@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755512Ab0GHIrI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 04:47:08 -0400
-Received: from relay.parallels.com ([195.214.232.42]:60117 "EHLO
+	id S1755654Ab0GHIrP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 04:47:15 -0400
+Received: from relay.parallels.com ([195.214.232.42]:60147 "EHLO
 	relay.parallels.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755315Ab0GHIrF (ORCPT
+	with ESMTP id S1755315Ab0GHIrL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 04:47:05 -0400
-Subject: [PATCH RFC 2/3] slist: singly-linked stack implementation
+	Thu, 8 Jul 2010 04:47:11 -0400
+Subject: [PATCH RFC 3/3] qlist: singly-linked queue implementation
 To: <linux-kernel@vger.kernel.org>
 From: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Date: Thu, 8 Jul 2010 12:47:00 +0400
-Message-ID: <20100708084700.3554.38228.stgit@zurg>
+Date: Thu, 8 Jul 2010 12:47:07 +0400
+Message-ID: <20100708084707.3554.26338.stgit@zurg>
 In-Reply-To: <20100708084654.3554.53100.stgit@zurg>
 References: <20100708084654.3554.53100.stgit@zurg>
 User-Agent: StGit/0.15
@@ -22,221 +22,361 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Intoduce slist -- singly-linked circular list.
-Usable for implementing Stacks and Sets.
+Introduce qlist -- singly-linked queue implementation.
 
-Struct slist_head uses twice less memory than nornal doubly-linked list_head.
-
-slist able to freely add and delete entries only at head
-or while safe-iterating: slist_for_each_entry_safe() provide pointer to
-previous entry, it usable to remove current entry or add new entry before it.
+Based on slist, but additianally manage pointer to last entry.
+So, qlist can add and splice elements to both ends.
 
 Signed-off-by: Konstantin Khlebnikov <khlebnikov@openvz.org>
 ---
- include/linux/list.h |  194 ++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 194 insertions(+), 0 deletions(-)
+ include/linux/list.h |  338 ++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 338 insertions(+), 0 deletions(-)
 
 diff --git a/include/linux/list.h b/include/linux/list.h
-index 6a6e9d3..691d37b 100644
+index 691d37b..2c78bf2 100644
 --- a/include/linux/list.h
 +++ b/include/linux/list.h
-@@ -809,4 +809,198 @@ static inline void hlist_move_list(struct hlist_head *old,
- 		({ tpos = hlist_entry(pos, typeof(*tpos), member); 1;}); \
- 	     pos = n)
+@@ -1003,4 +1003,342 @@ static inline void __slist_splice(struct slist_head *first,
+ 	     prev = (prev->next == &n->member) ? prev : &pos->member,	\
+ 	     pos = n, n = slist_entry(n->member.next, typeof(*n), member))
  
++
 +/*
-+ * Simple sindly-linked list implementation.
++ * Singly-linked queue implementation
 + */
 +
-+struct slist_head {
-+	struct slist_head *next;
++struct qlist_head
++{
++	struct slist_head head;
++	struct slist_head *tail;
 +};
 +
-+#define SLIST_HEAD_INIT(name) { .next = &(name) }
++#define QLIST_HEAD_INIT(name) { .head = SLIST_HEAD_INIT(name.head),	\
++				.tail = &name.head }
 +
-+#define SLIST_HEAD(name) \
-+	struct slist_head name = SLIST_HEAD_INIT(name)
++#define QLIST_HEAD(name) \
++	struct qlist_head name = QLIST_HEAD_INIT(name)
 +
-+static inline void INIT_SLIST_HEAD(struct slist_head *list)
++static inline void INIT_QLIST_HEAD(struct qlist_head *list)
 +{
-+	list->next = list;
++	INIT_SLIST_HEAD(&list->head);
++	list->tail = &list->head;
 +}
 +
 +/**
-+ * slist_empty - tests whether a list is empty
-+ * @head: the list to test.
++ * qlist_empty - tests whether a list is empty
++ * @head:	the list to test.
 + */
-+static inline bool slist_empty(const struct slist_head *head)
++static inline int qlist_empty(const struct qlist_head *list)
 +{
-+	return head->next == head;
++	return slist_empty(&list->head);
 +}
 +
 +/**
-+ * slist_add - add a new entry
-+ * @entry: new entry to be added
-+ * @prev: list head to add it after
++ * qlist_first - get list first entry
++ * @list:	list struct qlist_head
 + *
-+ * Insert a new entry after the specified head.
++ * Note, that list is expected to be not empty.
 + */
-+static inline void slist_add(struct slist_head *entry, struct slist_head *prev)
++#define qlist_first(list)	((list)->head.next)
++
++/**
++ * qlist_last - get list last entry
++ * @list:	list struct qlist_head
++ *
++ * Note, that list is expected to be not empty.
++ */
++#define qlist_last(list)	((list)->tail)
++
++/**
++ * qlist_add - add a new entry
++ * @entry:	new entry to be added
++ * @prev:	list position to add it after
++ * @list:	qlist head to add into it
++ *
++ * Insert a new entry after given position
++ */
++static inline void qlist_add(struct slist_head *entry,
++			     struct slist_head *prev,
++			     struct qlist_head *list)
 +{
-+	entry->next = prev->next;
-+	prev->next = entry;
++	if (prev == list->tail)
++		list->tail = entry;
++	slist_add(entry, prev);
 +}
 +
 +/**
-+ * slist_del - deletes entry from list.
-+ * @entry: the element to delete from the list.
-+ * @prev: previous entry in the list, list head for first entry.
++ * qlist_add_head - add a new entry
++ * @entry:	new entry to be added
++ * @list:	list head to add it after
++ *
++ * Insert a new entry into list head
++ */
++static inline void qlist_add_head(struct slist_head *entry,
++				  struct qlist_head *list)
++{
++	qlist_add(entry, &list->head, list);
++}
++
++/**
++ * qlist_add_tail - add a new entry
++ * @new:	new entry to be added
++ * @head:	list head to add it after
++ *
++ * Insert a new entry into list tail
++ */
++static inline void qlist_add_tail(struct slist_head *entry,
++				  struct qlist_head *list)
++{
++	slist_add(entry, list->tail);
++	list->tail = entry;
++}
++
++/**
++ * qlist_splice - insert list elements into given position
++ * @list:	source list
++ * @prev:	insert afther this position
++ * @head:	destination list
++ */
++static inline void qlist_splice(struct qlist_head *list,
++				struct slist_head *prev,
++				struct qlist_head *head)
++{
++	if (!qlist_empty(list)) {
++		if (prev == head->tail)
++			head->tail = list->tail;
++		__slist_splice(qlist_first(list), qlist_last(list), prev);
++	}
++}
++
++/**
++ * qlist_splice - insert list elements into given position and reinitialise src
++ * @list:	source list
++ * @prev:	insert afther this position
++ * @head:	destination list
++ */
++static inline void qlist_splice_init(struct qlist_head *list,
++				     struct slist_head *prev,
++				     struct qlist_head *head)
++{
++	if (!qlist_empty(list)) {
++		if (prev == head->tail)
++			head->tail = list->tail;
++		__slist_splice(qlist_first(list), qlist_last(list), prev);
++		INIT_QLIST_HEAD(list);
++	}
++}
++
++/**
++ * qlist_splice_head - insert elements into list head
++ * @list:	source
++ * @head:	destination
++ */
++static inline void qlist_splice_head(struct qlist_head *list,
++				     struct qlist_head *head)
++{
++	qlist_splice(list, &head->head, head);
++}
++
++/**
++ * qlist_splice_head_init - insert elements into list head and reinitialise src
++ * @list:	source
++ * @head:	destination
++ */
++static inline void qlist_splice_head_init(struct qlist_head *list,
++					  struct qlist_head *head)
++{
++	qlist_splice_init(list, &head->head, head);
++}
++
++/**
++ * qlist_splice_tail - insert elements into list tail
++ * @list:	source
++ * @head:	destination
++ */
++static inline void qlist_splice_tail(struct qlist_head *list,
++				     struct qlist_head *head)
++{
++	if (!qlist_empty(list)) {
++		__slist_splice(qlist_first(list), qlist_last(list), head->tail);
++		head->tail = list->tail;
++	}
++}
++
++/**
++ * qlist_splice_tail_init - insert elements into list tail and reinitialise src
++ * @list:	source
++ * @head:	destination
++ */
++static inline void qlist_splice_tail_init(struct qlist_head *list,
++					  struct qlist_head *head)
++{
++	if (!qlist_empty(list)) {
++		__slist_splice(qlist_first(list), qlist_last(list), head->tail);
++		head->tail = list->tail;
++		INIT_QLIST_HEAD(list);
++	}
++}
++
++/**
++ * qlist_del - deletes entry from list.
++ * @entry:	the element to delete.
++ * @prev:	previous entry in the list.
++ * @list:	list to delete from.
 + *
 + * Note: slist_empty() on entry does not return true after this, the entry is
 + * in an undefined state.
 + */
-+static inline void slist_del(struct slist_head *entry,
-+			     struct slist_head *prev)
++static inline void qlist_del(struct slist_head *entry,
++			     struct slist_head *prev,
++			     struct qlist_head *list)
 +{
-+	prev->next = entry->next;
-+	entry->next = LIST_POISON1;
++	if (entry == list->tail)
++		list->tail = prev;
++	slist_del(entry, prev);
 +}
 +
 +/**
-+ * slist_del_init - deletes entry from list and reinitialize it.
-+ * @entry: the element to delete from the list.
-+ * @prev: previous entry in the list, list head for first entry.
++ * qlist_del_init - deletes entry from list and reinitialize it.
++ * @entry:	the element to delete.
++ * @prev:	previous entry in the list.
++ * @list:	list to delete from.
 + */
-+static inline void slist_del_init(struct slist_head *entry,
-+				  struct slist_head *prev)
++static inline void qlist_del_init(struct slist_head *entry,
++				  struct slist_head *prev,
++				  struct qlist_head *list)
 +{
-+	slist_del(entry, prev);
++	qlist_del(entry, prev, list);
 +	INIT_SLIST_HEAD(entry);
 +}
 +
 +/**
-+ * __slist_splice - add entries chain into list
-+ * @first:	chain first entry
-+ * @last:	chain last entry
-+ * @prev:	place to insert chain
-+ */
-+static inline void __slist_splice(struct slist_head *first,
-+				  struct slist_head *last,
-+				  struct slist_head *prev)
-+{
-+	last->next = prev->next;
-+	prev->next = first;
-+}
-+
-+/**
-+ * slist_entry - get the struct for this entry
++ * qlist_entry - get the struct for this entry
 + * @ptr:	the &struct slist_head pointer.
 + * @type:	the type of the struct this is embedded in.
-+ * @member:	the name of the list_struct within the struct.
++ * @member:	the name of the slist_head within the struct.
 + */
-+#define slist_entry(ptr, type, member) \
-+	container_of(ptr, type, member)
++#define qlist_entry(ptr, type, member) \
++	slist_entry(ptr, type, member)
 +
 +/**
-+ * slist_first_entry - get the first element from a list
-+ * @head:	the list head to take the element from.
++ * qlist_first_entry - get the first element from a list
++ * @ptr:	the list head to take the element from.
 + * @type:	the type of the struct this is embedded in.
 + * @member:	the name of the slist_struct within the struct.
 + *
 + * Note, that list is expected to be not empty.
 + */
-+#define slist_first_entry(head, type, member) \
-+	slist_entry((head)->next, type, member)
++#define qlist_first_entry(ptr, type, member) \
++	qlist_entry(qlist_first(ptr), type, member)
 +
 +/**
-+ * slist_peek_entry - check is list non-empty and retrieve list first entry,
-+ * @ptr		pointer to strict * there to save result
-+ * @head:	the struct slist_head pointer.
++ * qlist_last_entry - get the last element from a list
++ * @ptr:	the list head to take the element from.
++ * @type:	the type of the struct this is embedded in.
 + * @member:	the name of the slist_struct within the struct.
 + *
-+ * Return true if list was not empty and @ptr is changed
++ * Note, that list is expected to be not empty.
 + */
-+#define slist_peek_entry(ptr, head, member) ({		\
-+	bool __empty = slist_empty(head);		\
++#define qlist_last_entry(ptr, type, member) \
++	qlist_entry(qlist_last(ptr), type, member)
++
++/**
++ * qlist_peek_entry - check is list non-empty and retrieve list first entry
++ * @ptr:	pointer to struct * whereto save result
++ * @list:	the struct slist_head pointer.
++ * @member:	the name of the slist_struct within the struct.
++ *
++ * Return true if list was not empty and @ptr updated
++ */
++#define qlist_peek_entry(ptr, list, member) ({		\
++	bool __empty = qlist_empty(list);		\
 +	if (!__empty) {					\
-+		*(ptr) = slist_first_entry(head, typeof(**(ptr)), member); \
++		*(ptr) = qlist_first_entry(list, typeof(**(ptr)), member); \
 +	} (!__empty); })
 +
 +/**
-+ * slist_pop_entry - check is list non-empty, retrieve and delete first entry,
-+ * @ptr		pointer to strict * there to save result
-+ * @head:	the struct slist_head pointer.
++ * qlist_peek_last_entry - check is list non-empty and retrieve list last entry
++ * @ptr:	pointer to struct * whereto save result
++ * @list:	the struct slist_head pointer.
 + * @member:	the name of the slist_struct within the struct.
 + *
-+ * Return true if list was not empty and @ptr is changed
++ * Return true if list was not empty and @ptr updated
 + */
-+#define slist_pop_entry(ptr, head, member) ({		\
-+	bool __empty = slist_empty(head);		\
++#define qlist_peek_last_entry(ptr, list, member) ({	\
++	bool __empty = qlist_empty(list);		\
 +	if (!__empty) {					\
-+		*(ptr) = slist_first_entry(head, typeof(**(ptr)), member); \
-+		slist_del(&(*(ptr))->member, head);	\
++		*(ptr) = qlist_last_entry(list, typeof(**(ptr)), member); \
 +	} (!__empty); })
 +
 +/**
-+ * slist_pop_init_entry - delete, reinitialize and return list first entry,
-+ * @ptr		pointer to strict * there to save result
-+ * @head:	the struct slist_head pointer.
++ * qlist_pop_entry - delete and return list first entry
++ * @ptr:	pointer to struct * whereto save result
++ * @list:	the struct slist_head pointer.
 + * @member:	the name of the slist_struct within the struct.
 + *
-+ * Return true if list was not empty and @ptr is changed
++ * Return true if list was not empty and @ptr updated
 + */
-+#define slist_pop_init_entry(ptr, head, member) ({	\
-+	bool __empty = slist_empty(head);		\
++#define qlist_pop_entry(ptr, list, member) ({		\
++	bool __empty = qlist_empty(list);		\
 +	if (!__empty) {					\
-+		*(ptr) = slist_first_entry(head, typeof(**(ptr)), member); \
-+		slist_del_init(&(*(ptr))->member, head); \
++		*(ptr) = qlist_first_entry(list, typeof(**(ptr)), member); \
++		qlist_del(&(*(ptr))->member, &(list)->head, list); \
 +	} (!__empty); })
 +
 +/**
-+ * slist_for_each - iterate over a list
++ * qlist_pop_init_entry - delete, reinitialize and return list first entry
++ * @ptr:	pointer to struct * whereto save result
++ * @list:	the struct slist_head pointer.
++ * @member:	the name of the slist_struct within the struct.
++ *
++ * Return true if list was not empty and @ptr updated
++ */
++#define qlist_pop_init_entry(ptr, list, member) ({	\
++	bool __empty = qlist_empty(list);		\
++	if (!__empty) {					\
++		*(ptr) = qlist_first_entry(list, typeof(**(ptr)), member); \
++		qlist_del_init(&(*(ptr))->member, &(list)->head, list); \
++	} (!__empty); })
++
++/**
++ * qlist_for_each - iterate over a list
 + * @pos:	the &struct list_head to use as a loop cursor.
-+ * @head:	the head for your list.
++ * @list:	the head for your list.
 + */
-+#define slist_for_each(pos, head) \
-+	for (pos = (head)->next; prefetch(pos->next), pos != (head); \
-+	     pos = pos->next)
++#define qlist_for_each(pos, list) \
++	slist_for_each(pos, &(list)->head)
 +
 +/**
-+ * slist_for_each_safe - iterate over a list safe against removal of list entry
++ * qlist_for_each_safe - iterate over a list safe against removal of list entry
 + * @pos:	the &struct slist_head to use as a loop cursor.
 + * @prev:	pointer to struct slist_head to store precursor.
 + * @n:		another &struct list_head to use as temporary storage
-+ * @head:	the head for your list.
++ * @list:	the head for your list.
 + */
-+#define slist_for_each_safe(pos, prev, n, head) \
-+	for (prev = (head), pos = (head)->next, n = pos->next; \
-+	     prefetch(pos->next), pos != (head); \
-+	     prev = (prev->next == n) ? prev : pos, pos = n, n = pos->next)
++#define qlist_for_each_safe(pos, prev, n, list) \
++	slist_for_each_safe(pos, prev, n, &(list)->head)
 +
 +/**
-+ * slist_for_each_entry	-	iterate over list of given type
++ * qlist_for_each_entry	-	iterate over list of given type
 + * @pos:	the type * to use as a loop cursor.
-+ * @head:	the head for your list.
++ * @list:	the head for your list.
 + * @member:	the name of the list_struct within the struct.
 + */
-+#define slist_for_each_entry(pos, head, member)				\
-+	for (pos = slist_entry((head)->next, typeof(*pos), member);	\
-+	     prefetch(pos->member.next), &pos->member != (head);	\
-+	     pos = slist_entry(pos->member.next, typeof(*pos), member))
++#define qlist_for_each_entry(pos, list, member) \
++	slist_for_each_entry(pos, &(list)->head, member)
 +
 +/**
-+ * slist_for_each_entry_safe - iterate over list of given type
-+ *			safe against removal of list entry
++ * qlist_for_each_entry_safe - iterate over list of given type
++ *				safe against removal of list entry
 + * @pos:	the type * to use as a loop cursor.
 + * @prev:	pointer to struct slist_head to store precursor.
 + * @n:		another type * to use as temporary storage
-+ * @head:	the head for your list.
++ * @list:	the head for your list.
 + * @member:	the name of the list_struct within the struct.
 + */
-+#define slist_for_each_entry_safe(pos, prev, n, head, member)		\
-+	for (prev = &(head)->member,					\
-+	     pos = slist_entry((head)->next, typeof(*pos), member),	\
-+	     n = slist_entry(pos->member.next, typeof(*pos), member);	\
-+	     prefetch(pos->member.next), &pos->member != (head);	\
-+	     prev = (prev->next == &n->member) ? prev : &pos->member,	\
-+	     pos = n, n = slist_entry(n->member.next, typeof(*n), member))
++#define qlist_for_each_entry_safe(pos, prev, n, list, member) \
++	slist_for_each_entry_safe(pos, prev, n, &(list)->head, member)
 +
  #endif
 
