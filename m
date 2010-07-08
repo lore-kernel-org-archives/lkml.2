@@ -1,57 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754937Ab0GHJY1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 05:24:27 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46610 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752794Ab0GHJYZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 05:24:25 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: FYI: mmap_sem OOM patch
-Cc: kosaki.motohiro@jp.fujitsu.com, Michel Lespinasse <walken@google.com>,
-       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Divyesh Shah <dpshah@google.com>
-In-Reply-To: <1278579768.1900.14.camel@laptop>
-References: <20100707231134.GA26555@google.com> <1278579768.1900.14.camel@laptop>
-Message-Id: <20100708182134.CD3F.A69D9226@jp.fujitsu.com>
+	id S1754828Ab0GHJ2X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 05:28:23 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53026 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754286Ab0GHJ2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 05:28:21 -0400
+Date: Thu, 8 Jul 2010 11:28:19 +0200
+From: Michal Hocko <mhocko@suse.cz>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>, Nick Piggin <npiggin@suse.de>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       Peter Zijlstra <peterz@infradead.org>, Darren Hart <dvhltc@us.ibm.com>
+Subject: Re: [PATCH] futex: futex_find_get_task remove credentails check
+Message-ID: <20100708092819.GB4925@tiehlicka.suse.cz>
+References: <20100628144246.GA14201@tiehlicka.suse.cz>
+ <20100628153214.GA24127@tiehlicka.suse.cz>
+ <20100628155845.GC24127@tiehlicka.suse.cz>
+ <20100628163952.GD24127@tiehlicka.suse.cz>
+ <1277743748.3561.139.camel@laptop>
+ <20100629084230.GE6215@tiehlicka.suse.cz>
+ <AANLkTinyoyZVg8iYOuUx6aA4XlUlLywl4q6GLXmeYP-x@mail.gmail.com>
+ <20100630070115.GB3890@tiehlicka.suse.cz>
+ <20100630095525.GA5840@tiehlicka.suse.cz>
+ <4C2B742F.6050403@us.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu,  8 Jul 2010 18:24:21 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C2B742F.6050403@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 2010-07-07 at 16:11 -0700, Michel Lespinasse wrote:
+On Wed 30-06-10 09:43:27, Darren Hart wrote:
+> On 06/30/2010 02:55 AM, Michal Hocko wrote:
+> >On Wed 30-06-10 09:01:15, Michal Hocko wrote:
+> >>On Tue 29-06-10 09:41:02, Linus Torvalds wrote:
+> >>>On Tue, Jun 29, 2010 at 1:42 AM, Michal Hocko<mhocko@suse.cz>  wrote:
+> >>>>
+> >>>>futex_find_get_task is currently used (through lookup_pi_state) from two
+> >>>>contexts, futex_requeue and futex_lock_pi_atomic. While credentials check
+> >>>>makes sense in the first code path, the second one is more problematic
+> >>>>because this check requires that the PI lock holder (pid parameter) has
+> >>>>the same uid and euid as the process's euid which is trying to lock the
+> >>>>same futex (current).
+> >>>
+> >>>So exactly why does it make sense to check the credentials in the
+> >>>first code path then?
+> >>
+> >>I though that requeue needs this for security reasons (don't let requeue
+> >>process for other user), but when I thought about that again you are
+> >>right and the only what matters should be accessibility of the shared
+> >>memory.
+> >
+> >And here is the patch which does the thing.
+> >
+> >--
+> >
+> > From 082c5ad2c482a8e78b61b17e213e750b006176aa Mon Sep 17 00:00:00 2001
+> >From: Michal Hocko<mhocko@suse.cz>
+> >Date: Wed, 30 Jun 2010 09:51:19 +0200
+> >Subject: [PATCH] futex: futex_find_get_task remove credentails check
+> >
+> >futex_find_get_task is currently used (through lookup_pi_state) from two
+> >contexts, futex_requeue and futex_lock_pi_atomic. None of the paths
+> >looks it needs the credentials check, though. Different (e)uids
+> >shouldn't matter at all because the only thing that is important for
+> >shared futex is the accessibility of the shared memory.
+> >
+> >The credentail check results in glibc assert failure or process hang (if
+> >glibc is compiled without assert support) for shared robust pthread
+> >mutex with priority inheritance if a process tries to lock already held
+> >lock owned by a process with a different euid:
+> >
+> >pthread_mutex_lock.c:312: __pthread_mutex_lock_full: Assertion `(-(e)) != 3 || !robust' failed.
+> >
+> >The problem is that futex_lock_pi_atomic which is called when we try to
+> >lock already held lock checks the current holder (tid is stored in the
+> >futex value) to get the PI state. It uses lookup_pi_state which in turn
+> >gets task struct from futex_find_get_task. ESRCH is returned either when
+> >the task is not found or if credentials check fails.
+> >futex_lock_pi_atomic simply returns if it gets ESRCH. glibc code,
+> >however,  doesn't expect that robust lock returns with ESRCH because it
+> >should get either success or owner died.
+> >
+> >Signed-off-by: Michal Hocko<mhocko@suse.cz>
 > 
-> > diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
-> > index f627779..4b3a1c7 100644
-> > --- a/arch/x86/mm/fault.c
-> > +++ b/arch/x86/mm/fault.c
-> > @@ -1062,7 +1062,10 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
-> >  			bad_area_nosemaphore(regs, error_code, address);
-> >  			return;
-> >  		}
-> > -		down_read(&mm->mmap_sem);
-> > +		if (test_thread_flag(TIF_MEMDIE))
-> > +			down_read_unfair(&mm->mmap_sem);
-> > +		else
-> > +			down_read(&mm->mmap_sem);
-> >  	} else {
-> >  		/*
-> >  		 * The above down_read_trylock() might have succeeded in
+> Without hearing back from Ingo on the original intent of the
+> credentials check, this looks right to me.
+
+Could you comment on that Ingo, please?
+
 > 
-> I still think adding that _unfair interface is asking for trouble.
+> Acked-by: Darren Hart <dvhltc@us.ibm.com>
+> 
+> 
+> >---
+> >  kernel/futex.c |   17 ++++-------------
+> >  1 files changed, 4 insertions(+), 13 deletions(-)
+> >
+> >diff --git a/kernel/futex.c b/kernel/futex.c
+> >index e7a35f1..6a3a5fa 100644
+> >--- a/kernel/futex.c
+> >+++ b/kernel/futex.c
+> >@@ -429,20 +429,11 @@ static void free_pi_state(struct futex_pi_state *pi_state)
+> >  static struct task_struct * futex_find_get_task(pid_t pid)
+> >  {
+> >  	struct task_struct *p;
+> >-	const struct cred *cred = current_cred(), *pcred;
+> >
+> >  	rcu_read_lock();
+> >  	p = find_task_by_vpid(pid);
+> >-	if (!p) {
+> >-		p = ERR_PTR(-ESRCH);
+> >-	} else {
+> >-		pcred = __task_cred(p);
+> >-		if (cred->euid != pcred->euid&&
+> >-		    cred->euid != pcred->uid)
+> >-			p = ERR_PTR(-ESRCH);
+> >-		else
+> >-			get_task_struct(p);
+> >-	}
+> >+	if (p)
+> >+		get_task_struct(p);
+> >
+> >  	rcu_read_unlock();
+> >
+> >@@ -564,8 +555,8 @@ lookup_pi_state(u32 uval, struct futex_hash_bucket *hb,
+> >  	if (!pid)
+> >  		return -ESRCH;
+> >  	p = futex_find_get_task(pid);
+> >-	if (IS_ERR(p))
+> >-		return PTR_ERR(p);
+> >+	if (!p)
+> >+		return -ESRCH;
+> >
+> >  	/*
+> >  	 * We need to look at the task state flags to figure out,
+> 
+> 
+> -- 
+> Darren Hart
+> IBM Linux Technology Center
+> Real-Time Linux Team
 
-Can you please explain trouble that you worry? Why do we need to keep
-thread fairness when OOM case?
-
-
-btw, I also dislike unfair + /proc combination.
-
-
-
+-- 
+Michal Hocko
+L3 team 
+SUSE LINUX s.r.o.
+Lihovarska 1060/12
+190 00 Praha 9    
+Czech Republic
