@@ -1,52 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758249Ab0GHBba (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 21:31:30 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:47109 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752839Ab0GHBb2 (ORCPT
+	id S1758268Ab0GHBdQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 21:33:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:45144 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756698Ab0GHBdO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 21:31:28 -0400
+	Wed, 7 Jul 2010 21:33:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dQzJTwQ8qTE8EMPe89Yf+8URCOXrPi32qHW/34NU27LmpBlqV7B2wej/HSfrt3Yeob
+         eoYnq/KP5vr3YN2z+KjS/1+e0RzCLe9MRVODYJcFEN5M+5272qK5R14IBrga22OobpHl
+         iOacd1t0TPBGYrx5t07IlLd3VlF1fkY6Y0w3k=
 MIME-Version: 1.0
-Date: Thu, 8 Jul 2010 11:31:26 +1000
-Message-ID: <AANLkTimeFKvKs5fpzBXqz0PypS0YJVq6mzI0nRqo7tHg@mail.gmail.com>
-Subject: IDEA: inotify - extend to be able to report changes in the past
-From: Bonne Eggleston <bonne@ixum.net>
-To: linux-kernel@vger.kernel.org
+In-Reply-To: <20100707122110.GF17967@verge.net.au>
+References: <AANLkTinEKn_UBpjf3k2DZn1euMM6z2UM_yeDPvdEQkav@mail.gmail.com>
+	<20100707122110.GF17967@verge.net.au>
+Date: Thu, 8 Jul 2010 09:33:13 +0800
+Message-ID: <AANLkTimBVoEYPt8uyATIw_TX290_xJqHKZQU1uWgWvNu@mail.gmail.com>
+Subject: Re: IPVS: Incorrect helper use for SCTP [was: wensong@linux-vs.org, 
+	horms@verge.net.au]
+From: xiaoyu Du <tingsrain@gmail.com>
+To: Simon Horman <horms@verge.net.au>
+Cc: lvs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I have an idea for an improvement to inotify, which may interest a
-keen kernel developer.
+This function is used  for sctp app heplers.
+since  there's no sctp helpers yet at present, it does nothing.
+If I make sure this is a bug. I will resend the pathch.
 
-The problem:
-The inotify feature of the linux kernel is a great way for programs
-which need to know about file changes to track them without having to
-scan the drive. Unfortunately if a system is rebooted often (like
-desktop and laptop machines) then the program must run a scan at
-startup to check for changes since the last time it was running. This
-can use a considerable amount of resources and be a deterrent from the
-use of otherwise very useful programs (such as desktop search or
-online backup etc.)
 
-Potential solution:
-Some modern filesystems should be able to quickly retrieve a list of
-files which have changed since a certain time using the journal or
-equivalent. If this was implemented within the inotify framework then
-programs which use inotify could specify the timestamp when they last
-ran and retrieve all the changes since that date. Inotify could then
-return those change events in the usual way and possibly also a
-timestamp to confirm the oldest time it was able to check back to.
-This would remove the need for a scan at startup.
-
-At this stage this is nothing more than an idea, and may well be
-impossible or already implemented or already under development. In any
-case I thought it worthwhile to share.
-
-Please cc me in any responses.
-
-Regards,
-Bonne Eggleston
+2010/7/7 Simon Horman <horms@verge.net.au>:
+> [CCed netdev]
+>
+> Thanks,
+>
+> that looks correct to me. Have you tested this change?
+> If so could you provided a Signed-off-by line
+> as per section 12 of Documentation/SubmittingPatches?
+>
+> On Wed, Jul 07, 2010 at 05:19:06PM +0800, xiaoyu Du wrote:
+>> Hi，all
+>>
+>> After I compared the sctp with tcp and udp, I thinkt his a bug that
+>> sctp_dnat_handler Incorrectly invoked ip_vs_app_pkt_out.
+>> below is the patch.
+>>
+>> ---
+>>  net/netfilter/ipvs/ip_vs_proto_sctp.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/net/netfilter/ipvs/ip_vs_proto_sctp.c
+>> b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+>> index c9a3f7a..db55759 100644
+>> --- a/net/netfilter/ipvs/ip_vs_proto_sctp.c
+>> +++ b/net/netfilter/ipvs/ip_vs_proto_sctp.c
+>> @@ -173,7 +173,7 @@ sctp_dnat_handler(struct sk_buff *skb,
+>>                        return 0;
+>>
+>>                /* Call application helper if needed */
+>> -               if (!ip_vs_app_pkt_out(cp, skb))
+>> +               if (!ip_vs_app_pkt_in(cp, skb))
+>>                        return 0;
+>>        }
+>>
+>> --
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe lvs-devel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
