@@ -1,77 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758392Ab0GHRuc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 13:50:32 -0400
-Received: from smtp4.Stanford.EDU ([171.67.219.84]:50946 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756636Ab0GHRub (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 13:50:31 -0400
-Subject: Re: 2.6.33.5 rt23: sleeping function called from invalid context
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-To: john stultz <johnstul@us.ibm.com>
-Cc: nando@ccrma.Stanford.EDU, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1278610624.3008.2.camel@localhost.localdomain>
-References: <1278561270.5448.2.camel@localhost.localdomain>
-	 <1278610624.3008.2.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Jul 2010 10:49:56 -0700
-Message-ID: <1278611396.7527.14.camel@localhost.localdomain>
+	id S1758439Ab0GHRu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 13:50:57 -0400
+Received: from mga01.intel.com ([192.55.52.88]:36015 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756682Ab0GHRuz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 13:50:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,559,1272870000"; 
+   d="scan'208";a="584198559"
+Subject: Re: [PATCH] sched: Call update_group_power only for local_group
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+       LKML <linux-kernel@vger.kernel.org>, Gautham R Shenoy <ego@in.ibm.com>,
+       Joel Schopp <jschopp@austin.ibm.com>,
+       Michael Neuling <mikey@neuling.org>
+In-Reply-To: <1278611346.1900.165.camel@laptop>
+References: <1278088816.1917.279.camel@laptop>
+	 <1278089799-11949-1-git-send-email-venki@google.com>
+	 <1278598336.1900.150.camel@laptop>
+	 <1278611133.2834.10.camel@sbs-t61.sc.intel.com>
+	 <1278611346.1900.165.camel@laptop>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Thu, 08 Jul 2010 10:50:16 -0700
+Message-Id: <1278611416.2834.12.camel@sbs-t61.sc.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 10:37 -0700, john stultz wrote:
-> On Wed, 2010-07-07 at 20:54 -0700, Fernando Lopez-Lezcano wrote:
-> > After a suspend/wake up cycle, just after upgrading to fc12 (I did not
-> > see this with the same basic kernel - that is, compiled from the same
-> > source + patches - under fc11). 
-> > 
-> > BUG: sleeping function called from invalid context at
-> > kernel/rtmutex.c:684
-> > pcnt: 0 0 in_atomic(): 0, irqs_disabled(): 1, pid: 10582, name:
-> > pm-suspend
-> > Pid: 10582, comm: pm-suspend Not tainted
-> > 2.6.33.5-120.rt23.1.fc11.ccrma.i686.rtPAE #1
-> > Call Trace:
-> > [<c042eced>] __might_sleep+0xcc/0xd4
-> > [<c0464f57>] rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> > [<c0792862>] rt_spin_lock+0x8/0xa
-> > [<c040dddc>] read_persistent_clock+0x11/0x30
-> > [<c045d1de>] timekeeping_suspend+0xe/0x4e
-> > [<c0640c9e>] sysdev_suspend+0x15c/0x356
-> > [<c0792906>] ? _mutex_unlock+0x8/0xa
-> > [<c046afc1>] suspend_devices_and_enter+0xea/0x17f
-> > [<c046b11e>] enter_state+0xc8/0x114
-> > [<c046a9cf>] state_store+0x93/0xa7
-> > [<c046a93c>] ? state_store+0x0/0xa7
-> > [<c05a6505>] kobj_attr_store+0x16/0x22
-> > [<c0515afa>] sysfs_write_file+0xbf/0xea
-> > [<c0515a3b>] ? sysfs_write_file+0x0/0xea
-> > [<c04d26ba>] vfs_write+0x80/0xdf
-> > [<c0465134>] ? rt_up_read+0x13/0x15
-> > [<c04d27ad>] sys_write+0x3b/0x5d
-> > [<c040895f>] sysenter_do_call+0x12/0x28
+On Thu, 2010-07-08 at 10:49 -0700, Peter Zijlstra wrote:
+> On Thu, 2010-07-08 at 10:45 -0700, Suresh Siddha wrote:
+> >  
+> > @@ -2456,6 +2454,9 @@ static inline void update_sd_lb_stats(struct sched_domain *sd, int this_cpu,
+> >  	init_sd_power_savings_stats(sd, sds, idle);
+> >  	load_idx = get_sd_load_idx(sd, idle);
+> >  
+> > +	if (this_cpu == smp_processor_id())
+> > +		update_group_power(sd, this_cpu);
+> > +
+> >  	do {
+> >  		int local_group;
 > 
-> Huh. Looks like the lock protecting the RTC/CMOS might need to be
-> converted to a raw spinlock, since suspend/resume is probably done with
-> irqs off.
-> 
-> A little baffled why the same kernel didn't see this with fc11.
+> Which will break for nohz_idle_balance..
 
-Same here, maybe I did not notice before?
+Then the logic is broken somewhere because update_group_power() reads
+APERF/MPERF MSR's which doesn't make sense when this_cpu !=
+smp_processor_id(). What am I missing?
 
-> Does this reproduce easily?
-
-Happens every time I suspend/resume (I think). No apparent side
-effects. 
-
--- Fernando
-
+thanks,
+suresh
 
