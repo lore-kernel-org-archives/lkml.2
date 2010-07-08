@@ -1,102 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab0GHJIo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 05:08:44 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:43995 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab0GHJIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 05:08:42 -0400
-Date: Thu, 8 Jul 2010 11:08:36 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Peter Feuerer <peter@piie.net>, Matthew Garrett <mjg@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Borislav Petkov <petkovbb@gmail.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] acerhdf: make needlessly global symbols static
-Message-ID: <20100708090836.GA14580@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Axel Lin <axel.lin@gmail.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
-	Peter Feuerer <peter@piie.net>, Matthew Garrett <mjg@redhat.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Borislav Petkov <petkovbb@gmail.com>,
-	Alexey Dobriyan <adobriyan@gmail.com>,
-	platform-driver-x86@vger.kernel.org
-References: <1278553580.7162.1.camel@mola>
+	id S1755234Ab0GHJUU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 05:20:20 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46424 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754773Ab0GHJUS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 05:20:18 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] reduce stack usage of node_read_meminfo()
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100708181629.CD3C.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1278553580.7162.1.camel@mola>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu,  8 Jul 2010 18:20:14 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Axel Lin <axel.lin@gmail.com>
-Date: Thu, Jul 08, 2010 at 09:46:20AM +0800
 
-> The following symbols are needlessly defined global:
-> 
-> thz_dev
-> cl_dev
-> acerhdf_dev
-> acerhdf_dev_ops
-> acerhdf_cooling_ops
-> 
-> This patch makes the symbols static.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Now, cmpilation node_read_meminfo() output following warning. Because
+it has very large sprintf() argument.
 
-Acked-by: Borislav Petkov <bp@alien8.de>
+	drivers/base/node.c: In function 'node_read_meminfo':
+	drivers/base/node.c:139: warning: the frame size of 848 bytes is
+	larger than 512 bytes
 
-> ---
->  drivers/platform/x86/acerhdf.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
-> index 7b2384d..5caaaf0 100644
-> --- a/drivers/platform/x86/acerhdf.c
-> +++ b/drivers/platform/x86/acerhdf.c
-> @@ -92,9 +92,9 @@ static unsigned int fanstate = ACERHDF_FAN_AUTO;
->  static char force_bios[16];
->  static char force_product[16];
->  static unsigned int prev_interval;
-> -struct thermal_zone_device *thz_dev;
-> -struct thermal_cooling_device *cl_dev;
-> -struct platform_device *acerhdf_dev;
-> +static struct thermal_zone_device *thz_dev;
-> +static struct thermal_cooling_device *cl_dev;
-> +static struct platform_device *acerhdf_dev;
->  
->  module_param(kernelmode, uint, 0);
->  MODULE_PARM_DESC(kernelmode, "Kernel mode fan control on / off");
-> @@ -374,7 +374,7 @@ static int acerhdf_get_crit_temp(struct thermal_zone_device *thermal,
->  }
->  
->  /* bind callback functions to thermalzone */
-> -struct thermal_zone_device_ops acerhdf_dev_ops = {
-> +static struct thermal_zone_device_ops acerhdf_dev_ops = {
->  	.bind = acerhdf_bind,
->  	.unbind = acerhdf_unbind,
->  	.get_temp = acerhdf_get_ec_temp,
-> @@ -449,7 +449,7 @@ err_out:
->  }
->  
->  /* bind fan callbacks to fan device */
-> -struct thermal_cooling_device_ops acerhdf_cooling_ops = {
-> +static struct thermal_cooling_device_ops acerhdf_cooling_ops = {
->  	.get_max_state = acerhdf_get_max_state,
->  	.get_cur_state = acerhdf_get_cur_state,
->  	.set_cur_state = acerhdf_set_cur_state,
-> -- 
-> 1.5.4.3
-> 
-> 
-> 
+This patch fixes it by splitting sprintf() in three parts.
+It doesn't have functional change.
 
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ drivers/base/node.c |   46 +++++++++++++++++++++++-----------------------
+ 1 files changed, 23 insertions(+), 23 deletions(-)
+
+diff --git a/drivers/base/node.c b/drivers/base/node.c
+index 2bdd8a9..a0fb2ef 100644
+--- a/drivers/base/node.c
++++ b/drivers/base/node.c
+@@ -66,8 +66,7 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
+ 	struct sysinfo i;
+ 
+ 	si_meminfo_node(&i, nid);
+-
+-	n = sprintf(buf, "\n"
++	n = sprintf(buf,
+ 		       "Node %d MemTotal:       %8lu kB\n"
+ 		       "Node %d MemFree:        %8lu kB\n"
+ 		       "Node %d MemUsed:        %8lu kB\n"
+@@ -78,13 +77,33 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
+ 		       "Node %d Active(file):   %8lu kB\n"
+ 		       "Node %d Inactive(file): %8lu kB\n"
+ 		       "Node %d Unevictable:    %8lu kB\n"
+-		       "Node %d Mlocked:        %8lu kB\n"
++		       "Node %d Mlocked:        %8lu kB\n",
++		       nid, K(i.totalram),
++		       nid, K(i.freeram),
++		       nid, K(i.totalram - i.freeram),
++		       nid, K(node_page_state(nid, NR_ACTIVE_ANON) +
++				node_page_state(nid, NR_ACTIVE_FILE)),
++		       nid, K(node_page_state(nid, NR_INACTIVE_ANON) +
++				node_page_state(nid, NR_INACTIVE_FILE)),
++		       nid, K(node_page_state(nid, NR_ACTIVE_ANON)),
++		       nid, K(node_page_state(nid, NR_INACTIVE_ANON)),
++		       nid, K(node_page_state(nid, NR_ACTIVE_FILE)),
++		       nid, K(node_page_state(nid, NR_INACTIVE_FILE)),
++		       nid, K(node_page_state(nid, NR_UNEVICTABLE)),
++		       nid, K(node_page_state(nid, NR_MLOCK)));
++
+ #ifdef CONFIG_HIGHMEM
++	n += sprintf(buf,
+ 		       "Node %d HighTotal:      %8lu kB\n"
+ 		       "Node %d HighFree:       %8lu kB\n"
+ 		       "Node %d LowTotal:       %8lu kB\n"
+-		       "Node %d LowFree:        %8lu kB\n"
++		       "Node %d LowFree:        %8lu kB\n",
++		       nid, K(i.totalhigh),
++		       nid, K(i.freehigh),
++		       nid, K(i.totalram - i.totalhigh),
++		       nid, K(i.freeram - i.freehigh));
+ #endif
++	n += sprintf(buf,
+ 		       "Node %d Dirty:          %8lu kB\n"
+ 		       "Node %d Writeback:      %8lu kB\n"
+ 		       "Node %d FilePages:      %8lu kB\n"
+@@ -99,25 +118,6 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
+ 		       "Node %d Slab:           %8lu kB\n"
+ 		       "Node %d SReclaimable:   %8lu kB\n"
+ 		       "Node %d SUnreclaim:     %8lu kB\n",
+-		       nid, K(i.totalram),
+-		       nid, K(i.freeram),
+-		       nid, K(i.totalram - i.freeram),
+-		       nid, K(node_page_state(nid, NR_ACTIVE_ANON) +
+-				node_page_state(nid, NR_ACTIVE_FILE)),
+-		       nid, K(node_page_state(nid, NR_INACTIVE_ANON) +
+-				node_page_state(nid, NR_INACTIVE_FILE)),
+-		       nid, K(node_page_state(nid, NR_ACTIVE_ANON)),
+-		       nid, K(node_page_state(nid, NR_INACTIVE_ANON)),
+-		       nid, K(node_page_state(nid, NR_ACTIVE_FILE)),
+-		       nid, K(node_page_state(nid, NR_INACTIVE_FILE)),
+-		       nid, K(node_page_state(nid, NR_UNEVICTABLE)),
+-		       nid, K(node_page_state(nid, NR_MLOCK)),
+-#ifdef CONFIG_HIGHMEM
+-		       nid, K(i.totalhigh),
+-		       nid, K(i.freehigh),
+-		       nid, K(i.totalram - i.totalhigh),
+-		       nid, K(i.freeram - i.freehigh),
+-#endif
+ 		       nid, K(node_page_state(nid, NR_FILE_DIRTY)),
+ 		       nid, K(node_page_state(nid, NR_WRITEBACK)),
+ 		       nid, K(node_page_state(nid, NR_FILE_PAGES)),
 -- 
-Regards/Gruss,
-Boris.
+1.6.5.2
+
+
+
