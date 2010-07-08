@@ -1,43 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab0GHIxX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 04:53:23 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:39731 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752613Ab0GHIxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 04:53:22 -0400
-Message-ID: <4C359200.8070105@kernel.dk>
-Date: Thu, 08 Jul 2010 10:53:20 +0200
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Christoph Hellwig <hch@infradead.org>, Sam Ravnborg <sam@ravnborg.org>,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       John Kacur <jkacur@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH 0/7] block: BKL removal, version 4
-References: <1278514289-21054-1-git-send-email-arnd@arndb.de> <4C34D74A.4060308@kernel.dk> <201007072218.24013.arnd@arndb.de>
-In-Reply-To: <201007072218.24013.arnd@arndb.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754979Ab0GHJCy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 05:02:54 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53893 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752979Ab0GHJCw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 05:02:52 -0400
+Subject: Re: FYI: mmap_sem OOM patch
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: linux-mm <linux-mm@kvack.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>, Divyesh Shah <dpshah@google.com>
+In-Reply-To: <20100707231134.GA26555@google.com>
+References: <20100707231134.GA26555@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 08 Jul 2010 11:02:48 +0200
+Message-ID: <1278579768.1900.14.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-07 22:18, Arnd Bergmann wrote:
-> On Wednesday 07 July 2010 21:36:42 Jens Axboe wrote:
->> I'll go over each one tomorrow and add the series.
-> 
-> Ok, thanks!
-> 
-> If it makes your life easier, feel free to get this series from
-> 
-> git pull git://git.kernel.org/pub/scm/linux/kernel/git/arnd/bkl.git block
+On Wed, 2010-07-07 at 16:11 -0700, Michel Lespinasse wrote:
 
-I applied it manually with the fixups mention, one of them also needed
-a bit of hand holding (applying with fuzz). The end result looks good
-and it survives an allmodconfig at least.
+> diff --git a/arch/x86/mm/fault.c b/arch/x86/mm/fault.c
+> index f627779..4b3a1c7 100644
+> --- a/arch/x86/mm/fault.c
+> +++ b/arch/x86/mm/fault.c
+> @@ -1062,7 +1062,10 @@ do_page_fault(struct pt_regs *regs, unsigned long error_code)
+>  			bad_area_nosemaphore(regs, error_code, address);
+>  			return;
+>  		}
+> -		down_read(&mm->mmap_sem);
+> +		if (test_thread_flag(TIF_MEMDIE))
+> +			down_read_unfair(&mm->mmap_sem);
+> +		else
+> +			down_read(&mm->mmap_sem);
+>  	} else {
+>  		/*
+>  		 * The above down_read_trylock() might have succeeded in
 
--- 
-Jens Axboe
-
+I still think adding that _unfair interface is asking for trouble.
