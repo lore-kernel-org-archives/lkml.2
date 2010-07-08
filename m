@@ -1,73 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756607Ab0GHPFM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 11:05:12 -0400
-Received: from mx6.sophos.com ([213.31.172.36]:39107 "EHLO mx6.sophos.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754475Ab0GHPFK convert rfc822-to-8bit (ORCPT
+	id S1756412Ab0GHPH0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 11:07:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:49157 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754718Ab0GHPHY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 11:05:10 -0400
-X-Greylist: delayed 607 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jul 2010 11:05:10 EDT
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: Greg KH <greg@kroah.com>
-Subject: Re: BUG: Securityfs and bind mounts (2.6.34)
-Date: Thu, 8 Jul 2010 15:55:01 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Al Viro <viro@zeniv.linux.org.uk>
-References: <201007081112.41252.tvrtko.ursulin@sophos.com> <20100708144317.GA2364@kroah.com>
-In-Reply-To: <20100708144317.GA2364@kroah.com>
-MIME-Version: 1.0
-Message-ID: <201007081555.01242.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/07/2010 15:55:01,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 08/07/2010 15:55:02,
-	Serialize complete at 08/07/2010 15:55:02
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 7BIT
+	Thu, 8 Jul 2010 11:07:24 -0400
+Date: Thu, 8 Jul 2010 08:11:08 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Norbert Preining <preining@logic.at>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@elte.hu>, akpm <akpm@linux-foundation.org>
+Subject: Re: high power consumption in recent kernels
+Message-ID: <20100708081108.43268bee@infradead.org>
+In-Reply-To: <1278590303.1900.91.camel@laptop>
+References: <20100706164539.GA14783@gamma.logic.tuwien.ac.at>
+	<1278579992.1900.17.camel@laptop>
+	<20100708045711.398d4e26@infradead.org>
+	<1278590303.1900.91.camel@laptop>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 08 Jul 2010 15:43:17 Greg KH wrote:
-> On Thu, Jul 08, 2010 at 11:12:41AM +0100, Tvrtko Ursulin wrote:
-> > Hi guys,
-> >
-> > If I overlay a file in securityfs using mount --bind with a file from
-> > a regular filesystem, should I be allowed to rmmod the module which
-> > registered the overlaid securityfs file?
->
-> Why would you want to overlay securityfs in the first place?
 
-For testing, more precisely faking some data exposed in securityfs module in
-order to provoke userspace reaction. It was convenient to leave the majority
-of real data and just overlay one file.
+> and for that matter, what is "[extra timer interrupt]", surely the
+> timer hardware doesn't generate spurious interrupts?
 
-> And you might be able to rmmod the module, but I didn't think that
-> security modules were able to be unloaded anymore.
+extra timer interrupt are those cases where we see the hardware
+interrupt fire, but we do not have software timers to account for them.
+two cases this can happen
+* a NO_HZ bug
+* we are idle longer than the longest interval we can program the hw
+  timer for. Without HPET this can happen.
 
-Perhaps it is not a security module in the way you think about it, just a
-module which happens to register some directories and files under securityfs.
 
-> > I was able to do that, then I
-> > unmounted the bind mount, and then when attempting to unmount
-> > securityfs hit a BUG at
-> > fs/dcache.c:676 (see below). It would have made more sense to first
-> > umount the overlay file and then remove the module which registered
-> > with securityfs, nevertheless should kernel crash in this case?
->
-> Probably not, but then again, you did something that you shouldn't have,
-> so perhaps it is telling you not to do such a thing in the future :)
 
-:) Well I do not know, but, it kind of smelled like a bug in the vfs/mount
-handling/securityfs area so I thought to let experts know. I _think_ I did
-nothing that much wrong. Just used the exposed API (securityfs_remove) and
-some bind mount shuffling from userspace.
-
-Tvrtko
-
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
