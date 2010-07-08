@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758401Ab0GHSKp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 14:10:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57151 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab0GHSKn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 14:10:43 -0400
-Subject: Re: [PATCH v4 08/12] Inject asynchronous page fault into a guest
- if page is swapped out.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
-       mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
-       cl@linux-foundation.org
-In-Reply-To: <1278612561.1900.170.camel@laptop>
-References: <1278433500-29884-1-git-send-email-gleb@redhat.com>
-	 <1278433500-29884-9-git-send-email-gleb@redhat.com>
-	 <20100708155920.GA13855@amt.cnet>  <20100708180525.GA11885@redhat.com>
-	 <1278612561.1900.170.camel@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 08 Jul 2010 20:10:31 +0200
-Message-ID: <1278612631.1900.171.camel@laptop>
+	id S1758389Ab0GHSNY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 14:13:24 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:11777 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756326Ab0GHSNX (ORCPT
+	<rfc822;groupwise-jlee@novell.com:6:1>);
+	Thu, 8 Jul 2010 14:13:23 -0400
+X-Greylist: delayed 1204 seconds by postgrey-1.27 at vger.kernel.org; Thu, 08 Jul 2010 14:13:23 EDT
+Message-Id: <4C369D2B020000230001CA27@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Thu, 08 Jul 2010 11:53:15 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <axel.lin@gmail.com>
+Cc: <mzxreary@0pointer.de>, <rpurdie@linux.intel.com>, <mjg@redhat.com>,
+       <gregkh@suse.de>, <linux-kernel@vger.kernel.org>,
+       <platform-driver-x86@vger.kernel.org>
+Subject: Re: [PATCH] msi-laptop: make struct rfkill_ops const
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 20:09 +0200, Peter Zijlstra wrote:
-> On Thu, 2010-07-08 at 21:05 +0300, Gleb Natapov wrote:
-> > > > +   /* do alloc atomic since if we are going to sleep anyway we
-> > > > +      may as well sleep faulting in page */
-> > > > +   work = kmem_cache_zalloc(async_pf_cache, GFP_ATOMIC);
-> > > > +   if (!work)
-> > > > +           return 0;
-> > > 
-> > > GFP_KERNEL is fine for this context.
-> > But it can sleep, no? The comment explains why I don't want to sleep
-> > here. 
-> 
-> In that case, use 0, no use wasting __GFP_HIGH on something that doesn't
-> actually need it.
+Hi Axel, 
 
-Ah, I just saw we have GFP_NOWAIT for that.
+於 四，2010-07-08 於 10:08 +0800，Axel Lin 提到：
+> rfkill uses a const struct rfkill_ops pointer.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/platform/x86/msi-laptop.c |    6 +++---
+>  1 files changed, 3 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/platform/x86/msi-laptop.c b/drivers/platform/x86/msi-laptop.c
+> index afd762b..05634f8 100644
+> --- a/drivers/platform/x86/msi-laptop.c
+> +++ b/drivers/platform/x86/msi-laptop.c
+> @@ -562,15 +562,15 @@ static int rfkill_threeg_set(void *data, bool blocked)
+>  	return 0;
+>  }
+>  
+> -static struct rfkill_ops rfkill_bluetooth_ops = {
+> +static const struct rfkill_ops rfkill_bluetooth_ops = {
+>  	.set_block = rfkill_bluetooth_set
+>  };
+>  
+> -static struct rfkill_ops rfkill_wlan_ops = {
+> +static const struct rfkill_ops rfkill_wlan_ops = {
+>  	.set_block = rfkill_wlan_set
+>  };
+>  
+> -static struct rfkill_ops rfkill_threeg_ops = {
+> +static const struct rfkill_ops rfkill_threeg_ops = {
+>  	.set_block = rfkill_threeg_set
+>  };
+>  
+
+The patch good to me, do I need Signed-off it?
+How can I signed off a patch?
+
+
+Thank's a lot!
+Joey Lee
+
