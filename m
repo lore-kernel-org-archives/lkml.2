@@ -1,59 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758235Ab0GHBPe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 7 Jul 2010 21:15:34 -0400
-Received: from ozlabs.org ([203.10.76.45]:47188 "EHLO ozlabs.org"
+	id S932073Ab0GHBPt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 7 Jul 2010 21:15:49 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58560 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753951Ab0GHBPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 7 Jul 2010 21:15:33 -0400
-Subject: Re: [PATCH 06/18] spufs: use llseek in all file operations
-From: Jeremy Kerr <jk@ozlabs.org>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Christoph Hellwig <hch@lst.de>, linuxppc-dev@ozlabs.org
-In-Reply-To: <1278538820-1392-7-git-send-email-arnd@arndb.de>
-References: <1278538820-1392-1-git-send-email-arnd@arndb.de>
-	 <1278538820-1392-7-git-send-email-arnd@arndb.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Jul 2010 09:15:28 +0800
-Message-ID: <1278551728.28333.55.camel@pororo.lan>
+	id S1757396Ab0GHBPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 7 Jul 2010 21:15:48 -0400
+Date: Thu, 8 Jul 2010 11:15:36 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Takeo Tung" <kernel@takeo.idv.tw>
+Cc: "Christoph Hellwig" <hch@lst.de>, "Michal Marek" <mmarek@suse.cz>,
+       <linux-kernel@vger.kernel.org>, <viro@zeniv.linux.org.uk>,
+       <sfr@canb.auug.org.au>
+Subject: Re: [PATCH] struct io panic on raid1 - Re: block: unify flags for
+ struct bio and struct request will kernel panic
+Message-ID: <20100708111536.6068ca58@notabene.brown>
+In-Reply-To: <F0921DE61714438C86A1AB46A4E7F22D@TAKEOW7NB1>
+References: <10E8B8D94205471F942B06D2A007832D@TAKEOW7NB1>
+	<4C129778.7040409@suse.cz>
+	<F8C0125B8F424A279E9679EAC24AC983@TAKEOW7NB1>
+	<20100612094937.GA12455@lst.de>
+	<F2CA952B7B5A41259C5F950CA3454C3A@TAKEOW7NB1>
+	<1AEF19B8648844C983F583EEBE9C46F4@TAKEOW7NB1>
+	<20100707231732.GA30007@lst.de>
+	<20100708094851.6dc6199d@notabene.brown>
+	<F0921DE61714438C86A1AB46A4E7F22D@TAKEOW7NB1>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Arnd,
+On Thu, 8 Jul 2010 08:43:38 +0800
+"Takeo Tung" <kernel@takeo.idv.tw> wrote:
 
-> The default for llseek is changing, so we need
-> explicit operations everywhere.
-
-Looks good, but:
-
-> @@ -2151,7 +2166,7 @@ static ssize_t spufs_ibox_info_read(struct file *file, char __user *buf,
->  static const struct file_operations spufs_ibox_info_fops = {
->  	.open = spufs_info_open,
->  	.read = spufs_ibox_info_read,
-> -	.llseek  = generic_file_llseek,
-> +	.llseek = no_llseek,
->  };
+> Hello,
 > 
->  static ssize_t __spufs_wbox_info_read(struct spu_context *ctx,
-> @@ -2194,7 +2209,7 @@ static ssize_t spufs_wbox_info_read(struct file *file, char __user *buf,
->  static const struct file_operations spufs_wbox_info_fops = {
->  	.open = spufs_info_open,
->  	.read = spufs_wbox_info_read,
-> -	.llseek  = generic_file_llseek,
-> +	.llseek = no_llseek,
->  };
+> ok. I rewrite the patch back to bool and re-add bio_rw_flagged fucntion. pls 
+> review it and any comment?
+
+I'm not sure why you did that.
+I meant to say that I liked the fact that you had changed from 'bool' to
+'unsigned long' and that I thought using 'bool' was unnecessary.  Maybe I
+didn't say that very clearly.
+
+It doesn't matter to me particularly which approach is used, but please don't
+re-introduce bio_rw_flagged because you think I want it - I don't.
+
+Thanks,
+NeilBrown
+
 > 
-
-Why the change in behaviour for the mbox info files?
-
-Cheers,
-
-
-Jeremy
-
+> Thanks,
+> Takeo Tung
+> 
+> --------------------------------------------------
+> From: "Neil Brown" <neilb@suse.de>
+> Sent: Thursday, July 08, 2010 7:48 AM
+> To: "Christoph Hellwig" <hch@lst.de>
+> Cc: "Takeo Tung" <kernel@takeo.idv.tw>; "Michal Marek" <mmarek@suse.cz>; 
+> <linux-kernel@vger.kernel.org>; <viro@zeniv.linux.org.uk>; 
+> <sfr@canb.auug.org.au>
+> Subject: Re: [PATCH] struct io panic on raid1 - Re: block: unify flags for 
+> struct bio and struct request will kernel panic
+> 
+> > On Thu, 8 Jul 2010 01:17:32 +0200
+> > Christoph Hellwig <hch@lst.de> wrote:
+> >
+> >> On Thu, Jul 08, 2010 at 07:05:39AM +0800, Takeo Tung wrote:
+> >> > Dear Christoph,
+> >> >
+> >> > I was check the patch again. I found the panic status haapen on Soft 
+> >> > RAID
+> >> > 1. I review it. found some define using bool, so some like ( x & 
+> >> > REQ_SYNC)
+> >> > only 0 or 1.
+> >> > so if bi_rw = rw | sync will bi_rw = rw | 0 or rw | 1. not rw | ( 1 <<
+> >> > __REQ_SYNC).
+> >> >
+> >> > So I write a patch is fix it. seems normal now. could you review the 
+> >> > patch
+> >> > or any comment?
+> >>
+> >> The patch looks correct to me, although your mailer mangled the
+> >> whitespace badly.  If Neil wants to keep the flag as bool we could
+> >> also add a !! around the bit flag checks.
+> >
+> > I think it is best to make them "unsigned long" holding the actual but.
+> > They were only made 'bool' because that is was bio_rw_flagged() returned.
+> > Converting to a bool then back to a bit-flag is unnecessary.
+> >
+> > Thanks,
+> > NeilBrown
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
+> >
+> > 
