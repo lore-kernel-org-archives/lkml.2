@@ -1,85 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757298Ab0GIPMY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 11:12:24 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:54699 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751332Ab0GIPMV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 11:12:21 -0400
-Subject: Re: [RFC][PATCH 00/13] perf pmu interface changes -v3
-From: Will Deacon <will.deacon@arm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Paul Mundt <lethal@linux-sh.org>,
+	id S1757303Ab0GIPNO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 11:13:14 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:49187 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1757199Ab0GIPNL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 11:13:11 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=MBwUKclTgnixAxK11o+d6LW5K04P60ZXKI6qFX0XNVZIHYSsm2gkQv22/JA+nESd92/nDh7guJ+KhPnBbOELnm9ckTKwtNWg7Y8pySKBz4i2SPCttRMSSTFle45P2dT5;
+Date: Fri, 9 Jul 2010 08:12:39 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100709082117.631541128@chello.nl>
-References: <20100709082117.631541128@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Jul 2010 16:11:42 +0100
-Message-ID: <1278688302.9864.9.camel@e102144-lin.cambridge.arm.com>
+       Al Viro <viro@zeniv.linux.org.uk>, Shawn Starr <shawn.starr@rogers.com>,
+       Dave Airlie <airlied@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Patrick McHardy <kaber@trash.net>, Jens Axboe <axboe@kernel.dk>,
+       Enrico Bandiello <enban@postal.uv.es>,
+       Norbert Preining <preining@logic.at>
+Subject: Re: 2.6.35-rc4-git3: Reported regressions from 2.6.34
+Message-ID: <20100709081239.4eb8fddd@virtuousgeek.org>
+In-Reply-To: <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com>
+References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
+	<AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 09 Jul 2010 15:11:46.0497 (UTC) FILETIME=[0C1DBB10:01CB1F79]
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Peter,
+On Thu, 8 Jul 2010 18:34:25 -0700
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-On Fri, 2010-07-09 at 09:21 +0100, Peter Zijlstra wrote:
-> The patches are boot tested on x86_64 and compile tested on: powerpc,
-> ppc-fsl,
-> sparc and arm and SH (by courtesy of Matt Fleming).
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16307
+> > Subject         : i915 in kernel 2.6.35-rc3, high number of wakeups
+> > Submitter       : Enrico Bandiello <enban@postal.uv.es>
+> > Date            : 2010-06-26 16:57 (13 days old)
+> > Message-ID      : <4C26317A.5070309@postal.uv.es>
+> > References      : http://marc.info/?l=linux-kernel&m=127757403404259&w=2  
 > 
-> X86 -- appears to be fully functional.
-> FSL -- should, after the initial few fixes, at least compile again.
-> ARM -- is known to have grown some issues, Will was looking into that.
+> I don't think anybody noticed this one. Jesse?
 
-I've been looking at this and after fixing atomic64 operations and a
-sign-extension bug, I'm getting closer to finding the *real* cause of
-the problem! It appears that the PMU isn't being enabled for pinned
-events. The following patch fixes that, but I'm not sure that it's the
-correct thing to do:
+Oh I hadn't seen that...  Enrico, can you bisect this issue?  It could
+be some spurious hotplug events or possibly a stuck vblank interrupt...
 
-diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
-index c440ae1..a946a77 100644
---- a/arch/arm/kernel/perf_event.c
-+++ b/arch/arm/kernel/perf_event.c
-@@ -304,6 +304,8 @@ armpmu_add(struct perf_event *event, int flags)
-        int idx;
-        int err = 0;
- 
-+       perf_pmu_disable(event->pmu);
-+
-        /* If we don't have a space for the counter then finish early.
-*/
-        idx = armpmu->get_event_idx(cpuc, hwc);
-        if (idx < 0) {
-@@ -328,6 +330,7 @@ armpmu_add(struct perf_event *event, int flags)
-        perf_event_update_userpage(event);
- 
- out:
-+       perf_pmu_enable(event->pmu);
-        return err;
- }
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16265
+> > Subject         : Why is kslowd accumulating so much CPU time?
+> > Submitter       : Theodore Ts'o <tytso@mit.edu>
+> > Date            : 2010-06-09 18:36 (30 days old)
+> > First-Bad-Commit: http://git.kernel.org/linus/fbf81762e385d3d45acad057b654d56972acf58c
+> > Message-ID      : <E1OMQ88-0002a1-Gb@closure.thunk.org>
+> > References      : http://marc.info/?l=linux-kernel&m=127610857819033&w=4  
+> 
+> Dave, Jesse?
 
-Because only pinned events seem to be broken, I'm worried that this is
-just hiding the problem... or is pmu->add(...) supposed to enable the
-PMU as well as installing the event?
+I haven't looked at the switchable graphics stuff, hopefully Dave has
+an idea here.
 
-The function names aren't especially helpful here either:
-armpmu_{start,stop} call armpmu->{enable,disable} and
-armpmu_{enable,disable} call armpmu->{start,stop}!
+> Fixed by commit f4985dc714d7.
+> 
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16228
+> > Subject         : BUG/boot failure on Dell Precision T3500 (pci/ahci_stop_engine)
+> > Submitter       : Brian Bloniarz <phunge0@hotmail.com>
+> > Date            : 2010-06-16 17:57 (23 days old)
+> > Handled-By      : Bjorn Helgaas <bjorn.helgaas@hp.com>  
+> 
+> This has a butt-ugly suggested patch that certainly won't be applied.
+> I saw the thread, but lost sight of it. Jesse, did that end up with
+> some resolution?
 
-Any thoughts?
+I'll follow up with Yinghai, we were pretty clear about what we wanted
+from that patch.
 
-Will
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16179
+> > Subject         : 2.6.35-rc2 completely hosed on intel gfx?
+> > Submitter       : Norbert Preining <preining@logic.at>
+> > Date            : 2010-06-06 11:55 (33 days old)
+> > Message-ID      : <20100606115534.GA9399@gamma.logic.tuwien.ac.at>
+> > References      : http://marc.info/?l=linux-kernel&m=127582534931581&w=2  
+> 
+> Hmm. That one is the vt.c bug coupled with another problem, which in
+> turn got opened as a separate bugzilla entry:
+> 
+>    http://bugzilla.kernel.org/show_bug.cgi?id=16252
+> 
+> which in turn then got closed. I dunno.
 
+Yeah, this is weird.  Norbert, do you still see this?  Have you tried
+to bisect it?
+
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
