@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759028Ab0GIAqg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 20:46:36 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35138 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758768Ab0GIAqf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 20:46:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH v2 2/2] vmscan: shrink_slab() require number of lru_pages, not page order
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-In-Reply-To: <alpine.DEB.2.00.1007081540400.15083@router.home>
-References: <20100708133152.5e556508.akpm@linux-foundation.org> <alpine.DEB.2.00.1007081540400.15083@router.home>
-Message-Id: <20100709092124.CD5A.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	id S932112Ab0GIArq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 20:47:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38418 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756791Ab0GIAro (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 20:47:44 -0400
+Date: Thu, 8 Jul 2010 20:49:45 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "Andrew Hendry" <andrew.hendry@gmail.com>
+Subject: Re: [Bug #16306] 2.6.35-rc3 BUG: unable to handle kernel NULL
+ pointer dereference at 0000000000000048 cifs_show_options
+Message-ID: <20100708204945.01ca1236@corrin.poochiereds.net>
+In-Reply-To: <TXb9XdQzJoD.A.DhB.SMmNMB@chimera>
+References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
+	<TXb9XdQzJoD.A.DhB.SMmNMB@chimera>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  9 Jul 2010 09:46:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 8 Jul 2010, Andrew Morton wrote:
+On Fri,  9 Jul 2010 01:41:39 +0200 (CEST)
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> > > AFAICT this is not argument error but someone changed the naming of the
-> > > parameter.
-> >
-> > It's been there since day zero:
-> >
-> > : commit 2a16e3f4b0c408b9e50297d2ec27e295d490267a
-> > : Author:     Christoph Lameter <clameter@engr.sgi.com>
-> > : AuthorDate: Wed Feb 1 03:05:35 2006 -0800
-> > : Commit:     Linus Torvalds <torvalds@g5.osdl.org>
-> > : CommitDate: Wed Feb 1 08:53:16 2006 -0800
-> > :
-> > :     [PATCH] Reclaim slab during zone reclaim
+> The following bug entry is on the current list of known regressions
+> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
-> That only shows that the order parameter was passed to shrink_slab() which
-> is what I remember being done intentionally.
 > 
-> Vaguely recall that this was necessary to avoid shrink_slab() throwing out
-> too many pages for higher order allocs.
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16306
+> Subject		: 2.6.35-rc3 BUG: unable to handle kernel NULL pointer dereference at 0000000000000048 cifs_show_options
+> Submitter	: Andrew Hendry <andrew.hendry@gmail.com>
+> Date		: 2010-06-26 10:46 (13 days old)
+> Message-ID	: <AANLkTilhTrEBYZd4HxeXQk8B6-yV8rCJ2C0jXsEREgIR@mail.gmail.com>
+> References	: http://marc.info/?l=linux-kernel&m=127754922110501&w=2
+> Handled-By	: Jeff Layton <jlayton@redhat.com>
+> 
+> 
 
-But It make opposite effect. number of scanning objects of shrink_slab() are
+Not sure if this is a new bug or not...
 
-                          lru_scanned        max_pass
-basic_scan_objects = 4 x -------------  x -----------------------------
-                          lru_pages        shrinker->seeks (default:2)
+I don't think this is really a CIFS bug, per-se. It seems like the
+problem may be that the iterator for /proc/pid/mountinfo is not
+sufficiently protected against removal from the vfsmount list.
 
-scan_objects = min(basic_scan_objects, max_pass * 2)
+Filesystems don't seem to be expected to do any locking in their
+show_options routines though so I'm guessing that something is borked
+in the generic vfs layer.
 
+Either that or this is some sort of generic mem corruption? I'm open to
+input from others that have a better grasp of this stuff at the VFS
+layer...
 
-That said, small lru_pages parameter makes too many slab dropping.
-Practically, zone-reclaim always take max_pass*2. about inode, 
-shrink_icache_memory() takes number of unused inode as max_pass.
-It mean one shrink_slab() calling drop all icache. Is this optimal
-behavior? why?
-
-Am I missing something?
-
-> Initially zone_reclaim was full of heuristics that later were replaced by
-> counter as the new ZVCs became available and gradually better ways of
-> accounting for pages became possible.
-
-
+-- 
+Jeff Layton <jlayton@redhat.com>
