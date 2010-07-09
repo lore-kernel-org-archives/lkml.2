@@ -1,66 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754267Ab0GIH5b (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 03:57:31 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49068 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751411Ab0GIH53 convert rfc822-to-8bit (ORCPT
+	id S1754256Ab0GIIBP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 04:01:15 -0400
+Received: from nwd2mail10.analog.com ([137.71.25.55]:49601 "EHLO
+	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab0GIIBN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 03:57:29 -0400
+	Fri, 9 Jul 2010 04:01:13 -0400
+X-IronPort-AV: E=Sophos;i="4.53,562,1272859200"; 
+   d="scan'208";a="18656734"
+Subject: [PATCH] MMC:mmc_spi: Recover from CRC error for SD read/write
+	operation over SPI.
+From: sonic zhang <sonic.adi@gmail.com>
+To: David Brownell <dbrownell@users.sourceforge.net>
+CC: linux-mmc@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
+Content-Type: text/plain
+Date: Fri, 9 Jul 2010 16:03:27 +0800
+Message-ID: <1278662607.16528.8.camel@eight.analog.com>
 MIME-Version: 1.0
-In-Reply-To: <82tyo9i0n2.fsf@mid.bfk.de>
-References: <AANLkTimvsaoOm_QEUnvlZf2EKuiMpOr9PdQt_Ga0Z97D@mail.gmail.com> 
-	<20100708012120.GB11419@auslistsprd01.us.dell.com> <D3F292ADF945FB49B35E96C94C2061B90C317EA2@nsmail.netscout.com> 
-	<82tyo9i0n2.fsf@mid.bfk.de>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Fri, 9 Jul 2010 09:57:14 +0200
-Message-ID: <AANLkTilRdnjShlB2JA1TjxMklTjw4ASl3BhwUWtKRdMW@mail.gmail.com>
-Subject: Re: nic enumeration
-To: Florian Weimer <fweimer@bfk.de>
-Cc: "Loke, Chetan" <Chetan.Loke@netscout.com>,
-       Matt Domsch <Matt_Domsch@dell.com>,
-       Michael Di Domenico <mdidomenico4@gmail.com>, linux-net@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.8.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 9, 2010 at 09:18, Florian Weimer <fweimer@bfk.de> wrote:
->> Ok, but can we achieve the renaming w/o a reboot?
->
-> "udev-trigger" or "udevadm trigger" works for renaming network
-> interfaces.  The kernel has some restrictions on renaming interfaces
-> which are in use, so this might not work in your case.
+>From 94d1ea57ac2fbe37133e25e99ccb265250f0027d Mon Sep 17 00:00:00 2001
+From: Sonic Zhang <sonic.zhang@analog.com>
+Date: Fri, 9 Jul 2010 15:36:20 +0800
+Subject: [PATCH] MMC:mmc_spi: Recover from CRC error for SD read/write operation over SPI.
 
-On older systems it would be:
-  udevtrigger
-on newer systems it would be:
-  udevadm trigger
+SPI bus is not reliable on all platforms when doing large dada transfer.
+Current mmc spi driver fails SD read/write command immediately, if
+occational CRC error is reported by SD device. This patch makes the
+operation recover from the CRC error by doing last SD command again.
+The retry count is set to 5 to ensure the driver pass any stress test.
 
-On recent systems you need to add:
-  udevadm trigger --action=add
-otherwise 'change' events will be triggered, which don't rename any
-netif. The default 'add' events caused too many problems with tools
-with not well integrated tools.
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ drivers/mmc/host/mmc_spi.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-And you should always limit the trigger to the subsystem you want to work with:
-  udevadm trigger --action=add --subsystem-match=net
-otherwise you run events for all devices on the system, which may
-cause completely unrelated trouble.
+diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
+index ad847a2..8192434 100644
+--- a/drivers/mmc/host/mmc_spi.c
++++ b/drivers/mmc/host/mmc_spi.c
+@@ -1055,6 +1055,8 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
+ {
+ 	struct mmc_spi_host	*host = mmc_priv(mmc);
+ 	int			status = -EINVAL;
++	int			crc_retry = 5;
++	struct mmc_command	stop;
+ 
+ #ifdef DEBUG
+ 	/* MMC core and layered drivers *MUST* issue SPI-aware commands */
+@@ -1084,10 +1086,30 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
+ 	}
+ #endif
+ 
++crc_recover:
+ 	/* issue command; then optionally data and stop */
+ 	status = mmc_spi_command_send(host, mrq, mrq->cmd, mrq->data != NULL);
+ 	if (status == 0 && mrq->data) {
+ 		mmc_spi_data_do(host, mrq->cmd, mrq->data, mrq->data->blksz);
++ 
++ 		/*
++ 		 * SPI bus is not reliable when doing large dada transfer.
++ 		 * If occational crc error is reported by SD device when do
++ 		 * data read/write over SPI, it can be recovered by doing
++ 		 * last SD command again. The retry count is set to 5 to
++ 		 * ensure the driver pass any stress test.
++ 		 */
++ 		if (mrq->data->error == -EILSEQ && crc_retry) {
++ 			stop.opcode = MMC_STOP_TRANSMISSION;
++ 			stop.arg = 0;
++ 			stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
++ 
++ 			status = mmc_spi_command_send(host, mrq, &stop, 0);
++ 			crc_retry--;
++ 			mrq->data->error = 0;
++ 			goto crc_recover;
++ 		}
++ 
+ 		if (mrq->stop)
+ 			status = mmc_spi_command_send(host, mrq, mrq->stop, 0);
+ 		else
+-- 
+1.6.0
 
-Anyway, it's not recommended to do anything like this. On many distros
-it will cause trouble with the network scripts/services, which are run
-again for already active interfaces. Using the udevadm trigger
-'hammer' on the running system may lead to all sorts of problems. This
-tool is usually only used at coldplug time during bootup.
 
-Also, busy interfaces which might be included in the rename attempt
-will cause ethX_rename failures if names need to be swapped.
 
-In general, there is no safe way, or a tool to do this. You have to
-know very well what you are doing. It's pretty common, that you
-disconnect yourself from a remote box if you try anything like this.
-
-Kay
