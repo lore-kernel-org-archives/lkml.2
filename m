@@ -1,42 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755243Ab0GIRdM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 13:33:12 -0400
-Received: from router-fw.net-space.pl ([89.174.63.77]:58837 "EHLO
-	router-fw.net-space.pl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab0GIRdL (ORCPT
+	id S1753326Ab0GIRdy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 13:33:54 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:49346 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752200Ab0GIRdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 13:33:11 -0400
-Date: Fri, 9 Jul 2010 19:32:56 +0200
-From: Daniel Kiper <dkiper@net-space.pl>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>, Daniel Kiper <dkiper@net-space.pl>,
-       xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
-Subject: Re: [Xen-devel] Re: GSoC 2010 - Migration from memory ballooning to	memory hotplug in Xen
-Message-ID: <20100709173256.GC8696@router-fw-old.local.net-space.pl>
-References: <20100708194553.GA30124@router-fw-old.local.net-space.pl> <871vbdr4ey.fsf@basil.nowhere.org> <4C36648F.6020006@goop.org> <20100709003409.GC15950@basil.fritz.box>
+	Fri, 9 Jul 2010 13:33:52 -0400
+Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw   
+ HIDIOCGFEATURE    and HIDIOCSFEATURE
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Alan Ott <alan@signal11.us>
+Cc: David S Miller <davem@davemloft.net>, Jiri Kosina <jkosina@suse.cz>,
+       Michael Poole <mdpoole@troilus.org>, Bastien Nocera <hadess@hadess.net>,
+       Eric Dumazet <eric.dumazet@gmail.com>, linux-bluetooth@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <4C372CEE.3070109@signal11.us>
+References: <1276467601-9066-1-git-send-email-alan@signal11.us>
+	 <1278623485.10421.73.camel@localhost.localdomain>
+	 <4C369CDC.9080104@signal11.us>
+	 <1278662497.10421.94.camel@localhost.localdomain>
+	 <4C371DE8.9020002@signal11.us>
+	 <1278680790.10421.106.camel@localhost.localdomain>
+	 <4C372CEE.3070109@signal11.us>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Jul 2010 14:33:35 -0300
+Message-ID: <1278696815.10421.137.camel@localhost.localdomain>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100709003409.GC15950@basil.fritz.box>
-User-Agent: Mutt/1.3.28i
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 09, 2010 at 02:34:09AM +0200, Andi Kleen wrote:
-> > > The only advantage of using memory hotadd is that the mem_map doesn't
-> > > need to be pre-allocated, but that's only a few percent of the memory.
-> > >
-> > > So it would only help if you want to add gigantic amounts of memory
-> > > to a VM (like >20-30x of what it already has).
-> >
-> > That's not wildly unreasonable on the face of it; consider a domain
-> > which starts at 1GB but could go up to 32GB as demand requires.  But
+Hi Alan,
+
+> >>>>> I looked at this and I am bit worried that this should not be done in
+> >>>>> this detail in the HIDP driver. Essentially HIDP is a pure transport
+> >>>>> driver. It should not handle all these details. Can we make this a bit
+> >>>>> easier for the transport drivers to support such features?
+> >>>>>
+> >>>>>            
+> >>>> I put these changes (most notably the addition of hidp_get_raw_report())
+> >>>> in hidp because that's where the parallel function
+> >>>> hidp_output_raw_report() was already located. I figured the input should
+> >>>> go with the output. That said, if there's a better place for both of
+> >>>> them (input and output) to go, let me know where you think it should be,
+> >>>> and I'll get them moved into the proper spot.
+> >>>>
+> >>>> I'm not sure what you mean about HIDP being a pure transport driver.
+> >>>>
+> >>>>          
+> >>> what is usb-hid.ko doing here? I would expect a bunch of code
+> >>> duplication with minor difference between USB and Bluetooth.
+> >>>        
+> >> usbhid doesn't have a lot of code for hidraw. Two functions are involved:
+> >>       usbhid_output_raw_report()
+> >>           - calls usb_control_msg() with Get_Report
+> >>       usbhid_get_raw_report()
+> >>           - calls usb_control_msg() with Set_Report
+> >>               OR
+> >>           - calls usb_interrupt_msg() on the Ouput pipe.
+> >>
+> >> This is of course easier than bluetooth because usb_control_msg() is
+> >> synchronous, even when requesting reports, mostly because of the nature
+> >> of USB, where the request and response are part of the same transfer.
+> >>
+> >> For Bluetooth, it's a bit more complicated since the kernel treats it
+> >> more like a networking interface (and indeed it is). My understanding is
+> >> that to make a synchronous transfer in bluetooth, one must:
+> >>       - send the request packet
+> >>       - block (wait_event_*())
+> >>       - when the response is received in the input handler, wake_up_*().
+> >>
+> >> There's not really any code duplication, mostly because initiating
+> >> synchronous USB transfers (input and output) is easy (because of the
+> >> usb_*_msg() functions), while making synchronous Bluetooth transfers
+> >> must be done manually. If there's a nice, convenient, synchronous
+> >> function in Bluetooth similar to usb_control_msg() that I've missed,
+> >> then let me know, as it would simplify this whole thing.
+> >>      
+> > there is not and I don't think we ever get one. My question here was
+> > more in the direction why HID core is doing these synchronously in the
+> > first place. Especially since USB can do everything async as well.
 >
-> The programs which need 32GB will probably not even start in 1GB :)
+> I'm open to suggestions. The way I see it is from a user space 
+> perspective. With Get_Feature being on an ioctl(), I don't see any clean 
+> way to do it other than synchronously. Other operating systems (I can 
+> say for sure Windows, Mac OS X, and FreeBSD) handle Get/Set Feature the 
+> same way (synchronously) from user space.
+> 
+> You seem to be proposing an asynchronous interface. What would that look 
+> like from user space?
 
-I am able to run program which allocates 32GB on machine 1GB... :-)))
-Do not underestimate memory overcommit...
+not necessarily from user space, but at least from HID core to HIDP and
+usb-hid transports. At least that is what I would expect, Jiri?
 
-Daniel
+Regards
+
+Marcel
+
+
