@@ -1,79 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756333Ab0GINbF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:31:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17782 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755535Ab0GINbB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:31:01 -0400
-Date: Fri, 9 Jul 2010 09:30:19 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-       Hannes Reinecke <hare@suse.de>
-Subject: Re: Dynamic Debug broken on 2.6.35-rc3?
-Message-ID: <20100709133019.GA2856@redhat.com>
-References: <201007011744.19564.trenn@suse.de>
- <20100708213927.GB2934@redhat.com>
- <20100708145300.d36cf006.akpm@linux-foundation.org>
- <201007091303.08693.trenn@suse.de>
+	id S1756255Ab0GINh7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:37:59 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40723 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755851Ab0GINh6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 09:37:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=t/IUP8OtzWhnIVYarnwvUS0g6mVmdAH4SHhzsGGXgo3Zd0N7sJQFj7ftZtFLFd0Akw
+         5zhrR8A0bWBfKdrc50iVgvQy1elD+vyM+b+UlcZ6ISUoue2V7wpZyHSLD8BhCVyut8nl
+         90Df3hzJ2YkE7S1UgFaZ/zlIEJ8ipfMQjxOQ8=
+Date: Fri, 9 Jul 2010 15:37:47 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH 2/8] init: remove the BKL from startup code
+Message-ID: <20100709133744.GF5291@nowhere>
+References: <1278194552-24943-1-git-send-email-arnd@arndb.de> <1278194552-24943-3-git-send-email-arnd@arndb.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201007091303.08693.trenn@suse.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1278194552-24943-3-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 09, 2010 at 01:03:08PM +0200, Thomas Renninger wrote:
-> Hi,
+On Sun, Jul 04, 2010 at 12:02:26AM +0200, Arnd Bergmann wrote:
+> I have shown by code review that no driver takes
+> the BKL at init time any more, so whatever the
+> init code was locking against is no longer there
+> and it is now safe to remove the BKL there.
 > 
-> I can confirm that this patch fixes the issue for me.
-> 
-> On Thursday 08 July 2010 23:53:00 Andrew Morton wrote:
-> > On Thu, 8 Jul 2010 17:39:28 -0400
-> > Jason Baron <jbaron@redhat.com> wrote:
-> > 
-> > > Make sure we properly call ddebug_remove_module() when a module fails to
-> > > load. In addition, pass the pointer to the "debug table", to both
-> > > ddebug_add_module(), and ddebug_remove_module() so that we can uniquely
-> > > identify each set of debug statements. In this way even modules with the
-> > > same name can be properly identified and removed.
-> > > 
-> > > 
-> > > Signed-off-by: Jason Baron <jbaron@redhat.com>
-> > 
-> > It'd be nice to track the Reported-by:s.  And the Tested-by:s if/when
-> > they arrive.  SighIllDoIt.
-> > 
-> > The patch (almost) applies to 2.6.34.  So are we missing a Cc:stable tag
-> > as well?
-> I'll resubmit with some more meta info and will include stable@kernel.org.
-> 
-> Could it be that this isn't a regression, but a bug that was always present,
-> but only gets exposed if you add modules with a specific implementation,
-> e.g. specific declarations of functions missing, etc.?
-> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Acked-by: Steven Rostedt <rostedt@goodmis>
+> ---
 
-Hi Thomas,
 
-yes, this race has likely been present for a while (i'd have to look at
-specific kernel versions to verify). I suspect its getting exposed now
-due to more usage of this feature, and the proliferation of kernel
-modules...
 
-> I tried to patch this into a 2.6.32.X kernel. While some hunks did not
-> succeed, it looks like an adjusted patch should get submitted for older
-> stable kernels as well?:
-> 
+Just trying to find any possible races here but I can't find any
+obvious. But I hope other reviewers can give it a look.
 
-if nobody else has done the 2.6.32 stable patch, I can do it, just let
-me know.
+In the meantime, I'll queue that in my bkl/core branch so that
+it can live some times in linux-next.
 
-thanks again for reporting this to me.
+Thanks.
 
-thanks,
-
--Jason
