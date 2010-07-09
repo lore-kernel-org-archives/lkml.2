@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758874Ab0GIAd7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 20:33:59 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:44447 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754534Ab0GIAd6 (ORCPT
+	id S1758996Ab0GIAeU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 20:34:20 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:59813 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758939Ab0GIAeO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 20:33:58 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=UZvpxFRP7Qm4H6XFIwgKC6J01TUsn/jnomR3nI903EHhXWbsV5qIXXaySR8TZA9x/6Y/PPBeYs9Kvk96a5Ncp1C43O8AhmWNGPGaJS60WU5irw4jwgT+h/AtoqP9gZXX;
-Date: Thu, 8 Jul 2010 17:33:44 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Alex Chiang" <achiang@canonical.com>,
-       "Ryan Wang" <openspace.wang@gmail.com>
-Subject: Re: [Bug #16197] [BUG on 2.6.35-rc2] sysfs: cannot create duplicate
- filename '/devices/pci0000:00/0000:00:11.0/0000:02:03.0/slot'
-Message-ID: <20100708173344.2d108ffd@virtuousgeek.org>
-In-Reply-To: <TXb9XdQzJoD.A.5eD.pNmNMB@chimera>
-References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
-	<TXb9XdQzJoD.A.5eD.pNmNMB@chimera>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Thu, 8 Jul 2010 20:34:14 -0400
+Date: Fri, 9 Jul 2010 02:34:09 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Daniel Kiper <dkiper@net-space.pl>,
+       xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org
+Subject: Re: [Xen-devel] Re: GSoC 2010 - Migration from memory ballooning
+ to	memory hotplug in Xen
+Message-ID: <20100709003409.GC15950@basil.fritz.box>
+References: <20100708194553.GA30124@router-fw-old.local.net-space.pl>
+ <871vbdr4ey.fsf@basil.nowhere.org>
+ <4C36648F.6020006@goop.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C36648F.6020006@goop.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri,  9 Jul 2010 01:41:34 +0200 (CEST)
-"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> Yes.  Another approach would be to fiddle with the E820 maps early at
+> boot to add more RAM, but then early_reserve it and hand it over to the
+> control of the balloon driver.  But it does mean you need to statically
+> come up with the max ever at boot time.
 
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.34.  Please verify if it still should be listed and let the tracking team
-> know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16197
-> Subject		: [BUG on 2.6.35-rc2] sysfs: cannot create duplicate filename '/devices/pci0000:00/0000:00:11.0/0000:02:03.0/slot'
-> Submitter	: Ryan Wang <openspace.wang@gmail.com>
-> Date		: 2010-06-07 0:23 (32 days old)
-> Message-ID	: <AANLkTincwMZPnYW3S4uz4k2GOn52RpgBIBRfzyD010Yo@mail.gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=127587022219378&w=2
+You need to do that too for memory hotadd -- you need predeclared
+hotadd regions. Linux mainly needs it to know in which node
+to put the memory. Other OS use it for other things too.
 
-I thought this one was closed with the revert of the slot symlink?
+> > The only advantage of using memory hotadd is that the mem_map doesn't
+> > need to be pre-allocated, but that's only a few percent of the memory.
+> >
+> > So it would only help if you want to add gigantic amounts of memory
+> > to a VM (like >20-30x of what it already has).
+> >   
+> 
+> That's not wildly unreasonable on the face of it; consider a domain
+> which starts at 1GB but could go up to 32GB as demand requires.  But
+
+The programs which need 32GB will probably not even start in 1GB :)
+
+> > One trap is also that memory hotadd is a frequent source of regressions,
+> > so you'll likely run into existing bugs.
+> 
+> That could be painful, but I expect the main reason for regressions is
+> that the code is fairly underused.  Adding new users should help.
+
+Yes, and we fixed a lot of the bugs, but still a lot of them 
+were tricky and frankly new ones might be too difficult for a SoC.
+
+-Andi
 
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+ak@linux.intel.com -- Speaking for myself only.
