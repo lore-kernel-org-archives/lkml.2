@@ -1,61 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754107Ab0GITTX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 15:19:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57761 "EHLO hera.kernel.org"
+	id S1754884Ab0GITTr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 15:19:47 -0400
+Received: from kroah.org ([198.145.64.141]:39830 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753491Ab0GITTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 15:19:21 -0400
-Date: Fri, 9 Jul 2010 19:19:00 GMT
-From: tip-bot for Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       kaneshige.kenji@jp.fujitsu.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, kaneshige.kenji@jp.fujitsu.com, hpa@linux.intel.com
-In-Reply-To: <4C1AE6CD.1080704@jp.fujitsu.com>
-References: <4C1AE6CD.1080704@jp.fujitsu.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, ioremap: Fix normal ram range check
-Message-ID: <tip-35be1b716a475717611b2dc04185e9d80b9cb693@git.kernel.org>
-Git-Commit-ID: 35be1b716a475717611b2dc04185e9d80b9cb693
-X-Mailer: tip-git-log-daemon
+	id S1752049Ab0GITTn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 15:19:43 -0400
+Date: Fri, 9 Jul 2010 12:18:58 -0700
+From: Greg KH <greg@kroah.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: lenb@kernel.org, linux-kernel@vger.kernel.org, linux-acpi@vger.kernel.org,
+       platform-driver-x86@vger.kernel.org, astarikovskiy@suse.de,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>
+Subject: Re: [PATCH 1/6] ACPI: Provide /sys/devices/system/ec/
+Message-ID: <20100709191858.GC8989@kroah.com>
+References: <1277996570-2686-1-git-send-email-trenn@suse.de>
+ <1277996570-2686-2-git-send-email-trenn@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 09 Jul 2010 19:19:00 +0000 (UTC)
+In-Reply-To: <1277996570-2686-2-git-send-email-trenn@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  35be1b716a475717611b2dc04185e9d80b9cb693
-Gitweb:     http://git.kernel.org/tip/35be1b716a475717611b2dc04185e9d80b9cb693
-Author:     Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-AuthorDate: Fri, 18 Jun 2010 12:23:57 +0900
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 9 Jul 2010 11:42:11 -0700
+On Thu, Jul 01, 2010 at 05:02:45PM +0200, Thomas Renninger wrote:
+> +config ACPI_EC_SYSFS
+> +	tristate "EC read/write access through sysfs"
+> +	default y
+> +	help
+> +	  Say N to disable Embedded Controller /sys interface
+> +
+> +	  An Embedded Controller typically is available on laptops and reads
+> +	  sensor values like battery state and temperature.
+> +	  The kernel access the EC through ACPI parsed code provided by BIOS
+> +	  tables.
+> +	  Thus this option is a debug option that helps to write ACPI drivers
+> +	  and which can be used to identify ACPI code or EC firmware bugs.
 
-x86, ioremap: Fix normal ram range check
+Wait, why is this a sysfs file at all?  It should be a debugfs one,
+right?
 
-Check for normal RAM in x86 ioremap() code seems to not work for the
-last page frame in the specified physical address range.
+thanks,
 
-Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
-LKML-Reference: <4C1AE6CD.1080704@jp.fujitsu.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/mm/ioremap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
-index 754cb4c..d41d3a9 100644
---- a/arch/x86/mm/ioremap.c
-+++ b/arch/x86/mm/ioremap.c
-@@ -101,7 +101,7 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
- 	 * Don't allow anybody to remap normal RAM that we're using..
- 	 */
- 	last_pfn = last_addr >> PAGE_SHIFT;
--	for (pfn = phys_addr >> PAGE_SHIFT; pfn < last_pfn; pfn++) {
-+	for (pfn = phys_addr >> PAGE_SHIFT; pfn <= last_pfn; pfn++) {
- 		int is_ram = page_is_ram(pfn);
- 
- 		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
+greg k-h
