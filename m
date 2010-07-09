@@ -1,68 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753088Ab0GII0G (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 04:26:06 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45213 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751877Ab0GII0D convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 04:26:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=un16B8f952gfeZN6us8dXF7YotOzJ+4rzqJPxKiCY2weTMWNerxVK5o6OX2PQPLPHK
-         HJ22n2w5ExFm3kwKAtP3vEkRbzD1artKmnATHWljmskqnevcDNn4YvXcFvvlbVojTQXV
-         pwarWrq0weH7HbXtAp5DHOPCnFB8qqot3MtL4=
+	id S1753820Ab0GII1w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 04:27:52 -0400
+Received: from ozlabs.org ([203.10.76.45]:46914 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752093Ab0GII1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 04:27:50 -0400
+Date: Fri, 9 Jul 2010 17:31:27 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 08/11] perf: Per PMU disable
+Message-ID: <20100709073127.GQ7771@brick.ozlabs.ibm.com>
+References: <20100624142804.431553874@chello.nl>
+ <20100624143406.936055007@chello.nl>
 MIME-Version: 1.0
-In-Reply-To: <20100709155108.3D2A.A69D9226@jp.fujitsu.com>
-References: <20100709155108.3D2A.A69D9226@jp.fujitsu.com>
-Date: Fri, 9 Jul 2010 17:26:00 +0900
-Message-ID: <AANLkTinhGeX1_YazJn8PHOFsPboTRmry17qHAENfZVbK@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: protect to read reclaim_stat by lru_lock
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Rik van Riel <riel@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100624143406.936055007@chello.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 9, 2010 at 3:52 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> Rik van Riel pointed out reading reclaim_stat should be protected
-> lru_lock, otherwise vmscan might sweep 2x much pages.
->
-> This fault was introduced by followint commit.
->
->  commit 4f98a2fee8acdb4ac84545df98cccecfd130f8db
->  Author: Rik van Riel <riel@redhat.com>
->  Date:   Sat Oct 18 20:26:32 2008 -0700
->
->    vmscan: split LRU lists into anon & file sets
->
->    Split the LRU lists in two, one set for pages that are backed by real file
->    systems ("file") and one for pages that are backed by memory and swap
->    ("anon").  The latter includes tmpfs.
->
->    The advantage of doing this is that the VM will not have to scan over lots
->    of anonymous pages (which we generally do not want to swap out), just to
->    find the page cache pages that it should evict.
->
->    This patch has the infrastructure and a basic policy to balance how much
->    we scan the anon lists and how much we scan the file lists.  The big
->    policy changes are in separate patches.
->
-> Cc: Rik van Riel <riel@redhat.com>
-> Cc: Minchan Kim <minchan.kim@gmail.com>
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+On Thu, Jun 24, 2010 at 04:28:12PM +0200, Peter Zijlstra wrote:
 
-Thanks, Kosaki. I have forgotten this issue.
+> Changes perf_disable() into perf_pmu_disable().
 
--- 
-Kind regards,
-Minchan Kim
+Needs this rolled in to compile on powerpc.
+
+Paul.
+
+diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+index 8890456..9046aea 100644
+--- a/arch/powerpc/kernel/perf_event.c
++++ b/arch/powerpc/kernel/perf_event.c
+@@ -517,7 +517,7 @@ static void write_mmcr0(struct cpu_hw_events *cpuhw, unsigned long mmcr0)
+  * Disable all events to prevent PMU interrupts and to allow
+  * events to be added or removed.
+  */
+-static void powerpc_pmu_pmu_disable(struct pmu *pmu)
++static void power_pmu_pmu_disable(struct pmu *pmu)
+ {
+ 	struct cpu_hw_events *cpuhw;
+ 	unsigned long flags;
+@@ -565,7 +565,7 @@ static void powerpc_pmu_pmu_disable(struct pmu *pmu)
+  * If we were previously disabled and events were added, then
+  * put the new config on the PMU.
+  */
+-static void powerpc_pmu_pmu_enable(struct pmu *pmu)
++static void power_pmu_pmu_enable(struct pmu *pmu)
+ {
+ 	struct perf_event *event;
+ 	struct cpu_hw_events *cpuhw;
+@@ -1130,7 +1130,7 @@ static int power_pmu_event_init(struct perf_event *event)
+ struct pmu power_pmu = {
+ 	.pmu_enable	= power_pmu_pmu_enable,
+ 	.pmu_disable	= power_pmu_pmu_disable,
+-	.event_init	= pmwer_pmu_event_init,
++	.event_init	= power_pmu_event_init,
+ 	.enable		= power_pmu_enable,
+ 	.disable	= power_pmu_disable,
+ 	.read		= power_pmu_read,
