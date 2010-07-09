@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab0GIPvY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 11:51:24 -0400
-Received: from g6t0186.atlanta.hp.com ([15.193.32.63]:33378 "EHLO
-	g6t0186.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757380Ab0GIPvV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 11:51:21 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [RFC PATCH 1/1] PCI: skip release and reallocation of io port resources
-Date: Fri, 9 Jul 2010 09:50:45 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Ram Pai <linuxram@us.ibm.com>,
-       linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       clemens@ladisch.de
-References: <20100630211516.GA25991@us.ibm.com> <AANLkTiknAtUipCr64qwJXakD9VgqhHNp35KPq5x9_x8V@mail.gmail.com> <4C33CF1C.7020803@kernel.org>
-In-Reply-To: <4C33CF1C.7020803@kernel.org>
+	id S1757580Ab0GIPvp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 11:51:45 -0400
+Received: from claw.goop.org ([74.207.240.146]:33599 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757413Ab0GIPvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 11:51:42 -0400
+Message-ID: <4C37458B.8040408@goop.org>
+Date: Fri, 09 Jul 2010 08:51:39 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: mmu notifier calls in apply_to_page_range()
+References: <4C373AEC.6000502@goop.org> <20100709151211.GE13493@random.random>
+In-Reply-To: <20100709151211.GE13493@random.random>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007090950.47269.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 06, 2010 06:49:32 pm Yinghai Lu wrote:
-> On 07/06/2010 04:58 PM, Linus Torvalds wrote:
-> > On Tue, Jul 6, 2010 at 4:13 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> >>
-> >> So you want to use pci=override_bios to reallocate all bios assigned resource include
-> >> peer root buses resources and pci bridge resource and pci devices BAR?
-> > 
-> > In a perfect world, we'd never need this at all, but sicne that's not
-> > an option, the second-best alternative might be something like the
-> > following:
-> > 
-> >   pci=override=off # default
-> >   pci=override=conflict # override only on conflicts
-> >   pci=override=<device> # clear BIOS allocations for <device> (and any
-> > children, if it's a bus)
-> 
-> current:
-> if there is conflict, like pci bridge resources or pci devices resources is not in the scope of peer root bus resource range.
-> or pci devices is not in pci bridge resources range.
-> kernel would reject the resource and try to get new range in parent resource for the children.
-> 
-> so current default is overriding the conflicts already.
+On 07/09/2010 08:12 AM, Andrea Arcangeli wrote:
+> On Fri, Jul 09, 2010 at 08:06:20AM -0700, Jeremy Fitzhardinge wrote:
+>   
+>> I just noticed that the original mmu notifier change (cddb8a5c14a) adds
+>> calls to mmu_notifier_invalidate_range_start/end to
+>> apply_to_page_range().  This doesn't seem correct to me, since
+>> apply_to_page_range can perform arbitrary operations to the range of
+>> pages, not just invalidation of the pages.  It seems to me that the
+>> appropriate mmu notifiers should be called either around the call to
+>> apply_to_page_range(), or from within the callback function.
+>>
+>> Andrea, what's the rationale for mmu_notifier_invalidate_range_start/end
+>> here?
+>>     
+> As long as the secondary mappings are teardown in range_start and
+> allowed to be established again only after range_end, all
+> modifications will be picked up by the secondary mmu. Imagine
+> secondary mmu like a tlb, that you only invalidate, then it'll be
+> refilled later (after range_end).
+>   
 
-One conflict we don't handle correctly is when we find a device that
-doesn't fit inside the root bus resources.  We currently disable the
-device, but Windows just leaves it where BIOS put it.
+Yes, but apply_to_page_range isn't necessarily making changes which
+requires that teardown/refill.  The most common user is vmalloc, which
+is just using a side-effect of apply_to_page_range to make sure that all
+the intermediate levels of the pagetable are allocated over the
+vmalloced range.  I think all the other users of it are within Xen code.
+In particular, we're using it in the gntdev driver, which also uses mmu
+notifiers to keep grant mappings in sync with process mappings, so the
+recursive mmu notifier call is causing problems.
 
-This causes this bug: https://bugzilla.kernel.org/show_bug.cgi?id=16263
-It should be fairly simple to make Linux handle this conflict the same
-way, without requiring any special kernel arguments.
+It seems to me that apply_to_page_range should be agnostic to its use,
+and its up to its callers to do any appropriate mmu notifier work. 
+Would you be happy with a patch to remove those calls?
 
-Bjorn
+Thanks,
+    J
