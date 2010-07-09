@@ -1,123 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753734Ab0GITp1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 15:45:27 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41185 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753063Ab0GITpZ convert rfc822-to-8bit (ORCPT
+	id S1753760Ab0GITrW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 15:47:22 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:54927
+	"EHLO VA3EHSOBE009.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753063Ab0GITrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 15:45:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WpAKyDJow6Nq/88SPKGIqvmvK3EpQz/NRSngplBAFUedP76l61Wha86J/jrOqzgqxW
-         t1GJ9o3uMy0wZn5FMsv+cvwGHZqhNossa4nDfyimZEhVAj53X7trpQs55U4pcxryq6DR
-         lx1S4k3UC49Oe9P1y0pPgc1JWHidzyeMfBFZU=
+	Fri, 9 Jul 2010 15:47:20 -0400
+X-SpamScore: -35
+X-BigFish: VPS-35(zz1411I1432N98dN936eM9371Pzz1202hzz15d4Rz32i2a8h34h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L5B2YM-01-HJ4-02
+X-M-MSG: 
+Date: Fri, 9 Jul 2010 21:52:02 +0200
+From: Conny Seidel <conny.seidel@amd.com>
+To: Yinghai Lu <yinghai@kernel.org>
+CC: "Petkov, Borislav" <Borislav.Petkov@amd.com>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: unable to handle kernel paging request at 40000000
+ __alloc_memory_core_early+0x147/0x1d6
+Message-ID: <20100709215202.4be679a8@marah.osrc.amd.com>
+In-Reply-To: <4C3773C4.1010609@kernel.org>
+References: <20100709145415.GC11199@aftab>
+	<4C3773C4.1010609@kernel.org>
+Organization: Advanced Micro Devices GmbH; Einsteinring 24; 85609 Dornach
+ bei =?UTF-8?B?TcO8bmNoZW47IEdlc2Now6RmdHNmw7xocmVyOg==?= Alberto Bozzo,
+ Andrew Bowd; Sitz: Dornach, Gemeinde Aschheim, Landkreis =?UTF-8?B?TcO8?=
+ =?UTF-8?B?bmNoZW47?= Registergericht =?UTF-8?B?TcO8bmNoZW4s?= HRB Nr. 43632
+X-Mailer: Claws Mail 3.7.6cvs11 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 MIME-Version: 1.0
-In-Reply-To: <x49fwzsbvga.fsf@segfault.boston.devel.redhat.com>
-References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
-	<x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
-	<x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
-	<x49fwzsbvga.fsf@segfault.boston.devel.redhat.com>
-Date: Fri, 9 Jul 2010 21:45:22 +0200
-Message-ID: <AANLkTilJFQITg7qK5gKJ9Rwt06KA6fvDr7Ed9u7cbwBX@mail.gmail.com>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Vivek Goyal <vgoyal@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+	boundary="Sig_/f=nKrM0quQJvqdm/Qw3+n9N";
+	protocol="application/pgp-signature"
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 9, 2010 at 4:07 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
-> Corrado Zoccolo <czoccolo@gmail.com> writes:
->
->> On Wed, Jul 7, 2010 at 10:06 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
->>> Corrado Zoccolo <czoccolo@gmail.com> writes:
->>>
->>>> On Wed, Jul 7, 2010 at 7:03 PM, Jeff Moyer <jmoyer@redhat.com> wrote:
->>>>> Corrado Zoccolo <czoccolo@gmail.com> writes:
->>>>>
->>>>>> Hi Jens,
->>>>>> patch 8e55063 "cfq-iosched: fix corner cases in idling logic", is
->>>>>> suspected for some regressions on high end hardware.
->>>>>> The two patches from this series:
->>>>>> - [PATCH 1/2] cfq-iosched: fix tree-wide handling of rq_noidle
->>>>>> - [PATCH 2/2] cfq-iosched: RQ_NOIDLE enabled for SYNC_WORKLOAD
->>>>>> fix two issues that I have identified, related to how RQ_NOIDLE is
->>>>>> used by the upper layers.
->>>>>> First patch makes sure that a RQ_NOIDLE coming after a sequence of
->>>>>> possibly idling requests from the same queue on the no-idle tree will
->>>>>> clear the noidle_tree_requires_idle flag.
->>>>>> Second patch enables RQ_NOIDLE for queues in the idling tree,
->>>>>> restoring the behaviour pre-8e55063 patch.
->>>>>
->>>>> Hi, Corrado,
->>>>>
->>>>> I ran your kernel through my tests.  Here are the results, up against
->>>>> vanilla, deadline, and the blk_yield patch set:
->>>>>
->>>> Hi Jeff,
->>>> can you also add cfq with 8e55063 reverted to the testing mix?
->>>
->>> Sure, the results now look like this:
->>>
->>>                 just    just
->>>                fs_mark  fio        mixed
->>> -------------------------------+--------------
->>> deadline        529.44   151.4 | 450.0    78.2
->>> vanilla cfq     107.88   164.4 |   6.6   137.2
->>> blk_yield cfq   530.82   158.7 | 113.2    78.6
->>> corrado cfq     110.16   220.6 |   7.0   159.8
->>> 8e55063 revert  559.66   198.9 |  16.1   153.3
->>>
->>> I had accidentally run your patch set (corrado cfq) on ext3, so the
->>> numbers were a bit off (everything else was run against ext4).  The
->>> corrected numbers above reflect the performance on ext4, which is much
->>> better for the sequential reader, but still not great for the fs_mark
->>> run.  Reverting 8e55063 definitely gets us into better shape.  However,
->>> if we care about the mixed workload, then it won't be enough.
+--Sig_/f=nKrM0quQJvqdm/Qw3+n9N
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
+
+Hi,
+
+On Fri, 9 Jul 2010 15:08:52 -0400
+Yinghai Lu <yinghai@kernel.org> wrote:
+
+>On 07/09/2010 07:54 AM, Borislav Petkov wrote:
+>> Hi,
 >>
->> Wondering why deadline performs so well in the fs_mark workload. Is it
->> because it doesn't distinguish between sync and async writes?
->
-> It performs well because it doesn't do any idling.
->
->> Maybe we can achieve something similar by putting all sync writes
->> (that are marked as REQ_NOIDLE) in the noidle tree? This, coupled with
->> making jbd(2) perform sync writes, should make the yield automatic,
->> since they all live in the same tree for which we don't idle between
->> queues, and should be able to provide fairness compared to a
->> sequential reader (that lives in the other tree).
+>> this is something we're getting during testing on one of our boxes
+>> here, a dual socket Magny-Cours machine. It is oopsing on the addr
+>> variable in __alloc_memory_core_early() after converting it to a
+>> virtual address in order to clear the mem region at it. I've removed
+>> the "#if 0.. #endif" around the printk which dumps the ranges in the
+>> early node map for more info.
 >>
->> Can you test the attached patch, where I also added your changes to
->> make jbd(2) to perform sync writes?
+>> It's latest -git, 32bit build, config is attached.
+>>
 >
-> I'm not sure what kernel you generated that patch against.  I'm working
-> with 2.6.35-rc3 or later, and your patch does not apply there.
-It's Jens' block/for-2.6.36 tree.
-
+>can not duplicate on all my setup.
 >
-> Cheers,
-> Jeff
+>but look at the code there is limit problem with 32 bit...
+>
+>please check if it will fix the problem.
+>
+>and we will need to rebase early_res to memblock patchset.
+>
+>Thanks
+>
+>Yinghai Lu
 >
 
+I'm sorry but the patch isn't working.
+
+Now we are seeing this:
+
+[    0.000000] BUG: Int 6: CR2 (null)
+[    0.000000]      EDI 00000005  ESI f3e00800  EBP c21afed4  ESP c21afe90
+[    0.000000]      EBX 01000000  EDX 00000006  ECX (null)  EAX fffffff4
+[    0.000000]      err (null)  EIP c2359558   CS 00000060  flg 00010046
+[    0.000000] Stack: fffffff4 (null) 00000001 f3e00000 00000005 00080000 0=
+0000001 00000002
+[    0.000000]        000b6800 00000002 f3e00000 00000001 00000002 c21aff0c=
+ c2359dd2 (null)
+[    0.000000]        ffe00000 00000004 (null) 00000004 001fafd8 c2943000 (=
+null) 00004e00
+[    0.000000] Pid: 0, comm: swapper Not tainted 2.6.35-rc4+ #1
+[    0.000000] Call Trace:
+[    0.000000]  [<c1dd39d9>] hlt_loop+0x0/0x3
+[    0.000000]  [<c2359558>] ? free_area_init_node+0x5b1/0x647
+[    0.000000]  [<c2359dd2>] free_area_init_nodes+0x7b5/0x89a
+[    0.000000]  [<c234a2c9>] paging_init+0x1a9/0x1cc
+[    0.000000]  [<c2330325>] setup_arch+0x1414/0x15f7
+[    0.000000]  [<c23510c1>] ? __reserve_early+0x119/0x135
+[    0.000000]  [<c1078c8a>] ? printk+0x36/0x54
+[    0.000000]  [<c232917b>] start_kernel+0x1d0/0xb6f
+[    0.000000]  [<c2328163>] i386_start_kernel+0x163/0x179
 
 
--- 
-__________________________________________________________________________
+##
+##################################################################
+# Email : conny.seidel@amd.com            GnuPG-Key : 0xA6AB055D #
+# Fingerprint: 17C4 5DB2 7C4C C1C7 1452 8148 F139 7C09 A6AB 055D #
+##################################################################
+# Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach      #
+# General Managers: Alberto Bozzo, Andrew Bowd                   #
+# Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen #
+#               HRB Nr. 43632                                    #
+##################################################################
 
-dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
-PhD - Department of Computer Science - University of Pisa, Italy
---------------------------------------------------------------------------
-The self-confidence of a warrior is not the self-confidence of the average
-man. The average man seeks certainty in the eyes of the onlooker and calls
-that self-confidence. The warrior seeks impeccability in his own eyes and
-calls that humbleness.
-                               Tales of Power - C. Castaneda
+--Sig_/f=nKrM0quQJvqdm/Qw3+n9N
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Disposition: attachment; filename="signature.asc"
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkw3feIACgkQ8Tl8CaarBV1PQwCg7KclRB/Y0mzHBo4OJ2PDv+u0
+Kz0An0N/0F5HocFgL0milUC2lO+bKWvj
+=x1sT
+-----END PGP SIGNATURE-----
+
+--Sig_/f=nKrM0quQJvqdm/Qw3+n9N--
