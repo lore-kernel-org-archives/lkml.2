@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab0GIGU0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 02:20:26 -0400
-Received: from gate.crashing.org ([63.228.1.57]:36649 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752912Ab0GIGUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 02:20:21 -0400
-Subject: Re: [PATCH 03/23] lmb: Print new doubled array location info
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <4C36300A.7030606@kernel.org>
-References: <1278226587-31213-1-git-send-email-yinghai@kernel.org>
-	 <1278226587-31213-4-git-send-email-yinghai@kernel.org>
-	 <201007081255.58049.bjorn.helgaas@hp.com>  <4C36300A.7030606@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Jul 2010 16:19:46 +1000
-Message-ID: <1278656386.28659.130.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752291Ab0GIGY3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 02:24:29 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58256 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751333Ab0GIGY2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 02:24:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=eDjPQx6YFzT3QdjvdWJgJhODwEAn0FEe7XUMNWkCZUE9CXyDZPw813mthRWf0XATR3
+         2N2kUMNtdhvoKtWoTiFU29D/5IKxIxrVWXOeSL0wOI9MqOmTk2xlhHk53REYP/VU28Jd
+         O2QEJYjMuwCeVx1qVO7oG19v0Yt9MRlgSGPAM=
+From: Helmut Schaa <helmut.schaa@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [Bug #16256] tpm_tis breaks suspend/hibernate on kernels > 2.6.34
+Date: Fri, 9 Jul 2010 08:23:47 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.35-rc3-wl-default+; KDE/4.3.5; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "David Safford" <safford@watson.ibm.com>,
+       "James Morris" <jmorris@namei.org>,
+       "Rajiv Andrade" <srajiv@linux.vnet.ibm.com>
+References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <TXb9XdQzJoD.A.QYC.1MmNMB@chimera>
+In-Reply-To: <TXb9XdQzJoD.A.QYC.1MmNMB@chimera>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007090823.47530.helmut.schaa@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> We can make them to be consistent later.
+Am Freitag 09 Juli 2010 schrieb Rafael J. Wysocki:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
 > 
-> current for early mem stage, it is consistent to without -1.
+> The following bug entry is on the current list of known regressions
+> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> know (either way).
 > 
-> later I like to see all pci resource could be consistent to without -1 too.
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16256
+> Subject		: tpm_tis breaks suspend/hibernate on kernels > 2.6.34
+> Submitter	: Helmut Schaa <helmut.schaa@googlemail.com>
+> Date		: 2010-06-20 11:15 (19 days old)
+> First-Bad-Commit: http://git.kernel.org/linus/225a9be24d799aa16d543c31fb09f0c9ed1d9caa
+> Handled-By	: Helmut Schaa <helmut.schaa@googlemail.com>
+> Patch		: http://marc.info/?l=tpmdd-devel&m=127609160616162&w=2
 
-No. You won't change what is the de-facto standard all over the kernel
-to make it consistent with x86 crap.
+Seems like the patch didn't make it into mainline yet. So I guess it should
+still be listed here.
 
--1 is the right way to print those things.
-
-Ben.
-
-
+Helmut
