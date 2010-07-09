@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab0GIBC1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 21:02:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7612 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751281Ab0GIBC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 21:02:26 -0400
+	id S1753785Ab0GIBD0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 21:03:26 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48580 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751744Ab0GIBDZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 21:03:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=oDrpBBqg3h5RLfSa2rIvNXunlLah2bsJsL+fEV/BN4//V/BPbo4a5h4HXQIUZed8Nx
+         LaLzPFswXdD4aFdIeWUbyqggpeyMFLjSNhKvqZD9Wf6NuZnNOTRK+1IrKUkwsfe7RQcU
+         kx5R5mNHlGvbyBbkm7S7Mhhu9h6Czqr++0o+I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: paulmck@linux.vnet.ibm.com
-X-Fcc: ~/Mail/linus
-Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Don Zickus <dzickus@redhat.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Jerome Marchand <jmarchan@redhat.com>,
-       Mandeep Singh Baines <msb@google.com>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: while_each_thread() under rcu_read_lock() is broken?
-In-Reply-To: Paul E. McKenney's message of  Thursday, 8 July 2010 17:41:07 -0700 <20100709004107.GQ2426@linux.vnet.ibm.com>
-References: <20100618190251.GA17297@redhat.com>
-	<20100618193403.GA17314@redhat.com>
-	<20100618223354.GL2365@linux.vnet.ibm.com>
-	<20100621170919.GA13826@redhat.com>
-	<20100621174455.GA14886@redhat.com>
-	<20100621190212.C8630400C5@magilla.sf.frob.com>
-	<20100621200633.GA21099@redhat.com>
-	<20100708235925.A71DA4A967@magilla.sf.frob.com>
-	<20100709004107.GQ2426@linux.vnet.ibm.com>
-X-Antipastobozoticataclysm: When George Bush projectile vomits antipasto on the Japanese.
-Message-Id: <20100709010137.B06704A968@magilla.sf.frob.com>
-Date: Thu,  8 Jul 2010 18:01:37 -0700 (PDT)
+In-Reply-To: <20100708204945.01ca1236@corrin.poochiereds.net>
+References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
+	<TXb9XdQzJoD.A.DhB.SMmNMB@chimera>
+	<20100708204945.01ca1236@corrin.poochiereds.net>
+Date: Fri, 9 Jul 2010 11:03:23 +1000
+Message-ID: <AANLkTikt1cJTq7_yYlISBYuAXlF2_X1mausSsr1j6l85@mail.gmail.com>
+Subject: Re: [Bug #16306] 2.6.35-rc3 BUG: unable to handle kernel NULL pointer 
+	dereference at 0000000000000048 cifs_show_options
+From: Andrew Hendry <andrew.hendry@gmail.com>
+To: Jeff Layton <jlayton@redhat.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Hmmm...  The kerneldoc for rcu_read_lock() looks like it says this
-> pretty unambiguously.  Then again, that is easy for me to say, given
-> that I was the one who made most of this stuff up.   ;-)
+It might not be a regression, and so far i haven't been able to reproduce.
+Its seems to be related to suspend/resume interface up/down and mount/unmount.
+Also potentially with cifs waiting for a NAS to spinup to complete mount.
 
-Yeah, well, I thought I knew what rcu_read_lock did and the only new thing
-I had in mind was using call_rcu, so that's the only place I looked.  It
-wasn't entirely unreasonable to have to read through Documentation/RCU/ a
-bit for a subtlety of this kind, and I did find it quickly enough once
-Oleg's attentiveness alerted me to be freshly afraid of the subtleties.
-
-> But it has been awhile since I looked after the kerneldoc.  Please see
-> below for the changes I would make if left to myself.
-
-Those look good to me!
-
-> Any other suggestions for improvement to the kerneldoc?
-
-Oh, I don't know, send over someone to read it to me in a sultry voice
-so I get appropriately motivated to cast about for all of it I can find
-and listen closely to every word?  It already looks like if I'd actually
-read all of it twice that day, I would have had the information I needed.
-
-
-Thanks,
-Roland
+On Fri, Jul 9, 2010 at 10:49 AM, Jeff Layton <jlayton@redhat.com> wrote:
+> On Fri,  9 Jul 2010 01:41:39 +0200 (CEST)
+> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+>
+>> This message has been generated automatically as a part of a summary report
+>> of recent regressions.
+>>
+>> The following bug entry is on the current list of known regressions
+>> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+>> know (either way).
+>>
+>>
+>> Bug-Entry     : http://bugzilla.kernel.org/show_bug.cgi?id=16306
+>> Subject               : 2.6.35-rc3 BUG: unable to handle kernel NULL pointer dereference at 0000000000000048 cifs_show_options
+>> Submitter     : Andrew Hendry <andrew.hendry@gmail.com>
+>> Date          : 2010-06-26 10:46 (13 days old)
+>> Message-ID    : <AANLkTilhTrEBYZd4HxeXQk8B6-yV8rCJ2C0jXsEREgIR@mail.gmail.com>
+>> References    : http://marc.info/?l=linux-kernel&m=127754922110501&w=2
+>> Handled-By    : Jeff Layton <jlayton@redhat.com>
+>>
+>>
+>
+> Not sure if this is a new bug or not...
+>
+> I don't think this is really a CIFS bug, per-se. It seems like the
+> problem may be that the iterator for /proc/pid/mountinfo is not
+> sufficiently protected against removal from the vfsmount list.
+>
+> Filesystems don't seem to be expected to do any locking in their
+> show_options routines though so I'm guessing that something is borked
+> in the generic vfs layer.
+>
+> Either that or this is some sort of generic mem corruption? I'm open to
+> input from others that have a better grasp of this stuff at the VFS
+> layer...
+>
+> --
+> Jeff Layton <jlayton@redhat.com>
+>
