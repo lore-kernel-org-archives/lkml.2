@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757211Ab0GIPLK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 11:11:10 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:46898 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754839Ab0GIPLI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 11:11:08 -0400
-Date: Fri, 9 Jul 2010 11:11:06 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Arjan van de Ven <arjan@infradead.org>
-cc: linux-pm@lists.linux-foundation.org, <linux-kernel@vger.kernel.org>
-Subject: Re: [linux-pm] [PATCH] pm: Add runtime PM statistics to sysfs
-In-Reply-To: <Pine.LNX.4.44L0.1007091056510.1582-100000@iolanthe.rowland.org>
-Message-ID: <Pine.LNX.4.44L0.1007091106070.1582-100000@iolanthe.rowland.org>
+	id S1757223Ab0GIPMR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 11:12:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63056 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751332Ab0GIPMQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 11:12:16 -0400
+Date: Fri, 9 Jul 2010 17:12:11 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: mmu notifier calls in apply_to_page_range()
+Message-ID: <20100709151211.GE13493@random.random>
+References: <4C373AEC.6000502@goop.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C373AEC.6000502@goop.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jul 2010, Alan Stern wrote:
-
-> On Thu, 8 Jul 2010, Arjan van de Ven wrote:
+On Fri, Jul 09, 2010 at 08:06:20AM -0700, Jeremy Fitzhardinge wrote:
+> I just noticed that the original mmu notifier change (cddb8a5c14a) adds
+> calls to mmu_notifier_invalidate_range_start/end to
+> apply_to_page_range().  This doesn't seem correct to me, since
+> apply_to_page_range can perform arbitrary operations to the range of
+> pages, not just invalidation of the pages.  It seems to me that the
+> appropriate mmu notifiers should be called either around the call to
+> apply_to_page_range(), or from within the callback function.
 > 
-> > From: Arjan van de Ven <arjan@linux.intel.com>
-> > Subject: pm: Add runtime PM statistics to sysfs
-> > 
-> > In order for PowerTOP to be able to report how well the new runtime PM is working
-> > for the various drivers, the kernel needs to export some basic statistics in sysfs.
-> > 
-> > This patch adds two sysfs files in the runtime PM domain that expose the
-> > total time a device has been active, and the time a device has been suspended.
-> > 
-> > With this PowerTOP can compute the activity percentage
-> > 
-> > Active %age = 100 * (delta active) / (delta active + delta suspended)
-> > 
-> > and present the information to the user.
-> > 
-> > I've written the PowerTOP code (slated for version 1.12) already, and the output looks
-> > like this:
-> > 
-> > Runtime Device Power Management statistics
-> > Active  Device name
-> >  10.0%	06:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8101E/RTL8102E
-> 
-> 
-> > @@ -411,6 +433,7 @@ int __pm_runtime_resume(struct device *dev, bool from_wq)
-> >  	}
-> >  
-> >  	if (retval) {
-> > +		update_pm_runtime_accounting(dev);
-> >  		dev->power.runtime_status = RPM_SUSPENDED;
-> >  		pm_runtime_cancel_pending(dev);
-> >  	} else {
-> 
-> This line was added in the wrong place.  It belongs either before the 
-> "if (retval) {" or after the "} else {".
+> Andrea, what's the rationale for mmu_notifier_invalidate_range_start/end
+> here?
 
-Whoops, sorry, my mistake.  It doesn't belong here at all.  It belongs 
-considerably earlier in the function, before the line:
+As long as the secondary mappings are teardown in range_start and
+allowed to be established again only after range_end, all
+modifications will be picked up by the secondary mmu. Imagine
+secondary mmu like a tlb, that you only invalidate, then it'll be
+refilled later (after range_end).
 
-	dev->power.runtime_status = RPM_RESUMING;
-
-This is because update_pm_runtime_accounting() doesn't take into 
-account the existence of the RPM_RESUMING and RPM_SUSPENDING states; it 
-treats them all the same as RPM_ACTIVE.
-
-Also, it looks like you forgot to add a call in 
-__pm_runtime_set_status().
-
-Alan Stern
-
+The exception is set_pte_at_notify that is called by ksm to establish
+a readonly secondary pte in KVM, KVM only calls
+get_user_pages(write=1) (never write=0 even for reads) so until that
+is optimized set_pte_at_notify allows guest to access readonly data
+without breaking the cow. set_pte_at_notify invokes a change_pte
+method, if not implemented it'll just fallback to the invalidate_page
+method that is backwards compatible, so no mmu notifier user is
+required to call change_pte (especially if the secondary page fault -
+kind of secondary tlb-miss software handler invokes get_user_pages
+with write=0 for reads, ->change_pte can only eliminate one minor
+fault so no big deal).
