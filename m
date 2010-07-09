@@ -1,82 +1,238 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754820Ab0GICE4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 22:04:56 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48254 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751946Ab0GICEx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 22:04:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=PzWy6t2cQUxetj/Gfq6GkGxSXOUV4zMzIq53d3jO79G5bZEeYqGLslVGfZ03chqX2I
-         LgNZtzuTuCZCVaXZ+UPEYQgHLZblh4b59F2VpgaHCKHbhYWN+tx9rgxowWLWY5Hs93kG
-         w6E85hurU7KB7f0pOKdkXoZhfupqNgzbf9KvY=
-Date: Fri, 9 Jul 2010 04:04:42 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
+	id S1754308Ab0GICwz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 22:52:55 -0400
+Received: from mga11.intel.com ([192.55.52.93]:62491 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753876Ab0GICwx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 22:52:53 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,561,1272870000"; 
+   d="scan'208";a="816333838"
+Date: Fri, 9 Jul 2010 10:52:50 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: Hugh Dickins <hughd@google.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>,
-       Al Viro <viro@zeniv.linux.org.uk>, Shawn Starr <shawn.starr@rogers.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Dave Airlie <airlied@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Patrick McHardy <kaber@trash.net>, Jens Axboe <axboe@kernel.dk>
-Subject: Re: 2.6.35-rc4-git3: Reported regressions from 2.6.34
-Message-ID: <20100709020440.GJ6405@nowhere>
-References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com>
+       Andi Kleen <andi@firstfloor.org>,
+       "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+       Tim Chen <tim.c.chen@linux.intel.com>
+Subject: Re: [PATCH]shmem: reduce one time of locking in pagefault
+Message-ID: <20100709025250.GA29570@sli10-desk.sh.intel.com>
+References: <1278465346.11107.8.camel@sli10-desk.sh.intel.com>
+ <alpine.DEB.1.00.1007081741290.1132@tigran.mtv.corp.google.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.DEB.1.00.1007081741290.1132@tigran.mtv.corp.google.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 06:34:25PM -0700, Linus Torvalds wrote:
-> On Thu, Jul 8, 2010 at 4:33 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16284
-> > Subject         : Hitting WARN_ON in hw_breakpoint code
-> > Submitter       : Paul Mackerras <paulus@samba.org>
-> > Date            : 2010-06-23 12:57 (16 days old)
-> > Message-ID      : <20100623125740.GA3368@brick.ozlabs.ibm.com>
-> > References      : http://marc.info/?l=linux-kernel&m=127729789113432&w=2
+On Fri, Jul 09, 2010 at 09:13:55AM +0800, Hugh Dickins wrote:
+> On Wed, 7 Jul 2010, Shaohua Li wrote:
 > 
-> This has "I have a fix, will post it very soon." in the thread from
-> Frederic, but I'm not seeing anything else. Frederic?
+> > I'm running a shmem pagefault test case (see attached file) under a 64 CPU
+> > system. Profile shows shmem_inode_info->lock is heavily contented and 100%
+> > CPUs time are trying to get the lock. In the pagefault (no swap) case,
+> > shmem_getpage gets the lock twice, the last one is avoidable if we prealloc a
+> > page so we could reduce one time of locking. This is what below patch does.
+> 
+> Right.  As usual, I'm rather unenthusiastic about a patch which has to
+> duplicate code paths to satisfy an artificial testcase; but I can see
+> the appeal.
+> 
+> We can ignore that you're making the swap path slower, that will be lost
+> in its noise.  I did like the way the old code checked the max_blocks
+> limit before it let you allocate the page: whereas you might have many
+> threads simultaneously over-allocating before reaching that check; but
+> I guess we can live with that.
+> 
+> > 
+> > The result of the test case:
+> > 2.6.35-rc3: ~20s
+> > 2.6.35-rc3 + patch: ~12s
+> > so this is 40% improvement.
+> 
+> Was that with or without Tim's shmem_sb_info max_blocks scalability
+> changes (that I've still not studied)?  Or max_blocks 0 (unlimited)?
+no Tim's patch. max_blocks 0.
+ 
+> I notice your test case lets each thread fault in from its own
+> disjoint part of the whole area.  Please also test with each thread
+> touching each page in the whole area at the same time: which I think
+> is just as likely a case, but not obvious to me how well it would
+> work with your changes - what numbers does it show?
+Tried this (I must use less memory (1G) because this is quite slow):
+2.6.35-rc5: ~78s (quite stable in 6 run)
+2.6.35-rc5 + patch: not stable. I collect 6 data: 75.5s, 20.9s, 76.1s, 14.6s
+22.3s, 75.7s. So sometimes there are big improvements, sometimes not. But
+not worse anyway.
+
+> > One might argue if we could have better locking for shmem. But even shmem is lockless,
+> > the pagefault will soon have pagecache lock heavily contented because shmem must add
+> > new page to pagecache. So before we have better locking for pagecache, improving shmem
+> > locking doesn't have too much improvement. I did a similar pagefault test against
+> > a ramfs file, the test result is ~10.5s.
+> > 
+> > Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> > 
+> > diff --git a/mm/shmem.c b/mm/shmem.c
+> > index f65f840..c5f2939 100644
+> > --- a/mm/shmem.c
+> > +++ b/mm/shmem.c
+> ...
+> > @@ -1258,7 +1258,19 @@ repeat:
+> >  		if (error)
+> >  			goto failed;
+> >  		radix_tree_preload_end();
+> > +		if (sgp != SGP_READ) {
+> 
+> Don't you need to check that prealloc_page is not already set there?
+> There are several places in the swap path where it has to goto repeat.
+Thanks for pointing out this. Updated patch.
 
 
+I'm running a shmem pagefault test case (see attached file) under a 64 CPU
+system. Profile shows shmem_inode_info->lock is heavily contented and 100%
+CPUs time are trying to get the lock. In the pagefault (no swap) case,
+shmem_getpage gets the lock twice, the last one is avoidable if we prealloc a
+page so we could reduce one time of locking. This is what below patch does.
 
-Right. In fact it wasn't a regression. The per task breakpoint reservation
-design was broken from the beginning and this warning has revealed the
-problem. This only touched perf, and it did since perf support breakpoints.
-Fortunately ptrace wasn't concerned by this problem, even not by side effects
-of this.
+The result of the test case:
+2.6.35-rc3: ~20s
+2.6.35-rc3 + patch: ~12s
+so this is 40% improvement.
 
-The fix is invasive as it's a rewrite of a (little) part of the breakpoint
-reservation. And since the symptom is only a warning and also breakpoints
-never released from the constraint table (just a counter, no memory leak),
-the fix is headed for 2.6.36.
+One might argue if we could have better locking for shmem. But even shmem is lockless,
+the pagefault will soon have pagecache lock heavily contented because shmem must add
+new page to pagecache. So before we have better locking for pagecache, improving shmem
+locking doesn't have too much improvement. I did a similar pagefault test against
+a ramfs file, the test result is ~10.5s.
 
-It is ready in tip:/perf/core:
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
-http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=commitdiff;h=45a73372efe4a63f44aa2e1125d4a777c2fdc8d8
+---
+ mm/shmem.c |   69 +++++++++++++++++++++++++++++++++++++++++++------------------
+ 1 file changed, 49 insertions(+), 20 deletions(-)
 
-I think this ticket can be safely closed.
-
-Thanks.
-
+Index: linux-2.6/mm/shmem.c
+===================================================================
+--- linux-2.6.orig/mm/shmem.c	2010-07-10 09:15:05.000000000 +0800
++++ linux-2.6/mm/shmem.c	2010-07-10 09:24:34.000000000 +0800
+@@ -1223,6 +1223,7 @@
+ 	struct shmem_sb_info *sbinfo;
+ 	struct page *filepage = *pagep;
+ 	struct page *swappage;
++	struct page *prealloc_page = NULL;
+ 	swp_entry_t *entry;
+ 	swp_entry_t swap;
+ 	gfp_t gfp;
+@@ -1247,7 +1248,6 @@
+ 		filepage = find_lock_page(mapping, idx);
+ 	if (filepage && PageUptodate(filepage))
+ 		goto done;
+-	error = 0;
+ 	gfp = mapping_gfp_mask(mapping);
+ 	if (!filepage) {
+ 		/*
+@@ -1258,7 +1258,19 @@
+ 		if (error)
+ 			goto failed;
+ 		radix_tree_preload_end();
++		if (sgp != SGP_READ && !prealloc_page) {
++			/* don't care if this successes */
++			prealloc_page = shmem_alloc_page(gfp, info, idx);
++			if (prealloc_page) {
++				if (mem_cgroup_cache_charge(prealloc_page,
++				    current->mm, GFP_KERNEL)) {
++					page_cache_release(prealloc_page);
++					prealloc_page = NULL;
++				}
++			}
++		}
+ 	}
++	error = 0;
+ 
+ 	spin_lock(&info->lock);
+ 	shmem_recalc_inode(inode);
+@@ -1407,28 +1419,37 @@
+ 		if (!filepage) {
+ 			int ret;
+ 
+-			spin_unlock(&info->lock);
+-			filepage = shmem_alloc_page(gfp, info, idx);
+-			if (!filepage) {
+-				shmem_unacct_blocks(info->flags, 1);
+-				shmem_free_blocks(inode, 1);
+-				error = -ENOMEM;
+-				goto failed;
+-			}
+-			SetPageSwapBacked(filepage);
++			if (!prealloc_page) {
++				spin_unlock(&info->lock);
++				filepage = shmem_alloc_page(gfp, info, idx);
++				if (!filepage) {
++					shmem_unacct_blocks(info->flags, 1);
++					shmem_free_blocks(inode, 1);
++					error = -ENOMEM;
++					goto failed;
++				}
++				SetPageSwapBacked(filepage);
+ 
+-			/* Precharge page while we can wait, compensate after */
+-			error = mem_cgroup_cache_charge(filepage, current->mm,
+-					GFP_KERNEL);
+-			if (error) {
+-				page_cache_release(filepage);
+-				shmem_unacct_blocks(info->flags, 1);
+-				shmem_free_blocks(inode, 1);
+-				filepage = NULL;
+-				goto failed;
++				/* Precharge page while we can wait, compensate
++				 * after
++				 */
++				error = mem_cgroup_cache_charge(filepage,
++					current->mm, GFP_KERNEL);
++				if (error) {
++					page_cache_release(filepage);
++					shmem_unacct_blocks(info->flags, 1);
++					shmem_free_blocks(inode, 1);
++					filepage = NULL;
++					goto failed;
++				}
++
++				spin_lock(&info->lock);
++			} else {
++				filepage = prealloc_page;
++				prealloc_page = NULL;
++				SetPageSwapBacked(filepage);
+ 			}
+ 
+-			spin_lock(&info->lock);
+ 			entry = shmem_swp_alloc(info, idx, sgp);
+ 			if (IS_ERR(entry))
+ 				error = PTR_ERR(entry);
+@@ -1469,6 +1490,10 @@
+ 	}
+ done:
+ 	*pagep = filepage;
++	if (prealloc_page) {
++		mem_cgroup_uncharge_cache_page(prealloc_page);
++		page_cache_release(prealloc_page);
++	}
+ 	return 0;
+ 
+ failed:
+@@ -1476,6 +1501,10 @@
+ 		unlock_page(filepage);
+ 		page_cache_release(filepage);
+ 	}
++	if (prealloc_page) {
++		mem_cgroup_uncharge_cache_page(prealloc_page);
++		page_cache_release(prealloc_page);
++	}
+ 	return error;
+ }
+ 
