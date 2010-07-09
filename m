@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755404Ab0GIKOE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 06:14:04 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60152 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754787Ab0GIKOB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 06:14:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-Subject: [PATCH] vmscan: stop meaningless loop iteration when no reclaimable slab
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100709171850.FA22.A69D9226@jp.fujitsu.com>
-References: <20100708133152.5e556508.akpm@linux-foundation.org> <20100709171850.FA22.A69D9226@jp.fujitsu.com>
-Message-Id: <20100709191308.FA25.A69D9226@jp.fujitsu.com>
+	id S1755434Ab0GIKR1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 06:17:27 -0400
+Received: from ozlabs.org ([203.10.76.45]:58040 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755284Ab0GIKRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 06:17:25 -0400
+Date: Fri, 9 Jul 2010 20:17:03 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 10/13] perf: Per PMU disable
+Message-ID: <20100709101703.GR7771@brick.ozlabs.ibm.com>
+References: <20100709082117.631541128@chello.nl>
+ <20100709083248.156796575@chello.nl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  9 Jul 2010 19:13:58 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100709083248.156796575@chello.nl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If number of reclaimable slabs are zero, shrink_icache_memory() and
-shrink_dcache_memory() return 0. but strangely shrink_slab() ignore
-it and continue meaningless loop iteration.
+On Fri, Jul 09, 2010 at 10:21:27AM +0200, Peter Zijlstra wrote:
 
-This patch fixes it.
+> -void hw_perf_disable(void)
+> +static void powerpc_pmu_pmu_disable(struct pmu *pmu)
 
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/vmscan.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+> -void hw_perf_enable(void)
+> +static void powerpc_pmu_pmu_enable(struct pmu *pmu)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 0f9f624..8f61adb 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -243,6 +243,11 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
- 			int nr_before;
- 
- 			nr_before = (*shrinker->shrink)(0, gfp_mask);
-+			/* no slab objects, no more reclaim. */
-+			if (nr_before == 0) {
-+				total_scan = 0;
-+				break;
-+			}
- 			shrink_ret = (*shrinker->shrink)(this_scan, gfp_mask);
- 			if (shrink_ret == -1)
- 				break;
--- 
-1.6.5.2
+>  struct pmu power_pmu = {
+> -	.event_init	= power_pmu_event_init,
+> +	.pmu_enable	= power_pmu_pmu_enable,
+> +	.pmu_disable	= power_pmu_pmu_disable,
+> +	.event_init	= pmwer_pmu_event_init,
 
+Doh!  Think you posted the old version of the patch again...
 
+:)
 
+Paul.
