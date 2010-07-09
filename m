@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752897Ab0GISnH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 14:43:07 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:49040 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751930Ab0GISnE convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 14:43:04 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.0 c=1 a=kfmJinPqzyUA:10 a=1CvaPgNKC-EA:10 a=VphdPIyG4kEA:10
- a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=VnNF1IyMAAAA:8
- a=e--v2E7seF_T0D39w2UA:9 a=O6-lKtWIugHkKau7EnbWSs-ltyEA:4 a=CjuIK1q_8ugA:10
-Subject: Re: [PATCH -V14 0/11] Generic name to handle and open by handle syscalls
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <20100708222121.5c0612ef@notabene.brown>
-Date: Fri, 9 Jul 2010 12:42:42 -0600
-Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
-       "J. Bruce Fields" <bfields@fieldses.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, Dave Chinner <david@fromorbit.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       "viro@zeniv.linux.org.uk Viro" <viro@zeniv.linux.org.uk>,
-       "corbet@lwn.net Corbet" <corbet@lwn.net>,
-       "hooanon05@yahoo.co.jp Okajima" <hooanon05@yahoo.co.jp>,
-       linux-fsdevel@vger.kernel.org,
-       "sfrench@us.ibm.com French" <sfrench@us.ibm.com>,
-       "philippe.deniel@CEA.FR Deniel" <philippe.deniel@CEA.FR>,
-       "linux-kernel@vger.kernel.org Mailinglist" 
-	<linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <5DF5C974-092B-4CE6-B11D-2DBB73782149@dilger.ca>
-References: <20100706161002.GD7387@fieldses.org> <87eifgfsez.fsf@linux.vnet.ibm.com> <20100706232351.GD25018@dastard> <20100707093629.10c2feab@notabene.brown> <20100707021150.GF25018@dastard> <20100707125726.3695587a@notabene.brown> <20100707125701.GA19872@fieldses.org> <E1OWUOL-0004DM-Ul@pomaz-ex.szeredi.hu> <20100707131721.GB19872@fieldses.org> <E1OWUn0-0004JI-7F@pomaz-ex.szeredi.hu> <20100707144511.GA24360@fieldses.org> <20100708082143.3701bfc7@notabene.brown> <87wrt6dzp2.fsf@linux.vnet.ibm.com> <20100708222121.5c0612ef@notabene.brown>
-To: Neil Brown <neilb@suse.de>
-X-Mailer: Apple Mail (2.1078)
+	id S1753378Ab0GISoM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 14:44:12 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:43344 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751930Ab0GISoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 14:44:10 -0400
+Message-ID: <4C376DE7.4000209@zytor.com>
+Date: Fri, 09 Jul 2010 11:43:51 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, kaneshige.kenji@jp.fujitsu.com, hpa@linux.intel.com
+CC: linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/mm] x86, pae: Fix handling of large physical addresses
+ in ioremap
+References: <4C197A9E.5040509@jp.fujitsu.com> <tip-39d8c3ff39443825b6a21b28249fc4904809203f@git.kernel.org>
+In-Reply-To: <tip-39d8c3ff39443825b6a21b28249fc4904809203f@git.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-08, at 06:21, Neil Brown wrote:
-> On Thu, 08 Jul 2010 16:10:09 +0530
-> "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
->> How about adding mnt_id to the handle ? Documentation file says it is unique 
->> 
->> (1) mount ID:  unique identifier of the mount (may be reused after umount)
+On 07/09/2010 11:31 AM, tip-bot for Kenji Kaneshige wrote:
+> Commit-ID:  39d8c3ff39443825b6a21b28249fc4904809203f
+> Gitweb:     http://git.kernel.org/tip/39d8c3ff39443825b6a21b28249fc4904809203f
+> Author:     Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+> AuthorDate: Thu, 17 Jun 2010 10:30:06 +0900
+> Committer:  H. Peter Anvin <hpa@linux.intel.com>
+> CommitDate: Fri, 9 Jul 2010 10:51:39 -0700
+> 
+> x86, pae: Fix handling of large physical addresses in ioremap
+> 
+> Current x86 ioremap() doesn't handle physical address higher than
+> 32-bit properly in X86_32 PAE mode. When physical address higher than
+> 32-bit is passed to ioremap(), higher 32-bits in physical address is
+> cleared wrongly. Due to this bug, ioremap() can map wrong address to
+> linear address space.
+> 
+> In my case, 64-bit MMIO region was assigned to a PCI device (ioat
+> device) on my system. Because of the ioremap()'s bug, wrong physical
+> address (instead of MMIO region) was mapped to linear address space.
+> Because of this, loading ioatdma driver caused unexpected behavior
+> (kernel panic, kernel hangup, ...).
+> 
 
-But this value is not persistent across a reboot, or even an umount/mount so it is not useful as an identifier.
+Sorry, pushed the wrong version of this patch.  I will push the correct
+one shortly.
 
-I suppose one way to resolve this issue is to just allow the underlying filesystem to supply a completely opaque filehandle to userspace.  For local filesystems that don't care about persistence or uniqueness between nodes they can use something like mount_id, and for distributed/clustered filesystems they can include a globally-unique identifier.
-
-Cheers, Andreas
-
-
-
-
-
+	-hpa
