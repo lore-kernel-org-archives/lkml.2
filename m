@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754238Ab0GIDSw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 23:18:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43030 "EHLO mx1.redhat.com"
+	id S1754917Ab0GIDTy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 23:19:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12372 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751308Ab0GIDSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 23:18:51 -0400
-Message-ID: <4C36948C.9000902@ds.jp.nec.com>
-Date: Thu, 08 Jul 2010 23:16:28 -0400
+	id S1751647Ab0GIDTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 23:19:53 -0400
+Message-ID: <4C3694BA.4080204@ds.jp.nec.com>
+Date: Thu, 08 Jul 2010 23:17:14 -0400
 From: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
-       Vivek Goyal <vgoyal@redhat.com>
-CC: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>, Ryo Tsuruta <ryov@valinux.co.jp>,
+To: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+CC: linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+       Vivek Goyal <vgoyal@redhat.com>, Ryo Tsuruta <ryov@valinux.co.jp>,
        taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
        Andrea Righi <righi.andrea@gmail.com>,
        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
        balbir@linux.vnet.ibm.com
-Subject: [RFC][PATCH 03/11] blkiocg async: Hooks for iotrack
+Subject: [RFC][PATCH 05/11] blkiocg async: __set_page_dirty_nobuffer not to
+ record process info
 References: <4C369009.80503@ds.jp.nec.com>
 In-Reply-To: <4C369009.80503@ds.jp.nec.com>
 Content-Type: text/plain; charset=ISO-2022-JP
@@ -27,187 +28,121 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Embedding hooks for iotrack to record process info, namely
-cgroup ID.
-This patch is based on a patch posted from Ryo Tsuruta on Oct 2,
-2009 titled "Page tracking hooks".
+For same reason of introducing block_commit_write_noiotrack()
+in the previous patch, this patch introduces
+__set_page_dirty_nobuffer_noiotrack().
+redirty_page_for_writepage() calls
+__set_page_dirty_nobuffers_noiotrack()
+because overwriting the process info for iotrack isn't needed
+when redirtying.
 
-Signed-off-by: Hirokazu Takahashi <taka@valinux.co.jp>
-Signed-off-by: Ryo Tsuruta <ryov@valinux.co.jp>
 Signed-off-by: Munehiro "Muuhh" Ikeda <m-ikeda@ds.jp.nec.com>
 ---
- fs/buffer.c         |    2 ++
- fs/direct-io.c      |    2 ++
- mm/bounce.c         |    2 ++
- mm/filemap.c        |    2 ++
- mm/memory.c         |    5 +++++
- mm/page-writeback.c |    2 ++
- mm/swap_state.c     |    2 ++
- 7 files changed, 17 insertions(+), 0 deletions(-)
+ include/linux/mm.h  |    1 +
+ mm/page-writeback.c |   55 +++++++++++++++++++++++++++++++++++---------------
+ 2 files changed, 39 insertions(+), 17 deletions(-)
 
-diff --git a/fs/buffer.c b/fs/buffer.c
-index d54812b..c418fdf 100644
---- a/fs/buffer.c
-+++ b/fs/buffer.c
-@@ -36,6 +36,7 @@
- #include <linux/buffer_head.h>
- #include <linux/task_io_accounting_ops.h>
- #include <linux/bio.h>
-+#include <linux/blk-iotrack.h>
- #include <linux/notifier.h>
- #include <linux/cpu.h>
- #include <linux/bitops.h>
-@@ -667,6 +668,7 @@ static void __set_page_dirty(struct page *page,
- 	if (page->mapping) {	/* Race with truncate? */
- 		WARN_ON_ONCE(warn && !PageUptodate(page));
- 		account_page_dirtied(page, mapping);
-+		blk_iotrack_reset_owner_pagedirty(page, current->mm);
- 		radix_tree_tag_set(&mapping->page_tree,
- 				page_index(page), PAGECACHE_TAG_DIRTY);
- 	}
-diff --git a/fs/direct-io.c b/fs/direct-io.c
-index 7600aac..2c1f42f 100644
---- a/fs/direct-io.c
-+++ b/fs/direct-io.c
-@@ -33,6 +33,7 @@
- #include <linux/err.h>
- #include <linux/blkdev.h>
- #include <linux/buffer_head.h>
-+#include <linux/blk-iotrack.h>
- #include <linux/rwsem.h>
- #include <linux/uio.h>
- #include <asm/atomic.h>
-@@ -846,6 +847,7 @@ static int do_direct_IO(struct dio *dio)
- 			ret = PTR_ERR(page);
- 			goto out;
- 		}
-+		blk_iotrack_reset_owner(page, current->mm);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b969efb..08a957b 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -851,6 +851,7 @@ extern int try_to_release_page(struct page * page, gfp_t gfp_mask);
+ extern void do_invalidatepage(struct page *page, unsigned long offset);
  
- 		while (block_in_page < blocks_per_page) {
- 			unsigned offset_in_page = block_in_page << blkbits;
-diff --git a/mm/bounce.c b/mm/bounce.c
-index 13b6dad..04339df 100644
---- a/mm/bounce.c
-+++ b/mm/bounce.c
-@@ -14,6 +14,7 @@
- #include <linux/init.h>
- #include <linux/hash.h>
- #include <linux/highmem.h>
-+#include <linux/blk-iotrack.h>
- #include <asm/tlbflush.h>
- 
- #include <trace/events/block.h>
-@@ -211,6 +212,7 @@ static void __blk_queue_bounce(struct request_queue *q, struct bio **bio_orig,
- 		to->bv_len = from->bv_len;
- 		to->bv_offset = from->bv_offset;
- 		inc_zone_page_state(to->bv_page, NR_BOUNCE);
-+		blk_iotrack_copy_owner(to->bv_page, page);
- 
- 		if (rw == WRITE) {
- 			char *vto, *vfrom;
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 20e5642..a255d0c 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -33,6 +33,7 @@
- #include <linux/cpuset.h>
- #include <linux/hardirq.h> /* for BUG_ON(!in_atomic()) only */
- #include <linux/memcontrol.h>
-+#include <linux/blk-iotrack.h>
- #include <linux/mm_inline.h> /* for page_is_file_cache() */
- #include "internal.h"
- 
-@@ -405,6 +406,7 @@ int add_to_page_cache_locked(struct page *page, struct address_space *mapping,
- 					gfp_mask & GFP_RECLAIM_MASK);
- 	if (error)
- 		goto out;
-+	blk_iotrack_set_owner(page, current->mm);
- 
- 	error = radix_tree_preload(gfp_mask & ~__GFP_HIGHMEM);
- 	if (error == 0) {
-diff --git a/mm/memory.c b/mm/memory.c
-index 119b7cc..3eb2d0d 100644
---- a/mm/memory.c
-+++ b/mm/memory.c
-@@ -52,6 +52,7 @@
- #include <linux/init.h>
- #include <linux/writeback.h>
- #include <linux/memcontrol.h>
-+#include <linux/blk-iotrack.h>
- #include <linux/mmu_notifier.h>
- #include <linux/kallsyms.h>
- #include <linux/swapops.h>
-@@ -2283,6 +2284,7 @@ gotten:
- 		 */
- 		ptep_clear_flush(vma, address, page_table);
- 		page_add_new_anon_rmap(new_page, vma, address);
-+		blk_iotrack_set_owner(new_page, mm);
- 		/*
- 		 * We call the notify macro here because, when using secondary
- 		 * mmu page tables (such as kvm shadow page tables), we want the
-@@ -2718,6 +2720,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 	flush_icache_page(vma, page);
- 	set_pte_at(mm, address, page_table, pte);
- 	page_add_anon_rmap(page, vma, address);
-+	blk_iotrack_reset_owner(page, mm);
- 	/* It's better to call commit-charge after rmap is established */
- 	mem_cgroup_commit_charge_swapin(page, ptr);
- 
-@@ -2795,6 +2798,7 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
- 
- 	inc_mm_counter_fast(mm, MM_ANONPAGES);
- 	page_add_new_anon_rmap(page, vma, address);
-+	blk_iotrack_set_owner(page, mm);
- setpte:
- 	set_pte_at(mm, address, page_table, entry);
- 
-@@ -2949,6 +2953,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
- 		if (anon) {
- 			inc_mm_counter_fast(mm, MM_ANONPAGES);
- 			page_add_new_anon_rmap(page, vma, address);
-+			blk_iotrack_set_owner(page, mm);
- 		} else {
- 			inc_mm_counter_fast(mm, MM_FILEPAGES);
- 			page_add_file_rmap(page);
+ int __set_page_dirty_nobuffers(struct page *page);
++int __set_page_dirty_nobuffers_noiotrack(struct page *page);
+ int __set_page_dirty_no_writeback(struct page *page);
+ int redirty_page_for_writepage(struct writeback_control *wbc,
+ 				struct page *page);
 diff --git a/mm/page-writeback.c b/mm/page-writeback.c
-index 54f28bd..f3e6b2c 100644
+index f3e6b2c..bdd6fdb 100644
 --- a/mm/page-writeback.c
 +++ b/mm/page-writeback.c
-@@ -23,6 +23,7 @@
- #include <linux/init.h>
- #include <linux/backing-dev.h>
- #include <linux/task_io_accounting_ops.h>
-+#include <linux/blk-iotrack.h>
- #include <linux/blkdev.h>
- #include <linux/mpage.h>
- #include <linux/rmap.h>
-@@ -1128,6 +1129,7 @@ int __set_page_dirty_nobuffers(struct page *page)
+@@ -1099,22 +1099,11 @@ void account_page_dirtied(struct page *page, struct address_space *mapping)
+ 	}
+ }
+ 
+-/*
+- * For address_spaces which do not use buffers.  Just tag the page as dirty in
+- * its radix tree.
+- *
+- * This is also used when a single buffer is being dirtied: we want to set the
+- * page dirty in that case, but not all the buffers.  This is a "bottom-up"
+- * dirtying, whereas __set_page_dirty_buffers() is a "top-down" dirtying.
+- *
+- * Most callers have locked the page, which pins the address_space in memory.
+- * But zap_pte_range() does not lock the page, however in that case the
+- * mapping is pinned by the vma's ->vm_file reference.
+- *
+- * We take care to handle the case where the page was truncated from the
+- * mapping by re-checking page_mapping() inside tree_lock.
++/**
++ * ____set_page_dirty_nobuffers - helper function for __set_page_dirty_nobuffers*
++ * If track is true, dirtying process info will be recorded for iotrack
+  */
+-int __set_page_dirty_nobuffers(struct page *page)
++static int ____set_page_dirty_nobuffers(struct page *page, int track)
+ {
+ 	if (!TestSetPageDirty(page)) {
+ 		struct address_space *mapping = page_mapping(page);
+@@ -1129,7 +1118,9 @@ int __set_page_dirty_nobuffers(struct page *page)
  			BUG_ON(mapping2 != mapping);
  			WARN_ON_ONCE(!PagePrivate(page) && !PageUptodate(page));
  			account_page_dirtied(page, mapping);
-+			blk_iotrack_reset_owner_pagedirty(page, current->mm);
+-			blk_iotrack_reset_owner_pagedirty(page, current->mm);
++			if (track)
++				blk_iotrack_reset_owner_pagedirty(page,
++					current->mm);
  			radix_tree_tag_set(&mapping->page_tree,
  				page_index(page), PAGECACHE_TAG_DIRTY);
  		}
-diff --git a/mm/swap_state.c b/mm/swap_state.c
-index e10f583..ab26978 100644
---- a/mm/swap_state.c
-+++ b/mm/swap_state.c
-@@ -19,6 +19,7 @@
- #include <linux/pagevec.h>
- #include <linux/migrate.h>
- #include <linux/page_cgroup.h>
-+#include <linux/blk-iotrack.h>
+@@ -1142,8 +1133,38 @@ int __set_page_dirty_nobuffers(struct page *page)
+ 	}
+ 	return 0;
+ }
++
++/*
++ * For address_spaces which do not use buffers.  Just tag the page as dirty in
++ * its radix tree.
++ *
++ * This is also used when a single buffer is being dirtied: we want to set the
++ * page dirty in that case, but not all the buffers.  This is a "bottom-up"
++ * dirtying, whereas __set_page_dirty_buffers() is a "top-down" dirtying.
++ *
++ * Most callers have locked the page, which pins the address_space in memory.
++ * But zap_pte_range() does not lock the page, however in that case the
++ * mapping is pinned by the vma's ->vm_file reference.
++ *
++ * We take care to handle the case where the page was truncated from the
++ * mapping by re-checking page_mapping() inside tree_lock.
++ */
++int __set_page_dirty_nobuffers(struct page *page)
++{
++	return ____set_page_dirty_nobuffers(page, 1);
++}
+ EXPORT_SYMBOL(__set_page_dirty_nobuffers);
  
- #include <asm/pgtable.h>
++/**
++ * Same as __set_page_dirty_nobuffers, but doesn't record process
++ * info for iotrack.
++ */
++int __set_page_dirty_nobuffers_noiotrack(struct page *page)
++{
++	return ____set_page_dirty_nobuffers(page, 0);
++}
++EXPORT_SYMBOL(__set_page_dirty_nobuffers_noiotrack);
++
+ /*
+  * When a writepage implementation decides that it doesn't want to write this
+  * page for some reason, it should redirty the locked page via
+@@ -1152,7 +1173,7 @@ EXPORT_SYMBOL(__set_page_dirty_nobuffers);
+ int redirty_page_for_writepage(struct writeback_control *wbc, struct page *page)
+ {
+ 	wbc->pages_skipped++;
+-	return __set_page_dirty_nobuffers(page);
++	return __set_page_dirty_nobuffers_noiotrack(page);
+ }
+ EXPORT_SYMBOL(redirty_page_for_writepage);
  
-@@ -324,6 +325,7 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
- 		/* May fail (-ENOMEM) if radix-tree node allocation failed. */
- 		__set_page_locked(new_page);
- 		SetPageSwapBacked(new_page);
-+		blk_iotrack_set_owner(new_page, current->mm);
- 		err = __add_to_swap_cache(new_page, entry);
- 		if (likely(!err)) {
- 			radix_tree_preload_end();
 -- 
 1.6.2.5
