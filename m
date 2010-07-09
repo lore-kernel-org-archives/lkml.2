@@ -1,314 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755532Ab0GIWd7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 18:33:59 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:40271 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755212Ab0GIWd5 (ORCPT
+	id S1754976Ab0GIWq4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 18:46:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53251 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753655Ab0GIWqy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 18:33:57 -0400
-From: Darren Hart <dvhltc@us.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
-       linux-rt-users@vger.kernel.org, Darren Hart <dvhltc@us.ibm.com>
-Subject: [PATCH 4/4] futex: convert hash_bucket locks to raw_spinlock_t
-Date: Fri,  9 Jul 2010 15:33:00 -0700
-Message-Id: <1278714780-788-5-git-send-email-dvhltc@us.ibm.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1278714780-788-1-git-send-email-dvhltc@us.ibm.com>
-References: <1278714780-788-1-git-send-email-dvhltc@us.ibm.com>
+	Fri, 9 Jul 2010 18:46:54 -0400
+Date: Fri, 9 Jul 2010 15:46:44 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, linux-kernel@vger.kernel.org,
+       Samium Gromoff <_deepfire@feelingofgreen.ru>, Greg KH <greg@kroah.com>
+Subject: Re: [PATCH -mmotm] 8250_early: fix printk format warnings
+Message-Id: <20100709154644.f5d8877a.akpm@linux-foundation.org>
+In-Reply-To: <20100709144148.3D25.A69D9226@jp.fujitsu.com>
+References: <201007011948.o61JmnT2022795@imap1.linux-foundation.org>
+	<20100702182437.977c8ef8.randy.dunlap@oracle.com>
+	<20100709144148.3D25.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The requeue_pi mechanism introduced proxy locking of the rtmutex.  This creates
-a scenario where a task can wake-up, not knowing it has been enqueued on an
-rtmutex. In order to detect this, the task would have to be able to take either
-task->pi_blocked_on->lock->wait_lock and/or the hb->lock.  Unfortunately,
-without already holding one of these, the pi_blocked_on variable can change
-from NULL to valid or from valid to NULL. Therefor, the task cannot be allowed
-to take a sleeping lock after wakeup or it could end up trying to block on two
-locks, the second overwriting a valid pi_blocked_on value. This obviously
-breaks the pi mechanism.
+On Fri,  9 Jul 2010 14:47:52 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-This patch increases latency, while running the ltp pthread_cond_many test
-which Michal reported the bug with, I see double digit hrtimer latencies
-(typically only on the first run after boo):
+> > From: Randy Dunlap <randy.dunlap@oracle.com>
+> > 
+> > Fix printk format warnings in serial-mmio32-support-for-8250_earlyc.patch:
+> > 
+> > drivers/serial/8250_early.c:207: warning: format '%p' expects type 'void *', but argument 3 has type 'long long unsigned int'
+> > drivers/serial/8250_early.c:210: warning: format '%p' expects type 'void *', but argument 2 has type 'long long unsigned int'
+> > 
+> > Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > Cc: Samium Gromoff <_deepfire@feelingofgreen.ru>
+> > Cc: Greg KH <greg@kroah.com>
+> > ---
+> >  drivers/serial/8250_early.c |    4 ++--
+> >  1 file changed, 2 insertions(+), 2 deletions(-)
+> > 
+> > --- mmotm-2010-0701-1219.orig/drivers/serial/8250_early.c
+> > +++ mmotm-2010-0701-1219/drivers/serial/8250_early.c
+> > @@ -202,12 +202,12 @@ static int __init parse_options(struct e
+> >  	}
+> >  
+> >  	if (mmio || mmio32)
+> > -		printk(KERN_INFO "Early serial console at MMIO%s 0x%p (options '%s')\n",
+> > +		printk(KERN_INFO "Early serial console at MMIO%s 0x%llu (options '%s')\n",
+> >  		       mmio32 ? "32" : "", (unsigned long long) port->mapbase,
+> >  		       device->options);
+> >  	else
+> >  		printk(KERN_INFO "Early serial console at I/O port 0x%pr (options '%s')\n",
+> > -		       (unsigned long long) port->iobase, device->options);
+> > +		       (void *) port->iobase, device->options);
+> 
+> seems still odd.
 
-	kernel: hrtimer: interrupt took 75911 ns
+Yes.
 
-This might be addressed by changing the various loops in the futex code to be
-incremental, probably at an additional throughput hit. The private hash_bucket
-lists discussed in the past could reduce hb->lock contention in some scenarios.
-It should be noted that pthread_cond_many is a rather pathological case.
+> %pr don't mean bare pointer. it want resource. another %pr use case is here.
+> 
+> drivers/pnp/resoruce.c
+> ======================================================================
+> struct pnp_resource *pnp_add_dma_resource(struct pnp_dev *dev, int dma,
+>                                           int flags)
+> {
+>         struct pnp_resource *pnp_res;
+>         struct resource *res;
+> (snip)
+>         pnp_dbg(&dev->dev, "  add %pr\n", res);
+> ======================================================================
+> 
+> and port->iobase is merely unsingned long.
+> I guess following change or something like are necessary.
+> 
+> -               printk(KERN_INFO "Early serial console at I/O port 0x%pr (options '%s')\n",
+> -                      (unsigned long long) port->iobase, device->options);
+> +               printk(KERN_INFO "Early serial console at I/O port %lu (options '%s')\n",
+> +                      port->iobase, device->options);
+> 
 
-This also introduces problems for plists which want a spinlock_t rather
-than a raw_spinlock_t. Any thoughts on how to address this?
+This?
 
-Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mike Galbraith <efault@gmx.de>
----
- kernel/futex.c |   67 ++++++++++++++++++++++++++++++--------------------------
- 1 files changed, 36 insertions(+), 31 deletions(-)
-
-diff --git a/kernel/futex.c b/kernel/futex.c
-index b217972..0ad5a85 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -128,7 +128,7 @@ struct futex_q {
-  * waiting on a futex.
-  */
- struct futex_hash_bucket {
--	spinlock_t lock;
-+	raw_spinlock_t lock;
- 	struct plist_head chain;
- };
- 
-@@ -479,7 +479,7 @@ void exit_pi_state_list(struct task_struct *curr)
- 		hb = hash_futex(&key);
- 		raw_spin_unlock_irq(&curr->pi_lock);
- 
--		spin_lock(&hb->lock);
-+		raw_spin_lock(&hb->lock);
- 
- 		raw_spin_lock_irq(&curr->pi_lock);
- 		/*
-@@ -499,7 +499,7 @@ void exit_pi_state_list(struct task_struct *curr)
- 
- 		rt_mutex_unlock(&pi_state->pi_mutex);
- 
--		spin_unlock(&hb->lock);
-+		raw_spin_unlock(&hb->lock);
- 
- 		raw_spin_lock_irq(&curr->pi_lock);
- 	}
-@@ -860,21 +860,21 @@ static inline void
- double_lock_hb(struct futex_hash_bucket *hb1, struct futex_hash_bucket *hb2)
- {
- 	if (hb1 <= hb2) {
--		spin_lock(&hb1->lock);
-+		raw_spin_lock(&hb1->lock);
- 		if (hb1 < hb2)
--			spin_lock_nested(&hb2->lock, SINGLE_DEPTH_NESTING);
-+			raw_spin_lock_nested(&hb2->lock, SINGLE_DEPTH_NESTING);
- 	} else { /* hb1 > hb2 */
--		spin_lock(&hb2->lock);
--		spin_lock_nested(&hb1->lock, SINGLE_DEPTH_NESTING);
-+		raw_spin_lock(&hb2->lock);
-+		raw_spin_lock_nested(&hb1->lock, SINGLE_DEPTH_NESTING);
- 	}
- }
- 
- static inline void
- double_unlock_hb(struct futex_hash_bucket *hb1, struct futex_hash_bucket *hb2)
- {
--	spin_unlock(&hb1->lock);
-+	raw_spin_unlock(&hb1->lock);
- 	if (hb1 != hb2)
--		spin_unlock(&hb2->lock);
-+		raw_spin_unlock(&hb2->lock);
- }
- 
- /*
-@@ -896,7 +896,7 @@ static int futex_wake(u32 __user *uaddr, int fshared, int nr_wake, u32 bitset)
- 		goto out;
- 
- 	hb = hash_futex(&key);
--	spin_lock(&hb->lock);
-+	raw_spin_lock(&hb->lock);
- 	head = &hb->chain;
- 
- 	plist_for_each_entry_safe(this, next, head, list) {
-@@ -916,7 +916,7 @@ static int futex_wake(u32 __user *uaddr, int fshared, int nr_wake, u32 bitset)
- 		}
- 	}
- 
--	spin_unlock(&hb->lock);
-+	raw_spin_unlock(&hb->lock);
- 	put_futex_key(fshared, &key);
- out:
- 	return ret;
-@@ -1070,6 +1070,7 @@ void requeue_pi_wake_futex(struct futex_q *q, union futex_key *key,
- 
- 	q->lock_ptr = &hb->lock;
- #ifdef CONFIG_DEBUG_PI_LIST
-+	/* FIXME: we're converting this to a raw lock... */
- 	q->list.plist.spinlock = &hb->lock;
- #endif
- 
-@@ -1377,14 +1378,14 @@ static inline struct futex_hash_bucket *queue_lock(struct futex_q *q)
- 	hb = hash_futex(&q->key);
- 	q->lock_ptr = &hb->lock;
- 
--	spin_lock(&hb->lock);
-+	raw_spin_lock(&hb->lock);
- 	return hb;
- }
- 
- static inline void
- queue_unlock(struct futex_q *q, struct futex_hash_bucket *hb)
- {
--	spin_unlock(&hb->lock);
-+	raw_spin_unlock(&hb->lock);
- 	drop_futex_key_refs(&q->key);
- }
- 
-@@ -1416,11 +1417,12 @@ static inline void queue_me(struct futex_q *q, struct futex_hash_bucket *hb)
- 
- 	plist_node_init(&q->list, prio);
- #ifdef CONFIG_DEBUG_PI_LIST
-+	/* FIXME: we're converting this to a raw_spinlock */
- 	q->list.plist.spinlock = &hb->lock;
- #endif
- 	plist_add(&q->list, &hb->chain);
- 	q->task = current;
--	spin_unlock(&hb->lock);
-+	raw_spin_unlock(&hb->lock);
- }
- 
- /**
-@@ -1444,7 +1446,7 @@ retry:
- 	lock_ptr = q->lock_ptr;
- 	barrier();
- 	if (lock_ptr != NULL) {
--		spin_lock(lock_ptr);
-+		raw_spin_lock(lock_ptr);
- 		/*
- 		 * q->lock_ptr can change between reading it and
- 		 * spin_lock(), causing us to take the wrong lock.  This
-@@ -1459,7 +1461,7 @@ retry:
- 		 * we can detect whether we acquired the correct lock.
- 		 */
- 		if (unlikely(lock_ptr != q->lock_ptr)) {
--			spin_unlock(lock_ptr);
-+			raw_spin_unlock(lock_ptr);
- 			goto retry;
- 		}
- 		WARN_ON(plist_node_empty(&q->list));
-@@ -1467,7 +1469,7 @@ retry:
- 
- 		BUG_ON(q->pi_state);
- 
--		spin_unlock(lock_ptr);
-+		raw_spin_unlock(lock_ptr);
- 		ret = 1;
- 	}
- 
-@@ -1491,7 +1493,7 @@ static void unqueue_me_pi(struct futex_q *q)
- 	pi_state = q->pi_state;
- 	q->pi_state = NULL;
- 
--	spin_unlock(q->lock_ptr);
-+	raw_spin_unlock(q->lock_ptr);
- 	drop_futex_key_refs(&q->key);
- 
- 	free_pi_state(pi_state);
-@@ -1579,11 +1581,11 @@ retry:
- 	 * simply return.
- 	 */
- handle_fault:
--	spin_unlock(q->lock_ptr);
-+	raw_spin_unlock(q->lock_ptr);
- 
- 	ret = fault_in_user_writeable(uaddr);
- 
--	spin_lock(q->lock_ptr);
-+	raw_spin_lock(q->lock_ptr);
- 
- 	/*
- 	 * Check if someone else fixed it for us:
-@@ -1976,7 +1978,7 @@ retry_private:
- 		ret = ret ? 0 : -EWOULDBLOCK;
- 	}
- 
--	spin_lock(q.lock_ptr);
-+	raw_spin_lock(q.lock_ptr);
- 	/*
- 	 * Fixup the pi_state owner and possibly acquire the lock if we
- 	 * haven't already.
-@@ -2053,7 +2055,7 @@ retry:
- 		goto out;
- 
- 	hb = hash_futex(&key);
--	spin_lock(&hb->lock);
-+	raw_spin_lock(&hb->lock);
- 
- 	/*
- 	 * To avoid races, try to do the TID -> 0 atomic transition
-@@ -2102,14 +2104,14 @@ retry:
- 	}
- 
- out_unlock:
--	spin_unlock(&hb->lock);
-+	raw_spin_unlock(&hb->lock);
- 	put_futex_key(fshared, &key);
- 
- out:
- 	return ret;
- 
- pi_faulted:
--	spin_unlock(&hb->lock);
-+	raw_spin_unlock(&hb->lock);
- 	put_futex_key(fshared, &key);
- 
- 	ret = fault_in_user_writeable(uaddr);
-@@ -2257,9 +2259,9 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
- 	/* Queue the futex_q, drop the hb lock, wait for wakeup. */
- 	futex_wait_queue_me(hb, &q, to);
- 
--	spin_lock(&hb->lock);
-+	raw_spin_lock(&hb->lock);
- 	ret = handle_early_requeue_pi_wakeup(hb, &q, &key2, to);
--	spin_unlock(&hb->lock);
-+	raw_spin_unlock(&hb->lock);
- 	if (ret)
- 		goto out_put_keys;
- 
-@@ -2277,10 +2279,10 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
- 		 * did a lock-steal - fix up the PI-state in that case.
- 		 */
- 		if (q.pi_state && (q.pi_state->owner != current)) {
--			spin_lock(q.lock_ptr);
-+			raw_spin_lock(q.lock_ptr);
- 			ret = fixup_pi_state_owner(uaddr2, &q, current,
- 						   fshared);
--			spin_unlock(q.lock_ptr);
-+			raw_spin_unlock(q.lock_ptr);
- 		}
- 	} else {
- 		/*
-@@ -2293,7 +2295,7 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
- 		ret = rt_mutex_finish_proxy_lock(pi_mutex, to, &rt_waiter, 1);
- 		debug_rt_mutex_free_waiter(&rt_waiter);
- 
--		spin_lock(q.lock_ptr);
-+		raw_spin_lock(q.lock_ptr);
- 		/*
- 		 * Fixup the pi_state owner and possibly acquire the lock if we
- 		 * haven't already.
-@@ -2668,8 +2670,11 @@ static int __init futex_init(void)
- 		futex_cmpxchg_enabled = 1;
- 
- 	for (i = 0; i < ARRAY_SIZE(futex_queues); i++) {
--		plist_head_init(&futex_queues[i].chain, &futex_queues[i].lock);
--		spin_lock_init(&futex_queues[i].lock);
-+		/* 
-+		 * FIXME: plist wants a spinlock, but the hb->lock is a raw_spinlock_t
-+		 */
-+		plist_head_init(&futex_queues[i].chain, NULL /*&futex_queues[i].lock*/);
-+		raw_spin_lock_init(&futex_queues[i].lock);
- 	}
- 
- 	return 0;
--- 
-1.7.0.4
+	if (mmio || mmio32)
+		printk(KERN_INFO
+		       "Early serial console at MMIO%s 0x%llu (options '%s')\n",
+			mmio32 ? "32" : "",
+			(unsigned long long)port->mapbase,
+			device->options);
+	else
+		printk(KERN_INFO
+		      "Early serial console at I/O port 0x%lu (options '%s')\n",
+			port->iobase,
+			device->options);
 
