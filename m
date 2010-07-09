@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab0GIRxk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 13:53:40 -0400
-Received: from kroah.org ([198.145.64.141]:43977 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753144Ab0GIRxj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 13:53:39 -0400
-Date: Fri, 9 Jul 2010 08:59:41 -0700
-From: Greg KH <greg@kroah.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Sachin Sant <sachinp@in.ibm.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>, linux-s390@vger.kernel.org,
-       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>
-Subject: Re: [-next July 9 - s390 ] Badness at fs/sysfs/symlink.c:82 during
- qeth initalization
-Message-ID: <20100709155941.GA2086@kroah.com>
-References: <20100709150117.51612026.sfr@canb.auug.org.au>
- <4C36EF9C.7010804@in.ibm.com>
- <m1d3ux55od.fsf@fess.ebiederm.org>
- <4C36F974.4030608@in.ibm.com>
- <20100709142818.GB9041@kroah.com>
- <20100709173326.72674aea@mschwide.boeblingen.de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100709173326.72674aea@mschwide.boeblingen.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754145Ab0GIRyc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 13:54:32 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46144 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752572Ab0GIRya (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 13:54:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=AuTgOSCaL36c2wK3dZ1pwOErNup7hq+0j8RmGgI8NfqPLNg6GE2UCny9XHFJcUK7Cl
+         0Mbm8lzW1OoVJiaBA8DnZ1izhlW6h9PltgcKjS0uO4y9PkW39mhbgy0UPei/cza/5ku/
+         ooQemUOuOFaq34HIJMsjbCK777EDdTHQusnXY=
+Subject: Re: [PATCH 001/001] QoS and/or fair queueing: Stateless NAT BUG
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Rodrigo Partearroyo =?ISO-8859-1?Q?Gonz=E1lez?= 
+	<rpartearroyo@albentia.com>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Iratxo Pichel Ortiz <ipichel@albentia.com>,
+       Noelia =?ISO-8859-1?Q?Mor=F3n?= <nmoron@albentia.com>,
+       netdev <netdev@vger.kernel.org>
+In-Reply-To: <201007091937.17349.rpartearroyo@albentia.com>
+References: <201007091937.17349.rpartearroyo@albentia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Jul 2010 19:54:23 +0200
+Message-ID: <1278698063.2696.61.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 09, 2010 at 05:33:26PM +0200, Martin Schwidefsky wrote:
-> On Fri, 9 Jul 2010 07:28:18 -0700
-> Greg KH <greg@kroah.com> wrote:
+Le vendredi 09 juillet 2010 à 19:37 +0200, Rodrigo Partearroyo González
+a écrit :
+> Hi all,
+> I have been testing Stateless NAT and found that ICMP packets with length
+> less than 20 bytes were not correctly NAT'ed. I have found a BUG that
+> makes taking into account IP header length twice, so ICMP packets smaller
+> than 20 bytes were being dropped.
 > 
-> > On Fri, Jul 09, 2010 at 03:57:00PM +0530, Sachin Sant wrote:
-> > > Eric W. Biederman wrote:
-> > >>> With today's next(20100709) qeth interface fails to initialize
-> > >>> with following Badness message:
-> > >>>     sysfs: symlink across ns_types 0.0.6000/net:eth0 -> net/eth0
-> > >>>     
-> > >>
-> > >> Is this with CONFIG_SYSFS_DEPRECATED set?
-> > >>
-> > >> I think I may have made my warning check a little extra strict.
-> > >>   
-> > > Yes.
-> > >
-> > > CONFIG_SYSFS_DEPRECATED=y
-> > > CONFIG_SYSFS_DEPRECATED_V2=y
-> > 
-> > Why do you have those options enabled?  Does your userspace really
-> > require them?  I want to remove those options soon, and it would be good
-> > to find out what is still relying on them.
-> > 
-> > If you disable those options, does it then work?
+> Proposed formal patch is below, as suggested by Eric Dumazet, thanks.
+> It is taken from 2.6.34.1 stable version.
 > 
-> The default configuration for s390 does not have the options enabled and
-> with a recent userspace everything works just fine. From my point of view
-> the two options can be removed.
+> Signed-off-by: Rodrigo Partearroyo González <rpartearroyo@albentia.com>
 
-Wonderful, thanks for letting me know.
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
 
-Sachin, care to disable them in your image as well?
+> ---
+> diff -uprN a/net/sched/act_nat.c b/net/sched/act_nat.c
+> --- a/net/sched/act_nat.c	2010-07-09 18:25:18.000000000 +0200
+> +++ b/net/sched/act_nat.c	2010-07-09 18:26:16.000000000 +0200
+> @@ -202,7 +202,7 @@ static int tcf_nat(struct sk_buff *skb, 
+>  	{
+>  		struct icmphdr *icmph;
+>  
+> -		if (!pskb_may_pull(skb, ihl + sizeof(*icmph) + sizeof(*iph)))
+> +		if (!pskb_may_pull(skb, ihl + sizeof(*icmph)))
+>  			goto drop;
+>  
+>  		icmph = (void *)(skb_network_header(skb) + ihl);
+> @@ -223,7 +223,7 @@ static int tcf_nat(struct sk_buff *skb, 
+>  
+>  		if (skb_cloned(skb) &&
+>  		    !skb_clone_writable(skb,
+> -					ihl + sizeof(*icmph) + sizeof(*iph)) &&
+> +					ihl + sizeof(*icmph)) &&
+>  		    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
+>  			goto drop;
+> 
 
-thanks,
 
-greg k-h
+
+
