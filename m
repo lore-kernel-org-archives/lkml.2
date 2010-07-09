@@ -1,90 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622Ab0GIF3f (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 01:29:35 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63634 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750815Ab0GIF3d (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 01:29:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=P5ZclccEN85FDoo8M/a0k0qlIH9iyu3DWNgPxokVm8ZZFCQG6btny8u/BhjGbI2cXK
-         Cng2VtanoKmeK9SfbD83w+POab/yPnpFsGfoOKoGhsSf5GibPC0FB9xJ5qJoi6UWrjY5
-         iYrJp3TxVSWKFadVXPAxO6HLAIhaYhIJs7Hf8=
-Subject: Re: 2.6.35-rc4-git3: Reported regressions from 2.6.34
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: torvalds@linux-foundation.org, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, netdev@vger.kernel.org, kaber@trash.net,
-       jengelh@medozas.de, casteyde.christian@free.fr
-In-Reply-To: <20100708.213420.112614033.davem@davemloft.net>
-References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
-	 <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com>
-	 <20100708.213420.112614033.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Jul 2010 07:28:54 +0200
-Message-ID: <1278653334.2435.196.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1751644Ab0GIFdL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 01:33:11 -0400
+Received: from claw.goop.org ([74.207.240.146]:59941 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab0GIFdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 01:33:09 -0400
+Message-ID: <4C36B494.6060801@goop.org>
+Date: Thu, 08 Jul 2010 22:33:08 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Simon Horman <horms@verge.net.au>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
+       Matthew Wilcox <matthew@wil.cx>, tglx@linutronix.de, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
+       macro@linux-mips.org, kamezawa.hiroyu@jp.fujitsu.com,
+       eike-kernel@sf-tec.de
+Subject: Re: [PATCH 1/2] x86: ioremap: fix wrong physical address handling
+References: <4C197A49.6020400@jp.fujitsu.com> <4C197A9E.5040509@jp.fujitsu.com> <20100617025052.GH9298@parisc-linux.org> <4C19A2EE.2010203@zytor.com> <4C19AABA.8000706@jp.fujitsu.com> <4C19BA9A.4010300@zytor.com> <4C19EC57.3000409@goop.org> <20100709042421.GB2951@verge.net.au>
+In-Reply-To: <20100709042421.GB2951@verge.net.au>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 08 juillet 2010 à 21:34 -0700, David Miller a écrit :
-> From: Linus Torvalds <torvalds@linux-foundation.org>
-> Date: Thu, 8 Jul 2010 18:34:25 -0700
-> 
-> > On Thu, Jul 8, 2010 at 4:33 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >>
-> >> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16187
-> >> Subject         : Carrier detection failed in dhcpcd when link is up
-> >> Submitter       : Christian Casteyde <casteyde.christian@free.fr>
-> >> Date            : 2010-06-12 15:15 (27 days old)
-> >> First-Bad-Commit: http://git.kernel.org/linus/10708f37ae729baba9b67bd134c3720709d4ae62
-> >> Handled-By      : Andrew Morton <akpm@linux-foundation.org>
-> > 
-> > David? This bisects to a networking commit. Doesn't look sensible, but
-> > what do I know?
-> 
-> My suspicion is that dhcpd uses netlink to dump the info of the
-> available links, and due to some bug gets confused with the new 64-bit
-> statistic netlink attribute being there now.
-> a second to have a look at this.
+On 07/08/2010 09:24 PM, Simon Horman wrote:
+>> I think it would be a pretty large change.  From the Xen's perspective,
+>> any machine even approximately approaching the 2^44 limit will be
+>> capable of running Xen guests in hvm mode, so PV isn't really a concern.
+>>     
+> Hi Jeremy,
+>
+> Is the implication of that statement that HVM is preferred where
+> supported by HW?
+>   
 
-It could be a dhcpcd bug because of extended size of answer
+I wouldn't go that far; the PV vs HVM choice is pretty complex, and
+depends on what your workload is and what hardware you have available. 
+All I meant was what I said: that if you're running on a machine with a
+large amount of memory, then you should run your 32-bit domains as HVM
+rather than PV.  Though Xen could easily keep domains limited to memory
+that they can actually use (it already does this, in fact).
 
-According to strace, dhcpcd tries a recvmsg() call with
-a 256 bytes buffer to hold answer.
-
-Looking at current dhcpcd source, I confirm it cannot realloc its buffer
-
-static int
-get_netlink(int fd, int flags,
-    int (*callback)(struct nlmsghdr *))
-{
-        char *buffer = NULL;
-        ssize_t bytes;
-        struct nlmsghdr *nlm;
-        int r = -1;
-
-        buffer = xzalloc(sizeof(char) * BUFFERLEN);
-        for (;;) {
-                bytes = recv(fd, buffer, BUFFERLEN, flags);
-                if (bytes == -1) {
-                        if (errno == EAGAIN) {
-                                r = 0;
-                                goto eexit;
-                        }
-                        if (errno == EINTR)
-                                continue;
-                        goto eexit;
-                }
-
-
-This program needs to fix this.
-
-
+    J
