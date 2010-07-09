@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab0GINvZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:51:25 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50492 "EHLO
+	id S1756682Ab0GINw2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:52:28 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50524 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756532Ab0GINvX (ORCPT
+	by vger.kernel.org with ESMTP id S1752870Ab0GINw1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:51:23 -0400
-Date: Fri, 9 Jul 2010 15:51:21 +0200
+	Fri, 9 Jul 2010 09:52:27 -0400
+Date: Fri, 9 Jul 2010 15:52:25 +0200
 From: Christoph Egger <siccegge@cs.fau.de>
 To: linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 02/11] Removing dead CONSOLE_*
-Message-ID: <12d3f51154aac6de4f85b1a3d64ba91d8e0f0339.1278682302.git.siccegge@cs.fau.de>
+Subject: [PATCH 01/11] Removing dead 68328_SERIAL_UART
+Message-ID: <824fd4e71f2141a8eb60bf30a1e423bba0f534d1.1278682302.git.siccegge@cs.fau.de>
 References: <cover.1278682302.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -23,37 +23,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONSOLE_* doesn't exist in Kconfig, therefore removing all references
-for it from the source code.
+68328_SERIAL_UART doesn't exist in Kconfig, therefore removing all
+references for it from the source code.
 
 Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- drivers/serial/68360serial.c |   12 ++----------
- 1 files changed, 2 insertions(+), 10 deletions(-)
+ drivers/serial/68328serial.h |    5 -----
+ 1 files changed, 0 insertions(+), 5 deletions(-)
 
-diff --git a/drivers/serial/68360serial.c b/drivers/serial/68360serial.c
-index 24661cd..f72972b 100644
---- a/drivers/serial/68360serial.c
-+++ b/drivers/serial/68360serial.c
-@@ -303,16 +303,8 @@ static int baud_table[] = {
- 	9600, 19200, 38400, 57600, 115200, 230400, 460800, 0 };
- 
- /* This sucks. There is a better way: */
--#if defined(CONFIG_CONSOLE_9600)
--  #define CONSOLE_BAUDRATE 9600
--#elif defined(CONFIG_CONSOLE_19200)
--  #define CONSOLE_BAUDRATE 19200
--#elif defined(CONFIG_CONSOLE_115200)
--  #define CONSOLE_BAUDRATE 115200
+diff --git a/drivers/serial/68328serial.h b/drivers/serial/68328serial.h
+index 58aa215..c6d5382 100644
+--- a/drivers/serial/68328serial.h
++++ b/drivers/serial/68328serial.h
+@@ -181,13 +181,8 @@ struct m68k_serial {
+ /* 
+  * Define the number of ports supported and their irqs.
+  */
+-#ifndef CONFIG_68328_SERIAL_UART2
+-#define NR_PORTS 1
+-#define UART_IRQ_DEFNS {UART_IRQ_NUM}
 -#else
--  #warning "console baud rate undefined"
--  #define CONSOLE_BAUDRATE 9600
+ #define NR_PORTS 2
+ #define UART_IRQ_DEFNS {UART1_IRQ_NUM, UART2_IRQ_NUM}
 -#endif
-+#warning "console baud rate undefined"
-+#define CONSOLE_BAUDRATE 9600
  
- /*
-  * ------------------------------------------------------------
+ #endif /* __KERNEL__ */
+ #endif /* !(_MC683XX_SERIAL_H) */
 -- 
 1.7.0.4
 
