@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757094Ab0GIOaP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 10:30:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:42644 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756749Ab0GIOaN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 10:30:13 -0400
-Subject: Re: periods and deadlines in SCHED_DEADLINE
-From: Peter Zijlstra <peterz@infradead.org>
-To: Raistlin <raistlin@linux.it>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Song Yuan <song.yuan@ericsson.com>,
-       Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Nicola Manica <nicola.manica@disi.unitn.it>,
-       Luca Abeni <lucabe72@email.it>,
-       Claudio Scordino <claudio@evidence.eu.com>,
-       Harald Gustafsson <harald.gustafsson@ericsson.com>,
-       Bjoern Brandenburg <bbb@email.unc.edu>, bastoni@cs.unc.edu,
-       Giuseppe Lipari <lipari@retis.sssup.it>
-In-Reply-To: <1278682707.6083.227.camel@Palantir>
-References: <1278682707.6083.227.camel@Palantir>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 09 Jul 2010 16:30:00 +0200
-Message-ID: <1278685800.1900.212.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754274Ab0GIOcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 10:32:23 -0400
+Received: from kroah.org ([198.145.64.141]:56072 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756942Ab0GIOcW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 10:32:22 -0400
+Date: Fri, 9 Jul 2010 07:28:18 -0700
+From: Greg KH <greg@kroah.com>
+To: Sachin Sant <sachinp@in.ibm.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>, linux-s390@vger.kernel.org,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: Re: [-next July 9 - s390 ] Badness at fs/sysfs/symlink.c:82 during
+	qeth initalization
+Message-ID: <20100709142818.GB9041@kroah.com>
+References: <20100709150117.51612026.sfr@canb.auug.org.au> <4C36EF9C.7010804@in.ibm.com> <m1d3ux55od.fsf@fess.ebiederm.org> <4C36F974.4030608@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C36F974.4030608@in.ibm.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-09 at 15:38 +0200, Raistlin wrote:
-> 
-> Therefore, here it is my proposal:
->  - if the programmer specify both period and deadline, I act as above,
->    running the _only_necessary_ test in the kernel, assuming that
->    userspace performed some other kind of (correct!) admission test by
->    its own, or that it is cool with missing some deadlines... What do
->    you think?
+On Fri, Jul 09, 2010 at 03:57:00PM +0530, Sachin Sant wrote:
+> Eric W. Biederman wrote:
+>>> With today's next(20100709) qeth interface fails to initialize
+>>> with following Badness message:
+>>>     sysfs: symlink across ns_types 0.0.6000/net:eth0 -> net/eth0
+>>>     
+>>
+>> Is this with CONFIG_SYSFS_DEPRECATED set?
+>>
+>> I think I may have made my warning check a little extra strict.
+>>   
+> Yes.
+>
+> CONFIG_SYSFS_DEPRECATED=y
+> CONFIG_SYSFS_DEPRECATED_V2=y
 
-It would be good to provide room in the interface to improve upon this
-situation.
+Why do you have those options enabled?  Does your userspace really
+require them?  I want to remove those options soon, and it would be good
+to find out what is still relying on them.
 
-One thing we could do, although this would make the proposed scheduler a
-wee bit more complex, is split between hard and soft realtime. Only
-accept P==rel_D for hard, and schedule the soft tasks in the hard slack
-or something like that.
+If you disable those options, does it then work?
 
-That way we can later extend the hard admission tests to accept more.
+thanks,
 
+greg k-h
