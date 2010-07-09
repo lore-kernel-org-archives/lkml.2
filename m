@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab0GIB21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 21:28:27 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:48367 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab0GIB20 (ORCPT
+	id S1753037Ab0GIBb3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 21:31:29 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:32904 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab0GIBb2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 21:28:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=ubI+2ozHLqoZTuPi834pV4t4mm6aWitC9dolKRqitJCR0zcYl1Nz26DzhqQWPcZOm
-	IS9sxI33fk0CVTtthuGUg==
-Date: Thu, 8 Jul 2010 18:28:20 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hughd@tigran.mtv.corp.google.com
-To: Shaohua Li <shaohua.li@intel.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andi Kleen <andi@firstfloor.org>,
-       "Zhang, Yanmin" <yanmin.zhang@intel.com>
-Subject: Re: [PATCH]shmem: reduce one time of locking in pagefault
-In-Reply-To: <20100707013919.GA22097@sli10-desk.sh.intel.com>
-Message-ID: <alpine.DEB.1.00.1007081814420.1132@tigran.mtv.corp.google.com>
-References: <1278465346.11107.8.camel@sli10-desk.sh.intel.com> <20100706183254.cf67e29e.akpm@linux-foundation.org> <20100707013919.GA22097@sli10-desk.sh.intel.com>
-User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
+	Thu, 8 Jul 2010 21:31:28 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: FYI: mmap_sem OOM patch
+Cc: kosaki.motohiro@jp.fujitsu.com, Michel Lespinasse <walken@google.com>,
+       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Divyesh Shah <dpshah@google.com>, Ingo Molnar <mingo@elte.hu>
+In-Reply-To: <1278588200.1900.89.camel@laptop>
+References: <20100708200324.CD4B.A69D9226@jp.fujitsu.com> <1278588200.1900.89.camel@laptop>
+Message-Id: <20100709102430.CD65.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri,  9 Jul 2010 10:31:21 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 7 Jul 2010, Shaohua Li wrote:
-> On Wed, Jul 07, 2010 at 09:32:54AM +0800, Andrew Morton wrote:
+> On Thu, 2010-07-08 at 20:06 +0900, KOSAKI Motohiro wrote:
+> > > [ small note on that we really should kill __GFP_NOFAIL, its utter
+> > > deadlock potential ]
 > > 
-> > The patch doesn't make shmem_getpage() any clearer :(
+> > I disagree. __GFP_NOFAIL mean this allocation failure can makes really
+> > dangerous result. Instead, OOM-Killer should try to kill next process.
+> > I think. 
+> 
+> Say _what_?! you think NOFAIL is a sane thing? 
 
-:)
+insane obviously ;)
+but as far as my experience, some embedded system prefer to use NOFAIL.
+So, I don't like to make big hammer crash. NOFAIL killing need long year
+rather than you expected, I guess.
 
-> > 
-> > shmem_inode_info.lock appears to be held too much.  Surely
-> > lookup_swap_cache() didn't need it (for example).
-> > 
-> > What data does shmem_inode_info.lock actually protect?
-> As far as my understanding, it protects shmem swp_entry, which is most used
-> to support swap. It also protects some accounting. If no swap, the lock almost
-> can be removed like tiny-shmem.
 
-That's right: shmem_info_info.lock protects what's in shmem_inode_info,
-plus what hangs off it (the shmem_swp blocks).
+> Pretty much everybody has
+> been agreeing for years that the thing should die.
 
-We want that lock across the lookup_swap_cache() to be sure that what we
-find is still what we want (otherwise another thread might bring it out
-of swap and that swap be reused for something else) - the page lock is
-good once you have a page to lock, but until then....  I guess could be
-done by dropping the lock then retaking and rechecking after, but that
-would go right against the grain of this patch.
+I'm not against this at all. but until it die, it should works correctly.
 
-Hugh
+
