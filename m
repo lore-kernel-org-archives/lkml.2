@@ -1,73 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab0GIKys (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 06:54:48 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:58295 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab0GIKyr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 06:54:47 -0400
-X-IronPort-AV: E=Sophos;i="4.53,563,1272844800"; 
-   d="scan'208";a="816299"
-Date: Fri, 9 Jul 2010 11:54:24 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Ian Campbell <Ian.Campbell@eu.citrix.com>
-CC: "ddutile@redhat.com" <ddutile@redhat.com>,
-       Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-       "jeremy@goop.org" <jeremy@goop.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       "stefano@stabellini.net" <stefano@stabellini.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "sheng@linux.intel.com" <sheng@linux.intel.com>
-Subject: Re: [Xen-devel] Re: [PATCH 12/13] Unplug emulated disks and nics
-In-Reply-To: <1278662546.28432.602.camel@zakaz.uk.xensource.com>
-Message-ID: <alpine.DEB.2.00.1007091150000.21432@kaball-desktop>
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>  <1277136847-13266-12-git-send-email-stefano@stabellini.net>  <4C2CEF56.4050008@redhat.com>  <alpine.DEB.2.00.1007051255310.29110@kaball-desktop>  <4C34DD1B.3010601@redhat.com> 
- <alpine.DEB.2.00.1007081246440.21432@kaball-desktop>  <4C362DC3.7000101@redhat.com>  <1278624583.12109.15.camel@localhost.localdomain>  <4C364A3F.8020900@redhat.com> <1278662546.28432.602.camel@zakaz.uk.xensource.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755654Ab0GILDH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 07:03:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49196 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753817Ab0GILDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 07:03:05 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: Dynamic Debug broken on 2.6.35-rc3?
+Date: Fri, 9 Jul 2010 13:03:08 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: Jason Baron <jbaron@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+       LKML <linux-kernel@vger.kernel.org>, Hannes Reinecke <hare@suse.de>
+References: <201007011744.19564.trenn@suse.de> <20100708213927.GB2934@redhat.com> <20100708145300.d36cf006.akpm@linux-foundation.org>
+In-Reply-To: <20100708145300.d36cf006.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007091303.08693.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jul 2010, Ian Campbell wrote:
+Hi,
+
+I can confirm that this patch fixes the issue for me.
+
+On Thursday 08 July 2010 23:53:00 Andrew Morton wrote:
+> On Thu, 8 Jul 2010 17:39:28 -0400
+> Jason Baron <jbaron@redhat.com> wrote:
+> 
+> > Make sure we properly call ddebug_remove_module() when a module fails to
+> > load. In addition, pass the pointer to the "debug table", to both
+> > ddebug_add_module(), and ddebug_remove_module() so that we can uniquely
+> > identify each set of debug statements. In this way even modules with the
+> > same name can be properly identified and removed.
 > > 
-> > > Any guest which uses xvda in its configuration file today will be using
-> > > emulated devices but I think that with Stefano's patch and your proposed
-> > > change in default on a Xen system without support for unplug will start
-> > > using PV devices without unplugging the emulated ones first.
-> > > 
-> > Well, Stefano requires the admin to add unplug switch to kernel cmd line,
+> > 
+> > Signed-off-by: Jason Baron <jbaron@redhat.com>
 > 
-> In the case where the host platform does not support the unplug protocol
-> this is correct and requiring explicit admin action to allow the PV
-> frontends to activate is the only safe option WRT the users data.
+> It'd be nice to track the Reported-by:s.  And the Tested-by:s if/when
+> they arrive.  SighIllDoIt.
 > 
-> However if the host platform does support the unplug protocol then this
-> is incorrect. In that case the default (in the absence of the command
-> line option) is to automatically unplug any device for which a PV driver
-> is available and so no command line option will be required in the
-> common case. (see xen_unplug_emulated_devices() under the comment "Set
-> the default value of xen_emul_unplug depending on...")
-> 
+> The patch (almost) applies to 2.6.34.  So are we missing a Cc:stable tag
+> as well?
+I'll resubmit with some more meta info and will include stable@kernel.org.
 
-that's right: on host platforms supporting unplug no command line options
-are required; on the other hand if the host platform does not support
-unplug then xen_emul_unplug=ignore is required to use PV drivers anyway.
+Could it be that this isn't a regression, but a bug that was always present,
+but only gets exposed if you add modules with a specific implementation,
+e.g. specific declarations of functions missing, etc.?
 
+I tried to patch this into a 2.6.32.X kernel. While some hunks did not
+succeed, it looks like an adjusted patch should get submitted for older
+stable kernels as well?:
 
-> > so I don't see the harm in defaulting to unplug... 
-> 
-> As I described in my previous mail this is unsafe on host platforms
-> which do not support unplug. As I describe above it is unnecessary on
-> host platforms which do support unplug
-> 
+/dev/shm/linux-2.6.32> patch --dry-run -p1 -i ../linux-2.6.35-rc3/dynamic_debug_broken.patch 
+patching file include/linux/dynamic_debug.h
+Hunk #2 succeeded at 76 with fuzz 2 (offset 3 lines).
+patching file include/linux/module.h
+Hunk #1 succeeded at 376 (offset -11 lines).
+patching file kernel/module.c
+Hunk #1 FAILED at 787.
+Hunk #2 succeeded at 1596 with fuzz 2 (offset 47 lines).
+Hunk #3 succeeded at 2098 (offset 44 lines).
+Hunk #4 succeeded at 2548 (offset 62 lines).
+Hunk #5 succeeded at 2638 with fuzz 2 (offset 73 lines).
+1 out of 5 hunks FAILED -- saving rejects to file kernel/module.c.rej
+patching file lib/dynamic_debug.c
+Hunk #1 succeeded at 691 (offset -1 lines).
+Hunk #2 succeeded at 702 (offset -1 lines).
 
-yep, keep in mind the copy and paste example.
+Thanks Jason for this quick fix!
 
-
-
-If you are happy about the patch, I'll include it in my next version.
-
+    Thomas
