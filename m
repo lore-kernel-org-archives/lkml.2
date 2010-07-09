@@ -1,101 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753446Ab0GIBFy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 21:05:54 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:59344 "EHLO e6.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751045Ab0GIBFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 21:05:53 -0400
-Subject: Re: [PATCH 10/13] Do not try to disable hpet if it hasn't been
- initialized before
-From: john stultz <johnstul@us.ibm.com>
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: stefano@stabellini.net, linux-kernel@vger.kernel.org,
-       xen-devel@lists.xensource.com, Stefano.Stabellini@eu.citrix.com,
-       sheng@linux.intel.com, ddutile@redhat.com, jeremy@goop.org
-In-Reply-To: <20100630175343.GA16488@phenom.dumpdata.com>
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>
-	 <1277136847-13266-10-git-send-email-stefano@stabellini.net>
-	 <20100630175343.GA16488@phenom.dumpdata.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Jul 2010 18:05:37 -0700
-Message-ID: <1278637537.3008.30.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753598Ab0GIBOM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 21:14:12 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:44554 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab0GIBOJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 21:14:09 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=GslRtMThvBE2kemSpKcuKnkBHdvjlT9tnXY0C2I0wWiA/bLNa3BZpvNSuKjHZI16g
+	/0k6EPbC8J1ZshqdqxlSg==
+Date: Thu, 8 Jul 2010 18:13:55 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hughd@tigran.mtv.corp.google.com
+To: Shaohua Li <shaohua.li@intel.com>
+cc: lkml <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       "Zhang, Yanmin" <yanmin.zhang@intel.com>,
+       Tim Chen <tim.c.chen@linux.intel.com>
+Subject: Re: [PATCH]shmem: reduce one time of locking in pagefault
+In-Reply-To: <1278465346.11107.8.camel@sli10-desk.sh.intel.com>
+Message-ID: <alpine.DEB.1.00.1007081741290.1132@tigran.mtv.corp.google.com>
+References: <1278465346.11107.8.camel@sli10-desk.sh.intel.com>
+User-Agent: Alpine 1.00 (DEB 882 2007-12-20)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-06-30 at 13:53 -0400, Konrad Rzeszutek Wilk wrote:
-> On Mon, Jun 21, 2010 at 05:14:04PM +0100, stefano@stabellini.net wrote:
-> > From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > 
-> > hpet_disable is called unconditionally on machine reboot if hpet support
-> > is compiled in the kernel.
-> > hpet_disable only checks if the machine is hpet capable but doesn't make
-> > sure that hpet has been initialized.
+On Wed, 7 Jul 2010, Shaohua Li wrote:
+
+> I'm running a shmem pagefault test case (see attached file) under a 64 CPU
+> system. Profile shows shmem_inode_info->lock is heavily contented and 100%
+> CPUs time are trying to get the lock. In the pagefault (no swap) case,
+> shmem_getpage gets the lock twice, the last one is avoidable if we prealloc a
+> page so we could reduce one time of locking. This is what below patch does.
+
+Right.  As usual, I'm rather unenthusiastic about a patch which has to
+duplicate code paths to satisfy an artificial testcase; but I can see
+the appeal.
+
+We can ignore that you're making the swap path slower, that will be lost
+in its noise.  I did like the way the old code checked the max_blocks
+limit before it let you allocate the page: whereas you might have many
+threads simultaneously over-allocating before reaching that check; but
+I guess we can live with that.
+
 > 
-> CC-ing John Stultz who has had his head wrapped around this time-thingy.
+> The result of the test case:
+> 2.6.35-rc3: ~20s
+> 2.6.35-rc3 + patch: ~12s
+> so this is 40% improvement.
+
+Was that with or without Tim's shmem_sb_info max_blocks scalability
+changes (that I've still not studied)?  Or max_blocks 0 (unlimited)?
+
+I notice your test case lets each thread fault in from its own
+disjoint part of the whole area.  Please also test with each thread
+touching each page in the whole area at the same time: which I think
+is just as likely a case, but not obvious to me how well it would
+work with your changes - what numbers does it show?
+
 > 
-> Hi John!
+> One might argue if we could have better locking for shmem. But even shmem is lockless,
+> the pagefault will soon have pagecache lock heavily contented because shmem must add
+> new page to pagecache. So before we have better locking for pagecache, improving shmem
+> locking doesn't have too much improvement. I did a similar pagefault test against
+> a ramfs file, the test result is ~10.5s.
 > 
-> What are your thoughts about this patch?
+> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> 
+> diff --git a/mm/shmem.c b/mm/shmem.c
+> index f65f840..c5f2939 100644
+> --- a/mm/shmem.c
+> +++ b/mm/shmem.c
+...
+> @@ -1258,7 +1258,19 @@ repeat:
+>  		if (error)
+>  			goto failed;
+>  		radix_tree_preload_end();
+> +		if (sgp != SGP_READ) {
 
-Sorry for the slow reply.
+Don't you need to check that prealloc_page is not already set there?
+There are several places in the swap path where it has to goto repeat.
 
-The patch looks good to me. It makes the code easier to read as well!
+> +			/* don't care if this successes */
+> +			prealloc_page = shmem_alloc_page(gfp, info, idx);
+> +			if (prealloc_page) {
+> +				if (mem_cgroup_cache_charge(prealloc_page,
+> +				    current->mm, GFP_KERNEL)) {
+> +					page_cache_release(prealloc_page);
+> +					prealloc_page = NULL;
+> +				}
+> +			}
+> +		}
+>  	}
 
-However, I've not had my head in the hpet details for awhile, so
-Venkatesh's ack (already provided) is the better endorsement.
-
-thanks
--john
-
-
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/x86/kernel/hpet.c |   18 ++++++++++--------
-> >  1 files changed, 10 insertions(+), 8 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-> > index 23b4ecd..2b299da 100644
-> > --- a/arch/x86/kernel/hpet.c
-> > +++ b/arch/x86/kernel/hpet.c
-> > @@ -959,16 +959,18 @@ fs_initcall(hpet_late_init);
-> >  
-> >  void hpet_disable(void)
-> >  {
-> > -	if (is_hpet_capable()) {
-> > -		unsigned int cfg = hpet_readl(HPET_CFG);
-> > +	unsigned int cfg;
-> >  
-> > -		if (hpet_legacy_int_enabled) {
-> > -			cfg &= ~HPET_CFG_LEGACY;
-> > -			hpet_legacy_int_enabled = 0;
-> > -		}
-> > -		cfg &= ~HPET_CFG_ENABLE;
-> > -		hpet_writel(cfg, HPET_CFG);
-> > +	if (!is_hpet_capable() || !hpet_address || !hpet_virt_address)
-> > +		return;
-> > +
-> > +	cfg = hpet_readl(HPET_CFG);
-> > +	if (hpet_legacy_int_enabled) {
-> > +		cfg &= ~HPET_CFG_LEGACY;
-> > +		hpet_legacy_int_enabled = 0;
-> >  	}
-> > +	cfg &= ~HPET_CFG_ENABLE;
-> > +	hpet_writel(cfg, HPET_CFG);
-> >  }
-> >  
-> >  #ifdef CONFIG_HPET_EMULATE_RTC
-> > -- 
-> > 1.7.0.4
-> > 
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> > Please read the FAQ at  http://www.tux.org/lkml/
-
-
+Hugh
