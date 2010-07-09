@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754872Ab0GIK2u (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 06:28:50 -0400
-Received: from khc.piap.pl ([195.187.100.11]:57428 "EHLO khc.piap.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754063Ab0GIK2t (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 06:28:49 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Ben Collins <bcollins@bluecherry.net>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Solo6010 staging driver - kernel panic
-Date: Fri, 09 Jul 2010 12:28:46 +0200
-Message-ID: <m3ocehdk4h.fsf@intrepid.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755498Ab0GIKb0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 06:31:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:34387 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753849Ab0GIKbZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 06:31:25 -0400
+Subject: Re: [RFC][PATCH 10/13] perf: Per PMU disable
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mackerras <paulus@samba.org>
+Cc: stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100709101703.GR7771@brick.ozlabs.ibm.com>
+References: <20100709082117.631541128@chello.nl>
+	 <20100709083248.156796575@chello.nl>
+	 <20100709101703.GR7771@brick.ozlabs.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 09 Jul 2010 12:30:58 +0200
+Message-ID: <1278671458.1900.193.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Ben,
+On Fri, 2010-07-09 at 20:17 +1000, Paul Mackerras wrote:
+> On Fri, Jul 09, 2010 at 10:21:27AM +0200, Peter Zijlstra wrote:
+> 
+> > -void hw_perf_disable(void)
+> > +static void powerpc_pmu_pmu_disable(struct pmu *pmu)
+> 
+> > -void hw_perf_enable(void)
+> > +static void powerpc_pmu_pmu_enable(struct pmu *pmu)
+> 
+> >  struct pmu power_pmu = {
+> > -	.event_init	= power_pmu_event_init,
+> > +	.pmu_enable	= power_pmu_pmu_enable,
+> > +	.pmu_disable	= power_pmu_pmu_disable,
+> > +	.event_init	= pmwer_pmu_event_init,
+> 
+> Doh!  Think you posted the old version of the patch again...
 
-I'm trying to use your solo6x10 driver with a card based on 6010 chip.
-The driver seems to detect the card correctly, but when I open
-/dev/video0 and then close it, I got a kernel panic. I traced the
-problem to invalid pointers in q->bufs[i]->queue in a call to
-videobuf_queue_cancel().
-
-The kernel is current Linus' tip (.35-rc4+) + your "staging solo6x10".
-The same seems to happen with 2.6.34 + the driver included "manually".
-x86-64. The card is Commell's MP-6010.
-
-It goes like this:
-
-# modprobe solo6x10 video_type=1
-
-solo6x10: module is from the staging directory, the quality is unknown,
-you have been warned.
-solo6010 0000:08:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
-solo6010 0000:08:00.0: Enabled 2 i2c adapters
-solo6010 0000:08:00.0: Initialized 1 tw28xx chip: tw2815[1]
-solo6010 0000:08:00.0: Display as /dev/video0 with 4 inputs (1 extended)
-solo6010 0000:08:00.0: Encoders as /dev/video1-4
-solo6010 0000:08:00.0: Alsa sound card as Softlogic0
-
-# cat /dev/video0 > /dev/null ^C
-
-- videobuf_queue_cancel() called
-- about to call list_del(&q->bufs[i]->queue) with:
-  i = 0
-  &q->bufs[i]->queue is a valid pointer = 0xffff88033cf97c00
-  q->bufs[i]->queue.prev = 0xdead000000200200
-  q->bufs[i]->queue.next = 0xdead000000100100
-
-The backtrace is:
-videobuf_queue_cancel()
-__videobuf_read_stop()
-videobuf_stop()
-solo_v4l2_release()
-v4l2_release()
-fput()
-filp_close()
-...
-
-Any ideas?
--- 
-Krzysztof Halasa
+*sigh*
