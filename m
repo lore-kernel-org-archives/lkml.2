@@ -1,80 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab0GIW3i (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 18:29:38 -0400
-Received: from n19.bullet.mail.mud.yahoo.com ([68.142.206.146]:39796 "HELO
-	n19.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754634Ab0GIW3h (ORCPT
+	id S1755322Ab0GIW3s (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 18:29:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47949 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754671Ab0GIW3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jul 2010 18:29:37 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 271956.75707.bm@omp110.mail.re3.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=rogers.com;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:References:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=zRKBgs/wFkGGYbvz6DvDIVP1A4FFxT9gtT2UrPa4K6IjA/JhGBchIah9ey6pl0Vs5nmGLl7IslGa0KCK6AZ4kT1qmRY6YMB+mdtMq0VZGhewrToPqOxnfVzbWpE/t/MNI38XqnM0r6E2VaAUo7VAMTnZomFrFfj1H9Lk8mC5Ev8=;
-Message-ID: <170016.53786.qm@web88004.mail.re2.yahoo.com>
-X-YMail-OSG: zBQUBkEVM1mvlksKruZzbbv_MDV13w9yfOdNESCv9lcuCB6
- JGKYlju6Ptr90Us7_2YB0kIJ_alTEJfhQXX_Zwbc6CYNxdMg7Qp5GFtbQKuI
- HEC2dcG5sxy2jwgwa3lAL7BUpVdPKWnuY3MzvKDoa.dwoDLIF56sunVuAQ1X
- bHWJD.LH8jPMgYyK7Z8EogIeJlllV6i5K0YfOCc6hx5VihVJEpHVdDoxpFLp
- UXngshDOIkcNbSKWFHQ1ZEp5hKIeF7amTuCGnvAFw0msyc1lOoOfeZu_6jZj
- WPISTObpq4INdmnSa.SxIkdrET_cG5flzS_b7euaOYycao9mF8wHEWrv60ix
- _bWNYCTA9TWgSYjWFQAN3JWSipLbB
-X-Mailer: YahooMailRC/420.4 YahooMailWebService/0.8.104.276605
-References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <TXb9XdQzJoD.A.YHB.IMmNMB@chimera> <201007082300.51672.shawn.starr@rogers.com> <201007092301.25839.rjw@sisk.pl>
-Date: Fri, 9 Jul 2010 15:29:36 -0700 (PDT)
-From: Shawn Starr <shawn.starr@rogers.com>
-Subject: Re: [Bug #16311] [REGRESSION][SUSPEND] 2.6.35-rcX won't suspend Lenovo W500 laptop
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-In-Reply-To: <201007092301.25839.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Date: Fri, 9 Jul 2010 15:28:51 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v2 1/2] vmscan: don't subtraction of unsined
+Message-Id: <20100709152851.330bf2b2.akpm@linux-foundation.org>
+In-Reply-To: <20100709090956.CD51.A69D9226@jp.fujitsu.com>
+References: <20100708163401.CD34.A69D9226@jp.fujitsu.com>
+	<20100708130048.fccfcdad.akpm@linux-foundation.org>
+	<20100709090956.CD51.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message ----
+On Fri,  9 Jul 2010 10:16:33 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-From: Rafael J. Wysocki <rjw@sisk.pl>
-To: Shawn Starr <shawn.starr@rogers.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>; Kernel Testers 
-List <kernel-testers@vger.kernel.org>; Maciej Rutecki <maciej.rutecki@gmail.com>
-Sent: Fri, July 9, 2010 5:01:25 PM
-Subject: Re: [Bug #16311] [REGRESSION][SUSPEND] 2.6.35-rcX won't suspend Lenovo 
-W500 laptop
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2588,7 +2588,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  		.swappiness = vm_swappiness,
+>  		.order = order,
+>  	};
+> -	unsigned long slab_reclaimable;
+> +	unsigned long nr_slab_pages0, nr_slab_pages1;
+>  
+>  	disable_swap_token();
+>  	cond_resched();
+> @@ -2615,8 +2615,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  		} while (priority >= 0 && sc.nr_reclaimed < nr_pages);
+>  	}
+>  
+> -	slab_reclaimable = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+> -	if (slab_reclaimable > zone->min_slab_pages) {
+> +	nr_slab_pages0 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+> +	if (nr_slab_pages0 > zone->min_slab_pages) {
+>  		/*
+>  		 * shrink_slab() does not currently allow us to determine how
+>  		 * many pages were freed in this zone.
 
-On Friday, July 09, 2010, Shawn Starr wrote:
-> On Thursday, July 08, 2010 07:41:40 pm Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.34.  Please verify if it still should be listed and let the
-> > tracking team know (either way).
-> > 
-> > 
-> > Bug-Entry    : http://bugzilla.kernel.org/show_bug.cgi?id=16311
-> > Subject        : [REGRESSION][SUSPEND] 2.6.35-rcX won't suspend Lenovo W500
-> > laptop Submitter    : Shawn Starr <shawn.starr@rogers.com>
-> > Date        : 2010-06-28 0:45 (11 days old)
-> > Message-ID    : <201006272045.17004.shawn.starr@rogers.com>
-> > References    : http://marc.info/?l=linux-kernel&m=127768633705286&w=2
-> 
-> Continues with July 7th, snapshot of 2.6.35-rc4. 
-> 
-> Some more info: I have USB in use while trying to suspend.  A USB Microsoft 
-> Mouse and a QuickCam Pro 9000 camera connected.
->>Well, can you please try to suspend without the USB devices and see if the bug
->>is still reproducible, then?
->>
->>Rafael
+Well no, but it could do so, with some minor changes to struct
+reclaim_state and its handling.  Put a zone* and a counter in
+reclaim_state, handle them in sl?b.c.
 
-Yes, will try that today.
+> So we take the current
+> @@ -2628,16 +2628,17 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>  		 * take a long time.
+>  		 */
+>  		while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
+> -			zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
+> -				slab_reclaimable - nr_pages)
+> +		       (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages >
+> +				nr_slab_pages0))
+>  			;
+>  
+>  		/*
+>  		 * Update nr_reclaimed by the number of slab pages we
+>  		 * reclaimed from this zone.
+>  		 */
+> -		sc.nr_reclaimed += slab_reclaimable -
+> -			zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+> +		nr_slab_pages1 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+> +		if (nr_slab_pages1 < nr_slab_pages0)
+> +			sc.nr_reclaimed += nr_slab_pages0 - nr_slab_pages1;
 
-Thanks, 
-Shawn
+My, that's horrible.  The whole expression says "this number is
+basically a pile of random junk.  Let's add it in anyway".
 
+
+>  	}
+>  
+>  	p->reclaim_state = NULL;
