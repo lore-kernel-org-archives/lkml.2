@@ -1,42 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab0GIPnt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 11:43:49 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:46946 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756973Ab0GIPnr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 11:43:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=jL7QUhK7gdwwJwlMRW6MMuxge3p+b9RzIJGVikdZJMlp5ehU+UViqfu6m0ehKp7/al
-         GleklLHEJ6/A4EH59QDtZgFUAovi9mBBgx6djAD6+e/dHL1bn+VbKjw6/wNh1jZgPJJ0
-         bvgGGRjeNPqdPDAcaf0sja90HuVQWign6TzRQ=
+	id S1757422Ab0GIPvV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 11:51:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9303 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755812Ab0GIPvU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 11:51:20 -0400
+Date: Fri, 9 Jul 2010 18:50:47 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, kvm@vger.kernel.org,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+       mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com, riel@redhat.com,
+       cl@linux-foundation.org
+Subject: Re: [PATCH v4 08/12] Inject asynchronous page fault into a guest
+ if page is swapped out.
+Message-ID: <20100709155047.GC11885@redhat.com>
+References: <1278433500-29884-1-git-send-email-gleb@redhat.com>
+ <1278433500-29884-9-git-send-email-gleb@redhat.com>
+ <20100708155920.GA13855@amt.cnet>
+ <20100708180525.GA11885@redhat.com>
+ <1278612561.1900.170.camel@laptop>
+ <1278612631.1900.171.camel@laptop>
 MIME-Version: 1.0
-In-Reply-To: <1278662607.16528.8.camel@eight.analog.com>
-References: <1278662607.16528.8.camel@eight.analog.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 9 Jul 2010 11:43:25 -0400
-Message-ID: <AANLkTimy9Y7udFmHiR2mSwVFXyenb08hFF6jRWxlntuq@mail.gmail.com>
-Subject: Re: [Uclinux-dist-devel] [PATCH] MMC:mmc_spi: Recover from CRC error 
-	for SD read/write operation over SPI.
-To: sonic zhang <sonic.adi@gmail.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-       uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
-       linux-mmc@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278612631.1900.171.camel@laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 9, 2010 at 04:03, sonic zhang <sonic.adi@gmail.com> wrote:
-> SPI bus is not reliable on all platforms when doing large dada transfer.
+On Thu, Jul 08, 2010 at 08:10:31PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-07-08 at 20:09 +0200, Peter Zijlstra wrote:
+> > On Thu, 2010-07-08 at 21:05 +0300, Gleb Natapov wrote:
+> > > > > +   /* do alloc atomic since if we are going to sleep anyway we
+> > > > > +      may as well sleep faulting in page */
+> > > > > +   work = kmem_cache_zalloc(async_pf_cache, GFP_ATOMIC);
+> > > > > +   if (!work)
+> > > > > +           return 0;
+> > > > 
+> > > > GFP_KERNEL is fine for this context.
+> > > But it can sleep, no? The comment explains why I don't want to sleep
+> > > here. 
+> > 
+> > In that case, use 0, no use wasting __GFP_HIGH on something that doesn't
+> > actually need it.
+> 
+> Ah, I just saw we have GFP_NOWAIT for that.
+Indeed. Will use GFP_NOWAIT.
 
-dada -> data
-
-> occational CRC error is reported by SD device. This patch makes the
-
-occational -> occasional
--mike
+--
+			Gleb.
