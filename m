@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756649Ab0GIN7P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:59:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65081 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753054Ab0GIN7N convert rfc822-to-8bit (ORCPT
+	id S1756633Ab0GIODR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 10:03:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:60649 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753867Ab0GIODQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:59:13 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <AANLkTikP-u1adVItGDgUZdee14Z13k8MLRC5V7UN-gpV@mail.gmail.com>
-References: <AANLkTikP-u1adVItGDgUZdee14Z13k8MLRC5V7UN-gpV@mail.gmail.com> <20100630233614.32422.97038.stgit@warthog.procyon.org.uk>
-To: Michael Kerrisk <mtk.manpages@gmail.com>
-Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
-       linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       samba-technical@lists.samba.org, linux-ext4@vger.kernel.org,
-       linux-api@vger.kernel.org
-Subject: Re: [PATCH] Add a pair of system calls to make extended file stats available [ver #3]
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 09 Jul 2010 14:59:06 +0100
-Message-ID: <21105.1278683946@redhat.com>
+	Fri, 9 Jul 2010 10:03:16 -0400
+X-Authority-Analysis: v=1.1 cv=eWk9bc5BAcy1KEyGm/gc5mmqTM7Cp/ADlcqpp9MTMWU= c=1 sm=0 a=zNANCjgXmV0A:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=e8lMqVrIIisU7lxzWT0A:9 a=7GFRt92HYekiuMvypFNB6kOV-TwA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: 2.6.35 regression
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Zeev Tarantov <zeev.tarantov@gmail.com>, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+In-Reply-To: <20100709130454.GC5291@nowhere>
+References: <loom.20100705T144459-919@post.gmane.org>
+	 <20100708132237.GA22830@goodmis.org>
+	 <AANLkTilsXUjNNDcC4ZA9m8hBDqzcoh5NGbNd4XX5xx5s@mail.gmail.com>
+	 <1278645989.1537.133.camel@gandalf.stny.rr.com>
+	 <AANLkTinkKVmB0fpVeqUkMeqe3ZYeXJdI8xDuzJEOjYwh@mail.gmail.com>
+	 <20100709130454.GC5291@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 09 Jul 2010 10:03:13 -0400
+Message-ID: <1278684193.1537.135.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+On Fri, 2010-07-09 at 15:04 +0200, Frederic Weisbecker wrote:
 
-> >        struct xstat_parameters {
-> >                unsigned long long      request_mask;
+> > 
+> > Thank you for the prompt response!
 > 
-> Poor name, since it's a value-result arg? Better maybe something like
-> "field_mask"?
-
-No.  The contents of xstat_parameters aren't changed.  request_mask is what
-you're asking for, result_mask in the xstat struct is what you actually got.
-
-result_mask may be more or less than request_mask as the filesystem isn't
-obliged to supply anything you didn't ask for, and may not be able to supply
-something you did ask for, and may give you stuff anyway that you didn't ask
-for if it's trivial to do so.
-
-> There is no XSTAT_REQUEST__GET_ANYWAY, AFAICS. I guess here you meant
-> XSTAT_REQUEST__EXTENDED_STATS? Or?
-
-Yep.  I forgot to change that in the patch description.
-
-> This case is almost certainly a user error, so why not simply return
-> an error (-1 and ERANGE or E2BIG)? The above approach invites
-> userspace errors of the form:
 > 
-> if (xtat(...) < 0) { /* How users often check for error */
->     /* I'll handle the error */
-> } else {
->     /* The call succeeded; I'm fine */
-> }
+> 
+> Thanks for your report and testing!
 
-I suppose.
+Yes thanks!
 
-> If you are looking for a way to inform the user about the required
-> buffer size, I think it would be better to take a leaf from the
-> getxattr(2) book: if 'buflen' is zero, then do nothing with the output
-> arg, but return the size that would be required.
+Zeev, can I add your "Tested-by:" tag, and Frederic your "Acked-by:"?
 
-That's reasonable.
+-- Steve
 
-David
+
