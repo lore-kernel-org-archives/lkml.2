@@ -1,59 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758955Ab0GIApM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 20:45:12 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:54814 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756888Ab0GIApK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 20:45:10 -0400
-Date: Thu, 8 Jul 2010 17:45:05 -0700
-From: Kees Cook <kees@outflux.net>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Chris Wilson <"email addresshidden"@ogre.sisk.pl>
-Subject: Re: [Bug #16294] [Q35 bisected] hang at init of i915 driver
-Message-ID: <20100709004505.GU828@outflux.net>
-References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
- <TXb9XdQzJoD.A.uoB.WMmNMB@chimera>
+	id S1759028Ab0GIAqg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 20:46:36 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:35138 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758768Ab0GIAqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 20:46:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH v2 2/2] vmscan: shrink_slab() require number of lru_pages, not page order
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <alpine.DEB.2.00.1007081540400.15083@router.home>
+References: <20100708133152.5e556508.akpm@linux-foundation.org> <alpine.DEB.2.00.1007081540400.15083@router.home>
+Message-Id: <20100709092124.CD5A.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <TXb9XdQzJoD.A.uoB.WMmNMB@chimera>
-Organization: Outflux
-X-HELO: www.outflux.net
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri,  9 Jul 2010 09:46:32 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+> On Thu, 8 Jul 2010, Andrew Morton wrote:
+> 
+> > > AFAICT this is not argument error but someone changed the naming of the
+> > > parameter.
+> >
+> > It's been there since day zero:
+> >
+> > : commit 2a16e3f4b0c408b9e50297d2ec27e295d490267a
+> > : Author:     Christoph Lameter <clameter@engr.sgi.com>
+> > : AuthorDate: Wed Feb 1 03:05:35 2006 -0800
+> > : Commit:     Linus Torvalds <torvalds@g5.osdl.org>
+> > : CommitDate: Wed Feb 1 08:53:16 2006 -0800
+> > :
+> > :     [PATCH] Reclaim slab during zone reclaim
+> 
+> That only shows that the order parameter was passed to shrink_slab() which
+> is what I remember being done intentionally.
+> 
+> Vaguely recall that this was necessary to avoid shrink_slab() throwing out
+> too many pages for higher order allocs.
 
-On Fri, Jul 09, 2010 at 01:41:39AM +0200, Rafael J. Wysocki wrote:
-> The following bug entry is on the current list of known regressions
-> from 2.6.34.  Please verify if it still should be listed and let the tracking team
-> know (either way).
+But It make opposite effect. number of scanning objects of shrink_slab() are
 
-Yup, this is still a regression.  The fix is trivial (see below).
+                          lru_scanned        max_pass
+basic_scan_objects = 4 x -------------  x -----------------------------
+                          lru_pages        shrinker->seeks (default:2)
 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16294
-> Subject		: [Q35 bisected] hang at init of i915 driver
-> Submitter	: Kees Cook <kees@outflux.net>
-> Date		: 2010-06-25 18:20 (14 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/f1befe71fa7a79ab733011b045639d8d809924ad
+scan_objects = min(basic_scan_objects, max_pass * 2)
 
-diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
-index 9344216..0d9007d 100644
---- a/drivers/char/agp/intel-gtt.c
-+++ b/drivers/char/agp/intel-gtt.c
-@@ -1229,6 +1229,7 @@ static int intel_i915_get_gtt_size(void)
- 				(gmch_ctrl & G33_PGETBL_SIZE_MASK));
- 			size = 512;
- 		}
-+		size = 1024;
- 	} else {
- 		/* On previous hardware, the GTT size was just what was
- 		 * required to map the aperture.
 
--- 
-Kees Cook                                            @outflux.net
+That said, small lru_pages parameter makes too many slab dropping.
+Practically, zone-reclaim always take max_pass*2. about inode, 
+shrink_icache_memory() takes number of unused inode as max_pass.
+It mean one shrink_slab() calling drop all icache. Is this optimal
+behavior? why?
+
+Am I missing something?
+
+> Initially zone_reclaim was full of heuristics that later were replaced by
+> counter as the new ZVCs became available and gradually better ways of
+> accounting for pages became possible.
+
+
