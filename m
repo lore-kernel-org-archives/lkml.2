@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab0GIDEg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 23:04:36 -0400
-Received: from casper.infradead.org ([85.118.1.10]:35427 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750985Ab0GIDEf (ORCPT
+	id S1753498Ab0GIDGA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 23:06:00 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:55278 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750985Ab0GIDF6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 23:04:35 -0400
-Date: Thu, 8 Jul 2010 20:08:21 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mike Galbraith <efault@gmx.de>, Norbert Preining <preining@logic.at>,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       akpm <akpm@linux-foundation.org>, tglx <tglx@linutronix.de>
-Subject: Re: high power consumption in recent kernels
-Message-ID: <20100708200821.35173ef8@infradead.org>
-In-Reply-To: <1278621854.1900.188.camel@laptop>
-References: <20100706164539.GA14783@gamma.logic.tuwien.ac.at>
-	<1278579992.1900.17.camel@laptop>
-	<20100708045711.398d4e26@infradead.org>
-	<1278590303.1900.91.camel@laptop>
-	<20100708120421.GF20841@gamma.logic.tuwien.ac.at>
-	<1278591779.1900.97.camel@laptop>
-	<20100708124627.GA7754@gamma.logic.tuwien.ac.at>
-	<1278595426.1900.130.camel@laptop>
-	<1278604779.1900.157.camel@laptop>
-	<1278618040.7498.21.camel@marge.simson.net>
-	<1278621854.1900.188.camel@laptop>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+	Thu, 8 Jul 2010 23:05:58 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Roland Dreier <rdreier@cisco.com>, linux-rdma@vger.kernel.org,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100709110427.c05987cc.sfr@canb.auug.org.au>
+References: <20100709110427.c05987cc.sfr@canb.auug.org.au>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-SDxkJnFeFJD33hkNdZuF"
+Date: Fri, 09 Jul 2010 04:05:45 +0100
+Message-ID: <1278644745.4854.119.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Mailer: Evolution 2.30.2 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: linux-next: build failure after merge of the infiniband tree
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 08 Jul 2010 22:44:14 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
 
-> On Thu, 2010-07-08 at 21:40 +0200, Mike Galbraith wrote:
-> > > Mike could you re-run your netperf tests that showed the 10%
-> > > throughput gain? Hopefully the fixed governor will yield the same
-> > > result and we can kill off this ratelimit thing.
-> > 
-> > The gain is (well was last time I checked), but as noted, I'd just
-> > call it a misguided optimization and be done with it. 
-> 
-> It would still be good to know what your machine does, if you can
-> still see a difference there might still be something to look at.
-> 
+--=-SDxkJnFeFJD33hkNdZuF
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-yeah and if you give me a reason / workload to improve the idle
-governor even more.....
+On Fri, 2010-07-09 at 11:04 +1000, Stephen Rothwell wrote:
+> Hi all,
+>=20
+> After merging the infiniband tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> make[2]: *** No rule to make target `firmware/qlogic/sd7220.fw', needed b=
+y `__fw_modbuild'.  Stop.
+>=20
+> Probably caused by commit bd4d621eacaa6455da1c23260909da89ef4c1a01
+> ("IB/qib: Use request_firmware() to load SD7220 firmware").
+>=20
+> I have used the version of the infiniband tree from next-20100708 for
+> today.
 
+The patch that I sent included the addition of
+firmware/qlogic/sd7220.fw.ihex but it seems to have been lost somewhere
+along the way.
 
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+Ben.
+
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
+
+--=-SDxkJnFeFJD33hkNdZuF
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIVAwUATDaSA+e/yOyVhhEJAQIS2w/9ErspPMPPD1t1i9hVJiYXuQKE4ljL5HxK
+Y/yk3AiZsRrlI7+YJFTWCeivrRsGbW0MZxPKEVwNBB4nIFhwLa1ZJMOhZ+FFbdg9
+YIvMjTWC1n8jCHUS/HQN6dUBEJDxMG3i6RcmSHkqodxEyby55fgOpi9z00sQNrbl
+1K1lBWV8s40onYBPBnf9JE7vHav3b5bsxn4MJxDMtFOmOdpE1OegM6OmN9wT+xIb
+1TiSncJGK10M8NveXO9aK8pTX9twdnxaZzceRa8BjixxAQlwxw47jznJDQjNie7g
+gyHmBy+odZOX+DVvLkQceuCOLKMJgfP6F5lD05z5XrhNxYJ5DzK5ykHy6+zqrjuV
+LO/LJFnccRbxNyTduozZIvRhg1mUQ4IDm/V8d+4RPSF12WVyLSb6/MH0QOuEkXpz
+vBNKTeBK6p72LfuzLsCByAoms58eVqbO/vJw/J3yD4iJBgkpNDlvfSG2k2WajN6w
+4q2DflC1NdpNivsLRwskSXVKNB/ejq1WvnN7RyckYcXqrWp5OT7ZJRE7hsk7Ah8x
+xp8eXs/t0XCe1nnhK+95YI0EVbeFuuBHqfsoRVWNKanEXI/hyVWgDJUyIcn4ePSp
+isPVJgkAgM1UgNNttIrk3O9PUqSQLdLV00W6UUzZu1ZQGKGqmTX3K6zGFMEtggTE
+gfdJm1LsvAY=
+=KZ/3
+-----END PGP SIGNATURE-----
+
+--=-SDxkJnFeFJD33hkNdZuF--
