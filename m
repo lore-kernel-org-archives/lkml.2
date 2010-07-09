@@ -1,72 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756929Ab0GIOOi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 10:14:38 -0400
-Received: from casper.infradead.org ([85.118.1.10]:53987 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab0GIOOh (ORCPT
+	id S1756952Ab0GIORt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 10:17:49 -0400
+Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:35207 "EHLO
+	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab0GIORp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 10:14:37 -0400
-Date: Fri, 9 Jul 2010 11:13:35 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Naren A Devaiah <naren.devaiah@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv8 2.6.35-rc4-tip 12/12] perf: Show Potential probe points.
-Message-ID: <20100709141335.GG5776@ghostprotocols.net>
-References: <20100708171003.29165.57615.sendpatchset@localhost6.localdomain6>
- <20100708171225.29165.28806.sendpatchset@localhost6.localdomain6>
- <20100708202057.GC30946@infradead.org>
- <20100709055644.GD26884@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100709055644.GD26884@linux.vnet.ibm.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 9 Jul 2010 10:17:45 -0400
+Subject: Re: [PATCH 04/10] SELinux: Add new labeling type native labels
+From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
+To: James Morris <jmorris@namei.org>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
+       sds@tycho.nsa.gov, "Matthew N. Dodd" <matthew.dodd@sparta.com>,
+       trond.myklebust@fys.uio.no, bfields@fieldses.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
+       linux-nfs@vger.kernel.org
+In-Reply-To: <alpine.LRH.2.00.1007090824150.23354@tundra.namei.org>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
+	 <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>
+	 <alpine.LRH.2.00.1007080921200.14102@tundra.namei.org>
+	 <1278595878.2494.186.camel@moss-terrapins.epoch.ncsc.mil>
+	 <alpine.LRH.2.00.1007090824150.23354@tundra.namei.org>
+Content-Type: text/plain
+Organization: National Security Agency
+Date: Fri, 09 Jul 2010 10:09:26 -0400
+Message-Id: <1278684566.2494.226.camel@moss-terrapins.epoch.ncsc.mil>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jul 09, 2010 at 11:26:44AM +0530, Srikar Dronamraju escreveu:
-> > > Show all potential probes in a process by pid 21106 across all dsos
-> > > # perf probe -S -p 21106 | tail
+On Fri, 2010-07-09 at 08:33 +1000, James Morris wrote:
+> On Thu, 8 Jul 2010, David P. Quigley wrote:
+> 
+> > > Otherwise, this is a global policy decision which affects all NFSv4 
+> > > mounts, right?
+> > > 
+> > > 
+> > 
+> > I don't believe we have that ability in any other file system.
+> 
+> NFS is quite different to other filesystems.  Your files are on other 
+> systems, for example, which may or may not support security labeling.
 
-> > Again, a file based interface would be much more useful.  E.g. what
-> > possible probe points do I have in my qemu binary.
+And if that is the case then the capability flag does not get set in the
+NFSv4 server caps and we don't use security label support on that mount.
 
-> Right, Currently perf probe needs -p option because it depend on
-> thread->map_groups for listing the dsos and its functions.
+> 
+> > If you want to decide that you want to use genfs style labels on NFSv4 
+> > just use a context mount.
+> 
+> So, we enable this feature, and virtually all existing mounts break 
+> because the servers do not support labeling.
 
-> I am not sure if perf already has ability to list functions in a file
-> esp if we dont have dwarf information in that file. If perf has the
-> ability I will reuse it here or will try implementing one.
+No it should default back to being nfs_t which is what happens when I
+use my client on an export that doesn't have security_label set.
 
-> Arnaldo, Do you know offhand if perf already has the ability to list
-> functions in a file (with / without dwarf info).
+> 
+> > That way you can have the default behavior be 
+> > use security label support unless you don't want to and then you can 
+> > have a context mount.
+> 
+> It needs to be the other way around.  This is a new feature, so the 
+> default needs to be the existing behavior, with security labeling as an 
+> option to enable at mount time.
 
-Definetely, it actually doesn't use DWARF at all, its just the
-symtabs that are used. It prefers -debuginfo packages because those have
-richer symtabs, but if just the stripped file is used it will try to use
-.dynsym, etc.
+We made sure it falls back properly. It was decided a long time ago with
+discussion by several people that having it default to use it if its
+there otherwise fall back to the old behavior makes much more sense to
+an administrator.
 
-Look at tools/perf/builtin-test.c, it has a regression test for the
-symbol lib, should be enough.
+> 
+> 
+> 
+> - James
 
-- Arnaldo
