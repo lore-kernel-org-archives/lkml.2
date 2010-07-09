@@ -1,53 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754040Ab0GIVz1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 17:55:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34111 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751913Ab0GIVz0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 17:55:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
-Subject: Re: HDD not suspending properly / dead on resume
-Date: Fri, 9 Jul 2010 23:53:25 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4; KDE/4.4.4; x86_64; ; )
-Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
-       linux-ide@vger.kernel.org, linux-pm@lists.osdl.org
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <201007092347.29244.stephan.diestelhorst@gmail.com>
-In-Reply-To: <201007092347.29244.stephan.diestelhorst@gmail.com>
+	id S1754498Ab0GIV4G (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 17:56:06 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:53426 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751913Ab0GIV4E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 17:56:04 -0400
+Date: Fri, 9 Jul 2010 23:56:01 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Zeev Tarantov <zeev.tarantov@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Maciej@antispam.struernethosting.dk
+Subject: Re: [PATCH][GIT PULL][for 2.6.35] tracing: Add alignment to
+	syscall metadata declarations
+Message-ID: <20100709215601.GA13985@merkur.ravnborg.org>
+References: <1278705402.1537.157.camel@gandalf.stny.rr.com> <20100709203301.GA13839@merkur.ravnborg.org> <1278708374.1537.161.camel@gandalf.stny.rr.com> <20100709205319.GA13941@merkur.ravnborg.org> <1278709550.1537.164.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007092353.25731.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278709550.1537.164.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 09, 2010, Stephan Diestelhorst wrote:
-> I wrote:
-> >   I have an issue with suspend to RAM and I/O load on a disk. Symptoms
-> > are that the disk does not respond to requests when woken up, producing
-> > only I/O errors on all tested kernels (newest 2.6.35-rc4 (Ubuntu
-> > mainline PPA build)):
-> > 
-> <snip>
->  
-> > This can be triggered most reliably with multiple "direct" writes to
-> > disk, I create the load with the attached script. If the issue is
-> > triggered, suspend (through pm-suspend) takes very long.
+On Fri, Jul 09, 2010 at 05:05:50PM -0400, Steven Rostedt wrote:
+> On Fri, 2010-07-09 at 22:53 +0200, Sam Ravnborg wrote:
 > 
-> Attached now...
+> > But in this case we have no control of the value of "." (current address)
+> > when we have processed (_ftrace_events) so it may even be at a 2 byte boundary.
+> > The linker will add padding as needed to satisfy the alignmnet of
+> > __syscalls_metadata - but that padding will be inbetween "." and the first
+> > member in __syscalls_metadata.
 > 
-> > IMHO the interesting log output during suspend is:
-> > [ 1674.700125] ata1.00: qc timeout (cmd 0xec)
-> 
-> Almighty google suggested to try "pci=nomsi", which seems to have
-> cured the issue for me for now. Is that plausible? I'll keep this
-> under observation.
+> Fine, but this is a separate issue.
+No - this is the exact issue we are facing here.
 
-Hmm.  How does your /proc/interrupts look like?
+In the linker script we have no control what-so-ever on the alignment of "."
+so relying on any alignment is a potential bug.
 
-Also, do you have a link to this "Google suggestion"?
+In this particular case gcc decide to increase the alignment of
+syscall_metadata from 8 to 16.
 
-Rafael
+And then suddenly things fall apart because we rely on "." being
+properly aligned - and it is only 4 byte aligned.
+
+So you fixed this by forcing gcc to use a smaller alignment
+for syscall_metadata (from 16 => 4).
+But what happens next time when "." is two-byte aligned?
+We will not change aligment down to 2...
+
+So to fix this properly we need to make sure that "." is properly
+aligned to the alignment of syscall_metadata.
+
+In other words - the linker script needs to be fixed too.
+But the fix in the .h file is required so we know the alignmnet
+of syscall_metadata.
+
+	Sam
