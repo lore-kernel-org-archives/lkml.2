@@ -1,71 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755674Ab0GIXZH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 19:25:07 -0400
-Received: from smtp4.Stanford.EDU ([171.67.219.84]:53029 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755612Ab0GIXZA (ORCPT
+	id S1755728Ab0GIXZl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 19:25:41 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48491 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755136Ab0GIXZj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 19:25:00 -0400
-Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-To: john stultz <johnstul@us.ibm.com>
-Cc: nando@ccrma.Stanford.EDU, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1278716860.7122.72.camel@localhost.localdomain>
-References: <1278609590.7527.11.camel@localhost.localdomain>
-	 <1278628386.3008.11.camel@localhost.localdomain>
-	 <1278629044.12059.6.camel@localhost.localdomain>
-	 <1278630050.3008.18.camel@localhost.localdomain>
-	 <1278702134.5102.9.camel@localhost.localdomain>
-	 <1278705254.2349.14.camel@localhost.localdomain>
-	 <1278713600.7122.22.camel@localhost.localdomain>
-	 <1278714680.2349.15.camel@localhost.localdomain>
-	 <1278716860.7122.72.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Jul 2010 16:24:29 -0700
-Message-ID: <1278717869.7122.97.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Jul 2010 19:25:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=RaXW1Rent1f68vxmNl8o0CF+c+Vvmc2B3jZZyjOnNEi+0p0qdT3tHzyIs/pU6pvIFb
+         Y/QRjxJ5GoGmmuZ5HxjCcWFhe/ki8LceKxCuAVtpbe3yJS8whXcylVLfelt/gJSNdRMG
+         tXxWTb9eotD5hd2aBfKrdU7jSUyf4xM2tsepk=
+Date: Sat, 10 Jul 2010 01:25:28 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>
+Subject: Re: [PATCH 1/8] do_coredump: do not take BKL
+Message-ID: <20100709232523.GB5269@nowhere>
+References: <1278194552-24943-1-git-send-email-arnd@arndb.de> <1278194552-24943-2-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278194552-24943-2-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-09 at 16:07 -0700, Fernando Lopez-Lezcano wrote:
-> 	On Fri, 2010-07-09 at 15:31 -0700, john stultz wrote:
-> > On Fri, 2010-07-09 at 15:13 -0700, Fernando Lopez-Lezcano wrote:
-> > > On Fri, 2010-07-09 at 12:54 -0700, john stultz wrote:
-> > > > On Fri, 2010-07-09 at 12:02 -0700, Fernando Lopez-Lezcano wrote:
-> > > > > Ok, I got one! (had to go buy a null modem cable, I thought I had one
-> > > > > but it has disappeared since the last time I did this :-)
-> > > > 
-> > > > Great! Sorry to make you go shopping! But this points out the problem
-> > > > nicely.
-> > > 
-> > > No problem at all, I was sure I had one... anyway, I still need it :-<
-> > > 
-> > > > > Find it below... it keeps spewing stuff every once in a while. Hopefully
-> > > > > this will be enough. No response from the network or the keyboard or
-> > > > > mouse at this point, reset is the only way out. 
-> > > > > 
-> > > > > I can retest if somebody comes up with a patch...
-> > > 
-> > > Sorry, it looks like the patch patched correctly and this is the new
-> > > kernel, but I still get a hang as before. 
-> > 
-> > Huh. Exact same backtrace? Maybe there's more then one issue with that
-> > function...
+On Sun, Jul 04, 2010 at 12:02:25AM +0200, Arnd Bergmann wrote:
+> core_pattern is not actually protected and hasn't been
+> ever since we introduced procfs support for sysctl -- a
+> _long_ time. Don't take it here either.
 > 
-> Hmmm, most likely I made some mistake - I'll double check and report
-> back. 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
 
-Argh, something's wrong with what I did, I'm looking at the source in
-the build server and it appears to not be patched (but I saw it being
-patched in the logs with no error? go figure...). 
 
--- Fernando
-
+Applied in bkl/core, thanks.
 
