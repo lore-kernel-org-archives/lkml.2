@@ -1,65 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754572Ab0GIWCz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 18:02:55 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:34491 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752802Ab0GIWCy (ORCPT
+	id S1754806Ab0GIWEY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 18:04:24 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:54397 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752852Ab0GIWEV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 18:02:54 -0400
-Date: Sat, 10 Jul 2010 00:02:52 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Zeev Tarantov <zeev.tarantov@gmail.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Maciej@antispam.struernethosting.dk
-Subject: Re: [PATCH][GIT PULL][for 2.6.35] tracing: Add alignment to
-	syscall metadata declarations
-Message-ID: <20100709220252.GA14080@merkur.ravnborg.org>
-References: <1278705402.1537.157.camel@gandalf.stny.rr.com> <20100709203301.GA13839@merkur.ravnborg.org> <1278708374.1537.161.camel@gandalf.stny.rr.com> <20100709205319.GA13941@merkur.ravnborg.org> <1278709550.1537.164.camel@gandalf.stny.rr.com>
+	Fri, 9 Jul 2010 18:04:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=U5ixwWXpOcEZLZ3bWJb/Napn6tLZq27X7MsJO04O6gva08bYPh29R06NA57ucuo343
+         ALWB5k23iq3jwH6Q8PXUIz3xj7F0h6XGe1htgPH+iVXg4ms4AH32iRk95ABIwI/PxjaQ
+         UZww0ksfsG3RFYt9QtwPSA9ZzM+xBR5n5T1hk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278709550.1537.164.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C3793FB.4080907@gmail.com>
+References: <4C3680D1.5070601@lwfinger.net>
+	<4C378AD9.1070602@gmail.com>
+	<4C379323.1090004@lwfinger.net>
+	<4C3793FB.4080907@gmail.com>
+Date: Fri, 9 Jul 2010 15:04:20 -0700
+X-Google-Sender-Auth: iagzt_LlA23qeYRJ9MDM7yP0LdQ
+Message-ID: <AANLkTikFmeXz9og4t98jm6QcAdRa6rIeCAv3oeFnTgd8@mail.gmail.com>
+Subject: Re: Warning message when using sparse
+From: Christopher Li <sparse@chrisli.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Larry Finger <Larry.Finger@lwfinger.net>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux-Sparse <linux-sparse@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 09, 2010 at 05:05:50PM -0400, Steven Rostedt wrote:
-> On Fri, 2010-07-09 at 22:53 +0200, Sam Ravnborg wrote:
-> 
-> > But in this case we have no control of the value of "." (current address)
-> > when we have processed (_ftrace_events) so it may even be at a 2 byte boundary.
-> > The linker will add padding as needed to satisfy the alignmnet of
-> > __syscalls_metadata - but that padding will be inbetween "." and the first
-> > member in __syscalls_metadata.
-> 
-> Fine, but this is a separate issue. I doubt the "ALIGN(8);" would have
-> helped us anyway. Remember what the issue we had:
-> 
-> ffffffff8173c438 <__start_syscalls_metadata>:
->         ...
-> 
-> ffffffff8173c440 <__syscall_meta__mmap>:
-> 
-> 
-> __start_syscalls_metadata was already aligned to 8, but for some strange
-> reason, gcc decided to align the first member to 16.
+On Fri, Jul 9, 2010 at 2:26 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> On 07/09/2010 11:22 PM, Larry Finger wrote:
+>> Obviously, I pulled the wrong git tree. I got the one from the wiki.
+>> When I built the one from the kernel.org tree, all is well.
+>
+> Both are from kernel.org. But the one I sent is a Chris'es "fork" with
+> my and other fixes.
+>
 
-I found some more info in following bug:
-https://bugzillafiles.novell.org/attachment.cgi?id=344563
+Yes, you caught me slacking off. It is time to cut a new release
+and flush all the bits into the official tree.
 
-Jeff Mahoney says:
-GCC 4.5 introduced behavior that forces the alignment of structures to
- use the largest possible value. The default value is 32 bytes, so if
- some structures are defined with a 4-byte alignment and others aren't
- declared with an alignment constraint at all - it will align at 32-bytes.
-
-So according to this we can rely on 32 byte alignment and
-this is trivial to add in vmlinux.lds.h.
-
-	Sam
+Chris
