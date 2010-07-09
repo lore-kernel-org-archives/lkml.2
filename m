@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab0GINSJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:18:09 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50224 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851Ab0GINSH convert rfc822-to-8bit (ORCPT
+	id S1756327Ab0GINSd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:18:33 -0400
+Received: from proofpoint-cluster.metrocast.net ([65.175.128.136]:44887 "EHLO
+	proofpoint-cluster.metrocast.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756248Ab0GINSb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:18:07 -0400
-Subject: Re: [PATCH] sched: Call update_group_power only for local_group
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-       LKML <linux-kernel@vger.kernel.org>, Gautham R Shenoy <ego@in.ibm.com>,
-       Joel Schopp <jschopp@austin.ibm.com>,
-       Michael Neuling <mikey@neuling.org>
-In-Reply-To: <1278626014.2834.74.camel@sbs-t61.sc.intel.com>
-References: <1278088816.1917.279.camel@laptop>
-	 <1278089799-11949-1-git-send-email-venki@google.com>
-	 <1278598336.1900.150.camel@laptop>
-	 <1278611133.2834.10.camel@sbs-t61.sc.intel.com>
-	 <1278612989.1900.176.camel@laptop>
-	 <1278626014.2834.74.camel@sbs-t61.sc.intel.com>
+	Fri, 9 Jul 2010 09:18:31 -0400
+Subject: Re: [PATCH 02/35] ivtv: use kthread_worker instead of workqueue
+From: Andy Walls <awalls@md.metrocast.net>
+To: Tejun Heo <tj@kernel.org>
+Cc: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+       oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
+       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
+       ivtv-devel@ivtvdriver.org, linux-media@vger.kernel.org
+In-Reply-To: <4C32D4BE.9030005@kernel.org>
+References: <1277759063-24607-1-git-send-email-tj@kernel.org>
+	 <1277759063-24607-3-git-send-email-tj@kernel.org>
+	 <1278349860.2229.9.camel@localhost>  <4C32D4BE.9030005@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 09 Jul 2010 15:17:47 +0200
-Message-ID: <1278681467.1900.199.camel@laptop>
+Date: Fri, 09 Jul 2010 09:15:34 -0400
+Message-ID: <1278681334.3385.0.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-Proofpoint-Virus-Version: vendor=fsecure engine=1.12.8161:2.4.5,1.2.40,4.0.166
+ definitions=2010-07-09_01:2010-02-06,2010-07-09,2010-07-09 signatures=0
+X-Proofpoint-Spam-Details: rule=notspam policy=default score=0 spamscore=0 ipscore=0 phishscore=0
+ bulkscore=0 adultscore=0 classifier=spam adjust=0 reason=mlx
+ engine=5.0.0-1005130000 definitions=main-1007090051
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 14:53 -0700, Suresh Siddha wrote:
+On Tue, 2010-07-06 at 09:01 +0200, Tejun Heo wrote:
+> On 07/05/2010 07:11 PM, Andy Walls wrote:
+> > Assuming the new kthread_worker implementation is OK, this change for
+> > ivtv looks good.
+> > 
+> > Reviewed-by: Andy Walls <awalls@md.metrocast.net>
+> > Acked-by: Andy Walls <awalls@md.metrocast.net>
+> 
+> May I route this patch through wq branch?  As it's not clear how this
+> whole patchset will end up, I think it would be better to keep things
+> isolated in this branch.
 
-> Also, looking at all this, don't we need to do something like this in
-> the nohz load balance?
+Yes, I think that is the best way to do things.
 
-Yes, I think you're right, thanks!
-
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 9910e1b..ae750e9 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -3598,6 +3598,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
->  		}
->  
->  		raw_spin_lock_irq(&this_rq->lock);
-> +		update_rq_clock(this_rq);
->  		update_cpu_load(this_rq);
->  		raw_spin_unlock_irq(&this_rq->lock);
+Regards,
+Andy
 
 
