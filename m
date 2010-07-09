@@ -1,83 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752870Ab0GITLy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 15:11:54 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:52958 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751053Ab0GITLw (ORCPT
+	id S1754725Ab0GITMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 15:12:22 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:34278 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753491Ab0GITMR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 15:11:52 -0400
-Date: Fri, 9 Jul 2010 21:11:46 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Brian Swetland <swetland@google.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Neil Brown <neilb@suse.de>,
-       tytso@mit.edu, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Felipe Balbi <felipe.balbi@nokia.com>,
-       Florian Mickler <florian@mickler.org>,
-       James Bottomley <James.Bottomley@suse.de>,
-       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Arjan van de Ven <arjan@infradead.org>
-Subject: HTC Dream drivers was Re: [linux-pm] suspend blockers & Android
- integration
-Message-ID: <20100709191145.GG1669@ucw.cz>
-References: <1275834706.7227.545.camel@mulgrave.site>
- <alpine.LFD.2.00.1006061725000.2933@localhost.localdomain>
- <1275844114.7227.552.camel@mulgrave.site>
- <20100606190525.GA20517@infradead.org>
- <AANLkTikKx-gXCGtNo3woHLCpBoEQ7hG9Jbiq3hwUTW_w@mail.gmail.com>
- <20100606192405.GA7559@infradead.org>
- <AANLkTikA0ihlbehyyN-zQ3mN4WmlZJYBSRTYV8SbDhSr@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikA0ihlbehyyN-zQ3mN4WmlZJYBSRTYV8SbDhSr@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 9 Jul 2010 15:12:17 -0400
+Message-Id: <20100709190854.930694716@quilx.com>
+User-Agent: quilt/0.48-1
+Date: Fri, 09 Jul 2010 14:07:15 -0500
+From: Christoph Lameter <cl@linux-foundation.org>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: linux-mm@kvack.org
+Cc: linux-kernel@vger.kernel.org
+Cc: Nick Piggin <npiggin@suse.de>
+Cc: David Rientjes <rientjes@google.com>
+Subject: [S+Q2 09/19] slub: discard_slab_unlock
+References: <20100709190706.938177313@quilx.com>
+Content-Disposition: inline; filename=slub_discard_unlock
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+The sequence of unlocking a slab and freeing occurs multiple times.
+Put the common into a single function. There is no intend here
+to use this to enforce a sequencing of events leading up
+to the discarding of a slab page.
 
+Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
 
-> > So for people who really care about running a mainline kernel on their
-> > android device doing that part first on a generic ARM board in qemu
-> > might be much better first step work.
-> 
-> > On the other hand I've heard
-> > that various hardware vendors or parties closed to them are rather
-> > annoyed by their drivers beeing stuck in the android tree - but that
-> > can be easily solved by getting removing the suspend blockers (at least
-> > temporarily), cleaning up a few bits here and there and getting them in.
-> 
-> This continues to baffle me.  If we (Google) are such a headache, why
-> not just route around us.  The drivers we've written are GPLv2, the
+---
+ mm/slub.c |   16 ++++++++++------
+ 1 file changed, 10 insertions(+), 6 deletions(-)
 
-Well, we did route around you, and that's why the HTC Dream drivers
-are in
-staging.
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2010-06-01 08:58:50.000000000 -0500
++++ linux-2.6/mm/slub.c	2010-06-01 08:58:54.000000000 -0500
+@@ -1260,6 +1260,13 @@ static __always_inline int slab_trylock(
+ 	return rc;
+ }
+ 
++static void discard_slab_unlock(struct kmem_cache *s,
++	struct page *page)
++{
++	slab_unlock(page);
++	discard_slab(s, page);
++}
++
+ /*
+  * Management of partially allocated slabs
+  */
+@@ -1437,9 +1444,8 @@ static void unfreeze_slab(struct kmem_ca
+ 			add_partial(n, page, 1);
+ 			slab_unlock(page);
+ 		} else {
+-			slab_unlock(page);
+ 			stat(s, FREE_SLAB);
+-			discard_slab(s, page);
++			discard_slab_unlock(s, page);
+ 		}
+ 	}
+ }
+@@ -1822,9 +1828,8 @@ slab_empty:
+ 		remove_partial(s, page);
+ 		stat(s, FREE_REMOVE_PARTIAL);
+ 	}
+-	slab_unlock(page);
+ 	stat(s, FREE_SLAB);
+-	discard_slab(s, page);
++	discard_slab_unlock(s, page);
+ 	return;
+ 
+ debug:
+@@ -2893,8 +2898,7 @@ int kmem_cache_shrink(struct kmem_cache 
+ 				 */
+ 				list_del(&page->lru);
+ 				n->nr_partial--;
+-				slab_unlock(page);
+-				discard_slab(s, page);
++				discard_slab_unlock(s, page);
+ 			} else {
+ 				list_move(&page->lru,
+ 				slabs_by_inuse + page->inuse);
 
-Unfortunately...
-
-> source is out there for anyone who wants it, etc.  The drivers other
-> people have written we have no control over at all. From my point of
-> view it'd be an annoyance if somebody took the code we wrote, modified
-> it heavily, and pushed it upstream, but fundamentally I can't stop
-> that from happening other than by pushing it upstream myself, first.
-
-...you were calling bloody murder when we tried to name them right way
--- thats board_dream, not board_trout -- and AFAIK you still did not
-switch to actually using those drivers so that diffs would grow
-smaller...
-
-And no, it is not 'just arm architecture #1536'; due to strange
-baseband/cpu split in msm drivers end up quite big&complex...
-
-									Pavel
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
