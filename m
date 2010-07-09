@@ -1,54 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756682Ab0GINw2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:52:28 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50524 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752870Ab0GINw1 (ORCPT
+	id S1756600Ab0GINzz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:55:55 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:51818 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752870Ab0GINzy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:52:27 -0400
-Date: Fri, 9 Jul 2010 15:52:25 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: linux-kernel@vger.kernel.org
-Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 01/11] Removing dead 68328_SERIAL_UART
-Message-ID: <824fd4e71f2141a8eb60bf30a1e423bba0f534d1.1278682302.git.siccegge@cs.fau.de>
-References: <cover.1278682302.git.siccegge@cs.fau.de>
+	Fri, 9 Jul 2010 09:55:54 -0400
+Date: Fri, 9 Jul 2010 08:54:58 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Minchan Kim <minchan.kim@gmail.com>
+cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+Subject: Re: [PATCH v2 2/2] vmscan: shrink_slab() require number of lru_pages,
+  not page order
+In-Reply-To: <AANLkTinwZfaQiTJhP8RcGhlSS-ynEXtbpzorrIZrNyIH@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1007090854420.30663@router.home>
+References: <20100708163401.CD34.A69D9226@jp.fujitsu.com> <20100708163934.CD37.A69D9226@jp.fujitsu.com> <AANLkTinwZfaQiTJhP8RcGhlSS-ynEXtbpzorrIZrNyIH@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1278682302.git.siccegge@cs.fau.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-68328_SERIAL_UART doesn't exist in Kconfig, therefore removing all
-references for it from the source code.
 
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- drivers/serial/68328serial.h |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+Ok. I am convinced.
 
-diff --git a/drivers/serial/68328serial.h b/drivers/serial/68328serial.h
-index 58aa215..c6d5382 100644
---- a/drivers/serial/68328serial.h
-+++ b/drivers/serial/68328serial.h
-@@ -181,13 +181,8 @@ struct m68k_serial {
- /* 
-  * Define the number of ports supported and their irqs.
-  */
--#ifndef CONFIG_68328_SERIAL_UART2
--#define NR_PORTS 1
--#define UART_IRQ_DEFNS {UART_IRQ_NUM}
--#else
- #define NR_PORTS 2
- #define UART_IRQ_DEFNS {UART1_IRQ_NUM, UART2_IRQ_NUM}
--#endif
- 
- #endif /* __KERNEL__ */
- #endif /* !(_MC683XX_SERIAL_H) */
--- 
-1.7.0.4
+Acked-by: Christoph Lameter <cl@linux-foundation.org>
 
