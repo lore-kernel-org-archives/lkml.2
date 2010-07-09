@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab0GIKjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 06:39:36 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:59578 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752792Ab0GIKjd (ORCPT
+	id S1754816Ab0GIKkK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 06:40:10 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56768 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752792Ab0GIKkI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 06:39:33 -0400
-To: Sachin Sant <sachinp@in.ibm.com>
-Cc: linux-s390@vger.kernel.org, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>
-References: <20100709150117.51612026.sfr@canb.auug.org.au>
-	<4C36EF9C.7010804@in.ibm.com> <m1d3ux55od.fsf@fess.ebiederm.org>
-	<4C36F974.4030608@in.ibm.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Fri, 09 Jul 2010 03:39:24 -0700
-In-Reply-To: <4C36F974.4030608@in.ibm.com> (Sachin Sant's message of "Fri\, 09 Jul 2010 15\:57\:00 +0530")
-Message-ID: <m14og95483.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Sachin Sant <sachinp@in.ibm.com>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 TR_Symld_Words too many words that have symbols inside
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.0 T_TooManySym_02 5+ unique symbols in subject
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: Re: [-next July 9 - s390 ] Badness at fs/sysfs/symlink.c:82 during qeth initalization
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
+	Fri, 9 Jul 2010 06:40:08 -0400
+Subject: Re: [RFC][PATCH 10/13] perf: Per PMU disable
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mackerras <paulus@samba.org>
+Cc: stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1278671458.1900.193.camel@laptop>
+References: <20100709082117.631541128@chello.nl>
+	 <20100709083248.156796575@chello.nl>
+	 <20100709101703.GR7771@brick.ozlabs.ibm.com>
+	 <1278671458.1900.193.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 09 Jul 2010 12:39:52 +0200
+Message-ID: <1278671992.1900.197.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sachin Sant <sachinp@in.ibm.com> writes:
+On Fri, 2010-07-09 at 12:30 +0200, Peter Zijlstra wrote:
+> On Fri, 2010-07-09 at 20:17 +1000, Paul Mackerras wrote:
+> > On Fri, Jul 09, 2010 at 10:21:27AM +0200, Peter Zijlstra wrote:
+> > 
+> > > -void hw_perf_disable(void)
+> > > +static void powerpc_pmu_pmu_disable(struct pmu *pmu)
+> > 
+> > > -void hw_perf_enable(void)
+> > > +static void powerpc_pmu_pmu_enable(struct pmu *pmu)
+> > 
+> > >  struct pmu power_pmu = {
+> > > -	.event_init	= power_pmu_event_init,
+> > > +	.pmu_enable	= power_pmu_pmu_enable,
+> > > +	.pmu_disable	= power_pmu_pmu_disable,
+> > > +	.event_init	= pmwer_pmu_event_init,
+> > 
+> > Doh!  Think you posted the old version of the patch again...
+> 
+> *sigh*
 
-> Eric W. Biederman wrote:
->>> With today's next(20100709) qeth interface fails to initialize
->>> with following Badness message:
->>>     sysfs: symlink across ns_types 0.0.6000/net:eth0 -> net/eth0
->>>     
->>
->> Is this with CONFIG_SYSFS_DEPRECATED set?
->>
->> I think I may have made my warning check a little extra strict.
->>   
-> Yes.
->
-> CONFIG_SYSFS_DEPRECATED=y
-> CONFIG_SYSFS_DEPRECATED_V2=y
-
-Ugh. It looks like the warning is correct and I have a regression
-in 2.6.35 that was overlooked because I did not closely test
-CONIFG_SYSFS_DEPRECATED.  I will see if I can cook up a proper
-patch shortly.
-
-Eric
+The hunks ended up in the last patch.. I've pushed out a new git tree.
