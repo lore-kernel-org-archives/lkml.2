@@ -1,128 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab0GIBQh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 21:16:37 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:37134 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab0GIBQg convert rfc822-to-8bit (ORCPT
+	id S1754146Ab0GIBS3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 21:18:29 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:47887 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751436Ab0GIBS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 21:16:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH v2 1/2] vmscan: don't subtraction of unsined
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>, Mel Gorman <mel@csn.ul.ie>,
-       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-In-Reply-To: <20100708130048.fccfcdad.akpm@linux-foundation.org>
-References: <20100708163401.CD34.A69D9226@jp.fujitsu.com> <20100708130048.fccfcdad.akpm@linux-foundation.org>
-Message-Id: <20100709090956.CD51.A69D9226@jp.fujitsu.com>
+	Thu, 8 Jul 2010 21:18:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=FrGeX14tvlq8HgYOmoHbn72Ypg614pXQSm0TWm9YIqBMutH1hG7tiTaBmy0rWr7QCT
+         eL4TnykHr/52KAMJsYj1WLVyUh07AaxgMccLCovDIgqFrjafo8EWha0PIJPSeuSULqt1
+         yILbWEoISPvJY701Wnc4Fty91MZq2p9R/dQBY=
+Message-ID: <4C367930.9000107@lwfinger.net>
+Date: Thu, 08 Jul 2010 20:19:44 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  9 Jul 2010 10:16:33 +0900 (JST)
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: [Bug #16122] 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
+References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <TXb9XdQzJoD.A.TQE.dOmNMB@chimera>
+In-Reply-To: <TXb9XdQzJoD.A.TQE.dOmNMB@chimera>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/08/2010 06:33 PM, Rafael J. Wysocki wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16122
+> Subject		: 2.6.35-rc1: WARNING at fs/fs-writeback.c:1142 __mark_inode_dirty+0x103/0x170
+> Submitter	: Larry Finger<Larry.Finger@lwfinger.net>
+> Date		: 2010-06-04 13:18 (35 days old)
+> Handled-By	: Jens Axboe<axboe@kernel.dk>
 
-> > @@ -2628,16 +2628,16 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
-> >  		 * take a long time.
-> >  		 */
-> >  		while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
-> > -			zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
-> > -				slab_reclaimable - nr_pages)
-> > +		       (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages > n))
-> >  			;
-> >  
-> >  		/*
-> >  		 * Update nr_reclaimed by the number of slab pages we
-> >  		 * reclaimed from this zone.
-> >  		 */
-> > -		sc.nr_reclaimed += slab_reclaimable -
-> > -			zone_page_state(zone, NR_SLAB_RECLAIMABLE);
-> > +		m = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
-> > +		if (m < n)
-> > +			sc.nr_reclaimed += n - m;
-> 
-> And it's not a completly trivial objection.  Your patch made the above
-> code snippet quite a lot harder to read (and hence harder to maintain).
+This bug is still present in 2.6.35-rc4.
 
-Initially, I proposed following patch to Christoph. but he prefer n and m.
-To be honest, I don't think this naming is big matter. so you prefer following
-I'll submit it.
-
-
-
-
-=====================================================================
->From 397199d69860061eaa5e1aaadac45c46c76b0522 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Wed, 30 Jun 2010 13:35:16 +0900
-Subject: [PATCH] vmscan: don't subtraction of unsined
-
-'slab_reclaimable' and 'nr_pages' are unsigned. so, subtraction is
-unsafe.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/vmscan.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 9c7e57c..79ff877 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2588,7 +2588,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		.swappiness = vm_swappiness,
- 		.order = order,
- 	};
--	unsigned long slab_reclaimable;
-+	unsigned long nr_slab_pages0, nr_slab_pages1;
- 
- 	disable_swap_token();
- 	cond_resched();
-@@ -2615,8 +2615,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		} while (priority >= 0 && sc.nr_reclaimed < nr_pages);
- 	}
- 
--	slab_reclaimable = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
--	if (slab_reclaimable > zone->min_slab_pages) {
-+	nr_slab_pages0 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
-+	if (nr_slab_pages0 > zone->min_slab_pages) {
- 		/*
- 		 * shrink_slab() does not currently allow us to determine how
- 		 * many pages were freed in this zone. So we take the current
-@@ -2628,16 +2628,17 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		 * take a long time.
- 		 */
- 		while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
--			zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
--				slab_reclaimable - nr_pages)
-+		       (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages >
-+				nr_slab_pages0))
- 			;
- 
- 		/*
- 		 * Update nr_reclaimed by the number of slab pages we
- 		 * reclaimed from this zone.
- 		 */
--		sc.nr_reclaimed += slab_reclaimable -
--			zone_page_state(zone, NR_SLAB_RECLAIMABLE);
-+		nr_slab_pages1 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
-+		if (nr_slab_pages1 < nr_slab_pages0)
-+			sc.nr_reclaimed += nr_slab_pages0 - nr_slab_pages1;
- 	}
- 
- 	p->reclaim_state = NULL;
--- 
-1.6.5.2
-
-
-
-
-
-
-
+Larry
