@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab0GIPid (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 11:38:33 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:58227 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756156Ab0GIPic (ORCPT
+	id S1757459Ab0GIPjj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 11:39:39 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:63242 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756809Ab0GIPji (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 11:38:32 -0400
+	Fri, 9 Jul 2010 11:39:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:from:date:message-id:subject:to
          :cc:content-type;
-        b=RfsCfLjXjxtBhIP0cpoU393Fgoo4i/3hjvQKPdRtmJFgW/U7+Ykt1764fQHqqDhJwh
-         9hZRf9sbuaTyAway8Fk5Y57uzYFU2/whzyinZXwrVwnTSVTrUH6n+o+P9S2kYCL7uv/Z
-         gQMaseBKI+dpAdd1W1WrZJmywte2v9TOxoVA0=
+        b=v4upvkoaNhYSxqB0lfcGM5aAA+7u9+Xdv8l8EVcuQ2aeaxvFsCPRukVbef7qoUwp4a
+         3l2UrxGVbfcvM2k/sJavqyh2btgOYy5KeMTrwsvdV7M3N1N4TvbmVzn1u/lxeDw4Oflm
+         JcPbYyNc8cn3YZ+ISaXBqtCr+6QYaYuQFagyw=
 MIME-Version: 1.0
-In-Reply-To: <ed2d69ca06335b2bad6f03a94f78b06be5e4061a.1278682303.git.siccegge@cs.fau.de>
-References: <cover.1278682302.git.siccegge@cs.fau.de> <ed2d69ca06335b2bad6f03a94f78b06be5e4061a.1278682303.git.siccegge@cs.fau.de>
+In-Reply-To: <86b706944a84c030fbd88d005e8d6365cb7921da.1278682303.git.siccegge@cs.fau.de>
+References: <cover.1278682302.git.siccegge@cs.fau.de> <86b706944a84c030fbd88d005e8d6365cb7921da.1278682303.git.siccegge@cs.fau.de>
 From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 9 Jul 2010 11:38:11 -0400
-Message-ID: <AANLkTimAZlbWsX8y462PAeqngDl6pt0ui7F44aIjXGas@mail.gmail.com>
-Subject: Re: [PATCH 10/11] Removing dead SERIAL_BFIN_SPORT_CTSRTS
+Date: Fri, 9 Jul 2010 11:39:09 -0400
+Message-ID: <AANLkTimBPFupVlodhd1YikHRDbhsn9jl_ZHY_wgZZG92@mail.gmail.com>
+Subject: Re: [PATCH 11/11] Removing dead SERIAL_BFIN_SPORT_CONSOLE
 To: Christoph Egger <siccegge@cs.fau.de>
 Cc: Greg Kroah-Hartman <gregkh@suse.de>, Mike Frysinger <vapier@gentoo.org>,
        Sonic Zhang <sonic.zhang@analog.com>,
@@ -33,8 +33,11 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Fri, Jul 9, 2010 at 09:50, Christoph Egger wrote:
-> SERIAL_BFIN_SPORT_CTSRTS doesn't exist in Kconfig, therefore removing
+> SERIAL_BFIN_SPORT_CONSOLE doesn't exist in Kconfig, therefore removing
 > all references for it from the source code.
 
-NAK: it is defied & used locally
+NAK
+
+your source is outdated then:
+./Kconfig:config SERIAL_BFIN_SPORT_CONSOLE
 -mike
