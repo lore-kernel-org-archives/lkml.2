@@ -1,118 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756098Ab0GINFJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:05:09 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:49797 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755834Ab0GINFH (ORCPT
+	id S1756231Ab0GINGG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:06:06 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:44295 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755851Ab0GINGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:05:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=qQQA1ucCLFmV08/RNfq3xg4E4NJqC2RzBrCHLlI/hj3pQNeLuW4R+iVp4G4LMjRJwd
-         NyR+WrD3JcwDLQBuy62XV2xgb/dfMhtioYn7IYnGF+79LbOW3XrPHD+gUQLMMsWgrJiT
-         wy/jGtSZ72U1qBiRCTpjXZO/c/BUXxV5AAQwU=
-Date: Fri, 9 Jul 2010 15:04:57 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Zeev Tarantov <zeev.tarantov@gmail.com>
-Cc: rostedt@goodmis.org, linux-kernel@vger.kernel.org,
+	Fri, 9 Jul 2010 09:06:04 -0400
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Pavel Emelyanov <xemul@openvz.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: 2.6.35 regression
-Message-ID: <20100709130454.GC5291@nowhere>
-References: <loom.20100705T144459-919@post.gmane.org> <20100708132237.GA22830@goodmis.org> <AANLkTilsXUjNNDcC4ZA9m8hBDqzcoh5NGbNd4XX5xx5s@mail.gmail.com> <1278645989.1537.133.camel@gandalf.stny.rr.com> <AANLkTinkKVmB0fpVeqUkMeqe3ZYeXJdI8xDuzJEOjYwh@mail.gmail.com>
+       Linux Containers <containers@lists.osdl.org>,
+       linux-kernel@vger.kernel.org,
+       Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
+References: <1277399329-18087-1-git-send-email-louis.rilling@kerlabs.com>
+	<20100624191843.GA14205@redhat.com>
+	<20100625102303.GG3773@hawkmoon.kerlabs.com>
+	<20100625183733.GA2627@us.ibm.com> <20100625192945.GA25532@redhat.com>
+	<20100625212618.GA11917@us.ibm.com>
+	<20100625212758.GA30474@redhat.com>
+	<20100625220713.GA31123@us.ibm.com>
+	<m1r5jd5l0v.fsf_-_@fess.ebiederm.org>
+	<m1mxu15kv4.fsf_-_@fess.ebiederm.org>
+	<20100709121425.GB18586@hawkmoon.kerlabs.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Fri, 09 Jul 2010 06:05:54 -0700
+In-Reply-To: <20100709121425.GB18586@hawkmoon.kerlabs.com> (Louis Rilling's message of "Fri\, 9 Jul 2010 14\:14\:25 +0200")
+Message-ID: <m1lj9k4xfx.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinkKVmB0fpVeqUkMeqe3ZYeXJdI8xDuzJEOjYwh@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-Report: * -1.0 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  1.5 XMNoVowels Alpha-numberic number with no vowels
+	*  1.5 TR_Symld_Words too many words that have symbols inside
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayes spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa06 0; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.1 XMSolicitRefs_0 Weightloss drug
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+X-Spam-DCC: ; sa06 0; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Oleg Nesterov <oleg@redhat.com>
+X-Spam-Relay-Country: _RELAYCOUNTRY_
+Subject: Re: [RFC][PATCH 2/2] pidns: Remove proc flush races when a pid namespaces are exiting.
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 09, 2010 at 11:45:09AM +0300, Zeev Tarantov wrote:
-> On Fri, Jul 9, 2010 at 06:26, Steven Rostedt <rostedt@goodmis.org> wrote:
-> > On Thu, 2010-07-08 at 21:53 +0300, Zeev Tarantov wrote:
-> >
-> >> With gcc 4.5.1 rev. 161655 objdump shows:
-> >> Disassembly of section .data:
-> >>
-> >> ffffffff8173c438 <__start_syscalls_metadata>:
-> >>         ...
-> >>
-> >> ffffffff8173c440 <__syscall_meta__mmap>:
-> >> ffffffff8173c440:       2b ab 5f 81 ff ff       sub    -0x7ea1(%rbx),%ebp
-> >
-> > Yeah, this is definitely the issue. It starts off at ffffffff8173c438,
-> > when the first item is really at ffffffff8173c440.
-> >
-> > Can you try this patch out:
-> >
-> > -- Steve
-> >
-> > diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-> > index 7f614ce..13ebb54 100644
-> > --- a/include/linux/syscalls.h
-> > +++ b/include/linux/syscalls.h
-> > @@ -124,7 +124,8 @@ extern struct trace_event_functions enter_syscall_print_funcs;
-> >  extern struct trace_event_functions exit_syscall_print_funcs;
-> >
-> >  #define SYSCALL_TRACE_ENTER_EVENT(sname)                               \
-> > -       static struct syscall_metadata __syscall_meta_##sname;          \
-> > +       static struct syscall_metadata                                  \
-> > +       __attribute__((__aligned__(4))) __syscall_meta_##sname;         \
-> >        static struct ftrace_event_call                                 \
-> >        __attribute__((__aligned__(4))) event_enter_##sname;            \
-> >        static struct ftrace_event_call __used                          \
-> > @@ -138,7 +139,8 @@ extern struct trace_event_functions exit_syscall_print_funcs;
-> >        }
-> >
-> >  #define SYSCALL_TRACE_EXIT_EVENT(sname)                                        \
-> > -       static struct syscall_metadata __syscall_meta_##sname;          \
-> > +       static struct syscall_metadata                                  \
-> > +       __attribute__((__aligned__(4))) __syscall_meta_##sname;         \
-> >        static struct ftrace_event_call                                 \
-> >        __attribute__((__aligned__(4))) event_exit_##sname;             \
-> >        static struct ftrace_event_call __used                          \
-> >
-> >
-> >
-> >
-> 
-> Boots fine with this applied.
+Louis Rilling <Louis.Rilling@kerlabs.com> writes:
 
+> On 08/07/10 21:39 -0700, Eric W. Biederman wrote:
+>> 
+>> Currently it is possible to put proc_mnt before we have flushed the
+>> last process that will use the proc_mnt to flush it's proc entries.
+>> 
+>> This race is fixed by not flushing proc entries for dead pid
+>> namespaces, and calling pid_ns_release_proc unconditionally from
+>> zap_pid_ns_processes after the pid namespace has been declared dead.
+>
+> One comment below.
+>
+>> 
+>> To ensure we don't unnecessarily leak any dcache entries with skipped
+>> flushes pid_ns_release_proc flushes the entire proc_mnt when it is
+>> called.
+>> 
+>> Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+>> ---
+>>  fs/proc/base.c         |    9 +++++----
+>>  fs/proc/root.c         |    3 +++
+>>  kernel/pid_namespace.c |    1 +
+>>  3 files changed, 9 insertions(+), 4 deletions(-)
+>> 
+>> diff --git a/fs/proc/base.c b/fs/proc/base.c
+>> index acb7ef8..e9d84e1 100644
+>> --- a/fs/proc/base.c
+>> +++ b/fs/proc/base.c
+>> @@ -2742,13 +2742,14 @@ void proc_flush_task(struct task_struct *task)
+>>  
+>>  	for (i = 0; i <= pid->level; i++) {
+>>  		upid = &pid->numbers[i];
+>> +
+>> +		/* Don't bother flushing dead pid namespaces */
+>> +		if (test_bit(PIDNS_DEAD, &upid->ns->flags))
+>> +			continue;
+>> +
+>
+> IMHO, nothing prevents zap_pid_ns_processes() from setting PIDNS_DEAD and
+> calling pid_ns_release_proc() right now. zap_pid_ns_processes() does not wait
+> for EXIT_DEAD (self-reaping) children to be released.
 
-Great!
+Good point we need something probably a lock to prevent proc_mnt from
+going away here.  We might do a little better if we were starting with
+a specific dentry, those at least have some rcu properties but that isn't
+a big help.
 
+Hmm.  Perhaps there is a way to completely restructure this flushing
+of dentries.  It is just an optimization after all so we don't get too many
+stale dentries building up.
 
+It might just be worth it simply kill proc_flush_mnt altogether.  I know
+it is measurable when we don't do the flushing but perhaps there can
+be a work struct that periodically wakes up and smacks stale proc dentries.
 
-> Linux version 2.6.35-rc4 (wolf@wolfpc) (gcc version 4.5.1-pre9999
-> 20100701 (prerelease) rev. 161655 (Gentoo SVN) ) #5 SMP Fri Jul 9
-> 11:13:08 IDT 2010
-> 
-> I hope Linus accepts this patch as it seems to me the compiler is
-> doing something it is allowed to do.
+Right now I really don't think proc_flush_task is worth the hassle it
+causes.
 
+Grumble, Grumble more thinking to do.
 
-In fact the alignment is on the definition already, the problem that
-appears here is that this version of gcc also requires the alignment
-to be on the declaration.
-
-Silly or not, that easily fixes the issue.
-
-
-> 
-> Thank you for the prompt response!
-
-
-
-Thanks for your report and testing!
-
-
-> -Zeev
-
+Eric
