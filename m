@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755852Ab0GIXhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 19:37:32 -0400
+	id S1755931Ab0GIXhl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 19:37:41 -0400
 Received: from smtp.polymtl.ca ([132.207.4.11]:59632 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755808Ab0GIXh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 19:37:28 -0400
-Message-Id: <20100709225818.892971740@efficios.com>
+	id S1755885Ab0GIXhf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 19:37:35 -0400
+Message-Id: <20100709225819.936183127@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 09 Jul 2010 18:57:43 -0400
+Date: Fri, 09 Jul 2010 18:57:47 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -24,159 +24,608 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Tom Zanussi <tzanussi@gmail.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Andi Kleen <andi@firstfloor.org>
-Subject: [patch 16/20] Ring buffer library - client sample
+Subject: [patch 20/20] Ring buffer: benchmark simple API
 References: <20100709225727.312232266@efficios.com>
-Content-Disposition: inline; filename=ring-buffer-client-sample.patch
-X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Fri,  9 Jul 2010 22:58:19 +0000
+Content-Disposition: inline; filename=ring-buffer-benchmark-simple-api.patch
+X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Fri,  9 Jul 2010 22:58:20 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Example ring buffer library client.
-
 Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 ---
- samples/Kconfig                                      |    9 
- samples/Makefile                                     |    2 
- samples/ring_buffer_user/Makefile                    |    4 
- samples/ring_buffer_user/ring_buffer_template_user.c |  273 +++++++++++++++++++
- samples/ring_buffer_user/ring_buffer_template_user.h |  100 ++++++
- 5 files changed, 387 insertions(+), 1 deletion(-)
+ kernel/trace/Makefile                                           |    8 
+ kernel/trace/lib_global_discard_ring_buffer_benchmark.c         |   14 
+ kernel/trace/lib_global_overwrite_ring_buffer_benchmark.c       |   14 
+ kernel/trace/lib_percpu_discard_ring_buffer_benchmark.c         |   14 
+ kernel/trace/lib_percpu_local_discard_ring_buffer_benchmark.c   |   14 
+ kernel/trace/lib_percpu_local_overwrite_ring_buffer_benchmark.c |   14 
+ kernel/trace/lib_percpu_overwrite_ring_buffer_benchmark.c       |   14 
+ kernel/trace/ring_buffer_benchmark_template.h                   |  725 ++++++++++
+ 8 files changed, 816 insertions(+), 1 deletion(-)
 
-Index: linux.trees.git/samples/Makefile
+Index: linux.trees.git/kernel/trace/Makefile
 ===================================================================
---- linux.trees.git.orig/samples/Makefile	2010-07-09 18:30:15.000000000 -0400
-+++ linux.trees.git/samples/Makefile	2010-07-09 18:31:11.000000000 -0400
-@@ -1,4 +1,4 @@
- # Makefile for Linux samples code
+--- linux.trees.git.orig/kernel/trace/Makefile	2010-07-09 18:32:08.000000000 -0400
++++ linux.trees.git/kernel/trace/Makefile	2010-07-09 18:35:53.000000000 -0400
+@@ -24,7 +24,13 @@ obj-y += trace_clock.o
+ obj-$(CONFIG_FUNCTION_TRACER) += libftrace.o
+ obj-$(CONFIG_FTRACE_RING_BUFFER) += ftrace_ring_buffer.o
+ obj-$(CONFIG_RING_BUFFER_BENCHMARK) += ftrace_ring_buffer_benchmark.o
+-obj-$(CONFIG_RING_BUFFER_BENCHMARK) += lib_ring_buffer_benchmark.o
++obj-$(CONFIG_RING_BUFFER_BENCHMARK) += lib_ring_buffer_benchmark.o \
++	lib_global_overwrite_ring_buffer_benchmark.o \
++	lib_global_discard_ring_buffer_benchmark.o \
++	lib_percpu_overwrite_ring_buffer_benchmark.o \
++	lib_percpu_discard_ring_buffer_benchmark.o \
++	lib_percpu_local_overwrite_ring_buffer_benchmark.o \
++	lib_percpu_local_discard_ring_buffer_benchmark.o
  
- obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ tracepoints/ trace_events/ \
--			   hw_breakpoint/
-+			   hw_breakpoint/ ring_buffer_user/
-Index: linux.trees.git/samples/ring_buffer_user/ring_buffer_template_user.c
+ obj-$(CONFIG_TRACING) += trace.o
+ obj-$(CONFIG_TRACING) += trace_output.o
+Index: linux.trees.git/kernel/trace/ring_buffer_benchmark_template.h
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux.trees.git/samples/ring_buffer_user/ring_buffer_template_user.c	2010-07-09 18:31:52.000000000 -0400
-@@ -0,0 +1,273 @@
++++ linux.trees.git/kernel/trace/ring_buffer_benchmark_template.h	2010-07-09 18:36:24.000000000 -0400
+@@ -0,0 +1,725 @@
 +/*
-+ * ring_buffer_template_user.c
++ * ring buffer tester and benchmark template
 + *
-+ * Copyright (C) 2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ * This template file is meant to be included in respective tester variant
++ * modules with appropriate definitions.
 + *
-+ * Ring buffer template instance code example.
-+ *
-+ * Dual LGPL v2.1/GPL v2 license.
++ * Copyright (C) 2009 Steven Rostedt <srostedt@redhat.com>
++ * Copyright (C) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 + */
 +
++#include <linux/trace_clock.h>
++#include <linux/completion.h>
++#include <linux/kmemcheck.h>
++#include <linux/kthread.h>
 +#include <linux/module.h>
++#include <linux/time.h>
 +#include <linux/debugfs.h>
++#include <linux/stringify.h>
++#include <asm/local.h>
 +
-+#include "ring_buffer_template_user.h"
++#include <linux/ringbuffer/config.h>		/* only for counter access */
++#include <linux/ringbuffer/backend.h>		/* only for counter access */
++#include <linux/ringbuffer/frontend.h>		/* only for counter access */
 +
-+struct ring_buffer_priv {
-+	struct dentry *dentry;
++#define BUFFER_SIZE	1048576			/* Use 1MB buffers */
++
++#ifdef RING_BUFFER_GLOBAL_TMPL
++# ifdef RING_BUFFER_OVERWRITE_TMPL
++#  include <linux/ringbuffer/global_overwrite.h>
++#  define RING_BUFFER_TMPL(x)	ring_buffer_global_overwrite_##x
++# else
++#  include <linux/ringbuffer/global_discard.h>
++#  define RING_BUFFER_TMPL(x)	ring_buffer_global_discard_##x
++# endif
++#elif defined(RING_BUFFER_PER_CPU_TMPL)
++# ifdef RING_BUFFER_OVERWRITE_TMPL
++#  include <linux/ringbuffer/percpu_overwrite.h>
++#  define RING_BUFFER_TMPL(x)	ring_buffer_percpu_overwrite_##x
++# else
++#  include <linux/ringbuffer/percpu_discard.h>
++#  define RING_BUFFER_TMPL(x)	ring_buffer_percpu_discard_##x
++# endif
++#elif defined(RING_BUFFER_PER_CPU_LOCAL_TMPL)
++# ifdef RING_BUFFER_OVERWRITE_TMPL
++#  include <linux/ringbuffer/percpu_local_overwrite.h>
++#  define RING_BUFFER_TMPL(x)	ring_buffer_percpu_local_overwrite_##x
++# else
++#  include <linux/ringbuffer/percpu_local_discard.h>
++#  define RING_BUFFER_TMPL(x)	ring_buffer_percpu_local_discard_##x
++# endif
++#else
++#error "Please define one type of ring buffer template"
++#endif
++
++#if (!defined(RING_BUFFER_OVERWRITE_TMPL) \
++	&& !defined(RING_BUFFER_DISCARD_TMPL))
++#error "Please define one mode of ring buffer template"
++#endif
++
++#ifndef RING_BUFFER_NAME_TMPL
++#error "Please define the ring buffer template name"
++#endif
++
++static struct channel *channel;
++
++#ifdef RING_BUFFER_PER_CPU_LOCAL_TMPL
++static struct dentry *dentry[NR_CPUS];
++#else
++static struct dentry *dentry;
++#endif
++
++/* run time and sleep time in seconds */
++#define RUN_TIME	10
++#define SLEEP_TIME	10
++
++#ifndef CONFIG_PREEMPT
++/* number of events for writer to give up the cpu */
++static int resched_interval = 5000;
++#endif
++
++static struct completion read_start;
++
++static struct task_struct *consumer;
++static unsigned long iter_read;
++static unsigned long long global_read;
++
++static int *writer_finish;
++static struct task_struct *producer;	/* Dispatch thread */
++static struct task_struct **producers;
++static struct completion *write_start;
++static struct completion *write_done;
++static atomic_long_t tot_hit;
++static atomic_long_t tot_missed;
++
++static int disable_reader;
++module_param(disable_reader, uint, 0644);
++MODULE_PARM_DESC(disable_reader, "only run producer");
++
++static int file_reader;
++module_param(file_reader, uint, 0644);
++MODULE_PARM_DESC(file_reader, "open debugfs file for read()");
++
++static unsigned int nr_producers = 1;
++module_param(nr_producers, uint, 0644);
++MODULE_PARM_DESC(nr_producers, "number of producer threads");
++
++static int writer_delay;
++module_param(writer_delay, uint, 0644);
++MODULE_PARM_DESC(writer_delay, "delay between writes, in ms");
++
++static int producer_nice = 19;
++static int consumer_nice = 19;
++
++static int producer_fifo = -1;
++static int consumer_fifo = -1;
++
++module_param(producer_nice, uint, 0644);
++MODULE_PARM_DESC(producer_nice, "nice prio for producer");
++
++module_param(consumer_nice, uint, 0644);
++MODULE_PARM_DESC(consumer_nice, "nice prio for consumer");
++
++module_param(producer_fifo, uint, 0644);
++MODULE_PARM_DESC(producer_fifo, "fifo prio for producer");
++
++module_param(consumer_fifo, uint, 0644);
++MODULE_PARM_DESC(consumer_fifo, "fifo prio for consumer");
++
++static int kill_test;
++
++#define KILL_TEST()				\
++	do {					\
++		if (!kill_test) {		\
++			kill_test = 1;		\
++			WARN_ON(1);		\
++		}				\
++	} while (0)
++
++enum event_status {
++	EVENT_FOUND,
++	EVENT_DROPPED,
 +};
 +
-+struct channel_priv {
-+	struct ring_buffer_priv *buf;
-+};
++static char payload[] = "Ring buffer test data.\n";
 +
-+static struct channel *chan;
-+static struct channel_priv channel_priv;
-+static const struct ring_buffer_config client_config;
-+
-+/* Client callbacks */
-+
-+static u64 client_ring_buffer_clock_read(struct channel *chan)
++static void wait_to_die(void)
 +{
-+	return ring_buffer_clock_read(chan);
++	set_current_state(TASK_INTERRUPTIBLE);
++	while (!kthread_should_stop()) {
++		schedule();
++		set_current_state(TASK_INTERRUPTIBLE);
++	}
++	__set_current_state(TASK_RUNNING);
 +}
 +
-+size_t client_record_header_size(const struct ring_buffer_config *config,
-+				 struct channel *chan, size_t offset,
-+				 size_t data_size,
-+				 size_t *pre_header_padding,
-+				 unsigned int rflags,
-+				 struct ring_buffer_ctx *ctx)
++#ifdef RING_BUFFER_PER_CPU_LOCAL_TMPL
++
++static int read_event(struct ring_buffer *buf)
 +{
-+	return record_header_size(config, chan, offset, data_size,
-+				  pre_header_padding, rflags, ctx);
++	ssize_t len;
++	char *read_payload;
++
++	len = ring_buffer_get_next_record(channel, buf);
++	if (len < 0)
++		return len;
++	WARN_ON_ONCE(len != sizeof(payload) - 1);
++	read_payload = kmalloc(len + 1, GFP_KERNEL);
++	if (!read_payload)
++		return -ENOMEM;
++
++	read_current_record(buf, read_payload);
++	read_payload[len] = '\0';
++
++	WARN_ON_ONCE(strcmp(read_payload, payload));
++	iter_read++;
++	global_read++;
++	kfree(read_payload);
++
++	return 0;
 +}
 +
-+/**
-+ * ring_buffer_sb_header_size - called on buffer-switch to a new sub-buffer
-+ *
-+ * Return header size without padding after the structure. Don't use packed
-+ * structure because gcc generates inefficient code on some architectures
-+ * (powerpc, mips..)
-+ */
-+static size_t client_subbuffer_header_size(void)
++static int read_channel_events(void)
 +{
-+	return offsetof(struct subbuffer_header, header_end);
-+}
++	int cpu;
++	int all_finalized = 1;
++	int all_empty = 1;
 +
-+/**
-+ * ring_buffer_write_trace_header - Write trace header
-+ * @trace: Trace information
-+ * @header: Memory address where the information must be written to
-+ */
-+static inline
-+void write_trace_header(void *priv, struct subbuffer_header *header)
-+{
-+	header->magic_number = 0x12345678;
-+	header->alignment = ring_buffer_get_alignment(&client_config);
-+	/* ... */
-+}
++	for_each_channel_cpu(cpu, channel) {
++		struct ring_buffer *buf;
++		int found = 1;
 +
-+static void client_buffer_begin(struct ring_buffer *buf, u64 tsc,
-+			      unsigned int subbuf_idx)
-+{
-+	struct channel *chan = buf->backend.chan;
-+	struct subbuffer_header *header =
-+		(struct subbuffer_header *)
-+			ring_buffer_offset_address(&buf->backend,
-+				subbuf_idx * chan->backend.subbuf_size);
++		buf = channel_get_ring_buffer(channel->backend.config, channel,
++					      cpu);
++		do {
++			int ret;
 +
-+	header->cycle_count_begin = tsc;
-+	header->data_size = 0xFFFFFFFF; /* for debugging */
-+	write_trace_header(chan->backend.priv, header);
-+}
++			ret = read_event(buf);
++			if (ret != -ENODATA)
++				all_finalized = 0;
++			if (ret == 0)
++				all_empty = 0;
++			else
++				found = 0;
++		} while (found && !kill_test);
++	}
 +
-+/*
-+ * offset is assumed to never be 0 here : never deliver a completely empty
-+ * subbuffer. data_size is between 1 and subbuf_size.
-+ */
-+static void client_buffer_end(struct ring_buffer *buf, u64 tsc,
-+			    unsigned int subbuf_idx, unsigned long data_size)
-+{
-+	struct channel *chan = buf->backend.chan;
-+	struct subbuffer_header *header =
-+		(struct subbuffer_header *)
-+			ring_buffer_offset_address(&buf->backend,
-+				subbuf_idx * chan->backend.subbuf_size);
-+	unsigned long records_lost = 0;
-+
-+	header->data_size = data_size;
-+	header->subbuf_size = PAGE_ALIGN(data_size);
-+	header->cycle_count_end = tsc;
-+	records_lost += ring_buffer_get_records_lost_full(&client_config, buf);
-+	records_lost += ring_buffer_get_records_lost_wrap(&client_config, buf);
-+	records_lost += ring_buffer_get_records_lost_big(&client_config, buf);
-+	header->records_lost = records_lost;
-+}
-+
-+static int client_buffer_create(struct ring_buffer *buf, void *priv,
-+				int cpu, const char *name)
-+{
-+	struct channel_priv *chan_priv = priv;
-+	struct ring_buffer_priv *buf_priv;
-+	char *tmpname;
-+	int ret = 0;
-+
-+	if (client_config.alloc == RING_BUFFER_ALLOC_PER_CPU)
-+		buf_priv = per_cpu_ptr(chan_priv->buf, cpu);
++	if (all_finalized)
++		return -ENODATA;
++	if (all_empty)
++		return -EAGAIN;
 +	else
-+		buf_priv = chan_priv->buf;
++		return 0;
++}
++
++static void ring_buffer_consumer(void)
++{
++	int ret;
++
++	do {
++		ret = read_channel_events();
++		if (ret == -EAGAIN)
++			wait_event_interruptible(channel->read_wait,
++				(ret = read_channel_events(),
++				 ret != -EAGAIN));
++	} while (!kill_test && ret != -ENODATA);
++}
++
++#else /* !RING_BUFFER_PER_CPU_LOCAL_TMPL */
++
++static int read_event(struct channel *chan)
++{
++	struct ring_buffer *buf;
++	ssize_t len;
++	char *read_payload;
++
++	len = channel_get_next_record(chan, &buf);
++	if (len < 0)
++		return len;
++	WARN_ON_ONCE(len != sizeof(payload) - 1);
++	read_payload = kmalloc(len + 1, GFP_KERNEL);
++	if (!read_payload)
++		return -ENOMEM;
++
++	read_current_record(buf, read_payload);
++	read_payload[len] = '\0';
++
++	WARN_ON_ONCE(strcmp(read_payload, payload));
++	iter_read++;
++	global_read++;
++	kfree(read_payload);
++
++	return 0;
++}
++
++static void ring_buffer_consumer(void)
++{
++	int ret;
++
++	do {
++		ret = read_event(channel);
++		if (ret == -EAGAIN)
++			wait_event_interruptible(channel->read_wait,
++				(ret = read_event(channel),
++				 ret != -EAGAIN));
++	} while (!kill_test && ret != -ENODATA);
++}
++
++#endif /* !RING_BUFFER_PER_CPU_LOCAL_TMPL */
++
++static int ring_buffer_consumer_thread(void *arg)
++{
++	WARN_ON_ONCE(channel_iterator_open(channel));
++
++	wait_for_completion_interruptible(&read_start);
++
++	ring_buffer_consumer();
++
++	channel_iterator_release(channel);
++
++	wait_to_die();
++
++	return 0;
++}
++
++static void ring_buffer_producer(unsigned int writer_id)
++{
++	unsigned long long hit = 0;
++	unsigned long long missed = 0;
++	int cnt = 0;
++	int ret;
++
++	/*
++	 * Hammer the buffer for 10 secs (this may make the system stall)
++	 */
++	while (!writer_finish[writer_id] && !kill_test) {
++		ret = RING_BUFFER_TMPL(write)(channel, payload,
++					      sizeof(payload) - 1);
++		if (ret)
++			missed++;
++		else
++			hit++;
++		cnt++;
++
++		if (writer_delay)
++			msleep(writer_delay);
++
++#ifndef CONFIG_PREEMPT
++		/*
++		 * If we are a non preempt kernel, the 10 second run will
++		 * stop everything while it runs. Instead, we will call
++		 * cond_resched and also add any time that was lost by a
++		 * reschedule.
++		 */
++		if (!(cnt % resched_interval))
++			cond_resched();
++#endif
++
++	}
++	writer_finish[writer_id] = 0;
++	atomic_long_add(hit, &tot_hit);
++	atomic_long_add(missed, &tot_missed);
++	complete(&write_done[writer_id]);
++}
++
++static void ring_buffer_report(unsigned long long time)
++{
++	unsigned long long hit, missed;
++	unsigned long long written = 0;
++	unsigned long long lost_full = 0, lost_wrap = 0, lost_big = 0;
++	unsigned long long entries = 0;
++	unsigned long long overruns = 0;
++	unsigned long long read = 0;
++	unsigned long avg;
++	struct ring_buffer *buf;
++	const struct ring_buffer_config *config;
++#ifndef RING_BUFFER_GLOBAL_TMPL
++	int cpu;
++#endif
++
++	config = channel->backend.config;
++	buf = channel_get_ring_buffer(config, channel, 0);
++
++	hit = atomic_long_read(&tot_hit);
++	missed = atomic_long_read(&tot_missed);
++
++	/*
++	 * These values only take into account flushed subbuffers.
++	 */
++#ifdef RING_BUFFER_GLOBAL_TMPL
++	written += ring_buffer_get_records_count(config, buf);
++	lost_full += ring_buffer_get_records_lost_full(config, buf);
++	lost_wrap += ring_buffer_get_records_lost_wrap(config, buf);
++	lost_big += ring_buffer_get_records_lost_big(config, buf);
++	overruns += ring_buffer_get_records_overrun(config, buf);
++	entries += ring_buffer_get_records_unread(config, buf);
++	read += ring_buffer_get_records_read(config, buf);
++#else
++	for_each_channel_cpu(cpu, channel) {
++		struct ring_buffer *buf =
++			channel_get_ring_buffer(config, channel, cpu);
++
++		written += ring_buffer_get_records_count(config, buf);
++		lost_full += ring_buffer_get_records_lost_full(config, buf);
++		lost_wrap += ring_buffer_get_records_lost_wrap(config, buf);
++		lost_big += ring_buffer_get_records_lost_big(config, buf);
++		overruns += ring_buffer_get_records_overrun(config, buf);
++		entries += ring_buffer_get_records_unread(config, buf);
++		read += ring_buffer_get_records_read(config, buf);
++	}
++#endif
++
++	trace_printk("Report for %s\n", RING_BUFFER_NAME_TMPL);
++
++	if (kill_test)
++		trace_printk("ERROR!\n");
++
++	if (!disable_reader) {
++		if (consumer_fifo < 0)
++			trace_printk("Running Consumer at nice: %d\n",
++				     consumer_nice);
++		else
++			trace_printk("Running Consumer at SCHED_FIFO %d\n",
++				     consumer_fifo);
++	}
++	if (producer_fifo < 0)
++		trace_printk("Running Producer at nice: %d\n",
++			     producer_nice);
++	else
++		trace_printk("Running Producer at SCHED_FIFO %d\n",
++			     producer_fifo);
++
++	/* Let the user know that the test is running at low priority */
++	if (producer_fifo < 0 && consumer_fifo < 0 &&
++	    producer_nice == 19 && consumer_nice == 19)
++		trace_printk("WARNING!!! This test is running at lowest "
++			     "priority.\n");
++
++	trace_printk("This iteration:           %llu (usecs)\n", time);
++	trace_printk("  Time:                   %llu (usecs)\n", time);
++	trace_printk("  Data production:\n");
++	trace_printk("    Written:              %llu\n", hit);
++	trace_printk("    Lost:                 %llu\n", missed);
++	trace_printk("  Data consumption:\n");
++	if (disable_reader)
++		trace_printk("    Read:                 (reader disabled)\n");
++	else
++		trace_printk("    Read:                 %lu\n",
++			     iter_read);
++	trace_printk("\n");
++	trace_printk("Global (only flushed subbuffers):\n");
++	trace_printk("  Data production:\n");
++	trace_printk("    Written:              %llu\n", written);
++	trace_printk("    Lost (buffer full)    %llu\n", lost_full);
++	trace_printk("    Lost (wrap around)    %llu\n", lost_wrap);
++	trace_printk("    Lost (event too big)  %llu\n", lost_big);
++	trace_printk("  Data consumption:\n");
++	if (disable_reader)
++		trace_printk("    Read:                 (reader disabled)\n");
++	else
++		trace_printk("    Read:                 %llu (%llu read-side)\n",
++			     read, global_read);
++	trace_printk("    Overruns:             %llu\n", overruns);
++	trace_printk("    Non-consumed entries: %llu\n", entries);
++	trace_printk("    Consumption total:    %llu\n",
++		     entries + overruns + read);
++
++	/* Convert time from usecs to CPU time millisecs */
++	time *= nr_producers;
++	do_div(time, USEC_PER_MSEC);
++	if (time)
++		hit /= (long)time;
++	else
++		trace_printk("TIME IS ZERO??\n");
++
++	trace_printk("Entries per millisec: %llu\n", hit);
++
++	if (hit) {
++		/* Calculate the average time in nanosecs */
++		avg = NSEC_PER_MSEC / hit;
++		trace_printk("%lu ns CPU time per entry written "
++			     "(%u writer threads)\n",
++			     avg, nr_producers);
++	}
++
++	if (missed) {
++		if (time)
++			missed /= (long)time;
++
++		trace_printk("Total iterations per millisec: %llu\n",
++			     hit + missed);
++
++		/* it is possible that hit + missed will overflow and be zero */
++		if (!(hit + missed)) {
++			trace_printk("hit + missed overflowed and "
++				     "totalled zero!\n");
++			hit--; /* make it non zero */
++		}
++
++		/* Caculate the average time in nanosecs */
++		avg = NSEC_PER_MSEC / (hit + missed);
++		trace_printk("%lu ns CPU time per entry (written+lost) "
++			     "(%u writer threads)\n",
++			     avg, nr_producers);
++	}
++	iter_read = 0;
++}
++
++static int ring_buffer_producer_thread(void *arg)
++{
++	unsigned int writer_id = (unsigned long) arg;
++
++	wait_for_completion_interruptible(&write_start[writer_id]);
++	while (!kthread_should_stop() && !kill_test) {
++		ring_buffer_producer(writer_id);
++		wait_for_completion_interruptible(&write_start[writer_id]);
++	}
++	__set_current_state(TASK_RUNNING);
++
++	if (kill_test)
++		wait_to_die();
++
++	return 0;
++}
++
++static int ring_buffer_main_producer_thread(void *arg)
++{
++
++	struct timeval start_tv;
++	struct timeval end_tv;
++	unsigned long long time;
++	int i;
++
++	if (consumer)
++		complete(&read_start);
++
++	while (!kthread_should_stop() && !kill_test) {
++		trace_printk("Starting ring buffer hammer\n");
++		do_gettimeofday(&start_tv);
++		/* Wake up producers */
++		for (i = 0; i < nr_producers; i++)
++			complete(&write_start[i]);
++
++		/* the completions must be visible before the finish var */
++		smp_wmb();
++
++		/* Wait for RUN_TIME  */
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule_timeout(HZ * RUN_TIME);
++		__set_current_state(TASK_RUNNING);
++
++		/* Stop producers */
++		for (i = 0; i < nr_producers; i++)
++			writer_finish[i] = 1;
++		/* finish var visible before waking up */
++		smp_wmb();
++
++		/* Wait for producers to complete */
++		for (i = 0; i < nr_producers; i++)
++			wake_up_process(producers[i]);
++		for (i = 0; i < nr_producers; i++)
++			wait_for_completion_interruptible(&write_done[i]);
++		do_gettimeofday(&end_tv);
++		trace_printk("End ring buffer hammer\n");
++
++		time = end_tv.tv_sec - start_tv.tv_sec;
++		time *= USEC_PER_SEC;
++		time += (long long)((long)end_tv.tv_usec
++				    - (long)start_tv.tv_usec);
++
++		if (kthread_should_stop() || kill_test)
++			break;
++
++		/* Print report */
++		ring_buffer_report(time);
++		atomic_long_set(&tot_hit, 0);
++		atomic_long_set(&tot_missed, 0);
++
++		trace_printk("Sleeping for 10 secs\n");
++		set_current_state(TASK_INTERRUPTIBLE);
++		schedule_timeout(HZ * SLEEP_TIME);
++		__set_current_state(TASK_RUNNING);
++	}
++
++	if (kill_test)
++		wait_to_die();
++
++	return 0;
++}
++
++#ifdef RING_BUFFER_PER_CPU_LOCAL_TMPL
++
++static int on_buffer_create(struct ring_buffer *buf, int cpu)
++{
++	int ret = 0;
++	char *tmpname;
++
++	if (!file_reader)
++		return 0;
 +
 +	tmpname = kzalloc(NAME_MAX + 1, GFP_KERNEL);
 +	if (!tmpname) {
@@ -184,283 +633,278 @@ Index: linux.trees.git/samples/ring_buffer_user/ring_buffer_template_user.c
 +		goto end;
 +	}
 +
-+	snprintf(tmpname, NAME_MAX, "%s%s_%d",
-+		 (client_config.mode == RING_BUFFER_OVERWRITE) ? "flight-" : "",
-+		 name, cpu);
-+
-+	buf_priv->dentry = debugfs_create_file(tmpname, S_IRUSR, NULL, buf,
-+					       &ring_buffer_file_operations);
-+	if (!buf_priv->dentry) {
++	snprintf(tmpname, NAME_MAX, "%s_%d",
++		 __stringify(RING_BUFFER_TMPL(benchmark)), cpu);
++	dentry[cpu] = debugfs_create_file(tmpname, S_IRUSR,
++					  NULL, buf,
++					  &ring_buffer_payload_file_operations);
++	if (!dentry[cpu])
 +		ret = -ENOMEM;
-+		goto free_name;
-+	}
-+free_name:
 +	kfree(tmpname);
 +end:
 +	return ret;
 +}
 +
-+static void client_buffer_finalize(struct ring_buffer *buf, void *priv, int cpu)
++static void on_buffer_finalize(struct ring_buffer *buf, int cpu)
 +{
-+	struct channel_priv *chan_priv = priv;
-+	struct ring_buffer_priv *buf_priv;
-+
-+	if (client_config.alloc == RING_BUFFER_ALLOC_PER_CPU)
-+		buf_priv = per_cpu_ptr(chan_priv->buf, cpu);
-+	else
-+		buf_priv = chan_priv->buf;
-+
-+	debugfs_remove(buf_priv->dentry);
++	if (file_reader)
++		debugfs_remove(dentry[cpu]);
 +}
 +
-+static const struct ring_buffer_config client_config = {
-+	.cb.ring_buffer_clock_read = client_ring_buffer_clock_read,
-+	.cb.record_header_size = client_record_header_size,
-+	.cb.subbuffer_header_size = client_subbuffer_header_size,
-+	.cb.buffer_begin = client_buffer_begin,
-+	.cb.buffer_end = client_buffer_end,
-+	.cb.buffer_create = client_buffer_create,
-+	.cb.buffer_finalize = client_buffer_finalize,
++#endif /* RING_BUFFER_PER_CPU_LOCAL_TMPL */
 +
-+	.tsc_bits = 64,
-+	.alloc = RING_BUFFER_ALLOC_PER_CPU,
-+	.sync = RING_BUFFER_SYNC_PER_CPU,
-+	.mode = RING_BUFFER_OVERWRITE,
-+	.align = RING_BUFFER_NATURAL,
-+	.backend = RING_BUFFER_PAGE,
-+	.output = RING_BUFFER_SPLICE,
-+	.oops = RING_BUFFER_OOPS_CONSISTENCY,
-+	.ipi = RING_BUFFER_IPI_BARRIER,
-+	.wakeup = RING_BUFFER_WAKEUP_BY_TIMER,
-+};
-+
-+static void write_event_header(const struct ring_buffer_config *config,
-+			       struct ring_buffer_ctx *ctx)
-+{
-+	ring_buffer_write(config, ctx, &ctx->tsc, sizeof(ctx->tsc));
-+}
-+
-+static noinline void trace_event(unsigned long data1, short data2)
-+{
-+	struct ring_buffer_ctx ctx;
-+	int ret, cpu;
-+
-+	cpu = ring_buffer_get_cpu(&client_config);
-+	if (cpu < 0)
-+		return;
-+	ring_buffer_ctx_init(&ctx, chan, &channel_priv,
-+			     sizeof(struct payload),
-+			     sizeof(unsigned long),
-+			     cpu);
-+
-+	ret = ring_buffer_reserve(&client_config, &ctx);
-+	if (ret)
-+		goto put;
-+
-+	write_event_header(&client_config, &ctx);
-+
-+	ring_buffer_align_ctx(&client_config, &ctx, sizeof(data1));
-+	ring_buffer_write(&client_config, &ctx, &data1, sizeof(data1));
-+	ring_buffer_align_ctx(&client_config, &ctx, sizeof(data2));
-+	ring_buffer_write(&client_config, &ctx, &data2, sizeof(data2));
-+
-+	ring_buffer_commit(&client_config, &ctx);
-+
-+put:
-+	ring_buffer_put_cpu(&client_config);
-+}
-+
-+static noinline void use_ring_buffer(void)
-+{
-+	unsigned long i;
-+
-+	for (i = 0; i < 1000000; i++)
-+		trace_event(i, (short)i);
-+}
-+
-+static int __init ring_buffer_client_init(void)
++static int __init ring_buffer_benchmark_init(void)
 +{
 +	int ret;
++	unsigned int i;
 +
-+	printk(KERN_DEBUG "Ring buffer client init begin\n");
++#ifdef RING_BUFFER_PER_CPU_LOCAL_TMPL
++	channel = RING_BUFFER_TMPL(create)(BUFFER_SIZE, on_buffer_create,
++					   on_buffer_finalize);
++#else
++	channel = RING_BUFFER_TMPL(create)(BUFFER_SIZE);
++#endif
++	if (!channel)
++		return -EINVAL;
 +
-+	if (client_config.alloc == RING_BUFFER_ALLOC_PER_CPU)
-+		channel_priv.buf = alloc_percpu(struct ring_buffer_priv);
-+	else
-+		channel_priv.buf = kzalloc(sizeof(struct ring_buffer_priv),
-+					    GFP_KERNEL);
-+	if (!channel_priv.buf)
-+		return -ENOMEM;
-+
-+	chan = channel_create(&client_config, "sample", &channel_priv, NULL,
-+			     1048576, 2,
-+			     100000, 1000);
-+	if (!chan) {
-+		ret = -EINVAL;
-+		goto error_create;
++	if (file_reader && !disable_reader) {
++		printk(KERN_WARNING "Forcefully disabling reader; file "
++				    "descriptor available for reading.\n");
++		disable_reader = 1;
 +	}
 +
-+	printk(KERN_DEBUG "Ring buffer client init end\n");
++	if (!disable_reader) {
++		init_completion(&read_start);
++		consumer = kthread_run(ring_buffer_consumer_thread,
++				       NULL, "rb_consumer");
++		ret = PTR_ERR(consumer);
++		if (IS_ERR(consumer))
++			goto out_fail;
++	}
 +
-+	use_ring_buffer();
++#ifndef RING_BUFFER_PER_CPU_LOCAL_TMPL
++	if (file_reader) {
++		dentry = debugfs_create_file(
++				__stringify(RING_BUFFER_TMPL(benchmark)),
++				S_IRUSR, NULL, channel,
++				&channel_payload_file_operations);
++		WARN_ON(!dentry);
++	}
++#endif
++
++	producers = kzalloc(sizeof(struct task_struct *) * nr_producers,
++			    GFP_KERNEL);
++	writer_finish = kzalloc(sizeof(int) * nr_producers, GFP_KERNEL);
++	write_start = kzalloc(sizeof(struct completion) * nr_producers,
++			      GFP_KERNEL);
++	write_done = kzalloc(sizeof(struct completion) * nr_producers,
++			     GFP_KERNEL);
++	if (!producers || !writer_finish || !write_start || !write_done) {
++		ret = -ENOMEM;
++		goto out_free_writer_structures;
++	}
++
++	for (i = 0; i < nr_producers; i++) {
++		init_completion(&write_start[i]);
++		init_completion(&write_done[i]);
++		producers[i] = kthread_run(ring_buffer_producer_thread,
++					   (void *)(unsigned long)i,
++					   "rb_producer");
++		ret = PTR_ERR(producers[i]);
++
++		if (IS_ERR(producers[i]))
++			goto out_kill_producers;
++	}
++
++	producer = kthread_run(ring_buffer_main_producer_thread,
++			       NULL, "rb_main_producer");
++	ret = PTR_ERR(producer);
++
++	if (IS_ERR(producer))
++		goto out_kill_producers;
++
++	/*
++	 * Run them as low-prio background tasks by default:
++	 */
++	if (!disable_reader) {
++		if (consumer_fifo >= 0) {
++			struct sched_param param = {
++				.sched_priority = consumer_fifo
++			};
++			sched_setscheduler(consumer, SCHED_FIFO, &param);
++		} else
++			set_user_nice(consumer, consumer_nice);
++	}
++
++	if (producer_fifo >= 0) {
++		struct sched_param param = {
++			.sched_priority = consumer_fifo
++		};
++		sched_setscheduler(producer, SCHED_FIFO, &param);
++		for (i = 0; i < nr_producers; i++)
++			sched_setscheduler(producers[i], SCHED_FIFO, &param);
++	} else {
++		set_user_nice(producer, producer_nice);
++		for (i = 0; i < nr_producers; i++)
++			set_user_nice(producers[i], producer_nice);
++	}
 +
 +	return 0;
 +
-+error_create:
-+	if (client_config.alloc == RING_BUFFER_ALLOC_PER_CPU)
-+		free_percpu(channel_priv.buf);
-+	else
-+		kfree(channel_priv.buf);
++out_kill_producers:
++	for (i = 0; i < nr_producers; i++)
++		if (producers[i] && !IS_ERR(producers[i]))
++			kthread_kill_stop(producers[i], SIGKILL);
++out_free_writer_structures:
++	kfree(write_done);
++	kfree(write_start);
++	kfree(writer_finish);
++	kfree(producers);
++#ifndef RING_BUFFER_PER_CPU_LOCAL_TMPL
++	if (file_reader)
++		debugfs_remove(dentry);
++#endif
++	if (consumer)
++		kthread_kill_stop(consumer, SIGKILL);
++out_fail:
++	RING_BUFFER_TMPL(destroy)(channel);
 +	return ret;
 +}
 +
-+static void __exit ring_buffer_client_exit(void)
++static void __exit ring_buffer_benchmark_exit(void)
 +{
-+	printk(KERN_DEBUG "Ring buffer client exit begin\n");
-+	channel_destroy(chan);
-+	if (client_config.alloc == RING_BUFFER_ALLOC_PER_CPU)
-+		free_percpu(channel_priv.buf);
-+	else
-+		kfree(channel_priv.buf);
-+	printk(KERN_DEBUG "Ring buffer client exit end\n");
++	unsigned int i;
++
++	kthread_kill_stop(producer, SIGKILL);
++	for (i = 0; i < nr_producers; i++)
++		kthread_kill_stop(producers[i], SIGKILL);
++#ifndef RING_BUFFER_PER_CPU_LOCAL_TMPL
++	if (file_reader)
++		debugfs_remove(dentry);
++#endif
++	RING_BUFFER_TMPL(destroy)(channel);
++	if (consumer)
++		kthread_kill_stop(consumer, SIGKILL);
++	kfree(write_done);
++	kfree(write_start);
++	kfree(writer_finish);
++	kfree(producers);
 +}
 +
-+module_init(ring_buffer_client_init);
-+module_exit(ring_buffer_client_exit);
++module_init(ring_buffer_benchmark_init);
++module_exit(ring_buffer_benchmark_exit);
+Index: linux.trees.git/kernel/trace/lib_global_discard_ring_buffer_benchmark.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux.trees.git/kernel/trace/lib_global_discard_ring_buffer_benchmark.c	2010-07-09 18:35:53.000000000 -0400
+@@ -0,0 +1,14 @@
++/*
++ * ring buffer global discard library tester and benchmark
++ *
++ * Copyright (C) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ */
 +
-+MODULE_LICENSE("GPL and additional rights");
++#define RING_BUFFER_GLOBAL_TMPL
++#define RING_BUFFER_DISCARD_TMPL
++#define RING_BUFFER_NAME_TMPL "ring buffer global discard"
++#include "ring_buffer_benchmark_template.h"
++
 +MODULE_AUTHOR("Mathieu Desnoyers");
-+MODULE_DESCRIPTION("Ring Buffer Client Template");
-Index: linux.trees.git/samples/ring_buffer_user/ring_buffer_template_user.h
++MODULE_DESCRIPTION(RING_BUFFER_NAME_TMPL " test and benchmark");
++MODULE_LICENSE("GPL");
+Index: linux.trees.git/kernel/trace/lib_global_overwrite_ring_buffer_benchmark.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux.trees.git/samples/ring_buffer_user/ring_buffer_template_user.h	2010-07-09 18:32:01.000000000 -0400
-@@ -0,0 +1,100 @@
-+#ifndef _RING_BUFFER_TEMPLATE_USER_H
-+#define _RING_BUFFER_TEMPLATE_USER_H
-+
++++ linux.trees.git/kernel/trace/lib_global_overwrite_ring_buffer_benchmark.c	2010-07-09 18:35:53.000000000 -0400
+@@ -0,0 +1,14 @@
 +/*
-+ * ring_buffer_template_user.h
++ * ring buffer global overwrite library tester and benchmark
 + *
-+ * Copyright (C) 2010 - Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-+ *
-+ * Ring buffer template instance code example.
-+ *
-+ * Dual LGPL v2.1/GPL v2 license.
++ * Copyright (C) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 + */
 +
-+#include <linux/types.h>
-+#include <linux/trace_clock.h>
++#define RING_BUFFER_GLOBAL_TMPL
++#define RING_BUFFER_OVERWRITE_TMPL
++#define RING_BUFFER_NAME_TMPL "ring buffer global overwrite"
++#include "ring_buffer_benchmark_template.h"
 +
-+/* Align data on its natural alignment */
-+#define RING_BUFFER_ALIGN
-+
-+#include <linux/ringbuffer/config.h>
-+
-+struct subbuffer_header {
-+	uint64_t cycle_count_begin;	/* Cycle count at subbuffer start */
-+	uint64_t cycle_count_end;	/* Cycle count at subbuffer end */
-+	uint32_t magic_number;		/*
-+					 * Trace magic number.
-+					 * contains endianness information.
-+					 */
-+	uint8_t major_version;
-+	uint8_t minor_version;
-+	uint8_t arch_size;		/* Architecture pointer size */
-+	uint8_t alignment;		/* ring buffer data alignment */
-+	uint64_t start_time_sec;	/* NTP-corrected start time */
-+	uint64_t start_time_usec;
-+	uint64_t start_freq;		/*
-+					 * Frequency at trace start,
-+					 * used all along the trace.
-+					 */
-+	uint32_t freq_scale;		/* Frequency scaling (divisor) */
-+	uint32_t data_size;		/* Size of data in subbuffer */
-+	uint32_t subbuf_size;		/* Subbuffer size (include padding) */
-+	uint32_t records_lost;		/*
-+					 * Records lost in this subbuffer since
-+					 * the beginning of the trace.
-+					 * (may overflow)
-+					 */
-+	uint8_t header_end[0];		/* End of header */
-+};
-+
-+struct event_header {
-+	u64 tsc;
-+};
-+
-+struct payload {
-+	unsigned long field1;
-+	short field2;
-+} RING_BUFFER_ALIGN_ATTR;
-+
-+/*
-+ * Using the trace_clock_global() as an example.
-+ */
-+static inline notrace u64 ring_buffer_clock_read(struct channel *chan)
-+{
-+	return trace_clock_global();
-+}
-+
-+/*
-+ * record_header_size - Calculate the header size and padding necessary.
-+ * @config: ring buffer instance configuration
-+ * @chan: channel
-+ * @offset: offset in the write buffer
-+ * @data_size: size of the payload
-+ * @pre_header_padding: padding to add before the header (output)
-+ * @rflags: reservation flags
-+ * @ctx: reservation context
-+ *
-+ * Returns the event header size (including padding).
-+ */
-+static inline notrace
-+unsigned char record_header_size(const struct ring_buffer_config *config,
-+				 struct channel *chan, size_t offset,
-+				 size_t data_size, size_t *pre_header_padding,
-+				 unsigned int rflags,
-+				 struct ring_buffer_ctx *ctx)
-+{
-+	size_t orig_offset = offset;
-+	size_t padding;
-+
-+	padding = ring_buffer_align(config, offset,
-+				    sizeof(struct event_header));
-+	offset += padding;
-+	offset += sizeof(struct event_header);
-+
-+	*pre_header_padding = padding;
-+	return offset - orig_offset;
-+}
-+
-+#include <linux/ringbuffer/api.h>
-+
-+#endif /* _RING_BUFFER_TEMPLATE_USER_H */
-Index: linux.trees.git/samples/Kconfig
-===================================================================
---- linux.trees.git.orig/samples/Kconfig	2010-07-09 18:30:15.000000000 -0400
-+++ linux.trees.git/samples/Kconfig	2010-07-09 18:31:11.000000000 -0400
-@@ -44,4 +44,13 @@ config SAMPLE_HW_BREAKPOINT
- 	help
- 	  This builds kernel hardware breakpoint example modules.
- 
-+config SAMPLE_LIB_RING_BUFFER_TEMPLATE
-+	tristate "Build ring buffer template user -- loadable modules only"
-+	default m
-+	depends on LIB_RING_BUFFER
-+	#depends on !TRACING	#name conflict with old ring buffer API
-+	select TRACE_CLOCK_STANDALONE
-+	help
-+	  This builds the ring buffer template user.
-+
- endif # SAMPLES
-Index: linux.trees.git/samples/ring_buffer_user/Makefile
++MODULE_AUTHOR("Mathieu Desnoyers");
++MODULE_DESCRIPTION(RING_BUFFER_NAME_TMPL " test and benchmark");
++MODULE_LICENSE("GPL");
+Index: linux.trees.git/kernel/trace/lib_percpu_discard_ring_buffer_benchmark.c
 ===================================================================
 --- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ linux.trees.git/samples/ring_buffer_user/Makefile	2010-07-09 18:31:11.000000000 -0400
-@@ -0,0 +1,4 @@
-+# builds the ring buffer template user example kernel modules;
-+# then to use one (as root):  insmod <module_name.ko>
++++ linux.trees.git/kernel/trace/lib_percpu_discard_ring_buffer_benchmark.c	2010-07-09 18:35:53.000000000 -0400
+@@ -0,0 +1,14 @@
++/*
++ * ring buffer per-cpu discard library tester and benchmark
++ *
++ * Copyright (C) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ */
 +
-+obj-$(CONFIG_SAMPLE_LIB_RING_BUFFER_TEMPLATE) += ring_buffer_template_user.o
++#define RING_BUFFER_PER_CPU_TMPL
++#define RING_BUFFER_DISCARD_TMPL
++#define RING_BUFFER_NAME_TMPL "ring buffer per-cpu discard"
++#include "ring_buffer_benchmark_template.h"
++
++MODULE_AUTHOR("Mathieu Desnoyers");
++MODULE_DESCRIPTION(RING_BUFFER_NAME_TMPL " test and benchmark");
++MODULE_LICENSE("GPL");
+Index: linux.trees.git/kernel/trace/lib_percpu_local_discard_ring_buffer_benchmark.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux.trees.git/kernel/trace/lib_percpu_local_discard_ring_buffer_benchmark.c	2010-07-09 18:35:53.000000000 -0400
+@@ -0,0 +1,14 @@
++/*
++ * ring buffer per-cpu local discard library tester and benchmark
++ *
++ * Copyright (C) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ */
++
++#define RING_BUFFER_PER_CPU_LOCAL_TMPL
++#define RING_BUFFER_DISCARD_TMPL
++#define RING_BUFFER_NAME_TMPL "ring buffer per-cpu local discard"
++#include "ring_buffer_benchmark_template.h"
++
++MODULE_AUTHOR("Mathieu Desnoyers");
++MODULE_DESCRIPTION(RING_BUFFER_NAME_TMPL " test and benchmark");
++MODULE_LICENSE("GPL");
+Index: linux.trees.git/kernel/trace/lib_percpu_local_overwrite_ring_buffer_benchmark.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux.trees.git/kernel/trace/lib_percpu_local_overwrite_ring_buffer_benchmark.c	2010-07-09 18:35:53.000000000 -0400
+@@ -0,0 +1,14 @@
++/*
++ * ring buffer per-cpu local overwrite library tester and benchmark
++ *
++ * Copyright (C) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ */
++
++#define RING_BUFFER_PER_CPU_LOCAL_TMPL
++#define RING_BUFFER_OVERWRITE_TMPL
++#define RING_BUFFER_NAME_TMPL "ring buffer per-cpu local overwrite"
++#include "ring_buffer_benchmark_template.h"
++
++MODULE_AUTHOR("Mathieu Desnoyers");
++MODULE_DESCRIPTION(RING_BUFFER_NAME_TMPL " test and benchmark");
++MODULE_LICENSE("GPL");
+Index: linux.trees.git/kernel/trace/lib_percpu_overwrite_ring_buffer_benchmark.c
+===================================================================
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux.trees.git/kernel/trace/lib_percpu_overwrite_ring_buffer_benchmark.c	2010-07-09 18:35:53.000000000 -0400
+@@ -0,0 +1,14 @@
++/*
++ * ring buffer per-cpu overwrite library tester and benchmark
++ *
++ * Copyright (C) 2010 Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
++ */
++
++#define RING_BUFFER_PER_CPU_TMPL
++#define RING_BUFFER_OVERWRITE_TMPL
++#define RING_BUFFER_NAME_TMPL "ring buffer per-cpu overwrite"
++#include "ring_buffer_benchmark_template.h"
++
++MODULE_AUTHOR("Mathieu Desnoyers");
++MODULE_DESCRIPTION(RING_BUFFER_NAME_TMPL " test and benchmark");
++MODULE_LICENSE("GPL");
 
