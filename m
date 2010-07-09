@@ -1,87 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756901Ab0GIOOI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 10:14:08 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:33588 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab0GIOOG (ORCPT
+	id S1756929Ab0GIOOi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 10:14:38 -0400
+Received: from casper.infradead.org ([85.118.1.10]:53987 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab0GIOOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 10:14:06 -0400
-Subject: Re: [PATCH 06/10] NFSv4: Add label recommended attribute and NFSv4
- flags
-From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-To: James Morris <jmorris@namei.org>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
-       viro@zeniv.linux.org.uk, casey@schaufler-ca.com, sds@tycho.nsa.gov,
-       matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org
-In-Reply-To: <alpine.LRH.2.00.1007090834190.23354@tundra.namei.org>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
-	 <1278513086-23964-7-git-send-email-dpquigl@tycho.nsa.gov>
-	 <20100707170058.GD28815@fieldses.org>
-	 <alpine.LRH.2.00.1007080928180.14102@tundra.namei.org>
-	 <1278596363.2494.194.camel@moss-terrapins.epoch.ncsc.mil>
-	 <alpine.LRH.2.00.1007090834190.23354@tundra.namei.org>
-Content-Type: text/plain
-Organization: National Security Agency
-Date: Fri, 09 Jul 2010 10:05:48 -0400
-Message-Id: <1278684348.2494.223.camel@moss-terrapins.epoch.ncsc.mil>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Jul 2010 10:14:37 -0400
+Date: Fri, 9 Jul 2010 11:13:35 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Naren A Devaiah <naren.devaiah@in.ibm.com>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv8 2.6.35-rc4-tip 12/12] perf: Show Potential probe points.
+Message-ID: <20100709141335.GG5776@ghostprotocols.net>
+References: <20100708171003.29165.57615.sendpatchset@localhost6.localdomain6>
+ <20100708171225.29165.28806.sendpatchset@localhost6.localdomain6>
+ <20100708202057.GC30946@infradead.org>
+ <20100709055644.GD26884@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100709055644.GD26884@linux.vnet.ibm.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-09 at 08:48 +1000, James Morris wrote:
-> On Thu, 8 Jul 2010, David P. Quigley wrote:
-> 
-> > > The maximum security label size on Linux is:
-> > > 
-> > > #define XATTR_SIZE_MAX 65536
-> > > 
-> > > Why arbitrarily limit this over the network?
-> > 
-> > Because there is no easy way not to. The specification doesn't specify a
-> > limit to label size in the IETF draft. However there is no way to do
-> > allocation of the memory needed to store the label where we first get
-> > access to its size. We tried this before and it failed. When I asked
-> > trond about it he said doing memory allocation in the rpc context isn't
-> > allowed.
-> 
-> In the NFSv3 code, the workaround I've been using is to always allocate 
-> 64k, but the correct way of doing this apparently is to use the page 
-> cache, as is used for ACLs and symlinks.
-> 
-> > For the most part what would make this label size inadequate would be 
-> > the MLS component. There are some cases where people want every other 
-> > compartment or something crazy like that. In terms of a normal label 
-> > though 4096 should be more than enough.
-> 
-> Yes, but we should not unnecessarily limit the network protocol when 
-> something is valid and possible in the local implementation (which is ~64k 
-> under Linux).
-> 
-> > Just to put this in perspective the string below is 4096 a's.
-> 
-> A security label include just about anything, e.g. an x509 certificate, or 
-> a base64 encoded image.
-> 
-> In the Linux implementation, if we can store a local label up to 64k, then 
-> we should try and ensure that it can be conveyed via NFS.
-> 
-> 
-> 
-> - James
+Em Fri, Jul 09, 2010 at 11:26:44AM +0530, Srikar Dronamraju escreveu:
+> > > Show all potential probes in a process by pid 21106 across all dsos
+> > > # perf probe -S -p 21106 | tail
 
+> > Again, a file based interface would be much more useful.  E.g. what
+> > possible probe points do I have in my qemu binary.
 
-If you want that to be the case you need to make your case to Trond
-about that. I've already had this conversation before and he seems to
-think that a page is sufficient. Bruce also has concerns about not
-wanting these labels to require a high order allocation. Under memory
-pressure finding 16 contiguous pages for each label might be a problem.
+> Right, Currently perf probe needs -p option because it depend on
+> thread->map_groups for listing the dsos and its functions.
 
-Dave
+> I am not sure if perf already has ability to list functions in a file
+> esp if we dont have dwarf information in that file. If perf has the
+> ability I will reuse it here or will try implementing one.
 
+> Arnaldo, Do you know offhand if perf already has the ability to list
+> functions in a file (with / without dwarf info).
+
+Definetely, it actually doesn't use DWARF at all, its just the
+symtabs that are used. It prefers -debuginfo packages because those have
+richer symtabs, but if just the stripped file is used it will try to use
+.dynsym, etc.
+
+Look at tools/perf/builtin-test.c, it has a regression test for the
+symbol lib, should be enough.
+
+- Arnaldo
