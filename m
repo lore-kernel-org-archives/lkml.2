@@ -1,49 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751644Ab0GIFdL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 01:33:11 -0400
-Received: from claw.goop.org ([74.207.240.146]:59941 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750815Ab0GIFdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 01:33:09 -0400
-Message-ID: <4C36B494.6060801@goop.org>
-Date: Thu, 08 Jul 2010 22:33:08 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Simon Horman <horms@verge.net.au>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-       Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>,
-       Matthew Wilcox <matthew@wil.cx>, tglx@linutronix.de, mingo@redhat.com,
-       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       macro@linux-mips.org, kamezawa.hiroyu@jp.fujitsu.com,
-       eike-kernel@sf-tec.de
-Subject: Re: [PATCH 1/2] x86: ioremap: fix wrong physical address handling
-References: <4C197A49.6020400@jp.fujitsu.com> <4C197A9E.5040509@jp.fujitsu.com> <20100617025052.GH9298@parisc-linux.org> <4C19A2EE.2010203@zytor.com> <4C19AABA.8000706@jp.fujitsu.com> <4C19BA9A.4010300@zytor.com> <4C19EC57.3000409@goop.org> <20100709042421.GB2951@verge.net.au>
-In-Reply-To: <20100709042421.GB2951@verge.net.au>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751959Ab0GIFp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 01:45:26 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59012 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751197Ab0GIFpZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 01:45:25 -0400
+Date: Thu, 8 Jul 2010 22:48:37 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] pm: Add runtime PM statistics to sysfs
+Message-ID: <20100708224837.6a18995b@infradead.org>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2010 09:24 PM, Simon Horman wrote:
->> I think it would be a pretty large change.  From the Xen's perspective,
->> any machine even approximately approaching the 2^44 limit will be
->> capable of running Xen guests in hvm mode, so PV isn't really a concern.
->>     
-> Hi Jeremy,
->
-> Is the implication of that statement that HVM is preferred where
-> supported by HW?
->   
+From: Arjan van de Ven <arjan@linux.intel.com>
+Subject: pm: Add runtime PM statistics to sysfs
 
-I wouldn't go that far; the PV vs HVM choice is pretty complex, and
-depends on what your workload is and what hardware you have available. 
-All I meant was what I said: that if you're running on a machine with a
-large amount of memory, then you should run your 32-bit domains as HVM
-rather than PV.  Though Xen could easily keep domains limited to memory
-that they can actually use (it already does this, in fact).
+In order for PowerTOP to be able to report how well the new runtime PM is working
+for the various drivers, the kernel needs to export some basic statistics in sysfs.
 
-    J
+This patch adds two sysfs files in the runtime PM domain that expose the
+total time a device has been active, and the time a device has been suspended.
+
+With this PowerTOP can compute the activity percentage
+
+Active %age = 100 * (delta active) / (delta active + delta suspended)
+
+and present the information to the user.
+
+I've written the PowerTOP code (slated for version 1.12) already, and the output looks
+like this:
+
+Runtime Device Power Management statistics
+Active  Device name
+ 10.0%	06:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8101E/RTL8102E
+
+
+
+
+Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+
+--
+ 3 files changed, 58 insertions(+)
+
+diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
+index b0ec0e9..4493775 100644
+--- a/drivers/base/power/runtime.c
++++ b/drivers/base/power/runtime.c
+@@ -123,6 +123,27 @@ int pm_runtime_idle(struct device *dev)
+ }
+ EXPORT_SYMBOL_GPL(pm_runtime_idle);
+ 
++void update_pm_runtime_accounting(struct device *dev)
++{
++	unsigned long now = jiffies;
++	int delta;
++
++	delta = now - dev->power.accounting_timestamp;
++
++	if (delta < 0)
++		delta = 0;
++
++	dev->power.accounting_timestamp = now;
++
++	if (dev->power.disable_depth > 0)
++		return;
++
++	if (dev->power.runtime_status == RPM_SUSPENDED)
++		dev->power.suspended_jiffies += delta;
++	else
++		dev->power.active_jiffies += delta;
++}
++
+ /**
+  * __pm_runtime_suspend - Carry out run-time suspend of given device.
+  * @dev: Device to suspend.
+@@ -237,6 +258,7 @@ int __pm_runtime_suspend(struct device *dev, bool from_wq)
+ 			pm_runtime_cancel_pending(dev);
+ 		}
+ 	} else {
++		update_pm_runtime_accounting(dev);
+ 		dev->power.runtime_status = RPM_SUSPENDED;
+ 		pm_runtime_deactivate_timer(dev);
+ 
+@@ -411,6 +433,7 @@ int __pm_runtime_resume(struct device *dev, bool from_wq)
+ 	}
+ 
+ 	if (retval) {
++		update_pm_runtime_accounting(dev);
+ 		dev->power.runtime_status = RPM_SUSPENDED;
+ 		pm_runtime_cancel_pending(dev);
+ 	} else {
+@@ -1077,6 +1100,7 @@ void pm_runtime_init(struct device *dev)
+ 	dev->power.request_pending = false;
+ 	dev->power.request = RPM_REQ_NONE;
+ 	dev->power.deferred_resume = false;
++	dev->power.accounting_timestamp = jiffies;
+ 	INIT_WORK(&dev->power.work, pm_runtime_work);
+ 
+ 	dev->power.timer_expires = 0;
+diff --git a/drivers/base/power/sysfs.c b/drivers/base/power/sysfs.c
+index a4c33bc..f45c316 100644
+--- a/drivers/base/power/sysfs.c
++++ b/drivers/base/power/sysfs.c
+@@ -6,6 +6,7 @@
+ #include <linux/string.h>
+ #include <linux/pm_runtime.h>
+ #include <asm/atomic.h>
++#include <linux/jiffies.h>
+ #include "power.h"
+ 
+ /*
+@@ -190,9 +191,34 @@ static ssize_t rtpm_status_show(struct device *dev,
+ 	return -EIO;
+ }
+ 
++static ssize_t rtpm_active_time_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	int ret;
++	spin_lock_irq(&dev->power.lock);
++	update_pm_runtime_accounting(dev);
++	ret = sprintf(buf, "%i\n", jiffies_to_msecs(dev->power.active_jiffies));
++	spin_unlock_irq(&dev->power.lock);
++	return ret;
++}
++
++static ssize_t rtpm_suspended_time_show(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	int ret;
++	spin_lock_irq(&dev->power.lock);
++	update_pm_runtime_accounting(dev);
++	ret = sprintf(buf, "%i\n",
++		jiffies_to_msecs(dev->power.suspended_jiffies));
++	spin_unlock_irq(&dev->power.lock);
++	return ret;
++}
++
+ static DEVICE_ATTR(runtime_usage, 0444, rtpm_usagecount_show, NULL);
+ static DEVICE_ATTR(runtime_active_kids, 0444, rtpm_children_show, NULL);
+ static DEVICE_ATTR(runtime_status, 0444, rtpm_status_show, NULL);
++static DEVICE_ATTR(runtime_active_time, 0444, rtpm_active_time_show, NULL);
++static DEVICE_ATTR(runtime_suspended_time, 0444, rtpm_suspended_time_show, NULL);
+ static DEVICE_ATTR(runtime_enabled, 0444, rtpm_enabled_show, NULL);
+ 
+ #endif
+@@ -234,6 +260,8 @@ static struct attribute * power_attrs[] = {
+ 	&dev_attr_async.attr,
+ #ifdef CONFIG_PM_RUNTIME
+ 	&dev_attr_runtime_usage.attr,
++	&dev_attr_runtime_suspended_time.attr,
++	&dev_attr_runtime_active_time.attr,
+ 	&dev_attr_runtime_active_kids.attr,
+ 	&dev_attr_runtime_status.attr,
+ 	&dev_attr_runtime_enabled.attr,
+diff --git a/include/linux/pm.h b/include/linux/pm.h
+index 8e258c7..dca597f 100644
+--- a/include/linux/pm.h
++++ b/include/linux/pm.h
+@@ -476,9 +476,15 @@ struct dev_pm_info {
+ 	enum rpm_request	request;
+ 	enum rpm_status		runtime_status;
+ 	int			runtime_error;
++	unsigned long		active_jiffies;
++	unsigned long		suspended_jiffies;
++	unsigned long		accounting_timestamp;
+ #endif
+ };
+ 
++extern void update_pm_runtime_accounting(struct device *dev);
++
++
+ /*
+  * The PM_EVENT_ messages are also used by drivers implementing the legacy
+  * suspend framework, based on the ->suspend() and ->resume() callbacks common
+
+
+-- 
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
