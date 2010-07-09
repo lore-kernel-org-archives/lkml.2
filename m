@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757611Ab0GIAOg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 20:14:36 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33832 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755311Ab0GIAOf (ORCPT
+	id S1758956Ab0GIARF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 20:17:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:43709 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755582Ab0GIARB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 20:14:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] reduce stack usage of node_read_meminfo()
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20100708135805.b4411965.akpm@linux-foundation.org>
-References: <20100708181629.CD3C.A69D9226@jp.fujitsu.com> <20100708135805.b4411965.akpm@linux-foundation.org>
-Message-Id: <20100709091138.CD57.A69D9226@jp.fujitsu.com>
+	Thu, 8 Jul 2010 20:17:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=L7SCTrBCGKi9MRZl/nAwsbjtqiVTGwbbBiEfIlkgDI7BQwQbbXqLNeIGv1kph5NSdY
+         1rim/H+aZmYZ9Sd+7kvocW9OULt+CzEzqfPOPPx1YukaPoTviJDOL0YmQcgQdZxYdpx8
+         a2DYZgJ0yktKNyz+2k5Pedmid9GnrljIK4es0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  9 Jul 2010 09:14:31 +0900 (JST)
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
+References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera>
+Date: Fri, 9 Jul 2010 02:16:57 +0200
+Message-ID: <AANLkTimmGRikJAWmVeYRkvr9-3AoeO9APN-oDlCJUpvl@mail.gmail.com>
+Subject: Re: 2.6.35-rc4-git3: Reported regressions from 2.6.34
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu,  8 Jul 2010 18:20:14 +0900 (JST)
-> KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
-> 
-> > 
-> > Now, cmpilation node_read_meminfo() output following warning. Because
-> > it has very large sprintf() argument.
-> > 
-> > 	drivers/base/node.c: In function 'node_read_meminfo':
-> > 	drivers/base/node.c:139: warning: the frame size of 848 bytes is
-> > 	larger than 512 bytes
-> 
-> hm, I'm surprised it's that much.
+Hi Rafael,
 
-me too.
+On Fri, Jul 9, 2010 at 1:33 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+[...]
+Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16169
+Subject         : Complain from preemptive debug
+Submitter       : Sedat Dilek <sedat.dilek@googlemail.com>
+Date            : 2010-05-31 10:10 (39 days old)
+Message-ID      : <AANLkTilTnAAZIizKinYsxFkNTkrmPqk6XJJuUjjhJ7EP@mail.gmail.com>
+References      : http://lkml.org/lkml/2010/5/31/77
+Handled-By      : Dmitry Monakhov <dmonakhov@openvz.org>
+                 Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
+Patch           : http://www.spinics.net/lists/cpufreq/msg01631.html
+                 https://patchwork.kernel.org/patch/106555/
 
-> 
-> > --- a/drivers/base/node.c
-> > +++ b/drivers/base/node.c
-> > @@ -66,8 +66,7 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
-> >  	struct sysinfo i;
-> >  
-> >  	si_meminfo_node(&i, nid);
-> > -
-> > -	n = sprintf(buf, "\n"
-> > +	n = sprintf(buf,
-> >  		       "Node %d MemTotal:       %8lu kB\n"
-> >  		       "Node %d MemFree:        %8lu kB\n"
-> >  		       "Node %d MemUsed:        %8lu kB\n"
-> > @@ -78,13 +77,33 @@ static ssize_t node_read_meminfo(struct sys_device * dev,
-> >  		       "Node %d Active(file):   %8lu kB\n"
-> >  		       "Node %d Inactive(file): %8lu kB\n"
-> >  		       "Node %d Unevictable:    %8lu kB\n"
-> > -		       "Node %d Mlocked:        %8lu kB\n"
-> > +		       "Node %d Mlocked:        %8lu kB\n",
-> > +		       nid, K(i.totalram),
-> > +		       nid, K(i.freeram),
-> > +		       nid, K(i.totalram - i.freeram),
-> > +		       nid, K(node_page_state(nid, NR_ACTIVE_ANON) +
-> > +				node_page_state(nid, NR_ACTIVE_FILE)),
-> 
-> Why the heck did we decide to print the same node-id 10000 times?
+This bug is fixed Upstream [1]:
 
-dunno. but I don't want to make behavior change for only stack reducing.
+commit 8c215bd3890c347dfb6a2db4779755f8b9c298a9
+"sched: Cure nr_iowait_cpu() users"
 
+- Sedat -
 
-> 
-> > +	n += sprintf(buf,
-> 
-> You just got caught sending untested patches.
-> 
-> --- a/drivers/base/node.c~drivers-base-nodec-reduce-stack-usage-of-node_read_meminfo-fix
-> +++ a/drivers/base/node.c
-> @@ -93,7 +93,7 @@ static ssize_t node_read_meminfo(struct 
->  		       nid, K(node_page_state(nid, NR_MLOCK)));
->  
->  #ifdef CONFIG_HIGHMEM
-> -	n += sprintf(buf,
-> +	n += sprintf(buf + n,
->  		       "Node %d HighTotal:      %8lu kB\n"
->  		       "Node %d HighFree:       %8lu kB\n"
->  		       "Node %d LowTotal:       %8lu kB\n"
-> @@ -103,7 +103,7 @@ static ssize_t node_read_meminfo(struct 
->  		       nid, K(i.totalram - i.totalhigh),
->  		       nid, K(i.freeram - i.freehigh));
->  #endif
-> -	n += sprintf(buf,
-> +	n += sprintf(buf + n,
->  		       "Node %d Dirty:          %8lu kB\n"
->  		       "Node %d Writeback:      %8lu kB\n"
->  		       "Node %d FilePages:      %8lu kB\n"
-> _
-> 
-> 
-> Please, run the code and check that we didn't muck up the output.
-
-100% my fault. I ran it, but I forgot to merge two patches ;)
-
-
-
-
+[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=8c215bd3890c347dfb6a2db4779755f8b9c298a9
