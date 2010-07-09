@@ -1,75 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752093Ab0GIFtj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 01:49:39 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:51479 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750990Ab0GIFti (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 01:49:38 -0400
-Date: Fri, 9 Jul 2010 11:11:33 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Naren A Devaiah <naren.devaiah@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv8 2.6.35-rc4-tip 11/12]  perf: perf interface for
- uprobes
-Message-ID: <20100709054133.GC26884@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100708171003.29165.57615.sendpatchset@localhost6.localdomain6>
- <20100708171215.29165.7352.sendpatchset@localhost6.localdomain6>
- <20100708201926.GB30946@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100708201926.GB30946@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752029Ab0GIFyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 01:54:45 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:53746 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750815Ab0GIFyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 01:54:44 -0400
+From: Sudhakar Rajashekhara <sudhakar.raj@ti.com>
+To: linux-mtd@lists.infradead.org
+Cc: linux-kernel@vger.kernel.org, david-b@pacbell.net, dwmw2@infradead.org,
+       akpm@linux-foundation.org, khilman@deeprootsystems.com,
+       dhowells@redhat.com, Sudhakar Rajashekhara <"sudhakar...."@ti.com>,
+       Sudhakar Rajashekhara <sudhakar.raj@ti.com>
+Subject: [PATCH] mtdpart: memory accessor interface for MTD layer
+Date: Fri,  9 Jul 2010 11:09:04 +0530
+Message-Id: <1278653944-12432-1-git-send-email-sudhakar.raj@ti.com>
+X-Mailer: git-send-email 1.5.6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Christoph, 
+From: Sudhakar Rajashekhara <sudhakar....@ti.com>
 
-> > Here is a terminal snapshot of placing, using and removing a probe on a
-> > process with pid 3591 (corresponding to zsh)
-> 
-> Btw, I think this interface is not the most the best one for typical
-> uses cases.  To make perf probe support more useful we'll need at least
-> a way to create a probe in all intances of a given binary/DSO, and
-> a way to run a binary with pre-defined breakpoints.
-> 
+This patch implements memory accessor interface in the MTD
+layer which enables the kernel to access flash data.
 
-Yes Peter had already asked for this and we have it in plan.
-These are listed in the todos I listed corresponding to file based
-probes.
+This patch adds two new members to the mtd_partition structure,
+a function handler which will be called during setup of the
+partition and an argument to be passed to this setup function.
 
-- Allowing probes per-executable/per dso.
-- Allowing probes across fork.
+Example:
++static struct mtd_partition spi_flash_partitions[] = {
++       [0] = {
++               .name       = "U-Boot",
++               .offset     = 0,
++               .size       = SZ_256K,
++               .mask_flags = MTD_WRITEABLE,
++       },
++       [1] = {
++               .name       = "U-Boot Environment",
++               .offset     = MTDPART_OFS_NXTBLK,
++               .size       = SZ_64K,
++               .mask_flags = MTD_WRITEABLE,
++       },
++       [2] = {
++               .name       = "Linux",
++               .offset     = MTDPART_OFS_NXTBLK,
++               .size       = SZ_7M,
++               .mask_flags = 0,
++       },
++       [3] = {
++               .name       = "MAC Address",
++               .offset     = MTDPART_OFS_NXTBLK,
++               .size       = SZ_64K,
++               .mask_flags = 0,
++               .setup      = davinci_get_mac_addr,
++               .context    = (void *)0,
++       },
++};
 
-I have some thoughts on how to achieve these.
+The davinci_get_mac_addr function reads the MAC address from
+offset ZERO of last MTD partition.
 
-However I am not sure which items I should work first
-- file based probes or on
-- automatically trigger perf uprobes on high overhead functions 
- that Ingo suggested.
+Signed-off-by: Sudhakar Rajashekhara <sudhakar.raj@ti.com>
+Acked-by: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: David Brownell <david-b@pacbell.net>
+Cc: David Woodhouse <dwmw2@infradead.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+---
+ drivers/mtd/mtdpart.c          |   40 ++++++++++++++++++++++++++++++++++++++++
+ include/linux/mtd/partitions.h |    3 +++
+ 2 files changed, 43 insertions(+), 0 deletions(-)
 
-I am not too clear on later so I might as well start thinking on file
-based probes.
+diff --git a/drivers/mtd/mtdpart.c b/drivers/mtd/mtdpart.c
+index b8043a9..9f4d5f8 100644
+--- a/drivers/mtd/mtdpart.c
++++ b/drivers/mtd/mtdpart.c
+@@ -26,6 +26,7 @@ static LIST_HEAD(mtd_partitions);
+ struct mtd_part {
+ 	struct mtd_info mtd;
+ 	struct mtd_info *master;
++	struct memory_accessor macc;
+ 	uint64_t offset;
+ 	struct list_head list;
+ };
+@@ -327,6 +328,39 @@ int del_mtd_partitions(struct mtd_info *master)
+ }
+ EXPORT_SYMBOL(del_mtd_partitions);
+ 
++/*
++ * This lets other kernel code access the flash data. For example, it
++ * might hold a board's Ethernet address, or board-specific calibration
++ * data generated on the manufacturing floor.
++ */
++static ssize_t mtd_macc_read(struct memory_accessor *macc, char *buf,
++			off_t offset, size_t count)
++{
++	struct mtd_part *part = container_of(macc, struct mtd_part, macc);
++	ssize_t ret = -EIO;
++	size_t retlen;
++
++	if (part_read((struct mtd_info *)part, offset, count,
++			&retlen, buf) == 0)
++		ret = retlen;
++
++	return ret;
++}
++
++static ssize_t mtd_macc_write(struct memory_accessor *macc, const char *buf,
++			off_t offset, size_t count)
++{
++	struct mtd_part *part = container_of(macc, struct mtd_part, macc);
++	ssize_t ret = -EIO;
++	size_t retlen;
++
++	if (part_write((struct mtd_info *)part, offset, count,
++			&retlen, buf) == 0)
++		ret = retlen;
++
++	return ret;
++}
++
+ static struct mtd_part *add_one_partition(struct mtd_info *master,
+ 		const struct mtd_partition *part, int partno,
+ 		uint64_t cur_offset)
+@@ -364,6 +398,9 @@ static struct mtd_part *add_one_partition(struct mtd_info *master,
+ 	slave->mtd.read = part_read;
+ 	slave->mtd.write = part_write;
+ 
++	slave->macc.read = mtd_macc_read;
++	slave->macc.write = mtd_macc_write;
++
+ 	if (master->panic_write)
+ 		slave->mtd.panic_write = part_panic_write;
+ 
+@@ -428,6 +465,9 @@ static struct mtd_part *add_one_partition(struct mtd_info *master,
+ 	printk(KERN_NOTICE "0x%012llx-0x%012llx : \"%s\"\n", (unsigned long long)slave->offset,
+ 		(unsigned long long)(slave->offset + slave->mtd.size), slave->mtd.name);
+ 
++	if (part->setup)
++		part->setup(&slave->macc, (void *)part->context);
++
+ 	/* let's do some sanity checks */
+ 	if (slave->offset >= master->size) {
+ 		/* let's register it anyway to preserve ordering */
+diff --git a/include/linux/mtd/partitions.h b/include/linux/mtd/partitions.h
+index 274b619..39782a6 100644
+--- a/include/linux/mtd/partitions.h
++++ b/include/linux/mtd/partitions.h
+@@ -10,6 +10,7 @@
+ #define MTD_PARTITIONS_H
+ 
+ #include <linux/types.h>
++#include <linux/memory.h>
+ 
+ 
+ /*
+@@ -40,6 +41,8 @@ struct mtd_partition {
+ 	uint64_t offset;		/* offset within the master MTD space */
+ 	uint32_t mask_flags;		/* master MTD flags to mask out for this partition */
+ 	struct nand_ecclayout *ecclayout;	/* out of band layout for this partition (NAND only)*/
++	void (*setup)(struct memory_accessor *, void *context);
++	void *context;
+ };
+ 
+ #define MTDPART_OFS_NXTBLK	(-2)
+-- 
+1.5.6
 
---
-Thanks and Regards
-Srikar
