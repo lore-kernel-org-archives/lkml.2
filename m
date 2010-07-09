@@ -1,80 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756952Ab0GIORt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 10:17:49 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:35207 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752029Ab0GIORp (ORCPT
+	id S1756932Ab0GIOTN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 10:19:13 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50981 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752029Ab0GIOTL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 10:17:45 -0400
-Subject: Re: [PATCH 04/10] SELinux: Add new labeling type native labels
-From: "David P. Quigley" <dpquigl@tycho.nsa.gov>
-To: James Morris <jmorris@namei.org>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       sds@tycho.nsa.gov, "Matthew N. Dodd" <matthew.dodd@sparta.com>,
-       trond.myklebust@fys.uio.no, bfields@fieldses.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org
-In-Reply-To: <alpine.LRH.2.00.1007090824150.23354@tundra.namei.org>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
-	 <1278513086-23964-5-git-send-email-dpquigl@tycho.nsa.gov>
-	 <alpine.LRH.2.00.1007080921200.14102@tundra.namei.org>
-	 <1278595878.2494.186.camel@moss-terrapins.epoch.ncsc.mil>
-	 <alpine.LRH.2.00.1007090824150.23354@tundra.namei.org>
-Content-Type: text/plain
-Organization: National Security Agency
-Date: Fri, 09 Jul 2010 10:09:26 -0400
-Message-Id: <1278684566.2494.226.camel@moss-terrapins.epoch.ncsc.mil>
+	Fri, 9 Jul 2010 10:19:11 -0400
+Subject: Re: periods and deadlines in SCHED_DEADLINE
+From: Peter Zijlstra <peterz@infradead.org>
+To: Raistlin <raistlin@linux.it>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Song Yuan <song.yuan@ericsson.com>,
+       Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Nicola Manica <nicola.manica@disi.unitn.it>,
+       Luca Abeni <lucabe72@email.it>,
+       Claudio Scordino <claudio@evidence.eu.com>,
+       Harald Gustafsson <harald.gustafsson@ericsson.com>,
+       Bjoern Brandenburg <bbb@email.unc.edu>, bastoni@cs.unc.edu,
+       Giuseppe Lipari <lipari@retis.sssup.it>
+In-Reply-To: <1278682707.6083.227.camel@Palantir>
+References: <1278682707.6083.227.camel@Palantir>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 09 Jul 2010 16:18:53 +0200
+Message-ID: <1278685133.1900.201.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-09 at 08:33 +1000, James Morris wrote:
-> On Thu, 8 Jul 2010, David P. Quigley wrote:
-> 
-> > > Otherwise, this is a global policy decision which affects all NFSv4 
-> > > mounts, right?
-> > > 
-> > > 
-> > 
-> > I don't believe we have that ability in any other file system.
-> 
-> NFS is quite different to other filesystems.  Your files are on other 
-> systems, for example, which may or may not support security labeling.
+On Fri, 2010-07-09 at 15:38 +0200, Raistlin wrote:
 
-And if that is the case then the capability flag does not get set in the
-NFSv4 server caps and we don't use security label support on that mount.
+>  - using periods for calculating the tasks' bandwidth and then using   
+>    deadlines for scheduling the tasks is going to work, but the
+>    admission control test that you would need for ensuring anybody
+>    will make its deadline is waaay more complex than Sum_i(BW_i)<1, even
+>    for uniprocessors/partitionig. That one instead would gives you just
+>    a very basic guarantee that the design in not completely broken
+>    (formally, I think I should say it is only a necessary
+>    condition :-)).
 
-> 
-> > If you want to decide that you want to use genfs style labels on NFSv4 
-> > just use a context mount.
-> 
-> So, we enable this feature, and virtually all existing mounts break 
-> because the servers do not support labeling.
-
-No it should default back to being nfs_t which is what happens when I
-use my client on an export that doesn't have security_label set.
-
-> 
-> > That way you can have the default behavior be 
-> > use security label support unless you don't want to and then you can 
-> > have a context mount.
-> 
-> It needs to be the other way around.  This is a new feature, so the 
-> default needs to be the existing behavior, with security labeling as an 
-> option to enable at mount time.
-
-We made sure it falls back properly. It was decided a long time ago with
-discussion by several people that having it default to use it if its
-there otherwise fall back to the old behavior makes much more sense to
-an administrator.
-
-> 
-> 
-> 
-> - James
-
+Happen to have a paper handy that explains all this in a concise way? 
