@@ -1,74 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753155Ab0GIRh0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 13:37:26 -0400
-Received: from llsc199-a04.servidoresdns.net ([82.223.190.46]:58099 "EHLO
-	llsc199-a04.servidoresdns.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751151Ab0GIRhZ convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 13:37:25 -0400
-To: "Eric Dumazet" <eric.dumazet@gmail.com>
-Subject: Re: [PATCH 001/001] QoS and/or fair queueing: Stateless NAT BUG
-Cc: "Herbert Xu" <herbert@gondor.hengli.com.au>,
-       "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
-       "Iratxo Pichel Ortiz" <ipichel@albentia.com>,
-       Noelia =?iso-8859-1?q?Mor=F3n?= <nmoron@albentia.com>,
-       "netdev" <netdev@vger.kernel.org>
-From: Rodrigo Partearroyo =?iso-8859-1?q?Gonz=E1lez?= 
-	<rpartearroyo@albentia.com>
-Organization: Albentia Systems
-Date: Fri, 9 Jul 2010 19:37:16 +0200
+	id S1753745Ab0GIRlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 13:41:53 -0400
+Received: from claw.goop.org ([74.207.240.146]:58250 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751894Ab0GIRlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 13:41:52 -0400
+Message-ID: <4C375F5F.5000907@goop.org>
+Date: Fri, 09 Jul 2010 10:41:51 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201007091937.17349.rpartearroyo@albentia.com>
+To: Andrea Arcangeli <aarcange@redhat.com>
+CC: Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: mmu notifier calls in apply_to_page_range()
+References: <4C373AEC.6000502@goop.org> <20100709151211.GE13493@random.random> <4C37458B.8040408@goop.org> <20100709162255.GA5741@random.random> <4C375CC8.2030705@goop.org> <20100709173612.GF5741@random.random>
+In-Reply-To: <20100709173612.GF5741@random.random>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-I have been testing Stateless NAT and found that ICMP packets with length
-less than 20 bytes were not correctly NAT'ed. I have found a BUG that
-makes taking into account IP header length twice, so ICMP packets smaller
-than 20 bytes were being dropped.
+On 07/09/2010 10:36 AM, Andrea Arcangeli wrote:
+> I'm not opposed to removing it, I've been wondering if it made any
+> sense in the first place but then there was no point not to add
+> it. Just calling apply_to_page_range in non blocking context doesn't
+> look so good.
+>   
 
-Proposed formal patch is below, as suggested by Eric Dumazet, thanks.
-It is taken from 2.6.34.1 stable version.
+That's a good point.  It should be safe if the pagetable is already
+fully populated; I should double-check that's true in our case.
 
-Signed-off-by: Rodrigo Partearroyo González <rpartearroyo@albentia.com>
----
-diff -uprN a/net/sched/act_nat.c b/net/sched/act_nat.c
---- a/net/sched/act_nat.c	2010-07-09 18:25:18.000000000 +0200
-+++ b/net/sched/act_nat.c	2010-07-09 18:26:16.000000000 +0200
-@@ -202,7 +202,7 @@ static int tcf_nat(struct sk_buff *skb, 
- 	{
- 		struct icmphdr *icmph;
- 
--		if (!pskb_may_pull(skb, ihl + sizeof(*icmph) + sizeof(*iph)))
-+		if (!pskb_may_pull(skb, ihl + sizeof(*icmph)))
- 			goto drop;
- 
- 		icmph = (void *)(skb_network_header(skb) + ihl);
-@@ -223,7 +223,7 @@ static int tcf_nat(struct sk_buff *skb, 
- 
- 		if (skb_cloned(skb) &&
- 		    !skb_clone_writable(skb,
--					ihl + sizeof(*icmph) + sizeof(*iph)) &&
-+					ihl + sizeof(*icmph)) &&
- 		    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
- 			goto drop;
+    J
 
----
-Rodrigo Partearroyo González
-R&D Engineer
-
-Albentia Systems S.A.
-http://www.albentia.com
-+34 914400213
-
-C\Margarita Salas 22
-Parque Tecnológico de Leganés
-Leganés (28918)
-Madrid
-Spain
