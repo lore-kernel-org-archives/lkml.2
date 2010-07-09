@@ -1,55 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755706Ab0GIXwl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 19:52:41 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:53123 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751975Ab0GIXwk (ORCPT
+	id S1755691Ab0GIX6t (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 19:58:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44751 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750987Ab0GIX6s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 19:52:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Ml9YSMj9ghuJyawxf9eYiGkYmN25ydTY+BG1VYLF0HmX1XHunuvkDw8pY0kxoiICmP
-         vvY/BZeUH1o24TurxgiCXgGVUPjEa4dzUnHMjAVkgsTTLPJz3fj1O+oa6sZ1wf3QyOuV
-         mXIpw3IKmdsB+3kAm6ZP+nFuRSiW+t51eY0CU=
-MIME-Version: 1.0
-In-Reply-To: <4C378B32.9060802@canonical.com>
-References: <4C378B32.9060802@canonical.com>
-Date: Fri, 9 Jul 2010 19:52:38 -0400
-Message-ID: <AANLkTim7bpQWiJ-IG3gt8Cwksl4v-GVGtfIEx73R6KNi@mail.gmail.com>
-Subject: Re: i915 boot regression on Q35 chipset with 2.6.35-rc4
-From: Woody Suwalski <terraluna977@gmail.com>
-To: jbarnes@virtuousgeek.org
-Cc: airlied@linux.ie,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Kees Cook <kees.cook@canonical.com>, chris@chris-wilson.co.uk,
-       eric@anholt.net, tim.gardner@canonical.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 9 Jul 2010 19:58:48 -0400
+Date: Fri, 9 Jul 2010 16:57:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Thomas Renninger <trenn@suse.de>
+Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org, hare@suse.de,
+       stable@kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Jason Baron <jbaron@redhat.com>
+Subject: Re: Dynamic Debug lib: Fix memory corruption for specific module
+ declarations
+Message-Id: <20100709165752.0daac206.akpm@linux-foundation.org>
+In-Reply-To: <201007091310.43314.trenn@suse.de>
+References: <201007091310.43314.trenn@suse.de>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 9, 2010 at 4:48 PM, Tim Gardner <tim.gardner@canonical.com> wrote:
->
-> Dave,
->
-> Please find attached a patch that fixes a boot time regression caused by commit f1befe71fa7a79ab733011b045639d8d809924ad. It has been reported to fix at least one user's boot problems.
->
-> I think it is also likely the source of the problems reported in http://marc.info/?l=linux-kernel&m=127869783002454&w=2
->
-> rtg
-> --
-> Tim Gardner tim.gardner@canonical.com
+On Fri, 9 Jul 2010 13:10:42 +0200
+Thomas Renninger <trenn@suse.de> wrote:
 
+> From: Jason Baron <jbaron@redhat.com>
 
-Jesse, the above patch
-0001-UBUNTU-Upstream-i915-Use-the-correct-mask-to-detect-.patch
+You forgot to cc Jason.
 
-is fixing my problem as well. No need for bisecting...
+> Make sure we properly call ddebug_remove_module() when a module fails to
+> load. In addition, pass the pointer to the "debug table", to both
+> ddebug_add_module(), and ddebug_remove_module() so that we can uniquely
+> identify each set of debug statements. In this way even modules with the
+> same name can be properly identified and removed.
+> 
+> Kernel bug reference:
+> http://bugzilla.kernel.org/show_bug.cgi?id=16330
+> 
+> By trenn (for stable people):
+> Not sure for how long this bug exists (always?), it nearly patches
+> fine for a 2.6.32 kernel...
 
-Thanks, Woody
+It's unclear what kernel this is against.  It applies quite badly to
+mainline.  I fixed all that up then lost the result :( It doesn't apply
+cleanly to 2.6.34 either.
 
-PS. I am sending from GMail Web client - strange things (e.g .HTML)
-may happen ;-(
+I was going to steal your changelog and add it to Jason's patch but
+Jason's patch generates a reject storm against mainline too.
+
+Giving up.
+
