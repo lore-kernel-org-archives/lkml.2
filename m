@@ -1,90 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab0GINsT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:48:19 -0400
-Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:56915 "EHLO
-	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755969Ab0GINsR (ORCPT
+	id S1756640Ab0GINtO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:49:14 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50283 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756517Ab0GINtM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:48:17 -0400
-Subject: Re: [PATCH 06/10] NFSv4: Add label recommended attribute and NFSv4
- flags
-From: Stephen Smalley <sds@tycho.nsa.gov>
-To: James Morris <jmorris@namei.org>
-Cc: "David P. Quigley" <dpquigl@tycho.nsa.gov>,
-       "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
-       viro@zeniv.linux.org.uk, casey@schaufler-ca.com,
-       matthew.dodd@sparta.com, trond.myklebust@fys.uio.no,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-security-module@vger.kernel.org, selinux@tycho.nsa.gov,
-       linux-nfs@vger.kernel.org
-In-Reply-To: <alpine.LRH.2.00.1007090834190.23354@tundra.namei.org>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
-	 <1278513086-23964-7-git-send-email-dpquigl@tycho.nsa.gov>
-	 <20100707170058.GD28815@fieldses.org>
-	 <alpine.LRH.2.00.1007080928180.14102@tundra.namei.org>
-	 <1278596363.2494.194.camel@moss-terrapins.epoch.ncsc.mil>
-	 <alpine.LRH.2.00.1007090834190.23354@tundra.namei.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: National Security Agency
-Date: Fri, 09 Jul 2010 09:47:50 -0400
-Message-ID: <1278683270.13292.10.camel@moss-pluto.epoch.ncsc.mil>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Fri, 9 Jul 2010 09:49:12 -0400
+Date: Fri, 9 Jul 2010 15:49:10 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: linux-kernel@vger.kernel.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: [PATCH 03/11] Removing dead PP04
+Message-ID: <0e8d9a136ce861c58f204c907ddbe40d4856cd5f.1278682302.git.siccegge@cs.fau.de>
+References: <cover.1278682302.git.siccegge@cs.fau.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1278682302.git.siccegge@cs.fau.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-09 at 08:48 +1000, James Morris wrote:
-> On Thu, 8 Jul 2010, David P. Quigley wrote:
-> 
-> > > The maximum security label size on Linux is:
-> > > 
-> > > #define XATTR_SIZE_MAX 65536
-> > > 
-> > > Why arbitrarily limit this over the network?
-> > 
-> > Because there is no easy way not to. The specification doesn't specify a
-> > limit to label size in the IETF draft. However there is no way to do
-> > allocation of the memory needed to store the label where we first get
-> > access to its size. We tried this before and it failed. When I asked
-> > trond about it he said doing memory allocation in the rpc context isn't
-> > allowed.
-> 
-> In the NFSv3 code, the workaround I've been using is to always allocate 
-> 64k, but the correct way of doing this apparently is to use the page 
-> cache, as is used for ACLs and symlinks.
-> 
-> > For the most part what would make this label size inadequate would be 
-> > the MLS component. There are some cases where people want every other 
-> > compartment or something crazy like that. In terms of a normal label 
-> > though 4096 should be more than enough.
-> 
-> Yes, but we should not unnecessarily limit the network protocol when 
-> something is valid and possible in the local implementation (which is ~64k 
-> under Linux).
-> 
-> > Just to put this in perspective the string below is 4096 a's.
-> 
-> A security label include just about anything, e.g. an x509 certificate, or 
-> a base64 encoded image.
-> 
-> In the Linux implementation, if we can store a local label up to 64k, then 
-> we should try and ensure that it can be conveyed via NFS.
+PP04 doesn't exist in Kconfig, therefore removing all references for
+it from the source code.
 
-You can't store a local label up to 64k on Linux; that is just what the
-xattr API permits, not the underlying filesystem implementations (at
-least ext[234]).
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ drivers/serial/68360serial.c |   14 --------------
+ 1 files changed, 0 insertions(+), 14 deletions(-)
 
-# touch foobar
-# setfattr -n user.foo -v `perl -e 'print "a" x 4096'` foobar
-setfattr: foobar: No space left on device
-
-Also the /proc/self/attr and selinuxfs APIs are presently limited to
-page size.
-
+diff --git a/drivers/serial/68360serial.c b/drivers/serial/68360serial.c
+index f72972b..ac062a8 100644
+--- a/drivers/serial/68360serial.c
++++ b/drivers/serial/68360serial.c
+@@ -2495,20 +2495,6 @@ static int __init rs_360_init(void)
+ 	cp->si_sicr &= ~0x00ffff00;
+ 	cp->si_sicr |=  0x001b1200;
+ 
+-#ifdef CONFIG_PP04
+-	/* Frequentis PP04 forced to RS-232 until we know better.
+-	 * Port C 12 and 13 low enables RS-232 on SCC3 and SCC4.
+-	 */
+-	immap->im_ioport.iop_pcdir |= 0x000c;
+-	immap->im_ioport.iop_pcpar &= ~0x000c;
+-	immap->im_ioport.iop_pcdat &= ~0x000c;
+-
+-	/* This enables the TX driver.
+-	*/
+-	cp->cp_pbpar &= ~0x6000;
+-	cp->cp_pbdat &= ~0x6000;
+-#endif
+-
+ 	for (i = 0, state = rs_table; i < NR_PORTS; i++,state++) {
+ 		state->magic = SSTATE_MAGIC;
+ 		state->line = i;
 -- 
-Stephen Smalley
-National Security Agency
+1.7.0.4
 
