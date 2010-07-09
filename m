@@ -1,47 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754987Ab0GIUsf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 16:48:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12908 "EHLO mx1.redhat.com"
+	id S1755124Ab0GIUtA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 16:49:00 -0400
+Received: from mail.tpi.com ([70.99.223.143]:3622 "EHLO mail.tpi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753897Ab0GIUse convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 16:48:34 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Corrado Zoccolo <czoccolo@gmail.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
-	<x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
-	<x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
-	<x49fwzsbvga.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTilJFQITg7qK5gKJ9Rwt06KA6fvDr7Ed9u7cbwBX@mail.gmail.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 09 Jul 2010 16:48:28 -0400
-In-Reply-To: <AANLkTilJFQITg7qK5gKJ9Rwt06KA6fvDr7Ed9u7cbwBX@mail.gmail.com>
-	(Corrado Zoccolo's message of "Fri, 9 Jul 2010 21:45:22 +0200")
-Message-ID: <x49mxu09yar.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1753897Ab0GIUs7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 16:48:59 -0400
+Message-ID: <4C378B32.9060802@canonical.com>
+Date: Fri, 09 Jul 2010 14:48:50 -0600
+From: Tim Gardner <tim.gardner@canonical.com>
+Reply-To: tim.gardner@canonical.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+To: airlied@linux.ie
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Kees Cook <kees.cook@canonical.com>, chris@chris-wilson.co.uk,
+       eric@anholt.net, jbarnes@virtuousgeek.org
+Subject: i915 boot regression on Q35 chipset with 2.6.35-rc4
+Content-Type: multipart/mixed;
+ boundary="------------000106050108090600060006"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Corrado Zoccolo <czoccolo@gmail.com> writes:
+This is a multi-part message in MIME format.
+--------------000106050108090600060006
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
->> I'm not sure what kernel you generated that patch against.  I'm working
->> with 2.6.35-rc3 or later, and your patch does not apply there.
+Dave,
 
-> It's Jens' block/for-2.6.36 tree.
+Please find attached a patch that fixes a boot time regression caused by 
+commit f1befe71fa7a79ab733011b045639d8d809924ad. It has been reported to 
+fix at least one user's boot problems.
 
-OK.  I'll get back to you on this next week.  My storage is kind of
-broken right now.  :(
+I think it is also likely the source of the problems reported in 
+http://marc.info/?l=linux-kernel&m=127869783002454&w=2
 
--Jeff
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
+
+--------------000106050108090600060006
+Content-Type: text/x-patch;
+ name="0001-UBUNTU-Upstream-i915-Use-the-correct-mask-to-detect-.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename*0="0001-UBUNTU-Upstream-i915-Use-the-correct-mask-to-detect-.pa";
+ filename*1="tch"
+
+>From e025bfb96059be648074a02f60dff92fb658cb9a Mon Sep 17 00:00:00 2001
+From: Tim Gardner <tim.gardner@canonical.com>
+Date: Fri, 9 Jul 2010 11:14:41 -0600
+Subject: [PATCH] i915: Use the correct mask to detect i830 aperture size.
+
+BugLink: https://bugs.launchpad.net/bugs/597075
+
+commit f1befe71fa7a79ab733011b045639d8d809924ad introduced a regression when
+detecting aperture size of some i915 adapters, e.g., those on the
+Intel Q35 chipset.
+
+The original report: https://bugzilla.kernel.org/show_bug.cgi?id=15733
+The regression report: https://bugzilla.kernel.org/show_bug.cgi?id=16294
+
+According to the specification found at http://intellinuxgraphics.org/VOL_1_graphics_core.pdf,
+the PCI config space register I830_GMCH_CTRL is a mirror of GMCH Graphics Control. The correct
+macro for isolating the aperture size bits is therefore I830_GMCH_GMS_MASK along with the
+attendant changes to the case statement.
+
+Signed-off-by: Tim Gardner <tim.gardner@canonical.com>
+Tested-by: Kees Cook <kees.cook@canonical.com>
+Cc: Chris Wilson <chris@chris-wilson.co.uk>
+Cc: Eric Anholt <eric@anholt.net>
+Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
+---
+ drivers/char/agp/intel-gtt.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/char/agp/intel-gtt.c b/drivers/char/agp/intel-gtt.c
+index 9344216..a754715 100644
+--- a/drivers/char/agp/intel-gtt.c
++++ b/drivers/char/agp/intel-gtt.c
+@@ -1216,17 +1216,20 @@ static int intel_i915_get_gtt_size(void)
+ 
+ 		/* G33's GTT size defined in gmch_ctrl */
+ 		pci_read_config_word(agp_bridge->dev, I830_GMCH_CTRL, &gmch_ctrl);
+-		switch (gmch_ctrl & G33_PGETBL_SIZE_MASK) {
+-		case G33_PGETBL_SIZE_1M:
++		switch (gmch_ctrl & I830_GMCH_GMS_MASK) {
++		case I830_GMCH_GMS_STOLEN_512:
++			size = 512;
++			break;
++		case I830_GMCH_GMS_STOLEN_1024:
+ 			size = 1024;
+ 			break;
+-		case G33_PGETBL_SIZE_2M:
+-			size = 2048;
++		case I830_GMCH_GMS_STOLEN_8192:
++			size = 8*1024;
+ 			break;
+ 		default:
+ 			dev_info(&agp_bridge->dev->dev,
+ 				 "unknown page table size 0x%x, assuming 512KB\n",
+-				(gmch_ctrl & G33_PGETBL_SIZE_MASK));
++				(gmch_ctrl & I830_GMCH_GMS_MASK));
+ 			size = 512;
+ 		}
+ 	} else {
+-- 
+1.7.0.4
+
+
+--------------000106050108090600060006--
