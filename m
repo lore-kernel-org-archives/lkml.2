@@ -1,82 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756457Ab0GINni (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:43:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44154 "EHLO mx1.redhat.com"
+	id S1756503Ab0GINqN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:46:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30561 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755834Ab0GINnh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:43:37 -0400
-Message-ID: <4C372743.6070003@redhat.com>
-Date: Fri, 09 Jul 2010 09:42:27 -0400
-From: Don Dutile <ddutile@redhat.com>
-Reply-To: ddutile@redhat.com
-User-Agent: Thunderbird 2.0.0.18 (X11/20081113)
+	id S1755882Ab0GINqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 09:46:11 -0400
+Date: Fri, 9 Jul 2010 09:45:46 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+       Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
+       kamezawa.hiroyu@jp.fujitsu.com, Andrea Righi <righi.andrea@gmail.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+       balbir@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH 00/11] blkiocg async support
+Message-ID: <20100709134546.GC3672@redhat.com>
+References: <4C369009.80503@ds.jp.nec.com>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: Ian Campbell <Ian.Campbell@eu.citrix.com>,
-       "jeremy@goop.org" <jeremy@goop.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       "stefano@stabellini.net" <stefano@stabellini.net>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "sheng@linux.intel.com" <sheng@linux.intel.com>
-Subject: Re: [Xen-devel] Re: [PATCH 12/13] Unplug emulated disks and nics
-References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>  <1277136847-13266-12-git-send-email-stefano@stabellini.net>  <4C2CEF56.4050008@redhat.com>  <alpine.DEB.2.00.1007051255310.29110@kaball-desktop>  <4C34DD1B.3010601@redhat.com>  <alpine.DEB.2.00.1007081246440.21432@kaball-desktop>  <4C362DC3.7000101@redhat.com>  <1278624583.12109.15.camel@localhost.localdomain>  <4C364A3F.8020900@redhat.com> <1278662546.28432.602.camel@zakaz.uk.xensource.com> <alpine.DEB.2.00.1007091150000.21432@kaball-desktop>
-In-Reply-To: <alpine.DEB.2.00.1007091150000.21432@kaball-desktop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C369009.80503@ds.jp.nec.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefano Stabellini wrote:
-> On Fri, 9 Jul 2010, Ian Campbell wrote:
->>>> Any guest which uses xvda in its configuration file today will be using
->>>> emulated devices but I think that with Stefano's patch and your proposed
->>>> change in default on a Xen system without support for unplug will start
->>>> using PV devices without unplugging the emulated ones first.
->>>>
->>> Well, Stefano requires the admin to add unplug switch to kernel cmd line,
->> In the case where the host platform does not support the unplug protocol
->> this is correct and requiring explicit admin action to allow the PV
->> frontends to activate is the only safe option WRT the users data.
->>
->> However if the host platform does support the unplug protocol then this
->> is incorrect. In that case the default (in the absence of the command
->> line option) is to automatically unplug any device for which a PV driver
->> is available and so no command line option will be required in the
->> common case. (see xen_unplug_emulated_devices() under the comment "Set
->> the default value of xen_emul_unplug depending on...")
->>
+On Thu, Jul 08, 2010 at 10:57:13PM -0400, Munehiro Ikeda wrote:
+> These RFC patches are trial to add async (cached) write support on blkio
+> controller.
 > 
-> that's right: on host platforms supporting unplug no command line options
-> are required; on the other hand if the host platform does not support
-> unplug then xen_emul_unplug=ignore is required to use PV drivers anyway.
+> Only test which has been done is to compile, boot, and that write bandwidth
+> seems prioritized when pages which were dirtied by two different processes in
+> different cgroups are written back to a device simultaneously.  I know this
+> is the minimum (or less) test but I posted this as RFC because I would like
+> to hear your opinions about the design direction in the early stage.
+> 
+> Patches are for 2.6.35-rc4.
+> 
+> This patch series consists of two chunks.
+> 
+> (1) iotrack (patch 01/11 -- 06/11)
+> 
+> This is a functionality to track who dirtied a page, in exact which cgroup a
+> process which dirtied a page belongs to.  Blkio controller will read the info
+> later and prioritize when the page is actually written to a block device.
+> This work is originated from Ryo Tsuruta and Hirokazu Takahashi and includes
+> Andrea Righi's idea.  It was posted as a part of dm-ioband which was one of
+> proposals for IO controller.
 > 
 > 
-I see by looking at xen_unplug_emulated_devices() closer, that the default
-unplugs emulated ide & emulated nic:
-	if (xen_platform_pci_enabled && !xen_emul_unplug)
+> (2) blkio controller modification (07/11 -- 11/11)
+> 
+> The main part of blkio controller async write support.
+> Currently async queues are device-wide and async write IOs are always treated
+> as root group.
+> These patches make async queues per a cfq_group per a device to control them.
+> Async write is handled by flush kernel thread.  Because queue pointers are
+> stored in cfq_io_context, io_context of the thread has to have multiple
+> cfq_io_contexts per a device.  So these patches make cfq_io_context per an
+> io_context per a cfq_group, which means per an io_context per a cgroup per a
+> device.
+> 
+> 
+> This might be a piece of puzzle for complete async write support of blkio
+> controller.  One of other pieces in my head is page dirtying ratio control.
+> I believe Andrea Righi was working on it...how about the situation?
 
-I had to work around the fact that xen_platform_pci_enabled would
-not be set on rhel5-dom0 (no emul-unplug), so I hadn't looked at this default
-so closely.
+Thanks Muuh. I will look into the patches in detail. 
 
+In my initial patches I had implemented the support for ASYNC control
+(also included Ryo's IO tracking patches) but it did not work well and
+it was unpredictable. I realized that until and unless we implement
+some kind of per group dirty ratio/page cache share at VM level and
+create parallel paths for ASYNC IO, writes often get serialized.
 
->>> so I don't see the harm in defaulting to unplug... 
->> As I described in my previous mail this is unsafe on host platforms
->> which do not support unplug. As I describe above it is unnecessary on
->> host platforms which do support unplug
->>
-> 
-> yep, keep in mind the copy and paste example.
-> 
-> 
-> 
-> If you are happy about the patch, I'll include it in my next version.
-> 
+So writes belonging to high priority group get stuck behind low priority
+group and you don't get any service differentiation.
 
-Yes, the patch seems like a reasonable solution for running on older qemu-dm's.
+So IMHO, this piece should go into kernel after we have first fixed the
+problem at VM (read memory controller) with per cgroup dirty ratio kind
+of thing.
 
-Thanks for the clarification(s).
+> 
+> And also, I'm thinking that async write support is required by bandwidth
+> capping policy of blkio controller.  Bandwidth capping can be done in upper
+> layer than elevator.
 
-- Don
+I think capping facility we should implement in higher layers otherwise
+it is not useful for higher level logical devices (dm/md).
+
+It was ok to implement proportional bandwidth division at CFQ level
+because one can do proportional BW division at each leaf node and still get
+overall service differentation at higher level logical node. But same can
+not be done for max BW control.
+ 
+>  However I think it should be also done in elevator layer
+> in my opinion.  Elevator buffers and sort requests.  If there is another
+> buffering functionality in upper layer, it is doubled buffering and it can be
+> harmful for elevator's prediction.
+
+I don't mind doing it at elevator layer also because in that case of
+somebody is not using dm/md, then one does not have to load max bw
+control module and one can simply enable max bw control in CFQ. 
+
+Thinking more about it, now we are suggesting implementing max BW
+control at two places. I think it will be duplication of code and
+increased complexity in CFQ. Probably implement max bw control with
+the help of dm module and use same for CFQ also. There is pain 
+associated with configuring dm device but I guess it is easier than
+maintaining two max bw control schemes in kernel.
+
+Thanks
+Vivek
