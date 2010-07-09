@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755739Ab0GIXmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 19:42:04 -0400
+	id S1755797Ab0GIXoF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 19:44:05 -0400
 Received: from smtp.polymtl.ca ([132.207.4.11]:59632 "EHLO smtp.polymtl.ca"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751362Ab0GIXmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 19:42:01 -0400
-Message-Id: <20100709225815.911511969@efficios.com>
+	id S1751601Ab0GIXoD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 19:44:03 -0400
+Message-Id: <20100709225814.855827624@efficios.com>
 User-Agent: quilt/0.48-1
-Date: Fri, 09 Jul 2010 18:57:32 -0400
+Date: Fri, 09 Jul 2010 18:57:28 -0400
 From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
@@ -24,135 +24,187 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Tom Zanussi <tzanussi@gmail.com>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Andi Kleen <andi@firstfloor.org>,
-       Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-       William Lee Irwin III <wli@holomorphy.com>
-Subject: [patch 05/20] Poll : add poll_wait_set_exclusive
+       Alexander Shishkin <virtuoso@slind.org>,
+       Russell King - ARM Linux <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org, Imre Deak <imre.deak@nokia.com>,
+       Jamie Lokier <jamie@shareable.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>
+Subject: [patch 01/20] Create generic alignment API (v8)
 References: <20100709225727.312232266@efficios.com>
-Content-Disposition: inline; filename=poll-wait-exclusive.patch
-X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Fri,  9 Jul 2010 22:58:16 +0000
+Content-Disposition: inline; filename=create-generic-alignment-api.patch
+X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Fri,  9 Jul 2010 22:58:15 +0000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Executive summary:
+Rather than re-doing the "alignment on a type size" trick all over again at
+different levels, import the "ltt_align" from LTTng into kernel.h and make this
+available to everyone. Renaming to:
 
-poll_wait_set_exclusive : set poll wait queue to exclusive
+- object_align()
+- object_align_floor()
+- offset_align()
+- offset_align_floor()
 
-Sets up a poll wait queue to use exclusive wakeups. This is useful to
-wake up only one waiter at each wakeup. Used to work-around "thundering herd"
-problem.
+Changelog since v7:
+- Add missing include/linux/Kconfig header-y.
 
-Detail:
+Changelog since v6:
+- Adapt to changes introduced by
+  commit a79ff731a1b277d0e92d9453bdf374e04cec717a
+- Use __alignof__() instead of sizeof() to support compound types.
 
-* Problem description :
+Changelog since v5:
+- moved alignment apis to a separate header file so that it is possible
+  to use them from other header files which are, for example, included
+  from kernel.h.
 
-In the ring buffer poll() implementation, a typical multithreaded user-space
-buffer reader polls all per-cpu buffer descriptors for data.  The number of
-reader threads can be user-defined; the motivation for permitting this is that
-there are typical workloads where a single CPU is producing most of the tracing
-data and all other CPUs are idle, available to consume data. It therefore makes
-sense not to tie those threads to specific buffers. However, when the number of
-threads grows, we face a "thundering herd" problem where many threads can be
-woken up and put back to sleep, leaving only a single thread doing useful work.
+Changelog since v4:
+- add missing ( ) around parameters within object_align() and
+  object_align_floor().
+- More coding style cleanups to ALIGN() (checkpatch.pl is happy now).
 
-* Solution :
+Changelog since v3:
+- optimize object_align*() so fewer instructions are needed for alignment of
+  addresses known dynamically. Use the (already existing) "ALIGN()", and create
+  the "ALIGN_FLOOR()" macro.
+- While we are there, let's clean up the ALIGN() macros wrt coding style. e.g.
+  missing parenthesis around the first use of the "x" parameter in ALIGN().
 
-Introduce a poll_wait_set_exclusive() primitive to poll API, so the code which
-implements the pollfd operation can specify that only a single waiter must be
-woken up.
+Changelog since v2:
+- Fix object_align*(): should use object size alignment, not pointer alignment.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-CC: William Lee Irwin III <wli@holomorphy.com>
-CC: Ingo Molnar <mingo@elte.hu>
+Changelog since v1:
+- Align on the object natural alignment
+    (rather than min(arch word alignment, natural alignment))
+
+The advantage of separating the API in "object alignment" and "offset alignment"
+is that it gives more freedom to play with offset alignment. Very useful to
+implement a tracer ring-buffer alignment. (hint hint)
+
+Typical users will use "object alignment", but infrastructures like tracers
+which need to perform alignment of statically known base+offsets will typically
+use "offset alignment", because it allows to align with respect to a base rather
+than to pass an absolute address.
+
+We use "sizeof(object)" rather than "__alignof__()" object because alignof
+returns "recommended" object alignment for the architecture, which can be
+sub-optimal on some architectures. By ensuring alignment on the object size, we
+are sure to make the right choice.
+
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+CC: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org
+CC: Imre Deak <imre.deak@nokia.com>
+CC: Jamie Lokier <jamie@shareable.org>
+CC: rostedt@goodmis.org
+CC: mingo@elte.hu
+CC: Alexey Dobriyan <adobriyan@gmail.com>
 ---
- fs/select.c          |   41 ++++++++++++++++++++++++++++++++++++++---
- include/linux/poll.h |    2 ++
- 2 files changed, 40 insertions(+), 3 deletions(-)
+ include/linux/Kbuild   |    1 
+ include/linux/align.h  |   56 +++++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/kernel.h |    8 -------
+ 3 files changed, 58 insertions(+), 7 deletions(-)
+ create mode 100644 include/linux/align.h
 
-Index: linux.trees.git/fs/select.c
+Index: linux.trees.git/include/linux/align.h
 ===================================================================
---- linux.trees.git.orig/fs/select.c	2010-07-09 15:59:00.000000000 -0400
-+++ linux.trees.git/fs/select.c	2010-07-09 16:03:24.000000000 -0400
-@@ -112,6 +112,9 @@ struct poll_table_page {
-  */
- static void __pollwait(struct file *filp, wait_queue_head_t *wait_address,
- 		       poll_table *p);
-+static void __pollwait_exclusive(struct file *filp,
-+				 wait_queue_head_t *wait_address,
-+				 poll_table *p);
- 
- void poll_initwait(struct poll_wqueues *pwq)
- {
-@@ -152,6 +155,20 @@ void poll_freewait(struct poll_wqueues *
- }
- EXPORT_SYMBOL(poll_freewait);
- 
-+/**
-+ * poll_wait_set_exclusive - set poll wait queue to exclusive
-+ *
-+ * Sets up a poll wait queue to use exclusive wakeups. This is useful to
-+ * wake up only one waiter at each wakeup. Used to work-around "thundering herd"
-+ * problem.
+--- /dev/null	1970-01-01 00:00:00.000000000 +0000
++++ linux.trees.git/include/linux/align.h	2010-07-01 11:54:43.000000000 -0400
+@@ -0,0 +1,56 @@
++#ifndef _LINUX_ALIGN_H
++#define _LINUX_ALIGN_H
++
++#define __ALIGN_KERNEL(x, a)	__ALIGN_KERNEL_MASK((x), (typeof(x))(a) - 1)
++#define __ALIGN_KERNEL_MASK(x, mask) \
++				(((x) + (mask)) & ~(mask))
++
++#ifdef __KERNEL__
++
++#include <linux/types.h>
++
++#define ALIGN(x, a)		__ALIGN_KERNEL((x), (a))
++#define __ALIGN_MASK(x, mask)	__ALIGN_KERNEL_MASK((x), (mask))
++#define PTR_ALIGN(p, a)		((typeof(p)) ALIGN((unsigned long) (p), (a)))
++#define ALIGN_FLOOR(x, a)	__ALIGN_FLOOR_MASK((x), (typeof(x)) (a) - 1)
++#define __ALIGN_FLOOR_MASK(x, mask)	((x) & ~(mask))
++#define PTR_ALIGN_FLOOR(p, a) \
++			((typeof(p)) ALIGN_FLOOR((unsigned long) (p), (a)))
++#define IS_ALIGNED(x, a)	(((x) & ((typeof(x)) (a) - 1)) == 0)
++
++/*
++ * Align pointer on natural object alignment. Object size must be power of two.
 + */
-+void poll_wait_set_exclusive(poll_table *p)
-+{
-+	if (p)
-+		init_poll_funcptr(p, __pollwait_exclusive);
-+}
-+EXPORT_SYMBOL(poll_wait_set_exclusive);
++#define object_align(obj)	PTR_ALIGN((obj), __alignof__(*(obj)))
++#define object_align_floor(obj)	PTR_ALIGN_FLOOR((obj), __alignof__(*(obj)))
 +
- static struct poll_table_entry *poll_get_entry(struct poll_wqueues *p)
- {
- 	struct poll_table_page *table = p->table;
-@@ -213,8 +230,10 @@ static int pollwake(wait_queue_t *wait,
- }
- 
- /* Add a new entry */
--static void __pollwait(struct file *filp, wait_queue_head_t *wait_address,
--				poll_table *p)
-+static void __pollwait_common(struct file *filp,
-+			      wait_queue_head_t *wait_address,
-+			      poll_table *p,
-+			      int exclusive)
- {
- 	struct poll_wqueues *pwq = container_of(p, struct poll_wqueues, pt);
- 	struct poll_table_entry *entry = poll_get_entry(pwq);
-@@ -226,7 +245,23 @@ static void __pollwait(struct file *filp
- 	entry->key = p->key;
- 	init_waitqueue_func_entry(&entry->wait, pollwake);
- 	entry->wait.private = pwq;
--	add_wait_queue(wait_address, &entry->wait);
-+	if (!exclusive)
-+		add_wait_queue(wait_address, &entry->wait);
-+	else
-+		add_wait_queue_exclusive(wait_address, &entry->wait);
++/**
++ * offset_align - Calculate the offset needed to align an object on its natural
++ *                alignment towards higher addresses.
++ * @align_drift:  object offset from an "alignment"-aligned address.
++ * @alignment:    natural object alignment. Must be non-zero, power of 2.
++ *
++ * Returns the offset that must be added to align towards higher
++ * addresses.
++ */
++static inline size_t offset_align(size_t align_drift, size_t alignment)
++{
++	return (alignment - align_drift) & (alignment - 1);
 +}
 +
-+static void __pollwait(struct file *filp, wait_queue_head_t *wait_address,
-+				poll_table *p)
++/**
++ * offset_align_floor - Calculate the offset needed to align an object
++ *                      on its natural alignment towards lower addresses.
++ * @align_drift:  object offset from an "alignment"-aligned address.
++ * @alignment:    natural object alignment. Must be non-zero, power of 2.
++ *
++ * Returns the offset that must be substracted to align towards lower addresses.
++ */
++static inline size_t offset_align_floor(size_t align_drift, size_t alignment)
 +{
-+	__pollwait_common(filp, wait_address, p, 0);
++	return (align_drift - alignment) & (alignment - 1);
 +}
 +
-+static void __pollwait_exclusive(struct file *filp,
-+				 wait_queue_head_t *wait_address,
-+				 poll_table *p)
-+{
-+	__pollwait_common(filp, wait_address, p, 1);
- }
- 
- int poll_schedule_timeout(struct poll_wqueues *pwq, int state,
-Index: linux.trees.git/include/linux/poll.h
++#endif /* __KERNEL__ */
++
++#endif
+Index: linux.trees.git/include/linux/kernel.h
 ===================================================================
---- linux.trees.git.orig/include/linux/poll.h	2010-07-09 15:59:00.000000000 -0400
-+++ linux.trees.git/include/linux/poll.h	2010-07-09 16:03:24.000000000 -0400
-@@ -79,6 +79,8 @@ static inline int poll_schedule(struct p
- 	return poll_schedule_timeout(pwq, state, NULL, 0);
- }
- 
-+extern void poll_wait_set_exclusive(poll_table *p);
-+
+--- linux.trees.git.orig/include/linux/kernel.h	2010-07-01 11:54:43.000000000 -0400
++++ linux.trees.git/include/linux/kernel.h	2010-07-01 12:29:05.000000000 -0400
+@@ -4,8 +4,7 @@
  /*
-  * Scaleable version of the fd_set.
+  * 'kernel.h' contains some often-used function prototypes etc
   */
+-#define __ALIGN_KERNEL(x, a)		__ALIGN_KERNEL_MASK(x, (typeof(x))(a) - 1)
+-#define __ALIGN_KERNEL_MASK(x, mask)	(((x) + (mask)) & ~(mask))
++#include <linux/align.h>
+ 
+ #ifdef __KERNEL__
+ 
+@@ -39,11 +38,6 @@ extern const char linux_proc_banner[];
+ 
+ #define STACK_MAGIC	0xdeadbeef
+ 
+-#define ALIGN(x, a)		__ALIGN_KERNEL((x), (a))
+-#define __ALIGN_MASK(x, mask)	__ALIGN_KERNEL_MASK((x), (mask))
+-#define PTR_ALIGN(p, a)		((typeof(p))ALIGN((unsigned long)(p), (a)))
+-#define IS_ALIGNED(x, a)		(((x) & ((typeof(x))(a) - 1)) == 0)
+-
+ #define ARRAY_SIZE(arr) (sizeof(arr) / sizeof((arr)[0]) + __must_be_array(arr))
+ 
+ /*
+Index: linux.trees.git/include/linux/Kbuild
+===================================================================
+--- linux.trees.git.orig/include/linux/Kbuild	2010-07-01 12:29:13.000000000 -0400
++++ linux.trees.git/include/linux/Kbuild	2010-07-01 12:29:40.000000000 -0400
+@@ -18,6 +18,7 @@ header-y += usb/
+ 
+ header-y += affs_hardblocks.h
+ header-y += aio_abi.h
++header-y += align.h
+ header-y += arcfb.h
+ header-y += atmapi.h
+ header-y += atmarp.h
 
