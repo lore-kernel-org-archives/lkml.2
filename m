@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab0GIBv2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 21:51:28 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34447 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752313Ab0GIBv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 21:51:26 -0400
-Date: Fri, 9 Jul 2010 11:51:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Luciano Coelho <luciano.coelho@nokia.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Subject: linux-next: manual merge of the wireless tree with the net tree
-Message-Id: <20100709115119.6c88f8d2.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__9_Jul_2010_11_51_19_+1000_+ybeaPsdpAXC7QsI"
+	id S1754820Ab0GICE4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 22:04:56 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:48254 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751946Ab0GICEx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 22:04:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=PzWy6t2cQUxetj/Gfq6GkGxSXOUV4zMzIq53d3jO79G5bZEeYqGLslVGfZ03chqX2I
+         LgNZtzuTuCZCVaXZ+UPEYQgHLZblh4b59F2VpgaHCKHbhYWN+tx9rgxowWLWY5Hs93kG
+         w6E85hurU7KB7f0pOKdkXoZhfupqNgzbf9KvY=
+Date: Fri, 9 Jul 2010 04:04:42 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Network Development <netdev@vger.kernel.org>,
+       Linux ACPI <linux-acpi@vger.kernel.org>,
+       Linux PM List <linux-pm@lists.linux-foundation.org>,
+       Linux SCSI List <linux-scsi@vger.kernel.org>,
+       Linux Wireless List <linux-wireless@vger.kernel.org>,
+       DRI <dri-devel@lists.sourceforge.net>,
+       Al Viro <viro@zeniv.linux.org.uk>, Shawn Starr <shawn.starr@rogers.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Dave Airlie <airlied@redhat.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       Patrick McHardy <kaber@trash.net>, Jens Axboe <axboe@kernel.dk>
+Subject: Re: 2.6.35-rc4-git3: Reported regressions from 2.6.34
+Message-ID: <20100709020440.GJ6405@nowhere>
+References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__9_Jul_2010_11_51_19_+1000_+ybeaPsdpAXC7QsI
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Thu, Jul 08, 2010 at 06:34:25PM -0700, Linus Torvalds wrote:
+> On Thu, Jul 8, 2010 at 4:33 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16284
+> > Subject         : Hitting WARN_ON in hw_breakpoint code
+> > Submitter       : Paul Mackerras <paulus@samba.org>
+> > Date            : 2010-06-23 12:57 (16 days old)
+> > Message-ID      : <20100623125740.GA3368@brick.ozlabs.ibm.com>
+> > References      : http://marc.info/?l=linux-kernel&m=127729789113432&w=2
+> 
+> This has "I have a fix, will post it very soon." in the thread from
+> Frederic, but I'm not seeing anything else. Frederic?
 
-Hi John,
 
-Today's linux-next merge of the wireless tree got a conflict in
-drivers/net/wireless/wl12xx/wl1271_cmd.h between commit
-ba2d3587912f82d1ab4367975b1df460db60fb1e ("drivers/net: use __packed
-annotation") from the net tree and commit
-34dd2aaac4a4b908c093980a9894fd878aeb6deb ("wl1271: moved scan operations
-to a separate file") from the wireless tree.
 
-I didn't bother changing __attribute((packed)) to __packed where this
-code has been moved to.  Maybe someone could write a patch to do that ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Right. In fact it wasn't a regression. The per task breakpoint reservation
+design was broken from the beginning and this warning has revealed the
+problem. This only touched perf, and it did since perf support breakpoints.
+Fortunately ptrace wasn't concerned by this problem, even not by side effects
+of this.
 
---Signature=_Fri__9_Jul_2010_11_51_19_+1000_+ybeaPsdpAXC7QsI
-Content-Type: application/pgp-signature
+The fix is invasive as it's a rewrite of a (little) part of the breakpoint
+reservation. And since the symptom is only a warning and also breakpoints
+never released from the constraint table (just a counter, no memory leak),
+the fix is headed for 2.6.36.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+It is ready in tip:/perf/core:
 
-iQEcBAEBAgAGBQJMNoCXAAoJEDMEi1NhKgbswMwH/1rRe2pRvN2JB6Wge38UYGww
-CXJUsjTUkPGK7ve2HDtBlbPcZv8Ow3iO/aTYWawYqjJRYZdVZr7ocmYgFGu5AiZE
-Wc2l429G4tGnFp6zDJbxIGPBVtrEujAgnTT56JxzzeRwkKehQRtrhv4GFB9L059t
-d5rZv8vcoVCJYoVzqOLNyS19YfWsVKejHZj1dHsMxBsbRDEqaRa+KJFXTmGnV7vX
-yPEkJ210wFubBLh7Zsq2E2D0D2mZKuJ+h8vN9TfLfSD9TR6XQ2deGMl8T+IHWTqN
-MBefMG14XDZhtpIjQuFmuU7AOUG9NlhMq3slile+TY/k3q/pydTGFbQKcOePaXs=
-=e7Pn
------END PGP SIGNATURE-----
+http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=commitdiff;h=45a73372efe4a63f44aa2e1125d4a777c2fdc8d8
 
---Signature=_Fri__9_Jul_2010_11_51_19_+1000_+ybeaPsdpAXC7QsI--
+I think this ticket can be safely closed.
+
+Thanks.
+
