@@ -1,69 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754725Ab0GIBo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 21:44:59 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:33619 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752783Ab0GIBo5 (ORCPT
+	id S1754860Ab0GIBqg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 21:46:36 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:53428 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751281Ab0GIBqf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 21:44:57 -0400
-Subject: Re: 2.6.33.5 rt23: sleeping function called from invalid context
-From: john stultz <johnstul@us.ibm.com>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1278610624.3008.2.camel@localhost.localdomain>
-References: <1278561270.5448.2.camel@localhost.localdomain>
-	 <1278610624.3008.2.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 08 Jul 2010 18:44:32 -0700
-Message-ID: <1278639872.3008.36.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 8 Jul 2010 21:46:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=cE6ldt1wMbBIqunQS6rmb8SJ9JjdVVC5YHvbmW7loPn44kMEoliSuDwSUgYsuadvWT
+         aVljJQIkkEa1lTCQjEtcUA3KgiXiMyd0+1W8Sf3CdREAjNnseelgp/XiFQoIVfyYjPNH
+         rHzd3NArqyraXRheSTsQgoN9OK21DbepoQj+Q=
+MIME-Version: 1.0
+In-Reply-To: <20100709090956.CD51.A69D9226@jp.fujitsu.com>
+References: <20100708163401.CD34.A69D9226@jp.fujitsu.com>
+	<20100708130048.fccfcdad.akpm@linux-foundation.org>
+	<20100709090956.CD51.A69D9226@jp.fujitsu.com>
+Date: Fri, 9 Jul 2010 10:46:32 +0900
+Message-ID: <AANLkTik_NdsbyY3BBxqERxTVIQjKMzXCi-mw7EaISo7R@mail.gmail.com>
+Subject: Re: [PATCH v2 1/2] vmscan: don't subtraction of unsined
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-08 at 10:37 -0700, john stultz wrote:
-> On Wed, 2010-07-07 at 20:54 -0700, Fernando Lopez-Lezcano wrote:
-> > After a suspend/wake up cycle, just after upgrading to fc12 (I did not
-> > see this with the same basic kernel - that is, compiled from the same
-> > source + patches - under fc11). 
-> > 
-> > BUG: sleeping function called from invalid context at
-> > kernel/rtmutex.c:684
-> > pcnt: 0 0 in_atomic(): 0, irqs_disabled(): 1, pid: 10582, name:
-> > pm-suspend
-> > Pid: 10582, comm: pm-suspend Not tainted
-> > 2.6.33.5-120.rt23.1.fc11.ccrma.i686.rtPAE #1
-> > Call Trace:
-> > [<c042eced>] __might_sleep+0xcc/0xd4
-> > [<c0464f57>] rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> > [<c0792862>] rt_spin_lock+0x8/0xa
-> > [<c040dddc>] read_persistent_clock+0x11/0x30
-> > [<c045d1de>] timekeeping_suspend+0xe/0x4e
-> > [<c0640c9e>] sysdev_suspend+0x15c/0x356
-> > [<c0792906>] ? _mutex_unlock+0x8/0xa
-> > [<c046afc1>] suspend_devices_and_enter+0xea/0x17f
-> 
-> Huh. Looks like the lock protecting the RTC/CMOS might need to be
-> converted to a raw spinlock, since suspend/resume is probably done with
-> irqs off.
+On Fri, Jul 9, 2010 at 10:16 AM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+>
+>> > @@ -2628,16 +2628,16 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+>> >              * take a long time.
+>> >              */
+>> >             while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
+>> > -                   zone_page_state(zone, NR_SLAB_RECLAIMABLE) >
+>> > -                           slab_reclaimable - nr_pages)
+>> > +                  (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages > n))
+>> >                     ;
+>> >
+>> >             /*
+>> >              * Update nr_reclaimed by the number of slab pages we
+>> >              * reclaimed from this zone.
+>> >              */
+>> > -           sc.nr_reclaimed += slab_reclaimable -
+>> > -                   zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+>> > +           m = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+>> > +           if (m < n)
+>> > +                   sc.nr_reclaimed += n - m;
+>>
+>> And it's not a completly trivial objection.  Your patch made the above
+>> code snippet quite a lot harder to read (and hence harder to maintain).
+>
+> Initially, I proposed following patch to Christoph. but he prefer n and m.
+> To be honest, I don't think this naming is big matter. so you prefer following
+> I'll submit it.
+>
+>
+>
+>
+> =====================================================================
+> From 397199d69860061eaa5e1aaadac45c46c76b0522 Mon Sep 17 00:00:00 2001
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date: Wed, 30 Jun 2010 13:35:16 +0900
+> Subject: [PATCH] vmscan: don't subtraction of unsined
+>
+> 'slab_reclaimable' and 'nr_pages' are unsigned. so, subtraction is
+> unsafe.
+>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-Oof. The rtc_lock is used all over the place. Not sure if we really want
-to convert it to a raw_spinlock. 
+I like this than n,m.
 
-However, sysdev_suspend() wants interrupts off on all the .suspend
-calls. I'm surprised we haven't hit this issue with more drivers. Maybe
-no one is testing suspend w/ -rt? Or am I just missing an obvious
-solution?
-
-Thomas, any thoughts on this? 
-
-thanks
--john
-
-
-
+-- 
+Kind regards,
+Minchan Kim
