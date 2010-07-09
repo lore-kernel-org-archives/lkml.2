@@ -1,119 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755221Ab0GITNE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 15:13:04 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:34430 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754921Ab0GITM3 (ORCPT
+	id S1754841Ab0GITNh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 15:13:37 -0400
+Received: from smtp1.Stanford.EDU ([171.67.219.81]:58888 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751053Ab0GITNd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 15:12:29 -0400
-Message-Id: <20100709190857.289989794@quilx.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 09 Jul 2010 14:07:19 -0500
-From: Christoph Lameter <cl@linux-foundation.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Nick Piggin <npiggin@suse.de>
-Cc: David Rientjes <rientjes@google.com>
-Subject: [S+Q2 13/19] slub: Extract hooks for memory checkers from hotpaths
-References: <20100709190706.938177313@quilx.com>
-Content-Disposition: inline; filename=slub_extract
+	Fri, 9 Jul 2010 15:13:33 -0400
+Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+To: john stultz <johnstul@us.ibm.com>
+Cc: nando@ccrma.Stanford.EDU, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1278702134.5102.9.camel@localhost.localdomain>
+References: <1278609590.7527.11.camel@localhost.localdomain>
+	 <1278628386.3008.11.camel@localhost.localdomain>
+	 <1278629044.12059.6.camel@localhost.localdomain>
+	 <1278630050.3008.18.camel@localhost.localdomain>
+	 <1278702134.5102.9.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Jul 2010 12:13:02 -0700
+Message-ID: <1278702782.7122.1.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Extract the code that memory checkers and other verification tools use from
-the hotpaths. Makes it easier to add new ones and reduces the disturbances
-of the hotpaths.
+On Fri, 2010-07-09 at 12:02 -0700, Fernando Lopez-Lezcano wrote:
+> On Thu, 2010-07-08 at 16:00 -0700, john stultz wrote:
+> > On Thu, 2010-07-08 at 15:44 -0700, Fernando Lopez-Lezcano wrote:
+> > > On Thu, 2010-07-08 at 15:33 -0700, john stultz wrote:
+> > > > On Thu, 2010-07-08 at 10:19 -0700, Fernando Lopez-Lezcano wrote:
+> > > > > We are having problems with 2.6.33.5+rt23, at least in our configuration
+> > > > > while accessing an nfs automounted directory. This causes a complete
+> > > > > machine lockup (press reset to exit as the only option). 
+> > > > > 
+> > > > > I simply use the Nautilus file manager (in Fedora 12) to navigate to an
+> > > > > autofs mounted directory and the process monitor goes to 100% on one
+> > > > > core (or maybe two), the mouse jerks a bit and the whole thing goes
+> > > > > catatonic almost immediately. 
+> > > > > 
+> > > > > I get this in any open terminal at the time of the crash:
+> > > > > 
+> > > > > --------
+> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> > > > >  kernel:------------[ cut here ]------------
+> > > > > 
+> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> > > > >  kernel:invalid opcode: 0000 [#1] PREEMPT SMP 
+> > > > > 
+> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> > > > >  kernel:last sysfs
+> > > > > file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
+> > > > > 
+> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> > > > >  kernel:Process nautilus (pid: 2874, ti=f0204000 task=f17dd1f0
+> > > > > task.ti=f0204000)
+> > > > > 
+> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> > > > >  kernel:Stack:
+> > > > > 
+> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> > > > >  kernel:Call Trace:
+> > > > > 
+> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> > > > >  kernel:Code: 7b 08 00 89 45 b8 75 12 8d 43 04 89 43 04 89 43 08 8d 43
+> > > > > 0c 89 43 0c 89 43 10 8b 43 14 64 8b 15 2c d1 a5 c0 83 e0 fc 39 c2 75 04
+> > > > > <0f> 0b eb fe 8b 3a 81 ff 08 01 00 00 74 0a 83 ff 02 b8 04 00 00 
+> > > > > 
+> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
+> > > > >  kernel:EIP: [<c0792c0f>] rt_spin_lock_slowlock+0x43/0x1bb SS:ESP
+> > > > > 0068:f0205cbc
+> > > > > --------
+> > > > > 
+> > > > > And that's it... nothing else in the logs. 
+> > > > 
+> > > > Hrm. Not too much to go on there, but thanks for the report.
+> > > > 
+> > > > 
+> > > > > For now we are booting into the normal Fedora kernel (this is on Fedora
+> > > > > 12) as this makes the rt kernel not usable in our setup. 
+> > > > > 
+> > > > > Let me know if there is anything else I can do to help debug this...
+> > > > 
+> > > > Had you done any testing with earlier 2.6.33-rt kernels where this
+> > > > didn't occur? If so what version?
+> > > 
+> > > I have been working with the whole series but my main usage case does
+> > > not use nfs/autofs (see next paragraphs). 
+> > > 
+> > > I have noticed that the problem does not appear to happen when I cd into
+> > > an nfs automounted directory directly. It appears to happen only when
+> > > listing the contents of a mount point (ie: when "/whatever/" is an
+> > > autofs mount point where several directories are mounted, not
+> > > necessarily from the same server). 
+> > > 
+> > > Before switching to Fedora 12 users were normally running 2.6.29 rt and
+> > > I had been running 2.6.31.x and 2.6.33.x rt, but I don't think it ever
+> > > happened to me personally (I'm always using the command line - this is
+> > > completely reproducible with nautilus). After the switch it started
+> > > happening almost immediately to regular users (using nautilus mostly). 
+> > > 
+> > > How could I try to get more debugging information?
+> > 
+> > Any chance you have a serial port on the machine in question? If so its
+> > likely any oops messages could be collected over that.
+> 
+> No response from the network or the keyboard or
+> mouse at this point, reset is the only way out. 
 
-Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
+Not quite true, it does respond to the sysrq key (a sync command got an
+immediate dump in the terminal). But the boot command does not reboot
+the machine. 
 
----
- mm/slub.c |   49 ++++++++++++++++++++++++++++++++++++++-----------
- 1 file changed, 38 insertions(+), 11 deletions(-)
+-- Fernando
 
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2010-07-07 09:14:45.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-07-07 10:38:17.000000000 -0500
-@@ -793,6 +793,37 @@ static void trace(struct kmem_cache *s, 
- }
- 
- /*
-+ * Hooks for other subsystems that check memory allocations. In a typical
-+ * production configuration these hooks all should produce no code at all.
-+ */
-+static inline int slab_pre_alloc_hook(struct kmem_cache *s, gfp_t flags)
-+{
-+	lockdep_trace_alloc(flags);
-+	might_sleep_if(flags & __GFP_WAIT);
-+
-+	return should_failslab(s->objsize, flags, s->flags);
-+}
-+
-+static inline void slab_post_alloc_hook(struct kmem_cache *s, gfp_t flags, void *object)
-+{
-+	kmemcheck_slab_alloc(s, flags, object, s->objsize);
-+	kmemleak_alloc_recursive(object, s->objsize, 1, s->flags, flags);
-+}
-+
-+static inline void slab_free_hook(struct kmem_cache *s, void *x)
-+{
-+	kmemleak_free_recursive(x, s->flags);
-+}
-+
-+static inline void slab_free_hook_irq(struct kmem_cache *s, void *object)
-+{
-+	kmemcheck_slab_free(s, object, s->objsize);
-+	debug_check_no_locks_freed(object, s->objsize);
-+	if (!(s->flags & SLAB_DEBUG_OBJECTS))
-+		debug_check_no_obj_freed(object, s->objsize);
-+}
-+
-+/*
-  * Tracking of fully allocated slabs for debugging purposes.
-  */
- static void add_full(struct kmem_cache_node *n, struct page *page)
-@@ -1704,10 +1735,7 @@ static __always_inline void *slab_alloc(
- 
- 	gfpflags &= gfp_allowed_mask;
- 
--	lockdep_trace_alloc(gfpflags);
--	might_sleep_if(gfpflags & __GFP_WAIT);
--
--	if (should_failslab(s->objsize, gfpflags, s->flags))
-+	if (!slab_pre_alloc_hook(s, gfpflags))
- 		return NULL;
- 
- 	local_irq_save(flags);
-@@ -1726,8 +1754,7 @@ static __always_inline void *slab_alloc(
- 	if (unlikely(gfpflags & __GFP_ZERO) && object)
- 		memset(object, 0, s->objsize);
- 
--	kmemcheck_slab_alloc(s, gfpflags, object, s->objsize);
--	kmemleak_alloc_recursive(object, s->objsize, 1, s->flags, gfpflags);
-+	slab_post_alloc_hook(s, gfpflags, object);
- 
- 	return object;
- }
-@@ -1856,13 +1883,13 @@ static __always_inline void slab_free(st
- 	struct kmem_cache_cpu *c;
- 	unsigned long flags;
- 
--	kmemleak_free_recursive(x, s->flags);
-+	slab_free_hook(s, x);
-+
- 	local_irq_save(flags);
- 	c = __this_cpu_ptr(s->cpu_slab);
--	kmemcheck_slab_free(s, object, s->objsize);
--	debug_check_no_locks_freed(object, s->objsize);
--	if (!(s->flags & SLAB_DEBUG_OBJECTS))
--		debug_check_no_obj_freed(object, s->objsize);
-+
-+	slab_free_hook_irq(s, x);
-+
- 	if (likely(page == c->page && c->node >= 0)) {
- 		set_freepointer(s, object, c->freelist);
- 		c->freelist = object;
 
