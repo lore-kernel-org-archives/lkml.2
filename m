@@ -1,129 +1,537 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753307Ab0GIHeT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 03:34:19 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51878 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752690Ab0GIHeS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 03:34:18 -0400
-Message-ID: <4C36D0F8.7070303@fusionio.com>
-Date: Fri, 09 Jul 2010 09:34:16 +0200
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: divya <dipraksh@linux.vnet.ibm.com>
-CC: "maciej.rutecki@gmail.com" <maciej.rutecki@gmail.com>,
-       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-       LKML <linux-kernel@vger.kernel.org>, Ron Minnich <rminnich@sandia.gov>,
-       Latchesar Ionkov <lucho@ionkov.net>, "hch@lst.de" <hch@lst.de>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@suse.de>
-Subject: Re: Oops while running fs_racer test on a POWER6 box against latest
-  git
-References: <4C2B28F3.7000006@linux.vnet.ibm.com> <201007012025.30452.maciej.rutecki@gmail.com> <4C2D8B63.2030500@linux.vnet.ibm.com> <4C36C876.9090404@linux.vnet.ibm.com>
-In-Reply-To: <4C36C876.9090404@linux.vnet.ibm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1753365Ab0GIHkk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 03:40:40 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47717 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751544Ab0GIHkj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 03:40:39 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 9 Jul 2010 16:35:52 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+       Vivek Goyal <vgoyal@redhat.com>, Ryo Tsuruta <ryov@valinux.co.jp>,
+       taka@valinux.co.jp, Andrea Righi <righi.andrea@gmail.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+       balbir@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH 02/11] blkiocg async: The main part of iotrack
+Message-Id: <20100709163552.3eef1d62.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C369452.2070103@ds.jp.nec.com>
+References: <4C369009.80503@ds.jp.nec.com>
+	<4C369452.2070103@ds.jp.nec.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-09 08:57, divya wrote:
-> On Friday 02 July 2010 12:16 PM, divya wrote:
->> On Thursday 01 July 2010 11:55 PM, Maciej Rutecki wrote:
->>> On środa, 30 czerwca 2010 o 13:22:27 divya wrote:
->>>> While running fs_racer test from LTP on a POWER6 box against latest
->>>> git(2.6.35-rc3-git4 - commitid 984bc9601f64fd) came across the 
->>>> following
->>>> warning followed by multiple oops.
->>>>
->>> I created a Bugzilla entry at
->>> https://bugzilla.kernel.org/show_bug.cgi?id=16324
->>> for your bug report, please add your address to the CC list in there, 
->>> thanks!
->>>
->>>
->> Here I find a cleaner back trace while running fs_racer test from LTP 
->> on a POWER6
->> box against the latest git(2.6.35-rc3-git5 - commitid 980019d74e4b242)
->>
->> Badness at kernel/mutex-debug.c:64
->> BUG: key (null) not in .data!
->> NIP: c0000000000be9e8 LR: c0000000000be9cc CTR: 0000000000000000
->> REGS: c00000010bb176f0 TRAP: 0700   Not tainted  
->> (2.6.35-rc3-git5-autotest)
->> BUG: key 00000000000001d8 not in .data!
->> BUG: key 00000000000001e0 not in .data!
->> BUG: key 00000000000001e8 not in .data!
->> MSR: 8000000000029032
->> Unable to handle kernel paging request for data at address 0x00000028
->> Faulting instruction address: 0xc0000000003ad0ec
->> Oops: Kernel access of bad area, sig: 11 [#1]
->> SMP NR_CPUS=1024 NUMA pSeries
->> last sysfs file: 
->> /sys/devices/system/cpu/cpu19/cache/index1/shared_cpu_map
->> Page fault in user mode with in_atomic() = 1 mm = c00000010943e600
->> Modules linked in:
->> NIP = fff9e98fc40  MSR = 800000004001d032
->>  ipv6 fuse loop
->> Unable to handle kernel paging request for unknown fault
->>  dm_mod
->> Faulting instruction address: 0xc00000000008d0f4
->>  sr_mod ibmveth cdrom sg sd_mod crc_t10dif ibmvscsic 
->> scsi_transport_srp scsi_tgt scsi_mod
->> NIP: c0000000003ad0ec LR: c00000000064c3b0 CTR: c0000000003a6eb0
->> REGS: c000000109b4f610 TRAP: 0300   Not tainted  
->> (2.6.35-rc3-git5-autotest)
->> MSR: 8000000000009032<EE,ME,IR,DR>   CR: 88004484  XER: 00000001
->> DAR: 0000000000000028, DSISR: 0000000040010000
->> TASK = c000000109a98600[7403] 'mkdir' THREAD: c000000109b4c000 CPU: 19
->> GPR00: 0000000080000013 c000000109b4f890 c000000000d3d798 
->> 0000000000000028
->> GPR04: 0000000000000000 0000000000000000 0000000000000000 
->> 0000000000000001
->> GPR08: 0000000000000000 0000000000000028 c000000000189f2c 
->> c000000109a98600
->> GPR12: 0000000024004424 c00000000f602f80 00000000000041ff 
->> 0000000000000001
->> GPR16: 0000000000000002 c00000010d8304c0 c000000109b4fb44 
->> 0000000000000000
->> GPR20: c00000010df77908 fffffffffffff000 0000000000010000 
->> 00000000000041ff
->> GPR24: c00000010df77758 c000000109fa1800 c00000010df77908 
->> c0000000ff236600
->> GPR28: 0000000000000028 0000000000000040 c000000000ca7b38 
->> c000000000189f2c
->> NIP [c0000000003ad0ec] .do_raw_spin_trylock+0x10/0x48
->> LR [c00000000064c3b0] ._raw_spin_lock+0x50/0xa4
->> Call Trace:
->> [c000000109b4f890] [c00000000064c3a4] ._raw_spin_lock+0x44/0xa4 
->> (unreliable)
->> [c000000109b4f920] [c000000000189f2c] .new_inode+0x4c/0xe4
->> [c000000109b4f9b0] [c0000000002257fc] .ext3_new_inode+0x84/0xb70
->> [c000000109b4fad0] [c00000000022f1ec] .ext3_mkdir+0x130/0x438
->> [c000000109b4fbe0] [c00000000017adb4] .vfs_mkdir+0xb8/0x160
->> [c000000109b4fc80] [c00000000017e52c] .SyS_mkdirat+0xb0/0x114
->> [c000000109b4fdc0] [c00000000017a730] .SyS_mkdir+0x1c/0x30
->> [c000000109b4fe30] [c0000000000085b4] syscall_exit+0x0/0x40
->> Instruction dump:
->> eb41ffd0 7c0803a6 eb61ffd8 eb81ffe0 eba1ffe8 ebc1fff0 ebe1fff8 4e800020
->> 38000000 7c691b78 980d0214 800d0008<7d601829>  2c0b0000 40c20010 7c00192d
->> Oops: Weird page fault, sig: 11 [#2]
->>
->> Pls let me know if this back trace would help in analyzing further.
->> Meanwhile I shall do a git bisect and send the inputs.
->>
->> Thanks
->> Divya
->>
->>
->>
-> Hi All,
+On Thu, 08 Jul 2010 23:15:30 -0400
+Munehiro Ikeda <m-ikeda@ds.jp.nec.com> wrote:
+
+> iotrack is a functionality to record who dirtied the
+> page.  This is needed for block IO controller cgroup
+> to support async (cached) write.
 > 
->  From the git bisect,seems like the commit
->  57439f878afafefad8836ebf5c49da2a0a746105 is the corrupt for the above
->  issue.
+> This patch is based on a patch posted from Ryo Tsuruta
+> on Oct 2, 2009 titled as "The body of blkio-cgroup".
+> The patch added a new member on struct page_cgroup to
+> record cgroup ID, but this was given a negative opinion
+> from Kame, a maintainer of memory controller cgroup,
+> because this bloats the size of struct page_cgroup.
+> 
+> Instead, this patch takes an approach proposed by
+> Andrea Righi, which records cgroup ID in flags
+> of struct page_cgroup with bit encoding.
+> 
+> ToDo:
+> Cgroup ID of deleted cgroup will be recycled.  Further
+> consideration is needed.
+> 
+> Signed-off-by: Hirokazu Takahashi <taka@valinux.co.jp>
+> Signed-off-by: Ryo Tsuruta <ryov@valinux.co.jp>
+> Signed-off-by: Andrea Righi <arighi@develer.com>
+> Signed-off-by: Munehiro "Muuhh" Ikeda <m-ikeda@ds.jp.nec.com>
+> ---
+>  block/Kconfig.iosched       |    8 +++
+>  block/Makefile              |    1 +
+>  block/blk-iotrack.c         |  129 +++++++++++++++++++++++++++++++++++++++++++
+>  include/linux/blk-iotrack.h |   62 +++++++++++++++++++++
+>  include/linux/page_cgroup.h |   25 ++++++++
+>  init/Kconfig                |    2 +-
+>  mm/page_cgroup.c            |   91 +++++++++++++++++++++++++++---
+>  7 files changed, 309 insertions(+), 9 deletions(-)
+>  create mode 100644 block/blk-iotrack.c
+>  create mode 100644 include/linux/blk-iotrack.h
+> 
+> diff --git a/block/Kconfig.iosched b/block/Kconfig.iosched
+> index 3199b76..3ab712d 100644
+> --- a/block/Kconfig.iosched
+> +++ b/block/Kconfig.iosched
+> @@ -43,6 +43,14 @@ config CFQ_GROUP_IOSCHED
+>  	---help---
+>  	  Enable group IO scheduling in CFQ.
+>  
+> +config GROUP_IOSCHED_ASYNC
+> +	bool "CFQ Group Scheduling for async IOs (EXPERIMENTAL)"
+> +	depends on CFQ_GROUP_IOSCHED && EXPERIMENTAL
+> +	select MM_OWNER
+> +	default n
+> +	help
+> +	  Enable group IO scheduling for async IOs.
+> +
+>  choice
+>  	prompt "Default I/O scheduler"
+>  	default DEFAULT_CFQ
+> diff --git a/block/Makefile b/block/Makefile
+> index 0bb499a..441858d 100644
+> --- a/block/Makefile
+> +++ b/block/Makefile
+> @@ -9,6 +9,7 @@ obj-$(CONFIG_BLOCK) := elevator.o blk-core.o blk-tag.o blk-sysfs.o \
+>  
+>  obj-$(CONFIG_BLK_DEV_BSG)	+= bsg.o
+>  obj-$(CONFIG_BLK_CGROUP)	+= blk-cgroup.o
+> +obj-$(CONFIG_GROUP_IOSCHED_ASYNC) += blk-iotrack.o
+>  obj-$(CONFIG_IOSCHED_NOOP)	+= noop-iosched.o
+>  obj-$(CONFIG_IOSCHED_DEADLINE)	+= deadline-iosched.o
+>  obj-$(CONFIG_IOSCHED_CFQ)	+= cfq-iosched.o
+> diff --git a/block/blk-iotrack.c b/block/blk-iotrack.c
+> new file mode 100644
+> index 0000000..d98a09a
+> --- /dev/null
+> +++ b/block/blk-iotrack.c
+> @@ -0,0 +1,129 @@
+> +/* blk-iotrack.c - Block I/O Tracking
+> + *
+> + * Copyright (C) VA Linux Systems Japan, 2008-2009
+> + * Developed by Hirokazu Takahashi <taka@valinux.co.jp>
+> + *
+> + * Copyright (C) 2010 Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License as published by
+> + * the Free Software Foundation; either version 2 of the License, or
+> + * (at your option) any later version.
+> + *
+> + * This program is distributed in the hope that it will be useful,
+> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+> + * GNU General Public License for more details.
+> + */
+> +
+> +#include <linux/sched.h>
+> +#include <linux/mm.h>
+> +#include <linux/memcontrol.h>
+> +#include <linux/mm_inline.h>
+> +#include <linux/rcupdate.h>
+> +#include <linux/module.h>
+> +#include <linux/blkdev.h>
+> +#include <linux/blk-iotrack.h>
+> +#include "blk-cgroup.h"
+> +
+> +/*
+> + * The block I/O tracking mechanism is implemented on the cgroup memory
+> + * controller framework. It helps to find the the owner of an I/O request
+> + * because every I/O request has a target page and the owner of the page
+> + * can be easily determined on the framework.
+> + */
+> +
+> +/* Return the blkio_cgroup that associates with a process. */
+> +static inline struct blkio_cgroup *task_to_blkio_cgroup(struct task_struct *p)
+> +{
+> +	return cgroup_to_blkio_cgroup(task_cgroup(p, blkio_subsys_id));
+> +}
+> +
+> +/**
+> + * blk_iotrack_set_owner() - set the owner ID of a page.
+> + * @page:	the page we want to tag
+> + * @mm:		the mm_struct of a page owner
+> + *
+> + * Make a given page have the blkio-cgroup ID of the owner of this page.
+> + */
+> +int blk_iotrack_set_owner(struct page *page, struct mm_struct *mm)
+> +{
+> +	struct blkio_cgroup *blkcg;
+> +	unsigned short id = 0;	/* 0: default blkio_cgroup id */
+> +
+> +	if (blk_iotrack_disabled())
+> +		return 0;
+> +	if (!mm)
+> +		goto out;
+> +
+> +	rcu_read_lock();
+> +	blkcg = task_to_blkio_cgroup(rcu_dereference(mm->owner));
+> +	if (likely(blkcg))
+> +		id = css_id(&blkcg->css);
+> +	rcu_read_unlock();
+> +out:
+> +	return page_cgroup_set_owner(page, id);
+> +}
+> +
+> +/**
+> + * blk_iotrack_reset_owner() - reset the owner ID of a page
+> + * @page:	the page we want to tag
+> + * @mm:		the mm_struct of a page owner
+> + *
+> + * Change the owner of a given page if necessary.
+> + */
+> +int blk_iotrack_reset_owner(struct page *page, struct mm_struct *mm)
+> +{
+> +	return blk_iotrack_set_owner(page, mm);
+> +}
+> +
+> +/**
+> + * blk_iotrack_reset_owner_pagedirty() - reset the owner ID of a pagecache page
+> + * @page:	the page we want to tag
+> + * @mm:		the mm_struct of a page owner
+> + *
+> + * Change the owner of a given page if the page is in the pagecache.
+> + */
+> +int blk_iotrack_reset_owner_pagedirty(struct page *page, struct mm_struct *mm)
+> +{
+> +	if (!page_is_file_cache(page))
+> +		return 0;
+> +	if (current->flags & PF_MEMALLOC)
+> +		return 0;
+> +
+> +	return blk_iotrack_reset_owner(page, mm);
+> +}
+> +
+> +/**
+> + * blk_iotrack_copy_owner() - copy the owner ID of a page into another page
+> + * @npage:	the page where we want to copy the owner
+> + * @opage:	the page from which we want to copy the ID
+> + *
+> + * Copy the owner ID of @opage into @npage.
+> + */
+> +int blk_iotrack_copy_owner(struct page *npage, struct page *opage)
+> +{
+> +	if (blk_iotrack_disabled())
+> +		return 0;
+> +	return page_cgroup_copy_owner(npage, opage);
+> +}
+> +
+> +/**
+> + * blk_iotrack_cgroup_id() - determine the blkio-cgroup ID
+> + * @bio:	the &struct bio which describes the I/O
+> + *
+> + * Returns the blkio-cgroup ID of a given bio. A return value zero
+> + * means that the page associated with the bio belongs to root blkio_cgroup.
+> + */
+> +unsigned long blk_iotrack_cgroup_id(struct bio *bio)
+> +{
+> +	struct page *page;
+> +
+> +	if (!bio->bi_vcnt)
+> +		return 0;
+> +
+> +	page = bio_iovec_idx(bio, 0)->bv_page;
+> +	return page_cgroup_get_owner(page);
+> +}
+> +EXPORT_SYMBOL(blk_iotrack_cgroup_id);
+> +
+> diff --git a/include/linux/blk-iotrack.h b/include/linux/blk-iotrack.h
+> new file mode 100644
+> index 0000000..8021c2b
+> --- /dev/null
+> +++ b/include/linux/blk-iotrack.h
+> @@ -0,0 +1,62 @@
+> +#include <linux/cgroup.h>
+> +#include <linux/mm.h>
+> +#include <linux/page_cgroup.h>
+> +
+> +#ifndef _LINUX_BLK_IOTRACK_H
+> +#define _LINUX_BLK_IOTRACK_H
+> +
+> +#ifdef CONFIG_GROUP_IOSCHED_ASYNC
+> +
+> +/**
+> + * blk_iotrack_disabled() - check whether block IO tracking is disabled
+> + * Returns true if disabled, false if not.
+> + */
+> +static inline bool blk_iotrack_disabled(void)
+> +{
+> +	if (blkio_subsys.disabled)
+> +		return true;
+> +	return false;
+> +}
+> +
+> +extern int blk_iotrack_set_owner(struct page *page, struct mm_struct *mm);
+> +extern int blk_iotrack_reset_owner(struct page *page, struct mm_struct *mm);
+> +extern int blk_iotrack_reset_owner_pagedirty(struct page *page,
+> +						 struct mm_struct *mm);
+> +extern int blk_iotrack_copy_owner(struct page *page, struct page *opage);
+> +extern unsigned long blk_iotrack_cgroup_id(struct bio *bio);
+> +
+> +#else /* !CONFIG_GROUP_IOSCHED_ASYNC */
+> +
+> +static inline bool blk_iotrack_disabled(void)
+> +{
+> +	return true;
+> +}
+> +
+> +static inline int blk_iotrack_set_owner(struct page *page,
+> +						struct mm_struct *mm)
+> +{
+> +}
+> +
+> +static inline int blk_iotrack_reset_owner(struct page *page,
+> +						struct mm_struct *mm)
+> +{
+> +}
+> +
+> +static inline int blk_iotrack_reset_owner_pagedirty(struct page *page,
+> +						struct mm_struct *mm)
+> +{
+> +}
+> +
+> +static inline int blk_iotrack_copy_owner(struct page *page,
+> +						struct page *opage)
+> +{
+> +}
+> +
+> +static inline unsigned long blk_iotrack_cgroup_id(struct bio *bio)
+> +{
+> +	return 0;
+> +}
+> +
+> +#endif /* CONFIG_GROUP_IOSCHED_ASYNC */
+> +
+> +#endif /* _LINUX_BLK_IOTRACK_H */
+> diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+> index 6a21b0d..473b79a 100644
+> --- a/include/linux/page_cgroup.h
+> +++ b/include/linux/page_cgroup.h
+> @@ -17,6 +17,31 @@ struct page_cgroup {
+>  	struct list_head lru;		/* per cgroup LRU list */
+>  };
+>  
+> +/*
+> + * use lower 16 bits for flags and reserve the rest for the page tracking id
+> + */
+> +#define PAGE_TRACKING_ID_SHIFT	(16)
+> +#define PAGE_TRACKING_ID_BITS \
+> +		(8 * sizeof(unsigned long) - PAGE_TRACKING_ID_SHIFT)
+> +
+> +/* NOTE: must be called with page_cgroup() lock held */
+> +static inline unsigned long page_cgroup_get_id(struct page_cgroup *pc)
+> +{
+> +	return pc->flags >> PAGE_TRACKING_ID_SHIFT;
+> +}
+> +
+> +/* NOTE: must be called with page_cgroup() lock held */
+> +static inline void page_cgroup_set_id(struct page_cgroup *pc, unsigned long id)
+> +{
+> +	WARN_ON(id >= (1UL << PAGE_TRACKING_ID_BITS));
+> +	pc->flags &= (1UL << PAGE_TRACKING_ID_SHIFT) - 1;
+> +	pc->flags |= (unsigned long)(id << PAGE_TRACKING_ID_SHIFT);
+> +}
 
-CC'ing Nick and Al.
+I think that this is the 1st wall.
+Because ->flags is a "bit field" there are some places set/clear bit without
+locks. (please see mem_cgroup_del/add_lru())
 
--- 
-Jens Axboe
+Then, I can't say this field operation is safe even if it's always done
+under locks. hmm. Can this be done by cmpxchg ?
+IIUC, there is an generic version now even if it's heavy.
+
+
+
+
+
+> +
+> +unsigned long page_cgroup_get_owner(struct page *page);
+> +int page_cgroup_set_owner(struct page *page, unsigned long id);
+> +int page_cgroup_copy_owner(struct page *npage, struct page *opage);
+> +
+>  void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat);
+>  
+>  #ifdef CONFIG_SPARSEMEM
+> diff --git a/init/Kconfig b/init/Kconfig
+> index 2e40f2f..337ee01 100644
+> --- a/init/Kconfig
+> +++ b/init/Kconfig
+> @@ -650,7 +650,7 @@ endif # CGROUPS
+>  
+>  config CGROUP_PAGE
+>  	def_bool y
+> -	depends on CGROUP_MEM_RES_CTLR
+> +	depends on CGROUP_MEM_RES_CTLR || GROUP_IOSCHED_ASYNC
+>  
+>  config MM_OWNER
+>  	bool
+> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> index 6c00814..69e080c 100644
+> --- a/mm/page_cgroup.c
+> +++ b/mm/page_cgroup.c
+> @@ -9,6 +9,7 @@
+>  #include <linux/vmalloc.h>
+>  #include <linux/cgroup.h>
+>  #include <linux/swapops.h>
+> +#include <linux/blk-iotrack.h>
+>  
+>  static void __meminit
+>  __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
+> @@ -74,7 +75,7 @@ void __init page_cgroup_init_flatmem(void)
+>  
+>  	int nid, fail;
+>  
+> -	if (mem_cgroup_disabled())
+> +	if (mem_cgroup_disabled() && blk_iotrack_disabled())
+>  		return;
+>  
+>  	for_each_online_node(nid)  {
+> @@ -83,12 +84,13 @@ void __init page_cgroup_init_flatmem(void)
+>  			goto fail;
+>  	}
+>  	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
+> -	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
+> -	" don't want memory cgroups\n");
+> +	printk(KERN_INFO "please try 'cgroup_disable=memory,blkio' option"
+> +	" if you don't want memory and blkio cgroups\n");
+>  	return;
+>  fail:
+>  	printk(KERN_CRIT "allocation of page_cgroup failed.\n");
+> -	printk(KERN_CRIT "please try 'cgroup_disable=memory' boot option\n");
+> +	printk(KERN_CRIT
+> +		"please try 'cgroup_disable=memory,blkio' boot option\n");
+>  	panic("Out of memory");
+>  }
+
+Hmm, io-track is always done if blkio-cgroup is used, Right ?
+
+Then, why you have extra config as CONFIG_GROUP_IOSCHED_ASYNC ?
+Is it necessary ?
+
+>  
+> @@ -251,7 +253,7 @@ void __init page_cgroup_init(void)
+>  	unsigned long pfn;
+>  	int fail = 0;
+>  
+> -	if (mem_cgroup_disabled())
+> +	if (mem_cgroup_disabled() && blk_iotrack_disabled())
+>  		return;
+>  
+>  	for (pfn = 0; !fail && pfn < max_pfn; pfn += PAGES_PER_SECTION) {
+> @@ -260,14 +262,15 @@ void __init page_cgroup_init(void)
+>  		fail = init_section_page_cgroup(pfn);
+>  	}
+>  	if (fail) {
+> -		printk(KERN_CRIT "try 'cgroup_disable=memory' boot option\n");
+> +		printk(KERN_CRIT
+> +			"try 'cgroup_disable=memory,blkio' boot option\n");
+>  		panic("Out of memory");
+>  	} else {
+>  		hotplug_memory_notifier(page_cgroup_callback, 0);
+>  	}
+>  	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
+> -	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you don't"
+> -	" want memory cgroups\n");
+> +	printk(KERN_INFO "please try 'cgroup_disable=memory,blkio' option"
+> +	" if you don't want memory and blkio cgroups\n");
+>  }
+>  
+>  void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat)
+> @@ -277,6 +280,78 @@ void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat)
+>  
+>  #endif
+>  
+> +/**
+> + * page_cgroup_get_owner() - get the owner ID of a page
+> + * @page:	the page we want to find the owner
+> + *
+> + * Returns the owner ID of the page, 0 means that the owner cannot be
+> + * retrieved.
+> + **/
+> +unsigned long page_cgroup_get_owner(struct page *page)
+> +{
+> +	struct page_cgroup *pc;
+> +	unsigned long ret;
+> +
+> +	pc = lookup_page_cgroup(page);
+> +	if (unlikely(!pc))
+> +		return 0;
+> +
+> +	lock_page_cgroup(pc);
+> +	ret = page_cgroup_get_id(pc);
+> +	unlock_page_cgroup(pc);
+> +	return ret;
+> +}
+
+Is this lock required ? Even if wrong ID is got by race, it just means
+this I/O is charged to other cgroup.
+I don't think it's an issue. Considering the user can move tasks while generating
+I/O without any interaction with I/O cgroup, the issue itself is invisible and
+cannot be handled. I love light wegiht here.
+
+
+
+
+
+> +
+> +/**
+> + * page_cgroup_set_owner() - set the owner ID of a page
+> + * @page:	the page we want to tag
+> + * @id:		the ID number that will be associated to page
+> + *
+> + * Returns 0 if the owner is correctly associated to the page. Returns a
+> + * negative value in case of failure.
+> + **/
+> +int page_cgroup_set_owner(struct page *page, unsigned long id)
+> +{
+> +	struct page_cgroup *pc;
+> +
+> +	pc = lookup_page_cgroup(page);
+> +	if (unlikely(!pc))
+> +		return -ENOENT;
+> +
+> +	lock_page_cgroup(pc);
+> +	page_cgroup_set_id(pc, id);
+> +	unlock_page_cgroup(pc);
+> +	return 0;
+> +}
+> +
+
+Doesn't this function check overwrite ?
+
+
+
+
+> +/**
+> + * page_cgroup_copy_owner() - copy the owner ID of a page into another page
+> + * @npage:	the page where we want to copy the owner
+> + * @opage:	the page from which we want to copy the ID
+> + *
+> + * Returns 0 if the owner is correctly associated to npage. Returns a negative
+> + * value in case of failure.
+> + **/
+> +int page_cgroup_copy_owner(struct page *npage, struct page *opage)
+> +{
+> +	struct page_cgroup *npc, *opc;
+> +	unsigned long id;
+> +
+> +	npc = lookup_page_cgroup(npage);
+> +	if (unlikely(!npc))
+> +		return -ENOENT;
+> +	opc = lookup_page_cgroup(opage);
+> +	if (unlikely(!opc))
+> +		return -ENOENT;
+> +	lock_page_cgroup(opc);
+> +	lock_page_cgroup(npc);
+> +	id = page_cgroup_get_id(opc);
+> +	page_cgroup_set_id(npc, id);
+> +	unlock_page_cgroup(npc);
+> +	unlock_page_cgroup(opc);
+> +
+> +	return 0;
+> +}
+
+you can remove lock here, too. (use cmpxchg for writer.)
+
+Thanks,
+-Kame
 
