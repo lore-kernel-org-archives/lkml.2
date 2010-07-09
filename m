@@ -1,70 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753098Ab0GIDQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 23:16:32 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:48037 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751227Ab0GIDQa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 23:16:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=i2wo/+ExLaUOfmR1C5eYf64siA2jVp6Ch7xs8dVw6jjJVTX1XOHYIym8qwKsByVhID
-         DvJYzI7C21mL0fKpTOxIWsL88KHxRGwXKzI7uL+5DDUAcMeO3IhsUUH+3Sq5/IkQ+w1d
-         Mi9buzTaMMBT9hSXNlLlXhvoHbZ7R1cFDfV50=
-Date: Fri, 9 Jul 2010 05:16:23 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>, Jan Kara <jack@suse.cz>,
-       Christoph Hellwig <hch@lst.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       reiserfs-devel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Chris Mason <chris.mason@oracle.com>,
-       Jeff Mahoney <jeffm@jeffreymahoney.com>
-Subject: Re: reiserfs locking (v2)
-Message-ID: <20100709031622.GL6405@nowhere>
-References: <20100702093451.GA3973@swordfish.minsk.epam.com> <20100702131248.GA5324@nowhere> <20100703092441.GM31073@ZenIV.linux.org.uk> <20100703094323.GN31073@ZenIV.linux.org.uk> <20100704091523.GP31073@ZenIV.linux.org.uk>
+	id S1753941Ab0GIDR1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 23:17:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42640 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751227Ab0GIDR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 23:17:26 -0400
+Message-ID: <4C369431.80409@ds.jp.nec.com>
+Date: Thu, 08 Jul 2010 23:14:57 -0400
+From: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100704091523.GP31073@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+       Vivek Goyal <vgoyal@redhat.com>
+CC: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>, Ryo Tsuruta <ryov@valinux.co.jp>,
+       taka@valinux.co.jp, kamezawa.hiroyu@jp.fujitsu.com,
+       Andrea Righi <righi.andrea@gmail.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+       balbir@linux.vnet.ibm.com
+Subject: [RFC][PATCH 01/11] blkiocg async: Make page_cgroup independent from
+ memory controller
+References: <4C369009.80503@ds.jp.nec.com>
+In-Reply-To: <4C369009.80503@ds.jp.nec.com>
+Content-Type: text/plain; charset=ISO-2022-JP
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 04, 2010 at 10:15:23AM +0100, Al Viro wrote:
-> On Sat, Jul 03, 2010 at 10:43:23AM +0100, Al Viro wrote:
-> > On Sat, Jul 03, 2010 at 10:24:42AM +0100, Al Viro wrote:
-> > 
-> > > Gyah...  For the 1001st time: readdir() is far from being the only thing that
-> > > nests mmap_sem inside i_mutex.  In particular, write() does the same thing.
-> > > 
-> > > So yes, it *is* a real deadlock, TYVM, with no directories involved.  Open the
-> > > same file twice, mmap one fd, close it, then have munmap() hitting i_mutex
-> > > in reiserfs_file_release() race with write() through another fd.
-> > > 
-> > > Incidentally, reiserfs_file_release() checks in the fastpath look completely
-> > > bogus.  Checking i_count?  What the hell is that one about?  And no, these
-> > > checks won't stop open() coming between them and grabbing i_mutex, so they
-> > > couldn't prevent the deadlock in question anyway.
-> > 
-> > ... and unfortunately it's been that way since the the initial merge in 2.4.early.
-> > FWIW, it seems that i_count check was a misguided attempt to check that no other
-> > opened struct file are there, but it's
-> > 	a) wrong, since way, _way_ back - open() affects d_count, not i_count
-> > 	b) wrong even with such modification (consider hardlinks)
-> > 	c) wrong for even more reasons since forever - i_count and d_count could
-> > be bumped by many things at any time
-> > 	d) hopelessly racy anyway, since another open() could very well have
-> > happened just as we'd finished these checks.
-> 
-> OK...  See 22093b8f3d387f77 in vfs-2.6.git for-next (should propagate to
-> git.kernel.org shortly).  That ought to deal with this crap, assuming I hadn't
-> fucked up somewhere...
+This patch makes page_cgroup independent from memory controller
+so that kernel functionalities other than memory controller can
+use page_cgroup.
 
+This patch is based on a patch posted from Ryo Tsuruta on Oct 2,
+2009 titled "The new page_cgroup framework".
 
-Looks good. Thanks for fixing this!
+Signed-off-by: Hirokazu Takahashi <taka@valinux.co.jp>
+Signed-off-by: Ryo Tsuruta <ryov@valinux.co.jp>
+Signed-off-by: Munehiro "Muuhh" Ikeda <m-ikeda@ds.jp.nec.com>
+---
+ include/linux/mmzone.h      |    4 ++--
+ include/linux/page_cgroup.h |    4 ++--
+ init/Kconfig                |    4 ++++
+ mm/Makefile                 |    3 ++-
+ 4 files changed, 10 insertions(+), 5 deletions(-)
 
+diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+index b4d109e..d3a9bf7 100644
+--- a/include/linux/mmzone.h
++++ b/include/linux/mmzone.h
+@@ -612,7 +612,7 @@ typedef struct pglist_data {
+ 	int nr_zones;
+ #ifdef CONFIG_FLAT_NODE_MEM_MAP	/* means !SPARSEMEM */
+ 	struct page *node_mem_map;
+-#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++#ifdef CONFIG_CGROUP_PAGE
+ 	struct page_cgroup *node_page_cgroup;
+ #endif
+ #endif
+@@ -971,7 +971,7 @@ struct mem_section {
+ 
+ 	/* See declaration of similar field in struct zone */
+ 	unsigned long *pageblock_flags;
+-#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++#ifdef CONFIG_CGROUP_PAGE
+ 	/*
+ 	 * If !SPARSEMEM, pgdat doesn't have page_cgroup pointer. We use
+ 	 * section. (see memcontrol.h/page_cgroup.h about this.)
+diff --git a/include/linux/page_cgroup.h b/include/linux/page_cgroup.h
+index 5bb13b3..6a21b0d 100644
+--- a/include/linux/page_cgroup.h
++++ b/include/linux/page_cgroup.h
+@@ -1,7 +1,7 @@
+ #ifndef __LINUX_PAGE_CGROUP_H
+ #define __LINUX_PAGE_CGROUP_H
+ 
+-#ifdef CONFIG_CGROUP_MEM_RES_CTLR
++#ifdef CONFIG_CGROUP_PAGE
+ #include <linux/bit_spinlock.h>
+ /*
+  * Page Cgroup can be considered as an extended mem_map.
+@@ -104,7 +104,7 @@ static inline void unlock_page_cgroup(struct page_cgroup *pc)
+ 	bit_spin_unlock(PCG_LOCK, &pc->flags);
+ }
+ 
+-#else /* CONFIG_CGROUP_MEM_RES_CTLR */
++#else /* CONFIG_CGROUP_PAGE */
+ struct page_cgroup;
+ 
+ static inline void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat)
+diff --git a/init/Kconfig b/init/Kconfig
+index 5cff9a9..2e40f2f 100644
+--- a/init/Kconfig
++++ b/init/Kconfig
+@@ -648,6 +648,10 @@ config DEBUG_BLK_CGROUP
+ 
+ endif # CGROUPS
+ 
++config CGROUP_PAGE
++	def_bool y
++	depends on CGROUP_MEM_RES_CTLR
++
+ config MM_OWNER
+ 	bool
+ 
+diff --git a/mm/Makefile b/mm/Makefile
+index 8982504..57b112e 100644
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -40,7 +40,8 @@ else
+ obj-y += percpu_up.o
+ endif
+ obj-$(CONFIG_QUICKLIST) += quicklist.o
+-obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o page_cgroup.o
++obj-$(CONFIG_CGROUP_MEM_RES_CTLR) += memcontrol.o
++obj-$(CONFIG_CGROUP_PAGE) += page_cgroup.o
+ obj-$(CONFIG_MEMORY_FAILURE) += memory-failure.o
+ obj-$(CONFIG_HWPOISON_INJECT) += hwpoison-inject.o
+ obj-$(CONFIG_DEBUG_KMEMLEAK) += kmemleak.o
+-- 
+1.6.2.5
