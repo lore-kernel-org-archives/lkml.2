@@ -1,91 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755771Ab0GILEn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 07:04:43 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55388 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab0GILEm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 07:04:42 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH] vmscan: stop meaningless loop iteration when no  reclaimable slab
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-In-Reply-To: <AANLkTins0OMGnj3JmUjIctO0dSnXPsQV1AUsbMEVt2D1@mail.gmail.com>
-References: <20100709191308.FA25.A69D9226@jp.fujitsu.com> <AANLkTins0OMGnj3JmUjIctO0dSnXPsQV1AUsbMEVt2D1@mail.gmail.com>
-Message-Id: <20100709195625.FA28.A69D9226@jp.fujitsu.com>
+	id S1755582Ab0GILKf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 07:10:35 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49324 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753849Ab0GILKd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 07:10:33 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: linux-kernel@vger.kernel.org
+Subject: Dynamic Debug lib: Fix memory corruption for specific module declarations
+Date: Fri, 9 Jul 2010 13:10:42 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
+Cc: akpm@linux-foundation.org, andi@firstfloor.org, hare@suse.de,
+       stable@kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  9 Jul 2010 20:04:36 +0900 (JST)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007091310.43314.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, Jul 9, 2010 at 7:13 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
-> > If number of reclaimable slabs are zero, shrink_icache_memory() and
-> > shrink_dcache_memory() return 0. but strangely shrink_slab() ignore
-> > it and continue meaningless loop iteration.
-> >
-> > This patch fixes it.
-> >
-> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> > ---
-> >  mm/vmscan.c |    5 +++++
-> >  1 files changed, 5 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/mm/vmscan.c b/mm/vmscan.c
-> > index 0f9f624..8f61adb 100644
-> > --- a/mm/vmscan.c
-> > +++ b/mm/vmscan.c
-> > @@ -243,6 +243,11 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
-> >                        int nr_before;
-> >
-> >                        nr_before = (*shrinker->shrink)(0, gfp_mask);
-> > +                       /* no slab objects, no more reclaim. */
-> > +                       if (nr_before == 0) {
-> > +                               total_scan = 0;
-> 
-> Why do you reset totoal_scan to 0?
+From: Jason Baron <jbaron@redhat.com>
 
-If shab objects are zero, we don't need more reclaim. 
+Make sure we properly call ddebug_remove_module() when a module fails to
+load. In addition, pass the pointer to the "debug table", to both
+ddebug_add_module(), and ddebug_remove_module() so that we can uniquely
+identify each set of debug statements. In this way even modules with the
+same name can be properly identified and removed.
 
-> I don't know exact meaning of shrinker->nr.
+Kernel bug reference:
+http://bugzilla.kernel.org/show_bug.cgi?id=16330
 
-similar meaning of reclaim_stat->nr_saved_scan.
-If total_scan can't divide SHRINK_BATCH(128), saving remainder and using at next shrink_slab().
+By trenn (for stable people):
+Not sure for how long this bug exists (always?), it nearly patches
+fine for a 2.6.32 kernel...
 
-> AFAIU, it can affect next shrinker's total_scan.
-> Isn't it harmful?
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+Reported-by: Thomas Renninger <trenn@suse.de>
+Tested-by: Thomas Renninger <trenn@suse.de>
+CC: stable@kernel.org
+CC: akpm@linux-foundation.org
+CC: linux-kernel@vger.kernel.org
+CC: andi@firstfloor.org
+CC: hare@suse.de 
 
-No.  This loop is
+---
+ include/linux/dynamic_debug.h |    7 ++-----
+ include/linux/module.h        |    4 ++++
+ kernel/module.c               |   10 +++++++---
+ lib/dynamic_debug.c           |    4 ++--
+ 4 files changed, 15 insertions(+), 10 deletions(-)
 
-                total_scan = shrinker->nr;		/* Reset and init total_scan */
-                shrinker->nr = 0;
-
-                while (total_scan >= SHRINK_BATCH) {
-                        nr_before = (*shrinker->shrink)(0, gfp_mask);
-                        /* no slab objects, no more reclaim. */
-                        if (nr_before == 0) {
-                                total_scan = 0;
-                                break;
-                        }
-                        shrink_ret = (*shrinker->shrink)(this_scan, gfp_mask);
-                        if (shrink_ret == -1)
-                                break;
-                        if (shrink_ret < nr_before)
-                                ret += nr_before - shrink_ret;
-                        total_scan -= this_scan;
-                }
-
-                shrinker->nr += total_scan;		/* save remainder #of-scan */
-
-
+diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
+index b3cd4de..a5c133e 100644
+--- a/include/linux/dynamic_debug.h
++++ b/include/linux/dynamic_debug.h
+@@ -40,7 +40,7 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
+ 				const char *modname);
+ 
+ #if defined(CONFIG_DYNAMIC_DEBUG)
+-extern int ddebug_remove_module(char *mod_name);
++extern int ddebug_remove_module(struct _ddebug *tab, char *mod_name);
+ 
+ #define __dynamic_dbg_enabled(dd)  ({	     \
+ 	int __ret = 0;							     \
+@@ -73,10 +73,7 @@ extern int ddebug_remove_module(char *mod_name);
+ 
+ #else
+ 
+-static inline int ddebug_remove_module(char *mod)
+-{
+-	return 0;
+-}
++#define ddebug_remove_module(tab, name) do {} while (0)
+ 
+ #define dynamic_pr_debug(fmt, ...)					\
+ 	do { if (0) printk(KERN_DEBUG pr_fmt(fmt), ##__VA_ARGS__); } while (0)
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 8a6b9fd..97ce090 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -387,6 +387,10 @@ struct module
+ 	ctor_fn_t *ctors;
+ 	unsigned int num_ctors;
+ #endif
++
++#ifdef CONFIG_DYNAMIC_DEBUG
++	struct _ddebug *ddebug;
++#endif
+ };
+ #ifndef MODULE_ARCH_INIT
+ #define MODULE_ARCH_INIT {}
+diff --git a/kernel/module.c b/kernel/module.c
+index 8c6b428..16bb044 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -787,7 +787,6 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
+ 
+ 	/* Store the name of the last unloaded module for diagnostic purposes */
+ 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
+-	ddebug_remove_module(mod->name);
+ 
+ 	free_module(mod);
+ 	return 0;
+@@ -1550,6 +1549,8 @@ static void free_module(struct module *mod)
+ 	remove_sect_attrs(mod);
+ 	mod_kobject_remove(mod);
+ 
++	ddebug_remove_module(mod->ddebug, mod->name);
++
+ 	/* Arch-specific cleanup. */
+ 	module_arch_cleanup(mod);
+ 
+@@ -2053,12 +2054,14 @@ static inline void add_kallsyms(struct module *mod,
+ }
+ #endif /* CONFIG_KALLSYMS */
+ 
+-static void dynamic_debug_setup(struct _ddebug *debug, unsigned int num)
++static void dynamic_debug_setup(struct _ddebug *debug, unsigned int num,
++							struct module *mod)
+ {
+ #ifdef CONFIG_DYNAMIC_DEBUG
+ 	if (ddebug_add_module(debug, num, debug->modname))
+ 		printk(KERN_ERR "dynamic debug error adding module: %s\n",
+ 					debug->modname);
++	mod->ddebug = debug;
+ #endif
+ }
+ 
+@@ -2483,7 +2486,7 @@ static noinline struct module *load_module(void __user *umod,
+ 		debug = section_objs(hdr, sechdrs, secstrings, "__verbose",
+ 				     sizeof(*debug), &num_debug);
+ 		if (debug)
+-			dynamic_debug_setup(debug, num_debug);
++			dynamic_debug_setup(debug, num_debug, mod);
+ 	}
+ 
+ 	err = module_finalize(hdr, sechdrs, mod);
+@@ -2562,6 +2565,7 @@ static noinline struct module *load_module(void __user *umod,
+ 	synchronize_sched();
+ 	module_arch_cleanup(mod);
+  cleanup:
++	ddebug_remove_module(mod->ddebug, mod->name);
+ 	free_modinfo(mod);
+ 	module_unload_free(mod);
+ #if defined(CONFIG_MODULE_UNLOAD)
+diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
+index 3df8eb1..7d66180 100644
+--- a/lib/dynamic_debug.c
++++ b/lib/dynamic_debug.c
+@@ -692,7 +692,7 @@ static void ddebug_table_free(struct ddebug_table *dt)
+  * Called in response to a module being unloaded.  Removes
+  * any ddebug_table's which point at the module.
+  */
+-int ddebug_remove_module(char *mod_name)
++int ddebug_remove_module(struct _ddebug *tab, char *mod_name)
+ {
+ 	struct ddebug_table *dt, *nextdt;
+ 	int ret = -ENOENT;
+@@ -703,7 +703,7 @@ int ddebug_remove_module(char *mod_name)
+ 
+ 	mutex_lock(&ddebug_lock);
+ 	list_for_each_entry_safe(dt, nextdt, &ddebug_tables, link) {
+-		if (!strcmp(dt->mod_name, mod_name)) {
++		if (!strcmp(dt->mod_name, mod_name) && (tab == dt->ddebugs)) {
+ 			ddebug_table_free(dt);
+ 			ret = 0;
+ 		}
+-- 
+1.7.1
 
