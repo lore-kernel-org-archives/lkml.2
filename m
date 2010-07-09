@@ -1,71 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755645Ab0GIKxP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 06:53:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:54364 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753687Ab0GIKxO convert rfc822-to-8bit (ORCPT
+	id S1755701Ab0GIKys (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 06:54:48 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:58295 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753687Ab0GIKyr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 06:53:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aygL7VIFe1fgf5ueSONPIZ7cawP1gRvYs7714ExY85S3vcp2tLdkou++3dqiGRj2fQ
-         rVWKDRh1YvsJQut5u7VY3KjLHa4ed363AuBbBFKGjpX7JpRkoms/xMNJVNwAK8X059O0
-         vRqVSyJZ2Sfa3prXDQtIrsUOHyQmOMDUgEIAs=
+	Fri, 9 Jul 2010 06:54:47 -0400
+X-IronPort-AV: E=Sophos;i="4.53,563,1272844800"; 
+   d="scan'208";a="816299"
+Date: Fri, 9 Jul 2010 11:54:24 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Ian Campbell <Ian.Campbell@eu.citrix.com>
+CC: "ddutile@redhat.com" <ddutile@redhat.com>,
+       Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       "jeremy@goop.org" <jeremy@goop.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       "stefano@stabellini.net" <stefano@stabellini.net>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "sheng@linux.intel.com" <sheng@linux.intel.com>
+Subject: Re: [Xen-devel] Re: [PATCH 12/13] Unplug emulated disks and nics
+In-Reply-To: <1278662546.28432.602.camel@zakaz.uk.xensource.com>
+Message-ID: <alpine.DEB.2.00.1007091150000.21432@kaball-desktop>
+References: <alpine.DEB.2.00.1006211456360.18470@kaball-desktop>  <1277136847-13266-12-git-send-email-stefano@stabellini.net>  <4C2CEF56.4050008@redhat.com>  <alpine.DEB.2.00.1007051255310.29110@kaball-desktop>  <4C34DD1B.3010601@redhat.com> 
+ <alpine.DEB.2.00.1007081246440.21432@kaball-desktop>  <4C362DC3.7000101@redhat.com>  <1278624583.12109.15.camel@localhost.localdomain>  <4C364A3F.8020900@redhat.com> <1278662546.28432.602.camel@zakaz.uk.xensource.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100709191308.FA25.A69D9226@jp.fujitsu.com>
-References: <20100708133152.5e556508.akpm@linux-foundation.org>
-	<20100709171850.FA22.A69D9226@jp.fujitsu.com>
-	<20100709191308.FA25.A69D9226@jp.fujitsu.com>
-Date: Fri, 9 Jul 2010 19:53:13 +0900
-Message-ID: <AANLkTins0OMGnj3JmUjIctO0dSnXPsQV1AUsbMEVt2D1@mail.gmail.com>
-Subject: Re: [PATCH] vmscan: stop meaningless loop iteration when no 
-	reclaimable slab
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-       Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 9, 2010 at 7:13 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
-> If number of reclaimable slabs are zero, shrink_icache_memory() and
-> shrink_dcache_memory() return 0. but strangely shrink_slab() ignore
-> it and continue meaningless loop iteration.
->
-> This patch fixes it.
->
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/vmscan.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
->
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 0f9f624..8f61adb 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -243,6 +243,11 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
->                        int nr_before;
->
->                        nr_before = (*shrinker->shrink)(0, gfp_mask);
-> +                       /* no slab objects, no more reclaim. */
-> +                       if (nr_before == 0) {
-> +                               total_scan = 0;
+On Fri, 9 Jul 2010, Ian Campbell wrote:
+> > 
+> > > Any guest which uses xvda in its configuration file today will be using
+> > > emulated devices but I think that with Stefano's patch and your proposed
+> > > change in default on a Xen system without support for unplug will start
+> > > using PV devices without unplugging the emulated ones first.
+> > > 
+> > Well, Stefano requires the admin to add unplug switch to kernel cmd line,
+> 
+> In the case where the host platform does not support the unplug protocol
+> this is correct and requiring explicit admin action to allow the PV
+> frontends to activate is the only safe option WRT the users data.
+> 
+> However if the host platform does support the unplug protocol then this
+> is incorrect. In that case the default (in the absence of the command
+> line option) is to automatically unplug any device for which a PV driver
+> is available and so no command line option will be required in the
+> common case. (see xen_unplug_emulated_devices() under the comment "Set
+> the default value of xen_emul_unplug depending on...")
+> 
 
-Why do you reset totoal_scan to 0?
-I don't know exact meaning of shrinker->nr.
-AFAIU, it can affect next shrinker's total_scan.
-Isn't it harmful?
+that's right: on host platforms supporting unplug no command line options
+are required; on the other hand if the host platform does not support
+unplug then xen_emul_unplug=ignore is required to use PV drivers anyway.
 
--- 
-Kind regards,
-Minchan Kim
+
+> > so I don't see the harm in defaulting to unplug... 
+> 
+> As I described in my previous mail this is unsafe on host platforms
+> which do not support unplug. As I describe above it is unnecessary on
+> host platforms which do support unplug
+> 
+
+yep, keep in mind the copy and paste example.
+
+
+
+If you are happy about the patch, I'll include it in my next version.
+
