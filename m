@@ -1,21 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab0GINvE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:51:04 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50483 "EHLO
+	id S1756922Ab0GINvZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:51:25 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50492 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756547Ab0GINvA (ORCPT
+	by vger.kernel.org with ESMTP id S1756532Ab0GINvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:51:00 -0400
-Date: Fri, 9 Jul 2010 15:50:58 +0200
+	Fri, 9 Jul 2010 09:51:23 -0400
+Date: Fri, 9 Jul 2010 15:51:21 +0200
 From: Christoph Egger <siccegge@cs.fau.de>
-To: Greg Kroah-Hartman <gregkh@suse.de>, Mike Frysinger <vapier@gentoo.org>,
-       Sonic Zhang <sonic.zhang@analog.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
+To: linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 11/11] Removing dead SERIAL_BFIN_SPORT_CONSOLE
-Message-ID: <86b706944a84c030fbd88d005e8d6365cb7921da.1278682303.git.siccegge@cs.fau.de>
+Subject: [PATCH 02/11] Removing dead CONSOLE_*
+Message-ID: <12d3f51154aac6de4f85b1a3d64ba91d8e0f0339.1278682302.git.siccegge@cs.fau.de>
 References: <cover.1278682302.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -26,40 +23,37 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SERIAL_BFIN_SPORT_CONSOLE doesn't exist in Kconfig, therefore removing
-all references for it from the source code.
+CONSOLE_* doesn't exist in Kconfig, therefore removing all references
+for it from the source code.
 
 Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- drivers/serial/bfin_sport_uart.c |   15 +++++----------
- 1 files changed, 5 insertions(+), 10 deletions(-)
+ drivers/serial/68360serial.c |   12 ++----------
+ 1 files changed, 2 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/serial/bfin_sport_uart.c b/drivers/serial/bfin_sport_uart.c
-index 05cd3a6..01bdd89 100644
---- a/drivers/serial/bfin_sport_uart.c
-+++ b/drivers/serial/bfin_sport_uart.c
-@@ -728,16 +728,11 @@ static int __devinit sport_uart_probe(struct platform_device *pdev)
- 		}
- 	}
+diff --git a/drivers/serial/68360serial.c b/drivers/serial/68360serial.c
+index 24661cd..f72972b 100644
+--- a/drivers/serial/68360serial.c
++++ b/drivers/serial/68360serial.c
+@@ -303,16 +303,8 @@ static int baud_table[] = {
+ 	9600, 19200, 38400, 57600, 115200, 230400, 460800, 0 };
  
--#ifdef CONFIG_SERIAL_BFIN_SPORT_CONSOLE
--	if (!is_early_platform_device(pdev)) {
+ /* This sucks. There is a better way: */
+-#if defined(CONFIG_CONSOLE_9600)
+-  #define CONSOLE_BAUDRATE 9600
+-#elif defined(CONFIG_CONSOLE_19200)
+-  #define CONSOLE_BAUDRATE 19200
+-#elif defined(CONFIG_CONSOLE_115200)
+-  #define CONSOLE_BAUDRATE 115200
+-#else
+-  #warning "console baud rate undefined"
+-  #define CONSOLE_BAUDRATE 9600
 -#endif
--		sport = bfin_sport_uart_ports[pdev->id];
--		sport->port.dev = &pdev->dev;
--		dev_set_drvdata(&pdev->dev, sport);
--		ret = uart_add_one_port(&sport_uart_reg, &sport->port);
--#ifdef CONFIG_SERIAL_BFIN_SPORT_CONSOLE
--	}
--#endif
-+	sport = bfin_sport_uart_ports[pdev->id];
-+	sport->port.dev = &pdev->dev;
-+	dev_set_drvdata(&pdev->dev, sport);
-+	ret = uart_add_one_port(&sport_uart_reg, &sport->port);
-+
- 	if (!ret)
- 		return 0;
++#warning "console baud rate undefined"
++#define CONSOLE_BAUDRATE 9600
  
+ /*
+  * ------------------------------------------------------------
 -- 
 1.7.0.4
 
