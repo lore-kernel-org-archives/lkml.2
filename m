@@ -1,145 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755482Ab0GIIk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 04:40:27 -0400
-Received: from ipmail06.adl2.internode.on.net ([150.101.137.129]:55079 "EHLO
-	ipmail06.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755033Ab0GIIkR (ORCPT
+	id S1755175Ab0GIIkJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 04:40:09 -0400
+Received: from casper.infradead.org ([85.118.1.10]:52213 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754987Ab0GIIkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 04:40:17 -0400
-X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jul 2010 04:40:16 EDT
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: Av0EAIt8Nkx5Ld5B/2dsb2JhbACDHp0Zcq0NkSiBKYMMcgQ
-Date: Fri, 9 Jul 2010 18:35:06 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Jens Axboe <jaxboe@fusionio.com>
-Cc: divya <dipraksh@linux.vnet.ibm.com>,
-       "maciej.rutecki@gmail.com" <maciej.rutecki@gmail.com>,
-       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-       LKML <linux-kernel@vger.kernel.org>, Ron Minnich <rminnich@sandia.gov>,
-       Latchesar Ionkov <lucho@ionkov.net>, "hch@lst.de" <hch@lst.de>,
-       Alexander Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@suse.de>
-Subject: Re: Oops while running fs_racer test on a POWER6 box against
- latest git
-Message-ID: <20100709083506.GB16931@laptop>
-References: <4C2B28F3.7000006@linux.vnet.ibm.com>
- <201007012025.30452.maciej.rutecki@gmail.com>
- <4C2D8B63.2030500@linux.vnet.ibm.com>
- <4C36C876.9090404@linux.vnet.ibm.com>
- <4C36D0F8.7070303@fusionio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <4C36D0F8.7070303@fusionio.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 9 Jul 2010 04:40:00 -0400
+Message-Id: <20100709083248.216905425@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Fri, 09 Jul 2010 10:21:28 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [RFC][PATCH 11/13] perf: Default PMU ops
+References: <20100709082117.631541128@chello.nl>
+Content-Disposition: inline; filename=perf-default-ops.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 09, 2010 at 09:34:16AM +0200, Jens Axboe wrote:
-> On 2010-07-09 08:57, divya wrote:
-> > On Friday 02 July 2010 12:16 PM, divya wrote:
-> >> On Thursday 01 July 2010 11:55 PM, Maciej Rutecki wrote:
-> >>> On środa, 30 czerwca 2010 o 13:22:27 divya wrote:
-> >>>> While running fs_racer test from LTP on a POWER6 box against latest
-> >>>> git(2.6.35-rc3-git4 - commitid 984bc9601f64fd) came across the 
-> >>>> following
-> >>>> warning followed by multiple oops.
-> >>>>
-> >>> I created a Bugzilla entry at
-> >>> https://bugzilla.kernel.org/show_bug.cgi?id=16324
-> >>> for your bug report, please add your address to the CC list in there, 
-> >>> thanks!
-> >>>
-> >>>
-> >> Here I find a cleaner back trace while running fs_racer test from LTP 
-> >> on a POWER6
-> >> box against the latest git(2.6.35-rc3-git5 - commitid 980019d74e4b242)
-> >>
-> >> Badness at kernel/mutex-debug.c:64
-> >> BUG: key (null) not in .data!
-> >> NIP: c0000000000be9e8 LR: c0000000000be9cc CTR: 0000000000000000
-> >> REGS: c00000010bb176f0 TRAP: 0700   Not tainted  
-> >> (2.6.35-rc3-git5-autotest)
-> >> BUG: key 00000000000001d8 not in .data!
-> >> BUG: key 00000000000001e0 not in .data!
-> >> BUG: key 00000000000001e8 not in .data!
-> >> MSR: 8000000000029032
-> >> Unable to handle kernel paging request for data at address 0x00000028
-> >> Faulting instruction address: 0xc0000000003ad0ec
-> >> Oops: Kernel access of bad area, sig: 11 [#1]
-> >> SMP NR_CPUS=1024 NUMA pSeries
-> >> last sysfs file: 
-> >> /sys/devices/system/cpu/cpu19/cache/index1/shared_cpu_map
-> >> Page fault in user mode with in_atomic() = 1 mm = c00000010943e600
-> >> Modules linked in:
-> >> NIP = fff9e98fc40  MSR = 800000004001d032
-> >>  ipv6 fuse loop
-> >> Unable to handle kernel paging request for unknown fault
-> >>  dm_mod
-> >> Faulting instruction address: 0xc00000000008d0f4
-> >>  sr_mod ibmveth cdrom sg sd_mod crc_t10dif ibmvscsic 
-> >> scsi_transport_srp scsi_tgt scsi_mod
-> >> NIP: c0000000003ad0ec LR: c00000000064c3b0 CTR: c0000000003a6eb0
-> >> REGS: c000000109b4f610 TRAP: 0300   Not tainted  
-> >> (2.6.35-rc3-git5-autotest)
-> >> MSR: 8000000000009032<EE,ME,IR,DR>   CR: 88004484  XER: 00000001
-> >> DAR: 0000000000000028, DSISR: 0000000040010000
-> >> TASK = c000000109a98600[7403] 'mkdir' THREAD: c000000109b4c000 CPU: 19
-> >> GPR00: 0000000080000013 c000000109b4f890 c000000000d3d798 
-> >> 0000000000000028
-> >> GPR04: 0000000000000000 0000000000000000 0000000000000000 
-> >> 0000000000000001
-> >> GPR08: 0000000000000000 0000000000000028 c000000000189f2c 
- >> c000000109a98600
-> >> GPR12: 0000000024004424 c00000000f602f80 00000000000041ff 
-> >> 0000000000000001
-> >> GPR16: 0000000000000002 c00000010d8304c0 c000000109b4fb44 
-> >> 0000000000000000
-> >> GPR20: c00000010df77908 fffffffffffff000 0000000000010000 
-> >> 00000000000041ff
-> >> GPR24: c00000010df77758 c000000109fa1800 c00000010df77908 
-> >> c0000000ff236600
-> >> GPR28: 0000000000000028 0000000000000040 c000000000ca7b38 
-> >> c000000000189f2c
-> >> NIP [c0000000003ad0ec] .do_raw_spin_trylock+0x10/0x48
-> >> LR [c00000000064c3b0] ._raw_spin_lock+0x50/0xa4
-> >> Call Trace:
-> >> [c000000109b4f890] [c00000000064c3a4] ._raw_spin_lock+0x44/0xa4 
-> >> (unreliable)
-> >> [c000000109b4f920] [c000000000189f2c] .new_inode+0x4c/0xe4
-> >> [c000000109b4f9b0] [c0000000002257fc] .ext3_new_inode+0x84/0xb70
-> >> [c000000109b4fad0] [c00000000022f1ec] .ext3_mkdir+0x130/0x438
-> >> [c000000109b4fbe0] [c00000000017adb4] .vfs_mkdir+0xb8/0x160
-> >> [c000000109b4fc80] [c00000000017e52c] .SyS_mkdirat+0xb0/0x114
-> >> [c000000109b4fdc0] [c00000000017a730] .SyS_mkdir+0x1c/0x30
-> >> [c000000109b4fe30] [c0000000000085b4] syscall_exit+0x0/0x40
-> >> Instruction dump:
-> >> eb41ffd0 7c0803a6 eb61ffd8 eb81ffe0 eba1ffe8 ebc1fff0 ebe1fff8 4e800020
-> >> 38000000 7c691b78 980d0214 800d0008<7d601829>  2c0b0000 40c20010 7c00192d
-> >> Oops: Weird page fault, sig: 11 [#2]
-> >>
-> >> Pls let me know if this back trace would help in analyzing further.
-> >> Meanwhile I shall do a git bisect and send the inputs.
+Provide default implementations for the pmu txn methods, this allows
+us to remove some conditional code.
 
-The call stack for Badness at kernel/mutex-debug.c:64 (or whatever
-explodes first) would be handy.  This one seems jumbled still. What
-spinlock is in the trace? inode_lock?  That would indicate some random
-corruption or breakage in the lock debugging.
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+---
+ include/linux/perf_event.h |   10 +++----
+ kernel/perf_event.c        |   64 ++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 57 insertions(+), 17 deletions(-)
 
-> >>
-> >> Thanks
-> >> Divya
-> >>
-> >>
-> >>
-> > Hi All,
-> > 
-> >  From the git bisect,seems like the commit
-> >  57439f878afafefad8836ebf5c49da2a0a746105 is the corrupt for the above
-> >  issue.
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -656,21 +656,14 @@ group_sched_in(struct perf_event *group_
+ {
+ 	struct perf_event *event, *partial_group = NULL;
+ 	struct pmu *pmu = group_event->pmu;
+-	bool txn = false;
+ 
+ 	if (group_event->state == PERF_EVENT_STATE_OFF)
+ 		return 0;
+ 
+-	/* Check if group transaction availabe */
+-	if (pmu->start_txn)
+-		txn = true;
+-
+-	if (txn)
+-		pmu->start_txn(pmu);
++	pmu->start_txn(pmu);
+ 
+ 	if (event_sched_in(group_event, cpuctx, ctx)) {
+-		if (txn)
+-			pmu->cancel_txn(pmu);
++		pmu->cancel_txn(pmu);
+ 		return -EAGAIN;
+ 	}
+ 
+@@ -684,7 +677,7 @@ group_sched_in(struct perf_event *group_
+ 		}
+ 	}
+ 
+-	if (!txn || !pmu->commit_txn(pmu))
++	if (!pmu->commit_txn(pmu))
+ 		return 0;
+ 
+ group_error:
+@@ -699,8 +692,7 @@ group_error:
+ 	}
+ 	event_sched_out(group_event, cpuctx, ctx);
+ 
+-	if (txn)
+-		pmu->cancel_txn(pmu);
++	pmu->cancel_txn(pmu);
+ 
+ 	return -EAGAIN;
+ }
+@@ -4755,6 +4747,31 @@ static LIST_HEAD(pmus);
+ static DEFINE_MUTEX(pmus_lock);
+ static struct srcu_struct pmus_srcu;
+ 
++static void perf_pmu_nop_void(struct pmu *pmu)
++{
++}
++
++static int perf_pmu_nop_int(struct pmu *pmu)
++{
++	return 0;
++}
++
++static void perf_pmu_start_txn(struct pmu *pmu)
++{
++	perf_pmu_disable(pmu);
++}
++
++static int perf_pmu_commit_txn(struct pmu *pmu)
++{
++	perf_pmu_enable(pmu);
++	return 0;
++}
++
++static void perf_pmu_cancel_txn(struct pmu *pmu)
++{
++	perf_pmu_enable(pmu);
++}
++
+ int perf_pmu_register(struct pmu *pmu)
+ {
+ 	int ret;
+@@ -4764,6 +4781,29 @@ int perf_pmu_register(struct pmu *pmu)
+ 	pmu->pmu_disable_count = alloc_percpu(int);
+ 	if (!pmu->pmu_disable_count)
+ 		goto unlock;
++
++	if (!pmu->start_txn) {
++		if (pmu->pmu_enable) {
++			/*
++			 * If we have pmu_enable/pmu_disable calls, install
++			 * transaction stubs that use that to try and batch
++			 * hardware accesses.
++			 */
++			pmu->start_txn  = perf_pmu_start_txn;
++			pmu->commit_txn = perf_pmu_commit_txn;
++			pmu->cancel_txn = perf_pmu_cancel_txn;
++		} else {
++			pmu->start_txn  = perf_pmu_nop_void;
++			pmu->commit_txn = perf_pmu_nop_int;
++			pmu->cancel_txn = perf_pmu_nop_void;
++		}
++	}
++
++	if (!pmu->pmu_enable) {
++		pmu->pmu_enable  = perf_pmu_nop_void;
++		pmu->pmu_disable = perf_pmu_nop_void;
++	}
++
+ 	list_add_rcu(&pmu->entry, &pmus);
+ 	ret = 0;
+ unlock:
+Index: linux-2.6/include/linux/perf_event.h
+===================================================================
+--- linux-2.6.orig/include/linux/perf_event.h
++++ linux-2.6/include/linux/perf_event.h
+@@ -565,8 +565,8 @@ struct pmu {
+ 
+ 	int				*pmu_disable_count;
+ 
+-	void (*pmu_enable)		(struct pmu *pmu);
+-	void (*pmu_disable)		(struct pmu *pmu);
++	void (*pmu_enable)		(struct pmu *pmu); /* optional */
++	void (*pmu_disable)		(struct pmu *pmu); /* optional */
+ 
+ 	/*
+ 	 * Should return -ENOENT when the @event doesn't match this PMU.
+@@ -590,19 +590,19 @@ struct pmu {
+ 	 * Start the transaction, after this ->enable() doesn't need to
+ 	 * do schedulability tests.
+ 	 */
+-	void (*start_txn)	(struct pmu *pmu);
++	void (*start_txn)	(struct pmu *pmu); /* optional */
+ 	/*
+ 	 * If ->start_txn() disabled the ->enable() schedulability test
+ 	 * then ->commit_txn() is required to perform one. On success
+ 	 * the transaction is closed. On error the transaction is kept
+ 	 * open until ->cancel_txn() is called.
+ 	 */
+-	int  (*commit_txn)	(struct pmu *pmu);
++	int  (*commit_txn)	(struct pmu *pmu); /* optional */
+ 	/*
+ 	 * Will cancel the transaction, assumes ->disable() is called
+ 	 * for each successfull ->enable() during the transaction.
+ 	 */
+-	void (*cancel_txn)	(struct pmu *pmu);
++	void (*cancel_txn)	(struct pmu *pmu); /* optional */
+ };
+ 
+ /**
 
-Call me blind but I can't see the problem. Are you sure this commit
-breaks it?
 
