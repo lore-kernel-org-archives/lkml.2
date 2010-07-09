@@ -1,54 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0GIUul (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 16:50:41 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:33692 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755168Ab0GIUuh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 16:50:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-Subject: Re: [Bug #16169] Complain from preemptive debug
-Date: Fri, 9 Jul 2010 22:49:19 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Dmitry Monakhov <dmonakhov@openvz.org>,
-       Sedat Dilek <sedat.dilek@googlemail.com>
-References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <TXb9XdQzJoD.A.SIE.FOmNMB@chimera> <20100709063836.GA3965@swordfish>
-In-Reply-To: <20100709063836.GA3965@swordfish>
+	id S1755116Ab0GIUxW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 16:53:22 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:45667 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754862Ab0GIUxV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 16:53:21 -0400
+Date: Fri, 9 Jul 2010 22:53:19 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Zeev Tarantov <zeev.tarantov@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Maciej@antispam.struernethosting.dk
+Subject: Re: [PATCH][GIT PULL][for 2.6.35] tracing: Add alignment to
+	syscall metadata declarations
+Message-ID: <20100709205319.GA13941@merkur.ravnborg.org>
+References: <1278705402.1537.157.camel@gandalf.stny.rr.com> <20100709203301.GA13839@merkur.ravnborg.org> <1278708374.1537.161.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007092249.19612.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278708374.1537.161.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 09, 2010, Sergey Senozhatsky wrote:
-> On (07/09/10 01:41), Rafael J. Wysocki wrote:
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16169
-> > Subject		: Complain from preemptive debug
-> > Submitter	: Sedat Dilek <sedat.dilek@googlemail.com>
-> > Date		: 2010-05-31 10:10 (39 days old)
-> > Message-ID	: <AANLkTilTnAAZIizKinYsxFkNTkrmPqk6XJJuUjjhJ7EP@mail.gmail.com>
-> > References	: http://lkml.org/lkml/2010/5/31/77
-> > Handled-By	: Dmitry Monakhov <dmonakhov@openvz.org>
-> > 		  Sergey Senozhatsky <sergey.senozhatsky@gmail.com>
-> > Patch		: http://www.spinics.net/lists/cpufreq/msg01631.html
-> > 		  https://patchwork.kernel.org/patch/106555/
-> > 
-> > 
+On Fri, Jul 09, 2010 at 04:46:14PM -0400, Steven Rostedt wrote:
+> On Fri, 2010-07-09 at 22:33 +0200, Sam Ravnborg wrote:
+> > On Fri, Jul 09, 2010 at 03:56:42PM -0400, Steven Rostedt wrote:
 > 
-> Hello,
-> The patch (Signed-off-by: Peter Zijlstra - http://lkml.org/lkml/2010/7/1/32) 
-> is already in the kernel. Please see this thread
-> http://lkml.org/lkml/2010/6/15/309
+> > This looks like a fix that just hide the real bug.
+> > If I remember the original report correct the problem is
+> > that the symbol:
+> > 
+> >     __start_syscalls_metadata
+> > 
+> > Does not point to a valid syscall entry.
+> > 
+> > The symbol is assigned in vmlinux.lds.h like this:
+> > #define TRACE_SYSCALLS() VMLINUX_SYMBOL(__start_syscalls_metadata) = .; \
+> >                          *(__syscalls_metadata)                         \
+> >                          VMLINUX_SYMBOL(__stop_syscalls_metadata) = .;
+> > 
+> > Now consider what is happening if we have the following scanario:
+> > 
+> > . equals 0x1004 so __start_syscalls_metadata is set to 0x1004
+> > But __syscall_metadata require 8 byte alignment so it starts at 0x1008.
 > 
-> 8c215bd3890c347dfb6a2db4779755f8b9c298a9
+> 
+> I did not know that the linker could start a section at a half a word
+> size. That seems to me to be a linker bug.
 
-The bug has been closed, thanks for the update.
+In this case the linker does not start a section - we are in the
+middle of an output section.
 
-Rafael
+   *(__syscalls_metadata)
+
+Is only used to tell the linker that it shall include the content
+of the "__syscalls_metadata" input section in the current output section.
+
+So what we have here is something like this:
+
+.data : AT(ADDR(.data) - LOAD_OFFSET) {
+	*(_ftrace_events)
+	__start_syscalls_metadata = .;
+	*(__syscalls_metadata)
+}
+
+.data is the outpud section - and the linker will align the output section
+to the biggest alignmnet it see within the referenced input sections.
+
+But in this case we have no control of the value of "." (current address)
+when we have processed (_ftrace_events) so it may even be at a 2 byte boundary.
+The linker will add padding as needed to satisfy the alignmnet of
+__syscalls_metadata - but that padding will be inbetween "." and the first
+member in __syscalls_metadata.
+
+	Sam
