@@ -1,85 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755498Ab0GIDv7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 23:51:59 -0400
-Received: from core.signal11.us ([64.251.29.136]:36558 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753676Ab0GIDv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 23:51:56 -0400
-Message-ID: <4C369CDC.9080104@signal11.us>
-Date: Thu, 08 Jul 2010 23:51:56 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Marcel Holtmann <marcel@holtmann.org>
-Cc: David S Miller <davem@davemloft.net>, Jiri Kosina <jkosina@suse.cz>,
-       Michael Poole <mdpoole@troilus.org>, Bastien Nocera <hadess@hadess.net>,
-       Eric Dumazet <eric.dumazet@gmail.com>, linux-bluetooth@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw  HIDIOCGFEATURE  and HIDIOCSFEATURE
-References: <1276467601-9066-1-git-send-email-alan@signal11.us> <1278623485.10421.73.camel@localhost.localdomain>
-In-Reply-To: <1278623485.10421.73.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1754969Ab0GIDvE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 23:51:04 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:43556 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751765Ab0GIDvB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 23:51:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=Gv2XqOS+r/CEE9WsUgGI/iuOb0ZIyumk9KZjJQ9LdkyER9nnMqOgEyAdowZXee8Fdo
+         5iNZbf9YtNxdTkIm56BNDLkRxFL7TP+q+YjnOklBbTyXGNdAdV2UFEdbsOb/EIhmiNTW
+         +W3hwcdKbUCuc28ilR68qdZdG/7HOaAShwf+M=
+Subject: [PATCH] acer-wmi: fix memory leaks in wmab_execute error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>,
+       Matthew Garrett <mjg@redhat.com>, Thomas Renninger <trenn@suse.de>,
+       Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+       platform-driver-x86@vger.kernel.org
+Content-Type: text/plain
+Date: Fri, 09 Jul 2010 11:51:15 +0800
+Message-Id: <1278647475.26099.2.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
-X-DSPAM-Result: Whitelisted
-X-DSPAM-Processed: Thu Jul  8 23:51:56 2010
-X-DSPAM-Confidence: 0.9899
-X-DSPAM-Probability: 0.0000
-X-DSPAM-Signature: 4c369cdc144131753669506
-X-DSPAM-Factors: 27,
-	Received*26+177, 0.01000,
-	Subject*hidraw+HIDIOCGFEATURE, 0.01000,
-	References*git, 0.01000,
-	of, 0.01000,
-	of, 0.01000,
-	User-Agent*Mozilla/5.0, 0.01000,
-	References*alan+signal11.us>, 0.01000,
-	Received*ESMTP, 0.01000,
-	Cc*<jkosina, 0.01000,
-	Received*(c+76, 0.01000,
-	Received*242.hsd1.fl.comcast.net+[76.26.177.242]), 0.01000,
-	User-Agent*US+rv, 0.01000,
-	Subject*HIDIOCSFEATURE, 0.01000,
-	References*send+email, 0.01000,
-	about, 0.01000,
-	these, 0.01000,
-	these, 0.01000,
-	From*<alan, 0.01000,
-	References*1+git, 0.01000,
-	>+I, 0.01000,
-	To*Holtmann, 0.01000,
-	References*email+alan, 0.01000,
-	User-Agent*U, 0.01000,
-	To*<marcel, 0.01000,
-	we, 0.01000,
-	because, 0.01000,
-	Cc*suse.cz>, 0.01000
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/08/2010 05:11 PM, Marcel Holtmann wrote:
-> I looked at this and I am bit worried that this should not be done in
-> this detail in the HIDP driver. Essentially HIDP is a pure transport
-> driver. It should not handle all these details. Can we make this a bit
-> easier for the transport drivers to support such features?
->
-> Regards
->
-> Marcel
->    
+When acpi_evaluate_object() is passed ACPI_ALLOCATE_BUFFER,
+the caller must kfree the returned buffer if AE_OK is returned.
 
-Hi Marcel,
+Call Trace:
+wmab_execute
+  -> wmi_evaluate_method
+    -> acpi_evaluate_object
 
-I put these changes (most notably the addition of hidp_get_raw_report()) 
-in hidp because that's where the parallel function 
-hidp_output_raw_report() was already located. I figured the input should 
-go with the output. That said, if there's a better place for both of 
-them (input and output) to go, let me know where you think it should be, 
-and I'll get them moved into the proper spot.
+Thus if callers of wmab_execute() pass ACPI_ALLOCATE_BUFFER,
+the return buffer must be kfreed if wmab_execute return AE_OK.
 
-I'm not sure what you mean about HIDP being a pure transport driver.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/platform/x86/acer-wmi.c |   13 ++++++++++++-
+ 1 files changed, 12 insertions(+), 1 deletions(-)
 
-Alan.
+diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+index 1ea6c43..a158d39 100644
+--- a/drivers/platform/x86/acer-wmi.c
++++ b/drivers/platform/x86/acer-wmi.c
+@@ -555,6 +555,7 @@ static acpi_status AMW0_find_mailled(void)
+ 	obj->buffer.length == sizeof(struct wmab_ret)) {
+ 		ret = *((struct wmab_ret *) obj->buffer.pointer);
+ 	} else {
++		kfree(out.pointer);
+ 		return AE_ERROR;
+ 	}
+ 
+@@ -598,6 +599,7 @@ static acpi_status AMW0_set_capabilities(void)
+ 	obj->buffer.length == sizeof(struct wmab_ret)) {
+ 		ret = *((struct wmab_ret *) obj->buffer.pointer);
+ 	} else {
++		kfree(out.pointer);
+ 		return AE_ERROR;
+ 	}
+ 
+@@ -607,15 +609,24 @@ static acpi_status AMW0_set_capabilities(void)
+ 	args.ebx = 2 << 8;
+ 	args.ebx |= ACER_AMW0_BLUETOOTH_MASK;
+ 
++	/*
++	 * It's ok to use existing buffer for next wmab_execute call.
++	 * But we need to kfree(out.pointer) if next wmab_execute call
++	 * returns AE_BUFFER_OVERFLOW.
++	 */
+ 	status = wmab_execute(&args, &out);
+-	if (ACPI_FAILURE(status))
++	if (ACPI_FAILURE(status)) {
++		if (status == AE_BUFFER_OVERFLOW)
++			kfree(out.pointer);
+ 		return status;
++	}
+ 
+ 	obj = (union acpi_object *) out.pointer;
+ 	if (obj && obj->type == ACPI_TYPE_BUFFER
+ 	&& obj->buffer.length == sizeof(struct wmab_ret)) {
+ 		ret = *((struct wmab_ret *) obj->buffer.pointer);
+ 	} else {
++		kfree(out.pointer);
+ 		return AE_ERROR;
+ 	}
+ 
+-- 
+1.5.4.3
+
 
 
