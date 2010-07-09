@@ -1,101 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab0GIJOt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 05:14:49 -0400
-Received: from mail.windriver.com ([147.11.1.11]:65025 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607Ab0GIJOs (ORCPT
+	id S1753571Ab0GIJWb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 05:22:31 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:54443 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751959Ab0GIJW3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 05:14:48 -0400
-Date: Fri, 9 Jul 2010 17:11:38 +0800
-From: Yong Zhang <yong.zhang@windriver.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
-       jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
-       cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
-       oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
-       dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
-       andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
-Subject: Re: [PATCH 27/35] workqueue: implement concurrency managed dynamic
- worker pool
-Message-ID: <20100709091138.GA7304@windriver.com>
-Reply-To: Yong Zhang <yong.zhang@windriver.com>
-References: <1277759063-24607-1-git-send-email-tj@kernel.org>
- <1277759063-24607-28-git-send-email-tj@kernel.org>
+	Fri, 9 Jul 2010 05:22:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=CfbGQHWxET2644EwL8id1NOHBiC4VYuiW52qrFBqZmPQ7aGBams02aGVTzRFIyYCws
+         HiOFasho5fiJrmdsFkSZmdT9tsJv9jCSELHO2LvaG2VjRbpb4DPGT8gNUFLupXlYBroq
+         nWl1R+5Zx2tPBjmhpWnOHA9FBgfz2UpCYidHM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <1277759063-24607-28-git-send-email-tj@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 09 Jul 2010 09:11:41.0491 (UTC) FILETIME=[BE877030:01CB1F46]
+In-Reply-To: <TXb9XdQzJoD.A.f6H.kLmNMB@chimera>
+References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <TXb9XdQzJoD.A.f6H.kLmNMB@chimera>
+From: Zeev Tarantov <zeev.tarantov@gmail.com>
+Date: Fri, 9 Jul 2010 11:50:42 +0300
+Message-ID: <AANLkTikKPkL7N2nD1Z-vsUU2pRkfk52KSgTPkFckpNFx@mail.gmail.com>
+Subject: Re: [Bug #16353] 2.6.35 regression
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jun 28, 2010 at 11:04:15PM +0200, Tejun Heo wrote:
-> +static bool maybe_create_worker(struct global_cwq *gcwq)
-> +{
-> +	if (!need_to_create_worker(gcwq))
-> +		return false;
-> +restart:
-> +	/* if we don't make progress in MAYDAY_INITIAL_TIMEOUT, call for help */
-> +	mod_timer(&gcwq->mayday_timer, jiffies + MAYDAY_INITIAL_TIMEOUT);
-> +
-> +	while (true) {
-> +		struct worker *worker;
-> +
-> +		spin_unlock_irq(&gcwq->lock);
-> +
-> +		worker = create_worker(gcwq, true);
-> +		if (worker) {
-> +			del_timer_sync(&gcwq->mayday_timer);
-> +			spin_lock_irq(&gcwq->lock);
-> +			start_worker(worker);
-> +			BUG_ON(need_to_create_worker(gcwq));
-> +			return true;
-> +		}
-> +
-> +		if (!need_to_create_worker(gcwq))
-> +			break;
-> +
-> +		spin_unlock_irq(&gcwq->lock);
-> +		__set_current_state(TASK_INTERRUPTIBLE);
-> +		schedule_timeout(CREATE_COOLDOWN);
-> +		spin_lock_irq(&gcwq->lock);
-> +		if (!need_to_create_worker(gcwq))
-> +			break;
-> +	}
-> +
-> +	spin_unlock_irq(&gcwq->lock);
+On Fri, Jul 9, 2010 at 02:41, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16353
+> Subject         : 2.6.35 regression
+> Submitter       : Zeev Tarantov <zeev.tarantov@gmail.com>
+> Date            : 2010-07-05 13:04 (4 days old)
+> Message-ID      : <loom.20100705T144459-919@post.gmane.org>
+> References      : http://marc.info/?l=linux-kernel&m=127836002702522&w=2
 
-A little worried about the lock operation. We may call spin_unlock_irq() twice
-under some special situation. Couldn't that happen? Or Am I missing something?
 
-And a rough patch for this issue if needed:
----
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 2eb9fbd..84a9cb9 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -1427,10 +1427,11 @@ restart:
- 			return true;
- 		}
- 
--		if (!need_to_create_worker(gcwq))
-+		if (!need_to_create_worker(gcwq)) {
-+			spin_lock_irq(&gcwq->lock);
- 			break;
-+		}
- 
--		spin_unlock_irq(&gcwq->lock);
- 		__set_current_state(TASK_INTERRUPTIBLE);
- 		schedule_timeout(CREATE_COOLDOWN);
- 		spin_lock_irq(&gcwq->lock);
+There's a working patch by Steven Rostedt at
+http://marc.info/?l=linux-kernel&m=127864600425732&w=2
 
-> +	del_timer_sync(&gcwq->mayday_timer);
-> +	spin_lock_irq(&gcwq->lock);
-> +	if (need_to_create_worker(gcwq))
-> +		goto restart;
-> +	return true;
-> +}
-> +
+-Zeev
