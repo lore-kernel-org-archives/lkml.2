@@ -1,240 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab0GIXoT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 19:44:19 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:59632 "EHLO smtp.polymtl.ca"
+	id S1755747Ab0GIXqM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 19:46:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24859 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755534Ab0GIXoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 19:44:04 -0400
-Message-Id: <20100709225816.167106877@efficios.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 09 Jul 2010 18:57:33 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>, Paul Menage <menage@google.com>,
-       Paul Jackson <pj@sgi.com>, David Rientjes <rientjes@google.com>,
-       Nick Piggin <nickpiggin@yahoo.com.au>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Balbir Singh <balbir@in.ibm.com>, Cedric Le Goater <clg@fr.ibm.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Serge Hallyn <serue@us.ibm.com>
-Subject: [patch 06/20] prio_heap: heap_remove(), heap_maximum(), heap_replace() and heap_cherrypick()
-References: <20100709225727.312232266@efficios.com>
-Content-Disposition: inline; filename=prio-heap-remove-maximum-replace-cherrypick.patch
-X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Fri,  9 Jul 2010 22:58:16 +0000
+	id S1750987Ab0GIXqJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 19:46:09 -0400
+Message-ID: <4C37B410.1070306@ds.jp.nec.com>
+Date: Fri, 09 Jul 2010 19:43:12 -0400
+From: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Andrea Righi <arighi@develer.com>
+CC: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+       Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
+       kamezawa.hiroyu@jp.fujitsu.com,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+       balbir@linux.vnet.ibm.com, Muuhh Ikeda <m-ikeda@ds.jp.nec.com>
+Subject: Re: [RFC][PATCH 03/11] blkiocg async: Hooks for iotrack
+References: <4C369009.80503@ds.jp.nec.com> <4C36948C.9000902@ds.jp.nec.com> <20100709092450.GA1814@linux.develer.com>
+In-Reply-To: <20100709092450.GA1814@linux.develer.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These added interfaces lets prio_heap users lookup the top of heap item without
-performing any insertion, perform removal of the topmost heap entry, and also
-replacement of topmost heap entry. This is useful if one need to use the result
-of the lookup to determine if the current maximum should simply be removed or if
-it should be replaced.
+Andrea Righi wrote, on 07/09/2010 05:24 AM:
+> On Thu, Jul 08, 2010 at 11:16:28PM -0400, Munehiro Ikeda wrote:
+>> Embedding hooks for iotrack to record process info, namely
+>> cgroup ID.
+>> This patch is based on a patch posted from Ryo Tsuruta on Oct 2,
+>> 2009 titled "Page tracking hooks".
+>>
+>> Signed-off-by: Hirokazu Takahashi<taka@valinux.co.jp>
+>> Signed-off-by: Ryo Tsuruta<ryov@valinux.co.jp>
+>> Signed-off-by: Munehiro "Muuhh" Ikeda<m-ikeda@ds.jp.nec.com>
+>> ---
+>>   fs/buffer.c         |    2 ++
+>>   fs/direct-io.c      |    2 ++
+>>   mm/bounce.c         |    2 ++
+>>   mm/filemap.c        |    2 ++
+>>   mm/memory.c         |    5 +++++
+>>   mm/page-writeback.c |    2 ++
+>>   mm/swap_state.c     |    2 ++
+>>   7 files changed, 17 insertions(+), 0 deletions(-)
+>>
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Paul Menage <menage@google.com>
-Cc: Paul Jackson <pj@sgi.com>
-Cc: David Rientjes <rientjes@google.com>
-Cc: Nick Piggin <nickpiggin@yahoo.com.au>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Balbir Singh <balbir@in.ibm.com>
-Cc: Cedric Le Goater <clg@fr.ibm.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Serge Hallyn <serue@us.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>
----
- include/linux/prio_heap.h |   44 ++++++++++++++++++++++
- lib/prio_heap.c           |   91 ++++++++++++++++++++++++++++++++++++----------
- 2 files changed, 116 insertions(+), 19 deletions(-)
+(snip)
 
-Index: linux.trees.git/include/linux/prio_heap.h
-===================================================================
---- linux.trees.git.orig/include/linux/prio_heap.h	2010-07-06 14:25:29.000000000 -0400
-+++ linux.trees.git/include/linux/prio_heap.h	2010-07-07 10:04:33.000000000 -0400
-@@ -23,6 +23,18 @@ struct ptr_heap {
- };
- 
- /**
-+ * heap_maximum - return the largest element in the heap
-+ * @heap: the heap to be operated on
-+ *
-+ * Returns the largest element in the heap, without performing any modification
-+ * to the heap structure. Returns NULL if the heap is empty.
-+ */
-+static inline void *heap_maximum(const struct ptr_heap *heap)
-+{
-+	return heap->size ? heap->ptrs[0] : NULL;
-+}
-+
-+/**
-  * heap_init - initialize an empty heap with a given memory size
-  * @heap: the heap structure to be initialized
-  * @size: amount of memory to use in bytes
-@@ -53,6 +65,38 @@ void heap_free(struct ptr_heap *heap);
-  */
- extern void *heap_insert(struct ptr_heap *heap, void *p);
- 
-+/**
-+ * heap_remove - remove the largest element from the heap
-+ * @heap: the heap to be operated on
-+ *
-+ * Returns the largest element in the heap. It removes this element from the
-+ * heap. Returns NULL if the heap is empty.
-+ */
-+extern void *heap_remove(struct ptr_heap *heap);
- 
-+/**
-+ * heap_cherrypick - remove a given element from the heap
-+ * @heap: the heap to be operated on
-+ * @p: the element
-+ *
-+ * Remove the given element from the heap. Return the element if present, else
-+ * return NULL. This algorithm has a complexity of O(n), which is higher than
-+ * O(log(n)) provided by the rest of this API.
-+ */
-+extern void *heap_cherrypick(struct ptr_heap *heap, void *p);
-+
-+/**
-+ * heap_replace_max - replace the the largest element from the heap
-+ * @heap: the heap to be operated on
-+ * @p: the pointer to be inserted as topmost element replacement
-+ *
-+ * Returns the largest element in the heap. It removes this element from the
-+ * heap. The heap is rebalanced only once after the insertion. Returns NULL if
-+ * the heap is empty.
-+ *
-+ * This is the equivalent of calling heap_remove() and then heap_insert(), but
-+ * it only rebalances the heap once.
-+ */
-+extern void *heap_replace_max(struct ptr_heap *heap, void *p);
- 
- #endif /* _LINUX_PRIO_HEAP_H */
-Index: linux.trees.git/lib/prio_heap.c
-===================================================================
---- linux.trees.git.orig/lib/prio_heap.c	2010-07-06 14:25:29.000000000 -0400
-+++ linux.trees.git/lib/prio_heap.c	2010-07-07 10:18:32.000000000 -0400
-@@ -23,12 +23,49 @@ void heap_free(struct ptr_heap *heap)
- 	kfree(heap->ptrs);
- }
- 
--void *heap_insert(struct ptr_heap *heap, void *p)
-+static void heapify(struct ptr_heap *heap, void **ptrs, void *p, int pos)
-+{
-+	while (1) {
-+		int left = 2 * pos + 1;
-+		int right = 2 * pos + 2;
-+		int largest = pos;
-+		if (left < heap->size && heap->gt(ptrs[left], p))
-+			largest = left;
-+		if (right < heap->size && heap->gt(ptrs[right], ptrs[largest]))
-+			largest = right;
-+		if (largest == pos)
-+			break;
-+		/* Push p down the heap one level and bump one up */
-+		ptrs[pos] = ptrs[largest];
-+		ptrs[largest] = p;
-+		pos = largest;
-+	}
-+}
-+
-+void *heap_replace_max(struct ptr_heap *heap, void *p)
- {
- 	void *res;
- 	void **ptrs = heap->ptrs;
- 	int pos;
- 
-+	if (!heap->size) {
-+		ptrs[heap->size++] = p;
-+		return NULL;
-+	}
-+
-+	/* Replace the current max and heapify */
-+	res = ptrs[0];
-+	ptrs[0] = p;
-+	pos = 0;
-+	heapify(heap, ptrs, p, pos);
-+	return res;
-+}
-+
-+void *heap_insert(struct ptr_heap *heap, void *p)
-+{
-+	void **ptrs = heap->ptrs;
-+	int pos;
-+
- 	if (heap->size < heap->max) {
- 		/* Heap insertion */
- 		pos = heap->size++;
-@@ -47,24 +84,40 @@ void *heap_insert(struct ptr_heap *heap,
- 		return p;
- 
- 	/* Replace the current max and heapify */
--	res = ptrs[0];
--	ptrs[0] = p;
--	pos = 0;
-+	return heap_replace_max(heap, p);
-+}
- 
--	while (1) {
--		int left = 2 * pos + 1;
--		int right = 2 * pos + 2;
--		int largest = pos;
--		if (left < heap->size && heap->gt(ptrs[left], p))
--			largest = left;
--		if (right < heap->size && heap->gt(ptrs[right], ptrs[largest]))
--			largest = right;
--		if (largest == pos)
--			break;
--		/* Push p down the heap one level and bump one up */
--		ptrs[pos] = ptrs[largest];
--		ptrs[largest] = p;
--		pos = largest;
-+void *heap_remove(struct ptr_heap *heap)
-+{
-+	void **ptrs = heap->ptrs;
-+
-+	switch (heap->size) {
-+	case 0:
-+		return NULL;
-+	case 1:
-+		return ptrs[--heap->size];
- 	}
--	return res;
-+
-+	/* Shrink, replace the current max by previous last entry and heapify */
-+	return heap_replace_max(heap, ptrs[--heap->size]);
-+}
-+
-+void *heap_cherrypick(struct ptr_heap *heap, void *p)
-+{
-+	void **ptrs = heap->ptrs;
-+	size_t pos, size = heap->size;
-+
-+	for (pos = 0; pos < size; pos++)
-+		if (ptrs[pos] == p)
-+			goto found;
-+	return NULL;
-+found:
-+	if (heap->size == 1)
-+		return ptrs[--heap->size];
-+	/*
-+	 * Replace p with previous last entry and heapify.
-+	 */
-+	ptrs[pos] = ptrs[--heap->size];
-+	heapify(heap, ptrs, ptrs[pos], pos);
-+	return p;
- }
+>> diff --git a/mm/memory.c b/mm/memory.c
+>> index 119b7cc..3eb2d0d 100644
+>> --- a/mm/memory.c
+>> +++ b/mm/memory.c
+>> @@ -52,6 +52,7 @@
+>>   #include<linux/init.h>
+>>   #include<linux/writeback.h>
+>>   #include<linux/memcontrol.h>
+>> +#include<linux/blk-iotrack.h>
+>>   #include<linux/mmu_notifier.h>
+>>   #include<linux/kallsyms.h>
+>>   #include<linux/swapops.h>
+>> @@ -2283,6 +2284,7 @@ gotten:
+>>   		 */
+>>   		ptep_clear_flush(vma, address, page_table);
+>>   		page_add_new_anon_rmap(new_page, vma, address);
+>> +		blk_iotrack_set_owner(new_page, mm);
+>>   		/*
+>>   		 * We call the notify macro here because, when using secondary
+>>   		 * mmu page tables (such as kvm shadow page tables), we want the
+>> @@ -2718,6 +2720,7 @@ static int do_swap_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>>   	flush_icache_page(vma, page);
+>>   	set_pte_at(mm, address, page_table, pte);
+>>   	page_add_anon_rmap(page, vma, address);
+>> +	blk_iotrack_reset_owner(page, mm);
+>>   	/* It's better to call commit-charge after rmap is established */
+>>   	mem_cgroup_commit_charge_swapin(page, ptr);
+>>
+>> @@ -2795,6 +2798,7 @@ static int do_anonymous_page(struct mm_struct *mm, struct vm_area_struct *vma,
+>>
+>>   	inc_mm_counter_fast(mm, MM_ANONPAGES);
+>>   	page_add_new_anon_rmap(page, vma, address);
+>> +	blk_iotrack_set_owner(page, mm);
+>
+> We're tracking anonymous memory here. Should we charge the cost of the
+> swap IO to the root cgroup or the actual owner of the page? there was a
+> previous discussion about this topic, but can't remember the details,
+> sorry.
+>
+> IMHO we could remove some overhead simply ignoring the tracking of
+> anonymous pages (swap IO) and just consider direct and writeback IO of
+> file pages.
+
+Well, this needs a decision.  Actually who should be charged for
+swap IO has multiple options.
+
+(1) root cgroup
+(2) page owner
+(3) memory hogger who triggered swap
+
+The choice of this patch is (2).  However, I agree that there is no
+concrete rationale to select (2) but (3), and (1) is the simplest
+and the best for performance.
+Alright, I will remove anonymous pages from tracking target.
+
+
+Thanks,
+Muuhh
+
+
+
+>>   setpte:
+>>   	set_pte_at(mm, address, page_table, entry);
+>>
+>> @@ -2949,6 +2953,7 @@ static int __do_fault(struct mm_struct *mm, struct vm_area_struct *vma,
+>>   		if (anon) {
+>>   			inc_mm_counter_fast(mm, MM_ANONPAGES);
+>>   			page_add_new_anon_rmap(page, vma, address);
+>> +			blk_iotrack_set_owner(page, mm);
+>
+> Ditto.
+>
+>>   		} else {
+>>   			inc_mm_counter_fast(mm, MM_FILEPAGES);
+>>   			page_add_file_rmap(page);
+>> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+>> index 54f28bd..f3e6b2c 100644
+>> --- a/mm/page-writeback.c
+>> +++ b/mm/page-writeback.c
+>> @@ -23,6 +23,7 @@
+>>   #include<linux/init.h>
+>>   #include<linux/backing-dev.h>
+>>   #include<linux/task_io_accounting_ops.h>
+>> +#include<linux/blk-iotrack.h>
+>>   #include<linux/blkdev.h>
+>>   #include<linux/mpage.h>
+>>   #include<linux/rmap.h>
+>> @@ -1128,6 +1129,7 @@ int __set_page_dirty_nobuffers(struct page *page)
+>>   			BUG_ON(mapping2 != mapping);
+>>   			WARN_ON_ONCE(!PagePrivate(page)&&  !PageUptodate(page));
+>>   			account_page_dirtied(page, mapping);
+>> +			blk_iotrack_reset_owner_pagedirty(page, current->mm);
+>>   			radix_tree_tag_set(&mapping->page_tree,
+>>   				page_index(page), PAGECACHE_TAG_DIRTY);
+>>   		}
+>> diff --git a/mm/swap_state.c b/mm/swap_state.c
+>> index e10f583..ab26978 100644
+>> --- a/mm/swap_state.c
+>> +++ b/mm/swap_state.c
+>> @@ -19,6 +19,7 @@
+>>   #include<linux/pagevec.h>
+>>   #include<linux/migrate.h>
+>>   #include<linux/page_cgroup.h>
+>> +#include<linux/blk-iotrack.h>
+>>
+>>   #include<asm/pgtable.h>
+>>
+>> @@ -324,6 +325,7 @@ struct page *read_swap_cache_async(swp_entry_t entry, gfp_t gfp_mask,
+>>   		/* May fail (-ENOMEM) if radix-tree node allocation failed. */
+>>   		__set_page_locked(new_page);
+>>   		SetPageSwapBacked(new_page);
+>> +		blk_iotrack_set_owner(new_page, current->mm);
+>
+> Ditto.
+>
+>>   		err = __add_to_swap_cache(new_page, entry);
+>>   		if (likely(!err)) {
+>>   			radix_tree_preload_end();
+>> --
+>> 1.6.2.5
+>
+> Thanks,
+> -Andrea
+>
+
+-- 
+IKEDA, Munehiro
+   NEC Corporation of America
+     m-ikeda@ds.jp.nec.com
 
