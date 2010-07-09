@@ -1,115 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756503Ab0GINqN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:46:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755882Ab0GINqL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:46:11 -0400
-Date: Fri, 9 Jul 2010 09:45:46 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
-Cc: linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
-       Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
-       kamezawa.hiroyu@jp.fujitsu.com, Andrea Righi <righi.andrea@gmail.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
-       balbir@linux.vnet.ibm.com
-Subject: Re: [RFC][PATCH 00/11] blkiocg async support
-Message-ID: <20100709134546.GC3672@redhat.com>
-References: <4C369009.80503@ds.jp.nec.com>
+	id S1756558Ab0GINro (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:47:44 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:50244 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755882Ab0GINrn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 09:47:43 -0400
+Date: Fri, 9 Jul 2010 15:47:39 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Greg Ungerer <gerg@uclinux.org>,
+       Thiago Farina <tfransosi@gmail.com>,
+       Sonic Zhang <sonic.zhang@analog.com>,
+       Mike Frysinger <vapier@gentoo.org>, Graf Yang <graf.yang@analog.com>,
+       Alan Cox <alan@linux.intel.com>,
+       Jesper Nilsson <jesper.nilsson@axis.com>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, uclinux-dist-devel@blackfin.uclinux.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: [PATCH 00/11] Removing dead code
+Message-ID: <cover.1278682302.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C369009.80503@ds.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 10:57:13PM -0400, Munehiro Ikeda wrote:
-> These RFC patches are trial to add async (cached) write support on blkio
-> controller.
-> 
-> Only test which has been done is to compile, boot, and that write bandwidth
-> seems prioritized when pages which were dirtied by two different processes in
-> different cgroups are written back to a device simultaneously.  I know this
-> is the minimum (or less) test but I posted this as RFC because I would like
-> to hear your opinions about the design direction in the early stage.
-> 
-> Patches are for 2.6.35-rc4.
-> 
-> This patch series consists of two chunks.
-> 
-> (1) iotrack (patch 01/11 -- 06/11)
-> 
-> This is a functionality to track who dirtied a page, in exact which cgroup a
-> process which dirtied a page belongs to.  Blkio controller will read the info
-> later and prioritize when the page is actually written to a block device.
-> This work is originated from Ryo Tsuruta and Hirokazu Takahashi and includes
-> Andrea Righi's idea.  It was posted as a part of dm-ioband which was one of
-> proposals for IO controller.
-> 
-> 
-> (2) blkio controller modification (07/11 -- 11/11)
-> 
-> The main part of blkio controller async write support.
-> Currently async queues are device-wide and async write IOs are always treated
-> as root group.
-> These patches make async queues per a cfq_group per a device to control them.
-> Async write is handled by flush kernel thread.  Because queue pointers are
-> stored in cfq_io_context, io_context of the thread has to have multiple
-> cfq_io_contexts per a device.  So these patches make cfq_io_context per an
-> io_context per a cfq_group, which means per an io_context per a cgroup per a
-> device.
-> 
-> 
-> This might be a piece of puzzle for complete async write support of blkio
-> controller.  One of other pieces in my head is page dirtying ratio control.
-> I believe Andrea Righi was working on it...how about the situation?
+Hi all!
 
-Thanks Muuh. I will look into the patches in detail. 
+        As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-In my initial patches I had implemented the support for ASYNC control
-(also included Ryo's IO tracking patches) but it did not work well and
-it was unpredictable. I realized that until and unless we implement
-some kind of per group dirty ratio/page cache share at VM level and
-create parallel paths for ASYNC IO, writes often get serialized.
+	      I've been running a check on the arch/arm sourcetree for
+config Items not defined in Kconfig and found 33 such
+cases. Sourcecode
+blocks depending on these Items are not reachable from a vanilla
+kernel -- dead code. I've seen such dead blocks made on purpose
+e.g. while integrating new features into the kernel but generally
+they're just useless.
 
-So writes belonging to high priority group get stuck behind low priority
-group and you don't get any service differentiation.
+	Each of the patches in this patchset removes on such dead
+config Item, I'd be glad if you consider applying them. I've been
+doing deeper analysis of such issues before and can do so again but
+I'm not so sure they were fastly usefull. Unfortunately arm doesn't
+allow some allyesconfig build covering all of that code so I couldn't
+build-test all of them, sorry for that.
 
-So IMHO, this piece should go into kernel after we have first fixed the
-problem at VM (read memory controller) with per cgroup dirty ratio kind
-of thing.
+        Please keep me informed of this patch getting confirmed /
+merged so we can keep track of it.
 
-> 
-> And also, I'm thinking that async write support is required by bandwidth
-> capping policy of blkio controller.  Bandwidth capping can be done in upper
-> layer than elevator.
+Regards
 
-I think capping facility we should implement in higher layers otherwise
-it is not useful for higher level logical devices (dm/md).
+        Christoph Egger
 
-It was ok to implement proportional bandwidth division at CFQ level
-because one can do proportional BW division at each leaf node and still get
-overall service differentation at higher level logical node. But same can
-not be done for max BW control.
- 
->  However I think it should be also done in elevator layer
-> in my opinion.  Elevator buffers and sort requests.  If there is another
-> buffering functionality in upper layer, it is doubled buffering and it can be
-> harmful for elevator's prediction.
+[0] http://vamos1.informatik.uni-erlangen.de/
 
-I don't mind doing it at elevator layer also because in that case of
-somebody is not using dm/md, then one does not have to load max bw
-control module and one can simply enable max bw control in CFQ. 
+Christoph Egger (11):
+  Removing dead 68328_SERIAL_UART
+  Removing dead CONSOLE_*
+  Removing dead PP04
+  Removing dead (ALMA_ANS | DRAGONIXVZ | M68EZ328ADS)
+  Removing dead ETRAX_RS485_ON_PORT_G
+  Removing dead ETRAX_RS485_LTC1387
+  Removing dead ETRAX_EXTERN_PB6CLK_ENABLED
+  Removing dead ETRAX_SERIAL_PROC_ENTRY
+  Removing dead SERIAL_BFIN_{HARD_,}CTSRTS
+  Removing dead SERIAL_BFIN_SPORT_CTSRTS
+  Removing dead SERIAL_BFIN_SPORT_CONSOLE
 
-Thinking more about it, now we are suggesting implementing max BW
-control at two places. I think it will be duplication of code and
-increased complexity in CFQ. Probably implement max bw control with
-the help of dm module and use same for CFQ also. There is pain 
-associated with configuring dm device but I guess it is easier than
-maintaining two max bw control schemes in kernel.
+ drivers/serial/68328serial.c     |   16 ++----
+ drivers/serial/68328serial.h     |    5 --
+ drivers/serial/68360serial.c     |   26 +---------
+ drivers/serial/bfin_5xx.c        |  103 --------------------------------------
+ drivers/serial/bfin_sport_uart.c |  100 ++-----------------------------------
+ drivers/serial/crisv10.c         |   71 --------------------------
+ 6 files changed, 12 insertions(+), 309 deletions(-)
 
-Thanks
-Vivek
