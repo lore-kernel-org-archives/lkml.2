@@ -1,50 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753037Ab0GIBb3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 21:31:29 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:32904 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab0GIBb2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 21:31:28 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: FYI: mmap_sem OOM patch
-Cc: kosaki.motohiro@jp.fujitsu.com, Michel Lespinasse <walken@google.com>,
-       linux-mm <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Divyesh Shah <dpshah@google.com>, Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <1278588200.1900.89.camel@laptop>
-References: <20100708200324.CD4B.A69D9226@jp.fujitsu.com> <1278588200.1900.89.camel@laptop>
-Message-Id: <20100709102430.CD65.A69D9226@jp.fujitsu.com>
+	id S1752954Ab0GIBif (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 21:38:35 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:51800 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751281Ab0GIBie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 21:38:34 -0400
+Message-ID: <4C367CAE.5070500@cn.fujitsu.com>
+Date: Fri, 09 Jul 2010 09:34:38 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri,  9 Jul 2010 10:31:21 +0900 (JST)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 4/9] KVM: MMU: introduce gfn_to_pfn_atomic() function
+References: <4C330918.6040709@cn.fujitsu.com> <4C3309D3.6010109@cn.fujitsu.com>
+In-Reply-To: <4C3309D3.6010109@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 2010-07-08 at 20:06 +0900, KOSAKI Motohiro wrote:
-> > > [ small note on that we really should kill __GFP_NOFAIL, its utter
-> > > deadlock potential ]
-> > 
-> > I disagree. __GFP_NOFAIL mean this allocation failure can makes really
-> > dangerous result. Instead, OOM-Killer should try to kill next process.
-> > I think. 
-> 
-> Say _what_?! you think NOFAIL is a sane thing? 
-
-insane obviously ;)
-but as far as my experience, some embedded system prefer to use NOFAIL.
-So, I don't like to make big hammer crash. NOFAIL killing need long year
-rather than you expected, I guess.
 
 
-> Pretty much everybody has
-> been agreeing for years that the thing should die.
+Xiao Guangrong wrote:
 
-I'm not against this at all. but until it die, it should works correctly.
+> +		if (atomic)
+> +			goto return_bad_page;
+> +
+>  		down_read(&current->mm->mmap_sem);
+>  		if (is_hwpoison_address(addr)) {
+>  			up_read(&current->mm->mmap_sem);
+> @@ -959,6 +965,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+>  		if (vma == NULL || addr < vma->vm_start ||
+>  		    !(vma->vm_flags & VM_PFNMAP)) {
+>  			up_read(&current->mm->mmap_sem);
+> +return_bad_page:
+>  			get_page(bad_page);
+>  			return page_to_pfn(bad_page);
+>  		}
+> @@ -972,7 +979,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+>  	return pfn;
+
+This patch is broken caused by commit b4f8c24994, rebase it on next branch
+
+Subject: [PATCH v6 4/9] KVM: MMU: introduce gfn_to_pfn_atomic() function
+
+Introduce gfn_to_pfn_atomic(), it's the fast path and can used in atomic
+context, the later patch will use it
+
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ include/linux/kvm_host.h |    1 +
+ virt/kvm/kvm_main.c      |   32 +++++++++++++++++++++++++-------
+ 2 files changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index 8055067..bf20c97 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -296,6 +296,7 @@ void kvm_release_page_dirty(struct page *page);
+ void kvm_set_page_dirty(struct page *page);
+ void kvm_set_page_accessed(struct page *page);
+ 
++pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn);
+ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn);
+diff --git a/virt/kvm/kvm_main.c b/virt/kvm/kvm_main.c
+index b78b794..55a61b7 100644
+--- a/virt/kvm/kvm_main.c
++++ b/virt/kvm/kvm_main.c
+@@ -943,19 +943,25 @@ unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_hva);
+ 
+-static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
++static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr, bool atomic)
+ {
+ 	struct page *page[1];
+ 	int npages;
+ 	pfn_t pfn;
+ 
+-	might_sleep();
+-
+-	npages = get_user_pages_fast(addr, 1, 1, page);
++	if (atomic)
++		npages = __get_user_pages_fast(addr, 1, 1, page);
++	else {
++		might_sleep();
++		npages = get_user_pages_fast(addr, 1, 1, page);
++	}
+ 
+ 	if (unlikely(npages != 1)) {
+ 		struct vm_area_struct *vma;
+ 
++		if (atomic)
++			goto return_fault_page;
++
+ 		down_read(&current->mm->mmap_sem);
+ 		if (is_hwpoison_address(addr)) {
+ 			up_read(&current->mm->mmap_sem);
+@@ -968,6 +974,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 		if (vma == NULL || addr < vma->vm_start ||
+ 		    !(vma->vm_flags & VM_PFNMAP)) {
+ 			up_read(&current->mm->mmap_sem);
++return_fault_page:
+ 			get_page(fault_page);
+ 			return page_to_pfn(fault_page);
+ 		}
+@@ -981,7 +988,7 @@ static pfn_t hva_to_pfn(struct kvm *kvm, unsigned long addr)
+ 	return pfn;
+ }
+ 
+-pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
++pfn_t __gfn_to_pfn(struct kvm *kvm, gfn_t gfn, bool atomic)
+ {
+ 	unsigned long addr;
+ 
+@@ -991,7 +998,18 @@ pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
+ 		return page_to_pfn(bad_page);
+ 	}
+ 
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, atomic);
++}
++
++pfn_t gfn_to_pfn_atomic(struct kvm *kvm, gfn_t gfn)
++{
++	return __gfn_to_pfn(kvm, gfn, true);
++}
++EXPORT_SYMBOL_GPL(gfn_to_pfn_atomic);
++
++pfn_t gfn_to_pfn(struct kvm *kvm, gfn_t gfn)
++{
++	return __gfn_to_pfn(kvm, gfn, false);
+ }
+ EXPORT_SYMBOL_GPL(gfn_to_pfn);
+ 
+@@ -999,7 +1017,7 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+ 			 struct kvm_memory_slot *slot, gfn_t gfn)
+ {
+ 	unsigned long addr = gfn_to_hva_memslot(slot, gfn);
+-	return hva_to_pfn(kvm, addr);
++	return hva_to_pfn(kvm, addr, false);
+ }
+ 
+ struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
+-- 
+1.6.1.2
 
 
