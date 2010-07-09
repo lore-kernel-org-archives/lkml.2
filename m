@@ -1,136 +1,185 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754263Ab0GITMT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 15:12:19 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:34267 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753151Ab0GITMR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 15:12:17 -0400
-Message-Id: <20100709190706.938177313@quilx.com>
-User-Agent: quilt/0.48-1
-Date: Fri, 09 Jul 2010 14:07:06 -0500
-From: Christoph Lameter <cl@linux-foundation.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-mm@kvack.org
-Cc: linux-kernel@vger.kernel.org
-Cc: Nick Piggin <npiggin@suse.de>
-Cc: David Rientjes <rientjes@google.com>
-Subject: [S+Q2 00/19] SLUB with queueing (V2) beats SLAB netperf TCP_RR
+	id S1752491Ab0GITTO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 15:19:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:57758 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750870Ab0GITTM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 15:19:12 -0400
+Date: Fri, 9 Jul 2010 19:18:41 GMT
+From: tip-bot for Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       kaneshige.kenji@jp.fujitsu.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, kaneshige.kenji@jp.fujitsu.com, hpa@linux.intel.com
+In-Reply-To: <4C1AE680.7090408@jp.fujitsu.com>
+References: <4C1AE680.7090408@jp.fujitsu.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mm] x86, ioremap: Fix incorrect physical address handling in PAE mode
+Message-ID: <tip-ffa71f33a820d1ab3f2fc5723819ac60fb76080b@git.kernel.org>
+Git-Commit-ID: ffa71f33a820d1ab3f2fc5723819ac60fb76080b
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 09 Jul 2010 19:18:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following patchset cleans some pieces up and then equips SLUB with
-per cpu queues that work similar to SLABs queues. With that approach
-SLUB wins significantly in hackbench and improves also on tcp_rr.
+Commit-ID:  ffa71f33a820d1ab3f2fc5723819ac60fb76080b
+Gitweb:     http://git.kernel.org/tip/ffa71f33a820d1ab3f2fc5723819ac60fb76080b
+Author:     Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+AuthorDate: Fri, 18 Jun 2010 12:22:40 +0900
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 9 Jul 2010 11:42:03 -0700
 
-Hackbench test script: 
+x86, ioremap: Fix incorrect physical address handling in PAE mode
 
-#!/bin/bash 
-uname -a
-echo "./hackbench 100 process 200000"
-./hackbench 100 process 200000
-echo "./hackbench 100 process 20000"
-./hackbench 100 process 20000
-echo "./hackbench 100 process 20000"
-./hackbench 100 process 20000
-echo "./hackbench 100 process 20000"
-./hackbench 100 process 20000
-echo "./hackbench 10 process 20000"
-./hackbench 10 process 20000
-echo "./hackbench 10 process 20000"
-./hackbench 10 process 20000
-echo "./hackbench 10 process 20000"
-./hackbench 10 process 20000
-echo "./hackbench 1 process 20000"
-./hackbench 1 process 20000
-echo "./hackbench 1 process 20000"
-./hackbench 1 process 20000
-echo "./hackbench 1 process 20000"
-./hackbench 1 process 20000
+Current x86 ioremap() doesn't handle physical address higher than
+32-bit properly in X86_32 PAE mode. When physical address higher than
+32-bit is passed to ioremap(), higher 32-bits in physical address is
+cleared wrongly. Due to this bug, ioremap() can map wrong address to
+linear address space.
 
-Dell Dual Quad Penryn on Linux 2.6.35-rc3
-Time measurements: Smaller is better:
+In my case, 64-bit MMIO region was assigned to a PCI device (ioat
+device) on my system. Because of the ioremap()'s bug, wrong physical
+address (instead of MMIO region) was mapped to linear address space.
+Because of this, loading ioatdma driver caused unexpected behavior
+(kernel panic, kernel hangup, ...).
 
-Procs	NR		SLAB	SLUB	SLUB+Queuing     %
--------------------------------------------------------------
-100	200000		2741.3	2764.7	2231.9		-18
-100	20000		279.3	270.3	219.0		-27
-100	20000		278.0	273.1	219.2		-26
-100	20000		279.0	271.7	218.8		-27
-10 	20000		34.0	35.6	28.8		-18
-10	20000		30.3	35.2	28.4		-6
-10	20000		32.9	34.6	28.4		-15
-1	20000		6.4	6.7	6.5		+1
-1	20000		6.3	6.8	6.5		+3
-1	20000		6.4	6.9	6.4		0
+Signed-off-by: Kenji Kaneshige <kaneshige.kenji@jp.fujitsu.com>
+LKML-Reference: <4C1AE680.7090408@jp.fujitsu.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/ioremap.c   |   12 +++++-------
+ include/linux/io.h      |    4 ++--
+ include/linux/vmalloc.h |    2 +-
+ lib/ioremap.c           |   10 +++++-----
+ mm/vmalloc.c            |    2 +-
+ 5 files changed, 14 insertions(+), 16 deletions(-)
 
-
-SLUB+Q also wins against SLAB in netperf:
-
-Script:
-
-#!/bin/bash
-
-TIME=60  # seconds
-HOSTNAME=localhost       # netserver
-
-NR_CPUS=$(grep ^processor /proc/cpuinfo | wc -l)
-echo NR_CPUS=$NR_CPUS
-
-run_netperf() {
-for i in $(seq 1 $1); do
-netperf -H $HOSTNAME -t TCP_RR -l $TIME &
-done
-}
-
-ITERATIONS=0
-while [ $ITERATIONS -lt 12 ]; do
-RATE=0
-ITERATIONS=$[$ITERATIONS + 1]   
-THREADS=$[$NR_CPUS * $ITERATIONS]
-RESULTS=$(run_netperf $THREADS | grep -v '[a-zA-Z]' | awk '{ print $6 }')
-
-for j in $RESULTS; do
-RATE=$[$RATE + ${j/.*}]
-done
-echo threads=$THREADS rate=$RATE
-done
-
-
-Dell Dual Quad Penryn on Linux 2.6.35-rc4
-
-Loop counts: Larger is better.
-
-Threads		SLAB		SLUB+Q		%
- 8		690869		714788		+ 3.4
-16		680295		711771		+ 4.6
-24		672677		703014		+ 4.5
-32		676780		703914		+ 4.0
-40		668458		699806		+ 4.6
-48		667017		698908		+ 4.7
-56		671227		696034		+ 3.6
-64		667956		696913		+ 4.3
-72		668332		694931		+ 3.9
-80		667073		695658		+ 4.2
-88		682866		697077		+ 2.0
-96		668089		694719		+ 3.9
-
-
-SLUB+Q is a merging of SLUB with some queuing concepts from SLAB and a
-new way of managing objects in the slabs using bitmaps. It uses a percpu
-queue so that free operations can be properly buffered and a bitmap for
-managing the free/allocated state in the slabs. It is slightly more
-inefficient than SLUB (due to the need to place large bitmaps --sized
-a few words--in some slab pages if there are more than BITS_PER_LONG
-objects in a slab) but in general does not increase space use too much.
-
-The SLAB scheme of not touching the object during management is adopted.
-SLUB+Q can efficiently free and allocate cache cold objects without
-causing cache misses.
-
-The queueing patches are likely still be a bit rough around corner cases
-and special features and need to see some more widespread testing.
-
-
+diff --git a/arch/x86/mm/ioremap.c b/arch/x86/mm/ioremap.c
+index 12e4d2d..754cb4c 100644
+--- a/arch/x86/mm/ioremap.c
++++ b/arch/x86/mm/ioremap.c
+@@ -62,8 +62,8 @@ int ioremap_change_attr(unsigned long vaddr, unsigned long size,
+ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 		unsigned long size, unsigned long prot_val, void *caller)
+ {
+-	unsigned long pfn, offset, vaddr;
+-	resource_size_t last_addr;
++	unsigned long offset, vaddr;
++	resource_size_t pfn, last_pfn, last_addr;
+ 	const resource_size_t unaligned_phys_addr = phys_addr;
+ 	const unsigned long unaligned_size = size;
+ 	struct vm_struct *area;
+@@ -100,10 +100,8 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 	/*
+ 	 * Don't allow anybody to remap normal RAM that we're using..
+ 	 */
+-	for (pfn = phys_addr >> PAGE_SHIFT;
+-				(pfn << PAGE_SHIFT) < (last_addr & PAGE_MASK);
+-				pfn++) {
+-
++	last_pfn = last_addr >> PAGE_SHIFT;
++	for (pfn = phys_addr >> PAGE_SHIFT; pfn < last_pfn; pfn++) {
+ 		int is_ram = page_is_ram(pfn);
+ 
+ 		if (is_ram && pfn_valid(pfn) && !PageReserved(pfn_to_page(pfn)))
+@@ -115,7 +113,7 @@ static void __iomem *__ioremap_caller(resource_size_t phys_addr,
+ 	 * Mappings have to be page-aligned
+ 	 */
+ 	offset = phys_addr & ~PAGE_MASK;
+-	phys_addr &= PAGE_MASK;
++	phys_addr &= PHYSICAL_PAGE_MASK;
+ 	size = PAGE_ALIGN(last_addr+1) - phys_addr;
+ 
+ 	retval = reserve_memtype(phys_addr, (u64)phys_addr + size,
+diff --git a/include/linux/io.h b/include/linux/io.h
+index 6c7f0ba..7fd2d21 100644
+--- a/include/linux/io.h
++++ b/include/linux/io.h
+@@ -29,10 +29,10 @@ void __iowrite64_copy(void __iomem *to, const void *from, size_t count);
+ 
+ #ifdef CONFIG_MMU
+ int ioremap_page_range(unsigned long addr, unsigned long end,
+-		       unsigned long phys_addr, pgprot_t prot);
++		       phys_addr_t phys_addr, pgprot_t prot);
+ #else
+ static inline int ioremap_page_range(unsigned long addr, unsigned long end,
+-				     unsigned long phys_addr, pgprot_t prot)
++				     phys_addr_t phys_addr, pgprot_t prot)
+ {
+ 	return 0;
+ }
+diff --git a/include/linux/vmalloc.h b/include/linux/vmalloc.h
+index 227c2a5..de05e96 100644
+--- a/include/linux/vmalloc.h
++++ b/include/linux/vmalloc.h
+@@ -30,7 +30,7 @@ struct vm_struct {
+ 	unsigned long		flags;
+ 	struct page		**pages;
+ 	unsigned int		nr_pages;
+-	unsigned long		phys_addr;
++	phys_addr_t		phys_addr;
+ 	void			*caller;
+ };
+ 
+diff --git a/lib/ioremap.c b/lib/ioremap.c
+index 14c6078..5730ecd 100644
+--- a/lib/ioremap.c
++++ b/lib/ioremap.c
+@@ -13,10 +13,10 @@
+ #include <asm/pgtable.h>
+ 
+ static int ioremap_pte_range(pmd_t *pmd, unsigned long addr,
+-		unsigned long end, unsigned long phys_addr, pgprot_t prot)
++		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
+ {
+ 	pte_t *pte;
+-	unsigned long pfn;
++	u64 pfn;
+ 
+ 	pfn = phys_addr >> PAGE_SHIFT;
+ 	pte = pte_alloc_kernel(pmd, addr);
+@@ -31,7 +31,7 @@ static int ioremap_pte_range(pmd_t *pmd, unsigned long addr,
+ }
+ 
+ static inline int ioremap_pmd_range(pud_t *pud, unsigned long addr,
+-		unsigned long end, unsigned long phys_addr, pgprot_t prot)
++		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
+ {
+ 	pmd_t *pmd;
+ 	unsigned long next;
+@@ -49,7 +49,7 @@ static inline int ioremap_pmd_range(pud_t *pud, unsigned long addr,
+ }
+ 
+ static inline int ioremap_pud_range(pgd_t *pgd, unsigned long addr,
+-		unsigned long end, unsigned long phys_addr, pgprot_t prot)
++		unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
+ {
+ 	pud_t *pud;
+ 	unsigned long next;
+@@ -67,7 +67,7 @@ static inline int ioremap_pud_range(pgd_t *pgd, unsigned long addr,
+ }
+ 
+ int ioremap_page_range(unsigned long addr,
+-		       unsigned long end, unsigned long phys_addr, pgprot_t prot)
++		       unsigned long end, phys_addr_t phys_addr, pgprot_t prot)
+ {
+ 	pgd_t *pgd;
+ 	unsigned long start;
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index ae00746..b7e314b 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -2403,7 +2403,7 @@ static int s_show(struct seq_file *m, void *p)
+ 		seq_printf(m, " pages=%d", v->nr_pages);
+ 
+ 	if (v->phys_addr)
+-		seq_printf(m, " phys=%lx", v->phys_addr);
++		seq_printf(m, " phys=%llx", (unsigned long long)v->phys_addr);
+ 
+ 	if (v->flags & VM_IOREMAP)
+ 		seq_printf(m, " ioremap");
