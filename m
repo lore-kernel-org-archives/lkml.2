@@ -1,66 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757016Ab0GIOrb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 10:47:31 -0400
-Received: from llsc494-a04.servidoresdns.net ([82.223.190.47]:49314 "EHLO
-	llsc494-a04.servidoresdns.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755699Ab0GIOra convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 10:47:30 -0400
-X-Greylist: delayed 563 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jul 2010 10:47:30 EDT
-From: Rodrigo Partearroyo =?iso-8859-1?q?Gonz=E1lez?= 
-	<rpartearroyo@albentia.com>
-Organization: Albentia Systems
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: net/sched/act_nat.c BUG
-Date: Fri, 9 Jul 2010 16:37:56 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; i686; ; )
-Cc: Iratxo Pichel Ortiz <ipichel@albentia.com>,
-       Noelia =?iso-8859-1?q?Mor=F3n?= <nmoron@albentia.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201007091637.57660.rpartearroyo@albentia.com>
+	id S1757085Ab0GIOun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 10:50:43 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:32817 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752016Ab0GIOum (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 10:50:42 -0400
+Date: Fri, 9 Jul 2010 16:47:28 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drm/sis: fixed brace and spacing coding style issues
+Message-ID: <20100709164728.3a2f4e64@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+Fixed brace and spacing coding style issues.
 
-I have been testing Stateless NAT and found that ICMP packets with length less 
-than 20 bytes were not correctly NAT'ed. I have found a BUG that makes taking 
-into account IP header length twice, so ICMP packets smaller than 20 bytes 
-were being dropped.
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+Supersedes patch "drm/sis: fixed brace coding style issues".
 
-The proposed fix is:
+ drivers/gpu/drm/sis/sis_drv.c |    3 +--
+ drivers/gpu/drm/sis/sis_mm.c  |   14 ++++++--------
+ 2 files changed, 7 insertions(+), 10 deletions(-)
 
-Index: net/sched/act_nat.c
-===================================================================
---- net/sched/act_nat.c
-+++ net/sched/act_nat.c
-@@ -202,7 +202,7 @@
-        {
-                struct icmphdr *icmph;
+diff --git a/drivers/gpu/drm/sis/sis_drv.c b/drivers/gpu/drm/sis/sis_drv.c
+index 4fd1f06..776bf9e 100644
+--- a/drivers/gpu/drm/sis/sis_drv.c
++++ b/drivers/gpu/drm/sis/sis_drv.c
+@@ -47,9 +47,8 @@ static int sis_driver_load(struct drm_device *dev, unsigned long chipset)
+ 	dev->dev_private = (void *)dev_priv;
+ 	dev_priv->chipset = chipset;
+ 	ret = drm_sman_init(&dev_priv->sman, 2, 12, 8);
+-	if (ret) {
++	if (ret)
+ 		kfree(dev_priv);
+-	}
  
--               if (!pskb_may_pull(skb, ihl + sizeof(*icmph) + sizeof(*iph)))
-+               if (!pskb_may_pull(skb, ihl + sizeof(*icmph)))
-                        goto drop;
+ 	return ret;
+ }
+diff --git a/drivers/gpu/drm/sis/sis_mm.c b/drivers/gpu/drm/sis/sis_mm.c
+index af22111..07d0f29 100644
+--- a/drivers/gpu/drm/sis/sis_mm.c
++++ b/drivers/gpu/drm/sis/sis_mm.c
+@@ -78,7 +78,7 @@ static unsigned long sis_sman_mm_offset(void *private, void *ref)
+ #else /* CONFIG_FB_SIS[_MODULE] */
  
-                icmph = (void *)(skb_network_header(skb) + ihl);
-
-Please, consider applying it.
+ #define SIS_MM_ALIGN_SHIFT 4
+-#define SIS_MM_ALIGN_MASK ( (1 << SIS_MM_ALIGN_SHIFT) - 1)
++#define SIS_MM_ALIGN_MASK ((1 << SIS_MM_ALIGN_SHIFT) - 1)
+ 
+ #endif /* CONFIG_FB_SIS[_MODULE] */
+ 
+@@ -225,9 +225,8 @@ static drm_local_map_t *sis_reg_init(struct drm_device *dev)
+ 		map = entry->map;
+ 		if (!map)
+ 			continue;
+-		if (map->type == _DRM_REGISTERS) {
++		if (map->type == _DRM_REGISTERS)
+ 			return map;
+-		}
+ 	}
+ 	return NULL;
+ }
+@@ -264,10 +263,10 @@ int sis_idle(struct drm_device *dev)
+ 
+ 	end = jiffies + (DRM_HZ * 3);
+ 
+-	for (i=0; i<4; ++i) {
++	for (i = 0; i < 4; ++i) {
+ 		do {
+ 			idle_reg = SIS_READ(0x85cc);
+-		} while ( !time_after_eq(jiffies, end) &&
++		} while (!time_after_eq(jiffies, end) &&
+ 			  ((idle_reg & 0x80000000) != 0x80000000));
+ 	}
+ 
+@@ -301,7 +300,7 @@ void sis_lastclose(struct drm_device *dev)
+ 	mutex_unlock(&dev->struct_mutex);
+ }
+ 
+-void sis_reclaim_buffers_locked(struct drm_device * dev,
++void sis_reclaim_buffers_locked(struct drm_device *dev,
+ 				struct drm_file *file_priv)
+ {
+ 	drm_sis_private_t *dev_priv = dev->dev_private;
+@@ -312,9 +311,8 @@ void sis_reclaim_buffers_locked(struct drm_device * dev,
+ 		return;
+ 	}
+ 
+-	if (dev->driver->dma_quiescent) {
++	if (dev->driver->dma_quiescent)
+ 		dev->driver->dma_quiescent(dev);
+-	}
+ 
+ 	drm_sman_owner_cleanup(&dev_priv->sman, (unsigned long)file_priv);
+ 	mutex_unlock(&dev->struct_mutex);
 -- 
-Rodrigo Partearroyo González
-R&D Engineer
-
-Albentia Systems S.A.
-http://www.albentia.com
-+34 914400213
-
-C\Margarita Salas 22
-Parque Tecnológico de Leganés
-Leganés (28918)
-Madrid
-Spain
+1.7.1
