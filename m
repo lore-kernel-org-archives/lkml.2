@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752631Ab0GIGUQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 02:20:16 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51891
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751411Ab0GIGUO convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 02:20:14 -0400
-Date: Thu, 08 Jul 2010 23:20:28 -0700 (PDT)
-Message-Id: <20100708.232028.15247875.davem@davemloft.net>
-To: eric.dumazet@gmail.com
-Cc: torvalds@linux-foundation.org, rjw@sisk.pl, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, netdev@vger.kernel.org, kaber@trash.net,
-       jengelh@medozas.de, casteyde.christian@free.fr
-Subject: Re: 2.6.35-rc4-git3: Reported regressions from 2.6.34
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1278653334.2435.196.camel@edumazet-laptop>
-References: <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com>
-	<20100708.213420.112614033.davem@davemloft.net>
-	<1278653334.2435.196.camel@edumazet-laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S1753365Ab0GIGU0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 02:20:26 -0400
+Received: from gate.crashing.org ([63.228.1.57]:36649 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752912Ab0GIGUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 02:20:21 -0400
+Subject: Re: [PATCH 03/23] lmb: Print new doubled array location info
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Bjorn Helgaas <bjorn.helgaas@hp.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <4C36300A.7030606@kernel.org>
+References: <1278226587-31213-1-git-send-email-yinghai@kernel.org>
+	 <1278226587-31213-4-git-send-email-yinghai@kernel.org>
+	 <201007081255.58049.bjorn.helgaas@hp.com>  <4C36300A.7030606@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Jul 2010 16:19:46 +1000
+Message-ID: <1278656386.28659.130.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric Dumazet <eric.dumazet@gmail.com>
-Date: Fri, 09 Jul 2010 07:28:54 +0200
 
-> Le jeudi 08 juillet 2010 à 21:34 -0700, David Miller a écrit :
->> From: Linus Torvalds <torvalds@linux-foundation.org>
->> Date: Thu, 8 Jul 2010 18:34:25 -0700
->> 
->> > On Thu, Jul 8, 2010 at 4:33 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >>
->> >> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16187
->> >> Subject         : Carrier detection failed in dhcpcd when link is up
->> >> Submitter       : Christian Casteyde <casteyde.christian@free.fr>
->> >> Date            : 2010-06-12 15:15 (27 days old)
->> >> First-Bad-Commit: http://git.kernel.org/linus/10708f37ae729baba9b67bd134c3720709d4ae62
->> >> Handled-By      : Andrew Morton <akpm@linux-foundation.org>
->> > 
->> > David? This bisects to a networking commit. Doesn't look sensible, but
->> > what do I know?
->> 
->> My suspicion is that dhcpd uses netlink to dump the info of the
->> available links, and due to some bug gets confused with the new 64-bit
->> statistic netlink attribute being there now.
->> a second to have a look at this.
+> We can make them to be consistent later.
 > 
-> It could be a dhcpcd bug because of extended size of answer
+> current for early mem stage, it is consistent to without -1.
 > 
-> According to strace, dhcpcd tries a recvmsg() call with
-> a 256 bytes buffer to hold answer.
-> 
-> Looking at current dhcpcd source, I confirm it cannot realloc its buffer
- ...
-> This program needs to fix this.
+> later I like to see all pci resource could be consistent to without -1 too.
 
-Agreed, I don't there is any reasonable way we could cater to this
-application bug with some compatability bits.  Restricting the link
-dump to 256 bytes is just too much inflexibility.
+No. You won't change what is the de-facto standard all over the kernel
+to make it consistent with x86 crap.
 
-If NetworkManager can get this right, dhcpd very well can too :-)
+-1 is the right way to print those things.
+
+Ben.
+
+
