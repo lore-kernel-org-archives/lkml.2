@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754482Ab0GIVhM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 17:37:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34018 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753466Ab0GIVhJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 17:37:09 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: 2.6.35-rc4-git3: Reported regressions from 2.6.34
-Date: Fri, 9 Jul 2010 23:35:50 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4; KDE/4.4.4; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Network Development <netdev@vger.kernel.org>,
-       Linux ACPI <linux-acpi@vger.kernel.org>,
-       Linux PM List <linux-pm@lists.linux-foundation.org>,
-       Linux SCSI List <linux-scsi@vger.kernel.org>,
-       Linux Wireless List <linux-wireless@vger.kernel.org>,
-       DRI <dri-devel@lists.sourceforge.net>,
-       Al Viro <viro@zeniv.linux.org.uk>, Shawn Starr <shawn.starr@rogers.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Dave Airlie <airlied@redhat.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Patrick McHardy <kaber@trash.net>, Jens Axboe <axboe@kernel.dk>
-References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com> <20100709020440.GJ6405@nowhere>
-In-Reply-To: <20100709020440.GJ6405@nowhere>
+	id S1752577Ab0GIVoL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 17:44:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58034 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751186Ab0GIVoI convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 17:44:08 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007092335.50486.rjw@sisk.pl>
+In-Reply-To: <AANLkTilBnb85HRYDVXSGzct-zTuxW_o6tcZwHXTN4R6N@mail.gmail.com>
+References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com>
+	<AANLkTilBnb85HRYDVXSGzct-zTuxW_o6tcZwHXTN4R6N@mail.gmail.com>
+Date: Fri, 9 Jul 2010 14:43:33 -0700
+Message-ID: <AANLkTik9Jvi9GEq9jk1XDPsqOSy3dg2NAN1ExM-YPuQM@mail.gmail.com>
+Subject: Re: Linux 2.6.35-rc4
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Xiaotian Feng <xtfeng@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 09, 2010, Frederic Weisbecker wrote:
-> On Thu, Jul 08, 2010 at 06:34:25PM -0700, Linus Torvalds wrote:
-> > On Thu, Jul 8, 2010 at 4:33 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> > > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16284
-> > > Subject         : Hitting WARN_ON in hw_breakpoint code
-> > > Submitter       : Paul Mackerras <paulus@samba.org>
-> > > Date            : 2010-06-23 12:57 (16 days old)
-> > > Message-ID      : <20100623125740.GA3368@brick.ozlabs.ibm.com>
-> > > References      : http://marc.info/?l=linux-kernel&m=127729789113432&w=2
-> > 
-> > This has "I have a fix, will post it very soon." in the thread from
-> > Frederic, but I'm not seeing anything else. Frederic?
-> 
-> 
-> 
-> Right. In fact it wasn't a regression. The per task breakpoint reservation
-> design was broken from the beginning and this warning has revealed the
-> problem. This only touched perf, and it did since perf support breakpoints.
-> Fortunately ptrace wasn't concerned by this problem, even not by side effects
-> of this.
-> 
-> The fix is invasive as it's a rewrite of a (little) part of the breakpoint
-> reservation. And since the symptom is only a warning and also breakpoints
-> never released from the constraint table (just a counter, no memory leak),
-> the fix is headed for 2.6.36.
-> 
-> It is ready in tip:/perf/core:
-> 
-> http://git.kernel.org/?p=linux/kernel/git/tip/linux-2.6-tip.git;a=commitdiff;h=45a73372efe4a63f44aa2e1125d4a777c2fdc8d8
-> 
-> I think this ticket can be safely closed.
+On Mon, Jul 5, 2010 at 3:22 AM, Xiaotian Feng <xtfeng@gmail.com> wrote:
+>
+> I'm facing some drm issue with -rc4, my x-windows is messed up and can
+> not be used. I got floods of following messages, kernel config is
+> attached. I have the same issue on -mmotm-rc3.
 
-OK, closing.
+It looks like the first oops that causes this problem is missing. It
+looks to me that the "scheduling while atomic" issue happens because
+you had an oops in drm_fb_release->mutex_lock_nested->oops, and then
+when that kills the process, we get that secondary "scheduling while
+atomic" thing.
 
-Rafael
+But I'd really like to see the first oops itself. It _looks_ like it
+should be a page fault with this backtrace:
+
+> [   34.532219]  [<ffffffffa0023e39>] ? drm_fb_release+0x2f/0x7e [drm]
+> [   34.532222]  [<ffffffff8127be8a>] ? __list_add+0x3f/0x81
+> [   34.532225]  [<ffffffff814fa4e0>] __mutex_lock_common+0x131/0x461
+> [   34.532233]  [<ffffffffa0023e39>] ? drm_fb_release+0x2f/0x7e [drm]
+> [   34.532239]  [<ffffffffa001b104>] ? drm_release+0x2bd/0x63e [drm]
+> [   34.532242]  [<ffffffff814fa8c5>] mutex_lock_nested+0x39/0x3e
+> [   34.532250]  [<ffffffffa0023e39>] drm_fb_release+0x2f/0x7e [drm]
+> [   34.532257]  [<ffffffffa001b1da>] drm_release+0x393/0x63e [drm]
+> [   34.532259]  [<ffffffff8111a636>] fput+0x135/0x1e2
+> [   34.532262]  [<ffffffff811177e5>] filp_close+0x68/0x72
+> [   34.532265]  [<ffffffff811178cb>] sys_close+0xdc/0x116
+> [   34.532268]  [<ffffffff81009cc2>] system_call_fastpath+0x16/0x1b
+
+but I'd like to see the actual register state etc from the oops too.
+
+And if it all scrolls away so quickly that you can't see it, then I
+suspect we need some help in the form of a bisection or something. Was
+2.6.35-rc3 fine for you? If so, it should bisect pretty well - there's
+only a few hundred commits, so you should be able to do it in eight or
+nine recompiles.
+
+                   Linus
