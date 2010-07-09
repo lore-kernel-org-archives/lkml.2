@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab0GINGs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 09:06:48 -0400
-Received: from senator.holtmann.net ([87.106.208.187]:37744 "EHLO
-	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755851Ab0GINGq (ORCPT
+	id S1756168Ab0GINSJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 09:18:09 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50224 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755851Ab0GINSH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 09:06:46 -0400
-Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw  
- HIDIOCGFEATURE   and HIDIOCSFEATURE
-From: Marcel Holtmann <marcel@holtmann.org>
-To: Alan Ott <alan@signal11.us>
-Cc: David S Miller <davem@davemloft.net>, Jiri Kosina <jkosina@suse.cz>,
-       Michael Poole <mdpoole@troilus.org>, Bastien Nocera <hadess@hadess.net>,
-       Eric Dumazet <eric.dumazet@gmail.com>, linux-bluetooth@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-In-Reply-To: <4C371DE8.9020002@signal11.us>
-References: <1276467601-9066-1-git-send-email-alan@signal11.us>
-	 <1278623485.10421.73.camel@localhost.localdomain>
-	 <4C369CDC.9080104@signal11.us>
-	 <1278662497.10421.94.camel@localhost.localdomain>
-	 <4C371DE8.9020002@signal11.us>
+	Fri, 9 Jul 2010 09:18:07 -0400
+Subject: Re: [PATCH] sched: Call update_group_power only for local_group
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Venkatesh Pallipadi <venki@google.com>,
+       LKML <linux-kernel@vger.kernel.org>, Gautham R Shenoy <ego@in.ibm.com>,
+       Joel Schopp <jschopp@austin.ibm.com>,
+       Michael Neuling <mikey@neuling.org>
+In-Reply-To: <1278626014.2834.74.camel@sbs-t61.sc.intel.com>
+References: <1278088816.1917.279.camel@laptop>
+	 <1278089799-11949-1-git-send-email-venki@google.com>
+	 <1278598336.1900.150.camel@laptop>
+	 <1278611133.2834.10.camel@sbs-t61.sc.intel.com>
+	 <1278612989.1900.176.camel@laptop>
+	 <1278626014.2834.74.camel@sbs-t61.sc.intel.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Jul 2010 10:06:30 -0300
-Message-ID: <1278680790.10421.106.camel@localhost.localdomain>
+Content-Transfer-Encoding: 8BIT
+Date: Fri, 09 Jul 2010 15:17:47 +0200
+Message-ID: <1278681467.1900.199.camel@laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alan,
+On Thu, 2010-07-08 at 14:53 -0700, Suresh Siddha wrote:
 
-> >>> I looked at this and I am bit worried that this should not be done in
-> >>> this detail in the HIDP driver. Essentially HIDP is a pure transport
-> >>> driver. It should not handle all these details. Can we make this a bit
-> >>> easier for the transport drivers to support such features?
-> >>>        
-> >> I put these changes (most notably the addition of hidp_get_raw_report())
-> >> in hidp because that's where the parallel function
-> >> hidp_output_raw_report() was already located. I figured the input should
-> >> go with the output. That said, if there's a better place for both of
-> >> them (input and output) to go, let me know where you think it should be,
-> >> and I'll get them moved into the proper spot.
-> >>
-> >> I'm not sure what you mean about HIDP being a pure transport driver.
-> >>      
-> > what is usb-hid.ko doing here? I would expect a bunch of code
-> > duplication with minor difference between USB and Bluetooth.
->
-> usbhid doesn't have a lot of code for hidraw. Two functions are involved:
->      usbhid_output_raw_report()
->          - calls usb_control_msg() with Get_Report
->      usbhid_get_raw_report()
->          - calls usb_control_msg() with Set_Report
->              OR
->          - calls usb_interrupt_msg() on the Ouput pipe.
-> 
-> This is of course easier than bluetooth because usb_control_msg() is 
-> synchronous, even when requesting reports, mostly because of the nature 
-> of USB, where the request and response are part of the same transfer.
-> 
-> For Bluetooth, it's a bit more complicated since the kernel treats it 
-> more like a networking interface (and indeed it is). My understanding is 
-> that to make a synchronous transfer in bluetooth, one must:
->      - send the request packet
->      - block (wait_event_*())
->      - when the response is received in the input handler, wake_up_*().
-> 
-> There's not really any code duplication, mostly because initiating 
-> synchronous USB transfers (input and output) is easy (because of the 
-> usb_*_msg() functions), while making synchronous Bluetooth transfers 
-> must be done manually. If there's a nice, convenient, synchronous 
-> function in Bluetooth similar to usb_control_msg() that I've missed, 
-> then let me know, as it would simplify this whole thing.
+> Also, looking at all this, don't we need to do something like this in
+> the nohz load balance?
 
-there is not and I don't think we ever get one. My question here was
-more in the direction why HID core is doing these synchronously in the
-first place. Especially since USB can do everything async as well.
+Yes, I think you're right, thanks!
 
-Regards
-
-Marcel
+> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+> index 9910e1b..ae750e9 100644
+> --- a/kernel/sched_fair.c
+> +++ b/kernel/sched_fair.c
+> @@ -3598,6 +3598,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
+>  		}
+>  
+>  		raw_spin_lock_irq(&this_rq->lock);
+> +		update_rq_clock(this_rq);
+>  		update_cpu_load(this_rq);
+>  		raw_spin_unlock_irq(&this_rq->lock);
 
 
