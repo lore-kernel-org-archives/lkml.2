@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755297Ab0GIW4E (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 18:56:04 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:42343 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753636Ab0GIW4B (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 18:56:01 -0400
-Message-ID: <4C37A8FA.2020607@us.ibm.com>
-Date: Fri, 09 Jul 2010 15:55:54 -0700
-From: Darren Hart <dvhltc@us.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Darren Hart <dvhltc@us.ibm.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
-       linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH 3/4 V2] futex: free_pi_state outside of hb->lock sections
-References: <1278714780-788-1-git-send-email-dvhltc@us.ibm.com> <1278714780-788-4-git-send-email-dvhltc@us.ibm.com>
-In-Reply-To: <1278714780-788-4-git-send-email-dvhltc@us.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755347Ab0GIW5M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 18:57:12 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:58675 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754541Ab0GIW5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 18:57:09 -0400
+Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
+From: john stultz <johnstul@us.ibm.com>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+       rt-users <linux-rt-users@vger.kernel.org>,
+       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1278713600.7122.22.camel@localhost.localdomain>
+References: <1278609590.7527.11.camel@localhost.localdomain>
+	 <1278628386.3008.11.camel@localhost.localdomain>
+	 <1278629044.12059.6.camel@localhost.localdomain>
+	 <1278630050.3008.18.camel@localhost.localdomain>
+	 <1278702134.5102.9.camel@localhost.localdomain>
+	 <1278705254.2349.14.camel@localhost.localdomain>
+	 <1278713600.7122.22.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 09 Jul 2010 15:57:02 -0700
+Message-ID: <1278716222.2349.20.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Apologies, mangled a rebase and this patch had bits of 4/4 in it.
-Corrected below:
+On Fri, 2010-07-09 at 15:13 -0700, Fernando Lopez-Lezcano wrote:
+> On Fri, 2010-07-09 at 12:54 -0700, john stultz wrote:
+> > On Fri, 2010-07-09 at 12:02 -0700, Fernando Lopez-Lezcano wrote:
+> > > Ok, I got one! (had to go buy a null modem cable, I thought I had one
+> > > but it has disappeared since the last time I did this :-)
+> > 
+> > Great! Sorry to make you go shopping! But this points out the problem
+> > nicely.
+> 
+> No problem at all, I was sure I had one... anyway, I still need it :-<
+> 
+> > > Find it below... it keeps spewing stuff every once in a while. Hopefully
+> > > this will be enough. No response from the network or the keyboard or
+> > > mouse at this point, reset is the only way out. 
+> > > 
+> > > I can retest if somebody comes up with a patch...
+> 
+> Sorry, it looks like the patch patched correctly and this is the new
+> kernel, but I still get a hang as before. 
 
+So looking over it, I'm not easily seeing what else could be off.
 
->From f40b8e684df6ed2b1ba9167cad3922ab43f4a717 Mon Sep 17 00:00:00 2001
-From: Darren Hart <dvhltc@us.ibm.com>
-Date: Fri, 9 Jul 2010 17:07:10 -0400
-Subject: [PATCH 3/4 V2] futex: free_pi_state outside of hb->lock sections
+So Lets see if we can cut some of the guess work out of this...
 
-free_pi_state() calls kfree() and might sleep. To prepare for raw hb->locks,
-get the calls to free_pi_state() out of the hb->lock() sections.
+>  [<c04e08e9>] ? d_materialise_unique+0xbf/0x29e
 
-Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: John Kacur <jkacur@redhat.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Mike Galbraith <efault@gmx.de>
----
- kernel/futex.c |    8 +++++---
- 1 files changed, 5 insertions(+), 3 deletions(-)
+I'm curious exactly where that is in d_materialise_unique. To find out,
+can you find the vmlinux image in the base of the directory you built
+the kernel you triggered this in?
 
-diff --git a/kernel/futex.c b/kernel/futex.c
-index a6cec32..2cd58a2 100644
---- a/kernel/futex.c
-+++ b/kernel/futex.c
-@@ -1339,7 +1339,6 @@ retry_private:
- 			} else if (ret) {
- 				/* -EDEADLK */
- 				this->pi_state = NULL;
--				free_pi_state(pi_state);
- 				goto out_unlock;
- 			}
- 		}
-@@ -1483,16 +1482,19 @@ retry:
-  */
- static void unqueue_me_pi(struct futex_q *q)
- {
-+	struct futex_pi_state *pi_state = NULL;
-+
- 	WARN_ON(plist_node_empty(&q->list));
- 	plist_del(&q->list, &q->list.plist);
- 
- 	BUG_ON(!q->pi_state);
--	free_pi_state(q->pi_state);
-+	pi_state = q->pi_state;
- 	q->pi_state = NULL;
- 
- 	spin_unlock(q->lock_ptr);
--
- 	drop_futex_key_refs(&q->key);
-+
-+	free_pi_state(pi_state);
- }
- 
- /*
--- 
-1.7.0.4
+Then run:
+# gdb ./vmlinux
+
+Once gdb loads:
+(gdb) list *0xc04e08e9
+
+That should point to exactly where in the function we are trying to
+acquire a previously locked lock.
+
+thanks
+-john
+
 
