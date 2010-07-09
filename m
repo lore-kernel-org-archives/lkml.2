@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab0GILLv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 07:11:51 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:19434 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753849Ab0GILLt (ORCPT
+	id S1755869Ab0GILTM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 07:19:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44239 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753817Ab0GILTK convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 07:11:49 -0400
-From: Luciano Coelho <luciano.coelho@nokia.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: [PATCH -next] wl1271: use __packed annotation
-Date: Fri,  9 Jul 2010 14:10:58 +0300
-Message-Id: <1278673858-17993-1-git-send-email-luciano.coelho@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
-X-OriginalArrivalTime: 09 Jul 2010 11:11:00.0185 (UTC) FILETIME=[69717490:01CB1F57]
-X-Nokia-AV: Clean
+	Fri, 9 Jul 2010 07:19:10 -0400
+Date: Fri, 9 Jul 2010 04:22:56 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Ming Lei <tom.leiming@gmail.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] pm: Add runtime PM statistics to sysfs
+Message-ID: <20100709042256.56e4b82f@infradead.org>
+In-Reply-To: <AANLkTinJSHiDbAZJ6ga3AGNoZEFzyVPSrHkEocxa8M6N@mail.gmail.com>
+References: <20100708224837.6a18995b@infradead.org>
+	<AANLkTinJSHiDbAZJ6ga3AGNoZEFzyVPSrHkEocxa8M6N@mail.gmail.com>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch changes __attribute__ ((packed)) annotations to __packed in wl1271
-code that was introduced in a recent patch in wireless-testing.
+On Fri, 9 Jul 2010 15:04:59 +0800
+Ming Lei <tom.leiming@gmail.com> wrote:
 
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Signed-off-by: Luciano Coelho <luciano.coelho@nokia.com>
----
- drivers/net/wireless/wl12xx/wl1271_acx.h  |    2 +-
- drivers/net/wireless/wl12xx/wl1271_scan.h |    8 ++++----
- 2 files changed, 5 insertions(+), 5 deletions(-)
+> 2010/7/9 Arjan van de Ven <arjan@infradead.org>:
+> > From: Arjan van de Ven <arjan@linux.intel.com>
+> > diff --git a/include/linux/pm.h b/include/linux/pm.h
+> > index 8e258c7..dca597f 100644
+> > --- a/include/linux/pm.h
+> > +++ b/include/linux/pm.h
+> > @@ -476,9 +476,15 @@ struct dev_pm_info {
+> >        enum rpm_request        request;
+> >        enum rpm_status         runtime_status;
+> >        int                     runtime_error;
+> > +       unsigned long           active_jiffies;
+> > +       unsigned long           suspended_jiffies;
+> > +       unsigned long           accounting_timestamp;
+> >  #endif
+> >  };
+> 
+> USB subsystem has implemented the function already, and only two
+> variables are enough to do the statistics. Suggest you to make a
+> reference to usb implementation, maybe sizeof(unsigned long) bytes
+> per device can be saved.
+> 
 
-diff --git a/drivers/net/wireless/wl12xx/wl1271_acx.h b/drivers/net/wireless/wl12xx/wl1271_acx.h
-index 8323360..4235bc5 100644
---- a/drivers/net/wireless/wl12xx/wl1271_acx.h
-+++ b/drivers/net/wireless/wl12xx/wl1271_acx.h
-@@ -1002,7 +1002,7 @@ struct wl1271_acx_fw_tsf_information {
- 	__le32 last_tbtt_low;
- 	u8 last_dtim_count;
- 	u8 padding[3];
--} __attribute__ ((packed));
-+} __packed;
- 
- enum {
- 	ACX_WAKE_UP_CONDITIONS      = 0x0002,
-diff --git a/drivers/net/wireless/wl12xx/wl1271_scan.h b/drivers/net/wireless/wl12xx/wl1271_scan.h
-index b0e36e3..f181570 100644
---- a/drivers/net/wireless/wl12xx/wl1271_scan.h
-+++ b/drivers/net/wireless/wl12xx/wl1271_scan.h
-@@ -76,7 +76,7 @@ struct basic_scan_params {
- 	u8 use_ssid_list;
- 	u8 scan_tag;
- 	u8 padding2;
--} __attribute__ ((packed));
-+} __packed;
- 
- struct basic_scan_channel_params {
- 	/* Duration in TU to wait for frames on a channel for active scan */
-@@ -91,19 +91,19 @@ struct basic_scan_channel_params {
- 	u8 dfs_candidate;
- 	u8 activity_detected;
- 	u8 pad;
--} __attribute__ ((packed));
-+} __packed;
- 
- struct wl1271_cmd_scan {
- 	struct wl1271_cmd_header header;
- 
- 	struct basic_scan_params params;
- 	struct basic_scan_channel_params channels[WL1271_SCAN_MAX_CHANNELS];
--} __attribute__ ((packed));
-+} __packed;
- 
- struct wl1271_cmd_trigger_scan_to {
- 	struct wl1271_cmd_header header;
- 
- 	__le32 timeout;
--} __attribute__ ((packed));
-+} __packed;
- 
- #endif /* __WL1271_SCAN_H__ */
+I did look at the USB implementation, and it is very clever. But it's
+more complex at the same time, because you no longer can just read out
+the time stamps, you need to look at the current device state each time
+to either subtract jiffies or not. 
+
+by having the timestamp as a separate variable all the code gets
+a lot simpler..... sometimes simple over clever is the right thing to
+do.
+
+
 -- 
-1.6.3.3
-
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
