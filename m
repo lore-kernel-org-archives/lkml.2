@@ -1,78 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755654Ab0GILDH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 07:03:07 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49196 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753817Ab0GILDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 07:03:05 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: Dynamic Debug broken on 2.6.35-rc3?
-Date: Fri, 9 Jul 2010 13:03:08 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.31.5-0.1-desktop; KDE/4.4.3; x86_64; ; )
-Cc: Jason Baron <jbaron@redhat.com>, Andi Kleen <andi@firstfloor.org>,
-       LKML <linux-kernel@vger.kernel.org>, Hannes Reinecke <hare@suse.de>
-References: <201007011744.19564.trenn@suse.de> <20100708213927.GB2934@redhat.com> <20100708145300.d36cf006.akpm@linux-foundation.org>
-In-Reply-To: <20100708145300.d36cf006.akpm@linux-foundation.org>
+	id S1755771Ab0GILEn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 07:04:43 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55388 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755302Ab0GILEm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 07:04:42 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH] vmscan: stop meaningless loop iteration when no  reclaimable slab
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+       Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <AANLkTins0OMGnj3JmUjIctO0dSnXPsQV1AUsbMEVt2D1@mail.gmail.com>
+References: <20100709191308.FA25.A69D9226@jp.fujitsu.com> <AANLkTins0OMGnj3JmUjIctO0dSnXPsQV1AUsbMEVt2D1@mail.gmail.com>
+Message-Id: <20100709195625.FA28.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007091303.08693.trenn@suse.de>
+Content-Type: text/plain; charset="ISO-8859-1"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri,  9 Jul 2010 20:04:36 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-I can confirm that this patch fixes the issue for me.
-
-On Thursday 08 July 2010 23:53:00 Andrew Morton wrote:
-> On Thu, 8 Jul 2010 17:39:28 -0400
-> Jason Baron <jbaron@redhat.com> wrote:
+> On Fri, Jul 9, 2010 at 7:13 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > If number of reclaimable slabs are zero, shrink_icache_memory() and
+> > shrink_dcache_memory() return 0. but strangely shrink_slab() ignore
+> > it and continue meaningless loop iteration.
+> >
+> > This patch fixes it.
+> >
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> > ---
+> >  mm/vmscan.c |    5 +++++
+> >  1 files changed, 5 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/mm/vmscan.c b/mm/vmscan.c
+> > index 0f9f624..8f61adb 100644
+> > --- a/mm/vmscan.c
+> > +++ b/mm/vmscan.c
+> > @@ -243,6 +243,11 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+> >                        int nr_before;
+> >
+> >                        nr_before = (*shrinker->shrink)(0, gfp_mask);
+> > +                       /* no slab objects, no more reclaim. */
+> > +                       if (nr_before == 0) {
+> > +                               total_scan = 0;
 > 
-> > Make sure we properly call ddebug_remove_module() when a module fails to
-> > load. In addition, pass the pointer to the "debug table", to both
-> > ddebug_add_module(), and ddebug_remove_module() so that we can uniquely
-> > identify each set of debug statements. In this way even modules with the
-> > same name can be properly identified and removed.
-> > 
-> > 
-> > Signed-off-by: Jason Baron <jbaron@redhat.com>
-> 
-> It'd be nice to track the Reported-by:s.  And the Tested-by:s if/when
-> they arrive.  SighIllDoIt.
-> 
-> The patch (almost) applies to 2.6.34.  So are we missing a Cc:stable tag
-> as well?
-I'll resubmit with some more meta info and will include stable@kernel.org.
+> Why do you reset totoal_scan to 0?
 
-Could it be that this isn't a regression, but a bug that was always present,
-but only gets exposed if you add modules with a specific implementation,
-e.g. specific declarations of functions missing, etc.?
+If shab objects are zero, we don't need more reclaim. 
 
-I tried to patch this into a 2.6.32.X kernel. While some hunks did not
-succeed, it looks like an adjusted patch should get submitted for older
-stable kernels as well?:
+> I don't know exact meaning of shrinker->nr.
 
-/dev/shm/linux-2.6.32> patch --dry-run -p1 -i ../linux-2.6.35-rc3/dynamic_debug_broken.patch 
-patching file include/linux/dynamic_debug.h
-Hunk #2 succeeded at 76 with fuzz 2 (offset 3 lines).
-patching file include/linux/module.h
-Hunk #1 succeeded at 376 (offset -11 lines).
-patching file kernel/module.c
-Hunk #1 FAILED at 787.
-Hunk #2 succeeded at 1596 with fuzz 2 (offset 47 lines).
-Hunk #3 succeeded at 2098 (offset 44 lines).
-Hunk #4 succeeded at 2548 (offset 62 lines).
-Hunk #5 succeeded at 2638 with fuzz 2 (offset 73 lines).
-1 out of 5 hunks FAILED -- saving rejects to file kernel/module.c.rej
-patching file lib/dynamic_debug.c
-Hunk #1 succeeded at 691 (offset -1 lines).
-Hunk #2 succeeded at 702 (offset -1 lines).
+similar meaning of reclaim_stat->nr_saved_scan.
+If total_scan can't divide SHRINK_BATCH(128), saving remainder and using at next shrink_slab().
 
-Thanks Jason for this quick fix!
+> AFAIU, it can affect next shrinker's total_scan.
+> Isn't it harmful?
 
-    Thomas
+No.  This loop is
+
+                total_scan = shrinker->nr;		/* Reset and init total_scan */
+                shrinker->nr = 0;
+
+                while (total_scan >= SHRINK_BATCH) {
+                        nr_before = (*shrinker->shrink)(0, gfp_mask);
+                        /* no slab objects, no more reclaim. */
+                        if (nr_before == 0) {
+                                total_scan = 0;
+                                break;
+                        }
+                        shrink_ret = (*shrinker->shrink)(this_scan, gfp_mask);
+                        if (shrink_ret == -1)
+                                break;
+                        if (shrink_ret < nr_before)
+                                ret += nr_before - shrink_ret;
+                        total_scan -= this_scan;
+                }
+
+                shrinker->nr += total_scan;		/* save remainder #of-scan */
+
+
+
