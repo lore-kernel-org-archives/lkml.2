@@ -1,84 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758279Ab0GIRDb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 13:03:31 -0400
-Received: from mx3.schottelius.org ([77.109.138.221]:46592 "EHLO
-	mx3.schottelius.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757905Ab0GIRDa (ORCPT
+	id S1756431Ab0GIRLD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 13:11:03 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:38694 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757154Ab0GIRLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 13:03:30 -0400
-Date: Fri, 9 Jul 2010 19:04:32 +0200
-From: Nico Schottelius <nico-linux-20100709@schottelius.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Nico Schottelius <nico-linux-20100709@schottelius.org>
-Subject: 2.6.35-rc4 / X201 issues
-Message-ID: <20100709170432.GA7691@schottelius.org>
-Mail-Followup-To: Nico Schottelius <nico-linux-20100709@schottelius.org>,
-	LKML <linux-kernel@vger.kernel.org>
+	Fri, 9 Jul 2010 13:11:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=k/KOlb+3d3gamLSMW0KpfjjNZkYRBGj1bUDQeuKrpYip7UcUpbElYTlOtwyEMpDMoZ
+         QzDd21rMFAN8UswgL7AUShxcqgHKmCudTSFPP5gqF0fBf0RrEANMx2BjrXAUMs7Dk3t0
+         fYv9Q1I1NbAlhxGxLf6ixAtXLOhFboQCKEK1o=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="9jxsPFA5p3P2qPhR"
-Content-Disposition: inline
-User-Agent: echo $message | gpg -e $sender  -s | netcat mailhost 25
-X-Netzseite: http://www.nico.schottelius.org/
-X-System-Info: kr (Linux 2.6.35-rc4 x86_64)
+In-Reply-To: <D3F292ADF945FB49B35E96C94C2061B90C3CF3E9@nsmail.netscout.com>
+References: <AANLkTimvsaoOm_QEUnvlZf2EKuiMpOr9PdQt_Ga0Z97D@mail.gmail.com>
+	<20100708012120.GB11419@auslistsprd01.us.dell.com>
+	<D3F292ADF945FB49B35E96C94C2061B90C317EA2@nsmail.netscout.com>
+	<82tyo9i0n2.fsf@mid.bfk.de>
+	<D3F292ADF945FB49B35E96C94C2061B90C3CF3E9@nsmail.netscout.com>
+Date: Fri, 9 Jul 2010 10:10:58 -0700
+Message-ID: <AANLkTik4JOoNFSoML98j8LPJhJjVpWd8om-OYMGp3s9V@mail.gmail.com>
+Subject: Re: nic enumeration
+From: Steve Fink <sphink@gmail.com>
+To: "Loke, Chetan" <Chetan.Loke@netscout.com>
+Cc: Florian Weimer <fweimer@bfk.de>, linux-net@vger.kernel.org,
+       Matt Domsch <Matt_Domsch@dell.com>,
+       Michael Di Domenico <mdidomenico4@gmail.com>,
+       linux-kernel@vger.kernel.org, kay.sievers@vrfy.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, Jul 9, 2010 at 9:27 AM, Loke, Chetan <Chetan.Loke@netscout.com> wrote:
+> Ok, no renaming, I would like a reference. And symlink just doesn't work
+> w/ the udevadm trigger business. We've tried that already.
+>
+> What needs to be changed in udev etc to create a soft link? Any place
+> where I should start digging and gotchas to lookout for?
 
---9jxsPFA5p3P2qPhR
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+By "soft link", I assume you're talking figuratively? Soft (symbolic)
+links are a filesystem concept, implemented by filesystem-specific
+logic that knows how to read a filename out of an inode and restart
+lookup. In order for something similar to work for network devices,
+somebody would have had to explicitly implement similar functionality.
+(Symlinks are a big headache and source of security holes -- access
+control, loops, pointing to nonexistent files, etc. -- so there's a
+good reason to NOT have an equivalent for network devices.)
 
-Good evening hackers,
-
-latest report from 2.6.35-rc4 on X201:
-
-  - (almost) everytime I close and reopen the lid, the image is screwed up
-    - switching to vt1 (away from xorg) and back to vt7 fixes that almost a=
-lways
-    - did not happen on 2.6.34 (iirc)
-  - if it's not screwed up, the system is frozen
-    - does not react on ping, last image is displayed, no keyboard shortcut=
- works
-    - ATTENTION: it's *NOT* needed to suspend directly before to get a free=
-ze!
-      - simplying closing & opening the lid is enough
-  - on freeze, JFS screws up many (open?) files:
-    - .viminfo contains stuff from other files / memory?
-    - branch of git is damaged:
-      [18:46] kr:ceofhack% cat .git/refs/heads/ceof-crypto
-      --- !ruby/object:RDoc::RI::MethodDescript%
-  - netdev notification for carrier change still broken (see previous repor=
-ts)
-
-The first two could probably also be xorg related, though in theory an appl=
-ication
-shouldn't be able to freeze the kernel... (yeah, know that xorg is "special=
-" here).
-
-Cheers,
-
-Nico
-
---=20
-New PGP key: 7ED9 F7D3 6B10 81D7 0EC5  5C09 D7DC C8E4 3187 7DF0
-Please resign, if you signed 9885188C or 8D0E27A4.
-
-Currently moving *.schottelius.org to http://www.nico.schottelius.org/ ...
-
---9jxsPFA5p3P2qPhR
-Content-Type: application/pgp-signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkw3VqAACgkQ19zI5DGHffDpJQCfWNAr6trvdM5zDTSL5c5YLZAZ
-COIAoJhVXYDwVthtShGFL1GsOxkjIr99
-=F6C1
------END PGP SIGNATURE-----
-
---9jxsPFA5p3P2qPhR--
+But perhaps there *is* an equivalent: what about (ab)using bridges?
+Create a set of bridges and bind each one to a single NIC. You can
+name the bridges whatever you want, and set up the mapping through
+arbitrary logic.
