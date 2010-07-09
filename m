@@ -1,44 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752223Ab0GIV0Z (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 17:26:25 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:60732 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750870Ab0GIV0X (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 17:26:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=JN4VP27LQLOfWnBi+3BZp3+sN/XW6Hfl476GGGFULzZFih+VoHBG37iHpo3+XNxrqh
-         ebz0Ycw9QhyzSjupata25bJ3AS0WzpXtS3RDSInq7HLd/5T50OVC8XfwTItA4AUe7X6c
-         0/HkyO2jN0nA4oM+TePChiWYHx6DWWEWjoulY=
-Message-ID: <4C3793FB.4080907@gmail.com>
-Date: Fri, 09 Jul 2010 23:26:19 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+	id S1753066Ab0GIV03 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 17:26:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49267 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750958Ab0GIV01 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 17:26:27 -0400
 MIME-Version: 1.0
-To: Larry Finger <Larry.Finger@lwfinger.net>
-CC: LKML <linux-kernel@vger.kernel.org>, Christopher Li <sparse@chrisli.org>,
-       Linux-Sparse <linux-sparse@vger.kernel.org>
-Subject: Re: Warning message when using sparse
-References: <4C3680D1.5070601@lwfinger.net> <4C378AD9.1070602@gmail.com> <4C379323.1090004@lwfinger.net>
-In-Reply-To: <4C379323.1090004@lwfinger.net>
-X-Enigmail-Version: 1.1
+In-Reply-To: <20100709203301.GA13839@merkur.ravnborg.org>
+References: <1278705402.1537.157.camel@gandalf.stny.rr.com>
+	<20100709203301.GA13839@merkur.ravnborg.org>
+Date: Fri, 9 Jul 2010 14:25:57 -0700
+Message-ID: <AANLkTinWkfkXNVA2Sx-apVQMZa-5ehugtd7JQ36np7xM@mail.gmail.com>
+Subject: Re: [PATCH][GIT PULL][for 2.6.35] tracing: Add alignment to syscall 
+	metadata declarations
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Zeev Tarantov <zeev.tarantov@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Maciej@antispam.struernethosting.dk,
+       "Rutecki <"@antispam.struernethosting.dk
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2010 11:22 PM, Larry Finger wrote:
-> Obviously, I pulled the wrong git tree. I got the one from the wiki.
-> When I built the one from the kernel.org tree, all is well.
+On Fri, Jul 9, 2010 at 1:33 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+>
+> Something like this:
+> (whitespace damaged)
+> diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+> index 48c5299..64430d3 100644
+> --- a/include/asm-generic/vmlinux.lds.h
+> +++ b/include/asm-generic/vmlinux.lds.h
+> @@ -133,7 +133,8 @@
+>  #endif
+>
+>  #ifdef CONFIG_FTRACE_SYSCALLS
+> -#define TRACE_SYSCALLS() VMLINUX_SYMBOL(__start_syscalls_metadata) = .;        \
+> +#define TRACE_SYSCALLS() . = ALIGN(8);                                 \
+> +                        VMLINUX_SYMBOL(__start_syscalls_metadata) = .; \
+>                         *(__syscalls_metadata)                         \
+>                         VMLINUX_SYMBOL(__stop_syscalls_metadata) = .;
+>  #else
 
-Both are from kernel.org. But the one I sent is a Chris'es "fork" with
-my and other fixes.
+If this is confirmed to fix it, then I would much prefer this version.
 
--- 
-js
+That said, I do wonder whether we shouldn't do the ALIGN(8) in the
+DATA_DATA define instead. That's what we do for other things like this
+(start_markers, start__verbose, etc etc)
+
+                       Linus
