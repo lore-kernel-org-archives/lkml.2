@@ -1,122 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab0GITNh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 15:13:37 -0400
-Received: from smtp1.Stanford.EDU ([171.67.219.81]:58888 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751053Ab0GITNd (ORCPT
+	id S1753847Ab0GITN3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 15:13:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:19557 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754852Ab0GITM1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 15:13:33 -0400
-Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-To: john stultz <johnstul@us.ibm.com>
-Cc: nando@ccrma.Stanford.EDU, Thomas Gleixner <tglx@linutronix.de>,
+	Fri, 9 Jul 2010 15:12:27 -0400
+Message-ID: <4C3773C4.1010609@kernel.org>
+Date: Fri, 09 Jul 2010 12:08:52 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Borislav Petkov <borislav.petkov@amd.com>
+CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
        LKML <linux-kernel@vger.kernel.org>,
-       rt-users <linux-rt-users@vger.kernel.org>,
-       Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1278702134.5102.9.camel@localhost.localdomain>
-References: <1278609590.7527.11.camel@localhost.localdomain>
-	 <1278628386.3008.11.camel@localhost.localdomain>
-	 <1278629044.12059.6.camel@localhost.localdomain>
-	 <1278630050.3008.18.camel@localhost.localdomain>
-	 <1278702134.5102.9.camel@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Jul 2010 12:13:02 -0700
-Message-ID: <1278702782.7122.1.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+       Conny Seidel <conny.seidel@amd.com>
+Subject: Re: BUG: unable to handle kernel paging request at 40000000 __alloc_memory_core_early+0x147/0x1d6
+References: <20100709145415.GC11199@aftab>
+In-Reply-To: <20100709145415.GC11199@aftab>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0209.4C37746B.007A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-09 at 12:02 -0700, Fernando Lopez-Lezcano wrote:
-> On Thu, 2010-07-08 at 16:00 -0700, john stultz wrote:
-> > On Thu, 2010-07-08 at 15:44 -0700, Fernando Lopez-Lezcano wrote:
-> > > On Thu, 2010-07-08 at 15:33 -0700, john stultz wrote:
-> > > > On Thu, 2010-07-08 at 10:19 -0700, Fernando Lopez-Lezcano wrote:
-> > > > > We are having problems with 2.6.33.5+rt23, at least in our configuration
-> > > > > while accessing an nfs automounted directory. This causes a complete
-> > > > > machine lockup (press reset to exit as the only option). 
-> > > > > 
-> > > > > I simply use the Nautilus file manager (in Fedora 12) to navigate to an
-> > > > > autofs mounted directory and the process monitor goes to 100% on one
-> > > > > core (or maybe two), the mouse jerks a bit and the whole thing goes
-> > > > > catatonic almost immediately. 
-> > > > > 
-> > > > > I get this in any open terminal at the time of the crash:
-> > > > > 
-> > > > > --------
-> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > > > >  kernel:------------[ cut here ]------------
-> > > > > 
-> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > > > >  kernel:invalid opcode: 0000 [#1] PREEMPT SMP 
-> > > > > 
-> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > > > >  kernel:last sysfs
-> > > > > file: /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq
-> > > > > 
-> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > > > >  kernel:Process nautilus (pid: 2874, ti=f0204000 task=f17dd1f0
-> > > > > task.ti=f0204000)
-> > > > > 
-> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > > > >  kernel:Stack:
-> > > > > 
-> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > > > >  kernel:Call Trace:
-> > > > > 
-> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > > > >  kernel:Code: 7b 08 00 89 45 b8 75 12 8d 43 04 89 43 04 89 43 08 8d 43
-> > > > > 0c 89 43 0c 89 43 10 8b 43 14 64 8b 15 2c d1 a5 c0 83 e0 fc 39 c2 75 04
-> > > > > <0f> 0b eb fe 8b 3a 81 ff 08 01 00 00 74 0a 83 ff 02 b8 04 00 00 
-> > > > > 
-> > > > > Message from syslogd@localhost at Jul  8 10:13:54 ...
-> > > > >  kernel:EIP: [<c0792c0f>] rt_spin_lock_slowlock+0x43/0x1bb SS:ESP
-> > > > > 0068:f0205cbc
-> > > > > --------
-> > > > > 
-> > > > > And that's it... nothing else in the logs. 
-> > > > 
-> > > > Hrm. Not too much to go on there, but thanks for the report.
-> > > > 
-> > > > 
-> > > > > For now we are booting into the normal Fedora kernel (this is on Fedora
-> > > > > 12) as this makes the rt kernel not usable in our setup. 
-> > > > > 
-> > > > > Let me know if there is anything else I can do to help debug this...
-> > > > 
-> > > > Had you done any testing with earlier 2.6.33-rt kernels where this
-> > > > didn't occur? If so what version?
-> > > 
-> > > I have been working with the whole series but my main usage case does
-> > > not use nfs/autofs (see next paragraphs). 
-> > > 
-> > > I have noticed that the problem does not appear to happen when I cd into
-> > > an nfs automounted directory directly. It appears to happen only when
-> > > listing the contents of a mount point (ie: when "/whatever/" is an
-> > > autofs mount point where several directories are mounted, not
-> > > necessarily from the same server). 
-> > > 
-> > > Before switching to Fedora 12 users were normally running 2.6.29 rt and
-> > > I had been running 2.6.31.x and 2.6.33.x rt, but I don't think it ever
-> > > happened to me personally (I'm always using the command line - this is
-> > > completely reproducible with nautilus). After the switch it started
-> > > happening almost immediately to regular users (using nautilus mostly). 
-> > > 
-> > > How could I try to get more debugging information?
-> > 
-> > Any chance you have a serial port on the machine in question? If so its
-> > likely any oops messages could be collected over that.
+On 07/09/2010 07:54 AM, Borislav Petkov wrote:
+> Hi,
 > 
-> No response from the network or the keyboard or
-> mouse at this point, reset is the only way out. 
+> this is something we're getting during testing on one of our boxes here,
+> a dual socket Magny-Cours machine. It is oopsing on the addr variable in
+> __alloc_memory_core_early() after converting it to a virtual address in
+> order to clear the mem region at it. I've removed the "#if 0.. #endif"
+> around the printk which dumps the ranges in the early node map for more
+> info.
+> 
+> It's latest -git, 32bit build, config is attached.
+> 
 
-Not quite true, it does respond to the sysrq key (a sync command got an
-immediate dump in the terminal). But the boot command does not reboot
-the machine. 
+can not duplicate on all my setup.
 
--- Fernando
+but look at the code there is limit problem with 32 bit...
 
+please check if it will fix the problem.
 
+and we will need to rebase early_res to memblock patchset.
+
+Thanks
+
+Yinghai Lu
+
+[PATCH] x86,mm: fix 32bit numa sparse vmemmp
+
+Borislav Petkov <borislav.petkov@amd.com> reported his 32bit numa has problem:
+
+[    0.000000] Reserving total of 4c00 pages for numa KVA remap
+[    0.000000] kva_start_pfn ~ 32800 max_low_pfn ~ 375fe
+[    0.000000] max_pfn = 238000
+[    0.000000] 8202MB HIGHMEM available.
+[    0.000000] 885MB LOWMEM available.
+[    0.000000]   mapped low ram: 0 - 375fe000
+[    0.000000]   low ram: 0 - 375fe000
+[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 1000 1000 => 34e7000
+[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 200 40 => 34c9d80
+[    0.000000] alloc (nid=0 100000 - 7ee00000) (1000000 - ffffffffffffffff) 180 40 => 34e6140
+[    0.000000] alloc (nid=1 80000000 - c7e60000) (1000000 - ffffffffffffffff) 240 40 => 80000000
+[    0.000000] BUG: unable to handle kernel paging request at 40000000
+[    0.000000] IP: [<c2c8cff1>] __alloc_memory_core_early+0x147/0x1d6
+[    0.000000] *pdpt = 0000000000000000 *pde = f000ff53f000ff00 
+...
+[    0.000000] Call Trace:
+[    0.000000]  [<c2c8b4f8>] ? __alloc_bootmem_node+0x216/0x22f
+[    0.000000]  [<c2c90c9b>] ? sparse_early_usemaps_alloc_node+0x5a/0x10b
+[    0.000000]  [<c2c9149e>] ? sparse_init+0x1dc/0x499
+[    0.000000]  [<c2c79118>] ? paging_init+0x168/0x1df
+[    0.000000]  [<c2c780ff>] ? native_pagetable_setup_start+0xef/0x1bb
+
+looks like it allocate much high address for bootmem.
+
+try to cut limit with get_max_mapped()
+
+Reported-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ mm/page_alloc.c |    3 +++
+ mm/sparse.c     |    5 ++++-
+ 2 files changed, 7 insertions(+), 1 deletion(-)
+
+Index: linux-2.6/mm/page_alloc.c
+===================================================================
+--- linux-2.6.orig/mm/page_alloc.c
++++ linux-2.6/mm/page_alloc.c
+@@ -3634,6 +3634,9 @@ void * __init __alloc_memory_core_early(
+ 	int i;
+ 	void *ptr;
+ 
++	if (limit > get_max_mapped())
++		limit = get_max_mapped();
++
+ 	/* need to go over early_node_map to find out good range for node */
+ 	for_each_active_range_index_in_nid(i, nid) {
+ 		u64 addr;
+Index: linux-2.6/mm/sparse.c
+===================================================================
+--- linux-2.6.orig/mm/sparse.c
++++ linux-2.6/mm/sparse.c
+@@ -363,7 +363,10 @@ static void __init sparse_early_usemaps_
+ 		return;
+ 	}
+ 
+-	usemap = alloc_bootmem_node(NODE_DATA(nodeid), size * usemap_count);
++	usemap = __alloc_bootmem_node_nopanic(NODE_DATA(nodeid),
++					      size * usemap_count,
++					      SMP_CACHE_BYTES,
++					      __pa(MAX_DMA_ADDRESS));
+ 	if (usemap) {
+ 		for (pnum = pnum_begin; pnum < pnum_end; pnum++) {
+ 			if (!present_section_nr(pnum))
