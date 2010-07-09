@@ -1,56 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754638Ab0GIT5o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 15:57:44 -0400
-Received: from mx1.emlix.com ([193.175.82.87]:37798 "EHLO mx1.emlix.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754442Ab0GIT5m convert rfc822-to-8bit (ORCPT
+	id S1754329Ab0GIUBR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 16:01:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48187 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753662Ab0GIUBQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 15:57:42 -0400
-From: =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
-To: David Brownell <dbrownell@users.sourceforge.net>
-Cc: linux-kernel@vger.kernel.org,
-       =?UTF-8?q?Daniel=20Gl=C3=B6ckner?= <dg@emlix.com>
-Subject: [PATCH 2/2] gpiolib: allow nested threaded irqs for poll(2)
-Date: Fri,  9 Jul 2010 21:24:18 +0200
-Message-Id: <1278703458-26412-2-git-send-email-dg@emlix.com>
-In-Reply-To: <1278703458-26412-1-git-send-email-dg@emlix.com>
-References: <1278703458-26412-1-git-send-email-dg@emlix.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-Organization: emlix gmbh, Goettingen, Germany
+	Fri, 9 Jul 2010 16:01:16 -0400
+Date: Fri, 9 Jul 2010 13:00:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+       qi.wang@intel.com, joel.clark@intel.com,
+       andrew.chih.howe.khor@intel.com, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Packet hub driver of Topcliff PCH
+Message-Id: <20100709130028.26174aa1.akpm@linux-foundation.org>
+In-Reply-To: <4C32CB44.9010908@dsn.okisemi.com>
+References: <4C204B0D.2030201@dsn.okisemi.com>
+	<4C32CB44.9010908@dsn.okisemi.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The pca953x driver requires the use of threaded irqs as its irq
-demultiplexer can sleep. Our irq handler can be called from any
-context, so use request_any_context_irq to allow threaded irqs
-as well.
+On Tue, 06 Jul 2010 15:20:52 +0900
+Masayuki Ohtak <masa-korg@dsn.okisemi.com> wrote:
 
-Signed-off-by: Daniel Glöckner <dg@emlix.com>
-Reported-by: Ian Jeffray <ian@jeffray.co.uk>
----
- drivers/gpio/gpiolib.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> Hi Arnd
+> 
+> I have modified for your comments.
+> Please confirm below.
+> 
+> Thanks, Ohtake.
+> 
+> ---
+> Packet hub driver of Topcliff PCH
+> 
+> Topcliff PCH is the platform controller hub that is going to be used in
+> Intel's upcoming general embedded platform. All IO peripherals in
+> Topcliff PCH are actually devices sitting on AMBA bus. Packet hub is
+> a special converter device in Topcliff PCH that translate AMBA transactions
+> to PCI Express transactions and vice versa. Thus packet hub helps present
+> all IO peripherals in Topcliff PCH as PCIE devices to IA system.
+> Topcliff PCH has MAC address and Option ROM data.
+> These data are in SROM which is connected to PCIE bus.
+> Packet hub driver of Topcliff PCH can access MAC address and Option ROM data in
+> SROM.
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index 67e6136..b4ba1ec 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -385,9 +385,9 @@ static int gpio_setup_irq(struct gpio_desc *desc, struct device *dev,
- 		}
- 	}
- 
--	ret = request_irq(irq, gpio_sysfs_irq, irq_flags,
-+	ret = request_any_context_irq(irq, gpio_sysfs_irq, irq_flags,
- 				"gpiolib", value_sd);
--	if (ret)
-+	if (ret < 0)
- 		goto free_id;
- 
- 	desc->flags |= gpio_flags;
--- 
-1.7.1
+That didn't describe the most important part of the driver: the
+userspace interface.  We should add here something along the lines of
 
+The driver creates a character device /dev/pch_phub.  That device file
+supports the following operations:
+
+read(): <document the read operation - seems to read a serial ROM?>
+write():<document the write operation - seems to write a serial ROM?> 
+ioctl():<document the ioctl operation - seems to read/write a MAC address?>  
+
+>
+> ...
+>
+> +static ssize_t pch_phub_write(struct file *file, const char __user *buf,
+> +			      size_t size, loff_t *ppos)
+> +{
+> +	unsigned int data;
+> +	int ret_value1;
+> +	int ret_value2;
+> +	int err;
+> +	unsigned int addr_offset;
+> +	loff_t pos = *ppos;
+> +	int ret;
+> +
+> +	ret = mutex_lock_interruptible(&pch_phub_mutex);
+> +	if (ret) {
+> +		err = -ERESTARTSYS;
+> +		goto return_err_nomutex;
+> +	}
+> +
+> +	for (addr_offset = 0; addr_offset < size; addr_offset++) {
+> +		ret_value1 = get_user(data, &buf[addr_offset]);
+> +		if (ret_value1) {
+> +			err = -EFAULT;
+> +			goto return_err;
+> +		}
+> +
+> +		ret_value2 = pch_phub_write_serial_rom(0x80 + addr_offset + pos,
+> +							data);
+
+I suspect this function will do strange things if passed an initial
+*ppos which is outside the range of the ROM.  It looks like it will write
+a single byte into the ROM then will bale out.
+
+
+> +		if (ret_value2) {
+> +			err = ret_value2;
+> +			goto return_err;
+> +		}
+> +
+> +		if (PCH_PHUB_OROM_SIZE < pos + addr_offset) {
+
+Is this off-by-one?
+
+> +			*ppos += addr_offset;
+> +			goto return_ok;
+> +		}
+> +
+> +	}
+> +
+> +	*ppos += addr_offset;
+> +
+> +return_ok:
+> +	mutex_unlock(&pch_phub_mutex);
+> +	return addr_offset;
+> +
+> +return_err:
+> +	mutex_unlock(&pch_phub_mutex);
+> +return_err_nomutex:
+> +	return err;
+> +}
+>
+> ...
+>
