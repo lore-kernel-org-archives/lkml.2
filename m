@@ -1,78 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754145Ab0GIRyc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 13:54:32 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:46144 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752572Ab0GIRya (ORCPT
+	id S1752284Ab0GISQV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 14:16:21 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:48502 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750908Ab0GISQU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 13:54:30 -0400
+	Fri, 9 Jul 2010 14:16:20 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=AuTgOSCaL36c2wK3dZ1pwOErNup7hq+0j8RmGgI8NfqPLNg6GE2UCny9XHFJcUK7Cl
-         0Mbm8lzW1OoVJiaBA8DnZ1izhlW6h9PltgcKjS0uO4y9PkW39mhbgy0UPei/cza/5ku/
-         ooQemUOuOFaq34HIJMsjbCK777EDdTHQusnXY=
-Subject: Re: [PATCH 001/001] QoS and/or fair queueing: Stateless NAT BUG
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Rodrigo Partearroyo =?ISO-8859-1?Q?Gonz=E1lez?= 
-	<rpartearroyo@albentia.com>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Iratxo Pichel Ortiz <ipichel@albentia.com>,
-       Noelia =?ISO-8859-1?Q?Mor=F3n?= <nmoron@albentia.com>,
-       netdev <netdev@vger.kernel.org>
-In-Reply-To: <201007091937.17349.rpartearroyo@albentia.com>
-References: <201007091937.17349.rpartearroyo@albentia.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 09 Jul 2010 19:54:23 +0200
-Message-ID: <1278698063.2696.61.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=rxZU+y7tPQKwdSRx3ZcZSVTZSuJSltLw4Xs2+c3ACPa7d7ygBrOddP4UqGf0Xrp3Dv
+         kbPVZJ8ZZu/BiRASJADIJxf/AoFWjT2ySgjuDadUXezpFHWzeAwQZsEb+qMvL6lVgXYy
+         8PfUIDeT3azdmX9WaqptyT/s7hSqOH3vZTanw=
+MIME-Version: 1.0
+In-Reply-To: <1278695580.2696.55.camel@edumazet-laptop>
+References: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>
+	<AANLkTil49m6Ul2bauiH4Pwn-6ykrYTFmSO6_SxqQgD_e@mail.gmail.com>
+	<1278626921.2435.73.camel@edumazet-laptop>
+	<AANLkTiliBClahTfb41M5BDi1etg5pgkqEz_VfGrn_mK4@mail.gmail.com>
+	<1278695580.2696.55.camel@edumazet-laptop>
+Date: Fri, 9 Jul 2010 15:16:17 -0300
+Message-ID: <AANLkTilwWI7wt-Bo45S_bpDV8MEu67jyB63kiZHB-C-P@mail.gmail.com>
+Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
+From: Felipe W Damasio <felipewd@gmail.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: David Miller <davem@davemloft.net>, Patrick McHardy <kaber@trash.net>,
+       linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 09 juillet 2010 à 19:37 +0200, Rodrigo Partearroyo González
-a écrit :
-> Hi all,
-> I have been testing Stateless NAT and found that ICMP packets with length
-> less than 20 bytes were not correctly NAT'ed. I have found a BUG that
-> makes taking into account IP header length twice, so ICMP packets smaller
-> than 20 bytes were being dropped.
-> 
-> Proposed formal patch is below, as suggested by Eric Dumazet, thanks.
-> It is taken from 2.6.34.1 stable version.
-> 
-> Signed-off-by: Rodrigo Partearroyo González <rpartearroyo@albentia.com>
+Hi,
 
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+2010/7/9 Eric Dumazet <eric.dumazet@gmail.com>:
+> Reviewing tproxy stuff I spotted a problem in nf_tproxy_assign_sock()
+> but I could not see how it could explain your crash.
+>
+> We can read uninitialized memory and trigger a fault in
+> nf_tproxy_assign_sock(), not later in tcp_recvmsg()...
 
-> ---
-> diff -uprN a/net/sched/act_nat.c b/net/sched/act_nat.c
-> --- a/net/sched/act_nat.c	2010-07-09 18:25:18.000000000 +0200
-> +++ b/net/sched/act_nat.c	2010-07-09 18:26:16.000000000 +0200
-> @@ -202,7 +202,7 @@ static int tcf_nat(struct sk_buff *skb, 
->  	{
->  		struct icmphdr *icmph;
->  
-> -		if (!pskb_may_pull(skb, ihl + sizeof(*icmph) + sizeof(*iph)))
-> +		if (!pskb_may_pull(skb, ihl + sizeof(*icmph)))
->  			goto drop;
->  
->  		icmph = (void *)(skb_network_header(skb) + ihl);
-> @@ -223,7 +223,7 @@ static int tcf_nat(struct sk_buff *skb, 
->  
->  		if (skb_cloned(skb) &&
->  		    !skb_clone_writable(skb,
-> -					ihl + sizeof(*icmph) + sizeof(*iph)) &&
-> +					ihl + sizeof(*icmph)) &&
->  		    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
->  			goto drop;
-> 
+Well, since I can't reproduce the bug, if you think this patch solves
+my problem, I'll tell my bosses that we can put back the production
+machine online.
 
+But anyway, if there's test you think I can run, I have same the same
+hardware on a lab using the same setup as the production
+environment...
 
+Thanks,
 
-
+Felipe Damasio
