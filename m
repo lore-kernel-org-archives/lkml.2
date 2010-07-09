@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab0GIBvK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 8 Jul 2010 21:51:10 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:43770 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751281Ab0GIBvI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 8 Jul 2010 21:51:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=GN9I0po1AHLklb82/6/MbuxYxdzsIupVWh3z3Rt8livVXu07GHD1cKrXnPgkFa/ZJb
-         T3qld69o6glaLHPptaRMz9snynWovY5sQ0DuVou5LSY1oX5DUGgFRfuRozmm2v3lscC/
-         /ZAAxFmom2ZaNORnL+8GtdnzKluIwlxOd26j4=
-Message-ID: <4C3680D1.5070601@lwfinger.net>
-Date: Thu, 08 Jul 2010 20:52:17 -0500
-From: Larry Finger <Larry.Finger@lwfinger.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
-MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: Warning message when using sparse
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1754950Ab0GIBv2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 8 Jul 2010 21:51:28 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34447 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752313Ab0GIBv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 8 Jul 2010 21:51:26 -0400
+Date: Fri, 9 Jul 2010 11:51:19 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Luciano Coelho <luciano.coelho@nokia.com>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Subject: linux-next: manual merge of the wireless tree with the net tree
+Message-Id: <20100709115119.6c88f8d2.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__9_Jul_2010_11_51_19_+1000_+ybeaPsdpAXC7QsI"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On recent kernels, sparse reports the following message for every source 
-file that is processed. The warning does not seem to affect the results. 
-I'm not sure when the problem started, but I think it was with 2.6.35-rc1.
+--Signature=_Fri__9_Jul_2010_11_51_19_+1000_+ybeaPsdpAXC7QsI
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi John,
 
-   CHECK   drivers/staging/rtl8712/rtl871x_rf.c
-/home/finger/linux-2.6/arch/x86/include/asm/cpufeature.h:297:21: error: 
-Expected ( after asm
-/home/finger/linux-2.6/arch/x86/include/asm/cpufeature.h:297:21: error: 
-got goto
+Today's linux-next merge of the wireless tree got a conflict in
+drivers/net/wireless/wl12xx/wl1271_cmd.h between commit
+ba2d3587912f82d1ab4367975b1df460db60fb1e ("drivers/net: use __packed
+annotation") from the net tree and commit
+34dd2aaac4a4b908c093980a9894fd878aeb6deb ("wl1271: moved scan operations
+to a separate file") from the wireless tree.
 
+I didn't bother changing __attribute((packed)) to __packed where this
+code has been moved to.  Maybe someone could write a patch to do that ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-Larry
+--Signature=_Fri__9_Jul_2010_11_51_19_+1000_+ybeaPsdpAXC7QsI
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMNoCXAAoJEDMEi1NhKgbswMwH/1rRe2pRvN2JB6Wge38UYGww
+CXJUsjTUkPGK7ve2HDtBlbPcZv8Ow3iO/aTYWawYqjJRYZdVZr7ocmYgFGu5AiZE
+Wc2l429G4tGnFp6zDJbxIGPBVtrEujAgnTT56JxzzeRwkKehQRtrhv4GFB9L059t
+d5rZv8vcoVCJYoVzqOLNyS19YfWsVKejHZj1dHsMxBsbRDEqaRa+KJFXTmGnV7vX
+yPEkJ210wFubBLh7Zsq2E2D0D2mZKuJ+h8vN9TfLfSD9TR6XQ2deGMl8T+IHWTqN
+MBefMG14XDZhtpIjQuFmuU7AOUG9NlhMq3slile+TY/k3q/pydTGFbQKcOePaXs=
+=e7Pn
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__9_Jul_2010_11_51_19_+1000_+ybeaPsdpAXC7QsI--
