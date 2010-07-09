@@ -1,48 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab0GIQxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 12:53:22 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:36572 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757878Ab0GIQxV (ORCPT
+	id S1758219Ab0GIRA7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 13:00:59 -0400
+Received: from llce437-z.servidoresdns.net ([82.223.199.149]:45111 "EHLO
+	llce437-z.servidoresdns.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758018Ab0GIRA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 12:53:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=QPUHSNLMuv/XgmpZVRT/sIqbaJ7/N01PZiZ7sRcYB6wtiCRx6uZxjKtO/u0EL6ED2Y
-         vi9DDWODF40NJ7BATyy8kQPp4ZKGvP0OtVcWxyFSuLTlyoojAMXJHeGOjk4Ydr3krJeE
-         qYI9C7B5JMaySikqmysuS70mpEMFg2Zl79jE4=
+	Fri, 9 Jul 2010 13:00:57 -0400
+X-Greylist: delayed 1497 seconds by postgrey-1.27 at vger.kernel.org; Fri, 09 Jul 2010 13:00:57 EDT
+Message-ID: <25524.83.175.223.254.1278693359.squirrel@mail.albentia.com>
+Date: Fri, 9 Jul 2010 18:35:59 +0200 (CEST)
+Subject: [PATCH 001/001] QoS and/or fair queueing: Stateless NAT BUG
+From: rpartearroyo@albentia.com
+To: "Eric Dumazet" <eric.dumazet@gmail.com>
+Cc: "Herbert Xu" <herbert@gondor.hengli.com.au>,
+       "Linux Kernel Mailing List" <linux-kernel@vger.kernel.org>,
+       "Iratxo Pichel Ortiz" <ipichel@albentia.com>,
+       Noelia =?iso-8859-1?Q?Mor=F3n?= <nmoron@albentia.com>,
+       "netdev" <netdev@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.10a
 MIME-Version: 1.0
-Date: Fri, 9 Jul 2010 10:53:19 -0600
-Message-ID: <AANLkTimLDcnf8EqNzP6K4wCLv6AkLUqxczo05BT7I4Hy@mail.gmail.com>
-Subject: [ANNOUNCE] MDB Merkey's Kernel Debugger 2.6.34.1 x86_64 07-08-2010
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CURRENT
+Hi all,
+I have been testing Stateless NAT and found that ICMP packets with length
+less than 20 bytes were not correctly NAT'ed. I have found a BUG that
+makes taking into account IP header length twice, so ICMP packets smaller
+than 20 bytes were being dropped.
 
-http://merkeydebugger.googlecode.com/files/mdb-2.6.34.1-x86_64-07-08-2010.patch
+Proposed formal patch is below, as suggested by Eric Dumazet, thanks.
+It is taken from 2.6.34.1 stable version.
 
-REPOSITORY
+Signed-off-by: Rodrigo Partearroyo González <rpartearroyo@albentia.com>
+---
+diff -uprN a/net/sched/act_nat.c b/net/sched/act_nat.c
+--- a/net/sched/act_nat.c    2010-07-09 18:25:18.000000000 +0200
++++ b/net/sched/act_nat.c 2010-07-09 18:26:16.000000000 +0200
+@@ -202,7 +202,7 @@ static int tcf_nat(struct sk_buff *skb,
+        {
+                struct icmphdr *icmph;
 
-http://code.google.com/p/merkeydebugger/
-http://sourceforge.net/projects/merkeydebugger/
+-               if (!pskb_may_pull(skb, ihl + sizeof(*icmph) + sizeof(*iph)))
++               if (!pskb_may_pull(skb, ihl + sizeof(*icmph)))
+                        goto drop;
 
-FIXES
-- fix precedence output in GDB disassembler with scalar expressions
-i.e. (rax + (rbx * 8)) to conform to C Language precedence rules
-- fix fpu_init code in arch/x86/kernel/i387.c to use GFP_DMA instead
-of  GFP_KERNEL since GFP_KERNEL should not be called from an exception
-context
-- regression test 2.6.34.1 on ia32/x86_64 4 way Opteron and ia32 UP
+                icmph = (void *)(skb_network_header(skb) + ihl);
+@@ -223,7 +223,7 @@ static int tcf_nat(struct sk_buff *skb,
 
-TODO
-- add GDB disssembler opcodes library for all linux arch (port in process)
-- add GDB registers and memory commands, abstract register naming in the code
-- restructure ARM command reference for DaVinci support
-- add DSP support for debugging ARM/DSP domains
+                if (skb_cloned(skb) &&
+                    !skb_clone_writable(skb,
+-                                       ihl + sizeof(*icmph) +
+sizeof(*iph)) &&
++                                       ihl + sizeof(*icmph) ) &&
+                    pskb_expand_head(skb, 0, 0, GFP_ATOMIC))
+                        goto drop;
+---
+
+-- 
+Rodrigo Partearroyo González
+
+Albentia Systems S.A.
+http://www.albentia.com
+
+C\Margarita Salas 22
+Parque Tecnológico de Leganés
+Leganés (28918)
+Madrid
+Spain
+
+
