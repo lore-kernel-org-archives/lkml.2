@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755983Ab0GJQty (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 12:49:54 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:51002 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755778Ab0GJQtx (ORCPT
+	id S1750930Ab0GJRTN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 13:19:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59612 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750736Ab0GJRTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 12:49:53 -0400
-Date: Sat, 10 Jul 2010 18:49:46 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Martin Enderleit <menderleit@gmail.com>
-Cc: mdharm-usb@one-eyed-alien.net, gregkh@suse.de, linux-usb@vger.kernel.org,
-       usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] usb: storage: freecom: Fixed several coding style
- issues.
-Message-ID: <20100710164946.GI17833@buzzloop.caiaq.de>
-References: <1278773412-21989-1-git-send-email-menderleit@gmail.com>
+	Sat, 10 Jul 2010 13:19:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=v98jzrMGUb8eoXGGiB5NquFBYxo8YQjTpRTMve/bZigfiysomh/q7yjaymOPxO/ejI
+         zFlD3P9it5el39G3pbaxddUlY/AYT5osOLA4OJQBNg1X6+p2aCx2NxNHrjgZ0IqLp3kF
+         nKRBRl40nU6huAuVpDVw+FBT806aEdm3zli9U=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278773412-21989-1-git-send-email-menderleit@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1278685800.1900.212.camel@laptop>
+References: <1278682707.6083.227.camel@Palantir>
+	<1278685800.1900.212.camel@laptop>
+Date: Sat, 10 Jul 2010 19:19:10 +0200
+Message-ID: <AANLkTilufL0jgoqQLKjxbu0egN2l6lCkF9JPCxBfV3Gz@mail.gmail.com>
+Subject: Re: periods and deadlines in SCHED_DEADLINE
+From: Harald Gustafsson <hgu1972@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Raistlin <raistlin@linux.it>, linux-kernel <linux-kernel@vger.kernel.org>,
+       Song Yuan <song.yuan@ericsson.com>,
+       Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Nicola Manica <nicola.manica@disi.unitn.it>,
+       Luca Abeni <lucabe72@email.it>,
+       Claudio Scordino <claudio@evidence.eu.com>,
+       Harald Gustafsson <harald.gustafsson@ericsson.com>,
+       Bjoern Brandenburg <bbb@email.unc.edu>, bastoni@cs.unc.edu,
+       Giuseppe Lipari <lipari@retis.sssup.it>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 10, 2010 at 04:50:12PM +0200, Martin Enderleit wrote:
-> Fixed several coding style issues in freecom.c.
-> 
-> Signed-off-by: Martin Enderleit <menderleit@gmail.com>
-> ---
->  drivers/usb/storage/freecom.c |   23 +++++++++++------------
->  1 files changed, 11 insertions(+), 12 deletions(-)
-> 
-> diff --git a/drivers/usb/storage/freecom.c b/drivers/usb/storage/freecom.c
-> index 54cc942..6542ca4 100644
-> --- a/drivers/usb/storage/freecom.c
-> +++ b/drivers/usb/storage/freecom.c
-> @@ -269,7 +269,7 @@ static int freecom_transport(struct scsi_cmnd *srb, struct us_data *us)
->  	/* The firmware will time-out commands after 20 seconds. Some commands
->  	 * can legitimately take longer than this, so we use a different
->  	 * command that only waits for the interrupt and then sends status,
-> -	 * without having to send a new ATAPI command to the device. 
-> +	 * without having to send a new ATAPI command to the device.
->  	 *
->  	 * NOTE: There is some indication that a data transfer after a timeout
->  	 * may not work, but that is a condition that should never happen.
-> @@ -324,14 +324,14 @@ static int freecom_transport(struct scsi_cmnd *srb, struct us_data *us)
->  
->  	/* Find the length we desire to read. */
->  	switch (srb->cmnd[0]) {
-> -		case INQUIRY:
-> -		case REQUEST_SENSE:		/* 16 or 18 bytes? spec says 18, lots of devices only have 16 */
-> -		case MODE_SENSE:
-> -		case MODE_SENSE_10:
-> -			length = le16_to_cpu(fst->Count);
-> -			break;
-> -		default:
-> -			length = scsi_bufflen(srb);
-> +	case INQUIRY:
-> +	case REQUEST_SENSE:	/* 16 or 18 bytes? spec says 18, lots of devices only have 16 */
-> +	case MODE_SENSE:
-> +	case MODE_SENSE_10:
-> +		length = le16_to_cpu(fst->Count);
-> +		break;
-> +	default:
-> +		length = scsi_bufflen(srb);
->  	}
->  
->  	/* verify that this amount is legal */
-> @@ -414,7 +414,7 @@ static int freecom_transport(struct scsi_cmnd *srb, struct us_data *us)
->  		/* should never hit here -- filtered in usb.c */
->  		US_DEBUGP ("freecom unimplemented direction: %d\n",
->  				us->srb->sc_data_direction);
-> -		// Return fail, SCSI seems to handle this better.
-> +		/* Return fail, SCSI seems to handle this better. */
->  		return USB_STOR_TRANSPORT_FAILED;
->  		break;
+2010/7/9 Peter Zijlstra <peterz@infradead.org>:
+> One thing we could do, although this would make the proposed scheduler a
+> wee bit more complex, is split between hard and soft realtime. Only
+> accept P==rel_D for hard, and schedule the soft tasks in the hard slack
+> or something like that.
+>
+> That way we can later extend the hard admission tests to accept more.
 
-While at it, you can also remove this useless break;
+Sorry for jumping in a bit late. I'm not that happy with this
+suggestion if I understand you correctly. The main reason for having
+deadlines shorter than the periods is for tasks that need a short
+response time and likely are most important for the system to be
+scheduled as fast as possible. Hence if they get scheduled after the
+tasks with deadline=period then that defeat the purpose with having a
+short deadline. Quite often these tasks are short and hence only need
+a low bandwidth, i.e. long period between activations relative to
+deadline and runtime.
 
-Daniel
+But also other use cases exist with longer running tasks (e.g. around
+5-10 ms) per period (e.g. around 20 ms). You might have several of
+such tasks running, but as a system designer you know that their
+activation phase will allow them to be scheduled interleaved. This can
+be for example you know that the interrupt pattern waking the tasks
+are interleaved. The admission test would be even more complex if we
+also need to take into account the phases of task periods. Hence I
+think some of these things need to be left for the system designer
+without being hindered by an admission into the highest hard deadline
+scheduling policy. As you might have understood I'm mostly talking
+about embedded system, which have some tasks that are central parts of
+the running system but which also might in parallel run more generic
+software.
+
+Did I get your proposal correct? Do you agree that tasks that need to
+set a deadline < period usually do that since they need to be
+scheduled in quickly?
