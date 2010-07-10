@@ -1,102 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751487Ab0GJGfF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 02:35:05 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:55853 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751071Ab0GJGfD (ORCPT
+	id S1751552Ab0GJGuo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 02:50:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56235 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab0GJGun (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 02:35:03 -0400
-Date: Sat, 10 Jul 2010 08:35:00 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Steven Rostedt <rostedt@goodmis.org>,
-       Zeev Tarantov <zeev.tarantov@gmail.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Zeev Tarantov <zeev.tarantov@gmail.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [PATCH] tracing: properly align linker defined symbols
-Message-ID: <20100710063459.GA14596@merkur.ravnborg.org>
-References: <1278705402.1537.157.camel@gandalf.stny.rr.com> <20100709203301.GA13839@merkur.ravnborg.org> <AANLkTinWkfkXNVA2Sx-apVQMZa-5ehugtd7JQ36np7xM@mail.gmail.com> <1278721339.1537.166.camel@gandalf.stny.rr.com>
+	Sat, 10 Jul 2010 02:50:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=Bfmqk/YwOSyLVRcGGQcA+LYUlIbDH+NePS9grmGfdq1oStfwaCsTONALO6TeeyCiSk
+         rziMPf0LjlH+jjI1HnJ1GPdWdugnogkaYawRNixXcm3XWWbqU2jFTbo2FM6dnjqngBwL
+         9R5vbdTGIap4KNwuoQQKjK8SfVhhP8MwT1ey8=
+From: Stephan Diestelhorst <stephan.diestelhorst@gmail.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: HDD not suspending properly / dead on resume
+Date: Sat, 10 Jul 2010 08:50:34 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.32-22-generic; KDE/4.4.4; i686; ; )
+Cc: Tejun Heo <tj@kernel.org>, linux-kernel@vger.kernel.org,
+       linux-ide@vger.kernel.org, linux-pm@lists.osdl.org,
+       stephan.diestelhorst@gmail.com, stephan.diestelhorst@amd.com
+References: <201007091750.05020.stephan.diestelhorst@amd.com> <201007100104.38693.stephan.diestelhorst@gmail.com> <201007100206.13401.rjw@sisk.pl>
+In-Reply-To: <201007100206.13401.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278721339.1537.166.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-2"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007100850.36889.stephan.diestelhorst@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zeev - please try this replacement patch.
-The alignmnet is increased to 32 bytes compared to my previous version and
-we introduce alignmnet for ftrace_events too.
+Rafael J. Wysocki wrote:
+> On Saturday, July 10, 2010, Stephan Diestelhorst wrote:
+> > Rafael J. Wysocki wrote:
+> > > On Friday, July 09, 2010, Stephan Diestelhorst wrote:
+> > > > I wrote:
+> > > > >   I have an issue with suspend to RAM and I/O load on a disk. Symptoms
+> > > > > are that the disk does not respond to requests when woken up, producing
+> > > > > only I/O errors on all tested kernels (newest 2.6.35-rc4 (Ubuntu
+> > > > > mainline PPA build)):
+> > > > > 
+> > > > <snip>
+> > > >  
+> > > > > This can be triggered most reliably with multiple "direct" writes to
+> > > > > disk, I create the load with the attached script. If the issue is
+> > > > > triggered, suspend (through pm-suspend) takes very long.
+> > > > 
+> > > > > IMHO the interesting log output during suspend is:
+> > > > > [ 1674.700125] ata1.00: qc timeout (cmd 0xec)
+> 
+> I have a box where this problem is kind of reproducible, but it happens _very_
+> rarely.  Also I can't reproduce it on demand running suspend-resume in a tight
+> loop.  Are you able to reproduce it more regurarly?
 
-	Sam
+For me it is much more reproducible. If I run multiple direct writing
+dd-s to the disk in question I trigger it rather reliably (~75% or
+higher). See the attached script from an earlier email.
+Maybe that helps triggering your case more reliabl, too?
 
->From 40bedb8fda25d2cf9ecdd41ab48a24104607c37e Mon Sep 17 00:00:00 2001
-From: Sam Ravnborg <sam@ravnborg.org>
-Date: Sat, 10 Jul 2010 08:24:12 +0200
-Subject: [PATCH] tracing: properly align linker defined symbols
+> Also, what kind of disk do you use?
 
-We define a number of symbols in the linker scipt like this:
+It is a Samsung HM321HI in a Samsung Eikee R525 notebook, please also 
+see my smartctl -a log, attached earlier.
 
-    __start_syscalls_metadata = .;
-    *(__syscalls_metadata)
+Interesting, I have a similar symptom on one of my home servers,
+which has a *Samsung* SpinPoint F1 and it went away with different
+disks. So maybe these disks are either faulty themselves or they
+trigger the issue more often?
 
-But we do not know the alignment of "." when we assign
-the __start_syscalls_metadata symbol.
-gcc started to uses bigger alignment for structs (32 bytes),
-so we saw situations where the linker due to alignment
-constraints increased the value of "." after the symbol assignment.
+I also have a LVM on top of LUKS on the disk. So the I/O will also
+add some computational overhead for encryption.
 
-This resulted in boot fails.
-
-Fix this by forcing a 32 byte alignment of "." before the
-assignment.
-
-This patch introduces the forced alignment for
-ftrace_events and syscalls_metadata.
-It may be required in more places.
-
-Reported-by: Zeev Tarantov <zeev.tarantov@gmail.com>
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
----
- include/asm-generic/vmlinux.lds.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
-
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 48c5299..4b5902a 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -63,6 +63,12 @@
- /* Align . to a 8 byte boundary equals to maximum function alignment. */
- #define ALIGN_FUNCTION()  . = ALIGN(8)
- 
-+/*
-+ * Align to a 32 byte boundary equal to the
-+ * alignment gcc 4.5 uses for a struct
-+ */
-+#define STRUCT_ALIGN() . = ALIGN(32)
-+
- /* The actual configuration determine if the init/exit sections
-  * are handled as text/data or they can be discarded (which
-  * often happens at runtime)
-@@ -166,7 +172,11 @@
- 	LIKELY_PROFILE()		       				\
- 	BRANCH_PROFILE()						\
- 	TRACE_PRINTKS()							\
-+									\
-+	STRUCT_ALIGN();							\
- 	FTRACE_EVENTS()							\
-+									\
-+	STRUCT_ALIGN();							\
- 	TRACE_SYSCALLS()
- 
- /*
--- 
-1.6.0.6
-
+Stephan
