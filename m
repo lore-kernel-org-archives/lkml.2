@@ -1,52 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158Ab0GJT4h (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 15:56:37 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57616 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750827Ab0GJT4g (ORCPT
+	id S1751415Ab0GJT5H (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 15:57:07 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:59367 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750927Ab0GJT5E convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 15:56:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=S9ACqXm79WP2doDVK8RDPcS68dGSPDH7aDO+43+oHRnQtyFN80eTXHpAdOv5T18nfe
-         PZ9CxICCAbzgeWU4riWz0YwF04hBCG5fsovZ46OFELzf9vmBHNVJs0NDDKj3Hh3J4YG1
-         /UO4Owh/z3iKjWeXsczJ+o78Evp8/QBjCQiIY=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [BUG -tip bisected] x86, mem: Optimize memcpy by avoiding memory false dependece
-Date: Sat, 10 Jul 2010 21:56:29 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc4; KDE/4.4.4; i686; ; )
-Cc: mingo@elte.hu, linux-kernel@vger.kernel.org, Ma Ling <ling.ma@intel.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-References: <20100707220325.GA27738@Krystal>
-In-Reply-To: <20100707220325.GA27738@Krystal>
+	Sat, 10 Jul 2010 15:57:04 -0400
+Date: Sat, 10 Jul 2010 21:56:21 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+       Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>
+Subject: Re: [S+Q2 00/19] SLUB with queueing (V2) beats SLAB netperf TCP_RR
+Message-ID: <20100710195621.GA13720@fancy-poultry.org>
+Mail-Followup-To: linux-kernel@vger.kernel.org,
+	Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+	Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>
+References: <20100709190706.938177313@quilx.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007102156.30347.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100709190706.938177313@quilx.com>
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.20+20100619 (GNU/Linux)
+Content-Transfer-Encoding: 8BIT
+X-Provags-ID: V02:K0:PEMbIyXKPFOhwLDVcdFOIBa+QffgQZH9UPjlxdBnuoY
+ R3MhtPmvnXqSbCHnMtPyqAd5uMY2SjfNObu6do5tHbrzkbtErr
+ qN0u4BmP2UmcNTnVR1b3H2no2uMbPopbBfPhhjR4i2xakGmxSU
+ aEYKT1+iIh+64DyZLj0xWqj+p41XNxYAWAW8kOciWkrCoo/7GX
+ G35LGb58mIwMY9yxRUNKg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On czwartek, 8 lipca 2010 o 00:03:25 Mathieu Desnoyers wrote:
-> Hi Ingo,
-> 
-> I just bisected the cause of boot hard lockup on my Intel Xeon E5405 to
-> this commit recently added to -tip:
-> 
-> a1e5278e40f16a4611264f8da9e557c16cb6f6ed is the first bad commit
-> Merge branch 'x86/mem'
-> 
+On 10.07.2010, Christoph Lameter wrote: 
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=16364
-for your bug report, please add your address to the CC list in there, thanks!
+> The following patchset cleans some pieces up and then equips SLUB with
+> per cpu queues that work similar to SLABs queues. With that approach
+> SLUB wins significantly in hackbench and improves also on tcp_rr.
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+The patchset applies cleanly, however compilation fails with
+
+[....]
+mm/slub.c: In function ‘alloc_kmem_cache_cpus’:
+mm/slub.c:2093: error: negative width in bit-field ‘<anonymous>’
+make[1]: *** [mm/slub.o] Error 1
+make: *** [mm] Error 2
+make: *** Waiting for unfinished jobs....
+[....]
+
