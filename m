@@ -1,102 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752391Ab0GJHuj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 03:50:39 -0400
-Received: from ms01.sssup.it ([193.205.80.99]:35897 "EHLO sssup.it"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751527Ab0GJHui (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 03:50:38 -0400
-Subject: Re: periods and deadlines in SCHED_DEADLINE
-From: Raistlin <raistlin@linux.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Song Yuan <song.yuan@ericsson.com>,
-       Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Nicola Manica <nicola.manica@disi.unitn.it>,
-       Luca Abeni <lucabe72@email.it>,
-       Claudio Scordino <claudio@evidence.eu.com>,
-       Harald Gustafsson <harald.gustafsson@ericsson.com>,
-       Bjoern Brandenburg <bbb@email.unc.edu>, bastoni@cs.unc.edu,
-       Giuseppe Lipari <lipari@retis.sssup.it>
-In-Reply-To: <1278685951.1900.215.camel@laptop>
-References: <1278682707.6083.227.camel@Palantir>
-	 <1278685951.1900.215.camel@laptop>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-UebN3eRwJQsxfGhkHQ1e"
-Date: Sat, 10 Jul 2010 09:50:27 +0200
-Message-ID: <1278748227.4390.26.camel@Palantir>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752615Ab0GJIHd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 04:07:33 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:35931 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab0GJIH3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 04:07:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=YsVWCw1I7o4mXXTj4PJSMCmkWudMGhoZkD01WEHqLmzgGrP/717Knj7uNGSyiLA7AL
+         O21BvJ5AcVD/lX/XP8goXPG002OwGLaQr6Xss1Sx+fPVd8EdDJKscXWF0+UCNCsM3T9x
+         jfBu7d9xAaQqVRQ6QeowgXj3+g8YraLWQ5p7Q=
+MIME-Version: 1.0
+Date: Sat, 10 Jul 2010 16:07:28 +0800
+Message-ID: <AANLkTimwrORk9yfJlSMpVdn1V0sg0tssKhxc-3q1xoMX@mail.gmail.com>
+Subject: [PATCH] avoid NULL deference in ext2_xattr_get
+From: shenghui <crosslonelyover@gmail.com>
+To: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
---=-UebN3eRwJQsxfGhkHQ1e
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+         I walked through ext2 code, and found one potential NULL deference
+in ext2/xattr.c.  The version is 2.6.35-rc4, while earlier versions have the
+same problem.
+         If you configure EXT2_XATTR_DEBUG, you'll get:
+# define ea_idebug(inode, f...) do { \
+                printk(KERN_DEBUG "inode %s:%ld: ", \
+                        inode->i_sb->s_id, inode->i_ino); \
+                printk(f); \
+                printk("\n"); \
+        } while (0)
 
-On Fri, 2010-07-09 at 16:32 +0200, Peter Zijlstra wrote:
-> On Fri, 2010-07-09 at 15:38 +0200, Raistlin wrote:
-> >  - do you think it could be useful to have a different syscall to deal
-> >    with the period parameter (if it's different from deadline), e.g.,
-> >    something useful to make the task periodic as you have (if I remembe=
-r
-> >    well) in Xenomai or RTAI?
-> >    If you think it's worth doing that, do you think the
-> >    task_wait_interval() syscall that we already added could/should do
-> >    the job?=20
->=20
-> Again, I'm afraid I need some extra education here in order to make a
-> sensible comment.
->=20
-Hey, fine, where's the problem? :-P
+In ext2/xttr.c ext2_xattr_get, NULL pointer check is done after
+ea_idebug call, so some may hit NULL deference here.
+ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
+                void *buffer, size_t buffer_size)
+ {
+         struct buffer_head *bh = NULL;
+         struct ext2_xattr_entry *entry;
+         size_t name_len, size;
+         char *end;
+         int error;
 
-> What are the exact semantics of this extra proposed syscall?
->=20
-Right now, it is:
-task_wait_interval(t) --> "wake me up at the first instant after t when=20
-			   you can give me my full runtime"
+         ea_idebug(inode, "name=%d.%s, buffer=%p, buffer_size=%ld",
+                   name_index, name, buffer, (long)buffer_size);
 
-> What exactly are the benefits over not having it, and simply rely on the
-> task to not wake up more often, but if it does have it run into the lack
-> of budget and sort it that way?
->
-What you're saying obviously will always work, and it is actually a
-quite common usage pattern (we use it like that a lot! :-)).
+         if (name == NULL)
+                 return -EINVAL;
 
-The new syscall might help when it is important for a task to
-synchronize with the budget provisioning mechanism. It might be
-uncommon, but there could be situations --more in hard than in soft
-scenarios-- where you want to be sure that you're next job (and all the
-subsequent ones, if you behave well) will get its full runtime, even if
-this means waiting a little bit.
 
-what I was wondering was if this semantic should be modified by the
-introduction of the "period", but I also agree with Luca that we must do
-our best to avoid confusion!
+Following is my patch. Please check it.
+The patch is against kernel 2.6.35-rc4.
 
-Regards,
-Dario
---=20
-<<This happens because I choose it to happen!>> (Raistlin Majere)
-----------------------------------------------------------------------
-Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
-http://blog.linux.it/raistlin / raistlin@ekiga.net /
-dario.faggioli@jabber.org
+>From adc1fa6535034db3b6d8deebda6ec7eaa8bfd2f8 Mon Sep 17 00:00:00 2001
+From: Wang Sheng-Hui <crosslonelyover@gmail.com>
+Date: Sat, 10 Jul 2010 16:05:53 +0800
+Subject: [PATCH] avoid NULL deference in ext2_xattr_get
 
---=-UebN3eRwJQsxfGhkHQ1e
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
+---
+ fs/ext2/xattr.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-iEYEABECAAYFAkw4JkMACgkQk4XaBE3IOsTkmgCeOOrO4PBhLw9E2C2uCtXEpkJI
-av8AnAry/CRpPIergtm9R/RWFUGqI7AU
-=qxx8
------END PGP SIGNATURE-----
+diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
+index 7c39157..81ec1c6 100644
+--- a/fs/ext2/xattr.c
++++ b/fs/ext2/xattr.c
+@@ -156,11 +156,12 @@ ext2_xattr_get(struct inode *inode, int
+name_index, const char *name,
+ 	char *end;
+ 	int error;
 
---=-UebN3eRwJQsxfGhkHQ1e--
++	if (name == NULL)
++		return -EINVAL;
++
+ 	ea_idebug(inode, "name=%d.%s, buffer=%p, buffer_size=%ld",
+ 		  name_index, name, buffer, (long)buffer_size);
 
+-	if (name == NULL)
+-		return -EINVAL;
+ 	down_read(&EXT2_I(inode)->xattr_sem);
+ 	error = -ENODATA;
+ 	if (!EXT2_I(inode)->i_file_acl)
+-- 
+1.6.3.3
+
+
+
+
+-- 
+
+
+Thanks and Best Regards,
+shenghui
