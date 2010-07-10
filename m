@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab0GJNrT (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 09:47:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:35832 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755226Ab0GJNrS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 09:47:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: HDD not suspending properly / dead on resume
-Date: Sat, 10 Jul 2010 15:45:17 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Stephan Diestelhorst <stephan.diestelhorst@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
-       linux-pm@lists.osdl.org, stephan.diestelhorst@amd.com
-References: <201007091750.05020.stephan.diestelhorst@amd.com> <201007100850.36889.stephan.diestelhorst@gmail.com> <4C384580.2080507@kernel.org>
-In-Reply-To: <4C384580.2080507@kernel.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007101545.17401.rjw@sisk.pl>
+	id S1755401Ab0GJNrm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 09:47:42 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:59157 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755226Ab0GJNrk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 09:47:40 -0400
+Subject: Re: [RFC][PATCH 13/13] perf: Rework the PMU methods
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
+       Robert Richter <robert.richter@amd.com>,
+       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
+       Yanmin <yanmin_zhang@linux.intel.com>,
+       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
+       David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100710133647.GA5306@nowhere>
+References: <20100709082117.631541128@chello.nl>
+	 <20100709083248.337539831@chello.nl>  <20100710133647.GA5306@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Sat, 10 Jul 2010 15:47:22 +0200
+Message-ID: <1278769642.1998.34.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday, July 10, 2010, Tejun Heo wrote:
-> On 07/10/2010 08:50 AM, Stephan Diestelhorst wrote:
-> >> I have a box where this problem is kind of reproducible, but it happens _very_
-> >> rarely.  Also I can't reproduce it on demand running suspend-resume in a tight
-> >> loop.  Are you able to reproduce it more regurarly?
-> > 
-> > For me it is much more reproducible. If I run multiple direct writing
-> > dd-s to the disk in question I trigger it rather reliably (~75% or
-> > higher). See the attached script from an earlier email.
-> > Maybe that helps triggering your case more reliabl, too?
-> 
-> Can you please try the following git tree?
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/tj/misc.git libata-irq-expect
+On Sat, 2010-07-10 at 15:36 +0200, Frederic Weisbecker wrote:
 
-Well, for now I got this:
+> So, if I understood well, this is to avoid enabling an event from perf_pmu_enable()
+> while the event was already stopped.
 
-[   36.833075] ata1.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-[   36.833085] ata1.00: failed command: SMART
-[   36.833099] ata1.00: cmd b0/d5:01:06:4f:c2/00:00:00:00:00/00 tag 0 pio 512 in
-[   36.833101]          res 40/00:00:00:4f:c2/00:00:00:00:00/00 Emask 0x4 (timeout)
-[   36.833107] ata1.00: status: { DRDY }
-[   36.833118] ata1: hard resetting link
-[   37.316053] ata1: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[   37.316840] ata1.00: configured for UDMA/133
-[   37.316888] ata1: EH complete
+Right.
 
-during initialization.  Apart from this it seems to work fine.
+> Looks good but why this ARCH name then? This should be a kind of PERF_HES_ONCPU
+> or so.
 
-But in fact I'll only be able to say it helps if it survives a week-or-so
-without suspend failure.
+Because I failed to come up with a sensible name, ONCPU doesn't really
+make sense either, its got nothing to do with CPUs.
 
-Rafael
+_REALLY_STOPPED maybe, but then, that's a bad name too ;-)
+
+
