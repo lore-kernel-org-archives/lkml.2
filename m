@@ -1,84 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab0GJImn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 04:42:43 -0400
-Received: from www17.your-server.de ([213.133.104.17]:37491 "EHLO
-	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751191Ab0GJIml (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 04:42:41 -0400
-Subject: Re: [Bug #15673] 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
-From: Thomas Meyer <thomas@m3y3r.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-In-Reply-To: <Hc02ROPrUsG.A.n-.nt7NMB@chimera>
-References: <xkNyyYrLiTN.A.s_G.7p7NMB@chimera>
-	 <Hc02ROPrUsG.A.n-.nt7NMB@chimera>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 10 Jul 2010 10:41:46 +0200
-Message-ID: <1278751306.2955.3.camel@localhost.localdomain>
+	id S1752630Ab0GJIvT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 04:51:19 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:44003 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751511Ab0GJIvR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 04:51:17 -0400
+X-Greylist: delayed 1968 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Jul 2010 04:51:17 EDT
+Date: Sat, 10 Jul 2010 10:15:40 +0200
+From: Michael Leun <lkml20100708@newton.leun.net>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: sysfs bug when using tun with network namespaces
+Message-ID: <20100710101540.2799c9ef@xenia.leun.net>
+In-Reply-To: <20100709235744.GA12752@kroah.com>
+References: <loom.20100708T183152-326@post.gmane.org>
+	<20100709235744.GA12752@kroah.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.6; i586-suse-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Samstag, den 10.07.2010, 02:33 +0200 schrieb Rafael J. Wysocki:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.33 and 2.6.34.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15673
-> Subject		: 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
-> Submitter	: Thomas Meyer <thomas@m3y3r.de>
-> Date		: 2010-03-28 11:31 (104 days old)
-> Message-ID	: <1269775909.5301.4.camel@localhost.localdomain>
-> References	: http://marc.info/?l=linux-kernel&m=126977593326800&w=2
+Hi,
 
-Still see the warning in 2.6.34.1:
+On Fri, 9 Jul 2010 16:57:44 -0700
+Greg KH <greg@kroah.com> wrote:
 
-[ 1466.091349] IMA: unmeasured files on fsmagic: 1021994
-[ 1466.091356] ima_dec_counts: open/free imbalance (r:0 w:-1 o:-1)
-[ 1466.091360] Pid: 2357, comm: async/10 Tainted: G        W  2.6.34.1 #3
-[ 1466.091362] Call Trace:
-[ 1466.091371]  [<c08865c7>] ? printk+0x1d/0x26
-[ 1466.091377]  [<c05f994f>] ima_file_free+0x16f/0x210
-[ 1466.091384]  [<c04d7742>] __fput+0xf2/0x1f0
-[ 1466.091388]  [<c04d785d>] fput+0x1d/0x30
-[ 1466.091394]  [<c06cad8f>] drm_gem_object_free_common+0x1f/0x40
-[ 1466.091398]  [<c06cae30>] ? drm_gem_object_free+0x0/0x40
-[ 1466.091402]  [<c06cae61>] drm_gem_object_free+0x31/0x40
-[ 1466.091407]  [<c061d59c>] kref_put+0x2c/0x60
-[ 1466.091412]  [<c06e7308>] i915_gem_cleanup_ringbuffer+0x48/0x70
-[ 1466.091416]  [<c06e8a6c>] i915_gem_idle+0x9c/0x120
-[ 1466.091420]  [<c06dbe1d>] i915_drm_freeze+0x3d/0xa0
-[ 1466.091423]  [<c06dbfde>] i915_pm_suspend+0x2e/0x80
-[ 1466.091427]  [<c0886d0a>] ? wait_for_common+0x1a/0xf0
-[ 1466.091432]  [<c0636629>] pci_pm_suspend+0x49/0x110
-[ 1466.091436]  [<c06365e0>] ? pci_pm_suspend+0x0/0x110
-[ 1466.091441]  [<c0718be1>] pm_op+0x181/0x1d0
-[ 1466.091445]  [<c0711d34>] ? device_for_each_child+0x54/0x60
-[ 1466.091449]  [<c071959f>] __device_suspend+0xbf/0x110
-[ 1466.091453]  [<c07199e3>] async_suspend+0x23/0x60
-[ 1466.091457]  [<c0450025>] async_thread+0xc5/0x210
-[ 1466.091461]  [<c0886931>] ? schedule+0x1e1/0x450
-[ 1466.091472]  [<c042bd60>] ? default_wake_function+0x0/0x20
-[ 1466.091476]  [<c044ff60>] ? async_thread+0x0/0x210
-[ 1466.091480]  [<c04493c4>] kthread+0x74/0x80
-[ 1466.091483]  [<c0449350>] ? kthread+0x0/0x80
-[ 1466.091488]  [<c040347e>] kernel_thread_helper+0x6/0x10
-[ 1466.096531] iint_free: writecount: -1
-[ 1466.096533] iint_free: opencount: -1
-[ 1466.096535] iint_free: writecount: -1
-[ 1466.096537] iint_free: opencount: -1
-[ 1466.103256] ehci_hcd 0000:00:1d.7: PCI INT A disabled
+> On Thu, Jul 08, 2010 at 04:40:09PM +0000, Michael Leun wrote:
+> > Hello,
+> > 
+> > > # tunctl -u ml -t tap1
+> > 
+> > works as expected, but
+> > 
+> > > # unshare -n /bin/bash
+> > > # tunctl -u ml -t tap1
+> > 
+> > Jul  8 18:03:59 doris kernel: ------------[ cut here ]------------
+> > Jul  8 18:03:59 doris kernel: kernel BUG at fs/sysfs/file.c:540!
+> > Jul  8 18:03:59 doris kernel: invalid opcode: 0000 [#1] PREEMPT SMP 
+> > Jul  8 18:03:59 doris kernel: last sysfs
+> > file: /sys/devices/virtual/misc/tun/dev Jul  8 18:03:59 doris
+> > kernel: Modules linked in: tun snd_pcm_oss snd_mixer_oss snd_seq
+> > snd_seq_device vboxnetadp vboxnetflt vboxdrv ipv6
+> > cpufreq_conservative cpufreq_ondemand cpufreq_userspace
+> > cpufreq_powersave acpi_cpufreq speedstep_lib freq_table ipt_REJECT
+> > ipt_LOG xt_limit xt_recent xt_state xt_tcpudp iptable_mangle
+> > iptable_nat iptable_filter nf_nat_ftp nf_nat nf_conntrack_ipv4
+> > nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack ip_tables x_tables
+> > fuse nls_utf8 loop snd_hda_codec_realtek arc4 snd_hda_intel ecb
+> > snd_hda_codec iwlagn snd_pcm iwlcore snd_timer mac80211 snd
+> > cfg80211 soundcore intel_agp video usb_storage agpgart i2c_i801
+> > rfkill snd_page_alloc output button battery ac joydev sg evdev tg3
+> > edd ext4 jbd2 crc16 sha256_generic aes_i586 aes_generic cbc
+> > dm_crypt linear rtc_cmos uhci_hcd rtc_core rtc_lib sd_mod
+> > crc_t10dif ehci_hcd usbcore dm_snapshot dm_mod fan processor
+> > thermal [last unloaded: tun] Jul  8 18:03:59 doris kernel: Jul  8
+> > 18:03:59 doris kernel: Pid: 4320, comm: tunctl Not tainted 2.6.34.1
+> > #3 Kuril                           /40684JG         
+> 
+> Network namespaces didn't go in until 2.6.35-rc, how is this working
+> on ..34.1?
 
+Huh? Network namespaces were there for quite some time - just for fun I
+grabbed a random older kernel (got 2.6.27.48) to check. CONFIG NET_NS
+was also in there (but was defined in net/Kconfig and had a depency
+on !SYSFS).
+
+In 2.6.34 it is defined in init/Kconfig (and has no depency on SYSFS at
+all).
+
+I think I started actually using that somewhere between .30 and .32.
+
+> Can you verify this works properly in .35-rc4?
+
+Indeed, it works there.
+
+There are several differencies between 2.6.34.1 and 2.6.35-rc4 in
+fs/sysfs/* stuff as well as in e.g. net/core/net_namespaces.c.
+
+I'll bisect that (but not on this atom netbook I used so far ;-) ).
+
+-- 
+MfG,
+
+Michael Leun
 
