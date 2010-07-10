@@ -1,55 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751955Ab0GJIiN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 04:38:13 -0400
-Received: from host-85.174.212.static.datatelekom.net.tr ([212.174.85.254]:4891
-	"EHLO mail.anadoluafm.com" rhost-flags-OK-FAIL-OK-OK)
-	by vger.kernel.org with ESMTP id S1751191Ab0GJIiL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 04:38:11 -0400
-X-Greylist: delayed 1927 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Jul 2010 04:38:10 EDT
-Reply-To: yedek-parca-burada@hotmail.com
-Message-ID: <e9cc91724b68b5ccd1fd1cb2092553c1@hotmail.com>
-From: "yedek-parca-burada@hotmail.com" <yedek-parca-burada@hotmail.com>
-To: <linux-kernel@vger.kernel.org>
-Subject: =?iso-8859-9?B?T1RPIFlFREVLIFBBUsdBREEgx9Za3E0gT1JUQdBJTklaIFd3dy5P?=
-	=?iso-8859-9?B?dG95ZWRla3BhcmNhYnVyYWRhLkNvbQ==?=
-Date: Sat, 10 Jul 2010 11:37:58 +0300
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="iso-8859-9"
-Content-Transfer-Encoding: 8BIT
+	id S1752731Ab0GJIjd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 04:39:33 -0400
+Received: from mail.pripojeni.net ([217.66.174.14]:48444 "EHLO
+	mail.pripojeni.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751373Ab0GJIja (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 04:39:30 -0400
+From: Jiri Slaby <jslaby@suse.cz>
+To: christ.li@gmail.com
+Cc: jirislaby@gmail.com, Larry Finger <Larry.Finger@lwfinger.net>,
+       linux-kernel@vger.kernel.org, linux-sparse@vger.kernel.org,
+       Jiri Slaby <jslaby@suse.cz>
+Subject: [PATCH 2/2] parser: define __builtin_unreachable
+Date: Sat, 10 Jul 2010 10:39:22 +0200
+Message-Id: <1278751162-10053-2-git-send-email-jslaby@suse.cz>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <AANLkTikFmeXz9og4t98jm6QcAdRa6rIeCAv3oeFnTgd8@mail.gmail.com>
+References: <AANLkTikFmeXz9og4t98jm6QcAdRa6rIeCAv3oeFnTgd8@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OTO YEDEK PARÇADA YOK YOK !
+Gcc 4.5 defines
+extern void __builtin_unreachable(void);
+so, add it also to sparse.
 
-Otoyedekparcaburada.Com 
-Otonuza Sýfýr Yedek Parça Online Satýþ Merkezi 
+Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+---
+ lib.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-BONUS , AXESS , MAXIMUM , CARD FINANS , WORLD  KART KULLANICILARI  PEÞÝN FÝYATINA 8 TAKSÝT 0 FAÝZ.
-TÜRKÝYEDE BÝR ÝLK KAPIDA ÖDEME SÝSTEMÝ !
-
-7 GÜN ÜRÜN ÝADE GARANTÝSÝ
-
-Saat 12:00'ye kadar verilen sipariþler AYNI GÜN KARGO
-Otoyedekparcaburada.Com 
-ALFAROMEO,AUDÝ,BMC,CHERY,CHEVROLET,CÝTROEN,CHRYSLER,DACÝA,DAEWOO,DAÝHATSU,DODGE,FÝAT-TOFAÞ,FORD,HONDA,HYUNDAÝ,ISUZU,ÝVECI,JAGUAR,JEEP,KIA,LADA,LAND ROVER,MAZDA,MERCEDES,MÝNÝ,MÝTSUBÝSHÝ,NÝSSAN,OPEL,PEUGEOT,PROTON,RENAULT,ROVER,SEAB,SEAT,SKODA,SUBARU,SUZUKÝ,TATA,TOYOTA,VOLSKWAGEN,VOLVO
-Yukarýda Belirttiðimiz Marka ve Model Otolarýnýzýn SIFIR YEDEK PARÇA'sý Elimizde Bulunmaktadýr.
-
-6 AY BOYUNCA 10.000 TL VE ÜZERÝ ALIÞVERÝÞLERÝNÝZDE SAMSUNG LEPTOP HEDÝYEMÝZ. 
-
-500 TL VE ÜZERÝ ALIÞVERÝÞLERÝNÝZDE TRAFÝK SETÝ HEDÝYEMÝZ.
-
-MÜÞRERÝ HÝZMETLERÝ  ;
-ANADOLU AFM OTOMOTÝV LTD ÞTI
-TELEFON 1 : 0 324 235 68 79
-TELEFON 1 : 0 324 234 84 34
-FAX               : 0 324 234 84 34
-ADRES          : SÝTELER MAH . AKDENÝZ CAD.  NO:175 MERSÝN
-Otoyedekparcaburada.Com 
-
-
+diff --git a/lib.c b/lib.c
+index a218bfc..ae6a20c 100644
+--- a/lib.c
++++ b/lib.c
+@@ -740,6 +740,7 @@ void declare_builtin_functions(void)
+ 	add_pre_buffer ("extern char * __builtin___strncpy_chk(char *, const char *, __SIZE_TYPE__, __SIZE_TYPE__);\n");
+ 	add_pre_buffer ("extern int __builtin___vsprintf_chk(char *, int, __SIZE_TYPE__, const char *, __builtin_va_list);\n");
+ 	add_pre_buffer ("extern int __builtin___vsnprintf_chk(char *, __SIZE_TYPE__, int, __SIZE_TYPE__, const char *, __builtin_va_list ap);\n");
++	add_pre_buffer ("extern void __builtin_unreachable(void);\n");
+ }
+ 
+ void create_builtin_stream(void)
+-- 
+1.7.1
 
 
