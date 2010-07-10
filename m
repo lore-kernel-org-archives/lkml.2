@@ -1,24 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab0GJCZj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 22:25:39 -0400
-Received: from bear.ext.ti.com ([192.94.94.41]:55218 "EHLO bear.ext.ti.com"
+	id S1754205Ab0GJCZm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 22:25:42 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45291 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751975Ab0GJCZU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 22:25:20 -0400
+	id S1752404Ab0GJCZW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 22:25:22 -0400
 From: Rene Sapiens <rene.sapiens@ti.com>
 To: greg@kroah.com
 Cc: gregkh@suse.de, omar.ramirez@ti.com, ohad@wizery.com,
        ameya.palande@nokia.com, linux-kernel@vger.kernel.org,
        linux-omap@vger.kernel.org, Rene Sapiens <rene.sapiens@ti.com>
-Subject: [PATCH 03/15] staging:ti dspbridge: Rename words with camel case.
-Date: Fri,  9 Jul 2010 21:23:57 -0500
-Message-Id: <1278728649-21012-4-git-send-email-rene.sapiens@ti.com>
+Subject: [PATCH 13/15] staging:ti dspbridge: Rename words with camel case.
+Date: Fri,  9 Jul 2010 21:24:07 -0500
+Message-Id: <1278728649-21012-14-git-send-email-rene.sapiens@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1278728649-21012-3-git-send-email-rene.sapiens@ti.com>
+In-Reply-To: <1278728649-21012-13-git-send-email-rene.sapiens@ti.com>
 References: <1278728649-21012-1-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-2-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-3-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-4-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-5-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-6-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-7-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-8-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-9-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-10-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-11-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-12-git-send-email-rene.sapiens@ti.com>
+ <1278728649-21012-13-git-send-email-rene.sapiens@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -27,1764 +37,1265 @@ The intention of this patch is to rename the remaining variables with camel
 case. Variables will be renamed avoiding camel case and Hungarian notation.
 The words to be renamed in this patch are:
 ========================================
-hStrm to stream_obj
-iMode to io_mode
-irqMask to irq_mask
-lOffset to offset
-memPtr to mem_ptr
-moduleId to module_id
-msgCallback to msg_callback
-msgList to msg_list
-nArgc to num_argc
-nEntryStart to entry_start
-nMemSpace to mem_space
-nStatus to node_status
-nStrms to strms
-numLibs to num_libs
-numLockedEntries to num_locked_entries
-pageSize to page_sz
+ulBrdState to brd_state
+ulChnl to chnl
+ulDspAddr to dsp_add
+ulDspDestAddr to dsp_dest_addr
+ulDspLoadAddr to dsp_load_addr
+ulDspRunAddr to dsp_run_addr
+ulDspSrcAddr to dsp_src_addr
+ulMapAttrs to map_attr
+ulMemType to mem_type
+ulRMSFxn to rms_fxn
+ulStatus to ret
+ulVirtAddr to virt_addr
+uNumDesc to num_desc
+uNumToDSP to num_to_dsp
+uPaSize to pa_size
+uPhase to phase
+uSegId to segm_id
+uStream1 to stream1
+uStream2 to stream2
+uZId to zid
 ========================================
 
 Signed-off-by: Rene Sapiens <rene.sapiens@ti.com>
 ---
- drivers/staging/tidspbridge/core/io_sm.c           |   26 ++--
- drivers/staging/tidspbridge/core/msg_sm.c          |   24 ++--
- drivers/staging/tidspbridge/hw/hw_mmu.c            |   42 +++---
- drivers/staging/tidspbridge/hw/hw_mmu.h            |   16 +-
- .../staging/tidspbridge/include/dspbridge/cod.h    |    8 +-
- .../staging/tidspbridge/include/dspbridge/dbdcd.h  |    4 +-
- .../staging/tidspbridge/include/dspbridge/dev.h    |    2 +-
- .../tidspbridge/include/dspbridge/dspdefs.h        |    8 +-
- .../staging/tidspbridge/include/dspbridge/dspmsg.h |    2 +-
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |    4 +-
- .../staging/tidspbridge/include/dspbridge/msg.h    |    6 +-
- .../tidspbridge/include/dspbridge/msgdefs.h        |    2 +-
- .../tidspbridge/include/dspbridge/nldrdefs.h       |    8 +-
- .../staging/tidspbridge/include/dspbridge/node.h   |    4 +-
- .../include/dspbridge/resourcecleanup.h            |    4 +-
- .../staging/tidspbridge/include/dspbridge/strm.h   |   72 +++++-----
- drivers/staging/tidspbridge/pmgr/cod.c             |   16 +-
- drivers/staging/tidspbridge/pmgr/dbll.c            |   14 +-
- drivers/staging/tidspbridge/pmgr/dev.c             |    4 +-
- drivers/staging/tidspbridge/pmgr/msg.c             |    6 +-
- drivers/staging/tidspbridge/rmgr/dbdcd.c           |    4 +-
- drivers/staging/tidspbridge/rmgr/drv.c             |    4 +-
- drivers/staging/tidspbridge/rmgr/node.c            |   18 +-
- drivers/staging/tidspbridge/rmgr/strm.c            |  156 ++++++++++---------
- 24 files changed, 231 insertions(+), 223 deletions(-)
+ drivers/staging/tidspbridge/core/io_sm.c           |    4 +-
+ drivers/staging/tidspbridge/core/msg_sm.c          |    8 +-
+ drivers/staging/tidspbridge/core/tiomap3430.c      |   74 +++++++++---------
+ drivers/staging/tidspbridge/core/tiomap_io.c       |    6 +-
+ drivers/staging/tidspbridge/core/tiomap_io.h       |    6 +-
+ .../staging/tidspbridge/include/dspbridge/cmm.h    |   12 ++--
+ .../staging/tidspbridge/include/dspbridge/cod.h    |    2 +-
+ .../staging/tidspbridge/include/dspbridge/dev.h    |    8 +-
+ .../tidspbridge/include/dspbridge/dspdefs.h        |   48 ++++++------
+ .../staging/tidspbridge/include/dspbridge/io_sm.h  |   14 ++--
+ .../tidspbridge/include/dspbridge/nldrdefs.h       |   12 ++--
+ .../staging/tidspbridge/include/dspbridge/node.h   |   14 ++--
+ drivers/staging/tidspbridge/pmgr/cmm.c             |   10 +-
+ drivers/staging/tidspbridge/pmgr/dev.c             |    8 +-
+ drivers/staging/tidspbridge/rmgr/disp.c            |   16 ++--
+ drivers/staging/tidspbridge/rmgr/node.c            |   80 ++++++++++----------
+ 16 files changed, 161 insertions(+), 161 deletions(-)
 
 diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
-index 346f0aa..81b81e1 100644
+index a8ff5f9..0292881 100644
 --- a/drivers/staging/tidspbridge/core/io_sm.c
 +++ b/drivers/staging/tidspbridge/core/io_sm.c
-@@ -133,16 +133,16 @@ struct io_mgr {
- 
- /* Function Prototypes */
- static void io_dispatch_chnl(IN struct io_mgr *pio_mgr,
--				IN OUT struct chnl_object *pchnl, u8 iMode);
-+				IN OUT struct chnl_object *pchnl, u8 io_mode);
- static void io_dispatch_msg(IN struct io_mgr *pio_mgr,
- 			    struct msg_mgr *hmsg_mgr);
- static void io_dispatch_pm(struct io_mgr *pio_mgr);
- static void notify_chnl_complete(struct chnl_object *pchnl,
- 				 struct chnl_irp *chnl_packet_obj);
- static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
--			u8 iMode);
-+			u8 io_mode);
- static void output_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
--			u8 iMode);
-+			u8 io_mode);
- static void input_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr);
- static void output_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr);
- static u32 find_ready_output(struct chnl_mgr *chnl_mgr_obj,
-@@ -839,18 +839,18 @@ func_end:
-  *      Proc-copy chanl dispatch.
+@@ -816,7 +816,7 @@ u32 io_buf_size(struct io_mgr *hio_mgr)
+  *  ======== io_cancel_chnl ========
+  *      Cancel IO on a given PCPY channel.
   */
- static void io_dispatch_chnl(IN struct io_mgr *pio_mgr,
--				IN OUT struct chnl_object *pchnl, u8 iMode)
-+				IN OUT struct chnl_object *pchnl, u8 io_mode)
+-void io_cancel_chnl(struct io_mgr *hio_mgr, u32 ulChnl)
++void io_cancel_chnl(struct io_mgr *hio_mgr, u32 chnl)
  {
- 	if (!pio_mgr)
- 		goto func_end;
+ 	struct io_mgr *pio_mgr = (struct io_mgr *)hio_mgr;
+ 	struct shm *sm;
+@@ -827,7 +827,7 @@ void io_cancel_chnl(struct io_mgr *hio_mgr, u32 ulChnl)
  
- 	/* See if there is any data available for transfer */
--	if (iMode != IO_SERVICE)
-+	if (io_mode != IO_SERVICE)
- 		goto func_end;
+ 	/* Inform DSP that we have no more buffers on this channel */
+ 	IO_AND_VALUE(pio_mgr->hbridge_context, struct shm, sm, host_free_mask,
+-		     (~(1 << ulChnl)));
++		     (~(1 << chnl)));
  
- 	/* Any channel will do for this mode */
--	input_chnl(pio_mgr, pchnl, iMode);
--	output_chnl(pio_mgr, pchnl, iMode);
-+	input_chnl(pio_mgr, pchnl, io_mode);
-+	output_chnl(pio_mgr, pchnl, io_mode);
+ 	sm_interrupt_dsp(pio_mgr->hbridge_context, MBX_PCPY_CLASS);
  func_end:
- 	return;
- }
-@@ -1014,7 +1014,7 @@ void io_mbox_msg(u32 msg)
-  *      interrupts the DSP.
-  */
- void io_request_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
--			u8 iMode, OUT u16 *pwMbVal)
-+			u8 io_mode, OUT u16 *pwMbVal)
- {
- 	struct chnl_mgr *chnl_mgr_obj;
- 	struct shm *sm;
-@@ -1023,7 +1023,7 @@ void io_request_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 		goto func_end;
- 	chnl_mgr_obj = pio_mgr->hchnl_mgr;
- 	sm = pio_mgr->shared_mem;
--	if (iMode == IO_INPUT) {
-+	if (io_mode == IO_INPUT) {
- 		/*
- 		 * Assertion fires if CHNL_AddIOReq() called on a stream
- 		 * which was cancelled, or attached to a dead board.
-@@ -1034,7 +1034,7 @@ void io_request_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 		IO_OR_VALUE(pio_mgr->hbridge_context, struct shm, sm,
- 			    host_free_mask, (1 << pchnl->chnl_id));
- 		*pwMbVal = MBX_PCPY_CLASS;
--	} else if (iMode == IO_OUTPUT) {
-+	} else if (io_mode == IO_OUTPUT) {
- 		/*
- 		 * This assertion fails if CHNL_AddIOReq() was called on a
- 		 * stream which was cancelled, or attached to a dead board.
-@@ -1047,7 +1047,7 @@ void io_request_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 		 */
- 		chnl_mgr_obj->dw_output_mask |= (1 << pchnl->chnl_id);
- 	} else {
--		DBC_ASSERT(iMode);	/* Shouldn't get here. */
-+		DBC_ASSERT(io_mode);	/* Shouldn't get here. */
- 	}
- func_end:
- 	return;
-@@ -1116,7 +1116,7 @@ func_end:
-  *      Dispatch a buffer on an input channel.
-  */
- static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
--			u8 iMode)
-+			u8 io_mode)
- {
- 	struct chnl_mgr *chnl_mgr_obj;
- 	struct shm *sm;
-@@ -1403,7 +1403,7 @@ func_end:
-  *      Dispatch a buffer on an output channel.
-  */
- static void output_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
--			u8 iMode)
-+			u8 io_mode)
- {
- 	struct chnl_mgr *chnl_mgr_obj;
- 	struct shm *sm;
 diff --git a/drivers/staging/tidspbridge/core/msg_sm.c b/drivers/staging/tidspbridge/core/msg_sm.c
-index 7c6d6cc..0a68df9 100644
+index 22e1898..888d32d 100644
 --- a/drivers/staging/tidspbridge/core/msg_sm.c
 +++ b/drivers/staging/tidspbridge/core/msg_sm.c
-@@ -38,10 +38,10 @@
- #include <dspbridge/dspmsg.h>
- 
+@@ -40,7 +40,7 @@
  /*  ----------------------------------- Function Prototypes */
--static int add_new_msg(struct lst_list *msgList);
-+static int add_new_msg(struct lst_list *msg_list);
+ static int add_new_msg(struct lst_list *msg_list);
  static void delete_msg_mgr(struct msg_mgr *hmsg_mgr);
- static void delete_msg_queue(struct msg_queue *msg_queue_obj, u32 uNumToDSP);
--static void free_msg_list(struct lst_list *msgList);
-+static void free_msg_list(struct lst_list *msg_list);
+-static void delete_msg_queue(struct msg_queue *msg_queue_obj, u32 uNumToDSP);
++static void delete_msg_queue(struct msg_queue *msg_queue_obj, u32 num_to_dsp);
+ static void free_msg_list(struct lst_list *msg_list);
  
  /*
-  *  ======== bridge_msg_create ========
-@@ -50,13 +50,13 @@ static void free_msg_list(struct lst_list *msgList);
+@@ -602,7 +602,7 @@ func_end:
+ /*
+  *  ======== delete_msg_queue ========
   */
- int bridge_msg_create(OUT struct msg_mgr **phMsgMgr,
- 			     struct dev_object *hdev_obj,
--			     msg_onexit msgCallback)
-+			     msg_onexit msg_callback)
+-static void delete_msg_queue(struct msg_queue *msg_queue_obj, u32 uNumToDSP)
++static void delete_msg_queue(struct msg_queue *msg_queue_obj, u32 num_to_dsp)
  {
- 	struct msg_mgr *msg_mgr_obj;
- 	struct io_mgr *hio_mgr;
- 	int status = 0;
- 
--	if (!phMsgMgr || !msgCallback || !hdev_obj) {
-+	if (!phMsgMgr || !msg_callback || !hdev_obj) {
- 		status = -EFAULT;
- 		goto func_end;
- 	}
-@@ -70,7 +70,7 @@ int bridge_msg_create(OUT struct msg_mgr **phMsgMgr,
- 	msg_mgr_obj = kzalloc(sizeof(struct msg_mgr), GFP_KERNEL);
- 
- 	if (msg_mgr_obj) {
--		msg_mgr_obj->on_exit = msgCallback;
-+		msg_mgr_obj->on_exit = msg_callback;
- 		msg_mgr_obj->hio_mgr = hio_mgr;
- 		/* List of MSG_QUEUEs */
- 		msg_mgr_obj->queue_list = kzalloc(sizeof(struct lst_list),
-@@ -551,7 +551,7 @@ void bridge_msg_set_queue_id(struct msg_queue *msg_queue_obj, u32 msgq_id)
-  *  ======== add_new_msg ========
-  *      Must be called in message manager critical section.
-  */
--static int add_new_msg(struct lst_list *msgList)
-+static int add_new_msg(struct lst_list *msg_list)
- {
+ 	struct msg_mgr *hmsg_mgr;
  	struct msg_frame *pmsg;
+@@ -614,8 +614,8 @@ static void delete_msg_queue(struct msg_queue *msg_queue_obj, u32 uNumToDSP)
+ 
+ 	hmsg_mgr = msg_queue_obj->hmsg_mgr;
+ 
+-	/* Pull off uNumToDSP message frames from Msg manager and free */
+-	for (i = 0; i < uNumToDSP; i++) {
++	/* Pull off num_to_dsp message frames from Msg manager and free */
++	for (i = 0; i < num_to_dsp; i++) {
+ 
+ 		if (!LST_IS_EMPTY(hmsg_mgr->msg_free_list)) {
+ 			pmsg = (struct msg_frame *)
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index 0fdec37..8e3d92a 100755
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -78,7 +78,7 @@ static int bridge_brd_monitor(struct bridge_dev_context *dev_context);
+ static int bridge_brd_read(struct bridge_dev_context *dev_context,
+ 				  OUT u8 *host_buff,
+ 				  u32 dsp_addr, u32 ul_num_bytes,
+-				  u32 ulMemType);
++				  u32 mem_type);
+ static int bridge_brd_start(struct bridge_dev_context *dev_context,
+ 				   u32 dsp_addr);
+ static int bridge_brd_status(struct bridge_dev_context *dev_context,
+@@ -87,21 +87,21 @@ static int bridge_brd_stop(struct bridge_dev_context *dev_context);
+ static int bridge_brd_write(struct bridge_dev_context *dev_context,
+ 				   IN u8 *host_buff,
+ 				   u32 dsp_addr, u32 ul_num_bytes,
+-				   u32 ulMemType);
++				   u32 mem_type);
+ static int bridge_brd_set_state(struct bridge_dev_context *dev_ctxt,
+-				    u32 ulBrdState);
++				    u32 brd_state);
+ static int bridge_brd_mem_copy(struct bridge_dev_context *dev_ctxt,
+-				   u32 ulDspDestAddr, u32 ulDspSrcAddr,
+-				   u32 ul_num_bytes, u32 ulMemType);
++				   u32 dsp_dest_addr, u32 dsp_src_addr,
++				   u32 ul_num_bytes, u32 mem_type);
+ static int bridge_brd_mem_write(struct bridge_dev_context *dev_context,
+ 				    IN u8 *host_buff, u32 dsp_addr,
+-				    u32 ul_num_bytes, u32 ulMemType);
++				    u32 ul_num_bytes, u32 mem_type);
+ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+-				  u32 ul_mpu_addr, u32 ulVirtAddr,
++				  u32 ul_mpu_addr, u32 virt_addr,
+ 				  u32 ul_num_bytes, u32 ul_map_attr,
+ 				  struct page **mapped_pages);
+ static int bridge_brd_mem_un_map(struct bridge_dev_context *dev_ctxt,
+-				     u32 ulVirtAddr, u32 ul_num_bytes);
++				     u32 virt_addr, u32 ul_num_bytes);
+ static int bridge_dev_create(OUT struct bridge_dev_context
+ 					**dev_cntxt,
+ 					struct dev_object *hdev_obj,
+@@ -116,7 +116,7 @@ static int pte_update(struct bridge_dev_context *dev_ctxt, u32 pa,
+ static int pte_set(struct pg_table_attrs *pt, u32 pa, u32 va,
+ 			  u32 size, struct hw_mmu_map_attrs_t *attrs);
+ static int mem_map_vmalloc(struct bridge_dev_context *dev_ctxt,
+-				  u32 ul_mpu_addr, u32 ulVirtAddr,
++				  u32 ul_mpu_addr, u32 virt_addr,
+ 				  u32 ul_num_bytes,
+ 				  struct hw_mmu_map_attrs_t *hw_attrs);
+ 
+@@ -305,7 +305,7 @@ static int bridge_brd_monitor(struct bridge_dev_context *dev_ctxt)
+  */
+ static int bridge_brd_read(struct bridge_dev_context *dev_ctxt,
+ 				  OUT u8 *host_buff, u32 dsp_addr,
+-				  u32 ul_num_bytes, u32 ulMemType)
++				  u32 ul_num_bytes, u32 mem_type)
+ {
  	int status = 0;
-@@ -559,7 +559,7 @@ static int add_new_msg(struct lst_list *msgList)
- 	pmsg = kzalloc(sizeof(struct msg_frame), GFP_ATOMIC);
- 	if (pmsg != NULL) {
- 		lst_init_elem((struct list_head *)pmsg);
--		lst_put_tail(msgList, (struct list_head *)pmsg);
-+		lst_put_tail(msg_list, (struct list_head *)pmsg);
+ 	struct bridge_dev_context *dev_context = dev_ctxt;
+@@ -322,7 +322,7 @@ static int bridge_brd_read(struct bridge_dev_context *dev_ctxt,
+ 		offset = dsp_addr - dev_context->dw_dsp_start_add;
  	} else {
- 		status = -ENOMEM;
+ 		status = read_ext_dsp_data(dev_context, host_buff, dsp_addr,
+-					   ul_num_bytes, ulMemType);
++					   ul_num_bytes, mem_type);
+ 		return status;
  	}
-@@ -655,19 +655,19 @@ func_end:
+ 	/* copy the data from  DSP memory, */
+@@ -336,12 +336,12 @@ static int bridge_brd_read(struct bridge_dev_context *dev_ctxt,
+  *      This routine updates the Board status.
+  */
+ static int bridge_brd_set_state(struct bridge_dev_context *dev_ctxt,
+-				    u32 ulBrdState)
++				    u32 brd_state)
+ {
+ 	int status = 0;
+ 	struct bridge_dev_context *dev_context = dev_ctxt;
+ 
+-	dev_context->dw_brd_state = ulBrdState;
++	dev_context->dw_brd_state = brd_state;
+ 	return status;
+ }
+ 
+@@ -766,7 +766,7 @@ static int bridge_brd_status(struct bridge_dev_context *dev_ctxt,
+  */
+ static int bridge_brd_write(struct bridge_dev_context *dev_ctxt,
+ 				   IN u8 *host_buff, u32 dsp_addr,
+-				   u32 ul_num_bytes, u32 ulMemType)
++				   u32 ul_num_bytes, u32 mem_type)
+ {
+ 	int status = 0;
+ 	struct bridge_dev_context *dev_context = dev_ctxt;
+@@ -778,10 +778,10 @@ static int bridge_brd_write(struct bridge_dev_context *dev_ctxt,
+ 	if ((dsp_addr - dev_context->dw_dsp_start_add) <
+ 	    dev_context->dw_internal_size) {
+ 		status = write_dsp_data(dev_ctxt, host_buff, dsp_addr,
+-					ul_num_bytes, ulMemType);
++					ul_num_bytes, mem_type);
+ 	} else {
+ 		status = write_ext_dsp_data(dev_context, host_buff, dsp_addr,
+-					    ul_num_bytes, ulMemType, false);
++					    ul_num_bytes, mem_type, false);
+ 	}
+ 
+ 	return status;
+@@ -1107,12 +1107,12 @@ static int bridge_dev_destroy(struct bridge_dev_context *dev_ctxt)
+ }
+ 
+ static int bridge_brd_mem_copy(struct bridge_dev_context *dev_ctxt,
+-				   u32 ulDspDestAddr, u32 ulDspSrcAddr,
+-				   u32 ul_num_bytes, u32 ulMemType)
++				   u32 dsp_dest_addr, u32 dsp_src_addr,
++				   u32 ul_num_bytes, u32 mem_type)
+ {
+ 	int status = 0;
+-	u32 src_addr = ulDspSrcAddr;
+-	u32 dest_addr = ulDspDestAddr;
++	u32 src_addr = dsp_src_addr;
++	u32 dest_addr = dsp_dest_addr;
+ 	u32 copy_bytes = 0;
+ 	u32 total_bytes = ul_num_bytes;
+ 	u8 host_buf[BUFFERSIZE];
+@@ -1122,20 +1122,20 @@ static int bridge_brd_mem_copy(struct bridge_dev_context *dev_ctxt,
+ 		    total_bytes > BUFFERSIZE ? BUFFERSIZE : total_bytes;
+ 		/* Read from External memory */
+ 		status = read_ext_dsp_data(dev_ctxt, host_buf, src_addr,
+-					   copy_bytes, ulMemType);
++					   copy_bytes, mem_type);
+ 		if (DSP_SUCCEEDED(status)) {
+ 			if (dest_addr < (dev_context->dw_dsp_start_add +
+ 					 dev_context->dw_internal_size)) {
+ 				/* Write to Internal memory */
+ 				status = write_dsp_data(dev_ctxt, host_buf,
+ 							dest_addr, copy_bytes,
+-							ulMemType);
++							mem_type);
+ 			} else {
+ 				/* Write to External memory */
+ 				status =
+ 				    write_ext_dsp_data(dev_ctxt, host_buf,
+ 						       dest_addr, copy_bytes,
+-						       ulMemType, false);
++						       mem_type, false);
+ 			}
+ 		}
+ 		total_bytes -= copy_bytes;
+@@ -1148,7 +1148,7 @@ static int bridge_brd_mem_copy(struct bridge_dev_context *dev_ctxt,
+ /* Mem Write does not halt the DSP to write unlike bridge_brd_write */
+ static int bridge_brd_mem_write(struct bridge_dev_context *dev_ctxt,
+ 				    IN u8 *host_buff, u32 dsp_addr,
+-				    u32 ul_num_bytes, u32 ulMemType)
++				    u32 ul_num_bytes, u32 mem_type)
+ {
+ 	int status = 0;
+ 	struct bridge_dev_context *dev_context = dev_ctxt;
+@@ -1162,11 +1162,11 @@ static int bridge_brd_mem_write(struct bridge_dev_context *dev_ctxt,
+ 				 dev_context->dw_internal_size)) {
+ 			status =
+ 			    write_dsp_data(dev_ctxt, host_buff, dsp_addr,
+-					   ul_bytes, ulMemType);
++					   ul_bytes, mem_type);
+ 		} else {
+ 			status = write_ext_dsp_data(dev_ctxt, host_buff,
+ 						    dsp_addr, ul_bytes,
+-						    ulMemType, true);
++						    mem_type, true);
+ 		}
+ 		ul_remain_bytes -= ul_bytes;
+ 		dsp_addr += ul_bytes;
+@@ -1185,7 +1185,7 @@ static int bridge_brd_mem_write(struct bridge_dev_context *dev_ctxt,
+  *  TODO: Disable MMU while updating the page tables (but that'll stall DSP)
+  */
+ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+-				  u32 ul_mpu_addr, u32 ulVirtAddr,
++				  u32 ul_mpu_addr, u32 virt_addr,
+ 				  u32 ul_num_bytes, u32 ul_map_attr,
+ 				  struct page **mapped_pages)
+ {
+@@ -1199,14 +1199,14 @@ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+ 	u32 num_usr_pgs = 0;
+ 	struct page *mapped_page, *pg;
+ 	s32 pg_num;
+-	u32 va = ulVirtAddr;
++	u32 va = virt_addr;
+ 	struct task_struct *curr_task = current;
+ 	u32 pg_i = 0;
+ 	u32 mpu_addr, pa;
+ 
+ 	dev_dbg(bridge,
+ 		"%s hDevCtxt %p, pa %x, va %x, size %x, ul_map_attr %x\n",
+-		__func__, dev_ctxt, ul_mpu_addr, ulVirtAddr, ul_num_bytes,
++		__func__, dev_ctxt, ul_mpu_addr, virt_addr, ul_num_bytes,
+ 		ul_map_attr);
+ 	if (ul_num_bytes == 0)
+ 		return -EINVAL;
+@@ -1253,7 +1253,7 @@ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+ 		hw_attrs.donotlockmpupage = 0;
+ 
+ 	if (attrs & DSP_MAPVMALLOCADDR) {
+-		return mem_map_vmalloc(dev_ctxt, ul_mpu_addr, ulVirtAddr,
++		return mem_map_vmalloc(dev_ctxt, ul_mpu_addr, virt_addr,
+ 				       ul_num_bytes, &hw_attrs);
+ 	}
+ 	/*
+@@ -1262,7 +1262,7 @@ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+ 	 * Pass the translated pa to pte_update.
+ 	 */
+ 	if ((attrs & DSP_MAPPHYSICALADDR)) {
+-		status = pte_update(dev_context, ul_mpu_addr, ulVirtAddr,
++		status = pte_update(dev_context, ul_mpu_addr, virt_addr,
+ 				    ul_num_bytes, &hw_attrs);
+ 		goto func_cont;
+ 	}
+@@ -1383,7 +1383,7 @@ func_cont:
+ 		 * mapping
+ 		 */
+ 		if (pg_i) {
+-			bridge_brd_mem_un_map(dev_context, ulVirtAddr,
++			bridge_brd_mem_un_map(dev_context, virt_addr,
+ 					   (pg_i * PG_SIZE4K));
+ 		}
+ 		status = -EPERM;
+@@ -1408,7 +1408,7 @@ func_cont:
+  *      we clear consecutive PTEs until we unmap all the bytes
+  */
+ static int bridge_brd_mem_un_map(struct bridge_dev_context *dev_ctxt,
+-				     u32 ulVirtAddr, u32 ul_num_bytes)
++				     u32 virt_addr, u32 ul_num_bytes)
+ {
+ 	u32 l1_base_va;
+ 	u32 l2_base_va;
+@@ -1430,13 +1430,13 @@ static int bridge_brd_mem_un_map(struct bridge_dev_context *dev_ctxt,
+ 	u32 paddr;
+ 	u32 numof4k_pages = 0;
+ 
+-	va_curr = ulVirtAddr;
++	va_curr = virt_addr;
+ 	rem_bytes = ul_num_bytes;
+ 	rem_bytes_l2 = 0;
+ 	l1_base_va = pt->l1_base_va;
+ 	pte_addr_l1 = hw_mmu_pte_addr_l1(l1_base_va, va_curr);
+ 	dev_dbg(bridge, "%s dev_ctxt %p, va %x, NumBytes %x l1_base_va %x, "
+-		"pte_addr_l1 %x\n", __func__, dev_ctxt, ulVirtAddr,
++		"pte_addr_l1 %x\n", __func__, dev_ctxt, virt_addr,
+ 		ul_num_bytes, l1_base_va, pte_addr_l1);
+ 
+ 	while (rem_bytes && (DSP_SUCCEEDED(status))) {
+@@ -1771,7 +1771,7 @@ static int pte_set(struct pg_table_attrs *pt, u32 pa, u32 va,
+ 
+ /* Memory map kernel VA -- memory allocated with vmalloc */
+ static int mem_map_vmalloc(struct bridge_dev_context *dev_context,
+-				  u32 ul_mpu_addr, u32 ulVirtAddr,
++				  u32 ul_mpu_addr, u32 virt_addr,
+ 				  u32 ul_num_bytes,
+ 				  struct hw_mmu_map_attrs_t *hw_attrs)
+ {
+@@ -1830,7 +1830,7 @@ static int mem_map_vmalloc(struct bridge_dev_context *dev_context,
+ 			get_page(PHYS_TO_PAGE(pa));
+ 			pa += HW_PAGE_SIZE4KB;
+ 		}
+-		status = pte_update(dev_context, pa_curr, ulVirtAddr +
++		status = pte_update(dev_context, pa_curr, virt_addr +
+ 				    (va_curr - ul_mpu_addr), size_curr,
+ 				    hw_attrs);
+ 		va_curr += size_curr;
+diff --git a/drivers/staging/tidspbridge/core/tiomap_io.c b/drivers/staging/tidspbridge/core/tiomap_io.c
+index 0ac4f8c..a3fcb02 100644
+--- a/drivers/staging/tidspbridge/core/tiomap_io.c
++++ b/drivers/staging/tidspbridge/core/tiomap_io.c
+@@ -52,7 +52,7 @@ bool symbols_reloaded = true;
+  */
+ int read_ext_dsp_data(struct bridge_dev_context *dev_ctxt,
+ 			     OUT u8 *host_buff, u32 dsp_addr,
+-			     u32 ul_num_bytes, u32 ulMemType)
++			     u32 ul_num_bytes, u32 mem_type)
+ {
+ 	int status = 0;
+ 	struct bridge_dev_context *dev_context = dev_ctxt;
+@@ -180,7 +180,7 @@ int read_ext_dsp_data(struct bridge_dev_context *dev_ctxt,
+  */
+ int write_dsp_data(struct bridge_dev_context *dev_ctxt,
+ 			  IN u8 *host_buff, u32 dsp_addr, u32 ul_num_bytes,
+-			  u32 ulMemType)
++			  u32 mem_type)
+ {
+ 	u32 offset;
+ 	u32 dw_base_addr = dev_ctxt->dw_dsp_base_addr;
+@@ -226,7 +226,7 @@ int write_dsp_data(struct bridge_dev_context *dev_ctxt,
+  */
+ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 			      IN u8 *host_buff, u32 dsp_addr,
+-			      u32 ul_num_bytes, u32 ulMemType,
++			      u32 ul_num_bytes, u32 mem_type,
+ 			      bool dynamic_load)
+ {
+ 	u32 dw_base_addr = dev_context->dw_dsp_ext_base_addr;
+diff --git a/drivers/staging/tidspbridge/core/tiomap_io.h b/drivers/staging/tidspbridge/core/tiomap_io.h
+index cff8691..8f9d072 100644
+--- a/drivers/staging/tidspbridge/core/tiomap_io.h
++++ b/drivers/staging/tidspbridge/core/tiomap_io.h
+@@ -49,14 +49,14 @@
+  */
+ extern int read_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 				    OUT u8 *host_buff, u32 dsp_addr,
+-				    u32 ul_num_bytes, u32 ulMemType);
++				    u32 ul_num_bytes, u32 mem_type);
+ 
  /*
-  *  ======== free_msg_list ========
+  *  ======== write_dsp_data ========
   */
--static void free_msg_list(struct lst_list *msgList)
-+static void free_msg_list(struct lst_list *msg_list)
- {
- 	struct msg_frame *pmsg;
+ extern int write_dsp_data(struct bridge_dev_context *dev_context,
+ 				 OUT u8 *host_buff, u32 dsp_addr,
+-				 u32 ul_num_bytes, u32 ulMemType);
++				 u32 ul_num_bytes, u32 mem_type);
  
--	if (!msgList)
-+	if (!msg_list)
- 		goto func_end;
- 
--	while ((pmsg = (struct msg_frame *)lst_get_head(msgList)) != NULL)
-+	while ((pmsg = (struct msg_frame *)lst_get_head(msg_list)) != NULL)
- 		kfree(pmsg);
- 
--	DBC_ASSERT(LST_IS_EMPTY(msgList));
-+	DBC_ASSERT(LST_IS_EMPTY(msg_list));
- 
--	kfree(msgList);
-+	kfree(msg_list);
- func_end:
- 	return;
- }
-diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.c b/drivers/staging/tidspbridge/hw/hw_mmu.c
-index 5f9f4ea..2bb64cd 100644
---- a/drivers/staging/tidspbridge/hw/hw_mmu.c
-+++ b/drivers/staging/tidspbridge/hw/hw_mmu.c
-@@ -81,7 +81,7 @@ static hw_status mmu_flush_entry(const void __iomem *base_address);
-  *       TypE		: const u32
-  *       Description     : Base Address of instance of MMU module
-  *
-- *       Identifier      : pageSize
-+ *       Identifier      : page_sz
-  *       TypE		: const u32
-  *       Description     : It indicates the page size
-  *
-@@ -113,7 +113,7 @@ static hw_status mmu_flush_entry(const void __iomem *base_address);
-  * METHOD:	       	: Check the Input parameters and set the CAM entry.
+ /*
+  *  ======== write_ext_dsp_data ========
+@@ -66,7 +66,7 @@ extern int write_dsp_data(struct bridge_dev_context *dev_context,
   */
- static hw_status mmu_set_cam_entry(const void __iomem *base_address,
--				   const u32 pageSize,
-+				   const u32 page_sz,
- 				   const u32 preservedBit,
- 				   const u32 validBit,
- 				   const u32 virtual_addr_tag);
-@@ -184,11 +184,11 @@ hw_status hw_mmu_disable(const void __iomem *base_address)
- }
+ extern int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 				     IN u8 *host_buff, u32 dsp_addr,
+-				     u32 ul_num_bytes, u32 ulMemType,
++				     u32 ul_num_bytes, u32 mem_type,
+ 				     bool dynamic_load);
  
- hw_status hw_mmu_num_locked_set(const void __iomem *base_address,
--				u32 numLockedEntries)
-+				u32 num_locked_entries)
- {
- 	hw_status status = RET_OK;
+ /*
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cmm.h b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
+index 78cc12a..3944a1e 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cmm.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
+@@ -262,17 +262,17 @@ extern int cmm_un_register_gppsm_seg(struct cmm_object *hcmm_mgr,
+  *  Parameters:
+  *      xlator:    Handle to a Xlator object.
+  *      va_buf:     Virtual address ptr(client context)
+- *      uPaSize:    Size of SM memory to allocate.
++ *      pa_size:    Size of SM memory to allocate.
+  *  Returns:
+- *      Ptr to valid physical address(Pa) of uPaSize bytes, NULL if failed.
++ *      Ptr to valid physical address(Pa) of pa_size bytes, NULL if failed.
+  *  Requires:
+  *      va_buf != 0.
+- *      uPaSize != 0.
++ *      pa_size != 0.
+  *  Ensures:
+  *
+  */
+ extern void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator,
+-				  void *va_buf, u32 uPaSize);
++				  void *va_buf, u32 pa_size);
  
--	MMUMMU_LOCK_BASE_VALUE_WRITE32(base_address, numLockedEntries);
-+	MMUMMU_LOCK_BASE_VALUE_WRITE32(base_address, num_locked_entries);
+ /*
+  *  ======== cmm_xlator_create ========
+@@ -346,7 +346,7 @@ extern int cmm_xlator_free_buf(struct cmm_xlatorobject *xlator,
+  *     xlator:     handle to translator.
+  *     paddr:       Virtual base address of segment.
+  *     ul_size:      Size in bytes.
+- *     uSegId:      Segment identifier of SM segment(s)
++ *     segm_id:     Segment identifier of SM segment(s)
+  *     set_info     Set xlator fields if TRUE, else return base addr
+  *  Returns:
+  *      0:        Success.
+@@ -360,7 +360,7 @@ extern int cmm_xlator_free_buf(struct cmm_xlatorobject *xlator,
+  */
+ extern int cmm_xlator_info(struct cmm_xlatorobject *xlator,
+ 				  IN OUT u8 **paddr,
+-				  u32 ul_size, u32 uSegId, bool set_info);
++				  u32 ul_size, u32 segm_id, bool set_info);
  
- 	return status;
- }
-@@ -203,44 +203,44 @@ hw_status hw_mmu_victim_num_set(const void __iomem *base_address,
- 	return status;
- }
- 
--hw_status hw_mmu_event_ack(const void __iomem *base_address, u32 irqMask)
-+hw_status hw_mmu_event_ack(const void __iomem *base_address, u32 irq_mask)
- {
- 	hw_status status = RET_OK;
- 
--	MMUMMU_IRQSTATUS_WRITE_REGISTER32(base_address, irqMask);
-+	MMUMMU_IRQSTATUS_WRITE_REGISTER32(base_address, irq_mask);
- 
- 	return status;
- }
- 
--hw_status hw_mmu_event_disable(const void __iomem *base_address, u32 irqMask)
-+hw_status hw_mmu_event_disable(const void __iomem *base_address, u32 irq_mask)
- {
- 	hw_status status = RET_OK;
- 	u32 irq_reg;
- 
- 	irq_reg = MMUMMU_IRQENABLE_READ_REGISTER32(base_address);
- 
--	MMUMMU_IRQENABLE_WRITE_REGISTER32(base_address, irq_reg & ~irqMask);
-+	MMUMMU_IRQENABLE_WRITE_REGISTER32(base_address, irq_reg & ~irq_mask);
- 
- 	return status;
- }
- 
--hw_status hw_mmu_event_enable(const void __iomem *base_address, u32 irqMask)
-+hw_status hw_mmu_event_enable(const void __iomem *base_address, u32 irq_mask)
- {
- 	hw_status status = RET_OK;
- 	u32 irq_reg;
- 
- 	irq_reg = MMUMMU_IRQENABLE_READ_REGISTER32(base_address);
- 
--	MMUMMU_IRQENABLE_WRITE_REGISTER32(base_address, irq_reg | irqMask);
-+	MMUMMU_IRQENABLE_WRITE_REGISTER32(base_address, irq_reg | irq_mask);
- 
- 	return status;
- }
- 
--hw_status hw_mmu_event_status(const void __iomem *base_address, u32 *irqMask)
-+hw_status hw_mmu_event_status(const void __iomem *base_address, u32 *irq_mask)
- {
- 	hw_status status = RET_OK;
- 
--	*irqMask = MMUMMU_IRQSTATUS_READ_REGISTER32(base_address);
-+	*irq_mask = MMUMMU_IRQSTATUS_READ_REGISTER32(base_address);
- 
- 	return status;
- }
-@@ -294,13 +294,13 @@ hw_status hw_mmu_twl_disable(const void __iomem *base_address)
- }
- 
- hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtualAddr,
--			   u32 pageSize)
-+			   u32 page_sz)
- {
- 	hw_status status = RET_OK;
- 	u32 virtual_addr_tag;
- 	enum hw_mmu_page_size_t pg_size_bits;
- 
--	switch (pageSize) {
-+	switch (page_sz) {
- 	case HW_PAGE_SIZE4KB:
- 		pg_size_bits = HW_MMU_SMALL_PAGE;
- 		break;
-@@ -334,7 +334,7 @@ hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtualAddr,
- hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 			 u32 physicalAddr,
- 			 u32 virtualAddr,
--			 u32 pageSize,
-+			 u32 page_sz,
- 			 u32 entry_num,
- 			 struct hw_mmu_map_attrs_t *map_attrs,
- 			 s8 preservedBit, s8 validBit)
-@@ -347,13 +347,13 @@ hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 	/*Check the input Parameters */
- 	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
- 			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
--	CHECK_INPUT_RANGE_MIN0(pageSize, MMU_PAGE_MAX, RET_PARAM_OUT_OF_RANGE,
-+	CHECK_INPUT_RANGE_MIN0(page_sz, MMU_PAGE_MAX, RET_PARAM_OUT_OF_RANGE,
- 			       RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
- 	CHECK_INPUT_RANGE_MIN0(map_attrs->element_size, MMU_ELEMENTSIZE_MAX,
- 			       RET_PARAM_OUT_OF_RANGE, RES_MMU_BASE +
- 			       RES_INVALID_INPUT_PARAM);
- 
--	switch (pageSize) {
-+	switch (page_sz) {
- 	case HW_PAGE_SIZE4KB:
- 		mmu_pg_size = HW_MMU_SMALL_PAGE;
- 		break;
-@@ -404,13 +404,13 @@ hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 			 u32 physicalAddr,
- 			 u32 virtualAddr,
--			 u32 pageSize, struct hw_mmu_map_attrs_t *map_attrs)
-+			 u32 page_sz, struct hw_mmu_map_attrs_t *map_attrs)
- {
- 	hw_status status = RET_OK;
- 	u32 pte_addr, pte_val;
- 	s32 num_entries = 1;
- 
--	switch (pageSize) {
-+	switch (page_sz) {
- 	case HW_PAGE_SIZE4KB:
- 		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
- 					      virtualAddr &
-@@ -537,7 +537,7 @@ static hw_status mmu_flush_entry(const void __iomem *base_address)
- 
- /* mmu_set_cam_entry */
- static hw_status mmu_set_cam_entry(const void __iomem *base_address,
--				   const u32 pageSize,
-+				   const u32 page_sz,
- 				   const u32 preservedBit,
- 				   const u32 validBit,
- 				   const u32 virtual_addr_tag)
-@@ -550,7 +550,7 @@ static hw_status mmu_set_cam_entry(const void __iomem *base_address,
- 			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
- 
- 	mmu_cam_reg = (virtual_addr_tag << 12);
--	mmu_cam_reg = (mmu_cam_reg) | (pageSize) | (validBit << 2) |
-+	mmu_cam_reg = (mmu_cam_reg) | (page_sz) | (validBit << 2) |
- 	    (preservedBit << 3);
- 
- 	/* write values to register */
-diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.h b/drivers/staging/tidspbridge/hw/hw_mmu.h
-index 7c851bd..aeedbe2 100644
---- a/drivers/staging/tidspbridge/hw/hw_mmu.h
-+++ b/drivers/staging/tidspbridge/hw/hw_mmu.h
-@@ -47,23 +47,23 @@ extern hw_status hw_mmu_enable(const void __iomem *base_address);
- extern hw_status hw_mmu_disable(const void __iomem *base_address);
- 
- extern hw_status hw_mmu_num_locked_set(const void __iomem *base_address,
--				       u32 numLockedEntries);
-+				       u32 num_locked_entries);
- 
- extern hw_status hw_mmu_victim_num_set(const void __iomem *base_address,
- 				       u32 victimEntryNum);
- 
- /* For MMU faults */
- extern hw_status hw_mmu_event_ack(const void __iomem *base_address,
--				  u32 irqMask);
-+				  u32 irq_mask);
- 
- extern hw_status hw_mmu_event_disable(const void __iomem *base_address,
--				      u32 irqMask);
-+				      u32 irq_mask);
- 
- extern hw_status hw_mmu_event_enable(const void __iomem *base_address,
--				     u32 irqMask);
-+				     u32 irq_mask);
- 
- extern hw_status hw_mmu_event_status(const void __iomem *base_address,
--				     u32 *irqMask);
-+				     u32 *irq_mask);
- 
- extern hw_status hw_mmu_fault_addr_read(const void __iomem *base_address,
- 					u32 *addr);
-@@ -77,12 +77,12 @@ extern hw_status hw_mmu_twl_enable(const void __iomem *base_address);
- extern hw_status hw_mmu_twl_disable(const void __iomem *base_address);
- 
- extern hw_status hw_mmu_tlb_flush(const void __iomem *base_address,
--				  u32 virtualAddr, u32 pageSize);
-+				  u32 virtualAddr, u32 page_sz);
- 
- extern hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 				u32 physicalAddr,
- 				u32 virtualAddr,
--				u32 pageSize,
-+				u32 page_sz,
- 				u32 entry_num,
- 				struct hw_mmu_map_attrs_t *map_attrs,
- 				s8 preservedBit, s8 validBit);
-@@ -91,7 +91,7 @@ extern hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- extern hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 				u32 physicalAddr,
- 				u32 virtualAddr,
--				u32 pageSize,
-+				u32 page_sz,
- 				struct hw_mmu_map_attrs_t *map_attrs);
- 
- extern hw_status hw_mmu_pte_clear(const u32 pg_tbl_va,
+ /*
+  *  ======== cmm_xlator_translate ========
 diff --git a/drivers/staging/tidspbridge/include/dspbridge/cod.h b/drivers/staging/tidspbridge/include/dspbridge/cod.h
-index 6914247..ae711df 100644
+index 2d5f41a..3827646 100644
 --- a/drivers/staging/tidspbridge/include/dspbridge/cod.h
 +++ b/drivers/staging/tidspbridge/include/dspbridge/cod.h
-@@ -50,7 +50,7 @@ struct cod_attrs {
+@@ -49,7 +49,7 @@ struct cod_attrs {
+  *  Function prototypes for writing memory to a DSP system, allocating
   *  and freeing DSP memory.
   */
- typedef u32(*cod_writefxn) (void *priv_ref, u32 ulDspAddr,
--			    void *pbuf, u32 ul_num_bytes, u32 nMemSpace);
-+			    void *pbuf, u32 ul_num_bytes, u32 mem_space);
+-typedef u32(*cod_writefxn) (void *priv_ref, u32 ulDspAddr,
++typedef u32(*cod_writefxn) (void *priv_ref, u32 dsp_add,
+ 			    void *pbuf, u32 ul_num_bytes, u32 mem_space);
  
  /*
-  *  ======== cod_close ========
-@@ -276,7 +276,7 @@ extern bool cod_init(void);
-  *      qualified pathname.
-  *  Parameters:
-  *      hmgr:       manager to load the code with
-- *      nArgc:      number of arguments in the args array
-+ *      num_argc:   number of arguments in the args array
-  *      args:       array of strings for arguments to DSP program
-  *      write_fxn:   board-specific function to write data to DSP system
-  *      pArb:       arbitrary pointer to be passed as first arg to write_fxn
-@@ -287,14 +287,14 @@ extern bool cod_init(void);
-  *  Requires:
-  *      COD module initialized.
-  *      hmgr is valid.
-- *      nArgc > 0.
-+ *      num_argc > 0.
-  *      args != NULL.
-  *      args[0] != NULL.
-  *      pfn_write != NULL.
-  *  Ensures:
-  */
- extern int cod_load_base(struct cod_manager *cod_mgr_obj,
--				u32 nArgc, char *args[],
-+				u32 num_argc, char *args[],
- 				cod_writefxn pfn_write, void *pArb,
- 				char *envp[]);
- 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h b/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
-index 54e8238..6658b74 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
-@@ -153,7 +153,7 @@ extern void dcd_exit(void);
-  *  Parameters:
-  *      hdcd_mgr: A DCD manager handle.
-  *      uuid_obj: Pointer to a dsp_uuid for a library.
-- *      numLibs: Size of uuid array (number of library uuids).
-+ *      num_libs: Size of uuid array (number of library uuids).
-  *      pDepLibUuids: Array of dependent library uuids to be filled in.
-  *      pPersistentDepLibs: Array indicating if corresponding lib is persistent.
-  *      phase: phase to obtain correct input library
-@@ -171,7 +171,7 @@ extern void dcd_exit(void);
-  */
- extern int dcd_get_dep_libs(IN struct dcd_manager *hdcd_mgr,
- 				   IN struct dsp_uuid *uuid_obj,
--				   u16 numLibs,
-+				   u16 num_libs,
- 				   OUT struct dsp_uuid *pDepLibUuids,
- 				   OUT bool *pPersistentDepLibs,
- 				   IN enum nldr_phase phase);
 diff --git a/drivers/staging/tidspbridge/include/dspbridge/dev.h b/drivers/staging/tidspbridge/include/dspbridge/dev.h
-index 2ee1c41..72d4591 100644
+index 0cdbcb2..aa89419 100644
 --- a/drivers/staging/tidspbridge/include/dspbridge/dev.h
 +++ b/drivers/staging/tidspbridge/include/dspbridge/dev.h
-@@ -56,7 +56,7 @@
+@@ -45,7 +45,7 @@
+  *      dsp_addr:       Address on DSP board (Destination).
+  *      host_buf:       Pointer to host buffer (Source).
+  *      ul_num_bytes:     Number of bytes to transfer.
+- *      ulMemType:      Memory space on DSP to which to transfer.
++ *      mem_type:       Memory space on DSP to which to transfer.
+  *  Returns:
+  *      Number of bytes written.  Returns 0 if the DEV_hObject passed in via
+  *      arb is invalid.
+@@ -55,7 +55,7 @@
+  *  Ensures:
   */
- extern u32 dev_brd_write_fxn(void *pArb,
- 			     u32 ulDspAddr,
--			     void *pHostBuf, u32 ul_num_bytes, u32 nMemSpace);
-+			     void *pHostBuf, u32 ul_num_bytes, u32 mem_space);
+ extern u32 dev_brd_write_fxn(void *arb,
+-			     u32 ulDspAddr,
++			     u32 dsp_add,
+ 			     void *host_buf, u32 ul_num_bytes, u32 mem_space);
  
  /*
-  *  ======== dev_create_device ========
+@@ -622,7 +622,7 @@ extern int dev_remove_proc_object(struct dev_object
+  *      set up by a watchdog timer.
+  *  Parameters:
+  *      hdev_obj:  Handle to device object created with dev_create_device().
+- *      ulStatus:    A status word, most likely a BRD_STATUS.
++ *      ret:         A status word, most likely a BRD_STATUS.
+  *  Returns:
+  *      0:     All registered clients were asynchronously notified.
+  *      -EINVAL:   Invalid hdev_obj.
+@@ -633,7 +633,7 @@ extern int dev_remove_proc_object(struct dev_object
+  *      delivered to clients.  This function does not ensure that
+  *      the notifications will ever be delivered.
+  */
+-extern int dev_notify_clients(struct dev_object *hdev_obj, u32 ulStatus);
++extern int dev_notify_clients(struct dev_object *hdev_obj, u32 ret);
+ 
+ /*
+  *  ======== dev_remove_device ========
 diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
-index 73034c3..fc8f8d3 100755
+index 1e4049b..f2830fe 100755
 --- a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
 +++ b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
-@@ -806,19 +806,19 @@ typedef int(*fxn_io_getprocload) (struct io_mgr *hio_mgr,
+@@ -74,19 +74,19 @@ typedef int(*fxn_brd_monitor) (struct bridge_dev_context *dev_ctxt);
+  *      Sets the Bridge driver state
   *  Parameters:
-  *      phMsgMgr:           Location to store msg_ctrl manager on output.
-  *      hdev_obj:         Handle to a device object.
-- *      msgCallback:        Called whenever an RMS_EXIT message is received.
-+ *      msg_callback:        Called whenever an RMS_EXIT message is received.
+  *      dev_ctxt:    Handle to Bridge driver defined device info.
+- *      ulBrdState:     Board state
++ *      brd_state:      Board state
   *  Returns:
-  *      0:            Success.
-  *      -ENOMEM:        Insufficient memory.
+  *      0:        Success.
+  *      -EPERM:      Other, unspecified error.
   *  Requires:
-  *      phMsgMgr != NULL.
-- *      msgCallback != NULL.
-+ *      msg_callback != NULL.
-  *      hdev_obj != NULL.
+  *      dev_ctxt != NULL;
+- *      ulBrdState  <= BRD_LASTSTATE.
++ *      brd_state  <= BRD_LASTSTATE.
   *  Ensures:
+- *      ulBrdState  <= BRD_LASTSTATE.
++ *      brd_state  <= BRD_LASTSTATE.
+  *  Update the Board state to the specified state.
   */
- typedef int(*fxn_msg_create)
-  (OUT struct msg_mgr **phMsgMgr,
--  struct dev_object *hdev_obj, msg_onexit msgCallback);
-+  struct dev_object *hdev_obj, msg_onexit msg_callback);
+ typedef int(*fxn_brd_setstate) (struct bridge_dev_context
+-				       * dev_ctxt, u32 ulBrdState);
++				       * dev_ctxt, u32 brd_state);
  
  /*
-  *  ======== bridge_msg_create_queue ========
-@@ -831,7 +831,7 @@ typedef int(*fxn_msg_create)
-  *      phMsgQueue:         Location to store msg_ctrl queue on output.
-  *      msgq_id:	    Identifier for messages (node environment pointer).
-  *      max_msgs:           Max number of simultaneous messages for the node.
-- *      h:                  Handle passed to hmsg_mgr->msgCallback().
-+ *      h:                  Handle passed to hmsg_mgr->msg_callback().
+  *  ======== bridge_brd_start ========
+@@ -116,10 +116,10 @@ typedef int(*fxn_brd_start) (struct bridge_dev_context
+  *  Copy memory from one DSP address to another
+  *  Parameters:
+  *      dev_context:    Pointer to context handle
+- *  ulDspDestAddr:  DSP address to copy to
+- *  ulDspSrcAddr:   DSP address to copy from
++ *  dsp_dest_addr:  DSP address to copy to
++ *  dsp_src_addr:   DSP address to copy from
+  *  ul_num_bytes: Number of bytes to copy
+- *  ulMemType:  What section of memory to copy to
++ *  mem_type:   What section of memory to copy to
   *  Returns:
-  *      0:            Success.
-  *      -ENOMEM:        Insufficient memory.
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspmsg.h b/drivers/staging/tidspbridge/include/dspbridge/dspmsg.h
-index a10634e..18f56e1 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dspmsg.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dspmsg.h
-@@ -28,7 +28,7 @@
+  *      0:        Success.
+  *      -EPERM:      Other, unspecified error.
+@@ -132,9 +132,9 @@ typedef int(*fxn_brd_start) (struct bridge_dev_context
+  */
+ typedef int(*fxn_brd_memcopy) (struct bridge_dev_context
+ 				      * dev_ctxt,
+-				      u32 ulDspDestAddr,
+-				      u32 ulDspSrcAddr,
+-				      u32 ul_num_bytes, u32 ulMemType);
++				      u32 dsp_dest_addr,
++				      u32 dsp_src_addr,
++				      u32 ul_num_bytes, u32 mem_type);
+ /*
+  *  ======== bridge_brd_mem_write ========
+  *  Purpose:
+@@ -145,7 +145,7 @@ typedef int(*fxn_brd_memcopy) (struct bridge_dev_context
+  *      dsp_addr:       Address on DSP board (Destination).
+  *      host_buf:       Pointer to host buffer (Source).
+  *      ul_num_bytes:     Number of bytes to transfer.
+- *      ulMemType:      Memory space on DSP to which to transfer.
++ *      mem_type:       Memory space on DSP to which to transfer.
+  *  Returns:
+  *      0:        Success.
+  *      -ETIMEDOUT:  Timeout occured waiting for a response from hardware.
+@@ -159,7 +159,7 @@ typedef int(*fxn_brd_memwrite) (struct bridge_dev_context
+ 				       * dev_ctxt,
+ 				       IN u8 *host_buf,
+ 				       u32 dsp_addr, u32 ul_num_bytes,
+-				       u32 ulMemType);
++				       u32 mem_type);
  
- extern int bridge_msg_create(OUT struct msg_mgr **phMsgMgr,
- 				    struct dev_object *hdev_obj,
--				    msg_onexit msgCallback);
-+				    msg_onexit msg_callback);
+ /*
+  *  ======== bridge_brd_mem_map ========
+@@ -168,7 +168,7 @@ typedef int(*fxn_brd_memwrite) (struct bridge_dev_context
+  *  Parameters:
+  *      dev_ctxt:    Handle to Bridge driver defined device info.
+  *      ul_mpu_addr:      MPU memory region start address.
+- *      ulVirtAddr:     DSP/IVA memory region u8 address.
++ *      virt_addr:      DSP/IVA memory region u8 address.
+  *      ul_num_bytes:     Number of bytes to map.
+  *      map_attrs:       Mapping attributes (e.g. endianness).
+  *  Returns:
+@@ -180,8 +180,8 @@ typedef int(*fxn_brd_memwrite) (struct bridge_dev_context
+  */
+ typedef int(*fxn_brd_memmap) (struct bridge_dev_context
+ 				     * dev_ctxt, u32 ul_mpu_addr,
+-				     u32 ulVirtAddr, u32 ul_num_bytes,
+-				     u32 ulMapAttrs,
++				     u32 virt_addr, u32 ul_num_bytes,
++				     u32 map_attr,
+ 				     struct page **mapped_pages);
  
- extern int bridge_msg_create_queue(struct msg_mgr *hmsg_mgr,
- 				       OUT struct msg_queue **phMsgQueue,
+ /*
+@@ -190,7 +190,7 @@ typedef int(*fxn_brd_memmap) (struct bridge_dev_context
+  *      UnMap an MPU memory region from DSP/IVA memory space
+  *  Parameters:
+  *      dev_ctxt:    Handle to Bridge driver defined device info.
+- *      ulVirtAddr:     DSP/IVA memory region u8 address.
++ *      virt_addr:      DSP/IVA memory region u8 address.
+  *      ul_num_bytes:     Number of bytes to unmap.
+  *  Returns:
+  *      0:        Success.
+@@ -201,7 +201,7 @@ typedef int(*fxn_brd_memmap) (struct bridge_dev_context
+  */
+ typedef int(*fxn_brd_memunmap) (struct bridge_dev_context
+ 				       * dev_ctxt,
+-				       u32 ulVirtAddr, u32 ul_num_bytes);
++				       u32 virt_addr, u32 ul_num_bytes);
+ 
+ /*
+  *  ======== bridge_brd_stop ========
+@@ -251,7 +251,7 @@ typedef int(*fxn_brd_status) (struct bridge_dev_context *dev_ctxt,
+  *      host_buf:       Pointer to host buffer (Destination).
+  *      dsp_addr:       Address on DSP board (Source).
+  *      ul_num_bytes:     Number of bytes to transfer.
+- *      ulMemType:      Memory space on DSP from which to transfer.
++ *      mem_type:       Memory space on DSP from which to transfer.
+  *  Returns:
+  *      0:        Success.
+  *      -ETIMEDOUT:  Timeout occured waiting for a response from hardware.
+@@ -265,7 +265,7 @@ typedef int(*fxn_brd_status) (struct bridge_dev_context *dev_ctxt,
+ typedef int(*fxn_brd_read) (struct bridge_dev_context *dev_ctxt,
+ 				   OUT u8 *host_buf,
+ 				   u32 dsp_addr,
+-				   u32 ul_num_bytes, u32 ulMemType);
++				   u32 ul_num_bytes, u32 mem_type);
+ 
+ /*
+  *  ======== bridge_brd_write ========
+@@ -277,7 +277,7 @@ typedef int(*fxn_brd_read) (struct bridge_dev_context *dev_ctxt,
+  *      dsp_addr:       Address on DSP board (Destination).
+  *      host_buf:       Pointer to host buffer (Source).
+  *      ul_num_bytes:     Number of bytes to transfer.
+- *      ulMemType:      Memory space on DSP to which to transfer.
++ *      mem_type:       Memory space on DSP to which to transfer.
+  *  Returns:
+  *      0:        Success.
+  *      -ETIMEDOUT:  Timeout occured waiting for a response from hardware.
+@@ -290,7 +290,7 @@ typedef int(*fxn_brd_read) (struct bridge_dev_context *dev_ctxt,
+ typedef int(*fxn_brd_write) (struct bridge_dev_context *dev_ctxt,
+ 				    IN u8 *host_buf,
+ 				    u32 dsp_addr,
+-				    u32 ul_num_bytes, u32 ulMemType);
++				    u32 ul_num_bytes, u32 mem_type);
+ 
+ /*
+  *  ======== bridge_chnl_create ========
+@@ -351,17 +351,17 @@ typedef int(*fxn_chnl_destroy) (struct chnl_mgr *hchnl_mgr);
+  *      When notified of DSP error, take appropriate action.
+  *  Parameters:
+  *      hdeh_mgr:        Handle to DEH manager object.
+- *      ulEventMask:  Indicate the type of exception
++ *      evnt_mask:    Indicate the type of exception
+  *      error_info:    Error information
+  *  Returns:
+  *
+  *  Requires:
+  *      hdeh_mgr != NULL;
+- *     ulEventMask with a valid exception
++ *     evnt_mask with a valid exception
+  *  Ensures:
+  */
+ typedef void (*fxn_deh_notify) (struct deh_mgr *hdeh_mgr,
+-				u32 ulEventMask, u32 error_info);
++				u32 evnt_mask, u32 error_info);
+ 
+ /*
+  *  ======== bridge_chnl_open ========
 diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-index 62899f2..8b0cd7f 100644
+index 538fbcd..7fff2b3 100755
 --- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
 +++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-@@ -108,7 +108,7 @@ void io_mbox_msg(u32 msg);
+@@ -54,13 +54,13 @@ extern u32 vdd1_dsp_freq[6][4];
+  *      Cancel IO on a given channel.
   *  Parameters:
-  *      hio_mgr:     IO manager handle.
-  *      pchnl:      Ptr to the channel requesting I/O.
-- *      iMode:      Mode of channel: {IO_INPUT | IO_OUTPUT}.
-+ *      io_mode:      Mode of channel: {IO_INPUT | IO_OUTPUT}.
+  *      hio_mgr:     IO Manager.
+- *      ulChnl:     Index of channel to cancel IO on.
++ *      chnl:       Index of channel to cancel IO on.
   *  Returns:
   *  Requires:
-  *      pchnl != NULL
-@@ -116,7 +116,7 @@ void io_mbox_msg(u32 msg);
-  */
- extern void io_request_chnl(struct io_mgr *hio_mgr,
- 			    struct chnl_object *pchnl,
--			    u8 iMode, OUT u16 *pwMbVal);
-+			    u8 io_mode, OUT u16 *pwMbVal);
- 
- /*
-  *  ======== iosm_schedule ========
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/msg.h b/drivers/staging/tidspbridge/include/dspbridge/msg.h
-index baac5f3..973bce2 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/msg.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/msg.h
-@@ -31,18 +31,18 @@
-  *  Parameters:
-  *      phMsgMgr:           Location to store msg_ctrl manager handle on output.
-  *      hdev_obj:         The device object.
-- *      msgCallback:        Called whenever an RMS_EXIT message is received.
-+ *      msg_callback:        Called whenever an RMS_EXIT message is received.
-  *  Returns:
-  *  Requires:
-  *      msg_mod_init(void) called.
-  *      phMsgMgr != NULL.
-  *      hdev_obj != NULL.
-- *      msgCallback != NULL.
-+ *      msg_callback != NULL.
+  *      Valid hio_mgr.
   *  Ensures:
   */
- extern int msg_create(OUT struct msg_mgr **phMsgMgr,
- 			     struct dev_object *hdev_obj,
--			     msg_onexit msgCallback);
-+			     msg_onexit msg_callback);
+-extern void io_cancel_chnl(struct io_mgr *hio_mgr, u32 ulChnl);
++extern void io_cancel_chnl(struct io_mgr *hio_mgr, u32 chnl);
  
  /*
-  *  ======== msg_delete ========
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/msgdefs.h b/drivers/staging/tidspbridge/include/dspbridge/msgdefs.h
-index fe24656..80a3fa1 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/msgdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/msgdefs.h
-@@ -24,6 +24,6 @@ struct msg_mgr;
- struct msg_queue;
+  *  ======== io_dpc ========
+@@ -142,20 +142,20 @@ extern void iosm_schedule(struct io_mgr *hio_mgr);
+  *  Parameters:
+  *      hio_mgr:         Handle to a I/O manager.
+  *      ddma_chnl_id:    DDMA channel identifier.
+- *      uNumDesc:       Number of buffer descriptors(equals # of IOReqs &
++ *      num_desc:       Number of buffer descriptors(equals # of IOReqs &
+  *                      Chirps)
+  *      dsp:           Dsp address;
+  *  Returns:
+  *  Requires:
+  *     ddma_chnl_id < DDMA_MAXDDMACHNLS
+- *     uNumDesc > 0
++ *     num_desc > 0
+  *     pVa != NULL
+  *     pDspPa != NULL
+  *
+  *  Ensures:
+  */
+ extern void io_ddma_init_chnl_desc(struct io_mgr *hio_mgr, u32 ddma_chnl_id,
+-				   u32 uNumDesc, void *dsp);
++				   u32 num_desc, void *dsp);
  
- /* Function prototype for callback to be called on RMS_EXIT message received */
--typedef void (*msg_onexit) (void *h, s32 nStatus);
-+typedef void (*msg_onexit) (void *h, s32 node_status);
+ /*
+  *  ======== io_ddma_clear_chnl_desc ========
+@@ -202,14 +202,14 @@ extern void io_ddma_request_chnl(struct io_mgr *hio_mgr,
+  *      Initialize ZCPY channel descriptor.
+  *  Parameters:
+  *      hio_mgr:     Handle to a I/O manager.
+- *      uZId:       zero-copy channel identifier.
++ *      zid:        zero-copy channel identifier.
+  *  Returns:
+  *  Requires:
+  *     ddma_chnl_id < DDMA_MAXZCPYCHNLS
+  *     hio_mgr != Null
+  *  Ensures:
+  */
+-extern void io_ddzc_init_chnl_desc(struct io_mgr *hio_mgr, u32 uZId);
++extern void io_ddzc_init_chnl_desc(struct io_mgr *hio_mgr, u32 zid);
  
- #endif /* MSGDEFS_ */
+ /*
+  *  ======== io_ddzc_clear_chnl_desc ========
 diff --git a/drivers/staging/tidspbridge/include/dspbridge/nldrdefs.h b/drivers/staging/tidspbridge/include/dspbridge/nldrdefs.h
-index 9be0483..d53b43e 100644
+index ed20dc0..9d35114 100644
 --- a/drivers/staging/tidspbridge/include/dspbridge/nldrdefs.h
 +++ b/drivers/staging/tidspbridge/include/dspbridge/nldrdefs.h
-@@ -48,7 +48,7 @@ enum nldr_loadtype {
-  *      ulDspRunAddr:   Run address of code or data.
-  *      ulDspLoadAddr:  Load address of code or data.
+@@ -45,8 +45,8 @@ enum nldr_loadtype {
+  *
+  *  Parameters:
+  *      priv_ref:       Handle to identify the node.
+- *      ulDspRunAddr:   Run address of code or data.
+- *      ulDspLoadAddr:  Load address of code or data.
++ *      dsp_run_addr:   Run address of code or data.
++ *      dsp_load_addr:  Load address of code or data.
   *      ul_num_bytes:     Number of (GPP) bytes to copy.
-- *      nMemSpace:      RMS_CODE or RMS_DATA.
-+ *      mem_space:      RMS_CODE or RMS_DATA.
+  *      mem_space:      RMS_CODE or RMS_DATA.
   *  Returns:
-  *      ul_num_bytes:     Success.
-  *      0:              Failure.
-@@ -56,7 +56,7 @@ enum nldr_loadtype {
+@@ -55,15 +55,15 @@ enum nldr_loadtype {
+  *  Requires:
   *  Ensures:
   */
- typedef u32(*nldr_ovlyfxn) (void *priv_ref, u32 ulDspRunAddr,
--			    u32 ulDspLoadAddr, u32 ul_num_bytes, u32 nMemSpace);
-+			    u32 ulDspLoadAddr, u32 ul_num_bytes, u32 mem_space);
+-typedef u32(*nldr_ovlyfxn) (void *priv_ref, u32 ulDspRunAddr,
+-			    u32 ulDspLoadAddr, u32 ul_num_bytes, u32 mem_space);
++typedef u32(*nldr_ovlyfxn) (void *priv_ref, u32 dsp_run_addr,
++			    u32 dsp_load_addr, u32 ul_num_bytes, u32 mem_space);
  
  /*
   *  ======== nldr_writefxn ========
-@@ -66,7 +66,7 @@ typedef u32(*nldr_ovlyfxn) (void *priv_ref, u32 ulDspRunAddr,
-  *      ulDspAddr:      Address of code or data.
+  *  Write memory function. Used for dynamic load writes.
+  *  Parameters:
+  *      priv_ref:       Handle to identify the node.
+- *      ulDspAddr:      Address of code or data.
++ *      dsp_add:        Address of code or data.
   *      pbuf:           Code or data to be written
   *      ul_num_bytes:     Number of (GPP) bytes to write.
-- *      nMemSpace:      DBLL_DATA or DBLL_CODE.
-+ *      mem_space:      DBLL_DATA or DBLL_CODE.
-  *  Returns:
-  *      ul_num_bytes:     Success.
-  *      0:              Failure.
-@@ -75,7 +75,7 @@ typedef u32(*nldr_ovlyfxn) (void *priv_ref, u32 ulDspRunAddr,
+  *      mem_space:      DBLL_DATA or DBLL_CODE.
+@@ -74,7 +74,7 @@ typedef u32(*nldr_ovlyfxn) (void *priv_ref, u32 ulDspRunAddr,
+  *  Ensures:
   */
  typedef u32(*nldr_writefxn) (void *priv_ref,
- 			     u32 ulDspAddr, void *pbuf,
--			     u32 ul_num_bytes, u32 nMemSpace);
-+			     u32 ul_num_bytes, u32 mem_space);
+-			     u32 ulDspAddr, void *pbuf,
++			     u32 dsp_add, void *pbuf,
+ 			     u32 ul_num_bytes, u32 mem_space);
  
  /*
-  *  ======== nldr_attrs ========
 diff --git a/drivers/staging/tidspbridge/include/dspbridge/node.h b/drivers/staging/tidspbridge/include/dspbridge/node.h
-index 5358d77..9dfa3a8 100644
+index e87708d..d933b27 100644
 --- a/drivers/staging/tidspbridge/include/dspbridge/node.h
 +++ b/drivers/staging/tidspbridge/include/dspbridge/node.h
-@@ -420,11 +420,11 @@ extern bool node_init(void);
-  *      called by the Bridge driver when an exit message for a node is received.
-  *  Parameters:
-  *      hnode:      Handle of the node that the exit message is for.
-- *      nStatus:    Return status of the node's execute phase.
-+ *      node_status:    Return status of the node's execute phase.
-  *  Returns:
+@@ -147,11 +147,11 @@ extern int node_close_orphans(struct node_mgr *hnode_mgr,
+  *                      if this is a connection from DSP node to GPP, or a
+  *                      node handle returned from a successful call to
+  *                      node_allocate().
+- *      uStream1:       Output stream index on first node, to be connected
++ *      stream1:        Output stream index on first node, to be connected
+  *                      to second node's input stream. Value must range from
+- *                      0 <= uStream1 < number of output streams.
+- *      uStream2:       Input stream index on second node. Value must range
+- *                      from 0 <= uStream2 < number of input streams.
++ *                      0 <= stream1 < number of output streams.
++ *      stream2:        Input stream index on second node. Value must range
++ *                      from 0 <= stream2 < number of input streams.
+  *      pattrs:         Stream attributes (NULL ==> use defaults).
+  *      conn_param:     A pointer to a dsp_cbdata structure that defines
+  *                      connection parameter for device nodes to pass to DSP
+@@ -167,7 +167,7 @@ extern int node_close_orphans(struct node_mgr *hnode_mgr,
+  *      -ENOMEM:            Insufficient host memory.
+  *      -EINVAL:             A stream index parameter is invalid.
+  *      -EISCONN:  A connection already exists for one of the
+- *                              indices uStream1 or uStream2.
++ *                              indices stream1 or stream2.
+  *      -EBADR:        Either node1 or node2 is not in the
+  *                              NODE_ALLOCATED state.
+  *      -ECONNREFUSED: No more connections available.
+@@ -179,9 +179,9 @@ extern int node_close_orphans(struct node_mgr *hnode_mgr,
   *  Ensures:
   */
--void node_on_exit(struct node_object *hnode, s32 nStatus);
-+void node_on_exit(struct node_object *hnode, s32 node_status);
- 
- /*
-  *  ======== node_pause ========
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/resourcecleanup.h b/drivers/staging/tidspbridge/include/dspbridge/resourcecleanup.h
-index 1fa7d13..6c78f2d 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/resourcecleanup.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/resourcecleanup.h
-@@ -48,11 +48,11 @@ extern void drv_proc_node_update_status(void *node_resource, s32 status);
- 
- extern int drv_proc_update_strm_res(u32 num_bufs, void *strm_res);
- 
--extern int drv_proc_insert_strm_res_element(void *hStrm,
-+extern int drv_proc_insert_strm_res_element(void *stream_obj,
- 						   void *strm_res,
- 						   void *pPctxt);
- 
--extern int drv_get_strm_res_element(void *hStrm, void *strm_res,
-+extern int drv_get_strm_res_element(void *stream_obj, void *strm_res,
- 					   void *ctxt);
- 
- extern int drv_proc_remove_strm_res_element(void *strm_res,
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/strm.h b/drivers/staging/tidspbridge/include/dspbridge/strm.h
-index 2ac630d..c4a4d65 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/strm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/strm.h
-@@ -29,13 +29,13 @@
-  *  Purpose:
-  *      Allocate data buffer(s) for use with a stream.
-  *  Parameter:
-- *      hStrm:          Stream handle returned from strm_open().
-+ *      stream_obj:     Stream handle returned from strm_open().
-  *      usize:          Size (GPP bytes) of the buffer(s).
-  *      num_bufs:       Number of buffers to allocate.
-  *      ap_buffer:       Array to hold buffer addresses.
-  *  Returns:
-  *      0:        Success.
-- *      -EFAULT:    Invalid hStrm.
-+ *      -EFAULT:    Invalid stream_obj.
-  *      -ENOMEM:    Insufficient memory.
-  *      -EPERM:      Failure occurred, unable to allocate buffers.
-  *      -EINVAL:      usize must be > 0 bytes.
-@@ -44,7 +44,7 @@
-  *      ap_buffer != NULL.
-  *  Ensures:
+ extern int node_connect(struct node_object *node1,
+-			       u32 uStream1,
++			       u32 stream1,
+ 			       struct node_object *node2,
+-			       u32 uStream2,
++			       u32 stream2,
+ 			       OPTIONAL IN struct dsp_strmattr *pattrs,
+ 			       OPTIONAL IN struct dsp_cbdata
+ 			       *conn_param);
+diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
+index 0a36085..2381984 100644
+--- a/drivers/staging/tidspbridge/pmgr/cmm.c
++++ b/drivers/staging/tidspbridge/pmgr/cmm.c
+@@ -1008,7 +1008,7 @@ int cmm_xlator_delete(struct cmm_xlatorobject *xlator, bool force)
+  *  ======== cmm_xlator_alloc_buf ========
   */
--extern int strm_allocate_buffer(struct strm_object *hStrm,
-+extern int strm_allocate_buffer(struct strm_object *stream_obj,
- 				       u32 usize,
- 				       OUT u8 **ap_buffer,
- 				       u32 num_bufs,
-@@ -55,10 +55,10 @@ extern int strm_allocate_buffer(struct strm_object *hStrm,
-  *  Purpose:
-  *      Close a stream opened with strm_open().
-  *  Parameter:
-- *      hStrm:          Stream handle returned from strm_open().
-+ *      stream_obj:          Stream handle returned from strm_open().
-  *  Returns:
-  *      0:        Success.
-- *      -EFAULT:    Invalid hStrm.
-+ *      -EFAULT:    Invalid stream_obj.
-  *      -EPIPE:   Some data buffers issued to the stream have not
-  *                      been reclaimed.
-  *      -EPERM:      Failure to close stream.
-@@ -66,7 +66,7 @@ extern int strm_allocate_buffer(struct strm_object *hStrm,
-  *      strm_init(void) called.
-  *  Ensures:
-  */
--extern int strm_close(struct strm_object *hStrm,
-+extern int strm_close(struct strm_object *stream_obj,
- 			     struct process_context *pr_ctxt);
- 
- /*
-@@ -125,7 +125,7 @@ extern void strm_exit(void);
-  *  Purpose:
-  *      Free buffer(s) allocated with strm_allocate_buffer.
-  *  Parameter:
-- *      hStrm:          Stream handle returned from strm_open().
-+ *      stream_obj:     Stream handle returned from strm_open().
-  *      ap_buffer:       Array containing buffer addresses.
-  *      num_bufs:       Number of buffers to be freed.
-  *  Returns:
-@@ -137,7 +137,7 @@ extern void strm_exit(void);
-  *      ap_buffer != NULL.
-  *  Ensures:
-  */
--extern int strm_free_buffer(struct strm_object *hStrm,
-+extern int strm_free_buffer(struct strm_object *stream_obj,
- 				   u8 **ap_buffer, u32 num_bufs,
- 				   struct process_context *pr_ctxt);
- 
-@@ -147,17 +147,17 @@ extern int strm_free_buffer(struct strm_object *hStrm,
-  *      Get stream's user event handle. This function is used when closing
-  *      a stream, so the event can be closed.
-  *  Parameter:
-- *      hStrm:          Stream handle returned from strm_open().
-+ *      stream_obj:      Stream handle returned from strm_open().
-  *      ph_event:        Location to store event handle on output.
-  *  Returns:
-  *      0:        Success.
-- *      -EFAULT:    Invalid hStrm.
-+ *      -EFAULT:    Invalid stream_obj.
-  *  Requires:
-  *      strm_init(void) called.
-  *      ph_event != NULL.
-  *  Ensures:
-  */
--extern int strm_get_event_handle(struct strm_object *hStrm,
-+extern int strm_get_event_handle(struct strm_object *stream_obj,
- 					OUT void **ph_event);
- 
- /*
-@@ -166,12 +166,12 @@ extern int strm_get_event_handle(struct strm_object *hStrm,
-  *      Get information about a stream. User's dsp_streaminfo is contained
-  *      in stream_info struct. stream_info also contains Bridge private info.
-  *  Parameters:
-- *      hStrm:              Stream handle returned from strm_open().
-+ *      stream_obj:         Stream handle returned from strm_open().
-  *      stream_info:        Location to store stream info on output.
-  *      uSteamInfoSize:     Size of user's dsp_streaminfo structure.
-  *  Returns:
-  *      0:            Success.
-- *      -EFAULT:        Invalid hStrm.
-+ *      -EFAULT:        Invalid stream_obj.
-  *      -EINVAL:          stream_info_size < sizeof(dsp_streaminfo).
-  *      -EPERM:          Unable to get stream info.
-  *  Requires:
-@@ -179,7 +179,7 @@ extern int strm_get_event_handle(struct strm_object *hStrm,
-  *      stream_info != NULL.
-  *  Ensures:
-  */
--extern int strm_get_info(struct strm_object *hStrm,
-+extern int strm_get_info(struct strm_object *stream_obj,
- 				OUT struct stream_info *stream_info,
- 				u32 stream_info_size);
- 
-@@ -195,18 +195,18 @@ extern int strm_get_info(struct strm_object *hStrm,
-  *      After a successful call to strm_idle(), all buffers can immediately
-  *      be reclaimed.
-  *  Parameters:
-- *      hStrm:          Stream handle returned from strm_open().
-+ *      stream_obj:     Stream handle returned from strm_open().
-  *      flush_data:     If TRUE, discard output buffers.
-  *  Returns:
-  *      0:        Success.
-- *      -EFAULT:    Invalid hStrm.
-+ *      -EFAULT:    Invalid stream_obj.
-  *      -ETIME:   A timeout occurred before the stream could be idled.
-  *      -EPERM:      Unable to idle stream.
-  *  Requires:
-  *      strm_init(void) called.
-  *  Ensures:
-  */
--extern int strm_idle(struct strm_object *hStrm, bool flush_data);
-+extern int strm_idle(struct strm_object *stream_obj, bool flush_data);
- 
- /*
-  *  ======== strm_init ========
-@@ -225,14 +225,14 @@ extern bool strm_init(void);
-  *  Purpose:
-  *      Send a buffer of data to a stream.
-  *  Parameters:
-- *      hStrm:              Stream handle returned from strm_open().
-+ *      stream_obj:         Stream handle returned from strm_open().
-  *      pbuf:               Pointer to buffer of data to be sent to the stream.
-  *      ul_bytes:            Number of bytes of data in the buffer.
-  *      ul_buf_size:          Actual buffer size in bytes.
-  *      dw_arg:              A user argument that travels with the buffer.
-  *  Returns:
-  *      0:            Success.
-- *      -EFAULT:        Invalid hStrm.
-+ *      -EFAULT:        Invalid stream_obj.
-  *      -ENOSR:    The stream is full.
-  *      -EPERM:          Failure occurred, unable to issue buffer.
-  *  Requires:
-@@ -240,7 +240,7 @@ extern bool strm_init(void);
-  *      pbuf != NULL.
-  *  Ensures:
-  */
--extern int strm_issue(struct strm_object *hStrm, IN u8 * pbuf,
-+extern int strm_issue(struct strm_object *stream_obj, IN u8 * pbuf,
- 			     u32 ul_bytes, u32 ul_buf_size, IN u32 dw_arg);
- 
- /*
-@@ -281,19 +281,19 @@ extern int strm_open(struct node_object *hnode, u32 dir,
-  *      Prepare a data buffer not allocated by DSPStream_AllocateBuffers()
-  *      for use with a stream.
-  *  Parameter:
-- *      hStrm:          Stream handle returned from strm_open().
-+ *      stream_obj:     Stream handle returned from strm_open().
-  *      usize:          Size (GPP bytes) of the buffer.
-  *      pbuffer:        Buffer address.
-  *  Returns:
-  *      0:        Success.
-- *      -EFAULT:    Invalid hStrm.
-+ *      -EFAULT:    Invalid stream_obj.
-  *      -EPERM:      Failure occurred, unable to prepare buffer.
-  *  Requires:
-  *      strm_init(void) called.
-  *      pbuffer != NULL.
-  *  Ensures:
-  */
--extern int strm_prepare_buffer(struct strm_object *hStrm,
-+extern int strm_prepare_buffer(struct strm_object *stream_obj,
- 				      u32 usize, u8 *pbuffer);
- 
- /*
-@@ -301,7 +301,7 @@ extern int strm_prepare_buffer(struct strm_object *hStrm,
-  *  Purpose:
-  *      Request a buffer back from a stream.
-  *  Parameters:
-- *      hStrm:          Stream handle returned from strm_open().
-+ *      stream_obj:          Stream handle returned from strm_open().
-  *      buf_ptr:        Location to store pointer to reclaimed buffer.
-  *      pulBytes:       Location where number of bytes of data in the
-  *                      buffer will be written.
-@@ -310,7 +310,7 @@ extern int strm_prepare_buffer(struct strm_object *hStrm,
-  *                      the buffer will be written.
-  *  Returns:
-  *      0:        Success.
-- *      -EFAULT:    Invalid hStrm.
-+ *      -EFAULT:    Invalid stream_obj.
-  *      -ETIME:   A timeout occurred before a buffer could be
-  *                      retrieved.
-  *      -EPERM:      Failure occurred, unable to reclaim buffer.
-@@ -321,7 +321,7 @@ extern int strm_prepare_buffer(struct strm_object *hStrm,
-  *      pdw_arg != NULL.
-  *  Ensures:
-  */
--extern int strm_reclaim(struct strm_object *hStrm,
-+extern int strm_reclaim(struct strm_object *stream_obj,
- 			       OUT u8 **buf_ptr, u32 * pulBytes,
- 			       u32 *pulBufSize, u32 *pdw_arg);
- 
-@@ -330,13 +330,13 @@ extern int strm_reclaim(struct strm_object *hStrm,
-  *  Purpose:
-  *      Register to be notified on specific events for this stream.
-  *  Parameters:
-- *      hStrm:          Stream handle returned by strm_open().
-+ *      stream_obj:     Stream handle returned by strm_open().
-  *      event_mask:     Mask of types of events to be notified about.
-  *      notify_type:    Type of notification to be sent.
-  *      hnotification:  Handle to be used for notification.
-  *  Returns:
-  *      0:        Success.
-- *      -EFAULT:    Invalid hStrm.
-+ *      -EFAULT:    Invalid stream_obj.
-  *      -ENOMEM:    Insufficient memory on GPP.
-  *      -EINVAL:     event_mask is invalid.
-  *      -ENOSYS:   Notification type specified by notify_type is not
-@@ -346,7 +346,7 @@ extern int strm_reclaim(struct strm_object *hStrm,
-  *      hnotification != NULL.
-  *  Ensures:
-  */
--extern int strm_register_notify(struct strm_object *hStrm,
-+extern int strm_register_notify(struct strm_object *stream_obj,
- 				       u32 event_mask, u32 notify_type,
- 				       struct dsp_notification
- 				       *hnotification);
-@@ -357,12 +357,12 @@ extern int strm_register_notify(struct strm_object *hStrm,
-  *      Select a ready stream.
-  *  Parameters:
-  *      strm_tab:       Array of stream handles returned from strm_open().
-- *      nStrms:         Number of stream handles in array.
-+ *      strms:          Number of stream handles in array.
-  *      pmask:          Location to store mask of ready streams on output.
-  *      utimeout:       Timeout value (milliseconds).
-  *  Returns:
-  *      0:        Success.
-- *      -EDOM:     nStrms out of range.
-+ *      -EDOM:     strms out of range.
- 
-  *      -EFAULT:    Invalid stream handle in array.
-  *      -ETIME:   A timeout occurred before a stream became ready.
-@@ -370,14 +370,14 @@ extern int strm_register_notify(struct strm_object *hStrm,
-  *  Requires:
-  *      strm_init(void) called.
-  *      strm_tab != NULL.
-- *      nStrms > 0.
-+ *      strms > 0.
-  *      pmask != NULL.
-  *  Ensures:
-  *      0:        *pmask != 0 || utimeout == 0.
-  *      Error:          *pmask == 0.
-  */
- extern int strm_select(IN struct strm_object **strm_tab,
--			      u32 nStrms, OUT u32 *pmask, u32 utimeout);
-+			      u32 strms, OUT u32 *pmask, u32 utimeout);
- 
- /*
-  *  ======== strm_unprepare_buffer ========
-@@ -386,19 +386,19 @@ extern int strm_select(IN struct strm_object **strm_tab,
-  *      with DSPStream_PrepareBuffer(), and that will no longer be used with
-  *      the stream.
-  *  Parameter:
-- *      hStrm:          Stream handle returned from strm_open().
-+ *      stream_obj:     Stream handle returned from strm_open().
-  *      usize:          Size (GPP bytes) of the buffer.
-  *      pbuffer:        Buffer address.
-  *  Returns:
-  *      0:        Success.
-- *      -EFAULT:    Invalid hStrm.
-+ *      -EFAULT:    Invalid stream_obj.
-  *      -EPERM:      Failure occurred, unable to unprepare buffer.
-  *  Requires:
-  *      strm_init(void) called.
-  *      pbuffer != NULL.
-  *  Ensures:
-  */
--extern int strm_unprepare_buffer(struct strm_object *hStrm,
-+extern int strm_unprepare_buffer(struct strm_object *stream_obj,
- 					u32 usize, u8 *pbuffer);
- 
- #endif /* STRM_ */
-diff --git a/drivers/staging/tidspbridge/pmgr/cod.c b/drivers/staging/tidspbridge/pmgr/cod.c
-index a9b0491..7682035 100644
---- a/drivers/staging/tidspbridge/pmgr/cod.c
-+++ b/drivers/staging/tidspbridge/pmgr/cod.c
-@@ -155,7 +155,7 @@ static s32 cod_f_read(void __user *pbuffer, s32 size, s32 count,
- 	return -EINVAL;
- }
- 
--static s32 cod_f_seek(struct file *filp, s32 lOffset, s32 origin)
-+static s32 cod_f_seek(struct file *filp, s32 offset, s32 origin)
+ void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator, void *va_buf,
+-			   u32 uPaSize)
++			   u32 pa_size)
  {
- 	loff_t dw_cur_pos;
+ 	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
+ 	void *pbuf = NULL;
+@@ -1018,7 +1018,7 @@ void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator, void *va_buf,
+ 	DBC_REQUIRE(xlator != NULL);
+ 	DBC_REQUIRE(xlator_obj->hcmm_mgr != NULL);
+ 	DBC_REQUIRE(va_buf != NULL);
+-	DBC_REQUIRE(uPaSize > 0);
++	DBC_REQUIRE(pa_size > 0);
+ 	DBC_REQUIRE(xlator_obj->ul_seg_id > 0);
  
-@@ -164,7 +164,7 @@ static s32 cod_f_seek(struct file *filp, s32 lOffset, s32 origin)
- 		return -EFAULT;
- 
- 	/* based on the origin flag, move the internal pointer */
--	dw_cur_pos = filp->f_op->llseek(filp, lOffset, origin);
-+	dw_cur_pos = filp->f_op->llseek(filp, offset, origin);
- 
- 	if ((s32) dw_cur_pos < 0)
- 		return -EPERM;
-@@ -487,12 +487,12 @@ bool cod_init(void)
-  *      loaded must be the first element of the args array and must be a fully
-  *      qualified pathname.
-  *  Details:
-- *      if nArgc doesn't match the number of arguments in the args array, the
-+ *      if num_argc doesn't match the number of arguments in the args array, the
-  *      args array is searched for a NULL terminating entry, and argc is
-  *      recalculated to reflect this.  In this way, we can support NULL
-- *      terminating args arrays, if nArgc is very large.
-+ *      terminating args arrays, if num_argc is very large.
+ 	if (xlator_obj) {
+@@ -1026,7 +1026,7 @@ void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator, void *va_buf,
+ 		*(volatile u32 *)va_buf = 0;
+ 		/* Alloc SM */
+ 		pbuf =
+-		    cmm_calloc_buf(xlator_obj->hcmm_mgr, uPaSize, &attrs, NULL);
++		    cmm_calloc_buf(xlator_obj->hcmm_mgr, pa_size, &attrs, NULL);
+ 		if (pbuf) {
+ 			/* convert to translator(node/strm) process Virtual
+ 			 * address */
+@@ -1076,14 +1076,14 @@ int cmm_xlator_free_buf(struct cmm_xlatorobject *xlator, void *buf_va)
+  *      Set/Get translator info.
   */
--int cod_load_base(struct cod_manager *hmgr, u32 nArgc, char *args[],
-+int cod_load_base(struct cod_manager *hmgr, u32 num_argc, char *args[],
- 			 cod_writefxn pfn_write, void *pArb, char *envp[])
+ int cmm_xlator_info(struct cmm_xlatorobject *xlator, IN OUT u8 ** paddr,
+-			   u32 ul_size, u32 uSegId, bool set_info)
++			   u32 ul_size, u32 segm_id, bool set_info)
  {
- 	dbll_flags flags;
-@@ -503,7 +503,7 @@ int cod_load_base(struct cod_manager *hmgr, u32 nArgc, char *args[],
+ 	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
+ 	int status = 0;
  
  	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(IS_VALID(hmgr));
--	DBC_REQUIRE(nArgc > 0);
-+	DBC_REQUIRE(num_argc > 0);
- 	DBC_REQUIRE(args != NULL);
- 	DBC_REQUIRE(args[0] != NULL);
- 	DBC_REQUIRE(pfn_write != NULL);
-@@ -513,9 +513,9 @@ int cod_load_base(struct cod_manager *hmgr, u32 nArgc, char *args[],
- 	 *  Make sure every argv[] stated in argc has a value, or change argc to
- 	 *  reflect true number in NULL terminated argv array.
- 	 */
--	for (i = 0; i < nArgc; i++) {
-+	for (i = 0; i < num_argc; i++) {
- 		if (args[i] == NULL) {
--			nArgc = i;
-+			num_argc = i;
- 			break;
- 		}
- 	}
-diff --git a/drivers/staging/tidspbridge/pmgr/dbll.c b/drivers/staging/tidspbridge/pmgr/dbll.c
-index 3636aa3..1f67193 100644
---- a/drivers/staging/tidspbridge/pmgr/dbll.c
-+++ b/drivers/staging/tidspbridge/pmgr/dbll.c
-@@ -156,14 +156,14 @@ static struct dynload_symbol *dbll_find_symbol(struct dynamic_loader_sym *this,
- 					       const char *name);
- static struct dynload_symbol *dbll_add_to_symbol_table(struct dynamic_loader_sym
- 						       *this, const char *name,
--						       unsigned moduleId);
-+						       unsigned module_id);
- static struct dynload_symbol *find_in_symbol_table(struct dynamic_loader_sym
- 						   *this, const char *name,
- 						   unsigned moduleid);
- static void dbll_purge_symbol_table(struct dynamic_loader_sym *this,
--				    unsigned moduleId);
-+				    unsigned module_id);
- static void *allocate(struct dynamic_loader_sym *this, unsigned memsize);
--static void deallocate(struct dynamic_loader_sym *this, void *memPtr);
-+static void deallocate(struct dynamic_loader_sym *this, void *mem_ptr);
- static void dbll_err_report(struct dynamic_loader_sym *this, const char *errstr,
- 			    va_list args);
- /* dynamic_loader_allocate */
-@@ -1094,7 +1094,7 @@ static struct dynload_symbol *find_in_symbol_table(struct dynamic_loader_sym
-  */
- static struct dynload_symbol *dbll_add_to_symbol_table(struct dynamic_loader_sym
- 						       *this, const char *name,
--						       unsigned moduleId)
-+						       unsigned module_id)
- {
- 	struct dbll_symbol *sym_ptr = NULL;
- 	struct dbll_symbol symbol;
-@@ -1150,7 +1150,7 @@ static struct dynload_symbol *dbll_add_to_symbol_table(struct dynamic_loader_sym
-  *  ======== dbll_purge_symbol_table ========
-  */
- static void dbll_purge_symbol_table(struct dynamic_loader_sym *this,
--				    unsigned moduleId)
-+				    unsigned module_id)
- {
- 	struct ldr_symbol *ldr_sym = (struct ldr_symbol *)this;
- 	struct dbll_library_obj *lib;
-@@ -1183,7 +1183,7 @@ static void *allocate(struct dynamic_loader_sym *this, unsigned memsize)
- /*
-  *  ======== deallocate ========
-  */
--static void deallocate(struct dynamic_loader_sym *this, void *memPtr)
-+static void deallocate(struct dynamic_loader_sym *this, void *mem_ptr)
- {
- 	struct ldr_symbol *ldr_sym = (struct ldr_symbol *)this;
- 	struct dbll_library_obj *lib;
-@@ -1192,7 +1192,7 @@ static void deallocate(struct dynamic_loader_sym *this, void *memPtr)
- 	lib = ldr_sym->lib;
- 	DBC_REQUIRE(lib);
+ 	DBC_REQUIRE(paddr != NULL);
+-	DBC_REQUIRE((uSegId > 0) && (uSegId <= CMM_MAXGPPSEGS));
++	DBC_REQUIRE((segm_id > 0) && (segm_id <= CMM_MAXGPPSEGS));
  
--	kfree(memPtr);
-+	kfree(mem_ptr);
- }
- 
- /*
+ 	if (xlator_obj) {
+ 		if (set_info) {
 diff --git a/drivers/staging/tidspbridge/pmgr/dev.c b/drivers/staging/tidspbridge/pmgr/dev.c
-index aac448e..eb4799d 100644
+index 55e2a5e..f1b69e1 100644
 --- a/drivers/staging/tidspbridge/pmgr/dev.c
 +++ b/drivers/staging/tidspbridge/pmgr/dev.c
-@@ -101,7 +101,7 @@ static void store_interface_fxns(struct bridge_drv_interface *drv_fxns,
+@@ -100,7 +100,7 @@ static void store_interface_fxns(struct bridge_drv_interface *drv_fxns,
+  *      is passed a handle to a DEV_hObject, then calls the
   *      device's bridge_brd_write() function.
   */
- u32 dev_brd_write_fxn(void *pArb, u32 ulDspAddr, void *pHostBuf,
--		      u32 ul_num_bytes, u32 nMemSpace)
-+		      u32 ul_num_bytes, u32 mem_space)
+-u32 dev_brd_write_fxn(void *arb, u32 ulDspAddr, void *host_buf,
++u32 dev_brd_write_fxn(void *arb, u32 dsp_add, void *host_buf,
+ 		      u32 ul_num_bytes, u32 mem_space)
  {
- 	struct dev_object *dev_obj = (struct dev_object *)pArb;
- 	u32 ul_written = 0;
-@@ -114,7 +114,7 @@ u32 dev_brd_write_fxn(void *pArb, u32 ulDspAddr, void *pHostBuf,
+ 	struct dev_object *dev_obj = (struct dev_object *)arb;
+@@ -114,7 +114,7 @@ u32 dev_brd_write_fxn(void *arb, u32 ulDspAddr, void *host_buf,
  		DBC_ASSERT(dev_obj->hbridge_context != NULL);
  		status = (*dev_obj->bridge_interface.pfn_brd_write) (
- 					dev_obj->hbridge_context, pHostBuf,
--					ulDspAddr, ul_num_bytes, nMemSpace);
-+					ulDspAddr, ul_num_bytes, mem_space);
+ 					dev_obj->hbridge_context, host_buf,
+-					ulDspAddr, ul_num_bytes, mem_space);
++					dsp_add, ul_num_bytes, mem_space);
  		/* Special case of getting the address only */
  		if (ul_num_bytes == 0)
  			ul_num_bytes = 1;
-diff --git a/drivers/staging/tidspbridge/pmgr/msg.c b/drivers/staging/tidspbridge/pmgr/msg.c
-index 64f1cb4..6122cd4 100644
---- a/drivers/staging/tidspbridge/pmgr/msg.c
-+++ b/drivers/staging/tidspbridge/pmgr/msg.c
-@@ -46,7 +46,7 @@ static u32 refs;		/* module reference count */
-  *      can exist per device object.
+@@ -798,7 +798,7 @@ bool dev_init(void)
+  *  Purpose:
+  *      Notify all clients of this device of a change in device status.
   */
- int msg_create(OUT struct msg_mgr **phMsgMgr,
--		      struct dev_object *hdev_obj, msg_onexit msgCallback)
-+		      struct dev_object *hdev_obj, msg_onexit msg_callback)
+-int dev_notify_clients(struct dev_object *hdev_obj, u32 ulStatus)
++int dev_notify_clients(struct dev_object *hdev_obj, u32 ret)
  {
- 	struct bridge_drv_interface *intf_fxns;
- 	struct msg_mgr_ *msg_mgr_obj;
-@@ -55,7 +55,7 @@ int msg_create(OUT struct msg_mgr **phMsgMgr,
+ 	int status = 0;
  
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(phMsgMgr != NULL);
--	DBC_REQUIRE(msgCallback != NULL);
-+	DBC_REQUIRE(msg_callback != NULL);
- 	DBC_REQUIRE(hdev_obj != NULL);
- 
- 	*phMsgMgr = NULL;
-@@ -64,7 +64,7 @@ int msg_create(OUT struct msg_mgr **phMsgMgr,
- 
- 	/* Let Bridge message module finish the create: */
- 	status =
--	    (*intf_fxns->pfn_msg_create) (&hmsg_mgr, hdev_obj, msgCallback);
-+	    (*intf_fxns->pfn_msg_create) (&hmsg_mgr, hdev_obj, msg_callback);
- 
- 	if (DSP_SUCCEEDED(status)) {
- 		/* Fill in DSP API message module's fields of the msg_mgr
-diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-index 4fe96bf..9d05166 100644
---- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
-+++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-@@ -327,7 +327,7 @@ void dcd_exit(void)
-  */
- int dcd_get_dep_libs(IN struct dcd_manager *hdcd_mgr,
- 			    IN struct dsp_uuid *uuid_obj,
--			    u16 numLibs, OUT struct dsp_uuid *pDepLibUuids,
-+			    u16 num_libs, OUT struct dsp_uuid *pDepLibUuids,
- 			    OUT bool *pPersistentDepLibs,
- 			    IN enum nldr_phase phase)
- {
-@@ -340,7 +340,7 @@ int dcd_get_dep_libs(IN struct dcd_manager *hdcd_mgr,
- 	DBC_REQUIRE(pPersistentDepLibs != NULL);
- 
- 	status =
--	    get_dep_lib_info(hdcd_mgr, uuid_obj, &numLibs, NULL, pDepLibUuids,
-+	    get_dep_lib_info(hdcd_mgr, uuid_obj, &num_libs, NULL, pDepLibUuids,
- 			     pPersistentDepLibs, phase);
+@@ -809,7 +809,7 @@ int dev_notify_clients(struct dev_object *hdev_obj, u32 ulStatus)
+ 	     proc_obj != NULL;
+ 	     proc_obj = (void *)lst_next(dev_obj->proc_list,
+ 					 (struct list_head *)proc_obj))
+-		proc_notify_clients(proc_obj, (u32) ulStatus);
++		proc_notify_clients(proc_obj, (u32) ret);
  
  	return status;
-diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
-index 36ddfdf..4abfd81 100644
---- a/drivers/staging/tidspbridge/rmgr/drv.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv.c
-@@ -375,7 +375,7 @@ int drv_remove_all_strm_res_elements(void *process_ctxt)
  }
- 
- /* Getting the stream resource element */
--int drv_get_strm_res_element(void *hStrm, void *hstrm_res,
-+int drv_get_strm_res_element(void *stream_obj, void *hstrm_res,
- 				    void *process_ctxt)
+diff --git a/drivers/staging/tidspbridge/rmgr/disp.c b/drivers/staging/tidspbridge/rmgr/disp.c
+index d2cb558..13cfdfb 100644
+--- a/drivers/staging/tidspbridge/rmgr/disp.c
++++ b/drivers/staging/tidspbridge/rmgr/disp.c
+@@ -223,7 +223,7 @@ bool disp_init(void)
+  */
+ int disp_node_change_priority(struct disp_object *disp_obj,
+ 				     struct node_object *hnode,
+-				     u32 ulRMSFxn, nodeenv node_env, s32 prio)
++				     u32 rms_fxn, nodeenv node_env, s32 prio)
  {
- 	struct strm_res_object **strm_res =
-@@ -389,7 +389,7 @@ int drv_get_strm_res_element(void *hStrm, void *hstrm_res,
- 		return -EPERM;
+ 	u32 dw_arg;
+ 	struct rms_command *rms_cmd;
+@@ -235,7 +235,7 @@ int disp_node_change_priority(struct disp_object *disp_obj,
  
- 	temp_strm = ctxt->pstrm_list;
--	while ((temp_strm != NULL) && (temp_strm->hstream != hStrm)) {
-+	while ((temp_strm != NULL) && (temp_strm->hstream != stream_obj)) {
- 		temp_strm2 = temp_strm;
- 		temp_strm = temp_strm->next;
- 	}
+ 	/* Send message to RMS to change priority */
+ 	rms_cmd = (struct rms_command *)(disp_obj->pbuf);
+-	rms_cmd->fxn = (rms_word) (ulRMSFxn);
++	rms_cmd->fxn = (rms_word) (rms_fxn);
+ 	rms_cmd->arg1 = (rms_word) node_env;
+ 	rms_cmd->arg2 = prio;
+ 	status = send_message(disp_obj, node_get_timeout(hnode),
+@@ -249,7 +249,7 @@ int disp_node_change_priority(struct disp_object *disp_obj,
+  *  Create a node on the DSP by remotely calling the node's create function.
+  */
+ int disp_node_create(struct disp_object *disp_obj,
+-			    struct node_object *hnode, u32 ulRMSFxn,
++			    struct node_object *hnode, u32 rms_fxn,
+ 			    u32 ul_create_fxn,
+ 			    IN CONST struct node_createargs *pargs,
+ 			    OUT nodeenv *node_env)
+@@ -351,7 +351,7 @@ int disp_node_create(struct disp_object *disp_obj,
+ 		total = 0;	/* Total number of words in buffer so far */
+ 		pdw_buf = (rms_word *) disp_obj->pbuf;
+ 		rms_cmd = (struct rms_command *)pdw_buf;
+-		rms_cmd->fxn = (rms_word) (ulRMSFxn);
++		rms_cmd->fxn = (rms_word) (rms_fxn);
+ 		rms_cmd->arg1 = (rms_word) (ul_create_fxn);
+ 		if (node_get_load_type(hnode) == NLDR_DYNAMICLOAD) {
+ 			/* Flush ICACHE on Load */
+@@ -485,7 +485,7 @@ func_end:
+  *
+  */
+ int disp_node_delete(struct disp_object *disp_obj,
+-			    struct node_object *hnode, u32 ulRMSFxn,
++			    struct node_object *hnode, u32 rms_fxn,
+ 			    u32 ul_delete_fxn, nodeenv node_env)
+ {
+ 	u32 dw_arg;
+@@ -507,7 +507,7 @@ int disp_node_delete(struct disp_object *disp_obj,
+ 			 *  Fill in buffer to send to RMS
+ 			 */
+ 			rms_cmd = (struct rms_command *)disp_obj->pbuf;
+-			rms_cmd->fxn = (rms_word) (ulRMSFxn);
++			rms_cmd->fxn = (rms_word) (rms_fxn);
+ 			rms_cmd->arg1 = (rms_word) node_env;
+ 			rms_cmd->arg2 = (rms_word) (ul_delete_fxn);
+ 			rms_cmd->data = node_get_type(hnode);
+@@ -539,7 +539,7 @@ int disp_node_delete(struct disp_object *disp_obj,
+  *      that has been suspended (via DISP_NodePause()) on the DSP.
+  */
+ int disp_node_run(struct disp_object *disp_obj,
+-			 struct node_object *hnode, u32 ulRMSFxn,
++			 struct node_object *hnode, u32 rms_fxn,
+ 			 u32 ul_execute_fxn, nodeenv node_env)
+ {
+ 	u32 dw_arg;
+@@ -560,7 +560,7 @@ int disp_node_run(struct disp_object *disp_obj,
+ 			 *  Fill in buffer to send to RMS.
+ 			 */
+ 			rms_cmd = (struct rms_command *)disp_obj->pbuf;
+-			rms_cmd->fxn = (rms_word) (ulRMSFxn);
++			rms_cmd->fxn = (rms_word) (rms_fxn);
+ 			rms_cmd->arg1 = (rms_word) node_env;
+ 			rms_cmd->arg2 = (rms_word) (ul_execute_fxn);
+ 			rms_cmd->data = node_get_type(hnode);
 diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
-index aaea5bb..d19d990 100644
+index cdae2c8..e788f31 100644
 --- a/drivers/staging/tidspbridge/rmgr/node.c
 +++ b/drivers/staging/tidspbridge/rmgr/node.c
-@@ -258,9 +258,9 @@ static int get_proc_props(struct node_mgr *hnode_mgr,
+@@ -242,14 +242,14 @@ static void delete_node(struct node_object *hnode,
+ 			struct process_context *pr_ctxt);
+ static void delete_node_mgr(struct node_mgr *hnode_mgr);
+ static void fill_stream_connect(struct node_object *node1,
+-				struct node_object *node2, u32 uStream1,
+-				u32 uStream2);
++				struct node_object *node2, u32 stream1,
++				u32 stream2);
+ static void fill_stream_def(struct node_object *hnode,
+ 			    struct node_strmdef *pstrm_def,
+ 			    struct dsp_strmattr *pattrs);
+ static void free_stream(struct node_mgr *hnode_mgr, struct stream_chnl stream);
+ static int get_fxn_address(struct node_object *hnode, u32 * fxn_addr,
+-				  u32 uPhase);
++				  u32 phase);
+ static int get_node_props(struct dcd_manager *hdcd_mgr,
+ 				 struct node_object *hnode,
+ 				 CONST struct dsp_uuid *node_uuid,
+@@ -257,9 +257,9 @@ static int get_node_props(struct dcd_manager *hdcd_mgr,
+ static int get_proc_props(struct node_mgr *hnode_mgr,
  				 struct dev_object *hdev_obj);
  static int get_rms_fxns(struct node_mgr *hnode_mgr);
- static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
--		u32 ul_num_bytes, u32 nMemSpace);
-+		u32 ul_num_bytes, u32 mem_space);
- static u32 mem_write(void *priv_ref, u32 ulDspAddr, void *pbuf,
--		     u32 ul_num_bytes, u32 nMemSpace);
-+		     u32 ul_num_bytes, u32 mem_space);
+-static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
++static u32 ovly(void *priv_ref, u32 dsp_run_addr, u32 dsp_load_addr,
+ 		u32 ul_num_bytes, u32 mem_space);
+-static u32 mem_write(void *priv_ref, u32 ulDspAddr, void *pbuf,
++static u32 mem_write(void *priv_ref, u32 dsp_add, void *pbuf,
+ 		     u32 ul_num_bytes, u32 mem_space);
  
  static u32 refs;		/* module reference count */
- 
-@@ -1987,14 +1987,14 @@ bool node_init(void)
+@@ -833,9 +833,9 @@ func_end:
   *  Purpose:
-  *      Gets called when RMS_EXIT is received for a node.
+  *      Connect two nodes on the DSP, or a node on the DSP to the GPP.
   */
--void node_on_exit(struct node_object *hnode, s32 nStatus)
-+void node_on_exit(struct node_object *hnode, s32 node_status)
+-int node_connect(struct node_object *node1, u32 uStream1,
++int node_connect(struct node_object *node1, u32 stream1,
+ 			struct node_object *node2,
+-			u32 uStream2, OPTIONAL IN struct dsp_strmattr *pattrs,
++			u32 stream2, OPTIONAL IN struct dsp_strmattr *pattrs,
+ 			OPTIONAL IN struct dsp_cbdata *conn_param)
  {
- 	if (!hnode)
- 		return;
+ 	struct node_mgr *hnode_mgr;
+@@ -877,10 +877,10 @@ int node_connect(struct node_object *node1, u32 uStream1,
+ 		node2_type = node_get_type(node2);
+ 		/* Check stream indices ranges */
+ 		if ((node1_type != NODE_GPP && node1_type != NODE_DEVICE &&
+-		     uStream1 >= MAX_OUTPUTS(node1)) || (node2_type != NODE_GPP
++		     stream1 >= MAX_OUTPUTS(node1)) || (node2_type != NODE_GPP
+ 							  && node2_type !=
+ 							  NODE_DEVICE
+-							  && uStream2 >=
++							  && stream2 >=
+ 							  MAX_INPUTS(node2)))
+ 			status = -EINVAL;
+ 	}
+@@ -932,7 +932,7 @@ int node_connect(struct node_object *node1, u32 uStream1,
+ 		if (node1_type == NODE_TASK || node1_type == NODE_DAISSOCKET) {
+ 			output =
+ 			    &(node1->create_args.asa.
+-			      task_arg_obj.strm_out_def[uStream1]);
++			      task_arg_obj.strm_out_def[stream1]);
+ 			if (output->sz_device != NULL)
+ 				status = -EISCONN;
  
- 	/* Set node state to done */
- 	NODE_SET_STATE(hnode, NODE_DONE);
--	hnode->exit_status = nStatus;
-+	hnode->exit_status = node_status;
- 	if (hnode->loaded && hnode->phase_split) {
- 		(void)hnode->hnode_mgr->nldr_fxns.pfn_unload(hnode->
- 							     nldr_node_obj,
-@@ -3128,7 +3128,7 @@ static int get_rms_fxns(struct node_mgr *hnode_mgr)
+@@ -940,7 +940,7 @@ int node_connect(struct node_object *node1, u32 uStream1,
+ 		if (node2_type == NODE_TASK || node2_type == NODE_DAISSOCKET) {
+ 			input =
+ 			    &(node2->create_args.asa.
+-			      task_arg_obj.strm_in_def[uStream2]);
++			      task_arg_obj.strm_in_def[stream2]);
+ 			if (input->sz_device != NULL)
+ 				status = -EISCONN;
+ 
+@@ -956,10 +956,10 @@ int node_connect(struct node_object *node1, u32 uStream1,
+ 		if (pipe_id == GB_NOBITS) {
+ 			status = -ECONNREFUSED;
+ 		} else {
+-			node1->outputs[uStream1].type = NODECONNECT;
+-			node2->inputs[uStream2].type = NODECONNECT;
+-			node1->outputs[uStream1].dev_id = pipe_id;
+-			node2->inputs[uStream2].dev_id = pipe_id;
++			node1->outputs[stream1].type = NODECONNECT;
++			node2->inputs[stream2].type = NODECONNECT;
++			node1->outputs[stream1].dev_id = pipe_id;
++			node2->inputs[stream2].dev_id = pipe_id;
+ 			output->sz_device = kzalloc(PIPENAMELEN + 1,
+ 							GFP_KERNEL);
+ 			input->sz_device = kzalloc(PIPENAMELEN + 1, GFP_KERNEL);
+@@ -1051,12 +1051,12 @@ int node_connect(struct node_object *node1, u32 uStream1,
+ func_cont2:
+ 		if (DSP_SUCCEEDED(status)) {
+ 			if (node1 == (struct node_object *)DSP_HGPPNODE) {
+-				node2->inputs[uStream2].type = HOSTCONNECT;
+-				node2->inputs[uStream2].dev_id = chnl_id;
++				node2->inputs[stream2].type = HOSTCONNECT;
++				node2->inputs[stream2].dev_id = chnl_id;
+ 				input->sz_device = pstr_dev_name;
+ 			} else {
+-				node1->outputs[uStream1].type = HOSTCONNECT;
+-				node1->outputs[uStream1].dev_id = chnl_id;
++				node1->outputs[stream1].type = HOSTCONNECT;
++				node1->outputs[stream1].dev_id = chnl_id;
+ 				output->sz_device = pstr_dev_name;
+ 			}
+ 			sprintf(pstr_dev_name, "%s%d", HOSTPREFIX, chnl_id);
+@@ -1069,13 +1069,13 @@ func_cont2:
+ 			/* node1 == > device */
+ 			dev_node_obj = node2;
+ 			hnode = node1;
+-			pstream = &(node1->outputs[uStream1]);
++			pstream = &(node1->outputs[stream1]);
+ 			pstrm_def = output;
+ 		} else {
+ 			/* device == > node2 */
+ 			dev_node_obj = node1;
+ 			hnode = node2;
+-			pstream = &(node2->inputs[uStream2]);
++			pstream = &(node2->inputs[stream2]);
+ 			pstrm_def = input;
+ 		}
+ 		/* Set up create args */
+@@ -1116,25 +1116,25 @@ func_cont2:
+ 		/* Update node1 and node2 stream_connect */
+ 		if (node1_type != NODE_GPP && node1_type != NODE_DEVICE) {
+ 			node1->num_outputs++;
+-			if (uStream1 > node1->max_output_index)
+-				node1->max_output_index = uStream1;
++			if (stream1 > node1->max_output_index)
++				node1->max_output_index = stream1;
+ 
+ 		}
+ 		if (node2_type != NODE_GPP && node2_type != NODE_DEVICE) {
+ 			node2->num_inputs++;
+-			if (uStream2 > node2->max_input_index)
+-				node2->max_input_index = uStream2;
++			if (stream2 > node2->max_input_index)
++				node2->max_input_index = stream2;
+ 
+ 		}
+-		fill_stream_connect(node1, node2, uStream1, uStream2);
++		fill_stream_connect(node1, node2, stream1, stream2);
+ 	}
+ 	/* end of sync_enter_cs */
+ 	/* Exit critical section */
+ 	mutex_unlock(&hnode_mgr->node_mgr_lock);
+ func_end:
+-	dev_dbg(bridge, "%s: node1: %p uStream1: %d node2: %p uStream2: %d"
++	dev_dbg(bridge, "%s: node1: %p stream1: %d node2: %p stream2: %d"
+ 		"pattrs: %p status: 0x%x\n", __func__, node1,
+-		uStream1, node2, uStream2, pattrs, status);
++		stream1, node2, stream2, pattrs, status);
+ 	return status;
+ }
+ 
+@@ -2701,7 +2701,7 @@ static void delete_node_mgr(struct node_mgr *hnode_mgr)
+  */
+ static void fill_stream_connect(struct node_object *node1,
+ 				struct node_object *node2,
+-				u32 uStream1, u32 uStream2)
++				u32 stream1, u32 stream2)
+ {
+ 	u32 strm_index;
+ 	struct dsp_streamconnect *strm1 = NULL;
+@@ -2718,7 +2718,7 @@ static void fill_stream_connect(struct node_object *node1,
+ 			    node1->num_outputs - 1;
+ 			strm1 = &(node1->stream_connect[strm_index]);
+ 			strm1->cb_struct = sizeof(struct dsp_streamconnect);
+-			strm1->this_node_stream_index = uStream1;
++			strm1->this_node_stream_index = stream1;
+ 		}
+ 
+ 		if (node2 != (struct node_object *)DSP_HGPPNODE) {
+@@ -2726,7 +2726,7 @@ static void fill_stream_connect(struct node_object *node1,
+ 			if (node1_type != NODE_DEVICE) {
+ 				strm1->connected_node = node2;
+ 				strm1->ui_connected_node_id = node2->node_uuid;
+-				strm1->connected_node_stream_index = uStream2;
++				strm1->connected_node_stream_index = stream2;
+ 				strm1->connect_type = CONNECTTYPE_NODEOUTPUT;
+ 			}
+ 			if (node2_type != NODE_DEVICE) {
+@@ -2735,10 +2735,10 @@ static void fill_stream_connect(struct node_object *node1,
+ 				strm2 = &(node2->stream_connect[strm_index]);
+ 				strm2->cb_struct =
+ 				    sizeof(struct dsp_streamconnect);
+-				strm2->this_node_stream_index = uStream2;
++				strm2->this_node_stream_index = stream2;
+ 				strm2->connected_node = node1;
+ 				strm2->ui_connected_node_id = node1->node_uuid;
+-				strm2->connected_node_stream_index = uStream1;
++				strm2->connected_node_stream_index = stream1;
+ 				strm2->connect_type = CONNECTTYPE_NODEINPUT;
+ 			}
+ 		} else if (node1_type != NODE_DEVICE)
+@@ -2749,7 +2749,7 @@ static void fill_stream_connect(struct node_object *node1,
+ 		strm_index = node2->num_inputs + node2->num_outputs - 1;
+ 		strm2 = &(node2->stream_connect[strm_index]);
+ 		strm2->cb_struct = sizeof(struct dsp_streamconnect);
+-		strm2->this_node_stream_index = uStream2;
++		strm2->this_node_stream_index = stream2;
+ 		strm2->connect_type = CONNECTTYPE_GPPINPUT;
+ 	}
+ }
+@@ -2820,7 +2820,7 @@ static void free_stream(struct node_mgr *hnode_mgr, struct stream_chnl stream)
+  *      Retrieves the address for create, execute or delete phase for a node.
+  */
+ static int get_fxn_address(struct node_object *hnode, u32 * fxn_addr,
+-				  u32 uPhase)
++				  u32 phase)
+ {
+ 	char *pstr_fxn_name = NULL;
+ 	struct node_mgr *hnode_mgr = hnode->hnode_mgr;
+@@ -2829,7 +2829,7 @@ static int get_fxn_address(struct node_object *hnode, u32 * fxn_addr,
+ 		    node_get_type(hnode) == NODE_DAISSOCKET ||
+ 		    node_get_type(hnode) == NODE_MESSAGE);
+ 
+-	switch (uPhase) {
++	switch (phase) {
+ 	case CREATEPHASE:
+ 		pstr_fxn_name =
+ 		    hnode->dcd_props.obj_data.node_obj.pstr_create_phase_fxn;
+@@ -3127,7 +3127,7 @@ static int get_rms_fxns(struct node_mgr *hnode_mgr)
+  *  Purpose:
   *      Called during overlay.Sends command to RMS to copy a block of data.
   */
- static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
--		u32 ul_num_bytes, u32 nMemSpace)
-+		u32 ul_num_bytes, u32 mem_space)
+-static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
++static u32 ovly(void *priv_ref, u32 dsp_run_addr, u32 dsp_load_addr,
+ 		u32 ul_num_bytes, u32 mem_space)
  {
  	struct node_object *hnode = (struct node_object *)priv_ref;
- 	struct node_mgr *hnode_mgr;
-@@ -3154,7 +3154,7 @@ static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
+@@ -3153,7 +3153,7 @@ static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
+ 	if (DSP_SUCCEEDED(status)) {
  		status =
  		    (*intf_fxns->pfn_brd_mem_copy) (hbridge_context,
- 						ulDspRunAddr, ulDspLoadAddr,
--						ul_num_bytes, (u32) nMemSpace);
-+						ul_num_bytes, (u32) mem_space);
+-						ulDspRunAddr, ulDspLoadAddr,
++						dsp_run_addr, dsp_load_addr,
+ 						ul_num_bytes, (u32) mem_space);
  		if (DSP_SUCCEEDED(status))
  			ul_bytes = ul_num_bytes;
- 		else
-@@ -3172,7 +3172,7 @@ static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
+@@ -3171,7 +3171,7 @@ static u32 ovly(void *priv_ref, u32 ulDspRunAddr, u32 ulDspLoadAddr,
+ /*
   *  ======== mem_write ========
   */
- static u32 mem_write(void *priv_ref, u32 ulDspAddr, void *pbuf,
--		     u32 ul_num_bytes, u32 nMemSpace)
-+		     u32 ul_num_bytes, u32 mem_space)
+-static u32 mem_write(void *priv_ref, u32 ulDspAddr, void *pbuf,
++static u32 mem_write(void *priv_ref, u32 dsp_add, void *pbuf,
+ 		     u32 ul_num_bytes, u32 mem_space)
  {
  	struct node_object *hnode = (struct node_object *)priv_ref;
- 	struct node_mgr *hnode_mgr;
-@@ -3184,12 +3184,12 @@ static u32 mem_write(void *priv_ref, u32 ulDspAddr, void *pbuf,
- 	struct bridge_drv_interface *intf_fxns;
- 
- 	DBC_REQUIRE(hnode);
--	DBC_REQUIRE(nMemSpace & DBLL_CODE || nMemSpace & DBLL_DATA);
-+	DBC_REQUIRE(mem_space & DBLL_CODE || mem_space & DBLL_DATA);
- 
- 	hnode_mgr = hnode->hnode_mgr;
- 
- 	ul_timeout = hnode->utimeout;
--	mem_sect_type = (nMemSpace & DBLL_CODE) ? RMS_CODE : RMS_DATA;
-+	mem_sect_type = (mem_space & DBLL_CODE) ? RMS_CODE : RMS_DATA;
- 
- 	/* Call new MemWrite function */
+@@ -3195,7 +3195,7 @@ static u32 mem_write(void *priv_ref, u32 ulDspAddr, void *pbuf,
  	intf_fxns = hnode_mgr->intf_fxns;
-diff --git a/drivers/staging/tidspbridge/rmgr/strm.c b/drivers/staging/tidspbridge/rmgr/strm.c
-index ffacfd4..795332e 100644
---- a/drivers/staging/tidspbridge/rmgr/strm.c
-+++ b/drivers/staging/tidspbridge/rmgr/strm.c
-@@ -88,7 +88,7 @@ struct strm_object {
- static u32 refs;		/* module reference count */
+ 	status = dev_get_bridge_context(hnode_mgr->hdev_obj, &hbridge_context);
+ 	status = (*intf_fxns->pfn_brd_mem_write) (hbridge_context, pbuf,
+-					ulDspAddr, ul_num_bytes, mem_sect_type);
++					dsp_add, ul_num_bytes, mem_sect_type);
  
- /*  ----------------------------------- Function Prototypes */
--static int delete_strm(struct strm_object *hStrm);
-+static int delete_strm(struct strm_object *stream_obj);
- static void delete_strm_mgr(struct strm_mgr *strm_mgr_obj);
- 
- /*
-@@ -96,7 +96,7 @@ static void delete_strm_mgr(struct strm_mgr *strm_mgr_obj);
-  *  Purpose:
-  *      Allocates buffers for a stream.
-  */
--int strm_allocate_buffer(struct strm_object *hStrm, u32 usize,
-+int strm_allocate_buffer(struct strm_object *stream_obj, u32 usize,
- 				OUT u8 **ap_buffer, u32 num_bufs,
- 				struct process_context *pr_ctxt)
- {
-@@ -109,7 +109,7 @@ int strm_allocate_buffer(struct strm_object *hStrm, u32 usize,
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(ap_buffer != NULL);
- 
--	if (hStrm) {
-+	if (stream_obj) {
- 		/*
- 		 * Allocate from segment specified at time of stream open.
- 		 */
-@@ -124,8 +124,9 @@ int strm_allocate_buffer(struct strm_object *hStrm, u32 usize,
- 		goto func_end;
- 
- 	for (i = 0; i < num_bufs; i++) {
--		DBC_ASSERT(hStrm->xlator != NULL);
--		(void)cmm_xlator_alloc_buf(hStrm->xlator, &ap_buffer[i], usize);
-+		DBC_ASSERT(stream_obj->xlator != NULL);
-+		(void)cmm_xlator_alloc_buf(stream_obj->xlator, &ap_buffer[i],
-+					   usize);
- 		if (ap_buffer[i] == NULL) {
- 			status = -ENOMEM;
- 			alloc_cnt = i;
-@@ -133,12 +134,12 @@ int strm_allocate_buffer(struct strm_object *hStrm, u32 usize,
- 		}
- 	}
- 	if (DSP_FAILED(status))
--		strm_free_buffer(hStrm, ap_buffer, alloc_cnt, pr_ctxt);
-+		strm_free_buffer(stream_obj, ap_buffer, alloc_cnt, pr_ctxt);
- 
- 	if (DSP_FAILED(status))
- 		goto func_end;
- 
--	if (drv_get_strm_res_element(hStrm, &hstrm_res, pr_ctxt) !=
-+	if (drv_get_strm_res_element(stream_obj, &hstrm_res, pr_ctxt) !=
- 	    -ENOENT)
- 		drv_proc_update_strm_res(num_bufs, hstrm_res);
- 
-@@ -151,7 +152,7 @@ func_end:
-  *  Purpose:
-  *      Close a stream opened with strm_open().
-  */
--int strm_close(struct strm_object *hStrm,
-+int strm_close(struct strm_object *stream_obj,
- 		      struct process_context *pr_ctxt)
- {
- 	struct bridge_drv_interface *intf_fxns;
-@@ -162,35 +163,35 @@ int strm_close(struct strm_object *hStrm,
- 
- 	DBC_REQUIRE(refs > 0);
- 
--	if (!hStrm) {
-+	if (!stream_obj) {
- 		status = -EFAULT;
- 	} else {
- 		/* Have all buffers been reclaimed? If not, return
- 		 * -EPIPE */
--		intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
-+		intf_fxns = stream_obj->strm_mgr_obj->intf_fxns;
- 		status =
--		    (*intf_fxns->pfn_chnl_get_info) (hStrm->chnl_obj,
-+		    (*intf_fxns->pfn_chnl_get_info) (stream_obj->chnl_obj,
- 						     &chnl_info_obj);
- 		DBC_ASSERT(DSP_SUCCEEDED(status));
- 
- 		if (chnl_info_obj.cio_cs > 0 || chnl_info_obj.cio_reqs > 0)
- 			status = -EPIPE;
- 		else
--			status = delete_strm(hStrm);
-+			status = delete_strm(stream_obj);
- 	}
- 
- 	if (DSP_FAILED(status))
- 		goto func_end;
- 
--	if (drv_get_strm_res_element(hStrm, &hstrm_res, pr_ctxt) !=
-+	if (drv_get_strm_res_element(stream_obj, &hstrm_res, pr_ctxt) !=
- 	    -ENOENT)
- 		drv_proc_remove_strm_res_element(hstrm_res, pr_ctxt);
- func_end:
- 	DBC_ENSURE(status == 0 || status == -EFAULT ||
- 		   status == -EPIPE || status == -EPERM);
- 
--	dev_dbg(bridge, "%s: hStrm: %p, status 0x%x\n", __func__,
--		hStrm, status);
-+	dev_dbg(bridge, "%s: stream_obj: %p, status 0x%x\n", __func__,
-+		stream_obj, status);
- 	return status;
+ 	return ul_num_bytes;
  }
- 
-@@ -270,7 +271,7 @@ void strm_exit(void)
-  *  Purpose:
-  *      Frees the buffers allocated for a stream.
-  */
--int strm_free_buffer(struct strm_object *hStrm, u8 ** ap_buffer,
-+int strm_free_buffer(struct strm_object *stream_obj, u8 ** ap_buffer,
- 			    u32 num_bufs, struct process_context *pr_ctxt)
- {
- 	int status = 0;
-@@ -281,20 +282,21 @@ int strm_free_buffer(struct strm_object *hStrm, u8 ** ap_buffer,
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(ap_buffer != NULL);
- 
--	if (!hStrm)
-+	if (!stream_obj)
- 		status = -EFAULT;
- 
- 	if (DSP_SUCCEEDED(status)) {
- 		for (i = 0; i < num_bufs; i++) {
--			DBC_ASSERT(hStrm->xlator != NULL);
-+			DBC_ASSERT(stream_obj->xlator != NULL);
- 			status =
--			    cmm_xlator_free_buf(hStrm->xlator, ap_buffer[i]);
-+			    cmm_xlator_free_buf(stream_obj->xlator,
-+						ap_buffer[i]);
- 			if (DSP_FAILED(status))
- 				break;
- 			ap_buffer[i] = NULL;
- 		}
- 	}
--	if (drv_get_strm_res_element(hStrm, hstrm_res, pr_ctxt) !=
-+	if (drv_get_strm_res_element(stream_obj, hstrm_res, pr_ctxt) !=
- 	    -ENOENT)
- 		drv_proc_update_strm_res(num_bufs - i, hstrm_res);
- 
-@@ -306,7 +308,7 @@ int strm_free_buffer(struct strm_object *hStrm, u8 ** ap_buffer,
-  *  Purpose:
-  *      Retrieves information about a stream.
-  */
--int strm_get_info(struct strm_object *hStrm,
-+int strm_get_info(struct strm_object *stream_obj,
- 			 OUT struct stream_info *stream_info,
- 			 u32 stream_info_size)
- {
-@@ -319,7 +321,7 @@ int strm_get_info(struct strm_object *hStrm,
- 	DBC_REQUIRE(stream_info != NULL);
- 	DBC_REQUIRE(stream_info_size >= sizeof(struct stream_info));
- 
--	if (!hStrm) {
-+	if (!stream_obj) {
- 		status = -EFAULT;
- 	} else {
- 		if (stream_info_size < sizeof(struct stream_info)) {
-@@ -330,22 +332,23 @@ int strm_get_info(struct strm_object *hStrm,
- 	if (DSP_FAILED(status))
- 		goto func_end;
- 
--	intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
-+	intf_fxns = stream_obj->strm_mgr_obj->intf_fxns;
- 	status =
--	    (*intf_fxns->pfn_chnl_get_info) (hStrm->chnl_obj, &chnl_info_obj);
-+	    (*intf_fxns->pfn_chnl_get_info) (stream_obj->chnl_obj,
-+						  &chnl_info_obj);
- 	if (DSP_FAILED(status))
- 		goto func_end;
- 
--	if (hStrm->xlator) {
-+	if (stream_obj->xlator) {
- 		/* We have a translator */
--		DBC_ASSERT(hStrm->segment_id > 0);
--		cmm_xlator_info(hStrm->xlator, (u8 **) &virt_base, 0,
--				hStrm->segment_id, false);
-+		DBC_ASSERT(stream_obj->segment_id > 0);
-+		cmm_xlator_info(stream_obj->xlator, (u8 **) &virt_base, 0,
-+				stream_obj->segment_id, false);
- 	}
--	stream_info->segment_id = hStrm->segment_id;
--	stream_info->strm_mode = hStrm->strm_mode;
-+	stream_info->segment_id = stream_obj->segment_id;
-+	stream_info->strm_mode = stream_obj->strm_mode;
- 	stream_info->virt_base = virt_base;
--	stream_info->user_strm->number_bufs_allowed = hStrm->num_bufs;
-+	stream_info->user_strm->number_bufs_allowed = stream_obj->num_bufs;
- 	stream_info->user_strm->number_bufs_in_stream = chnl_info_obj.cio_cs +
- 	    chnl_info_obj.cio_reqs;
- 	/* # of bytes transferred since last call to DSPStream_Idle() */
-@@ -373,25 +376,25 @@ func_end:
-  *  Purpose:
-  *      Idles a particular stream.
-  */
--int strm_idle(struct strm_object *hStrm, bool flush_data)
-+int strm_idle(struct strm_object *stream_obj, bool flush_data)
- {
- 	struct bridge_drv_interface *intf_fxns;
- 	int status = 0;
- 
- 	DBC_REQUIRE(refs > 0);
- 
--	if (!hStrm) {
-+	if (!stream_obj) {
- 		status = -EFAULT;
- 	} else {
--		intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
-+		intf_fxns = stream_obj->strm_mgr_obj->intf_fxns;
- 
--		status = (*intf_fxns->pfn_chnl_idle) (hStrm->chnl_obj,
--						      hStrm->utimeout,
-+		status = (*intf_fxns->pfn_chnl_idle) (stream_obj->chnl_obj,
-+						      stream_obj->utimeout,
- 						      flush_data);
- 	}
- 
--	dev_dbg(bridge, "%s: hStrm: %p flush_data: 0x%x status: 0x%x\n",
--		__func__, hStrm, flush_data, status);
-+	dev_dbg(bridge, "%s: stream_obj: %p flush_data: 0x%x status: 0x%x\n",
-+		__func__, stream_obj, flush_data, status);
- 	return status;
- }
- 
-@@ -419,7 +422,7 @@ bool strm_init(void)
-  *  Purpose:
-  *      Issues a buffer on a stream
-  */
--int strm_issue(struct strm_object *hStrm, IN u8 *pbuf, u32 ul_bytes,
-+int strm_issue(struct strm_object *stream_obj, IN u8 *pbuf, u32 ul_bytes,
- 		      u32 ul_buf_size, u32 dw_arg)
- {
- 	struct bridge_drv_interface *intf_fxns;
-@@ -429,13 +432,13 @@ int strm_issue(struct strm_object *hStrm, IN u8 *pbuf, u32 ul_bytes,
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(pbuf != NULL);
- 
--	if (!hStrm) {
-+	if (!stream_obj) {
- 		status = -EFAULT;
- 	} else {
--		intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
-+		intf_fxns = stream_obj->strm_mgr_obj->intf_fxns;
- 
--		if (hStrm->segment_id != 0) {
--			tmp_buf = cmm_xlator_translate(hStrm->xlator,
-+		if (stream_obj->segment_id != 0) {
-+			tmp_buf = cmm_xlator_translate(stream_obj->xlator,
- 						       (void *)pbuf,
- 						       CMM_VA2DSPPA);
- 			if (tmp_buf == NULL)
-@@ -444,15 +447,15 @@ int strm_issue(struct strm_object *hStrm, IN u8 *pbuf, u32 ul_bytes,
- 		}
- 		if (DSP_SUCCEEDED(status)) {
- 			status = (*intf_fxns->pfn_chnl_add_io_req)
--			    (hStrm->chnl_obj, pbuf, ul_bytes, ul_buf_size,
-+			    (stream_obj->chnl_obj, pbuf, ul_bytes, ul_buf_size,
- 			     (u32) tmp_buf, dw_arg);
- 		}
- 		if (status == -EIO)
- 			status = -ENOSR;
- 	}
- 
--	dev_dbg(bridge, "%s: hStrm: %p pbuf: %p ul_bytes: 0x%x dw_arg: 0x%x "
--		"status: 0x%x\n", __func__, hStrm, pbuf,
-+	dev_dbg(bridge, "%s: stream_obj: %p pbuf: %p ul_bytes: 0x%x dw_arg:"
-+		" 0x%x status: 0x%x\n", __func__, stream_obj, pbuf,
- 		ul_bytes, dw_arg, status);
- 	return status;
- }
-@@ -615,7 +618,7 @@ func_cont:
-  *  Purpose:
-  *      Relcaims a buffer from a stream.
-  */
--int strm_reclaim(struct strm_object *hStrm, OUT u8 ** buf_ptr,
-+int strm_reclaim(struct strm_object *stream_obj, OUT u8 ** buf_ptr,
- 			u32 *pulBytes, u32 *pulBufSize, u32 *pdw_arg)
- {
- 	struct bridge_drv_interface *intf_fxns;
-@@ -628,14 +631,15 @@ int strm_reclaim(struct strm_object *hStrm, OUT u8 ** buf_ptr,
- 	DBC_REQUIRE(pulBytes != NULL);
- 	DBC_REQUIRE(pdw_arg != NULL);
- 
--	if (!hStrm) {
-+	if (!stream_obj) {
- 		status = -EFAULT;
- 		goto func_end;
- 	}
--	intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
-+	intf_fxns = stream_obj->strm_mgr_obj->intf_fxns;
- 
- 	status =
--	    (*intf_fxns->pfn_chnl_get_ioc) (hStrm->chnl_obj, hStrm->utimeout,
-+	    (*intf_fxns->pfn_chnl_get_ioc) (stream_obj->chnl_obj,
-+					    stream_obj->utimeout,
- 					    &chnl_ioc_obj);
- 	if (DSP_SUCCEEDED(status)) {
- 		*pulBytes = chnl_ioc_obj.byte_size;
-@@ -656,7 +660,7 @@ int strm_reclaim(struct strm_object *hStrm, OUT u8 ** buf_ptr,
- 		/* Translate zerocopy buffer if channel not canceled. */
- 		if (DSP_SUCCEEDED(status)
- 		    && (!CHNL_IS_IO_CANCELLED(chnl_ioc_obj))
--		    && (hStrm->strm_mode == STRMMODE_ZEROCOPY)) {
-+		    && (stream_obj->strm_mode == STRMMODE_ZEROCOPY)) {
- 			/*
- 			 *  This is a zero-copy channel so chnl_ioc_obj.pbuf
- 			 *  contains the DSP address of SM. We need to
-@@ -664,12 +668,13 @@ int strm_reclaim(struct strm_object *hStrm, OUT u8 ** buf_ptr,
- 			 *  thread to access.
- 			 *  Note: Could add CMM_DSPPA2VA to CMM in the future.
- 			 */
--			tmp_buf = cmm_xlator_translate(hStrm->xlator,
-+			tmp_buf = cmm_xlator_translate(stream_obj->xlator,
- 						       chnl_ioc_obj.pbuf,
- 						       CMM_DSPPA2PA);
- 			if (tmp_buf != NULL) {
- 				/* now convert this GPP Pa to Va */
--				tmp_buf = cmm_xlator_translate(hStrm->xlator,
-+				tmp_buf = cmm_xlator_translate(stream_obj->
-+							       xlator,
- 							       tmp_buf,
- 							       CMM_PA2VA);
- 			}
-@@ -686,8 +691,8 @@ func_end:
- 		   status == -ETIME || status == -ESRCH ||
- 		   status == -EPERM);
- 
--	dev_dbg(bridge, "%s: hStrm: %p buf_ptr: %p pulBytes: %p pdw_arg: %p "
--		"status 0x%x\n", __func__, hStrm,
-+	dev_dbg(bridge, "%s: stream_obj: %p buf_ptr: %p pulBytes: %p "
-+		"pdw_arg: %p status 0x%x\n", __func__, stream_obj,
- 		buf_ptr, pulBytes, pdw_arg, status);
- 	return status;
- }
-@@ -697,7 +702,7 @@ func_end:
-  *  Purpose:
-  *      Register to be notified on specific events for this stream.
-  */
--int strm_register_notify(struct strm_object *hStrm, u32 event_mask,
-+int strm_register_notify(struct strm_object *stream_obj, u32 event_mask,
- 				u32 notify_type, struct dsp_notification
- 				* hnotification)
- {
-@@ -707,7 +712,7 @@ int strm_register_notify(struct strm_object *hStrm, u32 event_mask,
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(hnotification != NULL);
- 
--	if (!hStrm) {
-+	if (!stream_obj) {
- 		status = -EFAULT;
- 	} else if ((event_mask & ~((DSP_STREAMIOCOMPLETION) |
- 				   DSP_STREAMDONE)) != 0) {
-@@ -718,10 +723,11 @@ int strm_register_notify(struct strm_object *hStrm, u32 event_mask,
- 
- 	}
- 	if (DSP_SUCCEEDED(status)) {
--		intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
-+		intf_fxns = stream_obj->strm_mgr_obj->intf_fxns;
- 
- 		status =
--		    (*intf_fxns->pfn_chnl_register_notify) (hStrm->chnl_obj,
-+		    (*intf_fxns->pfn_chnl_register_notify) (stream_obj->
-+							    chnl_obj,
- 							    event_mask,
- 							    notify_type,
- 							    hnotification);
-@@ -738,7 +744,7 @@ int strm_register_notify(struct strm_object *hStrm, u32 event_mask,
-  *  Purpose:
-  *      Selects a ready stream.
-  */
--int strm_select(IN struct strm_object **strm_tab, u32 nStrms,
-+int strm_select(IN struct strm_object **strm_tab, u32 strms,
- 		       OUT u32 *pmask, u32 utimeout)
- {
- 	u32 index;
-@@ -751,10 +757,10 @@ int strm_select(IN struct strm_object **strm_tab, u32 nStrms,
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(strm_tab != NULL);
- 	DBC_REQUIRE(pmask != NULL);
--	DBC_REQUIRE(nStrms > 0);
-+	DBC_REQUIRE(strms > 0);
- 
- 	*pmask = 0;
--	for (i = 0; i < nStrms; i++) {
-+	for (i = 0; i < strms; i++) {
- 		if (!strm_tab[i]) {
- 			status = -EFAULT;
- 			break;
-@@ -764,7 +770,7 @@ int strm_select(IN struct strm_object **strm_tab, u32 nStrms,
- 		goto func_end;
- 
- 	/* Determine which channels have IO ready */
--	for (i = 0; i < nStrms; i++) {
-+	for (i = 0; i < strms; i++) {
- 		intf_fxns = strm_tab[i]->strm_mgr_obj->intf_fxns;
- 		status = (*intf_fxns->pfn_chnl_get_info) (strm_tab[i]->chnl_obj,
- 							  &chnl_info_obj);
-@@ -778,13 +784,13 @@ int strm_select(IN struct strm_object **strm_tab, u32 nStrms,
- 	}
- 	if (DSP_SUCCEEDED(status) && utimeout > 0 && *pmask == 0) {
- 		/* Non-zero timeout */
--		sync_events = kmalloc(nStrms * sizeof(struct sync_object *),
-+		sync_events = kmalloc(strms * sizeof(struct sync_object *),
- 								GFP_KERNEL);
- 
- 		if (sync_events == NULL) {
- 			status = -ENOMEM;
- 		} else {
--			for (i = 0; i < nStrms; i++) {
-+			for (i = 0; i < strms; i++) {
- 				intf_fxns =
- 				    strm_tab[i]->strm_mgr_obj->intf_fxns;
- 				status = (*intf_fxns->pfn_chnl_get_info)
-@@ -799,7 +805,7 @@ int strm_select(IN struct strm_object **strm_tab, u32 nStrms,
- 		}
- 		if (DSP_SUCCEEDED(status)) {
- 			status =
--			    sync_wait_on_multiple_events(sync_events, nStrms,
-+			    sync_wait_on_multiple_events(sync_events, strms,
- 							 utimeout, &index);
- 			if (DSP_SUCCEEDED(status)) {
- 				/* Since we waited on the event, we have to
-@@ -823,27 +829,29 @@ func_end:
-  *  Purpose:
-  *      Frees the resources allocated for a stream.
-  */
--static int delete_strm(struct strm_object *hStrm)
-+static int delete_strm(struct strm_object *stream_obj)
- {
- 	struct bridge_drv_interface *intf_fxns;
- 	int status = 0;
- 
--	if (hStrm) {
--		if (hStrm->chnl_obj) {
--			intf_fxns = hStrm->strm_mgr_obj->intf_fxns;
-+	if (stream_obj) {
-+		if (stream_obj->chnl_obj) {
-+			intf_fxns = stream_obj->strm_mgr_obj->intf_fxns;
- 			/* Channel close can fail only if the channel handle
- 			 * is invalid. */
--			status = (*intf_fxns->pfn_chnl_close) (hStrm->chnl_obj);
-+			status = (*intf_fxns->pfn_chnl_close)
-+					(stream_obj->chnl_obj);
- 			/* Free all SM address translator resources */
- 			if (DSP_SUCCEEDED(status)) {
--				if (hStrm->xlator) {
-+				if (stream_obj->xlator) {
- 					/* force free */
--					(void)cmm_xlator_delete(hStrm->xlator,
-+					(void)cmm_xlator_delete(stream_obj->
-+								xlator,
- 								true);
- 				}
- 			}
- 		}
--		kfree(hStrm);
-+		kfree(stream_obj);
- 	} else {
- 		status = -EFAULT;
- 	}
 -- 
 1.6.3.3
 
