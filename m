@@ -1,32 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754860Ab0GJCZw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 22:25:52 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45778 "EHLO arroyo.ext.ti.com"
+	id S1754286Ab0GJC2i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 22:28:38 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:45285 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752880Ab0GJCZX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 22:25:23 -0400
+	id S1752366Ab0GJCZS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 22:25:18 -0400
 From: Rene Sapiens <rene.sapiens@ti.com>
 To: greg@kroah.com
 Cc: gregkh@suse.de, omar.ramirez@ti.com, ohad@wizery.com,
        ameya.palande@nokia.com, linux-kernel@vger.kernel.org,
        linux-omap@vger.kernel.org, Rene Sapiens <rene.sapiens@ti.com>
-Subject: [PATCH 11/15] staging:ti dspbridge: Rename words with camel case
-Date: Fri,  9 Jul 2010 21:24:05 -0500
-Message-Id: <1278728649-21012-12-git-send-email-rene.sapiens@ti.com>
+Subject: [PATCH 04/15] staging:ti dspbridge: Rename words with camel case
+Date: Fri,  9 Jul 2010 21:23:58 -0500
+Message-Id: <1278728649-21012-5-git-send-email-rene.sapiens@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1278728649-21012-11-git-send-email-rene.sapiens@ti.com>
+In-Reply-To: <1278728649-21012-4-git-send-email-rene.sapiens@ti.com>
 References: <1278728649-21012-1-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-2-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-3-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-4-git-send-email-rene.sapiens@ti.com>
- <1278728649-21012-5-git-send-email-rene.sapiens@ti.com>
- <1278728649-21012-6-git-send-email-rene.sapiens@ti.com>
- <1278728649-21012-7-git-send-email-rene.sapiens@ti.com>
- <1278728649-21012-8-git-send-email-rene.sapiens@ti.com>
- <1278728649-21012-9-git-send-email-rene.sapiens@ti.com>
- <1278728649-21012-10-git-send-email-rene.sapiens@ti.com>
- <1278728649-21012-11-git-send-email-rene.sapiens@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -35,883 +28,1017 @@ The intention of this patch is to rename the remaining variables with camel
 case. Variables will be renamed avoiding camel case and Hungarian notation.
 The words to be renamed in this patch are:
 ========================================
-puLen to len
-pulEntry to entry_pt
-pulFxnAddr to fxn_addr
-pulId to chan_id
-pulSegId to sgmt_id
-pVaBuf to va_buf
-pVirtualAddress to virtual_address
-pwMbVal to mbx_val
-pWord to word
-pXlatorAttrs to xlator_attrs
-registerFxn to register_fxn
-rootPersistent to root_prstnt
-sectionData to section_data
-sectionInfo to section_info
-sectionName to section_name
-sectName to sec_name
+pArb to arb
+pbAlreadyAttached to already_attached
+pBaseAddr to base_addr
+pbHostBuf to host_buff
+pBufVa to buf_va
+pChnlInfo to channel_info
+pConfig to config_param
+pContent to content
+pContext to context
+pdcdProps to dcd_prop
+pDepLibUuids to dep_lib_uuids
+pDevNodeString to dev_node_strg
+pDispAttrs to disp_attrs
+pDsp to dsp
+pdwAutoStart to auto_start
+pdwChnl to chnl
 ========================================
 
 Signed-off-by: Rene Sapiens <rene.sapiens@ti.com>
 ---
- drivers/staging/tidspbridge/core/io_sm.c           |    6 ++--
- drivers/staging/tidspbridge/dynload/getsection.c   |   24 ++++++++++----------
- .../staging/tidspbridge/include/dspbridge/cmm.h    |   20 ++++++++--------
- .../staging/tidspbridge/include/dspbridge/cod.h    |   16 ++++++------
- .../staging/tidspbridge/include/dspbridge/dbdcd.h  |    4 +-
- .../staging/tidspbridge/include/dspbridge/dbll.h   |    4 +-
- .../tidspbridge/include/dspbridge/dblldefs.h       |   10 ++++----
- .../staging/tidspbridge/include/dspbridge/drv.h    |    8 +++---
- .../tidspbridge/include/dspbridge/getsection.h     |   16 ++++++------
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |    6 ++--
- .../tidspbridge/include/dspbridge/nodepriv.h       |    6 ++--
- drivers/staging/tidspbridge/pmgr/cmm.c             |   22 +++++++++---------
- drivers/staging/tidspbridge/pmgr/cod.c             |   16 ++++++------
- drivers/staging/tidspbridge/pmgr/dbll.c            |    6 ++--
- drivers/staging/tidspbridge/rmgr/dbdcd.c           |   12 +++++-----
- drivers/staging/tidspbridge/rmgr/drv.c             |    6 ++--
- drivers/staging/tidspbridge/rmgr/nldr.c            |   12 +++++-----
- drivers/staging/tidspbridge/rmgr/node.c            |   14 +++++-----
- 18 files changed, 104 insertions(+), 104 deletions(-)
- mode change 100644 => 100755 drivers/staging/tidspbridge/include/dspbridge/dbll.h
+ drivers/staging/tidspbridge/core/chnl_sm.c         |    6 ++--
+ drivers/staging/tidspbridge/core/tiomap3430.c      |   36 ++++++++++----------
+ drivers/staging/tidspbridge/core/tiomap_io.c       |   16 ++++----
+ drivers/staging/tidspbridge/core/tiomap_io.h       |    6 ++--
+ .../staging/tidspbridge/include/dspbridge/cfg.h    |    6 ++--
+ .../staging/tidspbridge/include/dspbridge/cmm.h    |    4 +-
+ .../staging/tidspbridge/include/dspbridge/cod.h    |    4 +-
+ .../staging/tidspbridge/include/dspbridge/dbdcd.h  |    6 ++--
+ .../staging/tidspbridge/include/dspbridge/dev.h    |   14 ++++----
+ .../staging/tidspbridge/include/dspbridge/disp.h   |    6 ++--
+ .../staging/tidspbridge/include/dspbridge/drv.h    |   12 +++---
+ .../tidspbridge/include/dspbridge/dspdefs.h        |   10 +++---
+ .../staging/tidspbridge/include/dspbridge/io_sm.h  |   16 ++++----
+ drivers/staging/tidspbridge/pmgr/cmm.c             |    6 ++--
+ drivers/staging/tidspbridge/pmgr/cod.c             |    4 +-
+ drivers/staging/tidspbridge/pmgr/dbll.c            |   10 +++---
+ drivers/staging/tidspbridge/pmgr/dev.c             |   14 ++++----
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |   14 ++++----
+ drivers/staging/tidspbridge/rmgr/disp.c            |   10 +++---
+ drivers/staging/tidspbridge/rmgr/drv.c             |   14 ++++----
+ drivers/staging/tidspbridge/rmgr/node.c            |   12 +++---
+ drivers/staging/tidspbridge/services/cfg.c         |   10 +++---
+ 22 files changed, 118 insertions(+), 118 deletions(-)
+ mode change 100644 => 100755 drivers/staging/tidspbridge/core/tiomap3430.c
+ mode change 100644 => 100755 drivers/staging/tidspbridge/include/dspbridge/io_sm.h
 
-diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
-index 6a8bdd2..a8ff5f9 100644
---- a/drivers/staging/tidspbridge/core/io_sm.c
-+++ b/drivers/staging/tidspbridge/core/io_sm.c
-@@ -1014,12 +1014,12 @@ void io_mbox_msg(u32 msg)
-  *      interrupts the DSP.
+diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
+index 362e01e..834172d 100644
+--- a/drivers/staging/tidspbridge/core/chnl_sm.c
++++ b/drivers/staging/tidspbridge/core/chnl_sm.c
+@@ -80,7 +80,7 @@ static void free_chirp_list(struct lst_list *pList);
+ static struct chnl_irp *make_new_chirp(void);
+ 
+ static int search_free_channel(struct chnl_mgr *chnl_mgr_obj,
+-				      OUT u32 *pdwChnl);
++				      OUT u32 *chnl);
+ 
+ /*
+  *  ======== bridge_chnl_add_io_req ========
+@@ -996,7 +996,7 @@ static struct chnl_irp *make_new_chirp(void)
+  *      Search for a free channel slot in the array of channel pointers.
   */
- void io_request_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
--			u8 io_mode, OUT u16 *pwMbVal)
-+			u8 io_mode, OUT u16 *mbx_val)
+ static int search_free_channel(struct chnl_mgr *chnl_mgr_obj,
+-				      OUT u32 *pdwChnl)
++				      OUT u32 *chnl)
  {
- 	struct chnl_mgr *chnl_mgr_obj;
- 	struct shm *sm;
- 
--	if (!pchnl || !pwMbVal)
-+	if (!pchnl || !mbx_val)
- 		goto func_end;
- 	chnl_mgr_obj = pio_mgr->hchnl_mgr;
- 	sm = pio_mgr->shared_mem;
-@@ -1033,7 +1033,7 @@ void io_request_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 		/* Indicate to the DSP we have a buffer available for input */
- 		IO_OR_VALUE(pio_mgr->hbridge_context, struct shm, sm,
- 			    host_free_mask, (1 << pchnl->chnl_id));
--		*pwMbVal = MBX_PCPY_CLASS;
-+		*mbx_val = MBX_PCPY_CLASS;
- 	} else if (io_mode == IO_OUTPUT) {
- 		/*
- 		 * This assertion fails if CHNL_AddIOReq() was called on a
-diff --git a/drivers/staging/tidspbridge/dynload/getsection.c b/drivers/staging/tidspbridge/dynload/getsection.c
-index 029898f..3086118 100644
---- a/drivers/staging/tidspbridge/dynload/getsection.c
-+++ b/drivers/staging/tidspbridge/dynload/getsection.c
-@@ -226,8 +226,8 @@ void *dload_module_open(struct dynamic_loader_stream *module,
-  *
-  * Parameters:
-  *  minfo		Handle from dload_module_open for this module
-- *	sectionName	Pointer to the string name of the section desired
-- *	sectionInfo	Address of a section info structure pointer to be
-+ *	section_name	Pointer to the string name of the section desired
-+ *	section_info	Address of a section info structure pointer to be
-  *			initialized
-  *
-  * Effect:
-@@ -237,8 +237,8 @@ void *dload_module_open(struct dynamic_loader_stream *module,
-  * Returns:
-  *	true for success, false for section not found
-  ************************************************************************* */
--int dload_get_section_info(void *minfo, const char *sectionName,
--			   const struct ldr_section_info **const sectionInfo)
-+int dload_get_section_info(void *minfo, const char *section_name,
-+			   const struct ldr_section_info **const section_info)
- {
- 	struct dload_state *dlthis;
- 	struct ldr_section_info *shp;
-@@ -250,8 +250,8 @@ int dload_get_section_info(void *minfo, const char *sectionName,
- 
- 	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
- 		shp = DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
--		if (strcmp(sectionName, shp->name) == 0) {
--			*sectionInfo = shp;
-+		if (strcmp(section_name, shp->name) == 0) {
-+			*section_info = shp;
- 			return true;
+ 	int status = -ENOSR;
+ 	u32 i;
+@@ -1006,7 +1006,7 @@ static int search_free_channel(struct chnl_mgr *chnl_mgr_obj,
+ 	for (i = 0; i < chnl_mgr_obj->max_channels; i++) {
+ 		if (chnl_mgr_obj->ap_channel[i] == NULL) {
+ 			status = 0;
+-			*pdwChnl = i;
++			*chnl = i;
+ 			break;
  		}
  	}
-@@ -267,9 +267,9 @@ int dload_get_section_info(void *minfo, const char *sectionName,
-  *
-  * Parameters:
-  *  minfo		Handle from dload_module_open for this module
-- *	sectionInfo	Pointer to a section info structure for the desired
-+ *	section_info	Pointer to a section info structure for the desired
-  *			section
-- *	sectionData	Buffer to contain the section initialized data
-+ *	section_data	Buffer to contain the section initialized data
-  *
-  * Effect:
-  *	Copies the initialized data for the specified section into the
-@@ -279,8 +279,8 @@ int dload_get_section_info(void *minfo, const char *sectionName,
-  *	true for success, false for section not found
-  ************************************************************************* */
- int dload_get_section(void *minfo,
--		      const struct ldr_section_info *sectionInfo,
--		      void *sectionData)
-+		      const struct ldr_section_info *section_info,
-+		      void *section_data)
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index 7ed0382..dd7436d
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -76,7 +76,7 @@
+ /* Forward Declarations: */
+ static int bridge_brd_monitor(struct bridge_dev_context *dev_context);
+ static int bridge_brd_read(struct bridge_dev_context *dev_context,
+-				  OUT u8 *pbHostBuf,
++				  OUT u8 *host_buff,
+ 				  u32 dsp_addr, u32 ul_num_bytes,
+ 				  u32 ulMemType);
+ static int bridge_brd_start(struct bridge_dev_context *dev_context,
+@@ -85,7 +85,7 @@ static int bridge_brd_status(struct bridge_dev_context *dev_context,
+ 				    int *pdwState);
+ static int bridge_brd_stop(struct bridge_dev_context *dev_context);
+ static int bridge_brd_write(struct bridge_dev_context *dev_context,
+-				   IN u8 *pbHostBuf,
++				   IN u8 *host_buff,
+ 				   u32 dsp_addr, u32 ul_num_bytes,
+ 				   u32 ulMemType);
+ static int bridge_brd_set_state(struct bridge_dev_context *dev_ctxt,
+@@ -94,7 +94,7 @@ static int bridge_brd_mem_copy(struct bridge_dev_context *dev_ctxt,
+ 				   u32 ulDspDestAddr, u32 ulDspSrcAddr,
+ 				   u32 ul_num_bytes, u32 ulMemType);
+ static int bridge_brd_mem_write(struct bridge_dev_context *dev_context,
+-				    IN u8 *pbHostBuf, u32 dsp_addr,
++				    IN u8 *host_buff, u32 dsp_addr,
+ 				    u32 ul_num_bytes, u32 ulMemType);
+ static int bridge_brd_mem_map(struct bridge_dev_context *dev_ctxt,
+ 				  u32 ul_mpu_addr, u32 ulVirtAddr,
+@@ -105,7 +105,7 @@ static int bridge_brd_mem_un_map(struct bridge_dev_context *dev_ctxt,
+ static int bridge_dev_create(OUT struct bridge_dev_context
+ 					**ppDevContext,
+ 					struct dev_object *hdev_obj,
+-					IN struct cfg_hostres *pConfig);
++					IN struct cfg_hostres *config_param);
+ static int bridge_dev_ctrl(struct bridge_dev_context *dev_context,
+ 				  u32 dw_cmd, IN OUT void *pargs);
+ static int bridge_dev_destroy(struct bridge_dev_context *dev_context);
+@@ -304,7 +304,7 @@ static int bridge_brd_monitor(struct bridge_dev_context *dev_ctxt)
+  *      Reads buffers for DSP memory.
+  */
+ static int bridge_brd_read(struct bridge_dev_context *dev_ctxt,
+-				  OUT u8 *pbHostBuf, u32 dsp_addr,
++				  OUT u8 *host_buff, u32 dsp_addr,
+ 				  u32 ul_num_bytes, u32 ulMemType)
  {
- 	struct dload_state *dlthis;
- 	u32 pos;
-@@ -289,12 +289,12 @@ int dload_get_section(void *minfo,
- 	struct image_packet_t ipacket;
- 	s32 ipsize;
- 	u32 checks;
--	s8 *dest = (s8 *) sectionData;
-+	s8 *dest = (s8 *) section_data;
- 
- 	dlthis = (struct dload_state *)minfo;
- 	if (!dlthis)
- 		return false;
--	sptr = LDRSEC_IS_DOFFSEC(sectionInfo);
-+	sptr = LDRSEC_IS_DOFFSEC(section_info);
- 	if (sptr == NULL)
- 		return false;
- 
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/cmm.h b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
-index 9d773aa..78cc12a 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/cmm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
-@@ -209,17 +209,17 @@ extern bool cmm_init(void);
-  *      c_factor:         Add offset if CMM_ADDTODSPPA, sub if CMM_SUBFROMDSPPA.
-  *      dw_dsp_base:       DSP virtual base byte address.
-  *      ul_dsp_size:       Size of DSP segment in bytes.
-- *      pulSegId:        Address to store segment Id.
-+ *      sgmt_id:         Address to store segment Id.
-  *
-  *  Returns:
-  *      0:         Success.
-  *      -EFAULT:     Invalid hcmm_mgr handle.
-  *      -EINVAL: Invalid input argument.
-  *      -EPERM:       Unable to register.
-- *      - On success *pulSegId is a valid SM segment ID.
-+ *      - On success *sgmt_id is a valid SM segment ID.
-  *  Requires:
-  *      ul_size > 0
-- *      pulSegId != NULL
-+ *      sgmt_id != NULL
-  *      dw_gpp_base_pa != 0
-  *      c_factor = CMM_ADDTODSPPA || c_factor = CMM_SUBFROMDSPPA
-  *  Ensures:
-@@ -232,7 +232,7 @@ extern int cmm_register_gppsm_seg(struct cmm_object *hcmm_mgr,
- 					 s8 c_factor,
- 					 unsigned int dw_dsp_base,
- 					 u32 ul_dsp_size,
--					 u32 *pulSegId, u32 gpp_base_ba);
-+					 u32 *sgmt_id, u32 gpp_base_ba);
- 
- /*
-  *  ======== cmm_un_register_gppsm_seg ========
-@@ -261,18 +261,18 @@ extern int cmm_un_register_gppsm_seg(struct cmm_object *hcmm_mgr,
-  *      Place on the descriptor on the translator's HaQ (Host Alloc'd Queue).
-  *  Parameters:
-  *      xlator:    Handle to a Xlator object.
-- *      pVaBuf:     Virtual address ptr(client context)
-+ *      va_buf:     Virtual address ptr(client context)
-  *      uPaSize:    Size of SM memory to allocate.
-  *  Returns:
-  *      Ptr to valid physical address(Pa) of uPaSize bytes, NULL if failed.
-  *  Requires:
-- *      pVaBuf != 0.
-+ *      va_buf != 0.
-  *      uPaSize != 0.
-  *  Ensures:
-  *
-  */
- extern void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator,
--				  void *pVaBuf, u32 uPaSize);
-+				  void *va_buf, u32 uPaSize);
- 
- /*
-  *  ======== cmm_xlator_create ========
-@@ -283,7 +283,7 @@ extern void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator,
-  *  Parameters:
-  *     xlator:         Address to place handle to a new Xlator handle.
-  *     hcmm_mgr:        Handle to Cmm Mgr associated with this translator.
-- *     pXlatorAttrs:   Translator attributes used for the client NODE or STREAM.
-+ *     xlator_attrs:   Translator attributes used for the client NODE or STREAM.
-  *  Returns:
-  *     0:            Success.
-  *     -EINVAL:    Bad input Attrs.
-@@ -291,13 +291,13 @@ extern void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator,
-  *  Requires:
-  *     xlator != NULL
-  *     hcmm_mgr != NULL
-- *     pXlatorAttrs != NULL
-+ *     xlator_attrs != NULL
-  *  Ensures:
-  *
-  */
- extern int cmm_xlator_create(OUT struct cmm_xlatorobject **xlator,
- 				    struct cmm_object *hcmm_mgr,
--				    struct cmm_xlatorattrs *pXlatorAttrs);
-+				    struct cmm_xlatorattrs *xlator_attrs);
- 
- /*
-  *  ======== cmm_xlator_delete ========
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/cod.h b/drivers/staging/tidspbridge/include/dspbridge/cod.h
-index c84761e..2d5f41a 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/cod.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/cod.h
-@@ -169,17 +169,17 @@ extern int cod_get_base_name(struct cod_manager *cod_mgr_obj,
-  *      Retrieve the entry point of a loaded DSP program image
-  *  Parameters:
-  *      cod_mgr_obj:   handle of manager to be deleted
-- *      pulEntry:   pointer to location for entry point
-+ *      entry_pt:   pointer to location for entry point
-  *  Returns:
-  *      0:       Success.
-  *  Requires:
-  *      COD module initialized.
-  *      valid cod_mgr_obj.
-- *      pulEntry != NULL.
-+ *      entry_pt != NULL.
-  *  Ensures:
-  */
- extern int cod_get_entry(struct cod_manager *cod_mgr_obj,
--				u32 *pulEntry);
-+				u32 *entry_pt);
- 
- /*
-  *  ======== cod_get_loader ========
-@@ -208,7 +208,7 @@ extern int cod_get_loader(struct cod_manager *cod_mgr_obj,
-  *      lib         Library handle returned from cod_open().
-  *      str_sect:   name of the section, with or without leading "."
-  *      addr:       Location to store address.
-- *      puLen:      Location to store length.
-+ *      len:        Location to store length.
-  *  Returns:
-  *      0:                Success
-  *      -ESPIPE:  Symbols could not be found or have not been loaded onto
-@@ -218,16 +218,16 @@ extern int cod_get_loader(struct cod_manager *cod_mgr_obj,
-  *      valid cod_mgr_obj.
-  *      str_sect != NULL;
-  *      addr != NULL;
-- *      puLen != NULL;
-+ *      len != NULL;
-  *  Ensures:
-- *      0:  *addr and *puLen contain the address and length of the
-+ *      0:  *addr and *len contain the address and length of the
-  *                 section.
-- *      else:  *addr == 0 and *puLen == 0;
-+ *      else:  *addr == 0 and *len == 0;
-  *
-  */
- extern int cod_get_section(struct cod_libraryobj *lib,
- 				  IN char *str_sect,
--				  OUT u32 *addr, OUT u32 *puLen);
-+				  OUT u32 *addr, OUT u32 *len);
- 
- /*
-  *  ======== cod_get_sym_value ========
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h b/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
-index c798e72..5e3b7f7 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
-@@ -278,7 +278,7 @@ extern int dcd_get_object_def(IN struct dcd_manager *hdcd_mgr,
-  *      hdcd_mgr:                A DCD manager handle.
-  *      sz_coff_path:           Pointer to name of COFF file containing DCD
-  *                              objects.
-- *      registerFxn:            Callback fxn to be applied on each located
-+ *      register_fxn:           Callback fxn to be applied on each located
-  *                              DCD object.
-  *      handle:                 Handle to pass to callback.
-  *  Returns:
-@@ -296,7 +296,7 @@ extern int dcd_get_object_def(IN struct dcd_manager *hdcd_mgr,
-  */
- extern int dcd_get_objects(IN struct dcd_manager *hdcd_mgr,
- 				  IN char *sz_coff_path,
--				  dcd_registerfxn registerFxn, void *handle);
-+				  dcd_registerfxn register_fxn, void *handle);
- 
- /*
-  *  ======== dcd_init ========
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbll.h b/drivers/staging/tidspbridge/include/dspbridge/dbll.h
-index a4dea0c..a197115
---- a/drivers/staging/tidspbridge/include/dspbridge/dbll.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbll.h
-@@ -43,7 +43,7 @@ extern int dbll_load(struct dbll_library_obj *lib,
- 			    dbll_flags flags,
- 			    struct dbll_attrs *attrs, u32 * entry);
- extern int dbll_load_sect(struct dbll_library_obj *lib,
--				 char *sectName, struct dbll_attrs *attrs);
-+				 char *sec_name, struct dbll_attrs *attrs);
- extern int dbll_open(struct dbll_tar_obj *target, char *file,
- 			    dbll_flags flags,
- 		       struct dbll_library_obj **lib_obj);
-@@ -53,7 +53,7 @@ extern void dbll_set_attrs(struct dbll_tar_obj *target,
- 			   struct dbll_attrs *pattrs);
- extern void dbll_unload(struct dbll_library_obj *lib, struct dbll_attrs *attrs);
- extern int dbll_unload_sect(struct dbll_library_obj *lib,
--				   char *sectName, struct dbll_attrs *attrs);
-+				   char *sect_name, struct dbll_attrs *attrs);
- #ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
- bool dbll_find_dsp_symbol(struct dbll_library_obj *zl_lib, u32 address,
- 		u32 offset_range, u32 *sym_addr_output, char *name_output);
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h b/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
-index 8446e0e..fa4c99f 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
-@@ -334,7 +334,7 @@ typedef bool(*dbll_init_fxn) (void);
-  *      lib             - Library handle returned from dbll_open().
-  *      flags           - Load code, data and/or symbols.
-  *      attrs           - May contain alloc, free, and write function.
-- *      pulEntry        - Location to store program entry on output.
-+ *      entry_pt        - Location to store program entry on output.
-  *  Returns:
-  *      0:        Success.
-  *      -EBADF:     File read failed.
-@@ -354,7 +354,7 @@ typedef int(*dbll_load_fxn) (struct dbll_library_obj *lib,
-  *  Load a named section from an library (for overlay support).
-  *  Parameters:
-  *      lib             - Handle returned from dbll_open().
-- *      sectName        - Name of section to load.
-+ *      sec_name        - Name of section to load.
-  *      attrs           - Contains write function and handle to pass to it.
-  *  Returns:
-  *      0:        Success.
-@@ -362,7 +362,7 @@ typedef int(*dbll_load_fxn) (struct dbll_library_obj *lib,
-  *      -ENOSYS:   Function not implemented.
-  *  Requires:
-  *      Valid lib.
-- *      sectName != NULL.
-+ *      sec_name != NULL.
-  *      attrs != NULL.
-  *      attrs->write != NULL.
-  *  Ensures:
-@@ -458,7 +458,7 @@ typedef void (*dbll_unload_fxn) (struct dbll_library_obj *library,
-  *  Unload a named section from an library (for overlay support).
-  *  Parameters:
-  *      lib             - Handle returned from dbll_open().
-- *      sectName        - Name of section to load.
-+ *      sec_name        - Name of section to load.
-  *      attrs           - Contains free() function and handle to pass to it.
-  *  Returns:
-  *      0:        Success.
-@@ -467,7 +467,7 @@ typedef void (*dbll_unload_fxn) (struct dbll_library_obj *library,
-  *  Requires:
-  *      DBL initialized.
-  *      Valid lib.
-- *      sectName != NULL.
-+ *      sec_name != NULL.
-  *  Ensures:
-  */
- typedef int(*dbll_unload_sect_fxn) (struct dbll_library_obj *lib,
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/drv.h b/drivers/staging/tidspbridge/include/dspbridge/drv.h
-index b43d22f..efdc29c 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/drv.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/drv.h
-@@ -470,7 +470,7 @@ extern void *mem_alloc_phys_mem(IN u32 byte_size,
-  *  Purpose:
-  *      Free the given block of physically contiguous memory.
-  *  Parameters:
-- *      pVirtualAddress:  Pointer to virtual memory region allocated
-+ *      virtual_address:  Pointer to virtual memory region allocated
-  *      by mem_alloc_phys_mem().
-  *      physical_address:  Pointer to physical memory region  allocated
-  *      by mem_alloc_phys_mem().
-@@ -478,12 +478,12 @@ extern void *mem_alloc_phys_mem(IN u32 byte_size,
-  *  Returns:
-  *  Requires:
-  *      MEM initialized.
-- *      pVirtualAddress is a valid memory address returned by
-+ *      virtual_address is a valid memory address returned by
-  *          mem_alloc_phys_mem()
-  *  Ensures:
-- *      pVirtualAddress is no longer a valid pointer to memory.
-+ *      virtual_address is no longer a valid pointer to memory.
-  */
--extern void mem_free_phys_mem(void *pVirtualAddress,
-+extern void mem_free_phys_mem(void *virtual_address,
- 			      u32 physical_address, u32 byte_size);
- 
- /*
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/getsection.h b/drivers/staging/tidspbridge/include/dspbridge/getsection.h
-index bdd8e20..626063d 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/getsection.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/getsection.h
-@@ -54,8 +54,8 @@ extern void *dload_module_open(struct dynamic_loader_stream
-  *
-  * Parameters:
-  *  minfo       Handle from dload_module_open for this module
-- *  sectionName Pointer to the string name of the section desired
-- *  sectionInfo Address of a section info structure pointer to be initialized
-+ *  section_name Pointer to the string name of the section desired
-+ *  section_info Address of a section info structure pointer to be initialized
-  *
-  * Effect:
-  *  Finds the specified section in the module information, and fills in
-@@ -65,17 +65,17 @@ extern void *dload_module_open(struct dynamic_loader_stream
-  *  TRUE for success, FALSE for section not found
-  */
- extern int dload_get_section_info(void *minfo,
--				  const char *sectionName,
-+				  const char *section_name,
- 				  const struct ldr_section_info
--				  **const sectionInfo);
-+				  **const section_info);
- 
- /*
-  * Procedure dload_get_section
-  *
-  * Parameters:
-  *  minfo       Handle from dload_module_open for this module
-- *  sectionInfo Pointer to a section info structure for the desired section
-- *  sectionData Buffer to contain the section initialized data
-+ *  section_info Pointer to a section info structure for the desired section
-+ *  section_data Buffer to contain the section initialized data
-  *
-  * Effect:
-  *  Copies the initialized data for the specified section into the
-@@ -85,8 +85,8 @@ extern int dload_get_section_info(void *minfo,
-  *  TRUE for success, FALSE for section not found
-  */
- extern int dload_get_section(void *minfo,
--			     const struct ldr_section_info *sectionInfo,
--			     void *sectionData);
-+			     const struct ldr_section_info *section_info,
-+			     void *section_data);
- 
- /*
-  * Procedure dload_module_close
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-index 1627e0a..a7fded7 100755
---- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-@@ -116,7 +116,7 @@ void io_mbox_msg(u32 msg);
-  */
- extern void io_request_chnl(struct io_mgr *hio_mgr,
- 			    struct chnl_object *pchnl,
--			    u8 io_mode, OUT u16 *pwMbVal);
-+			    u8 io_mode, OUT u16 *mbx_val);
- 
- /*
-  *  ======== iosm_schedule ========
-@@ -190,7 +190,7 @@ extern void io_ddma_clear_chnl_desc(struct io_mgr *hio_mgr, u32 uDDMAChnlId);
- extern void io_ddma_request_chnl(struct io_mgr *hio_mgr,
- 				 struct chnl_object *pchnl,
- 				 struct chnl_irp *chnl_packet_obj,
--				 OUT u16 *pwMbVal);
-+				 OUT u16 *mbx_val);
- 
- /*
-  * Zero-copy IO functions
-@@ -245,7 +245,7 @@ extern void io_ddzc_clear_chnl_desc(struct io_mgr *hio_mgr, u32 uChnlId);
- extern void io_ddzc_request_chnl(struct io_mgr *hio_mgr,
- 				 struct chnl_object *pchnl,
- 				 struct chnl_irp *chnl_packet_obj,
--				 OUT u16 *pwMbVal);
-+				 OUT u16 *mbx_val);
- 
- /*
-  *  ======== io_sh_msetting ========
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/nodepriv.h b/drivers/staging/tidspbridge/include/dspbridge/nodepriv.h
-index 0b45094..7c2e7a9 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/nodepriv.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/nodepriv.h
-@@ -88,7 +88,7 @@ struct node_createargs {
-  *      hnode:          Node object allocated from node_allocate().
-  *      dir:           Input (DSP_TONODE) or output (DSP_FROMNODE).
-  *      index:         Stream index.
-- *      pulId:          Location to store channel index.
-+ *      chan_id:        Location to store channel index.
-  *  Returns:
-  *      0:        Success.
-  *      -EFAULT:    Invalid hnode.
-@@ -98,11 +98,11 @@ struct node_createargs {
-  *  Requires:
-  *      node_init(void) called.
-  *      Valid dir.
-- *      pulId != NULL.
-+ *      chan_id != NULL.
-  *  Ensures:
-  */
- extern int node_get_channel_id(struct node_object *hnode,
--				      u32 dir, u32 index, OUT u32 *pulId);
-+				      u32 dir, u32 index, OUT u32 *chan_id);
- 
- /*
-  *  ======== node_get_strm_mgr ========
-diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
-index 8fd9c26..0a36085 100644
---- a/drivers/staging/tidspbridge/pmgr/cmm.c
-+++ b/drivers/staging/tidspbridge/pmgr/cmm.c
-@@ -540,7 +540,7 @@ int cmm_register_gppsm_seg(struct cmm_object *hcmm_mgr,
- 				  u32 dw_gpp_base_pa, u32 ul_size,
- 				  u32 dsp_addr_offset, s8 c_factor,
- 				  u32 dw_dsp_base, u32 ul_dsp_size,
--				  u32 *pulSegId, u32 dw_gpp_base_va)
-+				  u32 *sgmt_id, u32 dw_gpp_base_va)
- {
- 	struct cmm_object *cmm_mgr_obj = (struct cmm_object *)hcmm_mgr;
- 	struct cmm_allocator *psma = NULL;
-@@ -549,7 +549,7 @@ int cmm_register_gppsm_seg(struct cmm_object *hcmm_mgr,
- 	s32 slot_seg;
- 
- 	DBC_REQUIRE(ul_size > 0);
--	DBC_REQUIRE(pulSegId != NULL);
-+	DBC_REQUIRE(sgmt_id != NULL);
- 	DBC_REQUIRE(dw_gpp_base_pa != 0);
- 	DBC_REQUIRE(dw_gpp_base_va != 0);
- 	DBC_REQUIRE((c_factor <= CMM_ADDTODSPPA) &&
-@@ -596,7 +596,7 @@ int cmm_register_gppsm_seg(struct cmm_object *hcmm_mgr,
- 		}
- 		if (DSP_SUCCEEDED(status)) {
- 			/* return the actual segment identifier */
--			*pulSegId = (u32) slot_seg + 1;
-+			*sgmt_id = (u32) slot_seg + 1;
- 			/* create memory free list */
- 			psma->free_list_head = kzalloc(sizeof(struct lst_list),
- 								GFP_KERNEL);
-@@ -956,7 +956,7 @@ static struct cmm_allocator *get_allocator(struct cmm_object *cmm_mgr_obj,
-  */
- int cmm_xlator_create(OUT struct cmm_xlatorobject **xlator,
- 			     struct cmm_object *hcmm_mgr,
--			     struct cmm_xlatorattrs *pXlatorAttrs)
-+			     struct cmm_xlatorattrs *xlator_attrs)
- {
- 	struct cmm_xlator *xlator_object = NULL;
  	int status = 0;
-@@ -966,14 +966,14 @@ int cmm_xlator_create(OUT struct cmm_xlatorobject **xlator,
- 	DBC_REQUIRE(hcmm_mgr != NULL);
- 
- 	*xlator = NULL;
--	if (pXlatorAttrs == NULL)
--		pXlatorAttrs = &cmm_dfltxlatorattrs;	/* set defaults */
-+	if (xlator_attrs == NULL)
-+		xlator_attrs = &cmm_dfltxlatorattrs;	/* set defaults */
- 
- 	xlator_object = kzalloc(sizeof(struct cmm_xlator), GFP_KERNEL);
- 	if (xlator_object != NULL) {
- 		xlator_object->hcmm_mgr = hcmm_mgr;	/* ref back to CMM */
- 		/* SM seg_id */
--		xlator_object->ul_seg_id = pXlatorAttrs->ul_seg_id;
-+		xlator_object->ul_seg_id = xlator_attrs->ul_seg_id;
+@@ -321,12 +321,12 @@ static int bridge_brd_read(struct bridge_dev_context *dev_ctxt,
+ 	    dev_context->dw_internal_size) {
+ 		offset = dsp_addr - dev_context->dw_dsp_start_add;
  	} else {
- 		status = -ENOMEM;
+-		status = read_ext_dsp_data(dev_context, pbHostBuf, dsp_addr,
++		status = read_ext_dsp_data(dev_context, host_buff, dsp_addr,
+ 					   ul_num_bytes, ulMemType);
+ 		return status;
  	}
-@@ -1007,7 +1007,7 @@ int cmm_xlator_delete(struct cmm_xlatorobject *xlator, bool force)
- /*
-  *  ======== cmm_xlator_alloc_buf ========
-  */
--void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator, void *pVaBuf,
-+void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator, void *va_buf,
- 			   u32 uPaSize)
- {
- 	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
-@@ -1017,20 +1017,20 @@ void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator, void *pVaBuf,
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(xlator != NULL);
- 	DBC_REQUIRE(xlator_obj->hcmm_mgr != NULL);
--	DBC_REQUIRE(pVaBuf != NULL);
-+	DBC_REQUIRE(va_buf != NULL);
- 	DBC_REQUIRE(uPaSize > 0);
- 	DBC_REQUIRE(xlator_obj->ul_seg_id > 0);
- 
- 	if (xlator_obj) {
- 		attrs.ul_seg_id = xlator_obj->ul_seg_id;
--		*(volatile u32 *)pVaBuf = 0;
-+		*(volatile u32 *)va_buf = 0;
- 		/* Alloc SM */
- 		pbuf =
- 		    cmm_calloc_buf(xlator_obj->hcmm_mgr, uPaSize, &attrs, NULL);
- 		if (pbuf) {
- 			/* convert to translator(node/strm) process Virtual
- 			 * address */
--			*(volatile u32 **)pVaBuf =
-+			*(volatile u32 **)va_buf =
- 			    (u32 *) cmm_xlator_translate(xlator,
- 							 pbuf, CMM_PA2VA);
- 		}
-diff --git a/drivers/staging/tidspbridge/pmgr/cod.c b/drivers/staging/tidspbridge/pmgr/cod.c
-index ae44bed..d9501eb 100644
---- a/drivers/staging/tidspbridge/pmgr/cod.c
-+++ b/drivers/staging/tidspbridge/pmgr/cod.c
-@@ -360,13 +360,13 @@ int cod_get_base_name(struct cod_manager *cod_mgr_obj, char *sz_name,
-  *      Retrieve the entry point of a loaded DSP program image
-  *
-  */
--int cod_get_entry(struct cod_manager *cod_mgr_obj, u32 *pulEntry)
-+int cod_get_entry(struct cod_manager *cod_mgr_obj, u32 *entry_pt)
- {
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(IS_VALID(cod_mgr_obj));
--	DBC_REQUIRE(pulEntry != NULL);
-+	DBC_REQUIRE(entry_pt != NULL);
- 
--	*pulEntry = cod_mgr_obj->ul_entry;
-+	*entry_pt = cod_mgr_obj->ul_entry;
- 
- 	return 0;
+ 	/* copy the data from  DSP memory, */
+-	memcpy(pbHostBuf, (void *)(dsp_base_addr + offset), ul_num_bytes);
++	memcpy(host_buff, (void *)(dsp_base_addr + offset), ul_num_bytes);
+ 	return status;
  }
-@@ -397,7 +397,7 @@ int cod_get_loader(struct cod_manager *cod_mgr_obj,
-  *      given the section name.
-  */
- int cod_get_section(struct cod_libraryobj *lib, IN char *str_sect,
--			   OUT u32 *addr, OUT u32 *puLen)
-+			   OUT u32 *addr, OUT u32 *len)
- {
- 	struct cod_manager *cod_mgr_obj;
- 	int status = 0;
-@@ -407,19 +407,19 @@ int cod_get_section(struct cod_libraryobj *lib, IN char *str_sect,
- 	DBC_REQUIRE(IS_VALID(lib->cod_mgr));
- 	DBC_REQUIRE(str_sect != NULL);
- 	DBC_REQUIRE(addr != NULL);
--	DBC_REQUIRE(puLen != NULL);
-+	DBC_REQUIRE(len != NULL);
  
- 	*addr = 0;
--	*puLen = 0;
-+	*len = 0;
- 	if (lib != NULL) {
- 		cod_mgr_obj = lib->cod_mgr;
- 		status = cod_mgr_obj->fxns.get_sect_fxn(lib->dbll_lib, str_sect,
--							addr, puLen);
-+							addr, len);
+@@ -765,7 +765,7 @@ static int bridge_brd_status(struct bridge_dev_context *dev_ctxt,
+  *      Copies the buffers to DSP internal or external memory.
+  */
+ static int bridge_brd_write(struct bridge_dev_context *dev_ctxt,
+-				   IN u8 *pbHostBuf, u32 dsp_addr,
++				   IN u8 *host_buff, u32 dsp_addr,
+ 				   u32 ul_num_bytes, u32 ulMemType)
+ {
+ 	int status = 0;
+@@ -777,10 +777,10 @@ static int bridge_brd_write(struct bridge_dev_context *dev_ctxt,
+ 	}
+ 	if ((dsp_addr - dev_context->dw_dsp_start_add) <
+ 	    dev_context->dw_internal_size) {
+-		status = write_dsp_data(dev_ctxt, pbHostBuf, dsp_addr,
++		status = write_dsp_data(dev_ctxt, host_buff, dsp_addr,
+ 					ul_num_bytes, ulMemType);
  	} else {
- 		status = -ESPIPE;
+-		status = write_ext_dsp_data(dev_context, pbHostBuf, dsp_addr,
++		status = write_ext_dsp_data(dev_context, host_buff, dsp_addr,
+ 					    ul_num_bytes, ulMemType, false);
  	}
  
--	DBC_ENSURE(DSP_SUCCEEDED(status) || ((*addr == 0) && (*puLen == 0)));
-+	DBC_ENSURE(DSP_SUCCEEDED(status) || ((*addr == 0) && (*len == 0)));
+@@ -794,12 +794,12 @@ static int bridge_brd_write(struct bridge_dev_context *dev_ctxt,
+ static int bridge_dev_create(OUT struct bridge_dev_context
+ 					**ppDevContext,
+ 					struct dev_object *hdev_obj,
+-					IN struct cfg_hostres *pConfig)
++					IN struct cfg_hostres *config_param)
+ {
+ 	int status = 0;
+ 	struct bridge_dev_context *dev_context = NULL;
+ 	s32 entry_ndx;
+-	struct cfg_hostres *resources = pConfig;
++	struct cfg_hostres *resources = config_param;
+ 	struct pg_table_attrs *pt_attrs;
+ 	u32 pg_tbl_pa;
+ 	u32 pg_tbl_va;
+@@ -825,10 +825,10 @@ static int bridge_dev_create(OUT struct bridge_dev_context
+ 		    dev_context->atlb_entry[entry_ndx].ul_dsp_va = 0;
+ 	}
+ 	dev_context->dw_dsp_base_addr = (u32) MEM_LINEAR_ADDRESS((void *)
+-								 (pConfig->
++								 (config_param->
+ 								  dw_mem_base
+ 								  [3]),
+-								 pConfig->
++								 config_param->
+ 								 dw_mem_length
+ 								 [3]);
+ 	if (!dev_context->dw_dsp_base_addr)
+@@ -1147,7 +1147,7 @@ static int bridge_brd_mem_copy(struct bridge_dev_context *dev_ctxt,
+ 
+ /* Mem Write does not halt the DSP to write unlike bridge_brd_write */
+ static int bridge_brd_mem_write(struct bridge_dev_context *dev_ctxt,
+-				    IN u8 *pbHostBuf, u32 dsp_addr,
++				    IN u8 *host_buff, u32 dsp_addr,
+ 				    u32 ul_num_bytes, u32 ulMemType)
+ {
+ 	int status = 0;
+@@ -1161,16 +1161,16 @@ static int bridge_brd_mem_write(struct bridge_dev_context *dev_ctxt,
+ 		if (dsp_addr < (dev_context->dw_dsp_start_add +
+ 				 dev_context->dw_internal_size)) {
+ 			status =
+-			    write_dsp_data(dev_ctxt, pbHostBuf, dsp_addr,
++			    write_dsp_data(dev_ctxt, host_buff, dsp_addr,
+ 					   ul_bytes, ulMemType);
+ 		} else {
+-			status = write_ext_dsp_data(dev_ctxt, pbHostBuf,
++			status = write_ext_dsp_data(dev_ctxt, host_buff,
+ 						    dsp_addr, ul_bytes,
+ 						    ulMemType, true);
+ 		}
+ 		ul_remain_bytes -= ul_bytes;
+ 		dsp_addr += ul_bytes;
+-		pbHostBuf = pbHostBuf + ul_bytes;
++		host_buff = host_buff + ul_bytes;
+ 	}
+ 	return status;
+ }
+diff --git a/drivers/staging/tidspbridge/core/tiomap_io.c b/drivers/staging/tidspbridge/core/tiomap_io.c
+index 945f871..0ac4f8c 100644
+--- a/drivers/staging/tidspbridge/core/tiomap_io.c
++++ b/drivers/staging/tidspbridge/core/tiomap_io.c
+@@ -51,7 +51,7 @@ bool symbols_reloaded = true;
+  *      Copies DSP external memory buffers to the host side buffers.
+  */
+ int read_ext_dsp_data(struct bridge_dev_context *dev_ctxt,
+-			     OUT u8 *pbHostBuf, u32 dsp_addr,
++			     OUT u8 *host_buff, u32 dsp_addr,
+ 			     u32 ul_num_bytes, u32 ulMemType)
+ {
+ 	int status = 0;
+@@ -168,7 +168,7 @@ int read_ext_dsp_data(struct bridge_dev_context *dev_ctxt,
+ 	offset = dsp_addr - ul_ext_base;
+ 
+ 	if (DSP_SUCCEEDED(status))
+-		memcpy(pbHostBuf, (u8 *) dw_base_addr + offset, ul_num_bytes);
++		memcpy(host_buff, (u8 *) dw_base_addr + offset, ul_num_bytes);
  
  	return status;
  }
+@@ -179,7 +179,7 @@ int read_ext_dsp_data(struct bridge_dev_context *dev_ctxt,
+  *      Copies buffers to the DSP internal/external memory.
+  */
+ int write_dsp_data(struct bridge_dev_context *dev_ctxt,
+-			  IN u8 *pbHostBuf, u32 dsp_addr, u32 ul_num_bytes,
++			  IN u8 *host_buff, u32 dsp_addr, u32 ul_num_bytes,
+ 			  u32 ulMemType)
+ {
+ 	u32 offset;
+@@ -211,9 +211,9 @@ int write_dsp_data(struct bridge_dev_context *dev_ctxt,
+ 		return -EPERM;
+ 	}
+ 	if (ul_num_bytes)
+-		memcpy((u8 *) (dw_base_addr + offset), pbHostBuf, ul_num_bytes);
++		memcpy((u8 *) (dw_base_addr + offset), host_buff, ul_num_bytes);
+ 	else
+-		*((u32 *) pbHostBuf) = dw_base_addr + offset;
++		*((u32 *) host_buff) = dw_base_addr + offset;
+ 
+ 	return status;
+ }
+@@ -225,7 +225,7 @@ int write_dsp_data(struct bridge_dev_context *dev_ctxt,
+  *
+  */
+ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+-			      IN u8 *pbHostBuf, u32 dsp_addr,
++			      IN u8 *host_buff, u32 dsp_addr,
+ 			      u32 ul_num_bytes, u32 ulMemType,
+ 			      bool dynamic_load)
+ {
+@@ -371,10 +371,10 @@ int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+ 	}
+ 	if (DSP_SUCCEEDED(ret)) {
+ 		if (ul_num_bytes)
+-			memcpy((u8 *) dw_base_addr + dw_offset, pbHostBuf,
++			memcpy((u8 *) dw_base_addr + dw_offset, host_buff,
+ 			       ul_num_bytes);
+ 		else
+-			*((u32 *) pbHostBuf) = dw_base_addr + dw_offset;
++			*((u32 *) host_buff) = dw_base_addr + dw_offset;
+ 	}
+ 	/* Unmap here to force remap for other Ext loads */
+ 	if ((dynamic_load || trace_load) && dev_context->dw_dsp_ext_base_addr) {
+diff --git a/drivers/staging/tidspbridge/core/tiomap_io.h b/drivers/staging/tidspbridge/core/tiomap_io.h
+index b398f54..cff8691 100644
+--- a/drivers/staging/tidspbridge/core/tiomap_io.h
++++ b/drivers/staging/tidspbridge/core/tiomap_io.h
+@@ -48,14 +48,14 @@
+  * is configured by the combination of DSP MMU and shm Memory manager in the CDB
+  */
+ extern int read_ext_dsp_data(struct bridge_dev_context *dev_context,
+-				    OUT u8 *pbHostBuf, u32 dsp_addr,
++				    OUT u8 *host_buff, u32 dsp_addr,
+ 				    u32 ul_num_bytes, u32 ulMemType);
+ 
+ /*
+  *  ======== write_dsp_data ========
+  */
+ extern int write_dsp_data(struct bridge_dev_context *dev_context,
+-				 OUT u8 *pbHostBuf, u32 dsp_addr,
++				 OUT u8 *host_buff, u32 dsp_addr,
+ 				 u32 ul_num_bytes, u32 ulMemType);
+ 
+ /*
+@@ -65,7 +65,7 @@ extern int write_dsp_data(struct bridge_dev_context *dev_context,
+  *  shm Memory manager in the CDB
+  */
+ extern int write_ext_dsp_data(struct bridge_dev_context *dev_context,
+-				     IN u8 *pbHostBuf, u32 dsp_addr,
++				     IN u8 *host_buff, u32 dsp_addr,
+ 				     u32 ul_num_bytes, u32 ulMemType,
+ 				     bool dynamic_load);
+ 
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cfg.h b/drivers/staging/tidspbridge/include/dspbridge/cfg.h
+index 58064e0..0eadd71 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cfg.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cfg.h
+@@ -40,7 +40,7 @@ extern void cfg_exit(void);
+  *      Retreive the autostart mask, if any, for this board.
+  *  Parameters:
+  *      dev_node_obj:  Handle to the dev_node who's driver we are querying.
+- *      pdwAutoStart:   Ptr to location for 32 bit autostart mask.
++ *      auto_start:   Ptr to location for 32 bit autostart mask.
+  *  Returns:
+  *      0:                Success.
+  *      -EFAULT:  dev_node_obj is invalid.
+@@ -48,10 +48,10 @@ extern void cfg_exit(void);
+  *  Requires:
+  *      CFG initialized.
+  *  Ensures:
+- *      0:        *pdwAutoStart contains autostart mask for this devnode.
++ *      0:        *auto_start contains autostart mask for this devnode.
+  */
+ extern int cfg_get_auto_start(IN struct cfg_devnode *dev_node_obj,
+-				     OUT u32 *pdwAutoStart);
++				     OUT u32 *auto_start);
+ 
+ /*
+  *  ======== cfg_get_cd_version ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cmm.h b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
+index 5fbb051..d36972e 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cmm.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
+@@ -325,7 +325,7 @@ extern int cmm_xlator_delete(struct cmm_xlatorobject *xlator,
+  *      Does not free client process VM.
+  *  Parameters:
+  *      xlator:    handle to translator.
+- *      pBufVa      Virtual address of PA to free.
++ *      buf_va      Virtual address of PA to free.
+  *  Returns:
+  *      0:        Success.
+  *      -EFAULT:    Bad translator handle.
+@@ -334,7 +334,7 @@ extern int cmm_xlator_delete(struct cmm_xlatorobject *xlator,
+  *
+  */
+ extern int cmm_xlator_free_buf(struct cmm_xlatorobject *xlator,
+-				      void *pBufVa);
++				      void *buf_va);
+ 
+ /*
+  *  ======== cmm_xlator_info ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cod.h b/drivers/staging/tidspbridge/include/dspbridge/cod.h
+index ae711df..92f3cf7 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cod.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cod.h
+@@ -279,7 +279,7 @@ extern bool cod_init(void);
+  *      num_argc:   number of arguments in the args array
+  *      args:       array of strings for arguments to DSP program
+  *      write_fxn:   board-specific function to write data to DSP system
+- *      pArb:       arbitrary pointer to be passed as first arg to write_fxn
++ *      arb:       arbitrary pointer to be passed as first arg to write_fxn
+  *      envp:       array of environment strings for DSP exec.
+  *  Returns:
+  *      0:                   Success.
+@@ -295,7 +295,7 @@ extern bool cod_init(void);
+  */
+ extern int cod_load_base(struct cod_manager *cod_mgr_obj,
+ 				u32 num_argc, char *args[],
+-				cod_writefxn pfn_write, void *pArb,
++				cod_writefxn pfn_write, void *arb,
+ 				char *envp[]);
+ 
+ /*
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h b/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
+index 6658b74..2a2b655 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dbdcd.h
+@@ -154,7 +154,7 @@ extern void dcd_exit(void);
+  *      hdcd_mgr: A DCD manager handle.
+  *      uuid_obj: Pointer to a dsp_uuid for a library.
+  *      num_libs: Size of uuid array (number of library uuids).
+- *      pDepLibUuids: Array of dependent library uuids to be filled in.
++ *      dep_lib_uuids: Array of dependent library uuids to be filled in.
+  *      pPersistentDepLibs: Array indicating if corresponding lib is persistent.
+  *      phase: phase to obtain correct input library
+  *  Returns:
+@@ -166,13 +166,13 @@ extern void dcd_exit(void);
+  *      DCD initialized.
+  *      Valid hdcd_mgr.
+  *      uuid_obj != NULL
+- *      pDepLibUuids != NULL.
++ *      dep_lib_uuids != NULL.
+  *  Ensures:
+  */
+ extern int dcd_get_dep_libs(IN struct dcd_manager *hdcd_mgr,
+ 				   IN struct dsp_uuid *uuid_obj,
+ 				   u16 num_libs,
+-				   OUT struct dsp_uuid *pDepLibUuids,
++				   OUT struct dsp_uuid *dep_lib_uuids,
+ 				   OUT bool *pPersistentDepLibs,
+ 				   IN enum nldr_phase phase);
+ 
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dev.h b/drivers/staging/tidspbridge/include/dspbridge/dev.h
+index 72d4591..2e18edf 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dev.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dev.h
+@@ -37,10 +37,10 @@
+  *  ======== dev_brd_write_fxn ========
+  *  Purpose:
+  *      Exported function to be used as the COD write function.  This function
+- *      is passed a handle to a DEV_hObject by ZL in pArb, then calls the
++ *      is passed a handle to a DEV_hObject by ZL in arb, then calls the
+  *      device's bridge_brd_write() function.
+  *  Parameters:
+- *      pArb:           Handle to a Device Object.
++ *      arb:           Handle to a Device Object.
+  *      dev_ctxt:    Handle to Bridge driver defined device info.
+  *      dsp_addr:       Address on DSP board (Destination).
+  *      pHostBuf:       Pointer to host buffer (Source).
+@@ -48,13 +48,13 @@
+  *      ulMemType:      Memory space on DSP to which to transfer.
+  *  Returns:
+  *      Number of bytes written.  Returns 0 if the DEV_hObject passed in via
+- *      pArb is invalid.
++ *      arb is invalid.
+  *  Requires:
+  *      DEV Initialized.
+  *      pHostBuf != NULL
+  *  Ensures:
+  */
+-extern u32 dev_brd_write_fxn(void *pArb,
++extern u32 dev_brd_write_fxn(void *arb,
+ 			     u32 ulDspAddr,
+ 			     void *pHostBuf, u32 ul_num_bytes, u32 mem_space);
+ 
+@@ -585,7 +585,7 @@ extern int dev_is_locked(IN struct dev_object *hdev_obj);
+ extern int dev_insert_proc_object(IN struct dev_object
+ 					 *hdev_obj,
+ 					 IN u32 proc_obj,
+-					 OUT bool *pbAlreadyAttached);
++					 OUT bool *already_attached);
+ 
+ /*
+  *  ======== dev_remove_proc_object ========
+@@ -595,7 +595,7 @@ extern int dev_insert_proc_object(IN struct dev_object
+  *  Parameters:
+  *      p_proc_object:        Ptr to ProcObject to insert.
+  *      dev_obj:         Ptr to Dev Object where the list is.
+- *      pbAlreadyAttached:  Ptr to return the bool
++ *      already_attached:  Ptr to return the bool
+  *  Returns:
+  *      0:            If successful.
+  *      -EPERM           Failure to Remove the PROC Object from the list
+@@ -604,7 +604,7 @@ extern int dev_insert_proc_object(IN struct dev_object
+  *      proc_obj != 0
+  *      dev_obj->proc_list != NULL
+  *      !LST_IS_EMPTY(dev_obj->proc_list)
+- *      pbAlreadyAttached !=NULL
++ *      already_attached !=NULL
+  *  Ensures:
+  *  Details:
+  *      List will be deleted when the DEV is destroyed.
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/disp.h b/drivers/staging/tidspbridge/include/dspbridge/disp.h
+index 2c63db9..59fb431 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/disp.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/disp.h
+@@ -34,14 +34,14 @@
+  *  Parameters:
+  *      phDispObject:   Location to store node dispatcher object on output.
+  *      hdev_obj:     Device for this processor.
+- *      pDispAttrs:     Node dispatcher attributes.
++ *      disp_attrs:     Node dispatcher attributes.
+  *  Returns:
+  *      0:                Success;
+  *      -ENOMEM:            Insufficient memory for requested resources.
+  *      -EPERM:              Unable to create dispatcher.
+  *  Requires:
+  *      disp_init(void) called.
+- *      pDispAttrs != NULL.
++ *      disp_attrs != NULL.
+  *      hdev_obj != NULL.
+  *      phDispObject != NULL.
+  *  Ensures:
+@@ -50,7 +50,7 @@
+  */
+ extern int disp_create(OUT struct disp_object **phDispObject,
+ 			      struct dev_object *hdev_obj,
+-			      IN CONST struct disp_attr *pDispAttrs);
++			      IN CONST struct disp_attr *disp_attrs);
+ 
+ /*
+  *  ======== disp_delete ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/drv.h b/drivers/staging/tidspbridge/include/dspbridge/drv.h
+index f9b9634..14bb4a5 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/drv.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/drv.h
+@@ -382,7 +382,7 @@ extern int drv_remove_dev_object(struct drv_object *hdrv_obj,
+  *      Assigns the Resources or Releases them.
+  *  Parameters:
+  *      dw_context:          Path to the driver Registry Key.
+- *      pDevNodeString:     Ptr to dev_node String stored in the Device Ext.
++ *      dev_node_strg:     Ptr to dev_node String stored in the Device Ext.
+  *  Returns:
+  *      TRUE if success; FALSE otherwise.
+  *  Requires:
+@@ -394,7 +394,7 @@ extern int drv_remove_dev_object(struct drv_object *hdrv_obj,
+  *      later used by the CFG module.
+  */
+ extern int drv_request_resources(IN u32 dw_context,
+-					OUT u32 *pDevNodeString);
++					OUT u32 *dev_node_strg);
+ 
+ /*
+  *  ======== drv_release_resources ========
+@@ -509,14 +509,14 @@ extern void mem_free_phys_mem(void *pVirtualAddress,
+  *  Purpose:
+  *      Unmap the linear address mapped in MEM_LINEAR_ADDRESS.
+  *  Parameters:
+- *      pBaseAddr: Ptr to mapped memory (as returned by MEM_LINEAR_ADDRESS()).
++ *      base_addr: Ptr to mapped memory (as returned by MEM_LINEAR_ADDRESS()).
+  *  Returns:
+  *  Requires:
+  *      - MEM initialized.
+- *      - pBaseAddr is a valid linear address mapped in MEM_LINEAR_ADDRESS.
++ *      - base_addr is a valid linear address mapped in MEM_LINEAR_ADDRESS.
+  *  Ensures:
+- *      - pBaseAddr no longer points to a valid linear address.
++ *      - base_addr no longer points to a valid linear address.
+  */
+-#define MEM_UNMAP_LINEAR_ADDRESS(pBaseAddr) {}
++#define MEM_UNMAP_LINEAR_ADDRESS(base_addr) {}
+ 
+ #endif /* DRV_ */
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
+index fc8f8d3..19301b2 100755
+--- a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
+@@ -560,7 +560,7 @@ typedef int(*fxn_chnl_flushio) (struct chnl_object *chnl_obj,
+  *                      if (pInfo != NULL).
+  */
+ typedef int(*fxn_chnl_getinfo) (struct chnl_object *chnl_obj,
+-				       OUT struct chnl_info *pChnlInfo);
++				       OUT struct chnl_info *channel_info);
+ 
+ /*
+  *  ======== bridge_chnl_get_mgr_info ========
+@@ -649,7 +649,7 @@ typedef int(*fxn_chnl_registernotify)
+  *  Parameters:
+  *      phDevContext:   Ptr to location to store a Bridge device context.
+  *      hdev_obj:     Handle to a Device Object, created and managed by DSP API.
+- *      pConfig:        Ptr to configuration parameters provided by the
++ *      config_param:        Ptr to configuration parameters provided by the
+  *                      Configuration Manager during device loading.
+  *      pDspConfig:     DSP resources, as specified in the registry key for this
+  *                      device.
+@@ -659,9 +659,9 @@ typedef int(*fxn_chnl_registernotify)
+  *  Requires:
+  *      phDevContext != NULL;
+  *      hdev_obj != NULL;
+- *      pConfig != NULL;
++ *      config_param != NULL;
+  *      pDspConfig != NULL;
+- *      Fields in pConfig and pDspConfig contain valid values.
++ *      Fields in config_param and pDspConfig contain valid values.
+  *  Ensures:
+  *      0:        All Bridge driver specific DSP resource and other
+  *                      board context has been allocated.
+@@ -683,7 +683,7 @@ typedef int(*fxn_dev_create) (OUT struct bridge_dev_context
+ 				     struct dev_object
+ 				     * hdev_obj,
+ 				     IN struct cfg_hostres
+-				     * pConfig);
++				     * config_param);
+ 
+ /*
+  *  ======== bridge_dev_ctrl ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
+index 8b0cd7f..7e598ee
+--- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
+@@ -34,12 +34,12 @@
+     ((((s32)&(((type *)0)->field)) / wordsize) + (u32)base)
+ 
+ /* Access can be different SM access word size (e.g. 16/32 bit words) */
+-#define IO_SET_VALUE(pContext, type, base, field, value) (base->field = value)
+-#define IO_GET_VALUE(pContext, type, base, field)	(base->field)
+-#define IO_OR_VALUE(pContext, type, base, field, value)  (base->field |= value)
+-#define IO_AND_VALUE(pContext, type, base, field, value) (base->field &= value)
+-#define IO_SET_LONG(pContext, type, base, field, value)  (base->field = value)
+-#define IO_GET_LONG(pContext, type, base, field)         (base->field)
++#define IO_SET_VALUE(context, type, base, field, value) (base->field = value)
++#define IO_GET_VALUE(context, type, base, field)	(base->field)
++#define IO_OR_VALUE(context, type, base, field, value)  (base->field |= value)
++#define IO_AND_VALUE(context, type, base, field, value) (base->field &= value)
++#define IO_SET_LONG(context, type, base, field, value)  (base->field = value)
++#define IO_GET_LONG(context, type, base, field)         (base->field)
+ 
+ #ifdef CONFIG_TIDSPBRIDGE_DVFS
+ /* The maximum number of OPPs that are supported */
+@@ -144,7 +144,7 @@ extern void iosm_schedule(struct io_mgr *hio_mgr);
+  *      uDDMAChnlId:    DDMA channel identifier.
+  *      uNumDesc:       Number of buffer descriptors(equals # of IOReqs &
+  *                      Chirps)
+- *      pDsp:           Dsp address;
++ *      dsp:           Dsp address;
+  *  Returns:
+  *  Requires:
+  *     uDDMAChnlId < DDMA_MAXDDMACHNLS
+@@ -155,7 +155,7 @@ extern void iosm_schedule(struct io_mgr *hio_mgr);
+  *  Ensures:
+  */
+ extern void io_ddma_init_chnl_desc(struct io_mgr *hio_mgr, u32 uDDMAChnlId,
+-				   u32 uNumDesc, void *pDsp);
++				   u32 uNumDesc, void *dsp);
+ 
+ /*
+  *  ======== io_ddma_clear_chnl_desc ========
+diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
+index b302db5..ff1621c 100644
+--- a/drivers/staging/tidspbridge/pmgr/cmm.c
++++ b/drivers/staging/tidspbridge/pmgr/cmm.c
+@@ -1044,19 +1044,19 @@ void *cmm_xlator_alloc_buf(struct cmm_xlatorobject *xlator, void *pVaBuf,
+  *      Free the given SM buffer and descriptor.
+  *      Does not free virtual memory.
+  */
+-int cmm_xlator_free_buf(struct cmm_xlatorobject *xlator, void *pBufVa)
++int cmm_xlator_free_buf(struct cmm_xlatorobject *xlator, void *buf_va)
+ {
+ 	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
+ 	int status = -EPERM;
+ 	void *buf_pa = NULL;
+ 
+ 	DBC_REQUIRE(refs > 0);
+-	DBC_REQUIRE(pBufVa != NULL);
++	DBC_REQUIRE(buf_va != NULL);
+ 	DBC_REQUIRE(xlator_obj->ul_seg_id > 0);
+ 
+ 	if (xlator_obj) {
+ 		/* convert Va to Pa so we can free it. */
+-		buf_pa = cmm_xlator_translate(xlator, pBufVa, CMM_VA2PA);
++		buf_pa = cmm_xlator_translate(xlator, buf_va, CMM_VA2PA);
+ 		if (buf_pa) {
+ 			status = cmm_free_buf(xlator_obj->hcmm_mgr, buf_pa,
+ 					      xlator_obj->ul_seg_id);
+diff --git a/drivers/staging/tidspbridge/pmgr/cod.c b/drivers/staging/tidspbridge/pmgr/cod.c
+index 7682035..8317d03 100644
+--- a/drivers/staging/tidspbridge/pmgr/cod.c
++++ b/drivers/staging/tidspbridge/pmgr/cod.c
+@@ -493,7 +493,7 @@ bool cod_init(void)
+  *      terminating args arrays, if num_argc is very large.
+  */
+ int cod_load_base(struct cod_manager *hmgr, u32 num_argc, char *args[],
+-			 cod_writefxn pfn_write, void *pArb, char *envp[])
++			 cod_writefxn pfn_write, void *arb, char *envp[])
+ {
+ 	dbll_flags flags;
+ 	struct dbll_attrs save_attrs;
+@@ -525,7 +525,7 @@ int cod_load_base(struct cod_manager *hmgr, u32 num_argc, char *args[],
+ 
+ 	new_attrs = save_attrs;
+ 	new_attrs.write = (dbll_write_fxn) pfn_write;
+-	new_attrs.input_params = pArb;
++	new_attrs.input_params = arb;
+ 	new_attrs.alloc = (dbll_alloc_fxn) no_op;
+ 	new_attrs.free = (dbll_free_fxn) no_op;
+ 	new_attrs.log_write = NULL;
 diff --git a/drivers/staging/tidspbridge/pmgr/dbll.c b/drivers/staging/tidspbridge/pmgr/dbll.c
-index e94ef6b..cb4d2a7 100644
+index 1f67193..29918cc 100644
 --- a/drivers/staging/tidspbridge/pmgr/dbll.c
 +++ b/drivers/staging/tidspbridge/pmgr/dbll.c
-@@ -573,7 +573,7 @@ int dbll_load(struct dbll_library_obj *lib, dbll_flags flags,
-  *  ======== dbll_load_sect ========
-  *  Not supported for COFF.
+@@ -728,7 +728,7 @@ func_cont:
+  *  Get the content of a COFF section.
   */
--int dbll_load_sect(struct dbll_library_obj *zl_lib, char *sectName,
-+int dbll_load_sect(struct dbll_library_obj *zl_lib, char *sec_name,
- 			  struct dbll_attrs *attrs)
+ int dbll_read_sect(struct dbll_library_obj *lib, char *name,
+-			  char *pContent, u32 size)
++			  char *content, u32 size)
  {
- 	DBC_REQUIRE(zl_lib);
-@@ -853,11 +853,11 @@ func_end:
-  *  ======== dbll_unload_sect ========
-  *  Not supported for COFF.
-  */
--int dbll_unload_sect(struct dbll_library_obj *lib, char *sectName,
-+int dbll_unload_sect(struct dbll_library_obj *lib, char *sec_name,
- 			    struct dbll_attrs *attrs)
- {
+ 	struct dbll_library_obj *zl_lib = (struct dbll_library_obj *)lib;
+ 	bool opened_doff = false;
+@@ -740,7 +740,7 @@ int dbll_read_sect(struct dbll_library_obj *lib, char *name,
  	DBC_REQUIRE(refs > 0);
--	DBC_REQUIRE(sectName != NULL);
-+	DBC_REQUIRE(sec_name != NULL);
+ 	DBC_REQUIRE(zl_lib);
+ 	DBC_REQUIRE(name != NULL);
+-	DBC_REQUIRE(pContent != NULL);
++	DBC_REQUIRE(content != NULL);
+ 	DBC_REQUIRE(size != 0);
  
- 	return -ENOSYS;
+ 	/* If DOFF file is not open, we open it. */
+@@ -780,7 +780,7 @@ int dbll_read_sect(struct dbll_library_obj *lib, char *name,
+ 	if (ul_sect_size > size) {
+ 		status = -EPERM;
+ 	} else {
+-		if (!dload_get_section(zl_lib->desc, sect, pContent))
++		if (!dload_get_section(zl_lib->desc, sect, content))
+ 			status = -EBADF;
+ 
+ 	}
+@@ -790,8 +790,8 @@ func_cont:
+ 		opened_doff = false;
+ 	}
+ 
+-	dev_dbg(bridge, "%s: lib: %p name: %s pContent: %p size: 0x%x, "
+-		"status 0x%x\n", __func__, lib, name, pContent, size, status);
++	dev_dbg(bridge, "%s: lib: %p name: %s content: %p size: 0x%x, "
++		"status 0x%x\n", __func__, lib, name, content, size, status);
+ 	return status;
  }
+ 
+diff --git a/drivers/staging/tidspbridge/pmgr/dev.c b/drivers/staging/tidspbridge/pmgr/dev.c
+index eb4799d..2e4726e 100644
+--- a/drivers/staging/tidspbridge/pmgr/dev.c
++++ b/drivers/staging/tidspbridge/pmgr/dev.c
+@@ -100,10 +100,10 @@ static void store_interface_fxns(struct bridge_drv_interface *drv_fxns,
+  *      is passed a handle to a DEV_hObject, then calls the
+  *      device's bridge_brd_write() function.
+  */
+-u32 dev_brd_write_fxn(void *pArb, u32 ulDspAddr, void *pHostBuf,
++u32 dev_brd_write_fxn(void *arb, u32 ulDspAddr, void *pHostBuf,
+ 		      u32 ul_num_bytes, u32 mem_space)
+ {
+-	struct dev_object *dev_obj = (struct dev_object *)pArb;
++	struct dev_object *dev_obj = (struct dev_object *)arb;
+ 	u32 ul_written = 0;
+ 	int status;
+ 
+@@ -961,20 +961,20 @@ static int init_cod_mgr(struct dev_object *dev_obj)
+  *  Parameters:
+  *      p_proc_object:        Ptr to ProcObject to insert.
+  *      dev_obj:         Ptr to Dev Object where the list is.
+-  *     pbAlreadyAttached:  Ptr to return the bool
++  *     already_attached:  Ptr to return the bool
+  *  Returns:
+  *      0:           If successful.
+  *  Requires:
+  *      List Exists
+  *      hdev_obj is Valid handle
+  *      DEV Initialized
+- *      pbAlreadyAttached != NULL
++ *      already_attached != NULL
+  *      proc_obj != 0
+  *  Ensures:
+  *      0 and List is not Empty.
+  */
+ int dev_insert_proc_object(struct dev_object *hdev_obj,
+-				  u32 proc_obj, OUT bool *pbAlreadyAttached)
++				  u32 proc_obj, OUT bool *already_attached)
+ {
+ 	int status = 0;
+ 	struct dev_object *dev_obj = (struct dev_object *)hdev_obj;
+@@ -983,9 +983,9 @@ int dev_insert_proc_object(struct dev_object *hdev_obj,
+ 	DBC_REQUIRE(dev_obj);
+ 	DBC_REQUIRE(proc_obj != 0);
+ 	DBC_REQUIRE(dev_obj->proc_list != NULL);
+-	DBC_REQUIRE(pbAlreadyAttached != NULL);
++	DBC_REQUIRE(already_attached != NULL);
+ 	if (!LST_IS_EMPTY(dev_obj->proc_list))
+-		*pbAlreadyAttached = true;
++		*already_attached = true;
+ 
+ 	/* Add DevObject to tail. */
+ 	lst_put_tail(dev_obj->proc_list, (struct list_head *)proc_obj);
 diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-index a5cef43..992ff73 100644
+index 9d05166..be98c4c 100644
 --- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
 +++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
-@@ -66,7 +66,7 @@ static int get_attrs_from_buf(char *psz_buf, u32 ul_buf_size,
- 				     enum dsp_dcdobjtype obj_type,
- 				     struct dcd_genericobj *gen_obj);
- static void compress_buf(char *psz_buf, u32 ul_buf_size, s32 char_size);
--static char dsp_char2_gpp_char(char *pWord, s32 dsp_char_size);
-+static char dsp_char2_gpp_char(char *word, s32 dsp_char_size);
- static int get_dep_lib_info(IN struct dcd_manager *hdcd_mgr,
+@@ -71,7 +71,7 @@ static int get_dep_lib_info(IN struct dcd_manager *hdcd_mgr,
  				   IN struct dsp_uuid *uuid_obj,
- 				   IN OUT u16 *num_libs,
-@@ -534,7 +534,7 @@ func_end:
-  *  ======== dcd_get_objects ========
+ 				   IN OUT u16 *pNumLibs,
+ 				   OPTIONAL OUT u16 *pNumPersLibs,
+-				   OPTIONAL OUT struct dsp_uuid *pDepLibUuids,
++				   OPTIONAL OUT struct dsp_uuid *dep_lib_uuids,
+ 				   OPTIONAL OUT bool *pPersistentDepLibs,
+ 				   IN enum nldr_phase phase);
+ 
+@@ -327,7 +327,7 @@ void dcd_exit(void)
   */
- int dcd_get_objects(IN struct dcd_manager *hdcd_mgr,
--			   IN char *sz_coff_path, dcd_registerfxn registerFxn,
-+			   IN char *sz_coff_path, dcd_registerfxn register_fxn,
- 			   void *handle)
+ int dcd_get_dep_libs(IN struct dcd_manager *hdcd_mgr,
+ 			    IN struct dsp_uuid *uuid_obj,
+-			    u16 num_libs, OUT struct dsp_uuid *pDepLibUuids,
++			    u16 num_libs, OUT struct dsp_uuid *dep_lib_uuids,
+ 			    OUT bool *pPersistentDepLibs,
+ 			    IN enum nldr_phase phase)
  {
- 	struct dcd_manager *dcd_mgr_obj = hdcd_mgr;
-@@ -608,7 +608,7 @@ int dcd_get_objects(IN struct dcd_manager *hdcd_mgr,
- 			object_type = atoi(token);
- 
- 			/*
--			 *  Apply registerFxn to the found DCD object.
-+			 *  Apply register_fxn to the found DCD object.
- 			 *  Possible actions include:
- 			 *
- 			 *  1) Register found DCD object.
-@@ -616,7 +616,7 @@ int dcd_get_objects(IN struct dcd_manager *hdcd_mgr,
- 			 *  3) Add overlay node.
- 			 */
- 			status =
--			    registerFxn(&dsp_uuid_obj, object_type, handle);
-+			    register_fxn(&dsp_uuid_obj, object_type, handle);
- 			if (DSP_FAILED(status)) {
- 				/* if error occurs, break from while loop. */
- 				break;
-@@ -1376,13 +1376,13 @@ static void compress_buf(char *psz_buf, u32 ul_buf_size, s32 char_size)
-  *  Purpose:
-  *      Convert DSP char to host GPP char in a portable manner
-  */
--static char dsp_char2_gpp_char(char *pWord, s32 dsp_char_size)
-+static char dsp_char2_gpp_char(char *word, s32 dsp_char_size)
- {
- 	char ch = '\0';
- 	char *ch_src;
- 	s32 i;
- 
--	for (ch_src = pWord, i = dsp_char_size; i > 0; i--)
-+	for (ch_src = word, i = dsp_char_size; i > 0; i--)
- 		ch |= *ch_src++;
- 
- 	return ch;
-diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
-index f38123d..dc0c629 100755
---- a/drivers/staging/tidspbridge/rmgr/drv.c
-+++ b/drivers/staging/tidspbridge/rmgr/drv.c
-@@ -1037,12 +1037,12 @@ void *mem_alloc_phys_mem(u32 byte_size, u32 ulAlign, OUT u32 * physical_address)
-  *  Purpose:
-  *      Free the given block of physically contiguous memory.
-  */
--void mem_free_phys_mem(void *pVirtualAddress, u32 physical_address,
-+void mem_free_phys_mem(void *virtual_address, u32 physical_address,
- 		       u32 byte_size)
- {
--	DBC_REQUIRE(pVirtualAddress != NULL);
-+	DBC_REQUIRE(virtual_address != NULL);
- 
- 	if (!ext_phys_mem_pool_enabled)
--		dma_free_coherent(NULL, byte_size, pVirtualAddress,
-+		dma_free_coherent(NULL, byte_size, virtual_address,
- 				  physical_address);
- }
-diff --git a/drivers/staging/tidspbridge/rmgr/nldr.c b/drivers/staging/tidspbridge/rmgr/nldr.c
-index 3eb1ae3..198b698 100644
---- a/drivers/staging/tidspbridge/rmgr/nldr.c
-+++ b/drivers/staging/tidspbridge/rmgr/nldr.c
-@@ -299,7 +299,7 @@ static bool get_symbol_value(void *handle, void *parg, void *rmm_handle,
- 			     char *symName, struct dbll_sym_val **sym);
- static int load_lib(struct nldr_nodeobject *nldr_node_obj,
- 			   struct lib_node *root, struct dsp_uuid uuid,
--			   bool rootPersistent,
-+			   bool root_prstnt,
- 			   struct dbll_library_obj **lib_path,
- 			   enum nldr_phase phase, u16 depth);
- static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
-@@ -1243,7 +1243,7 @@ static bool get_symbol_value(void *handle, void *parg, void *rmm_handle,
-  */
- static int load_lib(struct nldr_nodeobject *nldr_node_obj,
- 			   struct lib_node *root, struct dsp_uuid uuid,
--			   bool rootPersistent,
-+			   bool root_prstnt,
- 			   struct dbll_library_obj **lib_path,
- 			   enum nldr_phase phase, u16 depth)
- {
-@@ -1300,7 +1300,7 @@ static int load_lib(struct nldr_nodeobject *nldr_node_obj,
- 	kfree(psz_file_name);
- 
- 	/* Check to see if library not already loaded */
--	if (DSP_SUCCEEDED(status) && rootPersistent) {
-+	if (DSP_SUCCEEDED(status) && root_prstnt) {
- 		lib_status =
- 		    find_in_persistent_lib_array(nldr_node_obj, root->lib);
- 		/* Close library */
-@@ -1374,7 +1374,7 @@ static int load_lib(struct nldr_nodeobject *nldr_node_obj,
- 			/* If root library is NOT persistent, and dep library
- 			 * is, then record it.  If root library IS persistent,
- 			 * the deplib is already included */
--			if (!rootPersistent && persistent_dep_libs[i] &&
-+			if (!root_prstnt && persistent_dep_libs[i] &&
- 			    *nldr_node_obj->pf_phase_split) {
- 				if ((nldr_node_obj->pers_libs) >= MAXLIBS) {
- 					status = -EILSEQ;
-@@ -1386,7 +1386,7 @@ static int load_lib(struct nldr_nodeobject *nldr_node_obj,
- 				    &nldr_node_obj->pers_lib_table
- 				    [nldr_node_obj->pers_libs];
- 			} else {
--				if (rootPersistent)
-+				if (root_prstnt)
- 					persistent_dep_libs[i] = true;
- 
- 				/* Allocate library within phase */
-@@ -1400,7 +1400,7 @@ static int load_lib(struct nldr_nodeobject *nldr_node_obj,
- 
- 			if (DSP_SUCCEEDED(status)) {
- 				if ((status != 0) &&
--				    !rootPersistent && persistent_dep_libs[i] &&
-+				    !root_prstnt && persistent_dep_libs[i] &&
- 				    *nldr_node_obj->pf_phase_split) {
- 					(nldr_node_obj->pers_libs)++;
- 				} else {
-diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
-index 91a5d8c..cdae2c8 100644
---- a/drivers/staging/tidspbridge/rmgr/node.c
-+++ b/drivers/staging/tidspbridge/rmgr/node.c
-@@ -248,7 +248,7 @@ static void fill_stream_def(struct node_object *hnode,
- 			    struct node_strmdef *pstrm_def,
- 			    struct dsp_strmattr *pattrs);
- static void free_stream(struct node_mgr *hnode_mgr, struct stream_chnl stream);
--static int get_fxn_address(struct node_object *hnode, u32 * pulFxnAddr,
-+static int get_fxn_address(struct node_object *hnode, u32 * fxn_addr,
- 				  u32 uPhase);
- static int get_node_props(struct dcd_manager *hdcd_mgr,
- 				 struct node_object *hnode,
-@@ -1762,13 +1762,13 @@ int node_get_attr(struct node_object *hnode,
-  *      host and a node.
-  */
- int node_get_channel_id(struct node_object *hnode, u32 dir, u32 index,
--			       OUT u32 *pulId)
-+			       OUT u32 *chan_id)
- {
- 	enum node_type node_type;
- 	int status = -EINVAL;
+@@ -336,11 +336,11 @@ int dcd_get_dep_libs(IN struct dcd_manager *hdcd_mgr,
  	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(dir == DSP_TONODE || dir == DSP_FROMNODE);
--	DBC_REQUIRE(pulId != NULL);
-+	DBC_REQUIRE(chan_id != NULL);
- 
- 	if (!hnode) {
- 		status = -EFAULT;
-@@ -1782,7 +1782,7 @@ int node_get_channel_id(struct node_object *hnode, u32 dir, u32 index,
- 	if (dir == DSP_TONODE) {
- 		if (index < MAX_INPUTS(hnode)) {
- 			if (hnode->inputs[index].type == HOSTCONNECT) {
--				*pulId = hnode->inputs[index].dev_id;
-+				*chan_id = hnode->inputs[index].dev_id;
- 				status = 0;
- 			}
- 		}
-@@ -1790,7 +1790,7 @@ int node_get_channel_id(struct node_object *hnode, u32 dir, u32 index,
- 		DBC_ASSERT(dir == DSP_FROMNODE);
- 		if (index < MAX_OUTPUTS(hnode)) {
- 			if (hnode->outputs[index].type == HOSTCONNECT) {
--				*pulId = hnode->outputs[index].dev_id;
-+				*chan_id = hnode->outputs[index].dev_id;
- 				status = 0;
- 			}
- 		}
-@@ -2819,7 +2819,7 @@ static void free_stream(struct node_mgr *hnode_mgr, struct stream_chnl stream)
-  *  Purpose:
-  *      Retrieves the address for create, execute or delete phase for a node.
-  */
--static int get_fxn_address(struct node_object *hnode, u32 * pulFxnAddr,
-+static int get_fxn_address(struct node_object *hnode, u32 * fxn_addr,
- 				  u32 uPhase)
- {
- 	char *pstr_fxn_name = NULL;
-@@ -2850,7 +2850,7 @@ static int get_fxn_address(struct node_object *hnode, u32 * pulFxnAddr,
+ 	DBC_REQUIRE(hdcd_mgr);
+ 	DBC_REQUIRE(uuid_obj != NULL);
+-	DBC_REQUIRE(pDepLibUuids != NULL);
++	DBC_REQUIRE(dep_lib_uuids != NULL);
+ 	DBC_REQUIRE(pPersistentDepLibs != NULL);
  
  	status =
- 	    hnode_mgr->nldr_fxns.pfn_get_fxn_addr(hnode->nldr_node_obj,
--						  pstr_fxn_name, pulFxnAddr);
-+						  pstr_fxn_name, fxn_addr);
+-	    get_dep_lib_info(hdcd_mgr, uuid_obj, &num_libs, NULL, pDepLibUuids,
++	    get_dep_lib_info(hdcd_mgr, uuid_obj, &num_libs, NULL, dep_lib_uuids,
+ 			     pPersistentDepLibs, phase);
  
+ 	return status;
+@@ -1393,7 +1393,7 @@ static int get_dep_lib_info(IN struct dcd_manager *hdcd_mgr,
+ 				   IN struct dsp_uuid *uuid_obj,
+ 				   IN OUT u16 *pNumLibs,
+ 				   OPTIONAL OUT u16 *pNumPersLibs,
+-				   OPTIONAL OUT struct dsp_uuid *pDepLibUuids,
++				   OPTIONAL OUT struct dsp_uuid *dep_lib_uuids,
+ 				   OPTIONAL OUT bool *pPersistentDepLibs,
+ 				   enum nldr_phase phase)
+ {
+@@ -1407,7 +1407,7 @@ static int get_dep_lib_info(IN struct dcd_manager *hdcd_mgr,
+ 	u32 dw_data_size = COD_MAXPATHLENGTH;
+ 	char seps[] = ", ";
+ 	char *token = NULL;
+-	bool get_uuids = (pDepLibUuids != NULL);
++	bool get_uuids = (dep_lib_uuids != NULL);
+ 	u16 dep_libs = 0;
+ 	int status = 0;
+ 
+@@ -1476,7 +1476,7 @@ static int get_dep_lib_info(IN struct dcd_manager *hdcd_mgr,
+ 			} else {
+ 				/* Retrieve UUID string. */
+ 				uuid_uuid_from_string(token,
+-						      &(pDepLibUuids
++						      &(dep_lib_uuids
+ 							[dep_libs]));
+ 				/* Is this library persistent? */
+ 				token = strsep(&psz_cur, seps);
+diff --git a/drivers/staging/tidspbridge/rmgr/disp.c b/drivers/staging/tidspbridge/rmgr/disp.c
+index 1bcd403..5f51d50 100644
+--- a/drivers/staging/tidspbridge/rmgr/disp.c
++++ b/drivers/staging/tidspbridge/rmgr/disp.c
+@@ -89,7 +89,7 @@ static int send_message(struct disp_object *disp_obj, u32 timeout,
+  */
+ int disp_create(OUT struct disp_object **phDispObject,
+ 		       struct dev_object *hdev_obj,
+-		       IN CONST struct disp_attr *pDispAttrs)
++		       IN CONST struct disp_attr *disp_attrs)
+ {
+ 	struct disp_object *disp_obj;
+ 	struct bridge_drv_interface *intf_fxns;
+@@ -100,7 +100,7 @@ int disp_create(OUT struct disp_object **phDispObject,
+ 
+ 	DBC_REQUIRE(refs > 0);
+ 	DBC_REQUIRE(phDispObject != NULL);
+-	DBC_REQUIRE(pDispAttrs != NULL);
++	DBC_REQUIRE(disp_attrs != NULL);
+ 	DBC_REQUIRE(hdev_obj != NULL);
+ 
+ 	*phDispObject = NULL;
+@@ -142,14 +142,14 @@ int disp_create(OUT struct disp_object **phDispObject,
+ 	/* Open channels for communicating with the RMS */
+ 	chnl_attr_obj.uio_reqs = CHNLIOREQS;
+ 	chnl_attr_obj.event_obj = NULL;
+-	ul_chnl_id = pDispAttrs->ul_chnl_offset + CHNLTORMSOFFSET;
++	ul_chnl_id = disp_attrs->ul_chnl_offset + CHNLTORMSOFFSET;
+ 	status = (*intf_fxns->pfn_chnl_open) (&(disp_obj->chnl_to_dsp),
+ 					      disp_obj->hchnl_mgr,
+ 					      CHNL_MODETODSP, ul_chnl_id,
+ 					      &chnl_attr_obj);
+ 
+ 	if (DSP_SUCCEEDED(status)) {
+-		ul_chnl_id = pDispAttrs->ul_chnl_offset + CHNLFROMRMSOFFSET;
++		ul_chnl_id = disp_attrs->ul_chnl_offset + CHNLFROMRMSOFFSET;
+ 		status =
+ 		    (*intf_fxns->pfn_chnl_open) (&(disp_obj->chnl_from_dsp),
+ 						 disp_obj->hchnl_mgr,
+@@ -158,7 +158,7 @@ int disp_create(OUT struct disp_object **phDispObject,
+ 	}
+ 	if (DSP_SUCCEEDED(status)) {
+ 		/* Allocate buffer for commands, replies */
+-		disp_obj->ul_bufsize = pDispAttrs->ul_chnl_buf_size;
++		disp_obj->ul_bufsize = disp_attrs->ul_chnl_buf_size;
+ 		disp_obj->ul_bufsize_rms = RMS_COMMANDBUFSIZE;
+ 		disp_obj->pbuf = kzalloc(disp_obj->ul_bufsize, GFP_KERNEL);
+ 		if (disp_obj->pbuf == NULL)
+diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
+index 4abfd81..78211a6 100644
+--- a/drivers/staging/tidspbridge/rmgr/drv.c
++++ b/drivers/staging/tidspbridge/rmgr/drv.c
+@@ -730,14 +730,14 @@ int drv_remove_dev_object(struct drv_object *driver_obj,
+  *  Purpose:
+  *      Requests  resources from the OS.
+  */
+-int drv_request_resources(u32 dw_context, u32 *pDevNodeString)
++int drv_request_resources(u32 dw_context, u32 *dev_node_strg)
+ {
+ 	int status = 0;
+ 	struct drv_object *pdrv_object;
+ 	struct drv_ext *pszdev_node;
+ 
+ 	DBC_REQUIRE(dw_context != 0);
+-	DBC_REQUIRE(pDevNodeString != NULL);
++	DBC_REQUIRE(dev_node_strg != NULL);
+ 
+ 	/*
+ 	 *  Allocate memory to hold the string. This will live untill
+@@ -754,22 +754,22 @@ int drv_request_resources(u32 dw_context, u32 *pDevNodeString)
+ 				(char *)dw_context, MAXREGPATHLENGTH - 1);
+ 			pszdev_node->sz_string[MAXREGPATHLENGTH - 1] = '\0';
+ 			/* Update the Driver Object List */
+-			*pDevNodeString = (u32) pszdev_node->sz_string;
++			*dev_node_strg = (u32) pszdev_node->sz_string;
+ 			lst_put_tail(pdrv_object->dev_node_string,
+ 				     (struct list_head *)pszdev_node);
+ 		} else {
+ 			status = -ENOMEM;
+-			*pDevNodeString = 0;
++			*dev_node_strg = 0;
+ 		}
+ 	} else {
+ 		dev_dbg(bridge, "%s: Failed to get Driver Object from Registry",
+ 			__func__);
+-		*pDevNodeString = 0;
++		*dev_node_strg = 0;
+ 	}
+ 
+-	DBC_ENSURE((DSP_SUCCEEDED(status) && pDevNodeString != NULL &&
++	DBC_ENSURE((DSP_SUCCEEDED(status) && dev_node_strg != NULL &&
+ 		    !LST_IS_EMPTY(pdrv_object->dev_node_string)) ||
+-		   (DSP_FAILED(status) && *pDevNodeString == 0));
++		   (DSP_FAILED(status) && *dev_node_strg == 0));
+ 
+ 	return status;
+ }
+diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
+index d19d990..7cffca4 100644
+--- a/drivers/staging/tidspbridge/rmgr/node.c
++++ b/drivers/staging/tidspbridge/rmgr/node.c
+@@ -253,7 +253,7 @@ static int get_fxn_address(struct node_object *hnode, u32 * pulFxnAddr,
+ static int get_node_props(struct dcd_manager *hdcd_mgr,
+ 				 struct node_object *hnode,
+ 				 CONST struct dsp_uuid *pNodeId,
+-				 struct dcd_genericobj *pdcdProps);
++				 struct dcd_genericobj *dcd_prop);
+ static int get_proc_props(struct node_mgr *hnode_mgr,
+ 				 struct dev_object *hdev_obj);
+ static int get_rms_fxns(struct node_mgr *hnode_mgr);
+@@ -2891,19 +2891,19 @@ void get_node_info(struct node_object *hnode, struct dsp_nodeinfo *pNodeInfo)
+ static int get_node_props(struct dcd_manager *hdcd_mgr,
+ 				 struct node_object *hnode,
+ 				 CONST struct dsp_uuid *pNodeId,
+-				 struct dcd_genericobj *pdcdProps)
++				 struct dcd_genericobj *dcd_prop)
+ {
+ 	u32 len;
+ 	struct node_msgargs *pmsg_args;
+ 	struct node_taskargs *task_arg_obj;
+ 	enum node_type node_type = NODE_TASK;
+ 	struct dsp_ndbprops *pndb_props =
+-	    &(pdcdProps->obj_data.node_obj.ndb_props);
++	    &(dcd_prop->obj_data.node_obj.ndb_props);
+ 	int status = 0;
+ 	char sz_uuid[MAXUUIDLEN];
+ 
+ 	status = dcd_get_object_def(hdcd_mgr, (struct dsp_uuid *)pNodeId,
+-				    DSP_DCDNODETYPE, pdcdProps);
++				    DSP_DCDNODETYPE, dcd_prop);
+ 
+ 	if (DSP_SUCCEEDED(status)) {
+ 		hnode->ntype = node_type = pndb_props->ntype;
+@@ -2917,9 +2917,9 @@ static int get_node_props(struct dcd_manager *hdcd_mgr,
+ 		if (node_type != NODE_DEVICE) {
+ 			pmsg_args = &(hnode->create_args.asa.node_msg_args);
+ 			pmsg_args->seg_id =
+-			    pdcdProps->obj_data.node_obj.msg_segid;
++			    dcd_prop->obj_data.node_obj.msg_segid;
+ 			pmsg_args->notify_type =
+-			    pdcdProps->obj_data.node_obj.msg_notify_type;
++			    dcd_prop->obj_data.node_obj.msg_notify_type;
+ 			pmsg_args->max_msgs = pndb_props->message_depth;
+ 			dev_dbg(bridge, "(node) Max Number of Messages: 0x%x\n",
+ 				pmsg_args->max_msgs);
+diff --git a/drivers/staging/tidspbridge/services/cfg.c b/drivers/staging/tidspbridge/services/cfg.c
+index 243fea9..cc138f7 100644
+--- a/drivers/staging/tidspbridge/services/cfg.c
++++ b/drivers/staging/tidspbridge/services/cfg.c
+@@ -50,22 +50,22 @@ void cfg_exit(void)
+  *      Retreive the autostart mask, if any, for this board.
+  */
+ int cfg_get_auto_start(struct cfg_devnode *dev_node_obj,
+-			      OUT u32 *pdwAutoStart)
++			      OUT u32 *auto_start)
+ {
+ 	int status = 0;
+ 	u32 dw_buf_size;
+ 	struct drv_data *drv_datap = dev_get_drvdata(bridge);
+ 
+-	dw_buf_size = sizeof(*pdwAutoStart);
++	dw_buf_size = sizeof(*auto_start);
+ 	if (!dev_node_obj)
+ 		status = -EFAULT;
+-	if (!pdwAutoStart || !drv_datap)
++	if (!auto_start || !drv_datap)
+ 		status = -EFAULT;
+ 	if (DSP_SUCCEEDED(status))
+-		*pdwAutoStart = (drv_datap->base_img) ? 1 : 0;
++		*auto_start = (drv_datap->base_img) ? 1 : 0;
+ 
+ 	DBC_ENSURE((status == 0 &&
+-		    (*pdwAutoStart == 0 || *pdwAutoStart == 1))
++		    (*auto_start == 0 || *auto_start == 1))
+ 		   || status != 0);
  	return status;
  }
 -- 
