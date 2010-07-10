@@ -1,104 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab0GJIHd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 04:07:33 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:35931 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752430Ab0GJIH3 (ORCPT
+	id S1752693Ab0GJIKU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 04:10:20 -0400
+Received: from [163.20.135.129] ([163.20.135.129]:53511 "EHLO
+	mail.phjh.tpc.edu.tw" rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1752430Ab0GJIKS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 04:07:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=YsVWCw1I7o4mXXTj4PJSMCmkWudMGhoZkD01WEHqLmzgGrP/717Knj7uNGSyiLA7AL
-         O21BvJ5AcVD/lX/XP8goXPG002OwGLaQr6Xss1Sx+fPVd8EdDJKscXWF0+UCNCsM3T9x
-         jfBu7d9xAaQqVRQ6QeowgXj3+g8YraLWQ5p7Q=
+	Sat, 10 Jul 2010 04:10:18 -0400
+From: "Dr.Smith Stanford" <info@mail.com>
+Reply-To: jamesmooreloanfirm@gmail.com
+Subject: N/A
+Date: Sat, 10 Jul 2010 10:41:59 +0300
+Message-Id: <20100710074159.M37747@mail.com>
+X-Mailer: OpenWebMail 2.52 20060502
+X-OriginatingIP: 41.138.176.143 (winnie116)
 MIME-Version: 1.0
-Date: Sat, 10 Jul 2010 16:07:28 +0800
-Message-ID: <AANLkTimwrORk9yfJlSMpVdn1V0sg0tssKhxc-3q1xoMX@mail.gmail.com>
-Subject: [PATCH] avoid NULL deference in ext2_xattr_get
-From: shenghui <crosslonelyover@gmail.com>
-To: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain;
+	charset=utf-8
+To: undisclosed-recipients:;
+X-NetStation-Status: PASS
+X-NetStation-SPAM: 0.00/5.00-6.00
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-         I walked through ext2 code, and found one potential NULL deference
-in ext2/xattr.c.  The version is 2.6.35-rc4, while earlier versions have the
-same problem.
-         If you configure EXT2_XATTR_DEBUG, you'll get:
-# define ea_idebug(inode, f...) do { \
-                printk(KERN_DEBUG "inode %s:%ld: ", \
-                        inode->i_sb->s_id, inode->i_ino); \
-                printk(f); \
-                printk("\n"); \
-        } while (0)
-
-In ext2/xttr.c ext2_xattr_get, NULL pointer check is done after
-ea_idebug call, so some may hit NULL deference here.
- ext2_xattr_get(struct inode *inode, int name_index, const char *name,
-                void *buffer, size_t buffer_size)
- {
-         struct buffer_head *bh = NULL;
-         struct ext2_xattr_entry *entry;
-         size_t name_len, size;
-         char *end;
-         int error;
-
-         ea_idebug(inode, "name=%d.%s, buffer=%p, buffer_size=%ld",
-                   name_index, name, buffer, (long)buffer_size);
-
-         if (name == NULL)
-                 return -EINVAL;
 
 
-Following is my patch. Please check it.
-The patch is against kernel 2.6.35-rc4.
+CONTACT JAMESMOORELOANFIRM@GMAIL.COM FOR A LOAN OFFER AT 3% INTEREST  RATE 
+WITHOUT OR WITH COLLATERAL VIA jamesmooreloanfirm@gmail.com
 
-
->From adc1fa6535034db3b6d8deebda6ec7eaa8bfd2f8 Mon Sep 17 00:00:00 2001
-From: Wang Sheng-Hui <crosslonelyover@gmail.com>
-Date: Sat, 10 Jul 2010 16:05:53 +0800
-Subject: [PATCH] avoid NULL deference in ext2_xattr_get
-
-
-Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
----
- fs/ext2/xattr.c |    5 +++--
- 1 files changed, 3 insertions(+), 2 deletions(-)
-
-diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
-index 7c39157..81ec1c6 100644
---- a/fs/ext2/xattr.c
-+++ b/fs/ext2/xattr.c
-@@ -156,11 +156,12 @@ ext2_xattr_get(struct inode *inode, int
-name_index, const char *name,
- 	char *end;
- 	int error;
-
-+	if (name == NULL)
-+		return -EINVAL;
-+
- 	ea_idebug(inode, "name=%d.%s, buffer=%p, buffer_size=%ld",
- 		  name_index, name, buffer, (long)buffer_size);
-
--	if (name == NULL)
--		return -EINVAL;
- 	down_read(&EXT2_I(inode)->xattr_sem);
- 	error = -ENODATA;
- 	if (!EXT2_I(inode)->i_file_acl)
--- 
-1.6.3.3
-
-
-
-
--- 
-
-
-Thanks and Best Regards,
-shenghui
