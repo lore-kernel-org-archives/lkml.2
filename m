@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755686Ab0GJC0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 22:26:12 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45789 "EHLO arroyo.ext.ti.com"
+	id S1754918Ab0GJCZ4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 22:25:56 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45779 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753579Ab0GJCZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 22:25:31 -0400
+	id S1753004Ab0GJCZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 22:25:25 -0400
 From: Rene Sapiens <rene.sapiens@ti.com>
 To: greg@kroah.com
 Cc: gregkh@suse.de, omar.ramirez@ti.com, ohad@wizery.com,
        ameya.palande@nokia.com, linux-kernel@vger.kernel.org,
        linux-omap@vger.kernel.org, Rene Sapiens <rene.sapiens@ti.com>
-Subject: [PATCH 14/15] staging:ti dspbridge: Rename words with camel case
-Date: Fri,  9 Jul 2010 21:24:08 -0500
-Message-Id: <1278728649-21012-15-git-send-email-rene.sapiens@ti.com>
+Subject: [PATCH 12/15] staging:ti dspbridge: Rename words with camel case
+Date: Fri,  9 Jul 2010 21:24:06 -0500
+Message-Id: <1278728649-21012-13-git-send-email-rene.sapiens@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1278728649-21012-14-git-send-email-rene.sapiens@ti.com>
+In-Reply-To: <1278728649-21012-12-git-send-email-rene.sapiens@ti.com>
 References: <1278728649-21012-1-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-2-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-3-git-send-email-rene.sapiens@ti.com>
@@ -28,8 +28,6 @@ References: <1278728649-21012-1-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-10-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-11-git-send-email-rene.sapiens@ti.com>
  <1278728649-21012-12-git-send-email-rene.sapiens@ti.com>
- <1278728649-21012-13-git-send-email-rene.sapiens@ti.com>
- <1278728649-21012-14-git-send-email-rene.sapiens@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -38,711 +36,1351 @@ The intention of this patch is to rename the remaining variables with camel
 case. Variables will be renamed avoiding camel case and Hungarian notation.
 The words to be renamed in this patch are:
 ========================================
-validBit to valid_bit
-victimEntryNum to victim_entry_num
-virtualAddr to virtual_addr
-xType to xtype
-actualValue to actual_value
-EASIL1_MMUMMU_IRQSTATUSReadRegister32 to easil1_mmummu_irqstatus_read_register32
-EASIL1_MMUMMU_LOCKBaseValueWrite32 to easil1_mmummu_lock_base_value_write32
-easiNum to easi_num
-expectedValue to expected_value
-invalidValue to invalid_value
-L1_base to l1_base
-L2_base to l2_base
-lower16Bits to lower16_bits
-lower8Bits to lower8_bits
-lowerMiddle8Bits to lower_middle8_bits
-lowerUpper8Bits to lower_upper8_bits
-maxValidValue to max_valid_value
-minValidValue to min_valid_value
-newValue to new_value
-returnCodeIfMismatch to return_code_if_mismatch
-spyCodeIfMisMatch to spy_code_if_mis_match
-upper16Bits to upper16_bits
-upper8Bits to upper8_bits
+segmentId to segmnt_id
+SetPageDirty to set_page_dirty
+sizeInBytes to size_in_bytes
+sleepCode to sleep_code
+Status to status
+symName to sym_name
+szVar to sz_var
+Trapped_Args to trapped_args
+TTBPhysAddr to ttb_phys_addr
+uChirps to chirps
+uChnlId to ch_id
+uChnlID to ch_id
+uContentSize to cont_size
+uDDMAChnlId to ddma_chnl_id
+uEvents to events
+ulAlign to align_mask
 ========================================
 
 Signed-off-by: Rene Sapiens <rene.sapiens@ti.com>
 ---
- drivers/staging/tidspbridge/hw/EasiGlobal.h        |    2 +-
- drivers/staging/tidspbridge/hw/GlobalTypes.h       |   72 ++++++++-------
- drivers/staging/tidspbridge/hw/MMURegAcM.h         |   96 ++++++++++----------
- drivers/staging/tidspbridge/hw/hw_mmu.c            |   46 +++++-----
- drivers/staging/tidspbridge/hw/hw_mmu.h            |   20 ++--
- .../staging/tidspbridge/include/dspbridge/cmm.h    |    6 +-
- drivers/staging/tidspbridge/pmgr/cmm.c             |   14 ++--
- 7 files changed, 129 insertions(+), 127 deletions(-)
- mode change 100644 => 100755 drivers/staging/tidspbridge/hw/GlobalTypes.h
+ drivers/staging/tidspbridge/core/chnl_sm.c         |   30 +++---
+ drivers/staging/tidspbridge/core/tiomap3430.c      |    4 +-
+ drivers/staging/tidspbridge/hw/hw_mmu.c            |    4 +-
+ drivers/staging/tidspbridge/hw/hw_mmu.h            |    2 +-
+ .../staging/tidspbridge/include/dspbridge/dbdefs.h |    4 +-
+ .../tidspbridge/include/dspbridge/dblldefs.h       |    2 +-
+ .../staging/tidspbridge/include/dspbridge/drv.h    |    4 +-
+ .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |    2 +-
+ .../staging/tidspbridge/include/dspbridge/dspapi.h |  112 ++++++++++----------
+ .../tidspbridge/include/dspbridge/dspchnl.h        |    4 +-
+ .../tidspbridge/include/dspbridge/dspdefs.h        |    8 +-
+ .../staging/tidspbridge/include/dspbridge/io_sm.h  |   20 ++--
+ .../staging/tidspbridge/include/dspbridge/proc.h   |   12 +-
+ .../staging/tidspbridge/include/dspbridge/pwr.h    |    6 +-
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |  116 ++++++++++----------
+ drivers/staging/tidspbridge/rmgr/drv.c             |    5 +-
+ drivers/staging/tidspbridge/rmgr/drv_interface.c   |    6 +-
+ drivers/staging/tidspbridge/rmgr/nldr.c            |   12 +-
+ drivers/staging/tidspbridge/rmgr/proc.c            |   18 ++--
+ drivers/staging/tidspbridge/rmgr/pwr.c             |    6 +-
+ 20 files changed, 189 insertions(+), 188 deletions(-)
+ mode change 100644 => 100755 drivers/staging/tidspbridge/rmgr/drv_interface.c
 
-diff --git a/drivers/staging/tidspbridge/hw/EasiGlobal.h b/drivers/staging/tidspbridge/hw/EasiGlobal.h
-index 9b45aa7..e48d7f6 100644
---- a/drivers/staging/tidspbridge/hw/EasiGlobal.h
-+++ b/drivers/staging/tidspbridge/hw/EasiGlobal.h
-@@ -36,6 +36,6 @@
-  *
-  * NOTE:         We currently dont use this functionality.
+diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
+index 97eeda9..ac393b8 100644
+--- a/drivers/staging/tidspbridge/core/chnl_sm.c
++++ b/drivers/staging/tidspbridge/core/chnl_sm.c
+@@ -73,7 +73,7 @@
+ #define MAILBOX_IRQ INT_MAIL_MPU_IRQ
+ 
+ /*  ----------------------------------- Function Prototypes */
+-static struct lst_list *create_chirp_list(u32 uChirps);
++static struct lst_list *create_chirp_list(u32 chirps);
+ 
+ static void free_chirp_list(struct lst_list *lst);
+ 
+@@ -709,18 +709,18 @@ func_end:
+  *  ======== bridge_chnl_get_mgr_info ========
+  *      Retrieve information related to the channel manager.
   */
--#define _DEBUG_LEVEL1_EASI(easiNum)     ((void)0)
-+#define _DEBUG_LEVEL1_EASI(easi_num)     ((void)0)
+-int bridge_chnl_get_mgr_info(struct chnl_mgr *hchnl_mgr, u32 uChnlID,
++int bridge_chnl_get_mgr_info(struct chnl_mgr *hchnl_mgr, u32 ch_id,
+ 				 OUT struct chnl_mgrinfo *mgr_info)
+ {
+ 	int status = 0;
+ 	struct chnl_mgr *chnl_mgr_obj = (struct chnl_mgr *)hchnl_mgr;
  
- #endif /* _EASIGLOBAL_H */
-diff --git a/drivers/staging/tidspbridge/hw/GlobalTypes.h b/drivers/staging/tidspbridge/hw/GlobalTypes.h
-index 9b55150..95fc8ca
---- a/drivers/staging/tidspbridge/hw/GlobalTypes.h
-+++ b/drivers/staging/tidspbridge/hw/GlobalTypes.h
-@@ -94,39 +94,39 @@
- #define LOWER8BIT_MASK	   0x000000FF
- 
- /*
-- * Definition: RETURN32BITS_FROM16LOWER_AND16UPPER(lower16Bits, upper16Bits)
-+ * Definition: RETURN32BITS_FROM16LOWER_AND16UPPER(lower16_bits, upper16_bits)
-  *
-  * DESCRIPTION: Returns a 32 bit value given a 16 bit lower value and a 16
-  *		bit upper value
+ 	if (mgr_info != NULL) {
+-		if (uChnlID <= CHNL_MAXCHANNELS) {
++		if (ch_id <= CHNL_MAXCHANNELS) {
+ 			if (hchnl_mgr) {
+ 				/* Return the requested information: */
+ 				mgr_info->chnl_obj =
+-				    chnl_mgr_obj->ap_channel[uChnlID];
++				    chnl_mgr_obj->ap_channel[ch_id];
+ 				mgr_info->open_channels =
+ 				    chnl_mgr_obj->open_channels;
+ 				mgr_info->dw_type = chnl_mgr_obj->dw_type;
+@@ -776,7 +776,7 @@ int bridge_chnl_idle(struct chnl_object *chnl_obj, u32 timeout,
   */
--#define RETURN32BITS_FROM16LOWER_AND16UPPER(lower16Bits, upper16Bits)\
--    (((((u32)lower16Bits)  & LOWER16BIT_MASK)) | \
--     (((((u32)upper16Bits) & LOWER16BIT_MASK) << UPPER16BIT_SHIFT)))
-+#define RETURN32BITS_FROM16LOWER_AND16UPPER(lower16_bits, upper16_bits)\
-+    (((((u32)lower16_bits)  & LOWER16BIT_MASK)) | \
-+     (((((u32)upper16_bits) & LOWER16BIT_MASK) << UPPER16BIT_SHIFT)))
+ int bridge_chnl_open(OUT struct chnl_object **chnl,
+ 			    struct chnl_mgr *hchnl_mgr, s8 chnl_mode,
+-			    u32 uChnlId, CONST IN struct chnl_attr *pattrs)
++			    u32 ch_id, CONST IN struct chnl_attr *pattrs)
+ {
+ 	int status = 0;
+ 	struct chnl_mgr *chnl_mgr_obj = hchnl_mgr;
+@@ -794,23 +794,23 @@ int bridge_chnl_open(OUT struct chnl_object **chnl,
+ 		if (!hchnl_mgr) {
+ 			status = -EFAULT;
+ 		} else {
+-			if (uChnlId != CHNL_PICKFREE) {
+-				if (uChnlId >= chnl_mgr_obj->max_channels)
++			if (ch_id != CHNL_PICKFREE) {
++				if (ch_id >= chnl_mgr_obj->max_channels)
+ 					status = -ECHRNG;
+-				else if (chnl_mgr_obj->ap_channel[uChnlId] !=
++				else if (chnl_mgr_obj->ap_channel[ch_id] !=
+ 					 NULL)
+ 					status = -EALREADY;
+ 			} else {
+ 				/* Check for free channel */
+ 				status =
+-				    search_free_channel(chnl_mgr_obj, &uChnlId);
++				    search_free_channel(chnl_mgr_obj, &ch_id);
+ 			}
+ 		}
+ 	}
+ 	if (DSP_FAILED(status))
+ 		goto func_end;
  
- /*
-- * Definition: RETURN16BITS_FROM8LOWER_AND8UPPER(lower16Bits, upper16Bits)
-+ * Definition: RETURN16BITS_FROM8LOWER_AND8UPPER(lower16_bits, upper16_bits)
-  *
-  * DESCRIPTION:  Returns a 16 bit value given a 8 bit lower value and a 8
-  *	       bit upper value
+-	DBC_ASSERT(uChnlId < chnl_mgr_obj->max_channels);
++	DBC_ASSERT(ch_id < chnl_mgr_obj->max_channels);
+ 	/* Create channel object: */
+ 	pchnl = kzalloc(sizeof(struct chnl_object), GFP_KERNEL);
+ 	if (!pchnl) {
+@@ -846,7 +846,7 @@ int bridge_chnl_open(OUT struct chnl_object **chnl,
+ 		    pchnl->free_packets_list) {
+ 			/* Initialize CHNL object fields: */
+ 			pchnl->chnl_mgr_obj = chnl_mgr_obj;
+-			pchnl->chnl_id = uChnlId;
++			pchnl->chnl_id = ch_id;
+ 			pchnl->chnl_mode = chnl_mode;
+ 			pchnl->user_event = sync_event;
+ 			pchnl->sync_event = sync_event;
+@@ -926,13 +926,13 @@ int bridge_chnl_register_notify(struct chnl_object *chnl_obj,
+  *  Purpose:
+  *      Initialize a queue of channel I/O Request/Completion packets.
+  *  Parameters:
+- *      uChirps:    Number of Chirps to allocate.
++ *      chirps:     Number of Chirps to allocate.
+  *  Returns:
+  *      Pointer to queue of IRPs, or NULL.
+  *  Requires:
+  *  Ensures:
   */
--#define RETURN16BITS_FROM8LOWER_AND8UPPER(lower8Bits, upper8Bits)\
--    (((((u32)lower8Bits)  & LOWER8BIT_MASK)) | \
--     (((((u32)upper8Bits) & LOWER8BIT_MASK) << UPPER8BIT_OF16_SHIFT)))
-+#define RETURN16BITS_FROM8LOWER_AND8UPPER(lower8_bits, upper8_bits)\
-+    (((((u32)lower8_bits)  & LOWER8BIT_MASK)) | \
-+     (((((u32)upper8_bits) & LOWER8BIT_MASK) << UPPER8BIT_OF16_SHIFT)))
+-static struct lst_list *create_chirp_list(u32 uChirps)
++static struct lst_list *create_chirp_list(u32 chirps)
+ {
+ 	struct lst_list *chirp_list;
+ 	struct chnl_irp *chnl_packet_obj;
+@@ -943,14 +943,14 @@ static struct lst_list *create_chirp_list(u32 uChirps)
+ 	if (chirp_list) {
+ 		INIT_LIST_HEAD(&chirp_list->head);
+ 		/* Make N chirps and place on queue. */
+-		for (i = 0; (i < uChirps)
++		for (i = 0; (i < chirps)
+ 		     && ((chnl_packet_obj = make_new_chirp()) != NULL); i++) {
+ 			lst_put_tail(chirp_list,
+ 				     (struct list_head *)chnl_packet_obj);
+ 		}
  
- /*
-- * Definition: RETURN32BITS_FROM48BIT_VALUES(lower8Bits, lowerMiddle8Bits,
-- * 					lowerUpper8Bits, upper8Bits)
-+ * Definition: RETURN32BITS_FROM48BIT_VALUES(lower8_bits, lower_middle8_bits,
-+ *					lower_upper8_bits, upper8_bits)
-  *
-  * DESCRIPTION:  Returns a 32 bit value given four 8 bit values
-  */
--#define RETURN32BITS_FROM48BIT_VALUES(lower8Bits, lowerMiddle8Bits,\
--	lowerUpper8Bits, upper8Bits)\
--	(((((u32)lower8Bits) & LOWER8BIT_MASK)) | \
--	(((((u32)lowerMiddle8Bits) & LOWER8BIT_MASK) <<\
-+#define RETURN32BITS_FROM48BIT_VALUES(lower8_bits, lower_middle8_bits,\
-+	lower_upper8_bits, upper8_bits)\
-+	(((((u32)lower8_bits) & LOWER8BIT_MASK)) | \
-+	(((((u32)lower_middle8_bits) & LOWER8BIT_MASK) <<\
- 		LOWER_MIDDLE8BIT_SHIFT)) | \
--	(((((u32)lowerUpper8Bits) & LOWER8BIT_MASK) <<\
-+	(((((u32)lower_upper8_bits) & LOWER8BIT_MASK) <<\
- 		UPPER_MIDDLE8BIT_SHIFT)) | \
--	(((((u32)upper8Bits) & LOWER8BIT_MASK) <<\
-+	(((((u32)upper8_bits) & LOWER8BIT_MASK) <<\
- 		UPPER8BIT_SHIFT)))
- 
- /*
-@@ -285,24 +285,26 @@ enum return_code_label {
- 
- /* Not sure if this all belongs here */
- 
--#define CHECK_RETURN_VALUE(actualValue, expectedValue,  returnCodeIfMismatch,\
--	spyCodeIfMisMatch)
--#define CHECK_RETURN_VALUE_RET(actualValue, expectedValue, returnCodeIfMismatch)
--#define CHECK_RETURN_VALUE_RES(actualValue, expectedValue, spyCodeIfMisMatch)
--#define CHECK_RETURN_VALUE_RET_VOID(actualValue, expectedValue,\
--	spyCodeIfMisMatch)
--
--#define CHECK_INPUT_PARAM(actualValue, invalidValue, returnCodeIfMismatch,\
--	spyCodeIfMisMatch)
--#define CHECK_INPUT_PARAM_NO_SPY(actualValue, invalidValue,\
--	returnCodeIfMismatch)
--#define CHECK_INPUT_RANGE(actualValue, minValidValue, maxValidValue,\
--	returnCodeIfMismatch, spyCodeIfMisMatch)
--#define CHECK_INPUT_RANGE_NO_SPY(actualValue, minValidValue, maxValidValue,\
--	returnCodeIfMismatch)
--#define CHECK_INPUT_RANGE_MIN0(actualValue, maxValidValue,\
--	returnCodeIfMismatch, spyCodeIfMisMatch)
--#define CHECK_INPUT_RANGE_NO_SPY_MIN0(actualValue, maxValidValue,\
--	returnCodeIfMismatch)
-+#define CHECK_RETURN_VALUE(actual_value, expected_value,\
-+	return_code_if_mismatch, spy_code_if_mis_match)
-+#define CHECK_RETURN_VALUE_RET(actual_value, expected_value,\
-+	return_code_if_mismatch)
-+#define CHECK_RETURN_VALUE_RES(actual_value, expected_value,\
-+	spy_code_if_mis_match)
-+#define CHECK_RETURN_VALUE_RET_VOID(actual_value, expected_value,\
-+	spy_code_if_mis_match)
-+
-+#define CHECK_INPUT_PARAM(actual_value, invalid_value,\
-+	return_code_if_mismatch, spy_code_if_mis_match)
-+#define CHECK_INPUT_PARAM_NO_SPY(actual_value, invalid_value,\
-+	return_code_if_mismatch)
-+#define CHECK_INPUT_RANGE(actual_value, min_valid_value, max_valid_value,\
-+	return_code_if_mismatch, spy_code_if_mis_match)
-+#define CHECK_INPUT_RANGE_NO_SPY(actual_value, min_valid_value,\
-+	max_valid_value, return_code_if_mismatch)
-+#define CHECK_INPUT_RANGE_MIN0(actual_value, max_valid_value,\
-+	return_code_if_mismatch, spy_code_if_mis_match)
-+#define CHECK_INPUT_RANGE_NO_SPY_MIN0(actual_value, max_valid_value,\
-+	return_code_if_mismatch)
- 
- #endif /* _GLOBALTYPES_H */
-diff --git a/drivers/staging/tidspbridge/hw/MMURegAcM.h b/drivers/staging/tidspbridge/hw/MMURegAcM.h
-index c341060..39db036 100644
---- a/drivers/staging/tidspbridge/hw/MMURegAcM.h
-+++ b/drivers/staging/tidspbridge/hw/MMURegAcM.h
-@@ -33,38 +33,38 @@
- {\
-     const u32 offset = MMU_MMU_SYSCONFIG_OFFSET;\
-     register u32 data = __raw_readl((base_address)+offset);\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_SYSCONFIG_IDLE_MODE_WRITE32);\
-     data &= ~(MMU_MMU_SYSCONFIG_IDLE_MODE_MASK);\
--    newValue <<= MMU_MMU_SYSCONFIG_IDLE_MODE_OFFSET;\
--    newValue &= MMU_MMU_SYSCONFIG_IDLE_MODE_MASK;\
--    newValue |= data;\
--    __raw_writel(newValue, base_address+offset);\
-+    new_value <<= MMU_MMU_SYSCONFIG_IDLE_MODE_OFFSET;\
-+    new_value &= MMU_MMU_SYSCONFIG_IDLE_MODE_MASK;\
-+    new_value |= data;\
-+    __raw_writel(new_value, base_address+offset);\
- }
- 
- #define MMUMMU_SYSCONFIG_AUTO_IDLE_WRITE32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_SYSCONFIG_OFFSET;\
-     register u32 data = __raw_readl((base_address)+offset);\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_SYSCONFIG_AUTO_IDLE_WRITE32);\
-     data &= ~(MMU_MMU_SYSCONFIG_AUTO_IDLE_MASK);\
--    newValue <<= MMU_MMU_SYSCONFIG_AUTO_IDLE_OFFSET;\
--    newValue &= MMU_MMU_SYSCONFIG_AUTO_IDLE_MASK;\
--    newValue |= data;\
--    __raw_writel(newValue, base_address+offset);\
-+    new_value <<= MMU_MMU_SYSCONFIG_AUTO_IDLE_OFFSET;\
-+    new_value &= MMU_MMU_SYSCONFIG_AUTO_IDLE_MASK;\
-+    new_value |= data;\
-+    __raw_writel(new_value, base_address+offset);\
- }
- 
- #define MMUMMU_IRQSTATUS_READ_REGISTER32(base_address)\
--    (_DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_IRQSTATUSReadRegister32),\
-+    (_DEBUG_LEVEL1_EASI(easil1_mmummu_irqstatus_read_register32),\
-       __raw_readl((base_address)+MMU_MMU_IRQSTATUS_OFFSET))
- 
- #define MMUMMU_IRQSTATUS_WRITE_REGISTER32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_IRQSTATUS_OFFSET;\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_IRQSTATUS_WRITE_REGISTER32);\
--    __raw_writel(newValue, (base_address)+offset);\
-+    __raw_writel(new_value, (base_address)+offset);\
- }
- 
- #define MMUMMU_IRQENABLE_READ_REGISTER32(base_address)\
-@@ -74,9 +74,9 @@
- #define MMUMMU_IRQENABLE_WRITE_REGISTER32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_IRQENABLE_OFFSET;\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_IRQENABLE_WRITE_REGISTER32);\
--    __raw_writel(newValue, (base_address)+offset);\
-+    __raw_writel(new_value, (base_address)+offset);\
- }
- 
- #define MMUMMU_WALKING_STTWL_RUNNING_READ32(base_address)\
-@@ -95,26 +95,26 @@
- {\
-     const u32 offset = MMU_MMU_CNTL_OFFSET;\
-     register u32 data = __raw_readl((base_address)+offset);\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_CNTLTWL_ENABLE_WRITE32);\
-     data &= ~(MMU_MMU_CNTL_TWL_ENABLE_MASK);\
--    newValue <<= MMU_MMU_CNTL_TWL_ENABLE_OFFSET;\
--    newValue &= MMU_MMU_CNTL_TWL_ENABLE_MASK;\
--    newValue |= data;\
--    __raw_writel(newValue, base_address+offset);\
-+    new_value <<= MMU_MMU_CNTL_TWL_ENABLE_OFFSET;\
-+    new_value &= MMU_MMU_CNTL_TWL_ENABLE_MASK;\
-+    new_value |= data;\
-+    __raw_writel(new_value, base_address+offset);\
- }
- 
- #define MMUMMU_CNTLMMU_ENABLE_WRITE32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_CNTL_OFFSET;\
-     register u32 data = __raw_readl((base_address)+offset);\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_CNTLMMU_ENABLE_WRITE32);\
-     data &= ~(MMU_MMU_CNTL_MMU_ENABLE_MASK);\
--    newValue <<= MMU_MMU_CNTL_MMU_ENABLE_OFFSET;\
--    newValue &= MMU_MMU_CNTL_MMU_ENABLE_MASK;\
--    newValue |= data;\
--    __raw_writel(newValue, base_address+offset);\
-+    new_value <<= MMU_MMU_CNTL_MMU_ENABLE_OFFSET;\
-+    new_value &= MMU_MMU_CNTL_MMU_ENABLE_MASK;\
-+    new_value |= data;\
-+    __raw_writel(new_value, base_address+offset);\
- }
- 
- #define MMUMMU_FAULT_AD_READ_REGISTER32(base_address)\
-@@ -124,9 +124,9 @@
- #define MMUMMU_TTB_WRITE_REGISTER32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_TTB_OFFSET;\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_TTB_WRITE_REGISTER32);\
--    __raw_writel(newValue, (base_address)+offset);\
-+    __raw_writel(new_value, (base_address)+offset);\
- }
- 
- #define MMUMMU_LOCK_READ_REGISTER32(base_address)\
-@@ -136,9 +136,9 @@
- #define MMUMMU_LOCK_WRITE_REGISTER32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_LOCK_OFFSET;\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCK_WRITE_REGISTER32);\
--    __raw_writel(newValue, (base_address)+offset);\
-+    __raw_writel(new_value, (base_address)+offset);\
- }
- 
- #define MMUMMU_LOCK_BASE_VALUE_READ32(base_address)\
-@@ -151,13 +151,13 @@
- {\
-     const u32 offset = MMU_MMU_LOCK_OFFSET;\
-     register u32 data = __raw_readl((base_address)+offset);\
--    register u32 newValue = (value);\
--    _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCKBaseValueWrite32);\
-+    register u32 new_value = (value);\
-+    _DEBUG_LEVEL1_EASI(easil1_mmummu_lock_base_value_write32);\
-     data &= ~(MMU_MMU_LOCK_BASE_VALUE_MASK);\
--    newValue <<= MMU_MMU_LOCK_BASE_VALUE_OFFSET;\
--    newValue &= MMU_MMU_LOCK_BASE_VALUE_MASK;\
--    newValue |= data;\
--    __raw_writel(newValue, base_address+offset);\
-+    new_value <<= MMU_MMU_LOCK_BASE_VALUE_OFFSET;\
-+    new_value &= MMU_MMU_LOCK_BASE_VALUE_MASK;\
-+    new_value |= data;\
-+    __raw_writel(new_value, base_address+offset);\
- }
- 
- #define MMUMMU_LOCK_CURRENT_VICTIM_READ32(base_address)\
-@@ -170,13 +170,13 @@
- {\
-     const u32 offset = MMU_MMU_LOCK_OFFSET;\
-     register u32 data = __raw_readl((base_address)+offset);\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LOCK_CURRENT_VICTIM_WRITE32);\
-     data &= ~(MMU_MMU_LOCK_CURRENT_VICTIM_MASK);\
--    newValue <<= MMU_MMU_LOCK_CURRENT_VICTIM_OFFSET;\
--    newValue &= MMU_MMU_LOCK_CURRENT_VICTIM_MASK;\
--    newValue |= data;\
--    __raw_writel(newValue, base_address+offset);\
-+    new_value <<= MMU_MMU_LOCK_CURRENT_VICTIM_OFFSET;\
-+    new_value &= MMU_MMU_LOCK_CURRENT_VICTIM_MASK;\
-+    new_value |= data;\
-+    __raw_writel(new_value, base_address+offset);\
- }
- 
- #define MMUMMU_LOCK_CURRENT_VICTIM_SET32(var, value)\
-@@ -192,33 +192,33 @@
- #define MMUMMU_LD_TLB_WRITE_REGISTER32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_LD_TLB_OFFSET;\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_LD_TLB_WRITE_REGISTER32);\
--    __raw_writel(newValue, (base_address)+offset);\
-+    __raw_writel(new_value, (base_address)+offset);\
- }
- 
- #define MMUMMU_CAM_WRITE_REGISTER32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_CAM_OFFSET;\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_CAM_WRITE_REGISTER32);\
--    __raw_writel(newValue, (base_address)+offset);\
-+    __raw_writel(new_value, (base_address)+offset);\
- }
- 
- #define MMUMMU_RAM_WRITE_REGISTER32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_RAM_OFFSET;\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_RAM_WRITE_REGISTER32);\
--    __raw_writel(newValue, (base_address)+offset);\
-+    __raw_writel(new_value, (base_address)+offset);\
- }
- 
- #define MMUMMU_FLUSH_ENTRY_WRITE_REGISTER32(base_address, value)\
- {\
-     const u32 offset = MMU_MMU_FLUSH_ENTRY_OFFSET;\
--    register u32 newValue = (value);\
-+    register u32 new_value = (value);\
-     _DEBUG_LEVEL1_EASI(EASIL1_MMUMMU_FLUSH_ENTRY_WRITE_REGISTER32);\
--    __raw_writel(newValue, (base_address)+offset);\
-+    __raw_writel(new_value, (base_address)+offset);\
- }
- 
- #endif /* USE_LEVEL_1_MACROS */
+ 		/* If we couldn't allocate all chirps, free those allocated: */
+-		if (i != uChirps) {
++		if (i != chirps) {
+ 			free_chirp_list(chirp_list);
+ 			chirp_list = NULL;
+ 		}
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index e759349..0fdec37 100755
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -1507,7 +1507,7 @@ static int bridge_brd_mem_un_map(struct bridge_dev_context *dev_ctxt,
+ 						"0x%x\n", paddr, ul_num_bytes);
+ 					bad_page_dump(paddr, pg);
+ 				} else {
+-					SetPageDirty(pg);
++					set_page_dirty(pg);
+ 					page_cache_release(pg);
+ 				}
+ 				paddr += HW_PAGE_SIZE4KB;
+@@ -1571,7 +1571,7 @@ skip_coarse_page:
+ 						"0x%x\n", paddr, ul_num_bytes);
+ 					bad_page_dump(paddr, pg);
+ 				} else {
+-					SetPageDirty(pg);
++					set_page_dirty(pg);
+ 					page_cache_release(pg);
+ 				}
+ 			}
 diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.c b/drivers/staging/tidspbridge/hw/hw_mmu.c
-index 705cbe3..969b5fc 100644
+index 668fb8a..705cbe3 100644
 --- a/drivers/staging/tidspbridge/hw/hw_mmu.c
 +++ b/drivers/staging/tidspbridge/hw/hw_mmu.c
-@@ -90,7 +90,7 @@ static hw_status mmu_flush_entry(const void __iomem *base_address);
-  *       Description     : It indicates the TLB entry is preserved entry
-  *							or not
-  *
-- *       Identifier      : validBit
-+ *       Identifier      : valid_bit
-  *       Type		: const u32
-  *       Description     : It indicates the TLB entry is valid entry or not
-  *
-@@ -115,7 +115,7 @@ static hw_status mmu_flush_entry(const void __iomem *base_address);
- static hw_status mmu_set_cam_entry(const void __iomem *base_address,
- 				   const u32 page_sz,
- 				   const u32 preserved_bit,
--				   const u32 validBit,
-+				   const u32 valid_bit,
- 				   const u32 virtual_addr_tag);
- 
- /*
-@@ -194,11 +194,11 @@ hw_status hw_mmu_num_locked_set(const void __iomem *base_address,
- }
- 
- hw_status hw_mmu_victim_num_set(const void __iomem *base_address,
--				u32 victimEntryNum)
-+				u32 victim_entry_num)
- {
- 	hw_status status = RET_OK;
- 
--	MMUMMU_LOCK_CURRENT_VICTIM_WRITE32(base_address, victimEntryNum);
-+	MMUMMU_LOCK_CURRENT_VICTIM_WRITE32(base_address, victim_entry_num);
- 
- 	return status;
- }
-@@ -293,7 +293,7 @@ hw_status hw_mmu_twl_disable(const void __iomem *base_address)
+@@ -259,7 +259,7 @@ hw_status hw_mmu_fault_addr_read(const void __iomem *base_address, u32 *addr)
  	return status;
  }
  
--hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtualAddr,
-+hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtual_addr,
- 			   u32 page_sz)
+-hw_status hw_mmu_ttb_set(const void __iomem *base_address, u32 TTBPhysAddr)
++hw_status hw_mmu_ttb_set(const void __iomem *base_address, u32 ttb_phys_addr)
  {
  	hw_status status = RET_OK;
-@@ -322,7 +322,7 @@ hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtualAddr,
- 	}
- 
- 	/* Generate the 20-bit tag from virtual address */
--	virtual_addr_tag = ((virtualAddr & MMU_ADDR_MASK) >> 12);
-+	virtual_addr_tag = ((virtual_addr & MMU_ADDR_MASK) >> 12);
- 
- 	mmu_set_cam_entry(base_address, pg_size_bits, 0, 0, virtual_addr_tag);
- 
-@@ -333,11 +333,11 @@ hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtualAddr,
- 
- hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 			 u32 physical_addr,
--			 u32 virtualAddr,
-+			 u32 virtual_addr,
- 			 u32 page_sz,
- 			 u32 entry_num,
- 			 struct hw_mmu_map_attrs_t *map_attrs,
--			 s8 preserved_bit, s8 validBit)
-+			 s8 preserved_bit, s8 valid_bit)
- {
- 	hw_status status = RET_OK;
- 	u32 lock_reg;
-@@ -377,10 +377,10 @@ hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 	lock_reg = MMUMMU_LOCK_READ_REGISTER32(base_address);
- 
- 	/* Generate the 20-bit tag from virtual address */
--	virtual_addr_tag = ((virtualAddr & MMU_ADDR_MASK) >> 12);
-+	virtual_addr_tag = ((virtual_addr & MMU_ADDR_MASK) >> 12);
- 
- 	/* Write the fields in the CAM Entry Register */
--	mmu_set_cam_entry(base_address, mmu_pg_size, preserved_bit, validBit,
-+	mmu_set_cam_entry(base_address, mmu_pg_size, preserved_bit, valid_bit,
- 			  virtual_addr_tag);
- 
- 	/* Write the different fields of the RAM Entry Register */
-@@ -403,7 +403,7 @@ hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 
- hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 			 u32 physical_addr,
--			 u32 virtualAddr,
-+			 u32 virtual_addr,
- 			 u32 page_sz, struct hw_mmu_map_attrs_t *map_attrs)
- {
- 	hw_status status = RET_OK;
-@@ -413,7 +413,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 	switch (page_sz) {
- 	case HW_PAGE_SIZE4KB:
- 		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
--					      virtualAddr &
-+					      virtual_addr &
- 					      MMU_SMALL_PAGE_MASK);
- 		pte_val =
- 		    ((physical_addr & MMU_SMALL_PAGE_MASK) |
-@@ -425,7 +425,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 	case HW_PAGE_SIZE64KB:
- 		num_entries = 16;
- 		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
--					      virtualAddr &
-+					      virtual_addr &
- 					      MMU_LARGE_PAGE_MASK);
- 		pte_val =
- 		    ((physical_addr & MMU_LARGE_PAGE_MASK) |
-@@ -436,7 +436,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 
- 	case HW_PAGE_SIZE1MB:
- 		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
--					      virtualAddr &
-+					      virtual_addr &
- 					      MMU_SECTION_ADDR_MASK);
- 		pte_val =
- 		    ((((physical_addr & MMU_SECTION_ADDR_MASK) |
-@@ -448,7 +448,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 	case HW_PAGE_SIZE16MB:
- 		num_entries = 16;
- 		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
--					      virtualAddr &
-+					      virtual_addr &
- 					      MMU_SSECTION_ADDR_MASK);
- 		pte_val =
- 		    (((physical_addr & MMU_SSECTION_ADDR_MASK) |
-@@ -460,7 +460,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 
- 	case HW_MMU_COARSE_PAGE_SIZE:
- 		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
--					      virtualAddr &
-+					      virtual_addr &
- 					      MMU_SECTION_ADDR_MASK);
- 		pte_val = (physical_addr & MMU_PAGE_TABLE_MASK) | 1;
- 		break;
-@@ -475,7 +475,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 	return status;
- }
- 
--hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtualAddr, u32 page_size)
-+hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtual_addr, u32 page_size)
- {
- 	hw_status status = RET_OK;
- 	u32 pte_addr;
-@@ -484,28 +484,28 @@ hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtualAddr, u32 page_size)
- 	switch (page_size) {
- 	case HW_PAGE_SIZE4KB:
- 		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
--					      virtualAddr &
-+					      virtual_addr &
- 					      MMU_SMALL_PAGE_MASK);
- 		break;
- 
- 	case HW_PAGE_SIZE64KB:
- 		num_entries = 16;
- 		pte_addr = hw_mmu_pte_addr_l2(pg_tbl_va,
--					      virtualAddr &
-+					      virtual_addr &
- 					      MMU_LARGE_PAGE_MASK);
- 		break;
- 
- 	case HW_PAGE_SIZE1MB:
- 	case HW_MMU_COARSE_PAGE_SIZE:
- 		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
--					      virtualAddr &
-+					      virtual_addr &
- 					      MMU_SECTION_ADDR_MASK);
- 		break;
- 
- 	case HW_PAGE_SIZE16MB:
- 		num_entries = 16;
- 		pte_addr = hw_mmu_pte_addr_l1(pg_tbl_va,
--					      virtualAddr &
-+					      virtual_addr &
- 					      MMU_SSECTION_ADDR_MASK);
- 		break;
- 
-@@ -539,7 +539,7 @@ static hw_status mmu_flush_entry(const void __iomem *base_address)
- static hw_status mmu_set_cam_entry(const void __iomem *base_address,
- 				   const u32 page_sz,
- 				   const u32 preserved_bit,
--				   const u32 validBit,
-+				   const u32 valid_bit,
- 				   const u32 virtual_addr_tag)
- {
- 	hw_status status = RET_OK;
-@@ -550,7 +550,7 @@ static hw_status mmu_set_cam_entry(const void __iomem *base_address,
+ 	u32 load_ttb;
+@@ -268,7 +268,7 @@ hw_status hw_mmu_ttb_set(const void __iomem *base_address, u32 TTBPhysAddr)
+ 	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
  			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
  
- 	mmu_cam_reg = (virtual_addr_tag << 12);
--	mmu_cam_reg = (mmu_cam_reg) | (page_sz) | (validBit << 2) |
-+	mmu_cam_reg = (mmu_cam_reg) | (page_sz) | (valid_bit << 2) |
- 	    (preserved_bit << 3);
- 
+-	load_ttb = TTBPhysAddr & ~0x7FUL;
++	load_ttb = ttb_phys_addr & ~0x7FUL;
  	/* write values to register */
+ 	MMUMMU_TTB_WRITE_REGISTER32(base_address, load_ttb);
+ 
 diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.h b/drivers/staging/tidspbridge/hw/hw_mmu.h
-index 554b52e..6ba133e 100644
+index 25f1954..554b52e 100644
 --- a/drivers/staging/tidspbridge/hw/hw_mmu.h
 +++ b/drivers/staging/tidspbridge/hw/hw_mmu.h
-@@ -50,7 +50,7 @@ extern hw_status hw_mmu_num_locked_set(const void __iomem *base_address,
- 				       u32 num_locked_entries);
+@@ -70,7 +70,7 @@ extern hw_status hw_mmu_fault_addr_read(const void __iomem *base_address,
  
- extern hw_status hw_mmu_victim_num_set(const void __iomem *base_address,
--				       u32 victimEntryNum);
-+				       u32 victim_entry_num);
+ /* Set the TT base address */
+ extern hw_status hw_mmu_ttb_set(const void __iomem *base_address,
+-				u32 TTBPhysAddr);
++				u32 ttb_phys_addr);
  
- /* For MMU faults */
- extern hw_status hw_mmu_event_ack(const void __iomem *base_address,
-@@ -77,45 +77,45 @@ extern hw_status hw_mmu_twl_enable(const void __iomem *base_address);
- extern hw_status hw_mmu_twl_disable(const void __iomem *base_address);
+ extern hw_status hw_mmu_twl_enable(const void __iomem *base_address);
  
- extern hw_status hw_mmu_tlb_flush(const void __iomem *base_address,
--				  u32 virtualAddr, u32 page_sz);
-+				  u32 virtual_addr, u32 page_sz);
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
+index 9462a96..fb168e6 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
+@@ -94,8 +94,8 @@
+ #define DSPWORDSIZE     sizeof(DSPWORD)
  
- extern hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 				u32 physical_addr,
--				u32 virtualAddr,
-+				u32 virtual_addr,
- 				u32 page_sz,
- 				u32 entry_num,
- 				struct hw_mmu_map_attrs_t *map_attrs,
--				s8 preserved_bit, s8 validBit);
-+				s8 preserved_bit, s8 valid_bit);
+ /* Success & Failure macros */
+-#define DSP_SUCCEEDED(Status)      likely((s32)(Status) >= 0)
+-#define DSP_FAILED(Status)         unlikely((s32)(Status) < 0)
++#define DSP_SUCCEEDED(status)      likely((s32)(status) >= 0)
++#define DSP_FAILED(status)         unlikely((s32)(status) < 0)
  
- /* For PTEs */
- extern hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 				u32 physical_addr,
--				u32 virtualAddr,
-+				u32 virtual_addr,
- 				u32 page_sz,
- 				struct hw_mmu_map_attrs_t *map_attrs);
+ /* Power control enumerations */
+ #define PROC_PWRCONTROL             0x8070
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h b/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
+index fa4c99f..d2b4fda 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dblldefs.h
+@@ -420,7 +420,7 @@ typedef int(*dbll_open_fxn) (struct dbll_tar_obj *target, char *file,
+  */
+ typedef int(*dbll_read_sect_fxn) (struct dbll_library_obj *lib,
+ 					 char *name, char *content,
+-					 u32 uContentSize);
++					 u32 cont_size);
  
- extern hw_status hw_mmu_pte_clear(const u32 pg_tbl_va,
--				  u32 page_size, u32 virtualAddr);
-+				  u32 page_size, u32 virtual_addr);
- 
- void hw_mmu_tlb_flush_all(const void __iomem *base);
- 
--static inline u32 hw_mmu_pte_addr_l1(u32 L1_base, u32 va)
-+static inline u32 hw_mmu_pte_addr_l1(u32 l1_base, u32 va)
- {
- 	u32 pte_addr;
- 	u32 va31_to20;
- 
- 	va31_to20 = va >> (20 - 2);	/* Left-shift by 2 here itself */
- 	va31_to20 &= 0xFFFFFFFCUL;
--	pte_addr = L1_base + va31_to20;
-+	pte_addr = l1_base + va31_to20;
- 
- 	return pte_addr;
- }
- 
--static inline u32 hw_mmu_pte_addr_l2(u32 L2_base, u32 va)
-+static inline u32 hw_mmu_pte_addr_l2(u32 l2_base, u32 va)
- {
- 	u32 pte_addr;
- 
--	pte_addr = (L2_base & 0xFFFFFC00) | ((va >> 10) & 0x3FC);
-+	pte_addr = (l2_base & 0xFFFFFC00) | ((va >> 10) & 0x3FC);
- 
- 	return pte_addr;
- }
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/cmm.h b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
-index 3944a1e..086ca25 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/cmm.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/cmm.h
-@@ -370,17 +370,17 @@ extern int cmm_xlator_info(struct cmm_xlatorobject *xlator,
+ /*
+  *  ======== dbll_set_attrs ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/drv.h b/drivers/staging/tidspbridge/include/dspbridge/drv.h
+index efdc29c..c180a7c 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/drv.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/drv.h
+@@ -450,7 +450,7 @@ extern void mem_ext_phys_pool_release(void);
+  *      Allocate physically contiguous, uncached memory
   *  Parameters:
-  *     xlator: handle to translator.
-  *     paddr    address of buffer to translate.
-- *     xType    Type of address xlation. CMM_PA2VA or CMM_VA2PA.
-+ *     xtype    Type of address xlation. CMM_PA2VA or CMM_VA2PA.
+  *      byte_size:     Number of bytes to allocate.
+- *      ulAlign:    Alignment Mask.
++ *      align_mask:    Alignment Mask.
+  *      physical_address: Physical address of allocated memory.
   *  Returns:
-  *     Valid address on success, else NULL.
-  *  Requires:
-  *      refs > 0
-  *      paddr != NULL
-- *      xType >= CMM_VA2PA) && (xType <= CMM_DSPPA2PA)
-+ *      xtype >= CMM_VA2PA) && (xtype <= CMM_DSPPA2PA)
+  *      Pointer to a block of memory;
+@@ -463,7 +463,7 @@ extern void mem_ext_phys_pool_release(void);
+  *      location of memory.
+  */
+ extern void *mem_alloc_phys_mem(IN u32 byte_size,
+-				IN u32 ulAlign, OUT u32 *physical_address);
++				IN u32 align_mask, OUT u32 *physical_address);
+ 
+ /*
+  *  ======== mem_free_phys_mem ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h b/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
+index cc4e75b..fa3ba6b 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dspapi-ioctl.h
+@@ -24,7 +24,7 @@
+ #include <dspbridge/strmdefs.h>
+ #include <dspbridge/dbdcd.h>
+ 
+-union Trapped_Args {
++union trapped_args {
+ 
+ 	/* MGR Module */
+ 	struct {
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspapi.h b/drivers/staging/tidspbridge/include/dspbridge/dspapi.h
+index 765a175..c99c687 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dspapi.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dspapi.h
+@@ -50,7 +50,7 @@
   *  Ensures:
+  */
+ extern int api_call_dev_ioctl(unsigned int cmd,
+-				      union Trapped_Args *args,
++				      union trapped_args *args,
+ 				      u32 *result, void *pr_ctxt);
+ 
+ /*
+@@ -98,70 +98,70 @@ extern int api_init_complete2(void);
+ extern void api_exit(void);
+ 
+ /* MGR wrapper functions */
+-extern u32 mgrwrap_enum_node_info(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 mgrwrap_enum_proc_info(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 mgrwrap_register_object(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 mgrwrap_unregister_object(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 mgrwrap_wait_for_bridge_events(union Trapped_Args *args,
++extern u32 mgrwrap_enum_node_info(union trapped_args *args, void *pr_ctxt);
++extern u32 mgrwrap_enum_proc_info(union trapped_args *args, void *pr_ctxt);
++extern u32 mgrwrap_register_object(union trapped_args *args, void *pr_ctxt);
++extern u32 mgrwrap_unregister_object(union trapped_args *args, void *pr_ctxt);
++extern u32 mgrwrap_wait_for_bridge_events(union trapped_args *args,
+ 					  void *pr_ctxt);
+ 
+-extern u32 mgrwrap_get_process_resources_info(union Trapped_Args *args,
++extern u32 mgrwrap_get_process_resources_info(union trapped_args *args,
+ 					      void *pr_ctxt);
+ 
+ /* CPRC (Processor) wrapper Functions */
+-extern u32 procwrap_attach(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_ctrl(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_detach(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_enum_node_info(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_enum_resources(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_get_state(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_get_trace(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_load(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_register_notify(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_start(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_reserve_memory(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_un_reserve_memory(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_map(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_un_map(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_flush_memory(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_stop(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_invalidate_memory(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_begin_dma(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 procwrap_end_dma(union Trapped_Args *args, void *pr_ctxt);
++extern u32 procwrap_attach(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_ctrl(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_detach(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_enum_node_info(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_enum_resources(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_get_state(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_get_trace(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_load(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_register_notify(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_start(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_reserve_memory(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_un_reserve_memory(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_map(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_un_map(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_flush_memory(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_stop(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_invalidate_memory(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_begin_dma(union trapped_args *args, void *pr_ctxt);
++extern u32 procwrap_end_dma(union trapped_args *args, void *pr_ctxt);
+ 
+ /* NODE wrapper functions */
+-extern u32 nodewrap_allocate(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_alloc_msg_buf(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_change_priority(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_connect(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_create(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_delete(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_free_msg_buf(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_get_attr(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_get_message(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_pause(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_put_message(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_register_notify(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_run(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_terminate(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 nodewrap_get_uuid_props(union Trapped_Args *args, void *pr_ctxt);
++extern u32 nodewrap_allocate(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_alloc_msg_buf(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_change_priority(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_connect(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_create(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_delete(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_free_msg_buf(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_get_attr(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_get_message(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_pause(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_put_message(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_register_notify(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_run(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_terminate(union trapped_args *args, void *pr_ctxt);
++extern u32 nodewrap_get_uuid_props(union trapped_args *args, void *pr_ctxt);
+ 
+ /* STRM wrapper functions */
+-extern u32 strmwrap_allocate_buffer(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_close(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_free_buffer(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_get_event_handle(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_get_info(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_idle(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_issue(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_open(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_reclaim(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_register_notify(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 strmwrap_select(union Trapped_Args *args, void *pr_ctxt);
++extern u32 strmwrap_allocate_buffer(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_close(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_free_buffer(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_get_event_handle(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_get_info(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_idle(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_issue(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_open(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_reclaim(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_register_notify(union trapped_args *args, void *pr_ctxt);
++extern u32 strmwrap_select(union trapped_args *args, void *pr_ctxt);
+ 
+-extern u32 cmmwrap_calloc_buf(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 cmmwrap_free_buf(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 cmmwrap_get_handle(union Trapped_Args *args, void *pr_ctxt);
+-extern u32 cmmwrap_get_info(union Trapped_Args *args, void *pr_ctxt);
++extern u32 cmmwrap_calloc_buf(union trapped_args *args, void *pr_ctxt);
++extern u32 cmmwrap_free_buf(union trapped_args *args, void *pr_ctxt);
++extern u32 cmmwrap_get_handle(union trapped_args *args, void *pr_ctxt);
++extern u32 cmmwrap_get_info(union trapped_args *args, void *pr_ctxt);
+ 
+ #endif /* DSPAPI_ */
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h b/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
+index cb7e18b..c08cc00 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
+@@ -34,7 +34,7 @@ extern int bridge_chnl_destroy(struct chnl_mgr *hchnl_mgr);
+ extern int bridge_chnl_open(OUT struct chnl_object **chnl,
+ 				   struct chnl_mgr *hchnl_mgr,
+ 				   s8 chnl_mode,
+-				   u32 uChnlId,
++				   u32 ch_id,
+ 				   CONST IN OPTIONAL struct chnl_attr
+ 				   *pattrs);
+ 
+@@ -57,7 +57,7 @@ extern int bridge_chnl_get_info(struct chnl_object *chnl_obj,
+ 				    OUT struct chnl_info *channel_info);
+ 
+ extern int bridge_chnl_get_mgr_info(struct chnl_mgr *hchnl_mgr,
+-					u32 uChnlID, OUT struct chnl_mgrinfo
++					u32 ch_id, OUT struct chnl_mgrinfo
+ 					*mgr_info);
+ 
+ extern int bridge_chnl_idle(struct chnl_object *chnl_obj,
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
+index ed6388e..1e4049b 100755
+--- a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
+@@ -373,7 +373,7 @@ typedef void (*fxn_deh_notify) (struct deh_mgr *hdeh_mgr,
+  *      		CHNL_GetMgr().
+  *      chnl_mode:          One of {CHNL_MODETODSP, CHNL_MODEFROMDSP} specifies
+  *                      direction of data transfer.
+- *      uChnlId:        If CHNL_PICKFREE is specified, the channel manager will
++ *      ch_id:        If CHNL_PICKFREE is specified, the channel manager will
+  *                      select a free channel id (default);
+  *                      otherwise this field specifies the id of the channel.
+  *      pattrs:         Channel attributes.  Attribute fields are as follows:
+@@ -411,7 +411,7 @@ typedef int(*fxn_chnl_open) (OUT struct chnl_object
+ 				    **chnl,
+ 				    struct chnl_mgr *hchnl_mgr,
+ 				    s8 chnl_mode,
+-				    u32 uChnlId,
++				    u32 ch_id,
+ 				    CONST IN OPTIONAL struct
+ 				    chnl_attr * pattrs);
+ 
+@@ -569,7 +569,7 @@ typedef int(*fxn_chnl_getinfo) (struct chnl_object *chnl_obj,
+  *      Retrieve information related to the channel manager.
+  *  Parameters:
+  *      hchnl_mgr:           Handle to a valid channel manager, or NULL.
+- *      uChnlID:            Channel ID.
++ *      ch_id:            Channel ID.
+  *      mgr_info:           Location to store channel manager info.
+  *  Returns:
+  *      0:            Success;
+@@ -582,7 +582,7 @@ typedef int(*fxn_chnl_getinfo) (struct chnl_object *chnl_obj,
+  */
+ typedef int(*fxn_chnl_getmgrinfo) (struct chnl_mgr
+ 					  * hchnl_mgr,
+-					  u32 uChnlID,
++					  u32 ch_id,
+ 					  OUT struct chnl_mgrinfo *mgr_info);
+ 
+ /*
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
+index a7fded7..538fbcd 100755
+--- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
+@@ -141,20 +141,20 @@ extern void iosm_schedule(struct io_mgr *hio_mgr);
+  *      Initialize DSP DMA channel descriptor.
+  *  Parameters:
+  *      hio_mgr:         Handle to a I/O manager.
+- *      uDDMAChnlId:    DDMA channel identifier.
++ *      ddma_chnl_id:    DDMA channel identifier.
+  *      uNumDesc:       Number of buffer descriptors(equals # of IOReqs &
+  *                      Chirps)
+  *      dsp:           Dsp address;
+  *  Returns:
+  *  Requires:
+- *     uDDMAChnlId < DDMA_MAXDDMACHNLS
++ *     ddma_chnl_id < DDMA_MAXDDMACHNLS
+  *     uNumDesc > 0
+  *     pVa != NULL
+  *     pDspPa != NULL
   *
+  *  Ensures:
   */
- extern void *cmm_xlator_translate(struct cmm_xlatorobject *xlator,
--				  void *paddr, enum cmm_xlatetype xType);
-+				  void *paddr, enum cmm_xlatetype xtype);
+-extern void io_ddma_init_chnl_desc(struct io_mgr *hio_mgr, u32 uDDMAChnlId,
++extern void io_ddma_init_chnl_desc(struct io_mgr *hio_mgr, u32 ddma_chnl_id,
+ 				   u32 uNumDesc, void *dsp);
  
- #endif /* CMM_ */
-diff --git a/drivers/staging/tidspbridge/pmgr/cmm.c b/drivers/staging/tidspbridge/pmgr/cmm.c
-index 2381984..d054e53 100644
---- a/drivers/staging/tidspbridge/pmgr/cmm.c
-+++ b/drivers/staging/tidspbridge/pmgr/cmm.c
-@@ -1103,7 +1103,7 @@ int cmm_xlator_info(struct cmm_xlatorobject *xlator, IN OUT u8 ** paddr,
-  *  ======== cmm_xlator_translate ========
+ /*
+@@ -163,13 +163,13 @@ extern void io_ddma_init_chnl_desc(struct io_mgr *hio_mgr, u32 uDDMAChnlId,
+  *      Clear DSP DMA channel descriptor.
+  *  Parameters:
+  *      hio_mgr:         Handle to a I/O manager.
+- *      uDDMAChnlId:    DDMA channel identifier.
++ *      ddma_chnl_id:    DDMA channel identifier.
+  *  Returns:
+  *  Requires:
+- *     uDDMAChnlId < DDMA_MAXDDMACHNLS
++ *     ddma_chnl_id < DDMA_MAXDDMACHNLS
+  *  Ensures:
   */
- void *cmm_xlator_translate(struct cmm_xlatorobject *xlator, void *paddr,
--			   enum cmm_xlatetype xType)
-+			   enum cmm_xlatetype xtype)
+-extern void io_ddma_clear_chnl_desc(struct io_mgr *hio_mgr, u32 uDDMAChnlId);
++extern void io_ddma_clear_chnl_desc(struct io_mgr *hio_mgr, u32 ddma_chnl_id);
+ 
+ /*
+  *  ======== io_ddma_request_chnl ========
+@@ -205,7 +205,7 @@ extern void io_ddma_request_chnl(struct io_mgr *hio_mgr,
+  *      uZId:       zero-copy channel identifier.
+  *  Returns:
+  *  Requires:
+- *     uDDMAChnlId < DDMA_MAXZCPYCHNLS
++ *     ddma_chnl_id < DDMA_MAXZCPYCHNLS
+  *     hio_mgr != Null
+  *  Ensures:
+  */
+@@ -217,14 +217,14 @@ extern void io_ddzc_init_chnl_desc(struct io_mgr *hio_mgr, u32 uZId);
+  *      Clear DSP ZC channel descriptor.
+  *  Parameters:
+  *      hio_mgr:         Handle to a I/O manager.
+- *      uChnlId:        ZC channel identifier.
++ *      ch_id:        ZC channel identifier.
+  *  Returns:
+  *  Requires:
+  *      hio_mgr is valid
+- *      uChnlId < DDMA_MAXZCPYCHNLS
++ *      ch_id < DDMA_MAXZCPYCHNLS
+  *  Ensures:
+  */
+-extern void io_ddzc_clear_chnl_desc(struct io_mgr *hio_mgr, u32 uChnlId);
++extern void io_ddzc_clear_chnl_desc(struct io_mgr *hio_mgr, u32 ch_id);
+ 
+ /*
+  *  ======== io_ddzc_request_chnl ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/proc.h b/drivers/staging/tidspbridge/include/dspbridge/proc.h
+index 5583bd5..e7a9510 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/proc.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/proc.h
+@@ -365,18 +365,18 @@ extern int proc_register_notify(void *hprocessor,
+  *      Notify the Processor Clients
+  *  Parameters:
+  *      proc       :   The processor handle.
+- *      uEvents     :   Event to be notified about.
++ *      events     :   Event to be notified about.
+  *  Returns:
+  *      0     :   Success.
+  *      -EFAULT :   Invalid processor handle.
+  *      -EPERM   :   Failure to Set or Reset the Event
+  *  Requires:
+- *      uEvents is Supported or Valid type of Event
++ *      events is Supported or Valid type of Event
+  *      proc is a valid handle
+  *      PROC Initialized.
+  *  Ensures:
+  */
+-extern int proc_notify_clients(void *proc, u32 uEvents);
++extern int proc_notify_clients(void *proc, u32 events);
+ 
+ /*
+  *  ======== proc_notify_all_clients ========
+@@ -384,13 +384,13 @@ extern int proc_notify_clients(void *proc, u32 uEvents);
+  *      Notify the Processor Clients
+  *  Parameters:
+  *      proc       :   The processor handle.
+- *      uEvents     :   Event to be notified about.
++ *      events     :   Event to be notified about.
+  *  Returns:
+  *      0     :   Success.
+  *      -EFAULT :   Invalid processor handle.
+  *      -EPERM   :   Failure to Set or Reset the Event
+  *  Requires:
+- *      uEvents is Supported or Valid type of Event
++ *      events is Supported or Valid type of Event
+  *      proc is a valid handle
+  *      PROC Initialized.
+  *  Ensures:
+@@ -398,7 +398,7 @@ extern int proc_notify_clients(void *proc, u32 uEvents);
+  *      NODE And STRM would use this function to notify their clients
+  *      about the state changes in NODE or STRM.
+  */
+-extern int proc_notify_all_clients(void *proc, u32 uEvents);
++extern int proc_notify_all_clients(void *proc, u32 events);
+ 
+ /*
+  *  ======== proc_start ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/pwr.h b/drivers/staging/tidspbridge/include/dspbridge/pwr.h
+index 63ccf8c..9f32c89 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/pwr.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/pwr.h
+@@ -25,7 +25,7 @@
+  *      Signal the DSP to go to sleep.
+  *
+  *  Parameters:
+- *      sleepCode:          New sleep state for DSP.  (Initially, valid codes
++ *      sleep_code:          New sleep state for DSP.  (Initially, valid codes
+  *                          are PWR_DEEPSLEEP or PWR_EMERGENCYDEEPSLEEP; both of
+  *                          these codes will simply put the DSP in deep sleep.)
+  *
+@@ -39,13 +39,13 @@
+  *  Returns:
+  *      0:            Success.
+  *      0: Success, but the DSP was already asleep.
+- *      -EINVAL:    The specified sleepCode is not supported.
++ *      -EINVAL:    The specified sleep_code is not supported.
+  *      -ETIME:       A timeout occured while waiting for DSP sleep
+  *                          confirmation.
+  *      -EPERM:          General failure, unable to send sleep command to
+  *                          the DSP.
+  */
+-extern int pwr_sleep_dsp(IN CONST u32 sleepCode, IN CONST u32 timeout);
++extern int pwr_sleep_dsp(IN CONST u32 sleep_code, IN CONST u32 timeout);
+ 
+ /*
+  *  ======== pwr_wake_dsp ========
+diff --git a/drivers/staging/tidspbridge/pmgr/dspapi.c b/drivers/staging/tidspbridge/pmgr/dspapi.c
+index 7597210..7ff2bd0 100644
+--- a/drivers/staging/tidspbridge/pmgr/dspapi.c
++++ b/drivers/staging/tidspbridge/pmgr/dspapi.c
+@@ -69,7 +69,7 @@
+ 
+ /* Device IOCtl function pointer */
+ struct api_cmd {
+-	u32(*fxn) (union Trapped_Args *args, void *pr_ctxt);
++	u32(*fxn) (union trapped_args *args, void *pr_ctxt);
+ 	u32 dw_index;
+ };
+ 
+@@ -208,10 +208,10 @@ static inline void _cp_to_usr(void __user *to, const void *from,
+  *  Purpose:
+  *      Call the (wrapper) function for the corresponding API IOCTL.
+  */
+-inline int api_call_dev_ioctl(u32 cmd, union Trapped_Args *args,
++inline int api_call_dev_ioctl(u32 cmd, union trapped_args *args,
+ 				      u32 *result, void *pr_ctxt)
  {
- 	u32 dw_addr_xlate = 0;
- 	struct cmm_xlator *xlator_obj = (struct cmm_xlator *)xlator;
-@@ -1113,7 +1113,7 @@ void *cmm_xlator_translate(struct cmm_xlatorobject *xlator, void *paddr,
+-	u32(*ioctl_cmd) (union Trapped_Args *args, void *pr_ctxt) = NULL;
++	u32(*ioctl_cmd) (union trapped_args *args, void *pr_ctxt) = NULL;
+ 	int i;
  
- 	DBC_REQUIRE(refs > 0);
- 	DBC_REQUIRE(paddr != NULL);
--	DBC_REQUIRE((xType >= CMM_VA2PA) && (xType <= CMM_DSPPA2PA));
-+	DBC_REQUIRE((xtype >= CMM_VA2PA) && (xtype <= CMM_DSPPA2PA));
+ 	if (_IOC_TYPE(cmd) != DB) {
+@@ -411,7 +411,7 @@ int api_init_complete2(void)
+ /*
+  * ======== mgrwrap_enum_node_info ========
+  */
+-u32 mgrwrap_enum_node_info(union Trapped_Args *args, void *pr_ctxt)
++u32 mgrwrap_enum_node_info(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u8 *pndb_props;
+ 	u32 num_nodes;
+@@ -443,7 +443,7 @@ u32 mgrwrap_enum_node_info(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== mgrwrap_enum_proc_info ========
+  */
+-u32 mgrwrap_enum_proc_info(union Trapped_Args *args, void *pr_ctxt)
++u32 mgrwrap_enum_proc_info(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u8 *processor_info;
+ 	u8 num_procs;
+@@ -477,7 +477,7 @@ u32 mgrwrap_enum_proc_info(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== mgrwrap_register_object ========
+  */
+-u32 mgrwrap_register_object(union Trapped_Args *args, void *pr_ctxt)
++u32 mgrwrap_register_object(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 ret;
+ 	struct dsp_uuid uuid_obj;
+@@ -517,7 +517,7 @@ func_end:
+ /*
+  * ======== mgrwrap_unregister_object ========
+  */
+-u32 mgrwrap_unregister_object(union Trapped_Args *args, void *pr_ctxt)
++u32 mgrwrap_unregister_object(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_uuid uuid_obj;
+@@ -537,7 +537,7 @@ func_end:
+ /*
+  * ======== mgrwrap_wait_for_bridge_events ========
+  */
+-u32 mgrwrap_wait_for_bridge_events(union Trapped_Args *args, void *pr_ctxt)
++u32 mgrwrap_wait_for_bridge_events(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0, real_status = 0;
+ 	struct dsp_notification *anotifications[MAX_EVENTS];
+@@ -572,7 +572,7 @@ u32 mgrwrap_wait_for_bridge_events(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== MGRWRAP_GetProcessResourceInfo ========
+  */
+-u32 __deprecated mgrwrap_get_process_resources_info(union Trapped_Args * args,
++u32 __deprecated mgrwrap_get_process_resources_info(union trapped_args * args,
+ 						    void *pr_ctxt)
+ {
+ 	pr_err("%s: deprecated dspbridge ioctl\n", __func__);
+@@ -582,7 +582,7 @@ u32 __deprecated mgrwrap_get_process_resources_info(union Trapped_Args * args,
+ /*
+  * ======== procwrap_attach ========
+  */
+-u32 procwrap_attach(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_attach(union trapped_args *args, void *pr_ctxt)
+ {
+ 	void *processor;
+ 	int status = 0;
+@@ -608,7 +608,7 @@ func_end:
+ /*
+  * ======== procwrap_ctrl ========
+  */
+-u32 procwrap_ctrl(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_ctrl(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 cb_data_size, __user * psize = (u32 __user *)
+ 	    args->args_proc_ctrl.pargs;
+@@ -645,7 +645,7 @@ func_end:
+ /*
+  * ======== procwrap_detach ========
+  */
+-u32 __deprecated procwrap_detach(union Trapped_Args * args, void *pr_ctxt)
++u32 __deprecated procwrap_detach(union trapped_args * args, void *pr_ctxt)
+ {
+ 	/* proc_detach called at bridge_release only */
+ 	pr_err("%s: deprecated dspbridge ioctl\n", __func__);
+@@ -655,7 +655,7 @@ u32 __deprecated procwrap_detach(union Trapped_Args * args, void *pr_ctxt)
+ /*
+  * ======== procwrap_enum_node_info ========
+  */
+-u32 procwrap_enum_node_info(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_enum_node_info(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 	void *node_tab[MAX_NODES];
+@@ -678,7 +678,7 @@ u32 procwrap_enum_node_info(union Trapped_Args *args, void *pr_ctxt)
+ 	return status;
+ }
  
- 	if (!xlator_obj)
- 		goto loop_cont;
-@@ -1125,9 +1125,9 @@ void *cmm_xlator_translate(struct cmm_xlatorobject *xlator, void *paddr,
- 	if (!allocator)
- 		goto loop_cont;
+-u32 procwrap_end_dma(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_end_dma(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
  
--	if ((xType == CMM_VA2DSPPA) || (xType == CMM_VA2PA) ||
--	    (xType == CMM_PA2VA)) {
--		if (xType == CMM_PA2VA) {
-+	if ((xtype == CMM_VA2DSPPA) || (xtype == CMM_VA2PA) ||
-+	    (xtype == CMM_PA2VA)) {
-+		if (xtype == CMM_PA2VA) {
- 			/* Gpp Va = Va Base + offset */
- 			dw_offset = (u8 *) paddr - (u8 *) (allocator->shm_base -
- 							   allocator->
-@@ -1152,14 +1152,14 @@ void *cmm_xlator_translate(struct cmm_xlatorobject *xlator, void *paddr,
- 		dw_addr_xlate = (u32) paddr;
+@@ -692,7 +692,7 @@ u32 procwrap_end_dma(union Trapped_Args *args, void *pr_ctxt)
+ 	return status;
+ }
+ 
+-u32 procwrap_begin_dma(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_begin_dma(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 
+@@ -709,7 +709,7 @@ u32 procwrap_begin_dma(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_flush_memory ========
+  */
+-u32 procwrap_flush_memory(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_flush_memory(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 
+@@ -727,7 +727,7 @@ u32 procwrap_flush_memory(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_invalidate_memory ========
+  */
+-u32 procwrap_invalidate_memory(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_invalidate_memory(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 
+@@ -741,7 +741,7 @@ u32 procwrap_invalidate_memory(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_enum_resources ========
+  */
+-u32 procwrap_enum_resources(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_enum_resources(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_resourceinfo resource_info;
+@@ -767,7 +767,7 @@ u32 procwrap_enum_resources(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_get_state ========
+  */
+-u32 procwrap_get_state(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_get_state(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 	struct dsp_processorstate proc_state;
+@@ -788,7 +788,7 @@ u32 procwrap_get_state(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_get_trace ========
+  */
+-u32 procwrap_get_trace(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_get_trace(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 	u8 *pbuf;
+@@ -814,7 +814,7 @@ u32 procwrap_get_trace(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_load ========
+  */
+-u32 procwrap_load(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_load(union trapped_args *args, void *pr_ctxt)
+ {
+ 	s32 i, len;
+ 	int status = 0;
+@@ -930,7 +930,7 @@ func_cont:
+ /*
+  * ======== procwrap_map ========
+  */
+-u32 procwrap_map(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_map(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 	void *map_addr;
+@@ -957,7 +957,7 @@ u32 procwrap_map(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_register_notify ========
+  */
+-u32 procwrap_register_notify(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_register_notify(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 	struct dsp_notification notification;
+@@ -979,7 +979,7 @@ u32 procwrap_register_notify(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_reserve_memory ========
+  */
+-u32 procwrap_reserve_memory(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_reserve_memory(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 	void *prsv_addr;
+@@ -1004,7 +1004,7 @@ u32 procwrap_reserve_memory(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_start ========
+  */
+-u32 procwrap_start(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_start(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 ret;
+ 
+@@ -1015,7 +1015,7 @@ u32 procwrap_start(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_un_map ========
+  */
+-u32 procwrap_un_map(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_un_map(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 
+@@ -1027,7 +1027,7 @@ u32 procwrap_un_map(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_un_reserve_memory ========
+  */
+-u32 procwrap_un_reserve_memory(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_un_reserve_memory(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 
+@@ -1040,7 +1040,7 @@ u32 procwrap_un_reserve_memory(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== procwrap_stop ========
+  */
+-u32 procwrap_stop(union Trapped_Args *args, void *pr_ctxt)
++u32 procwrap_stop(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 ret;
+ 
+@@ -1052,7 +1052,7 @@ u32 procwrap_stop(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_allocate ========
+  */
+-u32 nodewrap_allocate(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_allocate(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_uuid node_uuid;
+@@ -1111,7 +1111,7 @@ func_cont:
+ /*
+  *  ======== nodewrap_alloc_msg_buf ========
+  */
+-u32 nodewrap_alloc_msg_buf(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_alloc_msg_buf(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_bufferattr *pattr = NULL;
+@@ -1141,7 +1141,7 @@ u32 nodewrap_alloc_msg_buf(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_change_priority ========
+  */
+-u32 nodewrap_change_priority(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_change_priority(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 ret;
+ 
+@@ -1154,7 +1154,7 @@ u32 nodewrap_change_priority(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_connect ========
+  */
+-u32 nodewrap_connect(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_connect(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_strmattr attrs;
+@@ -1204,7 +1204,7 @@ func_cont:
+ /*
+  * ======== nodewrap_create ========
+  */
+-u32 nodewrap_create(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_create(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 ret;
+ 
+@@ -1216,7 +1216,7 @@ u32 nodewrap_create(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_delete ========
+  */
+-u32 nodewrap_delete(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_delete(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 ret;
+ 
+@@ -1228,7 +1228,7 @@ u32 nodewrap_delete(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  *  ======== nodewrap_free_msg_buf ========
+  */
+-u32 nodewrap_free_msg_buf(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_free_msg_buf(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_bufferattr *pattr = NULL;
+@@ -1255,7 +1255,7 @@ u32 nodewrap_free_msg_buf(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_get_attr ========
+  */
+-u32 nodewrap_get_attr(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_get_attr(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_nodeattr attr;
+@@ -1270,7 +1270,7 @@ u32 nodewrap_get_attr(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_get_message ========
+  */
+-u32 nodewrap_get_message(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_get_message(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 	struct dsp_msg msg;
+@@ -1286,7 +1286,7 @@ u32 nodewrap_get_message(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_pause ========
+  */
+-u32 nodewrap_pause(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_pause(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 ret;
+ 
+@@ -1298,7 +1298,7 @@ u32 nodewrap_pause(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_put_message ========
+  */
+-u32 nodewrap_put_message(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_put_message(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_msg msg;
+@@ -1317,7 +1317,7 @@ u32 nodewrap_put_message(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_register_notify ========
+  */
+-u32 nodewrap_register_notify(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_register_notify(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_notification notification;
+@@ -1343,7 +1343,7 @@ u32 nodewrap_register_notify(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_run ========
+  */
+-u32 nodewrap_run(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_run(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 ret;
+ 
+@@ -1355,7 +1355,7 @@ u32 nodewrap_run(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_terminate ========
+  */
+-u32 nodewrap_terminate(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_terminate(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 	int tempstatus;
+@@ -1370,7 +1370,7 @@ u32 nodewrap_terminate(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== nodewrap_get_uuid_props ========
+  */
+-u32 nodewrap_get_uuid_props(union Trapped_Args *args, void *pr_ctxt)
++u32 nodewrap_get_uuid_props(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_uuid node_uuid;
+@@ -1397,7 +1397,7 @@ func_cont:
+ /*
+  * ======== strmwrap_allocate_buffer ========
+  */
+-u32 strmwrap_allocate_buffer(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_allocate_buffer(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status;
+ 	u8 **ap_buffer = NULL;
+@@ -1428,7 +1428,7 @@ u32 strmwrap_allocate_buffer(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== strmwrap_close ========
+  */
+-u32 strmwrap_close(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_close(union trapped_args *args, void *pr_ctxt)
+ {
+ 	return strm_close(args->args_strm_close.hstream, pr_ctxt);
+ }
+@@ -1436,7 +1436,7 @@ u32 strmwrap_close(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== strmwrap_free_buffer ========
+  */
+-u32 strmwrap_free_buffer(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_free_buffer(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	u8 **ap_buffer = NULL;
+@@ -1464,7 +1464,7 @@ u32 strmwrap_free_buffer(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== strmwrap_get_event_handle ========
+  */
+-u32 __deprecated strmwrap_get_event_handle(union Trapped_Args * args,
++u32 __deprecated strmwrap_get_event_handle(union trapped_args * args,
+ 					   void *pr_ctxt)
+ {
+ 	pr_err("%s: deprecated dspbridge ioctl\n", __func__);
+@@ -1474,7 +1474,7 @@ u32 __deprecated strmwrap_get_event_handle(union Trapped_Args * args,
+ /*
+  * ======== strmwrap_get_info ========
+  */
+-u32 strmwrap_get_info(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_get_info(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct stream_info strm_info;
+@@ -1501,7 +1501,7 @@ u32 strmwrap_get_info(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== strmwrap_idle ========
+  */
+-u32 strmwrap_idle(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_idle(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 ret;
+ 
+@@ -1514,7 +1514,7 @@ u32 strmwrap_idle(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== strmwrap_issue ========
+  */
+-u32 strmwrap_issue(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_issue(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 
+@@ -1536,7 +1536,7 @@ u32 strmwrap_issue(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== strmwrap_open ========
+  */
+-u32 strmwrap_open(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_open(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct strm_attr attr;
+@@ -1565,7 +1565,7 @@ u32 strmwrap_open(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== strmwrap_reclaim ========
+  */
+-u32 strmwrap_reclaim(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_reclaim(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	u8 *buf_ptr;
+@@ -1590,7 +1590,7 @@ u32 strmwrap_reclaim(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== strmwrap_register_notify ========
+  */
+-u32 strmwrap_register_notify(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_register_notify(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct dsp_notification notification;
+@@ -1612,7 +1612,7 @@ u32 strmwrap_register_notify(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== strmwrap_select ========
+  */
+-u32 strmwrap_select(union Trapped_Args *args, void *pr_ctxt)
++u32 strmwrap_select(union trapped_args *args, void *pr_ctxt)
+ {
+ 	u32 mask;
+ 	struct strm_object *strm_tab[MAX_STREAMS];
+@@ -1636,7 +1636,7 @@ u32 strmwrap_select(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== cmmwrap_calloc_buf ========
+  */
+-u32 __deprecated cmmwrap_calloc_buf(union Trapped_Args * args, void *pr_ctxt)
++u32 __deprecated cmmwrap_calloc_buf(union trapped_args * args, void *pr_ctxt)
+ {
+ 	/* This operation is done in kernel */
+ 	pr_err("%s: deprecated dspbridge ioctl\n", __func__);
+@@ -1646,7 +1646,7 @@ u32 __deprecated cmmwrap_calloc_buf(union Trapped_Args * args, void *pr_ctxt)
+ /*
+  * ======== cmmwrap_free_buf ========
+  */
+-u32 __deprecated cmmwrap_free_buf(union Trapped_Args * args, void *pr_ctxt)
++u32 __deprecated cmmwrap_free_buf(union trapped_args * args, void *pr_ctxt)
+ {
+ 	/* This operation is done in kernel */
+ 	pr_err("%s: deprecated dspbridge ioctl\n", __func__);
+@@ -1656,7 +1656,7 @@ u32 __deprecated cmmwrap_free_buf(union Trapped_Args * args, void *pr_ctxt)
+ /*
+  * ======== cmmwrap_get_handle ========
+  */
+-u32 cmmwrap_get_handle(union Trapped_Args *args, void *pr_ctxt)
++u32 cmmwrap_get_handle(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct cmm_object *hcmm_mgr;
+@@ -1671,7 +1671,7 @@ u32 cmmwrap_get_handle(union Trapped_Args *args, void *pr_ctxt)
+ /*
+  * ======== cmmwrap_get_info ========
+  */
+-u32 cmmwrap_get_info(union Trapped_Args *args, void *pr_ctxt)
++u32 cmmwrap_get_info(union trapped_args *args, void *pr_ctxt)
+ {
+ 	int status = 0;
+ 	struct cmm_info cmm_info_obj;
+diff --git a/drivers/staging/tidspbridge/rmgr/drv.c b/drivers/staging/tidspbridge/rmgr/drv.c
+index dc0c629..03a2317 100755
+--- a/drivers/staging/tidspbridge/rmgr/drv.c
++++ b/drivers/staging/tidspbridge/rmgr/drv.c
+@@ -1012,14 +1012,15 @@ static void *mem_ext_phys_mem_alloc(u32 bytes, u32 align, OUT u32 * phys_addr)
+  *  Purpose:
+  *      Allocate physically contiguous, uncached memory
+  */
+-void *mem_alloc_phys_mem(u32 byte_size, u32 ulAlign, OUT u32 * physical_address)
++void *mem_alloc_phys_mem(u32 byte_size, u32 align_mask,
++				OUT u32 *physical_address)
+ {
+ 	void *va_mem = NULL;
+ 	dma_addr_t pa_mem;
+ 
+ 	if (byte_size > 0) {
+ 		if (ext_phys_mem_pool_enabled) {
+-			va_mem = mem_ext_phys_mem_alloc(byte_size, ulAlign,
++			va_mem = mem_ext_phys_mem_alloc(byte_size, align_mask,
+ 							(u32 *) &pa_mem);
+ 		} else
+ 			va_mem = dma_alloc_coherent(NULL, byte_size, &pa_mem,
+diff --git a/drivers/staging/tidspbridge/rmgr/drv_interface.c b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+index b0fd38e..dae16f8
+--- a/drivers/staging/tidspbridge/rmgr/drv_interface.c
++++ b/drivers/staging/tidspbridge/rmgr/drv_interface.c
+@@ -561,7 +561,7 @@ static long bridge_ioctl(struct file *filp, unsigned int code,
+ {
+ 	int status;
+ 	u32 retval = 0;
+-	union Trapped_Args buf_in;
++	union trapped_args buf_in;
+ 
+ 	DBC_REQUIRE(filp != NULL);
+ #ifdef CONFIG_TIDSPBRIDGE_RECOVERY
+@@ -581,8 +581,8 @@ static long bridge_ioctl(struct file *filp, unsigned int code,
+ 		goto err;
  	}
- 	/*Now convert address to proper target physical address if needed */
--	if ((xType == CMM_VA2DSPPA) || (xType == CMM_PA2DSPPA)) {
-+	if ((xtype == CMM_VA2DSPPA) || (xtype == CMM_PA2DSPPA)) {
- 		/* Got Gpp Pa now, convert to DSP Pa */
- 		dw_addr_xlate =
- 		    GPPPA2DSPPA((allocator->shm_base - allocator->ul_dsp_size),
- 				dw_addr_xlate,
- 				allocator->dw_dsp_phys_addr_offset *
- 				allocator->c_factor);
--	} else if (xType == CMM_DSPPA2PA) {
-+	} else if (xtype == CMM_DSPPA2PA) {
- 		/* Got DSP Pa, convert to GPP Pa */
- 		dw_addr_xlate =
- 		    DSPPA2GPPPA(allocator->shm_base - allocator->ul_dsp_size,
+ 
+-	status = copy_from_user(&buf_in, (union Trapped_Args *)args,
+-				sizeof(union Trapped_Args));
++	status = copy_from_user(&buf_in, (union trapped_args *)args,
++				sizeof(union trapped_args));
+ 
+ 	if (!status) {
+ 		status = api_call_dev_ioctl(code, &buf_in, &retval,
+diff --git a/drivers/staging/tidspbridge/rmgr/nldr.c b/drivers/staging/tidspbridge/rmgr/nldr.c
+index 198b698..46fc765 100644
+--- a/drivers/staging/tidspbridge/rmgr/nldr.c
++++ b/drivers/staging/tidspbridge/rmgr/nldr.c
+@@ -296,7 +296,7 @@ static s32 fake_ovly_write(void *handle, u32 dsp_address, void *buf, u32 bytes,
+ static void free_sects(struct nldr_object *nldr_obj,
+ 		       struct ovly_sect *phase_sects, u16 alloc_num);
+ static bool get_symbol_value(void *handle, void *parg, void *rmm_handle,
+-			     char *symName, struct dbll_sym_val **sym);
++			     char *sym_name, struct dbll_sym_val **sym);
+ static int load_lib(struct nldr_nodeobject *nldr_node_obj,
+ 			   struct lib_node *root, struct dsp_uuid uuid,
+ 			   bool root_prstnt,
+@@ -306,7 +306,7 @@ static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
+ 			    enum nldr_phase phase);
+ static int remote_alloc(void **ref, u16 mem_sect_type, u32 size,
+ 			       u32 align, u32 *dsp_address,
+-			       OPTIONAL s32 segmentId,
++			       OPTIONAL s32 segmnt_id,
+ 			       OPTIONAL s32 req, bool reserve);
+ static int remote_free(void **ref, u16 space, u32 dsp_address, u32 size,
+ 			      bool reserve);
+@@ -1625,7 +1625,7 @@ func_end:
+  */
+ static int remote_alloc(void **ref, u16 space, u32 size,
+ 			       u32 align, u32 *dsp_address,
+-			       OPTIONAL s32 segmentId, OPTIONAL s32 req,
++			       OPTIONAL s32 segmnt_id, OPTIONAL s32 req,
+ 			       bool reserve)
+ {
+ 	struct nldr_nodeobject *hnode = (struct nldr_nodeobject *)ref;
+@@ -1651,9 +1651,9 @@ static int remote_alloc(void **ref, u16 space, u32 size,
+ 	/* Modify memory 'align' to account for DSP cache line size */
+ 	align = find_lcm(GEM_CACHE_LINE_SIZE, align);
+ 	dev_dbg(bridge, "%s: memory align to 0x%x\n", __func__, align);
+-	if (segmentId != -1) {
+-		rmm_addr_obj->segid = segmentId;
+-		segid = segmentId;
++	if (segmnt_id != -1) {
++		rmm_addr_obj->segid = segmnt_id;
++		segid = segmnt_id;
+ 		mem_load_req = req;
+ 	} else {
+ 		switch (hnode->phase) {
+diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
+index eb81645..aa48fa8 100644
+--- a/drivers/staging/tidspbridge/rmgr/proc.c
++++ b/drivers/staging/tidspbridge/rmgr/proc.c
+@@ -111,7 +111,7 @@ DEFINE_MUTEX(proc_lock);	/* For critical sections */
+ static int proc_monitor(struct proc_object *hprocessor);
+ static s32 get_envp_count(char **envp);
+ static char **prepend_envp(char **new_envp, char **envp, s32 envp_elems,
+-			   s32 cnew_envp, char *szVar);
++			   s32 cnew_envp, char *sz_var);
+ 
+ /* remember mapping information */
+ static struct dmm_map_object *add_mapping_info(struct process_context *pr_ctxt,
+@@ -1848,14 +1848,14 @@ static s32 get_envp_count(char **envp)
+  *      copy in the existing var=value pairs in the old envp array.
+  */
+ static char **prepend_envp(char **new_envp, char **envp, s32 envp_elems,
+-			   s32 cnew_envp, char *szVar)
++			   s32 cnew_envp, char *sz_var)
+ {
+ 	char **pp_envp = new_envp;
+ 
+ 	DBC_REQUIRE(new_envp);
+ 
+ 	/* Prepend new environ var=value string */
+-	*new_envp++ = szVar;
++	*new_envp++ = sz_var;
+ 
+ 	/* Copy user's environment into our own. */
+ 	while (envp_elems--)
+@@ -1873,20 +1873,20 @@ static char **prepend_envp(char **new_envp, char **envp, s32 envp_elems,
+  *  Purpose:
+  *      Notify the processor the events.
+  */
+-int proc_notify_clients(void *proc, u32 uEvents)
++int proc_notify_clients(void *proc, u32 events)
+ {
+ 	int status = 0;
+ 	struct proc_object *p_proc_object = (struct proc_object *)proc;
+ 
+ 	DBC_REQUIRE(p_proc_object);
+-	DBC_REQUIRE(IS_VALID_PROC_EVENT(uEvents));
++	DBC_REQUIRE(IS_VALID_PROC_EVENT(events));
+ 	DBC_REQUIRE(refs > 0);
+ 	if (!p_proc_object) {
+ 		status = -EFAULT;
+ 		goto func_end;
+ 	}
+ 
+-	ntfy_notify(p_proc_object->ntfy_obj, uEvents);
++	ntfy_notify(p_proc_object->ntfy_obj, events);
+ func_end:
+ 	return status;
+ }
+@@ -1897,12 +1897,12 @@ func_end:
+  *      Notify the processor the events. This includes notifying all clients
+  *      attached to a particulat DSP.
+  */
+-int proc_notify_all_clients(void *proc, u32 uEvents)
++int proc_notify_all_clients(void *proc, u32 events)
+ {
+ 	int status = 0;
+ 	struct proc_object *p_proc_object = (struct proc_object *)proc;
+ 
+-	DBC_REQUIRE(IS_VALID_PROC_EVENT(uEvents));
++	DBC_REQUIRE(IS_VALID_PROC_EVENT(events));
+ 	DBC_REQUIRE(refs > 0);
+ 
+ 	if (!p_proc_object) {
+@@ -1910,7 +1910,7 @@ int proc_notify_all_clients(void *proc, u32 uEvents)
+ 		goto func_end;
+ 	}
+ 
+-	dev_notify_clients(p_proc_object->hdev_obj, uEvents);
++	dev_notify_clients(p_proc_object->hdev_obj, events);
+ 
+ func_end:
+ 	return status;
+diff --git a/drivers/staging/tidspbridge/rmgr/pwr.c b/drivers/staging/tidspbridge/rmgr/pwr.c
+index ec6d181..2d81743 100644
+--- a/drivers/staging/tidspbridge/rmgr/pwr.c
++++ b/drivers/staging/tidspbridge/rmgr/pwr.c
+@@ -36,7 +36,7 @@
+  *  ======== pwr_sleep_dsp ========
+  *    Send command to DSP to enter sleep state.
+  */
+-int pwr_sleep_dsp(IN CONST u32 sleepCode, IN CONST u32 timeout)
++int pwr_sleep_dsp(IN CONST u32 sleep_code, IN CONST u32 timeout)
+ {
+ 	struct bridge_drv_interface *intf_fxns;
+ 	struct bridge_dev_context *dw_context;
+@@ -59,9 +59,9 @@ int pwr_sleep_dsp(IN CONST u32 sleepCode, IN CONST u32 timeout)
+ 						&intf_fxns))) {
+ 			continue;
+ 		}
+-		if (sleepCode == PWR_DEEPSLEEP)
++		if (sleep_code == PWR_DEEPSLEEP)
+ 			ioctlcode = BRDIOCTL_DEEPSLEEP;
+-		else if (sleepCode == PWR_EMERGENCYDEEPSLEEP)
++		else if (sleep_code == PWR_EMERGENCYDEEPSLEEP)
+ 			ioctlcode = BRDIOCTL_EMERGENCYSLEEP;
+ 		else
+ 			status = -EINVAL;
 -- 
 1.6.3.3
 
