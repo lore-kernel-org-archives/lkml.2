@@ -1,152 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753092Ab0GJTKj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 15:10:39 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:63681 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab0GJTKh (ORCPT
+	id S1753195Ab0GJT36 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 15:29:58 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58480
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751102Ab0GJT34 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 15:10:37 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 96.40.186.250
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19IeqErK+RogbyT8rVrpd83
-Date: Sat, 10 Jul 2010 12:10:26 -0700
-From: David Beal <linux-kernel@davidbeal.net>
-To: shenghui <crosslonelyover@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] avoid NULL deference in ext2_xattr_get
-Message-ID: <20100710191026.GA12443@ciphex>
-References: <AANLkTimwrORk9yfJlSMpVdn1V0sg0tssKhxc-3q1xoMX@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimwrORk9yfJlSMpVdn1V0sg0tssKhxc-3q1xoMX@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 10 Jul 2010 15:29:56 -0400
+Date: Sat, 10 Jul 2010 12:30:11 -0700 (PDT)
+Message-Id: <20100710.123011.260095467.davem@davemloft.net>
+To: eric.dumazet@gmail.com
+Cc: felipewd@gmail.com, kaber@trash.net, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1278742649.2538.17.camel@edumazet-laptop>
+References: <1278695580.2696.55.camel@edumazet-laptop>
+	<AANLkTil39xHOhcdAo4h_jWtx_UuYdFHGdQVAdwPMd7QJ@mail.gmail.com>
+	<1278742649.2538.17.camel@edumazet-laptop>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Eric Dumazet <eric.dumazet@gmail.com>
+Date: Sat, 10 Jul 2010 08:17:29 +0200
 
-Hi Sheng-Hui,
+> Strange thing with your crash report is CR2 value, with unexpected value
+> of 000000000b388000 while RAX value is dce8dce85d415d41
+> 
+> Faulting instruction is :
+> 
+> 48 83 b8 b0 00 00 00 00   cmpq   $0x0,0xb0(%rax)
+> 
+> So I would have expected CR2 being RAX+0xb0, but its not.
 
-There is no NULL dereference in this particular case.  In Linux's printing
-routines, printk("%s",(char*)0) is safe, and would result in a "<NULL>" token
-being printed.
+It could be corruption from elsewhere.  Those last four hex
+digits (0x5d415d41) are "]A]A" in ascii, but that could just
+be coincidence.
 
-Indicating that the "name" argument is "<NULL>" in the output of the ea_debug
-routine is clearly valuable, as its purpose is to emit debugging messages.
-
-If your patch were applied, then a log message indicating that "name" is
-"<NULL>" would not appear.  Adding ternary operator inside printk() argument
-body is also not necessary.
-
-Specifically, in lib/vsnprintf.c, which services printk, a check against NULL
-is made for the string format specifier, %s:
-
-lib/vsnprintf.c:
-...
-static char *string(char *buf, char *end, char *s, struct printf_spec spec)
-{
-        int len, i;
-
-        if ((unsigned long)s < PAGE_SIZE)
-                s = "<NULL>";
-...
-
-The NULL check inside snprintf is GOOD, as it makes printk safer, and removes
-the need for the thousands of conditional branches that would need to be done
-OUTSIDE the printk function in order to check whether the argument to %s is
-NULL.
-
-Branch prediction has an easier time working with a branch in a function that
-is more often in the cache.
-
-Thank you,
-David Beal
-
-
-On Sat, Jul 10, 2010 at 04:07:28PM +0800, shenghui wrote:
-> Hi,
-> 
->          I walked through ext2 code, and found one potential NULL deference
-> in ext2/xattr.c.  The version is 2.6.35-rc4, while earlier versions have the
-> same problem.
->          If you configure EXT2_XATTR_DEBUG, you'll get:
-> # define ea_idebug(inode, f...) do { \
->                 printk(KERN_DEBUG "inode %s:%ld: ", \
->                         inode->i_sb->s_id, inode->i_ino); \
->                 printk(f); \
->                 printk("\n"); \
->         } while (0)
-> 
-> In ext2/xttr.c ext2_xattr_get, NULL pointer check is done after
-> ea_idebug call, so some may hit NULL deference here.
->  ext2_xattr_get(struct inode *inode, int name_index, const char *name,
->                 void *buffer, size_t buffer_size)
->  {
->          struct buffer_head *bh = NULL;
->          struct ext2_xattr_entry *entry;
->          size_t name_len, size;
->          char *end;
->          int error;
-> 
->          ea_idebug(inode, "name=%d.%s, buffer=%p, buffer_size=%ld",
->                    name_index, name, buffer, (long)buffer_size);
-> 
->          if (name == NULL)
->                  return -EINVAL;
-> 
-> 
-> Following is my patch. Please check it.
-> The patch is against kernel 2.6.35-rc4.
-> 
-> 
-> From adc1fa6535034db3b6d8deebda6ec7eaa8bfd2f8 Mon Sep 17 00:00:00 2001
-> From: Wang Sheng-Hui <crosslonelyover@gmail.com>
-> Date: Sat, 10 Jul 2010 16:05:53 +0800
-> Subject: [PATCH] avoid NULL deference in ext2_xattr_get
-> 
-> 
-> Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
-> ---
->  fs/ext2/xattr.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
-> index 7c39157..81ec1c6 100644
-> --- a/fs/ext2/xattr.c
-> +++ b/fs/ext2/xattr.c
-> @@ -156,11 +156,12 @@ ext2_xattr_get(struct inode *inode, int
-> name_index, const char *name,
->  	char *end;
->  	int error;
-> 
-> +	if (name == NULL)
-> +		return -EINVAL;
-> +
->  	ea_idebug(inode, "name=%d.%s, buffer=%p, buffer_size=%ld",
->  		  name_index, name, buffer, (long)buffer_size);
-> 
-> -	if (name == NULL)
-> -		return -EINVAL;
->  	down_read(&EXT2_I(inode)->xattr_sem);
->  	error = -ENODATA;
->  	if (!EXT2_I(inode)->i_file_acl)
-> -- 
-> 1.6.3.3
-> 
-> 
-> 
-> 
-> -- 
-> 
-> 
-> Thanks and Best Regards,
-> shenghui
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
