@@ -1,254 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab0GJQtV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 12:49:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34790 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755077Ab0GJQtU (ORCPT
+	id S1755983Ab0GJQty (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 12:49:54 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:51002 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755778Ab0GJQtx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 12:49:20 -0400
-Date: Sat, 10 Jul 2010 09:52:54 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Ming Lei <tom.leiming@gmail.com>
-Subject: [PATCH v2] pm: Add runtime PM statistics
-Message-ID: <20100710095254.5ab7291c@infradead.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i386-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sat, 10 Jul 2010 12:49:53 -0400
+Date: Sat, 10 Jul 2010 18:49:46 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Martin Enderleit <menderleit@gmail.com>
+Cc: mdharm-usb@one-eyed-alien.net, gregkh@suse.de, linux-usb@vger.kernel.org,
+       usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] usb: storage: freecom: Fixed several coding style
+ issues.
+Message-ID: <20100710164946.GI17833@buzzloop.caiaq.de>
+References: <1278773412-21989-1-git-send-email-menderleit@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278773412-21989-1-git-send-email-menderleit@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arjan van de Ven <arjan@linux.intel.com>
-Subject: [PATCH v2] pm: Add runtime PM statistics
+On Sat, Jul 10, 2010 at 04:50:12PM +0200, Martin Enderleit wrote:
+> Fixed several coding style issues in freecom.c.
+> 
+> Signed-off-by: Martin Enderleit <menderleit@gmail.com>
+> ---
+>  drivers/usb/storage/freecom.c |   23 +++++++++++------------
+>  1 files changed, 11 insertions(+), 12 deletions(-)
+> 
+> diff --git a/drivers/usb/storage/freecom.c b/drivers/usb/storage/freecom.c
+> index 54cc942..6542ca4 100644
+> --- a/drivers/usb/storage/freecom.c
+> +++ b/drivers/usb/storage/freecom.c
+> @@ -269,7 +269,7 @@ static int freecom_transport(struct scsi_cmnd *srb, struct us_data *us)
+>  	/* The firmware will time-out commands after 20 seconds. Some commands
+>  	 * can legitimately take longer than this, so we use a different
+>  	 * command that only waits for the interrupt and then sends status,
+> -	 * without having to send a new ATAPI command to the device. 
+> +	 * without having to send a new ATAPI command to the device.
+>  	 *
+>  	 * NOTE: There is some indication that a data transfer after a timeout
+>  	 * may not work, but that is a condition that should never happen.
+> @@ -324,14 +324,14 @@ static int freecom_transport(struct scsi_cmnd *srb, struct us_data *us)
+>  
+>  	/* Find the length we desire to read. */
+>  	switch (srb->cmnd[0]) {
+> -		case INQUIRY:
+> -		case REQUEST_SENSE:		/* 16 or 18 bytes? spec says 18, lots of devices only have 16 */
+> -		case MODE_SENSE:
+> -		case MODE_SENSE_10:
+> -			length = le16_to_cpu(fst->Count);
+> -			break;
+> -		default:
+> -			length = scsi_bufflen(srb);
+> +	case INQUIRY:
+> +	case REQUEST_SENSE:	/* 16 or 18 bytes? spec says 18, lots of devices only have 16 */
+> +	case MODE_SENSE:
+> +	case MODE_SENSE_10:
+> +		length = le16_to_cpu(fst->Count);
+> +		break;
+> +	default:
+> +		length = scsi_bufflen(srb);
+>  	}
+>  
+>  	/* verify that this amount is legal */
+> @@ -414,7 +414,7 @@ static int freecom_transport(struct scsi_cmnd *srb, struct us_data *us)
+>  		/* should never hit here -- filtered in usb.c */
+>  		US_DEBUGP ("freecom unimplemented direction: %d\n",
+>  				us->srb->sc_data_direction);
+> -		// Return fail, SCSI seems to handle this better.
+> +		/* Return fail, SCSI seems to handle this better. */
+>  		return USB_STOR_TRANSPORT_FAILED;
+>  		break;
 
-In order for PowerTOP to be able to report how well the new runtime PM is working
-for the various drivers, the kernel needs to export some basic statistics in sysfs.
+While at it, you can also remove this useless break;
 
-This patch adds two sysfs files in the runtime PM domain that expose the
-total time a device has been active, and the time a device has been suspended.
-
-With this PowerTOP can compute the activity percentage
-
-Active %age = 100 * (delta active) / (delta active + delta suspended)
-
-and present the information to the user.
-
-I've written the PowerTOP code (slated for version 1.12) already, and the output looks
-like this:
-
-Runtime Device Power Management statistics
-Active  Device name
- 10.0%	06:00.0 Ethernet controller: Realtek Semiconductor Co., Ltd. RTL8101E/RTL8102E PCI Express Fast Ethernet controller 
-
-
-
-[version 2: fix stat update bugs noticed by Alan Stern]
-
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-
-diff --git a/drivers/base/power/runtime.c b/drivers/base/power/runtime.c
-index b0ec0e9..b78c401 100644
---- a/drivers/base/power/runtime.c
-+++ b/drivers/base/power/runtime.c
-@@ -123,6 +123,45 @@ int pm_runtime_idle(struct device *dev)
- }
- EXPORT_SYMBOL_GPL(pm_runtime_idle);
- 
-+
-+/**
-+ * update_pm_runtime_accounting - Update the time accounting of power states
-+ * @dev: Device to update the accounting for
-+ *
-+ * In order to be able to have time accounting of the various power states
-+ * (as used by programs such as PowerTOP to show the effectiveness of runtime
-+ * PM), we need to track the time spent in each state.
-+ * update_pm_runtime_accounting must be called each time before the
-+ * runtime_status field is updated, to account the time in the old state
-+ * correctly.
-+ */
-+void update_pm_runtime_accounting(struct device *dev)
-+{
-+	unsigned long now = jiffies;
-+	int delta;
-+
-+	delta = now - dev->power.accounting_timestamp;
-+
-+	if (delta < 0)
-+		delta = 0;
-+
-+	dev->power.accounting_timestamp = now;
-+
-+	if (dev->power.disable_depth > 0)
-+		return;
-+
-+	if (dev->power.runtime_status == RPM_SUSPENDED)
-+		dev->power.suspended_jiffies += delta;
-+	else
-+		dev->power.active_jiffies += delta;
-+}
-+
-+static void __update_runtime_status(struct device *dev, enum rpm_status status)
-+{
-+	update_pm_runtime_accounting(dev);
-+	dev->power.runtime_status = status;
-+}
-+
- /**
-  * __pm_runtime_suspend - Carry out run-time suspend of given device.
-  * @dev: Device to suspend.
-@@ -197,7 +236,7 @@ int __pm_runtime_suspend(struct device *dev, bool from_wq)
- 		goto repeat;
- 	}
- 
--	dev->power.runtime_status = RPM_SUSPENDING;
-+	__update_runtime_status(dev, RPM_SUSPENDING);
- 	dev->power.deferred_resume = false;
- 
- 	if (dev->bus && dev->bus->pm && dev->bus->pm->runtime_suspend) {
-@@ -228,7 +267,7 @@ int __pm_runtime_suspend(struct device *dev, bool from_wq)
- 	}
- 
- 	if (retval) {
--		dev->power.runtime_status = RPM_ACTIVE;
-+		__update_runtime_status(dev, RPM_ACTIVE);
- 		if (retval == -EAGAIN || retval == -EBUSY) {
- 			if (dev->power.timer_expires == 0)
- 				notify = true;
-@@ -237,7 +276,7 @@ int __pm_runtime_suspend(struct device *dev, bool from_wq)
- 			pm_runtime_cancel_pending(dev);
- 		}
- 	} else {
--		dev->power.runtime_status = RPM_SUSPENDED;
-+		__update_runtime_status(dev, RPM_SUSPENDED);
- 		pm_runtime_deactivate_timer(dev);
- 
- 		if (dev->parent) {
-@@ -381,7 +420,7 @@ int __pm_runtime_resume(struct device *dev, bool from_wq)
- 		goto repeat;
- 	}
- 
--	dev->power.runtime_status = RPM_RESUMING;
-+	__update_runtime_status(dev, RPM_RESUMING);
- 
- 	if (dev->bus && dev->bus->pm && dev->bus->pm->runtime_resume) {
- 		spin_unlock_irq(&dev->power.lock);
-@@ -411,10 +450,10 @@ int __pm_runtime_resume(struct device *dev, bool from_wq)
- 	}
- 
- 	if (retval) {
--		dev->power.runtime_status = RPM_SUSPENDED;
-+		__update_runtime_status(dev, RPM_SUSPENDED);
- 		pm_runtime_cancel_pending(dev);
- 	} else {
--		dev->power.runtime_status = RPM_ACTIVE;
-+		__update_runtime_status(dev, RPM_ACTIVE);
- 		if (parent)
- 			atomic_inc(&parent->power.child_count);
- 	}
-@@ -848,7 +887,7 @@ int __pm_runtime_set_status(struct device *dev, unsigned int status)
- 	}
- 
-  out_set:
--	dev->power.runtime_status = status;
-+	__update_runtime_status(dev, status);
- 	dev->power.runtime_error = 0;
-  out:
- 	spin_unlock_irqrestore(&dev->power.lock, flags);
-@@ -1077,6 +1116,7 @@ void pm_runtime_init(struct device *dev)
- 	dev->power.request_pending = false;
- 	dev->power.request = RPM_REQ_NONE;
- 	dev->power.deferred_resume = false;
-+	dev->power.accounting_timestamp = jiffies;
- 	INIT_WORK(&dev->power.work, pm_runtime_work);
- 
- 	dev->power.timer_expires = 0;
-diff --git a/drivers/base/power/sysfs.c b/drivers/base/power/sysfs.c
-index a4c33bc..f45c316 100644
---- a/drivers/base/power/sysfs.c
-+++ b/drivers/base/power/sysfs.c
-@@ -6,6 +6,7 @@
- #include <linux/string.h>
- #include <linux/pm_runtime.h>
- #include <asm/atomic.h>
-+#include <linux/jiffies.h>
- #include "power.h"
- 
- /*
-@@ -190,9 +191,34 @@ static ssize_t rtpm_status_show(struct device *dev,
- 	return -EIO;
- }
- 
-+static ssize_t rtpm_active_time_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	int ret;
-+	spin_lock_irq(&dev->power.lock);
-+	update_pm_runtime_accounting(dev);
-+	ret = sprintf(buf, "%i\n", jiffies_to_msecs(dev->power.active_jiffies));
-+	spin_unlock_irq(&dev->power.lock);
-+	return ret;
-+}
-+
-+static ssize_t rtpm_suspended_time_show(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	int ret;
-+	spin_lock_irq(&dev->power.lock);
-+	update_pm_runtime_accounting(dev);
-+	ret = sprintf(buf, "%i\n",
-+		jiffies_to_msecs(dev->power.suspended_jiffies));
-+	spin_unlock_irq(&dev->power.lock);
-+	return ret;
-+}
-+
- static DEVICE_ATTR(runtime_usage, 0444, rtpm_usagecount_show, NULL);
- static DEVICE_ATTR(runtime_active_kids, 0444, rtpm_children_show, NULL);
- static DEVICE_ATTR(runtime_status, 0444, rtpm_status_show, NULL);
-+static DEVICE_ATTR(runtime_active_time, 0444, rtpm_active_time_show, NULL);
-+static DEVICE_ATTR(runtime_suspended_time, 0444, rtpm_suspended_time_show, NULL);
- static DEVICE_ATTR(runtime_enabled, 0444, rtpm_enabled_show, NULL);
- 
- #endif
-@@ -234,6 +260,8 @@ static struct attribute * power_attrs[] = {
- 	&dev_attr_async.attr,
- #ifdef CONFIG_PM_RUNTIME
- 	&dev_attr_runtime_usage.attr,
-+	&dev_attr_runtime_suspended_time.attr,
-+	&dev_attr_runtime_active_time.attr,
- 	&dev_attr_runtime_active_kids.attr,
- 	&dev_attr_runtime_status.attr,
- 	&dev_attr_runtime_enabled.attr,
-diff --git a/include/linux/pm.h b/include/linux/pm.h
-index 8e258c7..dca597f 100644
---- a/include/linux/pm.h
-+++ b/include/linux/pm.h
-@@ -476,9 +476,15 @@ struct dev_pm_info {
- 	enum rpm_request	request;
- 	enum rpm_status		runtime_status;
- 	int			runtime_error;
-+	unsigned long		active_jiffies;
-+	unsigned long		suspended_jiffies;
-+	unsigned long		accounting_timestamp;
- #endif
- };
- 
-+extern void update_pm_runtime_accounting(struct device *dev);
-+
-+
- /*
-  * The PM_EVENT_ messages are also used by drivers implementing the legacy
-  * suspend framework, based on the ->suspend() and ->resume() callbacks common
-
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
+Daniel
