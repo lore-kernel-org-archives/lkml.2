@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753233Ab0GJJJw (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 05:09:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:34003 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752059Ab0GJJJt (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 05:09:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Evpfp5IiQFy+mSi7VZdvyimRmAGq00u8/yirSt9bsgG4CkSwVx+NBcA9Ly+DYNMiD0
-         WfaQlbaAeIrJ9FBaolqSClQdgk6HbzXhWDIifSqtIVwHGReYvDR1uvicfp/hnfQdaXYE
-         2wV4EOhQPAMxrMZeJjvpDBfUOujA19Ptc6vN4=
-Date: Sat, 10 Jul 2010 11:07:36 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: shenghui <crosslonelyover@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-ext4@vger.kernel.org
-Subject: Re: [PATCH] avoid NULL deference in ext2_xattr_get
-Message-ID: <20100710090736.GR19184@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	shenghui <crosslonelyover@gmail.com>,
-	kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-	linux-ext4@vger.kernel.org
-References: <AANLkTimwrORk9yfJlSMpVdn1V0sg0tssKhxc-3q1xoMX@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimwrORk9yfJlSMpVdn1V0sg0tssKhxc-3q1xoMX@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753312Ab0GJJOj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 05:14:39 -0400
+Received: from ms01.sssup.it ([193.205.80.99]:39874 "EHLO sssup.it"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752059Ab0GJJOi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 05:14:38 -0400
+Subject: Re: periods and deadlines in SCHED_DEADLINE
+From: Raistlin <raistlin@linux.it>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Song Yuan <song.yuan@ericsson.com>,
+       Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Nicola Manica <nicola.manica@disi.unitn.it>,
+       Luca Abeni <lucabe72@email.it>,
+       Claudio Scordino <claudio@evidence.eu.com>,
+       Harald Gustafsson <harald.gustafsson@ericsson.com>,
+       Bjoern Brandenburg <bbb@email.unc.edu>, bastoni@cs.unc.edu,
+       Giuseppe Lipari <lipari@retis.sssup.it>
+In-Reply-To: <1278685800.1900.212.camel@laptop>
+References: <1278682707.6083.227.camel@Palantir>
+	 <1278685800.1900.212.camel@laptop>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-3cKtL5LtsPCHn6RipzvS"
+Date: Sat, 10 Jul 2010 11:14:27 +0200
+Message-ID: <1278753267.4390.102.camel@Palantir>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Good catch.  Your change is correct but can you resend it?
+--=-3cKtL5LtsPCHn6RipzvS
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-On Sat, Jul 10, 2010 at 04:07:28PM +0800, shenghui wrote:
-> >From adc1fa6535034db3b6d8deebda6ec7eaa8bfd2f8 Mon Sep 17 00:00:00 2001
-> From: Wang Sheng-Hui <crosslonelyover@gmail.com>
-> Date: Sat, 10 Jul 2010 16:05:53 +0800
-> Subject: [PATCH] avoid NULL deference in ext2_xattr_get
-> 
+On Fri, 2010-07-09 at 16:30 +0200, Peter Zijlstra wrote:
+> On Fri, 2010-07-09 at 15:38 +0200, Raistlin wrote:
+> >=20
+> > Therefore, here it is my proposal:
+> >  - if the programmer specify both period and deadline, I act as above,
+> >    running the _only_necessary_ test in the kernel, assuming that
+> >    userspace performed some other kind of (correct!) admission test by
+> >    its own, or that it is cool with missing some deadlines... What do
+> >    you think?
+>=20
+> It would be good to provide room in the interface to improve upon this
+> situation.
+>=20
+Well, room is already there, problem is decide how to use it.
 
-The longer description of the bug should go here.
+> One thing we could do, although this would make the proposed scheduler a
+> wee bit more complex, is split between hard and soft realtime. Only
+> accept P=3D=3Drel_D for hard, and schedule the soft tasks in the hard sla=
+ck
+> or something like that.
+>=20
+As said in the other mail, this could be done, just let me know as much
+as you can how you think it should happen (scheduling class, scheduling
+policy, two (or more) separate queues, ecc.
 
-> 
-> Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
-> ---
->  fs/ext2/xattr.c |    5 +++--
->  1 files changed, 3 insertions(+), 2 deletions(-)
-> 
-> diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
-> index 7c39157..81ec1c6 100644
-> --- a/fs/ext2/xattr.c
-> +++ b/fs/ext2/xattr.c
-> @@ -156,11 +156,12 @@ ext2_xattr_get(struct inode *inode, int
-> name_index, const char *name,
-^^^^^^
+Btw, Dhaval introduced me to the obscure world of IRC... I am (if
+everything worked! :-P) dariof on #sched and/or #sched-rt, so feel free
+to contact me even there, if at te PC I'll be glad to discuss even
+there! :-D
 
-Your email client line wrapped the patch.  Please send it to yourself
-and then save the email including headers and everything.
-	cd linux-2.6
-	cat ~/your-email-text | patch -p1 
+Thanks and regards,
+Dario
 
-If it applies cleanly then resend it to the list.
+--=20
+<<This happens because I choose it to happen!>> (Raistlin Majere)
+----------------------------------------------------------------------
+Dario Faggioli, ReTiS Lab, Scuola Superiore Sant'Anna, Pisa  (Italy)
 
-regards,
-dan carpenter
+http://blog.linux.it/raistlin / raistlin@ekiga.net /
+dario.faggioli@jabber.org
 
+--=-3cKtL5LtsPCHn6RipzvS
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkw4OfMACgkQk4XaBE3IOsSpKgCggdpCWGZvvZLG7f+2lTBTHgJH
+TSEAn3pAmzXwxbjAG5iHq3SkIXl5mWZ6
+=lslU
+-----END PGP SIGNATURE-----
+
+--=-3cKtL5LtsPCHn6RipzvS--
 
