@@ -1,130 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755836Ab0GJOyU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 10:54:20 -0400
-Received: from jester.euphonynet.be ([212.87.96.13]:42481 "EHLO
-	mailpush2.euphonynet.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755774Ab0GJOyQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 10:54:16 -0400
-X-Greylist: delayed 1086 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Jul 2010 10:54:15 EDT
-From: Bart Van Assche <bvanassche@acm.org>
-To: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] Fix discrepancies between sysfs implementation and documentation
-Date: Sat, 10 Jul 2010 16:36:01 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-scst; KDE/4.3.5; x86_64; ; )
-Cc: Randy Dunlap <rdunlap@xenotime.net>, "Greg Kroah-Hartman" <gregkh@suse.de>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1755791Ab0GJOzL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 10:55:11 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:52125 "EHLO serv04.lahn.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755499Ab0GJOzJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 10:55:09 -0400
+Date: Sat, 10 Jul 2010 16:52:08 +0200
+From: Michael Leun <lkml20100708@newton.leun.net>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: sysfs bug when using tun with network namespaces
+Message-ID: <20100710165208.59272ae6@xenia.leun.net>
+In-Reply-To: <20100710140800.GA20424@kroah.com>
+References: <loom.20100708T183152-326@post.gmane.org>
+	<20100709235744.GA12752@kroah.com>
+	<20100710101540.2799c9ef@xenia.leun.net>
+	<20100710140800.GA20424@kroah.com>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.6; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007101636.01122.bvanassche@acm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below fixes all discrepancies I know of between the sysfs
-implementation and its documentation.
+On Sat, 10 Jul 2010 07:08:00 -0700
+Greg KH <greg@kroah.com> wrote:
 
-Signed-off-by: Bart Van Assche <bart.vanassche@gmail.com>
+> On Sat, Jul 10, 2010 at 10:15:40AM +0200, Michael Leun wrote:
+> > Hi,
+> > 
+> > On Fri, 9 Jul 2010 16:57:44 -0700
+> > Greg KH <greg@kroah.com> wrote:
+> > 
+> > > On Thu, Jul 08, 2010 at 04:40:09PM +0000, Michael Leun wrote:
+> > > > Hello,
+> > > > 
+> > > > > # tunctl -u ml -t tap1
+> > > > 
+> > > > works as expected, but
+> > > > 
+> > > > > # unshare -n /bin/bash
+> > > > > # tunctl -u ml -t tap1
+> > > > 
+> > > > Jul  8 18:03:59 doris kernel: ------------[ cut
+> > > > here ]------------ Jul  8 18:03:59 doris kernel: kernel BUG at
+> > > > fs/sysfs/file.c:540! Jul  8 18:03:59 doris kernel: invalid
+> > > > opcode: 0000 [#1] PREEMPT SMP Jul  8 18:03:59 doris kernel:
+> > > > last sysfs file: /sys/devices/virtual/misc/tun/dev Jul  8
+> > > > 18:03:59 doris kernel: Modules linked in: tun snd_pcm_oss
+> > > > snd_mixer_oss snd_seq snd_seq_device vboxnetadp vboxnetflt
+> > > > vboxdrv ipv6 cpufreq_conservative cpufreq_ondemand
+> > > > cpufreq_userspace cpufreq_powersave acpi_cpufreq speedstep_lib
+> > > > freq_table ipt_REJECT ipt_LOG xt_limit xt_recent xt_state
+> > > > xt_tcpudp iptable_mangle iptable_nat iptable_filter nf_nat_ftp
+> > > > nf_nat nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp
+> > > > nf_conntrack ip_tables x_tables fuse nls_utf8 loop
+> > > > snd_hda_codec_realtek arc4 snd_hda_intel ecb snd_hda_codec
+> > > > iwlagn snd_pcm iwlcore snd_timer mac80211 snd cfg80211
+> > > > soundcore intel_agp video usb_storage agpgart i2c_i801 rfkill
+> > > > snd_page_alloc output button battery ac joydev sg evdev tg3 edd
+> > > > ext4 jbd2 crc16 sha256_generic aes_i586 aes_generic cbc
+> > > > dm_crypt linear rtc_cmos uhci_hcd rtc_core rtc_lib sd_mod
+> > > > crc_t10dif ehci_hcd usbcore dm_snapshot dm_mod fan processor
+> > > > thermal [last unloaded: tun] Jul  8 18:03:59 doris kernel: Jul
+> > > > 8 18:03:59 doris kernel: Pid: 4320, comm: tunctl Not tainted
+> > > > 2.6.34.1 #3 Kuril                           /40684JG         
+> > > 
+> > > Network namespaces didn't go in until 2.6.35-rc, how is this
+> > > working on ..34.1?
+> > 
+> > Huh? Network namespaces were there for quite some time - just for
+> > fun I grabbed a random older kernel (got 2.6.27.48) to check.
+> > CONFIG NET_NS was also in there (but was defined in net/Kconfig and
+> > had a depency on !SYSFS).
+> 
+> Ah, yeah, but everyone used SYSFS so it probably was never used :)
+> 
+> > In 2.6.34 it is defined in init/Kconfig (and has no depency on
+> > SYSFS at all).
+> > 
+> > I think I started actually using that somewhere between .30 and .32.
 
-diff --git a/Documentation/filesystems/sysfs.txt b/Documentation/filesystems/sysfs.txt
-index 931c806..d78ed0b 100644
---- a/Documentation/filesystems/sysfs.txt
-+++ b/Documentation/filesystems/sysfs.txt
-@@ -4,7 +4,7 @@ sysfs - _The_ filesystem for exporting kernel objects.
- Patrick Mochel	<mochel@osdl.org>
- Mike Murphy <mamurph@cs.clemson.edu>
- 
--Revised:    22 February 2009
-+Revised:    10 July 2010
- Original:   10 January 2003
- 
- 
-@@ -124,7 +124,7 @@ show and store methods of the attribute owners.
- 
- struct sysfs_ops {
-         ssize_t (*show)(struct kobject *, struct attribute *, char *);
--        ssize_t (*store)(struct kobject *, struct attribute *, const char *);
-+        ssize_t (*store)(struct kobject *, struct attribute *, const char *, size_t);
- };
- 
- [ Subsystems should have already defined a struct kobj_type as a
-@@ -139,18 +139,22 @@ calls the associated methods.
- 
- To illustrate:
- 
-+#define to_dev(obj) container_of(obj, struct device, kobj)
- #define to_dev_attr(_attr) container_of(_attr, struct device_attribute, attr)
--#define to_dev(d) container_of(d, struct device, kobj)
- 
--static ssize_t
--dev_attr_show(struct kobject * kobj, struct attribute * attr, char * buf)
-+static ssize_t dev_attr_show(struct kobject *kobj, struct attribute *attr,
-+                             char *buf)
- {
--        struct device_attribute * dev_attr = to_dev_attr(attr);
--        struct device * dev = to_dev(kobj);
--        ssize_t ret = 0;
-+        struct device_attribute *dev_attr = to_dev_attr(attr);
-+        struct device *dev = to_dev(kobj);
-+        ssize_t ret = -EIO;
- 
-         if (dev_attr->show)
--                ret = dev_attr->show(dev, buf);
-+                ret = dev_attr->show(dev, dev_attr, buf);
-+        if (ret >= (ssize_t)PAGE_SIZE) {
-+                print_symbol("dev_attr_show: %s returned bad count\n",
-+                                (unsigned long)dev_attr->show);
-+        }
-         return ret;
- }
- 
-@@ -163,10 +167,9 @@ To read or write attributes, show() or store() methods must be
- specified when declaring the attribute. The method types should be as
- simple as those defined for device attributes:
- 
--ssize_t (*show)(struct device * dev, struct device_attribute * attr,
--                char * buf);
--ssize_t (*store)(struct device * dev, struct device_attribute * attr,
--                 const char * buf);
-+ssize_t (*show)(struct device *dev, struct device_attribute *attr, char *buf);
-+ssize_t (*store)(struct device *dev, struct device_attribute *attr,
-+                 const char *buf, size_t count);
- 
- IOW, they should take only an object, an attribute, and a buffer as parameters.
- 
-@@ -209,8 +212,8 @@ Other notes:
- 
- - show() should always use snprintf(). 
- 
--- store() should return the number of bytes used from the buffer. This
--  can be done using strlen().
-+- store() should return the number of bytes used from the buffer. If the
-+  entire buffer has been used, just return the count argument.
- 
- - show() or store() can always return errors. If a bad value comes
-   through, be sure to return an error.
-@@ -223,15 +226,18 @@ Other notes:
- 
- A very simple (and naive) implementation of a device attribute is:
- 
--static ssize_t show_name(struct device *dev, struct device_attribute *attr, char *buf)
-+static ssize_t show_name(struct device *dev, struct device_attribute *attr,
-+                         char *buf)
- {
- 	return snprintf(buf, PAGE_SIZE, "%s\n", dev->name);
- }
- 
--static ssize_t store_name(struct device * dev, const char * buf)
-+static ssize_t store_name(struct device *dev, struct device_attribute *attr,
-+                          const char *buf, size_t count)
- {
--	sscanf(buf, "%20s", dev->name);
--	return strnlen(buf, PAGE_SIZE);
-+        snprintf(dev->name, sizeof(dev->name), "%.*s",
-+                 (int)min(count, sizeof(dev->name) - 1), buf);
-+	return count;
- }
- 
- static DEVICE_ATTR(name, S_IRUGO, show_name, store_name);
+...and knowing now, that basic sysfs support for netns was missing all
+the time it works surprisingly well most time.
+
+One point might be, that I never used interfaces with same name in
+different network namespaces.
+
+> > > Can you verify this works properly in .35-rc4?
+> > 
+> > Indeed, it works there.
+> > 
+> > There are several differencies between 2.6.34.1 and 2.6.35-rc4 in
+> > fs/sysfs/* stuff as well as in e.g. net/core/net_namespaces.c.
+> > 
+> > I'll bisect that (but not on this atom netbook I used so far ;-) ).
+
+git bisect seems to have a somewhat pessimistic nature - it only wants
+to help find out when something got broken, not when something got
+fixed (good rev cannot be greater then bad rev).
+
+So I had to do some manual mumbo jumbo to find out that
+a1b3f594dc5faab91d3a218c7019e9b5edd9fe1a seems to be the one finally
+fixing it, but of course depending on a zillion other ones, most
+notably the ones adding sysfs support for namespaces at all...
+
+I think I'll manage to understand that they will not fit in a stabile
+patch ;-)
+
+> I'd not recommend using it until .35-rc because of the sysfs changes
+> required.
+
+A I said, I'm using it quite a while now and it works surprisingly
+(when knowing what is missing) well in scenarios I used so far.
+
+Thank you very much for your support.
+
+-- 
+MfG,
+
+Michael Leun
+
