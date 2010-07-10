@@ -1,29 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab0GJA0H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 20:26:07 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:35827 "EHLO
+	id S1754947Ab0GJA3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 20:29:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:37289 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752801Ab0GJA0F (ORCPT
+	with ESMTP id S1752439Ab0GJA3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 20:26:05 -0400
-X-Authority-Analysis: v=1.1 cv=eWk9bc5BAcy1KEyGm/gc5mmqTM7Cp/ADlcqpp9MTMWU= c=1 sm=0 a=FRz5Z-s_pikA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=enOvQawGAAAA:8 a=meVymXHHAAAA:8 a=pGLkceISAAAA:8 a=fLbG0_AyAAAA:8 a=WPyIoOwQAAAA:8 a=JthM5FLITNI90Auf7SkA:9 a=PdYW2Q_PvQN3CrIXJFoA:7 a=PcINbpXVotJABtRA0vZcE26HmBwA:4 a=PUjeQqilurYA:10 a=bkT6KWdcy0IA:10 a=jeBq3FmKZ4MA:10 a=MSl-tDqOz04A:10 a=CO1XcZHhRtcA:10 a=1DbiqZag68YA:10 a=NfQ4XEVMfFwRZDAQ:21 a=RlLd5cM5IF2OoY7G:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Fri, 9 Jul 2010 20:29:50 -0400
+X-Authority-Analysis: v=1.1 cv=eWk9bc5BAcy1KEyGm/gc5mmqTM7Cp/ADlcqpp9MTMWU= c=1 sm=0 a=mSGy7vTMwJ8A:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VnNF1IyMAAAA:8 a=JfrnYn6hAAAA:8 a=pGLkceISAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=tlkc0S-Y51piGF4d2pIA:9 a=c9gGH3mqt-jhieWbLDwA:7 a=NR0muhcEao0_NQHWS046tUPPyqcA:4 a=PUjeQqilurYA:10 a=Zh68SRI7RUMA:10 a=3Rfx1nUSh_UA:10 a=MSl-tDqOz04A:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=_RhRFcbxBZMA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] tracing: recordmcount.pl: Fix $mcount_regex for MIPS.
+Subject: Re: [PATCH 1/4] rtmutex: avoid null derefence in WARN_ON
 From: Steven Rostedt <rostedt@goodmis.org>
 Reply-To: rostedt@goodmis.org
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-kernel@vger.kernel.org, linux-mips@linux-mips.org,
-       Li Hong <lihong.hi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Matt Fleming <matt@console-pimps.org>,
-       Ralf Baechle <ralf@linux-mips.org>, Wu Zhangjin <wuzhangjin@gmail.com>
-In-Reply-To: <1278712325-12050-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1278712325-12050-1-git-send-email-ddaney@caviumnetworks.com>
+To: Darren Hart <dvhltc@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
+       Mike Galbraith <efault@gmx.de>, linux-rt-users@vger.kernel.org
+In-Reply-To: <1278714780-788-2-git-send-email-dvhltc@us.ibm.com>
+References: <1278714780-788-1-git-send-email-dvhltc@us.ibm.com>
+	 <1278714780-788-2-git-send-email-dvhltc@us.ibm.com>
 Content-Type: text/plain; charset="ISO-8859-15"
 Organization: Kihon Technologies Inc.
-Date: Fri, 09 Jul 2010 20:26:02 -0400
-Message-ID: <1278721562.1537.169.camel@gandalf.stny.rr.com>
+Date: Fri, 09 Jul 2010 20:29:48 -0400
+Message-ID: <1278721788.1537.170.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -31,55 +32,47 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-09 at 14:52 -0700, David Daney wrote:
-> I found this issue in a locally patched 2.6.32.x, current kernels have
-> moved the offending code to an __init function which is skipped by
-> recordmcount.pl, so the bug is not currently being exercised.
-> However, I think the patch is still a good idea, to avoid future
-> problems if _mcount were to ever have its address taken in normal
-> code.
+On Fri, 2010-07-09 at 15:32 -0700, Darren Hart wrote:
+> If the pi_blocked_on variable is NULL, the subsequent WARN_ON's
+> will cause an OOPS. Only perform the susequent checks if
+> pi_blocked_on is valid.
 > 
-> This is what I originally saw:
+> Signed-off-by: Darren Hart <dvhltc@us.ibm.com>
+> Cc: Thomas Gleixner <tglx@linutronix.de>
+> Cc: Peter Zijlstra <peterz@infradead.org>
+> Cc: Ingo Molnar <mingo@elte.hu>
+> Cc: Eric Dumazet <eric.dumazet@gmail.com>
+> Cc: John Kacur <jkacur@redhat.com>
+> Cc: Steven Rostedt <rostedt@goodmis.org>
+> Cc: Mike Galbraith <efault@gmx.de>
+> ---
+>  kernel/rtmutex.c |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
 > 
->     Although arch/mips/kernel/ftrace.c is built without -pg, and thus
->     contains no calls to _mcount, it does use the address of _mcount
->     in ftrace_make_nop().  This was causing relocations to be emitted
->     for _mcount which recordmcount.pl erronously took to be _mcount
->     call sites.  The result was that the text of ftrace_make_nop()
->     would be patched with garbage leading to a system crash.
-> 
-> In non-module code, all _mcount call sites will have R_MIPS_26
-> relocations, so we restrict $mcount_regex to only match on these.
-> 
+> diff --git a/kernel/rtmutex.c b/kernel/rtmutex.c
+> index 23dd443..baac7d9 100644
+> --- a/kernel/rtmutex.c
+> +++ b/kernel/rtmutex.c
+> @@ -579,9 +579,10 @@ static void wakeup_next_waiter(struct rt_mutex *lock, int savestate)
+>  
+>  	raw_spin_lock(&pendowner->pi_lock);
+>  
+> -	WARN_ON(!pendowner->pi_blocked_on);
+> -	WARN_ON(pendowner->pi_blocked_on != waiter);
+> -	WARN_ON(pendowner->pi_blocked_on->lock != lock);
+> +	if (!WARN_ON(!pendowner->pi_blocked_on)) {
+> +		WARN_ON(pendowner->pi_blocked_on != waiter);
 
-I'd like to get an Acked-by from Ralf and Wu before pulling this.
+The above actually has no issue if the pi_blocked_on is NULL.
 
-Thanks,
+The below, well yeah.
 
 -- Steve
 
-> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
-> Cc: Steven Rostedt <rostedt@goodmis.org>
-> Cc: Li Hong <lihong.hi@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Matt Fleming <matt@console-pimps.org>
-> Cc: Ralf Baechle <ralf@linux-mips.org>
-> ---
->  scripts/recordmcount.pl |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/scripts/recordmcount.pl b/scripts/recordmcount.pl
-> index f3c9c0a..0171060 100755
-> --- a/scripts/recordmcount.pl
-> +++ b/scripts/recordmcount.pl
-> @@ -326,7 +326,7 @@ if ($arch eq "x86_64") {
->      #                    14: R_MIPS_NONE *ABS*
->      #	 18:   00020021        nop
->      if ($is_module eq "0") {
-> -	    $mcount_regex = "^\\s*([0-9a-fA-F]+):.*\\s_mcount\$";
-> +	    $mcount_regex = "^\\s*([0-9a-fA-F]+): R_MIPS_26\\s+_mcount\$";
->      } else {
->  	    $mcount_regex = "^\\s*([0-9a-fA-F]+): R_MIPS_HI16\\s+_mcount\$";
->      }
+> +		WARN_ON(pendowner->pi_blocked_on->lock != lock);
+> +	}
+>  
+>  	pendowner->pi_blocked_on = NULL;
+>  
 
 
