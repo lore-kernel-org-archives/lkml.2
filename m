@@ -1,305 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753266Ab0GJTk2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 15:40:28 -0400
-Received: from filtteri1.pp.htv.fi ([213.243.153.184]:33362 "EHLO
-	filtteri1.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752825Ab0GJTkY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 15:40:24 -0400
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: hpa@zytor.com
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Ingo Molnar <mingo@redhat.com>,
-       Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH v2] x86: Early-boot serial I/O support
-Date: Sat, 10 Jul 2010 22:40:20 +0300
-Message-Id: <1278790820-1817-1-git-send-email-penberg@cs.helsinki.fi>
-X-Mailer: git-send-email 1.6.3.3
+	id S1753453Ab0GJTl2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 15:41:28 -0400
+Received: from mail.gmx.net ([213.165.64.20]:34005 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751229Ab0GJTl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 15:41:26 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX196OOBSXrh6zIW+aER4ZdzinIoJL/sWjkmm/IOLTz
+	jTrz9H1V2pXp09
+Subject: Re: [PATCH 4/4] futex: convert hash_bucket locks to raw_spinlock_t
+From: Mike Galbraith <efault@gmx.de>
+To: Darren Hart <dvhltc@us.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
+       Steven Rostedt <rostedt@goodmis.org>, linux-rt-users@vger.kernel.org
+In-Reply-To: <1278714780-788-5-git-send-email-dvhltc@us.ibm.com>
+References: <1278714780-788-1-git-send-email-dvhltc@us.ibm.com>
+	 <1278714780-788-5-git-send-email-dvhltc@us.ibm.com>
+Content-Type: text/plain
+Date: Sat, 10 Jul 2010 21:41:22 +0200
+Message-Id: <1278790882.7352.101.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds serial I/O support to very early boot printf(). It's useful for
-debugging boot code when running Linux under KVM, for example. The actual code
-was lifted from early printk.
+On Fri, 2010-07-09 at 15:33 -0700, Darren Hart wrote:
+> The requeue_pi mechanism introduced proxy locking of the rtmutex.  This creates
+> a scenario where a task can wake-up, not knowing it has been enqueued on an
+> rtmutex. In order to detect this, the task would have to be able to take either
+> task->pi_blocked_on->lock->wait_lock and/or the hb->lock.  Unfortunately,
+> without already holding one of these, the pi_blocked_on variable can change
+> from NULL to valid or from valid to NULL. Therefor, the task cannot be allowed
+> to take a sleeping lock after wakeup or it could end up trying to block on two
+> locks, the second overwriting a valid pi_blocked_on value. This obviously
+> breaks the pi mechanism.
 
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
----
-v1 -> v2:
+copy/paste offline query/reply at Darren's request..
 
-  - Use 'earlyprintk' kernel parameter to determine whether to use
-    early serial or not as suggested by Yinghai and hpa.
+On Sat, 2010-07-10 at 10:26 -0700, Darren Hart wrote:
+On 07/09/2010 09:32 PM, Mike Galbraith wrote:
+> > On Fri, 2010-07-09 at 13:05 -0700, Darren Hart wrote:
+> >
+> >> The core of the problem is that the proxy_lock blocks a task on a lock
+> >> the task knows nothing about. So when it wakes up inside of
+> >> futex_wait_requeue_pi, it immediately tries to block on hb->lock to
+> >> check why it woke up. This has the potential to block the task on two
+> >> locks (thus overwriting the pi_blocked_on). Any attempt preventing this
+> >> involves a lock, and ultimiately the hb->lock. The only solution I see
+> >> is to make the hb->locks raw locks (thanks to Steven Rostedt for
+> >> original idea and batting this around with me in IRC).
+> >
+> > Hm, so wakee _was_ munging his own state after all.
+> >
+> > Out of curiosity, what's wrong with holding his pi_lock across the
+> > wakeup?  He can _try_ to block, but can't until pi state is stable.
+> >
+> > I presume there's a big fat gotcha that's just not obvious to futex
+> > locking newbie :)
+> 
+> It'll take me more time that I have right now to positive, but:
+> 
+> 
+> 	rt_mutex_set_owner(lock, pendowner, RT_MUTEX_OWNER_PENDING);
+> 
+> 	raw_spin_unlock(&current->pi_lock);
+> 
+> Your patch moved the unlock before the set_owner. I _believe_ this can 
+> break the pi boosting logic - current is the owner until it calls 
+> set_owner to be pendowner. I haven't traced this entire path yet, but 
+> that's my gut feel.
 
- arch/x86/boot/boot.h   |   16 +++++++
- arch/x86/boot/main.c   |    3 +
- arch/x86/boot/string.c |   41 ++++++++++++++++++
- arch/x86/boot/tty.c    |  111 +++++++++++++++++++++++++++++++++++++++++++++---
- 4 files changed, 165 insertions(+), 6 deletions(-)
+I _think_ it should be fine to do that.  Setting an owner seems to only
+require holding the wait_lock.  I could easily be missing subtleties
+though.  Looking around, I didn't see any reason not to unlock the
+owner's pi_lock after twiddling pi_waiters (and still don't, but...).
+ 
+> However, you're idea has merit as we have to take our ->pi_lock before 
+> we can block on the hb->lock (inside task_blocks_on_rt_mutex()).
+> 
+> If we can't move the unlock above before set_owner, then we may need a:
+> 
+> retry:
+> cur->lock()
+> top_waiter = get_top_waiter()
+> cur->unlock()
+> 
+> double_lock(cur, topwaiter)
+> if top_waiter != get_top_waiter()
+> 	double_unlock(cur, topwaiter)
+> 	goto retry
+> 
+> Not ideal, but I think I prefer that to making all the hb locks raw.
+> 
+> You dropped the CC list for some reason, probably a good idea to send 
+> this back out in response to my raw lock patch (4/4) - your question and 
+> my reply. This is crazy stuff, no harm in putting the question out there.
+> 
+> I'll take a closer look at this when I can, if not tonight, Monday morning.
 
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index 98239d2..f05b5ac 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -37,6 +37,8 @@
- extern struct setup_header hdr;
- extern struct boot_params boot_params;
- 
-+#define cpu_relax()	asm volatile("rep; nop" ::: "memory")
-+
- /* Basic port I/O */
- static inline void outb(u8 v, u16 port)
- {
-@@ -203,6 +205,17 @@ static inline int isdigit(int ch)
- 	return (ch >= '0') && (ch <= '9');
- }
- 
-+static inline int isxdigit(int ch)
-+{
-+	if (isdigit(ch))
-+		return true;
-+
-+	if ((ch >= 'a') && (ch <= 'f'))
-+		return true;
-+
-+	return (ch >= 'A') && (ch <= 'F');
-+}
-+
- /* Heap -- available for dynamic lists. */
- extern char _end[];
- extern char *HEAP;
-@@ -329,10 +342,13 @@ void initregs(struct biosregs *regs);
- 
- /* string.c */
- int strcmp(const char *str1, const char *str2);
-+int strncmp(const char *cs, const char *ct, size_t count);
- size_t strnlen(const char *s, size_t maxlen);
- unsigned int atou(const char *s);
-+unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base);
- 
- /* tty.c */
-+void console_init(void);
- void puts(const char *);
- void putchar(int);
- int getchar(void);
-diff --git a/arch/x86/boot/main.c b/arch/x86/boot/main.c
-index 140172b..4ef1a33 100644
---- a/arch/x86/boot/main.c
-+++ b/arch/x86/boot/main.c
-@@ -130,6 +130,9 @@ void main(void)
- 	/* First, copy the boot header into the "zeropage" */
- 	copy_boot_params();
- 
-+	/* Initialize the early-boot console */
-+	console_init();
-+
- 	/* End of heap check */
- 	init_heap();
- 
-diff --git a/arch/x86/boot/string.c b/arch/x86/boot/string.c
-index f94b7a0..aba29df 100644
---- a/arch/x86/boot/string.c
-+++ b/arch/x86/boot/string.c
-@@ -30,6 +30,22 @@ int strcmp(const char *str1, const char *str2)
- 	return 0;
- }
- 
-+int strncmp(const char *cs, const char *ct, size_t count)
-+{
-+	unsigned char c1, c2;
-+
-+	while (count) {
-+		c1 = *cs++;
-+		c2 = *ct++;
-+		if (c1 != c2)
-+			return c1 < c2 ? -1 : 1;
-+		if (!c1)
-+			break;
-+		count--;
-+	}
-+	return 0;
-+}
-+
- size_t strnlen(const char *s, size_t maxlen)
- {
- 	const char *es = s;
-@@ -48,3 +64,28 @@ unsigned int atou(const char *s)
- 		i = i * 10 + (*s++ - '0');
- 	return i;
- }
-+
-+/* Works only for digits and letters, but small and fast */
-+#define TOLOWER(x) ((x) | 0x20)
-+
-+unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base)
-+{
-+	unsigned long long result = 0;
-+
-+	if (base == 16 && cp[0] == '0' && TOLOWER(cp[1]) == 'x')
-+		cp += 2;
-+
-+	while (isxdigit(*cp)) {
-+		unsigned int value;
-+
-+		value = isdigit(*cp) ? *cp - '0' : TOLOWER(*cp) - 'a' + 10;
-+		if (value >= base)
-+			break;
-+		result = result * base + value;
-+		cp++;
-+	}
-+	if (endp)
-+		*endp = (char *)cp;
-+
-+	return result;
-+}
-diff --git a/arch/x86/boot/tty.c b/arch/x86/boot/tty.c
-index 01ec69c..f3ceee2 100644
---- a/arch/x86/boot/tty.c
-+++ b/arch/x86/boot/tty.c
-@@ -10,23 +10,51 @@
-  * ----------------------------------------------------------------------- */
- 
- /*
-- * Very simple screen I/O
-- * XXX: Probably should add very simple serial I/O?
-+ * Very simple screen and serial I/O
-  */
- 
- #include "boot.h"
- 
-+#define DEFAULT_SERIAL_PORT 0x3f8 /* ttyS0 */
-+
-+static int	early_serial_base;
-+
-+#define XMTRDY          0x20
-+
-+#define DLAB		0x80
-+
-+#define TXR             0       /*  Transmit register (WRITE) */
-+#define RXR             0       /*  Receive register  (READ)  */
-+#define IER             1       /*  Interrupt Enable          */
-+#define IIR             2       /*  Interrupt ID              */
-+#define FCR             2       /*  FIFO control              */
-+#define LCR             3       /*  Line control              */
-+#define MCR             4       /*  Modem control             */
-+#define LSR             5       /*  Line Status               */
-+#define MSR             6       /*  Modem Status              */
-+#define DLL             0       /*  Divisor Latch Low         */
-+#define DLH             1       /*  Divisor latch High        */
-+
-+#define DEFAULT_BAUD 9600
-+
- /*
-  * These functions are in .inittext so they can be used to signal
-  * error during initialization.
-  */
- 
--void __attribute__((section(".inittext"))) putchar(int ch)
-+static void __attribute__((section(".inittext"))) serial_putchar(int ch)
- {
--	struct biosregs ireg;
-+	unsigned timeout = 0xffff;
- 
--	if (ch == '\n')
--		putchar('\r');	/* \n -> \r\n */
-+	while ((inb(early_serial_base + LSR) & XMTRDY) == 0 && --timeout)
-+		cpu_relax();
-+
-+	outb(ch, early_serial_base + TXR);
-+}
-+
-+static void __attribute__((section(".inittext"))) bios_putchar(int ch)
-+{
-+	struct biosregs ireg;
- 
- 	initregs(&ireg);
- 	ireg.bx = 0x0007;
-@@ -36,6 +64,17 @@ void __attribute__((section(".inittext"))) putchar(int ch)
- 	intcall(0x10, &ireg, NULL);
- }
- 
-+void __attribute__((section(".inittext"))) putchar(int ch)
-+{
-+	if (ch == '\n')
-+		putchar('\r');	/* \n -> \r\n */
-+
-+	bios_putchar(ch);
-+
-+	if (early_serial_base != 0)
-+		serial_putchar(ch);
-+}
-+
- void __attribute__((section(".inittext"))) puts(const char *str)
- {
- 	while (*str)
-@@ -112,3 +151,63 @@ int getchar_timeout(void)
- 
- 	return 0;		/* Timeout! */
- }
-+
-+static void early_serial_init(int baud)
-+{
-+	unsigned char c;
-+	unsigned divisor;
-+
-+	outb(0x3, early_serial_base + LCR);	/* 8n1 */
-+	outb(0, early_serial_base + IER);	/* no interrupt */
-+	outb(0, early_serial_base + FCR);	/* no fifo */
-+	outb(0x3, early_serial_base + MCR);	/* DTR + RTS */
-+
-+	divisor	= 115200 / baud;
-+	c = inb(early_serial_base + LCR);
-+	outb(c | DLAB, early_serial_base + LCR);
-+	outb(divisor & 0xff, early_serial_base + DLL);
-+	outb((divisor >> 8) & 0xff, early_serial_base + DLH);
-+	outb(c & ~DLAB, early_serial_base + LCR);
-+}
-+
-+void console_init(void)
-+{
-+	int baud = DEFAULT_BAUD;
-+	char arg[32];
-+	int pos = 0;
-+
-+	if (cmdline_find_option("earlyprintk", arg, sizeof arg) > 0) {
-+		char *e;
-+
-+		if (!strncmp(arg, "serial", 6)) {
-+			early_serial_base = DEFAULT_SERIAL_PORT;
-+			pos += 6;
-+		}
-+
-+		if (arg[pos] == ',')
-+			pos++;
-+
-+		if (!strncmp(arg, "ttyS", 4)) {
-+			static const int bases[] = { 0x3f8, 0x2f8 };
-+			int port = 0;
-+
-+			if (!strncmp(arg + pos, "ttyS", 4))
-+				pos += 4;
-+
-+			if (arg[pos++] == '1')
-+				port = 1;
-+
-+			early_serial_base = bases[port];
-+		}
-+
-+		if (arg[pos] == ',')
-+			pos++;
-+
-+		baud = simple_strtoull(arg + pos, &e, 0);
-+		if (baud == 0 || arg + pos == e)
-+			baud = DEFAULT_BAUD;
-+	}
-+
-+	if (early_serial_base != 0)
-+		early_serial_init(baud);
-+}
--- 
-1.6.3.3
+	-Mike
 
