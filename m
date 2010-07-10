@@ -1,63 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752126Ab0GJBpO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 21:45:14 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:34095 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751236Ab0GJBpL (ORCPT
+	id S1752461Ab0GJBy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 21:54:29 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:40383 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751236Ab0GJBy1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 21:45:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IuYOcoSIj+2Os6qfwzQI0bchQ9DHbUfD5jtPaNqyvtaququITl9acgR0y0l3c50xR5
-         fQN3J9IfL5HF5Oogag+MVus/Y4n6GnU9v1u5hNTtKB0b2ESEew0QMbyK7OjmNX0caxXu
-         Rb9YTv7gWegtSpNVuzsm2ec89OI2ykAtXNLfw=
-Date: Sat, 10 Jul 2010 03:45:06 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Alexander Beregalov <a.beregalov@gmail.com>
-Subject: Re: [Bug #15805] reiserfs locking
-Message-ID: <20100710014504.GC5269@nowhere>
-References: <xkNyyYrLiTN.A.s_G.7p7NMB@chimera> <Hc02ROPrUsG.A.vs.ls7NMB@chimera>
+	Fri, 9 Jul 2010 21:54:27 -0400
+Date: Sat, 10 Jul 2010 10:54:21 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Patrick McHardy <kaber@trash.net>
+Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+       netfilter-devel@vger.kernel.org,
+       Malcolm Turnbull <malcolm@loadbalancer.org>,
+       Wensong Zhang <wensong@linux-vs.org>,
+       Julius Volz <julius.volz@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
+Subject: Re: [patch v2.3 3/4] IPVS: make FTP work with full NAT support
+Message-ID: <20100710015420.GK5443@verge.net.au>
+References: <20100704113246.562399500@vergenet.net>
+ <20100704114808.932594876@vergenet.net>
+ <4C3316F0.2030807@trash.net>
+ <20100707065324.GC20424@verge.net.au>
+ <4C373F48.8080504@trash.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <Hc02ROPrUsG.A.vs.ls7NMB@chimera>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C373F48.8080504@trash.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 10, 2010 at 02:33:24AM +0200, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.33 and 2.6.34.
+On Fri, Jul 09, 2010 at 05:24:56PM +0200, Patrick McHardy wrote:
+> Am 07.07.2010 08:53, schrieb Simon Horman:
+> > On Tue, Jul 06, 2010 at 01:43:44PM +0200, Patrick McHardy wrote:
+> >> Simon Horman wrote:
+> >>> @@ -219,19 +358,23 @@ static int ip_vs_ftp_out(struct ip_vs_ap
+> >>> 		buf_len = strlen(buf);
+> >>> +		ct = nf_ct_get(skb, &ctinfo);
+> >>> +		ret = nf_nat_mangle_tcp_packet(skb,
+> >>> +					       ct,
+> >>> +					       ctinfo,
+> >>> +					       start-data,
+> >>> +					       end-start,
+> >>> +					       buf,
+> >>> +					       buf_len);
+> >>> +
+> >>> +		if (ct && ct != &nf_conntrack_untracked)
+> >> This does not make sense, you're already using the conntrack above
+> >> in the call to nf_nat_mangle_tcp_packet(), so the check should
+> >> probably happen before that. You also should be checking the
+> >> return value of nf_nat_mangle_tcp_packet() before setting up the
+> >> expectation.
+> >>
+> >>> +			ip_vs_expect_related(skb, ct, n_cp,
+> >>> +					     IPPROTO_TCP, NULL, 0);
+> > 
+> > Good point. Is this better?
+> > 
+> > 		ct = nf_ct_get(skb, &ctinfo);
+> > 		if (ct && !nf_ct_is_untracked()) {
+> > 			ret = nf_nat_mangle_tcp_packet(skb, ct, ctinfo,
+> > 						       start-data, end-start,
+> > 						       buf, buf_len);
+> > 			if (ret)
+> > 				ip_vs_expect_related(skb, ct, n_cp,
+> > 						     IPPROTO_TCP, NULL, 0);
 > 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15805
-> Subject		: reiserfs locking
-> Submitter	: Alexander Beregalov <a.beregalov@gmail.com>
-> Date		: 2010-04-15 21:02 (86 days old)
-> Message-ID	: <t2ka4423d671004151402n7b2dc425mdc9c6bb9640d63fb@mail.gmail.com>
-> References	: http://marc.info/?l=linux-kernel&m=127136535323933&w=2
-> Handled-By	: Frederic Weisbecker <fweisbec@gmail.com>
+> Yes, that's better, although we're usually dropping packets
+> when mangling fails. This can only happen under memory pressure,
+> the assumption is that we might be able to properly mangle
+> the packet when it is retransmitted.
 
-
-It's a duplicate of 16334. Or rather 16334 is a duplicate of this
-but the discussion about the issue was more developped in 16334.
-
-Anyway this is not a regression (at least not recent) and the fix
-from Al is in the vfs tree in the for-next branch on commit
-6c2bdaf089a3876226893fab00dd83596c465ad2
-"Fix reiserfs_file_release()"
-
-Thanks.
+I didn't notice this either, but ret will be end up being the return value
+of ip_vs_ftp_out(), and if that is zero the packet will be dropped.
 
