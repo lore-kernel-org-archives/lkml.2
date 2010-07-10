@@ -1,212 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751622Ab0GJAzs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 20:55:48 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:37834 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750862Ab0GJAzr convert rfc822-to-8bit (ORCPT
+	id S1752255Ab0GJBHk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 21:07:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49111 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751186Ab0GJBHj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 20:55:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:from:date:message-id:
-	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=iktQcOXqVnNoHekWzwpwMf+2JNLPGNaOMbzwF3iDcjVZ8YU/oc8tYuoD3bmkc3wOS
-	qBTM2TLCvkdIwKB0crJBg==
+	Fri, 9 Jul 2010 21:07:39 -0400
+Message-ID: <4C37C6EE.9060104@kernel.org>
+Date: Fri, 09 Jul 2010 18:03:42 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <4C37BC1A.20102@ds.jp.nec.com>
-References: <4C369009.80503@ds.jp.nec.com> <20100709134546.GC3672@redhat.com> 
-	<4C37BC1A.20102@ds.jp.nec.com>
-From: Nauman Rafique <nauman@google.com>
-Date: Fri, 9 Jul 2010 17:55:23 -0700
-Message-ID: <AANLkTikECHfrksrk3QnD3X07pmgXdpo5-fv7hDLm2Zxw@mail.gmail.com>
-Subject: Re: [RFC][PATCH 00/11] blkiocg async support
-To: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
-Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
-       Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
-       kamezawa.hiroyu@jp.fujitsu.com, Andrea Righi <righi.andrea@gmail.com>,
-       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
-       balbir@linux.vnet.ibm.com
+To: Conny Seidel <conny.seidel@amd.com>
+CC: "Petkov, Borislav" <Borislav.Petkov@amd.com>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: unable to handle kernel paging request at 40000000 __alloc_memory_core_early+0x147/0x1d6
+References: <20100709145415.GC11199@aftab>	<4C3773C4.1010609@kernel.org>	<20100709215202.4be679a8@marah.osrc.amd.com>	<4C37841F.4030500@kernel.org>	<20100709224231.5736113b@marah.osrc.amd.com>	<4C379DB6.3040605@kernel.org> <20100710015142.3f94b9dd@marah.osrc.amd.com>
+In-Reply-To: <20100710015142.3f94b9dd@marah.osrc.amd.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0207.4C37C7C5.01E0,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 9, 2010 at 5:17 PM, Munehiro Ikeda <m-ikeda@ds.jp.nec.com> wrote:
-> Vivek Goyal wrote, on 07/09/2010 09:45 AM:
+On 07/09/2010 04:51 PM, Conny Seidel wrote:
+> On Fri, 9 Jul 2010 18:07:50 -0400
+> Yinghai Lu <yinghai@kernel.org> wrote:
+> 
+>> On 07/09/2010 01:42 PM, Conny Seidel wrote:
+>>> sparse_early_mem_map_alloc: sparsemem memory map backing failed some
+>>> memory will not be available.
 >>
->> On Thu, Jul 08, 2010 at 10:57:13PM -0400, Munehiro Ikeda wrote:
->>>
->>> These RFC patches are trial to add async (cached) write support on blkio
->>> controller.
->>>
->>> Only test which has been done is to compile, boot, and that write
->>> bandwidth
->>> seems prioritized when pages which were dirtied by two different
->>> processes in
->>> different cgroups are written back to a device simultaneously.  I know
->>> this
->>> is the minimum (or less) test but I posted this as RFC because I would
->>> like
->>> to hear your opinions about the design direction in the early stage.
->>>
->>> Patches are for 2.6.35-rc4.
->>>
->>> This patch series consists of two chunks.
->>>
->>> (1) iotrack (patch 01/11 -- 06/11)
->>>
->>> This is a functionality to track who dirtied a page, in exact which
->>> cgroup a
->>> process which dirtied a page belongs to.  Blkio controller will read the
->>> info
->>> later and prioritize when the page is actually written to a block device.
->>> This work is originated from Ryo Tsuruta and Hirokazu Takahashi and
->>> includes
->>> Andrea Righi's idea.  It was posted as a part of dm-ioband which was one
->>> of
->>> proposals for IO controller.
->>>
->>>
->>> (2) blkio controller modification (07/11 -- 11/11)
->>>
->>> The main part of blkio controller async write support.
->>> Currently async queues are device-wide and async write IOs are always
->>> treated
->>> as root group.
->>> These patches make async queues per a cfq_group per a device to control
->>> them.
->>> Async write is handled by flush kernel thread.  Because queue pointers
->>> are
->>> stored in cfq_io_context, io_context of the thread has to have multiple
->>> cfq_io_contexts per a device.  So these patches make cfq_io_context per
->>> an
->>> io_context per a cfq_group, which means per an io_context per a cgroup
->>> per a
->>> device.
->>>
->>>
->>> This might be a piece of puzzle for complete async write support of blkio
->>> controller.  One of other pieces in my head is page dirtying ratio
->>> control.
->>> I believe Andrea Righi was working on it...how about the situation?
+>> please check
 >>
->> Thanks Muuh. I will look into the patches in detail.
->>
->> In my initial patches I had implemented the support for ASYNC control
->> (also included Ryo's IO tracking patches) but it did not work well and
->> it was unpredictable. I realized that until and unless we implement
->> some kind of per group dirty ratio/page cache share at VM level and
->> create parallel paths for ASYNC IO, writes often get serialized.
->>
->> So writes belonging to high priority group get stuck behind low priority
->> group and you don't get any service differentiation.
->
-> I also faced the situation that high priority writes are behind
-> lower priority writes.  Although this patch seems to prioritize
-> IOs if these IOs are contended, yes, it is rare a bit because they
-> are serialized often.
->
->
->> So IMHO, this piece should go into kernel after we have first fixed the
->> problem at VM (read memory controller) with per cgroup dirty ratio kind
->> of thing.
->
-> Well, right.  I agree.
-> But I think we can work parallel.  I will try to struggle on both.
+> This still panics, see logfile for complete trace.
+> 
 
-IMHO, we have a classic chicken and egg problem here. We should try to
-merge pieces as they become available. If we get to agree on patches
-that do async IO tracking for IO controller, we should go ahead with
-them instead of trying to wait for per cgroup dirty ratios.
+this one should fix the problem.
 
-In terms of getting numbers, we have been using patches that add per
-cpuset dirty ratios on top of NUMA_EMU, and we get good
-differentiation between buffered writes as well as buffered writes vs.
-reads.
+Thanks
 
-It is really obvious that as long as flusher threads ,etc are not
-cgroup aware, differentiation for buffered writes would not be perfect
-in all cases, but this is a step in the right direction and we should
-go for it.
+Yinghai
 
->
-> By the way, I guess that write serialization is caused by page selection
-> of flush kernel thread.  If so, simple dirty ratio/page cache share
-> controlling don't seem to be able to solve that for me.  Instead or in
-> addition to it, page selection order should be modified.  Am I correct?
->
->
->>> And also, I'm thinking that async write support is required by bandwidth
->>> capping policy of blkio controller.  Bandwidth capping can be done in
->>> upper
->>> layer than elevator.
->>
->> I think capping facility we should implement in higher layers otherwise
->> it is not useful for higher level logical devices (dm/md).
->>
->> It was ok to implement proportional bandwidth division at CFQ level
->> because one can do proportional BW division at each leaf node and still
->> get
->> overall service differentation at higher level logical node. But same can
->> not be done for max BW control.
->
-> A reason why I prefer to have BW control in elevator is
-> based on my evaluation result of three proposed IO controller
-> comparison before blkio controller was merged.  Three proposals
-> were dm-ioband, io-throttle, and elevator implementation which is
-> the closest one to current blkio controller.  Former two handled
-> BIOs and only last one handled REQUESTs.  The result shows that
-> only handling REQUESTs can produce expected service differentiation.
-> Though I've not dived into the cause analysis, I guess that BIO
-> is not associated with actual IO request one by one and elevator
-> behavior are possibly the cause.
-> But on the other hand, as you say, BW controller in elevator
-> cannot control logical devices (or quite hard to adapt to them).
-> It's painful situation.
->
-> I will analyse the cause of non-differentiation in BIO handling
-> case much deeper.
->
->
->>>  However I think it should be also done in elevator layer
->>> in my opinion.  Elevator buffers and sort requests.  If there is another
->>> buffering functionality in upper layer, it is doubled buffering and it
->>> can be
->>> harmful for elevator's prediction.
->>
->> I don't mind doing it at elevator layer also because in that case of
->> somebody is not using dm/md, then one does not have to load max bw
->> control module and one can simply enable max bw control in CFQ.
->>
->> Thinking more about it, now we are suggesting implementing max BW
->> control at two places. I think it will be duplication of code and
->> increased complexity in CFQ. Probably implement max bw control with
->> the help of dm module and use same for CFQ also. There is pain
->> associated with configuring dm device but I guess it is easier than
->> maintaining two max bw control schemes in kernel.
->
-> Do you mean that sharing code for max BW control between dm and CFQ
-> is a possible solution?  It's interesting.  I will think about it.
->
->
->> Thanks
->> Vivek
->
->
-> Greatly thanks for your suggestion as always.
-> Muuhh
->
->
-> --
-> IKEDA, Munehiro
->  NEC Corporation of America
->    m-ikeda@ds.jp.nec.com
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+[PATCH -v3] x86,nobootmem: make alloc_bootmem_node fall back to other node when 32bit numa are used
+
+Borislav Petkov <borislav.petkov@amd.com> reported his 32bit numa has problem:
+
+[    0.000000] Reserving total of 4c00 pages for numa KVA remap
+[    0.000000] kva_start_pfn ~ 32800 max_low_pfn ~ 375fe
+[    0.000000] max_pfn = 238000
+[    0.000000] 8202MB HIGHMEM available.
+[    0.000000] 885MB LOWMEM available.
+[    0.000000]   mapped low ram: 0 - 375fe000
+[    0.000000]   low ram: 0 - 375fe000
+[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 1000 1000 => 34e7000
+[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 200 40 => 34c9d80
+[    0.000000] alloc (nid=0 100000 - 7ee00000) (1000000 - ffffffffffffffff) 180 40 => 34e6140
+[    0.000000] alloc (nid=1 80000000 - c7e60000) (1000000 - ffffffffffffffff) 240 40 => 80000000
+[    0.000000] BUG: unable to handle kernel paging request at 40000000
+[    0.000000] IP: [<c2c8cff1>] __alloc_memory_core_early+0x147/0x1d6
+[    0.000000] *pdpt = 0000000000000000 *pde = f000ff53f000ff00 
+...
+[    0.000000] Call Trace:
+[    0.000000]  [<c2c8b4f8>] ? __alloc_bootmem_node+0x216/0x22f
+[    0.000000]  [<c2c90c9b>] ? sparse_early_usemaps_alloc_node+0x5a/0x10b
+[    0.000000]  [<c2c9149e>] ? sparse_init+0x1dc/0x499
+[    0.000000]  [<c2c79118>] ? paging_init+0x168/0x1df
+[    0.000000]  [<c2c780ff>] ? native_pagetable_setup_start+0xef/0x1bb
+
+looks like it allocate much high address for bootmem.
+
+try to cut limit with get_max_mapped()
+
+-v3: make alloc_bootmem_node could fallback to other node.
+     just like old alloc_bootmem_node did
+
+need this patch for 2.6.34 and 2.6.35
+
+Reported-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org
+
+---
+ mm/bootmem.c    |   24 ++++++++++++++++++++----
+ mm/page_alloc.c |    3 +++
+ 2 files changed, 23 insertions(+), 4 deletions(-)
+
+Index: linux-2.6/mm/page_alloc.c
+===================================================================
+--- linux-2.6.orig/mm/page_alloc.c
++++ linux-2.6/mm/page_alloc.c
+@@ -3634,6 +3634,9 @@ void * __init __alloc_memory_core_early(
+ 	int i;
+ 	void *ptr;
+ 
++	if (limit > get_max_mapped())
++		limit = get_max_mapped();
++
+ 	/* need to go over early_node_map to find out good range for node */
+ 	for_each_active_range_index_in_nid(i, nid) {
+ 		u64 addr;
+Index: linux-2.6/mm/bootmem.c
+===================================================================
+--- linux-2.6.orig/mm/bootmem.c
++++ linux-2.6/mm/bootmem.c
+@@ -833,15 +833,24 @@ static void * __init ___alloc_bootmem_no
+ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+ 				   unsigned long align, unsigned long goal)
+ {
++	void *ptr;
++
+ 	if (WARN_ON_ONCE(slab_is_available()))
+ 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+ 
+ #ifdef CONFIG_NO_BOOTMEM
+-	return __alloc_memory_core_early(pgdat->node_id, size, align,
++	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
++					 goal, -1ULL);
++	if (ptr)
++		return ptr;
++
++	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
+ 					 goal, -1ULL);
+ #else
+-	return ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
++	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
+ #endif
++
++	return ptr;
+ }
+ 
+ void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
+@@ -977,14 +986,21 @@ void * __init __alloc_bootmem_low(unsign
+ void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
+ 				       unsigned long align, unsigned long goal)
+ {
++	void *ptr;
++
+ 	if (WARN_ON_ONCE(slab_is_available()))
+ 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+ 
+ #ifdef CONFIG_NO_BOOTMEM
+-	return __alloc_memory_core_early(pgdat->node_id, size, align,
++	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
++				goal, ARCH_LOW_ADDRESS_LIMIT);
++	if (ptr)
++		return ptr;
++	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
+ 				goal, ARCH_LOW_ADDRESS_LIMIT);
+ #else
+-	return ___alloc_bootmem_node(pgdat->bdata, size, align,
++	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align,
+ 				goal, ARCH_LOW_ADDRESS_LIMIT);
+ #endif
++	return ptr;
+ }
