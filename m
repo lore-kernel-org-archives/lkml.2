@@ -1,100 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751523Ab0GKG6J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 02:58:09 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:51874 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750979Ab0GKG6I (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 02:58:08 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: tuxonice-devel@tuxonice.net, linux-kernel@vger.kernel.org
-Subject: Fwd: [TuxOnIce-devel] hang on hibernation with kernel 2.6.34.1 and TuxOnIce 3.1.1.1
-Date: Sun, 11 Jul 2010 08:58:03 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34.1-tp42-toi-3.1.1.1-04990-g3a7d1f4; KDE/4.4.4; i686; ; )
+	id S1751720Ab0GKHJW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 03:09:22 -0400
+Received: from gw.mingo.gob.pa ([200.46.243.242]:4331 "EHLO mail.mingob.gob.pa"
+	rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751143Ab0GKHJV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 03:09:21 -0400
+X-Greylist: delayed 26151 seconds by postgrey-1.27 at vger.kernel.org; Sun, 11 Jul 2010 03:09:16 EDT
+Message-ID: <2648.95.16.117.194.1278781015.squirrel@mail.mingob.gob.pa>
+Date: Sat, 10 Jul 2010 12:56:55 -0400 (EDT)
+Subject: Lieber Freund!!!
+From: "Luther Zihiri" <roogdavds@yahoo.es>
+Reply-To: lutherzhiri@aim.com
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1610447.Z53E1hrCNW";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007110858.03932.Martin@lichtvoll.de>
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1610447.Z53E1hrCNW
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
 
 
-Hi!
 
-Since I initially guessed this to be more likely a vanilla kernel than a=20
-TuxOnIce bug, I might just ask on kernel mailinglist, whether someone can=20
-tell me on where to sort this backtrace. I do not really have an exact=20
-idea what subsystem this is. Async I/O?
+Lieber Freund!!!
 
-Ciao,
-Martin
+Ich vermute das diese E-Mail eine Überraschung für Sie sein wird, aber es
+ist wahr.Ich bin bei einer routinen Überprüfung in meiner Bank (Standard
+Bank von Süd Afrika) wo ich arbeite, auf einem Konto gestoßen, was nicht
+in anspruch genommen worden ist, wo derzeit $12,500,000
+(zwölfmillionenfünfhundert US Dollar) gutgeschrieben sind.
 
-=2D---------  Weitergeleitete Nachricht  ----------
+Dieses Konto gehörte Herrn Manfred Becker, der ein Kunde in unsere Bank
+war, der leider verstorben ist. Herr Becker war ein gebürtiger
+Deutscher.Damit es mir möglich ist dieses Geld $12,500,000 inanspruch
+zunehmen, benötige ich die zusammenarbeit eines Ausländischen Partners wie
+Sie,den ich als Verwandter und Erbe des verstorbenen Herrn Becker
+vorstellen kann,damit wir das Geld inanspruch nehmen können.
 
-Subject: [TuxOnIce-devel] hang on hibernation with kernel 2.6.34.1 and=20
-TuxOnIce 3.1.1.1
-Date: Samstag 10 Juli 2010
-=46rom: Martin Steigerwald <Martin@lichtvoll.de>
-To: tuxonice-devel@lists.tuxonice.net
+Für diese Unterstützung erhalten Sie 30% der Erbschaftsumme und die
+restlichen 70% teile ich mir mit meinen zwei Arbeitskollegen, die mich bei
+dieser Transaktion ebenfalls unterstützen.Wenn Sie interessiert sind,
+können Sie mir bitte eine E-Mail schicken, damit ich Ihnen mehr Details
+zukommen lassen kann.Schicken Sie bitte Ihre Antwort auf diese E-Mail
+Adresse: (lutherzhiri@aim.com)
 
-
-Hi Nigel, hi everyone else,
-
-yesterday I had a hang on hibernation:
-
-http://martin-steigerwald.de/tmp/hang-on-hibernation-2.6.31.1-
-toi-3.1.1.1/backtrace.jpg
-
-I have not the foggiest about this one.
-
-Anyone a clue?
-
-Does it make sense to report upstream? To me this does not look TuxOnIce=20
-related, but I am not sure, maybe its something regarding TuxOnIce async=20
-I/O. First I misread dpm as drm and thought of a Radeon DRM problem...
-
-Any idea on debugging?
-
-I am not willing to put much time into it right now, so no bisecting. This=
-=20
-is still a production machine. Again I will just downgrade the kernel when=
-=20
-it doesn't work. Its still called "stable" on kernel.org. I can try to ssh=
-=20
-into the machine next time, but I doubt it will work, cause it was=20
-hibernating already.
-
-Ciao,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
-=2D------------------------------------------------------
-
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart1610447.Z53E1hrCNW
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkw5a3sACgkQmRvqrKWZhMf7vACgi00KlEoJ3+gT/VlT+OlhKRKU
-8uwAnRjafdbqE+jmAHtODDXiT8pIw6n0
-=2asQ
------END PGP SIGNATURE-----
-
---nextPart1610447.Z53E1hrCNW--
+Mit freundlichen Grüßen
+Luther Zihiri.
