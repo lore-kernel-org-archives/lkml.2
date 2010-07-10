@@ -1,296 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751158Ab0GJRWu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 13:22:50 -0400
-Received: from mail.perches.com ([173.55.12.10]:1653 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750736Ab0GJRWs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 13:22:48 -0400
-From: Joe Perches <joe@perches.com>
-To: Roland Dreier <rolandd@cisco.com>,
-       Yevgeny Petrilin <yevgenyp@mellanox.co.il>,
-       Jack Morgenstein <jackm@dev.mellanox.co.il>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH net-next] drivers/net/mlx4: Use %pV, pr_<level>, printk_once
-Date: Sat, 10 Jul 2010 10:22:46 -0700
-Message-Id: <baf5f3949ffd5a48a6f5667b6d6394e6d48c91ca.1278696312.git.joe@perches.com>
-X-Mailer: git-send-email 1.7.1.337.g6068.dirty
+	id S1751373Ab0GJRZV (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 13:25:21 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58016 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750876Ab0GJRZU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 13:25:20 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100710070650.GA16248@elte.hu>
+References: <xkNyyYrLiTN.A.s_G.7p7NMB@chimera>
+	<Hc02ROPrUsG.A.vs.ls7NMB@chimera>
+	<20100710014504.GC5269@nowhere>
+	<20100710070650.GA16248@elte.hu>
+Date: Sat, 10 Jul 2010 10:24:28 -0700
+Message-ID: <AANLkTimvtvrQuIPCZwzPNgVqGWTecay5RktRzBgcf4fu@mail.gmail.com>
+Subject: Re: [Bug #15805] reiserfs locking
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Alexander Beregalov <a.beregalov@gmail.com>,
+       Alexander Viro <viro@ftp.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove near duplication of format string constants by using the newly
-introduced vsprintf extention %pV to reduce text by 20k or so.
+On Sat, Jul 10, 2010 at 12:06 AM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> Since it's a reproducible deadlock maybe the fix should go upstream faster
+> than v2.6.36?
 
-$ size drivers/net/mlx4/built-in.o*
-   text	   data	    bss	    dec	    hex	filename
- 161367	   1866	  48784	 212017	  33c31	drivers/net/mlx4/built-in.o
- 142621	   1866	  46248	 190735	  2e90f	drivers/net/mlx4/built-in.o.new
+As far as I know, it's only a lockdep warning, not an actual deadlock.
+And it's in a class of lockdep warnings that we've had for a long
+time, and has never actually triggered as a read deadlock afaik.
 
-Use printk_once as appropriate.
-Convert printks to pr_<level>, some bare printks now use pr_cont.
-Remove now unused #define PFX.
+I also don't think it's a new warning - or at least I don't see why it
+would have started triggering after 2.6.34.
 
-Signed-off-by: Joe Perches <joe@perches.com>
----
- drivers/net/mlx4/catas.c   |    4 +-
- drivers/net/mlx4/en_main.c |   29 +++++++++++++++++---
- drivers/net/mlx4/eq.c      |    6 ++--
- drivers/net/mlx4/main.c    |   16 +++--------
- drivers/net/mlx4/mlx4.h    |   15 +++++-----
- drivers/net/mlx4/mlx4_en.h |   62 +++++++++++++++++++++----------------------
- 6 files changed, 71 insertions(+), 61 deletions(-)
+My preferred fix in many ways would be to make the locking in the VM
+layer less incestuous. For example, we could fairly easily move the
+final
 
-diff --git a/drivers/net/mlx4/catas.c b/drivers/net/mlx4/catas.c
-index f599294..68aaa42 100644
---- a/drivers/net/mlx4/catas.c
-+++ b/drivers/net/mlx4/catas.c
-@@ -101,8 +101,8 @@ static void catas_reset(struct work_struct *work)
- 		ret = mlx4_restart_one(priv->dev.pdev);
- 		/* 'priv' now is not valid */
- 		if (ret)
--			printk(KERN_ERR "mlx4 %s: Reset failed (%d)\n",
--				pci_name(pdev), ret);
-+			pr_err("mlx4 %s: Reset failed (%d)\n",
-+			       pci_name(pdev), ret);
- 		else {
- 			dev  = pci_get_drvdata(pdev);
- 			mlx4_dbg(dev, "Reset succeeded\n");
-diff --git a/drivers/net/mlx4/en_main.c b/drivers/net/mlx4/en_main.c
-index cbabf14..97934f1 100644
---- a/drivers/net/mlx4/en_main.c
-+++ b/drivers/net/mlx4/en_main.c
-@@ -79,6 +79,29 @@ MLX4_EN_PARM_INT(pfctx, 0, "Priority based Flow Control policy on TX[7:0]."
- MLX4_EN_PARM_INT(pfcrx, 0, "Priority based Flow Control policy on RX[7:0]."
- 			   " Per priority bit mask");
- 
-+int en_print(const char *level, const struct mlx4_en_priv *priv,
-+	     const char *format, ...)
-+{
-+	va_list args;
-+	struct va_format vaf;
-+	int i;
-+
-+	va_start(args, format);
-+
-+	vaf.fmt = format;
-+	vaf.va = &args;
-+	if (priv->registered)
-+		i = printk("%s%s: %s: %pV",
-+			   level, DRV_NAME, priv->dev->name, &vaf);
-+	else
-+		i = printk("%s%s: %s: Port %d: %pV",
-+			   level, DRV_NAME, dev_name(&priv->mdev->pdev->dev),
-+			   priv->port, &vaf);
-+	va_end(args);
-+
-+	return i;
-+}
-+
- static int mlx4_en_get_profile(struct mlx4_en_dev *mdev)
- {
- 	struct mlx4_en_profile *params = &mdev->profile;
-@@ -152,15 +175,11 @@ static void mlx4_en_remove(struct mlx4_dev *dev, void *endev_ptr)
- 
- static void *mlx4_en_add(struct mlx4_dev *dev)
- {
--	static int mlx4_en_version_printed;
- 	struct mlx4_en_dev *mdev;
- 	int i;
- 	int err;
- 
--	if (!mlx4_en_version_printed) {
--		printk(KERN_INFO "%s", mlx4_en_version);
--		mlx4_en_version_printed++;
--	}
-+	printk_once(KERN_INFO "%s", mlx4_en_version);
- 
- 	mdev = kzalloc(sizeof *mdev, GFP_KERNEL);
- 	if (!mdev) {
-diff --git a/drivers/net/mlx4/eq.c b/drivers/net/mlx4/eq.c
-index 22d0b3b..6d7b2bf 100644
---- a/drivers/net/mlx4/eq.c
-+++ b/drivers/net/mlx4/eq.c
-@@ -475,10 +475,10 @@ static void mlx4_free_eq(struct mlx4_dev *dev,
- 		mlx4_dbg(dev, "Dumping EQ context %02x:\n", eq->eqn);
- 		for (i = 0; i < sizeof (struct mlx4_eq_context) / 4; ++i) {
- 			if (i % 4 == 0)
--				printk("[%02x] ", i * 4);
--			printk(" %08x", be32_to_cpup(mailbox->buf + i * 4));
-+				pr_cont("[%02x] ", i * 4);
-+			pr_cont(" %08x", be32_to_cpup(mailbox->buf + i * 4));
- 			if ((i + 1) % 4 == 0)
--				printk("\n");
-+				pr_cont("\n");
- 		}
- 	}
- 
-diff --git a/drivers/net/mlx4/main.c b/drivers/net/mlx4/main.c
-index e3e0d54..5102ab1 100644
---- a/drivers/net/mlx4/main.c
-+++ b/drivers/net/mlx4/main.c
-@@ -1050,8 +1050,7 @@ static int __mlx4_init_one(struct pci_dev *pdev, const struct pci_device_id *id)
- 	int err;
- 	int port;
- 
--	printk(KERN_INFO PFX "Initializing %s\n",
--	       pci_name(pdev));
-+	pr_info(DRV_NAME ": Initializing %s\n", pci_name(pdev));
- 
- 	err = pci_enable_device(pdev);
- 	if (err) {
-@@ -1216,12 +1215,7 @@ err_disable_pdev:
- static int __devinit mlx4_init_one(struct pci_dev *pdev,
- 				   const struct pci_device_id *id)
- {
--	static int mlx4_version_printed;
--
--	if (!mlx4_version_printed) {
--		printk(KERN_INFO "%s", mlx4_version);
--		++mlx4_version_printed;
--	}
-+	printk_once(KERN_INFO "%s", mlx4_version);
- 
- 	return __mlx4_init_one(pdev, id);
- }
-@@ -1301,17 +1295,17 @@ static struct pci_driver mlx4_driver = {
- static int __init mlx4_verify_params(void)
- {
- 	if ((log_num_mac < 0) || (log_num_mac > 7)) {
--		printk(KERN_WARNING "mlx4_core: bad num_mac: %d\n", log_num_mac);
-+		pr_warning("mlx4_core: bad num_mac: %d\n", log_num_mac);
- 		return -1;
- 	}
- 
- 	if ((log_num_vlan < 0) || (log_num_vlan > 7)) {
--		printk(KERN_WARNING "mlx4_core: bad num_vlan: %d\n", log_num_vlan);
-+		pr_warning("mlx4_core: bad num_vlan: %d\n", log_num_vlan);
- 		return -1;
- 	}
- 
- 	if ((log_mtts_per_seg < 1) || (log_mtts_per_seg > 5)) {
--		printk(KERN_WARNING "mlx4_core: bad log_mtts_per_seg: %d\n", log_mtts_per_seg);
-+		pr_warning("mlx4_core: bad log_mtts_per_seg: %d\n", log_mtts_per_seg);
- 		return -1;
- 	}
- 
-diff --git a/drivers/net/mlx4/mlx4.h b/drivers/net/mlx4/mlx4.h
-index 13343e8..0da5bb7 100644
---- a/drivers/net/mlx4/mlx4.h
-+++ b/drivers/net/mlx4/mlx4.h
-@@ -48,7 +48,6 @@
- #include <linux/mlx4/doorbell.h>
- 
- #define DRV_NAME	"mlx4_core"
--#define PFX		DRV_NAME ": "
- #define DRV_VERSION	"0.01"
- #define DRV_RELDATE	"May 1, 2007"
- 
-@@ -88,17 +87,17 @@ extern int mlx4_debug_level;
- #endif /* CONFIG_MLX4_DEBUG */
- 
- #define mlx4_dbg(mdev, format, arg...)					\
--	do {								\
--		if (mlx4_debug_level)					\
--			dev_printk(KERN_DEBUG, &mdev->pdev->dev, format, ## arg); \
--	} while (0)
-+do {									\
-+	if (mlx4_debug_level)						\
-+		dev_printk(KERN_DEBUG, &mdev->pdev->dev, format, ##arg); \
-+} while (0)
- 
- #define mlx4_err(mdev, format, arg...) \
--	dev_err(&mdev->pdev->dev, format, ## arg)
-+	dev_err(&mdev->pdev->dev, format, ##arg)
- #define mlx4_info(mdev, format, arg...) \
--	dev_info(&mdev->pdev->dev, format, ## arg)
-+	dev_info(&mdev->pdev->dev, format, ##arg)
- #define mlx4_warn(mdev, format, arg...) \
--	dev_warn(&mdev->pdev->dev, format, ## arg)
-+	dev_warn(&mdev->pdev->dev, format, ##arg)
- 
- struct mlx4_bitmap {
- 	u32			last;
-diff --git a/drivers/net/mlx4/mlx4_en.h b/drivers/net/mlx4/mlx4_en.h
-index b55e46c..4492109 100644
---- a/drivers/net/mlx4/mlx4_en.h
-+++ b/drivers/net/mlx4/mlx4_en.h
-@@ -52,40 +52,8 @@
- #define DRV_VERSION	"1.4.1.1"
- #define DRV_RELDATE	"June 2009"
- 
--
- #define MLX4_EN_MSG_LEVEL	(NETIF_MSG_LINK | NETIF_MSG_IFDOWN)
- 
--#define en_print(level, priv, format, arg...)			\
--	{							\
--	if ((priv)->registered)					\
--		printk(level "%s: %s: " format, DRV_NAME,	\
--			(priv->dev)->name, ## arg);		\
--	else							\
--		printk(level "%s: %s: Port %d: " format,	\
--			DRV_NAME, dev_name(&priv->mdev->pdev->dev), \
--			(priv)->port, ## arg);			\
--	}
--
--#define en_dbg(mlevel, priv, format, arg...)			\
--	{							\
--	if (NETIF_MSG_##mlevel & priv->msg_enable)		\
--		en_print(KERN_DEBUG, priv, format, ## arg)	\
--	}
--#define en_warn(priv, format, arg...)				\
--	en_print(KERN_WARNING, priv, format, ## arg)
--#define en_err(priv, format, arg...)				\
--	en_print(KERN_ERR, priv, format, ## arg)
--
--#define mlx4_err(mdev, format, arg...) \
--	printk(KERN_ERR "%s %s: " format , DRV_NAME ,\
--		dev_name(&mdev->pdev->dev) , ## arg)
--#define mlx4_info(mdev, format, arg...) \
--	printk(KERN_INFO "%s %s: " format , DRV_NAME ,\
--		dev_name(&mdev->pdev->dev) , ## arg)
--#define mlx4_warn(mdev, format, arg...) \
--	printk(KERN_WARNING "%s %s: " format , DRV_NAME ,\
--		dev_name(&mdev->pdev->dev) , ## arg)
--
- /*
-  * Device constants
-  */
-@@ -568,4 +536,34 @@ int mlx4_en_DUMP_ETH_STATS(struct mlx4_en_dev *mdev, u8 port, u8 reset);
-  * Globals
-  */
- extern const struct ethtool_ops mlx4_en_ethtool_ops;
-+
-+
-+
-+/*
-+ * printk / logging functions
-+ */
-+
-+int en_print(const char *level, const struct mlx4_en_priv *priv,
-+	     const char *format, ...) __attribute__ ((format (printf, 3, 4)));
-+
-+#define en_dbg(mlevel, priv, format, arg...)			\
-+do {								\
-+	if (NETIF_MSG_##mlevel & priv->msg_enable)		\
-+		en_print(KERN_DEBUG, priv, format, ##arg);	\
-+} while (0)
-+#define en_warn(priv, format, arg...)			\
-+	en_print(KERN_WARNING, priv, format, ##arg)
-+#define en_err(priv, format, arg...)			\
-+	en_print(KERN_ERR, priv, format, ##arg)
-+
-+#define mlx4_err(mdev, format, arg...)			\
-+	pr_err("%s %s: " format, DRV_NAME,		\
-+	       dev_name(&mdev->pdev->dev), ##arg)
-+#define mlx4_info(mdev, format, arg...)			\
-+	pr_info("%s %s: " format, DRV_NAME,		\
-+		dev_name(&mdev->pdev->dev), ##arg)
-+#define mlx4_warn(mdev, format, arg...)			\
-+	pr_warning("%s %s: " format, DRV_NAME,		\
-+		   dev_name(&mdev->pdev->dev), ##arg)
-+
- #endif
--- 
-1.7.1.337.g6068.dirty
+  if (vma->vm_file)
+    fput(vma->vm_file);
 
+outside the actual mmap_sem lock (well, "fairly easily" here means
+keeping the list of free'd vmas around for longer, probably in the
+task_struct thing, and then replacing all the
+"up_write(&mm->mmap_sem)" things with a "unlock_mm(mm)" looking
+something like
+
+  static void unlock_mm(struct mm_struct *mm)
+  {
+    struct vm_area_struct *vma_list = current->vma_to_free;
+    if (vma_list)
+      current->vma_to_free = NULL;
+    up_write(&mm->mmap_sem);
+    while (vma_list) {
+      struct vm_area_struct *vma = vma_list;
+      vma_list = vma_list->next;
+      fput(vma_list->vm_file);
+      kmem_cache_free(vm_area_cachep, vma);
+    }
+  }
+
+which would fairly trivially delay the actual 'fput()' to after we
+hold no locks.
+
+I dunno if it's really worth it, but it doesn't look all that
+complicated, and it would avoid at least _some_ lock dependencies.
+
+                     Linus
+
+                     Linus
