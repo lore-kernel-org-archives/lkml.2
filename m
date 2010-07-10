@@ -1,100 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751247Ab0GJRsI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 13:48:08 -0400
-Received: from smtprelay01.ispgateway.de ([80.67.31.24]:55867 "EHLO
-	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab0GJRsG (ORCPT
+	id S1752246Ab0GJSOh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 14:14:37 -0400
+Received: from filtteri2.pp.htv.fi ([213.243.153.185]:45435 "EHLO
+	filtteri2.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751732Ab0GJSOg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 13:48:06 -0400
-References: <1278553580.7162.1.camel@mola> <20100708090836.GA14580@a1.tnic>
-Message-ID: <cone.1278783771.875800.3926.1000@deskpiie>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
-       Matthew Garrett <mjg@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Borislav Petkov <petkovbb@gmail.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] acerhdf: make needlessly global symbols static
-Date: Sat, 10 Jul 2010 19:42:51 +0200
-Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-X-Df-Sender: 404094
+	Sat, 10 Jul 2010 14:14:36 -0400
+X-Greylist: delayed 395 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Jul 2010 14:14:36 EDT
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org,
+       Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@redhat.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>
+Subject: [RFC/PATCH] x86: Early-boot serial I/O support
+Date: Sat, 10 Jul 2010 21:07:57 +0300
+Message-Id: <1278785277-22629-1-git-send-email-penberg@cs.helsinki.fi>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Borislav Petkov writes:
+This patch adds serial I/O support to very early boot printf(). It's useful for
+debugging boot code when running Linux under KVM, for example. The actual code
+was lifted from early printk.
 
-> From: Axel Lin <axel.lin@gmail.com>
-> Date: Thu, Jul 08, 2010 at 09:46:20AM +0800
-> 
->> The following symbols are needlessly defined global:
->> 
->> thz_dev
->> cl_dev
->> acerhdf_dev
->> acerhdf_dev_ops
->> acerhdf_cooling_ops
->> 
->> This patch makes the symbols static.
->> 
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> 
-> Acked-by: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
+---
+ arch/x86/boot/boot.h |    1 +
+ arch/x86/boot/main.c |    3 ++
+ arch/x86/boot/tty.c  |   65 +++++++++++++++++++++++++++++++++++++++++++++----
+ 3 files changed, 63 insertions(+), 6 deletions(-)
 
-Acked-by: Peter Feuerer <peter@piie.net>
+diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+index 98239d2..5b37014 100644
+--- a/arch/x86/boot/boot.h
++++ b/arch/x86/boot/boot.h
+@@ -333,6 +333,7 @@ size_t strnlen(const char *s, size_t maxlen);
+ unsigned int atou(const char *s);
+ 
+ /* tty.c */
++void serial_init(void);
+ void puts(const char *);
+ void putchar(int);
+ int getchar(void);
+diff --git a/arch/x86/boot/main.c b/arch/x86/boot/main.c
+index 140172b..1437efe 100644
+--- a/arch/x86/boot/main.c
++++ b/arch/x86/boot/main.c
+@@ -127,6 +127,9 @@ static void init_heap(void)
+ 
+ void main(void)
+ {
++	/* Initialize serial console */
++	serial_init();
++
+ 	/* First, copy the boot header into the "zeropage" */
+ 	copy_boot_params();
+ 
+diff --git a/arch/x86/boot/tty.c b/arch/x86/boot/tty.c
+index 01ec69c..2f0def5 100644
+--- a/arch/x86/boot/tty.c
++++ b/arch/x86/boot/tty.c
+@@ -10,8 +10,7 @@
+  * ----------------------------------------------------------------------- */
+ 
+ /*
+- * Very simple screen I/O
+- * XXX: Probably should add very simple serial I/O?
++ * Very simple screen and serial I/O
+  */
+ 
+ #include "boot.h"
+@@ -20,13 +19,58 @@
+  * These functions are in .inittext so they can be used to signal
+  * error during initialization.
+  */
++static int early_serial_base = 0x3f8;  /* ttyS0 */
+ 
+-void __attribute__((section(".inittext"))) putchar(int ch)
++#define XMTRDY          0x20
++
++#define DLAB		0x80
++
++#define TXR             0       /*  Transmit register (WRITE) */
++#define RXR             0       /*  Receive register  (READ)  */
++#define IER             1       /*  Interrupt Enable          */
++#define IIR             2       /*  Interrupt ID              */
++#define FCR             2       /*  FIFO control              */
++#define LCR             3       /*  Line control              */
++#define MCR             4       /*  Modem control             */
++#define LSR             5       /*  Line Status               */
++#define MSR             6       /*  Modem Status              */
++#define DLL             0       /*  Divisor Latch Low         */
++#define DLH             1       /*  Divisor latch High        */
++
++#define DEFAULT_BAUD 9600
++
++void __attribute__((section(".inittext"))) serial_init(void)
+ {
+-	struct biosregs ireg;
++	unsigned baud = DEFAULT_BAUD;
++	unsigned char c;
++	unsigned divisor;
++
++	outb(0x3, early_serial_base + LCR);	/* 8n1 */
++	outb(0, early_serial_base + IER);	/* no interrupt */
++	outb(0, early_serial_base + FCR);	/* no fifo */
++	outb(0x3, early_serial_base + MCR);	/* DTR + RTS */
++
++	divisor	= 115200 / baud;
++	c = inb(early_serial_base + LCR);
++	outb(c | DLAB, early_serial_base + LCR);
++	outb(divisor & 0xff, early_serial_base + DLL);
++	outb((divisor >> 8) & 0xff, early_serial_base + DLH);
++	outb(c & ~DLAB, early_serial_base + LCR);
++}
+ 
+-	if (ch == '\n')
+-		putchar('\r');	/* \n -> \r\n */
++static void __attribute__((section(".inittext"))) serial_putchar(int ch)
++{
++	unsigned timeout = 0xffff;
++
++	while ((inb(early_serial_base + LSR) & XMTRDY) == 0 && --timeout)
++		;
++
++	outb(ch, early_serial_base + TXR);
++}
++
++static void __attribute__((section(".inittext"))) bios_putchar(int ch)
++{
++	struct biosregs ireg;
+ 
+ 	initregs(&ireg);
+ 	ireg.bx = 0x0007;
+@@ -36,6 +80,15 @@ void __attribute__((section(".inittext"))) putchar(int ch)
+ 	intcall(0x10, &ireg, NULL);
+ }
+ 
++void __attribute__((section(".inittext"))) putchar(int ch)
++{
++	if (ch == '\n')
++		putchar('\r');	/* \n -> \r\n */
++
++	bios_putchar(ch);
++	serial_putchar(ch);
++}
++
+ void __attribute__((section(".inittext"))) puts(const char *str)
+ {
+ 	while (*str)
+-- 
+1.6.3.3
 
-> 
->> ---
->>  drivers/platform/x86/acerhdf.c |   10 +++++-----
->>  1 files changed, 5 insertions(+), 5 deletions(-)
->> 
->> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
->> index 7b2384d..5caaaf0 100644
->> --- a/drivers/platform/x86/acerhdf.c
->> +++ b/drivers/platform/x86/acerhdf.c
->> @@ -92,9 +92,9 @@ static unsigned int fanstate = ACERHDF_FAN_AUTO;
->>  static char force_bios[16];
->>  static char force_product[16];
->>  static unsigned int prev_interval;
->> -struct thermal_zone_device *thz_dev;
->> -struct thermal_cooling_device *cl_dev;
->> -struct platform_device *acerhdf_dev;
->> +static struct thermal_zone_device *thz_dev;
->> +static struct thermal_cooling_device *cl_dev;
->> +static struct platform_device *acerhdf_dev;
->>  
->>  module_param(kernelmode, uint, 0);
->>  MODULE_PARM_DESC(kernelmode, "Kernel mode fan control on / off");
->> @@ -374,7 +374,7 @@ static int acerhdf_get_crit_temp(struct thermal_zone_device *thermal,
->>  }
->>  
->>  /* bind callback functions to thermalzone */
->> -struct thermal_zone_device_ops acerhdf_dev_ops = {
->> +static struct thermal_zone_device_ops acerhdf_dev_ops = {
->>  	.bind = acerhdf_bind,
->>  	.unbind = acerhdf_unbind,
->>  	.get_temp = acerhdf_get_ec_temp,
->> @@ -449,7 +449,7 @@ err_out:
->>  }
->>  
->>  /* bind fan callbacks to fan device */
->> -struct thermal_cooling_device_ops acerhdf_cooling_ops = {
->> +static struct thermal_cooling_device_ops acerhdf_cooling_ops = {
->>  	.get_max_state = acerhdf_get_max_state,
->>  	.get_cur_state = acerhdf_get_cur_state,
->>  	.set_cur_state = acerhdf_set_cur_state,
->> -- 
->> 1.5.4.3
->> 
->> 
->> 
-
-thanks and kind regards,
---peter;
