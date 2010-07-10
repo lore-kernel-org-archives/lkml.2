@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab0GJHUg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 03:20:36 -0400
-Received: from mail0.unitn.it ([193.205.206.51]:56867 "EHLO mail0.unitn.it"
+	id S1752235Ab0GJHsM (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 03:48:12 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:55400 "EHLO poutre.nerim.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751613Ab0GJHUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 03:20:35 -0400
-Subject: Re: periods and deadlines in SCHED_DEADLINE
-From: Luca Abeni <lucabe72@email.it>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Raistlin <raistlin@linux.it>, linux-kernel <linux-kernel@vger.kernel.org>,
-       Song Yuan <song.yuan@ericsson.com>,
-       Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Nicola Manica <nicola.manica@disi.unitn.it>,
-       Claudio Scordino <claudio@evidence.eu.com>,
-       Harald Gustafsson <harald.gustafsson@ericsson.com>,
-       Bjoern Brandenburg <bbb@email.unc.edu>, bastoni@cs.unc.edu,
-       Giuseppe Lipari <lipari@retis.sssup.it>
-In-Reply-To: <1278685470.1900.206.camel@laptop>
-References: <1278682707.6083.227.camel@Palantir>
-	 <1278685470.1900.206.camel@laptop>
-Content-Type: text/plain
-Date: Sat, 10 Jul 2010 09:11:47 +0200
-Message-Id: <1278745907.5248.18.camel@localhost>
+	id S1751527Ab0GJHsL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 03:48:11 -0400
+Date: Sat, 10 Jul 2010 09:48:07 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Linux I2C <linux-i2c@vger.kernel.org>
+Subject: [GIT PULL] i2c fixes for 2.6.35
+Message-ID: <20100710094807.7ee0317c@hyperion.delvare>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-09 at 16:24 +0200, Peter Zijlstra wrote:
-> On Fri, 2010-07-09 at 15:38 +0200, Raistlin wrote:
-> > Basically, from the scheduling point of view, what it could happen is
-> > that I'm still _NOT_ going to allow a task with runtime Q_i, deadline
-> > D_i and period P_i to use more bandwidth than Q_i/P_i, I'm still using D
-> > for scheduling but the passing of the simple in-kernel admission test
-> > Sum_i(Q_i/P_i)<1 won't guarantee that the task will always finish its
-> > jobs before D. 
-> 
-> But the tardiness would still be bounded, right? So its a valid Soft-RT
-> model?
-I think that if Sum_i(Q_i/P_i)<1 but Sum_i(Q_i/min{P_i,D_i})>=1 then you
-can have sporadic deadline misses, but it should still be possible to
-compute an upper bound for the tardiness.
-But this is just a feeling, I have no proof... :)
+Hi Linus,
 
+Please pull i2c subsystem fixes for Linux 2.6.35 from:
 
-				Luca
+git://git.kernel.org/pub/scm/linux/kernel/git/jdelvare/staging.git i2c-for-linus
 
+ drivers/i2c/busses/i2c-sibyte.c |    4 ++--
+ drivers/i2c/i2c-core.c          |    7 +++----
+ 2 files changed, 5 insertions(+), 6 deletions(-)
+
+---------------
+
+Guenter Roeck (1):
+      i2c/mips: Fix error return codes from Sibyte i2c bus driver
+
+Jean Delvare (1):
+      i2c: Fix probability check
+
+Thanks,
+-- 
+Jean Delvare
