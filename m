@@ -1,93 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755501Ab0GJOLK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 10:11:10 -0400
-Received: from kroah.org ([198.145.64.141]:41446 "EHLO coco.kroah.org"
+	id S1754258Ab0GJOgi (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 10:36:38 -0400
+Received: from 8bytes.org ([88.198.83.132]:46486 "EHLO 8bytes.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755385Ab0GJOLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 10:11:08 -0400
-Date: Sat, 10 Jul 2010 07:08:00 -0700
-From: Greg KH <greg@kroah.com>
-To: Michael Leun <lkml20100708@newton.leun.net>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: sysfs bug when using tun with network namespaces
-Message-ID: <20100710140800.GA20424@kroah.com>
-References: <loom.20100708T183152-326@post.gmane.org> <20100709235744.GA12752@kroah.com> <20100710101540.2799c9ef@xenia.leun.net>
+	id S1752798Ab0GJOgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 10:36:36 -0400
+Date: Sat, 10 Jul 2010 16:36:35 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: Hari Kanigeri <hari.kanigeri@gmail.com>,
+       Daniel Walker <dwalker@codeaurora.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+Message-ID: <20100710143635.GA10080@8bytes.org>
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <AANLkTinABCSdN6hnXVOvVZ12f1QBMR_UAi62qW8GmlkL@mail.gmail.com> <4C2D908E.9030309@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100710101540.2799c9ef@xenia.leun.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4C2D908E.9030309@codeaurora.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 10, 2010 at 10:15:40AM +0200, Michael Leun wrote:
-> Hi,
-> 
-> On Fri, 9 Jul 2010 16:57:44 -0700
-> Greg KH <greg@kroah.com> wrote:
-> 
-> > On Thu, Jul 08, 2010 at 04:40:09PM +0000, Michael Leun wrote:
-> > > Hello,
-> > > 
-> > > > # tunctl -u ml -t tap1
-> > > 
-> > > works as expected, but
-> > > 
-> > > > # unshare -n /bin/bash
-> > > > # tunctl -u ml -t tap1
-> > > 
-> > > Jul  8 18:03:59 doris kernel: ------------[ cut here ]------------
-> > > Jul  8 18:03:59 doris kernel: kernel BUG at fs/sysfs/file.c:540!
-> > > Jul  8 18:03:59 doris kernel: invalid opcode: 0000 [#1] PREEMPT SMP 
-> > > Jul  8 18:03:59 doris kernel: last sysfs
-> > > file: /sys/devices/virtual/misc/tun/dev Jul  8 18:03:59 doris
-> > > kernel: Modules linked in: tun snd_pcm_oss snd_mixer_oss snd_seq
-> > > snd_seq_device vboxnetadp vboxnetflt vboxdrv ipv6
-> > > cpufreq_conservative cpufreq_ondemand cpufreq_userspace
-> > > cpufreq_powersave acpi_cpufreq speedstep_lib freq_table ipt_REJECT
-> > > ipt_LOG xt_limit xt_recent xt_state xt_tcpudp iptable_mangle
-> > > iptable_nat iptable_filter nf_nat_ftp nf_nat nf_conntrack_ipv4
-> > > nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack ip_tables x_tables
-> > > fuse nls_utf8 loop snd_hda_codec_realtek arc4 snd_hda_intel ecb
-> > > snd_hda_codec iwlagn snd_pcm iwlcore snd_timer mac80211 snd
-> > > cfg80211 soundcore intel_agp video usb_storage agpgart i2c_i801
-> > > rfkill snd_page_alloc output button battery ac joydev sg evdev tg3
-> > > edd ext4 jbd2 crc16 sha256_generic aes_i586 aes_generic cbc
-> > > dm_crypt linear rtc_cmos uhci_hcd rtc_core rtc_lib sd_mod
-> > > crc_t10dif ehci_hcd usbcore dm_snapshot dm_mod fan processor
-> > > thermal [last unloaded: tun] Jul  8 18:03:59 doris kernel: Jul  8
-> > > 18:03:59 doris kernel: Pid: 4320, comm: tunctl Not tainted 2.6.34.1
-> > > #3 Kuril                           /40684JG         
+On Fri, Jul 02, 2010 at 12:09:02AM -0700, Zach Pfeffer wrote:
+> Hari Kanigeri wrote:
+> >> He demonstrated the usage of his code in one of the emails he sent out
+> >> initially. Did you go over that, and what (or how many) step would you
+> >> use with the current code to do the same thing?
 > > 
-> > Network namespaces didn't go in until 2.6.35-rc, how is this working
-> > on ..34.1?
+> > -- So is this patch set adding layers and abstractions to help the User ?
+> > 
+> > If the idea is to share some memory across multiple devices, I guess
+> > you can achieve the same by calling the map function provided by iommu
+> > module and sharing the mapped address to the 10's or 100's of devices
+> > to access the buffers. You would only need a dedicated virtual pool
+> > per IOMMU device to manage its virtual memory allocations.
 > 
-> Huh? Network namespaces were there for quite some time - just for fun I
-> grabbed a random older kernel (got 2.6.27.48) to check. CONFIG NET_NS
-> was also in there (but was defined in net/Kconfig and had a depency
-> on !SYSFS).
+> Yeah, you can do that. My idea is to get away from explicit addressing
+> and encapsulate the "device address to physical address" link into a
+> mapping.
 
-Ah, yeah, but everyone used SYSFS so it probably was never used :)
+The DMA-API already does this with the help of IOMMUs if they are
+present. What is the benefit of your approach over that?
 
-> In 2.6.34 it is defined in init/Kconfig (and has no depency on SYSFS at
-> all).
-> 
-> I think I started actually using that somewhere between .30 and .32.
-> 
-> > Can you verify this works properly in .35-rc4?
-> 
-> Indeed, it works there.
-> 
-> There are several differencies between 2.6.34.1 and 2.6.35-rc4 in
-> fs/sysfs/* stuff as well as in e.g. net/core/net_namespaces.c.
-> 
-> I'll bisect that (but not on this atom netbook I used so far ;-) ).
+	Joerg
 
-I'd not recommend using it until .35-rc because of the sysfs changes
-required.
-
-sorry,
-
-greg k-h
