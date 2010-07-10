@@ -1,59 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753121Ab0GJJHZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 05:07:25 -0400
-Received: from relay2-v.mail.gandi.net ([217.70.178.76]:36978 "EHLO
-	mrelay2-v.mgt.gandi.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752059Ab0GJJHX (ORCPT
+	id S1753233Ab0GJJJw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 05:09:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:34003 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752059Ab0GJJJt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 05:07:23 -0400
-X-Originating-IP: 217.70.178.37
-X-Originating-IP: 74.107.143.84
-Date: Sat, 10 Jul 2010 02:07:06 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Jiri Slaby <jslaby@suse.cz>
-Cc: christ.li@gmail.com, jirislaby@gmail.com,
-       Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org,
-       linux-sparse@vger.kernel.org
-Subject: Re: [PATCH 2/2] parser: define __builtin_unreachable
-Message-ID: <20100710090705.GA14881@feather>
-References: <AANLkTikFmeXz9og4t98jm6QcAdRa6rIeCAv3oeFnTgd8@mail.gmail.com>
- <1278751162-10053-2-git-send-email-jslaby@suse.cz>
+	Sat, 10 Jul 2010 05:09:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=Evpfp5IiQFy+mSi7VZdvyimRmAGq00u8/yirSt9bsgG4CkSwVx+NBcA9Ly+DYNMiD0
+         WfaQlbaAeIrJ9FBaolqSClQdgk6HbzXhWDIifSqtIVwHGReYvDR1uvicfp/hnfQdaXYE
+         2wV4EOhQPAMxrMZeJjvpDBfUOujA19Ptc6vN4=
+Date: Sat, 10 Jul 2010 11:07:36 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: shenghui <crosslonelyover@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] avoid NULL deference in ext2_xattr_get
+Message-ID: <20100710090736.GR19184@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	shenghui <crosslonelyover@gmail.com>,
+	kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
+	linux-ext4@vger.kernel.org
+References: <AANLkTimwrORk9yfJlSMpVdn1V0sg0tssKhxc-3q1xoMX@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1278751162-10053-2-git-send-email-jslaby@suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimwrORk9yfJlSMpVdn1V0sg0tssKhxc-3q1xoMX@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 10, 2010 at 10:39:22AM +0200, Jiri Slaby wrote:
-> Gcc 4.5 defines
-> extern void __builtin_unreachable(void);
-> so, add it also to sparse.
+
+Good catch.  Your change is correct but can you resend it?
+
+On Sat, Jul 10, 2010 at 04:07:28PM +0800, shenghui wrote:
+> >From adc1fa6535034db3b6d8deebda6ec7eaa8bfd2f8 Mon Sep 17 00:00:00 2001
+> From: Wang Sheng-Hui <crosslonelyover@gmail.com>
+> Date: Sat, 10 Jul 2010 16:05:53 +0800
+> Subject: [PATCH] avoid NULL deference in ext2_xattr_get
 > 
-> Signed-off-by: Jiri Slaby <jslaby@suse.cz>
+
+The longer description of the bug should go here.
+
+> 
+> Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
 > ---
->  lib.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
+>  fs/ext2/xattr.c |    5 +++--
+>  1 files changed, 3 insertions(+), 2 deletions(-)
 > 
-> diff --git a/lib.c b/lib.c
-> index a218bfc..ae6a20c 100644
-> --- a/lib.c
-> +++ b/lib.c
-> @@ -740,6 +740,7 @@ void declare_builtin_functions(void)
->  	add_pre_buffer ("extern char * __builtin___strncpy_chk(char *, const char *, __SIZE_TYPE__, __SIZE_TYPE__);\n");
->  	add_pre_buffer ("extern int __builtin___vsprintf_chk(char *, int, __SIZE_TYPE__, const char *, __builtin_va_list);\n");
->  	add_pre_buffer ("extern int __builtin___vsnprintf_chk(char *, __SIZE_TYPE__, int, __SIZE_TYPE__, const char *, __builtin_va_list ap);\n");
-> +	add_pre_buffer ("extern void __builtin_unreachable(void);\n");
+> diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
+> index 7c39157..81ec1c6 100644
+> --- a/fs/ext2/xattr.c
+> +++ b/fs/ext2/xattr.c
+> @@ -156,11 +156,12 @@ ext2_xattr_get(struct inode *inode, int
+> name_index, const char *name,
+^^^^^^
 
-__builtin_unreachable has special semantics beyond just a function.
-This definition will suffice to allow compilation, but
-__builtin_unreachable should have the same effect in sparse that it does
-in GCC: mark the point (and the remainder of the basic block) as
-unreachable.  Something like the mechanism used for handling noreturn
-would work here as well; declaring the function to have attribute
-noreturn would probably have almost the right semantics.
+Your email client line wrapped the patch.  Please send it to yourself
+and then save the email including headers and everything.
+	cd linux-2.6
+	cat ~/your-email-text | patch -p1 
 
-- Josh Triplett
+If it applies cleanly then resend it to the list.
+
+regards,
+dan carpenter
+
+
