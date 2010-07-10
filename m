@@ -1,653 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753240Ab0GJAsm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 20:48:42 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:61648 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752099Ab0GJAsk (ORCPT
+	id S1751622Ab0GJAzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 20:55:48 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:37834 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750862Ab0GJAzr convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 20:48:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=ns2yX0JOqQcjjrLMrbRIj8p7aT79+l9OS0LdsY61fplBOuD3LzeF1Q8zY9UCTFnAmx
-         HGUJb0B7Tba4NVSkkREF5bCyr3BQqmrt+EohHP5Xi60BbjRiwzlD3c3RLgb/u+cl0U5O
-         cLWEm2zYGpXG+wy+GVdgPDYzGl6q6LUCjhL/I=
-Message-ID: <4C37C365.6090508@gmail.com>
-Date: Fri, 09 Jul 2010 18:48:37 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc13 Thunderbird/3.1
+	Fri, 9 Jul 2010 20:55:47 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=iktQcOXqVnNoHekWzwpwMf+2JNLPGNaOMbzwF3iDcjVZ8YU/oc8tYuoD3bmkc3wOS
+	qBTM2TLCvkdIwKB0crJBg==
 MIME-Version: 1.0
-To: Bryan Hundven <bryanhundven@gmail.com>
-CC: mchehab@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: Interrupt Affinity in SMP
-References: <AANLkTimhqRAMjaVNwo50GJO9B6kTzySWVtK04gEdu0rg@mail.gmail.com>
-In-Reply-To: <AANLkTimhqRAMjaVNwo50GJO9B6kTzySWVtK04gEdu0rg@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C37BC1A.20102@ds.jp.nec.com>
+References: <4C369009.80503@ds.jp.nec.com> <20100709134546.GC3672@redhat.com> 
+	<4C37BC1A.20102@ds.jp.nec.com>
+From: Nauman Rafique <nauman@google.com>
+Date: Fri, 9 Jul 2010 17:55:23 -0700
+Message-ID: <AANLkTikECHfrksrk3QnD3X07pmgXdpo5-fv7hDLm2Zxw@mail.gmail.com>
+Subject: Re: [RFC][PATCH 00/11] blkiocg async support
+To: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, linux-kernel@vger.kernel.org,
+       Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
+       kamezawa.hiroyu@jp.fujitsu.com, Andrea Righi <righi.andrea@gmail.com>,
+       Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+       balbir@linux.vnet.ibm.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2010 04:59 PM, Bryan Hundven wrote:
-> Mauro, list,
+On Fri, Jul 9, 2010 at 5:17 PM, Munehiro Ikeda <m-ikeda@ds.jp.nec.com> wrote:
+> Vivek Goyal wrote, on 07/09/2010 09:45 AM:
+>>
+>> On Thu, Jul 08, 2010 at 10:57:13PM -0400, Munehiro Ikeda wrote:
+>>>
+>>> These RFC patches are trial to add async (cached) write support on blkio
+>>> controller.
+>>>
+>>> Only test which has been done is to compile, boot, and that write
+>>> bandwidth
+>>> seems prioritized when pages which were dirtied by two different
+>>> processes in
+>>> different cgroups are written back to a device simultaneously.  I know
+>>> this
+>>> is the minimum (or less) test but I posted this as RFC because I would
+>>> like
+>>> to hear your opinions about the design direction in the early stage.
+>>>
+>>> Patches are for 2.6.35-rc4.
+>>>
+>>> This patch series consists of two chunks.
+>>>
+>>> (1) iotrack (patch 01/11 -- 06/11)
+>>>
+>>> This is a functionality to track who dirtied a page, in exact which
+>>> cgroup a
+>>> process which dirtied a page belongs to.  Blkio controller will read the
+>>> info
+>>> later and prioritize when the page is actually written to a block device.
+>>> This work is originated from Ryo Tsuruta and Hirokazu Takahashi and
+>>> includes
+>>> Andrea Righi's idea.  It was posted as a part of dm-ioband which was one
+>>> of
+>>> proposals for IO controller.
+>>>
+>>>
+>>> (2) blkio controller modification (07/11 -- 11/11)
+>>>
+>>> The main part of blkio controller async write support.
+>>> Currently async queues are device-wide and async write IOs are always
+>>> treated
+>>> as root group.
+>>> These patches make async queues per a cfq_group per a device to control
+>>> them.
+>>> Async write is handled by flush kernel thread.  Because queue pointers
+>>> are
+>>> stored in cfq_io_context, io_context of the thread has to have multiple
+>>> cfq_io_contexts per a device.  So these patches make cfq_io_context per
+>>> an
+>>> io_context per a cfq_group, which means per an io_context per a cgroup
+>>> per a
+>>> device.
+>>>
+>>>
+>>> This might be a piece of puzzle for complete async write support of blkio
+>>> controller.  One of other pieces in my head is page dirtying ratio
+>>> control.
+>>> I believe Andrea Righi was working on it...how about the situation?
+>>
+>> Thanks Muuh. I will look into the patches in detail.
+>>
+>> In my initial patches I had implemented the support for ASYNC control
+>> (also included Ryo's IO tracking patches) but it did not work well and
+>> it was unpredictable. I realized that until and unless we implement
+>> some kind of per group dirty ratio/page cache share at VM level and
+>> create parallel paths for ASYNC IO, writes often get serialized.
+>>
+>> So writes belonging to high priority group get stuck behind low priority
+>> group and you don't get any service differentiation.
 >
-> (please CC me in replies, I am not on the lkml list).
+> I also faced the situation that high priority writes are behind
+> lower priority writes.  Although this patch seems to prioritize
+> IOs if these IOs are contended, yes, it is rare a bit because they
+> are serialized often.
 >
-> I am having a similar issue as:
-> http://lkml.indiana.edu/hypermail/linux/kernel/1006.3/01811.html
-> which has no responses.
 >
-> My company is using an evaluation of dual 5645 xeon board with the 5520 chipset.
-> Attached is my kernel config.
+>> So IMHO, this piece should go into kernel after we have first fixed the
+>> problem at VM (read memory controller) with per cgroup dirty ratio kind
+>> of thing.
 >
-> We have 12 82580 intel (igb) nics, and their affinity is set to
-> 0xffffffff, but I see all interrupts happening on cpu0:
-> =====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====
-> root@(none):~# cat /proc/irq/85/smp_affinity
-> ffffff
-> root@(none):~# cat /proc/irq/86/smp_affinity
-> ffffff
-> root@(none):~# cat /proc/irq/87/smp_affinity
-> ffffff
+> Well, right.  I agree.
+> But I think we can work parallel.  I will try to struggle on both.
 
-Tried changing these files to exclude CPU0?
+IMHO, we have a classic chicken and egg problem here. We should try to
+merge pieces as they become available. If we get to agree on patches
+that do async IO tracking for IO controller, we should go ahead with
+them instead of trying to wait for per cgroup dirty ratios.
 
-Have you tried running the irqbalance daemon? That's what you likely 
-want to be doing anyway..
+In terms of getting numbers, we have been using patches that add per
+cpuset dirty ratios on top of NUMA_EMU, and we get good
+differentiation between buffered writes as well as buffered writes vs.
+reads.
 
-> =====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====
->
-> =====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====
-> root@(none):~# cat /proc/interrupts
->              CPU0       CPU1       CPU2       CPU3       CPU4
-> CPU5       CPU6       CPU7       CPU8       CPU9       CPU10
-> CPU11      CPU12      CPU13      CPU14      CPU15      CPU16
-> CPU17      CPU18      CPU19      CPU20      CPU21      CPU22
-> CPU23
->     0:         70          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-edge      timer
->     1:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-edge      i8042
->     4:       4282          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-edge      serial
->     8:          1          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-edge      rtc0
->     9:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-fasteoi   acpi
->    12:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-edge      i8042
->    14:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-edge      ata_piix
->    15:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-edge      ata_piix
->    16:        438          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-fasteoi   pata_it8213
->    18:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-fasteoi   uhci_hcd:usb4
->    19:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-fasteoi   ata_piix, uhci_hcd:usb3
->    23:         26          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> IO-APIC-fasteoi   ehci_hcd:usb1, uhci_hcd:usb2
->    64:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    65:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    66:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    67:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    68:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    69:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    70:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    71:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    72:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    73:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      aerdrv
->    76:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      ioat-msix
->    77:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      ioat-msix
->    78:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      ioat-msix
->    79:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      ioat-msix
->    80:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      ioat-msix
->    81:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      ioat-msix
->    82:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      ioat-msix
->    83:          3          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      ioat-msix
->    84:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      pkp_dev
->    85:          1          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth0
->    86:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth0-TxRx-0
->    87:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth0-TxRx-1
->    88:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth0-TxRx-2
->    89:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth0-TxRx-3
->    90:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth0-TxRx-4
->    91:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth0-TxRx-5
->    92:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth0-TxRx-6
->    93:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth0-TxRx-7
->    94:          1          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth1
->    95:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth1-TxRx-0
->    96:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth1-TxRx-1
->    97:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth1-TxRx-2
->    98:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth1-TxRx-3
->    99:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth1-TxRx-4
->   100:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth1-TxRx-5
->   101:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth1-TxRx-6
->   102:         47          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth1-TxRx-7
->   103:          1          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth2
->   104:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth2-TxRx-0
->   105:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth2-TxRx-1
->   106:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth2-TxRx-2
->   107:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth2-TxRx-3
->   108:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth2-TxRx-4
->   109:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth2-TxRx-5
->   110:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth2-TxRx-6
->   111:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth2-TxRx-7
->   112:          1          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth3
->   113:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth3-TxRx-0
->   114:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth3-TxRx-1
->   115:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth3-TxRx-2
->   116:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth3-TxRx-3
->   117:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth3-TxRx-4
->   118:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth3-TxRx-5
->   119:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth3-TxRx-6
->   120:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth3-TxRx-7
->   121:          1          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth4
->   122:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth4-TxRx-0
->   123:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth4-TxRx-1
->   124:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth4-TxRx-2
->   125:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth4-TxRx-3
->   126:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth4-TxRx-4
->   127:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth4-TxRx-5
->   128:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth4-TxRx-6
->   129:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth4-TxRx-7
->   130:          1          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth5
->   131:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth5-TxRx-0
->   132:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth5-TxRx-1
->   133:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth5-TxRx-2
->   134:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth5-TxRx-3
->   135:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth5-TxRx-4
->   136:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth5-TxRx-5
->   137:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth5-TxRx-6
->   138:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth5-TxRx-7
->   139:          1          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth6
->   140:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth6-TxRx-0
->   141:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth6-TxRx-1
->   142:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth6-TxRx-2
->   143:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth6-TxRx-3
->   144:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth6-TxRx-4
->   145:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth6-TxRx-5
->   146:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth6-TxRx-6
->   147:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth6-TxRx-7
->   148:          1          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth7
->   149:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth7-TxRx-0
->   150:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth7-TxRx-1
->   151:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth7-TxRx-2
->   152:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth7-TxRx-3
->   153:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth7-TxRx-4
->   154:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth7-TxRx-5
->   155:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth7-TxRx-6
->   156:         46          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> PCI-MSI-edge      eth7-TxRx-7
->   NMI:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> Non-maskable interrupts
->   LOC:      45670      45920      45859      45793      45791
-> 45755      45720      45685      45796      45615      45580
-> 45545      45503      45474      45436      45405      45369
-> 45334      45299      45264      45229      45194      45159
-> 45106   Local timer interrupts
->   SPU:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0   Spurious
-> interrupts
->   PMI:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> Performance monitoring interrupts
->   PND:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0
-> Performance pending work
->   RES:        109          2          1          3          0
-> 1          0          1          0          1          0          1
->        8          1         47          1          0          1
->   0          1          0          1          0          8
-> Rescheduling interrupts
->   CAL:          5        316        132        130        128
-> 126        124        122        120        118        116        114
->        112        110        108        106        104        102
->   100         98         96         94         92         86   Function
-> call interrupts
->   TLB:         13          6          4          0          1
-> 0          0          0          0          0          0          0
->       24          0         13         28          1          0
->   0          0          0          0          0          0   TLB
-> shootdowns
->   TRM:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0   Thermal
-> event interrupts
->   THR:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0   Threshold
-> APIC interrupts
->   MCE:          0          0          0          0          0
-> 0          0          0          0          0          0          0
->        0          0          0          0          0          0
->   0          0          0          0          0          0   Machine
-> check exceptions
->   MCP:          2          2          2          2          2
-> 2          2          2          2          2          2          2
->        2          2          2          2          2          2
->   2          2          2          2          2          2   Machine
-> check polls
->   ERR:          0
->   MIS:          0
-> =====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====
->
-> I am happy testing patches, and running any unit-tests.
->
-> Thanks in advance,
->
-> -Bryan
+It is really obvious that as long as flusher threads ,etc are not
+cgroup aware, differentiation for buffered writes would not be perfect
+in all cases, but this is a step in the right direction and we should
+go for it.
 
+>
+> By the way, I guess that write serialization is caused by page selection
+> of flush kernel thread.  If so, simple dirty ratio/page cache share
+> controlling don't seem to be able to solve that for me.  Instead or in
+> addition to it, page selection order should be modified.  Am I correct?
+>
+>
+>>> And also, I'm thinking that async write support is required by bandwidth
+>>> capping policy of blkio controller.  Bandwidth capping can be done in
+>>> upper
+>>> layer than elevator.
+>>
+>> I think capping facility we should implement in higher layers otherwise
+>> it is not useful for higher level logical devices (dm/md).
+>>
+>> It was ok to implement proportional bandwidth division at CFQ level
+>> because one can do proportional BW division at each leaf node and still
+>> get
+>> overall service differentation at higher level logical node. But same can
+>> not be done for max BW control.
+>
+> A reason why I prefer to have BW control in elevator is
+> based on my evaluation result of three proposed IO controller
+> comparison before blkio controller was merged.  Three proposals
+> were dm-ioband, io-throttle, and elevator implementation which is
+> the closest one to current blkio controller.  Former two handled
+> BIOs and only last one handled REQUESTs.  The result shows that
+> only handling REQUESTs can produce expected service differentiation.
+> Though I've not dived into the cause analysis, I guess that BIO
+> is not associated with actual IO request one by one and elevator
+> behavior are possibly the cause.
+> But on the other hand, as you say, BW controller in elevator
+> cannot control logical devices (or quite hard to adapt to them).
+> It's painful situation.
+>
+> I will analyse the cause of non-differentiation in BIO handling
+> case much deeper.
+>
+>
+>>>  However I think it should be also done in elevator layer
+>>> in my opinion.  Elevator buffers and sort requests.  If there is another
+>>> buffering functionality in upper layer, it is doubled buffering and it
+>>> can be
+>>> harmful for elevator's prediction.
+>>
+>> I don't mind doing it at elevator layer also because in that case of
+>> somebody is not using dm/md, then one does not have to load max bw
+>> control module and one can simply enable max bw control in CFQ.
+>>
+>> Thinking more about it, now we are suggesting implementing max BW
+>> control at two places. I think it will be duplication of code and
+>> increased complexity in CFQ. Probably implement max bw control with
+>> the help of dm module and use same for CFQ also. There is pain
+>> associated with configuring dm device but I guess it is easier than
+>> maintaining two max bw control schemes in kernel.
+>
+> Do you mean that sharing code for max BW control between dm and CFQ
+> is a possible solution?  It's interesting.  I will think about it.
+>
+>
+>> Thanks
+>> Vivek
+>
+>
+> Greatly thanks for your suggestion as always.
+> Muuhh
+>
+>
+> --
+> IKEDA, Munehiro
+>  NEC Corporation of America
+>    m-ikeda@ds.jp.nec.com
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
