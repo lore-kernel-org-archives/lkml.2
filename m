@@ -1,140 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752958Ab0GJCMS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 22:12:18 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:60195 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752498Ab0GJCL6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 22:11:58 -0400
-Message-Id: <20100710020351.168273435@vergenet.net>
-User-Agent: quilt/0.48-1
-Date: Sat, 10 Jul 2010 11:03:51 +0900
-Subject: [patch v2.4 0/4] IPVS full NAT support + netfilter 'ipvs' match support
-From: Simon Horman <horms@verge.net.au>
-To: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
-       netfilter-devel@vger.kernel.org
-From: Simon Horman <horms@verge.net.au>
-Cc: Malcolm Turnbull <malcolm@loadbalancer.org>,
-       Wensong Zhang <wensong@linux-vs.org>,
-       Julius Volz <julius.volz@gmail.com>, Patrick McHardy <kaber@trash.net>,
-       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
+	id S1752749Ab0GJCMx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 22:12:53 -0400
+Received: from h5.dl5rb.org.uk ([81.2.74.5]:53521 "EHLO h5.dl5rb.org.uk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752342Ab0GJCMv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 9 Jul 2010 22:12:51 -0400
+Date: Sat, 10 Jul 2010 03:12:27 +0100
+From: Ralf Baechle <ralf@linux-mips.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: David Daney <ddaney@caviumnetworks.com>, linux-kernel@vger.kernel.org,
+       linux-mips@linux-mips.org, Li Hong <lihong.hi@gmail.com>,
+       Ingo Molnar <mingo@elte.hu>, Matt Fleming <matt@console-pimps.org>,
+       Wu Zhangjin <wuzhangjin@gmail.com>
+Subject: Re: [PATCH] tracing: recordmcount.pl: Fix $mcount_regex for MIPS.
+Message-ID: <20100710021227.GA16134@linux-mips.org>
+References: <1278712325-12050-1-git-send-email-ddaney@caviumnetworks.com>
+ <1278721562.1537.169.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278721562.1537.169.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a repost of a patch-series posted by Hannes Eder last September.
-This is v2 of the patch series and I don't see any outstanding objections to
-it in the mailing list archives.
+On Fri, Jul 09, 2010 at 08:26:02PM -0400, Steven Rostedt wrote:
 
-This addresses all of the concerns that Patrick McHardy raised
-witht the v2.3 series.
+> I'd like to get an Acked-by from Ralf and Wu before pulling this.
 
-Malcolm Turnbull has offered to test this code so I'd like to get
-a Reviewed-by from him before the code gets merged. In other words,
-at this stage these patches are for review not merging.
+I talked through this on irc with David and it is the right thing to do.
 
-The original cover-email from Hannes follows.
-The diffstat output has been updated to reflect minor up-porting by me.
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 
-From:	Hannes Eder <heder@google.com>
-
-The following series implements full NAT support for IPVS.  The
-approach is via a minimal change to IPVS (make friends with
-nf_conntrack) and adding a netfilter matcher, kernel- and user-space
-part, i.e. xt_ipvs and libxt_ipvs.
-
-Example usage:
-
-% ipvsadm -A -t 192.168.100.30:80 -s rr
-% ipvsadm -a -t 192.168.100.30:80 -r 192.168.10.20:80 -m
-# ...
-
-# Source NAT for VIP 192.168.100.30:80
-% iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
-> --vport 80 -j SNAT --to-source 192.168.10.10
-
-or SNAT-ing only a specific real server:
-
-% iptables -t nat -A POSTROUTING --dst 192.168.11.20 \
-> -m ipvs --vaddr 192.168.100.30/32 -j SNAT --to-source 192.168.10.10
-
-
-First of all, thanks for all the feedback.  This is the changelog for v2:
-
-- Make ip_vs_ftp work again.  Setup nf_conntrack expectations for
-  related data connections (based on Julian's patch see
-  http://www.ssi.bg/~ja/nfct/) and let nf_conntrack/nf_nat do the
-  packet mangling and the TCP sequence adjusting.
-
-  This change rises the question how to deal with ip_vs_sync?  Does it
-  work together with conntrackd?  Wild idea: what about getting rid of
-  ip_vs_sync and piggy packing all on nf_conntrack and use conntrackd?
-
-  Any comments on this?
-
-- xt_ipvs: add new rule '--vportctl port' to match the VIP port of the
-  controlling connection, e.g. port 21 for FTP.  Can be used to match
-  a related data connection for FTP:
-
-  # SNAT FTP control connection
-  % iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
-  > --vport 21 -j SNAT --to-source 192.168.10.10
-  
-  # SNAT FTP passive data connection
-  % iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
-  > --vportctl 21 -j SNAT --to-source 192.168.10.10
-
-- xt_ipvs: use 'par->family' instead of 'skb->protocol'
-
-- xt_ipvs: add ipvs_mt_check and restrict to NFPROTO_IPV4 and NFPROTO_IPV6
-
-- Call nf_conntrack_alter_reply(), so helper lookup is performed based
-  on the changed tuple.
-
-Changes to the linux kernel
-(nf-next-2.6, "bridge: add per bridge device controls for invoking iptables")
-
-Hannes Eder (3):
-      netfilter: xt_ipvs (netfilter matcher for IPVS)
-      IPVS: make friends with nf_conntrack
-      IPVS: make FTP work with full NAT support
-
-
- include/linux/netfilter/xt_ipvs.h |   25 +++++
- include/net/ip_vs.h              |    2 
- net/netfilter/Kconfig            |   10 ++
- net/netfilter/Makefile           |    1 
- net/netfilter/ipvs/Kconfig       |    4 
- net/netfilter/ipvs/ip_vs_app.c   |   43 ---------
- net/netfilter/ipvs/ip_vs_core.c  |   37 --------
- net/netfilter/ipvs/ip_vs_ftp.c   |  174 +++++++++++++++++++++++++++++++++++---
- net/netfilter/ipvs/ip_vs_proto.c |    1 
- net/netfilter/ipvs/ip_vs_xmit.c  |   29 ++++++
- net/netfilter/xt_ipvs.c           |  189 +++++++++++++++++++++++++++++++++++++
- 11 files changed, 420 insertions(+), 95 deletions(-)
- create mode 100644 include/linux/netfilter/xt_ipvs.h
- create mode 100644 net/netfilter/xt_ipvs.c
-
-
-Changes to iptables
-(iptables.git, "xt_quota: also document negation")
-
-Hannes Eder (1):
-      libxt_ipvs: user-space lib for netfilter matcher xt_ipvs
-
- configure.ac                      |   10 1
- extensions/libxt_ipvs.c           |  365 +++++++++++++++++++++++++++++++++++++
- extensions/libxt_ipvs.man         |   24 ++
- include/linux/netfilter/xt_ipvs.h |   25 +++
- 4 files changed, 422 insertions(+), 2 deletions(-)
- create mode 100644 extensions/libxt_ipvs.c
- create mode 100644 extensions/libxt_ipvs.man
- create mode 100644 include/linux/netfilter/xt_ipvs.h
-
-
---
-To unsubscribe from this list: send the line "unsubscribe netdev" in
-the body of a message to majordomo@vger.kernel.org
-More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  Ralf
