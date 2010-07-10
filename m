@@ -1,84 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751463Ab0GJGdH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 02:33:07 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:56263 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751315Ab0GJGdF (ORCPT
+	id S1751487Ab0GJGfF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 02:35:05 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:55853 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751071Ab0GJGfD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 02:33:05 -0400
-X-Sasl-enc: gZ5dm/u540oeGoxsKeUlTINqzQrRcGk7kuILhQSFqQys 1278743581
-Message-ID: <4C381411.4040505@fastmail.com.au>
-Date: Sat, 10 Jul 2010 16:32:49 +1000
-From: A D <amd1234@fastmail.com.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	Sat, 10 Jul 2010 02:35:03 -0400
+Date: Sat, 10 Jul 2010 08:35:00 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Steven Rostedt <rostedt@goodmis.org>,
+       Zeev Tarantov <zeev.tarantov@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Zeev Tarantov <zeev.tarantov@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [PATCH] tracing: properly align linker defined symbols
+Message-ID: <20100710063459.GA14596@merkur.ravnborg.org>
+References: <1278705402.1537.157.camel@gandalf.stny.rr.com> <20100709203301.GA13839@merkur.ravnborg.org> <AANLkTinWkfkXNVA2Sx-apVQMZa-5ehugtd7JQ36np7xM@mail.gmail.com> <1278721339.1537.166.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-To: johnstul@us.ibm.com, nando@ccrma.Stanford.EDU,
-       linux-kernel@vger.kernel.org
-Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
-References: <f4357-SJ-15@gated-at.bofh.it> <f47V8-84x-17@gated-at.bofh.it> <f484O-8hq-5@gated-at.bofh.it> <f48o9-rG-1@gated-at.bofh.it>
-In-Reply-To: <f48o9-rG-1@gated-at.bofh.it>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278721339.1537.166.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09/07/10 09:10, john stultz wrote:
-> On Thu, 2010-07-08 at 15:44 -0700, Fernando Lopez-Lezcano wrote:
->> On Thu, 2010-07-08 at 15:33 -0700, john stultz wrote:
->>> On Thu, 2010-07-08 at 10:19 -0700, Fernando Lopez-Lezcano wrote:
->>>> We are having problems with 2.6.33.5+rt23, at least in our configuration
->>>> while accessing an nfs automounted directory. This causes a complete
->>>> machine lockup (press reset to exit as the only option).
+Zeev - please try this replacement patch.
+The alignmnet is increased to 32 bytes compared to my previous version and
+we introduce alignmnet for ftrace_events too.
 
-I replied to this yesterday., then realized that it was a one-way news 
-group of lkml.
-Let's see if I can fudge a threaded reply.
-================================================
+	Sam
 
-I also have some nfs issues with this combo, but not as severe.
-Maybe my fstab mount options help:
-     noauto,users,rsize=4096,wsize=4096,timeo=14,intr,hard
+>From 40bedb8fda25d2cf9ecdd41ab48a24104607c37e Mon Sep 17 00:00:00 2001
+From: Sam Ravnborg <sam@ravnborg.org>
+Date: Sat, 10 Jul 2010 08:24:12 +0200
+Subject: [PATCH] tracing: properly align linker defined symbols
 
-Anyway, Fedora 13,both vanilla 2.6.33.5 and Redhat patched, exhibit it 
-as a kernel fault upon user mounting a nfs partition.  It is the 
-uniprocessor variant kernel (not PAE).  I get an operating nfs 
-connection, but the kernel auto bug reporting thingy (abrt) pops up 
-shortly after the mount.  I was going to work through a few variations 
-on kernels etc before trying bugzilla but I've acquired a bug of the 
-non-computer variety and won't feel up to this for a week or so.
+We define a number of symbols in the linker scipt like this:
 
-WARNING: at fs/namespace.c:1203 umount_tree+0xd8/0x118()
-Hardware name: VT8366-8233A
-Modules linked in: nfs fuse nfsd lockd nfs_acl auth_rpcgss exportfs 
-sunrpc ipv6 binfmt_misc snd_via82xx snd_ac97_codec ac97_bus snd_seq 
-snd_pcm snd_timer snd_page_alloc snd_mpu401_uart 8250_pnp snd_rawmidi 
-8250 snd_seq_device pcspkr i2c_viapro snd serial_core parport_pc 8139too 
-i2c_core fan thermal 8139cp soundcore mii firewire_ohci uhci_hcd floppy 
-firewire_core [last unloaded: freq_table]
-Pid: 2842, comm: mount.nfs Not tainted 2.6.33.5-rt23.fc13.i686 #1
-Call Trace:
-[<c0434f84>] warn_slowpath_common+0x6a/0x81
-[<c04d281a>] ? umount_tree+0xd8/0x118
-[<c0434fad>] warn_slowpath_null+0x12/0x15
-[<c04d281a>] umount_tree+0xd8/0x118
-[<c04d3084>] put_mnt_ns+0x80/0xa4
-[<c04c8339>] ? vfs_path_lookup+0x8a/0x99
-[<f89e58d2>] nfs_follow_remote_path+0x46/0xec [nfs]
-[<f89e587c>] ? nfs_do_root_mount+0x61/0x71 [nfs]
-[<f89e5a65>] nfs4_try_mount+0x61/0x94 [nfs]
-[<f89e6bc8>] nfs_get_sb+0x61d/0x815 [nfs]
-[<c04ba568>] ? pcpu_alloc+0x6bb/0x6d0
-[<c070cd77>] ? rt_spin_unlock+0xd/0xf
-[<c04a3da5>] ? kstrdup+0x2f/0x3f
-[<c04a3da5>] ? kstrdup+0x2f/0x3f
-[<c04c11f7>] vfs_kern_mount+0x86/0x11f
-[<c04c12db>] do_kern_mount+0x34/0xb4
-[<c04d44e1>] do_mount+0x67f/0x6de
-[<c04d26a2>] ? copy_mount_options+0x78/0xd7
-[<c04d45a6>] sys_mount+0x66/0x94
-[<c040329f>] sysenter_do_call+0x12/0x28
+    __start_syscalls_metadata = .;
+    *(__syscalls_metadata)
 
-If you want to follow up via email bump the user digits by one place to 
-the right.
+But we do not know the alignment of "." when we assign
+the __start_syscalls_metadata symbol.
+gcc started to uses bigger alignment for structs (32 bytes),
+so we saw situations where the linker due to alignment
+constraints increased the value of "." after the symbol assignment.
+
+This resulted in boot fails.
+
+Fix this by forcing a 32 byte alignment of "." before the
+assignment.
+
+This patch introduces the forced alignment for
+ftrace_events and syscalls_metadata.
+It may be required in more places.
+
+Reported-by: Zeev Tarantov <zeev.tarantov@gmail.com>
+Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ include/asm-generic/vmlinux.lds.h |   10 ++++++++++
+ 1 files changed, 10 insertions(+), 0 deletions(-)
+
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 48c5299..4b5902a 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -63,6 +63,12 @@
+ /* Align . to a 8 byte boundary equals to maximum function alignment. */
+ #define ALIGN_FUNCTION()  . = ALIGN(8)
+ 
++/*
++ * Align to a 32 byte boundary equal to the
++ * alignment gcc 4.5 uses for a struct
++ */
++#define STRUCT_ALIGN() . = ALIGN(32)
++
+ /* The actual configuration determine if the init/exit sections
+  * are handled as text/data or they can be discarded (which
+  * often happens at runtime)
+@@ -166,7 +172,11 @@
+ 	LIKELY_PROFILE()		       				\
+ 	BRANCH_PROFILE()						\
+ 	TRACE_PRINTKS()							\
++									\
++	STRUCT_ALIGN();							\
+ 	FTRACE_EVENTS()							\
++									\
++	STRUCT_ALIGN();							\
+ 	TRACE_SYSCALLS()
+ 
+ /*
+-- 
+1.6.0.6
+
