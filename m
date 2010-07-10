@@ -1,58 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab0GJOyF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 10:54:05 -0400
-Received: from 8bytes.org ([88.198.83.132]:45204 "EHLO 8bytes.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755499Ab0GJOyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 10:54:01 -0400
-Date: Sat, 10 Jul 2010 16:54:00 +0200
-From: Joerg Roedel <joro@8bytes.org>
-To: Zach Pfeffer <zpfeffer@codeaurora.org>
-Cc: Andi Kleen <andi@firstfloor.org>, Daniel Walker <dwalker@codeaurora.org>,
-       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
-Message-ID: <20100710145400.GB10080@8bytes.org>
-References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <1278012503.7738.17.camel@c-dwalke-linux.qualcomm.com> <20100701193850.GB3594@basil.fritz.box> <4C2D0FF1.6010206@codeaurora.org>
+	id S1755836Ab0GJOyU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 10:54:20 -0400
+Received: from jester.euphonynet.be ([212.87.96.13]:42481 "EHLO
+	mailpush2.euphonynet.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755774Ab0GJOyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 10:54:16 -0400
+X-Greylist: delayed 1086 seconds by postgrey-1.27 at vger.kernel.org; Sat, 10 Jul 2010 10:54:15 EDT
+From: Bart Van Assche <bvanassche@acm.org>
+To: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Fix discrepancies between sysfs implementation and documentation
+Date: Sat, 10 Jul 2010 16:36:01 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-scst; KDE/4.3.5; x86_64; ; )
+Cc: Randy Dunlap <rdunlap@xenotime.net>, "Greg Kroah-Hartman" <gregkh@suse.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C2D0FF1.6010206@codeaurora.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007101636.01122.bvanassche@acm.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 01, 2010 at 03:00:17PM -0700, Zach Pfeffer wrote:
-> Additionally, the current IOMMU interface does not allow users to
-> associate one page table with multiple IOMMUs [...]
+The patch below fixes all discrepancies I know of between the sysfs
+implementation and its documentation.
 
-Thats not true. Multiple IOMMUs are completly handled by the IOMMU
-drivers. In the case of the IOMMU-API backend drivers this also includes
-the ability to use page-tables on multiple IOMMUs.
+Signed-off-by: Bart Van Assche <bart.vanassche@gmail.com>
 
-> Since the particular topology is run-time configurable all of these
-> use-cases and more can be expressed without pushing the topology into
-> the low-level IOMMU driver.
-
-The IOMMU driver has to know about the topology anyway because it needs
-to know which IOMMU it needs to program for a particular device.
-
-> Already, there are ~20 different IOMMU map implementations in the
-> kernel. Had the Linux kernel had the VCMM, many of those
-> implementations could have leveraged the mapping and topology
-> management of a VCMM, while focusing on a few key hardware specific
-> functions (map this physical address, program the page table base
-> register).
-
-I partially agree here. All the IOMMU implementations in the Linux
-kernel have a lot of functionality in common where code could be
-shared. Work to share code has been done in the past by Fujita Tomonori
-but there are more places to work on. I am just not sure if a new
-front-end API is the right way to do this.
-
-	Joerg
-
+diff --git a/Documentation/filesystems/sysfs.txt b/Documentation/filesystems/sysfs.txt
+index 931c806..d78ed0b 100644
+--- a/Documentation/filesystems/sysfs.txt
++++ b/Documentation/filesystems/sysfs.txt
+@@ -4,7 +4,7 @@ sysfs - _The_ filesystem for exporting kernel objects.
+ Patrick Mochel	<mochel@osdl.org>
+ Mike Murphy <mamurph@cs.clemson.edu>
+ 
+-Revised:    22 February 2009
++Revised:    10 July 2010
+ Original:   10 January 2003
+ 
+ 
+@@ -124,7 +124,7 @@ show and store methods of the attribute owners.
+ 
+ struct sysfs_ops {
+         ssize_t (*show)(struct kobject *, struct attribute *, char *);
+-        ssize_t (*store)(struct kobject *, struct attribute *, const char *);
++        ssize_t (*store)(struct kobject *, struct attribute *, const char *, size_t);
+ };
+ 
+ [ Subsystems should have already defined a struct kobj_type as a
+@@ -139,18 +139,22 @@ calls the associated methods.
+ 
+ To illustrate:
+ 
++#define to_dev(obj) container_of(obj, struct device, kobj)
+ #define to_dev_attr(_attr) container_of(_attr, struct device_attribute, attr)
+-#define to_dev(d) container_of(d, struct device, kobj)
+ 
+-static ssize_t
+-dev_attr_show(struct kobject * kobj, struct attribute * attr, char * buf)
++static ssize_t dev_attr_show(struct kobject *kobj, struct attribute *attr,
++                             char *buf)
+ {
+-        struct device_attribute * dev_attr = to_dev_attr(attr);
+-        struct device * dev = to_dev(kobj);
+-        ssize_t ret = 0;
++        struct device_attribute *dev_attr = to_dev_attr(attr);
++        struct device *dev = to_dev(kobj);
++        ssize_t ret = -EIO;
+ 
+         if (dev_attr->show)
+-                ret = dev_attr->show(dev, buf);
++                ret = dev_attr->show(dev, dev_attr, buf);
++        if (ret >= (ssize_t)PAGE_SIZE) {
++                print_symbol("dev_attr_show: %s returned bad count\n",
++                                (unsigned long)dev_attr->show);
++        }
+         return ret;
+ }
+ 
+@@ -163,10 +167,9 @@ To read or write attributes, show() or store() methods must be
+ specified when declaring the attribute. The method types should be as
+ simple as those defined for device attributes:
+ 
+-ssize_t (*show)(struct device * dev, struct device_attribute * attr,
+-                char * buf);
+-ssize_t (*store)(struct device * dev, struct device_attribute * attr,
+-                 const char * buf);
++ssize_t (*show)(struct device *dev, struct device_attribute *attr, char *buf);
++ssize_t (*store)(struct device *dev, struct device_attribute *attr,
++                 const char *buf, size_t count);
+ 
+ IOW, they should take only an object, an attribute, and a buffer as parameters.
+ 
+@@ -209,8 +212,8 @@ Other notes:
+ 
+ - show() should always use snprintf(). 
+ 
+-- store() should return the number of bytes used from the buffer. This
+-  can be done using strlen().
++- store() should return the number of bytes used from the buffer. If the
++  entire buffer has been used, just return the count argument.
+ 
+ - show() or store() can always return errors. If a bad value comes
+   through, be sure to return an error.
+@@ -223,15 +226,18 @@ Other notes:
+ 
+ A very simple (and naive) implementation of a device attribute is:
+ 
+-static ssize_t show_name(struct device *dev, struct device_attribute *attr, char *buf)
++static ssize_t show_name(struct device *dev, struct device_attribute *attr,
++                         char *buf)
+ {
+ 	return snprintf(buf, PAGE_SIZE, "%s\n", dev->name);
+ }
+ 
+-static ssize_t store_name(struct device * dev, const char * buf)
++static ssize_t store_name(struct device *dev, struct device_attribute *attr,
++                          const char *buf, size_t count)
+ {
+-	sscanf(buf, "%20s", dev->name);
+-	return strnlen(buf, PAGE_SIZE);
++        snprintf(dev->name, sizeof(dev->name), "%.*s",
++                 (int)min(count, sizeof(dev->name) - 1), buf);
++	return count;
+ }
+ 
+ static DEVICE_ATTR(name, S_IRUGO, show_name, store_name);
