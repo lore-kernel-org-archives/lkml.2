@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755614Ab0GJOwK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 10:52:10 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:60686 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753074Ab0GJOwH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 10:52:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=haEB0yMGg7Ayi3tg+nLmMR6WSgLzfKiu4OfASwFbYR1IjMW6eextoVENyuPySKdNSB
-         YUqK9gLgMe3XxxJ+SXJcQ3iGXi8ES+Af2XwaL8s4HaqZhWFzvLqQ4AUtDKIyasCE9ZWJ
-         +QhmgBGRoQh45FfWWK7y2Kslw/zLHi8vowbB0=
+	id S1755736Ab0GJOyF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 10:54:05 -0400
+Received: from 8bytes.org ([88.198.83.132]:45204 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755499Ab0GJOyB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 10:54:01 -0400
+Date: Sat, 10 Jul 2010 16:54:00 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Daniel Walker <dwalker@codeaurora.org>,
+       Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+Message-ID: <20100710145400.GB10080@8bytes.org>
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <1278012503.7738.17.camel@c-dwalke-linux.qualcomm.com> <20100701193850.GB3594@basil.fritz.box> <4C2D0FF1.6010206@codeaurora.org>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilQ0w6EfbrXl5LklPJ46FMWQG6Q3W5twJY74RtE@mail.gmail.com>
-References: <AANLkTilPtW_hOG01qvQHBWMC4b0QJZ8SAL0bZi6j56ns@mail.gmail.com>
-	<AANLkTilQ0w6EfbrXl5LklPJ46FMWQG6Q3W5twJY74RtE@mail.gmail.com>
-Date: Sat, 10 Jul 2010 15:52:04 +0100
-Message-ID: <AANLkTinLjhLoQJ8URiuCKqgntiLEKxCesNEPZ8b24uLu@mail.gmail.com>
-Subject: Re: [2.6.35-rc3] select useful number of entries for DMA debugging...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C2D0FF1.6010206@codeaurora.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 9 July 2010 22:33, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> On Mon, Jul 5, 2010 at 1:35 AM, Daniel J Blueman
-> <daniel.blueman@gmail.com> wrote:
->> When booting 2.6.35-rc3 on some different x86 boxes with DMA debugging
->> enabled, I've consistently seen it exhaust the allocated entries during
->> boot, giving 'DMA-API: debugging out of memory - disabling'.
->>
->> Increase number of entries to allow DMA debugging again.
->
-> Rather than increase the default that gets allocated whenever anybody
-> enables the DMA debugging, I'd really prefer to see people use the
-> kernel command line option if they run out. After all, it's a (pretty
-> esoteric) debug option, and the number of required entries depends on
-> machine configuration. I'd rather not make the default cover a huge
-> number, when you could just add
->
->   dma_debug_entries=65536
->
-> on the kernel boot command line instead for machines that want/need it..
+On Thu, Jul 01, 2010 at 03:00:17PM -0700, Zach Pfeffer wrote:
+> Additionally, the current IOMMU interface does not allow users to
+> associate one page table with multiple IOMMUs [...]
 
-That said, I am seeing the DMA pool exhaust on a single socket Core i5
-system with Intel graphics and no other adapters - seems like a fairly
-common case. If eg 25% of developers will be using similar to this,
-maybe it's good to make DMA debugging less immediately esoteric?
+Thats not true. Multiple IOMMUs are completly handled by the IOMMU
+drivers. In the case of the IOMMU-API backend drivers this also includes
+the ability to use page-tables on multiple IOMMUs.
 
-On the other hand, I would immediately agree if the exhaustion
-occurred on an atypical setup.
--- 
-Daniel J Blueman
+> Since the particular topology is run-time configurable all of these
+> use-cases and more can be expressed without pushing the topology into
+> the low-level IOMMU driver.
+
+The IOMMU driver has to know about the topology anyway because it needs
+to know which IOMMU it needs to program for a particular device.
+
+> Already, there are ~20 different IOMMU map implementations in the
+> kernel. Had the Linux kernel had the VCMM, many of those
+> implementations could have leveraged the mapping and topology
+> management of a VCMM, while focusing on a few key hardware specific
+> functions (map this physical address, program the page table base
+> register).
+
+I partially agree here. All the IOMMU implementations in the Linux
+kernel have a lot of functionality in common where code could be
+shared. Work to share code has been done in the past by Fujita Tomonori
+but there are more places to work on. I am just not sure if a new
+front-end API is the right way to do this.
+
+	Joerg
+
