@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab0GJAbx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 20:31:53 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34531 "EHLO ogre.sisk.pl"
+	id S1755987Ab0GJAbw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 20:31:52 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34526 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752852Ab0GJAbu convert rfc822-to-8bit (ORCPT
+	id S1751425Ab0GJAbu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 9 Jul 2010 20:31:50 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
        Maciej Rutecki <maciej.rutecki@gmail.com>,
-       "Johannes Berg" <johannes@sipsolutions.net>,
-       "Nico Schottelius" <nico-linux-20100427@schottelius.org>
+       "Thomas Meyer" <thomas@m3y3r.de>
 References: <xkNyyYrLiTN.A.s_G.7p7NMB@chimera>
 In-Reply-To: <xkNyyYrLiTN.A.s_G.7p7NMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,8 +17,8 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <Hc02ROPrUsG.A.mk.Us7NMB@chimera>
-Subject: [Bug #15862] 2.6.34-rc4/5: iwlagn unusable until reload
+Message-ID: <Hc02ROPrUsG.A.n-.nt7NMB@chimera>
+Subject: [Bug #15673] 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Date: Sat, 10 Jul 2010 02:33:24 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
@@ -34,12 +33,11 @@ introduced between 2.6.33 and 2.6.34.  Please verify if it still should
 be listed and let the tracking team know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15862
-Subject		: 2.6.34-rc4/5: iwlagn unusable until reload
-Submitter	: Nico Schottelius <nico-linux-20100427@schottelius.org>
-Date		: 2010-04-27 7:49 (74 days old)
-Message-ID	: <20100427074934.GB3261@ikn.schottelius.org>
-References	: http://marc.info/?l=linux-kernel&m=127235784004839&w=2
-Handled-By	: Johannes Berg <johannes@sipsolutions.net>
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15673
+Subject		: 2.6.34-rc2: "ima_dec_counts: open/free imbalance"?
+Submitter	: Thomas Meyer <thomas@m3y3r.de>
+Date		: 2010-03-28 11:31 (104 days old)
+Message-ID	: <1269775909.5301.4.camel@localhost.localdomain>
+References	: http://marc.info/?l=linux-kernel&m=126977593326800&w=2
 
 
