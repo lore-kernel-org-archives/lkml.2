@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752278Ab0GJUzl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 16:55:41 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56652 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751347Ab0GJUzk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 16:55:40 -0400
-Date: Sat, 10 Jul 2010 20:55:28 +0000
-From: Denis Kirjanov <dkirjanov@hera.kernel.org>
-To: gregkh@suse.de
-Cc: liodot@gmail.com, charrer@alacritech.com, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH -staging] slicoss: README update
-Message-ID: <20100710205528.GA2748@hera.kernel.org>
+	id S1752490Ab0GJVHy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 17:07:54 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40095 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751614Ab0GJVHx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 17:07:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HUKKTjVqApv0jhBfjHB0Vr1CUUkEMlbDrQ4ghC80n3X84QR6PD5agj0YVBiDCm1nZU
+         xk3UJzOLSpB1jdgZlMM8SD6e3+vGUqTiMlmRUa5oe0LncAaQ/44hagWWjZBgWkh2N6A1
+         tGSgtUV/wXyP7NX4+abJIfj82QbeeqJKwCSkQ=
+Date: Sun, 11 Jul 2010 01:07:50 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@redhat.com>, Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH v2] x86: Early-boot serial I/O support
+Message-ID: <20100710210750.GC6615@lenovo>
+References: <1278790820-1817-1-git-send-email-penberg@cs.helsinki.fi>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 10 Jul 2010 20:55:29 +0000 (UTC)
+In-Reply-To: <1278790820-1817-1-git-send-email-penberg@cs.helsinki.fi>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update README to remove completed tasks
+On Sat, Jul 10, 2010 at 10:40:20PM +0300, Pekka Enberg wrote:
+> This patch adds serial I/O support to very early boot printf(). It's useful for
+> debugging boot code when running Linux under KVM, for example. The actual code
+> was lifted from early printk.
+> 
+> Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+> Cc: Ingo Molnar <mingo@redhat.com>
+> Cc: Yinghai Lu <yinghai@kernel.org>
+> Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
+> ---
+> v1 -> v2:
+> 
+>   - Use 'earlyprintk' kernel parameter to determine whether to use
+>     early serial or not as suggested by Yinghai and hpa.
+> 
+>  arch/x86/boot/boot.h   |   16 +++++++
+>  arch/x86/boot/main.c   |    3 +
+>  arch/x86/boot/string.c |   41 ++++++++++++++++++
+>  arch/x86/boot/tty.c    |  111 +++++++++++++++++++++++++++++++++++++++++++++---
+>  4 files changed, 165 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
+> index 98239d2..f05b5ac 100644
+> --- a/arch/x86/boot/boot.h
+> +++ b/arch/x86/boot/boot.h
+> @@ -37,6 +37,8 @@
+>  extern struct setup_header hdr;
+>  extern struct boot_params boot_params;
+>  
+> +#define cpu_relax()	asm volatile("rep; nop" ::: "memory")
+> +
+>  /* Basic port I/O */
+>  static inline void outb(u8 v, u16 port)
+>  {
+> @@ -203,6 +205,17 @@ static inline int isdigit(int ch)
+>  	return (ch >= '0') && (ch <= '9');
+>  }
+>  
+> +static inline int isxdigit(int ch)
+> +{
+> +	if (isdigit(ch))
+> +		return true;
+> +
+> +	if ((ch >= 'a') && (ch <= 'f'))
+> +		return true;
+> +
+> +	return (ch >= 'A') && (ch <= 'F');
+> +}
+> +
 
-Signed-off-by: Denis Kirjanov <dkirjanov@kernel.org>
----
- drivers/staging/slicoss/README |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+I suspect it's supposed to be static inline *bool*, right?
 
-diff --git a/drivers/staging/slicoss/README b/drivers/staging/slicoss/README
-index 70f4909..862a87d 100644
---- a/drivers/staging/slicoss/README
-+++ b/drivers/staging/slicoss/README
-@@ -7,14 +7,9 @@ This driver is supposed to support:
- The driver was actually tested on Oasis and Kalahari cards.
- 
- TODO:
--	- move firmware loading to request_firmware()
- 	- remove direct memory access of structures
- 	- any remaining sparse and checkpatch.pl warnings
- 
--	- use net_device_ops
--	- use dev->stats rather than adapter->stats
--	- don't cast netdev_priv it is already void
--	- use compare_ether_addr
- 	- GET RID OF MACROS
- 	- work on all architectures
- 	   - without CONFIG_X86_64 confusion
-@@ -25,10 +20,8 @@ TODO:
- 	- no new SIOCDEVPRIVATE ioctl allowed
- 	- don't use module_param for configuring interrupt mitigation
- 	  use ethtool instead
--	- reorder code to elminate use of forward declarations
- 	- don't keep private linked list of drivers.
- 	- remove all the gratiutous debug infrastructure
--	- use PCI_DEVICE()
- 	- do ethtool correctly using ethtool_ops
- 	- NAPI?
- 	- wasted overhead of extra stats
+	-- Cyrill
