@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751321Ab0GJRmF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 13:42:05 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.18.15]:57838 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750757Ab0GJRmE (ORCPT
+	id S1751247Ab0GJRsI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 13:48:08 -0400
+Received: from smtprelay01.ispgateway.de ([80.67.31.24]:55867 "EHLO
+	smtprelay01.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750757Ab0GJRsG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 13:42:04 -0400
-References: <1278491971.12801.36.camel@mola> <20100707122932.GA3115@a1.tnic>
-Message-ID: <cone.1278783712.579501.3926.1000@deskpiie>
+	Sat, 10 Jul 2010 13:48:06 -0400
+References: <1278553580.7162.1.camel@mola> <20100708090836.GA14580@a1.tnic>
+Message-ID: <cone.1278783771.875800.3926.1000@deskpiie>
 X-Mailer: http://www.courier-mta.org/cone/
 From: Peter Feuerer <peter@piie.net>
 To: Borislav Petkov <bp@alien8.de>
@@ -18,8 +18,8 @@ Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
        Borislav Petkov <petkovbb@gmail.com>,
        Alexey Dobriyan <adobriyan@gmail.com>,
        platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH v2] acerhdf: fix resource reclaim in error path
-Date: Sat, 10 Jul 2010 19:41:52 +0200
+Subject: Re: [PATCH] acerhdf: make needlessly global symbols static
+Date: Sat, 10 Jul 2010 19:42:51 +0200
 Mime-Version: 1.0
 Content-Type: text/plain; format=flowed; charset="US-ASCII"
 Content-Disposition: inline
@@ -32,34 +32,19 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Borislav Petkov writes:
 
 > From: Axel Lin <axel.lin@gmail.com>
-> Date: Wed, Jul 07, 2010 at 04:39:31PM +0800
+> Date: Thu, Jul 08, 2010 at 09:46:20AM +0800
 > 
->> This patch fix resource reclaim in below cases:
->> 1. acerhdf_register_platform() does not properly handle
->>    platform_device_alloc() failure and platform_device_add() failure
->>    This patch adds error handing for acerhdf_register_platform().
->> 2. acerhdf_register_platform() return err with acerhdf_dev == NULL.
->>    as a result, acerhdf_unregister_platform() does not do resource
->>    reclaim in acerhdf_init() error path.
->>    This patch adds error handing for acerhdf_register_platform(),
->>    thus correct the error handing path in acerhdf_init().
->>    goto out_err instead of err_unreg if acerhdf_register_platform() fail.
->> 3. platform_device_del() should only used in error handling.
->>    Current implementation missed a platform_device_put() in acerhdf_exit.
->>    This patch fixes it by using platform_device_unregister() instead of
->>    platform_device_del() in acerhdf_unregister_platform.
+>> The following symbols are needlessly defined global:
+>> 
+>> thz_dev
+>> cl_dev
+>> acerhdf_dev
+>> acerhdf_dev_ops
+>> acerhdf_cooling_ops
+>> 
+>> This patch makes the symbols static.
 >> 
 >> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> 
-> Ok, I just gave it a run and it looks good. Just a minor nitpick: when
-> writing your commit messages you don't have to explain what the code
-> does since we can see it in the patch itself. Rather, your commit
-> message should explain why you do this.
-> 
-> See http://userweb.kernel.org/~akpm/stuff/tpp.txt for further info on
-> how to create your patches.
-> 
-> Other than that:
 > 
 > Acked-by: Borislav Petkov <bp@alien8.de>
 
@@ -67,65 +52,49 @@ Acked-by: Peter Feuerer <peter@piie.net>
 
 > 
 >> ---
->>  drivers/platform/x86/acerhdf.c |   23 ++++++++++++++++-------
->>  1 files changed, 16 insertions(+), 7 deletions(-)
+>>  drivers/platform/x86/acerhdf.c |   10 +++++-----
+>>  1 files changed, 5 insertions(+), 5 deletions(-)
 >> 
 >> diff --git a/drivers/platform/x86/acerhdf.c b/drivers/platform/x86/acerhdf.c
->> index 7b2384d..d9f5ebb 100644
+>> index 7b2384d..5caaaf0 100644
 >> --- a/drivers/platform/x86/acerhdf.c
 >> +++ b/drivers/platform/x86/acerhdf.c
->> @@ -579,17 +579,26 @@ static int acerhdf_register_platform(void)
->>  		return err;
+>> @@ -92,9 +92,9 @@ static unsigned int fanstate = ACERHDF_FAN_AUTO;
+>>  static char force_bios[16];
+>>  static char force_product[16];
+>>  static unsigned int prev_interval;
+>> -struct thermal_zone_device *thz_dev;
+>> -struct thermal_cooling_device *cl_dev;
+>> -struct platform_device *acerhdf_dev;
+>> +static struct thermal_zone_device *thz_dev;
+>> +static struct thermal_cooling_device *cl_dev;
+>> +static struct platform_device *acerhdf_dev;
 >>  
->>  	acerhdf_dev = platform_device_alloc("acerhdf", -1);
->> -	platform_device_add(acerhdf_dev);
->> +	if (!acerhdf_dev) {
->> +		err = -ENOMEM;
->> +		goto err_device_alloc;
->> +	}
->> +	err = platform_device_add(acerhdf_dev);
->> +	if (err)
->> +		goto err_device_add;
->>  
->>  	return 0;
->> +
->> +err_device_add:
->> +	platform_device_put(acerhdf_dev);
->> +err_device_alloc:
->> +	platform_driver_unregister(&acerhdf_driver);
->> +	return err;
+>>  module_param(kernelmode, uint, 0);
+>>  MODULE_PARM_DESC(kernelmode, "Kernel mode fan control on / off");
+>> @@ -374,7 +374,7 @@ static int acerhdf_get_crit_temp(struct thermal_zone_device *thermal,
 >>  }
 >>  
->>  static void acerhdf_unregister_platform(void)
->>  {
->> -	if (!acerhdf_dev)
->> -		return;
->> -
->> -	platform_device_del(acerhdf_dev);
->> +	platform_device_unregister(acerhdf_dev);
->>  	platform_driver_unregister(&acerhdf_driver);
+>>  /* bind callback functions to thermalzone */
+>> -struct thermal_zone_device_ops acerhdf_dev_ops = {
+>> +static struct thermal_zone_device_ops acerhdf_dev_ops = {
+>>  	.bind = acerhdf_bind,
+>>  	.unbind = acerhdf_unbind,
+>>  	.get_temp = acerhdf_get_ec_temp,
+>> @@ -449,7 +449,7 @@ err_out:
 >>  }
 >>  
->> @@ -633,7 +642,7 @@ static int __init acerhdf_init(void)
->>  
->>  	err = acerhdf_register_platform();
->>  	if (err)
->> -		goto err_unreg;
->> +		goto out_err;
->>  
->>  	err = acerhdf_register_thermal();
->>  	if (err)
->> @@ -646,7 +655,7 @@ err_unreg:
->>  	acerhdf_unregister_platform();
->>  
->>  out_err:
->> -	return -ENODEV;
->> +	return err;
->>  }
->>  
->>  static void __exit acerhdf_exit(void)
+>>  /* bind fan callbacks to fan device */
+>> -struct thermal_cooling_device_ops acerhdf_cooling_ops = {
+>> +static struct thermal_cooling_device_ops acerhdf_cooling_ops = {
+>>  	.get_max_state = acerhdf_get_max_state,
+>>  	.get_cur_state = acerhdf_get_cur_state,
+>>  	.set_cur_state = acerhdf_set_cur_state,
 >> -- 
 >> 1.5.4.3
+>> 
+>> 
+>> 
 
-thank you,
+thanks and kind regards,
 --peter;
