@@ -1,163 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752255Ab0GJBHk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 9 Jul 2010 21:07:40 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49111 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751186Ab0GJBHj (ORCPT
+	id S1752016Ab0GJBRP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 9 Jul 2010 21:17:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:43913 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751396Ab0GJBRN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 9 Jul 2010 21:07:39 -0400
-Message-ID: <4C37C6EE.9060104@kernel.org>
-Date: Fri, 09 Jul 2010 18:03:42 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Conny Seidel <conny.seidel@amd.com>
-CC: "Petkov, Borislav" <Borislav.Petkov@amd.com>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: unable to handle kernel paging request at 40000000 __alloc_memory_core_early+0x147/0x1d6
-References: <20100709145415.GC11199@aftab>	<4C3773C4.1010609@kernel.org>	<20100709215202.4be679a8@marah.osrc.amd.com>	<4C37841F.4030500@kernel.org>	<20100709224231.5736113b@marah.osrc.amd.com>	<4C379DB6.3040605@kernel.org> <20100710015142.3f94b9dd@marah.osrc.amd.com>
-In-Reply-To: <20100710015142.3f94b9dd@marah.osrc.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 9 Jul 2010 21:17:13 -0400
+X-Authority-Analysis: v=1.1 cv=iR3a2x+wy8z+UqYHl7KFtKHYySPA0Tf/DXXAzrkvAHo= c=1 sm=0 a=WnsvnuwlmikA:10 a=0qYQvVkOOIcA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=fv-tAh-MAAAA:8 a=pnv-ruCEqLdSKi3lwqYA:9 a=2aAGGiN3FwlFPvjjuOYA:7 a=qDVtEUcC4mASgp7AA31N32AxG-kA:4 a=PUjeQqilurYA:10 a=ZnwwQfAZUQcA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 1/2] Add trace events to mmap and brk
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Eric B Munson <emunson@mgebm.net>
+Cc: akpm@linux-foundation.org, mingo@redhat.com, hugh.dickins@tiscali.co.uk,
+       riel@redhat.com, peterz@infradead.org, anton@samba.org,
+       hch@infradead.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <1278690830-22145-1-git-send-email-emunson@mgebm.net>
+References: <1278690830-22145-1-git-send-email-emunson@mgebm.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 09 Jul 2010 21:17:11 -0400
+Message-ID: <1278724631.1537.176.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0207.4C37C7C5.01E0,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/09/2010 04:51 PM, Conny Seidel wrote:
-> On Fri, 9 Jul 2010 18:07:50 -0400
-> Yinghai Lu <yinghai@kernel.org> wrote:
+On Fri, 2010-07-09 at 16:53 +0100, Eric B Munson wrote:
+> As requested by Peter Zijlstra, this patch builds on my earlier patch
+> and adds the corresponding trace points to mmap and brk.
 > 
->> On 07/09/2010 01:42 PM, Conny Seidel wrote:
->>> sparse_early_mem_map_alloc: sparsemem memory map backing failed some
->>> memory will not be available.
->>
->> please check
->>
-> This still panics, see logfile for complete trace.
+> Signed-off-by: Eric B Munson <emunson@mgebm.net>
+> ---
+>  include/trace/events/mm.h |   38 ++++++++++++++++++++++++++++++++++++++
+>  mm/mmap.c                 |   10 +++++++++-
+>  2 files changed, 47 insertions(+), 1 deletions(-)
 > 
+> diff --git a/include/trace/events/mm.h b/include/trace/events/mm.h
+> index c3a3857..1563988 100644
+> --- a/include/trace/events/mm.h
+> +++ b/include/trace/events/mm.h
+> @@ -24,6 +24,44 @@ TRACE_EVENT(munmap,
+>  	TP_printk("unmapping %u bytes at %lu\n", __entry->len, __entry->start)
+>  );
+>  
+> +TRACE_EVENT(brk,
+> +	TP_PROTO(unsigned long addr, unsigned long len),
+> +
+> +	TP_ARGS(addr, len),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(unsigned long, addr)
+> +		__field(unsigned long, len)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->addr = addr;
+> +		__entry->len = len;
+> +	),
+> +
+> +	TP_printk("brk mmapping %lu bytes at %lu\n", __entry->len,
+> +		   __entry->addr)
+> +);
+> +
+> +TRACE_EVENT(mmap,
+> +	TP_PROTO(unsigned long addr, unsigned long len),
+> +
+> +	TP_ARGS(addr, len),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(unsigned long, addr)
+> +		__field(unsigned long, len)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->addr = addr;
+> +		__entry->len = len;
+> +	),
+> +
+> +	TP_printk("mmapping %lu bytes at %lu\n", __entry->len,
+> +		   __entry->addr)
+> +);
+> +
 
-this one should fix the problem.
+Please convert the above two into DECLARE_EVENT_CLASS() and
+DEFINE_EVENT(). You don't need the "mapping" and "brk mapping" in the
+TP_printk() format since the event name will be displayed as well to
+differentiate the two.
 
-Thanks
+Thanks,
 
-Yinghai
+-- Steve
 
-[PATCH -v3] x86,nobootmem: make alloc_bootmem_node fall back to other node when 32bit numa are used
+>  #endif /* _TRACE_MM_H_ */
+>  
+>  /* This part must be outside protection */
+> diff --git a/mm/mmap.c b/mm/mmap.c
+> index 0775a30..252e3e0 100644
+> --- a/mm/mmap.c
+> +++ b/mm/mmap.c
+> @@ -952,6 +952,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+>  	unsigned int vm_flags;
+>  	int error;
+>  	unsigned long reqprot = prot;
+> +	unsigned long ret;
+>  
+>  	/*
+>  	 * Does the application expect PROT_READ to imply PROT_EXEC?
+> @@ -1077,7 +1078,12 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+>  	if (error)
+>  		return error;
+>  
+> -	return mmap_region(file, addr, len, flags, vm_flags, pgoff);
+> +	ret =  mmap_region(file, addr, len, flags, vm_flags, pgoff);
+> +
+> +	if (!(ret & ~PAGE_MASK))
+> +		trace_mmap(addr, len);
+> +
+> +	return ret;
+>  }
+>  EXPORT_SYMBOL(do_mmap_pgoff);
+>  
+> @@ -2218,6 +2224,8 @@ out:
+>  		if (!mlock_vma_pages_range(vma, addr, addr + len))
+>  			mm->locked_vm += (len >> PAGE_SHIFT);
+>  	}
+> +
+> +	trace_brk(addr, len);
+>  	return addr;
+>  }
+>  
 
-Borislav Petkov <borislav.petkov@amd.com> reported his 32bit numa has problem:
 
-[    0.000000] Reserving total of 4c00 pages for numa KVA remap
-[    0.000000] kva_start_pfn ~ 32800 max_low_pfn ~ 375fe
-[    0.000000] max_pfn = 238000
-[    0.000000] 8202MB HIGHMEM available.
-[    0.000000] 885MB LOWMEM available.
-[    0.000000]   mapped low ram: 0 - 375fe000
-[    0.000000]   low ram: 0 - 375fe000
-[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 1000 1000 => 34e7000
-[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 200 40 => 34c9d80
-[    0.000000] alloc (nid=0 100000 - 7ee00000) (1000000 - ffffffffffffffff) 180 40 => 34e6140
-[    0.000000] alloc (nid=1 80000000 - c7e60000) (1000000 - ffffffffffffffff) 240 40 => 80000000
-[    0.000000] BUG: unable to handle kernel paging request at 40000000
-[    0.000000] IP: [<c2c8cff1>] __alloc_memory_core_early+0x147/0x1d6
-[    0.000000] *pdpt = 0000000000000000 *pde = f000ff53f000ff00 
-...
-[    0.000000] Call Trace:
-[    0.000000]  [<c2c8b4f8>] ? __alloc_bootmem_node+0x216/0x22f
-[    0.000000]  [<c2c90c9b>] ? sparse_early_usemaps_alloc_node+0x5a/0x10b
-[    0.000000]  [<c2c9149e>] ? sparse_init+0x1dc/0x499
-[    0.000000]  [<c2c79118>] ? paging_init+0x168/0x1df
-[    0.000000]  [<c2c780ff>] ? native_pagetable_setup_start+0xef/0x1bb
-
-looks like it allocate much high address for bootmem.
-
-try to cut limit with get_max_mapped()
-
--v3: make alloc_bootmem_node could fallback to other node.
-     just like old alloc_bootmem_node did
-
-need this patch for 2.6.34 and 2.6.35
-
-Reported-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: stable@kernel.org
-
----
- mm/bootmem.c    |   24 ++++++++++++++++++++----
- mm/page_alloc.c |    3 +++
- 2 files changed, 23 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/mm/page_alloc.c
-===================================================================
---- linux-2.6.orig/mm/page_alloc.c
-+++ linux-2.6/mm/page_alloc.c
-@@ -3634,6 +3634,9 @@ void * __init __alloc_memory_core_early(
- 	int i;
- 	void *ptr;
- 
-+	if (limit > get_max_mapped())
-+		limit = get_max_mapped();
-+
- 	/* need to go over early_node_map to find out good range for node */
- 	for_each_active_range_index_in_nid(i, nid) {
- 		u64 addr;
-Index: linux-2.6/mm/bootmem.c
-===================================================================
---- linux-2.6.orig/mm/bootmem.c
-+++ linux-2.6/mm/bootmem.c
-@@ -833,15 +833,24 @@ static void * __init ___alloc_bootmem_no
- void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
- 				   unsigned long align, unsigned long goal)
- {
-+	void *ptr;
-+
- 	if (WARN_ON_ONCE(slab_is_available()))
- 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
- 
- #ifdef CONFIG_NO_BOOTMEM
--	return __alloc_memory_core_early(pgdat->node_id, size, align,
-+	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-+					 goal, -1ULL);
-+	if (ptr)
-+		return ptr;
-+
-+	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
- 					 goal, -1ULL);
- #else
--	return ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
-+	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
- #endif
-+
-+	return ptr;
- }
- 
- void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
-@@ -977,14 +986,21 @@ void * __init __alloc_bootmem_low(unsign
- void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
- 				       unsigned long align, unsigned long goal)
- {
-+	void *ptr;
-+
- 	if (WARN_ON_ONCE(slab_is_available()))
- 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
- 
- #ifdef CONFIG_NO_BOOTMEM
--	return __alloc_memory_core_early(pgdat->node_id, size, align,
-+	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-+				goal, ARCH_LOW_ADDRESS_LIMIT);
-+	if (ptr)
-+		return ptr;
-+	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
- 				goal, ARCH_LOW_ADDRESS_LIMIT);
- #else
--	return ___alloc_bootmem_node(pgdat->bdata, size, align,
-+	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align,
- 				goal, ARCH_LOW_ADDRESS_LIMIT);
- #endif
-+	return ptr;
- }
