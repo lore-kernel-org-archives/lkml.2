@@ -1,588 +1,446 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752856Ab0GJVwA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 17:52:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:59225 "EHLO
+	id S1753482Ab0GJVw1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 17:52:27 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:52719 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751415Ab0GJVv7 (ORCPT
+	with ESMTP id S1753121Ab0GJVwN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 17:51:59 -0400
+	Sat, 10 Jul 2010 17:52:13 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arnd@arndb.de>, Takashi Iwai <tiwai@suse.de>,
-       Jaroslav Kysela <perex@perex.cz>, alsa-devel@alsa-project.org
-Subject: [PATCH 3/3] sound: push BKL into open functions
-Date: Sat, 10 Jul 2010 23:51:41 +0200
-Message-Id: <1278798701-11171-4-git-send-email-arnd@arndb.de>
+       Matthew Wilcox <willy@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>,
+       Christoph Hellwig <hch@lst.de>,
+       Trond Myklebust <trond.myklebust@fys.uio.no>,
+       "J. Bruce Fields" <bfields@fieldses.org>,
+       Miklos Szeredi <mszeredi@suse.cz>, Ingo Molnar <mingo@redhat.com>,
+       linux-fsdevel@vger.kernel.org
+Subject: [PATCH 2/3] Remove BKL from fs/locks.c
+Date: Sat, 10 Jul 2010 23:51:40 +0200
+Message-Id: <1278798701-11171-3-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278798701-11171-1-git-send-email-arnd@arndb.de>
 References: <1278798701-11171-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:HwBtHBt2zNFS9yKXizbK0Yg1iWMYeSuo12Fe37zznUB
- +x9eH62Yf321uLhG4gUmmzj9xy6nfHGcYcr7KM5yphk2kZWl+p
- lt282/SPUyBFCarLhr9mZVJ/EtPH6OGVfvft3wKDys4IAf5V+w
- YZsX83w4OtFVd8mglkl5RkxojeeivafBMzogiRgPfIXBHxCERG
- /bhUR9jfY7eXndtv7SSVQ==
+X-Provags-ID: V02:K0:x3iELZbcdauOUhteFo4u6vHtoiAjFuPkEh0PDTYPF5P
+ KUl4VgPkC+GOLVt88EpB8QWXRa2j9+0VuGv05u7fjcJx50z9h0
+ rdyQ8Ciqiv2akcuEoTidJy4K8yy+GVpLENlX/QMNzXmLPXJZQK
+ OfP07srpyq+woDocRS6d2xtcN6qDdx5zLXGxqJoslKK4NcE0KG
+ Ovh9Qroz9ntB50Ba6uNJw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This moves the lock_kernel() call from soundcore_open
-to the individual OSS device drivers, where we can deal
-with it one driver at a time if needed, or just kill
-off the drivers.
+From: Matthew Wilcox <willy@linux.intel.com>
 
-All core components in ALSA already provide
-adequate locking in their open()-functions
-and do not require the big kernel lock, so
-there is no need to add the BKL there.
+I've taken a patch originally written by Matthew Wilcox and
+ported it to the current version. Unfortunately, the change
+conflicts with the use of lockd, which still heavily uses
+the big kernel lock.
+
+As a workaround, I've made the behaviour configurable,
+it either uses the BKL when it's enabled or a spinlock
+when the BKL (and consequently nfs and lockd) are
+disabled.
+
+Original introduction from Willy:
+
+   I've been promising to do this for about seven years now.
+
+   It seems to work well enough, but I haven't run any serious stress
+   tests on it.  This implementation uses one spinlock to protect both lock
+   lists and all the i_flock chains.  It doesn't seem worth splitting up
+   the locking any further.
+
+   I had to move one memory allocation out from under the file_lock_lock.
+   I hope I got that logic right.  I'm rather tempted to split out the
+   find_conflict algorithm from that function into something that can be
+   called separately for the FL_ACCESS case.
+
+   I also have to drop and reacquire the file_lock_lock around the call
+   to cond_resched().  This was done automatically for us before by the
+   special BKL semantics.
+
+   I had to change vfs_setlease() as it relied on the special BKL ability
+   to recursively acquire the same lock.  The internal caller now calls
+   __vfs_setlease and the exported interface acquires and releases the
+   file_lock_lock around calling __vfs_setlease.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Takashi Iwai <tiwai@suse.de>
-Cc: Jaroslav Kysela <perex@perex.cz>
-Cc: alsa-devel@alsa-project.org
+Cc: Matthew Wilcox <willy@linux.intel.com>
+Cc: Christoph Hellwig <hch@lst.de>
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: Miklos Szeredi <mszeredi@suse.cz>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: John Kacur <jkacur@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org
 ---
- arch/um/drivers/hostaudio_kern.c   |    6 ++++++
- sound/core/hwdep.c                 |   14 ++++++++++----
- sound/core/oss/mixer_oss.c         |   19 +++++++++++--------
- sound/oss/au1550_ac97.c            |   26 +++++++++++++++++---------
- sound/oss/dmasound/dmasound_core.c |   28 ++++++++++++++++++++++------
- sound/oss/msnd_pinnacle.c          |   10 +++++++---
- sound/oss/sh_dac_audio.c           |    9 +++++++--
- sound/oss/soundcard.c              |   20 +++++++++++---------
- sound/oss/swarm_cs4297a.c          |   17 ++++++++++++++++-
- sound/oss/vwsnd.c                  |    8 ++++++++
- sound/sound_core.c                 |    6 +-----
- 11 files changed, 116 insertions(+), 47 deletions(-)
+ fs/Kconfig |    4 ++
+ fs/locks.c |  116 +++++++++++++++++++++++++++++++++++++-----------------------
+ 2 files changed, 76 insertions(+), 44 deletions(-)
 
-diff --git a/arch/um/drivers/hostaudio_kern.c b/arch/um/drivers/hostaudio_kern.c
-index ae42695..68142df 100644
---- a/arch/um/drivers/hostaudio_kern.c
-+++ b/arch/um/drivers/hostaudio_kern.c
-@@ -8,6 +8,7 @@
- #include "linux/slab.h"
- #include "linux/sound.h"
- #include "linux/soundcard.h"
-+#include "linux/smp_lock.h"
- #include "asm/uaccess.h"
- #include "init.h"
- #include "os.h"
-@@ -198,7 +199,10 @@ static int hostaudio_open(struct inode *inode, struct file *file)
- 	if (file->f_mode & FMODE_WRITE)
- 		w = 1;
+diff --git a/fs/Kconfig b/fs/Kconfig
+index 5f85b59..a624d92 100644
+--- a/fs/Kconfig
++++ b/fs/Kconfig
+@@ -55,6 +55,10 @@ config FILE_LOCKING
+           for filesystems like NFS and for the flock() system
+           call. Disabling this option saves about 11k.
  
-+	lock_kernel();
- 	ret = os_open_file(dsp, of_set_rw(OPENFLAGS(), r, w), 0);
-+	unlock_kernel();
++config FLOCKS_SPINLOCK
++	bool
++	default FILE_LOCKING && !LOCK_KERNEL
 +
- 	if (ret < 0) {
- 		kfree(state);
- 		return ret;
-@@ -254,7 +258,9 @@ static int hostmixer_open_mixdev(struct inode *inode, struct file *file)
- 	if (file->f_mode & FMODE_WRITE)
- 		w = 1;
+ source "fs/notify/Kconfig"
  
-+	lock_kernel();
- 	ret = os_open_file(mixer, of_set_rw(OPENFLAGS(), r, w), 0);
-+	unlock_kernel();
+ source "fs/quota/Kconfig"
+diff --git a/fs/locks.c b/fs/locks.c
+index ab24d49..77c3f00 100644
+--- a/fs/locks.c
++++ b/fs/locks.c
+@@ -140,9 +140,29 @@ int lease_break_time = 45;
+ #define for_each_lock(inode, lockp) \
+ 	for (lockp = &inode->i_flock; *lockp != NULL; lockp = &(*lockp)->fl_next)
  
- 	if (ret < 0) {
- 		printk(KERN_ERR "hostaudio_open_mixdev failed to open '%s', "
-diff --git a/sound/core/hwdep.c b/sound/core/hwdep.c
-index a70ee7f..3439587 100644
---- a/sound/core/hwdep.c
-+++ b/sound/core/hwdep.c
-@@ -94,13 +94,18 @@ static int snd_hwdep_open(struct inode *inode, struct file * file)
- 		hw = snd_lookup_oss_minor_data(iminor(inode),
- 					       SNDRV_OSS_DEVICE_TYPE_DMFM);
- #endif
--	} else
--		return -ENXIO;
-+	} else {
-+		err = -ENXIO;
-+		goto out;
-+	}
++/*
++ * Protects the two list heads below, plus the inode->i_flock list
++ */
+ static LIST_HEAD(file_lock_list);
+ static LIST_HEAD(blocked_list);
+ 
++#ifdef CONFIG_FLOCKS_SPINLOCK
++static DEFINE_SPINLOCK(file_lock_lock);
 +
-+	err = -ENODEV;
- 	if (hw == NULL)
--		return -ENODEV;
-+		goto out;
- 
-+	err = -EFAULT;
- 	if (!try_module_get(hw->card->module))
--		return -EFAULT;
-+		goto out;
- 
- 	init_waitqueue_entry(&wait, current);
- 	add_wait_queue(&hw->open_wait, &wait);
-@@ -147,6 +152,7 @@ static int snd_hwdep_open(struct inode *inode, struct file * file)
- 	mutex_unlock(&hw->open_mutex);
- 	if (err < 0)
- 		module_put(hw->card->module);
-+out:
- 	return err;
- }
- 
-diff --git a/sound/core/oss/mixer_oss.c b/sound/core/oss/mixer_oss.c
-index f50ebf2..c30b1f3 100644
---- a/sound/core/oss/mixer_oss.c
-+++ b/sound/core/oss/mixer_oss.c
-@@ -49,17 +49,19 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
- 
- 	card = snd_lookup_oss_minor_data(iminor(inode),
- 					 SNDRV_OSS_DEVICE_TYPE_MIXER);
--	if (card == NULL)
--		return -ENODEV;
--	if (card->mixer_oss == NULL)
--		return -ENODEV;
-+	err = -ENODEV;
-+	if (card == NULL || card->mixer_oss == NULL)
-+		goto out;
-+
- 	err = snd_card_file_add(card, file);
- 	if (err < 0)
--		return err;
-+		goto out;
-+
- 	fmixer = kzalloc(sizeof(*fmixer), GFP_KERNEL);
- 	if (fmixer == NULL) {
- 		snd_card_file_remove(card, file);
--		return -ENOMEM;
-+		err = -ENOMEM;
-+		goto out;
- 	}
- 	fmixer->card = card;
- 	fmixer->mixer = card->mixer_oss;
-@@ -67,9 +69,10 @@ static int snd_mixer_oss_open(struct inode *inode, struct file *file)
- 	if (!try_module_get(card->module)) {
- 		kfree(fmixer);
- 		snd_card_file_remove(card, file);
--		return -EFAULT;
-+		err = -EFAULT;
- 	}
--	return 0;
-+out:
-+	return err;
- }
- 
- static int snd_mixer_oss_release(struct inode *inode, struct file *file)
-diff --git a/sound/oss/au1550_ac97.c b/sound/oss/au1550_ac97.c
-index c1070e3..47143a3 100644
---- a/sound/oss/au1550_ac97.c
-+++ b/sound/oss/au1550_ac97.c
-@@ -43,6 +43,7 @@
- #include <linux/sound.h>
- #include <linux/slab.h>
- #include <linux/soundcard.h>
-+#include <linux/smp_lock.h>
- #include <linux/init.h>
- #include <linux/interrupt.h>
- #include <linux/kernel.h>
-@@ -807,7 +808,9 @@ au1550_llseek(struct file *file, loff_t offset, int origin)
- static int
- au1550_open_mixdev(struct inode *inode, struct file *file)
- {
-+	lock_kernel();
- 	file->private_data = &au1550_state;
-+	unlock_kernel();
- 	return 0;
- }
- 
-@@ -1797,21 +1800,22 @@ au1550_open(struct inode *inode, struct file *file)
- #endif
- 
- 	file->private_data = s;
-+	lock_kernel();
- 	/* wait for device to become free */
- 	mutex_lock(&s->open_mutex);
- 	while (s->open_mode & file->f_mode) {
--		if (file->f_flags & O_NONBLOCK) {
--			mutex_unlock(&s->open_mutex);
--			return -EBUSY;
--		}
-+		ret = -EBUSY;
-+		if (file->f_flags & O_NONBLOCK)
-+			goto out;		
- 		add_wait_queue(&s->open_wait, &wait);
- 		__set_current_state(TASK_INTERRUPTIBLE);
- 		mutex_unlock(&s->open_mutex);
- 		schedule();
- 		remove_wait_queue(&s->open_wait, &wait);
- 		set_current_state(TASK_RUNNING);
-+		ret = -ERESTARTSYS;
- 		if (signal_pending(current))
--			return -ERESTARTSYS;
-+			goto out2;
- 		mutex_lock(&s->open_mutex);
- 	}
- 
-@@ -1840,17 +1844,21 @@ au1550_open(struct inode *inode, struct file *file)
- 
- 	if (file->f_mode & FMODE_READ) {
- 		if ((ret = prog_dmabuf_adc(s)))
--			return ret;
-+			goto out;
- 	}
- 	if (file->f_mode & FMODE_WRITE) {
- 		if ((ret = prog_dmabuf_dac(s)))
--			return ret;
-+			goto out;
- 	}
- 
- 	s->open_mode |= file->f_mode & (FMODE_READ | FMODE_WRITE);
--	mutex_unlock(&s->open_mutex);
- 	mutex_init(&s->sem);
--	return 0;
-+	ret = 0;
-+out:
-+	mutex_unlock(&s->open_mutex);
-+out2:
-+	unlock_kernel();
-+	return ret;
- }
- 
- static int
-diff --git a/sound/oss/dmasound/dmasound_core.c b/sound/oss/dmasound/dmasound_core.c
-index 3f3c3f7..5a4f38c 100644
---- a/sound/oss/dmasound/dmasound_core.c
-+++ b/sound/oss/dmasound/dmasound_core.c
-@@ -323,9 +323,13 @@ static struct {
- 
- static int mixer_open(struct inode *inode, struct file *file)
- {
--	if (!try_module_get(dmasound.mach.owner))
-+	lock_kernel();
-+	if (!try_module_get(dmasound.mach.owner)) {
-+		unlock_kernel();
- 		return -ENODEV;
-+	}
- 	mixer.busy = 1;
-+	unlock_kernel();
- 	return 0;
- }
- 
-@@ -737,8 +741,11 @@ static int sq_open(struct inode *inode, struct file *file)
- {
- 	int rc;
- 
--	if (!try_module_get(dmasound.mach.owner))
-+	lock_kernel();
-+	if (!try_module_get(dmasound.mach.owner)) {
-+		unlock_kernel();
- 		return -ENODEV;
-+	}
- 
- 	rc = write_sq_open(file); /* checks the f_mode */
- 	if (rc)
-@@ -781,10 +788,11 @@ static int sq_open(struct inode *inode, struct file *file)
- 		sound_set_format(AFMT_MU_LAW);
- 	}
- #endif
--
-+	unlock_kernel();
- 	return 0;
-  out:
- 	module_put(dmasound.mach.owner);
-+	unlock_kernel();
- 	return rc;
- }
- 
-@@ -1226,12 +1234,17 @@ static int state_open(struct inode *inode, struct file *file)
- {
- 	char *buffer = state.buf;
- 	int len = 0;
-+	int ret;
- 
-+	lock_kernel();
-+	ret = -EBUSY;
- 	if (state.busy)
--		return -EBUSY;
-+		goto out;
- 
-+	ret = -ENODEV;
- 	if (!try_module_get(dmasound.mach.owner))
--		return -ENODEV;
-+		goto out;
-+
- 	state.ptr = 0;
- 	state.busy = 1;
- 
-@@ -1293,7 +1306,10 @@ printk("dmasound: stat buffer used %d bytes\n", len) ;
- 		printk(KERN_ERR "dmasound_core: stat buffer overflowed!\n");
- 
- 	state.len = len;
--	return 0;
-+	ret = 0;
-+out:
-+	unlock_kernel();
-+	return ret;
- }
- 
- static int state_release(struct inode *inode, struct file *file)
-diff --git a/sound/oss/msnd_pinnacle.c b/sound/oss/msnd_pinnacle.c
-index a1e3f96..153d822 100644
---- a/sound/oss/msnd_pinnacle.c
-+++ b/sound/oss/msnd_pinnacle.c
-@@ -756,12 +756,15 @@ static int dev_open(struct inode *inode, struct file *file)
- 	int minor = iminor(inode);
- 	int err = 0;
- 
-+	lock_kernel();
- 	if (minor == dev.dsp_minor) {
- 		if ((file->f_mode & FMODE_WRITE &&
- 		     test_bit(F_AUDIO_WRITE_INUSE, &dev.flags)) ||
- 		    (file->f_mode & FMODE_READ &&
--		     test_bit(F_AUDIO_READ_INUSE, &dev.flags)))
--			return -EBUSY;
-+		     test_bit(F_AUDIO_READ_INUSE, &dev.flags))) {
-+			err = -EBUSY;
-+			goto out;
-+		}
- 
- 		if ((err = dsp_open(file)) >= 0) {
- 			dev.nresets = 0;
-@@ -782,7 +785,8 @@ static int dev_open(struct inode *inode, struct file *file)
- 		/* nothing */
- 	} else
- 		err = -EINVAL;
--
-+out:
-+	unlock_kernel();
- 	return err;
- }
- 
-diff --git a/sound/oss/sh_dac_audio.c b/sound/oss/sh_dac_audio.c
-index 4153752..8f0be40 100644
---- a/sound/oss/sh_dac_audio.c
-+++ b/sound/oss/sh_dac_audio.c
-@@ -16,6 +16,7 @@
- #include <linux/slab.h>
- #include <linux/fs.h>
- #include <linux/sound.h>
-+#include <linux/smp_lock.h>
- #include <linux/soundcard.h>
- #include <linux/interrupt.h>
- #include <linux/hrtimer.h>
-@@ -216,13 +217,17 @@ static int dac_audio_open(struct inode *inode, struct file *file)
- {
- 	if (file->f_mode & FMODE_READ)
- 		return -ENODEV;
--	if (in_use)
-+
-+	lock_kernel();
-+	if (in_use) {
-+		unlock_kernel();
- 		return -EBUSY;
-+	}
- 
- 	in_use = 1;
- 
- 	dac_audio_start();
--
-+	unlock_kernel();
- 	return 0;
- }
- 
-diff --git a/sound/oss/soundcard.c b/sound/oss/soundcard.c
-index 2d9c513..92aa762 100644
---- a/sound/oss/soundcard.c
-+++ b/sound/oss/soundcard.c
-@@ -210,42 +210,44 @@ static int sound_open(struct inode *inode, struct file *file)
- 		printk(KERN_ERR "Invalid minor device %d\n", dev);
- 		return -ENXIO;
- 	}
-+	lock_kernel();
- 	switch (dev & 0x0f) {
- 	case SND_DEV_CTL:
- 		dev >>= 4;
- 		if (dev >= 0 && dev < MAX_MIXER_DEV && mixer_devs[dev] == NULL) {
- 			request_module("mixer%d", dev);
- 		}
-+		retval = -ENXIO;
- 		if (dev && (dev >= num_mixers || mixer_devs[dev] == NULL))
--			return -ENXIO;
-+			break;
- 	
- 		if (!try_module_get(mixer_devs[dev]->owner))
--			return -ENXIO;
-+			break;
-+
-+		retval = 0;
- 		break;
- 
- 	case SND_DEV_SEQ:
- 	case SND_DEV_SEQ2:
--		if ((retval = sequencer_open(dev, file)) < 0)
--			return retval;
-+		retval = sequencer_open(dev, file);
- 		break;
- 
- 	case SND_DEV_MIDIN:
--		if ((retval = MIDIbuf_open(dev, file)) < 0)
--			return retval;
-+		retval = MIDIbuf_open(dev, file);
- 		break;
- 
- 	case SND_DEV_DSP:
- 	case SND_DEV_DSP16:
- 	case SND_DEV_AUDIO:
--		if ((retval = audio_open(dev, file)) < 0)
--			return retval;
-+		retval = audio_open(dev, file);
- 		break;
- 
- 	default:
- 		printk(KERN_ERR "Invalid minor device %d\n", dev);
--		return -ENXIO;
-+		retval = -ENXIO;
- 	}
- 
-+	unlock_kernel();
- 	return 0;
- }
- 
-diff --git a/sound/oss/swarm_cs4297a.c b/sound/oss/swarm_cs4297a.c
-index 3136c88..34b0838 100644
---- a/sound/oss/swarm_cs4297a.c
-+++ b/sound/oss/swarm_cs4297a.c
-@@ -68,6 +68,7 @@
- #include <linux/delay.h>
- #include <linux/sound.h>
- #include <linux/slab.h>
-+#include <linux/smp_lock.h>
- #include <linux/soundcard.h>
- #include <linux/ac97_codec.h>
- #include <linux/pci.h>
-@@ -1534,6 +1535,7 @@ static int cs4297a_open_mixdev(struct inode *inode, struct file *file)
- 	CS_DBGOUT(CS_FUNCTION | CS_OPEN, 4,
- 		  printk(KERN_INFO "cs4297a: cs4297a_open_mixdev()+\n"));
- 
-+	lock_kernel();
- 	list_for_each(entry, &cs4297a_devs)
- 	{
- 		s = list_entry(entry, struct cs4297a_state, list);
-@@ -1544,6 +1546,8 @@ static int cs4297a_open_mixdev(struct inode *inode, struct file *file)
- 	{
- 		CS_DBGOUT(CS_FUNCTION | CS_OPEN | CS_ERROR, 2,
- 			printk(KERN_INFO "cs4297a: cs4297a_open_mixdev()- -ENODEV\n"));
-+
-+		unlock_kernel();
- 		return -ENODEV;
- 	}
- 	VALIDATE_STATE(s);
-@@ -1551,6 +1555,7 @@ static int cs4297a_open_mixdev(struct inode *inode, struct file *file)
- 
- 	CS_DBGOUT(CS_FUNCTION | CS_OPEN, 4,
- 		  printk(KERN_INFO "cs4297a: cs4297a_open_mixdev()- 0\n"));
-+	unlock_kernel();
- 
- 	return nonseekable_open(inode, file);
- }
-@@ -2369,7 +2374,7 @@ static int cs4297a_release(struct inode *inode, struct file *file)
- 	return 0;
- }
- 
--static int cs4297a_open(struct inode *inode, struct file *file)
-+static int cs4297a_locked_open(struct inode *inode, struct file *file)
- {
- 	int minor = iminor(inode);
- 	struct cs4297a_state *s=NULL;
-@@ -2486,6 +2491,16 @@ static int cs4297a_open(struct inode *inode, struct file *file)
- 	return nonseekable_open(inode, file);
- }
- 
-+static int cs4297a_open(struct inode *inode, struct file *file)
++static inline void lock_flocks(void)
 +{
-+	int ret;
-+
-+	lock_kernel();
-+	ret = cs4297a_open(inode, file);
-+	unlock_kernel();
-+
-+	return ret;
++	spin_lock(&file_lock_lock);
 +}
++
++static inline void unlock_flocks(void)
++{
++	spin_unlock(&file_lock_lock);
++}
++#else
++#define lock_flocks() lock_kernel()
++#define unlock_flocks() unlock_kernel()
++#endif
++
+ static struct kmem_cache *filelock_cache __read_mostly;
  
- // ******************************************************************************************
- //   Wave (audio) file operations struct.
-diff --git a/sound/oss/vwsnd.c b/sound/oss/vwsnd.c
-index 20b3b32..99c94c4 100644
---- a/sound/oss/vwsnd.c
-+++ b/sound/oss/vwsnd.c
-@@ -2921,6 +2921,7 @@ static int vwsnd_audio_open(struct inode *inode, struct file *file)
- 
- 	DBGE("(inode=0x%p, file=0x%p)\n", inode, file);
- 
-+	lock_kernel();
- 	INC_USE_COUNT;
- 	for (devc = vwsnd_dev_list; devc; devc = devc->next_dev)
- 		if ((devc->audio_minor & ~0x0F) == (minor & ~0x0F))
-@@ -2928,6 +2929,7 @@ static int vwsnd_audio_open(struct inode *inode, struct file *file)
- 
- 	if (devc == NULL) {
- 		DEC_USE_COUNT;
-+		unlock_kernel();
- 		return -ENODEV;
- 	}
- 
-@@ -2936,11 +2938,13 @@ static int vwsnd_audio_open(struct inode *inode, struct file *file)
- 		mutex_unlock(&devc->open_mutex);
- 		if (file->f_flags & O_NONBLOCK) {
- 			DEC_USE_COUNT;
-+			unlock_kernel();
- 			return -EBUSY;
- 		}
- 		interruptible_sleep_on(&devc->open_wait);
- 		if (signal_pending(current)) {
- 			DEC_USE_COUNT;
-+			unlock_kernel();
- 			return -ERESTARTSYS;
- 		}
- 		mutex_lock(&devc->open_mutex);
-@@ -2993,6 +2997,7 @@ static int vwsnd_audio_open(struct inode *inode, struct file *file)
- 
- 	file->private_data = devc;
- 	DBGRV();
-+	unlock_kernel();
- 	return 0;
+ /* Allocate an empty lock structure. */
+@@ -511,9 +531,9 @@ static void __locks_delete_block(struct file_lock *waiter)
+  */
+ static void locks_delete_block(struct file_lock *waiter)
+ {
+-	lock_kernel();
++	lock_flocks();
+ 	__locks_delete_block(waiter);
+-	unlock_kernel();
++	unlock_flocks();
  }
  
-@@ -3062,15 +3067,18 @@ static int vwsnd_mixer_open(struct inode *inode, struct file *file)
- 	DBGEV("(inode=0x%p, file=0x%p)\n", inode, file);
+ /* Insert waiter into blocker's block list.
+@@ -644,7 +664,7 @@ posix_test_lock(struct file *filp, struct file_lock *fl)
+ {
+ 	struct file_lock *cfl;
  
- 	INC_USE_COUNT;
-+	lock_kernel();
- 	for (devc = vwsnd_dev_list; devc; devc = devc->next_dev)
- 		if (devc->mixer_minor == iminor(inode))
+-	lock_kernel();
++	lock_flocks();
+ 	for (cfl = filp->f_path.dentry->d_inode->i_flock; cfl; cfl = cfl->fl_next) {
+ 		if (!IS_POSIX(cfl))
+ 			continue;
+@@ -657,7 +677,7 @@ posix_test_lock(struct file *filp, struct file_lock *fl)
+ 			fl->fl_pid = pid_vnr(cfl->fl_nspid);
+ 	} else
+ 		fl->fl_type = F_UNLCK;
+-	unlock_kernel();
++	unlock_flocks();
+ 	return;
+ }
+ EXPORT_SYMBOL(posix_test_lock);
+@@ -730,18 +750,16 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
+ 	int error = 0;
+ 	int found = 0;
+ 
+-	lock_kernel();
+-	if (request->fl_flags & FL_ACCESS)
+-		goto find_conflict;
+-
+-	if (request->fl_type != F_UNLCK) {
+-		error = -ENOMEM;
++	if (!(request->fl_flags & FL_ACCESS) && (request->fl_type != F_UNLCK)) {
+ 		new_fl = locks_alloc_lock();
+-		if (new_fl == NULL)
+-			goto out;
+-		error = 0;
++		if (!new_fl)
++			return -ENOMEM;
+ 	}
+ 
++	lock_flocks();
++	if (request->fl_flags & FL_ACCESS)
++		goto find_conflict;
++
+ 	for_each_lock(inode, before) {
+ 		struct file_lock *fl = *before;
+ 		if (IS_POSIX(fl))
+@@ -767,8 +785,11 @@ static int flock_lock_file(struct file *filp, struct file_lock *request)
+ 	 * If a higher-priority process was blocked on the old file lock,
+ 	 * give it the opportunity to lock the file.
+ 	 */
+-	if (found)
++	if (found) {
++		unlock_flocks();
+ 		cond_resched();
++		lock_flocks();
++	}
+ 
+ find_conflict:
+ 	for_each_lock(inode, before) {
+@@ -794,7 +815,7 @@ find_conflict:
+ 	error = 0;
+ 
+ out:
+-	unlock_kernel();
++	unlock_flocks();
+ 	if (new_fl)
+ 		locks_free_lock(new_fl);
+ 	return error;
+@@ -823,7 +844,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 		new_fl2 = locks_alloc_lock();
+ 	}
+ 
+-	lock_kernel();
++	lock_flocks();
+ 	if (request->fl_type != F_UNLCK) {
+ 		for_each_lock(inode, before) {
+ 			fl = *before;
+@@ -991,7 +1012,7 @@ static int __posix_lock_file(struct inode *inode, struct file_lock *request, str
+ 		locks_wake_up_blocks(left);
+ 	}
+  out:
+-	unlock_kernel();
++	unlock_flocks();
+ 	/*
+ 	 * Free any unused locks.
+ 	 */
+@@ -1066,14 +1087,14 @@ int locks_mandatory_locked(struct inode *inode)
+ 	/*
+ 	 * Search the lock list for this inode for any POSIX locks.
+ 	 */
+-	lock_kernel();
++	lock_flocks();
+ 	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+ 		if (!IS_POSIX(fl))
+ 			continue;
+ 		if (fl->fl_owner != owner)
  			break;
- 
- 	if (devc == NULL) {
- 		DEC_USE_COUNT;
-+		unlock_kernel();
- 		return -ENODEV;
  	}
- 	file->private_data = devc;
-+	unlock_kernel();
- 	return 0;
+-	unlock_kernel();
++	unlock_flocks();
+ 	return fl ? -EAGAIN : 0;
  }
  
-diff --git a/sound/sound_core.c b/sound/sound_core.c
-index c8627fc..cb61317 100644
---- a/sound/sound_core.c
-+++ b/sound/sound_core.c
-@@ -629,12 +629,8 @@ static int soundcore_open(struct inode *inode, struct file *file)
- 		file->f_op = new_fops;
- 		spin_unlock(&sound_loader_lock);
+@@ -1186,7 +1207,7 @@ int __break_lease(struct inode *inode, unsigned int mode)
  
--		if (file->f_op->open) {
--			/* TODO: push down BKL into indivial open functions */
--			lock_kernel();
-+		if (file->f_op->open)
- 			err = file->f_op->open(inode,file);
--			unlock_kernel();
--		}
+ 	new_fl = lease_alloc(NULL, want_write ? F_WRLCK : F_RDLCK);
  
- 		if (err) {
- 			fops_put(file->f_op);
+-	lock_kernel();
++	lock_flocks();
+ 
+ 	time_out_leases(inode);
+ 
+@@ -1247,8 +1268,10 @@ restart:
+ 			break_time++;
+ 	}
+ 	locks_insert_block(flock, new_fl);
++	unlock_flocks();
+ 	error = wait_event_interruptible_timeout(new_fl->fl_wait,
+ 						!new_fl->fl_next, break_time);
++	lock_flocks();
+ 	__locks_delete_block(new_fl);
+ 	if (error >= 0) {
+ 		if (error == 0)
+@@ -1263,7 +1286,7 @@ restart:
+ 	}
+ 
+ out:
+-	unlock_kernel();
++	unlock_flocks();
+ 	if (!IS_ERR(new_fl))
+ 		locks_free_lock(new_fl);
+ 	return error;
+@@ -1319,7 +1342,7 @@ int fcntl_getlease(struct file *filp)
+ 	struct file_lock *fl;
+ 	int type = F_UNLCK;
+ 
+-	lock_kernel();
++	lock_flocks();
+ 	time_out_leases(filp->f_path.dentry->d_inode);
+ 	for (fl = filp->f_path.dentry->d_inode->i_flock; fl && IS_LEASE(fl);
+ 			fl = fl->fl_next) {
+@@ -1328,7 +1351,7 @@ int fcntl_getlease(struct file *filp)
+ 			break;
+ 		}
+ 	}
+-	unlock_kernel();
++	unlock_flocks();
+ 	return type;
+ }
+ 
+@@ -1341,7 +1364,7 @@ int fcntl_getlease(struct file *filp)
+  *	The (input) flp->fl_lmops->fl_break function is required
+  *	by break_lease().
+  *
+- *	Called with kernel lock held.
++ *	Called with file_lock_lock held.
+  */
+ int generic_setlease(struct file *filp, long arg, struct file_lock **flp)
+ {
+@@ -1436,7 +1459,15 @@ out:
+ }
+ EXPORT_SYMBOL(generic_setlease);
+ 
+- /**
++static int __vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
++{
++	if (filp->f_op && filp->f_op->setlease)
++		return filp->f_op->setlease(filp, arg, lease);
++	else
++		return generic_setlease(filp, arg, lease);
++}
++
++/**
+  *	vfs_setlease        -       sets a lease on an open file
+  *	@filp: file pointer
+  *	@arg: type of lease to obtain
+@@ -1467,12 +1498,9 @@ int vfs_setlease(struct file *filp, long arg, struct file_lock **lease)
+ {
+ 	int error;
+ 
+-	lock_kernel();
+-	if (filp->f_op && filp->f_op->setlease)
+-		error = filp->f_op->setlease(filp, arg, lease);
+-	else
+-		error = generic_setlease(filp, arg, lease);
+-	unlock_kernel();
++	lock_flocks();
++	error = __vfs_setlease(filp, arg, lease);
++	unlock_flocks();
+ 
+ 	return error;
+ }
+@@ -1499,9 +1527,9 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
+ 	if (error)
+ 		return error;
+ 
+-	lock_kernel();
++	lock_flocks();
+ 
+-	error = vfs_setlease(filp, arg, &flp);
++	error = __vfs_setlease(filp, arg, &flp);
+ 	if (error || arg == F_UNLCK)
+ 		goto out_unlock;
+ 
+@@ -1516,7 +1544,7 @@ int fcntl_setlease(unsigned int fd, struct file *filp, long arg)
+ 
+ 	error = __f_setown(filp, task_pid(current), PIDTYPE_PID, 0);
+ out_unlock:
+-	unlock_kernel();
++	unlock_flocks();
+ 	return error;
+ }
+ 
+@@ -2020,7 +2048,7 @@ void locks_remove_flock(struct file *filp)
+ 			fl.fl_ops->fl_release_private(&fl);
+ 	}
+ 
+-	lock_kernel();
++	lock_flocks();
+ 	before = &inode->i_flock;
+ 
+ 	while ((fl = *before) != NULL) {
+@@ -2038,7 +2066,7 @@ void locks_remove_flock(struct file *filp)
+  		}
+ 		before = &fl->fl_next;
+ 	}
+-	unlock_kernel();
++	unlock_flocks();
+ }
+ 
+ /**
+@@ -2053,12 +2081,12 @@ posix_unblock_lock(struct file *filp, struct file_lock *waiter)
+ {
+ 	int status = 0;
+ 
+-	lock_kernel();
++	lock_flocks();
+ 	if (waiter->fl_next)
+ 		__locks_delete_block(waiter);
+ 	else
+ 		status = -ENOENT;
+-	unlock_kernel();
++	unlock_flocks();
+ 	return status;
+ }
+ 
+@@ -2172,7 +2200,7 @@ static int locks_show(struct seq_file *f, void *v)
+ 
+ static void *locks_start(struct seq_file *f, loff_t *pos)
+ {
+-	lock_kernel();
++	lock_flocks();
+ 	f->private = (void *)1;
+ 	return seq_list_start(&file_lock_list, *pos);
+ }
+@@ -2184,7 +2212,7 @@ static void *locks_next(struct seq_file *f, void *v, loff_t *pos)
+ 
+ static void locks_stop(struct seq_file *f, void *v)
+ {
+-	unlock_kernel();
++	unlock_flocks();
+ }
+ 
+ static const struct seq_operations locks_seq_operations = {
+@@ -2231,7 +2259,7 @@ int lock_may_read(struct inode *inode, loff_t start, unsigned long len)
+ {
+ 	struct file_lock *fl;
+ 	int result = 1;
+-	lock_kernel();
++	lock_flocks();
+ 	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+ 		if (IS_POSIX(fl)) {
+ 			if (fl->fl_type == F_RDLCK)
+@@ -2248,7 +2276,7 @@ int lock_may_read(struct inode *inode, loff_t start, unsigned long len)
+ 		result = 0;
+ 		break;
+ 	}
+-	unlock_kernel();
++	unlock_flocks();
+ 	return result;
+ }
+ 
+@@ -2271,7 +2299,7 @@ int lock_may_write(struct inode *inode, loff_t start, unsigned long len)
+ {
+ 	struct file_lock *fl;
+ 	int result = 1;
+-	lock_kernel();
++	lock_flocks();
+ 	for (fl = inode->i_flock; fl != NULL; fl = fl->fl_next) {
+ 		if (IS_POSIX(fl)) {
+ 			if ((fl->fl_end < start) || (fl->fl_start > (start + len)))
+@@ -2286,7 +2314,7 @@ int lock_may_write(struct inode *inode, loff_t start, unsigned long len)
+ 		result = 0;
+ 		break;
+ 	}
+-	unlock_kernel();
++	unlock_flocks();
+ 	return result;
+ }
+ 
 -- 
 1.7.1
 
