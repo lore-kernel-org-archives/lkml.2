@@ -1,49 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755401Ab0GJNrm (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 09:47:42 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59157 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755226Ab0GJNrk convert rfc822-to-8bit (ORCPT
+	id S1755370Ab0GJNsx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 09:48:53 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:35278 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753560Ab0GJNsv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 09:47:40 -0400
-Subject: Re: [RFC][PATCH 13/13] perf: Rework the PMU methods
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-       Robert Richter <robert.richter@amd.com>,
-       Will Deacon <will.deacon@arm.com>, Paul Mundt <lethal@linux-sh.org>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-       Yanmin <yanmin_zhang@linux.intel.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       David Miller <davem@davemloft.net>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100710133647.GA5306@nowhere>
-References: <20100709082117.631541128@chello.nl>
-	 <20100709083248.337539831@chello.nl>  <20100710133647.GA5306@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Sat, 10 Jul 2010 15:47:22 +0200
-Message-ID: <1278769642.1998.34.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Sat, 10 Jul 2010 09:48:51 -0400
+Date: Sat, 10 Jul 2010 15:48:49 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Zeev Tarantov <zeev.tarantov@gmail.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] tracing: properly align linker defined symbols
+Message-ID: <20100710134849.GA15800@merkur.ravnborg.org>
+References: <1278705402.1537.157.camel@gandalf.stny.rr.com> <20100709203301.GA13839@merkur.ravnborg.org> <AANLkTinWkfkXNVA2Sx-apVQMZa-5ehugtd7JQ36np7xM@mail.gmail.com> <1278721339.1537.166.camel@gandalf.stny.rr.com> <20100710063459.GA14596@merkur.ravnborg.org> <AANLkTim7jTSaDaQTudR3e-DMBDrg9n00Hor8QdDQoVo_@mail.gmail.com> <1278761646.1537.182.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278761646.1537.182.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-07-10 at 15:36 +0200, Frederic Weisbecker wrote:
+On Sat, Jul 10, 2010 at 07:34:05AM -0400, Steven Rostedt wrote:
+> On Sat, 2010-07-10 at 13:18 +0300, Zeev Tarantov wrote:
+> > On Sat, Jul 10, 2010 at 09:35, Sam Ravnborg <sam@ravnborg.org> wrote:
+> 
+> > > +/*
+> > > + * Align to a 32 byte boundary equal to the
+> > > + * alignment gcc 4.5 uses for a struct
+> > > + */
+> > > +#define STRUCT_ALIGN() . = ALIGN(32)
+> > > +
+> 
+> What I'm nervous about is when gcc 4.8 decides to up the alignment to
+> 64.
+> 
+> Maybe we should have both patches, just to be safe.
 
-> So, if I understood well, this is to avoid enabling an event from perf_pmu_enable()
-> while the event was already stopped.
+Another approach could be to just stop playing games with alignment
+and use the fact that __stop_syscalls_metadata point to next byte
+after last entry.
 
-Right.
+Something like the below untested patch.
 
-> Looks good but why this ARCH name then? This should be a kind of PERF_HES_ONCPU
-> or so.
+But to fix the current regression I prefer the simpler
+patch that just fixup the aligment.
 
-Because I failed to come up with a sensible name, ONCPU doesn't really
-make sense either, its got nothing to do with CPUs.
-
-_REALLY_STOPPED maybe, but then, that's a bad name too ;-)
+	Sam
 
 
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 34e3580..50e9606 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -79,15 +79,19 @@ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
+ 	stop = (struct syscall_metadata *)__stop_syscalls_metadata;
+ 	kallsyms_lookup(syscall, NULL, NULL, NULL, str);
+ 
+-	for ( ; start < stop; start++) {
++	/*
++	 * start may point a few bytes before first entry
++	 * stop points at first byte after last entry
++	 */
++	for (stop--; stop >= start; stop--) {
+ 		/*
+ 		 * Only compare after the "sys" prefix. Archs that use
+ 		 * syscall wrappers may have syscalls symbols aliases prefixed
+ 		 * with "SyS" instead of "sys", leading to an unwanted
+ 		 * mismatch.
+ 		 */
+-		if (start->name && !strcmp(start->name + 3, str + 3))
+-			return start;
++		if (stop->name && !strcmp(stop->name + 3, str + 3))
++			return stop;
+ 	}
+ 	return NULL;
+ }
