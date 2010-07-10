@@ -1,95 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755598Ab0GJOuk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 10:50:40 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:36375 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755073Ab0GJOuj (ORCPT
+	id S1755614Ab0GJOwK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 10:52:10 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:60686 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753074Ab0GJOwH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 10:50:39 -0400
+	Sat, 10 Jul 2010 10:52:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=dFYoRLArY9WNk4UCYNSBNY/qMKmob/rtYUSt99Ud7o4UqgyFaRRlXBP3iQM+CvPri0
-         wyjbbyRr88/QGfwL7ee3goMhjjEn1AaPannY94EDW617uxYPE5oUFRn+2KVitiL17McA
-         xGy7SsZGErEZsieIXY7F1haBbCH+tE7e31txY=
-From: Martin Enderleit <menderleit@gmail.com>
-To: mdharm-usb@one-eyed-alien.net
-Cc: gregkh@suse.de, linux-usb@vger.kernel.org,
-       usb-storage@lists.one-eyed-alien.net, linux-kernel@vger.kernel.org,
-       Martin Enderleit <menderleit@gmail.com>
-Subject: [PATCH] usb: storage: freecom: Fixed several coding style issues.
-Date: Sat, 10 Jul 2010 16:50:12 +0200
-Message-Id: <1278773412-21989-1-git-send-email-menderleit@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=haEB0yMGg7Ayi3tg+nLmMR6WSgLzfKiu4OfASwFbYR1IjMW6eextoVENyuPySKdNSB
+         YUqK9gLgMe3XxxJ+SXJcQ3iGXi8ES+Af2XwaL8s4HaqZhWFzvLqQ4AUtDKIyasCE9ZWJ
+         +QhmgBGRoQh45FfWWK7y2Kslw/zLHi8vowbB0=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTilQ0w6EfbrXl5LklPJ46FMWQG6Q3W5twJY74RtE@mail.gmail.com>
+References: <AANLkTilPtW_hOG01qvQHBWMC4b0QJZ8SAL0bZi6j56ns@mail.gmail.com>
+	<AANLkTilQ0w6EfbrXl5LklPJ46FMWQG6Q3W5twJY74RtE@mail.gmail.com>
+Date: Sat, 10 Jul 2010 15:52:04 +0100
+Message-ID: <AANLkTinLjhLoQJ8URiuCKqgntiLEKxCesNEPZ8b24uLu@mail.gmail.com>
+Subject: Re: [2.6.35-rc3] select useful number of entries for DMA debugging...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Martin Enderleit <martin@martin-desktop.(none)>
+On 9 July 2010 22:33, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Mon, Jul 5, 2010 at 1:35 AM, Daniel J Blueman
+> <daniel.blueman@gmail.com> wrote:
+>> When booting 2.6.35-rc3 on some different x86 boxes with DMA debugging
+>> enabled, I've consistently seen it exhaust the allocated entries during
+>> boot, giving 'DMA-API: debugging out of memory - disabling'.
+>>
+>> Increase number of entries to allow DMA debugging again.
+>
+> Rather than increase the default that gets allocated whenever anybody
+> enables the DMA debugging, I'd really prefer to see people use the
+> kernel command line option if they run out. After all, it's a (pretty
+> esoteric) debug option, and the number of required entries depends on
+> machine configuration. I'd rather not make the default cover a huge
+> number, when you could just add
+>
+>   dma_debug_entries=65536
+>
+> on the kernel boot command line instead for machines that want/need it..
 
-Fixed several coding style issues in freecom.c.
+That said, I am seeing the DMA pool exhaust on a single socket Core i5
+system with Intel graphics and no other adapters - seems like a fairly
+common case. If eg 25% of developers will be using similar to this,
+maybe it's good to make DMA debugging less immediately esoteric?
 
-Signed-off-by: Martin Enderleit <menderleit@gmail.com>
----
- drivers/usb/storage/freecom.c |   23 +++++++++++------------
- 1 files changed, 11 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/usb/storage/freecom.c b/drivers/usb/storage/freecom.c
-index 54cc942..6542ca4 100644
---- a/drivers/usb/storage/freecom.c
-+++ b/drivers/usb/storage/freecom.c
-@@ -269,7 +269,7 @@ static int freecom_transport(struct scsi_cmnd *srb, struct us_data *us)
- 	/* The firmware will time-out commands after 20 seconds. Some commands
- 	 * can legitimately take longer than this, so we use a different
- 	 * command that only waits for the interrupt and then sends status,
--	 * without having to send a new ATAPI command to the device. 
-+	 * without having to send a new ATAPI command to the device.
- 	 *
- 	 * NOTE: There is some indication that a data transfer after a timeout
- 	 * may not work, but that is a condition that should never happen.
-@@ -324,14 +324,14 @@ static int freecom_transport(struct scsi_cmnd *srb, struct us_data *us)
- 
- 	/* Find the length we desire to read. */
- 	switch (srb->cmnd[0]) {
--		case INQUIRY:
--		case REQUEST_SENSE:		/* 16 or 18 bytes? spec says 18, lots of devices only have 16 */
--		case MODE_SENSE:
--		case MODE_SENSE_10:
--			length = le16_to_cpu(fst->Count);
--			break;
--		default:
--			length = scsi_bufflen(srb);
-+	case INQUIRY:
-+	case REQUEST_SENSE:	/* 16 or 18 bytes? spec says 18, lots of devices only have 16 */
-+	case MODE_SENSE:
-+	case MODE_SENSE_10:
-+		length = le16_to_cpu(fst->Count);
-+		break;
-+	default:
-+		length = scsi_bufflen(srb);
- 	}
- 
- 	/* verify that this amount is legal */
-@@ -414,7 +414,7 @@ static int freecom_transport(struct scsi_cmnd *srb, struct us_data *us)
- 		/* should never hit here -- filtered in usb.c */
- 		US_DEBUGP ("freecom unimplemented direction: %d\n",
- 				us->srb->sc_data_direction);
--		// Return fail, SCSI seems to handle this better.
-+		/* Return fail, SCSI seems to handle this better. */
- 		return USB_STOR_TRANSPORT_FAILED;
- 		break;
- 	}
-@@ -494,8 +494,7 @@ static void pdump (void *ibuffer, int length)
- 				offset = 0;
- 			}
- 			offset += sprintf (line+offset, "%08x:", i);
--		}
--		else if ((i & 7) == 0) {
-+		} else if ((i & 7) == 0) {
- 			offset += sprintf (line+offset, " -");
- 		}
- 		offset += sprintf (line+offset, " %02x", buffer[i] & 0xff);
+On the other hand, I would immediately agree if the exhaustion
+occurred on an atypical setup.
 -- 
-1.7.0.4
-
+Daniel J Blueman
