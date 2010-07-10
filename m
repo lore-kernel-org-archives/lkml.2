@@ -1,68 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754426Ab0GJK4q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 06:56:46 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45064 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752316Ab0GJK4o (ORCPT
+	id S1754735Ab0GJLeL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 07:34:11 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:52719 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754600Ab0GJLeJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 06:56:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=ItFyaDsN5/dYwrH2Xwi7L6kigjOhDOYxZDKdPvto4edI4nPbS6zH7qucbQtrPPq6yE
-         fEy6wm6iqeBi1Pt6RFoi6nbgyi9QsEEwpoiRjB5vLpBRFKcx/J3VlxkVDp5vxbHALAwL
-         KqKOHsdBi/KMxeD3wC5HTu9IvlRwoIXfpT+IM=
-Date: Sat, 10 Jul 2010 12:54:29 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Andrew Morton <akpm@linux-foundation.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] cgroups: save space for the terminator
-Message-ID: <20100710105429.GW19184@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-	Ben Blum <bblum@andrew.cmu.edu>,
-	containers@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sat, 10 Jul 2010 07:34:09 -0400
+X-Authority-Analysis: v=1.1 cv=o8sBXTxWt3Y8I13SYZ0pmcTcOViZ+nX/QX6HkgGmvUU= c=1 sm=0 a=T3RyHyitX6oA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=7gkXJVJtAAAA:8 a=AA96hDGzTQzOfXQ6WT4A:9 a=Ia8h96ouusjCG7P1qzjX3fyVmZAA:4 a=PUjeQqilurYA:10 a=JmBWkid0h3cA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH] tracing: properly align linker defined symbols
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Zeev Tarantov <zeev.tarantov@gmail.com>
+Cc: Sam Ravnborg <sam@ravnborg.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+In-Reply-To: <AANLkTim7jTSaDaQTudR3e-DMBDrg9n00Hor8QdDQoVo_@mail.gmail.com>
+References: <1278705402.1537.157.camel@gandalf.stny.rr.com>
+	 <20100709203301.GA13839@merkur.ravnborg.org>
+	 <AANLkTinWkfkXNVA2Sx-apVQMZa-5ehugtd7JQ36np7xM@mail.gmail.com>
+	 <1278721339.1537.166.camel@gandalf.stny.rr.com>
+	 <20100710063459.GA14596@merkur.ravnborg.org>
+	 <AANLkTim7jTSaDaQTudR3e-DMBDrg9n00Hor8QdDQoVo_@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Sat, 10 Jul 2010 07:34:05 -0400
+Message-ID: <1278761646.1537.182.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original code didn't leave enough space for a NULL terminator.
-These strings are copied with strcpy() into fixed length buffers in
-cgroup_root_from_opts().
- 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+On Sat, 2010-07-10 at 13:18 +0300, Zeev Tarantov wrote:
+> On Sat, Jul 10, 2010 at 09:35, Sam Ravnborg <sam@ravnborg.org> wrote:
 
-diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-index 3ac6f5b..a942820 100644
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1102,7 +1102,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 			if (opts->release_agent)
- 				return -EINVAL;
- 			opts->release_agent =
--				kstrndup(token + 14, PATH_MAX, GFP_KERNEL);
-+				kstrndup(token + 14, PATH_MAX - 1, GFP_KERNEL);
- 			if (!opts->release_agent)
- 				return -ENOMEM;
- 		} else if (!strncmp(token, "name=", 5)) {
-@@ -1123,7 +1123,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
- 			if (opts->name)
- 				return -EINVAL;
- 			opts->name = kstrndup(name,
--					      MAX_CGROUP_ROOT_NAMELEN,
-+					      MAX_CGROUP_ROOT_NAMELEN - 1,
- 					      GFP_KERNEL);
- 			if (!opts->name)
- 				return -ENOMEM;
+> > +/*
+> > + * Align to a 32 byte boundary equal to the
+> > + * alignment gcc 4.5 uses for a struct
+> > + */
+> > +#define STRUCT_ALIGN() . = ALIGN(32)
+> > +
+
+What I'm nervous about is when gcc 4.8 decides to up the alignment to
+64.
+
+Maybe we should have both patches, just to be safe.
+
+-- Steve
+
+
