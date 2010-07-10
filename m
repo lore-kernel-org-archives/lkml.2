@@ -1,281 +1,662 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753859Ab0GJWhY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 18:37:24 -0400
-Received: from mail.lang.hm ([64.81.33.126]:53195 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753195Ab0GJWhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 18:37:22 -0400
-Date: Sat, 10 Jul 2010 15:36:42 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: Fernando Luis Vazquez Cao <fernando@oss.ntt.co.jp>
-cc: kvm@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       mori.keisuke@oss.ntt.co.jp,
-       Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>,
-       Chris Wright <chrisw@redhat.com>, Dor Laor <dlaor@redhat.com>,
-       Lon Hohberger <lhh@redhat.com>, "Perry N. Myers" <pmyers@redhat.com>,
-       Luiz Capitulino <lcapitulino@redhat.com>, berrange@redhat.com
-Subject: Re: [RFC] High availability in KVM
-In-Reply-To: <4C199348.6050108@oss.ntt.co.jp>
-Message-ID: <alpine.DEB.2.00.1007101510180.27626@asgard.lang.hm>
-References: <4C199348.6050108@oss.ntt.co.jp>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+	id S1753510Ab0GJWv5 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 18:51:57 -0400
+Received: from webhosting01.bon.m2soft.com ([195.38.20.32]:55672 "EHLO
+	webhosting01.bon.m2soft.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751415Ab0GJWv4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 10 Jul 2010 18:51:56 -0400
+Date: Sun, 11 Jul 2010 00:42:27 +0200
+From: Nicolas Kaiser <nikai@nikai.net>
+To: David Airlie <airlied@linux.ie>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] drm/savage: fixed brace, macro and spacing coding style
+ issues
+Message-ID: <20100711004227.7d9bebc0@absol.kitzblitz>
+Organization: -
+X-Face: "fF&[w2"Nws:JNH4'g|:gVhgGKLhj|X}}&w&V?]0=,7n`jy8D6e[Jh=7+ca|4~t5e[ItpL5
+ N'y~Mvi-vJm`"1T5fi1^b!&EG]6nW~C!FN},=$G?^U2t~n[3;u\"5-|~H{-5]IQ2
+X-Mailer: Claws Mail (Linux)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 17 Jun 2010, Fernando Luis Vazquez Cao wrote:
+Fixed brace, macro and spacing coding style issues.
 
-> Existing open source HA stacks such as pacemaker/corosync and Red
-> Hat Cluster Suite rely on software clustering techniques to detect
-> both hardware failures and software failures, and employ fencing to
-> avoid split-brain situations which, in turn, makes it possible to
-> perform failover safely. However, when applied to virtualization
-> environments these solutions show some limitations:
->
->   - Hardware detection relies on polling mechanisms (for example
->     pinging a network interface to check for network connectivity),
->     imposing a trade off between failover time and the cost of
->     polling. The alternative is having the failing system send an
->     alarm to the HA software to trigger failover. The latter
->     approach is preferable but it is not always applicable when
->     dealing with bare-metal; depending on the failure type the
->     hardware may not able to get a message out to notify the HA
->     software. However, when it comes to virtualization environments
->     we can certainly do better. If a hardware failure, be it real
->     hardware or virtual hardware, is fully contained within a
->     virtual machine the host or hypervisor can detect that and
->     notify the HA software safely using clean resources.
+Signed-off-by: Nicolas Kaiser <nikai@nikai.net>
+---
+Supersedes patch "drm/savage: fixed brace coding style issues".
 
-you still need to detect failures that you won't be notified of.
+ drivers/gpu/drm/savage/savage_bci.c   |   48 +++++++--------
+ drivers/gpu/drm/savage/savage_drv.h   |  109 +++++++++++++++++----------------
+ drivers/gpu/drm/savage/savage_state.c |   63 +++++++++----------
+ 3 files changed, 109 insertions(+), 111 deletions(-)
 
-what if a network cable goes bad and your data isn't getting through? you 
-won't get any notification of this without doing polling, even in a 
-virtualized environment.
-
-also, in a virtualized environment you may have firewall rules between 
-virtual hosts, if those get misconfigured you may have 'virual physical 
-connectivity' still, but not the logical connectivity that you need.
-
->   - In most cases, when a hardware failure is detected the state of
->     the failing node is not known which means that some kind of
->     fencing is needed to lock resources away from that
->     node. Depending on the hardware and the cluster configuration
->     fencing can be a pretty expensive operation that contributes to
->     system downtime. Virtualization can help here. Upon failure
->     detection the host or hypervisor could put the virtual machine
->     in a quiesced state and release its hardware resources before
->     notifying the HA software, so that it can start failover
->     immediately without having to mingle with the failing virtual
->     machine (we now know that it is in a known quiesced state). Of
->     course this only makes sense in the event-driven failover case
->     described above.
->
->   - Fencing operations commonly involve killing the virtual machine,
->     thus depriving us of potentially critical debugging information:
->     a dump of the virtual machine itself. This issue could be solved
->     by providing a virtual machine control that puts the virtual
->     machine in a known quiesced state, releases its hardware
->     resources, but keeps the guest and device model in memory so
->     that forensics can be conducted offline after failover. Polling
->     HA resource agents should use this new command if postmortem
->     analysis is important.
-
-I don't see this as the job of the virtualization hypervisor. the software 
-HA stacks include the ability to run external scripts to perform these 
-tasks. These scripts can perform whatever calls to the hypervisor that 
-are appropriate to freeze, shutdown, or disconnect the virtual server (and 
-what is appropriate will vary from implementation to implementation)
-
-providing sample scripts that do this for the various HA stacks makes 
-sense as it gives people examples of what can be done and lets them tailor 
-exactly what does happen to their needs.
-
-> We are pursuing a scenario where current polling-based HA resource
-> agents are complemented with an event-driven failure notification
-> mechanism that allows for faster failover times by eliminating the
-> delay introduced by polling and by doing without fencing. This would
-> benefit traditional software clustering stacks and bring a feature
-> that is essential for fault tolerance solutions such as Kemari.
-
-heartbeat/pacemaker has been able to do sub-second failovers for several 
-years, I'm not sure that notification is really needed.
-
-that being said the HA stacks do allow for commands to be fed into the HA 
-system to tell a machine to go active/passive already, so why don't you 
-have your notification just call scripts to make the appropriate calls?
-
-> Additionally, for those who want or need to stick with a polling
-> model we would like to provide a virtual machine control that
-> freezes a virtual machine into a failover-safe state without killing
-> it, so that postmortem analysis is still possible.
-
-how is this different from simply pausing the virtual machine?
-
-> In the following sections we discuss the RAS-HA integration
-> challenges and the changes that need to be made to each component of
-> the qemu-KVM stack to realize this vision. While at it we will also
-> delve into some of the limitations of the current hardware error
-> subsystems of the Linux kernel.
->
->
-> HARDWARE ERRORS AND HIGH AVAILABILITY
->
-> The major open source software stacks for Linux rely on polling
-> mechanisms to detect both software errors and hardware failures. For
-> example, ping or an equivalent is widely used to check for network
-> connectivity interruptions. This is enough to get the job done in
-> most cases but one is forced to make a trade off between service
-> disruption time and the burden imposed by the polling resource
-> agent.
->
-> On the hardware side of things, the situation can be improved if we
-> take advantage of CPU and chipset RAS capabilities to trigger
-> failover in the event of a non-recoverable error or, even better, do
-> it preventively when hardware informs us things might go awry. The
-> premise is that RAS features such as hardware failure notification
-> can be leveraged to minimize or even eliminate service
-> down-times.
-
-having run dozens of sets of HA systems for about 10 years, I find that 
-very few of the failures that I have experianced would have been helped by 
-this. hardware very seldom gives me any indication that it's about to 
-fail, and even when it does fail it's usually only discovered due to the 
-side effects of other things I am trying to do not working.
-
-> Generally speaking, hardware errors reported to the operating system
-> can be classified into two broad categories: corrected errors and
-> uncorrected errors. The later are not necessarily critical errors
-> that require a system restart; depending on the hardware and the
-> software running on the affected system resource such errors may be
-> recoverable. The picture looks like this (definitions taken from
-> "Advanced Configuration and Power Interface Specification, Revision
-> 4.0a" and slightly modified to get rid of ACPI jargon):
->
->   - Corrected error: Hardware error condition that has been
->     corrected by the hardware or by the firmware by the time the
->     kernel is notified about the existence of an error condition.
->
->   - Uncorrected error: Hardware error condition that cannot be
->     corrected by the hardware or by the firmware. Uncorrected errors
->     are either fatal or non-fatal.
->
->       o A fatal hardware error is an uncorrected or uncontained
-> 	  error condition that is determined to be unrecoverable by
-> 	  the hardware. When a fatal uncorrected error occurs, the
-> 	  system is usually restarted to prevent propagation of the
-> 	  error.
->
->       o A non-fatal hardware error is an uncorrected error condition
-> 	  from which the kernel can attempt recovery by trying to
-> 	  correct the error. These are also referred to as correctable
-> 	  or recoverable errors.
->
-> Corrected errors are inoffensive in principle, but they may be
-> harbingers of fatal non-recoverable errors. It is thus reasonable in
-> some cases to do preventive failover or live migration when a
-> certain threshold is reached. However this is arguably the job
-> systems management software, not the HA, so this case will not be
-> discussed in detail here.
-
-the easiest way to do this is to log the correctable errors and let normal 
-log analysis tools notice these errors and decide to take action. trying 
-to make the hypervisor do something here is putting policy in the wrong 
-place.
-
-> Uncorrected errors are the ones HA software cares about.
->
-> When a fatal hardware error occurs the firmware may decide to
-> restart the hardware. If the fatal error is relayed to the kernel
-> instead the safest thing to do is to panic to avoid further
-> damage. Even though it is theoretically possible to send a
-> notification from the kernel's error or panic handler, this is a
-> extremely hardware-dependent operation and will not be considered
-> here. To detect this type of failures one's old reliable
-> polling-based resource agent is the way to go.
-
-and in this case you probably cannot trust the system to send notification 
-without damaging things further, simply halting is probably the only safe 
-thing to do.
-
-> Non-fatal or recoverable errors are the most interesting in the
-> pack.  Detection should ideally be performed in a non-intrusive way
-> and feed the policy engine with enough information about the error
-> to make the right call. If the policy engine decides that the error
-> might compromise service continuity it should notify the HA stack so
-> that failover can be started immediately.
-
-again, log the errors and let existing log analysis/alerting tools decide 
-what action to take.
-
-> Currently KVM is only notified about memory errors detected by the
-> MCE subsystem. When running on newer x86 hardware, if MCE detects an
-> error on user-space it signals the corresponding process with
-> SIGBUS. Qemu, upon receiving the signal, checks the problematic
-> address which the kernel stored in siginfo and decides whether to
-> inject the MCE to the virtual machine.
->
-> An obvious limitation is that we would like to be notified about
-> other types of error too and, as suggested before, a file-based
-> interface that can be sys_poll'ed might be needed for that. 
-> On a different note, in a HA environment the qemu policy described
-> above is not adequate; when a notification of a hardware error that
-> our policy determines to be serious arrives the first thing we want
-> to do is to put the virtual machine in a quiesced state to avoid
-> further wreckage. If we injected the error into the guest we would
-> risk a guest panic that might detectable only by polling or, worse,
-> being killed by the kernel, which means that postmortem analysis of
-> the guest is not possible. Once we had the guests in a quiesced
-> state, where all the buffers have been flushed and the hardware
-> sources released, we would have two modes of operation that can be
-> used together and complement each other.
-
-it sounds like you really need to be running HA at two layers
-
-1. on the host layer to detect problems with the host and decide to 
-freeze/migrate  virtual machines to another system
-
-2. inside the guests to make sure that the guests that are running (on 
-multiple real machines) continue to provide services.
-
-but what is your alturnative to sending the error into the guest? 
-depending on what the error is you may or may not be able to freeze the 
-guest (it makes no sense to try and flush buffers to a drive that won't 
-accept writes for example)
-
->   - Proactive: A qmp event describing the error (severity, topology,
->     etc) is emitted. The HA software would have to register to
->     receive hardware error events, possibly using the libvirt
->     bindings. Upon receiving the event the HA software would know
->     that the guest is in a failover-safe quiesced state so it could
->     do without fencing and proceed to the failover stage directly.
-
-if it's not a fatal error then the system can continue to run (for at 
-least a few more seconds ;-), let such errors get written to syslog and 
-let a tool like SEC (simple event correlator) see the logs and deicde what 
-to do. there's no need to modify the kernel/KVM for this.
-
->   - Passive: Polling resource agents that need to check the state of
->     the guest generally use libvirt or a wrapper such as virsh. When
->     the state is SHUTOFF or CRASHED the resource agent proceeds to
->     the facing stage, which might be expensive and usually involves
->     killing the qemu process. We propose adding a new state that
->     indicates the failover-safe state described before. In this
->     state the HA software would not need to use fencing techniques
->     and since the qemu process is not killed postmortem analysis of
->     the virtual machine is still possible.
-
-how do you define failover-safe states? why would the HA software (with 
-the assistance of a log watcher) not be able to do the job itself?
-
-I do think that it's significant that all the HA solutions out there 
-prefer to test if the functionality works rather than watching for log 
-events to say there may be a problem, but there's nothing preventing this 
-from easily being done.
-
-David Lang
-
+diff --git a/drivers/gpu/drm/savage/savage_bci.c b/drivers/gpu/drm/savage/savage_bci.c
+index 2d0c9ca..def6dd0 100644
+--- a/drivers/gpu/drm/savage/savage_bci.c
++++ b/drivers/gpu/drm/savage/savage_bci.c
+@@ -35,7 +35,7 @@
+ static int savage_do_cleanup_bci(struct drm_device *dev);
+ 
+ static int
+-savage_bci_wait_fifo_shadow(drm_savage_private_t * dev_priv, unsigned int n)
++savage_bci_wait_fifo_shadow(drm_savage_private_t *dev_priv, unsigned int n)
+ {
+ 	uint32_t mask = dev_priv->status_used_mask;
+ 	uint32_t threshold = dev_priv->bci_threshold_hi;
+@@ -64,7 +64,7 @@ savage_bci_wait_fifo_shadow(drm_savage_private_t * dev_priv, unsigned int n)
+ }
+ 
+ static int
+-savage_bci_wait_fifo_s3d(drm_savage_private_t * dev_priv, unsigned int n)
++savage_bci_wait_fifo_s3d(drm_savage_private_t *dev_priv, unsigned int n)
+ {
+ 	uint32_t maxUsed = dev_priv->cob_size + SAVAGE_BCI_FIFO_SIZE - n;
+ 	uint32_t status;
+@@ -85,7 +85,7 @@ savage_bci_wait_fifo_s3d(drm_savage_private_t * dev_priv, unsigned int n)
+ }
+ 
+ static int
+-savage_bci_wait_fifo_s4(drm_savage_private_t * dev_priv, unsigned int n)
++savage_bci_wait_fifo_s4(drm_savage_private_t *dev_priv, unsigned int n)
+ {
+ 	uint32_t maxUsed = dev_priv->cob_size + SAVAGE_BCI_FIFO_SIZE - n;
+ 	uint32_t status;
+@@ -117,7 +117,7 @@ savage_bci_wait_fifo_s4(drm_savage_private_t * dev_priv, unsigned int n)
+  * rule. Otherwise there may be glitches every 2^16 events.
+  */
+ static int
+-savage_bci_wait_event_shadow(drm_savage_private_t * dev_priv, uint16_t e)
++savage_bci_wait_event_shadow(drm_savage_private_t *dev_priv, uint16_t e)
+ {
+ 	uint32_t status;
+ 	int i;
+@@ -140,7 +140,7 @@ savage_bci_wait_event_shadow(drm_savage_private_t * dev_priv, uint16_t e)
+ }
+ 
+ static int
+-savage_bci_wait_event_reg(drm_savage_private_t * dev_priv, uint16_t e)
++savage_bci_wait_event_reg(drm_savage_private_t *dev_priv, uint16_t e)
+ {
+ 	uint32_t status;
+ 	int i;
+@@ -161,7 +161,7 @@ savage_bci_wait_event_reg(drm_savage_private_t * dev_priv, uint16_t e)
+ 	return -EBUSY;
+ }
+ 
+-uint16_t savage_bci_emit_event(drm_savage_private_t * dev_priv,
++uint16_t savage_bci_emit_event(drm_savage_private_t *dev_priv,
+ 			       unsigned int flags)
+ {
+ 	uint16_t count;
+@@ -203,7 +203,7 @@ uint16_t savage_bci_emit_event(drm_savage_private_t * dev_priv,
+ /*
+  * Freelist management
+  */
+-static int savage_freelist_init(struct drm_device * dev)
++static int savage_freelist_init(struct drm_device *dev)
+ {
+ 	drm_savage_private_t *dev_priv = dev->dev_private;
+ 	struct drm_device_dma *dma = dev->dma;
+@@ -269,7 +269,7 @@ static struct drm_buf *savage_freelist_get(struct drm_device * dev)
+ 	return NULL;
+ }
+ 
+-void savage_freelist_put(struct drm_device * dev, struct drm_buf * buf)
++void savage_freelist_put(struct drm_device *dev, struct drm_buf *buf)
+ {
+ 	drm_savage_private_t *dev_priv = dev->dev_private;
+ 	drm_savage_buf_priv_t *entry = buf->dev_private, *prev, *next;
+@@ -292,7 +292,7 @@ void savage_freelist_put(struct drm_device * dev, struct drm_buf * buf)
+ /*
+  * Command DMA
+  */
+-static int savage_dma_init(drm_savage_private_t * dev_priv)
++static int savage_dma_init(drm_savage_private_t *dev_priv)
+ {
+ 	unsigned int i;
+ 
+@@ -316,7 +316,7 @@ static int savage_dma_init(drm_savage_private_t * dev_priv)
+ 	return 0;
+ }
+ 
+-void savage_dma_reset(drm_savage_private_t * dev_priv)
++void savage_dma_reset(drm_savage_private_t *dev_priv)
+ {
+ 	uint16_t event;
+ 	unsigned int wrap, i;
+@@ -331,7 +331,7 @@ void savage_dma_reset(drm_savage_private_t * dev_priv)
+ 	dev_priv->first_dma_page = dev_priv->current_dma_page = 0;
+ }
+ 
+-void savage_dma_wait(drm_savage_private_t * dev_priv, unsigned int page)
++void savage_dma_wait(drm_savage_private_t *dev_priv, unsigned int page)
+ {
+ 	uint16_t event;
+ 	unsigned int wrap;
+@@ -415,7 +415,7 @@ uint32_t *savage_dma_alloc(drm_savage_private_t * dev_priv, unsigned int n)
+ 	return dma_ptr;
+ }
+ 
+-static void savage_dma_flush(drm_savage_private_t * dev_priv)
++static void savage_dma_flush(drm_savage_private_t *dev_priv)
+ {
+ 	unsigned int first = dev_priv->first_dma_page;
+ 	unsigned int cur = dev_priv->current_dma_page;
+@@ -498,7 +498,7 @@ static void savage_dma_flush(drm_savage_private_t * dev_priv)
+ 		  dev_priv->dma_pages[cur].flushed);
+ }
+ 
+-static void savage_fake_dma_flush(drm_savage_private_t * dev_priv)
++static void savage_fake_dma_flush(drm_savage_private_t *dev_priv)
+ {
+ 	unsigned int i, j;
+ 	BCI_LOCALS;
+@@ -525,9 +525,8 @@ static void savage_fake_dma_flush(drm_savage_private_t * dev_priv)
+ 		}
+ #endif
+ 		BEGIN_BCI(dev_priv->dma_pages[i].used);
+-		for (j = 0; j < dev_priv->dma_pages[i].used; ++j) {
++		for (j = 0; j < dev_priv->dma_pages[i].used; ++j)
+ 			BCI_WRITE(dma_ptr[j]);
+-		}
+ 		dev_priv->dma_pages[i].used = 0;
+ 	}
+ 
+@@ -586,7 +585,7 @@ int savage_driver_firstopen(struct drm_device *dev)
+ 			dev_priv->mtrr[0].size = 0x01000000;
+ 			dev_priv->mtrr[0].handle =
+ 			    drm_mtrr_add(dev_priv->mtrr[0].base,
+-				         dev_priv->mtrr[0].size, DRM_MTRR_WC);
++					 dev_priv->mtrr[0].size, DRM_MTRR_WC);
+ 			dev_priv->mtrr[1].base = fb_base + 0x02000000;
+ 			dev_priv->mtrr[1].size = 0x02000000;
+ 			dev_priv->mtrr[1].handle =
+@@ -675,7 +674,7 @@ int savage_driver_unload(struct drm_device *dev)
+ 	return 0;
+ }
+ 
+-static int savage_do_init_bci(struct drm_device * dev, drm_savage_init_t * init)
++static int savage_do_init_bci(struct drm_device *dev, drm_savage_init_t *init)
+ {
+ 	drm_savage_private_t *dev_priv = dev->dev_private;
+ 
+@@ -855,11 +854,10 @@ static int savage_do_init_bci(struct drm_device * dev, drm_savage_init_t * init)
+ 	dev_priv->event_wrap = 0;
+ 	dev_priv->bci_ptr = (volatile uint32_t *)
+ 	    ((uint8_t *) dev_priv->mmio->handle + SAVAGE_BCI_OFFSET);
+-	if (S3_SAVAGE3D_SERIES(dev_priv->chipset)) {
++	if (S3_SAVAGE3D_SERIES(dev_priv->chipset))
+ 		dev_priv->status_used_mask = SAVAGE_FIFO_USED_MASK_S3D;
+-	} else {
++	else
+ 		dev_priv->status_used_mask = SAVAGE_FIFO_USED_MASK_S4;
+-	}
+ 	if (dev_priv->status != NULL) {
+ 		dev_priv->status_ptr =
+ 		    (volatile uint32_t *)dev_priv->status->handle;
+@@ -868,11 +866,10 @@ static int savage_do_init_bci(struct drm_device * dev, drm_savage_init_t * init)
+ 		dev_priv->status_ptr[1023] = dev_priv->event_counter;
+ 	} else {
+ 		dev_priv->status_ptr = NULL;
+-		if (S3_SAVAGE3D_SERIES(dev_priv->chipset)) {
++		if (S3_SAVAGE3D_SERIES(dev_priv->chipset))
+ 			dev_priv->wait_fifo = savage_bci_wait_fifo_s3d;
+-		} else {
++		else
+ 			dev_priv->wait_fifo = savage_bci_wait_fifo_s4;
+-		}
+ 		dev_priv->wait_evnt = savage_bci_wait_event_reg;
+ 	}
+ 
+@@ -897,7 +894,7 @@ static int savage_do_init_bci(struct drm_device * dev, drm_savage_init_t * init)
+ 	return 0;
+ }
+ 
+-static int savage_do_cleanup_bci(struct drm_device * dev)
++static int savage_do_cleanup_bci(struct drm_device *dev)
+ {
+ 	drm_savage_private_t *dev_priv = dev->dev_private;
+ 
+@@ -1040,9 +1037,8 @@ int savage_bci_buffers(struct drm_device *dev, void *data, struct drm_file *file
+ 
+ 	d->granted_count = 0;
+ 
+-	if (d->request_count) {
++	if (d->request_count)
+ 		ret = savage_bci_get_buffers(dev, file_priv, d);
+-	}
+ 
+ 	return ret;
+ }
+diff --git a/drivers/gpu/drm/savage/savage_drv.h b/drivers/gpu/drm/savage/savage_drv.h
+index df2aac6..ca388ca 100644
+--- a/drivers/gpu/drm/savage/savage_drv.h
++++ b/drivers/gpu/drm/savage/savage_drv.h
+@@ -107,19 +107,22 @@ enum savage_family {
+ extern struct drm_ioctl_desc savage_ioctls[];
+ extern int savage_max_ioctl;
+ 
+-#define S3_SAVAGE3D_SERIES(chip)  ((chip>=S3_SAVAGE3D) && (chip<=S3_SAVAGE_MX))
++#define S3_SAVAGE3D_SERIES(chip)	((chip >= S3_SAVAGE3D)		\
++					&& (chip <= S3_SAVAGE_MX))
+ 
+-#define S3_SAVAGE4_SERIES(chip)  ((chip==S3_SAVAGE4)            \
+-                                  || (chip==S3_PROSAVAGE)       \
+-                                  || (chip==S3_TWISTER)         \
+-                                  || (chip==S3_PROSAVAGEDDR))
++#define S3_SAVAGE4_SERIES(chip)		((chip == S3_SAVAGE4)		\
++					|| (chip == S3_PROSAVAGE)	\
++					|| (chip == S3_TWISTER)		\
++					|| (chip == S3_PROSAVAGEDDR))
+ 
+-#define	S3_SAVAGE_MOBILE_SERIES(chip)	((chip==S3_SAVAGE_MX) || (chip==S3_SUPERSAVAGE))
++#define S3_SAVAGE_MOBILE_SERIES(chip)	((chip == S3_SAVAGE_MX)		\
++					|| (chip == S3_SUPERSAVAGE))
+ 
+-#define S3_SAVAGE_SERIES(chip)    ((chip>=S3_SAVAGE3D) && (chip<=S3_SAVAGE2000))
++#define S3_SAVAGE_SERIES(chip)		((chip >= S3_SAVAGE3D)		\
++					&& (chip <= S3_SAVAGE2000))
+ 
+-#define S3_MOBILE_TWISTER_SERIES(chip)   ((chip==S3_TWISTER)    \
+-                                          ||(chip==S3_PROSAVAGEDDR))
++#define S3_MOBILE_TWISTER_SERIES(chip)	((chip == S3_TWISTER)		\
++					|| (chip == S3_PROSAVAGEDDR))
+ 
+ /* flags */
+ #define SAVAGE_IS_AGP 1
+@@ -187,13 +190,13 @@ typedef struct drm_savage_private {
+ 	unsigned int waiting;
+ 
+ 	/* config/hardware-dependent function pointers */
+-	int (*wait_fifo) (struct drm_savage_private * dev_priv, unsigned int n);
+-	int (*wait_evnt) (struct drm_savage_private * dev_priv, uint16_t e);
++	int (*wait_fifo) (struct drm_savage_private *dev_priv, unsigned int n);
++	int (*wait_evnt) (struct drm_savage_private *dev_priv, uint16_t e);
+ 	/* Err, there is a macro wait_event in include/linux/wait.h.
+ 	 * Avoid unwanted macro expansion. */
+-	void (*emit_clip_rect) (struct drm_savage_private * dev_priv,
+-				const struct drm_clip_rect * pbox);
+-	void (*dma_flush) (struct drm_savage_private * dev_priv);
++	void (*emit_clip_rect) (struct drm_savage_private *dev_priv,
++				const struct drm_clip_rect *pbox);
++	void (*dma_flush) (struct drm_savage_private *dev_priv);
+ } drm_savage_private_t;
+ 
+ /* ioctls */
+@@ -201,12 +204,12 @@ extern int savage_bci_cmdbuf(struct drm_device *dev, void *data, struct drm_file
+ extern int savage_bci_buffers(struct drm_device *dev, void *data, struct drm_file *file_priv);
+ 
+ /* BCI functions */
+-extern uint16_t savage_bci_emit_event(drm_savage_private_t * dev_priv,
++extern uint16_t savage_bci_emit_event(drm_savage_private_t *dev_priv,
+ 				      unsigned int flags);
+-extern void savage_freelist_put(struct drm_device * dev, struct drm_buf * buf);
+-extern void savage_dma_reset(drm_savage_private_t * dev_priv);
+-extern void savage_dma_wait(drm_savage_private_t * dev_priv, unsigned int page);
+-extern uint32_t *savage_dma_alloc(drm_savage_private_t * dev_priv,
++extern void savage_freelist_put(struct drm_device *dev, struct drm_buf *buf);
++extern void savage_dma_reset(drm_savage_private_t *dev_priv);
++extern void savage_dma_wait(drm_savage_private_t *dev_priv, unsigned int page);
++extern uint32_t *savage_dma_alloc(drm_savage_private_t *dev_priv,
+ 				  unsigned int n);
+ extern int savage_driver_load(struct drm_device *dev, unsigned long chipset);
+ extern int savage_driver_firstopen(struct drm_device *dev);
+@@ -216,10 +219,10 @@ extern void savage_reclaim_buffers(struct drm_device *dev,
+ 				   struct drm_file *file_priv);
+ 
+ /* state functions */
+-extern void savage_emit_clip_rect_s3d(drm_savage_private_t * dev_priv,
+-				      const struct drm_clip_rect * pbox);
+-extern void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+-				     const struct drm_clip_rect * pbox);
++extern void savage_emit_clip_rect_s3d(drm_savage_private_t *dev_priv,
++				      const struct drm_clip_rect *pbox);
++extern void savage_emit_clip_rect_s4(drm_savage_private_t *dev_priv,
++				     const struct drm_clip_rect *pbox);
+ 
+ #define SAVAGE_FB_SIZE_S3	0x01000000	/*  16MB */
+ #define SAVAGE_FB_SIZE_S4	0x02000000	/*  32MB */
+@@ -237,7 +240,7 @@ extern void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+  */
+ #define SAVAGE_STATUS_WORD0		0x48C00
+ #define SAVAGE_STATUS_WORD1		0x48C04
+-#define SAVAGE_ALT_STATUS_WORD0 	0x48C60
++#define SAVAGE_ALT_STATUS_WORD0		0x48C60
+ 
+ #define SAVAGE_FIFO_USED_MASK_S3D	0x0001ffff
+ #define SAVAGE_FIFO_USED_MASK_S4	0x001fffff
+@@ -455,29 +458,29 @@ extern void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+ /*
+  * common commands
+  */
+-#define BCI_SET_REGISTERS( first, n )			\
++#define BCI_SET_REGISTERS(first, n)			\
+ 	BCI_WRITE(BCI_CMD_SET_REGISTER |		\
+ 		  ((uint32_t)(n) & 0xff) << 16 |	\
+ 		  ((uint32_t)(first) & 0xffff))
+-#define DMA_SET_REGISTERS( first, n )			\
++#define DMA_SET_REGISTERS(first, n)			\
+ 	DMA_WRITE(BCI_CMD_SET_REGISTER |		\
+ 		  ((uint32_t)(n) & 0xff) << 16 |	\
+ 		  ((uint32_t)(first) & 0xffff))
+ 
+-#define BCI_DRAW_PRIMITIVE(n, type, skip)         \
+-        BCI_WRITE(BCI_CMD_DRAW_PRIM | (type) | (skip) | \
++#define BCI_DRAW_PRIMITIVE(n, type, skip)		\
++	BCI_WRITE(BCI_CMD_DRAW_PRIM | (type) | (skip) |	\
+ 		  ((n) << 16))
+-#define DMA_DRAW_PRIMITIVE(n, type, skip)         \
+-        DMA_WRITE(BCI_CMD_DRAW_PRIM | (type) | (skip) | \
++#define DMA_DRAW_PRIMITIVE(n, type, skip)		\
++	DMA_WRITE(BCI_CMD_DRAW_PRIM | (type) | (skip) |	\
+ 		  ((n) << 16))
+ 
+-#define BCI_DRAW_INDICES_S3D(n, type, i0)         \
+-        BCI_WRITE(BCI_CMD_DRAW_INDEXED_PRIM | (type) |  \
++#define BCI_DRAW_INDICES_S3D(n, type, i0)		\
++	BCI_WRITE(BCI_CMD_DRAW_INDEXED_PRIM | (type) |	\
+ 		  ((n) << 16) | (i0))
+ 
+-#define BCI_DRAW_INDICES_S4(n, type, skip)        \
+-        BCI_WRITE(BCI_CMD_DRAW_INDEXED_PRIM | (type) |  \
+-                  (skip) | ((n) << 16))
++#define BCI_DRAW_INDICES_S4(n, type, skip)		\
++	BCI_WRITE(BCI_CMD_DRAW_INDEXED_PRIM | (type) |	\
++		  (skip) | ((n) << 16))
+ 
+ #define BCI_DMA(n)	\
+ 	BCI_WRITE(BCI_CMD_DMA | (((n) >> 1) - 1))
+@@ -485,8 +488,8 @@ extern void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+ /*
+  * access to MMIO
+  */
+-#define SAVAGE_READ(reg)	DRM_READ32(  dev_priv->mmio, (reg) )
+-#define SAVAGE_WRITE(reg)	DRM_WRITE32( dev_priv->mmio, (reg) )
++#define SAVAGE_READ(reg)	DRM_READ32(dev_priv->mmio, (reg))
++#define SAVAGE_WRITE(reg)	DRM_WRITE32(dev_priv->mmio, (reg))
+ 
+ /*
+  * access to the burst command interface (BCI)
+@@ -495,12 +498,12 @@ extern void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+ 
+ #define BCI_LOCALS    volatile uint32_t *bci_ptr;
+ 
+-#define BEGIN_BCI( n ) do {			\
++#define BEGIN_BCI(n) do {			\
+ 	dev_priv->wait_fifo(dev_priv, (n));	\
+ 	bci_ptr = dev_priv->bci_ptr;		\
+-} while(0)
++} while (0)
+ 
+-#define BCI_WRITE( val ) *bci_ptr++ = (uint32_t)(val)
++#define BCI_WRITE(val) (*bci_ptr++ = (uint32_t)(val))
+ 
+ /*
+  * command DMA support
+@@ -509,7 +512,7 @@ extern void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+ 
+ #define DMA_LOCALS   uint32_t *dma_ptr;
+ 
+-#define BEGIN_DMA( n ) do {						\
++#define BEGIN_DMA(n) do {						\
+ 	unsigned int cur = dev_priv->current_dma_page;			\
+ 	unsigned int rest = SAVAGE_DMA_PAGE_SIZE -			\
+ 		dev_priv->dma_pages[cur].used;				\
+@@ -523,14 +526,14 @@ extern void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+ 			savage_dma_wait(dev_priv, cur);			\
+ 		dev_priv->dma_pages[cur].used += (n);			\
+ 	}								\
+-} while(0)
++} while (0)
+ 
+-#define DMA_WRITE( val ) *dma_ptr++ = (uint32_t)(val)
++#define DMA_WRITE(val) (*dma_ptr++ = (uint32_t)(val))
+ 
+ #define DMA_COPY(src, n) do {					\
+ 	memcpy(dma_ptr, (src), (n)*4);				\
+ 	dma_ptr += n;						\
+-} while(0)
++} while (0)
+ 
+ #if SAVAGE_DMA_DEBUG
+ #define DMA_COMMIT() do {						\
+@@ -543,17 +546,17 @@ extern void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+ 			  "%p != %p\n", expected, dma_ptr);		\
+ 		savage_dma_reset(dev_priv);				\
+ 	}								\
+-} while(0)
++} while (0)
+ #else
+-#define DMA_COMMIT() do {/* nothing */} while(0)
++#define DMA_COMMIT() do {/* nothing */} while (0)
+ #endif
+ 
+-#define DMA_FLUSH() dev_priv->dma_flush(dev_priv)
++#define DMA_FLUSH() (dev_priv->dma_flush(dev_priv))
+ 
+ /* Buffer aging via event tag
+  */
+ 
+-#define UPDATE_EVENT_COUNTER( ) do {			\
++#define UPDATE_EVENT_COUNTER() do {			\
+ 	if (dev_priv->status_ptr) {			\
+ 		uint16_t count;				\
+ 		/* coordinate with Xserver */		\
+@@ -562,14 +565,14 @@ extern void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+ 			dev_priv->event_wrap++;		\
+ 		dev_priv->event_counter = count;	\
+ 	}						\
+-} while(0)
++} while (0)
+ 
+-#define SET_AGE( age, e, w ) do {	\
++#define SET_AGE(age, e, w) do {		\
+ 	(age)->event = e;		\
+ 	(age)->wrap = w;		\
+-} while(0)
++} while (0)
+ 
+-#define TEST_AGE( age, e, w )				\
+-	( (age)->wrap < (w) || ( (age)->wrap == (w) && (age)->event <= (e) ) )
++#define TEST_AGE(age, e, w)				\
++	((age)->wrap < (w) || ((age)->wrap == (w) && (age)->event <= (e)))
+ 
+ #endif				/* __SAVAGE_DRV_H__ */
+diff --git a/drivers/gpu/drm/savage/savage_state.c b/drivers/gpu/drm/savage/savage_state.c
+index 8a3e315..bd14dcb 100644
+--- a/drivers/gpu/drm/savage/savage_state.c
++++ b/drivers/gpu/drm/savage/savage_state.c
+@@ -26,8 +26,8 @@
+ #include "savage_drm.h"
+ #include "savage_drv.h"
+ 
+-void savage_emit_clip_rect_s3d(drm_savage_private_t * dev_priv,
+-			       const struct drm_clip_rect * pbox)
++void savage_emit_clip_rect_s3d(drm_savage_private_t *dev_priv,
++			       const struct drm_clip_rect *pbox)
+ {
+ 	uint32_t scstart = dev_priv->state.s3d.new_scstart;
+ 	uint32_t scend = dev_priv->state.s3d.new_scend;
+@@ -52,8 +52,8 @@ void savage_emit_clip_rect_s3d(drm_savage_private_t * dev_priv,
+ 	}
+ }
+ 
+-void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+-			      const struct drm_clip_rect * pbox)
++void savage_emit_clip_rect_s4(drm_savage_private_t *dev_priv,
++			      const struct drm_clip_rect *pbox)
+ {
+ 	uint32_t drawctrl0 = dev_priv->state.s4.new_drawctrl0;
+ 	uint32_t drawctrl1 = dev_priv->state.s4.new_drawctrl1;
+@@ -78,7 +78,7 @@ void savage_emit_clip_rect_s4(drm_savage_private_t * dev_priv,
+ 	}
+ }
+ 
+-static int savage_verify_texaddr(drm_savage_private_t * dev_priv, int unit,
++static int savage_verify_texaddr(drm_savage_private_t *dev_priv, int unit,
+ 				 uint32_t addr)
+ {
+ 	if ((addr & 6) != 2) {	/* reserved bits */
+@@ -113,11 +113,11 @@ static int savage_verify_texaddr(drm_savage_private_t * dev_priv, int unit,
+ 	return 0;
+ }
+ 
+-#define SAVE_STATE(reg,where)			\
+-	if(start <= reg && start+count > reg)	\
++#define SAVE_STATE(reg, where)			\
++	if (start <= reg && start+count > reg)	\
+ 		dev_priv->state.where = regs[reg - start]
+-#define SAVE_STATE_MASK(reg,where,mask) do {			\
+-	if(start <= reg && start+count > reg) {			\
++#define SAVE_STATE_MASK(reg, where, mask) do {			\
++	if (start <= reg && start+count > reg) {		\
+ 		uint32_t tmp;					\
+ 		tmp = regs[reg - start];			\
+ 		dev_priv->state.where = (tmp & (mask)) |	\
+@@ -125,7 +125,7 @@ static int savage_verify_texaddr(drm_savage_private_t * dev_priv, int unit,
+ 	}							\
+ } while (0)
+ 
+-static int savage_verify_state_s3d(drm_savage_private_t * dev_priv,
++static int savage_verify_state_s3d(drm_savage_private_t *dev_priv,
+ 				   unsigned int start, unsigned int count,
+ 				   const uint32_t *regs)
+ {
+@@ -155,7 +155,7 @@ static int savage_verify_state_s3d(drm_savage_private_t * dev_priv,
+ 	return 0;
+ }
+ 
+-static int savage_verify_state_s4(drm_savage_private_t * dev_priv,
++static int savage_verify_state_s4(drm_savage_private_t *dev_priv,
+ 				  unsigned int start, unsigned int count,
+ 				  const uint32_t *regs)
+ {
+@@ -194,8 +194,8 @@ static int savage_verify_state_s4(drm_savage_private_t * dev_priv,
+ #undef SAVE_STATE
+ #undef SAVE_STATE_MASK
+ 
+-static int savage_dispatch_state(drm_savage_private_t * dev_priv,
+-				 const drm_savage_cmd_header_t * cmd_header,
++static int savage_dispatch_state(drm_savage_private_t *dev_priv,
++				 const drm_savage_cmd_header_t *cmd_header,
+ 				 const uint32_t *regs)
+ {
+ 	unsigned int count = cmd_header->state.count;
+@@ -275,9 +275,9 @@ static int savage_dispatch_state(drm_savage_private_t * dev_priv,
+ 	return 0;
+ }
+ 
+-static int savage_dispatch_dma_prim(drm_savage_private_t * dev_priv,
+-				    const drm_savage_cmd_header_t * cmd_header,
+-				    const struct drm_buf * dmabuf)
++static int savage_dispatch_dma_prim(drm_savage_private_t *dev_priv,
++				    const drm_savage_cmd_header_t *cmd_header,
++				    const struct drm_buf *dmabuf)
+ {
+ 	unsigned char reorder = 0;
+ 	unsigned int prim = cmd_header->prim.prim;
+@@ -415,8 +415,8 @@ static int savage_dispatch_dma_prim(drm_savage_private_t * dev_priv,
+ 	return 0;
+ }
+ 
+-static int savage_dispatch_vb_prim(drm_savage_private_t * dev_priv,
+-				   const drm_savage_cmd_header_t * cmd_header,
++static int savage_dispatch_vb_prim(drm_savage_private_t *dev_priv,
++				   const drm_savage_cmd_header_t *cmd_header,
+ 				   const uint32_t *vtxbuf, unsigned int vb_size,
+ 				   unsigned int vb_stride)
+ {
+@@ -516,7 +516,7 @@ static int savage_dispatch_vb_prim(drm_savage_private_t * dev_priv,
+ 					 vtx_size * count);
+ 			} else {
+ 				for (i = start; i < start + count; ++i) {
+-					DMA_COPY(&vtxbuf [vb_stride * i],
++					DMA_COPY(&vtxbuf[vb_stride * i],
+ 						 vtx_size);
+ 				}
+ 			}
+@@ -533,10 +533,10 @@ static int savage_dispatch_vb_prim(drm_savage_private_t * dev_priv,
+ 	return 0;
+ }
+ 
+-static int savage_dispatch_dma_idx(drm_savage_private_t * dev_priv,
+-				   const drm_savage_cmd_header_t * cmd_header,
++static int savage_dispatch_dma_idx(drm_savage_private_t *dev_priv,
++				   const drm_savage_cmd_header_t *cmd_header,
+ 				   const uint16_t *idx,
+-				   const struct drm_buf * dmabuf)
++				   const struct drm_buf *dmabuf)
+ {
+ 	unsigned char reorder = 0;
+ 	unsigned int prim = cmd_header->idx.prim;
+@@ -674,8 +674,8 @@ static int savage_dispatch_dma_idx(drm_savage_private_t * dev_priv,
+ 	return 0;
+ }
+ 
+-static int savage_dispatch_vb_idx(drm_savage_private_t * dev_priv,
+-				  const drm_savage_cmd_header_t * cmd_header,
++static int savage_dispatch_vb_idx(drm_savage_private_t *dev_priv,
++				  const drm_savage_cmd_header_t *cmd_header,
+ 				  const uint16_t *idx,
+ 				  const uint32_t *vtxbuf,
+ 				  unsigned int vb_size, unsigned int vb_stride)
+@@ -788,8 +788,8 @@ static int savage_dispatch_vb_idx(drm_savage_private_t * dev_priv,
+ 	return 0;
+ }
+ 
+-static int savage_dispatch_clear(drm_savage_private_t * dev_priv,
+-				 const drm_savage_cmd_header_t * cmd_header,
++static int savage_dispatch_clear(drm_savage_private_t *dev_priv,
++				 const drm_savage_cmd_header_t *cmd_header,
+ 				 const drm_savage_cmd_header_t *data,
+ 				 unsigned int nbox,
+ 				 const struct drm_clip_rect *boxes)
+@@ -860,7 +860,7 @@ static int savage_dispatch_clear(drm_savage_private_t * dev_priv,
+ 	return 0;
+ }
+ 
+-static int savage_dispatch_swap(drm_savage_private_t * dev_priv,
++static int savage_dispatch_swap(drm_savage_private_t *dev_priv,
+ 				unsigned int nbox, const struct drm_clip_rect *boxes)
+ {
+ 	unsigned int swap_cmd;
+@@ -889,10 +889,10 @@ static int savage_dispatch_swap(drm_savage_private_t * dev_priv,
+ 	return 0;
+ }
+ 
+-static int savage_dispatch_draw(drm_savage_private_t * dev_priv,
++static int savage_dispatch_draw(drm_savage_private_t *dev_priv,
+ 				const drm_savage_cmd_header_t *start,
+ 				const drm_savage_cmd_header_t *end,
+-				const struct drm_buf * dmabuf,
++				const struct drm_buf *dmabuf,
+ 				const unsigned int *vtxbuf,
+ 				unsigned int vb_size, unsigned int vb_stride,
+ 				unsigned int nbox,
+@@ -993,8 +993,7 @@ int savage_bci_cmdbuf(struct drm_device *dev, void *data, struct drm_file *file_
+ 			return -ENOMEM;
+ 
+ 		if (DRM_COPY_FROM_USER(kcmd_addr, cmdbuf->cmd_addr,
+-				       cmdbuf->size * 8))
+-		{
++				       cmdbuf->size * 8)) {
+ 			kfree(kcmd_addr);
+ 			return -EFAULT;
+ 		}
+@@ -1132,7 +1131,7 @@ int savage_bci_cmdbuf(struct drm_device *dev, void *data, struct drm_file *file_
+ 	}
+ 
+ 	if (first_draw_cmd) {
+-		ret = savage_dispatch_draw (
++		ret = savage_dispatch_draw(
+ 			dev_priv, first_draw_cmd, cmdbuf->cmd_addr, dmabuf,
+ 			cmdbuf->vb_addr, cmdbuf->vb_size, cmdbuf->vb_stride,
+ 			cmdbuf->nbox, cmdbuf->box_addr);
+-- 
+1.7.1
