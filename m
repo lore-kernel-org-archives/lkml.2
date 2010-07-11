@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754050Ab0GKNFv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 09:05:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42721 "EHLO mx1.redhat.com"
+	id S1754336Ab0GKNZe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 09:25:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8504 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752452Ab0GKNFu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 09:05:50 -0400
-Message-ID: <4C39C1AB.6000606@redhat.com>
-Date: Sun, 11 Jul 2010 16:05:47 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1753769Ab0GKNZa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 09:25:30 -0400
+Date: Sun, 11 Jul 2010 16:19:28 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Cc: Jan Engelhardt <jengelh@medozas.de>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+        James Morris <jmorris@namei.org>,
+        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+        netfilter@vger.kernel.org, coreteam@netfilter.org,
+        netdev@vger.kernel.org, herbert.xu@redhat.com, kvm@vger.kernel.org
+Subject: Re: [PATCH] netfilter: add CHECKSUM target
+Message-ID: <20100711131928.GB3461@redhat.com>
+References: <20100708222913.GA4475@redhat.com>
+ <alpine.LSU.2.01.1007091154120.7235@obet.zrqbmnf.qr>
+ <20100711122708.GA3573@redhat.com>
+ <AANLkTikamhUUuoQ8EjwPn9gB4zHZkeDuzpiqd4XcN3lx@mail.gmail.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 6/9] KVM: MMU: introduce pte_prefetch_topup_memory_cache()
-References: <4C330918.6040709@cn.fujitsu.com> <4C330A37.8080709@cn.fujitsu.com>
-In-Reply-To: <4C330A37.8080709@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikamhUUuoQ8EjwPn9gB4zHZkeDuzpiqd4XcN3lx@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/06/2010 01:49 PM, Xiao Guangrong wrote:
-> Introduce this function to topup prefetch cache
->
->
->
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index 3dcd55d..cda4587 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -89,6 +89,8 @@ module_param(oos_shadow, bool, 0644);
->   	}
->   #endif
->
-> +#define PTE_PREFETCH_NUM		16
->    
+On Sun, Jul 11, 2010 at 08:45:01PM +0800, Changli Gao wrote:
+> On Sun, Jul 11, 2010 at 8:27 PM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> > On Fri, Jul 09, 2010 at 11:56:26AM +0200, Jan Engelhardt wrote:
+> >>
+> >> On Friday 2010-07-09 00:29, Michael S. Tsirkin wrote:
+> >> >
+> >> > include/linux/netfilter_ipv4/ipt_CHECKSUM.h |   18 +++++++
+> >> > net/ipv4/netfilter/Kconfig                  |   16 ++++++
+> >> > net/ipv4/netfilter/Makefile                 |    1 +
+> >> > net/ipv4/netfilter/ipt_CHECKSUM.c           |   72 +++++++++++++++++++++++++++
+> >>
+> >> New modules should use xt.
+> >
+> > I tried moving the module to xt_CHECKSUM but now
+> >        iptables -A POSTROUTING -t mangle -p udp --dport 68 -j CHECKSUM --checksum-fill
+> > does not to load the module.
+> > It seems that xt_request_find_target in x_tables uses the prefix 'ip' for a module.
+> > What am I missing?
+> >
+> 
+> You should add MODULE_ALIAS clause, i.e.
+> 
+> MODULE_ALIAS("ipt_CHECKSUM");
 
-Let's make it 8 to start with...  It's frightening enough.
+This worked, thanks!
 
-(8 = one cache line in both guest and host)
-
-> @@ -316,15 +318,16 @@ static void update_spte(u64 *sptep, u64 new_spte)
->   	}
->   }
->
-> -static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
-> -				  struct kmem_cache *base_cache, int min)
-> +static int __mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
-> +				    struct kmem_cache *base_cache, int min,
-> +				    int max, gfp_t flags)
->   {
->   	void *obj;
->
->   	if (cache->nobjs>= min)
->   		return 0;
-> -	while (cache->nobjs<  ARRAY_SIZE(cache->objects)) {
-> -		obj = kmem_cache_zalloc(base_cache, GFP_KERNEL);
-> +	while (cache->nobjs<  max) {
-> +		obj = kmem_cache_zalloc(base_cache, flags);
->   		if (!obj)
->   			return -ENOMEM;
->   		cache->objects[cache->nobjs++] = obj;
-> @@ -332,6 +335,20 @@ static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
->   	return 0;
->   }
->
-> +static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
-> +				  struct kmem_cache *base_cache, int min)
-> +{
-> +	return __mmu_topup_memory_cache(cache, base_cache, min,
-> +				      ARRAY_SIZE(cache->objects), GFP_KERNEL);
-> +}
-> +
-> +static int pte_prefetch_topup_memory_cache(struct kvm_vcpu *vcpu)
-> +{
-> +	return __mmu_topup_memory_cache(&vcpu->arch.mmu_rmap_desc_cache,
-> +					rmap_desc_cache, PTE_PREFETCH_NUM,
-> +					PTE_PREFETCH_NUM, GFP_ATOMIC);
-> +}
-> +
->    
-
-Just make the ordinary topup sufficient for prefetch.  If we allocate 
-too much, we don't lose anything, the memory remains for the next time 
-around.
-
-Note for shadow pages or pte chains you don't need extra pages, since 
-the prefetch fits in just one shadow page.  You only need extra for rmap.
-
--- 
-error compiling committee.c: too many arguments to function
-
+> -- 
+> Regards,
+> Changli Gao(xiaosuo@gmail.com)
