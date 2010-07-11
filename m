@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752434Ab0GKJBf (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 05:01:35 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:51621 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751978Ab0GKJBe (ORCPT
+	id S1752714Ab0GKJBm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 05:01:42 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:48769 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566Ab0GKJBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 05:01:34 -0400
-Message-ID: <4C398866.8050304@cs.helsinki.fi>
-Date: Sun, 11 Jul 2010 12:01:26 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	Sun, 11 Jul 2010 05:01:37 -0400
+Date: Sun, 11 Jul 2010 18:01:31 +0900
+From: Simon Horman <horms@verge.net.au>
+To: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+       netfilter-devel@vger.kernel.org
+Cc: Malcolm Turnbull <malcolm@loadbalancer.org>,
+       Wensong Zhang <wensong@linux-vs.org>,
+       Julius Volz <julius.volz@gmail.com>, Patrick McHardy <kaber@trash.net>,
+       "David S. Miller" <davem@davemloft.net>, Hannes Eder <heder@google.com>
+Subject: Re: [patch v2.5 3/4] IPVS: make FTP work with full NAT support
+Message-ID: <20100711085959.GA28199@verge.net.au>
+References: <20100710030057.731118760@vergenet.net>
+ <20100710030222.732009020@vergenet.net>
 MIME-Version: 1.0
-To: Axel Lin <axel.lin@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-       Stephen Hemminger <shemminger@vyatta.com>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       David Teigland <teigland@redhat.com>,
-       "Hans J. Koch" <hjk@linutronix.de>
-Subject: Re: [PATCH] edd: fix possible memory leak in edd_init() error path
-References: <1278672607.1335.3.camel@mola>
-In-Reply-To: <1278672607.1335.3.camel@mola>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100710030222.732009020@vergenet.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Axel Lin wrote:
-> The error may happen at any iteration of the for loop,
-> this patch properly unregisters already registed edd_devices in error path.
+On Sat, Jul 10, 2010 at 12:01:00PM +0900, Simon Horman wrote:
+> From:	Hannes Eder <heder@google.com>
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-
-Looks good to me.
-
-Reviewed-by: Pekka Enberg <penberg@cs.helsinki.fi>
-
-> ---
->  drivers/firmware/edd.c |   23 ++++++++++++++++-------
->  1 files changed, 16 insertions(+), 7 deletions(-)
+> Use nf_conntrack/nf_nat code to do the packet mangling and the TCP
+> sequence adjusting.  The function 'ip_vs_skb_replace' is now dead
+> code, so it is removed.
 > 
-> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
-> index 110e24e..b75082c 100644
-> --- a/drivers/firmware/edd.c
-> +++ b/drivers/firmware/edd.c
-> @@ -744,7 +744,7 @@ static inline int edd_num_devices(void)
->  static int __init
->  edd_init(void)
->  {
-> -	unsigned int i;
-> +	int i;
->  	int rc=0;
->  	struct edd_device *edev;
+> To SNAT FTP, use something like:
+> 
+> % iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
+> > --vport 21 -j SNAT --to-source 192.168.10.10
+> 
+> and for the data connections in passive mode:
+> 
+> % iptables -t nat -A POSTROUTING -m ipvs --vaddr 192.168.100.30/32 \
+> > --vportctl 21 -j SNAT --to-source 192.168.10.10
+> 
+> using '-m state --state RELATED' would also works.
+> 
+> Make sure the kernel modules ip_vs_ftp, nf_conntrack_ftp, and
+> nf_nat_ftp are loaded.
+
+[snip]
+
+> Index: nf-next-2.6/net/netfilter/ipvs/ip_vs_ftp.c
+> ===================================================================
+> --- nf-next-2.6.orig/net/netfilter/ipvs/ip_vs_ftp.c	2010-07-10 11:48:54.000000000 +0900
+> +++ nf-next-2.6/net/netfilter/ipvs/ip_vs_ftp.c	2010-07-10 11:59:19.000000000 +0900
+
+[snip]
+
+> @@ -43,6 +57,16 @@
+>  #define SERVER_STRING "227 Entering Passive Mode ("
+>  #define CLIENT_STRING "PORT "
 >  
-> @@ -760,21 +760,30 @@ edd_init(void)
->  	if (!edd_kset)
->  		return -ENOMEM;
->  
-> -	for (i = 0; i < edd_num_devices() && !rc; i++) {
-> +	for (i = 0; i < edd_num_devices(); i++) {
->  		edev = kzalloc(sizeof (*edev), GFP_KERNEL);
-> -		if (!edev)
-> -			return -ENOMEM;
-> +		if (!edev) {
-> +			rc = -ENOMEM;
-> +			goto out;
-> +		}
->  
->  		rc = edd_device_register(edev, i);
->  		if (rc) {
->  			kfree(edev);
-> -			break;
-> +			goto out;
->  		}
->  		edd_devices[i] = edev;
->  	}
->  
-> -	if (rc)
-> -		kset_unregister(edd_kset);
-> +	return 0;
+> +#define FMT_TUPLE	"%pI4:%u->%pI4:%u/%u"
+> +#define ARG_TUPLE(T)	(T)->src.u3.ip, ntohs((T)->src.u.all), \
+> +			(T)->dst.u3.ip, ntohs((T)->dst.u.all), \
+> +			(T)->dst.protonum
 > +
-> +out:
-> +	while (--i >= 0) {
-> +		edev = edd_devices[i];
-> +		if (edev)
-> +			edd_device_unregister(edev);
-> +	}
-> +	kset_unregister(edd_kset);
->  	return rc;
->  }
+> +#define FMT_CONN	"%pI4:%u->%pI4:%u->%pI4:%u/%u:%u"
+> +#define ARG_CONN(C)	(C)->caddr, ntohs((C)->cport), \
+> +			(C)->vaddr, ntohs((C)->vport), \
+> +			(C)->daddr, ntohs((C)->dport), \
+> +			(C)->protocol, (C)->state
 >  
+>  /*
+>   * List of ports (up to IP_VS_APP_MAX_PORTS) to be handled by helper
 
+The argument to the %pI4 needs to be a pointer
+so (T)->src.u3.ip should be &(T)->src.u3.ip and
+(C)->caddr should be &(C)->caddr.ip.
+
+I'm not sure how this slipped through the cracks so far.
+I will repost.
