@@ -1,105 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754261Ab0GKRW5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 13:22:57 -0400
-Received: from 1wt.eu ([62.212.114.60]:39183 "EHLO 1wt.eu"
+	id S1754074Ab0GKRc3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 13:32:29 -0400
+Received: from serv04.lahn.de ([213.239.197.57]:60122 "EHLO serv04.lahn.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752216Ab0GKRWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 13:22:55 -0400
-Date: Sun, 11 Jul 2010 19:22:52 +0200
-From: Willy Tarreau <w@1wt.eu>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-Message-ID: <20100711172252.GA3379@1wt.eu>
-References: <201007110918.42120.Martin@lichtvoll.de> <AANLkTimCwi2uJqqPaq3U30f3rvdDizu1BnaaXgvNeC9k@mail.gmail.com> <201007111651.42963.Martin@lichtvoll.de>
+	id S1752720Ab0GKRc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 13:32:28 -0400
+Date: Sun, 11 Jul 2010 19:29:39 +0200
+From: Michael Leun <lkml20100708@newton.leun.net>
+To: netdev@vger.kernel.org
+Cc: davem@davemloft.net, linux-kernel@vger.kernel.org
+Subject: FW: NET_NS: unregister_netdevice: waiting for lo to become free
+ (after using openvpn) (was Re: sysfs bug when using tun with network
+ namespaces)
+Message-ID: <20100711192939.1c25dcaf@xenia.leun.net>
+In-Reply-To: <20100710235323.5336f627@xenia.leun.net>
+References: <loom.20100708T183152-326@post.gmane.org>
+ <20100709235744.GA12752@kroah.com>
+ <20100710101540.2799c9ef@xenia.leun.net>
+ <20100710140800.GA20424@kroah.com>
+ <20100710165208.59272ae6@xenia.leun.net>
+ <20100710235323.5336f627@xenia.leun.net>
+Organization: Not Organized
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.6; i586-suse-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007111651.42963.Martin@lichtvoll.de>
-User-Agent: Mutt/1.4.2.3i
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Martin,
+Hi,
 
-On Sun, Jul 11, 2010 at 04:51:42PM +0200, Martin Steigerwald wrote:
-> I hope that someone answers who actually can take some critique. From the 
-> current replies I perceive a lack of that ability.
+On Sat, 10 Jul 2010 16:52:08 +0200
+Michael Leun <lkml20100708@newton.leun.net> wrote:
 
-well, I'll try to do then :-)
+> # tunctl -u ml -t tap1  
 
-There were some threads in the past about kernel releases quality,
-where Linus explained why it could not be completely black or white.
+> works as expected, but  
 
-Among the things he explained, I remember that one of primary concern
-was the inability to slow down development. I mean, if he waits 2 more
-weeks for things to stabilize, then there will be two more weeks of
-crap^H^H^H^Hdevelopment merged in next merge window, so in fact this
-will just shift dates and not quality.
+> # unshare -n /bin/bash
+> # tunctl -u ml -t tap1  
+[bug  (no sysfs support for net namespaces at all) solved in 2.6.35-rcX
+- I used 2.6.34.1]
 
-There are also some regressions that get merged with every pre-release.
-Thus, assuming he would wait for one more pre-release to merge the
-fixes you spotted, 2 or 3 more would appear, so there's a point where
-it must be decided when to release.
+Now that we have solved that last one I've another glitch (this time using 2.6.35-rc4):
 
-Right now it's released when he feels it "good enough". This can be
-very subjective, but I'd think that "good enough" basically means
-that the kernel will be able to live in its stable branch without
-major changes and without reverting features.
+In an network namespace I can use an tun/tap tunnel through ssh and
+when closing that namespace then eveything is fine.
 
-Also, you have to consider that there are several types of users.
-Some of them are developers who will run a latest -git kernel at
-some point. Some of them will be enthousiasts waiting for a feature,
-and who will run every -rc kernel once the feature is merged, to
-ensure it does not break before the release. There are also janitors
-and the curious ones who'll basically run a few of the last -rc as
-time permits to see if they can spot a few last-minute issues before
-the release. There are the brave ones who systematically download
-the dot-0 release once Linus announces it and will proudly run it
-to show their friends who it's better than the last one. There are
-those who need a bit of stability (eg: professional laptop or home
-server) and will prefer to wait for a few stable releases to ensure
-they won't waste their time on a big stupid issue that all other ones
-above will have immediately spotted for them. And there are the ones
-who run production servers who will either use distro kernels of
-long term stable kernels, with a more or less long qualification
-process between upgrades.
+But when using openvpn (also tunnel trough tun/tap) in an network
+namespace and then closing that namespace I get:
 
-It's just an ecosystem where you have to find your place. From your
-description, I think you're before the last ones above, you need
-something which works, eventhough it's not critical, so you could
-very well wait for 2-3 stable updates before upgrading (that does
-not prevent you from testing earlier on other systems if you want
-to test performance, new features, regressions, etc...).
+unregister_netdevice: waiting for lo to become free
+[repeated]
 
-It's not really advisable to call dot-0 releases "unstable" because
-it will only result in shifting the adoption point between the user
-classes above. We need to have enthousiasts who proudly say "hey
-look, dot-0 and it's already rock solid". We've all seen some of them
-and they're the ones who help reporting issues that get fixed in the
-next stable release.
+Please see the following two examples showing that difference:
 
-I think that the most reasonable thing to do is to assume your need
-for stability and always refrain from running on the latest release.
+# > unshare -n /bin/bash
+# > # how to setup veth device pair to get connectivity into namespace not shown here
+# > tunctl -u ml -t tap1
+# > ssh -o Tunnel=Ethernet -w 1:1 somewhere
+[ running some traffic over tap1 not shown here ]
+^d # logging out from somewhere
+# > tunctl -d tap1
+# > exit # logging out from shell in network namespace
 
-Speaking for myself, I tend to run rock solid kernels for my data (my
-file server was still on 2.4.37.9 till this afternoon, I just upgraded
-it to 2.6). The distro's kernel currently is 2.6.33.4 and I'm going to
-switch it back to 2.6.32.x or 2.6.27.x because I'd rather have something
-fully tested there. My desktop which regularly reaches 50-100 days
-uptime runs on whatever looks stable enough for the job when I upgrade.
-Usually it's one of Greg's long term stable series. 2.6.27.x or
-2.6.32.x, with x >= 10. My work laptop is on similar kernels. My
-netbook is generally running experimental code, it does not matter
-much. It's where I'd try 2.6.35-rc for instance, or where I test
-2.6.32.x-rc when Greg announces them.
+Now the veth device pair used automagically vanishes and nothing
+from that different network namespace remains - very well.
 
-You see, there's a kernel for everyone, and for every usage. You just
-have to make your choice. And when you don't know or don't want to
-guess, stick to the distro's kernel.
+but
 
-Regards,
-Willy
+# > unshare -n /bin/bash
+# > # how to setup veth device pair to get connectivity into namespace not shown here
+# > openvpn --config some.config
+[ running some traffic over vpn device not shown here ]
+^c # stopping openvpn
+# > lsof -i
+# > netstat -an
+Active Internet connections (servers and established)
+Proto Recv-Q Send-Q Local Address           Foreign Address         State
+Active UNIX domain sockets (servers and established)
+Proto RefCnt Flags       Type       State         I-Node Path
+# > ps ax|grep openvpn|grep -v grep
+# > # cannot find anything that suggests there is anything left from that openvpn session
+# > exit # logging out from shell in network namespace
+
+Now I get
+
+Jul 10 20:02:36 doris kernel: unregister_netdevice: waiting for lo to become free. Usage count = 3
+[repeated]
+
+Now one might say it is fault of openvpn (used OpenVPN 2.1_rc20
+i586-suse-linux - the one in openSuSE 11.2 package), openvpn didn't
+close some ressource and ssh does fine.
+
+But: should'nt kernel clean up after process when it exits?
+And/or: Should'nt kernel clean up if last process in network namespace
+exits - there is nothing left which might use that interface?!
+
+Greg KH <greg@kroah.com> wrote:
+
+> Yes, you are correct.  Care to resend all of this to the
+> network-namespace developer(s) and the netdev mailing list so that the
+> correct people are notified so they can fix it all?
+
+[X] done - hopefully, cannot find a particular network namespace
+developer in MAINTAINERS or source files. If such a one exists, please
+forward.
+
+Thanks.
+
+-- 
+MfG,
+
+Michael Leun
 
