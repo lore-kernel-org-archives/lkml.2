@@ -1,48 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754950Ab0GKUlw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 16:41:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41221 "EHLO mx2.suse.de"
+	id S1754747Ab0GKU6n (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 16:58:43 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60787 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754194Ab0GKUlu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 16:41:50 -0400
-Date: Sun, 11 Jul 2010 22:41:48 +0200 (CEST)
+	id S1753088Ab0GKU6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 16:58:41 -0400
+Date: Sun, 11 Jul 2010 22:58:37 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Amerigo Wang <amwang@redhat.com>,
-        Mauro Carvalho Chehab <mchehab@redhat.com>,
-        =?ISO-8859-15?Q?=22Uwe_Kleine-K=F6nig=22?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: linux-next: manual merge of the trivial tree with the v4l-dvb
- tree
-In-Reply-To: <20100706152529.371c7800.sfr@canb.auug.org.au>
-Message-ID: <alpine.LNX.2.00.1007112241280.4741@pobox.suse.cz>
-References: <20100706152529.371c7800.sfr@canb.auug.org.au>
+To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
+Cc: Jaya Kumar <jayakumar.lkml@gmail.com>, linux-fbdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/4 - adjusted changelog] HID: picolcd: fix deferred_io
+ init/cleanup to  (un)register_framebuffer ordering
+In-Reply-To: <20100630223631.49ab1c85@neptune.home>
+Message-ID: <alpine.LNX.2.00.1007112258270.4741@pobox.suse.cz>
+References: <20100509184911.3f136b77@neptune.home> <AANLkTik0EkPYKdnhrpF7yK6eXIrHMsNYrzSC6tyeBR0P@mail.gmail.com> <20100510080047.5adade6f@pluto.restena.lu> <20100526215829.28a4aa47@neptune.home> <20100530130945.5c03797f@neptune.home> <20100623123225.4c16e653@neptune.home>
+ <alpine.LNX.2.00.1006241053360.13809@pobox.suse.cz> <20100628222641.489c955a@neptune.home> <20100628222920.1127f8eb@neptune.home> <AANLkTingjmM4OmkdXl9IOUe5zsj0QxTdix1h34pVHWGl@mail.gmail.com> <20100630075657.47a325a6@pluto.restena.lu>
+ <20100630223631.49ab1c85@neptune.home>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 6 Jul 2010, Stephen Rothwell wrote:
+On Wed, 30 Jun 2010, Bruno Prémont wrote:
 
-> Hi Jiri,
+> Adjust ordering if framebuffer (un)registration and defio init/cleanup
+> to match the correct order (init defio, register FB ... unregister FB,
+> cleanup defio)
 > 
-> Today's linux-next merge of the trivial tree got a conflict in
-> drivers/media/video/ov511.c between commit
-> b2bde15c455d09057dc7bd9f5b9ed67b9ac99b8a ("V4L/DVB: Remove obsolete ov511
-> driver") from the v4l-dvb tree and commit
-> 421f91d21ad6f799dc7b489bb33cc560ccc56f98 ("fix typos concerning "initiali
-> [zs]e"") from the trivial tree.
-> 
-> The former just removes the file, so I removed it.
+> Acked-by: Jaya Kumar <jayakumar.lkml@gmail.com>
+> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> ---
+> I consider Jaya's reply as an ack to the patch.
 
-Hi Stephen,
-
-thanks for reporting it, I have reverted the drivers/media/video/ov511.c 
-hunk.
+Applied, thanks Bruno.
 
 -- 
 Jiri Kosina
