@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751402Ab0GKGKP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 02:10:15 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51898
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750873Ab0GKGKM (ORCPT
+	id S1751423Ab0GKGNH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 02:13:07 -0400
+Received: from fafnir.cs.unc.edu ([152.2.129.90]:44578 "EHLO fafnir.cs.unc.edu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751089Ab0GKGNF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 02:10:12 -0400
-Date: Sat, 10 Jul 2010 23:10:26 -0700 (PDT)
-Message-Id: <20100710.231026.233698429.davem@davemloft.net>
-To: joe@perches.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, gregkh@suse.de, James.Bottomley@suse.de,
-       matthew@wil.cx, linux-scsi@vger.kernel.org
-Subject: Re: [PATCH net-next] drivers/scsi: Remove warnings after vsprintf
- %pV introduction
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1278824921.1501.37.camel@Joe-Laptop.home>
-References: <1278562423.1712.43.camel@Joe-Laptop>
-	<20100710.195210.200371025.davem@davemloft.net>
-	<1278824921.1501.37.camel@Joe-Laptop.home>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 11 Jul 2010 02:13:05 -0400
+Subject: Re: periods and deadlines in SCHED_DEADLINE
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=windows-1252
+From: Bjoern Brandenburg <bbb@email.unc.edu>
+In-Reply-To: <1278758174.1998.31.camel@laptop>
+Date: Sun, 11 Jul 2010 08:12:14 +0200
+Cc: Luca Abeni <lucabe72@email.it>, Raistlin <raistlin@linux.it>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Song Yuan <song.yuan@ericsson.com>,
+       Dmitry Adamushko <dmitry.adamushko@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Nicola Manica <nicola.manica@disi.unitn.it>,
+       Claudio Scordino <claudio@evidence.eu.com>,
+       Harald Gustafsson <harald.gustafsson@ericsson.com>, bastoni@cs.unc.edu,
+       Giuseppe Lipari <lipari@retis.sssup.it>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <F3AA2541-6CF9-48A4-B0A6-E5CFA7BF53BB@email.unc.edu>
+References: <1278682707.6083.227.camel@Palantir> <1278685470.1900.206.camel@laptop>  <1278745907.5248.18.camel@localhost> <1278758174.1998.31.camel@laptop>
+To: Peter Zijlstra <peterz@infradead.org>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Sat, 10 Jul 2010 22:08:41 -0700
-
-> On Sat, 2010-07-10 at 19:52 -0700, David Miller wrote:
->> Could you take a stab at this and the other scsi bits that
->> trigger this warning?
+On Jul 10, 2010, at 12:36 PM, Peter Zijlstra wrote:
+> On Sat, 2010-07-10 at 09:11 +0200, Luca Abeni wrote:
+>> On Fri, 2010-07-09 at 16:24 +0200, Peter Zijlstra wrote:
+>>> On Fri, 2010-07-09 at 15:38 +0200, Raistlin wrote:
+>>>> Basically, from the scheduling point of view, what it could happen is
+>>>> that I'm still _NOT_ going to allow a task with runtime Q_i, deadline
+>>>> D_i and period P_i to use more bandwidth than Q_i/P_i, I'm still using D
+>>>> for scheduling but the passing of the simple in-kernel admission test
+>>>> Sum_i(Q_i/P_i)<1 won't guarantee that the task will always finish its
+>>>> jobs before D. 
+>>> 
+>>> But the tardiness would still be bounded, right? So its a valid Soft-RT
+>>> model?
 > 
-> Remove warnings introduced by conversions of dev_<level>
-> macros to functions.
+>> I think that if Sum_i(Q_i/P_i)<1 but Sum_i(Q_i/min{P_i,D_i})>=1 then you
+>> can have sporadic deadline misses, but it should still be possible to
+>> compute an upper bound for the tardiness.
+>> But this is just a feeling, I have no proof... :)
 > 
-> Compile tested only.
+> The paper referenced by Bjoern yesterday mentioned that Baruah et al.
+> did that proof.
 > 
-> Signed-off-by: Joe Perches <joe@perches.com>
+>        "For the considered case di < pi , Baruah et al. [7] showed
+>        that the complexity increases considerably. However, as-
+>        suming the processor utilization to be strictly less than 1,
+>        Baruah et al. [6, 7] proved that if a deadline is missed,
+>        this happens within a maximum time upper bound which
+>        can be computed."
+> 
+> 
+> [6] S. Baruah, A. Mok, and L. Rosier. Preemptively scheduling
+> hard-real-time sporadic tasks on one processor. Proceedings
+> of the 11th IEEE Real-Time Systems Symposium, December 1990.
+> 
+> [7] S. Baruah, L. Rosier, and R. Howell. Algorithms and
+> complexity concerning the preemptive scheduling of peri-
+> odic real-time tasks on one processor. Real-Time Systems,
+> 2(4):301–324, November 1990.
 
-SCSI folks, the background is that we have moved the dev_*() printk
-macros to external functions, so that the prefixing printf strings
-don't get emitting at every call site.
+These are two different things.
 
-As a consequence, dev_*() calls that try to use an empty string as the
-printf format emit a warning from gcc since an empty constant string
-is not a valid printf format.
+"Bounded tardiness" means "is there a constant x such that _every deadline_ is missed by at most x" and is commonly used in the context of global multiprocessor schedulers.
 
-That's what this change is all about.
+Baruah et al. showed that _on a uniprocessor_ the first deadline miss occurs within a bounded-length interval if the system is not fully utilized, which yields a slow but accurate admissions test. This result doesn't say by how much the first deadline is missed (if it is missed), nor whether or not there will be later deadline misses with ever-growing tardiness. (I don't think that's the case, but Baruah et al.'s work was not concerned with this question.)
 
-Anyways:
+> 
+> 
+> It also jives well with that I remember from reading through Jim's
+> papers on Soft-RT G-EDF.
+> 
 
-Acked-by: David S. Miller <davem@davemloft.net>
+Guaranteed bounded tardiness as long as the system is not over-utilized for the case P_i!=D_i follows from Leontyev & Anderson's work on window-constrained scheduling policies [1]: each priority priority point (i.e., deadline) lies within the window [release, release + max(D_i)] and is thus window-constrained.
+
+- Björn
+
+[1] H. Leontyev and J. Anderson, " Generalized Tardiness Bounds for Global Multiprocessor Scheduling ", Proceedings of the 28th IEEE Real-Time Systems Symposium, pp. 413-422, December 2007.  http://www.cs.unc.edu/~anderson/papers/rtss07b.pdf
+
+---
+Björn B. Brandenburg
+Ph.D. Student 
+Dept. of Computer Science
+University of North Carolina at Chapel Hill
+http://www.cs.unc.edu/~bbb
+
+
+
+
