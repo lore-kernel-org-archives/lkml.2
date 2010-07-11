@@ -1,37 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752937Ab0GKJRM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 05:17:12 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:61019 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751859Ab0GKJRL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 05:17:11 -0400
-Content-Type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org
-Date: Sun, 11 Jul 2010 05:10:21 -0400
-Subject: SNATed connections show as original ip in /proc/net/tcp
+	id S1753313Ab0GKJ1e (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 05:27:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57030 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751544Ab0GKJ1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 05:27:31 -0400
+Date: Sun, 11 Jul 2010 12:21:17 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+       Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+       "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
+       James Morris <jmorris@namei.org>,
+       Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
+       linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
+       netfilter@vger.kernel.org, coreteam@netfilter.org,
+       netdev@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: [PATCH] netfilter: add CHECKSUM target
+Message-ID: <20100711092117.GA16502@redhat.com>
+References: <20100708222913.GA4475@redhat.com>
+ <20100709071814.GA27964@gondor.apana.org.au>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Noah McNallie" <n0ah@n0ah.org>
-Message-ID: <op.vfn83jvflgimzx@win7>
-User-Agent: Opera Mail/10.60 (Win32)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100709071814.GA27964@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-just as the topic describes.
+On Fri, Jul 09, 2010 at 03:18:14PM +0800, Herbert Xu wrote:
+> On Fri, Jul 09, 2010 at 01:29:13AM +0300, Michael S. Tsirkin wrote:
+> > This adds a `CHECKSUM' target, which can be used in the iptables mangle
+> > table.
+> > 
+> > You can use this target to compute and fill in the checksum in
+> > an IP packet that lacks a checksum.  This is particularly useful,
+> > if you need to work around old applications such as dhcp clients,
+> > that do not work well with checksum offloads, but don't want to
+> > disable checksum offload in your device.
+> > 
+> > The problem happens in the field with virtualized applications.
+> > For reference, see Red Hat bz 605555, as well as
+> > http://www.spinics.net/lists/kvm/msg37660.html
+> > 
+> > Typical expected use (helps old dhclient binary running in a VM):
+> > iptables -A POSTROUTING -t mangle -p udp --dport 68 -j CHECKSUM
+> > --checksum-fill
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> 
+> I'd think that this target would be protocol-agnostic, no?
 
-I'm currently doing SNAT to force some destination tcp ports to be routed  
-through a specific route rather than the default route. To accomplish this  
-I mark thoes packets with iptables, use 'ip' to specify marked packets via  
-the specified route, and then use iptables to change their source address.
+Meaning it should go into net/netfilter/? Will do.
 
-one problem i've noticed is that in netstat (and hence /proc/net/tcp) the  
-connections are shown as their original source. this causes problems with  
-some things such as identd, because identd won't see the SNATed to ip with  
-that port open. hence it will reply that it has no connection.
-
-anyway i can get around this?
-
-noah
+> Cheers,
+> -- 
+> Email: Herbert Xu <herbert@gondor.apana.org.au>
+> Home Page: http://gondor.apana.org.au/~herbert/
+> PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
