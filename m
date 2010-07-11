@@ -1,183 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754606Ab0GKPUb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 11:20:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18345 "EHLO mx1.redhat.com"
+	id S1751765Ab0GKPbM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 11:31:12 -0400
+Received: from mail.perches.com ([173.55.12.10]:1674 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753406Ab0GKPU3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 11:20:29 -0400
-Date: Sun, 11 Jul 2010 18:14:53 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
-        Jan Engelhardt <jengelh@medozas.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        herbert@gondor.hengli.com.au
-Subject: [PATCHv3] extensions: libxt_CHECKSUM extension
-Message-ID: <20100711151453.GA7563@redhat.com>
-References: <20100711150623.GA7420@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100711150623.GA7420@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1750824Ab0GKPbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 11:31:11 -0400
+Subject: Re: [PATCH v2] hwmon: Add support for JEDEC JC 42.4 compliant
+ temperature sensors
+From: Joe Perches <joe@perches.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Goyette <paul@whooppee.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+In-Reply-To: <1278859984-22593-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1278859984-22593-1-git-send-email-guenter.roeck@ericsson.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 11 Jul 2010 08:31:06 -0700
+Message-ID: <1278862266.1501.59.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a `CHECKSUM' target, which can be used in the iptables mangle
-table.
+On Sun, 2010-07-11 at 07:53 -0700, Guenter Roeck wrote:
+> diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
+> new file mode 100644
+> index 0000000..685057d
+> --- /dev/null
+> +++ b/drivers/hwmon/jc42.c
+[]
+> +struct jc42_chips {
+> +	u16 manid;
+> +	u16 devid;
+> +	u16 devid_mask;
+> +};
+> +
+> +static struct jc42_chips jc42_chips[] = {
+> +	{ ADT_MANID, ADT7408_DEVID, ADT7408_DEVID_MASK },
+> +	{ IDT_MANID, TS3000B3_DEVID, TS3000B3_DEVID_MASK },
+> +	{ MAX_MANID, MAX6604_DEVID, MAX6604_DEVID_MASK },
+> +	{ MCP_MANID, MCP98242_DEVID, MCP98242_DEVID_MASK },
+> +	{ MCP_MANID, MCP98243_DEVID, MCP98243_DEVID_MASK },
+> +	{ MCP_MANID, MCP9843_DEVID, MCP9843_DEVID_MASK },
+> +	{ NXP_MANID, SE97_DEVID, SE97_DEVID_MASK },
+> +	{ ONS_MANID, CAT6095_DEVID, CAT6095_DEVID_MASK },
+> +	{ NXP_MANID, SE98_DEVID, SE98_DEVID_MASK },
+> +	{ STM_MANID, STTS424_DEVID, STTS424_DEVID_MASK },
+> +	{ STM_MANID, STTS424E_DEVID, STTS424E_DEVID_MASK },
+> +};
+[]
+> +	for (i = 0; i < ARRAY_SIZE(jc42_chips); i++) {
+> +		if (manid == jc42_chips[i].manid
+> +		    && (devid & jc42_chips[i].devid_mask) ==
+> +					    jc42_chips[i].devid) {
+> +			strlcpy(info->type, "jc42", I2C_NAME_SIZE);
+> +			return 0;
+> +		}
+> +	}
 
-You can use this target to compute and fill in the checksum in
-a packet that lacks a checksum.  This is particularly useful,
-if you need to work around old applications such as dhcp clients,
-that do not work well with checksum offloads, but don't want to disable
-checksum offload in your device.
+Decidedly trivial:
 
-The problem happens in the field with virtualized applications.
-For reference, see Red Hat bz 605555, as well as
-http://www.spinics.net/lists/kvm/msg37660.html
+Kernel style seems to prefer having logical tests at
+end of line rather than start of line.
 
-Typical expected use (helps old dhclient binary running in a VM):
-iptables -A POSTROUTING -t mangle -p udp --dport bootpc \
-        -j CHECKSUM --checksum-fill
+Maybe this bit would be more readable with a temporary:
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+	for (i = 0; i < ARRAY_SIZE(jc42_chips); i++) {
+		struct jc42_chips *chip = &jc42_chips[i];
+		if (manid == chip->manid &&
+		    (devid & chip->devid_mask) == chip->devid) {
+			strlcpy(info->type, "jc42", I2C_NAME_SIZE);
+			return 0;
+		}
+	}
 
-Correction in the documentation. Sorry about the noise.
-
-Changes from v2:
-	updated man file
-Changes from v1:
-	switched from ipt to xt
-
- extensions/libxt_CHECKSUM.c   |   99 +++++++++++++++++++++++++++++++++++++++++
- extensions/libxt_CHECKSUM.man |    8 +++
- 2 files changed, 107 insertions(+), 0 deletions(-)
- create mode 100644 extensions/libxt_CHECKSUM.c
- create mode 100644 extensions/libxt_CHECKSUM.man
-
-diff --git a/extensions/libxt_CHECKSUM.c b/extensions/libxt_CHECKSUM.c
-new file mode 100644
-index 0000000..00fbd8f
---- /dev/null
-+++ b/extensions/libxt_CHECKSUM.c
-@@ -0,0 +1,99 @@
-+/* Shared library add-on to xtables for CHECKSUM
-+ *
-+ * (C) 2002 by Harald Welte <laforge@gnumonks.org>
-+ * (C) 2010 by Red Hat, Inc
-+ * Author: Michael S. Tsirkin <mst@redhat.com>
-+ *
-+ * This program is distributed under the terms of GNU GPL v2, 1991
-+ *
-+ * libxt_CHECKSUM.c borrowed some bits from libipt_ECN.c
-+ *
-+ * $Id$
-+ */
-+#include <stdio.h>
-+#include <string.h>
-+#include <stdlib.h>
-+#include <getopt.h>
-+
-+#include <xtables.h>
-+#include <linux/netfilter/xt_CHECKSUM.h>
-+
-+static void CHECKSUM_help(void)
-+{
-+	printf(
-+"CHECKSUM target options\n"
-+"  --checksum-fill			Fill in packet checksum.\n");
-+}
-+
-+static const struct option CHECKSUM_opts[] = {
-+	{ "checksum-fill", 0, NULL, 'F' },
-+	{ .name = NULL }
-+};
-+
-+static int CHECKSUM_parse(int c, char **argv, int invert, unsigned int *flags,
-+                     const void *entry, struct xt_entry_target **target)
-+{
-+	struct xt_CHECKSUM_info *einfo
-+		= (struct xt_CHECKSUM_info *)(*target)->data;
-+
-+	switch (c) {
-+	case 'F':
-+		if (*flags)
-+			xtables_error(PARAMETER_PROBLEM,
-+			        "CHECKSUM target: Only use --checksum-fill ONCE!");
-+		einfo->operation = XT_CHECKSUM_OP_FILL;
-+		*flags |= XT_CHECKSUM_OP_FILL;
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	return 1;
-+}
-+
-+static void CHECKSUM_check(unsigned int flags)
-+{
-+	if (!flags)
-+		xtables_error(PARAMETER_PROBLEM,
-+		           "CHECKSUM target: Parameter --checksum-fill is required");
-+}
-+
-+static void CHECKSUM_print(const void *ip, const struct xt_entry_target *target,
-+                      int numeric)
-+{
-+	const struct xt_CHECKSUM_info *einfo =
-+		(const struct xt_CHECKSUM_info *)target->data;
-+
-+	printf("CHECKSUM ");
-+
-+	if (einfo->operation & XT_CHECKSUM_OP_FILL)
-+		printf("fill ");
-+}
-+
-+static void CHECKSUM_save(const void *ip, const struct xt_entry_target *target)
-+{
-+	const struct xt_CHECKSUM_info *einfo =
-+		(const struct xt_CHECKSUM_info *)target->data;
-+
-+	if (einfo->operation & XT_CHECKSUM_OP_FILL)
-+		printf("--checksum-fill ");
-+}
-+
-+static struct xtables_target checksum_tg_reg = {
-+	.name		= "CHECKSUM",
-+	.version	= XTABLES_VERSION,
-+	.family		= NFPROTO_UNSPEC,
-+	.size		= XT_ALIGN(sizeof(struct xt_CHECKSUM_info)),
-+	.userspacesize	= XT_ALIGN(sizeof(struct xt_CHECKSUM_info)),
-+	.help		= CHECKSUM_help,
-+	.parse		= CHECKSUM_parse,
-+	.final_check	= CHECKSUM_check,
-+	.print		= CHECKSUM_print,
-+	.save		= CHECKSUM_save,
-+	.extra_opts	= CHECKSUM_opts,
-+};
-+
-+void _init(void)
-+{
-+	xtables_register_target(&checksum_tg_reg);
-+}
-diff --git a/extensions/libxt_CHECKSUM.man b/extensions/libxt_CHECKSUM.man
-new file mode 100644
-index 0000000..92ae700
---- /dev/null
-+++ b/extensions/libxt_CHECKSUM.man
-@@ -0,0 +1,8 @@
-+This target allows to selectively work around broken/old applications.
-+It can only be used in the mangle table.
-+.TP
-+\fB\-\-checksum\-fill\fP
-+Compute and fill in the checksum in a packet that lacks a checksum.
-+This is particularly useful, if you need to work around old applications
-+such as dhcp clients, that do not work well with checksum offloads,
-+but don't want to disable checksum offload in your device.
--- 
-1.7.2.rc0.14.g41c1c
