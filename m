@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754565Ab0GKSCj (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 14:02:39 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59185 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752646Ab0GKSCi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 14:02:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :content-type;
-        b=SRE4msrSVG31dR9LgkK+XjFzgfqOofx7ioJUYkoajpsbpZRLPwZM7gGNWQiwAFMeO8
-         IU1hLZ7NBOz8LQkfgw+1SXn4Hgdn68Tg6LJfYuzrcdrP1MWpWQPubwpgdzWvn41iFjie
-         fu7WOTpXBRi2TQpwaCj7iRHyKTpzg8rAL+LJk=
-MIME-Version: 1.0
-In-Reply-To: <20100711131640.GA3503@thunk.org>
-References: <201007110918.42120.Martin@lichtvoll.de>
-	<20100711131640.GA3503@thunk.org>
-Date: Sun, 11 Jul 2010 21:02:36 +0300
-Message-ID: <AANLkTimQsJPqLGwQ68Ldi-fEJaomPtnTOKcWMrk9Ye2K@mail.gmail.com>
-Subject: Re: stable? quality assurance?
-From: Anca Emanuel <anca.emanuel@gmail.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Martin Steigerwald <Martin@lichtvoll.de>,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754604Ab0GKSIU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 14:08:20 -0400
+Received: from lo.gmane.org ([80.91.229.12]:48583 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753983Ab0GKSIT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 14:08:19 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Alexander Clouter <alex@digriz.org.uk>
+Subject: Re: SNATed connections show as original ip in /proc/net/tcp
+Date: Sun, 11 Jul 2010 18:08:52 +0100
+Message-ID: <4eapg7-6vg.ln1@chipmunk.wormnet.eu>
+References: <op.vfn83jvflgimzx@win7> <151pg7-26g.ln1@chipmunk.wormnet.eu> <op.vfopt9kclgimzx@win7>
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: chipmunk.wormnet.eu
+User-Agent: tin/1.9.3-20080506 ("Dalintober") (UNIX) (Linux/2.6.26-2-sparc64-smp (sparc64))
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Offtopic.
+Noah McNallie <n0ah@n0ah.org> wrote:
+>
+>> Look into using 'ip rule' and a second routing table.
+>>
+>> http://lartc.org/howto/lartc.rpdb.html
+>>
+>> You will still need use iptables/MARK to do L4 (tcp/udp/etc) policy
+>> routing though, however now you can dump the ugly SNATing.
+>
+> ok i'll stick it there i must have missed that browsing mailing lists last  
+> night... uhh as far as ip rule i am using that, that's how i match the  
+> packets with the firewall mark that need to go out a specific interface  
+> and to a specific route... i don't believe ip rule has any option to match  
+> packets based on destination port and change their source address and  
+> route them out any specific interface, or i'd be doing that all along as  
+> that would be much better.
+> 
+I read your original post as saying were using iptables and the SNAT 
+action, I am suggesting you use 'ip rule' to say "if x/tcp or y/udp 
+using routing table 'alternative'".  Might be easier if you actually put 
+here the ip/iptables rules you are actually using?
 
-I'm using Ubuntu 10.04 and kernel 2.6.35-rc1 from kernel.ubuntu.com
-Wonking fine (stable, but my webcam still not working).
+In the alternative routing table you can say to use a different source 
+IP and/or alternative default gateway address (using something like 'ip 
+route ... src ... via ... dev').  As I mentioned before, as 'ip rule' 
+only knows about IP addresses (and not tcp/udp/etc port numbers and what 
+not) you will need to use iptables MARK action and the fwmark in 'ip 
+rule' to get the L4 policy based routing you want.
 
-Using this https://wiki.ubuntu.com/KernelTeam/GitKernelBuild tutorial
-to compile the kernel. But no success (it finish the compile but no
-deb packages).
-I have done it from virtualbox some weeks ago, and grub can not mount.
+By using a second routing table (as described in the LARTC link), you 
+can stop using the 'iptables -j SNAT' I think you are using.  Then, 
+hopefully all your netstat output for locally sourced traffic will be 
+correct.
 
-Is there any tutorial how to build the kernel for Ubuntu 10.04 ?
+Cheers
 
-Please test it yourself in (Ubuntu 10.04):
-sudo cfdisk
-result: Bad primary partition 1. (any kernel, any enviroment).
+-- 
+Alexander Clouter
+.sigmonster says: You will be married within a year, and divorced within two.
+
