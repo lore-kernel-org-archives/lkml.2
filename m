@@ -1,57 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751792Ab0GKGqp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 02:46:45 -0400
-Received: from fafnir.cs.unc.edu ([152.2.129.90]:51696 "EHLO fafnir.cs.unc.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751500Ab0GKGqo convert rfc822-to-8bit (ORCPT
+	id S1751523Ab0GKG6J (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 02:58:09 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:51874 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750979Ab0GKG6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 02:46:44 -0400
-Subject: Re: periods and deadlines in SCHED_DEADLINE
-Mime-Version: 1.0 (Apple Message framework v1081)
-Content-Type: text/plain; charset=iso-8859-1
-From: Bjoern Brandenburg <bbb@email.unc.edu>
-In-Reply-To: <1278745706.4390.2.camel@Palantir>
-Date: Sun, 11 Jul 2010 08:46:12 +0200
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Song Yuan <song.yuan@ericsson.com>,
-       Dmitry Adamushko <dmitry.adamushko@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Nicola Manica <nicola.manica@disi.unitn.it>,
-       Luca Abeni <lucabe72@email.it>,
-       Claudio Scordino <claudio@evidence.eu.com>,
-       Harald Gustafsson <harald.gustafsson@ericsson.com>, bastoni@cs.unc.edu,
-       Giuseppe Lipari <lipari@retis.sssup.it>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <21AA2C13-8831-47A2-9464-28E84DBD72B0@email.unc.edu>
-References: <1278682707.6083.227.camel@Palantir> <1278685133.1900.201.camel@laptop> <51F8E441-58D7-45E1-B7A0-7A717EDF08B5@email.unc.edu> <1278745706.4390.2.camel@Palantir>
-To: Raistlin <raistlin@linux.it>
-X-Mailer: Apple Mail (2.1081)
+	Sun, 11 Jul 2010 02:58:08 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: tuxonice-devel@tuxonice.net, linux-kernel@vger.kernel.org
+Subject: Fwd: [TuxOnIce-devel] hang on hibernation with kernel 2.6.34.1 and TuxOnIce 3.1.1.1
+Date: Sun, 11 Jul 2010 08:58:03 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34.1-tp42-toi-3.1.1.1-04990-g3a7d1f4; KDE/4.4.4; i686; ; )
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1610447.Z53E1hrCNW";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007110858.03932.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Jul 10, 2010, at 9:08 AM, Raistlin wrote:
-
->> 
->> As a side note, almost all global EDF hard real-time admission tests can handle tasks with constrained deadlines transparently. However, as far as I can tell, they do not apply to SCHED_DEADLINE.
->> 
-> This is the only part I am not sure I got... Can you explain me what do
-> you mena by "they do not apply" ?
-
-I was under the impression that the kernel implementation is a P-EDF implementation. Now it seems to me that it is in fact a "P-EDF with frequent migrations" implementation. I'd be hesitant to just assume that it "approximates G-EDF" sufficiently well to apply any of the published G-EDF tests.
-
-- Björn
-
----
-Björn B. Brandenburg
-Ph.D. Student 
-Dept. of Computer Science
-University of North Carolina at Chapel Hill
-http://www.cs.unc.edu/~bbb
+--nextPart1610447.Z53E1hrCNW
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
 
+Hi!
+
+Since I initially guessed this to be more likely a vanilla kernel than a=20
+TuxOnIce bug, I might just ask on kernel mailinglist, whether someone can=20
+tell me on where to sort this backtrace. I do not really have an exact=20
+idea what subsystem this is. Async I/O?
+
+Ciao,
+Martin
+
+=2D---------  Weitergeleitete Nachricht  ----------
+
+Subject: [TuxOnIce-devel] hang on hibernation with kernel 2.6.34.1 and=20
+TuxOnIce 3.1.1.1
+Date: Samstag 10 Juli 2010
+=46rom: Martin Steigerwald <Martin@lichtvoll.de>
+To: tuxonice-devel@lists.tuxonice.net
 
 
+Hi Nigel, hi everyone else,
+
+yesterday I had a hang on hibernation:
+
+http://martin-steigerwald.de/tmp/hang-on-hibernation-2.6.31.1-
+toi-3.1.1.1/backtrace.jpg
+
+I have not the foggiest about this one.
+
+Anyone a clue?
+
+Does it make sense to report upstream? To me this does not look TuxOnIce=20
+related, but I am not sure, maybe its something regarding TuxOnIce async=20
+I/O. First I misread dpm as drm and thought of a Radeon DRM problem...
+
+Any idea on debugging?
+
+I am not willing to put much time into it right now, so no bisecting. This=
+=20
+is still a production machine. Again I will just downgrade the kernel when=
+=20
+it doesn't work. Its still called "stable" on kernel.org. I can try to ssh=
+=20
+into the machine next time, but I doubt it will work, cause it was=20
+hibernating already.
+
+Ciao,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+=2D------------------------------------------------------
+
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart1610447.Z53E1hrCNW
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkw5a3sACgkQmRvqrKWZhMf7vACgi00KlEoJ3+gT/VlT+OlhKRKU
+8uwAnRjafdbqE+jmAHtODDXiT8pIw6n0
+=2asQ
+-----END PGP SIGNATURE-----
+
+--nextPart1610447.Z53E1hrCNW--
