@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751765Ab0GKPbM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 11:31:12 -0400
-Received: from mail.perches.com ([173.55.12.10]:1674 "EHLO mail.perches.com"
+	id S1753581Ab0GKPkP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 11:40:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34825 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750824Ab0GKPbL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 11:31:11 -0400
-Subject: Re: [PATCH v2] hwmon: Add support for JEDEC JC 42.4 compliant
- temperature sensors
-From: Joe Perches <joe@perches.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Goyette <paul@whooppee.com>, lm-sensors@lm-sensors.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
-In-Reply-To: <1278859984-22593-1-git-send-email-guenter.roeck@ericsson.com>
-References: <1278859984-22593-1-git-send-email-guenter.roeck@ericsson.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 11 Jul 2010 08:31:06 -0700
-Message-ID: <1278862266.1501.59.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752929Ab0GKPkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 11:40:12 -0400
+Message-ID: <4C39E5D7.7030703@redhat.com>
+Date: Sun, 11 Jul 2010 18:40:07 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 2/9] KVM: MMU: fix race between 'walk_addr' and 'fetch'
+References: <4C330918.6040709@cn.fujitsu.com> <4C330948.1070305@cn.fujitsu.com> <4C39BE90.1030802@redhat.com>
+In-Reply-To: <4C39BE90.1030802@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-11 at 07:53 -0700, Guenter Roeck wrote:
-> diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
-> new file mode 100644
-> index 0000000..685057d
-> --- /dev/null
-> +++ b/drivers/hwmon/jc42.c
-[]
-> +struct jc42_chips {
-> +	u16 manid;
-> +	u16 devid;
-> +	u16 devid_mask;
-> +};
-> +
-> +static struct jc42_chips jc42_chips[] = {
-> +	{ ADT_MANID, ADT7408_DEVID, ADT7408_DEVID_MASK },
-> +	{ IDT_MANID, TS3000B3_DEVID, TS3000B3_DEVID_MASK },
-> +	{ MAX_MANID, MAX6604_DEVID, MAX6604_DEVID_MASK },
-> +	{ MCP_MANID, MCP98242_DEVID, MCP98242_DEVID_MASK },
-> +	{ MCP_MANID, MCP98243_DEVID, MCP98243_DEVID_MASK },
-> +	{ MCP_MANID, MCP9843_DEVID, MCP9843_DEVID_MASK },
-> +	{ NXP_MANID, SE97_DEVID, SE97_DEVID_MASK },
-> +	{ ONS_MANID, CAT6095_DEVID, CAT6095_DEVID_MASK },
-> +	{ NXP_MANID, SE98_DEVID, SE98_DEVID_MASK },
-> +	{ STM_MANID, STTS424_DEVID, STTS424_DEVID_MASK },
-> +	{ STM_MANID, STTS424E_DEVID, STTS424E_DEVID_MASK },
-> +};
-[]
-> +	for (i = 0; i < ARRAY_SIZE(jc42_chips); i++) {
-> +		if (manid == jc42_chips[i].manid
-> +		    && (devid & jc42_chips[i].devid_mask) ==
-> +					    jc42_chips[i].devid) {
-> +			strlcpy(info->type, "jc42", I2C_NAME_SIZE);
-> +			return 0;
-> +		}
-> +	}
+On 07/11/2010 03:52 PM, Avi Kivity wrote:
+> On 07/06/2010 01:45 PM, Xiao Guangrong wrote:
+>> 'walk_addr' is out of mmu_lock's protection, so while we handle 'fetch',
+>> then guest's mapping has modifited by other vcpu's write path, such as
+>> invlpg, pte_write and other fetch path
+>>
+>> Fixed by checking all level's mapping
+>>
+>>
+>> @@ -319,22 +319,23 @@ static u64 *FNAME(fetch)(struct kvm_vcpu *vcpu, 
+>> gva_t addr,
+>>           direct_access&= ~ACC_WRITE_MASK;
+>>
+>>       for_each_shadow_entry(vcpu, addr, iterator) {
+>> +        bool nonpresent = false, last_mapping = false;
+>> +
+>
+> I don't like these two new variables, but no suggestion at the 
+> moment.  I'll try to simplify this loop later.
+>
+> One idea may be:
+>
+>    while (level > walker.level) {
+>          handle indirect pages
+>    }
+>    while (level > hlevel) {
+>          handle direct pages
+>    }
+>    handle last spte
+>
+> I'm worried that this change is too big for backporting, but no 
+> suggestions on how to make it smaller, so we'll have to accept it.
 
-Decidedly trivial:
+Okay, I couldn't resist, posting this soon.
 
-Kernel style seems to prefer having logical tests at
-end of line rather than start of line.
-
-Maybe this bit would be more readable with a temporary:
-
-	for (i = 0; i < ARRAY_SIZE(jc42_chips); i++) {
-		struct jc42_chips *chip = &jc42_chips[i];
-		if (manid == chip->manid &&
-		    (devid & chip->devid_mask) == chip->devid) {
-			strlcpy(info->type, "jc42", I2C_NAME_SIZE);
-			return 0;
-		}
-	}
+-- 
+error compiling committee.c: too many arguments to function
 
