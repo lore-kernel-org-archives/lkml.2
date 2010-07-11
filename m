@@ -1,123 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab0GKQJp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 12:09:45 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:55430 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751703Ab0GKQJn (ORCPT
+	id S1751549Ab0GKQPH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 12:15:07 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:55375 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751523Ab0GKQPD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 12:09:43 -0400
-Date: Sun, 11 Jul 2010 19:09:42 +0300 (EEST)
-From: "=?ISO-8859-15?Q?Ilpo_J=E4rvinen?=" <ilpo.jarvinen@helsinki.fi>
-X-X-Sender: ijjarvin@melkinpaasi.cs.helsinki.fi
-To: Tejun Heo <tj@kernel.org>
-cc: "David S. Miller" <davem@davemloft.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
-        Carsten Aulbert <carsten.aulbert@aei.mpg.de>,
-        Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: oops in tcp_xmit_retransmit_queue() w/ v2.6.32.15
-In-Reply-To: <4C358AAA.9080400@kernel.org>
-Message-ID: <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi>
-References: <4C358AAA.9080400@kernel.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sun, 11 Jul 2010 12:15:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
+         :content-type:content-transfer-encoding;
+        b=sl4ioN6JR1Sbkpej7kkjdK9a++n1IvM/IyikuCegCZL5lhpXSjgugDpNabXvtAl+TW
+         wFpBPjsOxdecZhRZjNLQyQl6AQUNeVhC9W4+1TPsDW6mfAOWgZUW26BRSBt73VwIYRyy
+         mFG0BYY9HPEkajyUuQehcDfUFgKcikcCwRoXA=
+From: Kevin Winchester <kjwinchester@gmail.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Kevin Winchester <kjwinchester@gmail.com>,
+        Venkatesh Pallipadi <venki@google.com>, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] acpi: Fix warning: 'us_to_pm_timer_ticks' defined but not used
+Date: Sun, 11 Jul 2010 13:14:53 -0300
+Message-Id: <1278864893-26281-1-git-send-email-kjwinchester@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+To: Len Brown <lenb@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jul 2010, Tejun Heo wrote:
+Using:
 
-> We've been seeing oops in tcp_xmit_retransmit_queue() w/ 2.6.32.15.
-> Please see the attached photoshoot.  This is happening on a HPC
-> cluster and very interestingly caused by one particular job.  How long
-> it takes isn't clear yet (at least more than a day) but when it
-> happens it happens on a lot of machines in relatively short time.
-> 
-> With a bit of disassemblying, I've found that the oops is happening
-> during tcp_for_write_queue_from() because the skb->next points to
-> NULL.
-> 
->  void tcp_xmit_retransmit_queue(struct sock *sk)
->  {
->  ...
-> 	if (tp->retransmit_skb_hint) {
-> 		skb = tp->retransmit_skb_hint;
-> 		last_lost = TCP_SKB_CB(skb)->end_seq;
-> 		if (after(last_lost, tp->retransmit_high))
-> 			last_lost = tp->retransmit_high;
-> 	} else {
-> 		skb = tcp_write_queue_head(sk);
-> 		last_lost = tp->snd_una;
-> 	}
-> 
->  =>	tcp_for_write_queue_from(skb, sk) {
-> 		 __u8 sacked = TCP_SKB_CB(skb)->sacked;
-> 
-> 		 if (skb == tcp_send_head(sk))
-> 			 break;
-> 		 /* we could do better than to assign each time */
-> 		 if (hole == NULL)
-> 
-> This can happen for one of the following reasons,
-> 
-> 1. tp->retransmit_skb_hint is NULL and tcp_write_queue_head() is NULL
->    too.  ie. tcp_xmit_retransmit_queue() is called on an empty write
->    queue for some reason.
-> 
-> 2. tp->retransmit_skb_hint is pointing to a skb which is not on the
->    write_queue.  ie. somebody forgot to update hint while removing the
->    skb from the write queue.
+	gcc (GCC) 4.5.0 20100610 (prerelease)
 
-Once again I've read the unlinkers through, and only thing that could 
-cause this is tcp_send_synack (others do deal with the hints) but I think 
-Eric already proposed a patch to that but we never got anywhere due to 
-some counterargument why it wouldn't take place (too far away for me to 
-remember, see archives about the discussions). ...But if you want be dead 
-sure some WARN_ON there might not hurt. Also the purging of the whole 
-queue was a similar suspect I then came across (but that would only 
-materialize with sk reuse happening e.g., with nfs which the other guys 
-weren't using).
+The following warning is seen:
 
-> 3. The hint is pointing to a skb on the list but the list itself is
->    corrupt.
-> 
-> I added some debug code and the crash is happening when
-> tp->retransmit_skb_hint is not NULL but tp->retransmit_skb_hint->next
-> is NULL.  So, #1 is out; unfortunately, I didn't have debug code in
-> place to discern between #2 and #3.
-> 
-> Does anything ring a bell?  This is a production system and debugging
-> affects quite a number of people.  I can put debug code in to discern
-> between #2 and #3 but I'm basically shooting in the dark and it would
-> be great if someone has a better idea.
+	drivers/acpi/processor_idle.c:83:12: warning: ‘us_to_pm_timer_ticks’ defined but not used
 
-Thanks for taking this up. I've been kind of waiting somebody to show up 
-who actually has some way of reproducing it. Once I had one guy in the 
-hook but his ability to reproduce was for some reason lost when he tried 
-with a debug patch [1]. 
+This is because us_to_pm_timer_ticks is only used when
+CONFIG_ACPI_PROCFS is defined.
 
-I now realize that the debug patch should probably also print the write 
-queue too when the problem is caught in order to discern the cases you 
-mention.
+Fix the warning by moving the function definition into the #ifdef
+CONFIG_ACPI_PROCFS block.
 
-Something along these lines:
+Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
+---
+ drivers/acpi/processor_idle.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-tcp_for_write_queue(skb, sk) {
-	printk("skb %p (%u-%u) next %p prev %p sacked %u\n", ...);
-}
-
-Anyway, my debugging patch should be such that in a lucky case it avoids 
-crashing the system too, though price to pay might then be a stuck 
-connection. In case #3 I'd expect the box to die elsewhere in TCP code 
-pretty soon anyway so it depends whether avoiding oops is really so 
-useful, but if you're lucky other mechanism in TCP will recover 
-the lost one for you (basically RTO driven retransmission).
-
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index b1b3856..8525070 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -80,10 +80,6 @@ module_param(nocst, uint, 0000);
+ static unsigned int latency_factor __read_mostly = 2;
+ module_param(latency_factor, uint, 0644);
+ 
+-static u64 us_to_pm_timer_ticks(s64 t)
+-{
+-	return div64_u64(t * PM_TIMER_FREQUENCY, 1000000);
+-}
+ /*
+  * IBM ThinkPad R40e crashes mysteriously when going into C2 or C3.
+  * For now disable this. Probably a bug somewhere else.
+@@ -685,6 +681,12 @@ static int acpi_processor_get_power_info(struct acpi_processor *pr)
+ }
+ 
+ #ifdef CONFIG_ACPI_PROCFS
++
++static u64 us_to_pm_timer_ticks(s64 t)
++{
++	return div64_u64(t * PM_TIMER_FREQUENCY, 1000000);
++}
++
+ static int acpi_processor_power_seq_show(struct seq_file *seq, void *offset)
+ {
+ 	struct acpi_processor *pr = seq->private;
 -- 
- i.
+1.7.1.1
 
-[1] http://marc.info/?l=linux-kernel&m=126624014117610&w=2
