@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755435Ab0GKVUA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 17:20:00 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:59301 "EHLO
+	id S1755410Ab0GKVTe (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 17:19:34 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57393 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755336Ab0GKVT2 (ORCPT
+	with ESMTP id S1755290Ab0GKVTX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 17:19:28 -0400
+	Sun, 11 Jul 2010 17:19:23 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
         Arnd Bergmann <arnd@arndb.de>,
-        David Woodhouse <David.Woodhouse@intel.com>,
-        linux-mtd@lists.infradead.org
-Subject: [PATCH 09/12] mtd: autoconvert trivial BKL users to private mutex
-Date: Sun, 11 Jul 2010 23:19:00 +0200
-Message-Id: <1278883143-29035-10-git-send-email-arnd@arndb.de>
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@ozlabs.org
+Subject: [PATCH 10/12] mac: autoconvert trivial BKL users to private mutex
+Date: Sun, 11 Jul 2010 23:19:01 +0200
+Message-Id: <1278883143-29035-11-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278883143-29035-1-git-send-email-arnd@arndb.de>
 References: <1278883143-29035-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:2UxQanKpRWuMSqP+v7DmkUmNDTo+dTJWYYaod3qt7X3
- 1D3Cx0lrpNi3FQvqUKtEoDY4u+pUBDMGStgKLRyHqFTAWWmK5l
- 0/dUilJ0GDJVoP70LVvyO4cHvkwAGEcmpaM4JXBAQ/qhfuDMrU
- KXjd4dlvBvPNTHwh6qMz/oyxs+u8i7WdO4wpx+hQoNN4EQgWO0
- QVn5YpyFupLH4w59GoEig==
+X-Provags-ID: V02:K0:VSfCtdyJkk9uBlO5uFWZLIoo6cFkpOx4ap+F8/3LmhJ
+ S0vciR8kbXlgq6wf6uMiAyLKxeDJCHn9iFphP1tza4n6CPq67h
+ FYdh2qU5Lm5nQQDk3YBB693W60JACzV13l0Tr4nFyC1UmIoMSz
+ GbLsIdHSThSMzBUmo/xLwCx8wNwk3ZKoYZffGdxd3PQw3buDL+
+ gWjZPc+KAyXrDTWLhMKFQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -65,78 +65,153 @@ else
 fi
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: David Woodhouse <David.Woodhouse@intel.com>
-Cc: linux-mtd@lists.infradead.org
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: linuxppc-dev@ozlabs.org
 ---
- drivers/mtd/mtdchar.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+ drivers/macintosh/adb.c     |   10 +++++-----
+ drivers/macintosh/smu.c     |    6 +++---
+ drivers/macintosh/via-pmu.c |   11 ++++++-----
+ 3 files changed, 14 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
-index 91c8013..cdb6106 100644
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -12,7 +12,7 @@
- #include <linux/module.h>
- #include <linux/slab.h>
+diff --git a/drivers/macintosh/adb.c b/drivers/macintosh/adb.c
+index 1c4ee6e..e75e3be 100644
+--- a/drivers/macintosh/adb.c
++++ b/drivers/macintosh/adb.c
+@@ -24,7 +24,6 @@
+ #include <linux/fs.h>
+ #include <linux/mm.h>
  #include <linux/sched.h>
 -#include <linux/smp_lock.h>
-+#include <linux/mutex.h>
- #include <linux/backing-dev.h>
- #include <linux/compat.h>
- #include <linux/mount.h>
-@@ -23,6 +23,7 @@
- #include <asm/uaccess.h>
+ #include <linux/adb.h>
+ #include <linux/cuda.h>
+ #include <linux/pmu.h>
+@@ -55,6 +54,7 @@ extern struct adb_driver adb_iop_driver;
+ extern struct adb_driver via_pmu_driver;
+ extern struct adb_driver macio_adb_driver;
  
- #define MTD_INODE_FS_MAGIC 0x11307854
-+static DEFINE_MUTEX(mtd_mutex);
- static struct vfsmount *mtd_inode_mnt __read_mostly;
- 
- /*
-@@ -76,7 +77,7 @@ static int mtd_open(struct inode *inode, struct file *file)
- 	if ((file->f_mode & FMODE_WRITE) && (minor & 1))
- 		return -EACCES;
++static DEFINE_MUTEX(adb_mutex);
+ static struct adb_driver *adb_driver_list[] = {
+ #ifdef CONFIG_ADB_MACII
+ 	&via_macii_driver,
+@@ -647,7 +647,7 @@ static int adb_open(struct inode *inode, struct file *file)
+ 	struct adbdev_state *state;
+ 	int ret = 0;
  
 -	lock_kernel();
-+	mutex_lock(&mtd_mutex);
- 	mtd = get_mtd_device(NULL, devnum);
- 
- 	if (IS_ERR(mtd)) {
-@@ -124,7 +125,7 @@ static int mtd_open(struct inode *inode, struct file *file)
- 	file->private_data = mfi;
++	mutex_lock(&adb_mutex);
+ 	if (iminor(inode) > 0 || adb_controller == NULL) {
+ 		ret = -ENXIO;
+ 		goto out;
+@@ -665,7 +665,7 @@ static int adb_open(struct inode *inode, struct file *file)
+ 	state->inuse = 1;
  
  out:
 -	unlock_kernel();
-+	mutex_unlock(&mtd_mutex);
++	mutex_unlock(&adb_mutex);
  	return ret;
- } /* mtd_open */
+ }
  
-@@ -838,9 +839,9 @@ static long mtd_unlocked_ioctl(struct file *file, u_int cmd, u_long arg)
+@@ -674,7 +674,7 @@ static int adb_release(struct inode *inode, struct file *file)
+ 	struct adbdev_state *state = file->private_data;
+ 	unsigned long flags;
+ 
+-	lock_kernel();
++	mutex_lock(&adb_mutex);
+ 	if (state) {
+ 		file->private_data = NULL;
+ 		spin_lock_irqsave(&state->lock, flags);
+@@ -687,7 +687,7 @@ static int adb_release(struct inode *inode, struct file *file)
+ 			spin_unlock_irqrestore(&state->lock, flags);
+ 		}
+ 	}
+-	unlock_kernel();
++	mutex_unlock(&adb_mutex);
+ 	return 0;
+ }
+ 
+diff --git a/drivers/macintosh/smu.c b/drivers/macintosh/smu.c
+index 2506c95..8775dd4 100644
+--- a/drivers/macintosh/smu.c
++++ b/drivers/macintosh/smu.c
+@@ -19,7 +19,6 @@
+  *    the userland interface
+  */
+ 
+-#include <linux/smp_lock.h>
+ #include <linux/types.h>
+ #include <linux/kernel.h>
+ #include <linux/device.h>
+@@ -97,6 +96,7 @@ struct smu_device {
+  * I don't think there will ever be more than one SMU, so
+  * for now, just hard code that
+  */
++static DEFINE_MUTEX(smu_mutex);
+ static struct smu_device	*smu;
+ static DEFINE_MUTEX(smu_part_access);
+ static int smu_irq_inited;
+@@ -1095,12 +1095,12 @@ static int smu_open(struct inode *inode, struct file *file)
+ 	pp->mode = smu_file_commands;
+ 	init_waitqueue_head(&pp->wait);
+ 
+-	lock_kernel();
++	mutex_lock(&smu_mutex);
+ 	spin_lock_irqsave(&smu_clist_lock, flags);
+ 	list_add(&pp->list, &smu_clist);
+ 	spin_unlock_irqrestore(&smu_clist_lock, flags);
+ 	file->private_data = pp;
+-	unlock_kernel();
++	mutex_unlock(&smu_mutex);
+ 
+ 	return 0;
+ }
+diff --git a/drivers/macintosh/via-pmu.c b/drivers/macintosh/via-pmu.c
+index 3d4fc0f..28e4822 100644
+--- a/drivers/macintosh/via-pmu.c
++++ b/drivers/macintosh/via-pmu.c
+@@ -18,7 +18,7 @@
+  *
+  */
+ #include <stdarg.h>
+-#include <linux/smp_lock.h>
++#include <linux/mutex.h>
+ #include <linux/types.h>
+ #include <linux/errno.h>
+ #include <linux/kernel.h>
+@@ -72,6 +72,7 @@
+ /* How many iterations between battery polls */
+ #define BATTERY_POLLING_COUNT	2
+ 
++static DEFINE_MUTEX(pmu_info_proc_mutex);
+ static volatile unsigned char __iomem *via;
+ 
+ /* VIA registers - spaced 0x200 bytes apart */
+@@ -2076,7 +2077,7 @@ pmu_open(struct inode *inode, struct file *file)
+ 	pp->rb_get = pp->rb_put = 0;
+ 	spin_lock_init(&pp->lock);
+ 	init_waitqueue_head(&pp->wait);
+-	lock_kernel();
++	mutex_lock(&pmu_info_proc_mutex);
+ 	spin_lock_irqsave(&all_pvt_lock, flags);
+ #if defined(CONFIG_INPUT_ADBHID) && defined(CONFIG_PMAC_BACKLIGHT)
+ 	pp->backlight_locker = 0;
+@@ -2084,7 +2085,7 @@ pmu_open(struct inode *inode, struct file *file)
+ 	list_add(&pp->list, &all_pmu_pvt);
+ 	spin_unlock_irqrestore(&all_pvt_lock, flags);
+ 	file->private_data = pp;
+-	unlock_kernel();
++	mutex_unlock(&pmu_info_proc_mutex);
+ 	return 0;
+ }
+ 
+@@ -2341,9 +2342,9 @@ static long pmu_unlocked_ioctl(struct file *filp,
  {
  	int ret;
  
 -	lock_kernel();
-+	mutex_lock(&mtd_mutex);
- 	ret = mtd_ioctl(file, cmd, arg);
++	mutex_lock(&pmu_info_proc_mutex);
+ 	ret = pmu_ioctl(filp, cmd, arg);
 -	unlock_kernel();
-+	mutex_unlock(&mtd_mutex);
- 
- 	return ret;
- }
-@@ -864,7 +865,7 @@ static long mtd_compat_ioctl(struct file *file, unsigned int cmd,
- 	void __user *argp = compat_ptr(arg);
- 	int ret = 0;
- 
--	lock_kernel();
-+	mutex_lock(&mtd_mutex);
- 
- 	switch (cmd) {
- 	case MEMWRITEOOB32:
-@@ -899,7 +900,7 @@ static long mtd_compat_ioctl(struct file *file, unsigned int cmd,
- 		ret = mtd_ioctl(file, cmd, (unsigned long)argp);
- 	}
- 
--	unlock_kernel();
-+	mutex_unlock(&mtd_mutex);
++	mutex_unlock(&pmu_info_proc_mutex);
  
  	return ret;
  }
