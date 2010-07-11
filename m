@@ -1,86 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754366Ab0GKCiQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 22:38:16 -0400
-Received: from mga02.intel.com ([134.134.136.20]:51523 "EHLO mga02.intel.com"
+	id S1754490Ab0GKCiS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 22:38:18 -0400
+Received: from mga01.intel.com ([192.55.52.88]:41016 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753526Ab0GKCiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754070Ab0GKCiM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 10 Jul 2010 22:38:12 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,182,1278313200"; 
-   d="scan'208";a="534243193"
-Message-Id: <20100711021749.021449821@intel.com>
+   d="scan'208";a="816867797"
+Message-Id: <20100711021748.594522648@intel.com>
 User-Agent: quilt/0.48-1
-Date: Sun, 11 Jul 2010 10:07:00 +0800
+Date: Sun, 11 Jul 2010 10:06:57 +0800
 From: Wu Fengguang <fengguang.wu@intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Christoph Hellwig <hch@infradead.org>, Dave Chinner <david@fromorbit.com>,
-       Jan Kara <jack@suse.cz>, Wu Fengguang <fengguang.wu@intel.com>
+CC: Christoph Hellwig <hch@infradead.org>,
+       Richard Kennedy <richard@rsk.demon.co.uk>,
+       Wu Fengguang <fengguang.wu@intel.com>
+CC: Dave Chinner <david@fromorbit.com>
+CC: Jan Kara <jack@suse.cz>
 CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
 cc: <linux-fsdevel@vger.kernel.org>
 cc: Linux Memory Management List <linux-mm@kvack.org>
 cc: LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/6] writeback: dont redirty tail an inode with dirty pages
+Subject: [PATCH 1/6] writeback: take account of NR_WRITEBACK_TEMP in balance_dirty_pages()
 References: <20100711020656.340075560@intel.com>
-Content-Disposition: inline; filename=writeback-xfs-fast-redirty.patch
+Content-Disposition: inline; filename=writeback-temp.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This avoids delaying writeback for an expired (XFS) inode with lots of
-dirty pages, but no active dirtier at the moment. Previously we only do
-that for the kupdate case.
 
-CC: Dave Chinner <david@fromorbit.com>
-CC: Christoph Hellwig <hch@infradead.org>
-Acked-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
 Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
 ---
- fs/fs-writeback.c |   20 +++++++-------------
- 1 file changed, 7 insertions(+), 13 deletions(-)
+ mm/page-writeback.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
 
---- linux-next.orig/fs/fs-writeback.c	2010-07-11 08:53:44.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2010-07-11 08:57:35.000000000 +0800
-@@ -367,18 +367,7 @@ writeback_single_inode(struct inode *ino
- 	spin_lock(&inode_lock);
- 	inode->i_state &= ~I_SYNC;
- 	if (!(inode->i_state & I_FREEING)) {
--		if ((inode->i_state & I_DIRTY_PAGES) && wbc->for_kupdate) {
--			/*
--			 * More pages get dirtied by a fast dirtier.
--			 */
--			goto select_queue;
--		} else if (inode->i_state & I_DIRTY) {
--			/*
--			 * At least XFS will redirty the inode during the
--			 * writeback (delalloc) and on io completion (isize).
--			 */
--			redirty_tail(inode);
--		} else if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
-+		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
- 			/*
- 			 * We didn't write back all the pages.  nfs_writepages()
- 			 * sometimes bales out without doing anything. Redirty
-@@ -400,7 +389,6 @@ writeback_single_inode(struct inode *ino
- 				 * soon as the queue becomes uncongested.
- 				 */
- 				inode->i_state |= I_DIRTY_PAGES;
--select_queue:
- 				if (wbc->nr_to_write <= 0) {
- 					/*
- 					 * slice used up: queue for next turn
-@@ -423,6 +411,12 @@ select_queue:
- 				inode->i_state |= I_DIRTY_PAGES;
- 				redirty_tail(inode);
- 			}
-+		} else if (inode->i_state & I_DIRTY) {
-+			/*
-+			 * At least XFS will redirty the inode during the
-+			 * writeback (delalloc) and on io completion (isize).
-+			 */
-+			redirty_tail(inode);
- 		} else if (atomic_read(&inode->i_count)) {
- 			/*
- 			 * The inode is clean, inuse
+--- linux-next.orig/mm/page-writeback.c	2010-07-11 08:41:37.000000000 +0800
++++ linux-next/mm/page-writeback.c	2010-07-11 08:42:14.000000000 +0800
+@@ -503,11 +503,12 @@ static void balance_dirty_pages(struct a
+ 		};
+ 
+ 		get_dirty_limits(&background_thresh, &dirty_thresh,
+-				&bdi_thresh, bdi);
++				 &bdi_thresh, bdi);
+ 
+ 		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+-					global_page_state(NR_UNSTABLE_NFS);
+-		nr_writeback = global_page_state(NR_WRITEBACK);
++				 global_page_state(NR_UNSTABLE_NFS);
++		nr_writeback = global_page_state(NR_WRITEBACK) +
++			       global_page_state(NR_WRITEBACK_TEMP);
+ 
+ 		bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
+ 		bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
 
 
