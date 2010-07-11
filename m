@@ -1,87 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab0GKOZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 10:25:29 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:48607 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751683Ab0GKOZ2 (ORCPT
+	id S1753839Ab0GKOvr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 10:51:47 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:52539 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751686Ab0GKOvp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 10:25:28 -0400
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Containers <containers@lists.osdl.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>
-References: <20100625192945.GA25532@redhat.com>
-	<20100625212618.GA11917@us.ibm.com>
-	<20100625212758.GA30474@redhat.com>
-	<20100625220713.GA31123@us.ibm.com>
-	<m1r5jd5l0v.fsf_-_@fess.ebiederm.org>
-	<m1mxu15kv4.fsf_-_@fess.ebiederm.org>
-	<20100709121425.GB18586@hawkmoon.kerlabs.com>
-	<m1lj9k4xfx.fsf@fess.ebiederm.org>
-	<20100709141324.GC18586@hawkmoon.kerlabs.com>
-	<m1aaq04ph2.fsf_-_@fess.ebiederm.org>
-	<20100711141406.GD18586@hawkmoon.kerlabs.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Sun, 11 Jul 2010 07:25:18 -0700
-In-Reply-To: <20100711141406.GD18586@hawkmoon.kerlabs.com> (Louis Rilling's message of "Sun\, 11 Jul 2010 16\:14\:07 +0200")
-Message-ID: <m1mxtyt7sh.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Sun, 11 Jul 2010 10:51:45 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: stable? quality assurance?
+Date: Sun, 11 Jul 2010 16:51:42 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34.1-tp42-toi-3.1.1.1-04990-g3a7d1f4; KDE/4.4.4; i686; ; )
+References: <201007110918.42120.Martin@lichtvoll.de> <AANLkTimCwi2uJqqPaq3U30f3rvdDizu1BnaaXgvNeC9k@mail.gmail.com> (sfid-20100711_161032_809811_F0F1C0DA)
+In-Reply-To: <AANLkTimCwi2uJqqPaq3U30f3rvdDizu1BnaaXgvNeC9k@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa04 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Andrew Morton <akpm@linux-foundation.org>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa04 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.4 XMBrknScrpt_02 Possible Broken Spam Script
-	*  0.0 T_TooManySym_01 4+ unique symbols in subject
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: Re: [PATCH 01/24] pidns: Remove races by stopping the caching of proc_mnt
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: multipart/signed;
+  boundary="nextPart3311218.fWCruyExoO";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007111651.42963.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Louis Rilling <Louis.Rilling@kerlabs.com> writes:
+--nextPart3311218.fWCruyExoO
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
 
-> On 09/07/10  8:58 -0700, Eric W. Biederman wrote:
->> 
->> Having proc reference the pid_namespace and the pid_namespace
->> reference proc is a serious reference counting problem, which has
->> resulted in both leaks and use after free problems.  Mount already
->> knows how to go from a pid_namespace to a mount of proc, so we don't
->> need to cache the proc mount.
->> 
->> To do this I introduce get_proc_mnt and replace pid_ns->proc_mnt users
->> with it. Additionally I remove pid_ns_(prepare|release)_proc as they
->> are now unneeded.
->> 
->> This is slightly less efficient but it is much easier to avoid the
->> races.  If efficiency winds up being a problem we can revisit our data
->> structures.
->
-> IIUC, the difference between this solution and the first one I proposed is that
-> instead of pinning proc_mnt with mntget() at copy_process()-time, proc_mnt is
-> looked for and, if possible, mntget() at release_task()-time.
->
-> Could you elaborate on the trade-off, that is accessing proc_mnt at
-> copy_process()-time vs looking up proc_mnt at release_task()-time?
 
-A little code simplicity.  But Serge was right there is cost a noticeable
-cost.  About 5%-7% more on lat_proc from lmbench.
+Hi Lee,
 
-The real benefit was simplicity.
+Am Sonntag 11 Juli 2010 schrieb Lee Mathers:
+> Wow!
+>=20
+> First question what is a "desaster"?
 
-Eric
+=46or me freezing the machine or at least complete desktop randomly for=20
+example. And actually I said "for me" as you can reread on the bottom of=20
+your top posting.
+
+> Second question, what makes you so important that you feel you can
+> makes demands and comments as you did.
+
+Since when I do need to be considered to be important by you or anyone=20
+else to make comments? Actually I think I do not - this is still an open=20
+mailinglist, isn't it? And I won't waste my time with proofs that I=20
+contributed to free software here and there - also to kernel testing what=20
+for example Ingo Molnar could testify back in early CFS times where I=20
+roughly compiled a kernel a day and to kernel documentation once.
+
+I also do not get why you are attacking me personally. It seems to be that=
+=20
+you feel personally attacked by me. But I did not. I just questioned the=20
+quality of the kernel and its current quality assurance process. No one is=
+=20
+personally bad then anything of that lacks.
+
+One reason for a demand for me is best expressed by this question: Does=20
+the kernel developer community want to encourage that a group of advanced=20
+Linux users - but mostly non-developers - compile their own vanilla or=20
+valnilla near kernels, provide wider testing and report a bug now and=20
+then?
+
+I can live with either answer. If not, I just will be much more reluctant=20
+to try out new kernels.
+
+But I have experienced working productively with kernel developers like=20
+Ingo and tuxonice developer Nigel who where pretty interested in my usage=20
+of latest kernels.
+
+I admit my wording could have been friendlier, too, but I was just=20
+frustrated out of my recent experiences. What I wanted to achieve is=20
+raising concern whether kernel quality actually has decreased and more=20
+importantly something needs to be done to make it more stable again.
+
+Well Linus has at least been a bit more reluctant to take big changes=20
+after rc1 this cycle, so maybe 2.6.35 will be better again.
+
+> If indeed these are production systems and you are an administrator of
+> said production systems. I suggest you need to do a little more home
+> work to expand your knowledge base.
+
+Its production system that have some fault tolerance, i.e. not servers,=20
+but laptops and one, not yet all workstations. But for me a certain=20
+balance has to be met. I will just downgrade and drop newer kernels or=20
+even start skipping whole major versions completely on a regular basis if=20
+that turns out to be the only way to have stable enough machines for me.=20
+One approach would be to stick to the stable kernels that Greg and the=20
+stable team maintains for a longer time
+
+> Hope you have better luck in getting your systems running well.
+
+Thanks. I certainly will. If need be by downgrading.
+
+I hope that someone answers who actually can take some critique. From the=20
+current replies I perceive a lack of that ability.
+
+Ciao,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart3311218.fWCruyExoO
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkw52n4ACgkQmRvqrKWZhMcaBwCcCirhSk9OJsQBX+9P5wT0j1K7
+YQAAnRA5NOkcBFliHdloSvAWnbzLSX2f
+=GWOI
+-----END PGP SIGNATURE-----
+
+--nextPart3311218.fWCruyExoO--
