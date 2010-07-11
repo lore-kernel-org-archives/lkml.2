@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab0GKVTP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 17:19:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:50999 "EHLO
+	id S1755310Ab0GKVV5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 17:21:57 -0400
+Received: from moutng.kundenserver.de ([212.227.17.8]:55221 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751202Ab0GKVTM (ORCPT
+	with ESMTP id S1753951Ab0GKVTM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 11 Jul 2010 17:19:12 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-usb@vger.kernel.org
-Subject: [PATCH 05/12] usb: autoconvert trivial BKL users to private mutex
-Date: Sun, 11 Jul 2010 23:18:56 +0200
-Message-Id: <1278883143-29035-6-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org
+Subject: [PATCH 06/12] net: autoconvert trivial BKL users to private mutex
+Date: Sun, 11 Jul 2010 23:18:57 +0200
+Message-Id: <1278883143-29035-7-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278883143-29035-1-git-send-email-arnd@arndb.de>
 References: <1278883143-29035-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:6/aVRsejuRzemkgJU0RVOKX5h5G1a4iViXAPSAWwolC
- J3Zhcv5wY5SsOAdsciPXLgJmoi+RWCbhFk3aMdXTIKpVkJwNc+
- ota1BdQrstUl/dNFFKAd/VUUDYDL0GWfd2VRlsy/bxttqp+V8I
- ZSS62j4BFy9C3/AVBU/OWJxClKH+fEc4TyNr/NxUjNwFl30f9i
- C4mCGF6vaJznNJO0ygCpQ==
+X-Provags-ID: V02:K0:h44emQBWQeS4EWlsNellNSJO2wb3Qsv3OXQdCVfJIKu
+ AZ+wuYWO3zB9gBQWZajd3FOj0tPfBKHPRE7YmIpeuNGvN0uH1h
+ 7MvSK1FBpW82X8KWvC1kmZcXtIEZL2SVf4gIfzCKUSSGQfQpnP
+ M1J/ogJqBIrYBAJlrHd+rhn6zMnAjBvAwPLHKWTZfN608c6uVZ
+ OMzRaXMTd88SRbSrdyQQA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -64,275 +64,244 @@ else
 fi
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org
+Cc: "David S. Miller" <davem@davemloft.net>
+Cc: netdev@vger.kernel.org
 ---
- drivers/usb/gadget/printer.c |    7 ++++---
- drivers/usb/misc/iowarrior.c |   15 ++++++++-------
- drivers/usb/misc/rio500.c    |   15 ++++++++-------
- drivers/usb/misc/usblcd.c    |   16 ++++++++--------
- 4 files changed, 28 insertions(+), 25 deletions(-)
+ drivers/net/ppp_generic.c |   19 +++++++++----------
+ drivers/net/wan/cosa.c    |   10 +++++-----
+ net/wanrouter/wanmain.c   |    7 ++++---
+ net/wanrouter/wanproc.c   |    7 ++++---
+ 4 files changed, 22 insertions(+), 21 deletions(-)
 
-diff --git a/drivers/usb/gadget/printer.c b/drivers/usb/gadget/printer.c
-index 4c3ac5c..04c7bbf 100644
---- a/drivers/usb/gadget/printer.c
-+++ b/drivers/usb/gadget/printer.c
-@@ -25,7 +25,7 @@
- #include <linux/ioport.h>
- #include <linux/sched.h>
- #include <linux/slab.h>
+diff --git a/drivers/net/ppp_generic.c b/drivers/net/ppp_generic.c
+index 1b2c291..a72a335 100644
+--- a/drivers/net/ppp_generic.c
++++ b/drivers/net/ppp_generic.c
+@@ -40,7 +40,6 @@
+ #include <linux/if_arp.h>
+ #include <linux/ip.h>
+ #include <linux/tcp.h>
 -#include <linux/smp_lock.h>
-+#include <linux/mutex.h>
- #include <linux/errno.h>
- #include <linux/init.h>
- #include <linux/timer.h>
-@@ -70,6 +70,7 @@
- #define DRIVER_DESC		"Printer Gadget"
- #define DRIVER_VERSION		"2007 OCT 06"
+ #include <linux/spinlock.h>
+ #include <linux/rwsem.h>
+ #include <linux/stddef.h>
+@@ -181,6 +180,7 @@ struct channel {
+  * channel.downl.
+  */
  
-+static DEFINE_MUTEX(printer_mutex);
- static const char shortname [] = "printer";
- static const char driver_desc [] = DRIVER_DESC;
++static DEFINE_MUTEX(ppp_mutex);
+ static atomic_t ppp_unit_count = ATOMIC_INIT(0);
+ static atomic_t channel_count = ATOMIC_INIT(0);
  
-@@ -476,7 +477,7 @@ printer_open(struct inode *inode, struct file *fd)
- 	unsigned long		flags;
- 	int			ret = -EBUSY;
+@@ -363,7 +363,6 @@ static const int npindex_to_ethertype[NUM_NP] = {
+  */
+ static int ppp_open(struct inode *inode, struct file *file)
+ {
+-	cycle_kernel_lock();
+ 	/*
+ 	 * This could (should?) be enforced by the permissions on /dev/ppp.
+ 	 */
+@@ -588,7 +587,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		 * this fd and reopening /dev/ppp.
+ 		 */
+ 		err = -EINVAL;
+-		lock_kernel();
++		mutex_lock(&ppp_mutex);
+ 		if (pf->kind == INTERFACE) {
+ 			ppp = PF_TO_PPP(pf);
+ 			if (file == ppp->owner)
+@@ -600,7 +599,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		} else
+ 			printk(KERN_DEBUG "PPPIOCDETACH file->f_count=%ld\n",
+ 			       atomic_long_read(&file->f_count));
+-		unlock_kernel();
++		mutex_unlock(&ppp_mutex);
+ 		return err;
+ 	}
+ 
+@@ -608,7 +607,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		struct channel *pch;
+ 		struct ppp_channel *chan;
+ 
+-		lock_kernel();
++		mutex_lock(&ppp_mutex);
+ 		pch = PF_TO_CHANNEL(pf);
+ 
+ 		switch (cmd) {
+@@ -630,7 +629,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 				err = chan->ops->ioctl(chan, cmd, arg);
+ 			up_read(&pch->chan_sem);
+ 		}
+-		unlock_kernel();
++		mutex_unlock(&ppp_mutex);
+ 		return err;
+ 	}
+ 
+@@ -640,7 +639,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		return -EINVAL;
+ 	}
  
 -	lock_kernel();
-+	mutex_lock(&printer_mutex);
- 	dev = container_of(inode->i_cdev, struct printer_dev, printer_cdev);
- 
- 	spin_lock_irqsave(&dev->lock, flags);
-@@ -492,7 +493,7 @@ printer_open(struct inode *inode, struct file *fd)
- 	spin_unlock_irqrestore(&dev->lock, flags);
- 
- 	DBG(dev, "printer_open returned %x\n", ret);
++	mutex_lock(&ppp_mutex);
+ 	ppp = PF_TO_PPP(pf);
+ 	switch (cmd) {
+ 	case PPPIOCSMRU:
+@@ -788,7 +787,7 @@ static long ppp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	default:
+ 		err = -ENOTTY;
+ 	}
 -	unlock_kernel();
-+	mutex_unlock(&printer_mutex);
++	mutex_unlock(&ppp_mutex);
+ 	return err;
+ }
+ 
+@@ -801,7 +800,7 @@ static int ppp_unattached_ioctl(struct net *net, struct ppp_file *pf,
+ 	struct ppp_net *pn;
+ 	int __user *p = (int __user *)arg;
+ 
+-	lock_kernel();
++	mutex_lock(&ppp_mutex);
+ 	switch (cmd) {
+ 	case PPPIOCNEWUNIT:
+ 		/* Create a new ppp unit */
+@@ -852,7 +851,7 @@ static int ppp_unattached_ioctl(struct net *net, struct ppp_file *pf,
+ 	default:
+ 		err = -ENOTTY;
+ 	}
+-	unlock_kernel();
++	mutex_unlock(&ppp_mutex);
+ 	return err;
+ }
+ 
+diff --git a/drivers/net/wan/cosa.c b/drivers/net/wan/cosa.c
+index f0bd70f..04c6cd4 100644
+--- a/drivers/net/wan/cosa.c
++++ b/drivers/net/wan/cosa.c
+@@ -89,7 +89,6 @@
+ #include <linux/spinlock.h>
+ #include <linux/mutex.h>
+ #include <linux/device.h>
+-#include <linux/smp_lock.h>
+ #include <asm/io.h>
+ #include <asm/dma.h>
+ #include <asm/byteorder.h>
+@@ -174,6 +173,7 @@ struct cosa_data {
+  * Character device major number. 117 was allocated for us.
+  * The value of 0 means to allocate a first free one.
+  */
++static DEFINE_MUTEX(cosa_chardev_mutex);
+ static int cosa_major = 117;
+ 
+ /*
+@@ -944,7 +944,7 @@ static int cosa_open(struct inode *inode, struct file *file)
+ 	int n;
+ 	int ret = 0;
+ 
+-	lock_kernel();
++	mutex_lock(&cosa_chardev_mutex);
+ 	if ((n=iminor(file->f_path.dentry->d_inode)>>CARD_MINOR_BITS)
+ 		>= nr_cards) {
+ 		ret = -ENODEV;
+@@ -976,7 +976,7 @@ static int cosa_open(struct inode *inode, struct file *file)
+ 	chan->rx_done = chrdev_rx_done;
+ 	spin_unlock_irqrestore(&cosa->lock, flags);
+ out:
+-	unlock_kernel();
++	mutex_unlock(&cosa_chardev_mutex);
  	return ret;
  }
  
-diff --git a/drivers/usb/misc/iowarrior.c b/drivers/usb/misc/iowarrior.c
-index 7dc9d3c..8296645 100644
---- a/drivers/usb/misc/iowarrior.c
-+++ b/drivers/usb/misc/iowarrior.c
-@@ -18,7 +18,7 @@
- #include <linux/init.h>
- #include <linux/slab.h>
- #include <linux/sched.h>
+@@ -1212,10 +1212,10 @@ static long cosa_chardev_ioctl(struct file *file, unsigned int cmd,
+ 	struct cosa_data *cosa;
+ 	long ret;
+ 
+-	lock_kernel();
++	mutex_lock(&cosa_chardev_mutex);
+ 	cosa = channel->cosa;
+ 	ret = cosa_ioctl_common(cosa, channel, cmd, arg);
+-	unlock_kernel();
++	mutex_unlock(&cosa_chardev_mutex);
+ 	return ret;
+ }
+ 
+diff --git a/net/wanrouter/wanmain.c b/net/wanrouter/wanmain.c
+index 258daa8..2bf2340 100644
+--- a/net/wanrouter/wanmain.c
++++ b/net/wanrouter/wanmain.c
+@@ -48,7 +48,7 @@
+ #include <linux/kernel.h>
+ #include <linux/module.h>	/* support for loadable modules */
+ #include <linux/slab.h>		/* kmalloc(), kfree() */
 -#include <linux/smp_lock.h>
 +#include <linux/mutex.h>
- #include <linux/poll.h>
- #include <linux/usb/iowarrior.h>
+ #include <linux/mm.h>
+ #include <linux/string.h>	/* inline mem*, str* functions */
  
-@@ -61,6 +61,7 @@ MODULE_DESCRIPTION(DRIVER_DESC);
- MODULE_LICENSE("GPL");
+@@ -71,6 +71,7 @@
+  *	WAN device IOCTL handlers
+  */
  
- /* Module parameters */
-+static DEFINE_MUTEX(iowarrior_mutex);
- static int debug = 0;
- module_param(debug, bool, 0644);
- MODULE_PARM_DESC(debug, "debug=1 enables debugging messages");
-@@ -493,7 +494,7 @@ static long iowarrior_ioctl(struct file *file, unsigned int cmd,
- 		return -ENOMEM;
- 
- 	/* lock this object */
--	lock_kernel();
-+	mutex_lock(&iowarrior_mutex);
- 	mutex_lock(&dev->mutex);
- 
- 	/* verify that the device wasn't unplugged */
-@@ -585,7 +586,7 @@ static long iowarrior_ioctl(struct file *file, unsigned int cmd,
- error_out:
- 	/* unlock the device */
- 	mutex_unlock(&dev->mutex);
--	unlock_kernel();
-+	mutex_unlock(&iowarrior_mutex);
- 	kfree(buffer);
- 	return retval;
- }
-@@ -602,12 +603,12 @@ static int iowarrior_open(struct inode *inode, struct file *file)
- 
- 	dbg("%s", __func__);
++static DEFINE_MUTEX(wanrouter_mutex);
+ static int wanrouter_device_setup(struct wan_device *wandev,
+ 				  wandev_conf_t __user *u_conf);
+ static int wanrouter_device_stat(struct wan_device *wandev,
+@@ -376,7 +377,7 @@ long wanrouter_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	if (wandev->magic != ROUTER_MAGIC)
+ 		return -EINVAL;
  
 -	lock_kernel();
-+	mutex_lock(&iowarrior_mutex);
- 	subminor = iminor(inode);
- 
- 	interface = usb_find_interface(&iowarrior_driver, subminor);
- 	if (!interface) {
--		unlock_kernel();
-+		mutex_unlock(&iowarrior_mutex);
- 		err("%s - error, can't find device for minor %d", __func__,
- 		    subminor);
- 		return -ENODEV;
-@@ -617,7 +618,7 @@ static int iowarrior_open(struct inode *inode, struct file *file)
- 	dev = usb_get_intfdata(interface);
- 	if (!dev) {
- 		mutex_unlock(&iowarrior_open_disc_lock);
--		unlock_kernel();
-+		mutex_unlock(&iowarrior_mutex);
- 		return -ENODEV;
- 	}
- 
-@@ -644,7 +645,7 @@ static int iowarrior_open(struct inode *inode, struct file *file)
- 
- out:
- 	mutex_unlock(&dev->mutex);
--	unlock_kernel();
-+	mutex_unlock(&iowarrior_mutex);
- 	return retval;
- }
- 
-diff --git a/drivers/usb/misc/rio500.c b/drivers/usb/misc/rio500.c
-index a85771b..cc13ae6 100644
---- a/drivers/usb/misc/rio500.c
-+++ b/drivers/usb/misc/rio500.c
-@@ -32,7 +32,7 @@
- #include <linux/kernel.h>
- #include <linux/signal.h>
- #include <linux/sched.h>
--#include <linux/smp_lock.h>
-+#include <linux/mutex.h>
- #include <linux/errno.h>
- #include <linux/random.h>
- #include <linux/poll.h>
-@@ -72,6 +72,7 @@ struct rio_usb_data {
- 	struct mutex lock;          /* general race avoidance */
- };
- 
-+static DEFINE_MUTEX(rio500_mutex);
- static struct rio_usb_data rio_instance;
- 
- static int open_rio(struct inode *inode, struct file *file)
-@@ -79,12 +80,12 @@ static int open_rio(struct inode *inode, struct file *file)
- 	struct rio_usb_data *rio = &rio_instance;
- 
- 	/* against disconnect() */
--	lock_kernel();
-+	mutex_lock(&rio500_mutex);
- 	mutex_lock(&(rio->lock));
- 
- 	if (rio->isopen || !rio->present) {
- 		mutex_unlock(&(rio->lock));
--		unlock_kernel();
-+		mutex_unlock(&rio500_mutex);
- 		return -EBUSY;
- 	}
- 	rio->isopen = 1;
-@@ -94,7 +95,7 @@ static int open_rio(struct inode *inode, struct file *file)
- 	mutex_unlock(&(rio->lock));
- 
- 	dev_info(&rio->rio_dev->dev, "Rio opened.\n");
--	unlock_kernel();
-+	mutex_unlock(&rio500_mutex);
- 
- 	return 0;
- }
-@@ -491,7 +492,7 @@ static void disconnect_rio(struct usb_interface *intf)
- 	struct rio_usb_data *rio = usb_get_intfdata (intf);
- 
- 	usb_set_intfdata (intf, NULL);
--	lock_kernel();
-+	mutex_lock(&rio500_mutex);
- 	if (rio) {
- 		usb_deregister_dev(intf, &usb_rio_class);
- 
-@@ -501,7 +502,7 @@ static void disconnect_rio(struct usb_interface *intf)
- 			/* better let it finish - the release will do whats needed */
- 			rio->rio_dev = NULL;
- 			mutex_unlock(&(rio->lock));
--			unlock_kernel();
-+			mutex_unlock(&rio500_mutex);
- 			return;
- 		}
- 		kfree(rio->ibuf);
-@@ -512,7 +513,7 @@ static void disconnect_rio(struct usb_interface *intf)
- 		rio->present = 0;
- 		mutex_unlock(&(rio->lock));
- 	}
--	unlock_kernel();
-+	mutex_unlock(&rio500_mutex);
- }
- 
- static const struct usb_device_id rio_table[] = {
-diff --git a/drivers/usb/misc/usblcd.c b/drivers/usb/misc/usblcd.c
-index 7828c76..6ae39e3 100644
---- a/drivers/usb/misc/usblcd.c
-+++ b/drivers/usb/misc/usblcd.c
-@@ -16,7 +16,6 @@
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/slab.h>
--#include <linux/smp_lock.h>
- #include <linux/errno.h>
- #include <linux/mutex.h>
- #include <asm/uaccess.h>
-@@ -30,6 +29,7 @@
- #define IOCTL_GET_DRV_VERSION	2
- 
- 
-+static DEFINE_MUTEX(lcd_mutex);
- static const struct usb_device_id id_table[] = {
- 	{ .idVendor = 0x10D2, .match_flags = USB_DEVICE_ID_MATCH_VENDOR, },
- 	{ },
-@@ -74,12 +74,12 @@ static int lcd_open(struct inode *inode, struct file *file)
- 	struct usb_interface *interface;
- 	int subminor, r;
- 
--	lock_kernel();
-+	mutex_lock(&lcd_mutex);
- 	subminor = iminor(inode);
- 
- 	interface = usb_find_interface(&lcd_driver, subminor);
- 	if (!interface) {
--		unlock_kernel();
-+		mutex_unlock(&lcd_mutex);
- 		err ("USBLCD: %s - error, can't find device for minor %d",
- 		     __func__, subminor);
- 		return -ENODEV;
-@@ -89,7 +89,7 @@ static int lcd_open(struct inode *inode, struct file *file)
- 	dev = usb_get_intfdata(interface);
- 	if (!dev) {
- 		mutex_unlock(&open_disc_mutex);
--		unlock_kernel();
-+		mutex_unlock(&lcd_mutex);
- 		return -ENODEV;
- 	}
- 
-@@ -101,13 +101,13 @@ static int lcd_open(struct inode *inode, struct file *file)
- 	r = usb_autopm_get_interface(interface);
- 	if (r < 0) {
- 		kref_put(&dev->kref, lcd_delete);
--		unlock_kernel();
-+		mutex_unlock(&lcd_mutex);
- 		return r;
- 	}
- 
- 	/* save our object in the file's private structure */
- 	file->private_data = dev;
--	unlock_kernel();
-+	mutex_unlock(&lcd_mutex);
- 
- 	return 0;
- }
-@@ -164,14 +164,14 @@ static long lcd_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	
++	mutex_lock(&wanrouter_mutex);
  	switch (cmd) {
- 	case IOCTL_GET_HARD_VERSION:
--		lock_kernel();
-+		mutex_lock(&lcd_mutex);
- 		bcdDevice = le16_to_cpu((dev->udev)->descriptor.bcdDevice);
- 		sprintf(buf,"%1d%1d.%1d%1d",
- 			(bcdDevice & 0xF000)>>12,
- 			(bcdDevice & 0xF00)>>8,
- 			(bcdDevice & 0xF0)>>4,
- 			(bcdDevice & 0xF));
--		unlock_kernel();
-+		mutex_unlock(&lcd_mutex);
- 		if (copy_to_user((void __user *)arg,buf,strlen(buf))!=0)
- 			return -EFAULT;
- 		break;
+ 	case ROUTER_SETUP:
+ 		err = wanrouter_device_setup(wandev, data);
+@@ -408,7 +409,7 @@ long wanrouter_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 			err = wandev->ioctl(wandev, cmd, arg);
+ 		else err = -EINVAL;
+ 	}
+-	unlock_kernel();
++	mutex_unlock(&wanrouter_mutex);
+ 	return err;
+ }
+ 
+diff --git a/net/wanrouter/wanproc.c b/net/wanrouter/wanproc.c
+index c44d96b..11f25c7 100644
+--- a/net/wanrouter/wanproc.c
++++ b/net/wanrouter/wanproc.c
+@@ -27,7 +27,7 @@
+ #include <linux/module.h>
+ #include <linux/wanrouter.h>	/* WAN router API definitions */
+ #include <linux/seq_file.h>
+-#include <linux/smp_lock.h>
++#include <linux/mutex.h>
+ 
+ #include <net/net_namespace.h>
+ #include <asm/io.h>
+@@ -66,6 +66,7 @@
+  *	/proc/net/router
+  */
+ 
++static DEFINE_MUTEX(config_mutex);
+ static struct proc_dir_entry *proc_router;
+ 
+ /* Strings */
+@@ -85,7 +86,7 @@ static void *r_start(struct seq_file *m, loff_t *pos)
+ 	struct wan_device *wandev;
+ 	loff_t l = *pos;
+ 
+-	lock_kernel();
++	mutex_lock(&config_mutex);
+ 	if (!l--)
+ 		return SEQ_START_TOKEN;
+ 	for (wandev = wanrouter_router_devlist; l-- && wandev;
+@@ -104,7 +105,7 @@ static void *r_next(struct seq_file *m, void *v, loff_t *pos)
+ static void r_stop(struct seq_file *m, void *v)
+ 	__releases(kernel_lock)
+ {
+-	unlock_kernel();
++	mutex_unlock(&config_mutex);
+ }
+ 
+ static int config_show(struct seq_file *m, void *v)
 -- 
 1.7.1
 
