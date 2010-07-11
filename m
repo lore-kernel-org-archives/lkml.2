@@ -1,96 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753563Ab0GKQSM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 12:18:12 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:41676 "EHLO imr1.ericy.com"
+	id S1753710Ab0GKQVO (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 12:21:14 -0400
+Received: from gate.crashing.org ([63.228.1.57]:47986 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751523Ab0GKQSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 12:18:10 -0400
-Date: Sun, 11 Jul 2010 09:16:58 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Joe Perches <joe@perches.com>
-CC: Jean Delvare <khali@linux-fr.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Goyette <paul@whooppee.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-Subject: Re: [PATCH v2] hwmon: Add support for JEDEC JC 42.4 compliant
- temperature sensors
-Message-ID: <20100711161658.GA23927@ericsson.com>
-References: <1278859984-22593-1-git-send-email-guenter.roeck@ericsson.com>
- <1278862266.1501.59.camel@Joe-Laptop.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1278862266.1501.59.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751703Ab0GKQVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 12:21:13 -0400
+Subject: Re: [PATCH 1/2] edac: mpc85xx: Fix MPC85xx dependency
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <20100708045627.GA32489@oksana.dev.rtsoft.ru>
+Date: Sun, 11 Jul 2010 11:20:57 -0500
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Doug Thompson <dougthompson@xmission.com>,
+        Peter Tyser <ptyser@xes-inc.com>, Dave Jiang <djiang@mvista.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Content-Transfer-Encoding: 7bit
+Message-Id: <D4D6F1B7-CCA0-49ED-8CDD-8F9385DDF03E@kernel.crashing.org>
+References: <20100702124111.GA23320@oksana.dev.rtsoft.ru> <20100707144502.22b91374.akpm@linux-foundation.org> <20100708045627.GA32489@oksana.dev.rtsoft.ru>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 11, 2010 at 11:31:06AM -0400, Joe Perches wrote:
-> On Sun, 2010-07-11 at 07:53 -0700, Guenter Roeck wrote:
-> > diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
-> > new file mode 100644
-> > index 0000000..685057d
-> > --- /dev/null
-> > +++ b/drivers/hwmon/jc42.c
-> []
-> > +struct jc42_chips {
-> > +	u16 manid;
-> > +	u16 devid;
-> > +	u16 devid_mask;
-> > +};
-> > +
-> > +static struct jc42_chips jc42_chips[] = {
-> > +	{ ADT_MANID, ADT7408_DEVID, ADT7408_DEVID_MASK },
-> > +	{ IDT_MANID, TS3000B3_DEVID, TS3000B3_DEVID_MASK },
-> > +	{ MAX_MANID, MAX6604_DEVID, MAX6604_DEVID_MASK },
-> > +	{ MCP_MANID, MCP98242_DEVID, MCP98242_DEVID_MASK },
-> > +	{ MCP_MANID, MCP98243_DEVID, MCP98243_DEVID_MASK },
-> > +	{ MCP_MANID, MCP9843_DEVID, MCP9843_DEVID_MASK },
-> > +	{ NXP_MANID, SE97_DEVID, SE97_DEVID_MASK },
-> > +	{ ONS_MANID, CAT6095_DEVID, CAT6095_DEVID_MASK },
-> > +	{ NXP_MANID, SE98_DEVID, SE98_DEVID_MASK },
-> > +	{ STM_MANID, STTS424_DEVID, STTS424_DEVID_MASK },
-> > +	{ STM_MANID, STTS424E_DEVID, STTS424E_DEVID_MASK },
-> > +};
-> []
-> > +	for (i = 0; i < ARRAY_SIZE(jc42_chips); i++) {
-> > +		if (manid == jc42_chips[i].manid
-> > +		    && (devid & jc42_chips[i].devid_mask) ==
-> > +					    jc42_chips[i].devid) {
-> > +			strlcpy(info->type, "jc42", I2C_NAME_SIZE);
-> > +			return 0;
-> > +		}
-> > +	}
-> 
-> Decidedly trivial:
-> 
-> Kernel style seems to prefer having logical tests at
-> end of line rather than start of line.
-> 
-Ok. Would be nice to have checkpatch.pl complain about it, though,
-if it is a to-be-enforced rule.
 
-> Maybe this bit would be more readable with a temporary:
-> 
-> 	for (i = 0; i < ARRAY_SIZE(jc42_chips); i++) {
-> 		struct jc42_chips *chip = &jc42_chips[i];
-> 		if (manid == chip->manid &&
-> 		    (devid & chip->devid_mask) == chip->devid) {
-> 			strlcpy(info->type, "jc42", I2C_NAME_SIZE);
-> 			return 0;
-> 		}
-> 	}
-> 
-Agreed. I'll change that.
+On Jul 7, 2010, at 11:56 PM, Anton Vorontsov wrote:
 
-Thanks,
-Guenter
+> On Wed, Jul 07, 2010 at 02:45:02PM -0700, Andrew Morton wrote:
+>> On Fri, 2 Jul 2010 16:41:11 +0400
+>> Anton Vorontsov <avorontsov@mvista.com> wrote:
+>> 
+>>> Since commit 5753c082f66eca5be81f6bda85c1718c5eea6ada ("powerpc/85xx:
+>>> Kconfig cleanup"), there is no MPC85xx Kconfig symbol anymore, so the
+>>> driver became non-selectable.
+>> 
+>> hm.  5753c082f66eca5be81f6bda85c1718c5eea6ada got merged into mainline
+>> six months ago.  How come nobody noticed?
+> 
+> Dunno. Well, it's hard to notice these sorts of things until
+> somebody actually needs this driver on MPC85xx platform. :-)
+> 
+>>> This patch fixes the issue by switching to PPC_85xx symbol.
+>>> 
+>>> Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+>>> ---
+> [...]
+>>> -	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || MPC85xx)
+>>> +	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || PPC_85xx)
+>>> 	help
+>>> 	  Support for error detection and correction on the Freescale
+>>> 	  MPC8349, MPC8560, MPC8540, MPC8548
+>> 
+>> I suppose we shold scoot this into 2.6.35 and mark it for -stable
+>> backporting.  All very odd.
+> 
+> Yeah, -stable 2.6.{33,34} sounds good.
+> 
+> Thanks.
+
+we should add this to mpc85xx_defconfig so we build by default.
+
+- k
