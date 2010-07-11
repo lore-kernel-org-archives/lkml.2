@@ -1,38 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab0GKCPg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 22:15:36 -0400
-Received: from govinda.solana.com ([198.99.130.30]:54745 "EHLO
-	govinda.addtoit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753414Ab0GKCPe (ORCPT
+	id S1754169Ab0GKCQA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 22:16:00 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:36794 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753876Ab0GKCP4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 22:15:34 -0400
-Date: Sat, 10 Jul 2010 22:15:26 -0400
-From: Jeff Dike <jdike@addtoit.com>
-To: Philip Wernersbach <philip.wernersbach@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: Calling system call from User-mode Linux?
-Message-ID: <20100711021526.GA30049@c-98-229-117-200.hsd1.ma.comcast.net>
-References: <AANLkTilvP8WDEyyZhNOraBtCeRk1ru1TmryFfEppTHB3@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilvP8WDEyyZhNOraBtCeRk1ru1TmryFfEppTHB3@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Sat, 10 Jul 2010 22:15:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:x-mailer:mime-version:content-type
+         :content-transfer-encoding;
+        b=ngx7vS2g++oP7Bhh+pfyCXO+xOoOiSf8pN2zsuCMXok6uG5YxfGSTz8Ub6x5FzN+K5
+         Y1/7pgT10RvJpqibrkQi4sBcbDlH4dNqXS/UziaNjHfPv+shFhv4PkgYJaDv1ItSBk5S
+         6Of2ZZ5gJH2Xv1bnZVXtwtaOdAi4CCNyAQLXQ=
+Date: Sun, 11 Jul 2010 10:16:04 +0800
+From: "crosslonelyover" <crosslonelyover@gmail.com>
+To: "kernel-janitors" <kernel-janitors@vger.kernel.org>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>,
+       "linux-ext4" <linux-ext4@vger.kernel.org>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>,
+       "kernel-janitors" <kernel-janitors@vger.kernel.org>,
+       "error27" <error27@gmail.com>
+Subject: [PATCH & RESEND] avoid NULL deference in ext2_xattr_get
+Message-ID: <201007111016021569718@gmail.com>
+X-mailer: Foxmail 6, 15, 201, 22 [cn]
+Mime-Version: 1.0
+Content-Type: text/plain;
+	charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 10, 2010 at 05:55:48PM -0400, Philip Wernersbach wrote:
-> I'm trying to add some functionality to User-mode Linux that requires
-> the UML kernel to call a custom syscall I've added to the host kernel.
-> This should be technically possible since UML runs in the userspace,
-> but I can't figure out how to call the syscall, as the syscall()
-> function isn't defined in UML. Are there other ways I can accomplish
-> this?
+Hi Dan Carpenter,
 
-Add a function in the userspace side of UML (arch/um/os-Linux) which
-invokes your new system call through syscall(), and then call that
-from wherever you need to.
+     Thanks for your instructions. I regenerated the patch.
+Please check it.
 
-				Jeff
+>From 3149865e0d118b939c27659a4e4c884eaa6b3a4c Mon Sep 17 00:00:00 2001
+From: Wang Sheng-Hui <crosslonelyover@gmail.com>
+Date: Sat, 10 Jul 2010 22:07:37 -0400
+Subject: [PATCH] avoid NULL deference in ext2_xattr_get
+
+
+Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
+---
+ fs/ext2/xattr.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
+index 7c39157..81ec1c6 100644
+--- a/fs/ext2/xattr.c
++++ b/fs/ext2/xattr.c
+@@ -156,11 +156,12 @@ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
+ 	char *end;
+ 	int error;
+ 
++	if (name == NULL)
++		return -EINVAL;
++
+ 	ea_idebug(inode, "name=%d.%s, buffer=%p, buffer_size=%ld",
+ 		  name_index, name, buffer, (long)buffer_size);
+ 
+-	if (name == NULL)
+-		return -EINVAL;
+ 	down_read(&EXT2_I(inode)->xattr_sem);
+ 	error = -ENODATA;
+ 	if (!EXT2_I(inode)->i_file_acl)
+-- 
+1.7.1.1
+
+
