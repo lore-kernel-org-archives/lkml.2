@@ -1,58 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754286Ab0GKCv5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 10 Jul 2010 22:51:57 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:33957
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753909Ab0GKCv4 (ORCPT
+	id S1754192Ab0GKDLW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 10 Jul 2010 23:11:22 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:32934 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753712Ab0GKDLV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 10 Jul 2010 22:51:56 -0400
-Date: Sat, 10 Jul 2010 19:52:10 -0700 (PDT)
-Message-Id: <20100710.195210.200371025.davem@davemloft.net>
-To: joe@perches.com
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, gregkh@suse.de
-Subject: Re: linux-next: build warning after merge of the net tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1278562423.1712.43.camel@Joe-Laptop>
-References: <20100707.174522.148565561.davem@davemloft.net>
-	<20100707.181847.62350965.davem@davemloft.net>
-	<1278562423.1712.43.camel@Joe-Laptop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Sat, 10 Jul 2010 23:11:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=wcLn2ekxaCxg3nPIkGnzLCp6Jf/96tGn3GIYNYhZwa1z63UA98dxH+yAilaNo7+6Vc
+         Z1WKLSDpiaxK77ivFyXO+2rKAcZP1y9ButLCo4ZA+qHVF/gyytov4Jk2Mv/XSpjjXv6s
+         Keqvu3/A0W80/SYQb9RmyEKkFWvWaz7JlLfTQ=
+MIME-Version: 1.0
+In-Reply-To: <20100710.123011.260095467.davem@davemloft.net>
+References: <1278695580.2696.55.camel@edumazet-laptop>
+	<AANLkTil39xHOhcdAo4h_jWtx_UuYdFHGdQVAdwPMd7QJ@mail.gmail.com>
+	<1278742649.2538.17.camel@edumazet-laptop>
+	<20100710.123011.260095467.davem@davemloft.net>
+Date: Sun, 11 Jul 2010 00:11:20 -0300
+Message-ID: <AANLkTilQbM8F27a5SLZLMzndLYfz-eRhzyxP18KCFz2K@mail.gmail.com>
+Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
+From: Felipe W Damasio <felipewd@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: eric.dumazet@gmail.com, kaber@trash.net, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joe Perches <joe@perches.com>
-Date: Wed, 07 Jul 2010 21:13:42 -0700
+Hi Mr. Miller,
 
-> On Wed, 2010-07-07 at 18:18 -0700, David Miller wrote:
->> It looks like there are just a hand-ful of cases, so maybe we can tweak
->> them by hand.  For example, in the sym53c8xx_2 driver bits we can replace
->> the NULL labels passed to sym_print_msg() with a real string and therefore
->> remove the "" case.
->> 
->> Joe, any better ideas?
-> 
-> You're right there are just a few cases where dev_info
-> is uses as a preface for a hex_dump style display.
-> 
-> Maybe it'd be OK to simply add a trailing space to the
-> preface and remove any leading spaces from the subsequent
-> initial printks.
-> 
-> dev_info(dev, " ");
+2010/7/10 David Miller <davem@davemloft.net>:
+> It could be corruption from elsewhere.  Those last four hex
+> digits (0x5d415d41) are "]A]A" in ascii, but that could just
+> be coincidence.
 
-That might work.
+What do you mean "from elsewhere"? You mean elsewhere on the network code?
 
-The sym53c8xx_2 doesn't even need this, like I said, you could
-just remove the NULL 'label' argument cases and then have that
-bit cured.
+Since the function that had the problem was tcp_recvmsg and we're
+talking about a squid process, we're either talking about a typical
+webserver-objet response, or about about an incorrect/faulty http
+request from the user.
 
-Could you take a stab at this and the other scsi bits that
-trigger this warning?
+Like I told Mr. Dumazet, since on the squid logs I got a:
 
-Thanks Joe!
+2010/07/08 14:51:10| clientTryParseRequest: FD 6088
+(187.16.240.122:2035) Invalid Request
+
+Only a second before the bug entry on syslog, I suppose that this
+invalid request caused the problem (more like a guess, really).
+
+If you think there's a way I can help reproduce/trigger and fix this
+bug, please let me know, since the production machine is down until I
+can ensure my bosses that this particular crash won't happen again.
+
+Thanks,
+
+Felipe Damasio
