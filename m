@@ -1,117 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754854Ab0GKTZJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 15:25:09 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:57281 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754638Ab0GKTZG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 15:25:06 -0400
-Date: Sun, 11 Jul 2010 22:25:05 +0300 (EEST)
-From: "=?ISO-8859-15?Q?Ilpo_J=E4rvinen?=" <ilpo.jarvinen@helsinki.fi>
-X-X-Sender: ijjarvin@melkinpaasi.cs.helsinki.fi
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+	id S1754863Ab0GKT0k (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 15:26:40 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:60472 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754638Ab0GKT0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 15:26:38 -0400
+Date: Sun, 11 Jul 2010 21:26:15 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tejun Heo <tj@kernel.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
         lkml <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
-        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
-Subject: Re: oops in tcp_xmit_retransmit_queue() w/ v2.6.32.15
-In-Reply-To: <alpine.DEB.2.00.1007112214250.15736@melkinpaasi.cs.helsinki.fi>
-Message-ID: <alpine.DEB.2.00.1007112224110.15736@melkinpaasi.cs.helsinki.fi>
-References: <4C358AAA.9080400@kernel.org>  <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi>  <1278867977.2538.167.camel@edumazet-laptop>  <1278870382.2538.180.camel@edumazet-laptop> <1278872990.2538.189.camel@edumazet-laptop>
- <alpine.DEB.2.00.1007112214250.15736@melkinpaasi.cs.helsinki.fi>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+        Christoph Lameter <cl@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [RFC PATCH] x86-64: software IRQ masking and handling
+Message-ID: <20100711192615.GB21598@elte.hu>
+References: <4C3A06E3.50402@kernel.org>
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-696250871-1535017938-1278876305=:15736"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3A06E3.50402@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
 
----696250871-1535017938-1278876305=:15736
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+* Tejun Heo <tj@kernel.org> wrote:
 
-On Sun, 11 Jul 2010, Ilpo Järvinen wrote:
-
-> On Sun, 11 Jul 2010, Eric Dumazet wrote:
+> Hello,
 > 
-> > Le dimanche 11 juillet 2010 à 19:46 +0200, Eric Dumazet a écrit :
-> > > Le dimanche 11 juillet 2010 à 19:06 +0200, Eric Dumazet a écrit :
-> > > > Le dimanche 11 juillet 2010 à 19:09 +0300, Ilpo Järvinen a écrit :
-> > > > > On Thu, 8 Jul 2010, Tejun Heo wrote:
-> > > > > 
-> > > > > > We've been seeing oops in tcp_xmit_retransmit_queue() w/ 2.6.32.15.
-> > > > > > Please see the attached photoshoot.  This is happening on a HPC
-> > > > > > cluster and very interestingly caused by one particular job.  How long
-> > > > > > it takes isn't clear yet (at least more than a day) but when it
-> > > > > > happens it happens on a lot of machines in relatively short time.
-> > > > > > 
-> > > > > > With a bit of disassemblying, I've found that the oops is happening
-> > > > > > during tcp_for_write_queue_from() because the skb->next points to
-> > > > > > NULL.
-> > > > > > 
-> > > > > >  void tcp_xmit_retransmit_queue(struct sock *sk)
-> > > > > >  {
-> > > > > >  ...
-> > > > > > 	if (tp->retransmit_skb_hint) {
-> > > > > > 		skb = tp->retransmit_skb_hint;
-> > > > > > 		last_lost = TCP_SKB_CB(skb)->end_seq;
-> > > > > > 		if (after(last_lost, tp->retransmit_high))
-> > > > > > 			last_lost = tp->retransmit_high;
-> > > > > > 	} else {
-> > > > > > 		skb = tcp_write_queue_head(sk);
-> > > > > > 		last_lost = tp->snd_una;
-> > > > > > 	}
-> > > > > > 
-> > > > > >  =>	tcp_for_write_queue_from(skb, sk) {
-> > > > > > 		 __u8 sacked = TCP_SKB_CB(skb)->sacked;
-> > > > > > 
-> > > > > > 		 if (skb == tcp_send_head(sk))
-> > > > > > 			 break;
-> > > > > > 		 /* we could do better than to assign each time */
-> > > > > > 		 if (hole == NULL)
-> > > > > > 
-> > > > > > This can happen for one of the following reasons,
-> > > > > > 
-> > > > > > 1. tp->retransmit_skb_hint is NULL and tcp_write_queue_head() is NULL
-> > > > > >    too.  ie. tcp_xmit_retransmit_queue() is called on an empty write
-> > > > > >    queue for some reason.
-> > > > > > 
-> > > > > > 2. tp->retransmit_skb_hint is pointing to a skb which is not on the
-> > > > > >    write_queue.  ie. somebody forgot to update hint while removing the
-> > > > > >    skb from the write queue.
-> > > > > 
-> > > > > Once again I've read the unlinkers through, and only thing that could 
-> > > > > cause this is tcp_send_synack (others do deal with the hints) but I think 
-> > > > > Eric already proposed a patch to that but we never got anywhere due to 
-> > > > > some counterargument why it wouldn't take place (too far away for me to 
-> > > > > remember, see archives about the discussions). ...But if you want be dead 
-> > > > > sure some WARN_ON there might not hurt. Also the purging of the whole 
-> > > > > queue was a similar suspect I then came across (but that would only 
-> > > > > materialize with sk reuse happening e.g., with nfs which the other guys 
-> > > > > weren't using).
-> > > > > 
-> > > > 
-> > > > Hmm.
-> > > > 
-> > > > This sounds familiar to me, but I cannot remember the discussion you
-> > > > mention or the patch.
-> > > > 
-> > > > Or maybe it was the TCP transaction thing ? (including data in SYN or
-> > > > SYN-ACK packet)
+> This is something suggested by Rusty Russell a while ago.  It makes IRQ 
+> masking a software switch like preemption or softirq enable/disable.  
+> Hardware interrupt masking (cli/sti) and delivery are decoupled from actual 
+> IRQ handling.  IRQ disabling is done by single instruction moving 1 to a 
+> percpu variable.  Enabling is similar but it should check whether there's 
+> any pending interrupt to handle.
 > 
-> No. That's another thing. ...I've already found it with google today but 
-> cannot seem to find it again. I thought I used tcp_make_synack eric but 
-> for some reason I only get these transaction fix hits. I'll keep looking.
+> This change greatly reduces the number of hardware IRQ masking 
+> manipulations.  cli/sti still being somewhat costly operations (I hear 
+> nehalem is better tho), this should be able to improve overall performance, 
+> especially on paravirts.
 
-Right, this one:
+Not just Nehalem but on various AMD CPUs it was in the below-10-cycles range 
+for years.
 
-http://kerneltrap.org/mailarchive/linux-netdev/2009/10/29/6259073
+Note that we tried this in -rt, but the pain and trouble (and, often, code 
+bloat) was not worth the trouble. The PUSHF/POPF/CLI/STI instructions are 
+really simple and short in the instruction stream - without disturbing other 
+registers.
 
--- 
- i.
----696250871-1535017938-1278876305=:15736--
+	Ingo
