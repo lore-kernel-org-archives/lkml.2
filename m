@@ -1,83 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751549Ab0GKQPH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 12:15:07 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:55375 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751523Ab0GKQPD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 12:15:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:mime-version
-         :content-type:content-transfer-encoding;
-        b=sl4ioN6JR1Sbkpej7kkjdK9a++n1IvM/IyikuCegCZL5lhpXSjgugDpNabXvtAl+TW
-         wFpBPjsOxdecZhRZjNLQyQl6AQUNeVhC9W4+1TPsDW6mfAOWgZUW26BRSBt73VwIYRyy
-         mFG0BYY9HPEkajyUuQehcDfUFgKcikcCwRoXA=
-From: Kevin Winchester <kjwinchester@gmail.com>
-To: Len Brown <lenb@kernel.org>
-Cc: Kevin Winchester <kjwinchester@gmail.com>,
-        Venkatesh Pallipadi <venki@google.com>, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] acpi: Fix warning: 'us_to_pm_timer_ticks' defined but not used
-Date: Sun, 11 Jul 2010 13:14:53 -0300
-Message-Id: <1278864893-26281-1-git-send-email-kjwinchester@gmail.com>
-X-Mailer: git-send-email 1.7.1.1
+	id S1753563Ab0GKQSM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 12:18:12 -0400
+Received: from imr1.ericy.com ([198.24.6.9]:41676 "EHLO imr1.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751523Ab0GKQSK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 12:18:10 -0400
+Date: Sun, 11 Jul 2010 09:16:58 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Joe Perches <joe@perches.com>
+CC: Jean Delvare <khali@linux-fr.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Goyette <paul@whooppee.com>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
+Subject: Re: [PATCH v2] hwmon: Add support for JEDEC JC 42.4 compliant
+ temperature sensors
+Message-ID: <20100711161658.GA23927@ericsson.com>
+References: <1278859984-22593-1-git-send-email-guenter.roeck@ericsson.com>
+ <1278862266.1501.59.camel@Joe-Laptop.home>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-To: Len Brown <lenb@kernel.org>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1278862266.1501.59.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Using:
+On Sun, Jul 11, 2010 at 11:31:06AM -0400, Joe Perches wrote:
+> On Sun, 2010-07-11 at 07:53 -0700, Guenter Roeck wrote:
+> > diff --git a/drivers/hwmon/jc42.c b/drivers/hwmon/jc42.c
+> > new file mode 100644
+> > index 0000000..685057d
+> > --- /dev/null
+> > +++ b/drivers/hwmon/jc42.c
+> []
+> > +struct jc42_chips {
+> > +	u16 manid;
+> > +	u16 devid;
+> > +	u16 devid_mask;
+> > +};
+> > +
+> > +static struct jc42_chips jc42_chips[] = {
+> > +	{ ADT_MANID, ADT7408_DEVID, ADT7408_DEVID_MASK },
+> > +	{ IDT_MANID, TS3000B3_DEVID, TS3000B3_DEVID_MASK },
+> > +	{ MAX_MANID, MAX6604_DEVID, MAX6604_DEVID_MASK },
+> > +	{ MCP_MANID, MCP98242_DEVID, MCP98242_DEVID_MASK },
+> > +	{ MCP_MANID, MCP98243_DEVID, MCP98243_DEVID_MASK },
+> > +	{ MCP_MANID, MCP9843_DEVID, MCP9843_DEVID_MASK },
+> > +	{ NXP_MANID, SE97_DEVID, SE97_DEVID_MASK },
+> > +	{ ONS_MANID, CAT6095_DEVID, CAT6095_DEVID_MASK },
+> > +	{ NXP_MANID, SE98_DEVID, SE98_DEVID_MASK },
+> > +	{ STM_MANID, STTS424_DEVID, STTS424_DEVID_MASK },
+> > +	{ STM_MANID, STTS424E_DEVID, STTS424E_DEVID_MASK },
+> > +};
+> []
+> > +	for (i = 0; i < ARRAY_SIZE(jc42_chips); i++) {
+> > +		if (manid == jc42_chips[i].manid
+> > +		    && (devid & jc42_chips[i].devid_mask) ==
+> > +					    jc42_chips[i].devid) {
+> > +			strlcpy(info->type, "jc42", I2C_NAME_SIZE);
+> > +			return 0;
+> > +		}
+> > +	}
+> 
+> Decidedly trivial:
+> 
+> Kernel style seems to prefer having logical tests at
+> end of line rather than start of line.
+> 
+Ok. Would be nice to have checkpatch.pl complain about it, though,
+if it is a to-be-enforced rule.
 
-	gcc (GCC) 4.5.0 20100610 (prerelease)
+> Maybe this bit would be more readable with a temporary:
+> 
+> 	for (i = 0; i < ARRAY_SIZE(jc42_chips); i++) {
+> 		struct jc42_chips *chip = &jc42_chips[i];
+> 		if (manid == chip->manid &&
+> 		    (devid & chip->devid_mask) == chip->devid) {
+> 			strlcpy(info->type, "jc42", I2C_NAME_SIZE);
+> 			return 0;
+> 		}
+> 	}
+> 
+Agreed. I'll change that.
 
-The following warning is seen:
-
-	drivers/acpi/processor_idle.c:83:12: warning: ‘us_to_pm_timer_ticks’ defined but not used
-
-This is because us_to_pm_timer_ticks is only used when
-CONFIG_ACPI_PROCFS is defined.
-
-Fix the warning by moving the function definition into the #ifdef
-CONFIG_ACPI_PROCFS block.
-
-Signed-off-by: Kevin Winchester <kjwinchester@gmail.com>
----
- drivers/acpi/processor_idle.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
-
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index b1b3856..8525070 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -80,10 +80,6 @@ module_param(nocst, uint, 0000);
- static unsigned int latency_factor __read_mostly = 2;
- module_param(latency_factor, uint, 0644);
- 
--static u64 us_to_pm_timer_ticks(s64 t)
--{
--	return div64_u64(t * PM_TIMER_FREQUENCY, 1000000);
--}
- /*
-  * IBM ThinkPad R40e crashes mysteriously when going into C2 or C3.
-  * For now disable this. Probably a bug somewhere else.
-@@ -685,6 +681,12 @@ static int acpi_processor_get_power_info(struct acpi_processor *pr)
- }
- 
- #ifdef CONFIG_ACPI_PROCFS
-+
-+static u64 us_to_pm_timer_ticks(s64 t)
-+{
-+	return div64_u64(t * PM_TIMER_FREQUENCY, 1000000);
-+}
-+
- static int acpi_processor_power_seq_show(struct seq_file *seq, void *offset)
- {
- 	struct acpi_processor *pr = seq->private;
--- 
-1.7.1.1
-
+Thanks,
+Guenter
