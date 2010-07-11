@@ -1,28 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab0GKVT1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 17:19:27 -0400
-Received: from moutng.kundenserver.de ([212.227.126.171]:63754 "EHLO
+	id S1755268Ab0GKVTV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 17:19:21 -0400
+Received: from moutng.kundenserver.de ([212.227.126.171]:58841 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755288Ab0GKVTX (ORCPT
+	with ESMTP id S1755208Ab0GKVTS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 17:19:23 -0400
+	Sun, 11 Jul 2010 17:19:18 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: John Kacur <jkacur@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
-        Arnd Bergmann <arnd@arndb.de>, Corey Minyard <minyard@acm.org>,
-        openipmi-developer@lists.sourceforge.net
-Subject: [PATCH 11/12] ipmi: autoconvert trivial BKL users to private mutex
-Date: Sun, 11 Jul 2010 23:19:02 +0200
-Message-Id: <1278883143-29035-12-git-send-email-arnd@arndb.de>
+        Arnd Bergmann <arnd@arndb.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+        devel@driverdev.osuosl.org
+Subject: [PATCH 01/12] staging: autoconvert trivial BKL users to private mutex
+Date: Sun, 11 Jul 2010 23:18:52 +0200
+Message-Id: <1278883143-29035-2-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1278883143-29035-1-git-send-email-arnd@arndb.de>
 References: <1278883143-29035-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V02:K0:ggGPnegGOAuCeO246a65EQIQ9KaTf+QZERYuhFKNVKg
- gAJH49k2kKLo/2QFHi6ASf8GsLtKzid3+xh0oNTElAtwqXeAO1
- LfkVeiLGYwLpNQDfECkf6atXeRAk3BAvQWxQvXY87qfBOzeepL
- nopKDE+VPue3W+ZEgUV9KLvAuvKf/L32pJ57kpXyci+VBnoenL
- XLipE72AeT10TShTVkGSQ==
+X-Provags-ID: V02:K0:UvzNflUcvjMm3n8IYZx4bETQyAH+bsvNUH1nfRuzqrh
+ ypKbctmCKZgri3rS5cZEw89CFfr62WpKfRRO+GjrbGwx3RgHJ0
+ NDn7UH4j8z/js6Sm2vMiut/0lqRht2hNVsWSIJC+uWPXMX4ryw
+ zVTlC1lQsaIImJvbbqNW8Xjrrt9T6NRcWF3GWk9Syg6WTY+gPi
+ RWTfJq/CnrmaEyK+GypYQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -64,116 +64,117 @@ else
 fi
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-Cc: Corey Minyard <minyard@acm.org>
-Cc: openipmi-developer@lists.sourceforge.net
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org
 ---
- drivers/char/ipmi/ipmi_devintf.c  |   14 +++++++-------
- drivers/char/ipmi/ipmi_watchdog.c |    8 ++++----
- 2 files changed, 11 insertions(+), 11 deletions(-)
+ drivers/staging/crystalhd/crystalhd_lnx.c |    9 +++++----
+ drivers/staging/dt3155/dt3155_drv.c       |    6 ++++--
+ drivers/staging/vme/devices/vme_user.c    |    7 ++++---
+ 3 files changed, 13 insertions(+), 9 deletions(-)
 
-diff --git a/drivers/char/ipmi/ipmi_devintf.c b/drivers/char/ipmi/ipmi_devintf.c
-index d8ec92a..44833de 100644
---- a/drivers/char/ipmi/ipmi_devintf.c
-+++ b/drivers/char/ipmi/ipmi_devintf.c
-@@ -44,7 +44,6 @@
- #include <linux/init.h>
- #include <linux/device.h>
- #include <linux/compat.h>
--#include <linux/smp_lock.h>
+diff --git a/drivers/staging/crystalhd/crystalhd_lnx.c b/drivers/staging/crystalhd/crystalhd_lnx.c
+index a4ec891..e4b9caa 100644
+--- a/drivers/staging/crystalhd/crystalhd_lnx.c
++++ b/drivers/staging/crystalhd/crystalhd_lnx.c
+@@ -15,11 +15,12 @@
+   along with this driver.  If not, see <http://www.gnu.org/licenses/>.
+ ***************************************************************************/
  
- struct ipmi_file_private
- {
-@@ -59,6 +58,7 @@ struct ipmi_file_private
- 	unsigned int         default_retry_time_ms;
- };
- 
-+static DEFINE_MUTEX(ipmi_mutex);
- static void file_receive_handler(struct ipmi_recv_msg *msg,
- 				 void                 *handler_data)
- {
-@@ -102,9 +102,9 @@ static int ipmi_fasync(int fd, struct file *file, int on)
- 	struct ipmi_file_private *priv = file->private_data;
- 	int                      result;
- 
--	lock_kernel(); /* could race against open() otherwise */
-+	mutex_lock(&ipmi_mutex); /* could race against open() otherwise */
- 	result = fasync_helper(fd, file, on, &priv->fasync_queue);
--	unlock_kernel();
-+	mutex_unlock(&ipmi_mutex);
- 
- 	return (result);
- }
-@@ -125,7 +125,7 @@ static int ipmi_open(struct inode *inode, struct file *file)
- 	if (!priv)
- 		return -ENOMEM;
- 
--	lock_kernel();
-+	mutex_lock(&ipmi_mutex);
- 	priv->file = file;
- 
- 	rv = ipmi_create_user(if_num,
-@@ -150,7 +150,7 @@ static int ipmi_open(struct inode *inode, struct file *file)
- 	priv->default_retry_time_ms = 0;
- 
- out:
--	unlock_kernel();
-+	mutex_unlock(&ipmi_mutex);
- 	return rv;
- }
- 
-@@ -639,9 +639,9 @@ static long ipmi_unlocked_ioctl(struct file   *file,
- {
- 	int ret;
- 
--	lock_kernel();
-+	mutex_lock(&ipmi_mutex);
- 	ret = ipmi_ioctl(file, cmd, data);
--	unlock_kernel();
-+	mutex_unlock(&ipmi_mutex);
- 
- 	return ret;
- }
-diff --git a/drivers/char/ipmi/ipmi_watchdog.c b/drivers/char/ipmi/ipmi_watchdog.c
-index 82bcdb2..d80b8c9 100644
---- a/drivers/char/ipmi/ipmi_watchdog.c
-+++ b/drivers/char/ipmi/ipmi_watchdog.c
-@@ -35,7 +35,7 @@
- #include <linux/moduleparam.h>
- #include <linux/ipmi.h>
- #include <linux/ipmi_smi.h>
 -#include <linux/smp_lock.h>
 +#include <linux/mutex.h>
- #include <linux/watchdog.h>
- #include <linux/miscdevice.h>
- #include <linux/init.h>
-@@ -149,6 +149,7 @@
- #define	WDIOC_GET_PRETIMEOUT     _IOW(WATCHDOG_IOCTL_BASE, 22, int)
- #endif
+ #include <linux/slab.h>
  
-+static DEFINE_MUTEX(ipmi_watchdog_mutex);
- static int nowayout = WATCHDOG_NOWAYOUT;
+ #include "crystalhd_lnx.h"
  
- static ipmi_user_t watchdog_user;
-@@ -736,9 +737,9 @@ static long ipmi_unlocked_ioctl(struct file *file,
++static DEFINE_MUTEX(chd_dec_mutex);
+ static struct class *crystalhd_class;
+ 
+ static struct crystalhd_adp *g_adp_info;
+@@ -279,16 +280,16 @@ static long chd_dec_ioctl(struct file *fd, unsigned int cmd, unsigned long ua)
+ 		return -ENODATA;
+ 	}
+ 
+-	lock_kernel();
++	mutex_lock(&chd_dec_mutex);
+ 	cproc = crystalhd_get_cmd_proc(&adp->cmds, cmd, uc);
+ 	if (!cproc) {
+ 		BCMLOG_ERR("Unhandled command: %d\n", cmd);
+-		unlock_kernel();
++		mutex_unlock(&chd_dec_mutex);
+ 		return -EINVAL;
+ 	}
+ 
+ 	ret = chd_dec_api_cmd(adp, ua, uc->uid, cmd, cproc);
+-	unlock_kernel();
++	mutex_unlock(&chd_dec_mutex);
+ 	return ret;
+ }
+ 
+diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+index 40ef97f..fdfde1f 100644
+--- a/drivers/staging/dt3155/dt3155_drv.c
++++ b/drivers/staging/dt3155/dt3155_drv.c
+@@ -59,6 +59,7 @@ extern void printques(int);
+ 
+ #include <linux/module.h>
+ #include <linux/interrupt.h>
++#include <linux/mutex.h>
+ #include <linux/pci.h>
+ #include <linux/types.h>
+ #include <linux/poll.h>
+@@ -78,6 +79,7 @@ extern void printques(int);
+ MODULE_LICENSE("GPL");
+ 
+ /* Error variable.  Zero means no error. */
++static DEFINE_MUTEX(dt3155_mutex);
+ int dt3155_errno = 0;
+ 
+ #ifndef PCI_DEVICE_ID_INTEL_7116
+@@ -841,9 +843,9 @@ dt3155_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  {
  	int ret;
  
 -	lock_kernel();
-+	mutex_lock(&ipmi_watchdog_mutex);
- 	ret = ipmi_ioctl(file, cmd, arg);
++	mutex_lock(&dt3155_mutex);
+ 	ret = dt3155_ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
 -	unlock_kernel();
-+	mutex_unlock(&ipmi_watchdog_mutex);
++	mutex_unlock(&dt3155_mutex);
  
  	return ret;
  }
-@@ -832,7 +833,6 @@ static int ipmi_open(struct inode *ino, struct file *filep)
- 		if (test_and_set_bit(0, &ipmi_wdog_open))
- 			return -EBUSY;
+diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+index bc16fc0..73a67a8 100644
+--- a/drivers/staging/vme/devices/vme_user.c
++++ b/drivers/staging/vme/devices/vme_user.c
+@@ -31,7 +31,7 @@
+ #include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/syscalls.h>
+-#include <linux/smp_lock.h>
++#include <linux/mutex.h>
+ #include <linux/types.h>
  
--		cycle_kernel_lock();
+ #include <asm/io.h>
+@@ -40,6 +40,7 @@
+ #include "../vme.h"
+ #include "vme_user.h"
  
- 		/*
- 		 * Don't start the timer now, let it start on the
++static DEFINE_MUTEX(vme_user_mutex);
+ static char driver_name[] = "vme_user";
+ 
+ static int bus[USER_BUS_MAX];
+@@ -560,9 +561,9 @@ vme_user_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ {
+ 	int ret;
+ 
+-	lock_kernel();
++	mutex_lock(&vme_user_mutex);
+ 	ret = vme_user_ioctl(file->f_path.dentry->d_inode, file, cmd, arg);
+-	unlock_kernel();
++	mutex_unlock(&vme_user_mutex);
+ 
+ 	return ret;
+ }
 -- 
 1.7.1
 
