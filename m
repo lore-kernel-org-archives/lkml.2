@@ -1,87 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754622Ab0GKS5T (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 14:57:19 -0400
-Received: from mail.perches.com ([173.55.12.10]:1687 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754074Ab0GKS5R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 14:57:17 -0400
-Subject: [PATCH] scripts/checkpatch.pl: Add strict test of logical test
- continuations at beginning of line
-From: Joe Perches <joe@perches.com>
-To: Jean Delvare <khali@linux-fr.org>, Andy Whitcroft <apw@canonical.com>
-Cc: Guenter Roeck <guenter.roeck@ericsson.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Hans de Goede <hdegoede@redhat.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Paul Goyette <paul@whooppee.com>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-i2c@vger.kernel.org" <linux-i2c@vger.kernel.org>
-In-Reply-To: <20100711182138.132815e4@hyperion.delvare>
-References: <1278859984-22593-1-git-send-email-guenter.roeck@ericsson.com>
-	 <1278862266.1501.59.camel@Joe-Laptop.home>
-	 <20100711161658.GA23927@ericsson.com>
-	 <20100711182138.132815e4@hyperion.delvare>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 11 Jul 2010 11:57:12 -0700
-Message-ID: <1278874632.1501.68.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754754Ab0GKTMm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 15:12:42 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:32791 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754336Ab0GKTMj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 15:12:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=R0gWBBoieaU9KOG2aPkTB5saenJUinUoU/5LH+3S6Rzb43zFd21I2WEa1pfdEc5lA7
+         5MkRWOuelSFvjY6L5gcX1zkPcc3HfQkum35RmlCxXcqdc5HTkGc0LskC9msi60bfhAK4
+         JZGC8x0o9xJ6xk1bBAAflQInW8fFAuELFNlmk=
+From: Cyril Jayaprakash <cyril.jayaprakash@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-scsi@vger.kernel.org, martin.petersen@oracle.com, vasu.dev@intel.com,
+        akpm@linux-foundation.org, James.Bottomley@suse.de,
+        anil_ravindranath@pmc-sierra.com,
+        Cyril Jayaprakash <cyril.jayaprakash@gmail.com>
+Subject: [PATCH] pmcraid : Remove unwanted cast for void * pointers
+Date: Mon, 12 Jul 2010 00:42:00 +0530
+Message-Id: <1278875520-18592-1-git-send-email-cyril.jayaprakash@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-11 at 18:21 +0200, Jean Delvare wrote:
-> On Sun, 11 Jul 2010 09:16:58 -0700, Guenter Roeck wrote:
-> > On Sun, Jul 11, 2010 at 11:31:06AM -0400, Joe Perches wrote:
-> > > Kernel style seems to prefer having logical tests at
-> > > end of line rather than start of line.
-> > Ok. Would be nice to have checkpatch.pl complain about it, though,
-> > if it is a to-be-enforced rule.
-> Please, not again. This has been discussed before, with the conclusion
-> that nobody really cares and we don't want to add pointless warnings to
-> checkpatch.pl, which in the end will just dissuade people from running
-> the script and/or contributing to the kernel at all.
+From: Cyril Jayaprakash <cyril.jayaprakash@gmail.com>
 
-I don't remember that discussion.  Link?
+Patch to remove unwanted cast for void * pointers.
 
-Here's a patch that makes it a "--strict" option
-for those who really want to get all the style
-checking options.
-
-It also corrects a spelling typo.
-
-Signed-off-by: Joe Perches <joe@perches.com
+Signed-off-by: Cyril Jayaprakash <cyril.jayaprakash@gmail.com>
 ---
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index bd88f11..f0a4c25 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2180,6 +2180,11 @@ sub process {
- 			ERROR("space required before the open parenthesis '('\n" . $herecurr);
- 		}
- 
-+# Strict only - logical tests should be at EOL, not beginning of new lines
-+		if ($line=~/^.\s*(\&\&|\|\|)/) {
-+			CHK("logical test continuations should be on the previous line\n" . $hereprev);
-+		}
-+
- # Check for illegal assignment in if conditional -- and check for trailing
- # statements after the conditional.
- 		if ($line =~ /do\s*(?!{)/) {
-@@ -2299,7 +2304,7 @@ sub process {
- 
- #no spaces allowed after \ in define
- 		if ($line=~/\#\s*define.*\\\s$/) {
--			WARN("Whitepspace after \\ makes next lines useless\n" . $herecurr);
-+			WARN("Whitespace after \\ makes next lines useless\n" . $herecurr);
- 		}
- 
- #warn if <asm/foo.h> is #included and <linux/foo.h> is available (uses RAW line)
+ drivers/scsi/pmcraid.c |    7 +++----
+ 1 files changed, 3 insertions(+), 4 deletions(-)
 
+diff --git a/drivers/scsi/pmcraid.c b/drivers/scsi/pmcraid.c
+index c44e4ab..bd0b5a0 100644
+--- a/drivers/scsi/pmcraid.c
++++ b/drivers/scsi/pmcraid.c
+@@ -3324,8 +3324,7 @@ static int pmcraid_chr_open(struct inode *inode, struct file *filep)
+  */
+ static int pmcraid_chr_release(struct inode *inode, struct file *filep)
+ {
+-	struct pmcraid_instance *pinstance =
+-		((struct pmcraid_instance *)filep->private_data);
++	struct pmcraid_instance *pinstance = filep->private_data;
+ 
+ 	filep->private_data = NULL;
+ 	fasync_helper(-1, filep, 0, &pinstance->aen_queue);
+@@ -3344,7 +3343,7 @@ static int pmcraid_chr_fasync(int fd, struct file *filep, int mode)
+ 	struct pmcraid_instance *pinstance;
+ 	int rc;
+ 
+-	pinstance = (struct pmcraid_instance *)filep->private_data;
++	pinstance = filep->private_data;
+ 	mutex_lock(&pinstance->aen_queue_lock);
+ 	rc = fasync_helper(fd, filep, mode, &pinstance->aen_queue);
+ 	mutex_unlock(&pinstance->aen_queue_lock);
+@@ -3795,7 +3794,7 @@ static long pmcraid_chr_ioctl(
+ 		return retval;
+ 	}
+ 
+-	pinstance = (struct pmcraid_instance *)filep->private_data;
++	pinstance = filep->private_data;
+ 
+ 	if (!pinstance) {
+ 		pmcraid_info("adapter instance is not found\n");
+-- 
+1.7.0.4
 
