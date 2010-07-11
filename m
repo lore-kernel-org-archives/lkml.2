@@ -1,44 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754232Ab0GKREl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 13:04:41 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61252 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753982Ab0GKREk (ORCPT
+	id S1754508Ab0GKREt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 13:04:49 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:48996 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754323Ab0GKREq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 13:04:40 -0400
-Date: Sun, 11 Jul 2010 19:04:39 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-Message-ID: <20100711170439.GA9791@fancy-poultry.org>
-References: <201007110918.42120.Martin@lichtvoll.de>
- <1278837584.2538.135.camel@edumazet-laptop>
+	Sun, 11 Jul 2010 13:04:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:references:cc:date:message-id:mime-version
+         :content-type;
+        b=SX2OmB5wyiZqxyUMAodE5+Knr+JZKFXb18/NFrEDTciX2hXWEUWIQZkfK1OGto578W
+         opcumqStbIpVTG89eYIlxMikdGyHwZDalt0EL1awLqZB4Lj2vvIw0NGr+G0gtKVxRIQK
+         MQ3txiKPmU+8qkz106AJ1kejOLP6YAS5kZmYQ=
+From: "Patrick J. LoPresti" <lopresti@gmail.com>
+To: ocfs2-devel@oss.oracle.com
+Subject: [PATCH 2/2] OCFS2: Allow huge (> 16 TiB) volumes to mount
+References: <871vbax86w.fsf@patl.com>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Date: Sun, 11 Jul 2010 10:04:38 -0700
+Message-ID: <87zkxyvtjt.fsf@patl.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278837584.2538.135.camel@edumazet-laptop>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100619 (GNU/Linux)
-X-Provags-ID: V02:K0:4B0lo/9leShI5sqBb7jpXtSkhyVWHzMy5EZSS0eHE1o
- g31QLsfeM+79CsaZ6v+S1WHS9KxaB7P473zoGoExQMGzEjfXJu
- 4VIc7DmLxQ6eJyTq86MqGT2n4QCgOohFK7VfL4jaaBnp0TyK7L
- lGnE4WEf8pZbaun5puiEVeTnyZHT7oXbXE6kPV/zznTEmN/6YR
- ERTaRalI6Z/gyYiRCuJ7w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 11.07.2010, Eric Dumazet wrote: 
+The OCFS2 developers have already done all of the hard work to allow
+volumes larger than 16 TiB.  But there is still a "sanity check" in
+fs/ocfs2/super.c that prevents the mounting of such volumes, even when
+the cluster size and journal options would allow it.
 
-> When 2.6.X is released, everybody knows it contains at least 100 bugs.
-[....]
+This patch replaces that sanity check with a more sophisticated one to
+mount a huge volume provided that (a) it is addressable by the raw
+word/address size of the system (borrowing a test from ext4); (b) the
+volume is using JBD2; and (c) the JBD2_FEATURE_INCOMPAT_64BIT flag is
+set on the journal.
 
-http://s5.directupload.net/file/d/2217/ckghonrx_jpg.htm
+I factored out the sanity check into its own function.  I also moved it
+from ocfs2_initialize_super() down to ocfs2_check_volume(); any earlier,
+and the journal will not have been initialized yet.
 
-:-)
+This patch is one of a pair, and it depends on the other ("JBD2: Allow
+feature checks before journal recovery").
 
+I have tested this patch on small volumes, huge volumes, and huge
+volumes without 64-bit block support in the journal.  All of them appear
+to work or to fail gracefully, as appropriate.
+
+Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
+
+
+diff --git a/fs/ocfs2/super.c b/fs/ocfs2/super.c
+index 0eaa929..b809508 100644
+--- a/fs/ocfs2/super.c
++++ b/fs/ocfs2/super.c
+@@ -1991,6 +1991,47 @@ static int ocfs2_setup_osb_uuid(struct ocfs2_super *osb, const unsigned char *uu
+ 	return 0;
+ }
+ 
++/* Check to make sure entire volume is addressable on this system.
++   Requires osb_clusters_at_boot to be valid and for the journal to
++   have been initialized by ocfs2_journal_init(). */
++static int ocfs2_check_addressable(struct ocfs2_super *osb)
++{
++	int status = 0;
++	u64 max_block =
++		ocfs2_clusters_to_blocks(osb->sb,
++					 osb->osb_clusters_at_boot) - 1;
++
++	/* Absolute addressability check (borrowed from ext4/super.c) */
++	if ((max_block >
++	     (sector_t)(~0LL) >> (osb->sb->s_blocksize_bits - 9)) ||
++	    (max_block > (pgoff_t)(~0LL) >> (PAGE_CACHE_SHIFT -
++					     osb->sb->s_blocksize_bits))) {
++		mlog(ML_ERROR, "Volume too large "
++		     "to mount safely on this system");
++		status = -EFBIG;
++		goto out;
++	}
++
++	/* 32-bit block number is always OK. */
++	if (max_block <= (u32)~0UL)
++		goto out;
++
++	/* Volume is "huge", so see if our journal is new enough to
++	   support it. */
++	if (!(OCFS2_HAS_COMPAT_FEATURE(osb->sb,
++				       OCFS2_FEATURE_COMPAT_JBD2_SB) &&
++	      jbd2_journal_check_used_features(osb->journal->j_journal, 0, 0,
++					       JBD2_FEATURE_INCOMPAT_64BIT))) {
++		mlog(ML_ERROR, "The journal cannot address the entire volume. "
++		     "Enable the 'block64' journal option with tunefs.ocfs2");
++		status = -EFBIG;
++		goto out;
++	}
++
++ out:
++	return status;
++}
++
+ static int ocfs2_initialize_super(struct super_block *sb,
+ 				  struct buffer_head *bh,
+ 				  int sector_size,
+@@ -2215,14 +2256,6 @@ static int ocfs2_initialize_super(struct super_block *sb,
+ 		goto bail;
+ 	}
+ 
+-	if (ocfs2_clusters_to_blocks(osb->sb, le32_to_cpu(di->i_clusters) - 1)
+-	    > (u32)~0UL) {
+-		mlog(ML_ERROR, "Volume might try to write to blocks beyond "
+-		     "what jbd can address in 32 bits.\n");
+-		status = -EINVAL;
+-		goto bail;
+-	}
+-
+ 	if (ocfs2_setup_osb_uuid(osb, di->id2.i_super.s_uuid,
+ 				 sizeof(di->id2.i_super.s_uuid))) {
+ 		mlog(ML_ERROR, "Out of memory trying to setup our uuid.\n");
+@@ -2381,6 +2414,12 @@ static int ocfs2_check_volume(struct ocfs2_super *osb)
+ 		goto finally;
+ 	}
+ 
++	/* Now that journal has been initialized, check to make sure
++	   entire volume is addressable. */
++	status = ocfs2_check_addressable(osb);
++	if (status)
++		goto finally;
++
+ 	/* If the journal was unmounted cleanly then we don't want to
+ 	 * recover anything. Otherwise, journal_load will do that
+ 	 * dirty work for us :) */
