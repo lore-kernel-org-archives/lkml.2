@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751261Ab0GKGH2 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 02:07:28 -0400
-Received: from pfepa.post.tele.dk ([195.41.46.235]:58397 "EHLO
-	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750966Ab0GKGH1 (ORCPT
+	id S1751402Ab0GKGKP (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 02:10:15 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51898
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750873Ab0GKGKM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 02:07:27 -0400
-Date: Sun, 11 Jul 2010 08:07:23 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Zeev Tarantov <zeev.tarantov@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] tracing: properly align linker defined symbols
-Message-ID: <20100711060723.GA16125@merkur.ravnborg.org>
-References: <1278705402.1537.157.camel@gandalf.stny.rr.com> <20100709203301.GA13839@merkur.ravnborg.org> <AANLkTinWkfkXNVA2Sx-apVQMZa-5ehugtd7JQ36np7xM@mail.gmail.com> <1278721339.1537.166.camel@gandalf.stny.rr.com> <20100710063459.GA14596@merkur.ravnborg.org> <AANLkTindHPEQHhmrB562ZlFZMtAIN-S6yMmT7zubS2D_@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTindHPEQHhmrB562ZlFZMtAIN-S6yMmT7zubS2D_@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Sun, 11 Jul 2010 02:10:12 -0400
+Date: Sat, 10 Jul 2010 23:10:26 -0700 (PDT)
+Message-Id: <20100710.231026.233698429.davem@davemloft.net>
+To: joe@perches.com
+Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, gregkh@suse.de, James.Bottomley@suse.de,
+       matthew@wil.cx, linux-scsi@vger.kernel.org
+Subject: Re: [PATCH net-next] drivers/scsi: Remove warnings after vsprintf
+ %pV introduction
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1278824921.1501.37.camel@Joe-Laptop.home>
+References: <1278562423.1712.43.camel@Joe-Laptop>
+	<20100710.195210.200371025.davem@davemloft.net>
+	<1278824921.1501.37.camel@Joe-Laptop.home>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 10, 2010 at 03:25:02PM -0700, Linus Torvalds wrote:
-> On Fri, Jul 9, 2010 at 11:35 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> >
-> > We define a number of symbols in the linker scipt like this:
-> >
-> >    __start_syscalls_metadata = .;
-> >    *(__syscalls_metadata)
-> >
-> > But we do not know the alignment of "." when we assign
-> > the __start_syscalls_metadata symbol.
-> > gcc started to uses bigger alignment for structs (32 bytes),
-> > so we saw situations where the linker due to alignment
-> > constraints increased the value of "." after the symbol assignment.
+From: Joe Perches <joe@perches.com>
+Date: Sat, 10 Jul 2010 22:08:41 -0700
+
+> On Sat, 2010-07-10 at 19:52 -0700, David Miller wrote:
+>> Could you take a stab at this and the other scsi bits that
+>> trigger this warning?
 > 
-> Ok, why not clean this up a bit more, and use a helper macro for this
-> pattern. There's a fair number of users of that kind of pattern, so
-> that actually removes a few lines.
+> Remove warnings introduced by conversions of dev_<level>
+> macros to functions.
 > 
-> Here's an example patch. Untested. Whatever. But just this part
+> Compile tested only.
 > 
->  1 files changed, 21 insertions(+), 31 deletions(-)
-> 
-> says to me that it's a good idea, and there are other cases that could
-> use the new SYMBOL_SECTION() helper.
-> 
-> What do people think?
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-Looks good.
-I especially like how we with this standardize on the alignment.
-I will make sure a working version hits next merge window.
+SCSI folks, the background is that we have moved the dev_*() printk
+macros to external functions, so that the prefixing printf strings
+don't get emitting at every call site.
 
-A few comments.
+As a consequence, dev_*() calls that try to use an empty string as the
+printf format emit a warning from gcc since an empty constant string
+is not a valid printf format.
 
-+#define SYMBOL_SECTION(name, section)          \
-+       . = ALIGN(32);                          \
-+       VMLINUX_SYMBOL(__start_##section) = .;  \
-+       *(name)                                 \
-+       VMLINUX_SYMBOL(__stop_##section) = .;
+That's what this change is all about.
 
-The arguments to this macro is confusing.
-Something like this:
+Anyways:
 
-    #define SYMBOL_SECTION(section, symbol_suffix)
-
-To encourage people to use the section name as suffix
-the __start / __stop variables we could
-introduce an additional define:
-
-#define SYMBOL_SECTION(section) SYMBOL_SECTION_SUFFIX(section, section)
-
-#define SYMBOL_SECTION_SUFFIX(section, symbol_suffix) \
-+       . = ALIGN(32);                                \
-+       VMLINUX_SYMBOL(__start_##symbol_suffix) = .;  \
-+       *(section)                                    \
-+       VMLINUX_SYMBOL(__stop_##symbol_suffix) = .;
-
-
-I will update the patch to reflect this (+ the fix you pointed out).
-But it will wait until Steven has decided what patch to forward
-to fix the discussed regression.
-
-	Sam
+Acked-by: David S. Miller <davem@davemloft.net>
