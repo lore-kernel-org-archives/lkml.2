@@ -1,43 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab0GKU6n (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 16:58:43 -0400
-Received: from cantor.suse.de ([195.135.220.2]:60787 "EHLO mx1.suse.de"
+	id S1754907Ab0GKVOI (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 17:14:08 -0400
+Received: from cantor.suse.de ([195.135.220.2]:32900 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753088Ab0GKU6l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 16:58:41 -0400
-Date: Sun, 11 Jul 2010 22:58:37 +0200 (CEST)
+	id S1753088Ab0GKVOE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 17:14:04 -0400
+Date: Sun, 11 Jul 2010 23:14:01 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Jaya Kumar <jayakumar.lkml@gmail.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4 - adjusted changelog] HID: picolcd: fix deferred_io
- init/cleanup to  (un)register_framebuffer ordering
-In-Reply-To: <20100630223631.49ab1c85@neptune.home>
-Message-ID: <alpine.LNX.2.00.1007112258270.4741@pobox.suse.cz>
-References: <20100509184911.3f136b77@neptune.home> <AANLkTik0EkPYKdnhrpF7yK6eXIrHMsNYrzSC6tyeBR0P@mail.gmail.com> <20100510080047.5adade6f@pluto.restena.lu> <20100526215829.28a4aa47@neptune.home> <20100530130945.5c03797f@neptune.home> <20100623123225.4c16e653@neptune.home>
- <alpine.LNX.2.00.1006241053360.13809@pobox.suse.cz> <20100628222641.489c955a@neptune.home> <20100628222920.1127f8eb@neptune.home> <AANLkTingjmM4OmkdXl9IOUe5zsj0QxTdix1h34pVHWGl@mail.gmail.com> <20100630075657.47a325a6@pluto.restena.lu>
- <20100630223631.49ab1c85@neptune.home>
+To: Alan Ott <alan@signal11.us>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Marcel Holtmann <marcel@holtmann.org>,
+        Antonio Ospite <ospite@studenti.unina.it>,
+        Amit Nagal <helloin.amit@gmail.com>, linux-usb@vger.kernel.org,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] HID: Send Report ID when numbered reports are sent
+ over the control endpoint.
+In-Reply-To: <1277905836-3949-2-git-send-email-alan@signal11.us>
+Message-ID: <alpine.LNX.2.00.1007112313240.4741@pobox.suse.cz>
+References: <alpine.LNX.2.00.1006301126130.13809@pobox.suse.cz> <1277905836-3949-2-git-send-email-alan@signal11.us>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 30 Jun 2010, Bruno Prémont wrote:
+On Wed, 30 Jun 2010, Alan Ott wrote:
 
-> Adjust ordering if framebuffer (un)registration and defio init/cleanup
-> to match the correct order (init defio, register FB ... unregister FB,
-> cleanup defio)
+> The Report ID wasn't sent as part of the payload for reports which were sent
+> over the control endpoint. This is required by section 8.1 of the HID spec.
+
+We already have a8ab5d58b0238b8199cc699b8dff7c5e1da24138 commit in Linus' 
+tree, so I'll take this for .35 still, thanks a lot for fixing it Alan.
+
 > 
-> Acked-by: Jaya Kumar <jayakumar.lkml@gmail.com>
-> Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
+> Signed-off-by: Alan Ott <alan@signal11.us>
 > ---
-> I consider Jaya's reply as an ack to the patch.
-
-Applied, thanks Bruno.
+>  drivers/hid/usbhid/hid-core.c |   13 ++++++++++---
+>  1 files changed, 10 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/hid/usbhid/hid-core.c b/drivers/hid/usbhid/hid-core.c
+> index deef816..1697687 100644
+> --- a/drivers/hid/usbhid/hid-core.c
+> +++ b/drivers/hid/usbhid/hid-core.c
+> @@ -854,14 +854,21 @@ static int usbhid_output_raw_report(struct hid_device *hid, __u8 *buf, size_t co
+>  				ret++;
+>  		}
+>  	} else {
+> +		int skipped_report_id = 0;
+> +		if (buf[0] == 0x0) {
+> +			/* Don't send the Report ID */
+> +			buf++;
+> +			count--;
+> +			skipped_report_id = 1;
+> +		}
+>  		ret = usb_control_msg(dev, usb_sndctrlpipe(dev, 0),
+>  			HID_REQ_SET_REPORT,
+>  			USB_DIR_OUT | USB_TYPE_CLASS | USB_RECIP_INTERFACE,
+>  			((report_type + 1) << 8) | *buf,
+> -			interface->desc.bInterfaceNumber, buf + 1, count - 1,
+> +			interface->desc.bInterfaceNumber, buf, count,
+>  			USB_CTRL_SET_TIMEOUT);
+> -		/* count also the report id */
+> -		if (ret > 0)
+> +		/* count also the report id, if this was a numbered report. */
+> +		if (ret > 0 && skipped_report_id)
+>  			ret++;
+>  	}
 
 -- 
 Jiri Kosina
