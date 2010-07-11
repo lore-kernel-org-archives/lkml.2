@@ -1,118 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754074Ab0GKRc3 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 13:32:29 -0400
-Received: from serv04.lahn.de ([213.239.197.57]:60122 "EHLO serv04.lahn.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752720Ab0GKRc2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 13:32:28 -0400
-Date: Sun, 11 Jul 2010 19:29:39 +0200
-From: Michael Leun <lkml20100708@newton.leun.net>
-To: netdev@vger.kernel.org
-Cc: davem@davemloft.net, linux-kernel@vger.kernel.org
-Subject: FW: NET_NS: unregister_netdevice: waiting for lo to become free
- (after using openvpn) (was Re: sysfs bug when using tun with network
- namespaces)
-Message-ID: <20100711192939.1c25dcaf@xenia.leun.net>
-In-Reply-To: <20100710235323.5336f627@xenia.leun.net>
-References: <loom.20100708T183152-326@post.gmane.org>
- <20100709235744.GA12752@kroah.com>
- <20100710101540.2799c9ef@xenia.leun.net>
- <20100710140800.GA20424@kroah.com>
- <20100710165208.59272ae6@xenia.leun.net>
- <20100710235323.5336f627@xenia.leun.net>
-Organization: Not Organized
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.6; i586-suse-linux-gnu)
+	id S1754426Ab0GKRq2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 13:46:28 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35020 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754107Ab0GKRq0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 13:46:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=F6h5SBVHZPUWLgLkK26RLuo+T3yK0lOZF8vFbIsU0Bw/eKs5CWBiMmPEN4Otr07zLs
+         HxGZmWKLrXd7e+jYt6GvheQ0DY0FsaLXvgDBVe4pTbtxO0Sbvn/mWZnUj3TUuRGuAYvG
+         oRAHdrliQ6RdHoGRywr5GcYY7Jv3JQ+LD8Kf4=
+Subject: Re: oops in tcp_xmit_retransmit_queue() w/ v2.6.32.15
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ilpo =?ISO-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
+Cc: Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
+        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
+In-Reply-To: <1278867977.2538.167.camel@edumazet-laptop>
+References: <4C358AAA.9080400@kernel.org>
+	 <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi>
+	 <1278867977.2538.167.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 11 Jul 2010 19:46:22 +0200
+Message-ID: <1278870382.2538.180.camel@edumazet-laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Le dimanche 11 juillet 2010 à 19:06 +0200, Eric Dumazet a écrit :
+> Le dimanche 11 juillet 2010 à 19:09 +0300, Ilpo Järvinen a écrit :
+> > On Thu, 8 Jul 2010, Tejun Heo wrote:
+> > 
+> > > We've been seeing oops in tcp_xmit_retransmit_queue() w/ 2.6.32.15.
+> > > Please see the attached photoshoot.  This is happening on a HPC
+> > > cluster and very interestingly caused by one particular job.  How long
+> > > it takes isn't clear yet (at least more than a day) but when it
+> > > happens it happens on a lot of machines in relatively short time.
+> > > 
+> > > With a bit of disassemblying, I've found that the oops is happening
+> > > during tcp_for_write_queue_from() because the skb->next points to
+> > > NULL.
+> > > 
+> > >  void tcp_xmit_retransmit_queue(struct sock *sk)
+> > >  {
+> > >  ...
+> > > 	if (tp->retransmit_skb_hint) {
+> > > 		skb = tp->retransmit_skb_hint;
+> > > 		last_lost = TCP_SKB_CB(skb)->end_seq;
+> > > 		if (after(last_lost, tp->retransmit_high))
+> > > 			last_lost = tp->retransmit_high;
+> > > 	} else {
+> > > 		skb = tcp_write_queue_head(sk);
+> > > 		last_lost = tp->snd_una;
+> > > 	}
+> > > 
+> > >  =>	tcp_for_write_queue_from(skb, sk) {
+> > > 		 __u8 sacked = TCP_SKB_CB(skb)->sacked;
+> > > 
+> > > 		 if (skb == tcp_send_head(sk))
+> > > 			 break;
+> > > 		 /* we could do better than to assign each time */
+> > > 		 if (hole == NULL)
+> > > 
+> > > This can happen for one of the following reasons,
+> > > 
+> > > 1. tp->retransmit_skb_hint is NULL and tcp_write_queue_head() is NULL
+> > >    too.  ie. tcp_xmit_retransmit_queue() is called on an empty write
+> > >    queue for some reason.
+> > > 
+> > > 2. tp->retransmit_skb_hint is pointing to a skb which is not on the
+> > >    write_queue.  ie. somebody forgot to update hint while removing the
+> > >    skb from the write queue.
+> > 
+> > Once again I've read the unlinkers through, and only thing that could 
+> > cause this is tcp_send_synack (others do deal with the hints) but I think 
+> > Eric already proposed a patch to that but we never got anywhere due to 
+> > some counterargument why it wouldn't take place (too far away for me to 
+> > remember, see archives about the discussions). ...But if you want be dead 
+> > sure some WARN_ON there might not hurt. Also the purging of the whole 
+> > queue was a similar suspect I then came across (but that would only 
+> > materialize with sk reuse happening e.g., with nfs which the other guys 
+> > weren't using).
+> > 
+> 
+> Hmm.
+> 
+> This sounds familiar to me, but I cannot remember the discussion you
+> mention or the patch.
+> 
+> Or maybe it was the TCP transaction thing ? (including data in SYN or
+> SYN-ACK packet)
 
-On Sat, 10 Jul 2010 16:52:08 +0200
-Michael Leun <lkml20100708@newton.leun.net> wrote:
+Hmm, I cannot find where we reset restransmit_skb_hint in
+tcp_mtu_probe(), if we call tcp_unlink_write_queue().
 
-> # tunctl -u ml -t tap1  
+if (skb->len <= copy) {
+	/* We've eaten all the data from this skb.
+	 * Throw it away. */
+	TCP_SKB_CB(nskb)->flags |= TCP_SKB_CB(skb)->flags;
+<<>>	tcp_unlink_write_queue(skb, sk);
+	sk_wmem_free_skb(sk, skb);
+} else {
 
-> works as expected, but  
 
-> # unshare -n /bin/bash
-> # tunctl -u ml -t tap1  
-[bug  (no sysfs support for net namespaces at all) solved in 2.6.35-rcX
-- I used 2.6.34.1]
+Sorry if this was already discussed. We might add a comment here in anycase ;)
 
-Now that we have solved that last one I've another glitch (this time using 2.6.35-rc4):
-
-In an network namespace I can use an tun/tap tunnel through ssh and
-when closing that namespace then eveything is fine.
-
-But when using openvpn (also tunnel trough tun/tap) in an network
-namespace and then closing that namespace I get:
-
-unregister_netdevice: waiting for lo to become free
-[repeated]
-
-Please see the following two examples showing that difference:
-
-# > unshare -n /bin/bash
-# > # how to setup veth device pair to get connectivity into namespace not shown here
-# > tunctl -u ml -t tap1
-# > ssh -o Tunnel=Ethernet -w 1:1 somewhere
-[ running some traffic over tap1 not shown here ]
-^d # logging out from somewhere
-# > tunctl -d tap1
-# > exit # logging out from shell in network namespace
-
-Now the veth device pair used automagically vanishes and nothing
-from that different network namespace remains - very well.
-
-but
-
-# > unshare -n /bin/bash
-# > # how to setup veth device pair to get connectivity into namespace not shown here
-# > openvpn --config some.config
-[ running some traffic over vpn device not shown here ]
-^c # stopping openvpn
-# > lsof -i
-# > netstat -an
-Active Internet connections (servers and established)
-Proto Recv-Q Send-Q Local Address           Foreign Address         State
-Active UNIX domain sockets (servers and established)
-Proto RefCnt Flags       Type       State         I-Node Path
-# > ps ax|grep openvpn|grep -v grep
-# > # cannot find anything that suggests there is anything left from that openvpn session
-# > exit # logging out from shell in network namespace
-
-Now I get
-
-Jul 10 20:02:36 doris kernel: unregister_netdevice: waiting for lo to become free. Usage count = 3
-[repeated]
-
-Now one might say it is fault of openvpn (used OpenVPN 2.1_rc20
-i586-suse-linux - the one in openSuSE 11.2 package), openvpn didn't
-close some ressource and ssh does fine.
-
-But: should'nt kernel clean up after process when it exits?
-And/or: Should'nt kernel clean up if last process in network namespace
-exits - there is nothing left which might use that interface?!
-
-Greg KH <greg@kroah.com> wrote:
-
-> Yes, you are correct.  Care to resend all of this to the
-> network-namespace developer(s) and the netdev mailing list so that the
-> correct people are notified so they can fix it all?
-
-[X] done - hopefully, cannot find a particular network namespace
-developer in MAINTAINERS or source files. If such a one exists, please
-forward.
-
-Thanks.
-
--- 
-MfG,
-
-Michael Leun
 
