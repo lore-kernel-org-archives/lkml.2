@@ -1,137 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab0GKRGX (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 13:06:23 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:37728 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab0GKRGW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 13:06:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=lwlfHJP/MNRbvrT7lqYd8eY2ofDJSMSTFRckqnV+IGMsdaE0bGJT6NkBaHucelyMAK
-         t1e/Lx1lvN/M7RyvX5wGLUn6xpxPX5oG0vagHEiRW9whCfkyY4d5p04kWVjBx1bvygqr
-         wUWSfUxqPEifV42ePEE1URAitvZhWfJYzhiPY=
-Subject: Re: oops in tcp_xmit_retransmit_queue() w/ v2.6.32.15
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Ilpo =?ISO-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
-Cc: Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
-        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
-In-Reply-To: <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi>
-References: <4C358AAA.9080400@kernel.org>
-	 <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 11 Jul 2010 19:06:17 +0200
-Message-ID: <1278867977.2538.167.camel@edumazet-laptop>
+	id S1754261Ab0GKRW5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 13:22:57 -0400
+Received: from 1wt.eu ([62.212.114.60]:39183 "EHLO 1wt.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752216Ab0GKRWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 13:22:55 -0400
+Date: Sun, 11 Jul 2010 19:22:52 +0200
+From: Willy Tarreau <w@1wt.eu>
+To: Martin Steigerwald <Martin@lichtvoll.de>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: stable? quality assurance?
+Message-ID: <20100711172252.GA3379@1wt.eu>
+References: <201007110918.42120.Martin@lichtvoll.de> <AANLkTimCwi2uJqqPaq3U30f3rvdDizu1BnaaXgvNeC9k@mail.gmail.com> <201007111651.42963.Martin@lichtvoll.de>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007111651.42963.Martin@lichtvoll.de>
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le dimanche 11 juillet 2010 à 19:09 +0300, Ilpo Järvinen a écrit :
-> On Thu, 8 Jul 2010, Tejun Heo wrote:
-> 
-> > We've been seeing oops in tcp_xmit_retransmit_queue() w/ 2.6.32.15.
-> > Please see the attached photoshoot.  This is happening on a HPC
-> > cluster and very interestingly caused by one particular job.  How long
-> > it takes isn't clear yet (at least more than a day) but when it
-> > happens it happens on a lot of machines in relatively short time.
-> > 
-> > With a bit of disassemblying, I've found that the oops is happening
-> > during tcp_for_write_queue_from() because the skb->next points to
-> > NULL.
-> > 
-> >  void tcp_xmit_retransmit_queue(struct sock *sk)
-> >  {
-> >  ...
-> > 	if (tp->retransmit_skb_hint) {
-> > 		skb = tp->retransmit_skb_hint;
-> > 		last_lost = TCP_SKB_CB(skb)->end_seq;
-> > 		if (after(last_lost, tp->retransmit_high))
-> > 			last_lost = tp->retransmit_high;
-> > 	} else {
-> > 		skb = tcp_write_queue_head(sk);
-> > 		last_lost = tp->snd_una;
-> > 	}
-> > 
-> >  =>	tcp_for_write_queue_from(skb, sk) {
-> > 		 __u8 sacked = TCP_SKB_CB(skb)->sacked;
-> > 
-> > 		 if (skb == tcp_send_head(sk))
-> > 			 break;
-> > 		 /* we could do better than to assign each time */
-> > 		 if (hole == NULL)
-> > 
-> > This can happen for one of the following reasons,
-> > 
-> > 1. tp->retransmit_skb_hint is NULL and tcp_write_queue_head() is NULL
-> >    too.  ie. tcp_xmit_retransmit_queue() is called on an empty write
-> >    queue for some reason.
-> > 
-> > 2. tp->retransmit_skb_hint is pointing to a skb which is not on the
-> >    write_queue.  ie. somebody forgot to update hint while removing the
-> >    skb from the write queue.
-> 
-> Once again I've read the unlinkers through, and only thing that could 
-> cause this is tcp_send_synack (others do deal with the hints) but I think 
-> Eric already proposed a patch to that but we never got anywhere due to 
-> some counterargument why it wouldn't take place (too far away for me to 
-> remember, see archives about the discussions). ...But if you want be dead 
-> sure some WARN_ON there might not hurt. Also the purging of the whole 
-> queue was a similar suspect I then came across (but that would only 
-> materialize with sk reuse happening e.g., with nfs which the other guys 
-> weren't using).
-> 
+Hi Martin,
 
-Hmm.
+On Sun, Jul 11, 2010 at 04:51:42PM +0200, Martin Steigerwald wrote:
+> I hope that someone answers who actually can take some critique. From the 
+> current replies I perceive a lack of that ability.
 
-This sounds familiar to me, but I cannot remember the discussion you
-mention or the patch.
+well, I'll try to do then :-)
 
-Or maybe it was the TCP transaction thing ? (including data in SYN or
-SYN-ACK packet)
+There were some threads in the past about kernel releases quality,
+where Linus explained why it could not be completely black or white.
 
-> > 3. The hint is pointing to a skb on the list but the list itself is
-> >    corrupt.
-> > 
-> > I added some debug code and the crash is happening when
-> > tp->retransmit_skb_hint is not NULL but tp->retransmit_skb_hint->next
-> > is NULL.  So, #1 is out; unfortunately, I didn't have debug code in
-> > place to discern between #2 and #3.
-> > 
-> > Does anything ring a bell?  This is a production system and debugging
-> > affects quite a number of people.  I can put debug code in to discern
-> > between #2 and #3 but I'm basically shooting in the dark and it would
-> > be great if someone has a better idea.
-> 
-> Thanks for taking this up. I've been kind of waiting somebody to show up 
-> who actually has some way of reproducing it. Once I had one guy in the 
-> hook but his ability to reproduce was for some reason lost when he tried 
-> with a debug patch [1]. 
-> 
-> I now realize that the debug patch should probably also print the write 
-> queue too when the problem is caught in order to discern the cases you 
-> mention.
-> 
-> Something along these lines:
-> 
-> tcp_for_write_queue(skb, sk) {
-> 	printk("skb %p (%u-%u) next %p prev %p sacked %u\n", ...);
-> }
-> 
-> Anyway, my debugging patch should be such that in a lucky case it avoids 
-> crashing the system too, though price to pay might then be a stuck 
-> connection. In case #3 I'd expect the box to die elsewhere in TCP code 
-> pretty soon anyway so it depends whether avoiding oops is really so 
-> useful, but if you're lucky other mechanism in TCP will recover 
-> the lost one for you (basically RTO driven retransmission).
-> 
+Among the things he explained, I remember that one of primary concern
+was the inability to slow down development. I mean, if he waits 2 more
+weeks for things to stabilize, then there will be two more weeks of
+crap^H^H^H^Hdevelopment merged in next merge window, so in fact this
+will just shift dates and not quality.
 
+There are also some regressions that get merged with every pre-release.
+Thus, assuming he would wait for one more pre-release to merge the
+fixes you spotted, 2 or 3 more would appear, so there's a point where
+it must be decided when to release.
+
+Right now it's released when he feels it "good enough". This can be
+very subjective, but I'd think that "good enough" basically means
+that the kernel will be able to live in its stable branch without
+major changes and without reverting features.
+
+Also, you have to consider that there are several types of users.
+Some of them are developers who will run a latest -git kernel at
+some point. Some of them will be enthousiasts waiting for a feature,
+and who will run every -rc kernel once the feature is merged, to
+ensure it does not break before the release. There are also janitors
+and the curious ones who'll basically run a few of the last -rc as
+time permits to see if they can spot a few last-minute issues before
+the release. There are the brave ones who systematically download
+the dot-0 release once Linus announces it and will proudly run it
+to show their friends who it's better than the last one. There are
+those who need a bit of stability (eg: professional laptop or home
+server) and will prefer to wait for a few stable releases to ensure
+they won't waste their time on a big stupid issue that all other ones
+above will have immediately spotted for them. And there are the ones
+who run production servers who will either use distro kernels of
+long term stable kernels, with a more or less long qualification
+process between upgrades.
+
+It's just an ecosystem where you have to find your place. From your
+description, I think you're before the last ones above, you need
+something which works, eventhough it's not critical, so you could
+very well wait for 2-3 stable updates before upgrading (that does
+not prevent you from testing earlier on other systems if you want
+to test performance, new features, regressions, etc...).
+
+It's not really advisable to call dot-0 releases "unstable" because
+it will only result in shifting the adoption point between the user
+classes above. We need to have enthousiasts who proudly say "hey
+look, dot-0 and it's already rock solid". We've all seen some of them
+and they're the ones who help reporting issues that get fixed in the
+next stable release.
+
+I think that the most reasonable thing to do is to assume your need
+for stability and always refrain from running on the latest release.
+
+Speaking for myself, I tend to run rock solid kernels for my data (my
+file server was still on 2.4.37.9 till this afternoon, I just upgraded
+it to 2.6). The distro's kernel currently is 2.6.33.4 and I'm going to
+switch it back to 2.6.32.x or 2.6.27.x because I'd rather have something
+fully tested there. My desktop which regularly reaches 50-100 days
+uptime runs on whatever looks stable enough for the job when I upgrade.
+Usually it's one of Greg's long term stable series. 2.6.27.x or
+2.6.32.x, with x >= 10. My work laptop is on similar kernels. My
+netbook is generally running experimental code, it does not matter
+much. It's where I'd try 2.6.35-rc for instance, or where I test
+2.6.32.x-rc when Greg announces them.
+
+You see, there's a kernel for everyone, and for every usage. You just
+have to make your choice. And when you don't know or don't want to
+guess, stick to the distro's kernel.
+
+Regards,
+Willy
 
