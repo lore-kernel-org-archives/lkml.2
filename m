@@ -1,114 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752036Ab0GKHt4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 03:49:56 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:5681 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751306Ab0GKHtz (ORCPT
+	id S1752123Ab0GKICU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 04:02:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49481 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751306Ab0GKICR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 03:49:55 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=74.61.84.126;
-From: Milton Miller <miltonm@bga.com>
-To: Will Schmidt <will_schmidt@vnet.ibm.com>
-Subject: Re: [RT,RFC] Hacks allowing -rt to run on POWER7 / Powerpc.
-In-Reply-To: <1278701701.24737.19.camel@lexx>
-References: <1278701701.24737.19.camel@lexx>
-Cc: rt-users <linux-rt-users@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       linuxppc-dev <linuxppc-dev@ozlabs.org>, Darren Hart <dvhltc@us.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Date: Sun, 11 Jul 2010 02:49:54 -0500
-X-Originating-IP: 74.61.84.126
-Message-ID: <1278834594_17749@mail4.comsite.net>
+	Sun, 11 Jul 2010 04:02:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=FIDnmBuEUHtSFBJEofQSXrhHRAsuso2yxoRxUsN5tek3RtYIornkWLoReLkkTVT8fR
+         1e7Jj4T+cV/1rzIG5EFDPfgxZSfDkuE5mXYZ5eOPrJluVtsTc0FDCWy1HjS6Itnpwa28
+         2gr7CWsZpBmS5W1V9Nl+L6+Cj8r24MmoQsNjo=
+Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Felipe W Damasio <felipewd@gmail.com>, David Miller <davem@davemloft.net>,
+       Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
+       netdev <netdev@vger.kernel.org>
+In-Reply-To: <4C395459.6080407@redhat.com>
+References: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>
+	 <AANLkTil49m6Ul2bauiH4Pwn-6ykrYTFmSO6_SxqQgD_e@mail.gmail.com>
+	 <1278626921.2435.73.camel@edumazet-laptop>
+	 <AANLkTiliBClahTfb41M5BDi1etg5pgkqEz_VfGrn_mK4@mail.gmail.com>
+	 <1278695580.2696.55.camel@edumazet-laptop>
+	 <AANLkTil39xHOhcdAo4h_jWtx_UuYdFHGdQVAdwPMd7QJ@mail.gmail.com>
+	 <1278742649.2538.17.camel@edumazet-laptop>  <4C395459.6080407@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 11 Jul 2010 10:02:12 +0200
+Message-ID: <1278835332.2538.51.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Fri, 09 Jul 2010 about 08:55:01 -0000, Will Schmidt wrote:
-> We've been seeing some issues with userspace randomly SIGSEGV'ing while
-> running the -RT kernels on POWER7 based systems.   After lots of
-> debugging, head scratching, and experimental changes to the code, the
-> problem has been narrowed down such that we can avoid the problems by
-> disabling the TLB batching.
+Le dimanche 11 juillet 2010 à 08:19 +0300, Avi Kivity a écrit :
+> On 07/10/2010 09:17 AM, Eric Dumazet wrote:
+> >
+> > Strange thing with your crash report is CR2 value, with unexpected value
+> > of 000000000b388000 while RAX value is dce8dce85d415d41
+> >
+> > Faulting instruction is :
+> >
+> > 48 83 b8 b0 00 00 00 00   cmpq   $0x0,0xb0(%rax)
+> >
+> > So I would have expected CR2 being RAX+0xb0, but its not.
+> >    
 > 
-> After some input from Ben and further debug, we've found that the
-> restoration of the batch->active value near the end of __switch_to()
-> seems to be the key.    ( The -RT related  changes within
-> arch/powerpc/kernel/processor.c __switch_to()  do the equivalent of a
-> arch_leave_lazy_mmu_mode() before calling _switch, use a hadbatch flag
-> to indicate if batching was active, and then restore that batch->active
-> value on the way out after the call to _switch_to.    That particular
-> code is in the -RT branch, and not found in mainline  )
+> Nothing strange about it.  You only get page faults and valid cr2 for 
+> canonical addresses (17 high order bits all equal).  In this case 
+> rax+0xb0 is not a canonical address, so you got a general protection 
+> fault instead, with cr2 unchanged.
 > 
-> Deferring to Ben (or others in the know) for whether this is the proper
-> solution or if there is something deeper, but.. 
+
+OK, thanks Avi for this information, as I was not aware of this.
+
+So something overwrote sk->sk_prot pointer (or skb->sk pointer) with
+some data.
+
+tcp sockets are allocated from a dedicated kmem_cache (because of
+SLAB_DESTROY_RCU attribute). Their sk->sk_prot should never change in
+normal operation, since underlying memory cannot be reused by another
+object type in kernel. It should be NULL or &tcp_prot
+
+Felipe, please describe your configuration as much as possible.
+It might be a driver bug with with special kind of network frames.
+
+lsmod
+lspci -v
+ethtool -k eth0
+ethtool -k eth1 (if applicable)
 
 
-I looked at the patch and noticed 2 changes:
-	1) the batch is checked and cleared after local_irq_save
-	2) enabling the batch is skipped
 
-I talked to Will and had him try moving the local_irq_save above the
-check for the active batch.  That alone did not seem to be enough.
-However, he confirmed that we are setting batch to active when it is
-already active in lazy_mmu_enter, meaning that batching is being turned
-on recursively.  I suggested debug to check that irqs are off after the
-restore when re-enabling when our debug session timed out.
-
-milton
-
-> 
-> diff -aurp linux-2.6.33.5-rt23.orig/arch/powerpc/kernel/process.c linux-2.6.33.5-rt23.exp/arch/powerpc/kernel/process.c
-> --- linux-2.6.33.5-rt23.orig/arch/powerpc/kernel/process.c	2010-06-21 11:41:34.402513904 -0500
-> +++ linux-2.6.33.5-rt23.exp/arch/powerpc/kernel/process.c	2010-07-09 13:15:13.533269904 -0500
-> @@ -304,10 +304,6 @@ struct task_struct *__switch_to(struct t
->  	struct thread_struct *new_thread, *old_thread;
->  	unsigned long flags;
->  	struct task_struct *last;
-> -#if defined(CONFIG_PPC64) && defined (CONFIG_PREEMPT_RT)
-> -	struct ppc64_tlb_batch *batch;
-> -	int hadbatch;
-> -#endif
->  
->  #ifdef CONFIG_SMP
->  	/* avoid complexity of lazy save/restore of fpu
-> @@ -401,16 +397,6 @@ struct task_struct *__switch_to(struct t
->  		new_thread->start_tb = current_tb;
->  	}
->  
-> -#ifdef CONFIG_PREEMPT_RT
-> -	batch = &__get_cpu_var(ppc64_tlb_batch);
-> -	if (batch->active) {
-> -		hadbatch = 1;
-> -		if (batch->index) {
-> -			__flush_tlb_pending(batch);
-> -		}
-> -		batch->active = 0;
-> -	}
-> -#endif /* #ifdef CONFIG_PREEMPT_RT */
->  #endif
->  
->  	local_irq_save(flags);
-> @@ -425,16 +411,13 @@ struct task_struct *__switch_to(struct t
->  	 * of sync. Hard disable here.
->  	 */
->  	hard_irq_disable();
-> -	last = _switch(old_thread, new_thread);
-> -
-> -	local_irq_restore(flags);
->  
->  #if defined(CONFIG_PPC64) && defined(CONFIG_PREEMPT_RT)
-> -	if (hadbatch) {
-> -		batch = &__get_cpu_var(ppc64_tlb_batch);
-> -		batch->active = 1;
-> -	}
-> +	arch_leave_lazy_mmu_mode();
->  #endif
-> +	last = _switch(old_thread, new_thread);
-> +
-> +	local_irq_restore(flags);
->  
->  	return last;
->  }
