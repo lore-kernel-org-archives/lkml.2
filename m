@@ -1,47 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755122Ab0GKUHm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 16:07:42 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53622 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753216Ab0GKUHk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 16:07:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=l5Dp8cEw8JBafNgnK3PJZKRQ24Rg3G6WLbxJwy/bg8GY8P4Gh44s+LjcmAWoNXOWjI
-         UNLsP1YLJrQfIUoTwitOsX6ycA4L+/fs4kLvtygDaEMEClVrjSd6TELw2VmLaDNxSdju
-         ckKVxmzAyDtvh2pS+je1Fj8vDE5aqq2QFNZE4=
-Message-ID: <4C3A248C.3060005@gmail.com>
-Date: Sun, 11 Jul 2010 13:07:40 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+	id S1754973Ab0GKUNE (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 16:13:04 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60074 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753216Ab0GKUNA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 16:13:00 -0400
+Date: Sun, 11 Jul 2010 22:12:53 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: samwise <samwise@bagshot-row.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org, Stephane Chatty <chatty@enac.fr>,
+        Don Prince <dhprince-devel@yahoo.co.uk>,
+        Peter Hutterer <peter.hutterer@who-t.net>,
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        Daniel Oliveira Nascimento <don@syst.com.br>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Paul Qureshi <retro@world3.net>
+Subject: Re: [PATCHv1] USB HID DRIVERS: Enable HID_QUIRK_MULTI_INPUT for
+ Retro  Adaptor
+In-Reply-To: <AANLkTilCk7q_GsrBtxsuNGTwsQMZmUJN7O8e1G0q3fqA@mail.gmail.com>
+Message-ID: <alpine.LNX.2.00.1007112212050.4741@pobox.suse.cz>
+References: <AANLkTilCk7q_GsrBtxsuNGTwsQMZmUJN7O8e1G0q3fqA@mail.gmail.com>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]Documentation:Changes update broken web addresses
-References: <1278197173-14816-1-git-send-email-justinmattock@gmail.com> <alpine.LNX.2.00.1007112155310.4741@pobox.suse.cz>
-In-Reply-To: <alpine.LNX.2.00.1007112155310.4741@pobox.suse.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/11/2010 12:56 PM, Jiri Kosina wrote:
-> On Sat, 3 Jul 2010, Justin P. Mattock wrote:
->
->> I've found some web addresses not responding, giving the cannot
->> connect error when trying to load them. The below patch updates
->> the addresses that are not connecting with the best that I can find,
->> and also fixes a couple of addresses, so people can either choose an older
->> version of the package and/or a newer version(i.e. ppp).
->
-> Makes sense, I have queued the changes. Thanks.
->
+On Sun, 11 Jul 2010, samwise wrote:
 
-alright.. cool.
+> From: Peter Edwards <samwise@bagshot-row.org>
+> 
+> Patch for linux-2.6.35-rc4 mainline kernel to enable Paul Qureshi's
+> Retro Adapter [http://keio.dk/retroadapter.html], an open source USB
+> device which allows controllers and joysticks from classic computers
+> and consoles to work on modern PCs, to appear as two separate devices
+> under Linux.
+> Signed-off-by: Peter Edwards <samwise@bagshot-row.org>
+> Acked-by: Paul Qureshi <retro@world3.net>
+> ---
+> 
+> This is a first patch submission following the
+> Documentation/SubmittingPatches guidelines. Hope this is in the
+> correct format for inclusion and is directed at the correct
+> maintainer. Please reply if any modifications or further info is
+> required.
 
-Justin P. Mattock
+Hi Peter,
+
+your mail client damaged (whitespaces and line-wrapping) the patch. I have 
+fixed it up and applied the patch to my tree, but please keep that in mind 
+for your further patch submissions.
+
+Thanks!
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
