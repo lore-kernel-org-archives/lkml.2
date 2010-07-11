@@ -1,60 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753983Ab0GKOU7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 10:20:59 -0400
-Received: from kroah.org ([198.145.64.141]:38256 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752319Ab0GKOU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 10:20:58 -0400
-Date: Sun, 11 Jul 2010 07:13:07 -0700
-From: Greg KH <greg@kroah.com>
-To: Joe Eloff <kagen101@gmail.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Simon Horman <horms@verge.net.au>, devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] Staging: dt3155: fix coding style issues in
-	dt3155_drv.c
-Message-ID: <20100711141307.GA30015@kroah.com>
-References: <1278435198.5396.73.camel@dermezel> <20100708200018.GC3530@kroah.com> <1278841771.16713.1.camel@dermezel>
+	id S1752720Ab0GKOW5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 10:22:57 -0400
+Received: from mondschein.lichtvoll.de ([194.150.191.11]:44264 "EHLO
+	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751505Ab0GKOW4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 10:22:56 -0400
+From: Martin Steigerwald <Martin@lichtvoll.de>
+To: linux-kernel@vger.kernel.org
+Subject: Re: stable? quality assurance?
+Date: Sun, 11 Jul 2010 16:22:44 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34.1-tp42-toi-3.1.1.1-04990-g3a7d1f4; KDE/4.4.4; i686; ; )
+References: <201007110918.42120.Martin@lichtvoll.de> <1278837584.2538.135.camel@edumazet-laptop> (sfid-20100711_161035_603636_8F7DD04D)
+In-Reply-To: <1278837584.2538.135.camel@edumazet-laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278841771.16713.1.camel@dermezel>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: multipart/signed;
+  boundary="nextPart3946538.TkO7JYY5vI";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007111622.52856.Martin@lichtvoll.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 11, 2010 at 11:49:31AM +0200, Joe Eloff wrote:
-> On Thu, 2010-07-08 at 13:00 -0700, Greg KH wrote:
-> > On Tue, Jul 06, 2010 at 06:53:18PM +0200, Joe Eloff wrote:
-> > > I just realised how the commit chaining works after messing it up so I have already 
-> > > uploaded a 1/2 and 2/2 and now it made another 2/2 for this patch which is different.
-> > > 
-> > > I have realised how it works now and wont mess it up again and have no idea how to reverse chain the
-> > > 3 patches.
-> > > 
-> > > This now fixes up all checkpatch.pl issues bar 1.
-> > 
-> > This doesn't apply either :(
-> > 
-> > care to redo all of these against the latest linux-next?
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
-> Will redo all against latest tree :(. 
-> 
-> Did patches over 3 days, is that why it did not take?
+--nextPart3946538.TkO7JYY5vI
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: quoted-printable
 
-I do  not know, sorry.
+Am Sonntag 11 Juli 2010 schrieb Eric Dumazet:
+> Le dimanche 11 juillet 2010 =C3=A0 09:18 +0200, Martin Steigerwald a =C3=
+=A9crit :
+> > Hi!
 
-> Will get up to date and apply the patches again and send.
+Hi Eric,
 
-That would be wonderful.
+> > 2.6.34 was a desaster for me: bug #15969 - patch was availble before
+> > 2.6.34 already, bug #15788, also reported with 2.6.34-rc2 already, as
+> > well as most important two complete lockups - well maybe just X.org
+> > and radeon KMS, I didn't start my second laptop to SSH into the
+> > locked up one - on my ThinkPad T42. I fixed the first one with the
+> > patch, but after the lockups I just downgraded to 2.6.33 again.
+> >=20
+> > I still actually *use* my machines for something else than hunting
+> > patches for kernel bugs and on kernel.org it is written "Latest
+> > *Stable* Kernel" (accentuation from me). I know of the argument that
+[...]
 
-thanks,
+> > advertised as such on kernel.org I think. I am willing to risk some
+> > testing and do bug reports, but these are still production machines,
+> > I do not have any spare test machines, and there needs to be some
+> > balance, i.e. the kernels should basically work. Thus I for sure
+> > will be more reluctant to upgrade in the future.
+> >=20
+> > Ciao,
+>=20
+> Anybody running latest kernel on a production machine is living
+> dangerously. Dont you already know that ?
 
-greg k-h
+Yes, and I indicated it above. But in my - naturally rather subjective I=20
+admit - perception the balance between stable and unstable from about 1 or=
+=20
+2 years ago has been lost. In my personal experience it has gotten much=20
+worse in the last time. To the extent that I skipped some major kernels=20
+versions completely. For example 2.6.30.
+
+And its not servers - these use distro kernels. =20
+
+> When 2.6.X is released, everybody knows it contains at least 100 bugs.
+
+Then why its still labeled "stable" on kernel.org? It is not. It is at=20
+most beta quality software.
+
+Its not more stable than KDE 4.0 wasn't stable, but at least they=20
+mentioned in the release notes.
+
+> It was true for all previous values of X, it will be true for all
+> futures values.
+>=20
+> If you want to be safer, use a one year old kernel, with all stable
+> patches in.
+>=20
+> Something like 2.6.32.16 : Its probably more stable than all 2.6.X
+> kernels.
+>=20
+> If 2.6.33 runs OK on your machine, you are lucky, since 2.6.33.6
+> contains numerous bug fixes.
+
+Actually it was 2.6.33.1 with userspace software suspend and it had pretty=
+=20
+good uptimes above 20 days - only interrupted by installing 2.6.34.
+
+Well then if everybody else considers this for granted I just replace that=
+=20
+"stable" on kernel.org by "beta quality" - from my perception it does not=20
+even have release candidate status in the last iterations - in my mind and=
+=20
+be done with it.
+
+At as soon as the kernel contains a performant hibernation infrastructure=20
+I will probably just use distro kernels and be done with it.
+
+Ciao,
+=2D-=20
+Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
+GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
+
+--nextPart3946538.TkO7JYY5vI
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkw507UACgkQmRvqrKWZhMeSqgCdEbJAO2875aS+50Hl1fCXMLBj
+koMAoKzg4Xjh+KnJRnYPL2ybdjyZtmah
+=EFpD
+-----END PGP SIGNATURE-----
+
+--nextPart3946538.TkO7JYY5vI--
