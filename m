@@ -1,63 +1,173 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab0GKPMJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 11:12:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:60285 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754450Ab0GKPME (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 11:12:04 -0400
-Content-Type: text/plain; charset=iso-8859-15; format=flowed; delsp=yes
-To: linux-kernel@vger.kernel.org, "Alexander Clouter" <alex@digriz.org.uk>
-Subject: Re: SNATed connections show as original ip in /proc/net/tcp
-References: <op.vfn83jvflgimzx@win7> <151pg7-26g.ln1@chipmunk.wormnet.eu>
-Date: Sun, 11 Jul 2010 11:11:59 -0400
+	id S1754586Ab0GKPOY (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 11:14:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754160Ab0GKPOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 11:14:22 -0400
+Date: Sun, 11 Jul 2010 18:08:53 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Patrick McHardy <kaber@trash.net>, "David S. Miller" <davem@davemloft.net>,
+        Jan Engelhardt <jengelh@medozas.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        herbert@gondor.hengli.com.au
+Subject: [PATCHv2] extensions: libxt_CHECKSUM extension
+Message-ID: <20100711150853.GA7493@redhat.com>
+References: <20100711150623.GA7420@redhat.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 7bit
-From: "Noah McNallie" <n0ah@n0ah.org>
-Message-ID: <op.vfopt9kclgimzx@win7>
-In-Reply-To: <151pg7-26g.ln1@chipmunk.wormnet.eu>
-User-Agent: Opera Mail/10.60 (Win32)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100711150623.GA7420@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Jul 2010 10:30:25 -0400, Alexander Clouter <alex@digriz.org.uk>  
-wrote:
+This adds a `CHECKSUM' target, which can be used in the iptables mangle
+table.
 
-> Noah McNallie <n0ah@n0ah.org> wrote:
->>
->> just as the topic describes.
->>
-> Probably better to post this to netdev?
->
->> I'm currently doing SNAT to force some destination tcp ports to be  
->> routed
->> through a specific route rather than the default route. To accomplish  
->> this
->> I mark thoes packets with iptables, use 'ip' to specify marked packets  
->> via
->> the specified route, and then use iptables to change their source  
->> address.
->>
-> SNAT'ing locally sourced traffic?  That's pretty nasty.
->
-> Look into using 'ip rule' and a second routing table.
->
-> http://lartc.org/howto/lartc.rpdb.html
->
-> You will still need use iptables/MARK to do L4 (tcp/udp/etc) policy
-> routing though, however now you can dump the ugly SNATing.
->
-> Cheers
->
+You can use this target to compute and fill in the checksum in
+a packet that lacks a checksum.  This is particularly useful,
+if you need to work around old applications such as dhcp clients,
+that do not work well with checksum offloads, but don't want to disable
+checksum offload in your device.
 
-ok i'll stick it there i must have missed that browsing mailing lists last  
-night... uhh as far as ip rule i am using that, that's how i match the  
-packets with the firewall mark that need to go out a specific interface  
-and to a specific route... i don't believe ip rule has any option to match  
-packets based on destination port and change their source address and  
-route them out any specific interface, or i'd be doing that all along as  
-that would be much better.
+The problem happens in the field with virtualized applications.
+For reference, see Red Hat bz 605555, as well as
+http://www.spinics.net/lists/kvm/msg37660.html
 
-noah
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
+
+Changes from v1:
+	switched from ipt to xt target
+
+ extensions/libipt_CHECKSUM.man |    8 +++
+ extensions/libxt_CHECKSUM.c    |   99 ++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 107 insertions(+), 0 deletions(-)
+ create mode 100644 extensions/libipt_CHECKSUM.man
+ create mode 100644 extensions/libxt_CHECKSUM.c
+
+diff --git a/extensions/libipt_CHECKSUM.man b/extensions/libipt_CHECKSUM.man
+new file mode 100644
+index 0000000..4f83335
+--- /dev/null
++++ b/extensions/libipt_CHECKSUM.man
+@@ -0,0 +1,8 @@
++This target allows to selectively work around broken/old applications.
++It can only be used in the mangle table.
++.TP
++\fB\-\-checksum\-fill\fP
++Compute and fill in the checksum in a packet that lacks a checksum.
++This is particularly useful, if you need to work around old applications
++such as dhcp clients, that do not work well with checksum offloads,
++but don't want to disable checksum offload in your device.
+diff --git a/extensions/libxt_CHECKSUM.c b/extensions/libxt_CHECKSUM.c
+new file mode 100644
+index 0000000..00fbd8f
+--- /dev/null
++++ b/extensions/libxt_CHECKSUM.c
+@@ -0,0 +1,99 @@
++/* Shared library add-on to xtables for CHECKSUM
++ *
++ * (C) 2002 by Harald Welte <laforge@gnumonks.org>
++ * (C) 2010 by Red Hat, Inc
++ * Author: Michael S. Tsirkin <mst@redhat.com>
++ *
++ * This program is distributed under the terms of GNU GPL v2, 1991
++ *
++ * libxt_CHECKSUM.c borrowed some bits from libipt_ECN.c
++ *
++ * $Id$
++ */
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++#include <getopt.h>
++
++#include <xtables.h>
++#include <linux/netfilter/xt_CHECKSUM.h>
++
++static void CHECKSUM_help(void)
++{
++	printf(
++"CHECKSUM target options\n"
++"  --checksum-fill			Fill in packet checksum.\n");
++}
++
++static const struct option CHECKSUM_opts[] = {
++	{ "checksum-fill", 0, NULL, 'F' },
++	{ .name = NULL }
++};
++
++static int CHECKSUM_parse(int c, char **argv, int invert, unsigned int *flags,
++                     const void *entry, struct xt_entry_target **target)
++{
++	struct xt_CHECKSUM_info *einfo
++		= (struct xt_CHECKSUM_info *)(*target)->data;
++
++	switch (c) {
++	case 'F':
++		if (*flags)
++			xtables_error(PARAMETER_PROBLEM,
++			        "CHECKSUM target: Only use --checksum-fill ONCE!");
++		einfo->operation = XT_CHECKSUM_OP_FILL;
++		*flags |= XT_CHECKSUM_OP_FILL;
++		break;
++	default:
++		return 0;
++	}
++
++	return 1;
++}
++
++static void CHECKSUM_check(unsigned int flags)
++{
++	if (!flags)
++		xtables_error(PARAMETER_PROBLEM,
++		           "CHECKSUM target: Parameter --checksum-fill is required");
++}
++
++static void CHECKSUM_print(const void *ip, const struct xt_entry_target *target,
++                      int numeric)
++{
++	const struct xt_CHECKSUM_info *einfo =
++		(const struct xt_CHECKSUM_info *)target->data;
++
++	printf("CHECKSUM ");
++
++	if (einfo->operation & XT_CHECKSUM_OP_FILL)
++		printf("fill ");
++}
++
++static void CHECKSUM_save(const void *ip, const struct xt_entry_target *target)
++{
++	const struct xt_CHECKSUM_info *einfo =
++		(const struct xt_CHECKSUM_info *)target->data;
++
++	if (einfo->operation & XT_CHECKSUM_OP_FILL)
++		printf("--checksum-fill ");
++}
++
++static struct xtables_target checksum_tg_reg = {
++	.name		= "CHECKSUM",
++	.version	= XTABLES_VERSION,
++	.family		= NFPROTO_UNSPEC,
++	.size		= XT_ALIGN(sizeof(struct xt_CHECKSUM_info)),
++	.userspacesize	= XT_ALIGN(sizeof(struct xt_CHECKSUM_info)),
++	.help		= CHECKSUM_help,
++	.parse		= CHECKSUM_parse,
++	.final_check	= CHECKSUM_check,
++	.print		= CHECKSUM_print,
++	.save		= CHECKSUM_save,
++	.extra_opts	= CHECKSUM_opts,
++};
++
++void _init(void)
++{
++	xtables_register_target(&checksum_tg_reg);
++}
