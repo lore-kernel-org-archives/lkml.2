@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756437Ab0GLReg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 13:34:36 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:18832 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755781Ab0GLRef (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 13:34:35 -0400
-Message-ID: <4C3B5226.3090507@panasas.com>
-Date: Mon, 12 Jul 2010 20:34:30 +0300
-From: Benny Halevy <bhalevy@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1756429Ab0GLRfu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 13:35:50 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:58032 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753025Ab0GLRfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 13:35:48 -0400
+Date: Mon, 12 Jul 2010 22:56:40 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 10/13]  perf: Re-Add make_absolute_path
+Message-ID: <20100712172640.GD23776@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
+ <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6>
+ <20100712140023.GC25238@ghostprotocols.net>
+ <20100712153357.GB23776@linux.vnet.ibm.com>
+ <20100712162659.GG25238@ghostprotocols.net>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Michal Marek <mmarek@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.35-rc4 - CONFIG_LOCALVERSION ignored?
-References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com>	<201007052325.56971.rjw@sisk.pl>	<4C3B49B4.20300@panasas.com> <AANLkTik8MD7bWb_R38MGv3H6ct-Z3ee1x9i9sn5a_ohd@mail.gmail.com>
-In-Reply-To: <AANLkTik8MD7bWb_R38MGv3H6ct-Z3ee1x9i9sn5a_ohd@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 12 Jul 2010 17:34:34.0283 (UTC) FILETIME=[7E275FB0:01CB21E8]
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100712162659.GG25238@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul. 12, 2010, 20:20 +0300, Linus Torvalds <torvalds@linux-foundation.org> wrote:
-> 2010/7/12 Benny Halevy <bhalevy@panasas.com>:
->>
->> Not working for me either in 2.6.35-rc4.
 > 
-> I assume you're building with "O="? If so, have you checked -git (or
-> any of the nightly snapshots)?
+> > Actually we dont need to convert malloc@libc-2.5.so to a
+> > malloc@/lib/libc.so.6. Because we can match the shortname of the dso. 
+> 
+> Humm, I see, it is path based, so the first libc-2.5.so that appears in
+> the LD_LIBRARY_PATH equivalent used in this code will be user, is that
+> right?
 
-Correct.
+No,  As you might have got it by reading patch 11. I am trying to
+reuse the thread/session elements and walk thro the maps in the
+map_groups. So I dont need to bother on LD_LIBRARY_PATH.
+> 
+> I.e. if I'm testing some new libc-2.5.so that provides, say, private
+> futexes while the one in my distro still doesn't have this feature, I'll
+> have to specify the absolute name or make sure it is before the system's
+> libc-2.5.so in the LD_LIBRARY_PATH, right?
+
+We get to the right one, as we walk the list of dsos in the
+threadlist. But we have an option of either giving a correct full path
+or the shortname for the dso without any path. However right now the
+shortname has to be unique i.e I cant use malloc@libc instead of
+malloc@libc-2.5.so. I would think specifying full path will be the most
+probable usage case. However if a person refers /proc/<pid>/maps,
+specifying shortnames should also be easy.
 
 > 
-> Becuse it _should_ have been fixed about a week ago in commit
-> 7263e715c91f ("kbuild: Fix path to scripts/setlocalversion"). But
-> that's after -rc4.
+> > Problem will occur when users specifies a full path of the file.
+> > Since the file can refer to a symbolic link and the dso will have just
+> > the short name or the target file name. Here I am using
+> > make_absolute_path to resolve to the target file.
+> > Now we can then either check on dso full names or short names.
+> > I have chosen to use the short name.
 > 
-> (I'll do an -rc5 probably today, but it would be good to have it
-> confirmed that the bug is gone)
-
-Confirmed. This patch fixes my problem too.
-
-Thanks!
-
-Benny
-
+> Humm, so what you want is one of:
 > 
->                Linus
+> realpath - return the canonicalized absolute pathname
+> canonicalize_file_name -  return the canonicalized filename
+> 
+> Can you please check the man pages for both before we decide
+> re-introducing make_absolute_path?
+
+right, realpath is right choice, I will use it instead of this patch. 
+
+
+--
+Thanks and Regards
+Srikar
+
