@@ -1,338 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab0GLOmB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 10:42:01 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:46941 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab0GLOmA (ORCPT
+	id S1755866Ab0GLOr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 10:47:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51172 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754359Ab0GLOr4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 10:42:00 -0400
-Date: Mon, 12 Jul 2010 11:41:44 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 12/13]  [RFC] perf: Show Potential probe
- points.
-Message-ID: <20100712144144.GD25238@ghostprotocols.net>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
- <20100712103432.27491.61687.sendpatchset@localhost6.localdomain6>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100712103432.27491.61687.sendpatchset@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 12 Jul 2010 10:47:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=i2BFHRr538CVmQdUtGStBlfR3IbBKaj9OYFpNFsRDjiA0AkQYp3nGJWH5HENoWnrOH
+         1s0sE43dJNxxUVMVpQlHGYSG7qe1EM/8fbH4DVb9vjyjWxSBAWDPuUe2AmUdhxnYQg+Z
+         DtG299U/afhxDlmhikmnfNIrBYHZyH5JuvuAs=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Frederik Deweerdt <frederik.deweerdt@xprog.eu>,
+        Tejun Heo <tj@kernel.org>, Stoyan Gaydarov <sgayda2@uiuc.edu>,
+        =?UTF-8?q?N=C3=A9meth=20M=C3=A1rton?= <nm127@freemail.hu>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: line6: fix leaks in line6_probe()
+Date: Mon, 12 Jul 2010 18:47:30 +0400
+Message-Id: <1278946051-30118-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 12, 2010 at 04:04:32PM +0530, Srikar Dronamraju escreveu:
-> Introduces an option to list potential probes to probe using perf
-> probe command. Also introduces an option to limit the dso to list the
-> potential probes. Listing of potential probes is sorted by dso and
-> alphabetical order.
+If error occurs line6_probe() must put interface and usbdev that were
+got before.
 
-> Show all potential probes in the kernel and limit to the last 10 functions.
-> # perf probe -S | tail
-> zone_reclaimable_pages
-> zone_spanned_pages_in_node
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/staging/line6/driver.c |   68 ++++++++++++++++++++++++----------------
+ 1 files changed, 41 insertions(+), 27 deletions(-)
 
-<SNIP>
+diff --git a/drivers/staging/line6/driver.c b/drivers/staging/line6/driver.c
+index 1d5a473..d1728be 100644
+--- a/drivers/staging/line6/driver.c
++++ b/drivers/staging/line6/driver.c
+@@ -679,8 +679,10 @@ static int line6_probe(struct usb_interface *interface, const struct usb_device_
+ 	usb_get_dev(usbdev);
  
-> diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
-> @@ -134,6 +136,17 @@ static int opt_show_lines(const struct option *opt __used,
->  }
->  #endif
->  
-> +static int opt_limit_dsos(const struct option *opt __used,
-> +			       const char *str, int unset __used)
-> +{
-> +	if (str) {
-> +		if (!params.limitlist)
-> +			params.limitlist = strlist__new(true, NULL);
-
-What if strlist__new() fails?
-
-> +		strlist__add(params.limitlist, str);
-> +	}
-> +	return 0;
-> +}
-> +
->  static const char * const probe_usage[] = {
->  	"perf probe [<options>] 'PROBEDEF' ['PROBEDEF' ...]",
->  	"perf probe [<options>] --add 'PROBEDEF' [--add 'PROBEDEF' ...]",
-> diff --git a/tools/perf/util/map.h b/tools/perf/util/map.h
-> index f391345..b7dedcd 100644
-> --- a/tools/perf/util/map.h
-> +++ b/tools/perf/util/map.h
-> @@ -210,6 +210,8 @@ int map_groups__fixup_overlappings(struct map_groups *self, struct map *map,
->  
->  struct map *map_groups__find_by_name(struct map_groups *self,
->  				     enum map_type type, const char *name);
-> +int map_groups__iterate_maps(struct map_groups *self, enum map_type type,
-> +		const char *name, int (*fn)(struct map*, const char *));
-
-Humm, here I think perhaps we should try to do as the kernel and
-introduce some form of:
-
-map_groups__for_each_map(self, pos)
-
-Like we have for list_for_each_entry, strlist__for_each, for_each_lang,
-for_each_script, etc.
-
-Matter of coding style, following the culture of the kernel is a goal
-for these tools, to encourage kernel hackers to contribute to these
-tools.
-
->  struct map *machine__new_module(struct machine *self, u64 start, const char *filename);
->  
->  void map_groups__flush(struct map_groups *self);
-> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
-> index ef7c2d5..05b0748 100644
-> --- a/tools/perf/util/probe-event.c
-> +++ b/tools/perf/util/probe-event.c
-> @@ -1842,7 +1842,6 @@ int del_perf_probe_events(struct strlist *dellist, pid_t pid)
->  	struct str_node *ent;
->  	struct strlist *namelist = NULL, *unamelist = NULL;
->  
-> -
->  	/* Get current event names */
->  	if (!pid) {
->  		kfd = open_kprobe_events(true);
-> @@ -1907,3 +1906,87 @@ error:
->  	}
->  	return ret;
->  }
-> +
-> +static int print_list_available_symbols(struct map *map,
-> +					const char *name __unused)
-> +{
-> +	if (map__load(map, NULL) < 0)
-> +		return -EINVAL;
-> +	if (!dso__sorted_by_name(map->dso, map->type))
-> +		dso__sort_by_name(map->dso, map->type);
-> +
-> +	dso__list_available_symbols(map->dso, map->type);
-> +	return 0;
-> +}
-> +
-> +int show_possible_probes(struct strlist *limitlist, pid_t pid)
-> +{
-> +	struct perf_session *session;
-> +	struct thread *thread;
-> +	struct str_node *ent;
-> +	struct map *map = NULL;
-> +	char *name, *str;
-> +	int ret = -EINVAL;
-> +
-> +	if (!pid) {
-> +		ret = init_vmlinux();
-> +		if (ret < 0)
-> +			return ret;
-> +		return print_list_available_symbols(
-> +				machine.vmlinux_maps[MAP__FUNCTION], NULL);
-> +	}
-> +
-> +	session = perf_session__new(NULL, O_WRONLY, false, false);
-> +	if (!session) {
-> +		ret = -ENOMEM;
-> +		goto out_delete;
-> +	}
-> +
-> +	symbol_conf.sort_by_name = true;
-> +	symbol_conf.try_vmlinux_path = false;
-> +	if (symbol__init() < 0)
-> +		semantic_error("Cannot initialize symbols.");
-> +
-> +	event__synthesize_thread(pid, event__process, session);
-> +
-> +	thread = perf_session__findnew(session, pid);
-> +	if (!thread)
-> +		goto out_delete;
-> +
-> +	if (!limitlist)
-> +		ret = map_groups__iterate_maps(&thread->mg,
-> +				MAP__FUNCTION, NULL,
-> +				print_list_available_symbols);
-> +	strlist__for_each(ent, limitlist) {
-> +		str = strdup(ent->s);
-> +		if (!str) {
-> +			ret = -ENOMEM;
-> +			goto out_delete;
-> +		}
-> +
-> +		name = basename(make_absolute_path(str));
-> +		if (!name) {
-> +			pr_warning("Skip probe listing in %s DSO.", str);
-> +			free(str);
-> +			continue;
-> +		}
-> +		map = map_groups__find_by_name(&thread->mg,
-> +						MAP__FUNCTION, name);
-> +		if (!map) {
-> +			pr_warning("Skip probe listing in %s DSO.", str);
-> +			free(str);
-> +			continue;
-> +		}
-> +		ret = print_list_available_symbols(map, NULL);
-> +		if (ret)
-> +			pr_warning("Unknown dso %s .\n", str);
-> +		free(str);
-> +	}
-> +
-> +out_delete:
-> +	if (ret)
-> +		pr_warning("Failed to list available probes.\n");
-> +	if (session)
-> +		perf_session__delete(session);
-> +	return ret;
-> +}
-> diff --git a/tools/perf/util/probe-event.h b/tools/perf/util/probe-event.h
-> index f69f98e..a7a6a86 100644
-> --- a/tools/perf/util/probe-event.h
-> +++ b/tools/perf/util/probe-event.h
-> @@ -116,6 +116,7 @@ extern int add_perf_probe_events(struct perf_probe_event *pevs, int npevs,
->  extern int del_perf_probe_events(struct strlist *dellist, pid_t pid);
->  extern int show_perf_probe_events(void);
->  extern int show_line_range(struct line_range *lr);
-> +extern int show_possible_probes(struct strlist *availlist, pid_t pid);
->  
->  
->  /* Maximum index number of event-name postfix */
-> diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-> index 971d0a0..18bb1d8 100644
-> --- a/tools/perf/util/symbol.c
-> +++ b/tools/perf/util/symbol.c
-> @@ -1448,6 +1448,28 @@ struct map *map_groups__find_by_name(struct map_groups *self,
->  	return NULL;
->  }
->  
-> +int map_groups__iterate_maps(struct map_groups *self, enum map_type type,
-> +			const char *name, int (*fn)(struct map*, const char *))
-> +{
-> +	struct rb_node *nd;
-> +	struct map *map;
-> +	int ret;
-> +
-> +	if (!fn)
-> +		return -EINVAL;
-> +
-> +	for (nd = rb_first(&self->maps[type]); nd; nd = rb_next(nd)) {
-> +		map = rb_entry(nd, struct map, rb_node);
-> +		if (!map)
-> +			return -EINVAL;
-> +
-> +		ret = fn(map, name);
-> +		if (ret)
-> +			return ret;
-> +	}
-> +	return 0;
-> +}
-> +
->  static int dso__kernel_module_get_build_id(struct dso *self,
->  				const char *root_dir)
->  {
-> @@ -2343,3 +2365,19 @@ int machine__load_vmlinux_path(struct machine *self, enum map_type type,
->  
->  	return ret;
->  }
-> +
-> +void dso__list_available_symbols(struct dso *self, enum map_type type)
-> +{
-> +	struct rb_root *rb;
-> +	struct rb_node *nd;
-> +	struct symbol_name_rb_node *pos;
-> +
-> +	if (!self)
-> +		return;
-> +
-> +	rb = &self->symbol_names[type];
-> +	for (nd = rb_first(&self->symbol_names[type]); nd; nd = rb_next(nd)) {
-> +		pos = rb_entry(nd, struct symbol_name_rb_node, rb_node);
-> +		printf("%s\n", pos->sym.name);
-> +	}
-
-Also here please follow the style of the other routines that print
-entries, i.e.:
-
-size_t dso__fprintf_symbols(self, type, fp)
-
-like this:
-
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 971d0a0..85fe580 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -370,9 +370,21 @@ size_t dso__fprintf_buildid(struct dso *self, FILE *fp)
- 	return fprintf(fp, "%s", sbuild_id);
- }
- 
--size_t dso__fprintf(struct dso *self, enum map_type type, FILE *fp)
-+size_t dso__fprintf_symbols(struct dso *self, enum map_type type, FILE *fp)
- {
-+	size_t ret = 0;
- 	struct rb_node *nd;
-+
-+	for (nd = rb_first(&self->symbols[type]); nd; nd = rb_next(nd)) {
-+		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
-+		ret += symbol__fprintf(pos, fp);
+ 	/* we don't handle multiple configurations */
+-	if (usbdev->descriptor.bNumConfigurations != 1)
+-		return -ENODEV;
++	if (usbdev->descriptor.bNumConfigurations != 1) {
++		ret = -ENODEV;
++		goto err_put;
 +	}
-+
-+	return ret;
-+}
-+
-+size_t dso__fprintf(struct dso *self, enum map_type type, FILE *fp)
-+{
- 	size_t ret = fprintf(fp, "dso: %s (", self->short_name);
  
- 	if (self->short_name != self->long_name)
-@@ -381,12 +393,8 @@ size_t dso__fprintf(struct dso *self, enum map_type type, FILE *fp)
- 		       self->loaded ? "" : "NOT ");
- 	ret += dso__fprintf_buildid(self, fp);
- 	ret += fprintf(fp, ")\n");
--	for (nd = rb_first(&self->symbols[type]); nd; nd = rb_next(nd)) {
--		struct symbol *pos = rb_entry(nd, struct symbol, rb_node);
--		ret += symbol__fprintf(pos, fp);
+ 	/* check vendor and product id */
+ 	for (devtype = ARRAY_SIZE(line6_id_table) - 1; devtype--;) {
+@@ -692,16 +694,20 @@ static int line6_probe(struct usb_interface *interface, const struct usb_device_
+ 			break;
+ 	}
+ 
+-	if (devtype < 0)
+-		return -ENODEV;
++	if (devtype < 0) {
++		ret = -ENODEV;
++		goto err_put;
++	}
+ 
+ 	/* find free slot in device table: */
+ 	for (devnum = 0; devnum < LINE6_MAX_DEVICES; ++devnum)
+ 		if (line6_devices[devnum] == NULL)
+ 			break;
+ 
+-	if (devnum == LINE6_MAX_DEVICES)
+-		return -ENODEV;
++	if (devnum == LINE6_MAX_DEVICES) {
++		ret = -ENODEV;
++		goto err_put;
++	}
+ 
+ 	/* initialize device info: */
+ 	properties = &line6_properties_table[devtype];
+@@ -762,13 +768,14 @@ static int line6_probe(struct usb_interface *interface, const struct usb_device_
+ 
+ 	default:
+ 		MISSING_CASE;
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto err_put;
+ 	}
+ 
+ 	ret = usb_set_interface(usbdev, interface_number, alternate);
+ 	if (ret < 0) {
+ 		dev_err(&interface->dev, "set_interface failed\n");
+-		return ret;
++		goto err_put;
+ 	}
+ 
+ 	/* initialize device data based on product id: */
+@@ -815,7 +822,8 @@ static int line6_probe(struct usb_interface *interface, const struct usb_device_
+ 			break;
+ 
+ 		default:
+-			return -ENODEV;
++			ret = -ENODEV;
++			goto err_put;
+ 		}
+ 		break;
+ 
+@@ -827,19 +835,22 @@ static int line6_probe(struct usb_interface *interface, const struct usb_device_
+ 
+ 	default:
+ 		MISSING_CASE;
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto err_put;
+ 	}
+ 
+ 	if (size == 0) {
+ 		dev_err(line6->ifcdev, "driver bug: interface data size not set\n");
+-		return -ENODEV;
++		ret = -ENODEV;
++		goto err_put;
+ 	}
+ 
+ 	line6 = kzalloc(size, GFP_KERNEL);
+ 
+ 	if (line6 == NULL) {
+ 		dev_err(&interface->dev, "Out of memory\n");
+-		return -ENOMEM;
++		ret = -ENODEV;
++		goto err_put;
+ 	}
+ 
+ 	/* store basic data: */
+@@ -875,16 +886,16 @@ static int line6_probe(struct usb_interface *interface, const struct usb_device_
+ 
+ 		if (line6->buffer_listen == NULL) {
+ 			dev_err(&interface->dev, "Out of memory\n");
+-			line6_destruct(interface);
+-			return -ENOMEM;
++			ret = -ENOMEM;
++			goto err_destruct;
+ 		}
+ 
+ 		line6->buffer_message = kmalloc(LINE6_MESSAGE_MAXLEN, GFP_KERNEL);
+ 
+ 		if (line6->buffer_message == NULL) {
+ 			dev_err(&interface->dev, "Out of memory\n");
+-			line6_destruct(interface);
+-			return -ENOMEM;
++			ret = -ENOMEM;
++			goto err_destruct;
+ 		}
+ 
+ 		line6->urb_listen = usb_alloc_urb(0, GFP_KERNEL);
+@@ -892,15 +903,15 @@ static int line6_probe(struct usb_interface *interface, const struct usb_device_
+ 		if (line6->urb_listen == NULL) {
+ 			dev_err(&interface->dev, "Out of memory\n");
+ 			line6_destruct(interface);
+-			return -ENOMEM;
++			ret = -ENOMEM;
++			goto err_destruct;
+ 		}
+ 
+ 		ret = line6_start_listen(line6);
+ 		if (ret < 0) {
+ 			dev_err(&interface->dev, "%s: usb_submit_urb failed\n",
+ 				__func__);
+-			line6_destruct(interface);
+-			return ret;
++			goto err_destruct;
+ 		}
+ 	}
+ 
+@@ -952,22 +963,25 @@ static int line6_probe(struct usb_interface *interface, const struct usb_device_
+ 		ret = -ENODEV;
+ 	}
+ 
+-	if (ret < 0) {
+-		line6_destruct(interface);
+-		return ret;
 -	}
++	if (ret < 0)
++		goto err_destruct;
  
--	return ret;
-+	return ret + dso__fprintf_symbols(self, type, fp);
+ 	ret = sysfs_create_link(&interface->dev.kobj, &usbdev->dev.kobj,
+ 				"usb_device");
+-	if (ret < 0) {
+-		line6_destruct(interface);
+-		return ret;
+-	}
++	if (ret < 0)
++		goto err_put;
+ 
+ 	dev_info(&interface->dev, "Line6 %s now attached\n",
+ 		 line6->properties->name);
+ 	line6_devices[devnum] = line6;
+ 	line6_list_devices();
++	return 0;
++
++err_destruct:
++	line6_destruct(interface);
++err_put:
++	usb_put_intf(interface);
++	usb_put_dev(usbdev);
+ 	return ret;
  }
  
- int kallsyms__parse(const char *filename, void *arg,
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 261a3e3..714d286 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -177,6 +177,7 @@ size_t machines__fprintf_dsos(struct rb_root *self, FILE *fp);
- size_t machines__fprintf_dsos_buildid(struct rb_root *self, FILE *fp, bool with_hits);
- 
- size_t dso__fprintf_buildid(struct dso *self, FILE *fp);
-+size_t dso__fprintf_symbols(struct dso *self, enum map_type type, FILE *fp);
- size_t dso__fprintf(struct dso *self, enum map_type type, FILE *fp);
- 
- enum dso_origin {
+-- 
+1.7.0.4
 
-------------------------------------
-
-This way we reduce the resulting code size while following the existing
-style.
-
-- Arnaldo
