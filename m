@@ -1,69 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab0GLVxr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 17:53:47 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59316 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754489Ab0GLVxp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 17:53:45 -0400
-Date: Mon, 12 Jul 2010 14:52:06 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Richard Kennedy <richard@rsk.demon.co.uk>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Miklos Szeredi <miklos@szeredi.hu>
-Subject: Re: [PATCH 1/6] writeback: take account of NR_WRITEBACK_TEMP in
- balance_dirty_pages()
-Message-Id: <20100712145206.9808b411.akpm@linux-foundation.org>
-In-Reply-To: <20100711021748.594522648@intel.com>
-References: <20100711020656.340075560@intel.com>
-	<20100711021748.594522648@intel.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755059Ab0GLVyH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 17:54:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:42697 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754682Ab0GLVyE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 17:54:04 -0400
+Message-ID: <4C3B8E94.6040101@zytor.com>
+Date: Mon, 12 Jul 2010 14:52:20 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: 7eggert@gmx.de
+CC: Bodo Eggert <7eggert@web.de>, Yinghai Lu <yinghai@kernel.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Setup early console as early as possible
+References: <f5czp-42V-9@gated-at.bofh.it> <f5n1M-2lt-21@gated-at.bofh.it> <f5tqz-3ll-37@gated-at.bofh.it> <f5u3g-4mj-11@gated-at.bofh.it> <f5v90-5Wo-7@gated-at.bofh.it> <20100712211459.A0644107B09@mail-in-07.arcor-online.net>
+In-Reply-To: <20100712211459.A0644107B09@mail-in-07.arcor-online.net>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 11 Jul 2010 10:06:57 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
-
+On 07/12/2010 01:57 PM, Bodo Eggert wrote:
+> H. Peter Anvin <hpa@zytor.com> wrote:
+>> On 07/12/2010 09:21 AM, Yinghai Lu wrote:
 > 
-> Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
-> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> ---
->  mm/page-writeback.c |    7 ++++---
->  1 file changed, 4 insertions(+), 3 deletions(-)
+>>> earlycon=uart8250 or console=uart8250 should be better than earlyprintk.
+>>> because it is shared between different archs already.
 > 
-> --- linux-next.orig/mm/page-writeback.c	2010-07-11 08:41:37.000000000 +0800
-> +++ linux-next/mm/page-writeback.c	2010-07-11 08:42:14.000000000 +0800
-> @@ -503,11 +503,12 @@ static void balance_dirty_pages(struct a
->  		};
->  
->  		get_dirty_limits(&background_thresh, &dirty_thresh,
-> -				&bdi_thresh, bdi);
-> +				 &bdi_thresh, bdi);
->  
->  		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
-> -					global_page_state(NR_UNSTABLE_NFS);
-> -		nr_writeback = global_page_state(NR_WRITEBACK);
-> +				 global_page_state(NR_UNSTABLE_NFS);
-> +		nr_writeback = global_page_state(NR_WRITEBACK) +
-> +			       global_page_state(NR_WRITEBACK_TEMP);
->  
->  		bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
->  		bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
+>> console= is crap, because it makes the user keep track of items they
+>> should not have to deal with directly (unless they want to override the
+>> defaults), i.e. the specific I/O ports used by the serial ports.
+> 
+> Why does console= require these parameters, if earlyprintk does not?
+> 
+> IMO you should fix console= to not need these parameters unless they cannot
+> be guessed (in which case earlyprintk cannot guess them, either).
 > 
 
-hm, OK.
+earlycon is basically a low-level interface where you can steer
+everything.  This is what you have to do on most embedded architectures,
+where the firmware doesn't tell you where the console is located.
 
-I wonder whether we could/should have unified NR_WRITEBACK_TEMP and
-NR_UNSTABLE_NFS.  Their "meanings" aren't quite the same, but perhaps
-some "treat page as dirty because the fs is futzing with it" thing.
+On x86, either the firmware can tell you or you can rely on 20 years of
+legacy, with very few divergences.
+
+	-hpa
+
