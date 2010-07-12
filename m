@@ -1,35 +1,320 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab0GLW6c (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:58:32 -0400
-Received: from lucidpixels.com ([75.144.35.66]:40927 "EHLO lucidpixels.com"
+	id S1755900Ab0GLW4s (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:56:48 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56971 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756369Ab0GLW63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:58:29 -0400
-Date: Mon, 12 Jul 2010 18:58:27 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: Alan Piszcz <ap@solarrain.com>
-Subject: 2.6.34.1: Marvell 88SE6145 - Only sees one drive?
-Message-ID: <alpine.DEB.2.00.1007121857070.6428@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1755949Ab0GLW4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 18:56:23 -0400
+From: Nishanth Menon <nm@ti.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Ameya Palande <ameya.palande@nokia.com>,
+        Fernando Guzman Lugo <fernando.lugo@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Andy Shevchenko <andy.shevchenko@gmail.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        linux-omap <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
+Subject: [PATCH 05/11] staging: tidspbridge: remove RET_OK RET_FAIL
+Date: Mon, 12 Jul 2010 17:56:03 -0500
+Message-Id: <1278975369-7687-6-git-send-email-nm@ti.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1278975369-7687-1-git-send-email-nm@ti.com>
+References: <1278975369-7687-1-git-send-email-nm@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+RET_OK is 0 and RET_FAIL is a -1, replace these custom returns with
+a standard errno
 
-Per the Intel DP55KG manual:
+Signed-off-by: Nishanth Menon <nm@ti.com>
+---
+ drivers/staging/tidspbridge/core/tiomap3430.c |   10 ++---
+ drivers/staging/tidspbridge/hw/hw_mmu.c       |   53 +++++++++++++------------
+ 2 files changed, 31 insertions(+), 32 deletions(-)
 
-The red eSATA connectors on the back panel can be used to connect an eSATA 
-drive.  They can also be used for port replication, which allows the 
-aggregation of multiple hard drives on each of the eSATA ports.
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index 51e327f..33fcef5 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -1506,8 +1506,7 @@ static int bridge_brd_mem_un_map(struct bridge_dev_context *hDevContext,
+ 				}
+ 				paddr += HW_PAGE_SIZE4KB;
+ 			}
+-			if (hw_mmu_pte_clear(pte_addr_l2, va_curr, pte_size)
+-			    == RET_FAIL) {
++			if (hw_mmu_pte_clear(pte_addr_l2, va_curr, pte_size)) {
+ 				status = -EPERM;
+ 				goto EXIT_LOOP;
+ 			}
+@@ -1524,9 +1523,8 @@ static int bridge_brd_mem_un_map(struct bridge_dev_context *hDevContext,
+ 				/*
+ 				 * Clear the L1 PTE pointing to the L2 PT
+ 				 */
+-				if (hw_mmu_pte_clear(l1_base_va, va_curr_orig,
+-						     HW_MMU_COARSE_PAGE_SIZE) ==
+-				    RET_OK)
++				if (!hw_mmu_pte_clear(l1_base_va, va_curr_orig,
++						     HW_MMU_COARSE_PAGE_SIZE))
+ 					status = 0;
+ 				else {
+ 					status = -EPERM;
+@@ -1571,7 +1569,7 @@ skip_coarse_page:
+ 			}
+ 			paddr += HW_PAGE_SIZE4KB;
+ 		}
+-		if (hw_mmu_pte_clear(l1_base_va, va_curr, pte_size) == RET_OK) {
++		if (!hw_mmu_pte_clear(l1_base_va, va_curr, pte_size)) {
+ 			status = 0;
+ 			rem_bytes -= pte_size;
+ 			va_curr += pte_size;
+diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.c b/drivers/staging/tidspbridge/hw/hw_mmu.c
+index 4430daf..321b72d 100644
+--- a/drivers/staging/tidspbridge/hw/hw_mmu.c
++++ b/drivers/staging/tidspbridge/hw/hw_mmu.c
+@@ -22,6 +22,7 @@
+ #include <hw_defs.h>
+ #include <hw_mmu.h>
+ #include <linux/types.h>
++#include <linux/err.h>
+ 
+ #define MMU_BASE_VAL_MASK	0xFC00
+ #define MMU_PAGE_MAX	     3
+@@ -59,7 +60,7 @@ enum hw_mmu_page_size_t {
+  * RETURNS:
+  *
+  *       Type		: hw_status
+- *       Description     : RET_OK		 -- No errors occured
++ *       Description     : 0		 -- No errors occured
+  *			 RET_BAD_NULL_PARAM     -- A Pointer
+  *						Paramater was set to NULL
+  *
+@@ -102,7 +103,7 @@ static hw_status mmu_flush_entry(const void __iomem *base_address);
+  * RETURNS:
+  *
+  *       Type	    	: hw_status
+- *       Description     : RET_OK		 -- No errors occured
++ *       Description     : 0		 -- No errors occured
+  *			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
+  *						   was set to NULL
+  *			 RET_PARAM_OUT_OF_RANGE -- Input Parameter out
+@@ -147,7 +148,7 @@ static hw_status mmu_set_cam_entry(const void __iomem *base_address,
+  * RETURNS:
+  *
+  *       Type	    	: hw_status
+- *       Description     : RET_OK		 -- No errors occured
++ *       Description     : 0		 -- No errors occured
+  *			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
+  *							was set to NULL
+  *			 RET_PARAM_OUT_OF_RANGE -- Input Parameter
+@@ -167,7 +168,7 @@ static hw_status mmu_set_ram_entry(const void __iomem *base_address,
+ 
+ hw_status hw_mmu_enable(const void __iomem *base_address)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 
+ 	MMUMMU_CNTLMMU_ENABLE_WRITE32(base_address, HW_SET);
+ 
+@@ -176,7 +177,7 @@ hw_status hw_mmu_enable(const void __iomem *base_address)
+ 
+ hw_status hw_mmu_disable(const void __iomem *base_address)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 
+ 	MMUMMU_CNTLMMU_ENABLE_WRITE32(base_address, HW_CLEAR);
+ 
+@@ -186,7 +187,7 @@ hw_status hw_mmu_disable(const void __iomem *base_address)
+ hw_status hw_mmu_num_locked_set(const void __iomem *base_address,
+ 				u32 numLockedEntries)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 
+ 	MMUMMU_LOCK_BASE_VALUE_WRITE32(base_address, numLockedEntries);
+ 
+@@ -196,7 +197,7 @@ hw_status hw_mmu_num_locked_set(const void __iomem *base_address,
+ hw_status hw_mmu_victim_num_set(const void __iomem *base_address,
+ 				u32 victimEntryNum)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 
+ 	MMUMMU_LOCK_CURRENT_VICTIM_WRITE32(base_address, victimEntryNum);
+ 
+@@ -205,7 +206,7 @@ hw_status hw_mmu_victim_num_set(const void __iomem *base_address,
+ 
+ hw_status hw_mmu_event_ack(const void __iomem *base_address, u32 irqMask)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 
+ 	MMUMMU_IRQSTATUS_WRITE_REGISTER32(base_address, irqMask);
+ 
+@@ -214,7 +215,7 @@ hw_status hw_mmu_event_ack(const void __iomem *base_address, u32 irqMask)
+ 
+ hw_status hw_mmu_event_disable(const void __iomem *base_address, u32 irqMask)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 irq_reg;
+ 
+ 	irq_reg = MMUMMU_IRQENABLE_READ_REGISTER32(base_address);
+@@ -226,7 +227,7 @@ hw_status hw_mmu_event_disable(const void __iomem *base_address, u32 irqMask)
+ 
+ hw_status hw_mmu_event_enable(const void __iomem *base_address, u32 irqMask)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 irq_reg;
+ 
+ 	irq_reg = MMUMMU_IRQENABLE_READ_REGISTER32(base_address);
+@@ -238,7 +239,7 @@ hw_status hw_mmu_event_enable(const void __iomem *base_address, u32 irqMask)
+ 
+ hw_status hw_mmu_event_status(const void __iomem *base_address, u32 *irqMask)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 
+ 	*irqMask = MMUMMU_IRQSTATUS_READ_REGISTER32(base_address);
+ 
+@@ -247,7 +248,7 @@ hw_status hw_mmu_event_status(const void __iomem *base_address, u32 *irqMask)
+ 
+ hw_status hw_mmu_fault_addr_read(const void __iomem *base_address, u32 *addr)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 
+ 	/*Check the input Parameters */
+ 	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
+@@ -261,7 +262,7 @@ hw_status hw_mmu_fault_addr_read(const void __iomem *base_address, u32 *addr)
+ 
+ hw_status hw_mmu_ttb_set(const void __iomem *base_address, u32 TTBPhysAddr)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 load_ttb;
+ 
+ 	/*Check the input Parameters */
+@@ -277,7 +278,7 @@ hw_status hw_mmu_ttb_set(const void __iomem *base_address, u32 TTBPhysAddr)
+ 
+ hw_status hw_mmu_twl_enable(const void __iomem *base_address)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 
+ 	MMUMMU_CNTLTWL_ENABLE_WRITE32(base_address, HW_SET);
+ 
+@@ -286,7 +287,7 @@ hw_status hw_mmu_twl_enable(const void __iomem *base_address)
+ 
+ hw_status hw_mmu_twl_disable(const void __iomem *base_address)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 
+ 	MMUMMU_CNTLTWL_ENABLE_WRITE32(base_address, HW_CLEAR);
+ 
+@@ -296,7 +297,7 @@ hw_status hw_mmu_twl_disable(const void __iomem *base_address)
+ hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtualAddr,
+ 			   u32 pageSize)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 virtual_addr_tag;
+ 	enum hw_mmu_page_size_t pg_size_bits;
+ 
+@@ -318,7 +319,7 @@ hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtualAddr,
+ 		break;
+ 
+ 	default:
+-		return RET_FAIL;
++		return -EINVAL;
+ 	}
+ 
+ 	/* Generate the 20-bit tag from virtual address */
+@@ -339,7 +340,7 @@ hw_status hw_mmu_tlb_add(const void __iomem *base_address,
+ 			 struct hw_mmu_map_attrs_t *map_attrs,
+ 			 s8 preservedBit, s8 validBit)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 lock_reg;
+ 	u32 virtual_addr_tag;
+ 	enum hw_mmu_page_size_t mmu_pg_size;
+@@ -371,7 +372,7 @@ hw_status hw_mmu_tlb_add(const void __iomem *base_address,
+ 		break;
+ 
+ 	default:
+-		return RET_FAIL;
++		return -EINVAL;
+ 	}
+ 
+ 	lock_reg = MMUMMU_LOCK_READ_REGISTER32(base_address);
+@@ -406,7 +407,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
+ 			 u32 virtualAddr,
+ 			 u32 pageSize, struct hw_mmu_map_attrs_t *map_attrs)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 pte_addr, pte_val;
+ 	s32 num_entries = 1;
+ 
+@@ -466,7 +467,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
+ 		break;
+ 
+ 	default:
+-		return RET_FAIL;
++		return -EINVAL;
+ 	}
+ 
+ 	while (--num_entries >= 0)
+@@ -477,7 +478,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
+ 
+ hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtualAddr, u32 page_size)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 pte_addr;
+ 	s32 num_entries = 1;
+ 
+@@ -510,7 +511,7 @@ hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtualAddr, u32 page_size)
+ 		break;
+ 
+ 	default:
+-		return RET_FAIL;
++		return -EINVAL;
+ 	}
+ 
+ 	while (--num_entries >= 0)
+@@ -522,7 +523,7 @@ hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtualAddr, u32 page_size)
+ /* mmu_flush_entry */
+ static hw_status mmu_flush_entry(const void __iomem *base_address)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 flush_entry_data = 0x1;
+ 
+ 	/*Check the input Parameters */
+@@ -542,7 +543,7 @@ static hw_status mmu_set_cam_entry(const void __iomem *base_address,
+ 				   const u32 validBit,
+ 				   const u32 virtual_addr_tag)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 mmu_cam_reg;
+ 
+ 	/*Check the input Parameters */
+@@ -566,7 +567,7 @@ static hw_status mmu_set_ram_entry(const void __iomem *base_address,
+ 				   enum hw_element_size_t element_size,
+ 				   enum hw_mmu_mixed_size_t mixed_size)
+ {
+-	hw_status status = RET_OK;
++	hw_status status = 0;
+ 	u32 mmu_ram_reg;
+ 
+ 	/*Check the input Parameters */
+-- 
+1.6.3.3
 
-Has anyone gotten this working in Linux?
-
-It only sees one of the two drives on one sata port.
-Using a thermaltake blackx duet.
-
-Justin.
