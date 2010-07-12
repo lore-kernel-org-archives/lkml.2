@@ -1,354 +1,506 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab0GLXhV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 19:37:21 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:57694 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751232Ab0GLXhT convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 19:37:19 -0400
-MIME-Version: 1.0
-Date: Mon, 12 Jul 2010 16:37:09 -0700
-Message-ID: <AANLkTikro3L1Hy3BYmY-KE8-KviZIrWOCAb54FkF7eX-@mail.gmail.com>
-Subject: Linux 2.6.35-rc5
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1756098Ab0GLXiS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 19:38:18 -0400
+Received: from smtp1.Stanford.EDU ([171.67.219.81]:51645 "EHLO
+	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751232Ab0GLXiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 19:38:16 -0400
+Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
+From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+To: john stultz <johnstul@us.ibm.com>
+Cc: nando@ccrma.Stanford.EDU, Thomas Gleixner <tglx@linutronix.de>,
+        LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1278716222.2349.20.camel@localhost.localdomain>
+References: <1278609590.7527.11.camel@localhost.localdomain>
+	 <1278628386.3008.11.camel@localhost.localdomain>
+	 <1278629044.12059.6.camel@localhost.localdomain>
+	 <1278630050.3008.18.camel@localhost.localdomain>
+	 <1278702134.5102.9.camel@localhost.localdomain>
+	 <1278705254.2349.14.camel@localhost.localdomain>
+	 <1278713600.7122.22.camel@localhost.localdomain>
+	 <1278716222.2349.20.camel@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Jul 2010 16:37:38 -0700
+Message-ID: <1278977858.6489.52.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Another week, another -rc.
+On Fri, 2010-07-09 at 15:57 -0700, john stultz wrote:
+> On Fri, 2010-07-09 at 15:13 -0700, Fernando Lopez-Lezcano wrote:
+> > On Fri, 2010-07-09 at 12:54 -0700, john stultz wrote:
+> > > On Fri, 2010-07-09 at 12:02 -0700, Fernando Lopez-Lezcano wrote:
+> > > > Ok, I got one! (had to go buy a null modem cable, I thought I had one
+> > > > but it has disappeared since the last time I did this :-)
+> > > 
+> > > Great! Sorry to make you go shopping! But this points out the problem
+> > > nicely.
+> > 
+> > No problem at all, I was sure I had one... anyway, I still need it :-<
+> > 
+> > > > Find it below... it keeps spewing stuff every once in a while. Hopefully
+> > > > this will be enough. No response from the network or the keyboard or
+> > > > mouse at this point, reset is the only way out. 
+> > > > 
+> > > > I can retest if somebody comes up with a patch...
+> > 
+> > Sorry, it looks like the patch patched correctly and this is the new
+> > kernel, but I still get a hang as before. 
+> 
+> So looking over it, I'm not easily seeing what else could be off.
+> 
+> So Lets see if we can cut some of the guess work out of this...
+> 
+> >  [<c04e08e9>] ? d_materialise_unique+0xbf/0x29e
+> 
+> I'm curious exactly where that is in d_materialise_unique. To find out,
+> can you find the vmlinux image in the base of the directory you built
+> the kernel you triggered this in?
+> 
+> Then run:
+> # gdb ./vmlinux
+> 
+> Once gdb loads:
+> (gdb) list *0xc04e08e9
+> 
+> That should point to exactly where in the function we are trying to
+> acquire a previously locked lock.
+
+Finally... I did a local build in my desktop machine so I now have
+access to the full patched/compiled source tree. I confirmed that the
+patch you sent is there (moving a spin_lock one line down). 
+
+This is from a different kernel (non-PAE) so the exact address is
+different from the previous report:
+
+(gdb) list *0xc04d82dd
+0xc04d82dd is in d_materialise_unique (fs/dcache.c:2100).
+2095		spin_lock(&aparent->d_lock);
+2096		spin_lock(&dparent->d_lock);
+2097		spin_lock(&dentry->d_lock);
+2098		spin_lock(&anon->d_lock);
+2099	
+2100		dentry->d_parent = (aparent == anon) ? dentry : aparent;
+2101		list_del(&dentry->d_u.d_child);
+2102		if (!IS_ROOT(dentry))
+2103			list_add(&dentry->d_u.d_child, &dentry->d_parent->d_subdirs);
+2104		else
+
+See below for the full dump of the BUG through the serial console in
+this particular occurrence. 
+
+Let me know if there is anything else I could do. 
+-- Fernando
+
+
+
+------------[ cut here ]------------
+kernel BUG at kernel/rtmutex.c:808!
+invalid opcode: 0000 [#1] PREEMPT SMP 
+last sysfs
+file: /sys/devices/pci0000:00/0000:00:1c.5/0000:02:00.0/net/eth0/statistics/collisions
+Modules linked in: fuse autofs4 act_police cls_flow cls_fw cls_u32
+sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm
+iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REDIRECT
+ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah
+ipt_addrtype nf_nat_tftp nf_nat_snmp_basic nf_nat_sip nf_nat_pptp
+nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp
+nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip
+nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre
+nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_irc
+nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core xt_tcpmss
+xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log
+xt_multiport xt_MARK xt_mark xt_mac xt_limit xt_length xt_iprange
+xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_CONNMARK xt_connmark
+xt_CLASSIFY ipt_LOG iptable_nat nf_nat iptable_mangle nfnetlink coretemp
+hwmon_vid nfs lockd fscache nfs_acl auth_rpcgss sunrpc cpufreq_ondemand
+acpi_cpufreq ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables
+ipv6 dm_multipath uinput snd_hda_codec_realtek snd_hda_intel
+snd_hda_codec snd_hwdep snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda
+snd_seq_dummy snd_cs8427 snd_ac97_codec iTCO_wdt snd_seq_oss
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_pcm
+iTCO_vendor_support ac97_bus snd_i2c snd_mpu401_uart snd_rawmidi
+snd_seq_device snd_timer i2c_i801 snd ohci1394 snd_page_alloc soundcore
+asus_atk0110 joydev sky2 serio_raw sata_sil24 radeon ttm drm_kms_helper
+drm i2c_algo_bit i2c_core [last unloaded: microcode]
+
+Pid: 2832, comm: nautilus Not tainted
+2.6.33.6-147.rt23.3.fc12.ccrma.i686.rt #1 P5K/EPU/P5K/EPU
+EIP: 0060:[<c0780ab7>] EFLAGS: 00010046 CPU: 0
+EIP is at rt_spin_lock_slowlock+0x43/0x1bb
+EAX: f21522b0 EBX: f022f7a4 ECX: f022f7a4 EDX: f21522b0
+ESI: efcf9f1c EDI: f022fd3c EBP: f23b7d14 ESP: f23b7cbc
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068 preempt:00000001
+Process nautilus (pid: 2832, ti=f23b6000 task=f21522b0 task.ti=f23b6000)
+Stack:
+ 00000000 00000001 00000000 f23b7cd8 00000292 efcab7ac 00000000 f23b7d1c
+<0> fab0f5e6 00000246 f022f7a4 f022f79c 00000000 f23b7cfc c045e4cb
+efcab7ac
+<0> 00000000 c0781206 00000246 f022f7a4 efcf9f1c f022fd3c f23b7d20
+c045e501
+Call Trace:
+ [<fab0f5e6>] ? nfs_refresh_inode_locked+0x79c/0xa1e [nfs]
+ [<c045e4cb>] ? rt_spin_lock_fastlock.clone.1+0x26/0x5f
+ [<c0781206>] ? rt_spin_unlock+0x8/0xa
+ [<c045e501>] ? rt_spin_lock_fastlock.clone.1+0x5c/0x5f
+ [<c07811f2>] ? rt_spin_lock+0x8/0xa
+ [<c04d82dd>] ? d_materialise_unique+0xbf/0x29e
+ [<fab0c5a0>] ? nfs_do_filldir+0x27b/0x3a9 [nfs]
+ [<c04d5490>] ? filldir64+0x0/0xcb
+ [<fab0cd57>] ? nfs_readdir+0x689/0x707 [nfs]
+ [<c04d5490>] ? filldir64+0x0/0xcb
+ [<c0424e61>] ? enqueue_task+0x70/0x80
+ [<fab1d0de>] ? nfs3_decode_dirent+0x0/0x10e [nfs]
+ [<c045d24e>] ? do_futex+0x99/0x696
+ [<c0780e85>] ? rt_mutex_lock_killable+0x28/0x2c
+ [<c04d574a>] ? vfs_readdir+0x66/0x92
+ [<c04d5490>] ? filldir64+0x0/0xcb
+ [<c04d57d9>] ? sys_getdents64+0x63/0xa5
+ [<c0476d3f>] ? audit_syscall_entry+0x113/0x135
+ [<c040321f>] ? sysenter_do_call+0x12/0x28
+Code: 7b 08 00 89 45 b8 75 12 8d 43 04 89 43 04 89 43 08 8d 43 0c 89 43
+0c 89 43 10 8b 43 14 64 8b 15 7c d4 a3 c0 83 e0 fc 39 c2 75 04 <0f> 0b
+eb fe 8b 3a 81 ff 08 01 00 00 74 0a 83 ff 02 b8 04 00 00 
+EIP: [<c0780ab7>] rt_spin_lock_slowlock+0x43/0x1bb SS:ESP 0068:f23b7cbc
+---[ end trace 21aa2c1d673e60c7 ]---
+note: nautilus[2832] exited with preempt_count 1
+BUG: soft lockup - CPU#2 stuck for 61s! [gvfs-gdu-volume:2718]
+Modules linked in: fuse autofs4 act_police cls_flow cls_fw cls_u32
+sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm
+iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REDIRECT
+ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah
+ipt_addrtype nf_nat_tftp nf_nat_snmp_basic nf_nat_sip nf_nat_pptp
+nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp
+nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip
+nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre
+nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_irc
+nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core xt_tcpmss
+xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log
+xt_multiport xt_MARK xt_mark xt_mac xt_limit xt_length xt_iprange
+xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_CONNMARK xt_connmark
+xt_CLASSIFY ipt_LOG iptable_nat nf_nat iptable_mangle nfnetlink coretemp
+hwmon_vid nfs lockd fscache nfs_acl auth_rpcgss sunrpc cpufreq_ondemand
+acpi_cpufreq ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables
+ipv6 dm_multipath uinput snd_hda_codec_realtek snd_hda_intel
+snd_hda_codec snd_hwdep snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda
+snd_seq_dummy snd_cs8427 snd_ac97_codec iTCO_wdt snd_seq_oss
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_pcm
+iTCO_vendor_support ac97_bus snd_i2c snd_mpu401_uart snd_rawmidi
+snd_seq_device snd_timer i2c_i801 snd ohci1394 snd_page_alloc soundcore
+asus_atk0110 joydev sky2 serio_raw sata_sil24 radeon ttm drm_kms_helper
+drm i2c_algo_bit i2c_core [last unloaded: microcode]
+Modules linked in: fuse autofs4 act_police cls_flow cls_fw cls_u32
+sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm
+iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REDIRECT
+ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah
+ipt_addrtype nf_nat_tftp nf_nat_snmp_basic nf_nat_sip nf_nat_pptp
+nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp
+nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip
+nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre
+nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_irc
+nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core xt_tcpmss
+xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log
+xt_multiport xt_MARK xt_mark xt_mac xt_limit xt_length xt_iprange
+xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_CONNMARK xt_connmark
+xt_CLASSIFY ipt_LOG iptable_nat nf_nat iptable_mangle nfnetlink coretemp
+hwmon_vid nfs lockd fscache nfs_acl auth_rpcgss sunrpc cpufreq_ondemand
+acpi_cpufreq ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables
+ipv6 dm_multipath uinput snd_hda_codec_realtek snd_hda_intel
+snd_hda_codec snd_hwdep snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda
+snd_seq_dummy snd_cs8427 snd_ac97_codec iTCO_wdt snd_seq_oss
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_pcm
+iTCO_vendor_support ac97_bus snd_i2c snd_mpu401_uart snd_rawmidi
+snd_seq_device snd_timer i2c_i801 snd ohci1394 snd_page_alloc soundcore
+asus_atk0110 joydev sky2 serio_raw sata_sil24 radeon ttm drm_kms_helper
+drm i2c_algo_bit i2c_core [last unloaded: microcode]
+
+Pid: 2718, comm: gvfs-gdu-volume Tainted: G      D
+2.6.33.6-147.rt23.3.fc12.ccrma.i686.rt #1 P5K/EPU/P5K/EPU
+EIP: 0060:[<c045ec5a>] EFLAGS: 00200202 CPU: 2
+EIP is at smp_call_function_many+0x16b/0x175
+EAX: 00200296 EBX: c360353c ECX: 00000004 EDX: 00000020
+ESI: 00000002 EDI: c3603554 EBP: f18c7c90 ESP: f18c7c78
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068 preempt:00010003
+Process gvfs-gdu-volume (pid: 2718, ti=f18c6000 task=f214f0b0
+task.ti=f18c6000)
+Stack:
+ 014ad48f 00000000 c0423a7a f18c6000 c0423a7a 00000224 f18c7ca0 c045ec8a
+<0> 00000001 00000000 f18c7cb4 c043d731 00000246 00000020 00000224
+f18c7cbc
+<0> c04239e8 f18c7d58 c04ad6ad 00000000 00000021 00000225 00000226
+00000227
+Call Trace:
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c045ec8a>] ? smp_call_function+0x26/0x43
+ [<c043d731>] ? on_each_cpu+0x1b/0x4c
+ [<c04239e8>] ? flush_tlb_all+0x14/0x16
+ [<c04ad6ad>] ? pkmap_get_free+0x146/0x188
+ [<c04ad702>] ? pkmap_insert+0x13/0x108
+ [<c04ad823>] ? kmap_high+0x2c/0x33
+ [<c0424605>] ? kmap+0x4b/0x5a
+ [<c041fa66>] ? kmap_atomic_func+0x16/0x18
+ [<c04b0a25>] ? handle_mm_fault+0xb4/0x7d1
+ [<c056e902>] ? avc_has_perm+0x3c/0x46
+ [<c0783ccb>] ? do_page_fault+0x29d/0x2b3
+ [<c0783a2e>] ? do_page_fault+0x0/0x2b3
+ [<c0781db7>] ? error_code+0x73/0x78
+ [<c049bacb>] ? file_read_actor+0x28/0xda
+ [<c049d3ca>] ? generic_file_aio_read+0x340/0x519
+ [<c04c9896>] ? do_sync_read+0x87/0xc2
+ [<c0569a84>] ? security_file_permission+0xf/0x11
+ [<c04c9969>] ? rw_verify_area+0x98/0xbb
+ [<c04c980f>] ? do_sync_read+0x0/0xc2
+ [<c04c9eb8>] ? vfs_read+0x7d/0xdc
+ [<c04d08d9>] ? path_put+0x15/0x18
+ [<c04c9fab>] ? sys_read+0x3b/0x5d
+ [<c040321f>] ? sysenter_do_call+0x12/0x28
+Code: c0 89 c2 b8 88 61 94 c0 89 59 04 e8 f7 27 32 00 0f ae f0 89 f6 89
+f8 ff 15 e8 4c 97 c0 80 7d eb 00 75 04 eb 08 f3 90 f6 43 10 01 <75> f8
+8d 65 f4 5b 5e 5f 5d c3 55 89 e5 53 89 e3 81 e3 00 e0 ff 
+Call Trace:
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c045ec8a>] smp_call_function+0x26/0x43
+ [<c043d731>] on_each_cpu+0x1b/0x4c
+ [<c04239e8>] flush_tlb_all+0x14/0x16
+ [<c04ad6ad>] pkmap_get_free+0x146/0x188
+ [<c04ad702>] pkmap_insert+0x13/0x108
+ [<c04ad823>] kmap_high+0x2c/0x33
+ [<c0424605>] kmap+0x4b/0x5a
+ [<c041fa66>] kmap_atomic_func+0x16/0x18
+ [<c04b0a25>] handle_mm_fault+0xb4/0x7d1
+ [<c056e902>] ? avc_has_perm+0x3c/0x46
+ [<c0783ccb>] do_page_fault+0x29d/0x2b3
+ [<c0783a2e>] ? do_page_fault+0x0/0x2b3
+ [<c0781db7>] error_code+0x73/0x78
+ [<c049bacb>] ? file_read_actor+0x28/0xda
+ [<c049d3ca>] generic_file_aio_read+0x340/0x519
+ [<c04c9896>] do_sync_read+0x87/0xc2
+ [<c0569a84>] ? security_file_permission+0xf/0x11
+ [<c04c9969>] ? rw_verify_area+0x98/0xbb
+ [<c04c980f>] ? do_sync_read+0x0/0xc2
+ [<c04c9eb8>] vfs_read+0x7d/0xdc
+ [<c04d08d9>] ? path_put+0x15/0x18
+ [<c04c9fab>] sys_read+0x3b/0x5d
+ [<c040321f>] sysenter_do_call+0x12/0x28
+BUG: soft lockup - CPU#3 stuck for 61s! [gnome-keyring-d:2595]
+Modules linked in: fuse autofs4 act_police cls_flow cls_fw cls_u32
+sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm
+iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REDIRECT
+ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah
+ipt_addrtype nf_nat_tftp nf_nat_snmp_basic nf_nat_sip nf_nat_pptp
+nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp
+nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip
+nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre
+nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_irc
+nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core xt_tcpmss
+xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log
+xt_multiport xt_MARK xt_mark xt_mac xt_limit xt_length xt_iprange
+xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_CONNMARK xt_connmark
+xt_CLASSIFY ipt_LOG iptable_nat nf_nat iptable_mangle nfnetlink coretemp
+hwmon_vid nfs lockd fscache nfs_acl auth_rpcgss sunrpc cpufreq_ondemand
+acpi_cpufreq ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables
+ipv6 dm_multipath uinput snd_hda_codec_realtek snd_hda_intel
+snd_hda_codec snd_hwdep snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda
+snd_seq_dummy snd_cs8427 snd_ac97_codec iTCO_wdt snd_seq_oss
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_pcm
+iTCO_vendor_support ac97_bus snd_i2c snd_mpu401_uart snd_rawmidi
+snd_seq_device snd_timer i2c_i801 snd ohci1394 snd_page_alloc soundcore
+asus_atk0110 joydev sky2 serio_raw sata_sil24 radeon ttm drm_kms_helper
+drm i2c_algo_bit i2c_core [last unloaded: microcode]
+Modules linked in: fuse autofs4 act_police cls_flow cls_fw cls_u32
+sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm
+iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REDIRECT
+ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah
+ipt_addrtype nf_nat_tftp nf_nat_snmp_basic nf_nat_sip nf_nat_pptp
+nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp
+nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip
+nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre
+nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_irc
+nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core xt_tcpmss
+xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log
+xt_multiport xt_MARK xt_mark xt_mac xt_limit xt_length xt_iprange
+xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_CONNMARK xt_connmark
+xt_CLASSIFY ipt_LOG iptable_nat nf_nat iptable_mangle nfnetlink coretemp
+hwmon_vid nfs lockd fscache nfs_acl auth_rpcgss sunrpc cpufreq_ondemand
+acpi_cpufreq ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables
+ipv6 dm_multipath uinput snd_hda_codec_realtek snd_hda_intel
+snd_hda_codec snd_hwdep snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda
+snd_seq_dummy snd_cs8427 snd_ac97_codec iTCO_wdt snd_seq_oss
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_pcm
+iTCO_vendor_support ac97_bus snd_i2c snd_mpu401_uart snd_rawmidi
+snd_seq_device snd_timer i2c_i801 snd ohci1394 snd_page_alloc soundcore
+asus_atk0110 joydev sky2 serio_raw sata_sil24 radeon ttm drm_kms_helper
+drm i2c_algo_bit i2c_core [last unloaded: microcode]
+
+Pid: 2595, comm: gnome-keyring-d Tainted: G      D
+2.6.33.6-147.rt23.3.fc12.ccrma.i686.rt #1 P5K/EPU/P5K/EPU
+EIP: 0060:[<c045ec56>] EFLAGS: 00200202 CPU: 3
+EIP is at smp_call_function_many+0x167/0x175
+EAX: 00200282 EBX: c370353c ECX: 00000004 EDX: 00000020
+ESI: 00000003 EDI: c3703554 EBP: f23e5e34 ESP: f23e5e1c
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068 preempt:00010003
+Process gnome-keyring-d (pid: 2595, ti=f23e4000 task=f2240d30
+task.ti=f23e4000)
+Stack:
+ 014ad48f 00000000 c0423a7a f23e4000 c0423a7a 00000246 f23e5e44 c045ec8a
+<0> 00000001 00000000 f23e5e58 c043d731 00000267 00000020 00000246
+f23e5e60
+<0> c04239e8 f23e5efc c04ad6ad 00000021 00000020 00000247 00000248
+00000249
+Call Trace:
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c045ec8a>] ? smp_call_function+0x26/0x43
+ [<c043d731>] ? on_each_cpu+0x1b/0x4c
+ [<c04239e8>] ? flush_tlb_all+0x14/0x16
+ [<c04ad6ad>] ? pkmap_get_free+0x146/0x188
+ [<c04ad702>] ? pkmap_insert+0x13/0x108
+ [<c04ad823>] ? kmap_high+0x2c/0x33
+ [<c0424605>] ? kmap+0x4b/0x5a
+ [<c041fa66>] ? kmap_atomic_func+0x16/0x18
+ [<c04b0a25>] ? handle_mm_fault+0xb4/0x7d1
+ [<c044e9f9>] ? autoremove_wake_function+0x0/0x2f
+ [<c0783ccb>] ? do_page_fault+0x29d/0x2b3
+ [<c0783a2e>] ? do_page_fault+0x0/0x2b3
+ [<c0781db7>] ? error_code+0x73/0x78
+Code: 1d 80 61 94 c0 89 c2 b8 88 61 94 c0 89 59 04 e8 f7 27 32 00 0f ae
+f0 89 f6 89 f8 ff 15 e8 4c 97 c0 80 7d eb 00 75 04 eb 08 f3 90 <f6> 43
+10 01 75 f8 8d 65 f4 5b 5e 5f 5d c3 55 89 e5 53 89 e3 81 
+Call Trace:
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c045ec8a>] smp_call_function+0x26/0x43
+ [<c043d731>] on_each_cpu+0x1b/0x4c
+ [<c04239e8>] flush_tlb_all+0x14/0x16
+ [<c04ad6ad>] pkmap_get_free+0x146/0x188
+ [<c04ad702>] pkmap_insert+0x13/0x108
+ [<c04ad823>] kmap_high+0x2c/0x33
+ [<c0424605>] kmap+0x4b/0x5a
+ [<c041fa66>] kmap_atomic_func+0x16/0x18
+ [<c04b0a25>] handle_mm_fault+0xb4/0x7d1
+ [<c044e9f9>] ? autoremove_wake_function+0x0/0x2f
+ [<c0783ccb>] do_page_fault+0x29d/0x2b3
+ [<c0783a2e>] ? do_page_fault+0x0/0x2b3
+ [<c0781db7>] error_code+0x73/0x78
+BUG: soft lockup - CPU#0 stuck for 61s! [rsyslogd:1287]
+Modules linked in: fuse autofs4 act_police cls_flow cls_fw cls_u32
+sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm
+iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REDIRECT
+ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah
+ipt_addrtype nf_nat_tftp nf_nat_snmp_basic nf_nat_sip nf_nat_pptp
+nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp
+nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip
+nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre
+nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_irc
+nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core xt_tcpmss
+xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log
+xt_multiport xt_MARK xt_mark xt_mac xt_limit xt_length xt_iprange
+xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_CONNMARK xt_connmark
+xt_CLASSIFY ipt_LOG iptable_nat nf_nat iptable_mangle nfnetlink coretemp
+hwmon_vid nfs lockd fscache nfs_acl auth_rpcgss sunrpc cpufreq_ondemand
+acpi_cpufreq ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables
+ipv6 dm_multipath uinput snd_hda_codec_realtek snd_hda_intel
+snd_hda_codec snd_hwdep snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda
+snd_seq_dummy snd_cs8427 snd_ac97_codec iTCO_wdt snd_seq_oss
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_pcm
+iTCO_vendor_support ac97_bus snd_i2c snd_mpu401_uart snd_rawmidi
+snd_seq_device snd_timer i2c_i801 snd ohci1394 snd_page_alloc soundcore
+asus_atk0110 joydev sky2 serio_raw sata_sil24 radeon ttm drm_kms_helper
+drm i2c_algo_bit i2c_core [last unloaded: microcode]
+Modules linked in: fuse autofs4 act_police cls_flow cls_fw cls_u32
+sch_htb sch_hfsc sch_ingress sch_sfq xt_time xt_connlimit xt_realm
+iptable_raw xt_comment xt_recent xt_policy ipt_ULOG ipt_REDIRECT
+ipt_NETMAP ipt_MASQUERADE ipt_ECN ipt_ecn ipt_CLUSTERIP ipt_ah
+ipt_addrtype nf_nat_tftp nf_nat_snmp_basic nf_nat_sip nf_nat_pptp
+nf_nat_proto_gre nf_nat_irc nf_nat_h323 nf_nat_ftp nf_nat_amanda ts_kmp
+nf_conntrack_amanda nf_conntrack_sane nf_conntrack_tftp nf_conntrack_sip
+nf_conntrack_proto_sctp nf_conntrack_pptp nf_conntrack_proto_gre
+nf_conntrack_netlink nf_conntrack_netbios_ns nf_conntrack_irc
+nf_conntrack_h323 nf_conntrack_ftp xt_TPROXY nf_tproxy_core xt_tcpmss
+xt_pkttype xt_physdev xt_owner xt_NFQUEUE xt_NFLOG nfnetlink_log
+xt_multiport xt_MARK xt_mark xt_mac xt_limit xt_length xt_iprange
+xt_helper xt_hashlimit xt_DSCP xt_dscp xt_dccp xt_CONNMARK xt_connmark
+xt_CLASSIFY ipt_LOG iptable_nat nf_nat iptable_mangle nfnetlink coretemp
+hwmon_vid nfs lockd fscache nfs_acl auth_rpcgss sunrpc cpufreq_ondemand
+acpi_cpufreq ip6t_REJECT nf_conntrack_ipv6 ip6table_filter ip6_tables
+ipv6 dm_multipath uinput snd_hda_codec_realtek snd_hda_intel
+snd_hda_codec snd_hwdep snd_ice1712 snd_ice17xx_ak4xxx snd_ak4xxx_adda
+snd_seq_dummy snd_cs8427 snd_ac97_codec iTCO_wdt snd_seq_oss
+snd_seq_midi_event snd_seq snd_pcm_oss snd_mixer_oss snd_pcm
+iTCO_vendor_support ac97_bus snd_i2c snd_mpu401_uart snd_rawmidi
+snd_seq_device snd_timer i2c_i801 snd ohci1394 snd_page_alloc soundcore
+asus_atk0110 joydev sky2 serio_raw sata_sil24 radeon ttm drm_kms_helper
+drm i2c_algo_bit i2c_core [last unloaded: microcode]
+
+Pid: 1287, comm: rsyslogd Tainted: G      D
+2.6.33.6-147.rt23.3.fc12.ccrma.i686.rt #1 P5K/EPU/P5K/EPU
+EIP: 0060:[<c045ec56>] EFLAGS: 00000202 CPU: 0
+EIP is at smp_call_function_many+0x167/0x175
+EAX: 00000292 EBX: c340353c ECX: 00000004 EDX: 00000020
+ESI: 00000000 EDI: c3403554 EBP: f4203cd0 ESP: f4203cb8
+ DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068 preempt:00010003
+Process rsyslogd (pid: 1287, ti=f4202000 task=f5ebc170 task.ti=f4202000)
+Stack:
+ 014ad48f 00000000 c0423a7a f4202000 c0423a7a 00000267 f4203ce0 c045ec8a
+<0> 00000001 00000000 f4203cf4 c043d731 00000288 00000020 00000267
+f4203cfc
+<0> c04239e8 f4203d98 c04ad6ad 00000020 00000020 00000268 00000269
+0000026a
+Call Trace:
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c045ec8a>] ? smp_call_function+0x26/0x43
+ [<c043d731>] ? on_each_cpu+0x1b/0x4c
+ [<c04239e8>] ? flush_tlb_all+0x14/0x16
+ [<c04ad6ad>] ? pkmap_get_free+0x146/0x188
+ [<c04ad702>] ? pkmap_insert+0x13/0x108
+ [<c04ad823>] ? kmap_high+0x2c/0x33
+ [<c0424605>] ? kmap+0x4b/0x5a
+ [<c049b6ee>] ? iov_iter_copy_from_user_atomic+0x1d/0x63
+ [<c049b80d>] ? generic_file_buffered_write+0xd9/0x1b3
+ [<c049c861>] ? __generic_file_aio_write+0x256/0x287
+ [<c049c8ef>] ? generic_file_aio_write+0x5d/0xa4
+ [<c04c97d4>] ? do_sync_write+0x87/0xc2
+ [<c0432002>] ? pick_next_task_fair+0xb3/0xbb
+ [<c0569a84>] ? security_file_permission+0xf/0x11
+ [<c04c9969>] ? rw_verify_area+0x98/0xbb
+ [<c04c974d>] ? do_sync_write+0x0/0xc2
+ [<c04c9d26>] ? vfs_write+0x80/0xdf
+ [<c04c9e19>] ? sys_write+0x3b/0x5d
+ [<c040321f>] ? sysenter_do_call+0x12/0x28
+Code: 1d 80 61 94 c0 89 c2 b8 88 61 94 c0 89 59 04 e8 f7 27 32 00 0f ae
+f0 89 f6 89 f8 ff 15 e8 4c 97 c0 80 7d eb 00 75 04 eb 08 f3 90 <f6> 43
+10 01 75 f8 8d 65 f4 5b 5e 5f 5d c3 55 89 e5 53 89 e3 81 
+Call Trace:
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c0423a7a>] ? do_flush_tlb_all+0x0/0x37
+ [<c045ec8a>] smp_call_function+0x26/0x43
+ [<c043d731>] on_each_cpu+0x1b/0x4c
+ [<c04239e8>] flush_tlb_all+0x14/0x16
+ [<c04ad6ad>] pkmap_get_free+0x146/0x188
+ [<c04ad702>] pkmap_insert+0x13/0x108
+ [<c04ad823>] kmap_high+0x2c/0x33
+ [<c0424605>] kmap+0x4b/0x5a
+ [<c049b6ee>] iov_iter_copy_from_user_atomic+0x1d/0x63
+ [<c049b80d>] generic_file_buffered_write+0xd9/0x1b3
+ [<c049c861>] __generic_file_aio_write+0x256/0x287
+ [<c049c8ef>] generic_file_aio_write+0x5d/0xa4
+ [<c04c97d4>] do_sync_write+0x87/0xc2
+ [<c0432002>] ? pick_next_task_fair+0xb3/0xbb
+ [<c0569a84>] ? security_file_permission+0xf/0x11
+ [<c04c9969>] ? rw_verify_area+0x98/0xbb
+ [<c04c974d>] ? do_sync_write+0x0/0xc2
+ [<c04c9d26>] vfs_write+0x80/0xdf
+ [<c04c9e19>] sys_write+0x3b/0x5d
+ [<c040321f>] sysenter_do_call+0x12/0x28
 
-Ok, so it's actually eight days, but whatever. It's all the better for
-it, as I got to merge some additional regression fixes today (some
-sound resume issues, and a couple of v4l regression fixes).
 
-And I merged the ARM defconfig minimization thing, which isn't the
-final word on the whole defconfig issue, but since it removes almost
-200 _thousand_ lines of ARM defconfig noise, it's a pretty big deal.
-I'm hoping that going forward, we'll have much less defconfig noise in
-our diffs as a result of this and hopefully future cleanups. Of
-course, in the short term
-future we'll hopefully see similar shrinkage in the powerpc defconfigs.
-
-Other than that? It's pretty boring. Some MIPS and Ceph updates, and a
-lot of small fixes. The ShortLog (appended) gives some idea of the
-thing.
-
-                    Linus
-
----
-
-Alan Ott (1):
-      HID: Send Report ID when numbered reports are sent over the
-control endpoint.
-
-Alex Deucher (1):
-      drm/radeon/kms: fix shared ddc handling
-
-Alexey Fisher (1):
-      ALSA: usb-audio - Add volume resolution quirk for some Logitech webcams
-
-Andreas Herrmann (1):
-      hwmon: (k8temp) Fix temperature reporting for ASB1 processor revisions
-
-Andreas Steffen (1):
-      xfrm: fix XFRMA_MARK extraction in xfrm_mark_get
-
-Andy Gospodarek (2):
-      bonding: prevent netpoll over bonded interfaces
-      ixgbe: fix panic when shutting down system with WoL enabled
-
-Andy Walls (3):
-      V4L/DVB: tuner: Add a definition for the Philips FQ1236 MK5 NTSC tuner
-      V4L/DVB: tveeprom: Add an entry for tuner code 168: a TCL
-M30WTP-4N-E tuner
-      V4L/DVB: Documentation: Add the Philips FQ1236 MK5 to
-video4linux/CARDLIST.tuner
-
-Anton Blanchard (1):
-      powerpc: Linux cannot run with 0 cores
-
-Arnaud Patard (1):
-      MIPS: Loongson: Define rtc device on MC146818-equipped systems
-
-Artem Bityutskiy (1):
-      VFS: introduce s_dirty accessors
-
-Ben Hutchings (6):
-      ethtool: Fix potential kernel buffer overflow in ETHTOOL_GRXCLSRLALL
-      ethtool: Fix potential user buffer overflow for ETHTOOL_{G, S}RXFH
-      net: Revert "rndis_host: Poll status channel before control channel"
-      usbnet: Set parent device early for netdev_printk()
-      net: Fix definition of netif_vdbg() when VERBOSE_DEBUG is defined
-      IB/qib: Use request_firmware() to load SD7220 firmware
-
-Boojin Kim (1):
-      ARM: S5P: Bug fix on external interrupt for S5P SoCs
-
-Breno Leitao (2):
-      qlge: Replacing add_timer() to mod_timer()
-      qlge: fix a eeh handler to not add a pending timer
-
-Changli Gao (2):
-      splice: direct_splice_actor() should not use pos in sd
-      splice: check f_mode for seekable file
-
-Chris Dearman (1):
-      MIPS: Restore signalling NaN behaviour for abs.[sd]
-
-Christoph Hellwig (3):
-      writeback: remove writeback_inodes_wbc
-      writeback: split writeback_inodes_wb
-      writeback: simplify the write back thread queue
-
-Cody Rester (1):
-      drivers: bluetooth: bluecard_cs.c: Fixed include error, changed
-to linux/io.h
-
-Darrick J. Wong (1):
-      x86, Calgary: Limit the max PHB number to 256
-
-Dave Olson (1):
-      IB/qib: Don't mark VL15 bufs as WC to avoid a rare 7322 chip problem
-
-David Howells (1):
-      Bluetooth: Fix abuse of the preincrement operator
-
-Denis Kirjanov (2):
-      ll_temac: Fix missing iounmaps
-      powerpc/iseries: Fix possible null pointer dereference in
-iSeries_pcibios_fixup_resources
-
-Dominik Brodowski (1):
-      pcmcia: do not initialize the present flag too late.
-
-Eric Dumazet (1):
-      netfilter: ip6t_REJECT: fix a dst leak in ipv6 REJECT
-
-FUJITA Tomonori (1):
-      RDMA/cxgb4: Use the DMA state API instead of the pci equivalents
-
-Flavio Leitner (1):
-      bonding: check if clients MAC addr has changed
-
-Florian Fainelli (2):
-      MIPS: AR7: Use correct UART port type
-      MIPS: AR7: Fix typo in ar7.h
-
-Francisco Jerez (1):
-      drm/ttm: Allocate the page pool manager in the heap.
-
-Guenter Roeck (1):
-      i2c/mips: Fix error return codes from Sibyte i2c bus driver
-
-Guillaume Gaudonville (1):
-      ixgbe: skip non IPv4 packets in ATR filter
-
-Herbert Xu (2):
-      bridge br_multicast: BUG: unable to handle kernel NULL pointer dereference
-      bridge: Clear IPCB before possible entry into IP stack
-
-Hyuk Lee (1):
-      ARM: SAMSUNG: Fix on wrong function name for S5PV210 sdhci0
-
-Ian Armstrong (1):
-      V4L/DVB: ivtv: Add delay to ensure the decoder always restarts
-with a blank screen
-
-Jean Delvare (5):
-      hwmon: (it87) Fix in7 on IT8720F
-      hwmon: (coretemp) Skip duplicate CPU entries
-      hwmon: (coretemp) Properly label the sensors
-      hwmon: Fix autoloading of fschmd on recent Fujitsu machines
-      i2c: Fix probability check
-
-Jesper Nilsson (1):
-      MIPS: Return after handling coprocessor 2 exception
-
-Jesse Barnes (1):
-      drm: correctly update connector DPMS status in drm_fb_helper
-
-Jindrich Makovicka (1):
-      HID: check for HID_QUIRK_IGNORE during probing
-
-Joe Perches (1):
-      MAINTAINERS: fix EDAC-I7CORE file patterns
-
-Johannes Berg (2):
-      iwlwifi: fix multicast
-      powerpc: Fix logic error in fixup_irqs
-
-John Fastabend (3):
-      ixgbe: disable tx engine before disabling tx laser
-      sched: qdisc_reset_all_tx is calling qdisc_reset without qdisc_lock
-      net: decreasing real_num_tx_queues needs to flush qdisc
-
-Jon Mason (1):
-      s2io: resolve statistics issues
-
-Jonathan Rockway (1):
-      HID: add support for CH Eclipse yoke
-
-Julia Lawall (1):
-      HID: eliminate a double lock in debug code
-
-Kulikov Vasiliy (1):
-      net/ne: fix memory leak in ne_drv_probe()
-
-Laurent Pinchart (2):
-      V4L/DVB: uvcvideo: Power line frequency control doesn't support
-GET_MIN/MAX/RES
-      V4L/DVB: uvc: Fix multiple symbols definitions with UVC gadget
-and host drivers
-
-Linus Torvalds (1):
-      Linux 2.6.35-rc5
-
-Luke Yelavich (1):
-      ALSA: hda - Add Macbook 5,2 quirk
-
-Manuel Lauss (1):
-      MIPS: Alchemy: sleepcode without compile-time cputype dependencies
-
-Marek Szyprowski (1):
-      ARM: SAMSUNG: Fix build without SDHCI controllers for S3C64XX
-
-Matt Evans (1):
-      powerpc/perf_event: Fix for power_pmu_disable()
-
-Michael S. Tsirkin (3):
-      vhost: break out of polling loop on error
-      vhost: add unlikely annotations to error path
-      virtio_net: do not reschedule rx refill forever
-
-Michal Marek (1):
-      kbuild: Fix path to scripts/setlocalversion
-
-MyungJoo Ham (1):
-      ARM: S5PV210: Correct clock register properties
-
-Or Gerlitz (1):
-      IPoIB: Fix world-writable child interface control sysfs attributes
-
-Paul E. McKenney (1):
-      powerpc: Fix default_machine_crash_shutdown #ifdef botch
-
-Pawel Osciak (1):
-      V4L/DVB: v4l: mem2mem_testdev: fix g_fmt NULL pointer dereference
-
-Peter Edwards (1):
-      HID: Enable HID_QUIRK_MULTI_INPUT for Retro Adaptor
-
-Peter Kosyh (1):
-      xfrm: fix xfrm by MARK logic
-
-Peter Zijlstra (1):
-      rbtree: Undo augmented trees performance damage and regression
-
-Ralf Baechle (2):
-      MIPS: MT: Fix FPU affinity.
-      NET: SB1250: Initialize .owner
-
-Ralph Campbell (6):
-      IB/qib: Mask hardware error during link reset
-      IB/qib: Clear eager buffer memory for each new process
-      IB/qib: Clear 6120 hardware error register
-      IB/qib: Update 7322 serdes tables
-      IB/qib: Completion queue callback needs to be single threaded
-      IB/qib: Clean up properly if qib_init() fails
-
-Randy Dunlap (3):
-      HID: roccat: fix modules interdependencies
-      fs-writeback: fix kernel-doc warnings
-      linux/net.h: fix kernel-doc warnings
-
-Rusty Russell (1):
-      virtio_net: fix oom handling on tx
-
-Saeed Bishara (1):
-      mv643xx_eth: use sw csum for big packets
-
-Sage Weil (10):
-      ceph: fix map handler error path
-      ceph: fix message memory leak, uninitialized variable
-      ceph: fix crush map update decoding
-      ceph: handle splice_dentry/d_materialize_unique error in
-readdir_prepopulate
-      ceph: delay umount until all mds requests drop inode+dentry refs
-      ceph: fix crush recursion
-      ceph: fix crush CHOOSE_LEAF when type is already a leaf
-      ceph: only release clean, unused caps with mds requests
-      ceph: fix caps usage accounting for import (non-reserved) case
-      ceph: fix crush device 'out' threshold to 1.0, not 0.1
-
-Sam Ravnborg (1):
-      powerpc: Fix userspace build of ptrace.h
-
-Stephen Rothwell (3):
-      powerpc: Fix module building for gcc 4.5 and 64 bit
-      powerpc: Fix compile errors in prom_init_check for gcc 4.5
-      powerpc: Fix feature-fixup tests for gcc 4.5
-
-Steve Wise (3):
-      RDMA/cxgb4: Don't call abort_connection() for active connect failures
-      RDMA/cxgb4: Avoid false GTS CIDX_INC overflows
-      RDMA/cxgb4: Derive smac_idx from port viid
-
-Takashi Iwai (3):
-      ALSA: hda - Fix uninitialized variable
-      ALSA: hda - Enable beep on Realtek codecs with PCI SSID override
-      ALSA: hda - Restore cleared pin controls on resume
-
-Thomas Abraham (1):
-      ARM: S5P6442: Fix PLL setting announce message.
-
-Uwe Kleine-König (1):
-      ARM: reduce defconfigs
-
-Vaibhav Hiremath (3):
-      V4L/DVB: OMAP_VOUT:Build FIX: Rebased against latest DSS2 changes
-      V4L/DVB: OMAP_VOUT: fix: Replaced dma-sg with dma-contig
-      V4L/DVB: OMAP_VOUT: fix: Module params were not working through bootargs
-
-Vasanthakumar Thiagarajan (1):
-      ath9k: Fix bug in starting ani
-
-Waldemar Brodkorb (1):
-      MIPS: BCM47xx: Add NVRAM support devices
-
-Wey-Yi Guy (1):
-      iwlwifi: set TX_CMD_FLAG_PROT_REQUIRE_MSK in tx_flag
-
-Wu Fengguang (1):
-      vxge: show startup message with KERN_INFO
-
-Wu Zhangjin (13):
-      MIPS: Loongson: CS5536: Add missing RDMSRs for IDE and USB
-      MIPS: Loongson: Add a missing break statement in CS5536 IDE code
-      MIPS: Loongson: CS5536: Fix ISA support
-      MIPS: Tracing: Merge adjacent #ifdefs with same condition.
-      MIPS: Tracing: Cleanup the arguments passing of prepare_ftrace_return
-      MIPS: Tracing: Cleanup comments
-      MIPS: Tracing: Fix argument passing of the 32bit support with gcc 4.5
-      MIPS: Tracing: Fix 32-bit support with -mmcount-ra-address
-      MIPS: Tracing: Cleanup of instructions used
-      MIPS: Tracing: Reduce the overhead of dynamic Function Tracer
-      MIPS: Tracing: Cleanup of function graph tracer
-      MIPS: Tracing: Cleanup of address space checking
-      MIPS: Oprofile: Fixup of loongson2_exit()
-
-Yang Li (1):
-      powerpc: Disable SPARSE_IRQ by default
-
-Yehuda Sadeh (2):
-      ceph: some endianity fixes
-      ceph: fix caps debugfs entry
-
-Yoichi Yuasa (1):
-      MIPS: AR7, BCM63xx: fix gpio_to_irq() return value
-
-micki (1):
-      HID: ntrig: add support for new firwmare versions
