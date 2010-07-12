@@ -1,71 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755288Ab0GLAIw (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 20:08:52 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:49509 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755127Ab0GLAIu (ORCPT
+	id S1755256Ab0GLAQj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 20:16:39 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:41154 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754518Ab0GLAQh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 20:08:50 -0400
-X-Authority-Analysis: v=1.1 cv=FmZLatDjtfD3C7oE6GdrxaCbsxiNBR9ZXBX9JZchN1o= c=1 sm=0 a=oHObucO0UQQA:10 a=GQCbJdZ--msA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=pGLkceISAAAA:8 a=hBqU3vQJAAAA:8 a=Z4Rwk6OoAAAA:8 a=swR7W9_4ddrjJen3iLgA:9 a=u10fKoUQluEoHr266g66r37qU9gA:4 a=CjuIK1q_8ugA:10 a=MSl-tDqOz04A:10 a=4gZ4WExUoD4A:10 a=zRoV-LlUuCdadAwS:21 a=CKr2PT_X6wZXI9PF:21 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Sun, 11 Jul 2010 19:10:22 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Dan Carpenter <error27@gmail.com>, Paul Menage <menage@google.com>,
-        Li Zefan <lizf@cn.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] cgroups: save space for the terminator
-Message-ID: <20100712001022.GA6832@hallyn.com>
-References: <20100710105429.GW19184@bicker>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100710105429.GW19184@bicker>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Sun, 11 Jul 2010 20:16:37 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Mon, 12 Jul 2010 09:11:55 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Munehiro Ikeda <m-ikeda@ds.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
+        Andrea Righi <righi.andrea@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+        balbir@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH 02/11] blkiocg async: The main part of iotrack
+Message-Id: <20100712091155.c379cfe4.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C37AB74.7030401@ds.jp.nec.com>
+References: <4C369009.80503@ds.jp.nec.com>
+	<4C369452.2070103@ds.jp.nec.com>
+	<20100709163552.3eef1d62.kamezawa.hiroyu@jp.fujitsu.com>
+	<4C37AB74.7030401@ds.jp.nec.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Dan Carpenter (error27@gmail.com):
-> The original code didn't leave enough space for a NULL terminator.
-> These strings are copied with strcpy() into fixed length buffers in
-> cgroup_root_from_opts().
->  
-> Signed-off-by: Dan Carpenter <error27@gmail.com>
+On Fri, 09 Jul 2010 19:06:28 -0400
+Munehiro Ikeda <m-ikeda@ds.jp.nec.com> wrote:
 
-Hmm, yes - the fact that kstrndup() allocs len+1 probably threw off
-the author of these original lines.  Thanks for spotting this!
+> OK, we can do it like:
+> 
+> do {
+> 	old =  pc->flags;
+> 	new = old & ((1UL << PAGE_TRACKING_ID_SHIFT) - 1);
+> 	new |= (unsigned long)(id << PAGE_TRACKING_ID_SHIFT);
+> } while (cmpxchg(&pc->flags, old, new)  != old);
+> 
+> 
+> > IIUC, there is an generic version now even if it's heavy.
+> 
+> I couldn't find it out...is there already?  Or you mean we should
+> have generic one?
+> 
 
-Acked-by: Serge E. Hallyn <serge@hallyn.com>
+generic cmpxchg in /include/asm-generic/cmpxchg.h
+But...ahh...in some arch, you can't use cmpxchg, sorry.
+
+How about start from "a new field" for I/O cgroup in page_cgroup ?
+
+struct page_cgroup {
+        unsigned long flags;
+        struct mem_cgroup *mem_cgroup;
+	unsigned short blkio_cgroup_id;
+        struct page *page;
+        struct list_head lru;           /* per cgroup LRU list */
+};
+
+We can consider how we optimize it out, later.
+(And, it's easier to debug and make development smooth.)
+
+For example, If we can create a vmalloced-array of mem_cgroup,
+id->mem_cgroup lookup can be very fast and we can replace
+pc->mem_cgroup link with pc->mem_cgroup_id.
 
 
-> diff --git a/kernel/cgroup.c b/kernel/cgroup.c
-> index 3ac6f5b..a942820 100644
-> --- a/kernel/cgroup.c
-> +++ b/kernel/cgroup.c
-> @@ -1102,7 +1102,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
->  			if (opts->release_agent)
->  				return -EINVAL;
->  			opts->release_agent =
-> -				kstrndup(token + 14, PATH_MAX, GFP_KERNEL);
-> +				kstrndup(token + 14, PATH_MAX - 1, GFP_KERNEL);
->  			if (!opts->release_agent)
->  				return -ENOMEM;
->  		} else if (!strncmp(token, "name=", 5)) {
-> @@ -1123,7 +1123,7 @@ static int parse_cgroupfs_options(char *data, struct cgroup_sb_opts *opts)
->  			if (opts->name)
->  				return -EINVAL;
->  			opts->name = kstrndup(name,
-> -					      MAX_CGROUP_ROOT_NAMELEN,
-> +					      MAX_CGROUP_ROOT_NAMELEN - 1,
->  					      GFP_KERNEL);
->  			if (!opts->name)
->  				return -ENOMEM;
-> _______________________________________________
-> Containers mailing list
-> Containers@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/containers
+> 
+> >> +unsigned long page_cgroup_get_owner(struct page *page);
+> >> +int page_cgroup_set_owner(struct page *page, unsigned long id);
+> >> +int page_cgroup_copy_owner(struct page *npage, struct page *opage);
+> >> +
+> >>   void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat);
+> >>
+> >>   #ifdef CONFIG_SPARSEMEM
+> >> diff --git a/init/Kconfig b/init/Kconfig
+> >> index 2e40f2f..337ee01 100644
+> >> --- a/init/Kconfig
+> >> +++ b/init/Kconfig
+> >> @@ -650,7 +650,7 @@ endif # CGROUPS
+> >>
+> >>   config CGROUP_PAGE
+> >>   	def_bool y
+> >> -	depends on CGROUP_MEM_RES_CTLR
+> >> +	depends on CGROUP_MEM_RES_CTLR || GROUP_IOSCHED_ASYNC
+> >>
+> >>   config MM_OWNER
+> >>   	bool
+> >> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+> >> index 6c00814..69e080c 100644
+> >> --- a/mm/page_cgroup.c
+> >> +++ b/mm/page_cgroup.c
+> >> @@ -9,6 +9,7 @@
+> >>   #include<linux/vmalloc.h>
+> >>   #include<linux/cgroup.h>
+> >>   #include<linux/swapops.h>
+> >> +#include<linux/blk-iotrack.h>
+> >>
+> >>   static void __meminit
+> >>   __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
+> >> @@ -74,7 +75,7 @@ void __init page_cgroup_init_flatmem(void)
+> >>
+> >>   	int nid, fail;
+> >>
+> >> -	if (mem_cgroup_disabled())
+> >> +	if (mem_cgroup_disabled()&&  blk_iotrack_disabled())
+> >>   		return;
+> >>
+> >>   	for_each_online_node(nid)  {
+> >> @@ -83,12 +84,13 @@ void __init page_cgroup_init_flatmem(void)
+> >>   			goto fail;
+> >>   	}
+> >>   	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
+> >> -	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
+> >> -	" don't want memory cgroups\n");
+> >> +	printk(KERN_INFO "please try 'cgroup_disable=memory,blkio' option"
+> >> +	" if you don't want memory and blkio cgroups\n");
+> >>   	return;
+> >>   fail:
+> >>   	printk(KERN_CRIT "allocation of page_cgroup failed.\n");
+> >> -	printk(KERN_CRIT "please try 'cgroup_disable=memory' boot option\n");
+> >> +	printk(KERN_CRIT
+> >> +		"please try 'cgroup_disable=memory,blkio' boot option\n");
+> >>   	panic("Out of memory");
+> >>   }
+> >
+> > Hmm, io-track is always done if blkio-cgroup is used, Right ?
+> 
+> No, iotrack is enabled only when CONFIG_GROUP_IOSCHED_ASYNC=y.
+> If =n, iotrack is disabled even if blkio-cgroup is enabled.
+> 
+
+
+> 
+> > Then, why you have extra config as CONFIG_GROUP_IOSCHED_ASYNC ?
+> > Is it necessary ?
+> 
+> Current purpose of the option is only for debug because it is
+> experimental functionality.
+> It can be removed if this work is completed, or dynamic switch
+> might be useful.
+> 
+> In fact, just "cgroup_disable=memory" is enough for the failure
+> case.  Let me think right messages.
+> 
+
+IMHO, once you add boot-option or sysctl, it's very hard to remove it, lator.
+So, if you think you'll remove it lator, don't add it or just add CONFIG.
+
+Regards,
+-Kame
+
