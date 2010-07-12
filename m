@@ -1,72 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756229Ab0GLQ2s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 12:28:48 -0400
-Received: from LUNGE.MIT.EDU ([18.54.1.69]:54887 "EHLO lunge.queued.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755913Ab0GLQ2r convert rfc822-to-8bit (ORCPT
+	id S1756115Ab0GLQia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 12:38:30 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:32826 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab0GLQi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 12:28:47 -0400
-Date: Tue, 13 Jul 2010 20:05:41 +0000
-From: Andres Salomon <dilinger@queued.net>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
-        linux-kernel@vger.kernel.org, davem@davemloft.net
-Subject: Re: [PATCH] sparc: move is_root_node from private header to of.h
-Message-ID: <20100713200541.0dc8d0be@debxo>
-In-Reply-To: <AANLkTinVpBjQQa93DZ17ULQdspDByGV8h037bVJ2qxGC@mail.gmail.com>
-References: <20100713094226.33b421dd@debxo>
-	<AANLkTinVpBjQQa93DZ17ULQdspDByGV8h037bVJ2qxGC@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.6; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 12 Jul 2010 12:38:27 -0400
+Date: Mon, 12 Jul 2010 12:38:26 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: XFS status update for June 2010
+Message-ID: <20100712163826.GA17164@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010 09:53:04 -0600
-Grant Likely <grant.likely@secretlab.ca> wrote:
+The month of June saw a few important bug fixes for the Linux 2.6.35
+release candidates.  That includes ensuring that files used for the
+swapext ioctl are writable to the user, and doing proper validation
+of inodes coming from untrusted sources, such as NFS exporting and
+the open by handle system calls.  The main work however has been
+focused on development for the Linux 2.6.36 merge window, including
+merging various patches that have been out on the mainline list
+for a long time.  Highlights include further performance improvements
+for sync heavy metadata workloads, stack space reduction in the
+writeback path and improvements of the XFS tracing infrastructure.
+Also after some discussion the remaining hooks for DMAPI are going
+to be dropped in mainline.   As a replacement a tree containing
+full DMAPI support with a slightly cleaner XFS interaction will be
+hosted by SGI.
 
-> On Tue, Jul 13, 2010 at 3:42 AM, Andres Salomon <dilinger@queued.net>
-> wrote:
-> >
-> > Make is_root_node available for all archs to use, as it's not
-> > PROM-specific. Also rename it to of_is_root_node, and a few other
-> > minor changes for style/consistency.
-> >
-> > Signed-off-by: Andres Salomon <dilinger@queued.net>
-> > ---
-> >  arch/sparc/kernel/prom.h        |    8 --------
-> >  arch/sparc/kernel/prom_64.c     |    6 +++---
-> >  arch/sparc/kernel/prom_common.c |    2 +-
-> >  include/linux/of.h              |    8 ++++++++
-> >  4 files changed, 12 insertions(+), 12 deletions(-)
-> [...]
-> > diff --git a/include/linux/of.h b/include/linux/of.h
-> > index a367e19..b38cdf7 100644
-> > --- a/include/linux/of.h
-> > +++ b/include/linux/of.h
-> > @@ -97,6 +97,14 @@ extern struct device_node *of_node_get(struct
-> > device_node *node); extern void of_node_put(struct device_node
-> > *node); #endif
-> >
-> > +static inline bool of_is_root_node(const struct device_node *node)
-> > +{
-> > +       if (!node)
-> > +               return false;
-> > +
-> > +       return (node->parent == NULL);
-> > +}
-> 
-> Are you okay if I shorten this to?
-> 
-> +static inline bool of_is_root_node(const struct device_node *node)
-> +{
-> +       return (node && (node->parent == NULL));
-> +}
-> 
-> g.
-
-It's fine with me.
-
+On the userspace side June was a rather slow month, with no updates
+to xfsprogs and xfsdump at all, and just one new test case and a cleanup
+applied to xfstests.
