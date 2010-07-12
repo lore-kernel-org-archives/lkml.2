@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754765Ab0GLGgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 02:36:04 -0400
-Received: from e28smtp06.in.ibm.com ([122.248.162.6]:35331 "EHLO
-	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754171Ab0GLGf6 (ORCPT
+	id S1755097Ab0GLGgM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 02:36:12 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:47856 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754290Ab0GLGf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 02:35:58 -0400
+	Mon, 12 Jul 2010 02:35:59 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
         corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
         linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V16 04/12] vfs: Allow handle based open on symlinks
-Date: Mon, 12 Jul 2010 12:05:37 +0530
-Message-Id: <1278916545-19751-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V16 02/12] vfs: Add name to file handle conversion support
+Date: Mon, 12 Jul 2010 12:05:35 +0530
+Message-Id: <1278916545-19751-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.rc1
 In-Reply-To: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,77 +24,197 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch update may_open to allow handle based open on symlinks.
-The file handle based API use file descritor returned from open_by_handle_at
-to do different file system operations. To find the link target name we
-need to get a file descriptor on symlinks.
-
-We should be able to read the link target using file handle. The exact
-usecase is with respect to implementing READLINK operation on a
-userspace NFS server. The request contain the file handle and the
-response include target name.
+The file handle also include mount id which can be used
+to lookup file system specific information such as uuid
+in /proc/<pid>mountinfo
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c         |   10 +++++++++-
- fs/open.c          |    9 ++++++++-
- include/linux/fs.h |    1 +
- 3 files changed, 18 insertions(+), 2 deletions(-)
+ fs/open.c                |  124 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h       |    9 +++
+ include/linux/syscalls.h |    5 ++-
+ 3 files changed, 137 insertions(+), 1 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 4d590a3..a6a8093 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1456,7 +1456,15 @@ int may_open(struct path *path, int acc_mode, int flag)
- 
- 	switch (inode->i_mode & S_IFMT) {
- 	case S_IFLNK:
--		return -ELOOP;
-+		/*
-+		 * Allow only if acc_mode contain
-+		 * open link request and read request.
-+		 */
-+		if (acc_mode != (MAY_OPEN_LINK | MAY_READ))
-+			return -ELOOP;
-+		if (flag != O_RDONLY)
-+			return -ELOOP;
-+		break;
- 	case S_IFDIR:
- 		if (acc_mode & MAY_WRITE)
- 			return -EISDIR;
 diff --git a/fs/open.c b/fs/open.c
-index df5d21e..afb089e 100644
+index 5463266..7ad8f28 100644
 --- a/fs/open.c
 +++ b/fs/open.c
-@@ -1268,8 +1268,15 @@ static long do_sys_open_by_handle(int mountdirfd,
- 	 */
- 	if (open_flag & __O_SYNC)
- 		open_flag |= O_DSYNC;
+@@ -29,6 +29,7 @@
+ #include <linux/falloc.h>
+ #include <linux/fs_struct.h>
+ #include <linux/ima.h>
++#include <linux/exportfs.h>
+ 
+ #include "internal.h"
+ 
+@@ -1040,3 +1041,126 @@ int nonseekable_open(struct inode *inode, struct file *filp)
+ }
+ 
+ EXPORT_SYMBOL(nonseekable_open);
++
++#ifdef CONFIG_EXPORTFS
++/* limit the handle size to some value */
++#define MAX_HANDLE_SZ 4096
++static long do_sys_name_to_handle(struct path *path,
++				  struct file_handle __user *ufh)
++{
++	long retval;
++	int handle_size;
++	struct file_handle f_handle;
++	struct file_handle *handle = NULL;
++
++	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle))) {
++		retval = -EFAULT;
++		goto err_out;
++	}
++	if (f_handle.handle_size > MAX_HANDLE_SZ) {
++		retval = -EINVAL;
++		goto err_out;
++	}
++	handle = kmalloc(sizeof(struct file_handle) + f_handle.handle_size,
++			 GFP_KERNEL);
++	if (!handle) {
++		retval = -ENOMEM;
++		goto err_out;
++	}
++
++	/* convert handle size to  multiple of sizeof(u32) */
++	handle_size = f_handle.handle_size >> 2;
++
++	/* we ask for a non connected handle */
++	retval = exportfs_encode_fh(path->dentry,
++				    (struct fid *)handle->f_handle,
++				    &handle_size,  0);
++	/* convert handle size to bytes */
++	handle_size *= sizeof(u32);
++	handle->handle_type = retval;
++	handle->handle_size = handle_size;
++	/* copy the mount id */
++	handle->mnt_id = path->mnt->mnt_id;
++	if (handle_size > f_handle.handle_size) {
++		/*
++		 * set the handle_size to zero so we copy only
++		 * non variable part of the file_handle
++		 */
++		handle_size = 0;
++		retval = -EOVERFLOW;
++	} else
++		retval = 0;
++	if (copy_to_user(ufh, handle,
++			 sizeof(struct file_handle) + handle_size))
++		retval = -EFAULT;
++
++	kfree(handle);
++err_out:
++	return retval;
++}
++
++/**
++ * sys_name_to_handle_at: convert name to handle
++ * @dfd: directory relative to which name is interpreted if not absolute
++ * @name: name that should be converted to handle.
++ * @handle: resulting file handle
++ * @flag: flag value to indicate whether to follow symlink or not
++ *
++ * @handle->handle_size indicate the space available to store the
++ * variable part of the file handle in bytes. If there is not
++ * enough space, the field is updated to return the minimum
++ * value required.
++ */
++SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
++		struct file_handle __user *, handle, int, flag)
++{
++
++	int follow;
++	int fput_needed;
++	long ret = -EINVAL;
++	struct path path, *pp;
++	struct file *file = NULL;
++
++	if ((flag & ~AT_SYMLINK_FOLLOW) != 0)
++		goto err_out;
++
++	if (name == NULL && dfd != AT_FDCWD) {
++		file = fget_light(dfd, &fput_needed);
++		if (file) {
++			pp = &file->f_path;
++			ret = 0;
++		} else
++			ret = -EBADF;
++	} else {
++		follow = (flag & AT_SYMLINK_FOLLOW) ? LOOKUP_FOLLOW : 0;
++		ret = user_path_at(dfd, name, follow, &path);
++		pp = &path;
++	}
++	if (ret)
++		goto err_out;
 +	/*
-+	 * Handle based API allow open on a symlink
++	 * We need t make sure wether the file system
++	 * support decoding of the file handle
 +	 */
-+	if (S_ISLNK(path->dentry->d_inode->i_mode))
-+		acc_mode = MAY_OPEN_LINK;
++	if (!pp->mnt->mnt_sb->s_export_op ||
++	    !pp->mnt->mnt_sb->s_export_op->fh_to_dentry) {
++		ret = -EOPNOTSUPP;
++		goto out_path;
++	}
++	ret = do_sys_name_to_handle(pp, handle);
++
++out_path:
++	if (file)
++		fput_light(file, fput_needed);
 +	else
-+		acc_mode = MAY_OPEN;
- 
--	acc_mode = MAY_OPEN | ACC_MODE(open_flag);
-+	acc_mode |= ACC_MODE(open_flag);
- 
- 	/* O_TRUNC implies we need access checks for write permissions */
- 	if (open_flag & O_TRUNC)
++		path_put(&path);
++err_out:
++	return ret;
++}
++#else
++SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
++		struct file_handle __user *, handle, int, flag)
++{
++	return -ENOSYS;
++}
++#endif
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index a458b4e..08afa72 100644
+index 471e1ff..0e7cf4c 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -53,6 +53,7 @@ struct inodes_stat_t {
- #define MAY_APPEND 8
- #define MAY_ACCESS 16
- #define MAY_OPEN 32
-+#define MAY_OPEN_LINK 64
+@@ -949,6 +949,15 @@ struct file {
+ 	unsigned long f_mnt_write_state;
+ #endif
+ };
++
++struct file_handle {
++	int mnt_id;
++	int handle_size;
++	int handle_type;
++	/* file identifier */
++	unsigned char f_handle[0];
++};
++
+ extern spinlock_t files_lock;
+ #define file_list_lock() spin_lock(&files_lock);
+ #define file_list_unlock() spin_unlock(&files_lock);
+diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
+index 7f614ce..9d6d6e3 100644
+--- a/include/linux/syscalls.h
++++ b/include/linux/syscalls.h
+@@ -61,6 +61,7 @@ struct robust_list_head;
+ struct getcpu_cache;
+ struct old_linux_dirent;
+ struct perf_event_attr;
++struct file_handle;
  
- /*
-  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
+ #include <linux/types.h>
+ #include <linux/aio_abi.h>
+@@ -823,5 +824,7 @@ asmlinkage long sys_mmap_pgoff(unsigned long addr, unsigned long len,
+ 			unsigned long prot, unsigned long flags,
+ 			unsigned long fd, unsigned long pgoff);
+ asmlinkage long sys_old_mmap(struct mmap_arg_struct __user *arg);
+-
++asmlinkage long sys_name_to_handle_at(int dfd, const char __user *name,
++				      struct file_handle __user *handle,
++				      int flag);
+ #endif
 -- 
 1.7.2.rc1
 
