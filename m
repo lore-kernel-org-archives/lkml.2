@@ -1,63 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab0GLQ6L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 12:58:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45178 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752528Ab0GLQ6J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 12:58:09 -0400
-Date: Mon, 12 Jul 2010 18:58:07 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT] HID
-Message-ID: <alpine.LNX.2.00.1007121855180.4741@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756236Ab0GLQ6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 12:58:40 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:62091 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122Ab0GLQ6i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 12:58:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=nHFEqhStBehZXERoO9rfvBTqctLKt2dZR0MduGc/b038tBd+cfOLBaoMbeh0AyR5+m
+         QMKTIbbEzRl6Xyp5In+aeX/IZe144Ed0YXdd1k4Izj3K4UpMdiLoBDaqOjlmj4wGjSrO
+         g+pE0VqwfNzeUpUfL6K7tuKECp5Rk34/TNsVY=
+Message-ID: <4C3B49B4.20300@panasas.com>
+Date: Mon, 12 Jul 2010 19:58:28 +0300
+From: Benny Halevy <bhalevy@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Michal Marek <mmarek@suse.cz>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.35-rc4 - CONFIG_LOCALVERSION ignored?
+References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com> <201007052325.56971.rjw@sisk.pl>
+In-Reply-To: <201007052325.56971.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Jul. 06, 2010, 0:25 +0300, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> On Monday, July 05, 2010, Linus Torvalds wrote:
+>> Hey everybody, there's finally a new -rc out there..
+>>
+>> I've been back online for a week, and at least judging by the kinds of
+>> patches and pull requests I've been getting, I have to say that I
+>> think that having been strict for -rc3 ended up working out pretty
+>> well. The diffstat of rc3..rc4 looks quite reasonable, despite the
+>> longer window between rc's. And while there were certainly some things
+>> that needed fixing, I'm hoping that we'll have a timely 2.6.35 release
+>> despite my vacation (my longest time away from the kernel in many
+>> years, I do believe - I followed email on a cellphone, but did not a
+>> single kernel compile, and had a great time under water).
+>>
+>> So go out and test -rc4. It fixes a number of regressions, a couple of
+>> them harking back to from before 2.6.34. Networking, cfq, i915 and
+>> radeo. And filesystem writeback performance issues, etc. It's all
+>> good.
+> 
+> Hmm.  Am I dong anything particularly wrong, or is CONFIG_LOCALVERSION ignored
+> now, as it seems?
 
-please pull from 'for-linus' branch
+Not working for me either in 2.6.35-rc4.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+Note that I have a localversion-xxxx file in my root directory
+which is also ignored, regardless of CONFIG_LOCALVERSION
+and CONFIG_LOCALVERSION_AUTO.
 
-to receive the fixes below. Most of the patches are simple USB ID 
-additions, but the fix from Alan Ott fixes a bug introduced by 
-a8ab5d58b023 (" HID: hidraw: Use Interrupt Endpoint for OUT Transfers if 
-Available"), so we'd rather have that fixed for .35 still.
+Benny
 
-Thanks.
+> 
+> Rafael
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Alan Ott (1):
-      HID: Send Report ID when numbered reports are sent over the control endpoint.
-
-Jindrich Makovicka (1):
-      HID: check for HID_QUIRK_IGNORE during probing
-
-Jonathan Rockway (1):
-      HID: add support for CH Eclipse yoke
-
-Julia Lawall (1):
-      HID: eliminate a double lock in debug code
-
-Peter Edwards (1):
-      HID: Enable HID_QUIRK_MULTI_INPUT for Retro Adaptor
-
-Randy Dunlap (1):
-      HID: roccat: fix modules interdependencies
-
-micki (1):
-      HID: ntrig: add support for new firwmare versions
-
- drivers/hid/Kconfig             |    1 +
- drivers/hid/hid-core.c          |   21 ++++++++++++++++++++-
- drivers/hid/hid-debug.c         |    2 +-
- drivers/hid/hid-ids.h           |   21 +++++++++++++++++++++
- drivers/hid/hid-ntrig.c         |   36 ++++++++++++++++++++++++++++++++++++
- drivers/hid/usbhid/hid-core.c   |   13 ++++++++++---
- drivers/hid/usbhid/hid-quirks.c |    2 ++
- 7 files changed, 91 insertions(+), 5 deletions(-)
