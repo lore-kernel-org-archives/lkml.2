@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755599Ab0GLGg1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 02:36:27 -0400
-Received: from e28smtp05.in.ibm.com ([122.248.162.5]:32894 "EHLO
-	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956Ab0GLGgH (ORCPT
+	id S1755553Ab0GLGgX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 02:36:23 -0400
+Received: from e28smtp01.in.ibm.com ([122.248.162.1]:44285 "EHLO
+	e28smtp01.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754298Ab0GLGf7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 02:36:07 -0400
+	Mon, 12 Jul 2010 02:35:59 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
         corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
         linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V16 09/12] x86: Add new syscalls for x86_64
-Date: Mon, 12 Jul 2010 12:05:42 +0530
-Message-Id: <1278916545-19751-10-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V16 06/12] vfs: Support null pathname in faccessat
+Date: Mon, 12 Jul 2010 12:05:39 +0530
+Message-Id: <1278916545-19751-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.rc1
 In-Reply-To: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,117 +24,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add sys_name_to_handle_at and sys_open_by_handle_at syscalls
-for x86_64
+This enables to use faccessat to get the access check details
+from a file descriptor pointing to the file. This can be used
+with open_by_handle syscall that returns a file descriptor.
 
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- arch/x86/ia32/ia32entry.S        |    2 ++
- arch/x86/include/asm/unistd_64.h |    4 ++++
- fs/compat.c                      |   11 +++++++++++
- fs/open.c                        |   20 ++++++++++----------
- include/linux/fs.h               |    1 +
- 5 files changed, 28 insertions(+), 10 deletions(-)
+ fs/open.c |   29 +++++++++++++++++++++--------
+ 1 files changed, 21 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/ia32/ia32entry.S b/arch/x86/ia32/ia32entry.S
-index e790bc1..99f9623 100644
---- a/arch/x86/ia32/ia32entry.S
-+++ b/arch/x86/ia32/ia32entry.S
-@@ -842,4 +842,6 @@ ia32_sys_call_table:
- 	.quad compat_sys_rt_tgsigqueueinfo	/* 335 */
- 	.quad sys_perf_event_open
- 	.quad compat_sys_recvmmsg
-+	.quad sys_name_to_handle_at
-+	.quad compat_sys_open_by_handle_at	/* 339 */
- ia32_syscall_end:
-diff --git a/arch/x86/include/asm/unistd_64.h b/arch/x86/include/asm/unistd_64.h
-index ff4307b..6afd818 100644
---- a/arch/x86/include/asm/unistd_64.h
-+++ b/arch/x86/include/asm/unistd_64.h
-@@ -663,6 +663,10 @@ __SYSCALL(__NR_rt_tgsigqueueinfo, sys_rt_tgsigqueueinfo)
- __SYSCALL(__NR_perf_event_open, sys_perf_event_open)
- #define __NR_recvmmsg				299
- __SYSCALL(__NR_recvmmsg, sys_recvmmsg)
-+#define __NR_name_to_handle_at			300
-+__SYSCALL(__NR_name_to_handle_at, sys_name_to_handle_at)
-+#define __NR_open_by_handle_at			301
-+__SYSCALL(__NR_open_by_handle_at, sys_open_by_handle_at)
- 
- #ifndef __NO_STUBS
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/fs/compat.c b/fs/compat.c
-index 6490d21..dc662ac 100644
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -2332,3 +2332,14 @@ asmlinkage long compat_sys_timerfd_gettime(int ufd,
- }
- 
- #endif /* CONFIG_TIMERFD */
-+
-+/*
-+ * Exactly like fs/open.c:sys_open_by_handle_at(), except that it
-+ * doesn't set the O_LARGEFILE flag.
-+ */
-+asmlinkage long
-+compat_sys_open_by_handle_at(int mountdirfd,
-+			struct file_handle __user *handle, int flags)
-+{
-+	return do_sys_open_by_handle(mountdirfd, handle, flags);
-+}
 diff --git a/fs/open.c b/fs/open.c
-index a87c654..7a11b48 100644
+index afb089e..a87c654 100644
 --- a/fs/open.c
 +++ b/fs/open.c
-@@ -1217,8 +1217,8 @@ out_err:
- 	return ERR_PTR(retval);
- }
- 
--static long do_sys_open_by_handle(int mountdirfd,
--				  struct file_handle __user *ufh, int open_flag)
-+long do_sys_open_by_handle(int mountdirfd,
-+			   struct file_handle __user *ufh, int open_flag)
+@@ -288,9 +288,10 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
  {
- 	long retval = 0;
- 	int fd, acc_mode;
-@@ -1327,6 +1327,14 @@ out_handle:
- out_err:
- 	return retval;
- }
-+#else
-+long do_sys_open_by_handle(int mountdirfd,
-+			   struct file_handle __user *ufh, int open_flag)
-+{
-+
-+	return -ENOSYS;
-+}
-+#endif
+ 	const struct cred *old_cred;
+ 	struct cred *override_cred;
+-	struct path path;
++	struct file *file = NULL;
++	struct path path, *pp;
+ 	struct inode *inode;
+-	int res;
++	int res, fput_needed;
  
- /**
-  * sys_open_by_handle_at: Open the file handle
-@@ -1351,11 +1359,3 @@ SYSCALL_DEFINE3(open_by_handle_at, int, mountdirfd,
- 	ret = do_sys_open_by_handle(mountdirfd, handle, flags);
- 	return ret;
- }
--#else
--SYSCALL_DEFINE3(open_by_handle_at, int, mountdirfd,
--		struct file_handle __user *, handle,
--		int, flags)
--{
--	return -ENOSYS;
--}
--#endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 08afa72..3103c39 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -1929,6 +1929,7 @@ extern struct file * dentry_open(struct dentry *, struct vfsmount *, int,
- 				 const struct cred *);
- extern int filp_close(struct file *, fl_owner_t id);
- extern char * getname(const char __user *);
-+extern long do_sys_open_by_handle(int, struct file_handle __user *, int);
+ 	if (mode & ~S_IRWXO)	/* where's F_OK, X_OK, W_OK, R_OK? */
+ 		return -EINVAL;
+@@ -312,12 +313,21 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	}
  
- /* fs/ioctl.c */
+ 	old_cred = override_creds(override_cred);
+-
+-	res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
++	if (filename == NULL  && dfd != AT_FDCWD) {
++		file = fget_light(dfd, &fput_needed);
++		if (file) {
++			pp = &file->f_path;
++			res = 0;
++		} else
++			res = -EBADF;
++	} else {
++		res = user_path_at(dfd, filename, LOOKUP_FOLLOW, &path);
++		pp = &path;
++	}
+ 	if (res)
+ 		goto out;
  
+-	inode = path.dentry->d_inode;
++	inode = pp->dentry->d_inode;
+ 
+ 	if ((mode & MAY_EXEC) && S_ISREG(inode->i_mode)) {
+ 		/*
+@@ -325,7 +335,7 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 		 * with the "noexec" flag.
+ 		 */
+ 		res = -EACCES;
+-		if (path.mnt->mnt_flags & MNT_NOEXEC)
++		if (pp->mnt->mnt_flags & MNT_NOEXEC)
+ 			goto out_path_release;
+ 	}
+ 
+@@ -343,11 +353,14 @@ SYSCALL_DEFINE3(faccessat, int, dfd, const char __user *, filename, int, mode)
+ 	 * inherently racy and know that the fs may change
+ 	 * state before we even see this result.
+ 	 */
+-	if (__mnt_is_readonly(path.mnt))
++	if (__mnt_is_readonly(pp->mnt))
+ 		res = -EROFS;
+ 
+ out_path_release:
+-	path_put(&path);
++	if (file)
++		fput_light(file, fput_needed);
++	else
++		path_put(&path);
+ out:
+ 	revert_creds(old_cred);
+ 	put_cred(override_cred);
 -- 
 1.7.2.rc1
 
