@@ -1,106 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752002Ab0GLTfh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 15:35:37 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52438 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751352Ab0GLTff convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 15:35:35 -0400
+	id S1752296Ab0GLThn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 15:37:43 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:48564 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab0GLThm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 15:37:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=amU1ULUhci52fDsuRYChJoIsmu2GnC6Gn+IHY//S0hTEsfZzA8ZCGo2iXn/BO0B3hQ
+         Jhs7FpD5+ObhSKGgcCyH7lrIXeHVh6MCLx1oqUnS4sCnfjVtGO/uo8HpCrYqqh98QvM7
+         E/qQ2PJM5WDUdxbt//LNXJJoyaqegC3mloJfI=
+Message-ID: <4C3B6F03.8060708@lwfinger.net>
+Date: Mon, 12 Jul 2010 14:37:39 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1007121510260.10598@xanadu.home>
-References: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
-	<20100603181010.GA25779@flint.arm.linux.org.uk>
-	<1275589230.23384.19.camel@c-dwalke-linux.qualcomm.com>
-	<alpine.LFD.2.00.1006031119440.8175@i5.linux-foundation.org>
-	<20100614083214.GA2104@pengutronix.de>
-	<20100630104043.GG11746@pengutronix.de>
-	<20100712155518.GA24144@pengutronix.de>
-	<AANLkTilhI9O6YwnuAylo_jNgwR8VXmpSVJ1kylIYPCGT@mail.gmail.com>
-	<20100712173228.GC9897@n2100.arm.linux.org.uk>
-	<AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com>
-	<20100712185029.GB14425@pengutronix.de>
-	<AANLkTinOuU-VVXaMwMp69CBp2Y4wxpoWybEQ34H5j0lJ@mail.gmail.com>
-	<alpine.LFD.2.00.1007121510260.10598@xanadu.home>
-Date: Mon, 12 Jul 2010 12:34:59 -0700
-Message-ID: <AANLkTim-O00n9YPv7w4VCKjN-ETLijyTHomWUn4mZtTV@mail.gmail.com>
-Subject: Re: ARM defconfig files
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Eric Miao <eric.miao@canonical.com>, linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Joe Perches <joe@perches.com>
+CC: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Possible false positive from checkpatch.pl
+References: <4C3B5660.8020405@lwfinger.net>	 <1278959315.1501.261.camel@Joe-Laptop.home> <4C3B608B.9010501@lwfinger.net> <1278961381.1501.284.camel@Joe-Laptop.home>
+In-Reply-To: <1278961381.1501.284.camel@Joe-Laptop.home>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 12:17 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
->>
->>    Put another way: I realize that fairly late in the -rc series is
->> actually a really good time to do this, rather than during the merge
->> window itself when things are in flux. However, while it would be a
->> good time to pull this for that reason, it's also a _horrible_ time to
->> pull if it then regresses the defconfig uses, or if it causes horrible
->> problems for linux-next merging etc.
+On 07/12/2010 02:03 PM, Joe Perches wrote:
+> On Mon, 2010-07-12 at 13:35 -0500, Larry Finger wrote:
+>> These are ugly macros that will be eliminated, but for the moment they are in
+>> the code. As I stated in my original email, removing the comma from the
+>> definition and adding it to the code does fix the checkpatch error, but it
+>> should not be necessary.
 >
-> This cannot be any worse than wholesale removal of those files as you
-> were contemplating at some point.  Furthermore, on ARM we have someone
-> providing automatic rebuild of all defconfigs already, so any serious
-> issue should be noticed right away.
+> Hi Larry.
+>
+> Using checkpatch is not necessary.
+>
+> If you want generally conforming kernel style,
+> the macro should not end in a trailing comma.
+>
+> Feel free to ignore the checkpatch message,
+>
+> I think the warning is reasonable, though it
+> could be made more specific.
+>
+> cheers, Joe
+>
+> Maybe something like:
+> ---
+> diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
+> index bd88f11..7e8a3f4 100755
+> --- a/scripts/checkpatch.pl
+> +++ b/scripts/checkpatch.pl
+> @@ -2394,8 +2394,10 @@ sub process {
+>   			}x;
+>   			#print "REST<$rest>  dstat<$dstat>\n";
+>   			if ($rest ne '') {
+> -				if ($rest !~ /while\s*\(/&&
+> -				    $dstat !~ /$exceptions/)
+> +				if ($rest eq ",") {
+> +					ERROR("Macros should not end with a trailing comma\n" . "$here\n$ctx\n");
+> +				} elsif ($rest !~ /while\s*\(/&&
+> +					 $dstat !~ /$exceptions/)
+>   				{
+>   					ERROR("Macros with multiple statements should be enclosed in a do - while loop\n" . "$here\n$ctx\n");
+>   			}
 
-You aren't really answering the question. The thing is, the wholesale
-removal wouldn't happen during the late -rc anyway, and it wouldn't
-cause any merge issues (merge conflicts where the file is just to be
-removed are trivial to take care of).
+That looks good. At least it makes clear what is wrong.
 
-So I'm really asking about the issue of "how does this work during the
-late -rc phase". Where the _timing_ is the important thing.
+Should it be an error, or just a warning?
 
-Because I could as easily pull after 2.6.35 is out. That has it's own
-downsides (with all the merging going on), but at the same time, it's
-clearly the right time for a large change.
-
-So when I ask about timing and "how does this work in late -rc", it's
-really about how safe it is to do now. Because if it isn't very
-obviously safe, I can't pull it.
-
-One part of the "obviously safe" thing is verification for each
-defconfig file that the end result is identical with the reduced
-version. Uwe implied that it was, and that was clearly the intention,
-but was there some explicit verification that yes, the
-before-and-after configurations are 100% the same?
-
-Also, I assume that while it's _mostly_ a transparent change to users,
-it does require that people do "make oldconfig" with the reduced
-defconfig file first, in order to avoid having to answer with the
-defaults. No? And the reduced defconfig files obviously do depend on
-the default in the Kconfig files themselves, so it does have that kind
-of fairly subtle semantic change that may not be entirely obvious or
-easy to notice.
-
-So from a timing standpoint, I just want to be convinced that "late
--rc" really is the right thing. I'm not entirely sure it is, even
-though I do see advantages.
-
-> I think Uwe could provide his script and add it to the kernel tree.
-> Then all architectures could benefit from it.  Having the defconfig
-> files contain only those options which are different from the defaults
-> is certainly more readable, even on x86.
-
-Quite possible. But maintainers would need to be on the lookout of
-people actually using the script, and refusing to apply patches that
-re-introduce the whole big thing.
-
-I also haven't actually seen the script - I don't think Uwe ever
-posted it - so maybe it's some very fragile thing. Hard to judge on no
-real information ;^p
-
-               Linus
+Larry
