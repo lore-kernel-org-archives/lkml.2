@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab0GLOak (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 10:30:40 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53259 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755357Ab0GLOaj (ORCPT
+	id S1755934Ab0GLOhL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 10:37:11 -0400
+Received: from msux-gh1-uea02.nsa.gov ([63.239.65.40]:42010 "EHLO
+	msux-gh1-uea02.nsa.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755190Ab0GLOhI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 10:30:39 -0400
-X-Authority-Analysis: v=1.1 cv=FmZLatDjtfD3C7oE6GdrxaCbsxiNBR9ZXBX9JZchN1o= c=1 sm=0 a=dypDJS46MawA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=yYVPuK6vsqnGe_gb48sA:9 a=iDvGhCBQF3k8ThBnRYkA:7 a=KoylJLFzSurLep3dNYzRBaO82WEA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 10/13]  perf: Re-Add make_absolute_path
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20100712140023.GC25238@ghostprotocols.net>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
-	 <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6>
-	 <20100712140023.GC25238@ghostprotocols.net>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 12 Jul 2010 10:30:36 -0400
-Message-ID: <1278945036.1537.189.camel@gandalf.stny.rr.com>
+	Mon, 12 Jul 2010 10:37:08 -0400
+Subject: Re: [PATCH 06/10] NFSv4: Add label recommended attribute and NFSv4
+ flags
+From: Stephen Smalley <sds@tycho.nsa.gov>
+To: Casey Schaufler <casey@schaufler-ca.com>
+Cc: Kyle Moffett <kyle@moffetthome.net>,
+        "David P. Quigley" <dpquigl@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
+        viro@zeniv.linux.org.uk, matthew.dodd@sparta.com,
+        trond.myklebust@fys.uio.no, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux@tycho.nsa.gov, linux-nfs@vger.kernel.org
+In-Reply-To: <4C3952D6.7040608@schaufler-ca.com>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov>
+	 <1278513086-23964-7-git-send-email-dpquigl@tycho.nsa.gov>
+	 <20100707170058.GD28815@fieldses.org>
+	 <alpine.LRH.2.00.1007080928180.14102@tundra.namei.org>
+	 <1278596363.2494.194.camel@moss-terrapins.epoch.ncsc.mil>
+	 <alpine.LRH.2.00.1007090834190.23354@tundra.namei.org>
+	 <1278684348.2494.223.camel@moss-terrapins.epoch.ncsc.mil>
+	 <AANLkTinUO-xqvQQINTzKLcXnljq-RaN5X6ulEAqvuf0d@mail.gmail.com>
+	 <4C3952D6.7040608@schaufler-ca.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: National Security Agency
+Date: Mon, 12 Jul 2010 10:36:36 -0400
+Message-ID: <1278945396.5221.14.camel@moss-pluto.epoch.ncsc.mil>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-07-12 at 11:00 -0300, Arnaldo Carvalho de Melo wrote:
+On Sat, 2010-07-10 at 22:12 -0700, Casey Schaufler wrote:
+> Kyle Moffett wrote:
+> > ...
+> > Even in local filesystems like ext3 we prefer to turn labels into
+> > numbers, store the number with each inode, and then keep the labels
+> > indexed in a separate datastructure.
+> >   
+> 
+> I don't know what system you're talking about, but that notion
+> was pretty well dispelled in the late 1980's, after the SystemV/MLS
+> and SecureWare examples.
 
-> Also please remove the xstrdup and die calls from this function, we're
-> trying to get rid of all such 'panic' like functions so that we can
-> librarize as much code as possible.
->  
+SELinux did that too before switching to using xattrs for label storage.
+Persistent security identifier (PSID) associated with each inode (either
+stored directly in the inode in the original kernel patches or
+associated through a separate mapping in the LSM-based implementation),
+with a mapping from PSID to context stored in a mapping within each
+filesystem.  Allowed you to keep the labels with the volume but avoided
+storing the same label multiple times.
 
-What I found useful with the "die" calls with trace-cmd is that I made
-them weak, and then they could be overwritten by apps. Thus, in
-kernelshark, the die and warning functions produce pop-ups and bug
-reports.
+The xattr based implementation can sometimes share storage but only when
+the xattr is stored in the additional block (not when they are stored
+inline) and only if all of the xattrs on the file are identical.
 
--- Steve
+> > Cheers,
+> > Kyle Moffett
+> >
+> >
+> >   
 
+-- 
+Stephen Smalley
+National Security Agency
 
