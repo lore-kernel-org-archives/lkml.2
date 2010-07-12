@@ -1,54 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab0GLVyd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 17:54:33 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55795 "EHLO
+	id S1754775Ab0GLV5T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 17:57:19 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42245 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754682Ab0GLVyb convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 17:54:31 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1007121619100.10598@xanadu.home>
-References: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
-	<20100603181010.GA25779@flint.arm.linux.org.uk>
-	<1275589230.23384.19.camel@c-dwalke-linux.qualcomm.com>
-	<alpine.LFD.2.00.1006031119440.8175@i5.linux-foundation.org>
-	<20100614083214.GA2104@pengutronix.de>
-	<20100630104043.GG11746@pengutronix.de>
-	<20100712155518.GA24144@pengutronix.de>
-	<AANLkTilhI9O6YwnuAylo_jNgwR8VXmpSVJ1kylIYPCGT@mail.gmail.com>
-	<20100712173228.GC9897@n2100.arm.linux.org.uk>
-	<AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com>
-	<20100712200604.GD9897@n2100.arm.linux.org.uk>
-	<alpine.LFD.2.00.1007121619100.10598@xanadu.home>
-Date: Mon, 12 Jul 2010 14:54:24 -0700
-Message-ID: <AANLkTikxRqg2bFiCr7zwvU0pQ5LPGVdHiFdnQowVx3h6@mail.gmail.com>
-Subject: Re: ARM defconfig files
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Eric Miao <eric.miao@canonical.com>, linux-omap@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	by vger.kernel.org with ESMTP id S1754073Ab0GLV5S (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 17:57:18 -0400
+Date: Mon, 12 Jul 2010 14:56:43 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] writeback: avoid unnecessary calculation of bdi
+ dirty thresholds
+Message-Id: <20100712145643.a944c495.akpm@linux-foundation.org>
+In-Reply-To: <20100711021748.879183413@intel.com>
+References: <20100711020656.340075560@intel.com>
+	<20100711021748.879183413@intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 1:29 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+On Sun, 11 Jul 2010 10:06:59 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
+
+> +void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
 >
-> For the record, I do support Uwe's work too.  I do wish it could go in
-> now so that from that point going forward we could only focus on
-> improving the thing instead of having to care about implications during
-> the merge window.
+> ...
+>
+> +unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
+> +			       unsigned long dirty)
 
-Ok, I merged it. I do love the diffstat. And while it may not be
-optimal or a final solution, nobody seems to hate it either.
+It'd be nice to have some documentation for these things.  They're
+non-static, non-obvious and are stuffed to the gills with secret magic
+numbers.
 
-           Linus
