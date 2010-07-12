@@ -1,125 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756343Ab0GLQWI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 12:22:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755823Ab0GLQWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 12:22:06 -0400
-Date: Mon, 12 Jul 2010 12:21:40 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Hannes Reinecke <hare@suse.de>, yehuda@hq.newdream.net
-Subject: Re: Dynamic Debug broken on 2.6.35-rc3?
-Message-ID: <20100712162140.GA2925@redhat.com>
-References: <201007011744.19564.trenn@suse.de> <201007091303.08693.trenn@suse.de> <20100709133019.GA2856@redhat.com> <201007121624.17543.trenn@suse.de>
+	id S1756096Ab0GLQYn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 12:24:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55949 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752126Ab0GLQYm (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 12:24:42 -0400
+Message-ID: <4C3B40F3.6070009@kernel.org>
+Date: Mon, 12 Jul 2010 09:21:07 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007121624.17543.trenn@suse.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Setup early console as early as possible
+References: <4C3A3B27.7020009@oracle.com> <4C3AD94C.7070807@cs.helsinki.fi> <4C3B38F7.1050400@zytor.com>
+In-Reply-To: <4C3B38F7.1050400@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4C3B418F.00FC,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 04:24:16PM +0200, Thomas Renninger wrote:
-> Hi,
+On 07/12/2010 08:47 AM, H. Peter Anvin wrote:
+> On 07/12/2010 01:58 AM, Pekka Enberg wrote:
+>> Hi Yinghai,
+>>
+>> Yinghai Lu wrote:
+>>> Analyze "console=uart8250,io,0x3f8,115200n8" in
+>>> i386_start_kernel/x86_64_start_kernel,
+>>> and call setup_early_serial8250_console() to init early serial console.
+>>>
+>>> only can handle io port kind of 8250. because mmio need ioremap.
+>>>
+>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>>
+>> What's the purpose of this patch? Does it make my early boot I/O patch
+>> obsolete?
+>>
+>>             Pekka
 > 
-> it's this one:
-> commit ff49d74ad383f54041378144ca1a229ee9aeaa59
-> Author: Yehuda Sadeh <yehuda@hq.newdream.net>
-> Date:   Sat Jul 3 13:07:35 2010 +1000
+> No, they're complementary.  Your patch serial-port enables the RM
+> kernel, whereas Yinghai pushes the initialization earlier in the PM kernel.
+
+yes. cover more range.
+
+Can you consider to ask Pekka to anaylze "console=uart8250,io, 0x3f8,115200n8" instead?
+
+it looks like we can remove "earlyprintk=ttyS0,115200", or "earlyprintk=serial" etc.
+
+earlycon=uart8250 or console=uart8250 should be better than earlyprintk.
+because it is shared between different archs already.
+
 > 
-> which touches same code than Jason's fix does.
-> Possibly this patch also addresses (only parts of?) this problem?
-> Jason: Do you mind having a look at the latest git version and review
-> Yehuda's  and adjust your patch if still necessary.
+> Incidentally, Yinghai: it would be possible to push even an MMIO
+> reference earlier by reserving a fixmap slot for the early console.  I'm
+> not sure if it's worth it, though.
 
-So Yehuda's patch is meant to address this issue. I would still move the
-remove code to free_module(), for the case that load_module() fails as
-follows (on top of Yehuda's patch):
+in setup_arch() for x86, now we have
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- kernel/module.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+        /* VMI may relocate the fixmap; do this before touching ioremap area */
+        vmi_init();
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 5d2d281..6c56282 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -787,7 +787,6 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
- 
- 	/* Store the name of the last unloaded module for diagnostic purposes */
- 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
--	ddebug_remove_module(mod->name);
- 
- 	free_module(mod);
- 	return 0;
-@@ -1550,6 +1549,9 @@ static void free_module(struct module *mod)
- 	remove_sect_attrs(mod);
- 	mod_kobject_remove(mod);
- 
-+	/* Remove dynamic debug info */
-+	ddebug_remove_module(mod->name);
-+
- 	/* Arch-specific cleanup. */
- 	module_arch_cleanup(mod);
- 
--- 
-1.7.1
+        /* OFW also may relocate the fixmap */
+        olpc_ofw_detect();
 
-Also, the patch i wrote addressed the issue of duplicate "module" names.
-Although you can't have duplicate names of loadable modules. Dynamic
-debug also refers to built in vmlinux sections by using
-"KBUILD_MODNAME". These are not necessarily globally unique. Thus, we
-probably should be using a better globally unique identifier in the code.
-However, that improvement can probably wait...
+        early_trap_init();
+        early_cpu_init();
+        early_ioremap_init()
 
-I will re-post the above as a separate thread. Also, I should probably
-post a patch to add myself to the MAINTAINERS file, since I didn't see
-Yehuda's patch until now...
+so may need to move these 
+	vmi_init()
+	olpc_ofw_detect()
+	early_ioremap_init()
 
-> If Yehuda's patch is fixing this already, we still need it backported for
-> 2.6.34 stable kernel and further?
-> 
+to i386_start_kernel(), x86_start_kernel()
 
-Yes, patch might need to be adjusted a bit but is still relevant for
-2.6.34 stable. The situation was exacerbated by:
+may be not worth it at this time, could do that later if needed.
 
-commit 3bafeb6247042dcbb72b0141ec7c7107de9f0b99
-Author: Linus Torvalds <torvalds@linux-foundation.org>
-Date:   Sat Jun 5 11:17:36 2010 -0600
+Thanks
 
-    module: move find_module check to end
-
-during the 2.6.35 time frame.
-
-> One question about dynamic debug (unrelated to the mem corruption
-> issue):
-> Would it make sense to initialize dynamic debug earlier, somewhen shortly
-> after __setup is called.
-> Then a boot param ddebug_enable="xy" could be added.
-> The param could be in /sys/../control format or just be "all"?
-> My idea is to be able to track all the pr_debug calls (as) early (as possible) 
-> at boot up.
-> One example is ec.c. Currently it is not possible to see the pr_debug messages
-> when EC accesses are done when the ACPI interpreter is started, there
-> is no userspace and no sysfs yet.
-> Same for PCI related pr_debug messages at early PCI(e) initialization time?
-> Would that be possible or do I miss something?
-> 
-> Thanks,
-> 
->      Thomas
-
-definitely a good idea, and something I just had not yet done
-yet...after we resolve this issue, I'd be more than happy to review
-and/or write a patch to do this. I'm glad ppl are interested in this :)
-
-thanks,
-
--Jason
-
+Yinghai
