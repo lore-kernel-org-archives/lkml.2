@@ -1,101 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab0GLCyg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 22:54:36 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54959 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755512Ab0GLCyf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 22:54:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=D1GqyuENfAyEyWnPWzfe7PPfCrAvDt7FW2mL7inE9womWreRoaibDqffF+sGt/8wxD
-         TK20QHVFynLiJ7gr7ZaW3bi/lJ9eB+74Fkj3jmyQRf2r7m1CyXZL5hYTk4meqLJkhYEO
-         tVojZajVBVDgc85XMFKTPNhPPLP6caHkSWvmY=
-Message-ID: <4C3A83E7.3040807@gmail.com>
-Date: Sun, 11 Jul 2010 21:54:31 -0500
-From: Neal B <nealb001@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1755906Ab0GLC7t (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 22:59:49 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:50527 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755834Ab0GLC7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 22:59:48 -0400
+Message-ID: <4C3A8435.4050805@cn.fujitsu.com>
+Date: Mon, 12 Jul 2010 10:55:49 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Artem.Bityutskiy@nokia.com
-CC: dwmw2@infradead.org, rmk+kernel@arm.linux.org.uk, cascardo@holoscopio.com,
-        mohanlaljangir@gmail.com, maximlevitsky@gmail.com,
-        Julia Lawall <julia@diku.dk>, jkosina@suse.cz,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] Mtd: Removed legacy dbg function.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 5/9] KVM: MMU: introduce gfn_to_page_many_atomic()
+ function
+References: <4C330918.6040709@cn.fujitsu.com> <4C330A00.50108@cn.fujitsu.com> <4C39C030.6080009@redhat.com>
+In-Reply-To: <4C39C030.6080009@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is dependent on [patch 4/6 and patch 5/6]
- From 4840c4e191b3a507784298e8e3a5131b10901241 Mon Sep 17 00:00:00 2001
-From: Neal Buckendahl <nealb001@gmail.com>
-Date: Sun, 11 Jul 2010 18:42:39 -0500
-Subject: [PATCH 6/6] Mtd: Removed legacy dbg function which is no longer 
-needed.
-      Signed-off-by: Neal Buckendahl <nealb001@gmail.com>
-
----
-  drivers/mtd/cmdlinepart.c |   20 --------------------
-  1 files changed, 0 insertions(+), 20 deletions(-)
-
-diff --git a/drivers/mtd/cmdlinepart.c b/drivers/mtd/cmdlinepart.c
-index 2423ade..d20258c 100644
---- a/drivers/mtd/cmdlinepart.c
-+++ b/drivers/mtd/cmdlinepart.c
-@@ -32,13 +32,6 @@
-  /* error message prefix */
-  #define ERRP "mtd: "
-
--/* debug macro */
--#if 0
--#define dbg(x) do { printk("DEBUG-CMDLINE-PART: "); printk x; } while (0)
--#else
--#define dbg(x)
--#endif
--
-
-  /* special size referring to all the remaining space in a partition */
-  #define SIZE_REMAINING UINT_MAX
-@@ -175,13 +168,6 @@ static struct mtd_partition * newpart(char *s,
-  	parts[this_part].name = extra_mem;
-  	extra_mem += name_len + 1;
-
--	dbg(("partition %d: name <%s>, offset %llx, size %llx, mask flags %x\n",
--	     this_part,
--	     parts[this_part].name,
--	     parts[this_part].offset,
--	     parts[this_part].size,
--	     parts[this_part].mask_flags));
--
-  	/* return (updated) pointer to extra_mem memory */
-  	if (extra_mem_ptr)
-  	  *extra_mem_ptr = extra_mem;
-@@ -215,8 +201,6 @@ static int mtdpart_setup_real(char *s)
-  		}
-  		mtd_id_len = p - mtd_id;
-
--		dbg(("parsing <%s>\n", p+1));
--
-  		/*
-  		 * parse one mtd. have it reserve memory for the
-  		 * struct cmdline_mtd_partition and the mtd-id string.
-@@ -253,10 +237,6 @@ static int mtdpart_setup_real(char *s)
-  		this_mtd->next = partitions;
-  		partitions = this_mtd;
-
--		dbg(("mtdid=<%s> num_parts=<%d>\n",
--		     this_mtd->mtd_id, this_mtd->num_parts));
--
--
-  		/* EOS - we're done */
-  		if (*s == 0)
-  			break;
--- 
-1.7.1
 
 
+Avi Kivity wrote:
+> On 07/06/2010 01:48 PM, Xiao Guangrong wrote:
+>> This function not only return the gfn's page but also the page number
+>> after @gfn in the slot
+>>
+>>
+>> @@ -923,15 +923,25 @@ static unsigned long gfn_to_hva_memslot(struct
+>> kvm_memory_slot *slot, gfn_t gfn)
+>>       return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
+>>   }
+>>
+>> -unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
+>> +static unsigned long gfn_to_hva_many(struct kvm *kvm, gfn_t gfn, int
+>> *entry)
+>>   {
+>>    
+> 
+> 'entry' better be gfn_t.  We limit gfns in a slot, but that's
+> artificial, let's use the correct type.
+> 
+> Also suggest nr_pages as the name.
+> 
+
+OK, will fix it in the next version.
+
+>> @@ -1011,6 +1021,23 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
+>>       return hva_to_pfn(kvm, addr, false);
+>>   }
+>>
+>> +int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn,
+>> +                struct page **pages, int nr_pages, bool *enough)
+>> +{
+>> +    unsigned long addr;
+>> +    int entry, ret;
+>> +
+>> +    addr = gfn_to_hva_many(kvm, gfn,&entry);
+>> +    if (kvm_is_error_hva(addr))
+>> +        return -1;
+>> +
+>> +    entry = min(entry, nr_pages);
+>> +    *enough = (entry == nr_pages) ? true : false;
+>>    
+> 
+> s/ ? true : false//; :)
+
+Yeah, it's better.
+
+> 
+> Why not return 0 if !enough?
+> 
+
+I think it's better that handle the reset pages in the slot, for example,
+we expect 16 pages are consecutive, but only 12 pages in the slot, the better
+way is handle the reset 12 pages not throw those away.
+
+>> +    ret = __get_user_pages_fast(addr, entry, 1, pages);
+>> +    return ret;
+>> +}
+>> +EXPORT_SYMBOL_GPL(gfn_to_page_many_atomic);
+>> +
+>>   struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
+>>   {
+>>       pfn_t pfn;
+>>    
+> 
+> 
