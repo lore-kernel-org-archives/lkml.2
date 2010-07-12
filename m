@@ -1,120 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755872Ab0GLXku (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 19:40:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49095 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751232Ab0GLXkt (ORCPT
+	id S1755882Ab0GLXqG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 19:46:06 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:39002 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751367Ab0GLXqE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 19:40:49 -0400
-Message-ID: <4C3BA731.40508@oracle.com>
-Date: Mon, 12 Jul 2010 16:37:21 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	Mon, 12 Jul 2010 19:46:04 -0400
+Message-ID: <4C3BA927.3040307@metafoo.de>
+Date: Tue, 13 Jul 2010 01:45:43 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
+To: Joe Perches <joe@perches.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org,
         Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Setup early console as early as possible
-References: <4C3A3B27.7020009@oracle.com> <4C3AD94C.7070807@cs.helsinki.fi> <4C3B38F7.1050400@zytor.com> <20100712174420.GC5687@lenovo> <4C3B5A4A.4070107@zytor.com> <4C3B5AC9.3070604@oracle.com> <4C3B9DD4.1040808@goop.org>
-In-Reply-To: <4C3B9DD4.1040808@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Matt Fleming <matt@console-pimps.org>, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v5] MMC: Add JZ4740 mmc driver
+References: <1278970413-21617-1-git-send-email-lars@metafoo.de>         <1278973245-25451-1-git-send-email-lars@metafoo.de> <1278974710.1501.317.camel@Joe-Laptop.home>
+In-Reply-To: <1278974710.1501.317.camel@Joe-Laptop.home>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C3BA7CB.01CD:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2010 03:57 PM, Jeremy Fitzhardinge wrote:
-> On 07/12/2010 11:11 AM, Yinghai Lu wrote:
->> On 07/12/2010 11:09 AM, H. Peter Anvin wrote:
->>   
->>> On 07/12/2010 10:44 AM, Cyrill Gorcunov wrote:
->>>     
->>>> Peter, while reviewing this patch I found another nit in
->>>> context of early_param usage, so the patch is below. It's
->>>> completely trivial. Actually I thought I've already fixed
->>>> all early_param cases long ago but this one somehow sneaked ;)
->>>>
->>>> Anyway, Yinghai, Peter,
->>>>
->>>> I'm not sure but can't we use some boot_param "pad" field for
->>>> "being copied" flag instead of new variable? There is a case
->>>> when boot_param is used as __initdata and I'm not sure we clear
->>>> this section explicitly.
->>>>
->>>>       
->>> Actually, even better would be to simply use boot_params.hdr.version,
->>> which will never be zero.
->>>     
->> Jeremy,
->>
->> any reason that xen cat not use x86_64_start_kernel directly?
->>   
+Hi
+
+Joe Perches wrote:
+> On Tue, 2010-07-13 at 00:20 +0200, Lars-Peter Clausen wrote:
+>> This patch adds support for the mmc controller on JZ4740 SoCs.
+>> +static bool jz4740_mmc_write_data(struct jz4740_mmc_host *host,
+>> +	struct mmc_data *data)
+>> +{
+>> +	struct sg_mapping_iter *miter = &host->miter;
+>> +	uint32_t *buf;
+>> +	bool timeout;
+>> +	size_t i, j;
+>> +
+>> +	while (sg_miter_next(miter)) {
+>> +		buf = miter->addr;
+>> +		i = miter->length / 4;
+>> +		j = i / 8;
+>> +		i = i & 0x7;
+>> +		while (j) {
+>> +			timeout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_TXFIFO_WR_REQ);
+>> +			if (unlikely(timeout))
+>> +				goto poll_timeout;
+>> +
+>> +			writel(buf[0], host->base + JZ_REG_MMC_TXFIFO);
 > 
-> As I remember it, I split x86_64_start_kernel into two pieces, one
-> containing the bits that were awkward with Xen.  I don't remember which
-> were the problematic parts, but it all looks pretty tricky.  Specifically:
+> Perhaps it'd be better to use a temporary for
+> host->base + JZ_REG_MMC_TXFIFO
+Hm, indeed host->addr is reloaded before each write.
 > 
->     * Xen will pre-clear the bss, so that's not necessary
->     * we don't go via head, so cleanup_highmap isn't either
->     * PV domains don't have an IDT available to them, or any of their
->       associated structures
+>> +			writel(buf[1], host->base + JZ_REG_MMC_TXFIFO);
+>> +			writel(buf[2], host->base + JZ_REG_MMC_TXFIFO);
+>> +			writel(buf[3], host->base + JZ_REG_MMC_TXFIFO);
+>> +			writel(buf[4], host->base + JZ_REG_MMC_TXFIFO);
+>> +			writel(buf[5], host->base + JZ_REG_MMC_TXFIFO);
+>> +			writel(buf[6], host->base + JZ_REG_MMC_TXFIFO);
+>> +			writel(buf[7], host->base + JZ_REG_MMC_TXFIFO);
+>> +			buf += 8;
+>> +			--j;
+>> +		}
+>> +		if (unlikely(i)) {
+>> +			timeout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_TXFIFO_WR_REQ);
+>> +			if (unlikely(timeout))
+>> +				goto poll_timeout;
+>> +
+>> +			while (i) {
+>> +				writel(*buf, host->base + JZ_REG_MMC_TXFIFO);
+>> +				++buf;
+>> +				--i;
+>> +			}
+>> +		}
+>> +		data->bytes_xfered += miter->length;
+>> +	}
+>  
 > 
-> So the whole thing looks at best reundant, and at worst has the
-> potential for causing subtle damage.
-> 
-> Why do you ask?  Does it relate to the early console stuff, or are you
-> just asking because you're looking at it?
 
-yes, make setup_early_console()/copy_bootdata two times....
+Thanks for reviewing
+- Lars
 
-and that looks strange.
-
- 
-+static int __initdata bootdata_copied;
- static void __init copy_bootdata(char *real_mode_data)
- {
-        char * command_line;
- 
-+       if (bootdata_copied)
-+               return;
-+
-        memcpy(&boot_params, real_mode_data, sizeof boot_params);
-        if (boot_params.hdr.cmd_line_ptr) {
-                command_line = __va(boot_params.hdr.cmd_line_ptr);
-                memcpy(boot_command_line, command_line, COMMAND_LINE_SIZE);
-        }
-+
-+       bootdata_copied = 1;
- }
- 
- void __init x86_64_start_kernel(char * real_mode_data)
-@@ -73,6 +80,10 @@ void __init x86_64_start_kernel(char * real_mode_data)
-        /* clear bss before set_intr_gate with early_idt_handler */
-        clear_bss();
- 
-+       /* boot_params is in bss */
-+       copy_bootdata(__va(real_mode_data));
-+       setup_early_console();
-+
-        /* Make NULL pointers segfault */
-        zap_identity_mappings();
- 
-@@ -97,8 +108,11 @@ void __init x86_64_start_kernel(char * real_mode_data)
- void __init x86_64_start_reservations(char *real_mode_data)
- {
-        copy_bootdata(__va(real_mode_data));
-+       setup_early_console();
-+
-
-Thanks
-
-Yinghai Lu
