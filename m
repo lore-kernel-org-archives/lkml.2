@@ -1,10 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755900Ab0GLW4s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:56:48 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56971 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755949Ab0GLW4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756081Ab0GLW4m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:56:42 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:39462 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755929Ab0GLW4X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Jul 2010 18:56:23 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
@@ -15,9 +16,9 @@ Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
         Andy Shevchenko <andy.shevchenko@gmail.com>,
         lkml <linux-kernel@vger.kernel.org>,
         linux-omap <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 05/11] staging: tidspbridge: remove RET_OK RET_FAIL
-Date: Mon, 12 Jul 2010 17:56:03 -0500
-Message-Id: <1278975369-7687-6-git-send-email-nm@ti.com>
+Subject: [PATCH 09/11] staging: tidspbridge: remove OPTIONAL
+Date: Mon, 12 Jul 2010 17:56:07 -0500
+Message-Id: <1278975369-7687-10-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1278975369-7687-1-git-send-email-nm@ti.com>
 References: <1278975369-7687-1-git-send-email-nm@ti.com>
@@ -25,296 +26,274 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-RET_OK is 0 and RET_FAIL is a -1, replace these custom returns with
-a standard errno
+OPTIONAL modifier makes no sense in linux kernel
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/staging/tidspbridge/core/tiomap3430.c |   10 ++---
- drivers/staging/tidspbridge/hw/hw_mmu.c       |   53 +++++++++++++------------
- 2 files changed, 31 insertions(+), 32 deletions(-)
+ drivers/staging/tidspbridge/core/chnl_sm.c         |    2 +-
+ .../staging/tidspbridge/include/dspbridge/cod.h    |    2 +-
+ .../tidspbridge/include/dspbridge/dspchnl.h        |    4 ++--
+ .../tidspbridge/include/dspbridge/dspdefs.h        |    4 ++--
+ .../staging/tidspbridge/include/dspbridge/node.h   |   12 ++++++------
+ .../staging/tidspbridge/include/dspbridge/proc.h   |    2 +-
+ drivers/staging/tidspbridge/pmgr/cod.c             |    2 +-
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |   12 ++++++------
+ drivers/staging/tidspbridge/rmgr/nldr.c            |    6 +++---
+ drivers/staging/tidspbridge/rmgr/node.c            |   12 ++++++------
+ drivers/staging/tidspbridge/rmgr/proc.c            |    2 +-
+ 11 files changed, 30 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index 51e327f..33fcef5 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -1506,8 +1506,7 @@ static int bridge_brd_mem_un_map(struct bridge_dev_context *hDevContext,
- 				}
- 				paddr += HW_PAGE_SIZE4KB;
- 			}
--			if (hw_mmu_pte_clear(pte_addr_l2, va_curr, pte_size)
--			    == RET_FAIL) {
-+			if (hw_mmu_pte_clear(pte_addr_l2, va_curr, pte_size)) {
- 				status = -EPERM;
- 				goto EXIT_LOOP;
- 			}
-@@ -1524,9 +1523,8 @@ static int bridge_brd_mem_un_map(struct bridge_dev_context *hDevContext,
- 				/*
- 				 * Clear the L1 PTE pointing to the L2 PT
- 				 */
--				if (hw_mmu_pte_clear(l1_base_va, va_curr_orig,
--						     HW_MMU_COARSE_PAGE_SIZE) ==
--				    RET_OK)
-+				if (!hw_mmu_pte_clear(l1_base_va, va_curr_orig,
-+						     HW_MMU_COARSE_PAGE_SIZE))
- 					status = 0;
- 				else {
- 					status = -EPERM;
-@@ -1571,7 +1569,7 @@ skip_coarse_page:
- 			}
- 			paddr += HW_PAGE_SIZE4KB;
- 		}
--		if (hw_mmu_pte_clear(l1_base_va, va_curr, pte_size) == RET_OK) {
-+		if (!hw_mmu_pte_clear(l1_base_va, va_curr, pte_size)) {
- 			status = 0;
- 			rem_bytes -= pte_size;
- 			va_curr += pte_size;
-diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.c b/drivers/staging/tidspbridge/hw/hw_mmu.c
-index 4430daf..321b72d 100644
---- a/drivers/staging/tidspbridge/hw/hw_mmu.c
-+++ b/drivers/staging/tidspbridge/hw/hw_mmu.c
-@@ -22,6 +22,7 @@
- #include <hw_defs.h>
- #include <hw_mmu.h>
- #include <linux/types.h>
-+#include <linux/err.h>
+diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
+index 25d2450..2189796 100644
+--- a/drivers/staging/tidspbridge/core/chnl_sm.c
++++ b/drivers/staging/tidspbridge/core/chnl_sm.c
+@@ -91,7 +91,7 @@ static int search_free_channel(struct chnl_mgr *chnl_mgr_obj,
+  */
+ int bridge_chnl_add_io_req(struct chnl_object *chnl_obj, void *pHostBuf,
+ 			       u32 byte_size, u32 buf_size,
+-			       OPTIONAL u32 dw_dsp_addr, u32 dw_arg)
++			       u32 dw_dsp_addr, u32 dw_arg)
+ {
+ 	int status = 0;
+ 	struct chnl_object *pchnl = (struct chnl_object *)chnl_obj;
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cod.h b/drivers/staging/tidspbridge/include/dspbridge/cod.h
+index cb9b2c3..25817fc 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cod.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cod.h
+@@ -93,7 +93,7 @@ extern void cod_close(struct cod_libraryobj *lib);
+  */
+ extern int cod_create(OUT struct cod_manager **phManager,
+ 			     char *pstrZLFile,
+-			     OPTIONAL const struct cod_attrs *attrs);
++			     const struct cod_attrs *attrs);
  
- #define MMU_BASE_VAL_MASK	0xFC00
- #define MMU_PAGE_MAX	     3
-@@ -59,7 +60,7 @@ enum hw_mmu_page_size_t {
-  * RETURNS:
+ /*
+  *  ======== cod_delete ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h b/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
+index ee71e9b..8b943cc 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
+@@ -35,7 +35,7 @@ extern int bridge_chnl_open(OUT struct chnl_object **phChnl,
+ 				   struct chnl_mgr *hchnl_mgr,
+ 				   s8 chnl_mode,
+ 				   u32 uChnlId,
+-				   const OPTIONAL struct chnl_attr
++				   const struct chnl_attr
+ 				   *pattrs);
+ 
+ extern int bridge_chnl_close(struct chnl_object *chnl_obj);
+@@ -43,7 +43,7 @@ extern int bridge_chnl_close(struct chnl_object *chnl_obj);
+ extern int bridge_chnl_add_io_req(struct chnl_object *chnl_obj,
+ 				      void *pHostBuf,
+ 				      u32 byte_size, u32 buf_size,
+-				      OPTIONAL u32 dw_dsp_addr, u32 dw_arg);
++				      u32 dw_dsp_addr, u32 dw_arg);
+ 
+ extern int bridge_chnl_get_ioc(struct chnl_object *chnl_obj,
+ 				   u32 dwTimeOut, OUT struct chnl_ioc *pIOC);
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
+index 7c86e7b..467ec8b 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
+@@ -411,7 +411,7 @@ typedef int(*fxn_chnl_open) (OUT struct chnl_object
+ 				    struct chnl_mgr *hchnl_mgr,
+ 				    s8 chnl_mode,
+ 				    u32 uChnlId,
+-				    const OPTIONAL struct
++				    const struct
+ 				    chnl_attr * pattrs);
+ 
+ /*
+@@ -474,7 +474,7 @@ typedef int(*fxn_chnl_addioreq) (struct chnl_object
+ 					void *pHostBuf,
+ 					u32 byte_size,
+ 					u32 buf_size,
+-					OPTIONAL u32 dw_dsp_addr, u32 dw_arg);
++					u32 dw_dsp_addr, u32 dw_arg);
+ 
+ /*
+  *  ======== bridge_chnl_get_ioc ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/node.h b/drivers/staging/tidspbridge/include/dspbridge/node.h
+index 7f16f6f..7be6dda 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/node.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/node.h
+@@ -57,8 +57,8 @@
+  */
+ extern int node_allocate(struct proc_object *hprocessor,
+ 				const struct dsp_uuid *pNodeId,
+-				OPTIONAL const struct dsp_cbdata
+-				*pargs, OPTIONAL const struct dsp_nodeattrin
++				const struct dsp_cbdata
++				*pargs, const struct dsp_nodeattrin
+ 				*attr_in,
+ 				OUT struct node_object **ph_node,
+ 				struct process_context *pr_ctxt);
+@@ -86,7 +86,7 @@ extern int node_allocate(struct proc_object *hprocessor,
+  *  Ensures:
+  */
+ extern int node_alloc_msg_buf(struct node_object *hnode,
+-				     u32 usize, OPTIONAL struct dsp_bufferattr
++				     u32 usize, struct dsp_bufferattr
+ 				     *pattr, OUT u8 **pbuffer);
+ 
+ /*
+@@ -182,8 +182,8 @@ extern int node_connect(struct node_object *hNode1,
+ 			       u32 uStream1,
+ 			       struct node_object *hNode2,
+ 			       u32 uStream2,
+-			       OPTIONAL struct dsp_strmattr *pattrs,
+-			       OPTIONAL struct dsp_cbdata
++			       struct dsp_strmattr *pattrs,
++			       struct dsp_cbdata
+ 			       *conn_param);
+ 
+ /*
+@@ -335,7 +335,7 @@ extern void node_exit(void);
+  */
+ extern int node_free_msg_buf(struct node_object *hnode,
+ 				    u8 *pbuffer,
+-				    OPTIONAL struct dsp_bufferattr
++				    struct dsp_bufferattr
+ 				    *pattr);
+ 
+ /*
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/proc.h b/drivers/staging/tidspbridge/include/dspbridge/proc.h
+index a06ddc4..12f2f2a 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/proc.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/proc.h
+@@ -52,7 +52,7 @@ extern char *iva_img;
+  *      When attr_in is NULL, the default timeout value is 10 seconds.
+  */
+ extern int proc_attach(u32 processor_id,
+-			      OPTIONAL const struct dsp_processorattrin
++			      const struct dsp_processorattrin
+ 			      *attr_in, void **ph_processor,
+ 			      struct process_context *pr_ctxt);
+ 
+diff --git a/drivers/staging/tidspbridge/pmgr/cod.c b/drivers/staging/tidspbridge/pmgr/cod.c
+index 859c2ff..2aed7a4 100644
+--- a/drivers/staging/tidspbridge/pmgr/cod.c
++++ b/drivers/staging/tidspbridge/pmgr/cod.c
+@@ -217,7 +217,7 @@ void cod_close(struct cod_libraryobj *lib)
   *
-  *       Type		: hw_status
-- *       Description     : RET_OK		 -- No errors occured
-+ *       Description     : 0		 -- No errors occured
-  *			 RET_BAD_NULL_PARAM     -- A Pointer
-  *						Paramater was set to NULL
-  *
-@@ -102,7 +103,7 @@ static hw_status mmu_flush_entry(const void __iomem *base_address);
-  * RETURNS:
-  *
-  *       Type	    	: hw_status
-- *       Description     : RET_OK		 -- No errors occured
-+ *       Description     : 0		 -- No errors occured
-  *			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
-  *						   was set to NULL
-  *			 RET_PARAM_OUT_OF_RANGE -- Input Parameter out
-@@ -147,7 +148,7 @@ static hw_status mmu_set_cam_entry(const void __iomem *base_address,
-  * RETURNS:
-  *
-  *       Type	    	: hw_status
-- *       Description     : RET_OK		 -- No errors occured
-+ *       Description     : 0		 -- No errors occured
-  *			 RET_BAD_NULL_PARAM     -- A Pointer Paramater
-  *							was set to NULL
-  *			 RET_PARAM_OUT_OF_RANGE -- Input Parameter
-@@ -167,7 +168,7 @@ static hw_status mmu_set_ram_entry(const void __iomem *base_address,
- 
- hw_status hw_mmu_enable(const void __iomem *base_address)
+  */
+ int cod_create(OUT struct cod_manager **phMgr, char *pstrDummyFile,
+-		      OPTIONAL const struct cod_attrs *attrs)
++		      const struct cod_attrs *attrs)
  {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
+ 	struct cod_manager *mgr_new;
+ 	struct dbll_attrs zl_attrs;
+diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+index 61c47b0..81b91b8 100644
+--- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
++++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+@@ -70,9 +70,9 @@ static char dsp_char2_gpp_char(char *pWord, s32 dsp_char_size);
+ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
+ 				   struct dsp_uuid *uuid_obj,
+ 				   OUT u16 *pNumLibs,
+-				   OPTIONAL OUT u16 *pNumPersLibs,
+-				   OPTIONAL OUT struct dsp_uuid *pDepLibUuids,
+-				   OPTIONAL OUT bool *pPersistentDepLibs,
++				   OUT u16 *pNumPersLibs,
++				   OUT struct dsp_uuid *pDepLibUuids,
++				   OUT bool *pPersistentDepLibs,
+ 				   enum nldr_phase phase);
  
- 	MMUMMU_CNTLMMU_ENABLE_WRITE32(base_address, HW_SET);
- 
-@@ -176,7 +177,7 @@ hw_status hw_mmu_enable(const void __iomem *base_address)
- 
- hw_status hw_mmu_disable(const void __iomem *base_address)
+ /*
+@@ -1392,9 +1392,9 @@ static char dsp_char2_gpp_char(char *pWord, s32 dsp_char_size)
+ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
+ 				   struct dsp_uuid *uuid_obj,
+ 				   OUT u16 *pNumLibs,
+-				   OPTIONAL OUT u16 *pNumPersLibs,
+-				   OPTIONAL OUT struct dsp_uuid *pDepLibUuids,
+-				   OPTIONAL OUT bool *pPersistentDepLibs,
++				   OUT u16 *pNumPersLibs,
++				   OUT struct dsp_uuid *pDepLibUuids,
++				   OUT bool *pPersistentDepLibs,
+ 				   enum nldr_phase phase)
  {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
+ 	struct dcd_manager *dcd_mgr_obj = hdcd_mgr;
+diff --git a/drivers/staging/tidspbridge/rmgr/nldr.c b/drivers/staging/tidspbridge/rmgr/nldr.c
+index bad1b8f..aaaab67 100644
+--- a/drivers/staging/tidspbridge/rmgr/nldr.c
++++ b/drivers/staging/tidspbridge/rmgr/nldr.c
+@@ -306,8 +306,8 @@ static int load_lib(struct nldr_nodeobject *nldr_node_obj,
+ static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
+ 			    enum nldr_phase phase);
+ static int remote_alloc(void **pRef, u16 mem_sect_type, u32 size,
+-			       u32 align, u32 *dspAddr, OPTIONAL s32 segmentId,
+-			       OPTIONAL s32 req, bool reserve);
++			       u32 align, u32 *dspAddr, s32 segmentId,
++			       s32 req, bool reserve);
+ static int remote_free(void **pRef, u16 space, u32 dspAddr, u32 size,
+ 			      bool reserve);
  
- 	MMUMMU_CNTLMMU_ENABLE_WRITE32(base_address, HW_CLEAR);
- 
-@@ -186,7 +187,7 @@ hw_status hw_mmu_disable(const void __iomem *base_address)
- hw_status hw_mmu_num_locked_set(const void __iomem *base_address,
- 				u32 numLockedEntries)
+@@ -1625,7 +1625,7 @@ func_end:
+  */
+ static int remote_alloc(void **pRef, u16 space, u32 size,
+ 			       u32 align, u32 *dspAddr,
+-			       OPTIONAL s32 segmentId, OPTIONAL s32 req,
++			       s32 segmentId, s32 req,
+ 			       bool reserve)
  {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 
- 	MMUMMU_LOCK_BASE_VALUE_WRITE32(base_address, numLockedEntries);
- 
-@@ -196,7 +197,7 @@ hw_status hw_mmu_num_locked_set(const void __iomem *base_address,
- hw_status hw_mmu_victim_num_set(const void __iomem *base_address,
- 				u32 victimEntryNum)
+ 	struct nldr_nodeobject *hnode = (struct nldr_nodeobject *)pRef;
+diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
+index c19e1bf..1f975c6 100644
+--- a/drivers/staging/tidspbridge/rmgr/node.c
++++ b/drivers/staging/tidspbridge/rmgr/node.c
+@@ -292,8 +292,8 @@ enum node_state node_get_state(void *hnode)
+  */
+ int node_allocate(struct proc_object *hprocessor,
+ 			 const struct dsp_uuid *pNodeId,
+-			 OPTIONAL const struct dsp_cbdata *pargs,
+-			 OPTIONAL const struct dsp_nodeattrin *attr_in,
++			 const struct dsp_cbdata *pargs,
++			 const struct dsp_nodeattrin *attr_in,
+ 			 OUT struct node_object **ph_node,
+ 			 struct process_context *pr_ctxt)
  {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 
- 	MMUMMU_LOCK_CURRENT_VICTIM_WRITE32(base_address, victimEntryNum);
- 
-@@ -205,7 +206,7 @@ hw_status hw_mmu_victim_num_set(const void __iomem *base_address,
- 
- hw_status hw_mmu_event_ack(const void __iomem *base_address, u32 irqMask)
+@@ -685,7 +685,7 @@ func_end:
+  *      Allocates buffer for zero copy messaging.
+  */
+ DBAPI node_alloc_msg_buf(struct node_object *hnode, u32 usize,
+-			 OPTIONAL OUT struct dsp_bufferattr *pattr,
++			 OUT struct dsp_bufferattr *pattr,
+ 			 OUT u8 **pbuffer)
  {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 
- 	MMUMMU_IRQSTATUS_WRITE_REGISTER32(base_address, irqMask);
- 
-@@ -214,7 +215,7 @@ hw_status hw_mmu_event_ack(const void __iomem *base_address, u32 irqMask)
- 
- hw_status hw_mmu_event_disable(const void __iomem *base_address, u32 irqMask)
+ 	struct node_object *pnode = (struct node_object *)hnode;
+@@ -833,8 +833,8 @@ func_end:
+  */
+ int node_connect(struct node_object *hNode1, u32 uStream1,
+ 			struct node_object *hNode2,
+-			u32 uStream2, OPTIONAL struct dsp_strmattr *pattrs,
+-			OPTIONAL struct dsp_cbdata *conn_param)
++			u32 uStream2, struct dsp_strmattr *pattrs,
++			struct dsp_cbdata *conn_param)
  {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 irq_reg;
- 
- 	irq_reg = MMUMMU_IRQENABLE_READ_REGISTER32(base_address);
-@@ -226,7 +227,7 @@ hw_status hw_mmu_event_disable(const void __iomem *base_address, u32 irqMask)
- 
- hw_status hw_mmu_event_enable(const void __iomem *base_address, u32 irqMask)
+ 	struct node_mgr *hnode_mgr;
+ 	char *pstr_dev_name = NULL;
+@@ -1674,7 +1674,7 @@ void node_exit(void)
+  *      Frees the message buffer.
+  */
+ int node_free_msg_buf(struct node_object *hnode, u8 * pbuffer,
+-			     OPTIONAL struct dsp_bufferattr *pattr)
++			     struct dsp_bufferattr *pattr)
  {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 irq_reg;
- 
- 	irq_reg = MMUMMU_IRQENABLE_READ_REGISTER32(base_address);
-@@ -238,7 +239,7 @@ hw_status hw_mmu_event_enable(const void __iomem *base_address, u32 irqMask)
- 
- hw_status hw_mmu_event_status(const void __iomem *base_address, u32 *irqMask)
+ 	struct node_object *pnode = (struct node_object *)hnode;
+ 	int status = 0;
+diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
+index e95d44c..1f450fe 100644
+--- a/drivers/staging/tidspbridge/rmgr/proc.c
++++ b/drivers/staging/tidspbridge/rmgr/proc.c
+@@ -272,7 +272,7 @@ static inline struct page *get_mapping_page(struct dmm_map_object *map_obj,
+  */
+ int
+ proc_attach(u32 processor_id,
+-	    OPTIONAL const struct dsp_processorattrin *attr_in,
++	    const struct dsp_processorattrin *attr_in,
+ 	    void **ph_processor, struct process_context *pr_ctxt)
  {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 
- 	*irqMask = MMUMMU_IRQSTATUS_READ_REGISTER32(base_address);
- 
-@@ -247,7 +248,7 @@ hw_status hw_mmu_event_status(const void __iomem *base_address, u32 *irqMask)
- 
- hw_status hw_mmu_fault_addr_read(const void __iomem *base_address, u32 *addr)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 
- 	/*Check the input Parameters */
- 	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
-@@ -261,7 +262,7 @@ hw_status hw_mmu_fault_addr_read(const void __iomem *base_address, u32 *addr)
- 
- hw_status hw_mmu_ttb_set(const void __iomem *base_address, u32 TTBPhysAddr)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 load_ttb;
- 
- 	/*Check the input Parameters */
-@@ -277,7 +278,7 @@ hw_status hw_mmu_ttb_set(const void __iomem *base_address, u32 TTBPhysAddr)
- 
- hw_status hw_mmu_twl_enable(const void __iomem *base_address)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 
- 	MMUMMU_CNTLTWL_ENABLE_WRITE32(base_address, HW_SET);
- 
-@@ -286,7 +287,7 @@ hw_status hw_mmu_twl_enable(const void __iomem *base_address)
- 
- hw_status hw_mmu_twl_disable(const void __iomem *base_address)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 
- 	MMUMMU_CNTLTWL_ENABLE_WRITE32(base_address, HW_CLEAR);
- 
-@@ -296,7 +297,7 @@ hw_status hw_mmu_twl_disable(const void __iomem *base_address)
- hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtualAddr,
- 			   u32 pageSize)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 virtual_addr_tag;
- 	enum hw_mmu_page_size_t pg_size_bits;
- 
-@@ -318,7 +319,7 @@ hw_status hw_mmu_tlb_flush(const void __iomem *base_address, u32 virtualAddr,
- 		break;
- 
- 	default:
--		return RET_FAIL;
-+		return -EINVAL;
- 	}
- 
- 	/* Generate the 20-bit tag from virtual address */
-@@ -339,7 +340,7 @@ hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 			 struct hw_mmu_map_attrs_t *map_attrs,
- 			 s8 preservedBit, s8 validBit)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 lock_reg;
- 	u32 virtual_addr_tag;
- 	enum hw_mmu_page_size_t mmu_pg_size;
-@@ -371,7 +372,7 @@ hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 		break;
- 
- 	default:
--		return RET_FAIL;
-+		return -EINVAL;
- 	}
- 
- 	lock_reg = MMUMMU_LOCK_READ_REGISTER32(base_address);
-@@ -406,7 +407,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 			 u32 virtualAddr,
- 			 u32 pageSize, struct hw_mmu_map_attrs_t *map_attrs)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 pte_addr, pte_val;
- 	s32 num_entries = 1;
- 
-@@ -466,7 +467,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 		break;
- 
- 	default:
--		return RET_FAIL;
-+		return -EINVAL;
- 	}
- 
- 	while (--num_entries >= 0)
-@@ -477,7 +478,7 @@ hw_status hw_mmu_pte_set(const u32 pg_tbl_va,
- 
- hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtualAddr, u32 page_size)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 pte_addr;
- 	s32 num_entries = 1;
- 
-@@ -510,7 +511,7 @@ hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtualAddr, u32 page_size)
- 		break;
- 
- 	default:
--		return RET_FAIL;
-+		return -EINVAL;
- 	}
- 
- 	while (--num_entries >= 0)
-@@ -522,7 +523,7 @@ hw_status hw_mmu_pte_clear(const u32 pg_tbl_va, u32 virtualAddr, u32 page_size)
- /* mmu_flush_entry */
- static hw_status mmu_flush_entry(const void __iomem *base_address)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 flush_entry_data = 0x1;
- 
- 	/*Check the input Parameters */
-@@ -542,7 +543,7 @@ static hw_status mmu_set_cam_entry(const void __iomem *base_address,
- 				   const u32 validBit,
- 				   const u32 virtual_addr_tag)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 mmu_cam_reg;
- 
- 	/*Check the input Parameters */
-@@ -566,7 +567,7 @@ static hw_status mmu_set_ram_entry(const void __iomem *base_address,
- 				   enum hw_element_size_t element_size,
- 				   enum hw_mmu_mixed_size_t mixed_size)
- {
--	hw_status status = RET_OK;
-+	hw_status status = 0;
- 	u32 mmu_ram_reg;
- 
- 	/*Check the input Parameters */
+ 	int status = 0;
 -- 
 1.6.3.3
 
