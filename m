@@ -1,39 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754922Ab0GLG5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 02:57:43 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:62840 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752145Ab0GLG5m (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 02:57:42 -0400
-From: Thomas Weber <weber@corscience.de>
-To: lenb@kernel.org
-Cc: Thomas Weber <weber@corscience.de>, linux-pm@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] idle: intel_idle: Change mode 755 => 644
-Date: Mon, 12 Jul 2010 08:56:43 +0200
-Message-Id: <1278917804-4456-1-git-send-email-weber@corscience.de>
-X-Mailer: git-send-email 1.7.1
-X-Provags-ID: V02:K0:MWKzVglHXVEs4ej5P6i/T0pmCzWJPGJoez1Py35MzuZ
- MCRGkk7d2G/d745NAqpvCqCYPXlCUh18M6XOGj9oGRm2IsBN42
- bFd1mJZoxSSFy7JBkW30q5jxSYdjOzKR8DJPSlHbTo3DSU/mzu
- JMmxyuC+CCd+yTQZTIaaFrkfbq/8E5A0gClom98p2mo78h1ZiQ
- E4Zi6iaOrV7iKzmEc0JaA==
+	id S1755504Ab0GLG7P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 02:59:15 -0400
+Received: from sh.osrg.net ([192.16.179.4]:44068 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754078Ab0GLG7N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 02:59:13 -0400
+Date: Mon, 12 Jul 2010 15:59:11 +0900
+To: jbarnes@virtuousgeek.org
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] pci: remove unused
+ HAVE_ARCH_PCI_SET_DMA_MAX_SEGMENT_{SIZE|BOUNDARY}
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100712155845E.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 12 Jul 2010 15:59:12 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove execution permission from source file.
+In 2.6.34, we transformed the PCI DMA API into the generic device
+mode. The PCI DMA API is just the wrapper of the DMA API.
 
-Signed-off-by: Thomas Weber <weber@corscience.de>
+So we don't need HAVE_ARCH_PCI_SET_DMA_MAX_SEGMENT_SIZE or
+HAVE_ARCH_PCI_SET_DMA_SEGMENT_BOUNDARY (which enable architectures to
+have the own implementations). Both haven't been used anyway.
+
+Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
 ---
- 0 files changed, 0 insertions(+), 0 deletions(-)
- mode change 100755 => 100644 drivers/idle/intel_idle.c
+ drivers/pci/pci.c |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
-old mode 100755
-new mode 100644
+diff --git a/drivers/pci/pci.c b/drivers/pci/pci.c
+index 130ed1d..7fa3cbd 100644
+--- a/drivers/pci/pci.c
++++ b/drivers/pci/pci.c
+@@ -2312,21 +2312,17 @@ void pci_msi_off(struct pci_dev *dev)
+ }
+ EXPORT_SYMBOL_GPL(pci_msi_off);
+ 
+-#ifndef HAVE_ARCH_PCI_SET_DMA_MAX_SEGMENT_SIZE
+ int pci_set_dma_max_seg_size(struct pci_dev *dev, unsigned int size)
+ {
+ 	return dma_set_max_seg_size(&dev->dev, size);
+ }
+ EXPORT_SYMBOL(pci_set_dma_max_seg_size);
+-#endif
+ 
+-#ifndef HAVE_ARCH_PCI_SET_DMA_SEGMENT_BOUNDARY
+ int pci_set_dma_seg_boundary(struct pci_dev *dev, unsigned long mask)
+ {
+ 	return dma_set_seg_boundary(&dev->dev, mask);
+ }
+ EXPORT_SYMBOL(pci_set_dma_seg_boundary);
+-#endif
+ 
+ static int pcie_flr(struct pci_dev *dev, int probe)
+ {
 -- 
-1.7.1
+1.6.5
 
