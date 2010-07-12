@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755966Ab0GLXO6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 19:14:58 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57737 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755557Ab0GLXO4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 19:14:56 -0400
-Message-ID: <4C3BA1E7.1070607@ti.com>
-Date: Mon, 12 Jul 2010 18:14:47 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1756153Ab0GLXSk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 19:18:40 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37820 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755569Ab0GLXSi convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 19:18:38 -0400
 MIME-Version: 1.0
-To: Greg Kroah-Hartman <gregkh@suse.de>
-CC: "Ramirez Luna, Omar" <omar.ramirez@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Ameya Palande <ameya.palande@nokia.com>,
-        "Guzman Lugo, Fernando" <fernando.lugo@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH] staging: tidspbridge: fix build error for missing variable
-References: <1278975385-7769-1-git-send-email-nm@ti.com>
-In-Reply-To: <1278975385-7769-1-git-send-email-nm@ti.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201007121605.32462.davidb@codeaurora.org>
+References: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+	<AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com>
+	<20100712185029.GB14425@pengutronix.de>
+	<201007121605.32462.davidb@codeaurora.org>
+Date: Mon, 12 Jul 2010 16:18:01 -0700
+Message-ID: <AANLkTimho3rcoCZZ2PlC3B3KIZZhsEiTnTk-__n1q_Dy@mail.gmail.com>
+Subject: Re: ARM defconfig files
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Brown <davidb@codeaurora.org>
+Cc: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.miao@canonical.com>, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Menon, Nishanth had written, on 07/12/2010 05:56 PM, the following:
-> Commit:
-> staging: tidspbridge: gen: simplify and clean up
-> There is recently added hex_to_bin() kernel's method which we could use
-> instead of custom long function.
-> 
-> Introduced usage of hex_to_bin without defining the temp variable.
-> this causes the build error:
-> drivers/staging/tidspbridge/gen/uuidutil.c: In function 'uuid_hex_to_bin':
-> drivers/staging/tidspbridge/gen/uuidutil.c:63: error: 'value' undeclared (first use in this function)
-> drivers/staging/tidspbridge/gen/uuidutil.c:63: error: (Each undeclared identifier is reported only once
-> drivers/staging/tidspbridge/gen/uuidutil.c:63: error: for each function it appears in.)
-> 
-> introduce variable value to fix the error.
-> 
-> Signed-off-by: Nishanth Menon <nm@ti.com>
-> ---
->  drivers/staging/tidspbridge/gen/uuidutil.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/staging/tidspbridge/gen/uuidutil.c b/drivers/staging/tidspbridge/gen/uuidutil.c
-> index eb09bc3..070761b 100644
-> --- a/drivers/staging/tidspbridge/gen/uuidutil.c
-> +++ b/drivers/staging/tidspbridge/gen/uuidutil.c
-> @@ -58,6 +58,7 @@ static s32 uuid_hex_to_bin(char *buf, s32 len)
->  {
->  	s32 i;
->  	s32 result = 0;
-> +	int value;
->  
->  	for (i = 0; i < len; i++) {
->  		value = hex_to_bin(*buf++);
-arrgh.. just saw https://patchwork.kernel.org/patch/111141/ - please 
-consider the same and drop this patch. apologies on the noise.
+2010/7/12 David Brown <davidb@codeaurora.org>:
+>
+> Do you have scripts or tools that you did this with, or is a manual
+> process.  We're about to add several new (ARM) targets, and it'd be
+> nice to be able to make small defconfigs for those targets as well.
 
--- 
-Regards,
-Nishanth Menon
+Uwe posted it earlier in this thread as an attachement, and I put the
+python script into the merge commit message too. And we should
+probably put it somewhere in scripts too, and/or make a 'make' target
+to create the small config files.
+
+I pushed it all out, and tagged it as -rc5.
+
+                 Linus
