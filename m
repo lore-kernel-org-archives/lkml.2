@@ -1,174 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755834Ab0GLWrg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:47:36 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55292 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755548Ab0GLWre (ORCPT
+	id S1755880Ab0GLWuH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:50:07 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56309 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab0GLWuD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:47:34 -0400
-Date: Mon, 12 Jul 2010 15:45:31 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Dave Chinner <david@fromorbit.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel <linux-kernel@vger.kernel.org>,
-        ocfs2-devel@oss.oracle.com, Tao Ma <tao.ma@oracle.com>,
-        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-        Mark Fasheh <mfasheh@suse.com>
-Subject: Re: [Ocfs2-devel] [PATCH 0/3] ocfs2: Tail zeroing fixes.
-Message-ID: <20100712224531.GJ12179@mail.oracle.com>
-Mail-Followup-To: Dave Chinner <david@fromorbit.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	Linux Kernel <linux-kernel@vger.kernel.org>,
-	ocfs2-devel@oss.oracle.com, Tao Ma <tao.ma@oracle.com>,
-	Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
-	Mark Fasheh <mfasheh@suse.com>
-References: <20100703213219.GB21262@mail.oracle.com>
- <1278501367-7710-1-git-send-email-joel.becker@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278501367-7710-1-git-send-email-joel.becker@oracle.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C3B9B5E.0225:SCFMA4539814,ss=1,fgs=0
+	Mon, 12 Jul 2010 18:50:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Vefxbc8rrZU5wfMXnvAVqs2SV0MlG23lhowX9bXUVUfDxSBF3K2/oVKXTf9EZoSPo7
+         GNhMMCiTXl2ZZFNO5KhXLIP5CUzoWd1seC2S3K+hvtadTN1QXEw7L91mYl9+Q37OKt35
+         PaBWNqLkucxDe50NdEUuKn553wJj7KuLGKiYM=
+From: Roel Van Nyen <roel.vannyen@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Forest Bond <forest@alittletooquiet.net>, linux-kernel@vger.kernel.org,
+        Roel Van Nyen <roel.vannyen@gmail.com>
+Subject: [PATCH] Staging: vt6656: Remove the ULONG_PTR and DWORD_PTR defines from ttype.h
+Date: Tue, 13 Jul 2010 00:49:57 +0200
+Message-Id: <1278974997-27141-1-git-send-email-roel.vannyen@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 07, 2010 at 04:16:04AM -0700, Joel Becker wrote:
-> 	This is version 3 of the ocfs2 tail zeroing fixes.  This version
-> has some major changes.  Tao correctly pointed out that we can have
-> multiple extents past i_size due to unwritten extents.  I've reworked
-> the zeroing code to walk them all.  Since I had to do that, and I had to
-> handle refcounted extents, I end up fixing a refcount bug with
-> non-sparse extentds.
-> 	There are now three patches.  The first changes our zeroing
-> code to go page-by-page at the high level.  The second actually changes
-> the zeroing code.  The final patch, limiting zeroing to the end of a
-> write, is unchanged from v2.
+Remove the ULONG and DWORD PTR defines from ttype.h
 
-	Version 4 of these fixes are now in the fixes and linux-next
-branches of ocfs2.git.  I'm just appending the diff to this file rather
-than resending all the patches.  They've passed the first round of heavy
-testing from our testers, and we're going to keep pounding on them as we
-get towards 2.6.35.
-	Linus, I'm going to let all of the ocfs2 fixes stew in
-linux-next for a few days before I send the pull request.  Figure it by
-the end of the week.
+Signed-of-by: Roel Van Nyen <roel.vannyen@gmail.com>
+---
+ drivers/staging/vt6656/bssdb.c |    8 ++++----
+ drivers/staging/vt6656/ttype.h |    3 ---
+ 2 files changed, 4 insertions(+), 7 deletions(-)
 
-Joel
-
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 9b3381a..356e976 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -1107,6 +1107,7 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
- 	int ret = 0, i;
- 	unsigned long start, target_index, end_index, index;
- 	struct inode *inode = mapping->host;
-+	loff_t last_byte;
+diff --git a/drivers/staging/vt6656/bssdb.c b/drivers/staging/vt6656/bssdb.c
+index 830dd23..0b8584b 100644
+--- a/drivers/staging/vt6656/bssdb.c
++++ b/drivers/staging/vt6656/bssdb.c
+@@ -469,7 +469,7 @@ BOOL BSSbInsertToBSSList(void *hDeviceContext,
+ 	unsigned int uLen = pRSNWPA->len + 2;
  
- 	target_index = user_pos >> PAGE_CACHE_SHIFT;
+ 	if (uLen <= (uIELength -
+-		     (unsigned int) (ULONG_PTR) ((PBYTE) pRSNWPA - pbyIEs))) {
++		     (unsigned int) (unsigned long) ((PBYTE) pRSNWPA - pbyIEs))) {
+ 		pBSSList->wWPALen = uLen;
+ 		memcpy(pBSSList->byWPAIE, pRSNWPA, uLen);
+ 		WPA_ParseRSN(pBSSList, pRSNWPA);
+@@ -482,7 +482,7 @@ BOOL BSSbInsertToBSSList(void *hDeviceContext,
+ 	unsigned int uLen = pRSN->len + 2;
  
-@@ -1120,8 +1121,14 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
- 	if (new) {
- 		wc->w_num_pages = ocfs2_pages_per_cluster(inode->i_sb);
- 		start = ocfs2_align_clusters_to_page_index(inode->i_sb, cpos);
--		/* This is the index *past* the write */
--		end_index = ((user_pos + user_len - 1) >> PAGE_CACHE_SHIFT) + 1;
-+		/*
-+		 * We need the index *past* the last page we could possibly
-+		 * touch.  This is the page past the end of the write or
-+		 * i_size, whichever is greater.
-+		 */
-+		last_byte = max(user_pos + user_len, i_size_read(inode));
-+		BUG_ON(last_byte < 1);
-+		end_index = ((last_byte - 1) >> PAGE_CACHE_SHIFT) + 1;
- 		if ((start + wc->w_num_pages) > end_index)
- 			wc->w_num_pages = end_index - start;
- 	} else {
-@@ -1619,6 +1626,18 @@ static int ocfs2_expand_nonsparse_inode(struct inode *inode,
- 	return ret;
- }
+ 	if (uLen <= (uIELength -
+-		     (unsigned int) (ULONG_PTR) ((PBYTE) pRSN - pbyIEs))) {
++		     (unsigned int) (unsigned long) ((PBYTE) pRSN - pbyIEs))) {
+ 		pBSSList->wRSNLen = uLen;
+ 		memcpy(pBSSList->byRSNIE, pRSN, uLen);
+ 		WPA2vParseRSN(pBSSList, pRSN);
+@@ -674,7 +674,7 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
+    if (pRSNWPA != NULL) {
+ 	unsigned int uLen = pRSNWPA->len + 2;
+ 	if (uLen <= (uIELength -
+-		     (unsigned int) (ULONG_PTR) ((PBYTE) pRSNWPA - pbyIEs))) {
++		     (unsigned int) (unsigned long) ((PBYTE) pRSNWPA - pbyIEs))) {
+ 		pBSSList->wWPALen = uLen;
+ 		memcpy(pBSSList->byWPAIE, pRSNWPA, uLen);
+ 		WPA_ParseRSN(pBSSList, pRSNWPA);
+@@ -686,7 +686,7 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
+     if (pRSN != NULL) {
+ 	unsigned int uLen = pRSN->len + 2;
+ 	if (uLen <= (uIELength -
+-			(unsigned int) (ULONG_PTR) ((PBYTE) pRSN - pbyIEs))) {
++			(unsigned int) (unsigned long) ((PBYTE) pRSN - pbyIEs))) {
+ 		pBSSList->wRSNLen = uLen;
+ 		memcpy(pBSSList->byRSNIE, pRSN, uLen);
+ 		WPA2vParseRSN(pBSSList, pRSN);
+diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
+index 3425773..42091c4 100644
+--- a/drivers/staging/vt6656/ttype.h
++++ b/drivers/staging/vt6656/ttype.h
+@@ -83,9 +83,6 @@ typedef UQuadWord       QWORD;          // 64-bit
  
-+static int ocfs2_zero_tail(struct inode *inode, struct buffer_head *di_bh,
-+			   loff_t pos)
-+{
-+	int ret = 0;
-+
-+	BUG_ON(!ocfs2_sparse_alloc(OCFS2_SB(inode->i_sb)));
-+	if (pos > i_size_read(inode))
-+		ret = ocfs2_zero_extend(inode, di_bh, pos);
-+
-+	return ret;
-+}
-+
- int ocfs2_write_begin_nolock(struct address_space *mapping,
- 			     loff_t pos, unsigned len, unsigned flags,
- 			     struct page **pagep, void **fsdata,
-@@ -1655,7 +1674,7 @@ int ocfs2_write_begin_nolock(struct address_space *mapping,
- 	}
+ /****** Common pointer types ***********************************************/
  
- 	if (ocfs2_sparse_alloc(osb))
--		ret = ocfs2_zero_extend(inode, di_bh, pos);
-+		ret = ocfs2_zero_tail(inode, di_bh, pos);
- 	else
- 		ret = ocfs2_expand_nonsparse_inode(inode, di_bh, pos, len,
- 						   wc);
-diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
-index 1fdc45a..ac15911 100644
---- a/fs/ocfs2/file.c
-+++ b/fs/ocfs2/file.c
-@@ -734,7 +734,7 @@ static handle_t *ocfs2_zero_start_ordered_transaction(struct inode *inode)
- 	handle_t *handle = NULL;
- 	int ret = 0;
+-typedef unsigned long   ULONG_PTR;      // 32-bit
+-typedef unsigned long   DWORD_PTR;      // 32-bit
+-
+ // boolean pointer
+ typedef unsigned int *   PUINT;
  
--	if (ocfs2_should_order_data(inode))
-+	if (!ocfs2_should_order_data(inode))
- 		goto out;
- 
- 	handle = ocfs2_start_trans(osb, OCFS2_INODE_UPDATE_CREDITS);
-@@ -771,7 +771,7 @@ static int ocfs2_write_zero_page(struct inode *inode, u64 abs_from,
- 	unsigned zero_from, zero_to, block_start, block_end;
- 
- 	BUG_ON(abs_from >= abs_to);
--	BUG_ON(abs_to > ((index + 1) << PAGE_CACHE_SHIFT));
-+	BUG_ON(abs_to > (((u64)index + 1) << PAGE_CACHE_SHIFT));
- 	BUG_ON(abs_from & (inode->i_blkbits - 1));
- 
- 	page = grab_cache_page(mapping, index);
-@@ -793,8 +793,7 @@ static int ocfs2_write_zero_page(struct inode *inode, u64 abs_from,
- 	     index, zero_from, zero_to);
- 
- 	/* We know that zero_from is block aligned */
--	for (block_start = zero_from;
--	     (block_start < PAGE_CACHE_SIZE) && (block_start < zero_to);
-+	for (block_start = zero_from; block_start < zero_to;
- 	     block_start = block_end) {
- 		block_end = block_start + (1 << inode->i_blkbits);
- 
-@@ -966,6 +965,9 @@ int ocfs2_zero_extend(struct inode *inode, struct buffer_head *di_bh,
- 	struct super_block *sb = inode->i_sb;
- 
- 	zero_start = ocfs2_align_bytes_to_blocks(sb, i_size_read(inode));
-+	mlog(0, "zero_start %llu for i_size %llu\n",
-+	     (unsigned long long)zero_start,
-+	     (unsigned long long)i_size_read(inode));
- 	while (zero_start < zero_to_size) {
- 		ret = ocfs2_zero_extend_get_range(inode, di_bh, zero_start,
- 						  zero_to_size,
 -- 
+1.7.0.4
 
-"The only way to get rid of a temptation is to yield to it."
-         - Oscar Wilde 
-
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
