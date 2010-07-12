@@ -1,319 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756319Ab0GLW4x (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:56:53 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56972 "EHLO comal.ext.ti.com"
+	id S1755840Ab0GLW6c (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:58:32 -0400
+Received: from lucidpixels.com ([75.144.35.66]:40927 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755948Ab0GLW4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:56:23 -0400
-From: Nishanth Menon <nm@ti.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
-        Ameya Palande <ameya.palande@nokia.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 04/11] staging: tidspbridge: remove custom typedef reg_uword32
-Date: Mon, 12 Jul 2010 17:56:02 -0500
-Message-Id: <1278975369-7687-5-git-send-email-nm@ti.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1278975369-7687-1-git-send-email-nm@ti.com>
-References: <1278975369-7687-1-git-send-email-nm@ti.com>
+	id S1756369Ab0GLW63 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 18:58:29 -0400
+Date: Mon, 12 Jul 2010 18:58:27 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+cc: Alan Piszcz <ap@solarrain.com>
+Subject: 2.6.34.1: Marvell 88SE6145 - Only sees one drive?
+Message-ID: <alpine.DEB.2.00.1007121857070.6428@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use readl, writel to get and set the register instead.
+Hi,
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
- drivers/staging/tidspbridge/core/tiomap3430.c     |   18 +--
- drivers/staging/tidspbridge/core/tiomap3430_pwr.c |  126 ++++++---------------
- drivers/staging/tidspbridge/core/tiomap_io.c      |    2 +-
- drivers/staging/tidspbridge/rmgr/node.c           |    4 +-
- 4 files changed, 44 insertions(+), 106 deletions(-)
+Per the Intel DP55KG manual:
 
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
-index d067de9..51e327f 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430.c
-@@ -555,24 +555,18 @@ static int bridge_brd_start(struct bridge_dev_context *hDevContext,
- 		dev_context->mbox->rxq->callback = (int (*)(void *))io_mbox_msg;
- 
- /*PM_IVA2GRPSEL_PER = 0xC0;*/
--		temp = (u32) *((reg_uword32 *)
--				((u32) (resources->dw_per_pm_base) + 0xA8));
-+		temp = readl(resources->dw_per_pm_base + 0xA8);
- 		temp = (temp & 0xFFFFFF30) | 0xC0;
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8)) =
--		    (u32) temp;
-+		writel(temp, resources->dw_per_pm_base + 0xA8);
- 
- /*PM_MPUGRPSEL_PER &= 0xFFFFFF3F; */
--		temp = (u32) *((reg_uword32 *)
--				((u32) (resources->dw_per_pm_base) + 0xA4));
-+		temp = readl(resources->dw_per_pm_base + 0xA4);
- 		temp = (temp & 0xFFFFFF3F);
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4)) =
--		    (u32) temp;
-+		writel(temp, resources->dw_per_pm_base + 0xA4);
- /*CM_SLEEPDEP_PER |= 0x04; */
--		temp = (u32) *((reg_uword32 *)
--				((u32) (resources->dw_per_base) + 0x44));
-+		temp = readl(resources->dw_per_base + 0x44);
- 		temp = (temp & 0xFFFFFFFB) | 0x04;
--		*((reg_uword32 *) ((u32) (resources->dw_per_base) + 0x44)) =
--		    (u32) temp;
-+		writel(temp, resources->dw_per_base + 0x44);
- 
- /*CM_CLKSTCTRL_IVA2 = 0x00000003 -To Allow automatic transitions */
- 		(*pdata->dsp_cm_write)(OMAP34XX_CLKSTCTRL_ENABLE_AUTO,
-diff --git a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-index 2b3ce64..384b833 100644
---- a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-+++ b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
-@@ -430,12 +430,8 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 
- 	switch (clock_id) {
- 	case BPWR_GP_TIMER5:
--		iva2_grpsel = (u32) *((reg_uword32 *)
--				       ((u32) (resources->dw_per_pm_base) +
--					0xA8));
--		mpu_grpsel = (u32) *((reg_uword32 *)
--				      ((u32) (resources->dw_per_pm_base) +
--				       0xA4));
-+		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
-+		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
- 		if (enable) {
- 			iva2_grpsel |= OMAP3430_GRPSEL_GPT5_MASK;
- 			mpu_grpsel &= ~OMAP3430_GRPSEL_GPT5_MASK;
-@@ -443,18 +439,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 			mpu_grpsel |= OMAP3430_GRPSEL_GPT5_MASK;
- 			iva2_grpsel &= ~OMAP3430_GRPSEL_GPT5_MASK;
- 		}
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
--		    = iva2_grpsel;
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
--		    = mpu_grpsel;
-+		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
-+		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
- 		break;
- 	case BPWR_GP_TIMER6:
--		iva2_grpsel = (u32) *((reg_uword32 *)
--				       ((u32) (resources->dw_per_pm_base) +
--					0xA8));
--		mpu_grpsel = (u32) *((reg_uword32 *)
--				      ((u32) (resources->dw_per_pm_base) +
--				       0xA4));
-+		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
-+		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
- 		if (enable) {
- 			iva2_grpsel |= OMAP3430_GRPSEL_GPT6_MASK;
- 			mpu_grpsel &= ~OMAP3430_GRPSEL_GPT6_MASK;
-@@ -462,18 +452,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 			mpu_grpsel |= OMAP3430_GRPSEL_GPT6_MASK;
- 			iva2_grpsel &= ~OMAP3430_GRPSEL_GPT6_MASK;
- 		}
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
--		    = iva2_grpsel;
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
--		    = mpu_grpsel;
-+		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
-+		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
- 		break;
- 	case BPWR_GP_TIMER7:
--		iva2_grpsel = (u32) *((reg_uword32 *)
--				       ((u32) (resources->dw_per_pm_base) +
--					0xA8));
--		mpu_grpsel = (u32) *((reg_uword32 *)
--				      ((u32) (resources->dw_per_pm_base) +
--				       0xA4));
-+		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
-+		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
- 		if (enable) {
- 			iva2_grpsel |= OMAP3430_GRPSEL_GPT7_MASK;
- 			mpu_grpsel &= ~OMAP3430_GRPSEL_GPT7_MASK;
-@@ -481,18 +465,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 			mpu_grpsel |= OMAP3430_GRPSEL_GPT7_MASK;
- 			iva2_grpsel &= ~OMAP3430_GRPSEL_GPT7_MASK;
- 		}
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
--		    = iva2_grpsel;
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
--		    = mpu_grpsel;
-+		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
-+		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
- 		break;
- 	case BPWR_GP_TIMER8:
--		iva2_grpsel = (u32) *((reg_uword32 *)
--				       ((u32) (resources->dw_per_pm_base) +
--					0xA8));
--		mpu_grpsel = (u32) *((reg_uword32 *)
--				      ((u32) (resources->dw_per_pm_base) +
--				       0xA4));
-+		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
-+		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
- 		if (enable) {
- 			iva2_grpsel |= OMAP3430_GRPSEL_GPT8_MASK;
- 			mpu_grpsel &= ~OMAP3430_GRPSEL_GPT8_MASK;
-@@ -500,18 +478,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 			mpu_grpsel |= OMAP3430_GRPSEL_GPT8_MASK;
- 			iva2_grpsel &= ~OMAP3430_GRPSEL_GPT8_MASK;
- 		}
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
--		    = iva2_grpsel;
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
--		    = mpu_grpsel;
-+		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
-+		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
- 		break;
- 	case BPWR_MCBSP1:
--		iva2_grpsel = (u32) *((reg_uword32 *)
--				       ((u32) (resources->dw_core_pm_base) +
--					0xA8));
--		mpu_grpsel = (u32) *((reg_uword32 *)
--				      ((u32) (resources->dw_core_pm_base) +
--				       0xA4));
-+		iva2_grpsel = readl(resources->dw_core_pm_base + 0xA8);
-+		mpu_grpsel = readl(resources->dw_core_pm_base + 0xA4);
- 		if (enable) {
- 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP1_MASK;
- 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP1_MASK;
-@@ -519,18 +491,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP1_MASK;
- 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP1_MASK;
- 		}
--		*((reg_uword32 *) ((u32) (resources->dw_core_pm_base) + 0xA8))
--		    = iva2_grpsel;
--		*((reg_uword32 *) ((u32) (resources->dw_core_pm_base) + 0xA4))
--		    = mpu_grpsel;
-+		writel(iva2_grpsel, resources->dw_core_pm_base + 0xA8);
-+		writel(mpu_grpsel, resources->dw_core_pm_base + 0xA4);
- 		break;
- 	case BPWR_MCBSP2:
--		iva2_grpsel = (u32) *((reg_uword32 *)
--				       ((u32) (resources->dw_per_pm_base) +
--					0xA8));
--		mpu_grpsel = (u32) *((reg_uword32 *)
--				      ((u32) (resources->dw_per_pm_base) +
--				       0xA4));
-+		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
-+		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
- 		if (enable) {
- 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP2_MASK;
- 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP2_MASK;
-@@ -538,18 +504,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP2_MASK;
- 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP2_MASK;
- 		}
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
--		    = iva2_grpsel;
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
--		    = mpu_grpsel;
-+		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
-+		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
- 		break;
- 	case BPWR_MCBSP3:
--		iva2_grpsel = (u32) *((reg_uword32 *)
--				       ((u32) (resources->dw_per_pm_base) +
--					0xA8));
--		mpu_grpsel = (u32) *((reg_uword32 *)
--				      ((u32) (resources->dw_per_pm_base) +
--				       0xA4));
-+		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
-+		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
- 		if (enable) {
- 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP3_MASK;
- 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP3_MASK;
-@@ -557,18 +517,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP3_MASK;
- 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP3_MASK;
- 		}
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
--		    = iva2_grpsel;
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
--		    = mpu_grpsel;
-+		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
-+		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
- 		break;
- 	case BPWR_MCBSP4:
--		iva2_grpsel = (u32) *((reg_uword32 *)
--				       ((u32) (resources->dw_per_pm_base) +
--					0xA8));
--		mpu_grpsel = (u32) *((reg_uword32 *)
--				      ((u32) (resources->dw_per_pm_base) +
--				       0xA4));
-+		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
-+		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
- 		if (enable) {
- 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP4_MASK;
- 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP4_MASK;
-@@ -576,18 +530,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP4_MASK;
- 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP4_MASK;
- 		}
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
--		    = iva2_grpsel;
--		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
--		    = mpu_grpsel;
-+		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
-+		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
- 		break;
- 	case BPWR_MCBSP5:
--		iva2_grpsel = (u32) *((reg_uword32 *)
--				       ((u32) (resources->dw_core_pm_base) +
--					0xA8));
--		mpu_grpsel = (u32) *((reg_uword32 *)
--				      ((u32) (resources->dw_core_pm_base) +
--				       0xA4));
-+		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
-+		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
- 		if (enable) {
- 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP5_MASK;
- 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP5_MASK;
-@@ -595,10 +543,8 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
- 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP5_MASK;
- 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP5_MASK;
- 		}
--		*((reg_uword32 *) ((u32) (resources->dw_core_pm_base) + 0xA8))
--		    = iva2_grpsel;
--		*((reg_uword32 *) ((u32) (resources->dw_core_pm_base) + 0xA4))
--		    = mpu_grpsel;
-+		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
-+		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
- 		break;
- 	}
- }
-diff --git a/drivers/staging/tidspbridge/core/tiomap_io.c b/drivers/staging/tidspbridge/core/tiomap_io.c
-index c5d39d8..ae165b1 100644
---- a/drivers/staging/tidspbridge/core/tiomap_io.c
-+++ b/drivers/staging/tidspbridge/core/tiomap_io.c
-@@ -439,7 +439,7 @@ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val)
- 		omap_mbox_restore_ctx(dev_context->mbox);
- 
- 		/* Access MMU SYS CONFIG register to generate a short wakeup */
--		temp = *(reg_uword32 *) (resources->dw_dmmu_base + 0x10);
-+		temp = readl(resources->dw_dmmu_base + 0x10);
- 
- 		dev_context->dw_brd_state = BRD_RUNNING;
- 	} else if (dev_context->dw_brd_state == BRD_RETENTION) {
-diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
-index 928079e..4cc14fd 100644
---- a/drivers/staging/tidspbridge/rmgr/node.c
-+++ b/drivers/staging/tidspbridge/rmgr/node.c
-@@ -623,9 +623,7 @@ func_cont:
- 			ul_gpp_mem_base = (u32) host_res->dw_mem_base[1];
- 			off_set = pul_value - dynext_base;
- 			ul_stack_seg_addr = ul_gpp_mem_base + off_set;
--			ul_stack_seg_val = (u32) *((reg_uword32 *)
--						    ((u32)
--						     (ul_stack_seg_addr)));
-+			ul_stack_seg_val = readl(ul_stack_seg_addr);
- 
- 			dev_dbg(bridge, "%s: StackSegVal = 0x%x, StackSegAddr ="
- 				" 0x%x\n", __func__, ul_stack_seg_val,
--- 
-1.6.3.3
+The red eSATA connectors on the back panel can be used to connect an eSATA 
+drive.  They can also be used for port replication, which allows the 
+aggregation of multiple hard drives on each of the eSATA ports.
 
+Has anyone gotten this working in Linux?
+
+It only sees one of the two drives on one sata port.
+Using a thermaltake blackx duet.
+
+Justin.
