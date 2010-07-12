@@ -1,94 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755906Ab0GLC7t (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 22:59:49 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:50527 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755834Ab0GLC7s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 22:59:48 -0400
-Message-ID: <4C3A8435.4050805@cn.fujitsu.com>
-Date: Mon, 12 Jul 2010 10:55:49 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755850Ab0GLDBl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 23:01:41 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57064 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754201Ab0GLDBk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 23:01:40 -0400
+Date: Sun, 11 Jul 2010 23:01:29 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Theodore Tso <tytso@mit.edu>,
+        Christoph Hellwig <hch@infradead.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Li Shaohua <shaohua.li@intel.com>,
+        Myklebust Trond <Trond.Myklebust@netapp.com>,
+        "jens.axboe@oracle.com" <jens.axboe@oracle.com>,
+        Jan Kara <jack@suse.cz>, Nick Piggin <npiggin@suse.de>,
+        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 31/45] writeback: sync old inodes first in background
+ writeback
+Message-ID: <20100712030129.GA22769@infradead.org>
+References: <20091007073818.318088777@intel.com>
+ <20091007074905.131727024@intel.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 5/9] KVM: MMU: introduce gfn_to_page_many_atomic()
- function
-References: <4C330918.6040709@cn.fujitsu.com> <4C330A00.50108@cn.fujitsu.com> <4C39C030.6080009@redhat.com>
-In-Reply-To: <4C39C030.6080009@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20091007074905.131727024@intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Oct 07, 2009 at 03:38:49PM +0800, Wu Fengguang wrote:
+> A background flush work may run for ever. So it's reasonable for it to
+> mimic the kupdate behavior of syncing old/expired inodes first.
 
+I've looked at this a bit again after you pointed to this thread in
+the direct reclaim thread, and I think we should be even more aggressive
+in pushing out old inodes.
 
-Avi Kivity wrote:
-> On 07/06/2010 01:48 PM, Xiao Guangrong wrote:
->> This function not only return the gfn's page but also the page number
->> after @gfn in the slot
->>
->>
->> @@ -923,15 +923,25 @@ static unsigned long gfn_to_hva_memslot(struct
->> kvm_memory_slot *slot, gfn_t gfn)
->>       return slot->userspace_addr + (gfn - slot->base_gfn) * PAGE_SIZE;
->>   }
->>
->> -unsigned long gfn_to_hva(struct kvm *kvm, gfn_t gfn)
->> +static unsigned long gfn_to_hva_many(struct kvm *kvm, gfn_t gfn, int
->> *entry)
->>   {
->>    
-> 
-> 'entry' better be gfn_t.  We limit gfns in a slot, but that's
-> artificial, let's use the correct type.
-> 
-> Also suggest nr_pages as the name.
-> 
+We basically have two types of I/O done from wb_do_writeback:
 
-OK, will fix it in the next version.
+ - either we want to write all inodes for a given bdi/superblock.  That
+   includes all WB_SYNC_ALL callers, but also things like
+   writeback_inodes_sb and the wakeup_flusher_threads call from
+   sys_sync.
+ - or we have a specific goal, like for the background writeback or
+   the wakeup_flusher_threads from free_more_memory.
 
->> @@ -1011,6 +1021,23 @@ pfn_t gfn_to_pfn_memslot(struct kvm *kvm,
->>       return hva_to_pfn(kvm, addr, false);
->>   }
->>
->> +int gfn_to_page_many_atomic(struct kvm *kvm, gfn_t gfn,
->> +                struct page **pages, int nr_pages, bool *enough)
->> +{
->> +    unsigned long addr;
->> +    int entry, ret;
->> +
->> +    addr = gfn_to_hva_many(kvm, gfn,&entry);
->> +    if (kvm_is_error_hva(addr))
->> +        return -1;
->> +
->> +    entry = min(entry, nr_pages);
->> +    *enough = (entry == nr_pages) ? true : false;
->>    
-> 
-> s/ ? true : false//; :)
+For the first case there's obviously no point in doing any
+older_than_this processing as we write out all inodes anyway.
 
-Yeah, it's better.
+For the second case we should always do a older_than_this pass _first_.
+Rationale: we really should get the old inodes out ASAP, so that we
+keep the amount of changes lost on a crash in the boundaries.
+Furthermore the callers only need N pages cleaned, and they don't care
+where from.  So if we can reach our goal with the older_than_this
+writeback we're fine.  If the writeback loop is long enough we can
+keep doing more of these later on as well.
 
-> 
-> Why not return 0 if !enough?
-> 
+Doing this should also help cleaning the code up a bit by moving the
+wb_check_old_data_flush logic into wb_writeback and getting rid of the
+for_kupdate paramter in struct wb_writeback_work.  I'm not even sure
+it's worth keeping it in struct writeback_control.
 
-I think it's better that handle the reset pages in the slot, for example,
-we expect 16 pages are consecutive, but only 12 pages in the slot, the better
-way is handle the reset 12 pages not throw those away.
-
->> +    ret = __get_user_pages_fast(addr, entry, 1, pages);
->> +    return ret;
->> +}
->> +EXPORT_SYMBOL_GPL(gfn_to_page_many_atomic);
->> +
->>   struct page *gfn_to_page(struct kvm *kvm, gfn_t gfn)
->>   {
->>       pfn_t pfn;
->>    
-> 
-> 
