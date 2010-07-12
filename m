@@ -1,72 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756409Ab0GLRdp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 13:33:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33731 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753152Ab0GLRdo (ORCPT
+	id S1756437Ab0GLReg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 13:34:36 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:18832 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755781Ab0GLRef (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 13:33:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=kUgm1vE+R9Y+P794YgjThzBFeTegi239uU7POUR7Rmj8ZjkHvMZ4etxSu0VBbUUjbH
-         zSl5Bfk0P+bsQ1TV0n7lBzYKpyyBm8Jv9SaMfBW0jkhjfIPVzAKw5pmtzdjnJ62GW5TF
-         14XPzyA5zBbB96q3JfZElF0LCYrNb3cJ7JtfE=
+	Mon, 12 Jul 2010 13:34:35 -0400
+Message-ID: <4C3B5226.3090507@panasas.com>
+Date: Mon, 12 Jul 2010 20:34:30 +0300
+From: Benny Halevy <bhalevy@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100712172847.GA17423@merkur.ravnborg.org>
-References: <201007120554.16459.vda.linux@googlemail.com>
-	<20100712100301.db1d3980.randy.dunlap@oracle.com>
-	<AANLkTin88f83UV4HcqKtaXS7F2hMTe8YVJPpE-XLmo5J@mail.gmail.com>
-	<20100712172847.GA17423@merkur.ravnborg.org>
-Date: Mon, 12 Jul 2010 19:33:41 +0200
-Message-ID: <AANLkTimTdQRCoWzCYZ7yBLYsKr4P812n8UR678hktJbO@mail.gmail.com>
-Subject: Re: Modpost error after changing CONFIG_SOUND from m to y
-From: Denys Vlasenko <vda.linux@googlemail.com>
-To: Sam Ravnborg <sam@ravnborg.org>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>, Takashi Iwai <tiwai@suse.de>,
-        linux-kernel@vger.kernel.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Michal Marek <mmarek@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.35-rc4 - CONFIG_LOCALVERSION ignored?
+References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com>	<201007052325.56971.rjw@sisk.pl>	<4C3B49B4.20300@panasas.com> <AANLkTik8MD7bWb_R38MGv3H6ct-Z3ee1x9i9sn5a_ohd@mail.gmail.com>
+In-Reply-To: <AANLkTik8MD7bWb_R38MGv3H6ct-Z3ee1x9i9sn5a_ohd@mail.gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 12 Jul 2010 17:34:34.0283 (UTC) FILETIME=[7E275FB0:01CB21E8]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 7:28 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
-> On Mon, Jul 12, 2010 at 07:11:47PM +0200, Denys Vlasenko wrote:
->> On Mon, Jul 12, 2010 at 7:03 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->> > On Mon, 12 Jul 2010 05:54:16 +0200 Denys Vlasenko wrote:
->> >> I was using the same .config for my home machine for a long time,
->> >> updating it using "make oldconfig" every time I moved to newer kernel.
->> >> It worked fine for many kernels.
->> >>
->> >> In this .config I had CONFIG_SOUND=m.
->> >>
->> >> Starting witn 2.6.34, build fails with
->> >>
->> >> sound/core/sound_oss.c:25:2: error: #error "Enable the OSS soundcore multiplexer (CONFIG_SOUND) in the kernel."
->> >>
->> >> Ok. I changed CONFIG_SOUND to y. Now the build fails at modpost:
->> >
->> > Hi,
->> > I can't get the build to fail (2.6.34 or 2.6.35-rc4-git4).
->> > Please provide a full/complete .config file (and that will include a
->> > kernel version number :).
+On Jul. 12, 2010, 20:20 +0300, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> 2010/7/12 Benny Halevy <bhalevy@panasas.com>:
 >>
->> I found out that build only fails if I give empty CFLAGS_KERNEL
->> and CFLAGS_MODULE variables to make, like this:
->>
->> make CFLAGS_KERNEL="" CFLAGS_MODULE=""
->
-> Messing around with kernel internal flags is bound to give
-> unpredictable bugs.
->
-> I this case you loose "-DMODULE" and I guess some sound specificmodules
-> test on this symbol.
-> And there may be other subtle side-effects.
->
-> What is the intial reason why you assign CFLAGS_KERNEL and CFLAGS_MODULE?
+>> Not working for me either in 2.6.35-rc4.
+> 
+> I assume you're building with "O="? If so, have you checked -git (or
+> any of the nightly snapshots)?
 
-I want to add some flags to every compiler invocation.
--- 
-vda
+Correct.
+
+> 
+> Becuse it _should_ have been fixed about a week ago in commit
+> 7263e715c91f ("kbuild: Fix path to scripts/setlocalversion"). But
+> that's after -rc4.
+> 
+> (I'll do an -rc5 probably today, but it would be good to have it
+> confirmed that the bug is gone)
+
+Confirmed. This patch fixes my problem too.
+
+Thanks!
+
+Benny
+
+> 
+>                Linus
