@@ -1,71 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755850Ab0GLDBl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 23:01:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57064 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754201Ab0GLDBk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 23:01:40 -0400
-Date: Sun, 11 Jul 2010 23:01:29 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Theodore Tso <tytso@mit.edu>,
-        Christoph Hellwig <hch@infradead.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Li Shaohua <shaohua.li@intel.com>,
-        Myklebust Trond <Trond.Myklebust@netapp.com>,
-        "jens.axboe@oracle.com" <jens.axboe@oracle.com>,
-        Jan Kara <jack@suse.cz>, Nick Piggin <npiggin@suse.de>,
-        linux-fsdevel@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 31/45] writeback: sync old inodes first in background
- writeback
-Message-ID: <20100712030129.GA22769@infradead.org>
-References: <20091007073818.318088777@intel.com>
- <20091007074905.131727024@intel.com>
+	id S1755774Ab0GLDJz (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 23:09:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61985 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755099Ab0GLDJy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 23:09:54 -0400
+Message-ID: <4C3A8694.1000401@cn.fujitsu.com>
+Date: Mon, 12 Jul 2010 11:05:56 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20091007074905.131727024@intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 6/9] KVM: MMU: introduce pte_prefetch_topup_memory_cache()
+References: <4C330918.6040709@cn.fujitsu.com> <4C330A37.8080709@cn.fujitsu.com> <4C39C1AB.6000606@redhat.com>
+In-Reply-To: <4C39C1AB.6000606@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Oct 07, 2009 at 03:38:49PM +0800, Wu Fengguang wrote:
-> A background flush work may run for ever. So it's reasonable for it to
-> mimic the kupdate behavior of syncing old/expired inodes first.
 
-I've looked at this a bit again after you pointed to this thread in
-the direct reclaim thread, and I think we should be even more aggressive
-in pushing out old inodes.
 
-We basically have two types of I/O done from wb_do_writeback:
+Avi Kivity wrote:
+> On 07/06/2010 01:49 PM, Xiao Guangrong wrote:
+>> Introduce this function to topup prefetch cache
+>>
+>>
+>>
+>> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+>> index 3dcd55d..cda4587 100644
+>> --- a/arch/x86/kvm/mmu.c
+>> +++ b/arch/x86/kvm/mmu.c
+>> @@ -89,6 +89,8 @@ module_param(oos_shadow, bool, 0644);
+>>       }
+>>   #endif
+>>
+>> +#define PTE_PREFETCH_NUM        16
+>>    
+> 
+> Let's make it 8 to start with...  It's frightening enough.
+> 
+> (8 = one cache line in both guest and host)
 
- - either we want to write all inodes for a given bdi/superblock.  That
-   includes all WB_SYNC_ALL callers, but also things like
-   writeback_inodes_sb and the wakeup_flusher_threads call from
-   sys_sync.
- - or we have a specific goal, like for the background writeback or
-   the wakeup_flusher_threads from free_more_memory.
+Umm, before post this patchset, i have done the draft performance test for
+different prefetch distance, and it shows 16 is the best distance that we can
+get highest performance.
 
-For the first case there's obviously no point in doing any
-older_than_this processing as we write out all inodes anyway.
+> 
+>> @@ -316,15 +318,16 @@ static void update_spte(u64 *sptep, u64 new_spte)
+>>       }
+>>   }
+>>
+>> -static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
+>> -                  struct kmem_cache *base_cache, int min)
+>> +static int __mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
+>> +                    struct kmem_cache *base_cache, int min,
+>> +                    int max, gfp_t flags)
+>>   {
+>>       void *obj;
+>>
+>>       if (cache->nobjs>= min)
+>>           return 0;
+>> -    while (cache->nobjs<  ARRAY_SIZE(cache->objects)) {
+>> -        obj = kmem_cache_zalloc(base_cache, GFP_KERNEL);
+>> +    while (cache->nobjs<  max) {
+>> +        obj = kmem_cache_zalloc(base_cache, flags);
+>>           if (!obj)
+>>               return -ENOMEM;
+>>           cache->objects[cache->nobjs++] = obj;
+>> @@ -332,6 +335,20 @@ static int mmu_topup_memory_cache(struct
+>> kvm_mmu_memory_cache *cache,
+>>       return 0;
+>>   }
+>>
+>> +static int mmu_topup_memory_cache(struct kvm_mmu_memory_cache *cache,
+>> +                  struct kmem_cache *base_cache, int min)
+>> +{
+>> +    return __mmu_topup_memory_cache(cache, base_cache, min,
+>> +                      ARRAY_SIZE(cache->objects), GFP_KERNEL);
+>> +}
+>> +
+>> +static int pte_prefetch_topup_memory_cache(struct kvm_vcpu *vcpu)
+>> +{
+>> +    return __mmu_topup_memory_cache(&vcpu->arch.mmu_rmap_desc_cache,
+>> +                    rmap_desc_cache, PTE_PREFETCH_NUM,
+>> +                    PTE_PREFETCH_NUM, GFP_ATOMIC);
+>> +}
+>> +
+>>    
+> 
+> Just make the ordinary topup sufficient for prefetch.  If we allocate
+> too much, we don't lose anything, the memory remains for the next time
+> around.
+> 
 
-For the second case we should always do a older_than_this pass _first_.
-Rationale: we really should get the old inodes out ASAP, so that we
-keep the amount of changes lost on a crash in the boundaries.
-Furthermore the callers only need N pages cleaned, and they don't care
-where from.  So if we can reach our goal with the older_than_this
-writeback we're fine.  If the writeback loop is long enough we can
-keep doing more of these later on as well.
+Umm, but at the worst case, we should allocate 40 items for rmap, it's heavy
+for GFP_ATOMIC allocation and holding mmu_lock.
 
-Doing this should also help cleaning the code up a bit by moving the
-wb_check_old_data_flush logic into wb_writeback and getting rid of the
-for_kupdate paramter in struct wb_writeback_work.  I'm not even sure
-it's worth keeping it in struct writeback_control.
+
 
