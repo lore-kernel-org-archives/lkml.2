@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753090Ab0GLU3G (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:29:06 -0400
-Received: from smtp103.sbc.mail.gq1.yahoo.com ([67.195.15.62]:46264 "HELO
-	smtp103.sbc.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752337Ab0GLU3B (ORCPT
+	id S1753551Ab0GLU3n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:29:43 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:10162 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab0GLU3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 16:29:01 -0400
-X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
-X-YMail-OSG: cuv5pwAVM1lXKuLmet1qqC_KIoejs4ysRtSOWHiIGwJCBEFYtkxn1BX7MVMfy6gBPNFIe5q5CAa7mjl2iQ47AijwYdf8nPWDPeGVRFKofdlT.6OcqhlgFKRSFtRH4OK0PYIlbYUUE_Cew2ZTMDc_1hp8I20ir3FHgbsv3Jj27QQX4h4Rhx5kHgpnEAYDHYsonFe1oRmGCxOjHnS4t0mIVR_2kuU.qDzIdg.ZNe6eSU6pg_MNMj95HnxQBczEsUp6JWKKNQDClTxZXAnrKF9fDS1zDMGRL7NbUDWN9Ir_NAthwBwKDqdD2RIizWPonyr5QIuyJTYYQBVwJ1NVEr9hTyT5sSIQI2_cPTsQzjiX1mTTp6zBRhzopfrYjl9uoGflcbY-
-X-Yahoo-Newman-Property: ymail-3
-Subject: [ANNOUCE] lio-core-backports.git tree now available!
-From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-To: LKML <linux-kernel@vger.kernel.org>,
-        linux-scsi <linux-scsi@vger.kernel.org>,
-        Linux-fsdevel <linux-fsdevel@vger.kernel.org>
-Cc: nab@risingtidesystems.com
-Content-Type: text/plain
-Date: Mon, 12 Jul 2010 13:25:53 -0700
-Message-Id: <1278966353.16667.205.camel@haakon2.linux-iscsi.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Jul 2010 16:29:41 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN; charset=US-ASCII
+Date: Mon, 12 Jul 2010 16:29:40 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.miao@canonical.com>, linux-omap@vger.kernel.org
+Subject: Re: ARM defconfig files
+In-reply-to: <20100712200604.GD9897@n2100.arm.linux.org.uk>
+Message-id: <alpine.LFD.2.00.1007121619100.10598@xanadu.home>
+References: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org>
+ <20100603181010.GA25779@flint.arm.linux.org.uk>
+ <1275589230.23384.19.camel@c-dwalke-linux.qualcomm.com>
+ <alpine.LFD.2.00.1006031119440.8175@i5.linux-foundation.org>
+ <20100614083214.GA2104@pengutronix.de> <20100630104043.GG11746@pengutronix.de>
+ <20100712155518.GA24144@pengutronix.de>
+ <AANLkTilhI9O6YwnuAylo_jNgwR8VXmpSVJ1kylIYPCGT@mail.gmail.com>
+ <20100712173228.GC9897@n2100.arm.linux.org.uk>
+ <AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com>
+ <20100712200604.GD9897@n2100.arm.linux.org.uk>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings all,
+On Mon, 12 Jul 2010, Russell King - ARM Linux wrote:
 
-It is my pleasure to announce that the lio-core-backports.git tree
-containing the LIO v3.1.x 'out of tree' kernel module builds is now
-publicaly available!  This tree allows the LIO code to run on any
-unmodified kernel from recent v2.6.3[1,2] stable kernels that are
-shipping with RHEL6, OpenSuse 11 and Ubuntu Lucid Lynx going back to
-v2.6.18 w/ RHEL5.  The code is available via gitweb at:
+> On Mon, Jul 12, 2010 at 10:40:36AM -0700, Linus Torvalds wrote:
+> > On Mon, Jul 12, 2010 at 10:32 AM, Russell King - ARM Linux
+> > <linux@arm.linux.org.uk> wrote:
+> > >
+> > > When you brought up the problem you seemed absolutely convinced
+> > > that nothing except your solution was going to be acceptable.
+> > 
+> > That's not true. What's true is that you didn't seem to _understand_
+> > my solution, so I tried to push the understanding of it.
+> 
+> That's your point of view.
+> 
+> My viewpoint was that I had read your email, thought of some alternative
+> solution, proposed it and the result was shot down without any apparant
+> thought about it.  That gave the impression that you _only_ wanted to
+> see your own solution.
 
-http://risingtidesystems.com/git/?p=lio-core-backports.git;a=summary
+OK, please let's put this appearance of misunderstanding behind.  
+The rehashing of it from either parties doesn't produce any good.
 
-This tree has been maintained for the last 8 months tracking upstream
-lio-core-2.6.git changes for Rising Tide Systems customers, and is now
-being made available as a service to the community.
+> The result of that has been very little in the way of progress towards
+> either your, or my alternative solutions - and apart from a few Kconfig
+> corner quirk patches, the only major work that's happened has been from
+> Uwe.
 
-This tree contains the v3.1.x code for TCM/ConfigFS (Target_Core_Mod)
-and the LIO-Target iSCSI fabric module.  This tree also includes a
-backport of the configfs filesystem, which is required in order for LIO
-to run on pre v2.6.27 kernels due to bugs in the handling of config
-subsystem in logic the original fs/configfs code that was fixed upstream
-fall 2008.  Finally, the tree is capable of generating RPM and DEB
-kernel packages on many propular distributions.
+For the record, I do support Uwe's work too.  I do wish it could go in 
+now so that from that point going forward we could only focus on 
+improving the thing instead of having to care about implications during 
+the merge window.
 
-This tree contains complete support of all SPC-4 feature bits for
-Persistent Reservations and ALUA multipath.  This same logic has been
-certified for VMWare VSphere v4 from multiple independent hardware
-vendors who are now shipping LIO v3.x code.
+But I do prefer RMK's proposal in the long run.  Not only is it more 
+expressive and clear, but it is easier to maintain going forward too.  
+But that transition cannot be automated and I doubt the majority of 
+targets will be converted anytime soon if at all.  So at least Uwe's 
+reduction is quite a good compromise for those.
 
-Information has been added to LIO wiki download page at:
 
-http://linux-iscsi.org/index.php/Downloads
-
-and build README containing the mini-HOWTO is available here:
-
-http://risingtidesystems.com/git/?p=lio-core-backports.git;a=blob_plain;f=README;hb=HEAD
-
-Best,
-
---nab
-
+Nicolas
