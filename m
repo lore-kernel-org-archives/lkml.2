@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756620Ab0GLS1g (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 14:27:36 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:59124 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756577Ab0GLS1f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 14:27:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Spb5MdYDhQDp3/eqPv87gVBAEGkBij6wFOyiVmN7euxZwtT5sfHES4BGtss6VLgHLj
-         hgxC8H1LJkHzOTdheGEYpx4Y2ZtVYQMmIe1Ady1k+ouYC5UhvNDduDc4Ou8UQGGhykf+
-         KduaS8yPL7DoCBoEYlKhSJzTwnj2QeT67O1CM=
-MIME-Version: 1.0
-In-Reply-To: <D3F292ADF945FB49B35E96C94C2061B90C3CFABA@nsmail.netscout.com>
-References: <AANLkTimvsaoOm_QEUnvlZf2EKuiMpOr9PdQt_Ga0Z97D@mail.gmail.com>
-	<20100708012120.GB11419@auslistsprd01.us.dell.com>
-	<D3F292ADF945FB49B35E96C94C2061B90C317EA2@nsmail.netscout.com>
-	<82tyo9i0n2.fsf@mid.bfk.de>
-	<D3F292ADF945FB49B35E96C94C2061B90C3CF3E9@nsmail.netscout.com>
-	<AANLkTik4JOoNFSoML98j8LPJhJjVpWd8om-OYMGp3s9V@mail.gmail.com>
-	<D3F292ADF945FB49B35E96C94C2061B90C3CF4C5@nsmail.netscout.com>
-	<AANLkTilYZTwekbqKCXEaT6Yo3UTDl9tRHJlRdwpSg_IH@mail.gmail.com>
-	<D3F292ADF945FB49B35E96C94C2061B90C3CFABA@nsmail.netscout.com>
-Date: Mon, 12 Jul 2010 11:27:33 -0700
-Message-ID: <AANLkTilc6DkjD3Jzqv51t1ohzzxgLqvBZnP4ij3GKekB@mail.gmail.com>
-Subject: Re: nic enumeration
-From: Steve Fink <sphink@gmail.com>
-To: "Loke, Chetan" <Chetan.Loke@netscout.com>
-Cc: Florian Weimer <fweimer@bfk.de>, linux-net@vger.kernel.org,
-        Matt Domsch <Matt_Domsch@dell.com>,
-        Michael Di Domenico <mdidomenico4@gmail.com>,
-        linux-kernel@vger.kernel.org, kay.sievers@vrfy.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756607Ab0GLS2i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 14:28:38 -0400
+Received: from mail.perches.com ([173.55.12.10]:1705 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756375Ab0GLS2g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 14:28:36 -0400
+Subject: Re: Possible false positive from checkpatch.pl
+From: Joe Perches <joe@perches.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C3B5660.8020405@lwfinger.net>
+References: <4C3B5660.8020405@lwfinger.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 12 Jul 2010 11:28:35 -0700
+Message-ID: <1278959315.1501.261.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->> I only partially understand your problem, but I am still wondering if
->> my bridge idea would work for you. (Preferably combined with udev
->> rules or whatever so the bridges are unnecessary after the next
->> reboot.)
->
-> Why a bridge? Just to get around naming issues?
+On Mon, 2010-07-12 at 12:52 -0500, Larry Finger wrote:
+> Andy,
+> 
+> In preparing a vendor driver for submission to staging, I am getting the 
+> following from checkpatch.pl:
+> 
+> ERROR: Macros with multiple statements should be enclosed in a do - while loop
+> #377: FILE: staging/rtl8712/rtl871x_mp_ioctl.h:377:
+> +#define GEN_MP_IOCTL_HANDLER(sz, hdl, oid) {sz, hdl, oid},
 
-Yes. I wasn't claiming it was a *good* way to fix it. Just wondering
-if it would work.
+I think you should leave off the trailing comma from the macros
+and C99 might be better.  Maybe something like:
 
-I have no idea whether it makes sense or not, not really knowing much
-about this stuff myself. I tried it on my workstation. It's a good way
-to kick yourself off the network. But it does work in the simplest
-possible case, if you fix up routing afterwards. I don't know whether
-bridges can be usefully used by VMs.
+(whatever the field names really are)
+
+#define GEN_MP_IOCTL_HANDLER(sz, hdl, oid)	\
+	{.field1 = sz, .field2 = hdl, .field3 = oid}
+
+> ERROR: Macros with multiple statements should be enclosed in a do - while loop
+> #378: FILE: staging/rtl8712/rtl871x_mp_ioctl.h:378:
+> +#define EXT_MP_IOCTL_HANDLER(sz, subcode, oid) {sz, &mp_ioctl_ \
+> +       ## subcode ## _hdl, oid},
+
+The line continuation is rather ugly too.  Perhaps it's better as:
+
+#define EXT_MP_IOCTL_HANDLER(sz, subcode, oid)	\
+	{.field1 = sz, .field2 = &mp_ioctl_##subcode##_hdl, .field3 = oid}
+
+They pass checkpatch without error.
+
+$ cat foo.h
+#define GEN_MP_IOCTL_HANDLER(sz, hdl, oid)	\
+	{.field1 = sz, .field2 = hdl, .field3 = oid}
+#define EXT_MP_IOCTL_HANDLER(sz, subcode, oid)	\
+	{.field1 = sz, .field2 = &mp_ioctl_##subcode##_hdl, .field3 = oid}
+$ ./scripts/checkpatch.pl -f foo.h
+total: 0 errors, 0 warnings, 4 lines checked
+
+foo.h has no obvious style problems and is ready for submission.
+
