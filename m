@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab0GLUuf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:50:35 -0400
-Received: from mail.perches.com ([173.55.12.10]:1717 "EHLO mail.perches.com"
+	id S1754249Ab0GLUuh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:50:37 -0400
+Received: from mail.perches.com ([173.55.12.10]:1725 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754009Ab0GLUuc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 16:50:32 -0400
+	id S1754009Ab0GLUuf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 16:50:35 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Tony Luck <tony.luck@intel.com>,
-        Fenghua Yu <fenghua.yu@intel.com>, linux-ia64@vger.kernel.org
-Subject: [PATCH 02/36] arch/ia64: Remove unnecessary casts of private_data
-Date: Mon, 12 Jul 2010 13:49:54 -0700
-Message-Id: <51531d8f533d3e6f6bb53612e9569a8b6394beed.1278967120.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Marcel Holtmann <marcel@holtmann.org>,
+        linux-bluetooth@vger.kernel.org
+Subject: [PATCH 05/36] drivers/bluetooth: Remove unnecessary casts of private_data
+Date: Mon, 12 Jul 2010 13:49:57 -0700
+Message-Id: <2c766ab749f348012f0338eb41ec0b938a65044e.1278967120.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.337.g6068.dirty
 In-Reply-To: <cover.1278967120.git.joe@perches.com>
 References: <cover.1278967120.git.joe@perches.com>
@@ -22,67 +22,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/ia64/kernel/perfmon.c |   12 ++++++------
- 1 files changed, 6 insertions(+), 6 deletions(-)
+ drivers/bluetooth/btmrvl_debugfs.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
-index 7443290..9b6580c 100644
---- a/arch/ia64/kernel/perfmon.c
-+++ b/arch/ia64/kernel/perfmon.c
-@@ -1573,7 +1573,7 @@ pfm_read(struct file *filp, char __user *buf, size_t size, loff_t *ppos)
- 		return -EINVAL;
- 	}
+diff --git a/drivers/bluetooth/btmrvl_debugfs.c b/drivers/bluetooth/btmrvl_debugfs.c
+index b50b41d..54739b0 100644
+--- a/drivers/bluetooth/btmrvl_debugfs.c
++++ b/drivers/bluetooth/btmrvl_debugfs.c
+@@ -216,7 +216,7 @@ static const struct file_operations btmrvl_gpiogap_fops = {
+ static ssize_t btmrvl_hscmd_write(struct file *file, const char __user *ubuf,
+ 						size_t count, loff_t *ppos)
+ {
+-	struct btmrvl_private *priv = (struct btmrvl_private *) file->private_data;
++	struct btmrvl_private *priv = file->private_data;
+ 	char buf[16];
+ 	long result, ret;
  
--	ctx = (pfm_context_t *)filp->private_data;
-+	ctx = filp->private_data;
- 	if (ctx == NULL) {
- 		printk(KERN_ERR "perfmon: pfm_read: NULL ctx [%d]\n", task_pid_nr(current));
- 		return -EINVAL;
-@@ -1673,7 +1673,7 @@ pfm_poll(struct file *filp, poll_table * wait)
- 		return 0;
- 	}
- 
--	ctx = (pfm_context_t *)filp->private_data;
-+	ctx = filp->private_data;
- 	if (ctx == NULL) {
- 		printk(KERN_ERR "perfmon: pfm_poll: NULL ctx [%d]\n", task_pid_nr(current));
- 		return 0;
-@@ -1733,7 +1733,7 @@ pfm_fasync(int fd, struct file *filp, int on)
- 		return -EBADF;
- 	}
- 
--	ctx = (pfm_context_t *)filp->private_data;
-+	ctx = filp->private_data;
- 	if (ctx == NULL) {
- 		printk(KERN_ERR "perfmon: pfm_fasync NULL ctx [%d]\n", task_pid_nr(current));
- 		return -EBADF;
-@@ -1841,7 +1841,7 @@ pfm_flush(struct file *filp, fl_owner_t id)
- 		return -EBADF;
- 	}
- 
--	ctx = (pfm_context_t *)filp->private_data;
-+	ctx = filp->private_data;
- 	if (ctx == NULL) {
- 		printk(KERN_ERR "perfmon: pfm_flush: NULL ctx [%d]\n", task_pid_nr(current));
- 		return -EBADF;
-@@ -1984,7 +1984,7 @@ pfm_close(struct inode *inode, struct file *filp)
- 		return -EBADF;
- 	}
- 	
--	ctx = (pfm_context_t *)filp->private_data;
-+	ctx = filp->private_data;
- 	if (ctx == NULL) {
- 		printk(KERN_ERR "perfmon: pfm_close: NULL ctx [%d]\n", task_pid_nr(current));
- 		return -EBADF;
-@@ -4906,7 +4906,7 @@ restart_args:
- 		goto error_args;
- 	}
- 
--	ctx = (pfm_context_t *)file->private_data;
-+	ctx = file->private_data;
- 	if (unlikely(ctx == NULL)) {
- 		DPRINT(("no context for fd %d\n", fd));
- 		goto error_args;
 -- 
 1.7.1.337.g6068.dirty
 
