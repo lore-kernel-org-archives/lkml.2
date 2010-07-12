@@ -1,74 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754758Ab0GLNPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 09:15:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45272 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751497Ab0GLNPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 09:15:04 -0400
-Message-ID: <4C3B1554.7000005@redhat.com>
-Date: Mon, 12 Jul 2010 16:15:00 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1754924Ab0GLNSv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 09:18:51 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:49503 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754052Ab0GLNSu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 09:18:50 -0400
+Message-ID: <4C3B138E.4080208@monstr.eu>
+Date: Mon, 12 Jul 2010 15:07:26 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 1/9] KVM: MMU: fix forgot reserved bits check in speculative
- path
-References: <4C330918.6040709@cn.fujitsu.com> <4C39B81A.5080000@redhat.com> <4C3A7FEA.6030205@cn.fujitsu.com>
-In-Reply-To: <4C3A7FEA.6030205@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+CC: linux-kernel@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au
+Subject: Re: [PATCH] microblaze: remove unused HAVE_ARCH_PCI_SET_DMA_MASK
+References: <20100712153701V.fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100712153701V.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2010 05:37 AM, Xiao Guangrong wrote:
->    
->>> +    if (is_rsvd_bits_set(vcpu, gentry, PT_PAGE_TABLE_LEVEL))
->>> +        gentry = 0;
->>> +
->>>
->>>        
->> That only works if the gpte is for the same mode as the current vcpu mmu
->> mode.  In some cases it is too strict (vcpu in pae mode writing a 32-bit
->> gpte), which is not too bad, in some cases it is too permissive (vcpu in
->> nonpae mode writing a pae gpte).
->>
->>      
-> Avi, thanks for your review.
->
-> Do you mean that the VM has many different mode vcpu? For example, both
-> nonpae vcpu and pae vcpu are running in one VM? I forgot to consider this
-> case.
->    
+FUJITA Tomonori wrote:
+> HAVE_ARCH_PCI_SET_DMA_MASK was removed in 2.6.36 (no architecture has
+> the own implementation of pci_set_dma_mask).
 
-Yes.  This happens while the guest brings up other vcpus, and when using 
-nested virtualization.
+Added to next branch. I also fixed that kernel version.
 
->> (once upon a time mixed modes were rare, only on OS setup, but with
->> nested virt they happen all the time).
->>      
-> I'm afraid it's still has problem, it will cause access corruption:
-> 1: if nonpae vcpu write pae gpte, it will miss NX bit
-> 2: if pae vcpu write nonpae gpte, it will add NX bit that over gpte's width
->
-> How about only update the shadow page which has the same pae set with the written
-> vcpu? Just like this:
->
-> @@ -3000,6 +3000,10 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->                  while (npte--) {
->                          entry = *spte;
->                          mmu_pte_write_zap_pte(vcpu, sp, spte);
-> +
-> +                       if (!!is_pae(vcpu) != sp->role.cr4_pae)
-> +                               continue;
-> +
->    
+Thanks,
+Michal
 
-Not enough, one vcpu can have nx set while the other has it reset, etc.
+> 
+> Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+> ---
+>  arch/microblaze/include/asm/dma-mapping.h |    6 ------
+>  1 files changed, 0 insertions(+), 6 deletions(-)
+> 
+> diff --git a/arch/microblaze/include/asm/dma-mapping.h b/arch/microblaze/include/asm/dma-mapping.h
+> index 18b3731..5073895 100644
+> --- a/arch/microblaze/include/asm/dma-mapping.h
+> +++ b/arch/microblaze/include/asm/dma-mapping.h
+> @@ -79,12 +79,6 @@ static inline int dma_supported(struct device *dev, u64 mask)
+>  	return ops->dma_supported(dev, mask);
+>  }
+>  
+> -#ifdef CONFIG_PCI
+> -/* We have our own implementation of pci_set_dma_mask() */
+> -#define HAVE_ARCH_PCI_SET_DMA_MASK
+> -
+> -#endif
+> -
+>  static inline int dma_set_mask(struct device *dev, u64 dma_mask)
+>  {
+>  	struct dma_map_ops *ops = get_dma_ops(dev);
+
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
