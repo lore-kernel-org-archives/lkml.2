@@ -1,99 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755931Ab0GLO26 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 10:28:58 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49560 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755788Ab0GLO24 (ORCPT
+	id S1755900Ab0GLOak (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 10:30:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:53259 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755357Ab0GLOaj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 10:28:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=MMPozgnmC+t9EoJbMq1AVGL/WmFYpTfLDzCO9ew7H+yTlvcExuiW8a+CRHXPFr28fd
-         7qwuNXa5nDlHcQi4jbgcguqEOj6hXH8/f9rX4twdRjf+Ie+8TDOF2Dx6rgTSP+/7JcRI
-         7PiBixA6zXwu4ATN9fLZbGnc9sF8gPevDXtlU=
-Date: Mon, 12 Jul 2010 22:29:09 +0800
-From: "crosslonelyover" <crosslonelyover@gmail.com>
-To: "linux-ext4" <linux-ext4@vger.kernel.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>,
-        "kernel-janitors" <kernel-janitors@vger.kernel.org>
-Subject: [PATCH] check name_len before down_read xattr_sem and sb_read in ext2_xattr_get
-Message-ID: <201007122229025316610@gmail.com>
-X-mailer: Foxmail 6, 15, 201, 22 [cn]
+	Mon, 12 Jul 2010 10:30:39 -0400
+X-Authority-Analysis: v=1.1 cv=FmZLatDjtfD3C7oE6GdrxaCbsxiNBR9ZXBX9JZchN1o= c=1 sm=0 a=dypDJS46MawA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=yYVPuK6vsqnGe_gb48sA:9 a=iDvGhCBQF3k8ThBnRYkA:7 a=KoylJLFzSurLep3dNYzRBaO82WEA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 10/13]  perf: Re-Add make_absolute_path
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100712140023.GC25238@ghostprotocols.net>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
+	 <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6>
+	 <20100712140023.GC25238@ghostprotocols.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 12 Jul 2010 10:30:36 -0400
+Message-ID: <1278945036.1537.189.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-       I walked through ext2_xattr_get, and felt that we can
-do some optimization on it. For name_len check, it's done
-after down xattr_sem and sb_read, both of which are time
-consuming operation compared with strlen:
-         down_read(&EXT2_I(inode)->xattr_sem);
- ...
-         bh = sb_bread(inode->i_sb, EXT2_I(inode)->i_file_acl);
- ...
-         /* find named attribute */
-         name_len = strlen(name);
+On Mon, 2010-07-12 at 11:00 -0300, Arnaldo Carvalho de Melo wrote:
 
-         error = -ERANGE;
-         if (name_len > 255)
-                 goto cleanup;
+> Also please remove the xstrdup and die calls from this function, we're
+> trying to get rid of all such 'panic' like functions so that we can
+> librarize as much code as possible.
+>  
 
-       Most of the case, you'll get one valid block, but if the
-name len > 255, then the xattr_sem down and sb_bread operation
-can be seen as a waste of time. So I think we'd better do
-name len check as early as possible.
-       Following is my patch, and it's against 2.6.35-rc4.
-Please check it.
+What I found useful with the "die" calls with trace-cmd is that I made
+them weak, and then they could be overwritten by apps. Thus, in
+kernelshark, the die and warning functions produce pop-ups and bug
+reports.
 
-Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
----
- fs/ext2/xattr.c |   12 +++++++-----
- 1 files changed, 7 insertions(+), 5 deletions(-)
-
-diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
-index 7c39157..0b94d61 100644
---- a/fs/ext2/xattr.c
-+++ b/fs/ext2/xattr.c
-@@ -161,6 +161,13 @@ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
- 
- 	if (name == NULL)
- 		return -EINVAL;
-+
-+	/* find named attribute */
-+	name_len = strlen(name);
-+	error = -ERANGE;
-+	if (name_len > 255)
-+		goto cleanup;
-+
- 	down_read(&EXT2_I(inode)->xattr_sem);
- 	error = -ENODATA;
- 	if (!EXT2_I(inode)->i_file_acl)
-@@ -181,12 +188,7 @@ bad_block:	ext2_error(inode->i_sb, "ext2_xattr_get",
- 		error = -EIO;
- 		goto cleanup;
- 	}
--	/* find named attribute */
--	name_len = strlen(name);
- 
--	error = -ERANGE;
--	if (name_len > 255)
--		goto cleanup;
- 	entry = FIRST_ENTRY(bh);
- 	while (!IS_LAST_ENTRY(entry)) {
- 		struct ext2_xattr_entry *next =
--- 
-1.7.1.1
-
-
-
-
+-- Steve
 
 
