@@ -1,63 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab0GLWju (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:39:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26257 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755479Ab0GLWjt (ORCPT
+	id S1755714Ab0GLWkg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:40:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:48207 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab0GLWke (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:39:49 -0400
-Date: Mon, 12 Jul 2010 15:37:31 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
-        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 27/36] fs/ocfs2: Remove unnecessary casts of
- private_data
-Message-ID: <20100712223731.GH12179@mail.oracle.com>
-Mail-Followup-To: Joe Perches <joe@perches.com>,
-	Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
-	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
-References: <cover.1278967120.git.joe@perches.com>
- <c75b92bbfb63964703ae99733f39696af4550f07.1278967121.git.joe@perches.com>
+	Mon, 12 Jul 2010 18:40:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=O8Y3lzGSIiTw21i3KeoQ0AZenyj4vaF6fPehFD55JJvVT07cIZKhDxz6W8hRWQ6seJ
+         m3T6WIuZd1wEtxBBWR1Rfi0rTbbnlj8eyw0SiCp289LKCLwGR7M58nc8s5DLbVtFVF5C
+         LzBUdZcMTiT4nG+kHQdfklSe/BwWF+aGSry3U=
+Date: Tue, 13 Jul 2010 00:39:05 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: suokkos@gmail.com
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
+Subject: questions about ttm_page_alloc.c
+Message-ID: <20100712223905.GH5658@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>, suokkos@gmail.com,
+	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <c75b92bbfb63964703ae99733f39696af4550f07.1278967121.git.joe@perches.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0208.4C3B996D.01E2:SCFMA4539814,ss=1,fgs=0
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 01:50:19PM -0700, Joe Perches wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  fs/ocfs2/dlm/dlmdebug.c |    6 +++---
->  fs/ocfs2/dlmfs/dlmfs.c  |    3 +--
->  fs/ocfs2/dlmglue.c      |    4 ++--
->  3 files changed, 6 insertions(+), 7 deletions(-)
+I'm investigating: https://bugzilla.kernel.org/show_bug.cgi?id=16337
 
-Acked-by: Joel Becker <joel.becker@oracle.com>
+He is using the new radeon with the new ttm pool wc/uc page allocator.
+I'm sort of over my head when it comes to mm stuff so forgive me if
+these are dumb questions...  I'm looking at 
+drivers/gpu/drm/ttm/ttm_page_alloc.c.
 
-Btw, how hilarious is the comment for private_data?
+   230  static int set_pages_array_wc(struct page **pages, int addrinarray)
+   231  {
+   232  #ifdef TTM_HAS_AGP
+   233          int i;
+   234  
+   235          for (i = 0; i < addrinarray; i++)
+   236                  map_page_into_agp(pages[i]);
+			^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Joel
+	This actually sets the pages to uncached and not to write
+	cached.  Is that deliberate?
 
--- 
+   237  #endif
+   238          return 0;
+   239  }
 
-A good programming language should have features that make the
-kind of people who use the phrase "software engineering" shake
-their heads disapprovingly.
-	- Paul Graham
+[snip]
 
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+   327                  pages_to_free[freed_pages++] = p;
+   328                  /* We can only remove NUM_PAGES_TO_ALLOC at a time. */
+   329                  if (freed_pages >= NUM_PAGES_TO_ALLOC) {
+   330                          /* remove range of pages from the pool */
+   331                          __list_del(p->lru.prev, &pool->list);
+
+	Why do we use p->lru.prev here when we use &p->lru in other
+	places?
+
+   332  
+   333                          ttm_pool_update_free_locked(pool, freed_pages);
+   334                          /**
+   335                           * Because changing page caching is costly
+   336                           * we unlock the pool to prevent stalling.
+
+regards,
+dan carpenter
