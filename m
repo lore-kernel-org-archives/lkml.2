@@ -1,125 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab0GLByx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 21:54:53 -0400
-Received: from mail7.hitachi.co.jp ([133.145.228.42]:58033 "EHLO
-	mail7.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab0GLByw (ORCPT
+	id S1755534Ab0GLB6I (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 21:58:08 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45925 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab0GLB6G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 21:54:52 -0400
-X-AuditID: b753bd60-a74ceba000005dcc-f2-4c3a75e96279
-Message-ID: <4C3A75E3.6070803@hitachi.com>
-Date: Mon, 12 Jul 2010 10:54:43 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Sun, 11 Jul 2010 21:58:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Hellwig <hch@infradead.org>
+Subject: Re: [PATCH 1/2] Add trace events to mmap and brk
+Cc: kosaki.motohiro@jp.fujitsu.com, Eric B Munson <emunson@mgebm.net>,
+        akpm@linux-foundation.org, mingo@redhat.com,
+        hugh.dickins@tiscali.co.uk, riel@redhat.com, peterz@infradead.org,
+        anton@samba.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <20100709160342.GB3281@infradead.org>
+References: <1278690830-22145-1-git-send-email-emunson@mgebm.net> <20100709160342.GB3281@infradead.org>
+Message-Id: <20100712104602.EA1A.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ian Munsie <imunsie@au.ibm.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>
-Subject: Re: [PATCH] perf: Add DWARF register lookup for SH
-References: <e55812819ad18c2ceca5651ac7698a2af46180d7.1278774279.git.matt@console-pimps.org>
-In-Reply-To: <e55812819ad18c2ceca5651ac7698a2af46180d7.1278774279.git.matt@console-pimps.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Mon, 12 Jul 2010 10:58:01 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Fleming wrote:
-> Implement get_arch_regstr() for SH so that, given a DWARF register
-> number, the corresponding symbolic name of that register can be looked
-> up.
+> Hmm, thinking about it a bit more, what do you trace events give us that
+> the event based syscall tracer doesn't?
 
-OK, the patch itself looks good, but I don't know whether SH kernel
-supports KPROBE_EVENT which is required for perf-probe. Or, SH kernel
-repository already has it?
+Yup. I think we need two tracepoint.
 
-Thank you,
+ 1) need to know userland argument.
+    -> syscall tracer
+ 2) need to know actual vma change.
+    -> need to trace more low layer
 
-> 
-> Signed-off-by: Matt Fleming <matt@console-pimps.org>
-> ---
->  tools/perf/arch/sh/Makefile          |    4 ++
->  tools/perf/arch/sh/util/dwarf-regs.c |   55 ++++++++++++++++++++++++++++++++++
->  2 files changed, 59 insertions(+), 0 deletions(-)
->  create mode 100644 tools/perf/arch/sh/Makefile
->  create mode 100644 tools/perf/arch/sh/util/dwarf-regs.c
-> 
-> diff --git a/tools/perf/arch/sh/Makefile b/tools/perf/arch/sh/Makefile
-> new file mode 100644
-> index 0000000..15130b5
-> --- /dev/null
-> +++ b/tools/perf/arch/sh/Makefile
-> @@ -0,0 +1,4 @@
-> +ifndef NO_DWARF
-> +PERF_HAVE_DWARF_REGS := 1
-> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
-> +endif
-> diff --git a/tools/perf/arch/sh/util/dwarf-regs.c b/tools/perf/arch/sh/util/dwarf-regs.c
-> new file mode 100644
-> index 0000000..a11edb0
-> --- /dev/null
-> +++ b/tools/perf/arch/sh/util/dwarf-regs.c
-> @@ -0,0 +1,55 @@
-> +/*
-> + * Mapping of DWARF debug register numbers into register names.
-> + *
-> + * Copyright (C) 2010 Matt Fleming <matt@console-pimps.org>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-> + *
-> + */
-> +
-> +#include <libio.h>
-> +#include <dwarf-regs.h>
-> +
-> +/*
-> + * Generic dwarf analysis helpers
-> + */
-> +
-> +#define SH_MAX_REGS 18
-> +const char *sh_regs_table[SH_MAX_REGS] = {
-> +	"r0",
-> +	"r1",
-> +	"r2",
-> +	"r3",
-> +	"r4",
-> +	"r5",
-> +	"r6",
-> +	"r7",
-> +	"r8",
-> +	"r9",
-> +	"r10",
-> +	"r11",
-> +	"r12",
-> +	"r13",
-> +	"r14",
-> +	"r15",
-> +	"pc",
-> +	"pr",
-> +};
-> +
-> +/* Return architecture dependent register string (for kprobe-tracer) */
-> +const char *get_arch_regstr(unsigned int n)
-> +{
-> +	return (n <= SH_MAX_REGS) ? sh_regs_table[n] : NULL;
-> +}
+
+As I said, if userland app have following code,
+
+	mmap(0x10000, PROT_READ|PROT_WRITE)
+	mmap(0x10000, PROT_NONE)
+
+second mmap implicitly unmap firt mmap region and map another region.
+so if we want to track munmap activity, syscall exiting point is not
+so good place. we need to trace per-vma activity.
+
+btw, perf_event_mmap() already take vma argument.
+
+
+
+
 
