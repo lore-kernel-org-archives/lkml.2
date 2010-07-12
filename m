@@ -1,316 +1,234 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754705Ab0GLWBm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:01:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36961 "EHLO hera.kernel.org"
+	id S1755009Ab0GLWEF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:04:05 -0400
+Received: from lucidpixels.com ([75.144.35.66]:36338 "EHLO lucidpixels.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754041Ab0GLWBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:01:40 -0400
-Date: Mon, 12 Jul 2010 22:00:54 GMT
-From: tip-bot for Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, penberg@cs.helsinki.fi, gorcunov@gmail.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, penberg@cs.helsinki.fi, gorcunov@gmail.com,
-        tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <1278835617-11368-1-git-send-email-penberg@cs.helsinki.fi>
-References: <1278835617-11368-1-git-send-email-penberg@cs.helsinki.fi>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/setup] x86, setup: Early-boot serial I/O support
-Message-ID: <tip-fa97bdf92709adaaf8b9a5164a895e262a4fcf60@git.kernel.org>
-Git-Commit-ID: fa97bdf92709adaaf8b9a5164a895e262a4fcf60
-X-Mailer: tip-git-log-daemon
+	id S1754174Ab0GLWED (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 18:04:03 -0400
+Date: Mon, 12 Jul 2010 18:03:59 -0400 (EDT)
+From: Justin Piszcz <jpiszcz@lucidpixels.com>
+To: linux-kernel@vger.kernel.org
+cc: linux-scsi@vger.kernel.org
+Subject: Re: 2.6.34.1: link online but device misclassifed / input/output
+ error
+In-Reply-To: <alpine.DEB.2.00.1007121633320.5154@p34.internal.lan>
+Message-ID: <alpine.DEB.2.00.1007121803000.18654@p34.internal.lan>
+References: <alpine.DEB.2.00.1007121633320.5154@p34.internal.lan>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 12 Jul 2010 22:00:55 +0000 (UTC)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fa97bdf92709adaaf8b9a5164a895e262a4fcf60
-Gitweb:     http://git.kernel.org/tip/fa97bdf92709adaaf8b9a5164a895e262a4fcf60
-Author:     Pekka Enberg <penberg@cs.helsinki.fi>
-AuthorDate: Sun, 11 Jul 2010 11:06:57 +0300
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 12 Jul 2010 14:46:00 -0700
+Hi,
 
-x86, setup: Early-boot serial I/O support
+The marvell controller was set to IDE mode and not RAID, after it was set 
+to AHCI, the smart status returned OK.
 
-This patch adds serial I/O support to the real-mode setup (very early
-boot) printf(). It's useful for debugging boot code when running Linux
-under KVM, for example. The actual code was lifted from early printk.
+Still kind of annoying though the marvell 88SE6145 does not support port 
+multipliers.
 
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Pekka Enberg <penberg@cs.helsinki.fi>
-LKML-Reference: <1278835617-11368-1-git-send-email-penberg@cs.helsinki.fi>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/boot.h   |   16 +++++++
- arch/x86/boot/main.c   |    3 +
- arch/x86/boot/string.c |   41 ++++++++++++++++++
- arch/x86/boot/tty.c    |  111 +++++++++++++++++++++++++++++++++++++++++++++---
- 4 files changed, 165 insertions(+), 6 deletions(-)
+Justin.
 
-diff --git a/arch/x86/boot/boot.h b/arch/x86/boot/boot.h
-index 98239d2..46c4c5c 100644
---- a/arch/x86/boot/boot.h
-+++ b/arch/x86/boot/boot.h
-@@ -37,6 +37,8 @@
- extern struct setup_header hdr;
- extern struct boot_params boot_params;
- 
-+#define cpu_relax()	asm volatile("rep; nop")
-+
- /* Basic port I/O */
- static inline void outb(u8 v, u16 port)
- {
-@@ -203,6 +205,17 @@ static inline int isdigit(int ch)
- 	return (ch >= '0') && (ch <= '9');
- }
- 
-+static inline int isxdigit(int ch)
-+{
-+	if (isdigit(ch))
-+		return true;
-+
-+	if ((ch >= 'a') && (ch <= 'f'))
-+		return true;
-+
-+	return (ch >= 'A') && (ch <= 'F');
-+}
-+
- /* Heap -- available for dynamic lists. */
- extern char _end[];
- extern char *HEAP;
-@@ -329,10 +342,13 @@ void initregs(struct biosregs *regs);
- 
- /* string.c */
- int strcmp(const char *str1, const char *str2);
-+int strncmp(const char *cs, const char *ct, size_t count);
- size_t strnlen(const char *s, size_t maxlen);
- unsigned int atou(const char *s);
-+unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base);
- 
- /* tty.c */
-+void console_init(void);
- void puts(const char *);
- void putchar(int);
- int getchar(void);
-diff --git a/arch/x86/boot/main.c b/arch/x86/boot/main.c
-index 140172b..4ef1a33 100644
---- a/arch/x86/boot/main.c
-+++ b/arch/x86/boot/main.c
-@@ -130,6 +130,9 @@ void main(void)
- 	/* First, copy the boot header into the "zeropage" */
- 	copy_boot_params();
- 
-+	/* Initialize the early-boot console */
-+	console_init();
-+
- 	/* End of heap check */
- 	init_heap();
- 
-diff --git a/arch/x86/boot/string.c b/arch/x86/boot/string.c
-index f94b7a0..aba29df 100644
---- a/arch/x86/boot/string.c
-+++ b/arch/x86/boot/string.c
-@@ -30,6 +30,22 @@ int strcmp(const char *str1, const char *str2)
- 	return 0;
- }
- 
-+int strncmp(const char *cs, const char *ct, size_t count)
-+{
-+	unsigned char c1, c2;
-+
-+	while (count) {
-+		c1 = *cs++;
-+		c2 = *ct++;
-+		if (c1 != c2)
-+			return c1 < c2 ? -1 : 1;
-+		if (!c1)
-+			break;
-+		count--;
-+	}
-+	return 0;
-+}
-+
- size_t strnlen(const char *s, size_t maxlen)
- {
- 	const char *es = s;
-@@ -48,3 +64,28 @@ unsigned int atou(const char *s)
- 		i = i * 10 + (*s++ - '0');
- 	return i;
- }
-+
-+/* Works only for digits and letters, but small and fast */
-+#define TOLOWER(x) ((x) | 0x20)
-+
-+unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base)
-+{
-+	unsigned long long result = 0;
-+
-+	if (base == 16 && cp[0] == '0' && TOLOWER(cp[1]) == 'x')
-+		cp += 2;
-+
-+	while (isxdigit(*cp)) {
-+		unsigned int value;
-+
-+		value = isdigit(*cp) ? *cp - '0' : TOLOWER(*cp) - 'a' + 10;
-+		if (value >= base)
-+			break;
-+		result = result * base + value;
-+		cp++;
-+	}
-+	if (endp)
-+		*endp = (char *)cp;
-+
-+	return result;
-+}
-diff --git a/arch/x86/boot/tty.c b/arch/x86/boot/tty.c
-index 01ec69c..f3ceee2 100644
---- a/arch/x86/boot/tty.c
-+++ b/arch/x86/boot/tty.c
-@@ -10,23 +10,51 @@
-  * ----------------------------------------------------------------------- */
- 
- /*
-- * Very simple screen I/O
-- * XXX: Probably should add very simple serial I/O?
-+ * Very simple screen and serial I/O
-  */
- 
- #include "boot.h"
- 
-+#define DEFAULT_SERIAL_PORT 0x3f8 /* ttyS0 */
-+
-+static int	early_serial_base;
-+
-+#define XMTRDY          0x20
-+
-+#define DLAB		0x80
-+
-+#define TXR             0       /*  Transmit register (WRITE) */
-+#define RXR             0       /*  Receive register  (READ)  */
-+#define IER             1       /*  Interrupt Enable          */
-+#define IIR             2       /*  Interrupt ID              */
-+#define FCR             2       /*  FIFO control              */
-+#define LCR             3       /*  Line control              */
-+#define MCR             4       /*  Modem control             */
-+#define LSR             5       /*  Line Status               */
-+#define MSR             6       /*  Modem Status              */
-+#define DLL             0       /*  Divisor Latch Low         */
-+#define DLH             1       /*  Divisor latch High        */
-+
-+#define DEFAULT_BAUD 9600
-+
- /*
-  * These functions are in .inittext so they can be used to signal
-  * error during initialization.
-  */
- 
--void __attribute__((section(".inittext"))) putchar(int ch)
-+static void __attribute__((section(".inittext"))) serial_putchar(int ch)
- {
--	struct biosregs ireg;
-+	unsigned timeout = 0xffff;
- 
--	if (ch == '\n')
--		putchar('\r');	/* \n -> \r\n */
-+	while ((inb(early_serial_base + LSR) & XMTRDY) == 0 && --timeout)
-+		cpu_relax();
-+
-+	outb(ch, early_serial_base + TXR);
-+}
-+
-+static void __attribute__((section(".inittext"))) bios_putchar(int ch)
-+{
-+	struct biosregs ireg;
- 
- 	initregs(&ireg);
- 	ireg.bx = 0x0007;
-@@ -36,6 +64,17 @@ void __attribute__((section(".inittext"))) putchar(int ch)
- 	intcall(0x10, &ireg, NULL);
- }
- 
-+void __attribute__((section(".inittext"))) putchar(int ch)
-+{
-+	if (ch == '\n')
-+		putchar('\r');	/* \n -> \r\n */
-+
-+	bios_putchar(ch);
-+
-+	if (early_serial_base != 0)
-+		serial_putchar(ch);
-+}
-+
- void __attribute__((section(".inittext"))) puts(const char *str)
- {
- 	while (*str)
-@@ -112,3 +151,63 @@ int getchar_timeout(void)
- 
- 	return 0;		/* Timeout! */
- }
-+
-+static void early_serial_init(int baud)
-+{
-+	unsigned char c;
-+	unsigned divisor;
-+
-+	outb(0x3, early_serial_base + LCR);	/* 8n1 */
-+	outb(0, early_serial_base + IER);	/* no interrupt */
-+	outb(0, early_serial_base + FCR);	/* no fifo */
-+	outb(0x3, early_serial_base + MCR);	/* DTR + RTS */
-+
-+	divisor	= 115200 / baud;
-+	c = inb(early_serial_base + LCR);
-+	outb(c | DLAB, early_serial_base + LCR);
-+	outb(divisor & 0xff, early_serial_base + DLL);
-+	outb((divisor >> 8) & 0xff, early_serial_base + DLH);
-+	outb(c & ~DLAB, early_serial_base + LCR);
-+}
-+
-+void console_init(void)
-+{
-+	int baud = DEFAULT_BAUD;
-+	char arg[32];
-+	int pos = 0;
-+
-+	if (cmdline_find_option("earlyprintk", arg, sizeof arg) > 0) {
-+		char *e;
-+
-+		if (!strncmp(arg, "serial", 6)) {
-+			early_serial_base = DEFAULT_SERIAL_PORT;
-+			pos += 6;
-+		}
-+
-+		if (arg[pos] == ',')
-+			pos++;
-+
-+		if (!strncmp(arg, "ttyS", 4)) {
-+			static const int bases[] = { 0x3f8, 0x2f8 };
-+			int port = 0;
-+
-+			if (!strncmp(arg + pos, "ttyS", 4))
-+				pos += 4;
-+
-+			if (arg[pos++] == '1')
-+				port = 1;
-+
-+			early_serial_base = bases[port];
-+		}
-+
-+		if (arg[pos] == ',')
-+			pos++;
-+
-+		baud = simple_strtoull(arg + pos, &e, 0);
-+		if (baud == 0 || arg + pos == e)
-+			baud = DEFAULT_BAUD;
-+	}
-+
-+	if (early_serial_base != 0)
-+		early_serial_init(baud);
-+}
+On Mon, 12 Jul 2010, Justin Piszcz wrote:
+
+> Hello,
+>
+> I have two thermaltake docks with two 150GB velociraptors.
+>
+> It happens on both drives, each on a separate thermaltake dock.
+>
+> When I run smartctl -a, it hangs when it tries to read the self-test log:
+>
+> # smartctl -a /dev/sdd
+> smartctl 5.40 2010-03-16 r3077 [x86_64-unknown-linux-gnu] (local build)
+> Copyright (C) 2002-10 by Bruce Allen, http://smartmontools.sourceforge.net
+>
+> === START OF INFORMATION SECTION ===
+> Model Family:     Western Digital VelociRaptor family
+> Device Model:     WDC WD1500HLFS-01G6U3
+> Serial Number:    --------------
+> Firmware Version: 04.04V05
+> User Capacity:    150,039,945,216 bytes
+> Device is:        In smartctl database [for details use: -P show]
+> ATA Version is:   8
+> ATA Standard is:  Exact ATA specification draft version not indicated
+> Local Time is:    Mon Jul 12 16:33:13 2010 EDT
+> SMART support is: Available - device has SMART capability.
+> SMART support is: Enabled
+>
+> Error SMART Thresholds Read failed: Input/output error
+> Smartctl: SMART Read Thresholds failed.
+>
+> === START OF READ SMART DATA SECTION ===
+> SMART overall-health self-assessment test result: PASSED
+>
+> General SMART Values:
+> Offline data collection status:  (0x80) Offline data collection activity
+>                                        was never started.
+>                                        Auto Offline Data Collection: 
+> Enabled.
+> Self-test execution status:      (   0) The previous self-test routine 
+> completed
+>                                        without error or no self-test has 
+> ever
+>                                        been run.
+> Total time to complete Offline data collection:                 (2400) 
+> seconds.
+> Offline data collection
+> capabilities:                    (0x7b) SMART execute Offline immediate.
+>                                        Auto Offline data collection on/off 
+> support.
+>                                        Suspend Offline collection upon new
+>                                        command.
+>                                        Offline surface scan supported.
+>                                        Self-test supported.
+>                                        Conveyance Self-test supported.
+>                                        Selective Self-test supported.
+> SMART capabilities:            (0x0003) Saves SMART data before entering
+>                                        power-saving mode.
+>                                        Supports SMART auto save timer.
+> Error logging capability:        (0x01) Error logging supported.
+>                                        General Purpose Logging supported.
+> Short self-test routine recommended polling time:        (   2) minutes.
+> Extended self-test routine
+> recommended polling time:        (  32) minutes.
+> Conveyance self-test routine
+> recommended polling time:        (   5) minutes.
+> SCT capabilities:              (0x303f) SCT Status supported.
+>                                        SCT Error Recovery Control supported.
+>                                        SCT Feature Control supported.
+>                                        SCT Data Table supported.
+>
+> SMART Attributes Data Structure revision number: 16
+> Vendor Specific SMART Attributes with Thresholds:
+> ID# ATTRIBUTE_NAME          FLAG     VALUE WORST THRESH TYPE      UPDATED 
+> WHEN_FAILED RAW_VALUE
+>  1 Raw_Read_Error_Rate     0x000f   100   253   ---    Pre-fail  Always 
+> -       0
+>  3 Spin_Up_Time            0x0003   200   200   ---    Pre-fail  Always 
+> -       2991
+>  4 Start_Stop_Count        0x0032   100   100   ---    Old_age   Always 
+> -       10
+>  5 Reallocated_Sector_Ct   0x0033   200   200   ---    Pre-fail  Always 
+> -       0
+>  7 Seek_Error_Rate         0x000e   100   253   ---    Old_age   Always 
+> -       0
+>  9 Power_On_Hours          0x0032   100   100   ---    Old_age   Always 
+> -       0
+> 10 Spin_Retry_Count        0x0012   100   253   ---    Old_age   Always 
+> -       0
+> 11 Calibration_Retry_Count 0x0012   100   253   ---    Old_age   Always 
+> -       0
+> 12 Power_Cycle_Count       0x0032   100   100   ---    Old_age   Always 
+> -       10
+> 192 Power-Off_Retract_Count 0x0032   200   200   ---    Old_age   Always 
+> -       9
+> 193 Load_Cycle_Count        0x0032   200   200   ---    Old_age   Always 
+> -       10
+> 194 Temperature_Celsius     0x0022   122   116   ---    Old_age   Always 
+> -       25
+> 196 Reallocated_Event_Count 0x0032   200   200   ---    Old_age   Always 
+> -       0
+> 197 Current_Pending_Sector  0x0012   200   200   ---    Old_age   Always 
+> -       0
+> 198 Offline_Uncorrectable   0x0010   100   253   ---    Old_age   Offline 
+> -       0
+> 200 Multi_Zone_Error_Rate   0x0008   100   253   ---    Old_age   Offline 
+> -       0
+>
+> SMART Error Log Version: 1
+> No Errors Logged
+>
+> SMART Self-test log structure revision number 1
+> No self-tests have been logged.  [To run self-tests, use: smartctl -t]
+>
+>
+> Error SMART Read Selective Self-Test Log failed: Input/output error
+> Smartctl: SMART Selective Self Test Log Read Failed
+> p34:~#
+>
+> --
+>
+> [  112.535712] ata10: exception Emask 0x10 SAct 0x0 SErr 0x0 action 0xe 
+> frozen
+> [  112.535717] ata10: irq_stat 0x02400000, PHY RDY changed
+> [  112.535725] ata10: hard resetting link
+> [  116.981140] ata10: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> [  116.990551] ata10.00: ATA-8: WDC WD1500HLFS-01G6U1, 04.04V02, max UDMA/133
+> [  116.990557] ata10.00: 293046768 sectors, multi 0: LBA48 [  116.994261] 
+> ata10.00: configured for UDMA/133
+> [  116.994265] ata10: EH complete
+> [  116.994389] scsi 11:0:0:0: Direct-Access     ATA      WDC WD1500HLFS-0 
+> 04.0 PQ: 0 ANSI: 5
+> [  116.994493] sd 11:0:0:0: [sdc] 293046768 512-byte logical blocks: (150 
+> GB/139 GiB)
+> [  116.994513] sd 11:0:0:0: [sdc] Write Protect is off
+> [  116.994514] sd 11:0:0:0: [sdc] Mode Sense: 00 3a 00 00
+> [  116.994523] sd 11:0:0:0: [sdc] Write cache: enabled, read cache: enabled, 
+> doesn't support DPO or FUA
+> [  116.994579]  sdc: unknown partition table
+> [  117.003178] sd 11:0:0:0: [sdc] Attached SCSI disk
+> [  154.893776] ata10.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 
+> frozen
+> [  154.893783] ata10.00: failed command: SMART
+> [  154.893792] ata10.00: cmd b0/d5:01:06:4f:c2/00:00:00:00:00/00 tag 0 pio 
+> 512 in
+> [  154.893794]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 
+> (timeout)
+> [  154.893797] ata10.00: status: { DRDY }
+> [  154.893803] ata10: hard resetting link
+> [  155.198680] ata10: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> [  155.198691] ata10.00: link online but device misclassifed
+> [  155.206089] ata10.00: configured for UDMA/133
+> [  155.206108] ata10: EH complete
+> [  176.286644] ata9: exception Emask 0x10 SAct 0x0 SErr 0x0 action 0xe frozen
+> [  176.286649] ata9: irq_stat 0x02400000, PHY RDY changed
+> [  176.286657] ata9: hard resetting link
+> [  178.889785] ata10.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 
+> frozen
+> [  178.889791] ata10.00: failed command: SMART
+> [  178.889800] ata10.00: cmd b0/d5:01:09:4f:c2/00:00:00:00:00/00 tag 0 pio 
+> 512 in
+> [  178.889802]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 
+> (timeout)
+> [  178.889806] ata10.00: status: { DRDY }
+> [  178.889810] ata10: hard resetting link
+> [  179.194749] ata10: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> [  179.194761] ata10.00: link online but device misclassifed
+> [  179.202676] ata10.00: configured for UDMA/133
+> [  179.202691] ata10: EH complete
+> [  181.853312] ata9: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> [  181.864114] ata9.00: ATA-8: WDC WD1500HLFS-01G6U3, 04.04V05, max UDMA/133
+> [  181.864119] ata9.00: 293046768 sectors, multi 0: LBA48 [  181.867582] 
+> ata9.00: configured for UDMA/133
+> [  181.867590] ata9: EH complete
+> [  181.867747] scsi 10:0:0:0: Direct-Access     ATA      WDC WD1500HLFS-0 
+> 04.0 PQ: 0 ANSI: 5
+> [  181.867908] sd 10:0:0:0: [sdd] 293046768 512-byte logical blocks: (150 
+> GB/139 GiB)
+> [  181.867927] sd 10:0:0:0: [sdd] Write Protect is off
+> [  181.867928] sd 10:0:0:0: [sdd] Mode Sense: 00 3a 00 00
+> [  181.867936] sd 10:0:0:0: [sdd] Write cache: enabled, read cache: enabled, 
+> doesn't support DPO or FUA
+> [  181.867990]  sdd: unknown partition table
+> [  181.870859] sd 10:0:0:0: [sdd] Attached SCSI disk
+> [  203.888696] ata9.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 
+> frozen
+> [  203.888705] ata9.00: failed command: SMART
+> [  203.888717] ata9.00: cmd b0/d5:01:09:4f:c2/00:00:00:00:00/00 tag 0 pio 512 
+> in
+> [  203.888719]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 
+> (timeout)
+> [  203.888725] ata9.00: status: { DRDY }
+> [  203.888733] ata9: hard resetting link
+> [  204.193579] ata9: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
+> [  204.193590] ata9.00: link online but device misclassifed
+> [  204.200938] ata9.00: configured for UDMA/133
+> [  204.200956] ata9: EH complete
+>
+> Justin.
+>
+>
