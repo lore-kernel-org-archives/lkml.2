@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab0GLQia (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 12:38:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:32826 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755900Ab0GLQi1 (ORCPT
+	id S1756171Ab0GLQjY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 12:39:24 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:34647 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755900Ab0GLQjX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 12:38:27 -0400
-Date: Mon, 12 Jul 2010 12:38:26 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: XFS status update for June 2010
-Message-ID: <20100712163826.GA17164@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 12 Jul 2010 12:39:23 -0400
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: miklos@szeredi.hu, hch@infradead.org, viro@zeniv.linux.org.uk,
+        adilger@sun.com, corbet@lwn.net, neilb@suse.de, npiggin@suse.de,
+        hooanon05@yahoo.co.jp, bfields@fieldses.org,
+        linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+In-reply-to: <87hbk5yrhl.fsf@linux.vnet.ibm.com>
+	(aneesh.kumar@linux.vnet.ibm.com)
+Subject: Re: [PATCH -V16 02/12] vfs: Add name to file handle conversion support
+References: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1278916545-19751-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <E1OYEAj-0005rI-9q@pomaz-ex.szeredi.hu> <87hbk5yrhl.fsf@linux.vnet.ibm.com>
+Message-Id: <E1OYM1q-0006wn-Rn@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Mon, 12 Jul 2010 18:38:50 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The month of June saw a few important bug fixes for the Linux 2.6.35
-release candidates.  That includes ensuring that files used for the
-swapext ioctl are writable to the user, and doing proper validation
-of inodes coming from untrusted sources, such as NFS exporting and
-the open by handle system calls.  The main work however has been
-focused on development for the Linux 2.6.36 merge window, including
-merging various patches that have been out on the mainline list
-for a long time.  Highlights include further performance improvements
-for sync heavy metadata workloads, stack space reduction in the
-writeback path and improvements of the XFS tracing infrastructure.
-Also after some discussion the remaining hooks for DMAPI are going
-to be dropped in mainline.   As a replacement a tree containing
-full DMAPI support with a slightly cleaner XFS interaction will be
-hosted by SGI.
+On Mon, 12 Jul 2010, Aneesh Kumar K. V wrote:
+> That would include another stat call on the file to get the st_dev ? As
+> per the last review (Message-id:20100708082143.3701bfc7@notabene.brown)
+> http://article.gmane.org/gmane.linux.kernel/1007385 we discussed that
+> it would be nice to add st_dev as a part of handle. Later I suggested
+> it would be nice to get mount_id instead of st_dev because st_dev is
+> not stable (against remounts) for file system that doesn't have a
+> backing device. So instead of using something that is partially stable,
+> add mnt_id which is explicitly stated to be unstable across remounts.
+> 
+> If you are against having mount_id as a part of struct file_handle, do
+> you think we could add it as a extra argument to syscall ? 
 
-On the userspace side June was a rather slow month, with no updates
-to xfsprogs and xfsdump at all, and just one new test case and a cleanup
-applied to xfstests.
+Yeah, I think that would be cleaner.
+
+Thanks,
+Miklos
