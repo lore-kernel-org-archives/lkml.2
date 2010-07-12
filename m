@@ -1,142 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756167Ab0GLPws (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 11:52:48 -0400
-Received: from mga02.intel.com ([134.134.136.20]:42168 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752997Ab0GLPwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 11:52:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,188,1278313200"; 
-   d="scan'208";a="534612037"
-Date: Mon, 12 Jul 2010 23:52:39 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Martin Bligh <mbligh@google.com>, Michael Rubin <mrubin@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] writeback: merge for_kupdate and !for_kupdate cases
-Message-ID: <20100712155239.GC30222@localhost>
-References: <20100711020656.340075560@intel.com>
- <20100711021749.303817848@intel.com>
- <20100712020842.GC25335@dastard>
+	id S1756242Ab0GLPx2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 11:53:28 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:45348 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab0GLPx0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 11:53:26 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100712020842.GC25335@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100713094226.33b421dd@debxo>
+References: <20100713094226.33b421dd@debxo>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Mon, 12 Jul 2010 09:53:04 -0600
+X-Google-Sender-Auth: SltvdVDPXleVGe7t84j_EplNL6U
+Message-ID: <AANLkTinVpBjQQa93DZ17ULQdspDByGV8h037bVJ2qxGC@mail.gmail.com>
+Subject: Re: [PATCH] sparc: move is_root_node from private header to of.h
+To: Andres Salomon <dilinger@queued.net>
+Cc: devicetree-discuss@lists.ozlabs.org, sparclinux@vger.kernel.org,
+        linux-kernel@vger.kernel.org, davem@davemloft.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 10:08:42AM +0800, Dave Chinner wrote:
-> On Sun, Jul 11, 2010 at 10:07:02AM +0800, Wu Fengguang wrote:
-> > Unify the logic for kupdate and non-kupdate cases.
-> > There won't be starvation because the inodes requeued into b_more_io
-> > will later be spliced _after_ the remaining inodes in b_io, hence won't
-> > stand in the way of other inodes in the next run.
-> > 
-> > It avoids unnecessary redirty_tail() calls, hence the update of
-> > i_dirtied_when. The timestamp update is undesirable because it could
-> > later delay the inode's periodic writeback, or exclude the inode from
-> > the data integrity sync operation (which will check timestamp to avoid
-> > extra work and livelock).
-> > 
-> > CC: Dave Chinner <david@fromorbit.com>
-> > Cc: Martin Bligh <mbligh@google.com>
-> > Cc: Michael Rubin <mrubin@google.com>
-> > Cc: Peter Zijlstra <peterz@infradead.org>
-> > Signed-off-by: Fengguang Wu <wfg@mail.ustc.edu.cn>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  fs/fs-writeback.c |   39 ++++++---------------------------------
-> >  1 file changed, 6 insertions(+), 33 deletions(-)
-> > 
-> > --- linux-next.orig/fs/fs-writeback.c	2010-07-11 09:13:32.000000000 +0800
-> > +++ linux-next/fs/fs-writeback.c	2010-07-11 09:13:36.000000000 +0800
-> > @@ -373,45 +373,18 @@ writeback_single_inode(struct inode *ino
-> >  		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
-> >  			/*
-> >  			 * We didn't write back all the pages.  nfs_writepages()
-> > -			 * sometimes bales out without doing anything. Redirty
-> > -			 * the inode; Move it from b_io onto b_more_io/b_dirty.
-> > +			 * sometimes bales out without doing anything.
-> >  			 */
-> > -			/*
-> > -			 * akpm: if the caller was the kupdate function we put
-> > -			 * this inode at the head of b_dirty so it gets first
-> > -			 * consideration.  Otherwise, move it to the tail, for
-> > -			 * the reasons described there.  I'm not really sure
-> > -			 * how much sense this makes.  Presumably I had a good
-> > -			 * reasons for doing it this way, and I'd rather not
-> > -			 * muck with it at present.
-> > -			 */
-> > -			if (wbc->for_kupdate) {
-> > +			inode->i_state |= I_DIRTY_PAGES;
-> > +			if (wbc->nr_to_write <= 0) {
-> >  				/*
-> > -				 * For the kupdate function we move the inode
-> > -				 * to b_more_io so it will get more writeout as
-> > -				 * soon as the queue becomes uncongested.
-> > +				 * slice used up: queue for next turn
-> >  				 */
-> > -				inode->i_state |= I_DIRTY_PAGES;
-> > -				if (wbc->nr_to_write <= 0) {
-> > -					/*
-> > -					 * slice used up: queue for next turn
-> > -					 */
-> > -					requeue_io(inode);
-> > -				} else {
-> > -					/*
-> > -					 * somehow blocked: retry later
-> > -					 */
-> > -					redirty_tail(inode);
-> > -				}
-> > +				requeue_io(inode);
-> >  			} else {
-> >  				/*
-> > -				 * Otherwise fully redirty the inode so that
-> > -				 * other inodes on this superblock will get some
-> > -				 * writeout.  Otherwise heavy writing to one
-> > -				 * file would indefinitely suspend writeout of
-> > -				 * all the other files.
-> > +				 * somehow blocked: retry later
-> >  				 */
-> > -				inode->i_state |= I_DIRTY_PAGES;
-> >  				redirty_tail(inode);
-> >  			}
-> 
-> This means that congestion will always trigger redirty_tail(). Is
-> that really what we want for that case?
+On Tue, Jul 13, 2010 at 3:42 AM, Andres Salomon <dilinger@queued.net> wrote:
+>
+> Make is_root_node available for all archs to use, as it's not PROM-specific.
+> Also rename it to of_is_root_node, and a few other minor changes for
+> style/consistency.
+>
+> Signed-off-by: Andres Salomon <dilinger@queued.net>
+> ---
+>  arch/sparc/kernel/prom.h        |    8 --------
+>  arch/sparc/kernel/prom_64.c     |    6 +++---
+>  arch/sparc/kernel/prom_common.c |    2 +-
+>  include/linux/of.h              |    8 ++++++++
+>  4 files changed, 12 insertions(+), 12 deletions(-)
+[...]
+> diff --git a/include/linux/of.h b/include/linux/of.h
+> index a367e19..b38cdf7 100644
+> --- a/include/linux/of.h
+> +++ b/include/linux/of.h
+> @@ -97,6 +97,14 @@ extern struct device_node *of_node_get(struct device_node *node);
+>  extern void of_node_put(struct device_node *node);
+>  #endif
+>
+> +static inline bool of_is_root_node(const struct device_node *node)
+> +{
+> +       if (!node)
+> +               return false;
+> +
+> +       return (node->parent == NULL);
+> +}
 
-This patch actually converts some redirty_tail() cases to use
-requeue_io(), so are reducing the use of redirty_tail(). Also
-recent kernels are blocked _inside_ get_request() on congestion
-instead of returning to writeback_single_inode() on congestion.
-So the "somehow blocked" comment for redirty_tail() no longer includes
-the congestion case.
+Are you okay if I shorten this to?
 
-> Also, I'd prefer that the
-> comments remain somewhat more descriptive of the circumstances that
-> we are operating under. Comments like "retry later to avoid blocking
-> writeback of other inodes" is far, far better than "retry later"
-> because it has "why" component that explains the reason for the
-> logic. You may remember why, but I sure won't in a few months time....
++static inline bool of_is_root_node(const struct device_node *node)
++{
++       return (node && (node->parent == NULL));
++}
 
-Ah yes the comment is too simple. However the redirty_tail() is not to
-avoid blocking writeback of other inodes, but to avoid eating 100% CPU
-on busy retrying a dirty inode/page that cannot perform writeback for
-a while. (In theory redirty_tail() can still busy retry though, when
-there is only one single dirty inode.) So how about
-
-        /*
-         * somehow blocked: avoid busy retrying
-         */
-
-Thanks,
-Fengguang
+g.
