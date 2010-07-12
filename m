@@ -1,90 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754173Ab0GLMO0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 08:14:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:52956 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab0GLMOY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 08:14:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :x-enigmail-version:content-type;
-        b=Jdm07bcoDN5+DlmKp10tGK9n95LePkrw4phcYueKbfYeJNmTqfhjWqXLF1payN66AM
-         cHnGMuxH08HTn3/NQygMNKW9ayToGGC3W9S5lgFrVAZLLUmyqEJUZ/Y/cJ+cP6TNhqZ4
-         7bbvRAlLrg6R6/c4n+DNWyD55RKNvMePFKp/Y=
-Message-ID: <4C3B071D.10505@gmail.com>
-Date: Mon, 12 Jul 2010 13:14:21 +0100
-From: Lee Jones <ljkenny@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, akpm@linuxfoundation.org
-Subject: [Upstream] Stop ARM boards crashing with CUPS is loaded
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/mixed;
- boundary="------------030109070704010001010209"
+	id S1754223Ab0GLMYW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 08:24:22 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:60959 "EHLO bear.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752997Ab0GLMYV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 08:24:21 -0400
+From: Sekhar Nori <nsekhar@ti.com>
+To: linux-kernel@vger.kernel.org
+Cc: davinci-linux-open-source@linux.davincidsp.com,
+        Anuj Aggarwal <anuj.aggarwal@ti.com>, Sekhar Nori <nsekhar@ti.com>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH v2 1/2] regulator: tps6507x: allow driver to use DEFDCDC{2,3}_HIGH register
+Date: Mon, 12 Jul 2010 17:54:06 +0530
+Message-Id: <1278937448-32404-1-git-send-email-nsekhar@ti.com>
+X-Mailer: git-send-email 1.6.2.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------030109070704010001010209
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+From: Anuj Aggarwal <anuj.aggarwal@ti.com>
 
-Please find attached a patch which rectifies the following bug.
+In TPS6507x, depending on the status of DEFDCDC{2,3} pin either
+DEFDCDC{2,3}_LOW or DEFDCDC{2,3}_HIGH register needs to be read or
+programmed to change the output voltage.
 
-When CUPS loads, it tries to load several drivers that it may need.
-When one of these drivers, specifically parport_pc is loaded on ARM
-based systems, it causes a segmentation fault as the address is not
-writable on non-PC based architectures. This code prevents this
-driver from being compiled on said architectures.
+The current driver assumes DEFDCDC{2,3} pins are always tied low
+and thus operates only on DEFDCDC{2,3}_LOW register. This need
+not always be the case (as is found on OMAP-L138 EVM).
 
-Kind regards,
-Lee
+Unfortunately, software cannot read the status of DEFDCDC{2,3} pins.
+So, this information is passed through platform data depending on
+how the board is wired.
 
---------------030109070704010001010209
-Content-Type: text/x-patch;
- name="0001-UBUNTU-Upstream-Stop-ARM-boards-crashing-with-CUPS-i.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename*0="0001-UBUNTU-Upstream-Stop-ARM-boards-crashing-with-CUPS-i.pa";
- filename*1="tch"
-
->From e7552c2cfbceb22af2765b7bea91e0ea830010b7 Mon Sep 17 00:00:00 2001
-From: Lee Jones <lee.jones@canonical.com>
-Date: Mon, 12 Jul 2010 12:41:54 +0100
-Subject: [PATCH] UBUNTU: [Upstream] Stop ARM boards crashing with CUPS is loaded
-
-BugLink: http://bugs.launchpad.net/bugs/601226
-
-When CUPS loads, it tries to load several drivers that it may need.
-When one of these drivers, specifically parport_pc is loaded on ARM
-based systems, it causes a segmentation fault as the address is not
-writable on non-PC based architectures. This code prevents this
-driver from being compiled on said architectures.
-
-Signed-off-by: Lee Jones <lee.jones@canonical.com>
+Signed-off-by: Anuj Aggarwal <anuj.aggarwal@ti.com>
+Signed-off-by: Sekhar Nori <nsekhar@ti.com>
 ---
- drivers/parport/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+v2: changed defdcdc_high to defdcdc_default to reflect the fact that it
+     only takes care of reset default - not runtime change in defdcdc pin.
 
-diff --git a/drivers/parport/Kconfig b/drivers/parport/Kconfig
-index 855f389..ef1c666 100644
---- a/drivers/parport/Kconfig
-+++ b/drivers/parport/Kconfig
-@@ -36,7 +36,7 @@ if PARPORT
- config PARPORT_PC
- 	tristate "PC-style hardware"
- 	depends on (!SPARC64 || PCI) && !SPARC32 && !M32R && !FRV && \
--		(!M68K || ISA) && !MN10300 && !AVR32 && !BLACKFIN
-+		(!M68K || ISA) && !MN10300 && !AVR32 && !BLACKFIN && !ARM
- 	---help---
- 	  You should say Y here if you have a PC-style parallel port. All
- 	  IBM PC compatible computers and some Alphas have PC-style
+ drivers/regulator/tps6507x-regulator.c |   36 +++++++++++++++++++++++++------
+ include/linux/regulator/tps6507x.h     |   32 ++++++++++++++++++++++++++++
+ 2 files changed, 61 insertions(+), 7 deletions(-)
+ create mode 100644 include/linux/regulator/tps6507x.h
+
+diff --git a/drivers/regulator/tps6507x-regulator.c b/drivers/regulator/tps6507x-regulator.c
+index 14b4576..8152d65 100644
+--- a/drivers/regulator/tps6507x-regulator.c
++++ b/drivers/regulator/tps6507x-regulator.c
+@@ -22,6 +22,7 @@
+ #include <linux/platform_device.h>
+ #include <linux/regulator/driver.h>
+ #include <linux/regulator/machine.h>
++#include <linux/regulator/tps6507x.h>
+ #include <linux/delay.h>
+ #include <linux/slab.h>
+ #include <linux/mfd/tps6507x.h>
+@@ -101,9 +102,12 @@ struct tps_info {
+ 	unsigned max_uV;
+ 	u8 table_len;
+ 	const u16 *table;
++
++	/* Does DCDC high or the low register defines output voltage? */
++	bool defdcdc_default;
+ };
+ 
+-static const struct tps_info tps6507x_pmic_regs[] = {
++static struct tps_info tps6507x_pmic_regs[] = {
+ 	{
+ 		.name = "VDCDC1",
+ 		.min_uV = 725000,
+@@ -145,7 +149,7 @@ struct tps6507x_pmic {
+ 	struct regulator_desc desc[TPS6507X_NUM_REGULATOR];
+ 	struct tps6507x_dev *mfd;
+ 	struct regulator_dev *rdev[TPS6507X_NUM_REGULATOR];
+-	const struct tps_info *info[TPS6507X_NUM_REGULATOR];
++	struct tps_info *info[TPS6507X_NUM_REGULATOR];
+ 	struct mutex io_lock;
+ };
+ static inline int tps6507x_pmic_read(struct tps6507x_pmic *tps, u8 reg)
+@@ -341,10 +345,16 @@ static int tps6507x_pmic_dcdc_get_voltage(struct regulator_dev *dev)
+ 		reg = TPS6507X_REG_DEFDCDC1;
+ 		break;
+ 	case TPS6507X_DCDC_2:
+-		reg = TPS6507X_REG_DEFDCDC2_LOW;
++		if (tps->info[dcdc]->defdcdc_default)
++			reg = TPS6507X_REG_DEFDCDC2_HIGH;
++		else
++			reg = TPS6507X_REG_DEFDCDC2_LOW;
+ 		break;
+ 	case TPS6507X_DCDC_3:
+-		reg = TPS6507X_REG_DEFDCDC3_LOW;
++		if (tps->info[dcdc]->defdcdc_default)
++			reg = TPS6507X_REG_DEFDCDC3_HIGH;
++		else
++			reg = TPS6507X_REG_DEFDCDC3_LOW;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -370,10 +380,16 @@ static int tps6507x_pmic_dcdc_set_voltage(struct regulator_dev *dev,
+ 		reg = TPS6507X_REG_DEFDCDC1;
+ 		break;
+ 	case TPS6507X_DCDC_2:
+-		reg = TPS6507X_REG_DEFDCDC2_LOW;
++		if (tps->info[dcdc]->defdcdc_default)
++			reg = TPS6507X_REG_DEFDCDC2_HIGH;
++		else
++			reg = TPS6507X_REG_DEFDCDC2_LOW;
+ 		break;
+ 	case TPS6507X_DCDC_3:
+-		reg = TPS6507X_REG_DEFDCDC3_LOW;
++		if (tps->info[dcdc]->defdcdc_default)
++			reg = TPS6507X_REG_DEFDCDC3_HIGH;
++		else
++			reg = TPS6507X_REG_DEFDCDC3_LOW;
+ 		break;
+ 	default:
+ 		return -EINVAL;
+@@ -532,7 +548,7 @@ int tps6507x_pmic_probe(struct platform_device *pdev)
+ {
+ 	struct tps6507x_dev *tps6507x_dev = dev_get_drvdata(pdev->dev.parent);
+ 	static int desc_id;
+-	const struct tps_info *info = &tps6507x_pmic_regs[0];
++	struct tps_info *info = &tps6507x_pmic_regs[0];
+ 	struct regulator_init_data *init_data;
+ 	struct regulator_dev *rdev;
+ 	struct tps6507x_pmic *tps;
+@@ -569,6 +585,12 @@ int tps6507x_pmic_probe(struct platform_device *pdev)
+ 	for (i = 0; i < TPS6507X_NUM_REGULATOR; i++, info++, init_data++) {
+ 		/* Register the regulators */
+ 		tps->info[i] = info;
++		if (init_data->driver_data) {
++			struct tps6507x_reg_platform_data *data =
++							init_data->driver_data;
++			tps->info[i]->defdcdc_default = data->defdcdc_default;
++		}
++
+ 		tps->desc[i].name = info->name;
+ 		tps->desc[i].id = desc_id++;
+ 		tps->desc[i].n_voltages = num_voltages[i];
+diff --git a/include/linux/regulator/tps6507x.h b/include/linux/regulator/tps6507x.h
+new file mode 100644
+index 0000000..4892f59
+--- /dev/null
++++ b/include/linux/regulator/tps6507x.h
+@@ -0,0 +1,32 @@
++/*
++ * tps6507x.h  --  Voltage regulation for the Texas Instruments TPS6507X
++ *
++ * Copyright (C) 2010 Texas Instruments, Inc.
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
++ */
++
++#ifndef REGULATOR_TPS6507X
++#define REGULATOR_TPS6507X
++
++/**
++ * tps6507x_reg_platform_data - platform data for tps6507x
++ * @defdcdc_default: Defines whether DCDC high or the low register controls
++ *	output voltage by default. Valid for DCDC2 and DCDC3 outputs only.
++ */
++struct tps6507x_reg_platform_data {
++	bool defdcdc_default;
++};
++
++#endif
 -- 
-1.7.0.4
+1.6.2.4
 
-
---------------030109070704010001010209--
