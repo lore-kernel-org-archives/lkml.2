@@ -1,183 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab0GLUpo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:45:44 -0400
-Received: from lucidpixels.com ([75.144.35.66]:52510 "EHLO lucidpixels.com"
+	id S1754047Ab0GLUuc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:50:32 -0400
+Received: from mail.perches.com ([173.55.12.10]:1712 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753846Ab0GLUpm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 16:45:42 -0400
-X-Greylist: delayed 531 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jul 2010 16:45:42 EDT
-Date: Mon, 12 Jul 2010 16:36:50 -0400 (EDT)
-From: Justin Piszcz <jpiszcz@lucidpixels.com>
-To: linux-kernel@vger.kernel.org
-cc: linux-scsi@vger.kernel.org
-Subject: 2.6.34.1: link online but device misclassifed / input/output error
-Message-ID: <alpine.DEB.2.00.1007121633320.5154@p34.internal.lan>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
+	id S1752199Ab0GLUua (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 16:50:30 -0400
+From: Joe Perches <joe@perches.com>
+To: Jiri Kosina <trivial@kernel.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 00/36] Remove unnecessary casts of private_data
+Date: Mon, 12 Jul 2010 13:49:52 -0700
+Message-Id: <cover.1278967120.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.1.337.g6068.dirty
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+private_data is a void *, so remove the unnecessary casts
 
-I have two thermaltake docks with two 150GB velociraptors.
+Joe Perches (36):
+  arch/cris: Remove unnecessary casts of private_data
+  arch/ia64: Remove unnecessary casts of private_data
+  arch/powerpc: Remove unnecessary casts of private_data
+  arch/s390: Remove unnecessary casts of private_data
+  drivers/bluetooth: Remove unnecessary casts of private_data
+  drivers/char: Remove unnecessary casts of private_data
+  drivers/gpu: Remove unnecessary casts of private_data
+  drivers/ieee1394: Remove unnecessary casts of private_data
+  drivers/infiniband: Remove unnecessary casts of private_data
+  drivers/isdn: Remove unnecessary casts of private_data
+  drivers/media: Remove unnecessary casts of private_data
+  drivers/misc: Remove unnecessary casts of private_data
+  drivers/net/caif: Remove unnecessary casts of private_data
+  drivers/net/wireless: Remove unnecessary casts of private_data
+  drivers/s390: Remove unnecessary casts of private_data
+  drivers/sbus: Remove unnecessary casts of private_data
+  drivers/scsi: Remove unnecessary casts of private_data
+  drivers/staging: Remove unnecessary casts of private_data
+  drivers/usb/gadget: Remove unnecessary casts of private_data
+  drivers/usb/misc: Remove unnecessary casts of private_data
+  drivers/usb: Remove unnecessary casts of private_data
+  fs/cifs: Remove unnecessary casts of private_data
+  fs/coda: Remove unnecessary casts of private_data
+  fs/ecryptfs: Remove unnecessary casts of private_data
+  fs/ext3: Remove unnecessary casts of private_data
+  fs/ext4: Remove unnecessary casts of private_data
+  fs/ocfs2: Remove unnecessary casts of private_data
+  fs: Remove unnecessary casts of private_data
+  kernel/trace: Remove unnecessary casts of private_data
+  kernel: Remove unnecessary casts of private_data
+  net/core: Remove unnecessary casts of private_data
+  net/irda: Remove unnecessary casts of private_data
+  net/sunrpc: Remove unnecessary casts of private_data
+  sound/soc/blackfin: Remove unnecessary casts of private_data
+  sound/soc/davinci: Remove unnecessary casts of private_data
+  sound/core: Remove unnecessary casts of private_data
 
-It happens on both drives, each on a separate thermaltake dock.
-
-When I run smartctl -a, it hangs when it tries to read the self-test log:
-
-# smartctl -a /dev/sdd
-smartctl 5.40 2010-03-16 r3077 [x86_64-unknown-linux-gnu] (local build)
-Copyright (C) 2002-10 by Bruce Allen, http://smartmontools.sourceforge.net
-
-=== START OF INFORMATION SECTION ===
-Model Family:     Western Digital VelociRaptor family
-Device Model:     WDC WD1500HLFS-01G6U3
-Serial Number:    --------------
-Firmware Version: 04.04V05
-User Capacity:    150,039,945,216 bytes
-Device is:        In smartctl database [for details use: -P show]
-ATA Version is:   8
-ATA Standard is:  Exact ATA specification draft version not indicated
-Local Time is:    Mon Jul 12 16:33:13 2010 EDT
-SMART support is: Available - device has SMART capability.
-SMART support is: Enabled
-
-Error SMART Thresholds Read failed: Input/output error
-Smartctl: SMART Read Thresholds failed.
-
-=== START OF READ SMART DATA SECTION ===
-SMART overall-health self-assessment test result: PASSED
-
-General SMART Values:
-Offline data collection status:  (0x80) Offline data collection activity
-                                         was never started.
-                                         Auto Offline Data Collection: Enabled.
-Self-test execution status:      (   0) The previous self-test routine completed
-                                         without error or no self-test has ever
-                                         been run.
-Total time to complete Offline 
-data collection:                 (2400) seconds.
-Offline data collection
-capabilities:                    (0x7b) SMART execute Offline immediate.
-                                         Auto Offline data collection on/off support.
-                                         Suspend Offline collection upon new
-                                         command.
-                                         Offline surface scan supported.
-                                         Self-test supported.
-                                         Conveyance Self-test supported.
-                                         Selective Self-test supported.
-SMART capabilities:            (0x0003) Saves SMART data before entering
-                                         power-saving mode.
-                                         Supports SMART auto save timer.
-Error logging capability:        (0x01) Error logging supported.
-                                         General Purpose Logging supported.
-Short self-test routine 
-recommended polling time:        (   2) minutes.
-Extended self-test routine
-recommended polling time:        (  32) minutes.
-Conveyance self-test routine
-recommended polling time:        (   5) minutes.
-SCT capabilities:              (0x303f) SCT Status supported.
-                                         SCT Error Recovery Control supported.
-                                         SCT Feature Control supported.
-                                         SCT Data Table supported.
-
-SMART Attributes Data Structure revision number: 16
-Vendor Specific SMART Attributes with Thresholds:
-ID# ATTRIBUTE_NAME          FLAG     VALUE WORST THRESH TYPE      UPDATED  WHEN_FAILED RAW_VALUE
-   1 Raw_Read_Error_Rate     0x000f   100   253   ---    Pre-fail  Always       -       0
-   3 Spin_Up_Time            0x0003   200   200   ---    Pre-fail  Always       -       2991
-   4 Start_Stop_Count        0x0032   100   100   ---    Old_age   Always       -       10
-   5 Reallocated_Sector_Ct   0x0033   200   200   ---    Pre-fail  Always       -       0
-   7 Seek_Error_Rate         0x000e   100   253   ---    Old_age   Always       -       0
-   9 Power_On_Hours          0x0032   100   100   ---    Old_age   Always       -       0
-  10 Spin_Retry_Count        0x0012   100   253   ---    Old_age   Always       -       0
-  11 Calibration_Retry_Count 0x0012   100   253   ---    Old_age   Always       -       0
-  12 Power_Cycle_Count       0x0032   100   100   ---    Old_age   Always       -       10
-192 Power-Off_Retract_Count 0x0032   200   200   ---    Old_age   Always       -       9
-193 Load_Cycle_Count        0x0032   200   200   ---    Old_age   Always       -       10
-194 Temperature_Celsius     0x0022   122   116   ---    Old_age   Always       -       25
-196 Reallocated_Event_Count 0x0032   200   200   ---    Old_age   Always       -       0
-197 Current_Pending_Sector  0x0012   200   200   ---    Old_age   Always       -       0
-198 Offline_Uncorrectable   0x0010   100   253   ---    Old_age   Offline      -       0
-200 Multi_Zone_Error_Rate   0x0008   100   253   ---    Old_age   Offline      -       0
-
-SMART Error Log Version: 1
-No Errors Logged
-
-SMART Self-test log structure revision number 1
-No self-tests have been logged.  [To run self-tests, use: smartctl -t]
-
-
-Error SMART Read Selective Self-Test Log failed: Input/output error
-Smartctl: SMART Selective Self Test Log Read Failed
-p34:~#
-
---
-
-[  112.535712] ata10: exception Emask 0x10 SAct 0x0 SErr 0x0 action 0xe frozen
-[  112.535717] ata10: irq_stat 0x02400000, PHY RDY changed
-[  112.535725] ata10: hard resetting link
-[  116.981140] ata10: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[  116.990551] ata10.00: ATA-8: WDC WD1500HLFS-01G6U1, 04.04V02, max UDMA/133
-[  116.990557] ata10.00: 293046768 sectors, multi 0: LBA48 
-[  116.994261] ata10.00: configured for UDMA/133
-[  116.994265] ata10: EH complete
-[  116.994389] scsi 11:0:0:0: Direct-Access     ATA      WDC WD1500HLFS-0 04.0 PQ: 0 ANSI: 5
-[  116.994493] sd 11:0:0:0: [sdc] 293046768 512-byte logical blocks: (150 GB/139 GiB)
-[  116.994513] sd 11:0:0:0: [sdc] Write Protect is off
-[  116.994514] sd 11:0:0:0: [sdc] Mode Sense: 00 3a 00 00
-[  116.994523] sd 11:0:0:0: [sdc] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
-[  116.994579]  sdc: unknown partition table
-[  117.003178] sd 11:0:0:0: [sdc] Attached SCSI disk
-[  154.893776] ata10.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-[  154.893783] ata10.00: failed command: SMART
-[  154.893792] ata10.00: cmd b0/d5:01:06:4f:c2/00:00:00:00:00/00 tag 0 pio 512 in
-[  154.893794]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-[  154.893797] ata10.00: status: { DRDY }
-[  154.893803] ata10: hard resetting link
-[  155.198680] ata10: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[  155.198691] ata10.00: link online but device misclassifed
-[  155.206089] ata10.00: configured for UDMA/133
-[  155.206108] ata10: EH complete
-[  176.286644] ata9: exception Emask 0x10 SAct 0x0 SErr 0x0 action 0xe frozen
-[  176.286649] ata9: irq_stat 0x02400000, PHY RDY changed
-[  176.286657] ata9: hard resetting link
-[  178.889785] ata10.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-[  178.889791] ata10.00: failed command: SMART
-[  178.889800] ata10.00: cmd b0/d5:01:09:4f:c2/00:00:00:00:00/00 tag 0 pio 512 in
-[  178.889802]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-[  178.889806] ata10.00: status: { DRDY }
-[  178.889810] ata10: hard resetting link
-[  179.194749] ata10: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[  179.194761] ata10.00: link online but device misclassifed
-[  179.202676] ata10.00: configured for UDMA/133
-[  179.202691] ata10: EH complete
-[  181.853312] ata9: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[  181.864114] ata9.00: ATA-8: WDC WD1500HLFS-01G6U3, 04.04V05, max UDMA/133
-[  181.864119] ata9.00: 293046768 sectors, multi 0: LBA48 
-[  181.867582] ata9.00: configured for UDMA/133
-[  181.867590] ata9: EH complete
-[  181.867747] scsi 10:0:0:0: Direct-Access     ATA      WDC WD1500HLFS-0 04.0 PQ: 0 ANSI: 5
-[  181.867908] sd 10:0:0:0: [sdd] 293046768 512-byte logical blocks: (150 GB/139 GiB)
-[  181.867927] sd 10:0:0:0: [sdd] Write Protect is off
-[  181.867928] sd 10:0:0:0: [sdd] Mode Sense: 00 3a 00 00
-[  181.867936] sd 10:0:0:0: [sdd] Write cache: enabled, read cache: enabled, doesn't support DPO or FUA
-[  181.867990]  sdd: unknown partition table
-[  181.870859] sd 10:0:0:0: [sdd] Attached SCSI disk
-[  203.888696] ata9.00: exception Emask 0x0 SAct 0x0 SErr 0x0 action 0x6 frozen
-[  203.888705] ata9.00: failed command: SMART
-[  203.888717] ata9.00: cmd b0/d5:01:09:4f:c2/00:00:00:00:00/00 tag 0 pio 512 in
-[  203.888719]          res 40/00:00:00:00:00/00:00:00:00:00/00 Emask 0x4 (timeout)
-[  203.888725] ata9.00: status: { DRDY }
-[  203.888733] ata9: hard resetting link
-[  204.193579] ata9: SATA link up 3.0 Gbps (SStatus 123 SControl 300)
-[  204.193590] ata9.00: link online but device misclassifed
-[  204.200938] ata9.00: configured for UDMA/133
-[  204.200956] ata9: EH complete
-
-Justin.
+ arch/cris/arch-v32/drivers/mach-fs/gpio.c     |   10 +++++-----
+ arch/ia64/kernel/perfmon.c                    |   12 ++++++------
+ arch/powerpc/kvm/timing.c                     |    2 +-
+ arch/s390/kernel/debug.c                      |    6 +++---
+ drivers/bluetooth/btmrvl_debugfs.c            |    2 +-
+ drivers/char/snsc.c                           |    8 ++++----
+ drivers/gpu/drm/radeon/radeon_ttm.c           |    2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_fifo.c          |    2 +-
+ drivers/gpu/drm/vmwgfx/vmwgfx_ttm_glue.c      |    2 +-
+ drivers/ieee1394/dv1394.c                     |    4 ++--
+ drivers/ieee1394/raw1394.c                    |    4 ++--
+ drivers/ieee1394/video1394.c                  |    6 +++---
+ drivers/infiniband/hw/ipath/ipath_file_ops.c  |    2 +-
+ drivers/isdn/capi/capi.c                      |    6 +++---
+ drivers/isdn/hysdn/hysdn_proclog.c            |    2 +-
+ drivers/isdn/i4l/isdn_ppp.c                   |    2 +-
+ drivers/media/IR/imon.c                       |    6 +++---
+ drivers/media/common/saa7146_vbi.c            |    4 ++--
+ drivers/media/common/saa7146_video.c          |    4 ++--
+ drivers/media/dvb/bt8xx/dst_ca.c              |    2 +-
+ drivers/media/video/cx18/cx18-ioctl.c         |    2 +-
+ drivers/media/video/cx88/cx88-alsa.c          |    2 +-
+ drivers/media/video/hdpvr/hdpvr-video.c       |    4 ++--
+ drivers/media/video/mem2mem_testdev.c         |    4 ++--
+ drivers/media/video/saa7134/saa7134-alsa.c    |    2 +-
+ drivers/media/video/uvc/uvc_v4l2.c            |    8 ++++----
+ drivers/misc/ibmasm/ibmasmfs.c                |    4 ++--
+ drivers/net/caif/caif_spi.c                   |    4 ++--
+ drivers/net/wireless/airo.c                   |   22 +++++++++++-----------
+ drivers/net/wireless/ath/ath9k/htc_drv_main.c |    9 +++------
+ drivers/net/wireless/iwlwifi/iwl-debugfs.c    |   10 +++++-----
+ drivers/net/wireless/libertas/debugfs.c       |    4 ++--
+ drivers/s390/block/dasd_eer.c                 |    6 +++---
+ drivers/s390/char/tape_block.c                |    4 ++--
+ drivers/s390/char/tape_char.c                 |    8 ++++----
+ drivers/s390/char/vmcp.c                      |    6 +++---
+ drivers/sbus/char/openprom.c                  |    4 ++--
+ drivers/scsi/aacraid/linit.c                  |    2 +-
+ drivers/scsi/pmcraid.c                        |    7 +++----
+ drivers/scsi/sg.c                             |   18 +++++++++---------
+ drivers/staging/batman-adv/bat_debugfs.c      |    4 ++--
+ drivers/staging/batman-adv/icmp_socket.c      |   12 ++++--------
+ drivers/staging/cx25821/cx25821-alsa.c        |    2 +-
+ drivers/staging/easycap/easycap_ioctl.c       |    4 ++--
+ drivers/staging/easycap/easycap_main.c        |    4 ++--
+ drivers/staging/easycap/easycap_sound.c       |    2 +-
+ drivers/usb/gadget/f_hid.c                    |    6 +++---
+ drivers/usb/misc/ftdi-elan.c                  |    4 ++--
+ drivers/usb/misc/iowarrior.c                  |    8 ++++----
+ drivers/usb/misc/legousbtower.c               |    6 +++---
+ drivers/usb/misc/sisusbvga/sisusb.c           |   10 +++++-----
+ drivers/usb/misc/usblcd.c                     |    8 ++++----
+ drivers/usb/usb-skeleton.c                    |    8 ++++----
+ fs/cifs/file.c                                |   24 ++++++++++--------------
+ fs/cifs/inode.c                               |    4 ++--
+ fs/cifs/ioctl.c                               |    3 +--
+ fs/coda/psdev.c                               |    8 ++++----
+ fs/ecryptfs/ecryptfs_kernel.h                 |    2 +-
+ fs/ext3/dir.c                                 |    2 +-
+ fs/ext4/dir.c                                 |    2 +-
+ fs/ext4/mballoc.c                             |    2 +-
+ fs/ocfs2/dlm/dlmdebug.c                       |    6 +++---
+ fs/ocfs2/dlmfs/dlmfs.c                        |    3 +--
+ fs/ocfs2/dlmglue.c                            |    4 ++--
+ fs/seq_file.c                                 |    6 +++---
+ kernel/pm_qos_params.c                        |    2 +-
+ kernel/trace/ftrace.c                         |    4 ++--
+ kernel/trace/trace.c                          |    2 +-
+ net/core/pktgen.c                             |    4 ++--
+ net/irda/irnet/irnet_ppp.c                    |   10 +++++-----
+ net/sunrpc/rpc_pipe.c                         |    4 ++--
+ sound/core/oss/mixer_oss.c                    |   22 +++++++++++-----------
+ sound/core/pcm.c                              |    3 +--
+ sound/core/timer.c                            |    4 ++--
+ sound/soc/blackfin/bf5xx-ac97.c               |    6 ++----
+ sound/soc/blackfin/bf5xx-tdm.c                |    6 ++----
+ sound/soc/davinci/davinci-pcm.c               |    2 +-
+ 77 files changed, 206 insertions(+), 225 deletions(-)
 
