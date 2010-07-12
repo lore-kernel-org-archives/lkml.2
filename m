@@ -1,60 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755781Ab0GLCsv (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 22:48:51 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:62832 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755302Ab0GLCsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 22:48:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :content-type:content-transfer-encoding;
-        b=KzoFLzn+driMaujtXvASnt4q7Fo2qTYKh26sAxfXHmHzJZIawgoVgKJ9+axO8p/tk9
-         PnVEaV6fxk9sONjSrmTTKeyGCGfZt197cNROgifQ8WpsXA7D1ddd1IOh0P62lB4HDDqU
-         oxBvi6X2VIECW34ph9uT00s0txpHjGKpJ/CNU=
-Message-ID: <4C3A828D.1070509@gmail.com>
-Date: Sun, 11 Jul 2010 21:48:45 -0500
-From: Neal B <nealb001@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1755825Ab0GLCtd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 22:49:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55309 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755533Ab0GLCtc convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 22:49:32 -0400
 MIME-Version: 1.0
-To: Artem.Bityutskiy@nokia.com
-CC: dwmw2@infradead.org, rmk+kernel@arm.linux.org.uk, cascardo@holoscopio.com,
-        mohanlaljangir@gmail.com, maximlevitsky@gmail.com,
-        Julia Lawall <julia@diku.dk>, jkosina@suse.cz,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/6] Mtd: fixed space after open parenthesis
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <201007121149.58129.rusty@rustcorp.com.au>
+References: <4C3A06E3.50402@kernel.org>
+	<AANLkTik8EHarsrnAisuj9SKbeXddlA6Dz-KzDOPsmBxh@mail.gmail.com>
+	<201007121149.58129.rusty@rustcorp.com.au>
+Date: Sun, 11 Jul 2010 19:49:22 -0700
+Message-ID: <AANLkTimMzNV4hw8N6uqRS-HRLg95LbDyQXsM3Hc-mjhg@mail.gmail.com>
+Subject: Re: [RFC PATCH] x86-64: software IRQ masking and handling
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Rusty Russell <rusty@rustcorp.com.au>
+Cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- From d1caf6c1e0e1c8137a0c23c570df5ce764eb60f6 Mon Sep 17 00:00:00 2001
-From: Neal Buckendahl <nealb001@gmail.com>
-Date: Sun, 11 Jul 2010 17:06:12 -0500
-Subject: [PATCH 2/6] Mtd: fixed space after open parenthesis found by 
-the checkpatch.pl tool
-  Signed-off-by: Neal Buckendahl <nealb001@gmail.com>
+On Sun, Jul 11, 2010 at 7:19 PM, Rusty Russell <rusty@rustcorp.com.au> wrote:
+>
+> PS.  When did we start top-commenting and quoting the whole patch?
 
----
-  drivers/mtd/ar7part.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
+Sorry, my bad. I've been using the gmail web interface for a while now
+(that's how I tracked my email on my cellphone while I was on
+vacation, which helped a lot when I got back). I like many of the
+features, but the email posting takes some getting used to. Partly
+because gmail seems to actively encourage some bad behavior (like top
+posting and obviously not having working tabs), but mostly because I'm
+just a klutz.
 
-diff --git a/drivers/mtd/ar7part.c b/drivers/mtd/ar7part.c
-index 6697a1e..7ccfdca 100644
---- a/drivers/mtd/ar7part.c
-+++ b/drivers/mtd/ar7part.c
-@@ -148,6 +148,6 @@ static int __init ar7_parser_init(void)
-  module_init(ar7_parser_init);
+(The big upside of the gmail web interface being that searching works
+across folders. So I think I'll stick with it despite the downsides.
+And I'll try to be less klutzy)
 
-  MODULE_LICENSE("GPL");
--MODULE_AUTHOR(	"Felix Fietkau <nbd@openwrt.org>, "
-+MODULE_AUTHOR("Felix Fietkau <nbd@openwrt.org>, "
-  		"Eugene Konev <ejka@openwrt.org>");
-  MODULE_DESCRIPTION("MTD partitioning for TI AR7");
--- 
-1.7.1
-
-
+                      Linus
