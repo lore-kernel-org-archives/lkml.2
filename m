@@ -1,126 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755403Ab0GLI5f (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 04:57:35 -0400
-Received: from mail9.hitachi.co.jp ([133.145.228.44]:58139 "EHLO
-	mail9.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752871Ab0GLI5e (ORCPT
+	id S1755288Ab0GLI7E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 04:59:04 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:53456 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754472Ab0GLI7B (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 04:57:34 -0400
-X-AuditID: b753bd60-a7602ba000007d15-c0-4c3ad8fb23f6
-Message-ID: <4C3AD8F9.5070703@hitachi.com>
-Date: Mon, 12 Jul 2010 17:57:29 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Mon, 12 Jul 2010 04:59:01 -0400
+Message-ID: <4C3AD94C.7070807@cs.helsinki.fi>
+Date: Mon, 12 Jul 2010 11:58:52 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ian Munsie <imunsie@au.ibm.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>
-Subject: Re: [PATCH] perf: Add DWARF register lookup for SH
-References: <e55812819ad18c2ceca5651ac7698a2af46180d7.1278774279.git.matt@console-pimps.org>
-In-Reply-To: <e55812819ad18c2ceca5651ac7698a2af46180d7.1278774279.git.matt@console-pimps.org>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Yinghai Lu <yinghai.lu@oracle.com>
+CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] x86: Setup early console as early as possible
+References: <4C3A3B27.7020009@oracle.com>
+In-Reply-To: <4C3A3B27.7020009@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matt Fleming wrote:
-> Implement get_arch_regstr() for SH so that, given a DWARF register
-> number, the corresponding symbolic name of that register can be looked
-> up.
+Hi Yinghai,
 
-KPROBE_EVENT has already been supported on the latest linux-sh,
-so this should be work on that.
-
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-
-Thanks!
-
+Yinghai Lu wrote:
+> Analyze "console=uart8250,io,0x3f8,115200n8" in i386_start_kernel/x86_64_start_kernel,
+> and call setup_early_serial8250_console() to init early serial console.
 > 
-> Signed-off-by: Matt Fleming <matt@console-pimps.org>
-> ---
->  tools/perf/arch/sh/Makefile          |    4 ++
->  tools/perf/arch/sh/util/dwarf-regs.c |   55 ++++++++++++++++++++++++++++++++++
->  2 files changed, 59 insertions(+), 0 deletions(-)
->  create mode 100644 tools/perf/arch/sh/Makefile
->  create mode 100644 tools/perf/arch/sh/util/dwarf-regs.c
+> only can handle io port kind of 8250. because mmio need ioremap.
 > 
-> diff --git a/tools/perf/arch/sh/Makefile b/tools/perf/arch/sh/Makefile
-> new file mode 100644
-> index 0000000..15130b5
-> --- /dev/null
-> +++ b/tools/perf/arch/sh/Makefile
-> @@ -0,0 +1,4 @@
-> +ifndef NO_DWARF
-> +PERF_HAVE_DWARF_REGS := 1
-> +LIB_OBJS += $(OUTPUT)arch/$(ARCH)/util/dwarf-regs.o
-> +endif
-> diff --git a/tools/perf/arch/sh/util/dwarf-regs.c b/tools/perf/arch/sh/util/dwarf-regs.c
-> new file mode 100644
-> index 0000000..a11edb0
-> --- /dev/null
-> +++ b/tools/perf/arch/sh/util/dwarf-regs.c
-> @@ -0,0 +1,55 @@
-> +/*
-> + * Mapping of DWARF debug register numbers into register names.
-> + *
-> + * Copyright (C) 2010 Matt Fleming <matt@console-pimps.org>
-> + *
-> + * This program is free software; you can redistribute it and/or modify
-> + * it under the terms of the GNU General Public License as published by
-> + * the Free Software Foundation; either version 2 of the License, or
-> + * (at your option) any later version.
-> + *
-> + * This program is distributed in the hope that it will be useful,
-> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
-> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-> + * GNU General Public License for more details.
-> + *
-> + * You should have received a copy of the GNU General Public License
-> + * along with this program; if not, write to the Free Software
-> + * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-> + *
-> + */
-> +
-> +#include <libio.h>
-> +#include <dwarf-regs.h>
-> +
-> +/*
-> + * Generic dwarf analysis helpers
-> + */
-> +
-> +#define SH_MAX_REGS 18
-> +const char *sh_regs_table[SH_MAX_REGS] = {
-> +	"r0",
-> +	"r1",
-> +	"r2",
-> +	"r3",
-> +	"r4",
-> +	"r5",
-> +	"r6",
-> +	"r7",
-> +	"r8",
-> +	"r9",
-> +	"r10",
-> +	"r11",
-> +	"r12",
-> +	"r13",
-> +	"r14",
-> +	"r15",
-> +	"pc",
-> +	"pr",
-> +};
-> +
-> +/* Return architecture dependent register string (for kprobe-tracer) */
-> +const char *get_arch_regstr(unsigned int n)
-> +{
-> +	return (n <= SH_MAX_REGS) ? sh_regs_table[n] : NULL;
-> +}
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
+What's the purpose of this patch? Does it make my early boot I/O patch 
+obsolete?
+
+			Pekka
