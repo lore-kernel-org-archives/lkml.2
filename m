@@ -1,1148 +1,430 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab0GLVd7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 17:33:59 -0400
-Received: from smtp-out-217.synserver.de ([212.40.180.217]:1038 "HELO
-	smtp-out-217.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752270Ab0GLVd4 (ORCPT
+	id S1753816Ab0GLViq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 17:38:46 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:59673 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752802Ab0GLVip (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 17:33:56 -0400
-X-SynServer-TrustedSrc: 1
-X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 17199
-From: Lars-Peter Clausen <lars@metafoo.de>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
-        Lars-Peter Clausen <lars@metafoo.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Fleming <matt@console-pimps.org>, linux-mmc@vger.kernel.org
-Subject: [PATCH v4] MMC: Add JZ4740 mmc driver
-Date: Mon, 12 Jul 2010 23:33:32 +0200
-Message-Id: <1278970413-21617-1-git-send-email-lars@metafoo.de>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1277688041-23522-1-git-send-email-lars@metafoo.de>
-References: <1277688041-23522-1-git-send-email-lars@metafoo.de>
+	Mon, 12 Jul 2010 17:38:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=CI7gYZ4+sOk7BNREm/g5O/HT/Uah6xZgxdKsQobzeKAvfmSEFhzbLqnprXAWYYFPIo
+         6dq2UIqaNgRBTXT+IL+kmbWrlpltoiNeuPBDz0xirv6JtFQpperBHIG2ROWrOWROiIVu
+         QIjFUF8kqOhn+eWwbTLOmKH2eYUT38QApa0O0=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinnlhzSGP8sRQ8Pr4CIuwn4d859rvSe1yO_3TEz@mail.gmail.com>
+References: <AANLkTimkNg81yzxSHTcAa1QlTE9SYmvzL4eOTVHApWq3@mail.gmail.com>
+	<AANLkTilvbOb0n9l6F3EHwQg3VfNNmYB1BdFbzL2Cwg_P@mail.gmail.com>
+	<AANLkTinnlhzSGP8sRQ8Pr4CIuwn4d859rvSe1yO_3TEz@mail.gmail.com>
+Date: Mon, 12 Jul 2010 17:38:43 -0400
+Message-ID: <AANLkTil58zbo28QL2ncTAXx9iHeQS20W8u0MuDgLaojj@mail.gmail.com>
+Subject: Re: Regression 2.6.34->2.6.35-rc4: radeaon KMS an RS690 broken
+From: Alex Deucher <alexdeucher@gmail.com>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: multipart/mixed; boundary=0015174c0e4ca0761e048b3793f2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the mmc controller on JZ4740 SoCs.
+--0015174c0e4ca0761e048b3793f2
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-Acked-by: Matt Fleming <matt@console-pimps.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Matt Fleming <matt@console-pimps.org>
-Cc: linux-mmc@vger.kernel.org
+On Mon, Jul 12, 2010 at 3:54 PM, Torsten Kaiser
+<just.for.lkml@googlemail.com> wrote:
+> On Mon, Jul 12, 2010 at 5:23 PM, Alex Deucher <alexdeucher@gmail.com> wro=
+te:
+>> On Sun, Jul 11, 2010 at 3:56 PM, Torsten Kaiser
+>> <just.for.lkml@googlemail.com> wrote:
+>>> I just tried 2.6.35-rc4 to see, if a different bug is fixed, but noted
+>>> that this kernel will only boot with radeon.modeset=3D0.
+>>>
+>>> If KMS is active the display turns off and the system is completely
+>>> dead, not even SysRq+B is working.
+>>>
+>>> I build a new kernel with the radeon driver as a module and inserted
+>>> it by hand via ssh.
+>>> The ssh session, I was using has this output:
+>>> ariolc drm # insmod ./drm_kms_helper.ko
+>>> ariolc drm # insmod ttm/ttm.ko
+>>> ariolc drm # insmod radeon/radeon.ko
+>>> Segmentation fault
+>>> ariolc drm #
+>>>
+>>> The final insmod segfaulted, the shell was displaying a new prompt,
+>>> but not new input was possible.
+>>> The system still reacted to ping and trying to create a new ssh
+>>> connection resulted in a password prompt, but after entering the
+>>> password no shell was provided.
+>>> I tried SysRq+S, SysRq+U and SysRq+B, but not visible result. After a
+>>> reboot I did not find any additional information in /var/log/messages.
+>>> The effect was like the boot time failures with a builtin radeon
+>>> driver: The display (attached to the VGA output) just turns off.
+>>>
+>>> But I had a second ssh connection open, doing tail -f /var/log/messages=
+:
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.720470] [drm] radeon defaulting
+>>> to kernel modesetting.
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.720477] [drm] radeon kernel
+>>> modesetting enabled.
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.720623] radeon 0000:01:05.0: PC=
+I
+>>> INT A -> GSI 18 (level, low) -> IRQ 18
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.726859] [drm] initializing
+>>> kernel modesetting (RS690 0x1002:0x791E).
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.728607] [drm] register mmio
+>>> base: 0xFE9F0000
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.728613] [drm] register mmio
+>>> size: 65536
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729591] ATOM BIOS: ATI
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729625] radeon 0000:01:05.0:
+>>> VRAM: 32M 0xDE000000 - 0xDFFFFFFF (32M used)
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729632] radeon 0000:01:05.0:
+>>> GTT: 512M 0xBE000000 - 0xDDFFFFFF
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729675] [drm] radeon: irq initi=
+alized.
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729690] mtrr: type mismatch for
+>>> fc000000,2000000 old: write-back new: write-combining
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729696] [drm] Detected VRAM
+>>> RAM=3D32M, BAR=3D32M
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729701] [drm] RAM width 128bits=
+ DDR
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729796] [TTM] Zone =A0kernel:
+>>> Available graphics memory: 2010998 kiB.
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729802] [TTM] Initializing pool=
+ allocator.
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729841] [drm] radeon: 32M of
+>>> VRAM memory ready
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729846] [drm] radeon: 512M of
+>>> GTT memory ready.
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.729857] [drm] GART: num cpu
+>>> pages 131072, num gpu pages 131072
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.736223] [drm] radeon: 1 quad
+>>> pipes, 1 z pipes initialized.
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.752553] [drm] Loading
+>>> RS690/RS740 Microcode
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0131.911461] [drm] radeon: ring at
+>>> 0x00000000BE000000
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.055912] [drm:r100_ring_test]
+>>> *ERROR* radeon: ring test failed (sracth(0x15E4)=3D0xCAFEDEAD)
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.055918] [drm:r100_cp_init]
+>>> *ERROR* radeon: cp isn't working (-22).
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.055925] radeon 0000:01:05.0:
+>>> failled initializing CP (-22).
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.055929] radeon 0000:01:05.0:
+>>> Disabling GPU acceleration
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.056174] [drm] radeon: cp finali=
+zed
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.057378] [drm] Default TV standa=
+rd: NTSC
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.058671] [drm] Default TV standa=
+rd: NTSC
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059748] [drm] Radeon Display Co=
+nnectors
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059753] [drm] Connector 0:
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059756] [drm] =A0 VGA
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059763] [drm] =A0 DDC: 0x7e50
+>>> 0x7e40 0x7e54 0x7e44 0x7e58 0x7e48 0x7e5c 0x7e4c
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059766] [drm] =A0 Encoders:
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059770] [drm] =A0 =A0 CRT1:
+>>> INTERNAL_KLDSCP_DAC1
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059773] [drm] Connector 1:
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059776] [drm] =A0 S-video
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059778] [drm] =A0 Encoders:
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059781] [drm] =A0 =A0 TV1:
+>>> INTERNAL_KLDSCP_DAC1
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059784] [drm] Connector 2:
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059787] [drm] =A0 HDMI-A
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059792] [drm] =A0 DDC: 0x7e40
+>>> 0x7e50 0x7e44 0x7e54 0x7e48 0x7e58 0x7e4c 0x7e5c
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059795] [drm] =A0 Encoders:
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.059798] [drm] =A0 =A0 DFP3: INT=
+ERNAL_LVTM1
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.253484] [drm] fb mappable at 0x=
+FC040000
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.253488] [drm] vram apper at 0xF=
+C000000
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.253489] [drm] size 786432
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.253491] [drm] fb depth is 8
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.253492] [drm] =A0 =A0pitch is 1=
+024
+>>> Jul 11 21:30:23 ariolc kernel: [ =A0132.253880] fbcon: radeondrmfb (fb0=
+)
+>>> is primary device
+>>>
+>>> Hardware info: (lspci -vv from 2.6.33)
+>>> 00:00.0 Host bridge: ATI Technologies Inc RS690 Host Bridge
+>>> =A0 =A0 =A0 =A0Subsystem: ATI Technologies Inc RS690 Host Bridge
+>>> =A0 =A0 =A0 =A0Control: I/O- Mem+ BusMaster+ SpecCycle- MemWINV- VGASno=
+op-
+>>> ParErr- Stepping- SERR- FastB2B- DisINTx-
+>>> =A0 =A0 =A0 =A0Status: Cap- 66MHz+ UDF- FastB2B- ParErr- DEVSEL=3Dmediu=
+m
+>>>>TAbort- <TAbort- <MAbort+ >SERR- <PERR- INTx-
+>>> =A0 =A0 =A0 =A0Latency: 0
+>>>
+>>> 00:01.0 PCI bridge: ATI Technologies Inc RS690 PCI to PCI Bridge
+>>> (Internal gfx) (prog-if 00 [Normal decode])
+>>> =A0 =A0 =A0 =A0Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASno=
+op-
+>>> ParErr- Stepping- SERR+ FastB2B- DisINTx-
+>>> =A0 =A0 =A0 =A0Status: Cap+ 66MHz+ UDF- FastB2B- ParErr- DEVSEL=3Dmediu=
+m
+>>>>TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
+>>> =A0 =A0 =A0 =A0Latency: 64
+>>> =A0 =A0 =A0 =A0Bus: primary=3D00, secondary=3D01, subordinate=3D01, sec=
+-latency=3D64
+>>> =A0 =A0 =A0 =A0I/O behind bridge: 0000c000-0000cfff
+>>> =A0 =A0 =A0 =A0Memory behind bridge: fe800000-fe9fffff
+>>> =A0 =A0 =A0 =A0Prefetchable memory behind bridge: 00000000fc000000-0000=
+0000fdffffff
+>>> =A0 =A0 =A0 =A0Secondary status: 66MHz+ FastB2B- ParErr- DEVSEL=3Dmediu=
+m
+>>>>TAbort- <TAbort- <MAbort- <SERR- <PERR-
+>>> =A0 =A0 =A0 =A0BridgeCtl: Parity- SERR+ NoISA- VGA+ MAbort- >Reset- Fas=
+tB2B-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0PriDiscTmr- SecDiscTmr- DiscTmrStat- Dis=
+cTmrSERREn-
+>>> =A0 =A0 =A0 =A0Capabilities: [44] HyperTransport: MSI Mapping Enable+ F=
+ixed+
+>>> =A0 =A0 =A0 =A0Capabilities: [b0] Subsystem: ATI Technologies Inc RS690=
+ PCI
+>>> to PCI Bridge (Internal gfx)
+>>>
+>>> 00:07.0 PCI bridge: ATI Technologies Inc RS690 PCI to PCI Bridge (PCI
+>>> Express Port 3) (
+>>> prog-if 00 [Normal decode])
+>>> =A0 =A0 =A0 =A0Control: I/O+ Mem+ BusMaster+ SpecCycle- MemWINV- VGASno=
+op-
+>>> ParErr- Stepping- S
+>>> ERR+ FastB2B- DisINTx+
+>>> =A0 =A0 =A0 =A0Status: Cap+ 66MHz- UDF- FastB2B- ParErr- DEVSEL=3Dfast =
+>TAbort-
+>>> <TAbort- <MAbort
+>>> - >SERR- <PERR- INTx-
+>>> =A0 =A0 =A0 =A0Latency: 0, Cache Line Size: 64 bytes
+>>> =A0 =A0 =A0 =A0Bus: primary=3D00, secondary=3D02, subordinate=3D02, sec=
+-latency=3D0
+>>> =A0 =A0 =A0 =A0I/O behind bridge: 0000d000-0000dfff
+>>> =A0 =A0 =A0 =A0Memory behind bridge: fea00000-feafffff
+>>> =A0 =A0 =A0 =A0Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=3Dfast =
+>TAbort-
+>>> <TAbort- <MAbort
+>>> - <SERR- <PERR-
+>>> =A0 =A0 =A0 =A0BridgeCtl: Parity+ SERR+ NoISA- VGA- MAbort- >Reset- Fas=
+tB2B-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0PriDiscTmr- SecDiscTmr- DiscTmrStat- Dis=
+cTmrSERREn-
+>>> =A0 =A0 =A0 =A0Capabilities: [50] Power Management version 3
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0Flags: PMEClk- DSI- D1- D2- AuxCurrent=
+=3D0mA
+>>> PME(D0+,D1-,D2-,D3hot+,D3col
+>>> d+)
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0Status: D0 NoSoftRst- PME-Enable- DSel=
+=3D0 DScale=3D0 PME-
+>>> =A0 =A0 =A0 =A0Capabilities: [58] Express (v1) Root Port (Slot+), MSI 0=
+0
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0DevCap: MaxPayload 128 bytes, PhantFunc =
+0, Latency L0s
+>>> <64ns, L1 <1us
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0ExtTag+ RBE+ FLReset-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0DevCtl: Report errors: Correctable- Non-=
+Fatal- Fatal-
+>>> Unsupported-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0RlxdOrd+ ExtTag- PhantFu=
+nc- AuxPwr- NoSnoop+
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0MaxPayload 128 bytes, Ma=
+xReadReq 128 bytes
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0DevSta: CorrErr- UncorrErr- FatalErr- Un=
+suppReq-
+>>> AuxPwr- TransPend-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0LnkCap: Port #4, Speed 2.5GT/s, Width x1=
+, ASPM L0s L1,
+>>> Latency L0 <64ns, L1 <1us
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0ClockPM- Surprise- LLAct=
+Rep+ BwNot-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0LnkCtl: ASPM Disabled; RCB 64 bytes Disa=
+bled- Retrain- CommClk+
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0ExtSynch- ClockPM- AutWi=
+dDis- BWInt- AutBWInt-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0LnkSta: Speed 2.5GT/s, Width x1, TrErr- =
+Train-
+>>> SlotClk+ DLActive+ BWMgmt- ABWMgmt-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0SltCap: AttnBtn- PwrCtrl- MRL- AttnInd- =
+PwrInd-
+>>> HotPlug- Surpise-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0Slot # =A06, PowerLimit =
+25.000000; Interlock- NoCompl-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0SltCtl: Enable: AttnBtn- PwrFlt- MRL- Pr=
+esDet-
+>>> CmdCplt- HPIrq- LinkChg-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0Control: AttnInd Off, Pw=
+rInd Off, Power- Interlock-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0SltSta: Status: AttnBtn- PowerFlt- MRL- =
+CmdCplt-
+>>> PresDet+ Interlock-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0Changed: MRL- PresDet+ L=
+inkState-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0RootCtl: ErrCorrectable- ErrNon-Fatal- E=
+rrFatal-
+>>> PMEIntEna- CRSVisible-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0RootCap: CRSVisible-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0RootSta: PME ReqID 0000, PMEStatus- PMEP=
+ending-
+>>> =A0 =A0 =A0 =A0Capabilities: [80] MSI: Enable+ Count=3D1/1 Maskable- 64=
+bit-
+>>> =A0 =A0 =A0 =A0 =A0 =A0 =A0 =A0Address: fee0300c =A0Data: 4149
+>>> =A0 =A0 =A0 =A0Capabilities: [b0] Subsystem: ATI Technologies Inc RS690=
+ PCI
+>>> to PCI Bridge
+>>> =A0 =A0 =A0 =A0Capabilities: [b8] HyperTransport: MSI Mapping Enable+ F=
+ixed+
+>>> =A0 =A0 =A0 =A0Capabilities: [100] Virtual Channel <?>
+>>> =A0 =A0 =A0 =A0Kernel driver in use: pcieport
+>>>
+>>> KMS was working stable on 2.6.33 and seems to work on 2.6.34 (Not
+>>> really tested, because 2.6.34 is not working for me, but I'm not sure
+>>> if that is KMS related)
+>>>
+>>> Output from working KMS in 2.6.33:
+>>> [ =A0 =A00.385804] [drm] Initialized drm 1.1.0 20060810
+>>> [ =A0 =A00.385896] [drm] radeon defaulting to kernel modesetting.
+>>> [ =A0 =A00.385955] [drm] radeon kernel modesetting enabled.
+>>> [ =A0 =A00.386066] radeon 0000:01:05.0: PCI INT A -> GSI 18 (level, low=
+) -> IRQ 18
+>>> [ =A0 =A00.388388] [drm] radeon: Initializing kernel modesetting.
+>>> [ =A0 =A00.388534] [drm] register mmio base: 0xFE9F0000
+>>> [ =A0 =A00.388593] [drm] register mmio size: 65536
+>>> [ =A0 =A00.389106] ATOM BIOS: ATI
+>>> [ =A0 =A00.389374] [drm] GPU reset succeed (RBBM_STATUS=3D0x10000140)
+>>> [ =A0 =A00.389436] [drm] radeon: VRAM 32M
+>>> [ =A0 =A00.389495] [drm] radeon: VRAM from 0xDE000000 to 0xDFFFFFFF
+>>> [ =A0 =A00.389554] [drm] radeon: GTT 512M
+>>> [ =A0 =A00.389612] [drm] radeon: GTT from 0x00000000 to 0x1FFFFFFF
+>>> [ =A0 =A00.389688] radeon 0000:01:05.0: irq 25 for MSI/MSI-X
+>>> [ =A0 =A00.389692] [drm] radeon: using MSI.
+>>> [ =A0 =A00.389766] [drm] radeon: irq initialized.
+>>> [ =A0 =A00.389828] mtrr: type mismatch for fc000000,2000000 old:
+>>> write-back new: write-combining
+>>> [ =A0 =A00.389902] [drm] Detected VRAM RAM=3D32M, BAR=3D32M
+>>> [ =A0 =A00.389960] [drm] RAM width 128bits DDR
+>>> [ =A0 =A00.390238] [TTM] Zone =A0kernel: Available graphics memory: 201=
+0380 kiB.
+>>> [ =A0 =A00.390313] [drm] radeon: 32M of VRAM memory ready
+>>> [ =A0 =A00.390372] [drm] radeon: 512M of GTT memory ready.
+>>> [ =A0 =A00.390431] [drm] GART: num cpu pages 131072, num gpu pages 1310=
+72
+>>> [ =A0 =A00.393504] [drm] radeon: 1 quad pipes, 1 z pipes initialized.
+>>> [ =A0 =A00.393568] [drm] radeon: cp idle (0x10000C03)
+>>> [ =A0 =A00.393691] [drm] Loading RS690/RS740 Microcode
+>>> [ =A0 =A00.393751] platform radeon_cp.0: firmware: using built-in firmw=
+are
+>>> radeon/RS690_cp.bin
+>>> [ =A0 =A00.393964] [drm] radeon: ring at 0x0000000000000000
+>>> [ =A0 =A00.394039] [drm] ring test succeeded in 1 usecs
+>>> [ =A0 =A00.394180] [drm] radeon: ib pool ready.
+>>> [ =A0 =A00.394249] [drm] ib test succeeded in 0 usecs
+>>> [ =A0 =A00.394454] [drm] Default TV standard: NTSC
+>>> [ =A0 =A00.394690] [drm] Radeon Display Connectors
+>>> [ =A0 =A00.394749] [drm] Connector 0:
+>>> [ =A0 =A00.394807] [drm] =A0 VGA
+>>> [ =A0 =A00.394865] [drm] =A0 DDC: 0x7e50 0x7e40 0x7e54 0x7e44 0x7e58 0x=
+7e48
+>>> 0x7e5c 0x7e4c
+>>> [ =A0 =A00.394938] [drm] =A0 Encoders:
+>>> [ =A0 =A00.394996] [drm] =A0 =A0 CRT1: INTERNAL_KLDSCP_DAC1
+>>> [ =A0 =A00.395055] [drm] Connector 1:
+>>> [ =A0 =A00.395112] [drm] =A0 S-video
+>>> [ =A0 =A00.395169] [drm] =A0 Encoders:
+>>> [ =A0 =A00.395227] [drm] =A0 =A0 TV1: INTERNAL_KLDSCP_DAC1
+>>> [ =A0 =A00.395285] [drm] Connector 2:
+>>> [ =A0 =A00.395343] [drm] =A0 HDMI-A
+>>> [ =A0 =A00.395401] [drm] =A0 DDC: 0x7e40 0x7e50 0x7e44 0x7e54 0x7e48 0x=
+7e58
+>>> 0x7e4c 0x7e5c
+>>> [ =A0 =A00.395474] [drm] =A0 Encoders:
+>>> [ =A0 =A00.395532] [drm] =A0 =A0 DFP3: INTERNAL_LVTM1
+>>> [ =A0 =A00.593345] [drm] fb mappable at 0xFC040000
+>>> [ =A0 =A00.593404] [drm] vram apper at 0xFC000000
+>>> [ =A0 =A00.593462] [drm] size 786432
+>>> [ =A0 =A00.593519] [drm] fb depth is 8
+>>> [ =A0 =A00.593576] [drm] =A0 =A0pitch is 1024
+>>> [ =A0 =A00.615713] Console: switching to colour frame buffer device 128=
+x48
+>>> [ =A0 =A00.617300] fb0: radeondrmfb frame buffer device
+>>> [ =A0 =A00.617319] registered panic notifier
+>>> [ =A0 =A00.617337] [drm] Initialized radeon 2.0.0 20080528 for
+>>> 0000:01:05.0 on minor 0
+>>>
+>>> Please ask, if I should provide more information or test something.
+>>
+>> Can you bisect to see what commit broke it?
+>>
+>> Alex
+>
+> Its you fault. ;-P
+>
+> 0888e883ea5ff8fac27e813256d6c1eaede5a234 is the first bad commit
+> commit 0888e883ea5ff8fac27e813256d6c1eaede5a234
+> Author: Alex Deucher <alexdeucher@gmail.com>
+> Date: =A0 Sat Jun 12 11:50:13 2010 -0400
+>
+> =A0 =A0drm/radeon/kms: fix bandwidth calculation when sideport is present
+>
+> =A0 =A0Fixes fdo bug 27529:
+> =A0 =A0https://bugs.freedesktop.org/show_bug.cgi?id=3D27529
+>
+> =A0 =A0Reported-by: steckdenis@yahoo.fr
+> =A0 =A0Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+> =A0 =A0Signed-off-by: Dave Airlie <airlied@redhat.com>
+>
+> :040000 040000 2ff9114469e4569e1bebd659c9632c5b59bfc238
+> b0eb9a29c698da1eeb8289ba1180b8135a94ecd7 M =A0 =A0 drivers
+>
+> My system does not have any sideport memory.
+> The other revisions before this did boot into the correct KMS mode,
+> but I did not test X, because I'm using that system as a remote
+> desktop server and only sometimes the fb text console to debug
+> something that went wrong.
 
----
-Changes since v1
-- Do not request IRQ with IRQF_DISABLED since it is a noop now
-- Use a generous slack for the timeout timer. It does not need to be accurate.
+Does this patch help?
 
-Changes since v2
-- Use sg_mapping_to iterate over sg elements in mmc read and write functions
-- Use bitops instead of a spinlock and a variable for testing whether a request
-  has been finished.
-- Rework irq and timeout handling in order to get rid of locking in hot paths
+Alex
 
-Changes since v3
-- Drastically decrease IRQ poll timeout. Now when the poll timeout is reached
-  the IRQ which was polled is enabled. A variable keeps track of what state the
-  driver is in and what has to be done next when the IRQ handler is entered
-  again.
-  By doing so busy looping is reduced, but overall performance can be maintained.
-- Move header file from include/linux/mmc to arch/mips/include/asm/mach-jz4740
----
- arch/mips/include/asm/mach-jz4740/jz4740_mmc.h |   15 +
- drivers/mmc/host/Kconfig                       |    8 +
- drivers/mmc/host/Makefile                      |    1 +
- drivers/mmc/host/jz4740_mmc.c                  | 1024 ++++++++++++++++++++++++
- 4 files changed, 1048 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/include/asm/mach-jz4740/jz4740_mmc.h
- create mode 100644 drivers/mmc/host/jz4740_mmc.c
+--0015174c0e4ca0761e048b3793f2
+Content-Type: text/x-patch; charset=US-ASCII; 
+	name="0001-drm-radeon-kms-fix-possible-mis-detection-of-sidepor.patch"
+Content-Disposition: attachment; 
+	filename="0001-drm-radeon-kms-fix-possible-mis-detection-of-sidepor.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gbju4k660
 
-diff --git a/arch/mips/include/asm/mach-jz4740/jz4740_mmc.h b/arch/mips/include/asm/mach-jz4740/jz4740_mmc.h
-new file mode 100644
-index 0000000..8543f43
---- /dev/null
-+++ b/arch/mips/include/asm/mach-jz4740/jz4740_mmc.h
-@@ -0,0 +1,15 @@
-+#ifndef __LINUX_MMC_JZ4740_MMC
-+#define __LINUX_MMC_JZ4740_MMC
-+
-+struct jz4740_mmc_platform_data {
-+	int gpio_power;
-+	int gpio_card_detect;
-+	int gpio_read_only;
-+	unsigned card_detect_active_low:1;
-+	unsigned read_only_active_low:1;
-+	unsigned power_active_low:1;
-+
-+	unsigned data_1bit:1;
-+};
-+
-+#endif
-diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
-index f06d06e..546fc49 100644
---- a/drivers/mmc/host/Kconfig
-+++ b/drivers/mmc/host/Kconfig
-@@ -81,6 +81,14 @@ config MMC_RICOH_MMC
- 
- 	  If unsure, say Y.
- 
-+config MMC_JZ4740
-+	tristate "JZ4740 SD/Multimedia Card Interface support"
-+	depends on MACH_JZ4740
-+	help
-+	  This selects the Ingenic Z4740 SD/Multimedia card Interface.
-+	  If you have an ngenic platform with a Multimedia Card slot,
-+	  say Y or M here.
-+
- config MMC_SDHCI_OF
- 	tristate "SDHCI support on OpenFirmware platforms"
- 	depends on MMC_SDHCI && PPC_OF
-diff --git a/drivers/mmc/host/Makefile b/drivers/mmc/host/Makefile
-index e30c2ee..f4e53c9 100644
---- a/drivers/mmc/host/Makefile
-+++ b/drivers/mmc/host/Makefile
-@@ -36,6 +36,7 @@ obj-$(CONFIG_MMC_CB710)	+= cb710-mmc.o
- obj-$(CONFIG_MMC_VIA_SDMMC)	+= via-sdmmc.o
- obj-$(CONFIG_SDH_BFIN)		+= bfin_sdh.o
- obj-$(CONFIG_MMC_SH_MMCIF)	+= sh_mmcif.o
-+obj-$(CONFIG_MMC_JZ4740)	+= jz4740_mmc.o
- 
- obj-$(CONFIG_MMC_SDHCI_OF)	+= sdhci-of.o
- sdhci-of-y				:= sdhci-of-core.o
-diff --git a/drivers/mmc/host/jz4740_mmc.c b/drivers/mmc/host/jz4740_mmc.c
-new file mode 100644
-index 0000000..82a449a
---- /dev/null
-+++ b/drivers/mmc/host/jz4740_mmc.c
-@@ -0,0 +1,1024 @@
-+/*
-+ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *  JZ4740 SD/MMC controller driver
-+ *
-+ *  This program is free software; you can redistribute  it and/or modify it
-+ *  under  the terms of  the GNU General  Public License as published by the
-+ *  Free Software Foundation;  either version 2 of the  License, or (at your
-+ *  option) any later version.
-+ *
-+ *  You should have received a copy of the  GNU General Public License along
-+ *  with this program; if not, write  to the Free Software Foundation, Inc.,
-+ *  675 Mass Ave, Cambridge, MA 02139, USA.
-+ *
-+ */
-+
-+#include <linux/mmc/host.h>
-+#include <linux/io.h>
-+#include <linux/irq.h>
-+#include <linux/interrupt.h>
-+#include <linux/module.h>
-+#include <linux/platform_device.h>
-+#include <linux/delay.h>
-+#include <linux/scatterlist.h>
-+#include <linux/clk.h>
-+
-+#include <linux/bitops.h>
-+#include <linux/gpio.h>
-+#include <asm/mach-jz4740/gpio.h>
-+#include <asm/cacheflush.h>
-+#include <linux/dma-mapping.h>
-+
-+#include <asm/mach-jz4740/jz4740_mmc.h>
-+
-+#define JZ_REG_MMC_STRPCL	0x00
-+#define JZ_REG_MMC_STATUS	0x04
-+#define JZ_REG_MMC_CLKRT	0x08
-+#define JZ_REG_MMC_CMDAT	0x0C
-+#define JZ_REG_MMC_RESTO	0x10
-+#define JZ_REG_MMC_RDTO		0x14
-+#define JZ_REG_MMC_BLKLEN	0x18
-+#define JZ_REG_MMC_NOB		0x1C
-+#define JZ_REG_MMC_SNOB		0x20
-+#define JZ_REG_MMC_IMASK	0x24
-+#define JZ_REG_MMC_IREG		0x28
-+#define JZ_REG_MMC_CMD		0x2C
-+#define JZ_REG_MMC_ARG		0x30
-+#define JZ_REG_MMC_RESP_FIFO	0x34
-+#define JZ_REG_MMC_RXFIFO	0x38
-+#define JZ_REG_MMC_TXFIFO	0x3C
-+
-+#define JZ_MMC_STRPCL_EXIT_MULTIPLE BIT(7)
-+#define JZ_MMC_STRPCL_EXIT_TRANSFER BIT(6)
-+#define JZ_MMC_STRPCL_START_READWAIT BIT(5)
-+#define JZ_MMC_STRPCL_STOP_READWAIT BIT(4)
-+#define JZ_MMC_STRPCL_RESET BIT(3)
-+#define JZ_MMC_STRPCL_START_OP BIT(2)
-+#define JZ_MMC_STRPCL_CLOCK_CONTROL (BIT(1) | BIT(0))
-+#define JZ_MMC_STRPCL_CLOCK_STOP BIT(0)
-+#define JZ_MMC_STRPCL_CLOCK_START BIT(1)
-+
-+
-+#define JZ_MMC_STATUS_IS_RESETTING BIT(15)
-+#define JZ_MMC_STATUS_SDIO_INT_ACTIVE BIT(14)
-+#define JZ_MMC_STATUS_PRG_DONE BIT(13)
-+#define JZ_MMC_STATUS_DATA_TRAN_DONE BIT(12)
-+#define JZ_MMC_STATUS_END_CMD_RES BIT(11)
-+#define JZ_MMC_STATUS_DATA_FIFO_AFULL BIT(10)
-+#define JZ_MMC_STATUS_IS_READWAIT BIT(9)
-+#define JZ_MMC_STATUS_CLK_EN BIT(8)
-+#define JZ_MMC_STATUS_DATA_FIFO_FULL BIT(7)
-+#define JZ_MMC_STATUS_DATA_FIFO_EMPTY BIT(6)
-+#define JZ_MMC_STATUS_CRC_RES_ERR BIT(5)
-+#define JZ_MMC_STATUS_CRC_READ_ERROR BIT(4)
-+#define JZ_MMC_STATUS_TIMEOUT_WRITE BIT(3)
-+#define JZ_MMC_STATUS_CRC_WRITE_ERROR BIT(2)
-+#define JZ_MMC_STATUS_TIMEOUT_RES BIT(1)
-+#define JZ_MMC_STATUS_TIMEOUT_READ BIT(0)
-+
-+#define JZ_MMC_STATUS_READ_ERROR_MASK (BIT(4) | BIT(0))
-+#define JZ_MMC_STATUS_WRITE_ERROR_MASK (BIT(3) | BIT(2))
-+
-+
-+#define JZ_MMC_CMDAT_IO_ABORT BIT(11)
-+#define JZ_MMC_CMDAT_BUS_WIDTH_4BIT BIT(10)
-+#define JZ_MMC_CMDAT_DMA_EN BIT(8)
-+#define JZ_MMC_CMDAT_INIT BIT(7)
-+#define JZ_MMC_CMDAT_BUSY BIT(6)
-+#define JZ_MMC_CMDAT_STREAM BIT(5)
-+#define JZ_MMC_CMDAT_WRITE BIT(4)
-+#define JZ_MMC_CMDAT_DATA_EN BIT(3)
-+#define JZ_MMC_CMDAT_RESPONSE_FORMAT (BIT(2) | BIT(1) | BIT(0))
-+#define JZ_MMC_CMDAT_RSP_R1 1
-+#define JZ_MMC_CMDAT_RSP_R2 2
-+#define JZ_MMC_CMDAT_RSP_R3 3
-+
-+#define JZ_MMC_IRQ_SDIO BIT(7)
-+#define JZ_MMC_IRQ_TXFIFO_WR_REQ BIT(6)
-+#define JZ_MMC_IRQ_RXFIFO_RD_REQ BIT(5)
-+#define JZ_MMC_IRQ_END_CMD_RES BIT(2)
-+#define JZ_MMC_IRQ_PRG_DONE BIT(1)
-+#define JZ_MMC_IRQ_DATA_TRAN_DONE BIT(0)
-+
-+
-+#define JZ_MMC_CLK_RATE 24000000
-+
-+enum jz4740_mmc_state {
-+	JZ4740_MMC_STATE_READ_RESPONSE,
-+	JZ4740_MMC_STATE_TRANSFER_DATA,
-+	JZ4740_MMC_STATE_SEND_STOP,
-+	JZ4740_MMC_STATE_DONE,
-+};
-+
-+struct jz4740_mmc_host {
-+	struct mmc_host *mmc;
-+	struct platform_device *pdev;
-+	struct jz4740_mmc_platform_data *pdata;
-+	struct clk *clk;
-+
-+	int irq;
-+	int card_detect_irq;
-+
-+	struct resource *mem;
-+	void __iomem *base;
-+	struct mmc_request *req;
-+	struct mmc_command *cmd;
-+
-+	unsigned long waiting;
-+
-+	uint32_t cmdat;
-+
-+	uint16_t irq_mask;
-+
-+	spinlock_t lock;
-+
-+	struct timer_list timeout_timer;
-+	struct sg_mapping_iter miter;
-+	enum jz4740_mmc_state state;
-+};
-+
-+static void jz4740_mmc_set_irq_enabled(struct jz4740_mmc_host *host,
-+	unsigned int irq, bool enabled)
-+{
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&host->lock, flags);
-+	if (enabled)
-+		host->irq_mask &= ~irq;
-+	else
-+		host->irq_mask |= irq;
-+	spin_unlock_irqrestore(&host->lock, flags);
-+
-+	writew(host->irq_mask, host->base + JZ_REG_MMC_IMASK);
-+}
-+
-+static void jz4740_mmc_clock_enable(struct jz4740_mmc_host *host,
-+	bool start_transfer)
-+{
-+	uint16_t val = JZ_MMC_STRPCL_CLOCK_START;
-+
-+	if (start_transfer)
-+		val |= JZ_MMC_STRPCL_START_OP;
-+
-+	writew(val, host->base + JZ_REG_MMC_STRPCL);
-+}
-+
-+static void jz4740_mmc_clock_disable(struct jz4740_mmc_host *host)
-+{
-+	uint32_t status;
-+	unsigned int timeout = 1000;
-+
-+	writew(JZ_MMC_STRPCL_CLOCK_STOP, host->base + JZ_REG_MMC_STRPCL);
-+	do {
-+		status = readl(host->base + JZ_REG_MMC_STATUS);
-+	} while (status & JZ_MMC_STATUS_CLK_EN && --timeout);
-+}
-+
-+static void jz4740_mmc_reset(struct jz4740_mmc_host *host)
-+{
-+	uint32_t status;
-+	unsigned int timeout = 1000;
-+
-+	writew(JZ_MMC_STRPCL_RESET, host->base + JZ_REG_MMC_STRPCL);
-+	udelay(10);
-+	do {
-+		status = readl(host->base + JZ_REG_MMC_STATUS);
-+	} while (status & JZ_MMC_STATUS_IS_RESETTING && --timeout);
-+}
-+
-+static void jz4740_mmc_request_done(struct jz4740_mmc_host *host)
-+{
-+	struct mmc_request *req;
-+
-+	req = host->req;
-+	host->req = NULL;
-+
-+	mmc_request_done(host->mmc, req);
-+}
-+static unsigned int jz4740_mmc_poll_irq(struct jz4740_mmc_host *host,
-+	unsigned int irq)
-+{
-+	unsigned int timeout = 1000;
-+	uint16_t status;
-+
-+	do {
-+		status = readw(host->base + JZ_REG_MMC_IREG);
-+	} while (!(status & irq) && --timeout);
-+
-+	if (timeout == 0) {
-+		set_bit(0, &host->waiting);
-+		mod_timer(&host->timeout_timer, jiffies + 5*HZ);
-+		jz4740_mmc_set_irq_enabled(host, irq, true);
-+		return true;
-+	}
-+
-+	return false;
-+}
-+
-+static void jz4740_mmc_transfer_check_state(struct jz4740_mmc_host *host,
-+	struct mmc_data *data)
-+{
-+	int status;
-+
-+	status = readl(host->base + JZ_REG_MMC_STATUS);
-+	if (status & JZ_MMC_STATUS_WRITE_ERROR_MASK) {
-+		if (status & (JZ_MMC_STATUS_TIMEOUT_WRITE)) {
-+			host->req->cmd->error = -ETIMEDOUT;
-+			data->error = -ETIMEDOUT;
-+		} else {
-+			host->req->cmd->error = -EIO;
-+			data->error = -EIO;
-+		}
-+	}
-+}
-+
-+static bool jz4740_mmc_write_data(struct jz4740_mmc_host *host,
-+	struct mmc_data *data)
-+{
-+	struct sg_mapping_iter *miter = &host->miter;
-+	uint32_t *buf;
-+	bool timeout;
-+	size_t i, j;
-+
-+	while (sg_miter_next(miter)) {
-+		buf = miter->addr;
-+		i = miter->length / 4;
-+		j = i / 8;
-+		i = i & 0x7;
-+		while (j) {
-+			timeout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_TXFIFO_WR_REQ);
-+			if (unlikely(timeout))
-+				goto poll_timeout;
-+
-+			writel(buf[0], host->base + JZ_REG_MMC_TXFIFO);
-+			writel(buf[1], host->base + JZ_REG_MMC_TXFIFO);
-+			writel(buf[2], host->base + JZ_REG_MMC_TXFIFO);
-+			writel(buf[3], host->base + JZ_REG_MMC_TXFIFO);
-+			writel(buf[4], host->base + JZ_REG_MMC_TXFIFO);
-+			writel(buf[5], host->base + JZ_REG_MMC_TXFIFO);
-+			writel(buf[6], host->base + JZ_REG_MMC_TXFIFO);
-+			writel(buf[7], host->base + JZ_REG_MMC_TXFIFO);
-+			buf += 8;
-+			--j;
-+		}
-+		if (unlikely(i)) {
-+			timeout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_TXFIFO_WR_REQ);
-+			if (unlikely(timeout))
-+				goto poll_timeout;
-+
-+			while (i) {
-+				writel(*buf, host->base + JZ_REG_MMC_TXFIFO);
-+				++buf;
-+				--i;
-+			}
-+		}
-+		data->bytes_xfered += miter->length;
-+	}
-+	sg_miter_stop(miter);
-+
-+	return false;
-+
-+poll_timeout:
-+	miter->consumed = (void *)buf - miter->addr;
-+	data->bytes_xfered += miter->consumed;
-+	sg_miter_stop(miter);
-+
-+	return true;
-+}
-+
-+static bool jz4740_mmc_read_data(struct jz4740_mmc_host *host,
-+				struct mmc_data *data)
-+{
-+	struct sg_mapping_iter *miter = &host->miter;
-+	uint32_t *buf;
-+	uint32_t d;
-+	uint16_t status;
-+	size_t i, j;
-+	unsigned int timeout;
-+
-+	while (sg_miter_next(miter)) {
-+		buf = miter->addr;
-+		i = miter->length;
-+		j = i / 32;
-+		i = i & 0x1f;
-+		while (j) {
-+			timeout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_RXFIFO_RD_REQ);
-+			if (unlikely(timeout))
-+				goto poll_timeout;
-+
-+			buf[0] = readl(host->base + JZ_REG_MMC_RXFIFO);
-+			buf[1] = readl(host->base + JZ_REG_MMC_RXFIFO);
-+			buf[2] = readl(host->base + JZ_REG_MMC_RXFIFO);
-+			buf[3] = readl(host->base + JZ_REG_MMC_RXFIFO);
-+			buf[4] = readl(host->base + JZ_REG_MMC_RXFIFO);
-+			buf[5] = readl(host->base + JZ_REG_MMC_RXFIFO);
-+			buf[6] = readl(host->base + JZ_REG_MMC_RXFIFO);
-+			buf[7] = readl(host->base + JZ_REG_MMC_RXFIFO);
-+
-+			buf += 8;
-+			--j;
-+		}
-+
-+		if (unlikely(i)) {
-+			timeout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_RXFIFO_RD_REQ);
-+			if (unlikely(timeout))
-+				goto poll_timeout;
-+
-+			while (i >= 4) {
-+				*buf++ = readl(host->base + JZ_REG_MMC_RXFIFO);
-+				i -= 4;
-+			}
-+			if (unlikely(i > 0)) {
-+				d = readl(host->base + JZ_REG_MMC_RXFIFO);
-+				memcpy(buf, &d, i);
-+			}
-+		}
-+		data->bytes_xfered += miter->length;
-+
-+		/* This can go away once MIPS implements
-+		 * flush_kernel_dcache_page */
-+		flush_dcache_page(miter->page);
-+	}
-+	sg_miter_stop(miter);
-+
-+	/* For whatever reason there is sometime one word more in the fifo then
-+	 * requested */
-+	timeout = 1000;
-+	status = readl(host->base + JZ_REG_MMC_STATUS);
-+	while (!(status & JZ_MMC_STATUS_DATA_FIFO_EMPTY) && --timeout) {
-+		d = readl(host->base + JZ_REG_MMC_RXFIFO);
-+		status = readl(host->base + JZ_REG_MMC_STATUS);
-+	}
-+
-+	return false;
-+
-+poll_timeout:
-+	miter->consumed = (void *)buf - miter->addr;
-+	data->bytes_xfered += miter->consumed;
-+	sg_miter_stop(miter);
-+
-+	return true;
-+}
-+
-+static void jz4740_mmc_timeout(unsigned long data)
-+{
-+	struct jz4740_mmc_host *host = (struct jz4740_mmc_host *)data;
-+
-+	if (!test_and_clear_bit(0, &host->waiting))
-+		return;
-+
-+	jz4740_mmc_set_irq_enabled(host, JZ_MMC_IRQ_END_CMD_RES, false);
-+
-+	host->req->cmd->error = -ETIMEDOUT;
-+	jz4740_mmc_request_done(host);
-+}
-+
-+static void jz4740_mmc_read_response(struct jz4740_mmc_host *host,
-+	struct mmc_command *cmd)
-+{
-+	int i;
-+	uint16_t tmp;
-+
-+	if (cmd->flags & MMC_RSP_136) {
-+		tmp = readw(host->base + JZ_REG_MMC_RESP_FIFO);
-+		for (i = 0; i < 4; ++i) {
-+			cmd->resp[i] = tmp << 24;
-+			tmp = readw(host->base + JZ_REG_MMC_RESP_FIFO);
-+			cmd->resp[i] |= tmp << 8;
-+			tmp = readw(host->base + JZ_REG_MMC_RESP_FIFO);
-+			cmd->resp[i] |= tmp >> 8;
-+		}
-+	} else {
-+		cmd->resp[0] = readw(host->base + JZ_REG_MMC_RESP_FIFO) << 24;
-+		cmd->resp[0] |= readw(host->base + JZ_REG_MMC_RESP_FIFO) << 8;
-+		cmd->resp[0] |= readw(host->base + JZ_REG_MMC_RESP_FIFO) & 0xff;
-+	}
-+}
-+
-+static void jz4740_mmc_send_command(struct jz4740_mmc_host *host,
-+	struct mmc_command *cmd)
-+{
-+	uint32_t cmdat = host->cmdat;
-+
-+	host->cmdat &= ~JZ_MMC_CMDAT_INIT;
-+	jz4740_mmc_clock_disable(host);
-+
-+	host->cmd = cmd;
-+
-+	if (cmd->flags & MMC_RSP_BUSY)
-+		cmdat |= JZ_MMC_CMDAT_BUSY;
-+
-+	switch (mmc_resp_type(cmd)) {
-+	case MMC_RSP_R1B:
-+	case MMC_RSP_R1:
-+		cmdat |= JZ_MMC_CMDAT_RSP_R1;
-+		break;
-+	case MMC_RSP_R2:
-+		cmdat |= JZ_MMC_CMDAT_RSP_R2;
-+		break;
-+	case MMC_RSP_R3:
-+		cmdat |= JZ_MMC_CMDAT_RSP_R3;
-+		break;
-+	default:
-+		break;
-+	}
-+
-+	if (cmd->data) {
-+		cmdat |= JZ_MMC_CMDAT_DATA_EN;
-+		if (cmd->data->flags & MMC_DATA_WRITE)
-+			cmdat |= JZ_MMC_CMDAT_WRITE;
-+		if (cmd->data->flags & MMC_DATA_STREAM)
-+			cmdat |= JZ_MMC_CMDAT_STREAM;
-+
-+		writew(cmd->data->blksz, host->base + JZ_REG_MMC_BLKLEN);
-+		writew(cmd->data->blocks, host->base + JZ_REG_MMC_NOB);
-+	}
-+
-+	writeb(cmd->opcode, host->base + JZ_REG_MMC_CMD);
-+	writel(cmd->arg, host->base + JZ_REG_MMC_ARG);
-+	writel(cmdat, host->base + JZ_REG_MMC_CMDAT);
-+
-+	jz4740_mmc_clock_enable(host, 1);
-+}
-+
-+static void jz_mmc_prepare_data_transfer(struct jz4740_mmc_host *host)
-+{
-+	struct mmc_command *cmd = host->req->cmd;
-+	struct mmc_data *data = cmd->data;
-+	int direction;
-+
-+	if (cmd->data->flags & MMC_DATA_READ)
-+		direction = SG_MITER_TO_SG;
-+	else
-+		direction = SG_MITER_FROM_SG;
-+
-+	sg_miter_start(&host->miter, data->sg, data->sg_len, direction);
-+}
-+
-+
-+static irqreturn_t jz_mmc_irq_worker(int irq, void *devid)
-+{
-+	struct jz4740_mmc_host *host = (struct jz4740_mmc_host *)devid;
-+	struct mmc_command *cmd = host->req->cmd;
-+	struct mmc_request *req = host->req;
-+	bool timedout = false;
-+
-+	if (cmd->error)
-+		host->state = JZ4740_MMC_STATE_DONE;
-+
-+	switch (host->state) {
-+	case JZ4740_MMC_STATE_READ_RESPONSE:
-+		if (cmd->flags & MMC_RSP_PRESENT)
-+			jz4740_mmc_read_response(host, cmd);
-+
-+		if (!cmd->data)
-+			break;
-+
-+		jz_mmc_prepare_data_transfer(host);
-+
-+	case JZ4740_MMC_STATE_TRANSFER_DATA:
-+		if (cmd->data->flags & MMC_DATA_READ)
-+			timedout = jz4740_mmc_read_data(host, cmd->data);
-+		else
-+			timedout = jz4740_mmc_write_data(host, cmd->data);
-+
-+		if (unlikely(timedout)) {
-+			host->state = JZ4740_MMC_STATE_TRANSFER_DATA;
-+			break;
-+		}
-+
-+		jz4740_mmc_transfer_check_state(host, cmd->data);
-+
-+		timedout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_DATA_TRAN_DONE);
-+		if (unlikely(timedout)) {
-+			host->state = JZ4740_MMC_STATE_SEND_STOP;
-+			break;
-+		}
-+		writew(JZ_MMC_IRQ_DATA_TRAN_DONE, host->base + JZ_REG_MMC_IREG);
-+
-+	case JZ4740_MMC_STATE_SEND_STOP:
-+		if (!req->stop)
-+			break;
-+
-+		jz4740_mmc_send_command(host, req->stop);
-+
-+		timedout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_PRG_DONE);
-+		if (timedout) {
-+			host->state = JZ4740_MMC_STATE_DONE;
-+			break;
-+		}
-+	case JZ4740_MMC_STATE_DONE:
-+		break;
-+	}
-+
-+	if (!timedout)
-+		jz4740_mmc_request_done(host);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static irqreturn_t jz_mmc_irq(int irq, void *devid)
-+{
-+	struct jz4740_mmc_host *host = devid;
-+	uint16_t irq_reg, status, tmp;
-+
-+	irq_reg = readw(host->base + JZ_REG_MMC_IREG);
-+
-+	tmp = irq_reg;
-+	irq_reg &= ~host->irq_mask;
-+
-+	tmp &= ~(JZ_MMC_IRQ_TXFIFO_WR_REQ | JZ_MMC_IRQ_RXFIFO_RD_REQ |
-+		JZ_MMC_IRQ_PRG_DONE | JZ_MMC_IRQ_DATA_TRAN_DONE);
-+
-+	if (tmp != irq_reg)
-+		writew(tmp & ~irq_reg, host->base + JZ_REG_MMC_IREG);
-+
-+	if (irq_reg & JZ_MMC_IRQ_SDIO) {
-+		writew(JZ_MMC_IRQ_SDIO, host->base + JZ_REG_MMC_IREG);
-+		mmc_signal_sdio_irq(host->mmc);
-+		irq_reg &= ~JZ_MMC_IRQ_SDIO;
-+	}
-+
-+	if (host->req && host->cmd && irq_reg) {
-+		if (test_and_clear_bit(0, &host->waiting)) {
-+			del_timer(&host->timeout_timer);
-+
-+			status = readl(host->base + JZ_REG_MMC_STATUS);
-+
-+			if (status & JZ_MMC_STATUS_TIMEOUT_RES) {
-+				host->cmd->error = -ETIMEDOUT;
-+			} else if (status & JZ_MMC_STATUS_CRC_RES_ERR) {
-+				host->cmd->error = -EIO;
-+			} else if (status & (JZ_MMC_STATUS_CRC_READ_ERROR |
-+				    JZ_MMC_STATUS_CRC_WRITE_ERROR)) {
-+				host->cmd->data->error = -EIO;
-+			} else if (status & (JZ_MMC_STATUS_CRC_READ_ERROR |
-+					JZ_MMC_STATUS_CRC_WRITE_ERROR)) {
-+				host->cmd->data->error = -EIO;
-+			}
-+
-+			jz4740_mmc_set_irq_enabled(host, irq_reg, false);
-+			writew(irq_reg, host->base + JZ_REG_MMC_IREG);
-+
-+			return IRQ_WAKE_THREAD;
-+		}
-+	}
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static int jz4740_mmc_set_clock_rate(struct jz4740_mmc_host *host, int rate)
-+{
-+	int div = 0;
-+	int real_rate;
-+
-+	jz4740_mmc_clock_disable(host);
-+	clk_set_rate(host->clk, JZ_MMC_CLK_RATE);
-+
-+	real_rate = clk_get_rate(host->clk);
-+
-+	while (real_rate > rate && div < 7) {
-+		++div;
-+		real_rate >>= 1;
-+	}
-+
-+	writew(div, host->base + JZ_REG_MMC_CLKRT);
-+	return real_rate;
-+}
-+
-+static void jz4740_mmc_request(struct mmc_host *mmc, struct mmc_request *req)
-+{
-+	struct jz4740_mmc_host *host = mmc_priv(mmc);
-+
-+	host->req = req;
-+
-+	writew(0xffff, host->base + JZ_REG_MMC_IREG);
-+
-+	writew(JZ_MMC_IRQ_END_CMD_RES, host->base + JZ_REG_MMC_IREG);
-+	jz4740_mmc_set_irq_enabled(host, JZ_MMC_IRQ_END_CMD_RES, true);
-+
-+	host->state = JZ4740_MMC_STATE_READ_RESPONSE;
-+	set_bit(0, &host->waiting);
-+	mod_timer(&host->timeout_timer, jiffies + 5*HZ);
-+	jz4740_mmc_send_command(host, req->cmd);
-+}
-+
-+static void jz4740_mmc_set_ios(struct mmc_host *mmc, struct mmc_ios *ios)
-+{
-+	struct jz4740_mmc_host *host = mmc_priv(mmc);
-+	if (ios->clock)
-+		jz4740_mmc_set_clock_rate(host, ios->clock);
-+
-+	switch (ios->power_mode) {
-+	case MMC_POWER_UP:
-+		jz4740_mmc_reset(host);
-+		if (gpio_is_valid(host->pdata->gpio_power))
-+			gpio_set_value(host->pdata->gpio_power,
-+					!host->pdata->power_active_low);
-+		host->cmdat |= JZ_MMC_CMDAT_INIT;
-+		clk_enable(host->clk);
-+		break;
-+	case MMC_POWER_ON:
-+		break;
-+	default:
-+		if (gpio_is_valid(host->pdata->gpio_power))
-+			gpio_set_value(host->pdata->gpio_power,
-+					host->pdata->power_active_low);
-+		clk_disable(host->clk);
-+		break;
-+	}
-+
-+	switch (ios->bus_width) {
-+	case MMC_BUS_WIDTH_1:
-+		host->cmdat &= ~JZ_MMC_CMDAT_BUS_WIDTH_4BIT;
-+		break;
-+	case MMC_BUS_WIDTH_4:
-+		host->cmdat |= JZ_MMC_CMDAT_BUS_WIDTH_4BIT;
-+		break;
-+	default:
-+		break;
-+	}
-+}
-+
-+static int jz4740_mmc_get_ro(struct mmc_host *mmc)
-+{
-+	struct jz4740_mmc_host *host = mmc_priv(mmc);
-+	if (!gpio_is_valid(host->pdata->gpio_read_only))
-+		return -ENOSYS;
-+
-+	return gpio_get_value(host->pdata->gpio_read_only) ^
-+		host->pdata->read_only_active_low;
-+}
-+
-+static int jz4740_mmc_get_cd(struct mmc_host *mmc)
-+{
-+	struct jz4740_mmc_host *host = mmc_priv(mmc);
-+	if (!gpio_is_valid(host->pdata->gpio_card_detect))
-+		return -ENOSYS;
-+
-+	return gpio_get_value(host->pdata->gpio_card_detect) ^
-+			host->pdata->card_detect_active_low;
-+}
-+
-+static irqreturn_t jz4740_mmc_card_detect_irq(int irq, void *devid)
-+{
-+	struct jz4740_mmc_host *host = devid;
-+
-+	mmc_detect_change(host->mmc, HZ / 2);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static void jz4740_mmc_enable_sdio_irq(struct mmc_host *mmc, int enable)
-+{
-+	struct jz4740_mmc_host *host = mmc_priv(mmc);
-+	jz4740_mmc_set_irq_enabled(host, JZ_MMC_IRQ_SDIO, enable);
-+}
-+
-+static const struct mmc_host_ops jz4740_mmc_ops = {
-+	.request	= jz4740_mmc_request,
-+	.set_ios	= jz4740_mmc_set_ios,
-+	.get_ro		= jz4740_mmc_get_ro,
-+	.get_cd		= jz4740_mmc_get_cd,
-+	.enable_sdio_irq = jz4740_mmc_enable_sdio_irq,
-+};
-+
-+static const struct jz_gpio_bulk_request jz4740_mmc_pins[] = {
-+	JZ_GPIO_BULK_PIN(MSC_CMD),
-+	JZ_GPIO_BULK_PIN(MSC_CLK),
-+	JZ_GPIO_BULK_PIN(MSC_DATA0),
-+	JZ_GPIO_BULK_PIN(MSC_DATA1),
-+	JZ_GPIO_BULK_PIN(MSC_DATA2),
-+	JZ_GPIO_BULK_PIN(MSC_DATA3),
-+};
-+
-+static int __devinit jz4740_mmc_request_gpio(struct device *dev, int gpio,
-+	const char *name, bool output, int value)
-+{
-+	int ret;
-+
-+	if (!gpio_is_valid(gpio))
-+		return 0;
-+
-+	ret = gpio_request(gpio, name);
-+	if (ret) {
-+		dev_err(dev, "Failed to request %s gpio: %d\n", name, ret);
-+		return ret;
-+	}
-+
-+	if (output)
-+		gpio_direction_output(gpio, value);
-+	else
-+		gpio_direction_input(gpio);
-+
-+	return 0;
-+}
-+
-+static int __devinit jz4740_mmc_request_gpios(struct platform_device *pdev)
-+{
-+	int ret;
-+	struct jz4740_mmc_platform_data *pdata = pdev->dev.platform_data;
-+
-+	if (!pdata)
-+		return 0;
-+
-+	ret = jz4740_mmc_request_gpio(&pdev->dev, pdata->gpio_card_detect,
-+			"MMC detect change", false, 0);
-+	if (ret)
-+		goto err;
-+
-+	ret = jz4740_mmc_request_gpio(&pdev->dev, pdata->gpio_read_only,
-+			"MMC read only", false, 0);
-+	if (ret)
-+		goto err_free_gpio_card_detect;
-+
-+	ret = jz4740_mmc_request_gpio(&pdev->dev, pdata->gpio_power,
-+			"MMC read only", true, pdata->power_active_low);
-+	if (ret)
-+		goto err_free_gpio_read_only;
-+
-+	return 0;
-+
-+err_free_gpio_read_only:
-+	if (gpio_is_valid(pdata->gpio_read_only))
-+		gpio_free(pdata->gpio_read_only);
-+err_free_gpio_card_detect:
-+	if (gpio_is_valid(pdata->gpio_card_detect))
-+		gpio_free(pdata->gpio_card_detect);
-+err:
-+	return ret;
-+}
-+
-+static int __devinit jz4740_mmc_request_cd_irq(struct platform_device *pdev,
-+	struct jz4740_mmc_host *host)
-+{
-+	int ret;
-+	struct jz4740_mmc_platform_data *pdata = pdev->dev.platform_data;
-+
-+	if (gpio_is_valid(pdata->gpio_card_detect))
-+		return 0;
-+
-+	host->card_detect_irq = gpio_to_irq(pdata->gpio_card_detect);
-+
-+	if (host->card_detect_irq < 0) {
-+		dev_warn(&pdev->dev, "Failed to get card detect irq\n");
-+		return 0;
-+	}
-+	return request_irq(host->card_detect_irq, jz4740_mmc_card_detect_irq,
-+			IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,
-+			"MMC card detect", host);
-+
-+
-+	return ret;
-+}
-+
-+static void jz4740_mmc_free_gpios(struct platform_device *pdev)
-+{
-+	struct jz4740_mmc_platform_data *pdata = pdev->dev.platform_data;
-+
-+	if (!pdata)
-+		return;
-+
-+	if (gpio_is_valid(pdata->gpio_power))
-+		gpio_free(pdata->gpio_power);
-+	if (gpio_is_valid(pdata->gpio_read_only))
-+		gpio_free(pdata->gpio_read_only);
-+	if (gpio_is_valid(pdata->gpio_card_detect))
-+		gpio_free(pdata->gpio_card_detect);
-+}
-+
-+static inline size_t jz4740_mmc_num_pins(struct jz4740_mmc_host *host)
-+{
-+	size_t num_pins = ARRAY_SIZE(jz4740_mmc_pins);
-+	if (host->pdata && host->pdata->data_1bit)
-+		num_pins -= 3;
-+
-+	return num_pins;
-+}
-+
-+static int __devinit jz4740_mmc_probe(struct platform_device* pdev)
-+{
-+	int ret;
-+	struct mmc_host *mmc;
-+	struct jz4740_mmc_host *host;
-+	struct jz4740_mmc_platform_data *pdata;
-+
-+	pdata = pdev->dev.platform_data;
-+
-+	mmc = mmc_alloc_host(sizeof(struct jz4740_mmc_host), &pdev->dev);
-+	if (!mmc) {
-+		dev_err(&pdev->dev, "Failed to alloc mmc host structure\n");
-+		return -ENOMEM;
-+	}
-+
-+	host = mmc_priv(mmc);
-+	host->pdata = pdata;
-+
-+	host->irq = platform_get_irq(pdev, 0);
-+	if (host->irq < 0) {
-+		ret = host->irq;
-+		dev_err(&pdev->dev, "Failed to get platform irq: %d\n", ret);
-+		goto err_free_host;
-+	}
-+
-+	host->clk = clk_get(&pdev->dev, "mmc");
-+	if (!host->clk) {
-+		ret = -ENOENT;
-+		dev_err(&pdev->dev, "Failed to get mmc clock\n");
-+		goto err_free_host;
-+	}
-+
-+	host->mem = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-+	if (!host->mem) {
-+		ret = -ENOENT;
-+		dev_err(&pdev->dev, "Failed to get base platform memory\n");
-+		goto err_clk_put;
-+	}
-+
-+	host->mem = request_mem_region(host->mem->start,
-+					resource_size(host->mem), pdev->name);
-+	if (!host->mem) {
-+		ret = -EBUSY;
-+		dev_err(&pdev->dev, "Failed to request base memory region\n");
-+		goto err_clk_put;
-+	}
-+
-+	host->base = ioremap_nocache(host->mem->start, resource_size(host->mem));
-+	if (!host->base) {
-+		ret = -EBUSY;
-+		dev_err(&pdev->dev, "Failed to ioremap base memory\n");
-+		goto err_release_mem_region;
-+	}
-+
-+	ret = jz_gpio_bulk_request(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request mmc pins: %d\n", ret);
-+		goto err_iounmap;
-+	}
-+
-+	ret = jz4740_mmc_request_gpios(pdev);
-+	if (ret)
-+		goto err_gpio_bulk_free;
-+
-+	mmc->ops = &jz4740_mmc_ops;
-+	mmc->f_min = JZ_MMC_CLK_RATE / 128;
-+	mmc->f_max = JZ_MMC_CLK_RATE;
-+	mmc->ocr_avail = MMC_VDD_32_33 | MMC_VDD_33_34;
-+	mmc->caps = (pdata && pdata->data_1bit) ? 0 : MMC_CAP_4_BIT_DATA;
-+	mmc->caps |= MMC_CAP_SDIO_IRQ;
-+
-+	mmc->max_blk_size = (1 << 10) - 1;
-+	mmc->max_blk_count = (1 << 15) - 1;
-+	mmc->max_req_size = mmc->max_blk_size * mmc->max_blk_count;
-+
-+	mmc->max_phys_segs = 128;
-+	mmc->max_hw_segs = 128;
-+	mmc->max_seg_size = mmc->max_req_size;
-+
-+	host->mmc = mmc;
-+	host->pdev = pdev;
-+	spin_lock_init(&host->lock);
-+	host->irq_mask = 0xffff;
-+
-+	ret = jz4740_mmc_request_cd_irq(pdev, host);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request card detect irq\n");
-+		goto err_free_gpios;
-+	}
-+
-+	ret = request_threaded_irq(host->irq, jz_mmc_irq, jz_mmc_irq_worker, 0,
-+			dev_name(&pdev->dev), host);
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to request irq: %d\n", ret);
-+		goto err_free_card_detect_irq;
-+	}
-+
-+	jz4740_mmc_reset(host);
-+	jz4740_mmc_clock_disable(host);
-+	setup_timer(&host->timeout_timer, jz4740_mmc_timeout,
-+			(unsigned long)host);
-+	/* It is not important when it times out, it just needs to timeout. */
-+	set_timer_slack(&host->timeout_timer, HZ);
-+
-+	platform_set_drvdata(pdev, host);
-+	ret = mmc_add_host(mmc);
-+
-+	if (ret) {
-+		dev_err(&pdev->dev, "Failed to add mmc host: %d\n", ret);
-+		goto err_free_irq;
-+	}
-+	dev_info(&pdev->dev, "JZ SD/MMC card driver registered\n");
-+
-+	return 0;
-+
-+err_free_irq:
-+	free_irq(host->irq, host);
-+err_free_card_detect_irq:
-+	if (host->card_detect_irq >= 0)
-+		free_irq(host->card_detect_irq, host);
-+err_free_gpios:
-+	jz4740_mmc_free_gpios(pdev);
-+err_gpio_bulk_free:
-+	jz_gpio_bulk_free(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
-+err_iounmap:
-+	iounmap(host->base);
-+err_release_mem_region:
-+	release_mem_region(host->mem->start, resource_size(host->mem));
-+err_clk_put:
-+	clk_put(host->clk);
-+err_free_host:
-+	platform_set_drvdata(pdev, NULL);
-+	mmc_free_host(mmc);
-+
-+	return ret;
-+}
-+
-+static int __devexit jz4740_mmc_remove(struct platform_device *pdev)
-+{
-+	struct jz4740_mmc_host *host = platform_get_drvdata(pdev);
-+
-+	del_timer_sync(&host->timeout_timer);
-+	jz4740_mmc_set_irq_enabled(host, 0xff, false);
-+	jz4740_mmc_reset(host);
-+
-+	mmc_remove_host(host->mmc);
-+
-+	free_irq(host->irq, host);
-+	if (host->card_detect_irq >= 0)
-+		free_irq(host->card_detect_irq, host);
-+
-+	jz4740_mmc_free_gpios(pdev);
-+	jz_gpio_bulk_free(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
-+
-+	iounmap(host->base);
-+	release_mem_region(host->mem->start, resource_size(host->mem));
-+
-+	clk_put(host->clk);
-+
-+	platform_set_drvdata(pdev, NULL);
-+	mmc_free_host(host->mmc);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+
-+static int jz4740_mmc_suspend(struct device *dev)
-+{
-+	struct jz4740_mmc_host *host = dev_get_drvdata(dev);
-+
-+	mmc_suspend_host(host->mmc);
-+
-+	jz_gpio_bulk_suspend(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
-+
-+	return 0;
-+}
-+
-+static int jz4740_mmc_resume(struct device *dev)
-+{
-+	struct jz4740_mmc_host *host = dev_get_drvdata(dev);
-+
-+	jz_gpio_bulk_resume(jz4740_mmc_pins, jz4740_mmc_num_pins(host));
-+
-+	mmc_resume_host(host->mmc);
-+
-+	return 0;
-+}
-+
-+const struct dev_pm_ops jz4740_mmc_pm_ops = {
-+	.suspend	= jz4740_mmc_suspend,
-+	.resume		= jz4740_mmc_resume,
-+	.poweroff	= jz4740_mmc_suspend,
-+	.restore	= jz4740_mmc_resume,
-+};
-+
-+#define JZ4740_MMC_PM_OPS (&jz4740_mmc_pm_ops)
-+#else
-+#define JZ4740_MMC_PM_OPS NULL
-+#endif
-+
-+static struct platform_driver jz4740_mmc_driver = {
-+	.probe = jz4740_mmc_probe,
-+	.remove = __devexit_p(jz4740_mmc_remove),
-+	.driver = {
-+		.name = "jz4740-mmc",
-+		.owner = THIS_MODULE,
-+		.pm = JZ4740_MMC_PM_OPS,
-+	},
-+};
-+
-+static int __init jz4740_mmc_init(void)
-+{
-+	return platform_driver_register(&jz4740_mmc_driver);
-+}
-+module_init(jz4740_mmc_init);
-+
-+static void __exit jz4740_mmc_exit(void)
-+{
-+	platform_driver_unregister(&jz4740_mmc_driver);
-+}
-+module_exit(jz4740_mmc_exit);
-+
-+MODULE_DESCRIPTION("JZ4740 SD/MMC controller driver");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Lars-Peter Clausen <lars@metafoo.de>");
--- 
-1.5.6.5
-
+RnJvbSA4MWQ2YWJiN2U5ZjcwZTkxZmQ3NGFiOGU1YzBjNWM4YTlhMjM3YmM5IE1vbiBTZXAgMTcg
+MDA6MDA6MDAgMjAwMQpGcm9tOiBBbGV4IERldWNoZXIgPGFsZXhkZXVjaGVyQGdtYWlsLmNvbT4K
+RGF0ZTogTW9uLCAxMiBKdWwgMjAxMCAxNzozMzo1MCAtMDQwMApTdWJqZWN0OiBbUEFUQ0hdIGRy
+bS9yYWRlb24va21zOiBmaXggcG9zc2libGUgbWlzLWRldGVjdGlvbiBvZiBzaWRlcG9ydCBvbiBy
+czY5MC9yczc0MAoKQ2hlY2sgdWxCb290VXBNZW1vcnlDbG9jayBvbiBBTUQgSUdQcy4KCkZpeCBy
+ZWdyZXNzaW9uIG5vdGljZWQgYnkgVG9yc3RlbiBLYWlzZXIgPGp1c3QuZm9yLmxrbWxAZ29vZ2xl
+bWFpbC5jb20+CgpTaWduZWQtb2ZmLWJ5OiBBbGV4IERldWNoZXIgPGFsZXhkZXVjaGVyQGdtYWls
+LmNvbT4KQ2M6IHN0YWJsZUBrZXJuZWwub3JnCi0tLQogZHJpdmVycy9ncHUvZHJtL3JhZGVvbi9y
+YWRlb25fYXRvbWJpb3MuYyB8ICAgMTEgKysrKysrKysrLS0KIDEgZmlsZXMgY2hhbmdlZCwgOSBp
+bnNlcnRpb25zKCspLCAyIGRlbGV0aW9ucygtKQoKZGlmZiAtLWdpdCBhL2RyaXZlcnMvZ3B1L2Ry
+bS9yYWRlb24vcmFkZW9uX2F0b21iaW9zLmMgYi9kcml2ZXJzL2dwdS9kcm0vcmFkZW9uL3JhZGVv
+bl9hdG9tYmlvcy5jCmluZGV4IDVkZDg2YjkuLjNmODljOWIgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMv
+Z3B1L2RybS9yYWRlb24vcmFkZW9uX2F0b21iaW9zLmMKKysrIGIvZHJpdmVycy9ncHUvZHJtL3Jh
+ZGVvbi9yYWRlb25fYXRvbWJpb3MuYwpAQCAtMTAyOSw4ICsxMDI5LDE1IEBAIGJvb2wgcmFkZW9u
+X2F0b21iaW9zX3NpZGVwb3J0X3ByZXNlbnQoc3RydWN0IHJhZGVvbl9kZXZpY2UgKnJkZXYpCiAJ
+CQkJICAgICAgZGF0YV9vZmZzZXQpOwogCQlzd2l0Y2ggKGNyZXYpIHsKIAkJY2FzZSAxOgotCQkJ
+aWYgKGlncF9pbmZvLT5pbmZvLnVjTWVtb3J5VHlwZSAmIDB4ZjApCi0JCQkJcmV0dXJuIHRydWU7
+CisJCQkvKiBBTUQgSUdQUyAqLworCQkJaWYgKChyZGV2LT5mYW1pbHkgPT0gQ0hJUF9SUzY5MCkg
+fHwKKwkJCSAgICAocmRldi0+ZmFtaWx5ID09IENISVBfUlM3NDApKSB7CisJCQkJaWYgKGlncF9p
+bmZvLT5pbmZvLnVsQm9vdFVwTWVtb3J5Q2xvY2spCisJCQkJCXJldHVybiB0cnVlOworCQkJfSBl
+bHNlIHsKKwkJCQlpZiAoaWdwX2luZm8tPmluZm8udWNNZW1vcnlUeXBlICYgMHhmMCkKKwkJCQkJ
+cmV0dXJuIHRydWU7CisJCQl9CiAJCQlicmVhazsKIAkJY2FzZSAyOgogCQkJaWYgKGlncF9pbmZv
+LT5pbmZvXzIudWNNZW1vcnlUeXBlICYgMHgwZikKLS0gCjEuNy4wLjEKCg==
+--0015174c0e4ca0761e048b3793f2--
