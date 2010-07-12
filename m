@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755557Ab0GLUxB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:53:01 -0400
-Received: from mail.perches.com ([173.55.12.10]:1785 "EHLO mail.perches.com"
+	id S1755610Ab0GLUxG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:53:06 -0400
+Received: from mail.perches.com ([173.55.12.10]:1783 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755031Ab0GLUvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755018Ab0GLUvD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Jul 2010 16:51:03 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Alexander Viro <viro@zeniv.linux.org.uk>,
-        linux-fsdevel@vger.kernel.org
-Subject: [PATCH 28/36] fs: Remove unnecessary casts of private_data
-Date: Mon, 12 Jul 2010 13:50:20 -0700
-Message-Id: <88719afae7220e41bb1cca1cf59c141f38ffefc3.1278967121.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Tyler Hicks <tyhicks@linux.vnet.ibm.com>,
+        Dustin Kirkland <kirkland@canonical.com>,
+        ecryptfs-devel@lists.launchpad.net
+Subject: [PATCH 24/36] fs/ecryptfs: Remove unnecessary casts of private_data
+Date: Mon, 12 Jul 2010 13:50:16 -0700
+Message-Id: <98ae7e6c316dcdfdf5f19acd84ad4befa42f2a14.1278967121.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.337.g6068.dirty
 In-Reply-To: <cover.1278967120.git.joe@perches.com>
 References: <cover.1278967120.git.joe@perches.com>
@@ -22,40 +23,22 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/seq_file.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ fs/ecryptfs/ecryptfs_kernel.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/seq_file.c b/fs/seq_file.c
-index e1f437b..0e7cb13 100644
---- a/fs/seq_file.c
-+++ b/fs/seq_file.c
-@@ -131,7 +131,7 @@ Eoverflow:
-  */
- ssize_t seq_read(struct file *file, char __user *buf, size_t size, loff_t *ppos)
+diff --git a/fs/ecryptfs/ecryptfs_kernel.h b/fs/ecryptfs/ecryptfs_kernel.h
+index 0032a9f..40186b9 100644
+--- a/fs/ecryptfs/ecryptfs_kernel.h
++++ b/fs/ecryptfs/ecryptfs_kernel.h
+@@ -477,7 +477,7 @@ ecryptfs_lower_header_size(struct ecryptfs_crypt_stat *crypt_stat)
+ static inline struct ecryptfs_file_info *
+ ecryptfs_file_to_private(struct file *file)
  {
--	struct seq_file *m = (struct seq_file *)file->private_data;
-+	struct seq_file *m = file->private_data;
- 	size_t copied = 0;
- 	loff_t pos;
- 	size_t n;
-@@ -280,7 +280,7 @@ EXPORT_SYMBOL(seq_read);
-  */
- loff_t seq_lseek(struct file *file, loff_t offset, int origin)
- {
--	struct seq_file *m = (struct seq_file *)file->private_data;
-+	struct seq_file *m = file->private_data;
- 	loff_t retval = -EINVAL;
+-	return (struct ecryptfs_file_info *)file->private_data;
++	return file->private_data;
+ }
  
- 	mutex_lock(&m->lock);
-@@ -324,7 +324,7 @@ EXPORT_SYMBOL(seq_lseek);
-  */
- int seq_release(struct inode *inode, struct file *file)
- {
--	struct seq_file *m = (struct seq_file *)file->private_data;
-+	struct seq_file *m = file->private_data;
- 	kfree(m->buf);
- 	kfree(m);
- 	return 0;
+ static inline void
 -- 
 1.7.1.337.g6068.dirty
 
