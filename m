@@ -1,72 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756086Ab0GLQMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 12:12:53 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43215 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751099Ab0GLQMw (ORCPT
+	id S1756073Ab0GLQTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 12:19:51 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:58437 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751780Ab0GLQTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 12:12:52 -0400
-Date: Mon, 12 Jul 2010 13:12:39 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 10/13]  perf: Re-Add make_absolute_path
-Message-ID: <20100712161239.GF25238@ghostprotocols.net>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
- <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6>
- <20100712140023.GC25238@ghostprotocols.net>
- <1278945036.1537.189.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278945036.1537.189.camel@gandalf.stny.rr.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Mon, 12 Jul 2010 12:19:49 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=STun/qdzrmvvVFtl7uCM97mcKK+l/11EreR69GU8DmA9CQFrW+6g7mYx9JZkl3Lg4EKBef46veddujfNhVKNzbJgutipx3Qmw2yBxdrN6r6iGEykAgs91INVyIAk7sG1;
+Date: Mon, 12 Jul 2010 09:20:03 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "Tino Keitel" <tino.keitel+xorg@tikei.de>
+Subject: Re: [Bug #16207] Suspend and VT switch hangs since 2.6.34
+Message-ID: <20100712092003.074ab8ee@virtuousgeek.org>
+In-Reply-To: <Hc02ROPrUsG.A.zdH.cq7NMB@chimera>
+References: <xkNyyYrLiTN.A.s_G.7p7NMB@chimera>
+	<Hc02ROPrUsG.A.zdH.cq7NMB@chimera>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 12, 2010 at 10:30:36AM -0400, Steven Rostedt escreveu:
-> On Mon, 2010-07-12 at 11:00 -0300, Arnaldo Carvalho de Melo wrote:
-> > Also please remove the xstrdup and die calls from this function, we're
-> > trying to get rid of all such 'panic' like functions so that we can
-> > librarize as much code as possible.
+On Sat, 10 Jul 2010 02:33:28 +0200 (CEST)
+"Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
-> What I found useful with the "die" calls with trace-cmd is that I made
-> them weak, and then they could be overwritten by apps. Thus, in
-> kernelshark, the die and warning functions produce pop-ups and bug
-> reports.
+> This message has been generated automatically as a part of a report
+> of regressions introduced between 2.6.33 and 2.6.34.
+> 
+> The following bug entry is on the current list of known regressions
+> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
+> be listed and let the tracking team know (either way).
+> 
+> 
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16207
+> Subject		: Suspend and VT switch hangs since 2.6.34
+> Submitter	: Tino Keitel <tino.keitel+xorg@tikei.de>
+> Date		: 2010-06-09 17:53 (31 days old)
+> Message-ID	: <20100609175356.GA17332@x61.home>
+> References	: http://marc.info/?l=linux-kernel&m=127610606214060&w=2
 
-Well, I prefer to follow the kernel way of doing things, i.e. to
-propagate as much as possible up the callchain the error return value,
-so that the apps can handle it in any way they prefer, i.e. die() calls
-in tools/perf/builtin-foo.c are okayish, but not on tools/perf/util/.
+Two commits in the X server repo (1.8 branch commits shown) might help
+here:
 
-When I'm writing a tools/perf/builtin-.c file I also don't use die()
-calls, as some routines may end up moving to the library, so its nice to
-avoid them from the start.
+commit	665aa7ce8645b50b888db32ebab4e192dbe00649
+  OS support: fix writeable client vs IgnoreClient behavior
 
-The pr_{warning,err,info,etc} calls do something along the lines of what
-you do, but not by marking them weak, the routine that is ultimately
-called checks what kind of UI is being used and calls the appropriate
-one (TUI/NEWT of stdio).
+commit	090d26723f7cdbb3aebfe212170b7f81c163dd7b
+  dixstruct: make ignoreCount change more ABI friendly
 
-- Arnaldo
+2.6.34 introduced some new features, and X will test for them and use
+them if available.  However, the server's handling of clients was buggy
+with the new code, which could cause clients to hang after VT switch,
+waiting to be woken up.
+
+-- 
+Jesse Barnes, Intel Open Source Technology Center
