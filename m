@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab0GLXE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 19:04:28 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:42404 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753758Ab0GLXE1 (ORCPT
+	id S1756085Ab0GLXFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 19:05:47 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:31977 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab0GLXFp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 19:04:27 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C3B9F56.5090806@s5r6.in-berlin.de>
-Date: Tue, 13 Jul 2010 01:03:50 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	Mon, 12 Jul 2010 19:05:45 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6041"; a="47264353"
+From: David Brown <davidb@codeaurora.org>
+To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: ARM defconfig files
+Date: Mon, 12 Jul 2010 16:05:32 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.34.1; KDE/4.4.5; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.miao@canonical.com>, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>
+References: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com> <20100712185029.GB14425@pengutronix.de>
+In-Reply-To: <20100712185029.GB14425@pengutronix.de>
 MIME-Version: 1.0
-To: Martin Steigerwald <Martin@lichtvoll.de>
-CC: Willy Tarreau <w@1wt.eu>, linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-References: <201007110918.42120.Martin@lichtvoll.de> <201007121744.05844.Martin@lichtvoll.de> <20100712173625.GE6953@1wt.eu> (sfid-20100712_202952_849487_F77B8D03) <201007122156.21725.Martin@lichtvoll.de>
-In-Reply-To: <201007122156.21725.Martin@lichtvoll.de>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201007121605.32462.davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Steigerwald wrote:
-> I think I wait for 2.6.34.2 or .3 and then try again. If it then happens 
-> again, hopefully in a moment where I have nerve to deal with such bugs, I 
-> fire up my second notebook and try to SSH into the machine. If that works I 
-> at least could look into dmesg and X.org logs.
+On Monday 12 July 2010 11:50:29 Uwe Kleine-König wrote:
 
-netconsole might be required.
+> If it helps the powerpc people I can reduce their defconfigs, too.
 
-...
-> Is the Linux kernel development really in balance with feature work and 
-> stabilization work? Currently at least from my personal perception it is 
-> not. Development goes that fast - can you all cope with that speed? Maybe 
-> its just time to *slow it down* a bit?
+Do you have scripts or tools that you did this with, or is a manual
+process.  We're about to add several new (ARM) targets, and it'd be
+nice to be able to make small defconfigs for those targets as well.
 
-If those who added the regressions are found out and asked to debug and
-fix them, the balance should be corrected and perhaps more precautions
-being taken in the future.  Alas, finding the point in history at which
-the kernel regressed might take a lot more time than to actually fix it
-then.  In that case, maybe give the author of the bug an estimate of the
-volunteered hours that were spent on reporting this bug, to put the
-repercussions into it into perspective.  OTOH I suspect a lack of
-responsibility at the developers is not so much an issue here, more so
-that the number of people who take the time for -rc tests (not to
-mention linux-next tests) _and_ to file reports is rather low.  Plus, a
-good bug report often requires experience or good intuition, besides
-patience and rigor.
-
-There were discussions in the past on how more enthusiasts who are
-willing and able to test prereleases could be attracted.  But maybe
-(just maybe) there are more ways in which the developers themselves
-could perform more extensive/ more systematic tests.
--- 
-Stefan Richter
--=====-==-=- -=== -==-=
-http://arcgraph.de/sr/
+Thanks,
+David
