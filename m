@@ -1,53 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756138Ab0GLQJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 12:09:52 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43581 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584Ab0GLQJu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 12:09:50 -0400
-Date: Mon, 12 Jul 2010 18:09:49 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: =?ISO-8859-15?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-Cc: Jaya Kumar <jayakumar.lkml@gmail.com>, linux-fbdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/4 - adjusted changelog] HID: picolcd: fix deferred_io
- init/cleanup to  (un)register_framebuffer ordering
-In-Reply-To: <alpine.LNX.2.00.1007121804290.4741@pobox.suse.cz>
-Message-ID: <alpine.LNX.2.00.1007121809170.4741@pobox.suse.cz>
-References: <20100509184911.3f136b77@neptune.home> <AANLkTik0EkPYKdnhrpF7yK6eXIrHMsNYrzSC6tyeBR0P@mail.gmail.com> <20100510080047.5adade6f@pluto.restena.lu> <20100526215829.28a4aa47@neptune.home> <20100530130945.5c03797f@neptune.home> <20100623123225.4c16e653@neptune.home>
- <alpine.LNX.2.00.1006241053360.13809@pobox.suse.cz> <20100628222641.489c955a@neptune.home> <20100628222920.1127f8eb@neptune.home> <AANLkTingjmM4OmkdXl9IOUe5zsj0QxTdix1h34pVHWGl@mail.gmail.com> <20100630075657.47a325a6@pluto.restena.lu> <20100630223631.49ab1c85@neptune.home>
- <alpine.LNX.2.00.1007112258270.4741@pobox.suse.cz> <20100712081711.25793f9d@pluto.restena.lu> <alpine.LNX.2.00.1007121804290.4741@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756086Ab0GLQMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 12:12:53 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:43215 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab0GLQMw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 12:12:52 -0400
+Date: Mon, 12 Jul 2010 13:12:39 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 10/13]  perf: Re-Add make_absolute_path
+Message-ID: <20100712161239.GF25238@ghostprotocols.net>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
+ <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6>
+ <20100712140023.GC25238@ghostprotocols.net>
+ <1278945036.1537.189.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278945036.1537.189.camel@gandalf.stny.rr.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010, Jiri Kosina wrote:
+Em Mon, Jul 12, 2010 at 10:30:36AM -0400, Steven Rostedt escreveu:
+> On Mon, 2010-07-12 at 11:00 -0300, Arnaldo Carvalho de Melo wrote:
+> > Also please remove the xstrdup and die calls from this function, we're
+> > trying to get rid of all such 'panic' like functions so that we can
+> > librarize as much code as possible.
 
-> > > > Adjust ordering if framebuffer (un)registration and defio
-> > > > init/cleanup to match the correct order (init defio, register
-> > > > FB ... unregister FB, cleanup defio)
-> > > > 
-> > > > Acked-by: Jaya Kumar <jayakumar.lkml@gmail.com>
-> > > > Signed-off-by: Bruno Prémont <bonbons@linux-vserver.org>
-> > > > ---
-> > > > I consider Jaya's reply as an ack to the patch.
-> > > 
-> > > Applied, thanks Bruno.
-> > 
-> > Thanks for applying, what about the 3 other patches of the series?
-> 
-> Hi Bruno,
-> 
-> I have come from vacation, so I have quite some backlog, but will get to 
-> your patches hopefully soon. Thanks for patience.
+> What I found useful with the "die" calls with trace-cmd is that I made
+> them weak, and then they could be overwritten by apps. Thus, in
+> kernelshark, the die and warning functions produce pop-ups and bug
+> reports.
 
-OK, I have now applied the patches. Thanks,
+Well, I prefer to follow the kernel way of doing things, i.e. to
+propagate as much as possible up the callchain the error return value,
+so that the apps can handle it in any way they prefer, i.e. die() calls
+in tools/perf/builtin-foo.c are okayish, but not on tools/perf/util/.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+When I'm writing a tools/perf/builtin-.c file I also don't use die()
+calls, as some routines may end up moving to the library, so its nice to
+avoid them from the start.
+
+The pr_{warning,err,info,etc} calls do something along the lines of what
+you do, but not by marking them weak, the routine that is ultimately
+called checks what kind of UI is being used and calls the appropriate
+one (TUI/NEWT of stdio).
+
+- Arnaldo
