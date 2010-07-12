@@ -1,60 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755517Ab0GLWXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:23:50 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39247 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755272Ab0GLWXt (ORCPT
+	id S1755475Ab0GLW2O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:28:14 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45463 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753787Ab0GLW2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:23:49 -0400
-Date: Mon, 12 Jul 2010 15:22:54 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        Martin Bligh <mbligh@google.com>, Michael Rubin <mrubin@google.com>,
-        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/6] writeback: merge for_kupdate and !for_kupdate cases
-Message-Id: <20100712152254.2071ba5f.akpm@linux-foundation.org>
-In-Reply-To: <20100712155239.GC30222@localhost>
-References: <20100711020656.340075560@intel.com>
-	<20100711021749.303817848@intel.com>
-	<20100712020842.GC25335@dastard>
-	<20100712155239.GC30222@localhost>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 12 Jul 2010 18:28:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Z49qa92xmOEZDYJfYYU5n0lXxu/3e0nUx8IzB8f78/2NzRl5TmSGwxVNqYtUlVkLCg
+         lmSOOw675s7XHMYM8qiyz76Xv88HzTgMzaOUXHySVo0Pw9Ytm1I0xruL7QhIePAjXshN
+         lySPPaRxr/AnFvtFq93ZINh9pX6IZccizmaes=
+From: Roel Van Nyen <roel.vannyen@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Roel Van Nyen <roel.vannyen@gmail.com>
+Subject: [PATCH] Staging: vt6656: Remove PUINT from ttype.h
+Date: Tue, 13 Jul 2010 00:28:02 +0200
+Message-Id: <1278973682-25540-1-git-send-email-roel.vannyen@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010 23:52:39 +0800
-Wu Fengguang <fengguang.wu@intel.com> wrote:
+Remove PUINT from ttype.h and change it to unsigned int *
 
-> > Also, I'd prefer that the
-> > comments remain somewhat more descriptive of the circumstances that
-> > we are operating under. Comments like "retry later to avoid blocking
-> > writeback of other inodes" is far, far better than "retry later"
-> > because it has "why" component that explains the reason for the
-> > logic. You may remember why, but I sure won't in a few months time....
+Signed-of-by Roel Van Nyen <roel.vannyen@gmail.com>
+---
+ drivers/staging/vt6656/bssdb.c |    4 ++--
+ drivers/staging/vt6656/bssdb.h |    4 ++--
+ drivers/staging/vt6656/dpc.c   |    8 ++++----
+ drivers/staging/vt6656/ttype.h |    1 -
+ 4 files changed, 8 insertions(+), 9 deletions(-)
 
-me2 (of course).  This code is waaaay too complex to be scrimping on comments.
-
-> Ah yes the comment is too simple. However the redirty_tail() is not to
-> avoid blocking writeback of other inodes, but to avoid eating 100% CPU
-> on busy retrying a dirty inode/page that cannot perform writeback for
-> a while. (In theory redirty_tail() can still busy retry though, when
-> there is only one single dirty inode.) So how about
-> 
->         /*
->          * somehow blocked: avoid busy retrying
->          */
-
-That's much too short.  Expand on the "somehow" - provide an example,
-describe the common/expected cause.  Fully explain what the "busy"
-retry _is_ and how it can come about.
+diff --git a/drivers/staging/vt6656/bssdb.c b/drivers/staging/vt6656/bssdb.c
+index 830dd23..a417b7e 100644
+--- a/drivers/staging/vt6656/bssdb.c
++++ b/drivers/staging/vt6656/bssdb.c
+@@ -736,7 +736,7 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
+ 
+ BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
+ 		       PBYTE abyDstAddr,
+-		       PUINT puNodeIndex)
++		       unsigned int * puNodeIndex)
+ {
+     PSDevice        pDevice = (PSDevice)hDeviceContext;
+     PSMgmtObject    pMgmt = &(pDevice->sMgmtObj);
+@@ -768,7 +768,7 @@ BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
+  *    None
+  *
+ -*/
+-void BSSvCreateOneNode(void *hDeviceContext, PUINT puNodeIndex)
++void BSSvCreateOneNode(void *hDeviceContext, unsigned int * puNodeIndex)
+ {
+ 
+     PSDevice     pDevice = (PSDevice)hDeviceContext;
+diff --git a/drivers/staging/vt6656/bssdb.h b/drivers/staging/vt6656/bssdb.h
+index c3aaefe..e016fe7 100644
+--- a/drivers/staging/vt6656/bssdb.h
++++ b/drivers/staging/vt6656/bssdb.h
+@@ -278,9 +278,9 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
+ 
+ BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
+ 		       PBYTE abyDstAddr,
+-		       PUINT puNodeIndex);
++		       unsigned int * puNodeIndex);
+ 
+-void BSSvCreateOneNode(void *hDeviceContext, PUINT puNodeIndex);
++void BSSvCreateOneNode(void *hDeviceContext, unsigned int * puNodeIndex);
+ 
+ void BSSvUpdateAPNode(void *hDeviceContext,
+ 		      PWORD pwCapInfo,
+diff --git a/drivers/staging/vt6656/dpc.c b/drivers/staging/vt6656/dpc.c
+index 81ce46f..8362272 100644
+--- a/drivers/staging/vt6656/dpc.c
++++ b/drivers/staging/vt6656/dpc.c
+@@ -80,7 +80,7 @@ static
+ void
+ s_vGetDASA(
+       PBYTE pbyRxBufferAddr,
+-     PUINT pcbHeaderSize,
++     unsigned int * pcbHeaderSize,
+      PSEthernetHeader psEthHeader
+     );
+ 
+@@ -92,7 +92,7 @@ s_vProcessRxMACHeader (
+       unsigned int cbPacketSize,
+       BOOL bIsWEP,
+       BOOL bExtIV,
+-     PUINT pcbHeadSize
++     unsigned int * pcbHeadSize
+     );
+ 
+ static BOOL s_bAPModeRxCtl(
+@@ -167,7 +167,7 @@ s_vProcessRxMACHeader (
+       unsigned int cbPacketSize,
+       BOOL bIsWEP,
+       BOOL bExtIV,
+-     PUINT pcbHeadSize
++     unsigned int * pcbHeadSize
+     )
+ {
+     PBYTE           pbyRxBuffer;
+@@ -261,7 +261,7 @@ static
+ void
+ s_vGetDASA (
+       PBYTE pbyRxBufferAddr,
+-     PUINT pcbHeaderSize,
++     unsigned int * pcbHeaderSize,
+      PSEthernetHeader psEthHeader
+     )
+ {
+diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
+index 3425773..fd78135 100644
+--- a/drivers/staging/vt6656/ttype.h
++++ b/drivers/staging/vt6656/ttype.h
+@@ -87,7 +87,6 @@ typedef unsigned long   ULONG_PTR;      // 32-bit
+ typedef unsigned long   DWORD_PTR;      // 32-bit
+ 
+ // boolean pointer
+-typedef unsigned int *   PUINT;
+ 
+ typedef BYTE *           PBYTE;
+ 
+-- 
+1.7.0.4
 
