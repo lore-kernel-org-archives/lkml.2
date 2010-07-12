@@ -1,42 +1,43 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-        id S1753721Ab0GCH06 (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
-        Sat, 3 Jul 2010 03:26:58 -0400
-Received: from mail2.ecunet.org ([72.250.175.188]:40702 "EHLO mail2.ecunet.org"
-        rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-        id S1752992Ab0GCH05 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-        Sat, 3 Jul 2010 03:26:57 -0400
-X-Greylist: delayed 16817 seconds by postgrey-1.27 at vger.kernel.org; Sat, 03 Jul 2010 03:26:56 EDT
-Date: Fri, 2 Jul 2010 22:43:02 -0400
-Message-Id: <201007030243.o632h2Zl023749@ecunet-web-1.ecunet.org>
-From: becky_teamah@ecunet.org
-To: becky_teamah@ecunet.org
-Subject: hello
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.0 (ecunet.org [192.168.0.90]); Fri, 02 Jul 2010 22:43:17 -0400 (EDT)
+        id S1754718Ab0GLVtM (ORCPT <rfc822;macro@linux-mips.org> + 1 other);
+        Mon, 12 Jul 2010 17:49:12 -0400
+Received: from n21.bullet.mail.ukl.yahoo.com ([87.248.110.138]:48183 "HELO
+        n21.bullet.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
+        by vger.kernel.org with SMTP id S1754073Ab0GLVtJ convert rfc822-to-8bit
+        (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+        Mon, 12 Jul 2010 17:49:09 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 201605.40917.bm@omp205.mail.ukl.yahoo.com
+Message-ID: <897722.73690.qm@web28611.mail.ukl.yahoo.com>
+X-YMail-OSG: YCy5BiAVM1m1w21KiaB06kkMZaoqka9.kvmSM1dndsZktWz
+ YTGXD_3IaV8RHSQUCqNCk7TkUE6ECx4_.BYmFwWz41Fzv7T9.NfwqLHsKuN.
+ KLMmgdrN.KJtr4eTS78mCsjn5g9g.FXfN5DoFClYrfeUnTaaZjZJNic7Ys1R
+ d7n3vwi7RP4pLXuTKQOCPEaNfng2lI6OrNe07PfHcEDicF4Jf7WQXKe1DxhF
+ MKHDqGueE9SjIKBlweQhAku8Cgw--
+X-RocketYMMF: d_samu
+X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.104.274457
+Date: Mon, 12 Jul 2010 21:49:07 +0000 (GMT)
+From: David Konne <d.konne@hotmail.fr>
+Reply-To: david.konne1@cantv.net
+Subject: Hello
+To: undisclosed recipients:;
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 
-&#1605;&#1585;&#1581;&#1576;&#1575;
 
-&#1602;&#1585;&#1571;&#1578; &#1575;&#1587;&#1605;&#1610; &#1576;&#1610;&#1603;&#1610; &#1571;&#1606;&#1575; &#1601;&#1578;&#1575;&#1577; &#1588;&#1575;&#1576;&#1577; &#1580;&#1605;&#1610;&#1604;&#1577; &#1580;&#1583;&#1575; &#1548; &#1576;&#1585;&#1608;&#1601;&#1575;&#1610;&#1604;&#1603; &#1575;&#1604;&#1610;&#1608;&#1605; &#1601;&#1610; [&#1575;&#1604;&#1593;&#1585;&#1576;&#1610;&#1577;] &#1605;&#1608;&#1602;&#1593; &#1608;&#1571;&#1594;&#1578;&#1606;&#1605; &#1571;&#1601;&#1610;&#1585;&#1610; &#1606;&#1592;&#1585;&#1577; &#1601;&#1575;&#1581;&#1589;&#1577; &#1593;&#1604;&#1609; &#1584;&#1604;&#1603;. &#1571;&#1585;&#1610;&#1583;&#1603; &#1571;&#1606; &#1578;&#1593;&#1585;&#1601; &#1571;&#1606; &#1581;&#1576;&#1610; &#1604;&#1603; &#1548; &#1608;&#1571;&#1608;&#1583; &#1571;&#1606; &#1571;&#1593;&#1585;&#1601; &#1571;&#1606;&#1603; &#1571;&#1601;&#1590;&#1604; &#1604;&#1571;&#1606;&#1603; &#1589;&#1608;&#1578; &#1581;&#1604;&#1608;&#1577; &#1580;&#1583;&#1575; &#1608;&#158!
- 0;&#1605;&#1610;&#1604;&#1577; &#1601;&#1610; &#1605;&#1604;&#1601;&#1607; &#1575;&#1604;&#1582;&#1575;&#1589; &#1608;&#1604;&#1584;&#1575; &#1601;&#1573;&#1606;&#1606;&#1610; &#1587;&#1608;&#1601; &#1578;&#1585;&#1610;&#1583; &#1605;&#1606;&#1575; &#1571;&#1606; devolop &#1604;&#1604;&#1581;&#1602;&#1610;&#1602;&#1577; &#1608;&#1593;&#1604;&#1575;&#1602;&#1577; &#1575;&#1604;&#1579;&#1602;&#1577; &#1571;&#1608; &#1571;&#1589;&#1583;&#1602;&#1575;&#1569; &#1605;&#1606; &#1605;&#1593;&#1585;&#1601;&#1577; &#1576;&#1593;&#1590;&#1607;&#1605; &#1575;&#1604;&#1576;&#1593;&#1590; &#1601;&#1610; &#1605;&#1581;&#1575;&#1608;&#1604;&#1577; more.please &#1571;&#1606; &#1610;&#1603;&#1578;&#1576; &#1604;&#1610; &#1607;&#1606;&#1575; &#1601;&#1610; &#1593;&#1606;&#1608;&#1575;&#1606; &#1576;&#1585;&#1610;&#1583;&#1610; &#1575;&#1604;&#1575;&#1604;&#1603;&#1578;&#1585;&#1608;&#1606;&#1610; &#1575;&#1604;&#1582;&#1575;&#1589; &#1563; (beckybaby4love@yahoo.com) &#1576;&#1605;&#1580;&#158!
- 5;&#1583; &#1575;&#1604;&#1581;&#1589;&#1608;&#1604; &#1593;&#!
- 1604;&#1
-609; &#1585;&#1587;&#1575;&#1604;&#1578;&#1610; &#1575;&#1604;&#1580;&#1605;&#1610;&#1604;&#1577; &#1576;&#1581;&#1610;&#1579; &#1571;&#1606;&#1607; &#1587;&#1610;&#1578;&#1605; &#1573;&#1585;&#1587;&#1575;&#1604; &#1575;&#1604;&#1589;&#1608;&#1585; aneble &#1604;&#1576;&#1604;&#1583;&#1610; &#1608;&#1575;&#1602;&#1608;&#1604; &#1604;&#1603;&#1605; &#1575;&#1604;&#1605;&#1586;&#1610;&#1583; &#1593;&#1606; &#1604;&#1610;.
-             
-(&#1578;&#1584;&#1603;&#1585; &#1578;&#1604;&#1603; &#1575;&#1604;&#1605;&#1587;&#1575;&#1601;&#1577; &#1608;&#1575;&#1604;&#1604;&#1594;&#1577; &#1608;&#1575;&#1604;&#1579;&#1602;&#1575;&#1601;&#1577; &#1571;&#1608; &#1575;&#1604;&#1587;&#1606; &#1571;&#1608; &#1575;&#1604;&#1604;&#1608;&#1606; &#1604;&#1575; &#1610;&#1607;&#1605; &#1601;&#1610; &#1608;&#1580;&#1608;&#1583; &#1593;&#1604;&#1575;&#1602;&#1577; &#1581;&#1602;&#1610;&#1602;&#1610;&#1577; &#1608;&#1604;&#1603;&#1606; &#1575;&#1604;&#1581;&#1576; &#1605;&#1587;&#1575;&#1574;&#1604; &#1603;&#1579;&#1610;&#1585;&#1577;) &#1548; &#1608;&#1571;&#1606;&#1575; &#1601;&#1610; &#1575;&#1606;&#1578;&#1592;&#1575;&#1585; &#1585;&#1583;&#1603;&#1605;
+DEAREST RESPECTFUL ONE,
+I know my message will come to you as a surprise. Don't worry I was totally convinced to right you in reference of 600 kilos of gold, i want you to help me receive this 600 kilos of gold and also help me investment  in your country for the best of my future. I promise you that your % is sure for your assistance, I will wait to hear from you so that i will give you more details on how we can get this done successfully, Have a nice day.
+yours sincerely,
+David
 
-   &#1604;&#1603; &#1573;&#1604;&#1609; &#1575;&#1604;&#1571;&#1576;&#1583; &#1548;
 
-    &#1576;&#1610;&#1603;&#1610;.
--------------------------------------------------------------------------------------
-hello
 
-My Name is Becky i am a very beautiful young girl,I read your profile today in [arab site ]and i  take avery good look at it. I want you to know that my love is yours,i wish to know you better because you sound very sweet and nice in your profile so i will like us to devolop a truth and trust relationship or friends from knowing each other the more.please try to write me Here in my private email address;(beckybaby4love@yahoo.com) as soon as you get my lovely letter so that it will aneble to send my pictures and tell you more about me. 
-             
-(Remember that distance,language,culture,age or colour does not matter in a real relationship but love matters alot).I am waiting for your reply 
 
-   Yours forever,
 
-    Becky.
+      
+
