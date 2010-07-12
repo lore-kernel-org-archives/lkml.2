@@ -1,130 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab0GLW2O (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:28:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:45463 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753787Ab0GLW2N (ORCPT
+	id S1755610Ab0GLWju (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:39:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26257 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755479Ab0GLWjt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:28:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Z49qa92xmOEZDYJfYYU5n0lXxu/3e0nUx8IzB8f78/2NzRl5TmSGwxVNqYtUlVkLCg
-         lmSOOw675s7XHMYM8qiyz76Xv88HzTgMzaOUXHySVo0Pw9Ytm1I0xruL7QhIePAjXshN
-         lySPPaRxr/AnFvtFq93ZINh9pX6IZccizmaes=
-From: Roel Van Nyen <roel.vannyen@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Forest Bond <forest@alittletooquiet.net>, devel@driverdev.osuosl.org,
-        linux-kernel@vger.kernel.org, Roel Van Nyen <roel.vannyen@gmail.com>
-Subject: [PATCH] Staging: vt6656: Remove PUINT from ttype.h
-Date: Tue, 13 Jul 2010 00:28:02 +0200
-Message-Id: <1278973682-25540-1-git-send-email-roel.vannyen@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 12 Jul 2010 18:39:49 -0400
+Date: Mon, 12 Jul 2010 15:37:31 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+        Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+Subject: Re: [PATCH 27/36] fs/ocfs2: Remove unnecessary casts of
+ private_data
+Message-ID: <20100712223731.GH12179@mail.oracle.com>
+Mail-Followup-To: Joe Perches <joe@perches.com>,
+	Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com
+References: <cover.1278967120.git.joe@perches.com>
+ <c75b92bbfb63964703ae99733f39696af4550f07.1278967121.git.joe@perches.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <c75b92bbfb63964703ae99733f39696af4550f07.1278967121.git.joe@perches.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0208.4C3B996D.01E2:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove PUINT from ttype.h and change it to unsigned int *
+On Mon, Jul 12, 2010 at 01:50:19PM -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  fs/ocfs2/dlm/dlmdebug.c |    6 +++---
+>  fs/ocfs2/dlmfs/dlmfs.c  |    3 +--
+>  fs/ocfs2/dlmglue.c      |    4 ++--
+>  3 files changed, 6 insertions(+), 7 deletions(-)
 
-Signed-of-by Roel Van Nyen <roel.vannyen@gmail.com>
----
- drivers/staging/vt6656/bssdb.c |    4 ++--
- drivers/staging/vt6656/bssdb.h |    4 ++--
- drivers/staging/vt6656/dpc.c   |    8 ++++----
- drivers/staging/vt6656/ttype.h |    1 -
- 4 files changed, 8 insertions(+), 9 deletions(-)
+Acked-by: Joel Becker <joel.becker@oracle.com>
 
-diff --git a/drivers/staging/vt6656/bssdb.c b/drivers/staging/vt6656/bssdb.c
-index 830dd23..a417b7e 100644
---- a/drivers/staging/vt6656/bssdb.c
-+++ b/drivers/staging/vt6656/bssdb.c
-@@ -736,7 +736,7 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
- 
- BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
- 		       PBYTE abyDstAddr,
--		       PUINT puNodeIndex)
-+		       unsigned int * puNodeIndex)
- {
-     PSDevice        pDevice = (PSDevice)hDeviceContext;
-     PSMgmtObject    pMgmt = &(pDevice->sMgmtObj);
-@@ -768,7 +768,7 @@ BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
-  *    None
-  *
- -*/
--void BSSvCreateOneNode(void *hDeviceContext, PUINT puNodeIndex)
-+void BSSvCreateOneNode(void *hDeviceContext, unsigned int * puNodeIndex)
- {
- 
-     PSDevice     pDevice = (PSDevice)hDeviceContext;
-diff --git a/drivers/staging/vt6656/bssdb.h b/drivers/staging/vt6656/bssdb.h
-index c3aaefe..e016fe7 100644
---- a/drivers/staging/vt6656/bssdb.h
-+++ b/drivers/staging/vt6656/bssdb.h
-@@ -278,9 +278,9 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
- 
- BOOL BSSbIsSTAInNodeDB(void *hDeviceContext,
- 		       PBYTE abyDstAddr,
--		       PUINT puNodeIndex);
-+		       unsigned int * puNodeIndex);
- 
--void BSSvCreateOneNode(void *hDeviceContext, PUINT puNodeIndex);
-+void BSSvCreateOneNode(void *hDeviceContext, unsigned int * puNodeIndex);
- 
- void BSSvUpdateAPNode(void *hDeviceContext,
- 		      PWORD pwCapInfo,
-diff --git a/drivers/staging/vt6656/dpc.c b/drivers/staging/vt6656/dpc.c
-index 81ce46f..8362272 100644
---- a/drivers/staging/vt6656/dpc.c
-+++ b/drivers/staging/vt6656/dpc.c
-@@ -80,7 +80,7 @@ static
- void
- s_vGetDASA(
-       PBYTE pbyRxBufferAddr,
--     PUINT pcbHeaderSize,
-+     unsigned int * pcbHeaderSize,
-      PSEthernetHeader psEthHeader
-     );
- 
-@@ -92,7 +92,7 @@ s_vProcessRxMACHeader (
-       unsigned int cbPacketSize,
-       BOOL bIsWEP,
-       BOOL bExtIV,
--     PUINT pcbHeadSize
-+     unsigned int * pcbHeadSize
-     );
- 
- static BOOL s_bAPModeRxCtl(
-@@ -167,7 +167,7 @@ s_vProcessRxMACHeader (
-       unsigned int cbPacketSize,
-       BOOL bIsWEP,
-       BOOL bExtIV,
--     PUINT pcbHeadSize
-+     unsigned int * pcbHeadSize
-     )
- {
-     PBYTE           pbyRxBuffer;
-@@ -261,7 +261,7 @@ static
- void
- s_vGetDASA (
-       PBYTE pbyRxBufferAddr,
--     PUINT pcbHeaderSize,
-+     unsigned int * pcbHeaderSize,
-      PSEthernetHeader psEthHeader
-     )
- {
-diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
-index 3425773..fd78135 100644
---- a/drivers/staging/vt6656/ttype.h
-+++ b/drivers/staging/vt6656/ttype.h
-@@ -87,7 +87,6 @@ typedef unsigned long   ULONG_PTR;      // 32-bit
- typedef unsigned long   DWORD_PTR;      // 32-bit
- 
- // boolean pointer
--typedef unsigned int *   PUINT;
- 
- typedef BYTE *           PBYTE;
- 
+Btw, how hilarious is the comment for private_data?
+
+Joel
+
 -- 
-1.7.0.4
 
+A good programming language should have features that make the
+kind of people who use the phrase "software engineering" shake
+their heads disapprovingly.
+	- Paul Graham
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
