@@ -1,17 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753624Ab0GLUfg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:35:36 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34906 "EHLO mx1.suse.de"
+	id S1753674Ab0GLUia (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:38:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51487 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752442Ab0GLUff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 16:35:35 -0400
-Date: Mon, 12 Jul 2010 22:35:33 +0200
-Message-ID: <s5hr5j85tgq.wl%tiwai@suse.de>
+	id S1752596Ab0GLUi3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 16:38:29 -0400
+Date: Mon, 12 Jul 2010 22:38:25 +0200
+Message-ID: <s5hocec5tby.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] sound fix for 2.6.35-rc5
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Jaroslav Kysela <perex@perex.cz>, LKML <linux-kernel@vger.kernel.org>,
+        John Kacur <jkacur@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        ALSA development <alsa-devel@alsa-project.org>
+Subject: Re: [PATCH] sound/oss: convert to unlocked_ioctl
+In-Reply-To: <201007121953.19531.arnd@arndb.de>
+References: <1278798701-11171-1-git-send-email-arnd@arndb.de>
+	<201007111216.36538.arnd@arndb.de>
+	<s5h1vb8pugz.wl%tiwai@suse.de>
+	<201007121953.19531.arnd@arndb.de>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -21,110 +29,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+At Mon, 12 Jul 2010 19:53:18 +0200,
+Arnd Bergmann wrote:
+> 
+> These are the final conversions for the ioctl file operation so we can remove
+> it in the next merge window.
+> 
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> Cc: Jaroslav Kysela <perex@perex.cz>
+> Cc: Takashi Iwai <tiwai@suse.de>
+> Cc: alsa-devel@alsa-project.org
+> ---
+> On Monday 12 July 2010 17:53:32 Takashi Iwai wrote:
+> > 
+> > BTW, do you have an updated patch for native_ioctl conversion wrt
+> > sound/*?
+> 
+> Almost forgot that, thanks for reminding me!
 
-please pull an HD-audio fix for v2.6.35-rc5 from:
+Thanks, applied now.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tiwai/sound-2.6.git fix/hda
+Now the rest is eliminating each lock_kernel() in sound/oss/*.c :)
 
-This is a regression fix since 2.6.34.
-
-
-Thanks!
 
 Takashi
-
-===
-
-Takashi Iwai (1):
-      ALSA: hda - Restore cleared pin controls on resume
-
----
- sound/pci/hda/hda_codec.c |   27 +++++++++++++++++++++++++++
- sound/pci/hda/hda_codec.h |    5 ++++-
- 2 files changed, 31 insertions(+), 1 deletions(-)
-
-diff --git a/sound/pci/hda/hda_codec.c b/sound/pci/hda/hda_codec.c
-index a3d638c..ba2098d 100644
---- a/sound/pci/hda/hda_codec.c
-+++ b/sound/pci/hda/hda_codec.c
-@@ -784,6 +784,9 @@ static int read_pin_defaults(struct hda_codec *codec)
- 		pin->nid = nid;
- 		pin->cfg = snd_hda_codec_read(codec, nid, 0,
- 					      AC_VERB_GET_CONFIG_DEFAULT, 0);
-+		pin->ctrl = snd_hda_codec_read(codec, nid, 0,
-+					       AC_VERB_GET_PIN_WIDGET_CONTROL,
-+					       0);
- 	}
- 	return 0;
- }
-@@ -912,15 +915,38 @@ static void restore_pincfgs(struct hda_codec *codec)
- void snd_hda_shutup_pins(struct hda_codec *codec)
- {
- 	int i;
-+	/* don't shut up pins when unloading the driver; otherwise it breaks
-+	 * the default pin setup at the next load of the driver
-+	 */
-+	if (codec->bus->shutdown)
-+		return;
- 	for (i = 0; i < codec->init_pins.used; i++) {
- 		struct hda_pincfg *pin = snd_array_elem(&codec->init_pins, i);
- 		/* use read here for syncing after issuing each verb */
- 		snd_hda_codec_read(codec, pin->nid, 0,
- 				   AC_VERB_SET_PIN_WIDGET_CONTROL, 0);
- 	}
-+	codec->pins_shutup = 1;
- }
- EXPORT_SYMBOL_HDA(snd_hda_shutup_pins);
- 
-+/* Restore the pin controls cleared previously via snd_hda_shutup_pins() */
-+static void restore_shutup_pins(struct hda_codec *codec)
-+{
-+	int i;
-+	if (!codec->pins_shutup)
-+		return;
-+	if (codec->bus->shutdown)
-+		return;
-+	for (i = 0; i < codec->init_pins.used; i++) {
-+		struct hda_pincfg *pin = snd_array_elem(&codec->init_pins, i);
-+		snd_hda_codec_write(codec, pin->nid, 0,
-+				    AC_VERB_SET_PIN_WIDGET_CONTROL,
-+				    pin->ctrl);
-+	}
-+	codec->pins_shutup = 0;
-+}
-+
- static void init_hda_cache(struct hda_cache_rec *cache,
- 			   unsigned int record_size);
- static void free_hda_cache(struct hda_cache_rec *cache);
-@@ -2907,6 +2933,7 @@ static void hda_call_codec_resume(struct hda_codec *codec)
- 			    codec->afg ? codec->afg : codec->mfg,
- 			    AC_PWRST_D0);
- 	restore_pincfgs(codec); /* restore all current pin configs */
-+	restore_shutup_pins(codec);
- 	hda_exec_init_verbs(codec);
- 	if (codec->patch_ops.resume)
- 		codec->patch_ops.resume(codec);
-diff --git a/sound/pci/hda/hda_codec.h b/sound/pci/hda/hda_codec.h
-index 49e939e..5991d14 100644
---- a/sound/pci/hda/hda_codec.h
-+++ b/sound/pci/hda/hda_codec.h
-@@ -821,6 +821,7 @@ struct hda_codec {
- 	unsigned int pin_amp_workaround:1; /* pin out-amp takes index
- 					    * (e.g. Conexant codecs)
- 					    */
-+	unsigned int pins_shutup:1;	/* pins are shut up */
- 	unsigned int no_trigger_sense:1; /* don't trigger at pin-sensing */
- #ifdef CONFIG_SND_HDA_POWER_SAVE
- 	unsigned int power_on :1;	/* current (global) power-state */
-@@ -897,7 +898,9 @@ void snd_hda_codec_resume_cache(struct hda_codec *codec);
- /* the struct for codec->pin_configs */
- struct hda_pincfg {
- 	hda_nid_t nid;
--	unsigned int cfg;
-+	unsigned char ctrl;	/* current pin control value */
-+	unsigned char pad;	/* reserved */
-+	unsigned int cfg;	/* default configuration */
- };
- 
- unsigned int snd_hda_codec_get_pincfg(struct hda_codec *codec, hda_nid_t nid);
