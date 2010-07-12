@@ -1,44 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756112Ab0GLPeh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 11:34:37 -0400
-Received: from perceval.irobotique.be ([92.243.18.41]:42243 "EHLO
-	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756027Ab0GLPeg (ORCPT
+	id S1756140Ab0GLPf0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 11:35:26 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:34285 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751397Ab0GLPfZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 11:34:36 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: macbook webcam no longer works on .35-rc
-Date: Mon, 12 Jul 2010 17:34:28 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; x86_64; ; )
-Cc: linux-media@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-References: <1277932269.11050.1.camel@jlt3.sipsolutions.net> <201007051023.40923.laurent.pinchart@ideasonboard.com> <1278938186.5870.18.camel@jlt3.sipsolutions.net>
-In-Reply-To: <1278938186.5870.18.camel@jlt3.sipsolutions.net>
+	Mon, 12 Jul 2010 11:35:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=ZvKthcN53cvJcbuwiIwCo65kkkCHBWlmb/pN1nxRjWkjJVVxV+q4M0DYDvfXBqAOUq
+         ur3ZFuk35LVUmDIyPd/svrBNfZ1TgmulZfTYk41nT6DQIe53XEWlYo67ncuApnRnEDUt
+         Jg0OR1r3LDK5jo7M1sW30faVxaXgC9m9OFRos=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Stephan Diestelhorst <stephan.diestelhorst@amd.com>
+Subject: Re: HDD not suspending properly / dead on resume
+Date: Mon, 12 Jul 2010 17:35:06 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc4; KDE/4.4.4; i686; ; )
+Cc: Tejun Heo <tj@kernel.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+        linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org,
+        linux-pm@lists.osdl.org, stephan.diestelhorst@gmail.com
+References: <201007091750.05020.stephan.diestelhorst@amd.com>
+In-Reply-To: <201007091750.05020.stephan.diestelhorst@amd.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007121734.29394.laurent.pinchart@ideasonboard.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201007121735.07244.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Johannes,
-
-On Monday 12 July 2010 14:36:26 Johannes Berg wrote:
-> On Mon, 2010-07-05 at 10:23 +0200, Laurent Pinchart wrote:
-> > Could you please test the following patch when you will have time ?
+On piątek, 9 lipca 2010 o 17:50:04 Stephan Diestelhorst wrote:
+> Hi,
+>   I have n issue with suepnd to RAM and I/O load on a disk. Symptoms
+> are that the disk does not respond to requests when woken up, producing
+> only I/O errors on all tested kernels (newest 2.6.35-rc4 (Ubuntu
+> mainline PPA build)):
 > 
-> That fixes it, thank you.
 
-The fix has been applied to 
-http://git.kernel.org/?p=linux/kernel/git/mchehab/linux-next.git;a=shortlog 
-and should end up in the next 2.6.35-rc.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16370
+for your bug report, please add your address to the CC list in there, thanks!
 
 -- 
-Regards,
-
-Laurent Pinchart
+Maciej Rutecki
+http://www.maciek.unixy.pl
