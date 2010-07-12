@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754823Ab0GLVTx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 17:19:53 -0400
-Received: from mail.hq.newdream.net ([66.33.206.127]:50726 "EHLO
-	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab0GLVTw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 17:19:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=hq.newdream.net; h=date:from
-	:to:cc:subject:in-reply-to:message-id:references:mime-version
-	:content-type; q=dns; s=drama; b=H9nHqAukY0i+CWMiqSzZ/NeHpPKbXZX
-	aS1ZyWIqg4rlvhklNlhqJOY2tuO/I44Q9nYxei7nadHha5TCUS7DJmVwGOWdKYlZ
-	3hNhN8NsJWJXos9lPRvO6yCOomSlF8eSodIaGSetDYhAmQnrh/+pbruxtITR9ogU
-	EPJwJHNNIPHA=
-Date: Mon, 12 Jul 2010 14:21:46 -0700 (PDT)
-From: Yehuda Sadeh <yehuda@hq.newdream.net>
-X-X-Sender: yehudasa@yehudasa-desktop
-To: Jason Baron <jbaron@redhat.com>
-cc: Thomas Renninger <trenn@suse.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
-        Hannes Reinecke <hare@suse.de>, yehuda@hq.newdream.net
-Subject: Re: Dynamic Debug broken on 2.6.35-rc3?
-In-Reply-To: <20100712162140.GA2925@redhat.com>
-Message-ID: <alpine.DEB.2.00.1007121359010.17416@yehudasa-desktop>
-References: <201007011744.19564.trenn@suse.de> <201007091303.08693.trenn@suse.de> <20100709133019.GA2856@redhat.com> <201007121624.17543.trenn@suse.de> <20100712162140.GA2925@redhat.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754736Ab0GLVWp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 17:22:45 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52744 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753814Ab0GLVWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 17:22:43 -0400
+Date: Mon, 12 Jul 2010 14:21:26 -0700
+From: Greg KH <gregkh@suse.de>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for July 12 (debugfs/sysfs/rcu)
+Message-ID: <20100712212126.GA2684@suse.de>
+References: <20100712155109.d997bf1c.sfr@canb.auug.org.au> <20100712124750.8ab5e870.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100712124750.8ab5e870.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, Jul 12, 2010 at 12:47:50PM -0700, Randy Dunlap wrote:
+> On Mon, 12 Jul 2010 15:51:09 +1000 Stephen Rothwell wrote:
+> 
+> > Hi all,
+> > 
+> > Changes since 20100709:
+> 
+> Greg,
+> What is there about debugfs that requires sysfs?
 
+Look at commit 3348e05a4f25489908d9f7ed4e80ac291ead18f4 almost 5 years
+ago:
+    [PATCH] DEBUG_FS must depend on SYSFS
+    
+    CONFIG_DEBUG_FS=y and CONFIG_SYSFS=n results in the following compile
+    error:
+    
+    <--  snip  -->
+    
+    ...
+      LD      vmlinux
+    fs/built-in.o: In function `debugfs_init':
+    inode.c:(.init.text+0x31be): undefined reference to `kernel_subsys'
+    make: *** [vmlinux] Error 1
+    
+    <--  snip  -->
 
-On Mon, 12 Jul 2010, Jason Baron wrote:
-...
-> I will re-post the above as a separate thread. Also, I should probably
-> post a patch to add myself to the MAINTAINERS file, since I didn't see
-> Yehuda's patch until now...
+But, there is no "kernel_subsys" anymore, it is called kernel_kobj, and
+is in kernel/ksysfs.c and always is built now, even if CONFIG_SYSFS is
+disabled.
 
-Yeah, I wasn't sure who was responsible for this module. Wasn't clear 
-from the log.
+So it should be safe to remove that dependancy if you want to.
 
->
->> If Yehuda's patch is fixing this already, we still need it backported for
->> 2.6.34 stable kernel and further?
->>
->
-> Yes, patch might need to be adjusted a bit but is still relevant for
-> 2.6.34 stable. The situation was exacerbated by:
->
-> commit 3bafeb6247042dcbb72b0141ec7c7107de9f0b99
-> Author: Linus Torvalds <torvalds@linux-foundation.org>
-> Date:   Sat Jun 5 11:17:36 2010 -0600
->
->    module: move find_module check to end
->
-> during the 2.6.35 time frame.
->
+thanks,
 
-Right. Looking at the code, pre .35-rc2 loads the dynamic debug code after 
-verifying that the module is loadable. So it's a bit harder to hit 
-it, although it can still fail at the following module_finalize() or at 
-the parse_args(), so the problem is there.
-
-Yehuda
+greg k-h
