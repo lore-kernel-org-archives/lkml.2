@@ -1,31 +1,31 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755452Ab0GLBKA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 21:10:00 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:39630 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755249Ab0GLBJ6 (ORCPT
+	id S1755482Ab0GLBNV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 21:13:21 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44925 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755426Ab0GLBNT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 21:09:58 -0400
+	Sun, 11 Jul 2010 21:13:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:content-type:date:message-id:mime-version
          :x-mailer:content-transfer-encoding;
-        b=TqAuJ5l85QKF0tMWJ2AXUMmQGYQr5ZA86sEvpKhVowPq4cqoKhwUjASKUwxqcQiZrV
-         n3UPcwMVEdG2FDGjAiFAfJ3uXsaoyOCBunvshMnCOG6BqyEA08B6kw8QLJEuD3lhfpYW
-         XoXgZtO8Pt58xpR2CZpAhquGGw6g04GEfDIdA=
-Subject: [PATCH] acer-wmi: remove non-used acer_quirks struct definition
+        b=iz5anDlu688Ke6QoLwYStTyHBDA/koJXrzDkbyQl0h55FzxuLtTTF3OoOuaPgA6dFz
+         s7g6TarQskoTvTFdBQ7G7M+VVAOiB0p4GiT8+qLxUisEgAX1eAOIGRf1OkfTUT6gkiMH
+         +IVnA67yL3PwEBzzr4RXM9iy5zepTkH/ko94M=
+Subject: [PATCH] asus-laptop: fix wapf, wlan_status and bluetooth_status
+	module_param permissions
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>,
+Cc: Corentin Chary <corentincj@iksaif.net>, Matthew Garrett <mjg@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Thomas Renninger <trenn@suse.de>,
         Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+        acpi4asus-user@lists.sourceforge.net,
         platform-driver-x86@vger.kernel.org
 Content-Type: text/plain
-Date: Mon, 12 Jul 2010 09:10:22 +0800
-Message-Id: <1278897022.6563.2.camel@mola>
+Date: Mon, 12 Jul 2010 09:13:47 +0800
+Message-Id: <1278897227.6563.5.camel@mola>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -33,35 +33,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes non-used acer_quirks struct definition.
+The wapf module parameters defines the behavior of the Fn+Fx wlan key.
+The wlan_status and bluetooth_status module parameters are for setting the
+wlan/bluetooth status on boot.
+All above module parameters are determinated only at the module load time.
+Change the value after the module is loaded does not make sense and has
+no effect at all, thus set the permissions to 0444 instead of 0644.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- drivers/platform/x86/acer-wmi.c |   11 -----------
- 1 files changed, 0 insertions(+), 11 deletions(-)
+ drivers/platform/x86/asus-laptop.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
-index 1ea6c43..a9ca04e 100644
---- a/drivers/platform/x86/acer-wmi.c
-+++ b/drivers/platform/x86/acer-wmi.c
-@@ -50,17 +50,6 @@ MODULE_LICENSE("GPL");
- #define ACER_INFO KERN_INFO ACER_LOGPREFIX
+diff --git a/drivers/platform/x86/asus-laptop.c b/drivers/platform/x86/asus-laptop.c
+index 71db2ef..7c44dce 100644
+--- a/drivers/platform/x86/asus-laptop.c
++++ b/drivers/platform/x86/asus-laptop.c
+@@ -76,18 +76,18 @@ MODULE_LICENSE("GPL");
+  * So, if something doesn't work as you want, just try other values =)
+  */
+ static uint wapf = 1;
+-module_param(wapf, uint, 0644);
++module_param(wapf, uint, 0444);
+ MODULE_PARM_DESC(wapf, "WAPF value");
  
- /*
-- * The following defines quirks to get some specific functions to work
-- * which are known to not be supported over ACPI-WMI (such as the mail LED
-- * on WMID based Acer's)
-- */
--struct acer_quirks {
--	const char *vendor;
--	const char *model;
--	u16 quirks;
--};
--
--/*
-  * Magic Number
-  * Meaning is unknown - this number is required for writing to ACPI for AMW0
-  * (it's also used in acerhk when directly accessing the BIOS)
+ static int wlan_status = 1;
+ static int bluetooth_status = 1;
+ 
+-module_param(wlan_status, int, 0644);
++module_param(wlan_status, int, 0444);
+ MODULE_PARM_DESC(wlan_status, "Set the wireless status on boot "
+ 		 "(0 = disabled, 1 = enabled, -1 = don't do anything). "
+ 		 "default is 1");
+ 
+-module_param(bluetooth_status, int, 0644);
++module_param(bluetooth_status, int, 0444);
+ MODULE_PARM_DESC(bluetooth_status, "Set the wireless status on boot "
+ 		 "(0 = disabled, 1 = enabled, -1 = don't do anything). "
+ 		 "default is 1");
 -- 
 1.5.4.3
 
