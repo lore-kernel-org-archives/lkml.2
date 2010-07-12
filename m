@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755928Ab0GLNni (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 09:43:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52673 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754648Ab0GLNng (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 09:43:36 -0400
-Date: Mon, 12 Jul 2010 09:49:11 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Michael Tokarev <mjt@tls.msk.ru>
-Cc: Josef Bacik <josef@redhat.com>,
-        Giangiacomo Mariotti <gg.mariotti@gmail.com>,
-        linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Subject: Re: BTRFS: Unbelievably slow with kvm/qemu
-Message-ID: <20100712134911.GC15754@dhcp231-156.rdu.redhat.com>
-References: <AANLkTin1uF6WbVvxJ84oO1NKnCU-6VHrmWU1XFYTlqtp@mail.gmail.com> <4C3ABF96.9070405@msgid.tls.msk.ru> <AANLkTim7A9teJtk5c1jh2g6mDv07HAi72d5S6WveL8Gp@mail.gmail.com> <20100712134347.GB15754@dhcp231-156.rdu.redhat.com> <4C3B1BAC.1050907@msgid.tls.msk.ru>
+	id S1755212Ab0GLN7w (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 09:59:52 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:51765 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754155Ab0GLN7u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 09:59:50 -0400
+Date: Mon, 12 Jul 2010 08:55:04 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Tejun Heo <tj@kernel.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Rusty Russell <rusty@rustcorp.com.au>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [RFC PATCH] x86-64: software IRQ masking and handling
+In-Reply-To: <4C3AC5C4.5090505@kernel.org>
+Message-ID: <alpine.DEB.2.00.1007120852400.14328@router.home>
+References: <4C3A06E3.50402@kernel.org> <AANLkTik8EHarsrnAisuj9SKbeXddlA6Dz-KzDOPsmBxh@mail.gmail.com> <4C3AC5C4.5090505@kernel.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C3B1BAC.1050907@msgid.tls.msk.ru>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 05:42:04PM +0400, Michael Tokarev wrote:
-> Josef Bacik wrote:
-> []
-> > O_DIRECT support was just introduced recently, please try on the latest kernel
-> > with the normal settings (which IIRC uses O_DIRECT), that should make things
-> > suck alot less.  Thanks,
-> 
-> Um.  Do you mean it were introduced in BTRFS or general? :)
-> 
-> Because, wel, O_DIRECT is here and supported since some 2.2 times... ;)
+On Mon, 12 Jul 2010, Tejun Heo wrote:
 
-Btrfs obviously.
+> I'm not very convinced either.  Nehalems are said to be able to do
+> cli-sti sequences every 13 cycles or so, which sounds pretty good and
+> managing it asynchronously might not buy anything.  But what they said
+> was cli-sti bandwidth, probably meaning that if you do cli-sti's in
+> succession or tight loop, each iteration will take 13 cycles.  So,
+> there still could be cost related to instruction scheduling.
 
-Josef
+Note that Andi has repeatedly pointed out that it is not the cli-sti
+instructions that cause the most latencies but the pushf/popf etc stack
+operations.
+
+> It only took me a couple of days to get it working and the changes are
+> pretty localized, so I think it's worthwhile to see whether it
+> actually helps anything on x86.  I'm thinking about doing raw IOs on
+> SSDs which isn't too unrealistic and heavy on both IRQ masking and IRQ
+> handling although actual hardware access cost might just drown any
+> difference and workloads which are heavy on memory allocations and
+> such might be better fit.  If you have any better ideas on testing,
+> please let me know.
+
+If it is a win for local_irq_save/restore then it will help any slab
+allocator because the alloc / free hotpath must disable interupts to be
+usable from hardware interrupps.
+
