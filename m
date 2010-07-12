@@ -1,42 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab0GLGXs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 02:23:48 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:59404 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752145Ab0GLGXr (ORCPT
+	id S1754359Ab0GLGf7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 02:35:59 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:51131 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754170Ab0GLGf6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 02:23:47 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Ian Munsie <imunsie@au.ibm.com>,
-        Masami Hiramatsu <mhiramat@redhat.com>,
-        Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH] perf: Add DWARF register lookup for SH
-In-Reply-To: <4C3A75E3.6070803@hitachi.com>
-References: <e55812819ad18c2ceca5651ac7698a2af46180d7.1278774279.git.matt@console-pimps.org> <4C3A75E3.6070803@hitachi.com>
-User-Agent: Notmuch/0.3.1-61-g3f63bb6 (http://notmuchmail.org) Emacs/23.1.90.2 (x86_64-unknown-linux-gnu)
-Date: Mon, 12 Jul 2010 07:23:44 +0100
-Message-ID: <87lj9h8bgv.fsf@linux-g6p1.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 12 Jul 2010 02:35:58 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
+        bfields@fieldses.org
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V16 05/12] vfs: Support null pathname in readlink
+Date: Mon, 12 Jul 2010 12:05:38 +0530
+Message-Id: <1278916545-19751-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.rc1
+In-Reply-To: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010 10:54:43 +0900, Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com> wrote:
-> Matt Fleming wrote:
-> > Implement get_arch_regstr() for SH so that, given a DWARF register
-> > number, the corresponding symbolic name of that register can be looked
-> > up.
-> 
-> OK, the patch itself looks good, but I don't know whether SH kernel
-> supports KPROBE_EVENT which is required for perf-probe. Or, SH kernel
-> repository already has it?
+From: NeilBrown <neilb@suse.de>
 
-No, SH doesn't support KPROBE_EVENT yet. It's on my list of things to
-do. However, this patch also stops the "DWARF register mappings have not
-been defined" warning when building perf.
+This enables to use readlink to get the link target name
+from a file descriptor point to the link. This can be used
+with open_by_handle syscall that returns a file descriptor for a link.
+We can then use this file descriptor to get the target name.
+
+This is similar to utimensat(2) interface
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/stat.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
+
+diff --git a/fs/stat.c b/fs/stat.c
+index c4ecd52..a66a0ef 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 		char __user *, buf, int, bufsiz)
+ {
+-	struct path path;
+-	int error;
++	int error = 0, fput_needed;
++	struct path path, *pp;
++	struct file *file = NULL;
+ 
+ 	if (bufsiz <= 0)
+ 		return -EINVAL;
+ 
+-	error = user_path_at(dfd, pathname, 0, &path);
++	if (pathname == NULL && dfd != AT_FDCWD) {
++		file = fget_light(dfd, &fput_needed);
++
++		if (file)
++			pp = &file->f_path;
++		else
++			error = -EBADF;
++	} else {
++		error = user_path_at(dfd, pathname, 0, &path);
++		pp = &path;
++	}
+ 	if (!error) {
+-		struct inode *inode = path.dentry->d_inode;
++		struct inode *inode = pp->dentry->d_inode;
+ 
+ 		error = -EINVAL;
+ 		if (inode->i_op->readlink) {
+-			error = security_inode_readlink(path.dentry);
++			error = security_inode_readlink(pp->dentry);
+ 			if (!error) {
+-				touch_atime(path.mnt, path.dentry);
+-				error = inode->i_op->readlink(path.dentry,
++				touch_atime(pp->mnt, pp->dentry);
++				error = inode->i_op->readlink(pp->dentry,
+ 							      buf, bufsiz);
+ 			}
+ 		}
+-		path_put(&path);
++		if (file)
++			fput_light(file, fput_needed);
++		else
++			path_put(&path);
+ 	}
+ 	return error;
+ }
+-- 
+1.7.2.rc1
+
