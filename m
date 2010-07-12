@@ -1,52 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754721Ab0GLHqI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 03:46:08 -0400
-Received: from hera.kernel.org ([140.211.167.34]:59175 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751018Ab0GLHqF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 03:46:05 -0400
-Message-ID: <4C3AC826.4010506@kernel.org>
-Date: Mon, 12 Jul 2010 09:45:42 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1755196Ab0GLHtQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 03:49:16 -0400
+Received: from nwd2mail11.analog.com ([137.71.25.57]:12954 "EHLO
+	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753375Ab0GLHtO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 03:49:14 -0400
+X-IronPort-AV: E=Sophos;i="4.55,186,1278302400"; 
+   d="scan'208";a="19151054"
+Subject: [PATCH v2] MMC:mmc_spi: Recover from CRC error for SD read/write
+	operation over SPI.
+From: sonic zhang <sonic.adi@gmail.com>
+To: David Brownell <dbrownell@users.sourceforge.net>
+CC: linux-mmc@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
+        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
+Content-Type: text/plain
+Date: Mon, 12 Jul 2010 15:50:56 +0800
+Message-ID: <1278921056.22437.1.camel@eight.analog.com>
 MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [RFC PATCH] x86-64: software IRQ masking and handling
-References: <4C3A06E3.50402@kernel.org> <AANLkTik8EHarsrnAisuj9SKbeXddlA6Dz-KzDOPsmBxh@mail.gmail.com> <201007121149.58129.rusty@rustcorp.com.au>
-In-Reply-To: <201007121149.58129.rusty@rustcorp.com.au>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.8.2 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 12 Jul 2010 07:45:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Rusty.
+>From 94d1ea57ac2fbe37133e25e99ccb265250f0027d Mon Sep 17 00:00:00 2001
+From: Sonic Zhang <sonic.zhang@analog.com>
+Date: Fri, 9 Jul 2010 15:36:20 +0800
+Subject: [PATCH v2] MMC:mmc_spi: Recover from crc error for SD read/write operation over SPI.
 
-On 07/12/2010 04:19 AM, Rusty Russell wrote:
-> Also, is it worth trying to implement this soft disable generically?
-> I know at least ppc64 does it today...
-> 
-> (Y'know, because your initial patch wasn't ambitious enough...)
+SPI bus is not reliable on all platforms when doing large data transfer.
+Current mmc spi driver fails SD read/write command immediately, if
+occasional CRC error is reported by SD device. This patch makes the
+operation recover from the CRC error by doing last SD command again.
+The retry count is set to 5 to ensure the driver pass any stress test.
 
-We can evolve things such that common parts are factored into generic
-code but most of important part being heavily dependent on the
-specific architecture, I don't think there will be too much (calling
-irqhandler on a separate stack if necessary, generic IRQ masking flag
-mgmt maybe merged into preemption flag and so on).
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+---
+ drivers/mmc/host/mmc_spi.c |   22 ++++++++++++++++++++++
+ 1 files changed, 22 insertions(+), 0 deletions(-)
 
-Thanks.
-
+diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
+index ad847a2..8192434 100644
+--- a/drivers/mmc/host/mmc_spi.c
++++ b/drivers/mmc/host/mmc_spi.c
+@@ -1055,6 +1055,8 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
+ {
+ 	struct mmc_spi_host	*host = mmc_priv(mmc);
+ 	int			status = -EINVAL;
++	int			crc_retry = 5;
++	struct mmc_command	stop;
+ 
+ #ifdef DEBUG
+ 	/* MMC core and layered drivers *MUST* issue SPI-aware commands */
+@@ -1084,10 +1086,30 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
+ 	}
+ #endif
+ 
++crc_recover:
+ 	/* issue command; then optionally data and stop */
+ 	status = mmc_spi_command_send(host, mrq, mrq->cmd, mrq->data != NULL);
+ 	if (status == 0 && mrq->data) {
+ 		mmc_spi_data_do(host, mrq->cmd, mrq->data, mrq->data->blksz);
++ 
++ 		/*
++ 		 * SPI bus is not reliable when doing large data transfer.
++ 		 * If occasional crc error is reported by SD device when do
++ 		 * data read/write over SPI, it can be recovered by doing
++ 		 * last SD command again. The retry count is set to 5 to
++ 		 * ensure the driver pass any stress test.
++ 		 */
++ 		if (mrq->data->error == -EILSEQ && crc_retry) {
++ 			stop.opcode = MMC_STOP_TRANSMISSION;
++ 			stop.arg = 0;
++ 			stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
++ 
++ 			status = mmc_spi_command_send(host, mrq, &stop, 0);
++ 			crc_retry--;
++ 			mrq->data->error = 0;
++ 			goto crc_recover;
++ 		}
++ 
+ 		if (mrq->stop)
+ 			status = mmc_spi_command_send(host, mrq, mrq->stop, 0);
+ 		else
 -- 
-tejun
+1.6.0
+
+
+
