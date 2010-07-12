@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab0GLQ6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 12:58:40 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:62091 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756122Ab0GLQ6i (ORCPT
+	id S1756074Ab0GLRD7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 13:03:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24971 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751203Ab0GLRD5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 12:58:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=nHFEqhStBehZXERoO9rfvBTqctLKt2dZR0MduGc/b038tBd+cfOLBaoMbeh0AyR5+m
-         QMKTIbbEzRl6Xyp5In+aeX/IZe144Ed0YXdd1k4Izj3K4UpMdiLoBDaqOjlmj4wGjSrO
-         g+pE0VqwfNzeUpUfL6K7tuKECp5Rk34/TNsVY=
-Message-ID: <4C3B49B4.20300@panasas.com>
-Date: Mon, 12 Jul 2010 19:58:28 +0300
-From: Benny Halevy <bhalevy@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.35-rc4 - CONFIG_LOCALVERSION ignored?
-References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com> <201007052325.56971.rjw@sisk.pl>
-In-Reply-To: <201007052325.56971.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-2
+	Mon, 12 Jul 2010 13:03:57 -0400
+Date: Mon, 12 Jul 2010 10:03:01 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Denys Vlasenko <vda.linux@googlemail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Modpost error after changing CONFIG_SOUND from m to y
+Message-Id: <20100712100301.db1d3980.randy.dunlap@oracle.com>
+In-Reply-To: <201007120554.16459.vda.linux@googlemail.com>
+References: <201007120554.16459.vda.linux@googlemail.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C3B4AFA.022C:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Jul. 06, 2010, 0:25 +0300, "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> On Monday, July 05, 2010, Linus Torvalds wrote:
->> Hey everybody, there's finally a new -rc out there..
->>
->> I've been back online for a week, and at least judging by the kinds of
->> patches and pull requests I've been getting, I have to say that I
->> think that having been strict for -rc3 ended up working out pretty
->> well. The diffstat of rc3..rc4 looks quite reasonable, despite the
->> longer window between rc's. And while there were certainly some things
->> that needed fixing, I'm hoping that we'll have a timely 2.6.35 release
->> despite my vacation (my longest time away from the kernel in many
->> years, I do believe - I followed email on a cellphone, but did not a
->> single kernel compile, and had a great time under water).
->>
->> So go out and test -rc4. It fixes a number of regressions, a couple of
->> them harking back to from before 2.6.34. Networking, cfq, i915 and
->> radeo. And filesystem writeback performance issues, etc. It's all
->> good.
+On Mon, 12 Jul 2010 05:54:16 +0200 Denys Vlasenko wrote:
+
+> Hi,
 > 
-> Hmm.  Am I dong anything particularly wrong, or is CONFIG_LOCALVERSION ignored
-> now, as it seems?
-
-Not working for me either in 2.6.35-rc4.
-
-Note that I have a localversion-xxxx file in my root directory
-which is also ignored, regardless of CONFIG_LOCALVERSION
-and CONFIG_LOCALVERSION_AUTO.
-
-Benny
-
+> I was using the same .config for my home machine for a long time,
+> updating it using "make oldconfig" every time I moved to newer kernel.
+> It worked fine for many kernels.
 > 
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> In this .config I had CONFIG_SOUND=m.
+> 
+> Starting witn 2.6.34, build fails with
+> 
+> sound/core/sound_oss.c:25:2: error: #error "Enable the OSS soundcore multiplexer (CONFIG_SOUND) in the kernel."
+> 
+> Ok. I changed CONFIG_SOUND to y. Now the build fails at modpost:
 
+Hi,
+I can't get the build to fail (2.6.34 or 2.6.35-rc4-git4).
+Please provide a full/complete .config file (and that will include a
+kernel version number :).
+
+
+> Kernel: arch/x86/boot/bzImage is ready  (#3)
+>   Building modules, stage 2.
+>   MODPOST 609 modules
+> ERROR: "snd_hda_build_controls" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_resume" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_suspend" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_codec_configure" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_calc_stream_format" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_queue_unsol_event" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_bus_reboot_notify" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_codec_new" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_build_pcms" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_bus_new" [sound/pci/hda/snd-hda-intel.ko] undefined!
+> ERROR: "snd_hda_multi_out_dig_prepare" [sound/pci/hda/snd-hda-codec-via.ko] undefined!
+> ERROR: "snd_hda_input_mux_info" [sound/pci/hda/snd-hda-codec-via.ko] undefined!
+> 
+> ... lots and lots of similar messages...
+> 
+> ERROR: "snd_hda_set_vmaster_tlv" [sound/pci/hda/snd-hda-codec-analog.ko] undefined!
+> ERROR: "snd_hda_bind_vol" [sound/pci/hda/snd-hda-codec-analog.ko] undefined!
+> ERROR: "snd_hda_codec_read" [sound/pci/hda/snd-hda-codec-analog.ko] undefined!
+> ERROR: "snd_hda_codec_amp_read" [sound/pci/hda/snd-hda-codec-analog.ko] undefined!
+> ERROR: "snd_hda_add_new_ctls" [sound/pci/hda/snd-hda-codec-analog.ko] undefined!
+> ERROR: "snd_hda_codec_amp_update" [sound/pci/hda/snd-hda-codec-analog.ko] undefined!
+> ERROR: "snd_hda_shutup_pins" [sound/pci/hda/snd-hda-codec-analog.ko] undefined!
+> WARNING: modpost: Found 4 section mismatch(es).
+> To see full details build your kernel with:
+> 'make CONFIG_DEBUG_SECTION_MISMATCH=y'
+> make[1]: *** [__modpost] Error 1
+> make: *** [modules] Error 2
+> 
+> I tried switching some other things to y but the error
+> proves pretty resilient...
+> 
+> Result of "grep ^CONFIG .config" is below:
+
+[snip]
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
