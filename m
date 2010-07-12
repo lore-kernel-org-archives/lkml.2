@@ -1,50 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755854Ab0GLGhf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 02:37:35 -0400
-Received: from sh.osrg.net ([192.16.179.4]:54421 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755499Ab0GLGhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 02:37:32 -0400
-Date: Mon, 12 Jul 2010 15:37:20 +0900
-To: monstr@monstr.eu
-Cc: linux-kernel@vger.kernel.org, microblaze-uclinux@itee.uq.edu.au
-Subject: [PATCH] microblaze: remove unused HAVE_ARCH_PCI_SET_DMA_MASK
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100712153701V.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 12 Jul 2010 15:37:21 +0900 (JST)
+	id S1754765Ab0GLGgE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 02:36:04 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:35331 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754171Ab0GLGf6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 02:35:58 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
+        bfields@fieldses.org
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org,
+        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V16 04/12] vfs: Allow handle based open on symlinks
+Date: Mon, 12 Jul 2010 12:05:37 +0530
+Message-Id: <1278916545-19751-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.2.rc1
+In-Reply-To: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HAVE_ARCH_PCI_SET_DMA_MASK was removed in 2.6.36 (no architecture has
-the own implementation of pci_set_dma_mask).
+The patch update may_open to allow handle based open on symlinks.
+The file handle based API use file descritor returned from open_by_handle_at
+to do different file system operations. To find the link target name we
+need to get a file descriptor on symlinks.
 
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+We should be able to read the link target using file handle. The exact
+usecase is with respect to implementing READLINK operation on a
+userspace NFS server. The request contain the file handle and the
+response include target name.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- arch/microblaze/include/asm/dma-mapping.h |    6 ------
- 1 files changed, 0 insertions(+), 6 deletions(-)
+ fs/namei.c         |   10 +++++++++-
+ fs/open.c          |    9 ++++++++-
+ include/linux/fs.h |    1 +
+ 3 files changed, 18 insertions(+), 2 deletions(-)
 
-diff --git a/arch/microblaze/include/asm/dma-mapping.h b/arch/microblaze/include/asm/dma-mapping.h
-index 18b3731..5073895 100644
---- a/arch/microblaze/include/asm/dma-mapping.h
-+++ b/arch/microblaze/include/asm/dma-mapping.h
-@@ -79,12 +79,6 @@ static inline int dma_supported(struct device *dev, u64 mask)
- 	return ops->dma_supported(dev, mask);
- }
+diff --git a/fs/namei.c b/fs/namei.c
+index 4d590a3..a6a8093 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1456,7 +1456,15 @@ int may_open(struct path *path, int acc_mode, int flag)
  
--#ifdef CONFIG_PCI
--/* We have our own implementation of pci_set_dma_mask() */
--#define HAVE_ARCH_PCI_SET_DMA_MASK
--
--#endif
--
- static inline int dma_set_mask(struct device *dev, u64 dma_mask)
- {
- 	struct dma_map_ops *ops = get_dma_ops(dev);
+ 	switch (inode->i_mode & S_IFMT) {
+ 	case S_IFLNK:
+-		return -ELOOP;
++		/*
++		 * Allow only if acc_mode contain
++		 * open link request and read request.
++		 */
++		if (acc_mode != (MAY_OPEN_LINK | MAY_READ))
++			return -ELOOP;
++		if (flag != O_RDONLY)
++			return -ELOOP;
++		break;
+ 	case S_IFDIR:
+ 		if (acc_mode & MAY_WRITE)
+ 			return -EISDIR;
+diff --git a/fs/open.c b/fs/open.c
+index df5d21e..afb089e 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -1268,8 +1268,15 @@ static long do_sys_open_by_handle(int mountdirfd,
+ 	 */
+ 	if (open_flag & __O_SYNC)
+ 		open_flag |= O_DSYNC;
++	/*
++	 * Handle based API allow open on a symlink
++	 */
++	if (S_ISLNK(path->dentry->d_inode->i_mode))
++		acc_mode = MAY_OPEN_LINK;
++	else
++		acc_mode = MAY_OPEN;
+ 
+-	acc_mode = MAY_OPEN | ACC_MODE(open_flag);
++	acc_mode |= ACC_MODE(open_flag);
+ 
+ 	/* O_TRUNC implies we need access checks for write permissions */
+ 	if (open_flag & O_TRUNC)
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index a458b4e..08afa72 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -53,6 +53,7 @@ struct inodes_stat_t {
+ #define MAY_APPEND 8
+ #define MAY_ACCESS 16
+ #define MAY_OPEN 32
++#define MAY_OPEN_LINK 64
+ 
+ /*
+  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
 -- 
-1.6.5
+1.7.2.rc1
 
