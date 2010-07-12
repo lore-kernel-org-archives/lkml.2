@@ -1,102 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753754Ab0GLUaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:30:14 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:42071 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751649Ab0GLUaM (ORCPT
+	id S1753720Ab0GLUcU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:32:20 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:58403 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751628Ab0GLUcS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 16:30:12 -0400
-Date: Mon, 12 Jul 2010 16:16:38 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: davem@davemloft.net
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: pull request: wireless-2.6 2010-07-12
-Message-ID: <20100712201637.GD2442@tuxdriver.com>
+	Mon, 12 Jul 2010 16:32:18 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
+	<u.kleine-koenig@pengutronix.de>
+Subject: Re: ARM defconfig files
+Date: Mon, 12 Jul 2010 22:31:16 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.90; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        "Russell King - ARM Linux" <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.miao@canonical.com>, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>
+References: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com> <20100712185029.GB14425@pengutronix.de>
+In-Reply-To: <20100712185029.GB14425@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201007122231.16283.arnd@arndb.de>
+X-Provags-ID: V02:K0:exad8tQRAMX239unxlg6c27dMeEW6C+rQjIzndAbJpM
+ GthfzmJiSzreq8ZBpTEVGNoNseWRjh72Q8k83XWIIS93XQ7X9q
+ C/Z6Hcuq8x3aAj6dy+VFEivRcs3UpBzxvpQmtJMzVT7IwPkOpG
+ je8fF6DvgtgjxTVoF6GOQVaa1NsrIHHqVGgDH2WICuT+r1lz5I
+ U6ReJScvDhkPftueiNwMg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave,
+On Monday 12 July 2010 20:50:29 Uwe Kleine-König wrote:
+> 
+> [1] The following changes since commit 67a3e12b05e055c0415c556a315a3d3eb637e29e:
+> 
+>   Linux 2.6.35-rc1 (2010-05-30 13:21:02 -0700)
+> 
+> are available in the git repository at:
+>   git://git.pengutronix.de/git/ukl/linux-2.6.git arm/defconfig/reduced-v2.6.35-rc1
 
-Here are a couple of small fixes for resource leaks in 2.6.35.
+BTW, looking at the most common entries in there, I think we might at some
+point want to change some of the defaults in the respective Kconfig files.
+Right now an empty defconfig would result in a configuration without
+file system, networking or modules:
 
-Please let me know if there are problems!
+sort arch/arm/configs/* | uniq -c | sort -n | tail -n 30
+    114 CONFIG_BLK_DEV_RAM=y
+    116 CONFIG_BLK_DEV_INITRD=y
+    116 CONFIG_UEVENT_HELPER_PATH="/sbin/hotplug"
+    117 CONFIG_NFS_FS=y
+    118 CONFIG_MTD_CHAR=y
+    119 CONFIG_INOTIFY=y
+    122 # CONFIG_BLK_DEV_BSG is not set
+    122 CONFIG_IP_PNP=y
+    123 # CONFIG_IPV6 is not set
+    123 CONFIG_MTD_BLOCK=y
+    125 CONFIG_FPE_NWFPE=y
+    127 CONFIG_NET_ETHERNET=y
+    128 CONFIG_LOG_BUF_SHIFT=14
+    128 CONFIG_MTD=y
+    131 CONFIG_PACKET=y
+    132 # CONFIG_INPUT_MOUSE is not set
+    133 CONFIG_DEBUG_KERNEL=y
+    134 CONFIG_EXT2_FS=y
+    138 CONFIG_MODULE_UNLOAD=y
+    139 CONFIG_TMPFS=y
+    142 CONFIG_NETDEVICES=y
+    147 CONFIG_ZBOOT_ROM_BSS=0x0
+    147 CONFIG_ZBOOT_ROM_TEXT=0x0
+    151 CONFIG_INET=y
+    151 CONFIG_UNIX=y
+    153 CONFIG_NET=y
+    156 # CONFIG_VGA_CONSOLE is not set
+    158 CONFIG_MODULES=y
+    164 CONFIG_SYSVIPC=y
+    174 CONFIG_EXPERIMENTAL=y
 
-Thanks,
+Also, some of the defconfigs contain stuff that arguably does not belong
+into a defconfig and could be removed in the next merge window, e.g.
 
-John
+ezx_defconfig:CONFIG_LOCALVERSION="-ezx200910312315"
+pnx4008_defconfig:CONFIG_DECNET=m
+at572d940hfek_defconfig:CONFIG_SGI_PARTITION=y
 
----
-
-The following changes since commit 17c99297212a2d1b1779a08caf4b0d83a85545df:
-
-  r8169: incorrect identifier for a 8168dp (2010-07-11 17:10:09 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
-
-Rajkumar Manoharan (1):
-      ath9k_htc: fix memory leak in ath9k_hif_usb_alloc_urbs
-
-Reinette Chatre (1):
-      iwlwifi: remove key information during device restart
-
- drivers/net/wireless/ath/ath9k/hif_usb.c |    8 ++++++--
- drivers/net/wireless/iwlwifi/iwl-sta.h   |   11 +++++++++++
- 2 files changed, 17 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/net/wireless/ath/ath9k/hif_usb.c b/drivers/net/wireless/ath/ath9k/hif_usb.c
-index 77b3591..23c15aa 100644
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -730,13 +730,17 @@ static int ath9k_hif_usb_alloc_urbs(struct hif_device_usb *hif_dev)
- 
- 	/* RX */
- 	if (ath9k_hif_usb_alloc_rx_urbs(hif_dev) < 0)
--		goto err;
-+		goto err_rx;
- 
- 	/* Register Read */
- 	if (ath9k_hif_usb_alloc_reg_in_urb(hif_dev) < 0)
--		goto err;
-+		goto err_reg;
- 
- 	return 0;
-+err_reg:
-+	ath9k_hif_usb_dealloc_rx_urbs(hif_dev);
-+err_rx:
-+	ath9k_hif_usb_dealloc_tx_urbs(hif_dev);
- err:
- 	return -ENOMEM;
- }
-diff --git a/drivers/net/wireless/iwlwifi/iwl-sta.h b/drivers/net/wireless/iwlwifi/iwl-sta.h
-index c2a453a..dc43ebd 100644
---- a/drivers/net/wireless/iwlwifi/iwl-sta.h
-+++ b/drivers/net/wireless/iwlwifi/iwl-sta.h
-@@ -97,6 +97,17 @@ static inline void iwl_clear_driver_stations(struct iwl_priv *priv)
- 	spin_lock_irqsave(&priv->sta_lock, flags);
- 	memset(priv->stations, 0, sizeof(priv->stations));
- 	priv->num_stations = 0;
-+
-+	/*
-+	 * Remove all key information that is not stored as part of station
-+	 * information since mac80211 may not have had a
-+	 * chance to remove all the keys. When device is reconfigured by
-+	 * mac80211 after an error all keys will be reconfigured.
-+	 */
-+	priv->ucode_key_table = 0;
-+	priv->key_mapping_key = 0;
-+	memset(priv->wep_keys, 0, sizeof(priv->wep_keys));
-+
- 	spin_unlock_irqrestore(&priv->sta_lock, flags);
- }
- 
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+	Arnd
