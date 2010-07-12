@@ -1,114 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755402Ab0GLWIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:08:30 -0400
-Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:35633 "EHLO
-	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753043Ab0GLWI2 (ORCPT
+	id S1754969Ab0GLWOF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:14:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40766 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753852Ab0GLWOC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:08:28 -0400
-Message-ID: <4C3B923F.1090703@metafoo.de>
-Date: Tue, 13 Jul 2010 00:07:59 +0200
-From: Lars-Peter Clausen <lars@metafoo.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
-MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Fleming <matt@console-pimps.org>, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH v4] MMC: Add JZ4740 mmc driver
-References: <1277688041-23522-1-git-send-email-lars@metafoo.de> <1278970413-21617-1-git-send-email-lars@metafoo.de> <4C3B8C13.3040009@oracle.com>
-In-Reply-To: <4C3B8C13.3040009@oracle.com>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Jul 2010 18:14:02 -0400
+Date: Mon, 12 Jul 2010 15:13:17 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] writeback: dont redirty tail an inode with dirty
+ pages
+Message-Id: <20100712151317.bd9d656c.akpm@linux-foundation.org>
+In-Reply-To: <20100712153127.GB30222@localhost>
+References: <20100711020656.340075560@intel.com>
+	<20100711021749.021449821@intel.com>
+	<20100712020109.GB25335@dastard>
+	<20100712153127.GB30222@localhost>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+On Mon, 12 Jul 2010 23:31:27 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-Randy Dunlap wrote:
-> Lars-Peter Clausen wrote:
->> This patch adds support for the mmc controller on JZ4740 SoCs.
->>
->> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
->> Acked-by: Matt Fleming <matt@console-pimps.org>
->> Cc: Andrew Morton <akpm@linux-foundation.org>
->> Cc: Matt Fleming <matt@console-pimps.org>
->> Cc: linux-mmc@vger.kernel.org
->>
->> ---
->>  arch/mips/include/asm/mach-jz4740/jz4740_mmc.h |   15 +
->>  drivers/mmc/host/Kconfig                       |    8 +
->>  drivers/mmc/host/Makefile                      |    1 +
->>  drivers/mmc/host/jz4740_mmc.c                  | 1024 ++++++++++++++++++++++++
->>  4 files changed, 1048 insertions(+), 0 deletions(-)
->>  create mode 100644 arch/mips/include/asm/mach-jz4740/jz4740_mmc.h
->>  create mode 100644 drivers/mmc/host/jz4740_mmc.c
->>
->> diff --git a/arch/mips/include/asm/mach-jz4740/jz4740_mmc.h b/arch/mips/include/asm/mach-jz4740/jz4740_mmc.h
->> new file mode 100644
->> index 0000000..8543f43
->> --- /dev/null
->> +++ b/arch/mips/include/asm/mach-jz4740/jz4740_mmc.h
->> @@ -0,0 +1,15 @@
->> +#ifndef __LINUX_MMC_JZ4740_MMC
->> +#define __LINUX_MMC_JZ4740_MMC
->> +
->> +struct jz4740_mmc_platform_data {
->> +	int gpio_power;
->> +	int gpio_card_detect;
->> +	int gpio_read_only;
->> +	unsigned card_detect_active_low:1;
->> +	unsigned read_only_active_low:1;
->> +	unsigned power_active_low:1;
->> +
->> +	unsigned data_1bit:1;
->> +};
->> +
->> +#endif
->> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
->> index f06d06e..546fc49 100644
->> --- a/drivers/mmc/host/Kconfig
->> +++ b/drivers/mmc/host/Kconfig
->> @@ -81,6 +81,14 @@ config MMC_RICOH_MMC
->>  
->>  	  If unsure, say Y.
->>  
->> +config MMC_JZ4740
->> +	tristate "JZ4740 SD/Multimedia Card Interface support"
->> +	depends on MACH_JZ4740
+> > > +		} else if (inode->i_state & I_DIRTY) {
+> > > +			/*
+> > > +			 * At least XFS will redirty the inode during the
+> > > +			 * writeback (delalloc) and on io completion (isize).
+> > > +			 */
+> > > +			redirty_tail(inode);
+> > 
+> > I'd drop the mention of XFS here - any filesystem that does delayed
+> > allocation or unwritten extent conversion after Io completion will
+> > cause this. Perhaps make the comment:
+> > 
+> > 	/*
+> > 	 * Filesystems can dirty the inode during writeback
+> > 	 * operations, such as delayed allocation during submission
+> > 	 * or metadata updates after data IO completion.
+> > 	 */
 > 
-> What tree has the kconfig symbol MACH_JZ4740 in it?
-> I can't seem to find it...
+> Thanks, comments updated accordingly.
 > 
-> Should the depends also say anything about GPIO?
-> I only ask because the header file above mentions gpio.
+> ---
+> writeback: don't redirty tail an inode with dirty pages
+> 
+> This avoids delaying writeback for an expired (XFS) inode with lots of
+> dirty pages, but no active dirtier at the moment. Previously we only do
+> that for the kupdate case.
 > 
 
-None yet, mips hopefully soon. Version 1 of this patch was part of a series adding
-support for the JZ4740.
-Since the jz4740 platform code provides the gpio functions I don't think it is
-necessary to add an additional depends on GENERIC_GPIO.
+You didn't actually explain the _reason_ for making this change. 
+Please always do that.
 
->> +	help
->> +	  This selects the Ingenic Z4740 SD/Multimedia card Interface.
->> +	  If you have an ngenic platform with a Multimedia Card slot,
-> 
-> 	                 Ingenic ?
-> 
+The patch is...  surprisingly complicated, although the end result
+looks OK.  This is not aided by the partial duplication between
+mapping_tagged(PAGECACHE_TAG_DIRTY) and I_DIRTY_PAGES.  I don't think
+we can easily remove I_DIRTY_PAGES because it's used for the
+did-someone-just-dirty-a-page test here.
 
-Woops, yes.
+This code is way too complex and fragile and I fear that anything we do
+to it will break something :(
 
->> +	  say Y or M here.
->> +
->>  config MMC_SDHCI_OF
->>  	tristate "SDHCI support on OpenFirmware platforms"
->>  	depends on MMC_SDHCI && PPC_OF
-> 
-> 
-
-Thanks for reviewing
-- Lars
