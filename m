@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756279Ab0GLW4v (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:56:51 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:56970 "EHLO comal.ext.ti.com"
+	id S1756319Ab0GLW4x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:56:53 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:56972 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755939Ab0GLW4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755948Ab0GLW4X (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 12 Jul 2010 18:56:23 -0400
 From: Nishanth Menon <nm@ti.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
@@ -15,9 +15,9 @@ Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
         Andy Shevchenko <andy.shevchenko@gmail.com>,
         lkml <linux-kernel@vger.kernel.org>,
         linux-omap <linux-omap@vger.kernel.org>, Nishanth Menon <nm@ti.com>
-Subject: [PATCH 02/11] staging: tidspbridge: no need for custom NULL
-Date: Mon, 12 Jul 2010 17:56:00 -0500
-Message-Id: <1278975369-7687-3-git-send-email-nm@ti.com>
+Subject: [PATCH 04/11] staging: tidspbridge: remove custom typedef reg_uword32
+Date: Mon, 12 Jul 2010 17:56:02 -0500
+Message-Id: <1278975369-7687-5-git-send-email-nm@ti.com>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1278975369-7687-1-git-send-email-nm@ti.com>
 References: <1278975369-7687-1-git-send-email-nm@ti.com>
@@ -25,86 +25,295 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-kernel has it's own NULL define, we dont need to introduce our own
-custom NULL type!
+use readl, writel to get and set the register instead.
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/staging/tidspbridge/dynload/header.h       |    4 ----
- drivers/staging/tidspbridge/hw/GlobalTypes.h       |    9 ---------
- .../staging/tidspbridge/include/dspbridge/dbtype.h |    8 --------
- .../staging/tidspbridge/include/dspbridge/std.h    |    4 ----
- 4 files changed, 0 insertions(+), 25 deletions(-)
+ drivers/staging/tidspbridge/core/tiomap3430.c     |   18 +--
+ drivers/staging/tidspbridge/core/tiomap3430_pwr.c |  126 ++++++---------------
+ drivers/staging/tidspbridge/core/tiomap_io.c      |    2 +-
+ drivers/staging/tidspbridge/rmgr/node.c           |    4 +-
+ 4 files changed, 44 insertions(+), 106 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/dynload/header.h b/drivers/staging/tidspbridge/dynload/header.h
-index 04623f1..5b50a15 100644
---- a/drivers/staging/tidspbridge/dynload/header.h
-+++ b/drivers/staging/tidspbridge/dynload/header.h
-@@ -14,10 +14,6 @@
-  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-  */
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430.c b/drivers/staging/tidspbridge/core/tiomap3430.c
+index d067de9..51e327f 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430.c
+@@ -555,24 +555,18 @@ static int bridge_brd_start(struct bridge_dev_context *hDevContext,
+ 		dev_context->mbox->rxq->callback = (int (*)(void *))io_mbox_msg;
  
--#ifndef NULL
--#define NULL 0
--#endif
--
- #include <linux/string.h>
- #define DL_STRCMP  strcmp
+ /*PM_IVA2GRPSEL_PER = 0xC0;*/
+-		temp = (u32) *((reg_uword32 *)
+-				((u32) (resources->dw_per_pm_base) + 0xA8));
++		temp = readl(resources->dw_per_pm_base + 0xA8);
+ 		temp = (temp & 0xFFFFFF30) | 0xC0;
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8)) =
+-		    (u32) temp;
++		writel(temp, resources->dw_per_pm_base + 0xA8);
  
-diff --git a/drivers/staging/tidspbridge/hw/GlobalTypes.h b/drivers/staging/tidspbridge/hw/GlobalTypes.h
-index ba045eb..2f8e69b 100644
---- a/drivers/staging/tidspbridge/hw/GlobalTypes.h
-+++ b/drivers/staging/tidspbridge/hw/GlobalTypes.h
-@@ -20,15 +20,6 @@
- #define _GLOBALTYPES_H
+ /*PM_MPUGRPSEL_PER &= 0xFFFFFF3F; */
+-		temp = (u32) *((reg_uword32 *)
+-				((u32) (resources->dw_per_pm_base) + 0xA4));
++		temp = readl(resources->dw_per_pm_base + 0xA4);
+ 		temp = (temp & 0xFFFFFF3F);
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4)) =
+-		    (u32) temp;
++		writel(temp, resources->dw_per_pm_base + 0xA4);
+ /*CM_SLEEPDEP_PER |= 0x04; */
+-		temp = (u32) *((reg_uword32 *)
+-				((u32) (resources->dw_per_base) + 0x44));
++		temp = readl(resources->dw_per_base + 0x44);
+ 		temp = (temp & 0xFFFFFFFB) | 0x04;
+-		*((reg_uword32 *) ((u32) (resources->dw_per_base) + 0x44)) =
+-		    (u32) temp;
++		writel(temp, resources->dw_per_base + 0x44);
  
- /*
-- * Definition: NULL
-- *
-- * DESCRIPTION:  Invalid pointer
-- */
--#ifndef NULL
--#define NULL	(void *)0
--#endif
--
--/*
-  * Definition: RET_CODE_BASE
-  *
-  * DESCRIPTION:  Base value for return code offsets
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbtype.h b/drivers/staging/tidspbridge/include/dspbridge/dbtype.h
-index 0b2cb93..ca5eaf8 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dbtype.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbtype.h
-@@ -42,14 +42,6 @@
- #endif
+ /*CM_CLKSTCTRL_IVA2 = 0x00000003 -To Allow automatic transitions */
+ 		(*pdata->dsp_cm_write)(OMAP34XX_CLKSTCTRL_ENABLE_AUTO,
+diff --git a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
+index 2b3ce64..384b833 100644
+--- a/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
++++ b/drivers/staging/tidspbridge/core/tiomap3430_pwr.c
+@@ -430,12 +430,8 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
  
- /*===========================================================================*/
--/*  NULL    (Definition is language specific) */
--/*===========================================================================*/
--
--#ifndef NULL
--#define NULL    ((void *)0)	/* Null pointer. */
--#endif
--
--/*===========================================================================*/
- /*  NULL character   (normally used for string termination) */
- /*===========================================================================*/
+ 	switch (clock_id) {
+ 	case BPWR_GP_TIMER5:
+-		iva2_grpsel = (u32) *((reg_uword32 *)
+-				       ((u32) (resources->dw_per_pm_base) +
+-					0xA8));
+-		mpu_grpsel = (u32) *((reg_uword32 *)
+-				      ((u32) (resources->dw_per_pm_base) +
+-				       0xA4));
++		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
++		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
+ 		if (enable) {
+ 			iva2_grpsel |= OMAP3430_GRPSEL_GPT5_MASK;
+ 			mpu_grpsel &= ~OMAP3430_GRPSEL_GPT5_MASK;
+@@ -443,18 +439,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
+ 			mpu_grpsel |= OMAP3430_GRPSEL_GPT5_MASK;
+ 			iva2_grpsel &= ~OMAP3430_GRPSEL_GPT5_MASK;
+ 		}
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
+-		    = iva2_grpsel;
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
+-		    = mpu_grpsel;
++		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
++		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
+ 		break;
+ 	case BPWR_GP_TIMER6:
+-		iva2_grpsel = (u32) *((reg_uword32 *)
+-				       ((u32) (resources->dw_per_pm_base) +
+-					0xA8));
+-		mpu_grpsel = (u32) *((reg_uword32 *)
+-				      ((u32) (resources->dw_per_pm_base) +
+-				       0xA4));
++		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
++		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
+ 		if (enable) {
+ 			iva2_grpsel |= OMAP3430_GRPSEL_GPT6_MASK;
+ 			mpu_grpsel &= ~OMAP3430_GRPSEL_GPT6_MASK;
+@@ -462,18 +452,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
+ 			mpu_grpsel |= OMAP3430_GRPSEL_GPT6_MASK;
+ 			iva2_grpsel &= ~OMAP3430_GRPSEL_GPT6_MASK;
+ 		}
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
+-		    = iva2_grpsel;
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
+-		    = mpu_grpsel;
++		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
++		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
+ 		break;
+ 	case BPWR_GP_TIMER7:
+-		iva2_grpsel = (u32) *((reg_uword32 *)
+-				       ((u32) (resources->dw_per_pm_base) +
+-					0xA8));
+-		mpu_grpsel = (u32) *((reg_uword32 *)
+-				      ((u32) (resources->dw_per_pm_base) +
+-				       0xA4));
++		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
++		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
+ 		if (enable) {
+ 			iva2_grpsel |= OMAP3430_GRPSEL_GPT7_MASK;
+ 			mpu_grpsel &= ~OMAP3430_GRPSEL_GPT7_MASK;
+@@ -481,18 +465,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
+ 			mpu_grpsel |= OMAP3430_GRPSEL_GPT7_MASK;
+ 			iva2_grpsel &= ~OMAP3430_GRPSEL_GPT7_MASK;
+ 		}
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
+-		    = iva2_grpsel;
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
+-		    = mpu_grpsel;
++		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
++		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
+ 		break;
+ 	case BPWR_GP_TIMER8:
+-		iva2_grpsel = (u32) *((reg_uword32 *)
+-				       ((u32) (resources->dw_per_pm_base) +
+-					0xA8));
+-		mpu_grpsel = (u32) *((reg_uword32 *)
+-				      ((u32) (resources->dw_per_pm_base) +
+-				       0xA4));
++		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
++		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
+ 		if (enable) {
+ 			iva2_grpsel |= OMAP3430_GRPSEL_GPT8_MASK;
+ 			mpu_grpsel &= ~OMAP3430_GRPSEL_GPT8_MASK;
+@@ -500,18 +478,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
+ 			mpu_grpsel |= OMAP3430_GRPSEL_GPT8_MASK;
+ 			iva2_grpsel &= ~OMAP3430_GRPSEL_GPT8_MASK;
+ 		}
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
+-		    = iva2_grpsel;
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
+-		    = mpu_grpsel;
++		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
++		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
+ 		break;
+ 	case BPWR_MCBSP1:
+-		iva2_grpsel = (u32) *((reg_uword32 *)
+-				       ((u32) (resources->dw_core_pm_base) +
+-					0xA8));
+-		mpu_grpsel = (u32) *((reg_uword32 *)
+-				      ((u32) (resources->dw_core_pm_base) +
+-				       0xA4));
++		iva2_grpsel = readl(resources->dw_core_pm_base + 0xA8);
++		mpu_grpsel = readl(resources->dw_core_pm_base + 0xA4);
+ 		if (enable) {
+ 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP1_MASK;
+ 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP1_MASK;
+@@ -519,18 +491,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
+ 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP1_MASK;
+ 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP1_MASK;
+ 		}
+-		*((reg_uword32 *) ((u32) (resources->dw_core_pm_base) + 0xA8))
+-		    = iva2_grpsel;
+-		*((reg_uword32 *) ((u32) (resources->dw_core_pm_base) + 0xA4))
+-		    = mpu_grpsel;
++		writel(iva2_grpsel, resources->dw_core_pm_base + 0xA8);
++		writel(mpu_grpsel, resources->dw_core_pm_base + 0xA4);
+ 		break;
+ 	case BPWR_MCBSP2:
+-		iva2_grpsel = (u32) *((reg_uword32 *)
+-				       ((u32) (resources->dw_per_pm_base) +
+-					0xA8));
+-		mpu_grpsel = (u32) *((reg_uword32 *)
+-				      ((u32) (resources->dw_per_pm_base) +
+-				       0xA4));
++		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
++		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
+ 		if (enable) {
+ 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP2_MASK;
+ 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP2_MASK;
+@@ -538,18 +504,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
+ 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP2_MASK;
+ 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP2_MASK;
+ 		}
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
+-		    = iva2_grpsel;
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
+-		    = mpu_grpsel;
++		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
++		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
+ 		break;
+ 	case BPWR_MCBSP3:
+-		iva2_grpsel = (u32) *((reg_uword32 *)
+-				       ((u32) (resources->dw_per_pm_base) +
+-					0xA8));
+-		mpu_grpsel = (u32) *((reg_uword32 *)
+-				      ((u32) (resources->dw_per_pm_base) +
+-				       0xA4));
++		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
++		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
+ 		if (enable) {
+ 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP3_MASK;
+ 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP3_MASK;
+@@ -557,18 +517,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
+ 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP3_MASK;
+ 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP3_MASK;
+ 		}
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
+-		    = iva2_grpsel;
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
+-		    = mpu_grpsel;
++		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
++		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
+ 		break;
+ 	case BPWR_MCBSP4:
+-		iva2_grpsel = (u32) *((reg_uword32 *)
+-				       ((u32) (resources->dw_per_pm_base) +
+-					0xA8));
+-		mpu_grpsel = (u32) *((reg_uword32 *)
+-				      ((u32) (resources->dw_per_pm_base) +
+-				       0xA4));
++		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
++		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
+ 		if (enable) {
+ 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP4_MASK;
+ 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP4_MASK;
+@@ -576,18 +530,12 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
+ 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP4_MASK;
+ 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP4_MASK;
+ 		}
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA8))
+-		    = iva2_grpsel;
+-		*((reg_uword32 *) ((u32) (resources->dw_per_pm_base) + 0xA4))
+-		    = mpu_grpsel;
++		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
++		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
+ 		break;
+ 	case BPWR_MCBSP5:
+-		iva2_grpsel = (u32) *((reg_uword32 *)
+-				       ((u32) (resources->dw_core_pm_base) +
+-					0xA8));
+-		mpu_grpsel = (u32) *((reg_uword32 *)
+-				      ((u32) (resources->dw_core_pm_base) +
+-				       0xA4));
++		iva2_grpsel = readl(resources->dw_per_pm_base + 0xA8);
++		mpu_grpsel = readl(resources->dw_per_pm_base + 0xA4);
+ 		if (enable) {
+ 			iva2_grpsel |= OMAP3430_GRPSEL_MCBSP5_MASK;
+ 			mpu_grpsel &= ~OMAP3430_GRPSEL_MCBSP5_MASK;
+@@ -595,10 +543,8 @@ void dsp_clk_wakeup_event_ctrl(u32 clock_id, bool enable)
+ 			mpu_grpsel |= OMAP3430_GRPSEL_MCBSP5_MASK;
+ 			iva2_grpsel &= ~OMAP3430_GRPSEL_MCBSP5_MASK;
+ 		}
+-		*((reg_uword32 *) ((u32) (resources->dw_core_pm_base) + 0xA8))
+-		    = iva2_grpsel;
+-		*((reg_uword32 *) ((u32) (resources->dw_core_pm_base) + 0xA4))
+-		    = mpu_grpsel;
++		writel(iva2_grpsel, resources->dw_per_pm_base + 0xA8);
++		writel(mpu_grpsel, resources->dw_per_pm_base + 0xA4);
+ 		break;
+ 	}
+ }
+diff --git a/drivers/staging/tidspbridge/core/tiomap_io.c b/drivers/staging/tidspbridge/core/tiomap_io.c
+index c5d39d8..ae165b1 100644
+--- a/drivers/staging/tidspbridge/core/tiomap_io.c
++++ b/drivers/staging/tidspbridge/core/tiomap_io.c
+@@ -439,7 +439,7 @@ int sm_interrupt_dsp(struct bridge_dev_context *dev_context, u16 mb_val)
+ 		omap_mbox_restore_ctx(dev_context->mbox);
  
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/std.h b/drivers/staging/tidspbridge/include/dspbridge/std.h
-index 7e09fec..ca2827d 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/std.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/std.h
-@@ -74,10 +74,6 @@
+ 		/* Access MMU SYS CONFIG register to generate a short wakeup */
+-		temp = *(reg_uword32 *) (resources->dw_dmmu_base + 0x10);
++		temp = readl(resources->dw_dmmu_base + 0x10);
  
- typedef s32(*fxn) (void);	/* generic function type */
+ 		dev_context->dw_brd_state = BRD_RUNNING;
+ 	} else if (dev_context->dw_brd_state == BRD_RETENTION) {
+diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
+index 928079e..4cc14fd 100644
+--- a/drivers/staging/tidspbridge/rmgr/node.c
++++ b/drivers/staging/tidspbridge/rmgr/node.c
+@@ -623,9 +623,7 @@ func_cont:
+ 			ul_gpp_mem_base = (u32) host_res->dw_mem_base[1];
+ 			off_set = pul_value - dynext_base;
+ 			ul_stack_seg_addr = ul_gpp_mem_base + off_set;
+-			ul_stack_seg_val = (u32) *((reg_uword32 *)
+-						    ((u32)
+-						     (ul_stack_seg_addr)));
++			ul_stack_seg_val = readl(ul_stack_seg_addr);
  
--#ifndef NULL
--#define NULL 0
--#endif
--
- /*
-  * These macros are used to cast 'Arg' types to 's32' or 'Ptr'.
-  * These macros were added for the 55x since Arg is not the same
+ 			dev_dbg(bridge, "%s: StackSegVal = 0x%x, StackSegAddr ="
+ 				" 0x%x\n", __func__, ul_stack_seg_val,
 -- 
 1.6.3.3
 
