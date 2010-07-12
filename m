@@ -1,83 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755927Ab0GLPMV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 11:12:21 -0400
-Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:24809 "EHLO
-	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750958Ab0GLPMS (ORCPT
-	<rfc822;groupwise-jlee@novell.com:3:2>);
-	Mon, 12 Jul 2010 11:12:18 -0400
-Message-Id: <4C3BBD6D020000230001CD30@novprvlin0050.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.2 
-Date: Mon, 12 Jul 2010 09:12:13 -0600
-From: "Joey Lee" <jlee@novell.com>
-To: <mjg59@srcf.ucam.org>
-Cc: <dri-devel@lists.sourceforge.net>, <linux-acpi@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, <Dennis.Jansen@web.de>
-Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
- detect
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-Content-Disposition: inline
+	id S1755823Ab0GLPPd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 11:15:33 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:42444 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751099Ab0GLPPc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 11:15:32 -0400
+Date: Mon, 12 Jul 2010 10:11:50 -0500 (CDT)
+From: Christoph Lameter <cl@linux-foundation.org>
+X-X-Sender: cl@router.home
+To: Heinz Diehl <htd@fancy-poultry.org>
+cc: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
+        David Rientjes <rientjes@google.com>, Tejun Heo <tj@kernel.org>
+Subject: Re: [S+Q2 00/19] SLUB with queueing (V2) beats SLAB netperf TCP_RR
+In-Reply-To: <20100710195621.GA13720@fancy-poultry.org>
+Message-ID: <alpine.DEB.2.00.1007121010420.14328@router.home>
+References: <20100709190706.938177313@quilx.com> <20100710195621.GA13720@fancy-poultry.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: MULTIPART/MIXED; BOUNDARY="-1463811839-1120396131-1278947511=:14328"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mattew, 
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-於 一，2010-07-12 於 03:27 +0100，Matthew Garrett 提到：
-> On Sun, Jul 11, 2010 at 08:12:57PM -0600, Joey Lee wrote:
-> 
-> > He tested the drm blacklist patch can works fine on his computer, it's
-> > also works on VESA mode because the acpi _BCM, _BQC direct change
-> > brightness by opregion.
-> > 
+---1463811839-1120396131-1278947511=:14328
+Content-Type: TEXT/PLAIN; charset=utf-8
+Content-Transfer-Encoding: QUOTED-PRINTABLE
 
-Sorry, I write a wrong information, the MSI poulsbo netbook change
-brightness by ec command in _BCM, _BQC, not opregion.
+On Sat, 10 Jul 2010, Heinz Diehl wrote:
 
-> > What can we do for this situtation? I mean if the BIOS have opregion
-> > implementation but there have no opensource drm driver or native video
-> > driver support opregion on Linux?
-> 
-> The cleanest way would be to implement a stub backlight control driver 
-> for the chip - there should be enough information in the source of the 
-> poulsbo drm to do that. 
+> On 10.07.2010, Christoph Lameter wrote:
+>
+> > The following patchset cleans some pieces up and then equips SLUB with
+> > per cpu queues that work similar to SLABs queues. With that approach
+> > SLUB wins significantly in hackbench and improves also on tcp_rr.
+>
+> The patchset applies cleanly, however compilation fails with
+>
+> [....]
+> mm/slub.c: In function =E2=80=98alloc_kmem_cache_cpus=E2=80=99:
+> mm/slub.c:2093: error: negative width in bit-field =E2=80=98<anonymous>=
+=E2=80=99
+> make[1]: *** [mm/slub.o] Error 1
+> make: *** [mm] Error 2
+> make: *** Waiting for unfinished jobs....
+> [....]
 
-M... Follow your suggestion, I am tracing the i915 drm driver and
-Poulsbo drm driver from here:
-
-http://sourceforge.net/mailarchive/message.php?msg_name=49C2ADA8.2090405%40shipmail.org
-
-I am not sure fully understood your suggestion... Did you mean we can
-extract some parts from Poulsbo drm driver and put it to a stub
-backlight control driver for Poulsbo? Where can we put the stub driver?
-Do we still put it in i915 drm? 
-
-On the other hand, the Poulsbo is a old and stop ship chip, do we still
-want to add a special driver for it?
-
-> The main problem with the blacklist approach is 
-> that there's no guarantee that all poulsbo systems will have a working 
-> acpi method, and I /think/ there's a couple more PCI IDs that ought to 
-> be covered in any case. On the other hand doing it properly does involve 
-> writing rather a lot more code, and the fact that Intel have shown 
-> absolutely no interest in making their hardware work means that the 
-> quick hack might be the most reasonable thing to do.
-> 
-
-Thank's for your remind, I fully agreed cann't guarantee all poulsbo
-systems have working acpi method. But, I am sure the MSI U110/U115 have
-workable acpi backlight method.
-Do you think it's good to put the special DMI detection in msi-laptop
-driver to enable the the acpi backlight control by call
-acpi_video_register in acpi video? But will cause msi-laptop driver
-dependency to acpi video driver.
-
-Need your kindly suggestion!
+You need a sufficient PERCPU_DYNAMIC_EARLY_SIZE to be configured. What
+platform is this? Tejon: You suggested the BUILD_BUG_ON(). How can he
+increase the early size?
 
 
-Thank's a lot!
-Joey Lee
-
+---1463811839-1120396131-1278947511=:14328--
