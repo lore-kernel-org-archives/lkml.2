@@ -1,58 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752351Ab0GLTtL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 15:49:11 -0400
-Received: from mail.perches.com ([173.55.12.10]:1711 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752119Ab0GLTtK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 15:49:10 -0400
-Subject: Re: Possible false positive from checkpatch.pl
-From: Joe Perches <joe@perches.com>
-To: Larry Finger <Larry.Finger@lwfinger.net>
-Cc: Andy Whitcroft <apw@canonical.com>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C3B6F03.8060708@lwfinger.net>
-References: <4C3B5660.8020405@lwfinger.net>
-	 <1278959315.1501.261.camel@Joe-Laptop.home> <4C3B608B.9010501@lwfinger.net>
-	 <1278961381.1501.284.camel@Joe-Laptop.home> <4C3B6F03.8060708@lwfinger.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Jul 2010 12:49:07 -0700
-Message-ID: <1278964147.1501.291.camel@Joe-Laptop.home>
+	id S1752604Ab0GLTti (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 15:49:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:60676 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752417Ab0GLTtg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 15:49:36 -0400
+Date: Mon, 12 Jul 2010 12:49:04 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        David Teigland <teigland@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "Hans J. Koch" <hjk@linutronix.de>
+Subject: Re: [PATCH] edd: fix possible memory leak in edd_init() error path
+Message-Id: <20100712124904.d05242d2.akpm@linux-foundation.org>
+In-Reply-To: <1278672607.1335.3.camel@mola>
+References: <1278672607.1335.3.camel@mola>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-07-12 at 14:37 -0500, Larry Finger wrote:
-> On 07/12/2010 02:03 PM, Joe Perches wrote:
-> > diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-> > index bd88f11..7e8a3f4 100755
-> > --- a/scripts/checkpatch.pl
-> > +++ b/scripts/checkpatch.pl
-> > @@ -2394,8 +2394,10 @@ sub process {
-> >   			}x;
-> >   			#print "REST<$rest>  dstat<$dstat>\n";
-> >   			if ($rest ne '') {
-> > -				if ($rest !~ /while\s*\(/&&
-> > -				    $dstat !~ /$exceptions/)
-> > +				if ($rest eq ",") {
-> > +					ERROR("Macros should not end with a trailing comma\n" . "$here\n$ctx\n");
-> > +				} elsif ($rest !~ /while\s*\(/&&
-> > +					 $dstat !~ /$exceptions/)
-> >   				{
-> >   					ERROR("Macros with multiple statements should be enclosed in a do - while loop\n" . "$here\n$ctx\n");
-> >   			}
+On Fri, 09 Jul 2010 18:50:07 +0800
+Axel Lin <axel.lin@gmail.com> wrote:
+
+> The error may happen at any iteration of the for loop,
+> this patch properly unregisters already registed edd_devices in error path.
 > 
-> That looks good. At least it makes clear what is wrong.
-> Should it be an error, or just a warning?
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/firmware/edd.c |   23 ++++++++++++++++-------
+>  1 files changed, 16 insertions(+), 7 deletions(-)
+> 
+> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+> index 110e24e..b75082c 100644
+> --- a/drivers/firmware/edd.c
+> +++ b/drivers/firmware/edd.c
+> @@ -744,7 +744,7 @@ static inline int edd_num_devices(void)
+>  static int __init
+>  edd_init(void)
+>  {
+> -	unsigned int i;
+> +	int i;
+>  	int rc=0;
+>  	struct edd_device *edev;
+>  
+> @@ -760,21 +760,30 @@ edd_init(void)
+>  	if (!edd_kset)
+>  		return -ENOMEM;
+>  
+> -	for (i = 0; i < edd_num_devices() && !rc; i++) {
+> +	for (i = 0; i < edd_num_devices(); i++) {
+>  		edev = kzalloc(sizeof (*edev), GFP_KERNEL);
+> -		if (!edev)
+> -			return -ENOMEM;
+> +		if (!edev) {
+> +			rc = -ENOMEM;
+> +			goto out;
+> +		}
+>  
+>  		rc = edd_device_register(edev, i);
+>  		if (rc) {
+>  			kfree(edev);
+> -			break;
+> +			goto out;
+>  		}
+>  		edd_devices[i] = edev;
+>  	}
+>  
+> -	if (rc)
+> -		kset_unregister(edd_kset);
+> +	return 0;
+> +
+> +out:
+> +	while (--i >= 0) {
+> +		edev = edd_devices[i];
+> +		if (edev)
 
-I don't much care.
+This test is unneeded?
 
-If Andy wants to do anything, let him decide.
-
-Perhaps the new test should be
-	if ($rest =~ /\s*,\s*$/)
-
-cheers, Joe
+> +			edd_device_unregister(edev);
+> +	}
+> +	kset_unregister(edd_kset);
+>  	return rc;
+>  }
 
