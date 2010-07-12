@@ -1,56 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754223Ab0GLK7H (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 06:59:07 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:54817 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751107Ab0GLK7E (ORCPT
+	id S1752997Ab0GLLpY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 07:45:24 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:58061 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751594Ab0GLLpX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 06:59:04 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-        corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
-        bfields@fieldses.org, linux-fsdevel@vger.kernel.org,
-        sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V16 07/12] vfs: Support null pathname in linkat
-In-Reply-To: <E1OYE1D-0005qC-AI@pomaz-ex.szeredi.hu>
-References: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1278916545-19751-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <E1OYE1D-0005qC-AI@pomaz-ex.szeredi.hu>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Mon, 12 Jul 2010 16:28:53 +0530
-Message-ID: <87aapxyniq.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Mon, 12 Jul 2010 07:45:23 -0400
+X-Authority-Analysis: v=1.1 cv=eWk9bc5BAcy1KEyGm/gc5mmqTM7Cp/ADlcqpp9MTMWU= c=1 sm=0 a=iC0lH2aJipMA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=EJzxo7rHj25SfJK1AWMA:9 a=5uhFCARqgGlWeUvRP08A:7 a=-2upkoig3PoIPheuXYjdzhmqsb8A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 4/4] futex: convert hash_bucket locks to raw_spinlock_t
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Mike Galbraith <mgalbraith@suse.de>
+Cc: Darren Hart <dvhltc@us.ibm.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
+        linux-rt-users@vger.kernel.org
+In-Reply-To: <1278855208.15197.6.camel@marge.simson.net>
+References: <1278714780-788-1-git-send-email-dvhltc@us.ibm.com>
+	 <1278714780-788-5-git-send-email-dvhltc@us.ibm.com>
+	 <1278790882.7352.101.camel@marge.simson.net>
+	 <1278855208.15197.6.camel@marge.simson.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 12 Jul 2010 07:45:20 -0400
+Message-ID: <1278935120.1537.187.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010 10:05:39 +0200, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> On Mon, 12 Jul 2010, Aneesh Kumar K.V wrote:
-> > This enables to use linkat to create hardlinks from a
-> > file descriptor pointing to the file. This can be used
-> > with open_by_handle syscall that returns a file descriptor.
+On Sun, 2010-07-11 at 15:33 +0200, Mike Galbraith wrote:
+> On Sat, 2010-07-10 at 21:41 +0200, Mike Galbraith wrote:
+
+> diff --git a/kernel/futex.c b/kernel/futex.c
+> index a6cec32..ef489f3 100644
+> --- a/kernel/futex.c
+> +++ b/kernel/futex.c
+> @@ -2255,7 +2255,14 @@ static int futex_wait_requeue_pi(u32 __user *uaddr, int fshared,
+>  	/* Queue the futex_q, drop the hb lock, wait for wakeup. */
+>  	futex_wait_queue_me(hb, &q, to);
+>  
+> -	spin_lock(&hb->lock);
+> +	/*
+> +	 * Non-blocking synchronization point with futex_requeue().
+> +	 *
+> +	 * We dare not block here because this will alter PI state, possibly
+> +	 * before our waker finishes modifying same in wakeup_next_waiter().
+> +	 */
+> +	while(!spin_trylock(&hb->lock))
+> +		cpu_relax();
+
+I agree that this would work. But I wonder if this should have an:
+
+#ifdef PREEMPT_RT
+[...]
+#else
+	spin_lock(&hb->lock);
+#endif
+
+around it. Or encapsulate this lock in a macro that does the same thing
+(just to keep the actual code cleaner)
+
+-- Steve
+
+>  	ret = handle_early_requeue_pi_wakeup(hb, &q, &key2, to);
+>  	spin_unlock(&hb->lock);
+>  	if (ret)
 > 
-> This needs more thought, filesystems don't usually tolerate
-> resurrecting a file which has already been unlinked (i_nlink == 0).
 > 
 
-We get -ENOENT error when we do that on ext*
 
-open("test", O_RDONLY)                  = 3
-unlink("test")                          = 0
-linkat(3, NULL, AT_FDCWD, "test3", 0)   = -1 ENOENT (No such file or directory)
-
-ext4_link does the below
-
-/*
- * Return -ENOENT if we've raced with unlink and i_nlink is 0.  Doing
- * otherwise has the potential to corrupt the orphan inode list.
- */
-if (inode->i_nlink == 0)
-	return -ENOENT;
-
-I can move this check to VFS so that we do it for all file systems. 
-
--aneesh
