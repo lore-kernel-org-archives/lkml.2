@@ -1,78 +1,174 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755885Ab0GLWpP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:45:15 -0400
-Received: from mail.perches.com ([173.55.12.10]:1844 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755197Ab0GLWpN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:45:13 -0400
-Subject: Re: [PATCH v5] MMC: Add JZ4740 mmc driver
-From: Joe Perches <joe@perches.com>
-To: Lars-Peter Clausen <lars@metafoo.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Matt Fleming <matt@console-pimps.org>, linux-mmc@vger.kernel.org
-In-Reply-To: <1278973245-25451-1-git-send-email-lars@metafoo.de>
-References: <1278970413-21617-1-git-send-email-lars@metafoo.de>
-	 <1278973245-25451-1-git-send-email-lars@metafoo.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Jul 2010 15:45:10 -0700
-Message-ID: <1278974710.1501.317.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755834Ab0GLWrg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:47:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:55292 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755548Ab0GLWre (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 18:47:34 -0400
+Date: Mon, 12 Jul 2010 15:45:31 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Dave Chinner <david@fromorbit.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        ocfs2-devel@oss.oracle.com, Tao Ma <tao.ma@oracle.com>,
+        Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+        Mark Fasheh <mfasheh@suse.com>
+Subject: Re: [Ocfs2-devel] [PATCH 0/3] ocfs2: Tail zeroing fixes.
+Message-ID: <20100712224531.GJ12179@mail.oracle.com>
+Mail-Followup-To: Dave Chinner <david@fromorbit.com>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Linux Kernel <linux-kernel@vger.kernel.org>,
+	ocfs2-devel@oss.oracle.com, Tao Ma <tao.ma@oracle.com>,
+	Dave Chinner <dchinner@redhat.com>, Christoph Hellwig <hch@lst.de>,
+	Mark Fasheh <mfasheh@suse.com>
+References: <20100703213219.GB21262@mail.oracle.com>
+ <1278501367-7710-1-git-send-email-joel.becker@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278501367-7710-1-git-send-email-joel.becker@oracle.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C3B9B5E.0225:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-13 at 00:20 +0200, Lars-Peter Clausen wrote:
-> This patch adds support for the mmc controller on JZ4740 SoCs.
-> +static bool jz4740_mmc_write_data(struct jz4740_mmc_host *host,
-> +	struct mmc_data *data)
-> +{
-> +	struct sg_mapping_iter *miter = &host->miter;
-> +	uint32_t *buf;
-> +	bool timeout;
-> +	size_t i, j;
-> +
-> +	while (sg_miter_next(miter)) {
-> +		buf = miter->addr;
-> +		i = miter->length / 4;
-> +		j = i / 8;
-> +		i = i & 0x7;
-> +		while (j) {
-> +			timeout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_TXFIFO_WR_REQ);
-> +			if (unlikely(timeout))
-> +				goto poll_timeout;
-> +
-> +			writel(buf[0], host->base + JZ_REG_MMC_TXFIFO);
+On Wed, Jul 07, 2010 at 04:16:04AM -0700, Joel Becker wrote:
+> 	This is version 3 of the ocfs2 tail zeroing fixes.  This version
+> has some major changes.  Tao correctly pointed out that we can have
+> multiple extents past i_size due to unwritten extents.  I've reworked
+> the zeroing code to walk them all.  Since I had to do that, and I had to
+> handle refcounted extents, I end up fixing a refcount bug with
+> non-sparse extentds.
+> 	There are now three patches.  The first changes our zeroing
+> code to go page-by-page at the high level.  The second actually changes
+> the zeroing code.  The final patch, limiting zeroing to the end of a
+> write, is unchanged from v2.
 
-Perhaps it'd be better to use a temporary for
-host->base + JZ_REG_MMC_TXFIFO
+	Version 4 of these fixes are now in the fixes and linux-next
+branches of ocfs2.git.  I'm just appending the diff to this file rather
+than resending all the patches.  They've passed the first round of heavy
+testing from our testers, and we're going to keep pounding on them as we
+get towards 2.6.35.
+	Linus, I'm going to let all of the ocfs2 fixes stew in
+linux-next for a few days before I send the pull request.  Figure it by
+the end of the week.
 
-> +			writel(buf[1], host->base + JZ_REG_MMC_TXFIFO);
-> +			writel(buf[2], host->base + JZ_REG_MMC_TXFIFO);
-> +			writel(buf[3], host->base + JZ_REG_MMC_TXFIFO);
-> +			writel(buf[4], host->base + JZ_REG_MMC_TXFIFO);
-> +			writel(buf[5], host->base + JZ_REG_MMC_TXFIFO);
-> +			writel(buf[6], host->base + JZ_REG_MMC_TXFIFO);
-> +			writel(buf[7], host->base + JZ_REG_MMC_TXFIFO);
-> +			buf += 8;
-> +			--j;
-> +		}
-> +		if (unlikely(i)) {
-> +			timeout = jz4740_mmc_poll_irq(host, JZ_MMC_IRQ_TXFIFO_WR_REQ);
-> +			if (unlikely(timeout))
-> +				goto poll_timeout;
-> +
-> +			while (i) {
-> +				writel(*buf, host->base + JZ_REG_MMC_TXFIFO);
-> +				++buf;
-> +				--i;
-> +			}
-> +		}
-> +		data->bytes_xfered += miter->length;
-> +	}
+Joel
 
+diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
+index 9b3381a..356e976 100644
+--- a/fs/ocfs2/aops.c
++++ b/fs/ocfs2/aops.c
+@@ -1107,6 +1107,7 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
+ 	int ret = 0, i;
+ 	unsigned long start, target_index, end_index, index;
+ 	struct inode *inode = mapping->host;
++	loff_t last_byte;
+ 
+ 	target_index = user_pos >> PAGE_CACHE_SHIFT;
+ 
+@@ -1120,8 +1121,14 @@ static int ocfs2_grab_pages_for_write(struct address_space *mapping,
+ 	if (new) {
+ 		wc->w_num_pages = ocfs2_pages_per_cluster(inode->i_sb);
+ 		start = ocfs2_align_clusters_to_page_index(inode->i_sb, cpos);
+-		/* This is the index *past* the write */
+-		end_index = ((user_pos + user_len - 1) >> PAGE_CACHE_SHIFT) + 1;
++		/*
++		 * We need the index *past* the last page we could possibly
++		 * touch.  This is the page past the end of the write or
++		 * i_size, whichever is greater.
++		 */
++		last_byte = max(user_pos + user_len, i_size_read(inode));
++		BUG_ON(last_byte < 1);
++		end_index = ((last_byte - 1) >> PAGE_CACHE_SHIFT) + 1;
+ 		if ((start + wc->w_num_pages) > end_index)
+ 			wc->w_num_pages = end_index - start;
+ 	} else {
+@@ -1619,6 +1626,18 @@ static int ocfs2_expand_nonsparse_inode(struct inode *inode,
+ 	return ret;
+ }
+ 
++static int ocfs2_zero_tail(struct inode *inode, struct buffer_head *di_bh,
++			   loff_t pos)
++{
++	int ret = 0;
++
++	BUG_ON(!ocfs2_sparse_alloc(OCFS2_SB(inode->i_sb)));
++	if (pos > i_size_read(inode))
++		ret = ocfs2_zero_extend(inode, di_bh, pos);
++
++	return ret;
++}
++
+ int ocfs2_write_begin_nolock(struct address_space *mapping,
+ 			     loff_t pos, unsigned len, unsigned flags,
+ 			     struct page **pagep, void **fsdata,
+@@ -1655,7 +1674,7 @@ int ocfs2_write_begin_nolock(struct address_space *mapping,
+ 	}
+ 
+ 	if (ocfs2_sparse_alloc(osb))
+-		ret = ocfs2_zero_extend(inode, di_bh, pos);
++		ret = ocfs2_zero_tail(inode, di_bh, pos);
+ 	else
+ 		ret = ocfs2_expand_nonsparse_inode(inode, di_bh, pos, len,
+ 						   wc);
+diff --git a/fs/ocfs2/file.c b/fs/ocfs2/file.c
+index 1fdc45a..ac15911 100644
+--- a/fs/ocfs2/file.c
++++ b/fs/ocfs2/file.c
+@@ -734,7 +734,7 @@ static handle_t *ocfs2_zero_start_ordered_transaction(struct inode *inode)
+ 	handle_t *handle = NULL;
+ 	int ret = 0;
+ 
+-	if (ocfs2_should_order_data(inode))
++	if (!ocfs2_should_order_data(inode))
+ 		goto out;
+ 
+ 	handle = ocfs2_start_trans(osb, OCFS2_INODE_UPDATE_CREDITS);
+@@ -771,7 +771,7 @@ static int ocfs2_write_zero_page(struct inode *inode, u64 abs_from,
+ 	unsigned zero_from, zero_to, block_start, block_end;
+ 
+ 	BUG_ON(abs_from >= abs_to);
+-	BUG_ON(abs_to > ((index + 1) << PAGE_CACHE_SHIFT));
++	BUG_ON(abs_to > (((u64)index + 1) << PAGE_CACHE_SHIFT));
+ 	BUG_ON(abs_from & (inode->i_blkbits - 1));
+ 
+ 	page = grab_cache_page(mapping, index);
+@@ -793,8 +793,7 @@ static int ocfs2_write_zero_page(struct inode *inode, u64 abs_from,
+ 	     index, zero_from, zero_to);
+ 
+ 	/* We know that zero_from is block aligned */
+-	for (block_start = zero_from;
+-	     (block_start < PAGE_CACHE_SIZE) && (block_start < zero_to);
++	for (block_start = zero_from; block_start < zero_to;
+ 	     block_start = block_end) {
+ 		block_end = block_start + (1 << inode->i_blkbits);
+ 
+@@ -966,6 +965,9 @@ int ocfs2_zero_extend(struct inode *inode, struct buffer_head *di_bh,
+ 	struct super_block *sb = inode->i_sb;
+ 
+ 	zero_start = ocfs2_align_bytes_to_blocks(sb, i_size_read(inode));
++	mlog(0, "zero_start %llu for i_size %llu\n",
++	     (unsigned long long)zero_start,
++	     (unsigned long long)i_size_read(inode));
+ 	while (zero_start < zero_to_size) {
+ 		ret = ocfs2_zero_extend_get_range(inode, di_bh, zero_start,
+ 						  zero_to_size,
+-- 
 
+"The only way to get rid of a temptation is to yield to it."
+         - Oscar Wilde 
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
