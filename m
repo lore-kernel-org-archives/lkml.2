@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755658Ab0GLUxK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:53:10 -0400
-Received: from mail.perches.com ([173.55.12.10]:1783 "EHLO mail.perches.com"
+	id S1754979Ab0GLUvA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:51:00 -0400
+Received: from mail.perches.com ([173.55.12.10]:1760 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755006Ab0GLUvB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 16:51:01 -0400
+	id S1754861Ab0GLUu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 16:50:56 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Jan Harkes <jaharkes@cs.cmu.edu>,
-        coda@cs.cmu.edu, codalist@TELEMANN.coda.cs.cmu.edu
-Subject: [PATCH 23/36] fs/coda: Remove unnecessary casts of private_data
-Date: Mon, 12 Jul 2010 13:50:15 -0700
-Message-Id: <a7be2383327c25d0ae51b6c7e582fdeae6ea76d9.1278967121.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        linux-usb@vger.kernel.org
+Subject: [PATCH 21/36] drivers/usb: Remove unnecessary casts of private_data
+Date: Mon, 12 Jul 2010 13:50:13 -0700
+Message-Id: <b7b64f6d1d8b19cab0d73960fe9f72b2c40bdc62.1278967121.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.337.g6068.dirty
 In-Reply-To: <cover.1278967120.git.joe@perches.com>
 References: <cover.1278967120.git.joe@perches.com>
@@ -22,49 +22,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/coda/psdev.c |    8 ++++----
+ drivers/usb/usb-skeleton.c |    8 ++++----
  1 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/coda/psdev.c b/fs/coda/psdev.c
-index 66b9cf7..2c4fd44 100644
---- a/fs/coda/psdev.c
-+++ b/fs/coda/psdev.c
-@@ -63,7 +63,7 @@ static struct class *coda_psdev_class;
- 
- static unsigned int coda_psdev_poll(struct file *file, poll_table * wait)
+diff --git a/drivers/usb/usb-skeleton.c b/drivers/usb/usb-skeleton.c
+index d110588..552679b 100644
+--- a/drivers/usb/usb-skeleton.c
++++ b/drivers/usb/usb-skeleton.c
+@@ -142,7 +142,7 @@ static int skel_release(struct inode *inode, struct file *file)
  {
--        struct venus_comm *vcp = (struct venus_comm *) file->private_data;
-+        struct venus_comm *vcp = file->private_data;
- 	unsigned int mask = POLLOUT | POLLWRNORM;
+ 	struct usb_skel *dev;
  
- 	poll_wait(file, &vcp->vc_waitq, wait);
-@@ -95,7 +95,7 @@ static long coda_psdev_ioctl(struct file * filp, unsigned int cmd, unsigned long
- static ssize_t coda_psdev_write(struct file *file, const char __user *buf, 
- 				size_t nbytes, loff_t *off)
- {
--        struct venus_comm *vcp = (struct venus_comm *) file->private_data;
-+        struct venus_comm *vcp = file->private_data;
-         struct upc_req *req = NULL;
-         struct upc_req *tmp;
- 	struct list_head *lh;
-@@ -209,7 +209,7 @@ static ssize_t coda_psdev_read(struct file * file, char __user * buf,
- 			       size_t nbytes, loff_t *off)
- {
- 	DECLARE_WAITQUEUE(wait, current);
--        struct venus_comm *vcp = (struct venus_comm *) file->private_data;
-+        struct venus_comm *vcp = file->private_data;
-         struct upc_req *req;
- 	ssize_t retval = 0, count = 0;
+-	dev = (struct usb_skel *)file->private_data;
++	dev = file->private_data;
+ 	if (dev == NULL)
+ 		return -ENODEV;
  
-@@ -300,7 +300,7 @@ static int coda_psdev_open(struct inode * inode, struct file * file)
+@@ -162,7 +162,7 @@ static int skel_flush(struct file *file, fl_owner_t id)
+ 	struct usb_skel *dev;
+ 	int res;
  
- static int coda_psdev_release(struct inode * inode, struct file * file)
- {
--	struct venus_comm *vcp = (struct venus_comm *) file->private_data;
-+	struct venus_comm *vcp = file->private_data;
- 	struct upc_req *req, *tmp;
+-	dev = (struct usb_skel *)file->private_data;
++	dev = file->private_data;
+ 	if (dev == NULL)
+ 		return -ENODEV;
  
- 	if (!vcp || !vcp->vc_inuse ) {
+@@ -246,7 +246,7 @@ static ssize_t skel_read(struct file *file, char *buffer, size_t count,
+ 	int rv;
+ 	bool ongoing_io;
+ 
+-	dev = (struct usb_skel *)file->private_data;
++	dev = file->private_data;
+ 
+ 	/* if we cannot read at all, return EOF */
+ 	if (!dev->bulk_in_urb || !count)
+@@ -401,7 +401,7 @@ static ssize_t skel_write(struct file *file, const char *user_buffer,
+ 	char *buf = NULL;
+ 	size_t writesize = min(count, (size_t)MAX_TRANSFER);
+ 
+-	dev = (struct usb_skel *)file->private_data;
++	dev = file->private_data;
+ 
+ 	/* verify that we actually have some data to write */
+ 	if (count == 0)
 -- 
 1.7.1.337.g6068.dirty
 
