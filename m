@@ -1,89 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756071Ab0GLQ4h (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 12:56:37 -0400
-Received: from exprod6og117.obsmtp.com ([64.18.1.39]:35728 "HELO
-	exprod6og117.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755817Ab0GLQ4f convert rfc822-to-8bit (ORCPT
+	id S1756167Ab0GLQ4y (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 12:56:54 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:49273 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755817Ab0GLQ4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 12:56:35 -0400
-X-MimeOLE: Produced By Microsoft Exchange V6.5
-Content-class: urn:content-classes:message
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-Subject: RE: nic enumeration
-Date: Mon, 12 Jul 2010 12:56:31 -0400
-Message-ID: <D3F292ADF945FB49B35E96C94C2061B90C3CFABA@nsmail.netscout.com>
-In-Reply-To: <AANLkTilYZTwekbqKCXEaT6Yo3UTDl9tRHJlRdwpSg_IH@mail.gmail.com>
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Thread-Topic: nic enumeration
-Thread-Index: AcsfrWbGbNcOEMgVTgGyzV/NQbOUcwCKxOdg
-References: <AANLkTimvsaoOm_QEUnvlZf2EKuiMpOr9PdQt_Ga0Z97D@mail.gmail.com><20100708012120.GB11419@auslistsprd01.us.dell.com><D3F292ADF945FB49B35E96C94C2061B90C317EA2@nsmail.netscout.com><82tyo9i0n2.fsf@mid.bfk.de><D3F292ADF945FB49B35E96C94C2061B90C3CF3E9@nsmail.netscout.com><AANLkTik4JOoNFSoML98j8LPJhJjVpWd8om-OYMGp3s9V@mail.gmail.com><D3F292ADF945FB49B35E96C94C2061B90C3CF4C5@nsmail.netscout.com> <AANLkTilYZTwekbqKCXEaT6Yo3UTDl9tRHJlRdwpSg_IH@mail.gmail.com>
-From: "Loke, Chetan" <Chetan.Loke@netscout.com>
-To: "Steve Fink" <sphink@gmail.com>
-Cc: "Florian Weimer" <fweimer@bfk.de>, <linux-net@vger.kernel.org>,
-        "Matt Domsch" <Matt_Domsch@dell.com>,
-        "Michael Di Domenico" <mdidomenico4@gmail.com>,
-        <linux-kernel@vger.kernel.org>, <kay.sievers@vrfy.org>
-X-OriginalArrivalTime: 12 Jul 2010 16:56:33.0258 (UTC) FILETIME=[2E8E94A0:01CB21E3]
-X-TM-AS-Product-Ver: SMEX-8.0.0.4125-6.000.1038-17500.007
-X-TM-AS-Result: No--19.585100-8.000000-31
-X-TM-AS-User-Approved-Sender: No
-X-TM-AS-User-Blocked-Sender: No
+	Mon, 12 Jul 2010 12:56:53 -0400
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: miklos@szeredi.hu, hch@infradead.org, viro@zeniv.linux.org.uk,
+        adilger@sun.com, corbet@lwn.net, neilb@suse.de, npiggin@suse.de,
+        hooanon05@yahoo.co.jp, bfields@fieldses.org,
+        linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+        philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+In-reply-to: <87d3utyr2o.fsf@linux.vnet.ibm.com>
+	(aneesh.kumar@linux.vnet.ibm.com)
+Subject: Re: [PATCH -V16 04/12] vfs: Allow handle based open on symlinks
+References: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1278916545-19751-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <E1OYEIL-0005si-EO@pomaz-ex.szeredi.hu> <87d3utyr2o.fsf@linux.vnet.ibm.com>
+Message-Id: <E1OYMIx-0006z5-F9@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Mon, 12 Jul 2010 18:56:31 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Steve Fink [mailto:sphink@gmail.com]
-> Sent: July 09, 2010 5:27 PM
-> To: Loke, Chetan
-> Cc: Florian Weimer; linux-net@vger.kernel.org; Matt Domsch; Michael Di
-> Domenico; linux-kernel@vger.kernel.org; kay.sievers@vrfy.org
-> Subject: Re: nic enumeration
+On Mon, 12 Jul 2010, Aneesh Kumar K. V wrote:
+> On Mon, 12 Jul 2010 10:23:21 +0200, Miklos Szeredi <miklos@szeredi.hu> wrote:
+> > On Mon, 12 Jul 2010, Aneesh Kumar K.V wrote:
+> > > The patch update may_open to allow handle based open on symlinks.
+> > > The file handle based API use file descritor returned from open_by_handle_at
+> > > to do different file system operations. To find the link target name we
+> > > need to get a file descriptor on symlinks.
+> > > 
+> > > We should be able to read the link target using file handle. The exact
+> > > usecase is with respect to implementing READLINK operation on a
+> > > userspace NFS server. The request contain the file handle and the
+> > > response include target name.
+> > > 
+> > > Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> > > ---
+> > >  fs/namei.c         |   10 +++++++++-
+> > >  fs/open.c          |    9 ++++++++-
+> > >  include/linux/fs.h |    1 +
+> > >  3 files changed, 18 insertions(+), 2 deletions(-)
+> > > 
+> > > diff --git a/fs/namei.c b/fs/namei.c
+> > > index 4d590a3..a6a8093 100644
+> > > --- a/fs/namei.c
+> > > +++ b/fs/namei.c
+> > > @@ -1456,7 +1456,15 @@ int may_open(struct path *path, int acc_mode, int flag)
+> > >  
+> > >  	switch (inode->i_mode & S_IFMT) {
+> > >  	case S_IFLNK:
+> > > -		return -ELOOP;
+> > > +		/*
+> > > +		 * Allow only if acc_mode contain
+> > > +		 * open link request and read request.
+> > > +		 */
+> > > +		if (acc_mode != (MAY_OPEN_LINK | MAY_READ))
+> > 
+> > Why require MAY_READ? 
 > 
-> 
-> Your problem is different from the one that began this thread. Can you
-> describe your situation more fully?
-> 
+> a value of 0x0 for flag in open(2) implies a read ?
 
-Sorry guys, I thought I mentioned my requirement. And I apologize for
-pulling in my discussion in this thread.
+Yes.
 
-Requirement:
-I've a box with 'M' NICs. During install time, all the h/w config is
-static, customers will configure the box. They would say use 'ethX' for
-task-foo and 'ethY' for task-bar.
-All this while our-apps where happy because we would never modify the
-h/w config(single NIC vendor). So the configuration was pretty static.
-However, we now let customers add/replace NICs from different vendors(so
-different drivers will get loaded).The older 'ethX' might now map to a
-newly-inserted-NICs-mac. So I would now like an 'ethX' agnostic way of
-addressing the NICs and BTW we can't reboot the box[look below why].
+However a value of 0x3 is not defined in POSIX, and in linux it's a
+sort of weird O_NOACCESS: it requires both read and write permission
+on the file but allows neither read or write.
 
-Possible solution:
-S1)I thought symlink[or a reference etc] would solve this problem. 
-S2)I have another idea in mind(using mac-ids,enhance dev_ioctl[introduce
-SIOCGHWADDR_TO_IFNAMEINDEXMAP] and traverse
-for_each_netdev::for_each_dev_addrs) but I will wait for everyone's
-suggestions because there might be an easy way.
+Requiring permission is because on device files the open can have side
+effects.  Not sure if open_by_handle() really wants to allow device
+opens, that's another thing to think about.
 
-Why can't I reboot?
-Imagine the above configuration within a VM. Some customers have as many
-as 75+ VMs deployed and we cannot afford to reboot the VMs after adding
-a new (virtual)vNIC. The newly added vNIC is seen by the guest as if it
-were a hot-insertion.
-
-
-> I only partially understand your problem, but I am still wondering if
-> my bridge idea would work for you. (Preferably combined with udev
-> rules or whatever so the bridges are unnecessary after the next
-> reboot.)
-
-Why a bridge? Just to get around naming issues?
-
-Regards
-Chetan Loke
+Thanks,
+Miklos
