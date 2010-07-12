@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754852Ab0GLNGM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 09:06:12 -0400
-Received: from www.tglx.de ([62.245.132.106]:42498 "EHLO www.tglx.de"
+	id S1754758Ab0GLNPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 09:15:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45272 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751683Ab0GLNGL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 09:06:11 -0400
-Date: Mon, 12 Jul 2010 15:05:30 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhltc@us.ibm.com>
-cc: linux-kernel@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>,
-        Ingo Molnar <mingo@elte.hu>, Eric Dumazet <eric.dumazet@gmail.com>,
-        John Kacur <jkacur@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-        Mike Galbraith <efault@gmx.de>, linux-rt-users@vger.kernel.org
-Subject: Re: [PATCH 4/4] futex: convert hash_bucket locks to raw_spinlock_t
-In-Reply-To: <1278714780-788-5-git-send-email-dvhltc@us.ibm.com>
-Message-ID: <alpine.LFD.2.00.1007121503010.3321@localhost.localdomain>
-References: <1278714780-788-1-git-send-email-dvhltc@us.ibm.com> <1278714780-788-5-git-send-email-dvhltc@us.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751497Ab0GLNPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 09:15:04 -0400
+Message-ID: <4C3B1554.7000005@redhat.com>
+Date: Mon, 12 Jul 2010 16:15:00 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 1/9] KVM: MMU: fix forgot reserved bits check in speculative
+ path
+References: <4C330918.6040709@cn.fujitsu.com> <4C39B81A.5080000@redhat.com> <4C3A7FEA.6030205@cn.fujitsu.com>
+In-Reply-To: <4C3A7FEA.6030205@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jul 2010, Darren Hart wrote:
+On 07/12/2010 05:37 AM, Xiao Guangrong wrote:
+>    
+>>> +    if (is_rsvd_bits_set(vcpu, gentry, PT_PAGE_TABLE_LEVEL))
+>>> +        gentry = 0;
+>>> +
+>>>
+>>>        
+>> That only works if the gpte is for the same mode as the current vcpu mmu
+>> mode.  In some cases it is too strict (vcpu in pae mode writing a 32-bit
+>> gpte), which is not too bad, in some cases it is too permissive (vcpu in
+>> nonpae mode writing a pae gpte).
+>>
+>>      
+> Avi, thanks for your review.
+>
+> Do you mean that the VM has many different mode vcpu? For example, both
+> nonpae vcpu and pae vcpu are running in one VM? I forgot to consider this
+> case.
+>    
 
-> The requeue_pi mechanism introduced proxy locking of the rtmutex.  This creates
-> a scenario where a task can wake-up, not knowing it has been enqueued on an
-> rtmutex. In order to detect this, the task would have to be able to take either
-> task->pi_blocked_on->lock->wait_lock and/or the hb->lock.  Unfortunately,
-> without already holding one of these, the pi_blocked_on variable can change
-> from NULL to valid or from valid to NULL. Therefor, the task cannot be allowed
-> to take a sleeping lock after wakeup or it could end up trying to block on two
-> locks, the second overwriting a valid pi_blocked_on value. This obviously
-> breaks the pi mechanism.
-> 
-> This patch increases latency, while running the ltp pthread_cond_many test
-> which Michal reported the bug with, I see double digit hrtimer latencies
-> (typically only on the first run after boo):
-> 
-> 	kernel: hrtimer: interrupt took 75911 ns
+Yes.  This happens while the guest brings up other vcpus, and when using 
+nested virtualization.
 
-Eewwww. There must be some more intelligent and less intrusive way to
-detect this.
+>> (once upon a time mixed modes were rare, only on OS setup, but with
+>> nested virt they happen all the time).
+>>      
+> I'm afraid it's still has problem, it will cause access corruption:
+> 1: if nonpae vcpu write pae gpte, it will miss NX bit
+> 2: if pae vcpu write nonpae gpte, it will add NX bit that over gpte's width
+>
+> How about only update the shadow page which has the same pae set with the written
+> vcpu? Just like this:
+>
+> @@ -3000,6 +3000,10 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>                  while (npte--) {
+>                          entry = *spte;
+>                          mmu_pte_write_zap_pte(vcpu, sp, spte);
+> +
+> +                       if (!!is_pae(vcpu) != sp->role.cr4_pae)
+> +                               continue;
+> +
+>    
 
-Thanks,
+Not enough, one vcpu can have nx set while the other has it reset, etc.
 
-	tglx
+-- 
+error compiling committee.c: too many arguments to function
+
