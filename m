@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab0GLWuH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:50:07 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:56309 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755479Ab0GLWuD (ORCPT
+	id S1755921Ab0GLWvB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:51:01 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57328 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755479Ab0GLWvA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:50:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Vefxbc8rrZU5wfMXnvAVqs2SV0MlG23lhowX9bXUVUfDxSBF3K2/oVKXTf9EZoSPo7
-         GNhMMCiTXl2ZZFNO5KhXLIP5CUzoWd1seC2S3K+hvtadTN1QXEw7L91mYl9+Q37OKt35
-         PaBWNqLkucxDe50NdEUuKn553wJj7KuLGKiYM=
-From: Roel Van Nyen <roel.vannyen@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Forest Bond <forest@alittletooquiet.net>, linux-kernel@vger.kernel.org,
-        Roel Van Nyen <roel.vannyen@gmail.com>
-Subject: [PATCH] Staging: vt6656: Remove the ULONG_PTR and DWORD_PTR defines from ttype.h
-Date: Tue, 13 Jul 2010 00:49:57 +0200
-Message-Id: <1278974997-27141-1-git-send-email-roel.vannyen@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Mon, 12 Jul 2010 18:51:00 -0400
+Date: Mon, 12 Jul 2010 15:49:49 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: Jean Delvare <khali@linux-fr.org>, Randy Dunlap <rdunlap@xenotime.net>,
+        Hans de Goede <hdegoede@redhat.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Joe Perches <joe@perches.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Paul Goyette <paul@whooppee.com>, lm-sensors@lm-sensors.org,
+        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org
+Subject: Re: [PATCH v2] hwmon: Add support for JEDEC JC 42.4 compliant
+ temperature sensors
+Message-Id: <20100712154949.3230beec.akpm@linux-foundation.org>
+In-Reply-To: <1278859984-22593-1-git-send-email-guenter.roeck@ericsson.com>
+References: <1278859984-22593-1-git-send-email-guenter.roeck@ericsson.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the ULONG and DWORD PTR defines from ttype.h
+On Sun, 11 Jul 2010 07:53:04 -0700
+Guenter Roeck <guenter.roeck@ericsson.com> wrote:
 
-Signed-of-by: Roel Van Nyen <roel.vannyen@gmail.com>
----
- drivers/staging/vt6656/bssdb.c |    8 ++++----
- drivers/staging/vt6656/ttype.h |    3 ---
- 2 files changed, 4 insertions(+), 7 deletions(-)
+> +static int jc42_probe(struct i2c_client *new_client,
+> +		      const struct i2c_device_id *id)
+> +{
+> +	struct jc42_data *data;
+> +	int config, cap, err;
+> +
+> +	data = kzalloc(sizeof(struct jc42_data), GFP_KERNEL);
+> +	if (!data) {
+> +		err = -ENOMEM;
+> +		goto exit;
+> +	}
+> +
+> +	i2c_set_clientdata(new_client, data);
+> +	data->valid = false;
 
-diff --git a/drivers/staging/vt6656/bssdb.c b/drivers/staging/vt6656/bssdb.c
-index 830dd23..0b8584b 100644
---- a/drivers/staging/vt6656/bssdb.c
-+++ b/drivers/staging/vt6656/bssdb.c
-@@ -469,7 +469,7 @@ BOOL BSSbInsertToBSSList(void *hDeviceContext,
- 	unsigned int uLen = pRSNWPA->len + 2;
- 
- 	if (uLen <= (uIELength -
--		     (unsigned int) (ULONG_PTR) ((PBYTE) pRSNWPA - pbyIEs))) {
-+		     (unsigned int) (unsigned long) ((PBYTE) pRSNWPA - pbyIEs))) {
- 		pBSSList->wWPALen = uLen;
- 		memcpy(pBSSList->byWPAIE, pRSNWPA, uLen);
- 		WPA_ParseRSN(pBSSList, pRSNWPA);
-@@ -482,7 +482,7 @@ BOOL BSSbInsertToBSSList(void *hDeviceContext,
- 	unsigned int uLen = pRSN->len + 2;
- 
- 	if (uLen <= (uIELength -
--		     (unsigned int) (ULONG_PTR) ((PBYTE) pRSN - pbyIEs))) {
-+		     (unsigned int) (unsigned long) ((PBYTE) pRSN - pbyIEs))) {
- 		pBSSList->wRSNLen = uLen;
- 		memcpy(pBSSList->byRSNIE, pRSN, uLen);
- 		WPA2vParseRSN(pBSSList, pRSN);
-@@ -674,7 +674,7 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
-    if (pRSNWPA != NULL) {
- 	unsigned int uLen = pRSNWPA->len + 2;
- 	if (uLen <= (uIELength -
--		     (unsigned int) (ULONG_PTR) ((PBYTE) pRSNWPA - pbyIEs))) {
-+		     (unsigned int) (unsigned long) ((PBYTE) pRSNWPA - pbyIEs))) {
- 		pBSSList->wWPALen = uLen;
- 		memcpy(pBSSList->byWPAIE, pRSNWPA, uLen);
- 		WPA_ParseRSN(pBSSList, pRSNWPA);
-@@ -686,7 +686,7 @@ BOOL BSSbUpdateToBSSList(void *hDeviceContext,
-     if (pRSN != NULL) {
- 	unsigned int uLen = pRSN->len + 2;
- 	if (uLen <= (uIELength -
--			(unsigned int) (ULONG_PTR) ((PBYTE) pRSN - pbyIEs))) {
-+			(unsigned int) (unsigned long) ((PBYTE) pRSN - pbyIEs))) {
- 		pBSSList->wRSNLen = uLen;
- 		memcpy(pBSSList->byRSNIE, pRSN, uLen);
- 		WPA2vParseRSN(pBSSList, pRSN);
-diff --git a/drivers/staging/vt6656/ttype.h b/drivers/staging/vt6656/ttype.h
-index 3425773..42091c4 100644
---- a/drivers/staging/vt6656/ttype.h
-+++ b/drivers/staging/vt6656/ttype.h
-@@ -83,9 +83,6 @@ typedef UQuadWord       QWORD;          // 64-bit
- 
- /****** Common pointer types ***********************************************/
- 
--typedef unsigned long   ULONG_PTR;      // 32-bit
--typedef unsigned long   DWORD_PTR;      // 32-bit
--
- // boolean pointer
- typedef unsigned int *   PUINT;
- 
--- 
-1.7.0.4
+I think it would be acceptable to assume that memset(..., 0, ...) sets
+a bool to `false' ;)
 
+
+> +	mutex_init(&data->update_lock);
