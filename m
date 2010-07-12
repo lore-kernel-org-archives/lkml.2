@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755764Ab0GLUyM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:54:12 -0400
+	id S1754847Ab0GLUuy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:50:54 -0400
 Received: from mail.perches.com ([173.55.12.10]:1760 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754863Ab0GLUu5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 16:50:57 -0400
+	id S1754711Ab0GLUut (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 16:50:49 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Steve French <sfrench@samba.org>,
-        linux-cifs@vger.kernel.org, samba-technical@lists.samba.org
-Subject: [PATCH 22/36] fs/cifs: Remove unnecessary casts of private_data
-Date: Mon, 12 Jul 2010 13:50:14 -0700
-Message-Id: <50f719e6afc5504af06be41c057062f625615a0b.1278967121.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+        linux-s390@vger.kernel.org
+Subject: [PATCH 15/36] drivers/s390: Remove unnecessary casts of private_data
+Date: Mon, 12 Jul 2010 13:50:07 -0700
+Message-Id: <4450e89c24fcd49ba08ea585ab1d145f8ebf1f06.1278967121.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.337.g6068.dirty
 In-Reply-To: <cover.1278967120.git.joe@perches.com>
 References: <cover.1278967120.git.joe@perches.com>
@@ -22,145 +23,136 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- fs/cifs/file.c  |   24 ++++++++++--------------
- fs/cifs/inode.c |    4 ++--
- fs/cifs/ioctl.c |    3 +--
- 3 files changed, 13 insertions(+), 18 deletions(-)
+ drivers/s390/block/dasd_eer.c  |    6 +++---
+ drivers/s390/char/tape_block.c |    4 ++--
+ drivers/s390/char/tape_char.c  |    8 ++++----
+ drivers/s390/char/vmcp.c       |    6 +++---
+ 4 files changed, 12 insertions(+), 12 deletions(-)
 
-diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-index 409e4f5..b5fb2a0 100644
---- a/fs/cifs/file.c
-+++ b/fs/cifs/file.c
-@@ -427,7 +427,7 @@ static int cifs_reopen_file(struct file *file, bool can_flush)
- 	__u16 netfid;
+diff --git a/drivers/s390/block/dasd_eer.c b/drivers/s390/block/dasd_eer.c
+index dd88803..75688af 100644
+--- a/drivers/s390/block/dasd_eer.c
++++ b/drivers/s390/block/dasd_eer.c
+@@ -572,7 +572,7 @@ static int dasd_eer_close(struct inode *inp, struct file *filp)
+ 	struct eerbuffer *eerb;
+ 	unsigned long flags;
  
- 	if (file->private_data)
--		pCifsFile = (struct cifsFileInfo *)file->private_data;
-+		pCifsFile = file->private_data;
- 	else
- 		return -EBADF;
+-	eerb = (struct eerbuffer *) filp->private_data;
++	eerb = filp->private_data;
+ 	spin_lock_irqsave(&bufferlock, flags);
+ 	list_del(&eerb->list);
+ 	spin_unlock_irqrestore(&bufferlock, flags);
+@@ -591,7 +591,7 @@ static ssize_t dasd_eer_read(struct file *filp, char __user *buf,
+         unsigned long flags;
+ 	struct eerbuffer *eerb;
  
-@@ -565,8 +565,7 @@ int cifs_close(struct inode *inode, struct file *file)
- 	int xid, timeout;
- 	struct cifs_sb_info *cifs_sb;
- 	struct cifsTconInfo *pTcon;
--	struct cifsFileInfo *pSMBFile =
--		(struct cifsFileInfo *)file->private_data;
-+	struct cifsFileInfo *pSMBFile = file->private_data;
+-	eerb = (struct eerbuffer *) filp->private_data;
++	eerb = filp->private_data;
+ 	if (mutex_lock_interruptible(&readbuffer_mutex))
+ 		return -ERESTARTSYS;
  
- 	xid = GetXid();
+@@ -653,7 +653,7 @@ static unsigned int dasd_eer_poll(struct file *filp, poll_table *ptable)
+ 	unsigned long flags;
+ 	struct eerbuffer *eerb;
  
-@@ -641,8 +640,7 @@ int cifs_closedir(struct inode *inode, struct file *file)
+-	eerb = (struct eerbuffer *) filp->private_data;
++	eerb = filp->private_data;
+ 	poll_wait(filp, &dasd_eer_read_wait_queue, ptable);
+ 	spin_lock_irqsave(&bufferlock, flags);
+ 	if (eerb->head != eerb->tail)
+diff --git a/drivers/s390/char/tape_block.c b/drivers/s390/char/tape_block.c
+index b7de025..d448fe5 100644
+--- a/drivers/s390/char/tape_block.c
++++ b/drivers/s390/char/tape_block.c
+@@ -296,7 +296,7 @@ tapeblock_revalidate_disk(struct gendisk *disk)
+ 	unsigned int		nr_of_blks;
+ 	int			rc;
+ 
+-	device = (struct tape_device *) disk->private_data;
++	device = disk->private_data;
+ 	BUG_ON(!device);
+ 
+ 	if (!device->blk_data.medium_changed)
+@@ -345,7 +345,7 @@ tapeblock_medium_changed(struct gendisk *disk)
  {
- 	int rc = 0;
- 	int xid;
--	struct cifsFileInfo *pCFileStruct =
--	    (struct cifsFileInfo *)file->private_data;
-+	struct cifsFileInfo *pCFileStruct = file->private_data;
- 	char *ptmp;
+ 	struct tape_device *device;
  
- 	cFYI(1, "Closedir inode = 0x%p", inode);
-@@ -863,8 +861,7 @@ int cifs_lock(struct file *file, int cmd, struct file_lock *pfLock)
- 				      length, pfLock,
- 				      posix_lock_type, wait_flag);
- 	} else {
--		struct cifsFileInfo *fid =
--			(struct cifsFileInfo *)file->private_data;
-+		struct cifsFileInfo *fid = file->private_data;
+-	device = (struct tape_device *) disk->private_data;
++	device = disk->private_data;
+ 	DBF_LH(6, "tapeblock_medium_changed(%p) = %d\n",
+ 		device, device->blk_data.medium_changed);
  
- 		if (numLock) {
- 			rc = CIFSSMBLock(xid, tcon, netfid, length,
-@@ -965,7 +962,7 @@ ssize_t cifs_user_write(struct file *file, const char __user *write_data,
+diff --git a/drivers/s390/char/tape_char.c b/drivers/s390/char/tape_char.c
+index 539045a..bd037d2 100644
+--- a/drivers/s390/char/tape_char.c
++++ b/drivers/s390/char/tape_char.c
+@@ -134,7 +134,7 @@ tapechar_read(struct file *filp, char __user *data, size_t count, loff_t *ppos)
+ 	int rc;
  
- 	if (file->private_data == NULL)
- 		return -EBADF;
--	open_file = (struct cifsFileInfo *) file->private_data;
-+	open_file = file->private_data;
+ 	DBF_EVENT(6, "TCHAR:read\n");
+-	device = (struct tape_device *) filp->private_data;
++	device = filp->private_data;
  
- 	rc = generic_write_checks(file, poffset, &write_size, 0);
- 	if (rc)
-@@ -1067,7 +1064,7 @@ static ssize_t cifs_write(struct file *file, const char *write_data,
+ 	/*
+ 	 * If the tape isn't terminated yet, do it now. And since we then
+@@ -199,7 +199,7 @@ tapechar_write(struct file *filp, const char __user *data, size_t count, loff_t
+ 	int i, rc;
  
- 	if (file->private_data == NULL)
- 		return -EBADF;
--	open_file = (struct cifsFileInfo *)file->private_data;
-+	open_file = file->private_data;
+ 	DBF_EVENT(6, "TCHAR:write\n");
+-	device = (struct tape_device *) filp->private_data;
++	device = filp->private_data;
+ 	/* Find out block size and number of blocks */
+ 	if (device->char_data.block_size != 0) {
+ 		if (count < device->char_data.block_size) {
+@@ -317,7 +317,7 @@ tapechar_release(struct inode *inode, struct file *filp)
+ 	struct tape_device *device;
  
- 	xid = GetXid();
+ 	DBF_EVENT(6, "TCHAR:release: %x\n", iminor(inode));
+-	device = (struct tape_device *) filp->private_data;
++	device = filp->private_data;
  
-@@ -1651,8 +1648,7 @@ int cifs_fsync(struct file *file, int datasync)
- 	int xid;
- 	int rc = 0;
- 	struct cifsTconInfo *tcon;
--	struct cifsFileInfo *smbfile =
--		(struct cifsFileInfo *)file->private_data;
-+	struct cifsFileInfo *smbfile = file->private_data;
- 	struct inode *inode = file->f_path.dentry->d_inode;
+ 	/*
+ 	 * If this is the rewinding tape minor then rewind. In that case we
+@@ -454,7 +454,7 @@ tapechar_ioctl(struct file *filp, unsigned int no, unsigned long data)
  
- 	xid = GetXid();
-@@ -1756,7 +1752,7 @@ ssize_t cifs_user_read(struct file *file, char __user *read_data,
- 		FreeXid(xid);
- 		return rc;
+ 	DBF_EVENT(6, "TCHAR:ioct\n");
+ 
+-	device = (struct tape_device *) filp->private_data;
++	device = filp->private_data;
+ 	mutex_lock(&device->mutex);
+ 	rc = __tapechar_ioctl(device, no, data);
+ 	mutex_unlock(&device->mutex);
+diff --git a/drivers/s390/char/vmcp.c b/drivers/s390/char/vmcp.c
+index 04e532e..19a14d9 100644
+--- a/drivers/s390/char/vmcp.c
++++ b/drivers/s390/char/vmcp.c
+@@ -47,7 +47,7 @@ static int vmcp_release(struct inode *inode, struct file *file)
+ {
+ 	struct vmcp_session *session;
+ 
+-	session = (struct vmcp_session *)file->private_data;
++	session = file->private_data;
+ 	file->private_data = NULL;
+ 	free_pages((unsigned long)session->response, get_order(session->bufsize));
+ 	kfree(session);
+@@ -94,7 +94,7 @@ vmcp_write(struct file *file, const char __user *buff, size_t count,
+ 		return -EFAULT;
  	}
--	open_file = (struct cifsFileInfo *)file->private_data;
-+	open_file = file->private_data;
+ 	cmd[count] = '\0';
+-	session = (struct vmcp_session *)file->private_data;
++	session = file->private_data;
+ 	if (mutex_lock_interruptible(&session->mutex)) {
+ 		kfree(cmd);
+ 		return -ERESTARTSYS;
+@@ -136,7 +136,7 @@ static long vmcp_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	int __user *argp;
+ 	int temp;
  
- 	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
- 		cFYI(1, "attempting read on write only file instance");
-@@ -1837,7 +1833,7 @@ static ssize_t cifs_read(struct file *file, char *read_data, size_t read_size,
- 		FreeXid(xid);
- 		return rc;
- 	}
--	open_file = (struct cifsFileInfo *)file->private_data;
-+	open_file = file->private_data;
- 
- 	if ((file->f_flags & O_ACCMODE) == O_WRONLY)
- 		cFYI(1, "attempting read on write only file instance");
-@@ -1968,7 +1964,7 @@ static int cifs_readpages(struct file *file, struct address_space *mapping,
- 		FreeXid(xid);
- 		return rc;
- 	}
--	open_file = (struct cifsFileInfo *)file->private_data;
-+	open_file = file->private_data;
- 	cifs_sb = CIFS_SB(file->f_path.dentry->d_sb);
- 	pTcon = cifs_sb->tcon;
- 
-diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-index 107c84d..ee08248 100644
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -288,7 +288,7 @@ int cifs_get_file_info_unix(struct file *filp)
- 	struct inode *inode = filp->f_path.dentry->d_inode;
- 	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
- 	struct cifsTconInfo *tcon = cifs_sb->tcon;
--	struct cifsFileInfo *cfile = (struct cifsFileInfo *) filp->private_data;
-+	struct cifsFileInfo *cfile = filp->private_data;
- 
- 	xid = GetXid();
- 	rc = CIFSSMBUnixQFileInfo(xid, tcon, cfile->netfid, &find_data);
-@@ -515,7 +515,7 @@ int cifs_get_file_info(struct file *filp)
- 	struct inode *inode = filp->f_path.dentry->d_inode;
- 	struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
- 	struct cifsTconInfo *tcon = cifs_sb->tcon;
--	struct cifsFileInfo *cfile = (struct cifsFileInfo *) filp->private_data;
-+	struct cifsFileInfo *cfile = filp->private_data;
- 
- 	xid = GetXid();
- 	rc = CIFSSMBQFileInfo(xid, tcon, cfile->netfid, &find_data);
-diff --git a/fs/cifs/ioctl.c b/fs/cifs/ioctl.c
-index 505926f..9d38a71 100644
---- a/fs/cifs/ioctl.c
-+++ b/fs/cifs/ioctl.c
-@@ -41,8 +41,7 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
- 	__u64	ExtAttrMask = 0;
- 	__u64   caps;
- 	struct cifsTconInfo *tcon;
--	struct cifsFileInfo *pSMBFile =
--		(struct cifsFileInfo *)filep->private_data;
-+	struct cifsFileInfo *pSMBFile = filep->private_data;
- #endif /* CONFIG_CIFS_POSIX */
- 
- 	xid = GetXid();
+-	session = (struct vmcp_session *)file->private_data;
++	session = file->private_data;
+ 	if (is_compat_task())
+ 		argp = compat_ptr(arg);
+ 	else
 -- 
 1.7.1.337.g6068.dirty
 
