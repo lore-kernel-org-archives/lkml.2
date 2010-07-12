@@ -1,20 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755434Ab0GLUvX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:51:23 -0400
+	id S1755300Ab0GLUvO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:51:14 -0400
 Received: from mail.perches.com ([173.55.12.10]:1799 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755132Ab0GLUvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 16:51:09 -0400
+	id S1755106Ab0GLUvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 16:51:07 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        alsa-devel@alsa-project.org
-Subject: [PATCH 35/36] sound/soc/davinci: Remove unnecessary casts of private_data
-Date: Mon, 12 Jul 2010 13:50:27 -0700
-Message-Id: <4cdf03e6ab6a80a90be8aff33f8261a3cb367676.1278967121.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        netdev@vger.kernel.org
+Subject: [PATCH 31/36] net/core: Remove unnecessary casts of private_data
+Date: Mon, 12 Jul 2010 13:50:23 -0700
+Message-Id: <217e404708d336ed1ad3254c5ea6626ee94b6a3d.1278967121.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.337.g6068.dirty
 In-Reply-To: <cover.1278967120.git.joe@perches.com>
 References: <cover.1278967120.git.joe@perches.com>
@@ -24,22 +22,31 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- sound/soc/davinci/davinci-pcm.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ net/core/pktgen.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/sound/soc/davinci/davinci-pcm.c b/sound/soc/davinci/davinci-pcm.c
-index 2dc406f..def454e 100644
---- a/sound/soc/davinci/davinci-pcm.c
-+++ b/sound/soc/davinci/davinci-pcm.c
-@@ -800,7 +800,7 @@ static void davinci_pcm_free(struct snd_pcm *pcm)
- 		dma_free_writecombine(pcm->card->dev, buf->bytes,
- 				      buf->area, buf->addr);
- 		buf->area = NULL;
--		iram_dma = (struct snd_dma_buffer *)buf->private_data;
-+		iram_dma = buf->private_data;
- 		if (iram_dma) {
- 			sram_free(iram_dma->area, iram_dma->bytes);
- 			kfree(iram_dma);
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 1ee2ebd..24a19de 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -846,7 +846,7 @@ static ssize_t pktgen_if_write(struct file *file,
+ 			       const char __user * user_buffer, size_t count,
+ 			       loff_t * offset)
+ {
+-	struct seq_file *seq = (struct seq_file *)file->private_data;
++	struct seq_file *seq = file->private_data;
+ 	struct pktgen_dev *pkt_dev = seq->private;
+ 	int i = 0, max, len;
+ 	char name[16], valstr[32];
+@@ -1776,7 +1776,7 @@ static ssize_t pktgen_thread_write(struct file *file,
+ 				   const char __user * user_buffer,
+ 				   size_t count, loff_t * offset)
+ {
+-	struct seq_file *seq = (struct seq_file *)file->private_data;
++	struct seq_file *seq = file->private_data;
+ 	struct pktgen_thread *t = seq->private;
+ 	int i = 0, max, len, ret;
+ 	char name[40];
 -- 
 1.7.1.337.g6068.dirty
 
