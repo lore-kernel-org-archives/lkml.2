@@ -1,66 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753375Ab0GLICf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 04:02:35 -0400
-Received: from ozlabs.org ([203.10.76.45]:36178 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751742Ab0GLICd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 04:02:33 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Subject: Re: [RFC PATCH] x86-64: software IRQ masking and handling
-Date: Mon, 12 Jul 2010 17:32:24 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        "the arch/x86 maintainers" <x86@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-References: <4C3A06E3.50402@kernel.org> <AANLkTim5a4OxT518REsmNow-wo3T2qdkUORv876Adcqj@mail.gmail.com> <1278911493.2538.204.camel@edumazet-laptop>
-In-Reply-To: <1278911493.2538.204.camel@edumazet-laptop>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007121732.26092.rusty@rustcorp.com.au>
+	id S1753970Ab0GLID3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 04:03:29 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:49125 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751018Ab0GLID1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 04:03:27 -0400
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+CC: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+        corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
+        bfields@fieldses.org, linux-fsdevel@vger.kernel.org,
+        sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+        linux-kernel@vger.kernel.org, aneesh.kumar@linux.vnet.ibm.com
+In-reply-to: <1278916545-19751-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [PATCH -V16 05/12] vfs: Support null pathname in readlink
+References: <1278916545-19751-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1278916545-19751-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Message-Id: <E1OYDyZ-0005pL-OV@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Mon, 12 Jul 2010 10:02:55 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010 02:41:33 pm Eric Dumazet wrote:
-> Two changes are possible :
+On Mon, 12 Jul 2010, Aneesh Kumar K.V wrote:
+> From: NeilBrown <neilb@suse.de>
 > 
-> 1) Get rid of the cpu_online_mask (its a const pointer to a known
-> target). I cant see a reason for its need it actually...
-
-There was a reason, but I'm trying to remember it.
-
-ISTR, it was to catch direct frobbing of the masks.  That was important:
-we were converting code everywhere to hand around cpumasks by ptr
-rather than by copy.  But that semantic change meant that a function which
-previously harmlessly frobbed a copy would now frob (say) cpu_online_mask.
-
-However, ((const struct cpumask *)cpu_online_bits)) would work for that
-too.  (Well, renaming cpu_online_bits to __cpu_online_bits would be better
-since it's not non-static).
-
-Ideally, those masks too would be dynamically allocated.  But the boot
-changes required for that are best left until someone really needs > 64k
-CPUs.
-
-> 2) Dont use a the last const qualifier but __read_mostly to move
-> cpu_online_mask on same section.
+> This enables to use readlink to get the link target name
+> from a file descriptor point to the link. This can be used
+> with open_by_handle syscall that returns a file descriptor for a link.
+> We can then use this file descriptor to get the target name.
 > 
-> Rusty, could you comment on one or other way before I submit a patch ?
+> This is similar to utimensat(2) interface
+
+We could introduce pair of new helper functions to extract the common
+code from do_utimes() and this:
+
+  err = lookup_path_at(dfd, filename, atflags, &path, &file);
+  /* do something with path */
+  put_path_at(&path, file);
+
+Thanks,
+Miklos
+
+> Signed-off-by: NeilBrown <neilb@suse.de>
+> Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+> ---
+>  fs/stat.c |   30 ++++++++++++++++++++++--------
+>  1 files changed, 22 insertions(+), 8 deletions(-)
 > 
-> (Of course, possible/present/active have same problem)
-
-Yep.  Might want to do a patch to get rid of the remaining 100 references
-to cpu_online_map (etc) as well if you're feeling enthusiastic :)
-
-Thanks!
-Rusty.
+> diff --git a/fs/stat.c b/fs/stat.c
+> index c4ecd52..a66a0ef 100644
+> --- a/fs/stat.c
+> +++ b/fs/stat.c
+> @@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+>  SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+>  		char __user *, buf, int, bufsiz)
+>  {
+> -	struct path path;
+> -	int error;
+> +	int error = 0, fput_needed;
+> +	struct path path, *pp;
+> +	struct file *file = NULL;
+>  
+>  	if (bufsiz <= 0)
+>  		return -EINVAL;
+>  
+> -	error = user_path_at(dfd, pathname, 0, &path);
+> +	if (pathname == NULL && dfd != AT_FDCWD) {
+> +		file = fget_light(dfd, &fput_needed);
+> +
+> +		if (file)
+> +			pp = &file->f_path;
+> +		else
+> +			error = -EBADF;
+> +	} else {
+> +		error = user_path_at(dfd, pathname, 0, &path);
+> +		pp = &path;
+> +	}
+>  	if (!error) {
+> -		struct inode *inode = path.dentry->d_inode;
+> +		struct inode *inode = pp->dentry->d_inode;
+>  
+>  		error = -EINVAL;
+>  		if (inode->i_op->readlink) {
+> -			error = security_inode_readlink(path.dentry);
+> +			error = security_inode_readlink(pp->dentry);
+>  			if (!error) {
+> -				touch_atime(path.mnt, path.dentry);
+> -				error = inode->i_op->readlink(path.dentry,
+> +				touch_atime(pp->mnt, pp->dentry);
+> +				error = inode->i_op->readlink(pp->dentry,
+>  							      buf, bufsiz);
+>  			}
+>  		}
+> -		path_put(&path);
+> +		if (file)
+> +			fput_light(file, fput_needed);
+> +		else
+> +			path_put(&path);
+>  	}
+>  	return error;
+>  }
+> -- 
+> 1.7.2.rc1
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
