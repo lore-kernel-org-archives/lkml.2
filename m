@@ -1,152 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab0GLSVm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 14:21:42 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:48885 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756140Ab0GLSVk (ORCPT
+	id S1756593Ab0GLS0Z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 14:26:25 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:42928 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab0GLS0Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 14:21:40 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6041"; a="47235389"
-X-IronPort-AV: E=Sophos;i="4.55,188,1278313200"; 
-   d="scan'208";a="82192039"
-Message-ID: <4C3B5D68.5010809@qualcomm.com>
-Date: Mon, 12 Jul 2010 11:22:32 -0700
-From: Max Krasnyansky <maxk@qualcomm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Thunderbird/3.0.5
+	Mon, 12 Jul 2010 14:26:24 -0400
+Date: Mon, 12 Jul 2010 20:26:22 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Denys Vlasenko <vda.linux@googlemail.com>, Michal Marek <mmarek@suse.cz>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>, Takashi Iwai <tiwai@suse.de>,
+        linux-kernel@vger.kernel.org
+Subject: Re: Modpost error after changing CONFIG_SOUND from m to y
+Message-ID: <20100712182622.GA17551@merkur.ravnborg.org>
+References: <201007120554.16459.vda.linux@googlemail.com> <20100712100301.db1d3980.randy.dunlap@oracle.com> <AANLkTin88f83UV4HcqKtaXS7F2hMTe8YVJPpE-XLmo5J@mail.gmail.com> <20100712172847.GA17423@merkur.ravnborg.org> <AANLkTimTdQRCoWzCYZ7yBLYsKr4P812n8UR678hktJbO@mail.gmail.com> <20100712174114.GA17431@merkur.ravnborg.org> <AANLkTik8WV6kRwDK2N5M_hg7Opi0agLdIERK06GwhU0o@mail.gmail.com>
 MIME-Version: 1.0
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "lkml20100708@newton.leun.net" <lkml20100708@newton.leun.net>
-Subject: Re: Fw: sysfs bug when using tun with network namespaces
-References: <20100709132919.7871bee6@xenia.leun.net>
-In-Reply-To: <20100709132919.7871bee6@xenia.leun.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTik8WV6kRwDK2N5M_hg7Opi0agLdIERK06GwhU0o@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michael,
+On Mon, Jul 12, 2010 at 07:42:25PM +0200, Denys Vlasenko wrote:
+> On Mon, Jul 12, 2010 at 7:41 PM, Sam Ravnborg <sam@ravnborg.org> wrote:
+> >> >
+> >> > What is the intial reason why you assign CFLAGS_KERNEL and CFLAGS_MODULE?
+> >>
+> >> I want to add some flags to every compiler invocation.
+> >
+> >    make KCFLAGS=-DMYSTUFF
+> >
+> > is what you want to use then.
+> 
+> What to do if I want different options for kernel and for modules?
 
-On 07/09/2010 04:29 AM, Michael Leun wrote:
-> Hello,
->
->> # tunctl -u ml -t tap1
->
-> works as expected, but
->
->> # unshare -n /bin/bash
->> # tunctl -u ml -t tap1
+Use CFLAGS_KERNEL, CFLAGS_MODULE :-)
+But you then need to add "-DMODULE" to CLFAGS_MODULE because that
+is lost when you override these variables.
 
-Thanks for forwarding this report. I'll take a look and try to reproduce 
-and fix it when I get a chance.
+Maybe we should fix this...
+Relying on the user to add "-DMODULE" to CFLAGS_MODULE is just broken.
 
-Max
+Following patch fixes it so we free up CFLAGS_MODULE to
+be used by the user.
+It drops the potentially user visible "MODFLAGS".
+But alas I do not know of it being used...
 
+Comments?
 
+	Sam
 
+diff --git a/Makefile b/Makefile
+index f9835c8..c7c6fdd 100644
+--- a/Makefile
++++ b/Makefile
+@@ -332,9 +332,8 @@ CHECK		= sparse
+ 
+ CHECKFLAGS     := -D__linux__ -Dlinux -D__STDC__ -Dunix -D__unix__ \
+ 		  -Wbitwise -Wno-return-void $(CF)
+-MODFLAGS	= -DMODULE
+-CFLAGS_MODULE   = $(MODFLAGS)
+-AFLAGS_MODULE   = $(MODFLAGS)
++CFLAGS_MODULE   =
++AFLAGS_MODULE   =
+ LDFLAGS_MODULE  = -T $(srctree)/scripts/module-common.lds
+ CFLAGS_KERNEL	=
+ AFLAGS_KERNEL	=
+@@ -355,6 +354,7 @@ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+ 		   -Wno-format-security \
+ 		   -fno-delete-null-pointer-checks
+ KBUILD_AFLAGS   := -D__ASSEMBLY__
++KBUILD_MODFLAGS := -DMODULE
+ 
+ # Read KERNELRELEASE from include/config/kernel.release (if it exists)
+ KERNELRELEASE = $(shell cat include/config/kernel.release 2> /dev/null)
+@@ -368,7 +368,7 @@ export HOSTCXX HOSTCXXFLAGS LDFLAGS_MODULE CHECK CHECKFLAGS
+ 
+ export KBUILD_CPPFLAGS NOSTDINC_FLAGS LINUXINCLUDE OBJCOPYFLAGS LDFLAGS
+ export KBUILD_CFLAGS CFLAGS_KERNEL CFLAGS_MODULE CFLAGS_GCOV
+-export KBUILD_AFLAGS AFLAGS_KERNEL AFLAGS_MODULE
++export KBUILD_AFLAGS AFLAGS_KERNEL AFLAGS_MODULE KBUILD_MODFLAGS
+ 
+ # When compiling out-of-tree modules, put MODVERDIR in the module
+ # tree rather than in the kernel tree. The kernel tree might
+diff --git a/arch/mips/Makefile b/arch/mips/Makefile
+index 0b9c01a..2d77a2d 100644
+--- a/arch/mips/Makefile
++++ b/arch/mips/Makefile
+@@ -93,7 +93,7 @@ all-$(CONFIG_SYS_SUPPORTS_ZBOOT)+= vmlinuz
+ cflags-y			+= -G 0 -mno-abicalls -fno-pic -pipe
+ cflags-y			+= -msoft-float
+ LDFLAGS_vmlinux			+= -G 0 -static -n -nostdlib
+-MODFLAGS			+= -mlong-calls
++KBUILD_MODFLAGS			+= -mlong-calls
+ 
+ cflags-y += -ffreestanding
+ 
+@@ -185,7 +185,7 @@ cflags-$(CONFIG_CPU_DADDI_WORKAROUNDS)	+= $(call cc-option,-mno-daddi,)
+ 
+ ifdef CONFIG_CPU_SB1
+ ifdef CONFIG_SB1_PASS_1_WORKAROUNDS
+-MODFLAGS	+= -msb1-pass1-workarounds
++KBUILD_MODFLAGS	+= -msb1-pass1-workarounds
+ endif
+ endif
+ 
+diff --git a/arch/s390/Makefile b/arch/s390/Makefile
+index 30c5f01..16a3ef9 100644
+--- a/arch/s390/Makefile
++++ b/arch/s390/Makefile
+@@ -24,7 +24,7 @@ CHECKFLAGS	+= -D__s390__ -msize-long
+ else
+ LD_BFD		:= elf64-s390
+ LDFLAGS		:= -m elf64_s390
+-MODFLAGS	+= -fpic -D__PIC__
++KBUILD_MODFLAGS	+= -fpic -D__PIC__
+ KBUILD_CFLAGS	+= -m64
+ KBUILD_AFLAGS	+= -m64
+ UTS_MACHINE	:= s390x
+diff --git a/arch/score/Makefile b/arch/score/Makefile
+index 68e0cd0..c667f1d 100644
+--- a/arch/score/Makefile
++++ b/arch/score/Makefile
+@@ -20,7 +20,7 @@ cflags-y += -G0 -pipe -mel -mnhwloop -D__SCOREEL__ \
+ #
+ KBUILD_AFLAGS += $(cflags-y)
+ KBUILD_CFLAGS += $(cflags-y)
+-MODFLAGS += -mlong-calls
++KBUILD_MODFLAGS += -mlong-calls
+ LDFLAGS += --oformat elf32-littlescore
+ LDFLAGS_vmlinux	+= -G0 -static -nostdlib
+ 
+diff --git a/scripts/Makefile.build b/scripts/Makefile.build
+index e4deb73..c538f81 100644
+--- a/scripts/Makefile.build
++++ b/scripts/Makefile.build
+@@ -115,7 +115,10 @@ endif
+ # ---------------------------------------------------------------------------
+ 
+ # Default is built-in, unless we know otherwise
+-modkern_cflags = $(if $(part-of-module), $(CFLAGS_MODULE), $(CFLAGS_KERNEL))
++modkern_cflags =                                     \
++	$(if $(part-of-module),                      \
++		$(KBUILD_MODFLAGS) $(CFLAGS_MODULE), \
++		$(CFLAGS_KERNEL))
+ quiet_modtag := $(empty)   $(empty)
+ 
+ $(real-objs-m)        : part-of-module := y
+@@ -250,8 +253,8 @@ $(obj)/%.lst: $(src)/%.c FORCE
+ 
+ modkern_aflags := $(AFLAGS_KERNEL)
+ 
+-$(real-objs-m)      : modkern_aflags := $(AFLAGS_MODULE)
+-$(real-objs-m:.o=.s): modkern_aflags := $(AFLAGS_MODULE)
++$(real-objs-m)      : modkern_aflags := $(KBUILD_MODFLAGS) $(AFLAGS_MODULE)
++$(real-objs-m:.o=.s): modkern_aflags := $(KBUILD_MODFLAGS) $(AFLAGS_MODULE)
+ 
+ quiet_cmd_as_s_S = CPP $(quiet_modtag) $@
+ cmd_as_s_S       = $(CPP) $(a_flags)   -o $@ $< 
 
->
-> Jul  8 18:03:59 doris kernel: ------------[ cut here ]------------
-> Jul  8 18:03:59 doris kernel: kernel BUG at fs/sysfs/file.c:540!
-> Jul  8 18:03:59 doris kernel: invalid opcode: 0000 [#1] PREEMPT SMP
-> Jul  8 18:03:59 doris kernel: last sysfs
-> file: /sys/devices/virtual/misc/tun/dev Jul  8 18:03:59 doris kernel:
-> Modules linked in: tun snd_pcm_oss snd_mixer_oss snd_seq snd_seq_device
-> vboxnetadp vboxnetflt vboxdrv ipv6 cpufreq_conservative
-> cpufreq_ondemand cpufreq_userspace cpufreq_powersave acpi_cpufreq
-> speedstep_lib freq_table ipt_REJECT ipt_LOG xt_limit xt_recent xt_state
-> xt_tcpudp iptable_mangle iptable_nat iptable_filter nf_nat_ftp nf_nat
-> nf_conntrack_ipv4 nf_defrag_ipv4 nf_conntrack_ftp nf_conntrack
-> ip_tables x_tables fuse nls_utf8 loop snd_hda_codec_realtek arc4
-> snd_hda_intel ecb snd_hda_codec iwlagn snd_pcm iwlcore snd_timer
-> mac80211 snd cfg80211 soundcore intel_agp video usb_storage agpgart
-> i2c_i801 rfkill snd_page_alloc output button battery ac joydev sg evdev
-> tg3 edd ext4 jbd2 crc16 sha256_generic aes_i586 aes_generic cbc
-> dm_crypt linear rtc_cmos uhci_hcd rtc_core rtc_lib sd_mod crc_t10dif
-> ehci_hcd usbcore dm_snapshot dm_mod fan processor thermal [last
-> unloaded: tun] Jul  8 18:03:59 doris kernel: Jul  8 18:03:59 doris
-> kernel: Pid: 4320, comm: tunctl Not tainted 2.6.34.1 #3
-> Kuril                           /40684JG Jul  8 18:03:59 doris kernel:
-> EIP: 0060:[<c03129e1>] EFLAGS: 00010246 CPU: 0 Jul  8 18:03:59 doris
-> kernel: EIP is at sysfs_create_file+0x21/0x30 Jul  8 18:03:59 doris
-> kernel: EAX: 00000000 EBX: f66a73c0 ECX: f66a72bc EDX: f81587b4 Jul  8
-> 18:03:59 doris kernel: ESI: 00000000 EDI: f67a7f00 EBP: f68ade90 ESP:
-> f68ade90 Jul  8 18:03:59 doris kernel: DS: 007b ES: 007b FS: 00d8 GS:
-> 00e0 SS: 0068 Jul  8 18:03:59 doris kernel: Process tunctl (pid: 4320,
-> ti=f68ac000 task=f66e8f40 task.ti=f68ac000)
-> Jul  8 18:03:59 doris kernel: Stack:
-> Jul  8 18:03:59 doris kernel: f68ade98 c03e6da3 f68adf00 f8157fe0
-> f8158700 f48496c0 00000001 f66a7000
-> Jul  8 18:03:59 doris kernel:<0>  f6b63c00 bfe0fafc f68aded0 00000000
-> 00000000 000000ca b777a000 c1fbcca0
-> Jul  8 18:03:59 doris kernel:<0>  356e7574 00000000 00000000 00000000
-> 00001001 00000000 00000000 00000000
-> Jul  8 18:03:59 doris kernel: Call Trace:
-> Jul  8 18:03:59 doris kernel: [<c03e6da3>] ?
-> device_create_file+0x13/0x20 Jul  8 18:03:59 doris kernel:
-> [<f8157fe0>] ? tun_chr_ioctl+0x820/0xa26 [tun] Jul  8 18:03:59 doris
-> kernel: [<c02cd91d>] ? vfs_ioctl+0x2d/0xc0 Jul  8 18:03:59 doris
-> kernel: [<f81577c0>] ? tun_chr_ioctl+0x0/0xa26 [tun] Jul  8 18:03:59
-> doris kernel: [<c02cdafa>] ? do_vfs_ioctl+0x6a/0x5a0 Jul  8 18:03:59
-> doris kernel: [<c021fc10>] ? do_page_fault+0x0/0x370 Jul  8 18:03:59
-> doris kernel: [<c021fdc4>] ? do_page_fault+0x1b4/0x370 Jul  8 18:03:59
-> doris kernel: [<c02d5b8a>] ? alloc_fd+0xba/0x100 Jul  8 18:03:59 doris
-> kernel: [<c02ca976>] ? putname+0x26/0x40 Jul  8 18:03:59 doris kernel:
-> [<c02be80e>] ? do_sys_open+0xee/0x110 Jul  8 18:03:59 doris kernel:
-> [<c02ce08f>] ? sys_ioctl+0x5f/0x80 Jul  8 18:03:59 doris kernel:
-> [<c02be899>] ? sys_open+0x29/0x40 Jul  8 18:03:59 doris kernel:
-> [<c0202e13>] ? sysenter_do_call+0x12/0x22 Jul  8 18:03:59 doris kernel:
-> Code: 00 00 00 00 8d bf 00 00 00 00 55 85 c0 89 e5 74 1a 8b 40 18 85 d2
-> 74 13 85 c0 74 0f b9 02 00 00 00 e8 34 ff ff ff c9 8d 76 00 c3<0f>  0b
-> eb fe 8d 74 26 00 8d bc 27 00 00 00 00 55 89 e5 57 31 ff Jul  8
-> 18:03:59 doris kernel: EIP: [<c03129e1>] sysfs_create_file+0x21/0x30
-> SS:ESP 0068:f68ade90 Jul  8 18:03:59 doris kernel: ---[ end trace
-> 3ce86c182470888c ]---
->
->
-> No vmlinux specified,
-> assuming /lib/modules/2.6.34.1/build/vmlinux
->   c03129c3:      89 e5                   mov    %esp,%ebp           |
-> %esp = f68ade90
->   c03129c5:      74 1a                   je     c03129e1
-> <sysfs_create_file+0x21>
->   c03129c7:      8b 40 18                mov    0x18(%eax),%eax
->   c03129ca:      85 d2                   test   %edx,%edx           |
-> %edx =>  f81587b4
->   c03129cc:      74 13                   je     c03129e1
-> <sysfs_create_file+0x21>  c03129ce:      85 c0                   test
-> %eax,%eax           |  %eax =>  0 c03129d0:      74 0f
-> je     c03129e1<sysfs_create_file+0x21>  c03129d2:      b9 02 00 00
-> 00          mov    $0x2,%ecx           |  %ecx =>  f66a72bc
->   c03129d7:      e8 34 ff ff ff          call   c0312910<sysfs_add_file>
->   c03129dc:      c9                      leave
->   c03129dd:      8d 76 00                lea    0x0(%esi),%esi      |
-> %esi =>  0 c03129e0:      c3                      ret
-> *c03129e1:      0f 0b                   ud2a<--- faulting
-> instruction c03129e3:      eb fe                   jmp    c03129e3
-> <sysfs_create_file+0x23>  c03129e5:      8d 74 26 00             lea
-> 0x0(%esi,%eiz,1),%esi c03129e9:      8d bc 27 00 00 00 00    lea
-> 0x0(%edi,%eiz,1),%edi
->
->   c03129f0<sysfs_create_files>:
->   c03129f0:      55                      push   %ebp
->   c03129f1:      89 e5                   mov    %esp,%ebp
->   c03129f3:      57                      push   %edi
->   c03129f4:      31 ff                   xor    %edi,%edi
->   c03129f6:      56                      push   %esi
->   c03129f7:      89 d6                   mov    %edx,%esi
->   c03129f9:      53                      push   %ebx
->   c03129fa:      31 db                   xor    %ebx,%ebx
->   c03129fc:      83 ec 04                sub    $0x4,%esp
->   c03129ff:      89 45 f0                mov    %eax,-0x10(%ebp)
->   c0312a02:      8b 12                   mov    (%edx),%edx
->   c0312a04:      85 d2                   test   %edx,%edx
->   c0312a06:      74 3b                   je     c0312a43
->   <sysfs_create_files+0x53>  c0312a08:      90                      nop
->   c0312a09:      8d b4 26 00 00 00 00    lea    0x0(%esi,%eiz,1),%esi
->   c0312a10:      8b 45 f0                mov    -0x10(%ebp),%eax
->   c0312a13:      e8 a8 ff ff ff          call   c03129c0
->   <sysfs_create_file>
->
 
