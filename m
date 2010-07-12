@@ -1,41 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756038Ab0GLRUR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 13:20:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50896 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751188Ab0GLRUP (ORCPT
+	id S1756140Ab0GLR2o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 13:28:44 -0400
+Received: from vms173007pub.verizon.net ([206.46.173.7]:52861 "EHLO
+	vms173007pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753020Ab0GLR2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 13:20:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <4C3B49B4.20300@panasas.com>
-References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com>
-	<201007052325.56971.rjw@sisk.pl>
-	<4C3B49B4.20300@panasas.com>
-Date: Mon, 12 Jul 2010 10:20:08 -0700
-Message-ID: <AANLkTik8MD7bWb_R38MGv3H6ct-Z3ee1x9i9sn5a_ohd@mail.gmail.com>
-Subject: Re: Linux 2.6.35-rc4 - CONFIG_LOCALVERSION ignored?
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Benny Halevy <bhalevy@panasas.com>
-Cc: Michal Marek <mmarek@suse.cz>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 12 Jul 2010 13:28:43 -0400
+Date: Mon, 12 Jul 2010 13:28:23 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Alex Chiang <achiang@canonical.com>
+Cc: Jan Pogadl <pogadl.jan@googlemail.com>, gong.chen@linux.intel.com,
+        linux-acpi@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ACPI: processor: fix processor_physically_present on UP
+In-reply-to: <20100617150853.GF2138@canonical.com>
+Message-id: <alpine.LFD.2.00.1007121328050.25332@localhost.localdomain>
+References: <20100617150853.GF2138@canonical.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/12 Benny Halevy <bhalevy@panasas.com>:
->
-> Not working for me either in 2.6.35-rc4.
+applied
 
-I assume you're building with "O="? If so, have you checked -git (or
-any of the nightly snapshots)?
+thanks,
+Len Brown, Intel Open Source Technology Center
 
-Becuse it _should_ have been fixed about a week ago in commit
-7263e715c91f ("kbuild: Fix path to scripts/setlocalversion"). But
-that's after -rc4.
-
-(I'll do an -rc5 probably today, but it would be good to have it
-confirmed that the bug is gone)
-
-               Linus
