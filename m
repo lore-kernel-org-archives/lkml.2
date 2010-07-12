@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab0GLRb7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 13:31:59 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:48725 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752087Ab0GLRb6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 13:31:58 -0400
-Message-ID: <4C3B514E.4000501@zytor.com>
-Date: Mon, 12 Jul 2010 10:30:54 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1756373Ab0GLRc4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 13:32:56 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:36842 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752087Ab0GLRcy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 13:32:54 -0400
+Date: Mon, 12 Jul 2010 18:32:28 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.miao@canonical.com>, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: ARM defconfig files
+Message-ID: <20100712173228.GC9897@n2100.arm.linux.org.uk>
+References: <20100603074548.GA12104@flint.arm.linux.org.uk> <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <20100603181010.GA25779@flint.arm.linux.org.uk> <1275589230.23384.19.camel@c-dwalke-linux.qualcomm.com> <alpine.LFD.2.00.1006031119440.8175@i5.linux-foundation.org> <20100614083214.GA2104@pengutronix.de> <20100630104043.GG11746@pengutronix.de> <20100712155518.GA24144@pengutronix.de> <AANLkTilhI9O6YwnuAylo_jNgwR8VXmpSVJ1kylIYPCGT@mail.gmail.com>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Setup early console as early as possible
-References: <4C3A3B27.7020009@oracle.com> <4C3AD94C.7070807@cs.helsinki.fi> <4C3B38F7.1050400@zytor.com> <4C3B40F3.6070009@kernel.org>
-In-Reply-To: <4C3B40F3.6070009@kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilhI9O6YwnuAylo_jNgwR8VXmpSVJ1kylIYPCGT@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2010 09:21 AM, Yinghai Lu wrote:
-> 
-> Can you consider to ask Pekka to anaylze "console=uart8250,io, 0x3f8,115200n8" instead?
-> 
-> it looks like we can remove "earlyprintk=ttyS0,115200", or "earlyprintk=serial" etc.
-> 
-> earlycon=uart8250 or console=uart8250 should be better than earlyprintk.
-> because it is shared between different archs already.
-> 
+On Mon, Jul 12, 2010 at 09:51:47AM -0700, Linus Torvalds wrote:
+> So if the ARM people decide that your script is a good way to clean up
+> the mess, I might be happy with that. But that would require that they
+> NEVER EVER try to push me a update that contains an un-cleaned-up
+> defconfig file.
 
-Did you manage to miss my comment about that?
+Does this mean that you aren't going to delete all the defconfigs
+during the next merge window if we come up with an alternative
+solution to yours?
 
-console= is crap, because it makes the user keep track of items they
-should not have to deal with directly (unless they want to override the
-defaults), i.e. the specific I/O ports used by the serial ports.
-
-It's insanely user-unfriendly, and as far as I can see the movement has
-been *toward* earlyprintk= rather than away from it.  It makes sense:
-it's a higher-order interface that is closer to the user.
-
-So, no, I will not ask Pekka to change from a good user interface to a
-bad one.
-
->>
->> Incidentally, Yinghai: it would be possible to push even an MMIO
->> reference earlier by reserving a fixmap slot for the early console.  I'm
->> not sure if it's worth it, though.
-> 
-> in setup_arch() for x86, now we have
-> 
->         /* VMI may relocate the fixmap; do this before touching ioremap area */
->         vmi_init();
-> 
->         /* OFW also may relocate the fixmap */
->         olpc_ofw_detect();
-> 
->         early_trap_init();
->         early_cpu_init();
->         early_ioremap_init()
-> 
-> so may need to move these 
-> 	vmi_init()
-> 	olpc_ofw_detect()
-> 	early_ioremap_init()
-> 
-> to i386_start_kernel(), x86_start_kernel()
-> 
-> may be not worth it at this time, could do that later if needed.
-
-Don't think so at this time, since mmio 8250 serial ports are basically
-never used in the x86 world, but it could be interesting for non-8250
-consoles, e.g. USB, in the future.
-
-	-hpa
+When you brought up the problem you seemed absolutely convinced
+that nothing except your solution was going to be acceptable.
