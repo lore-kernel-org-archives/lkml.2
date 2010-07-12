@@ -1,173 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab0GLOBF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 10:01:05 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59509 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754607Ab0GLOBD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 10:01:03 -0400
-Date: Mon, 12 Jul 2010 11:00:23 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 10/13]  perf: Re-Add make_absolute_path
-Message-ID: <20100712140023.GC25238@ghostprotocols.net>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
- <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6>
+	id S1755788Ab0GLOYP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 10:24:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38492 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755190Ab0GLOYO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 10:24:14 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Jason Baron <jbaron@redhat.com>
+Subject: Re: Dynamic Debug broken on 2.6.35-rc3?
+Date: Mon, 12 Jul 2010 16:24:16 +0200
+User-Agent: KMail/1.9.10
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+        Hannes Reinecke <hare@suse.de>, yehuda@hq.newdream.net
+References: <201007011744.19564.trenn@suse.de> <201007091303.08693.trenn@suse.de> <20100709133019.GA2856@redhat.com>
+In-Reply-To: <20100709133019.GA2856@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-Id: <201007121624.17543.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 12, 2010 at 04:04:12PM +0530, Srikar Dronamraju escreveu:
-> perf: Re-Add make_absolute_path
-> 
-> perf probe for uprobes would use make_absolute_path.
-> make_absolute_path can be used to convert a file name to a dso name.
-> 
-> so if user specifies the function to be traced as malloc@/lib/libc.so.6
-> it needs to be converted to malloc@libc-2.5.so
+Hi,
 
-Isn't this the other way around? I.e. "if the user specifies
-malloc@libc-2.5.so it needs to be converted to malloc@/lib/libc.so.6"?
+it's this one:
+commit ff49d74ad383f54041378144ca1a229ee9aeaa59
+Author: Yehuda Sadeh <yehuda@hq.newdream.net>
+Date:   Sat Jul 3 13:07:35 2010 +1000
 
-Also please remove the xstrdup and die calls from this function, we're
-trying to get rid of all such 'panic' like functions so that we can
-librarize as much code as possible.
- 
-> This patch reverts a part of a41794cdd7ee94a5199e14f642c26d649d383fa5
+which touches same code than Jason's fix does.
+Possibly this patch also addresses (only parts of?) this problem?
+Jason: Do you mind having a look at the latest git version and review
+Yehuda's  and adjust your patch if still necessary.
+If Yehuda's patch is fixing this already, we still need it backported for
+2.6.34 stable kernel and further?
 
-> Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> ---
-> 
->  tools/perf/util/abspath.c |   81 +++++++++++++++++++++++++++++++++++++++++++++
->  tools/perf/util/cache.h   |    1 +
->  2 files changed, 82 insertions(+), 0 deletions(-)
-> 
-> 
-> diff --git a/tools/perf/util/abspath.c b/tools/perf/util/abspath.c
-> index 0e76aff..0a985fd 100644
-> --- a/tools/perf/util/abspath.c
-> +++ b/tools/perf/util/abspath.c
-> @@ -1,5 +1,86 @@
->  #include "cache.h"
->  
-> +/*
-> + * Do not use this for inspecting *tracked* content.  When path is a
-> + * symlink to a directory, we do not want to say it is a directory when
-> + * dealing with tracked content in the working tree.
-> + */
-> +static int is_directory(const char *path)
-> +{
-> +	struct stat st;
-> +	return !stat(path, &st) && S_ISDIR(st.st_mode);
-> +}
-> +
-> +/* We allow "recursive" symbolic links. Only within reason, though. */
-> +#define MAXDEPTH 5
-> +
-> +const char *make_absolute_path(const char *path)
-> +{
-> +	static char bufs[2][PATH_MAX + 1], *buf = bufs[0], *next_buf = bufs[1];
-> +	char cwd[1024] = "";
-> +	int buf_index = 1, len;
-> +
-> +	int depth = MAXDEPTH;
-> +	char *last_elem = NULL;
-> +	struct stat st;
-> +
-> +	if (strlcpy(buf, path, PATH_MAX) >= PATH_MAX)
-> +		die("Too long path: %.*s", 60, path);
-> +
-> +	while (depth--) {
-> +		if (!is_directory(buf)) {
-> +			char *last_slash = strrchr(buf, '/');
-> +			if (last_slash) {
-> +				*last_slash = '\0';
-> +				last_elem = xstrdup(last_slash + 1);
-> +			} else {
-> +				last_elem = xstrdup(buf);
-> +				*buf = '\0';
-> +			}
-> +		}
-> +
-> +		if (*buf) {
-> +			if (!*cwd && !getcwd(cwd, sizeof(cwd)))
-> +				die("Could not get current working directory");
-> +
-> +			if (chdir(buf))
-> +				die("Could not switch to '%s'", buf);
-> +		}
-> +		if (!getcwd(buf, PATH_MAX))
-> +			die("Could not get current working directory");
-> +
-> +		if (last_elem) {
-> +			len = strlen(buf);
-> +
-> +			if (len + strlen(last_elem) + 2 > PATH_MAX)
-> +				die("Too long path name: '%s/%s'",
-> +						buf, last_elem);
-> +			buf[len] = '/';
-> +			strcpy(buf + len + 1, last_elem);
-> +			free(last_elem);
-> +			last_elem = NULL;
-> +		}
-> +
-> +		if (!lstat(buf, &st) && S_ISLNK(st.st_mode)) {
-> +			len = readlink(buf, next_buf, PATH_MAX);
-> +			if (len < 0)
-> +				die("Invalid symlink: %s", buf);
-> +			if (PATH_MAX <= len)
-> +				die("symbolic link too long: %s", buf);
-> +			next_buf[len] = '\0';
-> +			buf = next_buf;
-> +			buf_index = 1 - buf_index;
-> +			next_buf = bufs[buf_index];
-> +		} else
-> +			break;
-> +	}
-> +
-> +	if (*cwd && chdir(cwd))
-> +		die("Could not change back to '%s'", cwd);
-> +
-> +	return buf;
-> +}
-> +
->  static const char *get_pwd_cwd(void)
->  {
->  	static char cwd[PATH_MAX + 1];
-> diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-> index 27e9ebe..0dfed40 100644
-> --- a/tools/perf/util/cache.h
-> +++ b/tools/perf/util/cache.h
-> @@ -73,6 +73,7 @@ static inline int is_absolute_path(const char *path)
->  	return path[0] == '/';
->  }
->  
-> +const char *make_absolute_path(const char *path);
->  const char *make_nonrelative_path(const char *path);
->  char *strip_path_suffix(const char *path, const char *suffix);
->  
+One question about dynamic debug (unrelated to the mem corruption
+issue):
+Would it make sense to initialize dynamic debug earlier, somewhen shortly
+after __setup is called.
+Then a boot param ddebug_enable="xy" could be added.
+The param could be in /sys/../control format or just be "all"?
+My idea is to be able to track all the pr_debug calls (as) early (as possible) 
+at boot up.
+One example is ec.c. Currently it is not possible to see the pr_debug messages
+when EC accesses are done when the ACPI interpreter is started, there
+is no userspace and no sysfs yet.
+Same for PCI related pr_debug messages at early PCI(e) initialization time?
+Would that be possible or do I miss something?
+
+Thanks,
+
+     Thomas
+
+On Friday 09 July 2010 03:30:19 pm Jason Baron wrote:
+> On Fri, Jul 09, 2010 at 01:03:08PM +0200, Thomas Renninger wrote:
+> > Hi,
+> >
+> > I can confirm that this patch fixes the issue for me.
+> >
+> > On Thursday 08 July 2010 23:53:00 Andrew Morton wrote:
+> > > On Thu, 8 Jul 2010 17:39:28 -0400
+> > >
+> > > Jason Baron <jbaron@redhat.com> wrote:
+> > > > Make sure we properly call ddebug_remove_module() when a module fails
+> > > > to load. In addition, pass the pointer to the "debug table", to both
+> > > > ddebug_add_module(), and ddebug_remove_module() so that we can
+> > > > uniquely identify each set of debug statements. In this way even
+> > > > modules with the same name can be properly identified and removed.
+> > > >
+> > > >
+> > > > Signed-off-by: Jason Baron <jbaron@redhat.com>
+> > >
+> > > It'd be nice to track the Reported-by:s.  And the Tested-by:s if/when
+> > > they arrive.  SighIllDoIt.
+> > >
+> > > The patch (almost) applies to 2.6.34.  So are we missing a Cc:stable
+> > > tag as well?
+> >
+> > I'll resubmit with some more meta info and will include
+> > stable@kernel.org.
+> >
+> > Could it be that this isn't a regression, but a bug that was always
+> > present, but only gets exposed if you add modules with a specific
+> > implementation, e.g. specific declarations of functions missing, etc.?
+>
+> Hi Thomas,
+>
+> yes, this race has likely been present for a while (i'd have to look at
+> specific kernel versions to verify). I suspect its getting exposed now
+> due to more usage of this feature, and the proliferation of kernel
+> modules...
+>
+> > I tried to patch this into a 2.6.32.X kernel. While some hunks did not
+> > succeed, it looks like an adjusted patch should get submitted for older
+> > stable kernels as well?:
+>
+> if nobody else has done the 2.6.32 stable patch, I can do it, just let
+> me know.
+>
+> thanks again for reporting this to me.
+>
+> thanks,
+>
+> -Jason
+
+
