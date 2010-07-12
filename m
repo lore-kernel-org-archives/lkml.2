@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754904Ab0GLNXW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 09:23:22 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:53241 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753989Ab0GLNXV convert rfc822-to-8bit (ORCPT
+	id S1755055Ab0GLN0I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 09:26:08 -0400
+Received: from mail.windriver.com ([147.11.1.11]:58355 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753318Ab0GLN0G (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 09:23:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=OMwfl4awNuP2xHJFfKZ55ZZqshMoYuPxwEz/lPhmrkOxccvDDnQocAK4IYtq8ltBgb
-         ULQ7WwVrKcqrjNzm+A3p0dJnDWIxJAUUH7cN8/6QCWoc1Bxzopexx8ovlSwt+vKYjLYx
-         iiM3nZlSc+Blrr702K4CyuP/HrpuKW3wJG2sI=
+	Mon, 12 Jul 2010 09:26:06 -0400
+Date: Mon, 12 Jul 2010 21:23:47 +0800
+From: Yong Zhang <yong.zhang@windriver.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        cl@linux-foundation.org, dhowells@redhat.com, arjan@linux.intel.com,
+        oleg@redhat.com, axboe@kernel.dk, fweisbec@gmail.com,
+        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com
+Subject: Re: [PATCH] workqueue: fix locking in retry path of
+ maybe_create_worker()
+Message-ID: <20100712132347.GA19305@windriver.com>
+Reply-To: Yong Zhang <yong.zhang@windriver.com>
+References: <1277759063-24607-1-git-send-email-tj@kernel.org>
+ <1277759063-24607-28-git-send-email-tj@kernel.org>
+ <20100709091138.GA7304@windriver.com>
+ <4C3AD7FE.2050702@kernel.org>
 MIME-Version: 1.0
-In-Reply-To: <4C3AC187.2080909@gmail.com>
-References: <AANLkTin1uF6WbVvxJ84oO1NKnCU-6VHrmWU1XFYTlqtp@mail.gmail.com>
-	<4C3ABF96.9070405@msgid.tls.msk.ru>
-	<4C3AC187.2080909@gmail.com>
-Date: Mon, 12 Jul 2010 15:15:31 +0200
-Message-ID: <AANLkTil0LulVxPS4b0kfbArMeERhOcjRzUoWZZ4sfcDO@mail.gmail.com>
-Subject: Re: BTRFS: Unbelievably slow with kvm/qemu
-From: Giangiacomo Mariotti <gg.mariotti@gmail.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Michael Tokarev <mjt@tls.msk.ru>, linux-kernel@vger.kernel.org,
-        linux-fsdevel <linux-fsdevel@vger.kernel.org>,
-        qemu-devel <qemu-devel@nongnu.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <4C3AD7FE.2050702@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 12 Jul 2010 13:23:49.0624 (UTC) FILETIME=[76D69780:01CB21C5]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 9:17 AM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
-> On 07/12/2010 12:09 AM, Michael Tokarev wrote:
->>
->> This looks quite similar to a problem with ext4 and O_SYNC which I
->> reported earlier but no one cared to answer (or read?) - there:
->> http://permalink.gmane.org/gmane.linux.file-systems/42758
->> (sent to qemu-devel and linux-fsdevel lists - Cc'd too).  You can
->> try a few other options, esp. cache=none and re-writing some guest
->> files to verify.
->>
->> /mjt
->
-> cool a solution... glad to see... no chance at a bisect with this?
-> (getting this down too a commit or two makes things easier)
->
-> Justin P. Mattock
->
-I didn't even say what kernel version I was using, sorry! Kernel
-2.6.34.1+"patches in stable queue for next stable release". I tried
-this some time ago with 2.6.33.x(don't remember which version exactly)
-and it had the same problem, but at the time I stopped trying thinking
-that it was a kvm problem. So basically there's no known(to me) good
-version and no, I can't bisect this because this is my production
-system. Anyway, I suspect this is reproducible. Am I the only one who
-created a virtual hd file on a Btrfs and then used it with kvm/qemu? I
-mean, it's not a particularly exotic test-case!
+On Mon, Jul 12, 2010 at 10:53:18AM +0200, Tejun Heo wrote:
+> maybe_create_worker() mismanaged locking when worker creation fails
+> and it has to retry.  Fix locking and simplify lock manipulation.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Yong Zhang <yong.zhang@windriver.com>
+> ---
+> Heh, that was stupid.  Thanks a lot for spotting it.  I simplified
+> things a bit there as there's no reason to repeatedly lock and unlock
+> there.  Does this look good to you?
 
+Yeah, this is better.
 
--- 
-Giangiacomo
+Thanks,
+Yong
