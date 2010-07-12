@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab0GLVwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 17:52:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55599 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754489Ab0GLVwf (ORCPT
+	id S1754936Ab0GLVxr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 17:53:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59316 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754489Ab0GLVxp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 17:52:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=WAwC2TfZgPns4H5J1cEsYLkewY7h08uc48kluKt4QTyZUa3QCByDUcS8DZ+PfvR3A0
-         908dPDI2sQUe/k8oFn6luuwGur8vDuqOzpP7lSG2J4b8usHoGwrUT8FvOcdyXcfrfMUx
-         L0notqBELmQLOdxzpxmQZwXcJQMbN6mY8hM1c=
-Date: Mon, 12 Jul 2010 23:51:01 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Eric Van Hensbergen <ericvh@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Abhishek Kulkarni <adkulkar@umail.iu.edu>,
-        Venkateswararao Jujjuri <jvrao@us.ibm.com>,
-        linux-kernel@vger.kernel.org, Tilman Sauerbeck <tilman@code-monkey.de>,
-        netdev@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [patch] 9p: strlen() doesn't count the terminator
-Message-ID: <20100712215101.GG5658@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Eric Van Hensbergen <ericvh@gmail.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	Abhishek Kulkarni <adkulkar@umail.iu.edu>,
-	Venkateswararao Jujjuri <jvrao@us.ibm.com>,
-	linux-kernel@vger.kernel.org,
-	Tilman Sauerbeck <tilman@code-monkey.de>, netdev@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
-References: <20100710095154.GU19184@bicker> <20100712130458.bb8ae751.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100712130458.bb8ae751.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Mon, 12 Jul 2010 17:53:45 -0400
+Date: Mon, 12 Jul 2010 14:52:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Richard Kennedy <richard@rsk.demon.co.uk>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Miklos Szeredi <miklos@szeredi.hu>
+Subject: Re: [PATCH 1/6] writeback: take account of NR_WRITEBACK_TEMP in
+ balance_dirty_pages()
+Message-Id: <20100712145206.9808b411.akpm@linux-foundation.org>
+In-Reply-To: <20100711021748.594522648@intel.com>
+References: <20100711020656.340075560@intel.com>
+	<20100711021748.594522648@intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 01:04:58PM -0700, Andrew Morton wrote:
-> > diff --git a/net/9p/trans_fd.c b/net/9p/trans_fd.c
-> > index 98ce9bc..c85109d 100644
-> > --- a/net/9p/trans_fd.c
-> > +++ b/net/9p/trans_fd.c
-> > @@ -948,7 +948,7 @@ p9_fd_create_unix(struct p9_client *client, const char *addr, char *args)
-> >  
-> >  	csocket = NULL;
-> >  
-> > -	if (strlen(addr) > UNIX_PATH_MAX) {
-> > +	if (strlen(addr) >= UNIX_PATH_MAX) {
-> >  		P9_EPRINTK(KERN_ERR, "p9_trans_unix: address too long: %s\n",
-> >  			addr);
-> >  		return -ENAMETOOLONG;
+On Sun, 11 Jul 2010 10:06:57 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
+
 > 
-> This bug doesn't strike me as serious enough to warrant backporting the fix
-> into -stable.  What was your thinking there?
+> Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  mm/page-writeback.c |    7 ++++---
+>  1 file changed, 4 insertions(+), 3 deletions(-)
+> 
+> --- linux-next.orig/mm/page-writeback.c	2010-07-11 08:41:37.000000000 +0800
+> +++ linux-next/mm/page-writeback.c	2010-07-11 08:42:14.000000000 +0800
+> @@ -503,11 +503,12 @@ static void balance_dirty_pages(struct a
+>  		};
+>  
+>  		get_dirty_limits(&background_thresh, &dirty_thresh,
+> -				&bdi_thresh, bdi);
+> +				 &bdi_thresh, bdi);
+>  
+>  		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
+> -					global_page_state(NR_UNSTABLE_NFS);
+> -		nr_writeback = global_page_state(NR_WRITEBACK);
+> +				 global_page_state(NR_UNSTABLE_NFS);
+> +		nr_writeback = global_page_state(NR_WRITEBACK) +
+> +			       global_page_state(NR_WRITEBACK_TEMP);
+>  
+>  		bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
+>  		bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
+> 
 
-I don't feel strongly about it.  It's safe enough and it applies
-cleanly.  On the other hand, root should always control the name of the
-device to mount so it's not a big deal.
+hm, OK.
 
-regards,
-dan carpenter
+I wonder whether we could/should have unified NR_WRITEBACK_TEMP and
+NR_UNSTABLE_NFS.  Their "meanings" aren't quite the same, but perhaps
+some "treat page as dirty because the fs is futzing with it" thing.
