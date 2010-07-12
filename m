@@ -1,65 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756089Ab0GLP3F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 11:29:05 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:58399 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751397Ab0GLP3B convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 11:29:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=Sw9aJu+ytU5YhLi33MRY1lqnH46e1rcWZ8Ax4fDHA4MRpVnegeCIyveRga5ShamUx9
-         IrRzVXMNcXEcZ6QcTnKxxooMh4k1h3/A4ZLvTtvMtwPPRYELVmRSP+p0K1wHsLU7hNf/
-         4dowy7mmFWOH2NsCfo9DKBtyU6u5RU9lqBppU=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Woody Suwalski <terraluna977@gmail.com>
-Subject: Re: Yet another 2.6.35 regression (AGP)?
-Date: Mon, 12 Jul 2010 17:28:52 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc4; KDE/4.4.4; i686; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>,
-        drivers_video-dri-intel@kernel-bugs.osdl.org
-References: <AANLkTikoCiIoo4nfmoFGBMOkc4lNKTU_ouE15EmV1j-h@mail.gmail.com> <4C373084.8000503@gmail.com>
-In-Reply-To: <4C373084.8000503@gmail.com>
+	id S1756105Ab0GLPbh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 11:31:37 -0400
+Received: from mga02.intel.com ([134.134.136.20]:17209 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755931Ab0GLPbg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 11:31:36 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,188,1278313200"; 
+   d="scan'208";a="637620522"
+Date: Mon, 12 Jul 2010 23:31:27 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 4/6] writeback: dont redirty tail an inode with dirty
+ pages
+Message-ID: <20100712153127.GB30222@localhost>
+References: <20100711020656.340075560@intel.com>
+ <20100711021749.021449821@intel.com>
+ <20100712020109.GB25335@dastard>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201007121728.52800.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100712020109.GB25335@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On piątek, 9 lipca 2010 o 16:21:56 Woody Suwalski wrote:
-> I have found one system, where 2.6.35 does not work (as tested with rc3
-> and rc4)
-> That Intel system has no problems in 2.6.33.x nor 2.6.34.0.
+> > +		} else if (inode->i_state & I_DIRTY) {
+> > +			/*
+> > +			 * At least XFS will redirty the inode during the
+> > +			 * writeback (delalloc) and on io completion (isize).
+> > +			 */
+> > +			redirty_tail(inode);
 > 
-> The problem seems to be in AGP - I can boot if I specify "agp=off" - but
-> of course only in text mode...
-> There seems to be a hard lock-up, so the only way to show the crash is
-> by picture 8-)
+> I'd drop the mention of XFS here - any filesystem that does delayed
+> allocation or unwritten extent conversion after Io completion will
+> cause this. Perhaps make the comment:
 > 
-> Since I do not build kernel on that machine, I did not do any bisect
-> tests, however if someone is interested in digging deeper, I can try...
-> Preferably a patch to try out ;-)
-> 
-> This bug seems to be different then
-> https://bugzilla.kernel.org/show_bug.cgi?id=16179
-> 
-> Should it be blamed on BIOS (the conflict indicated just before the crash)?
-> 
-> Thanks, Woody
+> 	/*
+> 	 * Filesystems can dirty the inode during writeback
+> 	 * operations, such as delayed allocation during submission
+> 	 * or metadata updates after data IO completion.
+> 	 */
 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=16369
-for your bug report, please add your address to the CC list in there, thanks!
+Thanks, comments updated accordingly.
 
+---
+writeback: don't redirty tail an inode with dirty pages
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+This avoids delaying writeback for an expired (XFS) inode with lots of
+dirty pages, but no active dirtier at the moment. Previously we only do
+that for the kupdate case.
+
+CC: Dave Chinner <david@fromorbit.com>
+CC: Christoph Hellwig <hch@infradead.org>
+Acked-by: Jan Kara <jack@suse.cz>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+---
+ fs/fs-writeback.c |   22 +++++++++-------------
+ 1 file changed, 9 insertions(+), 13 deletions(-)
+
+--- linux-next.orig/fs/fs-writeback.c	2010-07-11 09:13:30.000000000 +0800
++++ linux-next/fs/fs-writeback.c	2010-07-12 23:26:06.000000000 +0800
+@@ -367,18 +367,7 @@ writeback_single_inode(struct inode *ino
+ 	spin_lock(&inode_lock);
+ 	inode->i_state &= ~I_SYNC;
+ 	if (!(inode->i_state & I_FREEING)) {
+-		if ((inode->i_state & I_DIRTY_PAGES) && wbc->for_kupdate) {
+-			/*
+-			 * More pages get dirtied by a fast dirtier.
+-			 */
+-			goto select_queue;
+-		} else if (inode->i_state & I_DIRTY) {
+-			/*
+-			 * At least XFS will redirty the inode during the
+-			 * writeback (delalloc) and on io completion (isize).
+-			 */
+-			redirty_tail(inode);
+-		} else if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
++		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+ 			/*
+ 			 * We didn't write back all the pages.  nfs_writepages()
+ 			 * sometimes bales out without doing anything. Redirty
+@@ -400,7 +389,6 @@ writeback_single_inode(struct inode *ino
+ 				 * soon as the queue becomes uncongested.
+ 				 */
+ 				inode->i_state |= I_DIRTY_PAGES;
+-select_queue:
+ 				if (wbc->nr_to_write <= 0) {
+ 					/*
+ 					 * slice used up: queue for next turn
+@@ -423,6 +411,14 @@ select_queue:
+ 				inode->i_state |= I_DIRTY_PAGES;
+ 				redirty_tail(inode);
+ 			}
++		} else if (inode->i_state & I_DIRTY) {
++			/*
++			 * Filesystems can dirty the inode during writeback
++			 * operations, such as delayed allocation during
++			 * submission or metadata updates after data IO
++			 * completion.
++			 */
++			redirty_tail(inode);
+ 		} else if (atomic_read(&inode->i_count)) {
+ 			/*
+ 			 * The inode is clean, inuse
