@@ -1,357 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab0GLPt4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 11:49:56 -0400
-Received: from mxout-07.mxes.net ([216.86.168.182]:35968 "EHLO
-	mxout-07.mxes.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755973Ab0GLPtp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 11:49:45 -0400
-From: =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Bri=C3=A8re?= <fbriere@fbriere.net>
-To: linux-kernel@vger.kernel.org
-Cc: linux-serial@vger.kernel.org, linux-parport@lists.infradead.org
-Subject: [PATCH 2/2] parport/serial: add support for Timedia/SUNIX cards to parport_serial
-Date: Mon, 12 Jul 2010 11:49:43 -0400
-Message-Id: <1278949783-2820-2-git-send-email-fbriere@fbriere.net>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100712154448.GA2558@toroia.fbriere.dyndns.org>
-References: <20100712154448.GA2558@toroia.fbriere.dyndns.org>
+	id S1756167Ab0GLPws (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 11:52:48 -0400
+Received: from mga02.intel.com ([134.134.136.20]:42168 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752997Ab0GLPwr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 11:52:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,188,1278313200"; 
+   d="scan'208";a="534612037"
+Date: Mon, 12 Jul 2010 23:52:39 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Martin Bligh <mbligh@google.com>, Michael Rubin <mrubin@google.com>,
+        Peter Zijlstra <peterz@infradead.org>, Jan Kara <jack@suse.cz>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 6/6] writeback: merge for_kupdate and !for_kupdate cases
+Message-ID: <20100712155239.GC30222@localhost>
+References: <20100711020656.340075560@intel.com>
+ <20100711021749.303817848@intel.com>
+ <20100712020842.GC25335@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100712020842.GC25335@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Timedia/SUNIX PCI cards with both serial and parallel ports are
-currently supported by 8250_pci and parport_pc individually.  Moving
-that support into parport_serial allows using both types of ports at the
-same time.
+On Mon, Jul 12, 2010 at 10:08:42AM +0800, Dave Chinner wrote:
+> On Sun, Jul 11, 2010 at 10:07:02AM +0800, Wu Fengguang wrote:
+> > Unify the logic for kupdate and non-kupdate cases.
+> > There won't be starvation because the inodes requeued into b_more_io
+> > will later be spliced _after_ the remaining inodes in b_io, hence won't
+> > stand in the way of other inodes in the next run.
+> > 
+> > It avoids unnecessary redirty_tail() calls, hence the update of
+> > i_dirtied_when. The timestamp update is undesirable because it could
+> > later delay the inode's periodic writeback, or exclude the inode from
+> > the data integrity sync operation (which will check timestamp to avoid
+> > extra work and livelock).
+> > 
+> > CC: Dave Chinner <david@fromorbit.com>
+> > Cc: Martin Bligh <mbligh@google.com>
+> > Cc: Michael Rubin <mrubin@google.com>
+> > Cc: Peter Zijlstra <peterz@infradead.org>
+> > Signed-off-by: Fengguang Wu <wfg@mail.ustc.edu.cn>
+> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> > ---
+> >  fs/fs-writeback.c |   39 ++++++---------------------------------
+> >  1 file changed, 6 insertions(+), 33 deletions(-)
+> > 
+> > --- linux-next.orig/fs/fs-writeback.c	2010-07-11 09:13:32.000000000 +0800
+> > +++ linux-next/fs/fs-writeback.c	2010-07-11 09:13:36.000000000 +0800
+> > @@ -373,45 +373,18 @@ writeback_single_inode(struct inode *ino
+> >  		if (mapping_tagged(mapping, PAGECACHE_TAG_DIRTY)) {
+> >  			/*
+> >  			 * We didn't write back all the pages.  nfs_writepages()
+> > -			 * sometimes bales out without doing anything. Redirty
+> > -			 * the inode; Move it from b_io onto b_more_io/b_dirty.
+> > +			 * sometimes bales out without doing anything.
+> >  			 */
+> > -			/*
+> > -			 * akpm: if the caller was the kupdate function we put
+> > -			 * this inode at the head of b_dirty so it gets first
+> > -			 * consideration.  Otherwise, move it to the tail, for
+> > -			 * the reasons described there.  I'm not really sure
+> > -			 * how much sense this makes.  Presumably I had a good
+> > -			 * reasons for doing it this way, and I'd rather not
+> > -			 * muck with it at present.
+> > -			 */
+> > -			if (wbc->for_kupdate) {
+> > +			inode->i_state |= I_DIRTY_PAGES;
+> > +			if (wbc->nr_to_write <= 0) {
+> >  				/*
+> > -				 * For the kupdate function we move the inode
+> > -				 * to b_more_io so it will get more writeout as
+> > -				 * soon as the queue becomes uncongested.
+> > +				 * slice used up: queue for next turn
+> >  				 */
+> > -				inode->i_state |= I_DIRTY_PAGES;
+> > -				if (wbc->nr_to_write <= 0) {
+> > -					/*
+> > -					 * slice used up: queue for next turn
+> > -					 */
+> > -					requeue_io(inode);
+> > -				} else {
+> > -					/*
+> > -					 * somehow blocked: retry later
+> > -					 */
+> > -					redirty_tail(inode);
+> > -				}
+> > +				requeue_io(inode);
+> >  			} else {
+> >  				/*
+> > -				 * Otherwise fully redirty the inode so that
+> > -				 * other inodes on this superblock will get some
+> > -				 * writeout.  Otherwise heavy writing to one
+> > -				 * file would indefinitely suspend writeout of
+> > -				 * all the other files.
+> > +				 * somehow blocked: retry later
+> >  				 */
+> > -				inode->i_state |= I_DIRTY_PAGES;
+> >  				redirty_tail(inode);
+> >  			}
+> 
+> This means that congestion will always trigger redirty_tail(). Is
+> that really what we want for that case?
 
-This was successfully tested with a SUNIX 4079T.
+This patch actually converts some redirty_tail() cases to use
+requeue_io(), so are reducing the use of redirty_tail(). Also
+recent kernels are blocked _inside_ get_request() on congestion
+instead of returning to writeback_single_inode() on congestion.
+So the "somehow blocked" comment for redirty_tail() no longer includes
+the congestion case.
 
-Signed-off-by: Frédéric Brière <fbriere@fbriere.net>
----
- drivers/parport/parport_pc.c     |   54 -------------
- drivers/parport/parport_serial.c |  163 ++++++++++++++++++++++++++++++++++++++
- drivers/serial/8250_pci.c        |   23 ++++++
- 3 files changed, 186 insertions(+), 54 deletions(-)
+> Also, I'd prefer that the
+> comments remain somewhat more descriptive of the circumstances that
+> we are operating under. Comments like "retry later to avoid blocking
+> writeback of other inodes" is far, far better than "retry later"
+> because it has "why" component that explains the reason for the
+> logic. You may remember why, but I sure won't in a few months time....
 
-diff --git a/drivers/parport/parport_pc.c b/drivers/parport/parport_pc.c
-index 0950fa4..e5d1d2f 100644
---- a/drivers/parport/parport_pc.c
-+++ b/drivers/parport/parport_pc.c
-@@ -2866,24 +2866,6 @@ enum parport_pc_pci_cards {
- 	lava_parallel_dual_b,
- 	boca_ioppar,
- 	plx_9050,
--	timedia_4078a,
--	timedia_4079h,
--	timedia_4085h,
--	timedia_4088a,
--	timedia_4089a,
--	timedia_4095a,
--	timedia_4096a,
--	timedia_4078u,
--	timedia_4079a,
--	timedia_4085u,
--	timedia_4079r,
--	timedia_4079s,
--	timedia_4079d,
--	timedia_4079e,
--	timedia_4079f,
--	timedia_9079a,
--	timedia_9079b,
--	timedia_9079c,
- 	timedia_4006a,
- 	timedia_4014,
- 	timedia_4008a,
-@@ -2942,24 +2924,6 @@ static struct parport_pc_pci {
- 	/* lava_parallel_dual_b */	{ 1, { { 0, -1 }, } },
- 	/* boca_ioppar */		{ 1, { { 0, -1 }, } },
- 	/* plx_9050 */			{ 2, { { 4, -1 }, { 5, -1 }, } },
--	/* timedia_4078a */		{ 1, { { 2, -1 }, } },
--	/* timedia_4079h */             { 1, { { 2, 3 }, } },
--	/* timedia_4085h */             { 2, { { 2, -1 }, { 4, -1 }, } },
--	/* timedia_4088a */             { 2, { { 2, 3 }, { 4, 5 }, } },
--	/* timedia_4089a */             { 2, { { 2, 3 }, { 4, 5 }, } },
--	/* timedia_4095a */             { 2, { { 2, 3 }, { 4, 5 }, } },
--	/* timedia_4096a */             { 2, { { 2, 3 }, { 4, 5 }, } },
--	/* timedia_4078u */             { 1, { { 2, -1 }, } },
--	/* timedia_4079a */             { 1, { { 2, 3 }, } },
--	/* timedia_4085u */             { 2, { { 2, -1 }, { 4, -1 }, } },
--	/* timedia_4079r */             { 1, { { 2, 3 }, } },
--	/* timedia_4079s */             { 1, { { 2, 3 }, } },
--	/* timedia_4079d */             { 1, { { 2, 3 }, } },
--	/* timedia_4079e */             { 1, { { 2, 3 }, } },
--	/* timedia_4079f */             { 1, { { 2, 3 }, } },
--	/* timedia_9079a */             { 1, { { 2, 3 }, } },
--	/* timedia_9079b */             { 1, { { 2, 3 }, } },
--	/* timedia_9079c */             { 1, { { 2, 3 }, } },
- 	/* timedia_4006a */             { 1, { { 0, -1 }, } },
- 	/* timedia_4014  */             { 2, { { 0, -1 }, { 2, -1 }, } },
- 	/* timedia_4008a */             { 1, { { 0, 1 }, } },
-@@ -3021,24 +2985,6 @@ static const struct pci_device_id parport_pc_pci_tbl[] = {
- 	{ PCI_VENDOR_ID_PLX, PCI_DEVICE_ID_PLX_9050,
- 	  PCI_SUBVENDOR_ID_EXSYS, PCI_SUBDEVICE_ID_EXSYS_4014, 0, 0, plx_9050 },
- 	/* PCI_VENDOR_ID_TIMEDIA/SUNIX has many differing cards ...*/
--	{ 0x1409, 0x7168, 0x1409, 0x4078, 0, 0, timedia_4078a },
--	{ 0x1409, 0x7168, 0x1409, 0x4079, 0, 0, timedia_4079h },
--	{ 0x1409, 0x7168, 0x1409, 0x4085, 0, 0, timedia_4085h },
--	{ 0x1409, 0x7168, 0x1409, 0x4088, 0, 0, timedia_4088a },
--	{ 0x1409, 0x7168, 0x1409, 0x4089, 0, 0, timedia_4089a },
--	{ 0x1409, 0x7168, 0x1409, 0x4095, 0, 0, timedia_4095a },
--	{ 0x1409, 0x7168, 0x1409, 0x4096, 0, 0, timedia_4096a },
--	{ 0x1409, 0x7168, 0x1409, 0x5078, 0, 0, timedia_4078u },
--	{ 0x1409, 0x7168, 0x1409, 0x5079, 0, 0, timedia_4079a },
--	{ 0x1409, 0x7168, 0x1409, 0x5085, 0, 0, timedia_4085u },
--	{ 0x1409, 0x7168, 0x1409, 0x6079, 0, 0, timedia_4079r },
--	{ 0x1409, 0x7168, 0x1409, 0x7079, 0, 0, timedia_4079s },
--	{ 0x1409, 0x7168, 0x1409, 0x8079, 0, 0, timedia_4079d },
--	{ 0x1409, 0x7168, 0x1409, 0x9079, 0, 0, timedia_4079e },
--	{ 0x1409, 0x7168, 0x1409, 0xa079, 0, 0, timedia_4079f },
--	{ 0x1409, 0x7168, 0x1409, 0xb079, 0, 0, timedia_9079a },
--	{ 0x1409, 0x7168, 0x1409, 0xc079, 0, 0, timedia_9079b },
--	{ 0x1409, 0x7168, 0x1409, 0xd079, 0, 0, timedia_9079c },
- 	{ 0x1409, 0x7268, 0x1409, 0x0101, 0, 0, timedia_4006a },
- 	{ 0x1409, 0x7268, 0x1409, 0x0102, 0, 0, timedia_4014 },
- 	{ 0x1409, 0x7268, 0x1409, 0x0103, 0, 0, timedia_4008a },
-diff --git a/drivers/parport/parport_serial.c b/drivers/parport/parport_serial.c
-index 40e208d..a64b275 100644
---- a/drivers/parport/parport_serial.c
-+++ b/drivers/parport/parport_serial.c
-@@ -41,6 +41,24 @@ enum parport_pc_pci_cards {
- 	siig_2p1s_20x,
- 	siig_1s1p_20x,
- 	siig_2s1p_20x,
-+	timedia_4078a,
-+	timedia_4079h,
-+	timedia_4085h,
-+	timedia_4088a,
-+	timedia_4089a,
-+	timedia_4095a,
-+	timedia_4096a,
-+	timedia_4078u,
-+	timedia_4079a,
-+	timedia_4085u,
-+	timedia_4079r,
-+	timedia_4079s,
-+	timedia_4079d,
-+	timedia_4079e,
-+	timedia_4079f,
-+	timedia_9079a,
-+	timedia_9079b,
-+	timedia_9079c,
- };
- 
- /* each element directly indexed from enum list, above */
-@@ -105,6 +123,24 @@ static struct parport_pc_pci cards[] __devinitdata = {
- 	/* siig_2p1s_20x */		{ 2, { { 1, 2 }, { 3, 4 }, } },
- 	/* siig_1s1p_20x */		{ 1, { { 1, 2 }, } },
- 	/* siig_2s1p_20x */		{ 1, { { 2, 3 }, } },
-+	/* timedia_4078a */		{ 1, { { 2, -1 }, } },
-+	/* timedia_4079h */             { 1, { { 2, 3 }, } },
-+	/* timedia_4085h */             { 2, { { 2, -1 }, { 4, -1 }, } },
-+	/* timedia_4088a */             { 2, { { 2, 3 }, { 4, 5 }, } },
-+	/* timedia_4089a */             { 2, { { 2, 3 }, { 4, 5 }, } },
-+	/* timedia_4095a */             { 2, { { 2, 3 }, { 4, 5 }, } },
-+	/* timedia_4096a */             { 2, { { 2, 3 }, { 4, 5 }, } },
-+	/* timedia_4078u */             { 1, { { 2, -1 }, } },
-+	/* timedia_4079a */             { 1, { { 2, 3 }, } },
-+	/* timedia_4085u */             { 2, { { 2, -1 }, { 4, -1 }, } },
-+	/* timedia_4079r */             { 1, { { 2, 3 }, } },
-+	/* timedia_4079s */             { 1, { { 2, 3 }, } },
-+	/* timedia_4079d */             { 1, { { 2, 3 }, } },
-+	/* timedia_4079e */             { 1, { { 2, 3 }, } },
-+	/* timedia_4079f */             { 1, { { 2, 3 }, } },
-+	/* timedia_9079a */             { 1, { { 2, 3 }, } },
-+	/* timedia_9079b */             { 1, { { 2, 3 }, } },
-+	/* timedia_9079c */             { 1, { { 2, 3 }, } },
- };
- 
- static struct pci_device_id parport_serial_pci_tbl[] = {
-@@ -176,6 +212,25 @@ static struct pci_device_id parport_serial_pci_tbl[] = {
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, siig_2s1p_20x },
- 	{ PCI_VENDOR_ID_SIIG, PCI_DEVICE_ID_SIIG_2S1P_20x_850,
- 	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, siig_2s1p_20x },
-+	/* PCI_VENDOR_ID_TIMEDIA/SUNIX has many differing cards ...*/
-+	{ 0x1409, 0x7168, 0x1409, 0x4078, 0, 0, timedia_4078a },
-+	{ 0x1409, 0x7168, 0x1409, 0x4079, 0, 0, timedia_4079h },
-+	{ 0x1409, 0x7168, 0x1409, 0x4085, 0, 0, timedia_4085h },
-+	{ 0x1409, 0x7168, 0x1409, 0x4088, 0, 0, timedia_4088a },
-+	{ 0x1409, 0x7168, 0x1409, 0x4089, 0, 0, timedia_4089a },
-+	{ 0x1409, 0x7168, 0x1409, 0x4095, 0, 0, timedia_4095a },
-+	{ 0x1409, 0x7168, 0x1409, 0x4096, 0, 0, timedia_4096a },
-+	{ 0x1409, 0x7168, 0x1409, 0x5078, 0, 0, timedia_4078u },
-+	{ 0x1409, 0x7168, 0x1409, 0x5079, 0, 0, timedia_4079a },
-+	{ 0x1409, 0x7168, 0x1409, 0x5085, 0, 0, timedia_4085u },
-+	{ 0x1409, 0x7168, 0x1409, 0x6079, 0, 0, timedia_4079r },
-+	{ 0x1409, 0x7168, 0x1409, 0x7079, 0, 0, timedia_4079s },
-+	{ 0x1409, 0x7168, 0x1409, 0x8079, 0, 0, timedia_4079d },
-+	{ 0x1409, 0x7168, 0x1409, 0x9079, 0, 0, timedia_4079e },
-+	{ 0x1409, 0x7168, 0x1409, 0xa079, 0, 0, timedia_4079f },
-+	{ 0x1409, 0x7168, 0x1409, 0xb079, 0, 0, timedia_9079a },
-+	{ 0x1409, 0x7168, 0x1409, 0xc079, 0, 0, timedia_9079b },
-+	{ 0x1409, 0x7168, 0x1409, 0xd079, 0, 0, timedia_9079c },
- 
- 	{ 0, } /* terminate list */
- };
-@@ -267,6 +322,114 @@ static struct pciserial_board pci_parport_serial_boards[] __devinitdata = {
- 		.base_baud	= 921600,
- 		.uart_offset	= 8,
- 	},
-+	[timedia_4078a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079h] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4085h] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4088a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4089a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4095a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4096a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4078u] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4085u] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079r] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079s] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079d] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079e] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_4079f] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_9079a] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_9079b] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
-+	[timedia_9079c] = {
-+		.flags		= FL_BASE0|FL_BASE_BARS,
-+		.num_ports	= 1,
-+		.base_baud	= 921600,
-+		.uart_offset	= 8,
-+	},
- };
- 
- struct parport_serial_private {
-diff --git a/drivers/serial/8250_pci.c b/drivers/serial/8250_pci.c
-index d9b9a63..bf50a1f 100644
---- a/drivers/serial/8250_pci.c
-+++ b/drivers/serial/8250_pci.c
-@@ -574,6 +574,28 @@ static const struct timedia_struct {
- 	{ 8, timedia_eight_port }
- };
- 
-+/*
-+ * There are nearly 70 different Timedia/SUNIX PCI serial devices.  Instead of
-+ * listing them individually, this driver merely grabs them all with
-+ * PCI_ANY_ID.  Some of these devices, however, also feature a parallel port,
-+ * and should be left free to be claimed by parport_serial instead.
-+ */
-+static int pci_timedia_probe(struct pci_dev *dev)
-+{
-+	/*
-+	 * Check the third digit of the subdevice ID
-+	 * (0,2,3,5,6: serial only -- 7,8,9: serial + parallel)
-+	 */
-+	if ((dev->subsystem_device & 0x00f0) >= 0x70) {
-+		dev_info(&dev->dev,
-+			"ignoring Timedia subdevice %04x for parport_serial\n",
-+			dev->subsystem_device);
-+		return -ENODEV;
-+	}
-+
-+	return 0;
-+}
-+
- static int pci_timedia_init(struct pci_dev *dev)
- {
- 	const unsigned short *ids;
-@@ -1343,6 +1365,7 @@ static struct pci_serial_quirk pci_serial_quirks[] __refdata = {
- 		.device		= PCI_DEVICE_ID_TIMEDIA_1889,
- 		.subvendor	= PCI_VENDOR_ID_TIMEDIA,
- 		.subdevice	= PCI_ANY_ID,
-+		.probe		= pci_timedia_probe,
- 		.init		= pci_timedia_init,
- 		.setup		= pci_timedia_setup,
- 	},
--- 
-1.7.1
+Ah yes the comment is too simple. However the redirty_tail() is not to
+avoid blocking writeback of other inodes, but to avoid eating 100% CPU
+on busy retrying a dirty inode/page that cannot perform writeback for
+a while. (In theory redirty_tail() can still busy retry though, when
+there is only one single dirty inode.) So how about
 
+        /*
+         * somehow blocked: avoid busy retrying
+         */
+
+Thanks,
+Fengguang
