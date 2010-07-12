@@ -1,69 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755328Ab0GLWIF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 18:08:05 -0400
-Received: from shutemov.name ([188.40.19.243]:36995 "EHLO shutemov.name"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754442Ab0GLWID (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 18:08:03 -0400
-Date: Tue, 13 Jul 2010 01:08:01 +0300
-From: "Kirill A. Shutemov" <kirill@shutemov.name>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Siarhei Siamashka <siarhei.siamashka@nokia.com>,
-        Anfei Zhou <anfei.zhou@gmail.com>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Alexander Shishkin <virtuoso@slind.org>,
-        alan@lxorguk.ukuu.org.uk, linux-arm-kernel@lists.infradead.org
-Subject: Re: [patch 071/149] ARM: 6166/1: Proper prefetch abort handling on
- pre-ARMv6
-Message-ID: <20100712220801.GA28926@shutemov.name>
-References: <20100701221728.GA12187@suse.de>
- <20100701222541.GB10481@shutemov.name>
- <20100701224837.GA27389@flint.arm.linux.org.uk>
- <20100701225911.GC10481@shutemov.name>
- <20100701231207.GB27389@flint.arm.linux.org.uk>
- <20100706130618.GA14177@shutemov.name>
- <20100706225815.GA21834@flint.arm.linux.org.uk>
- <20100707085601.GA18732@shutemov.name>
- <20100707223417.GA22673@n2100.arm.linux.org.uk>
- <20100708113122.GA23854@shutemov.name>
+	id S1755402Ab0GLWIa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 18:08:30 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:35633 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753043Ab0GLWI2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 18:08:28 -0400
+Message-ID: <4C3B923F.1090703@metafoo.de>
+Date: Tue, 13 Jul 2010 00:07:59 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100708113122.GA23854@shutemov.name>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Matt Fleming <matt@console-pimps.org>, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH v4] MMC: Add JZ4740 mmc driver
+References: <1277688041-23522-1-git-send-email-lars@metafoo.de> <1278970413-21617-1-git-send-email-lars@metafoo.de> <4C3B8C13.3040009@oracle.com>
+In-Reply-To: <4C3B8C13.3040009@oracle.com>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 08, 2010 at 02:31:22PM +0300, Kirill A. Shutemov wrote:
-> On Wed, Jul 07, 2010 at 11:34:18PM +0100, Russell King - ARM Linux wrote:
-> > On Wed, Jul 07, 2010 at 11:56:01AM +0300, Kirill A. Shutemov wrote:
-> > > But it seems that the problem is more global. Potentially, any of
-> > > pmd_none() check may produce false results. I don't see an easy way to fix
-> > > it.
-> > 
-> > It isn't.  We normally guarantee that we always fill on both L1 entries.
-> > The only exception is for the mappings specified via create_mapping()
-> > which is used for the static platform mappings.
->  
-> Why do not to change create_mapping() to follow the same rules?
-> I mean, create sections only if it asked for 2*SECTION_SIZE with
-> appropriate alignment. It reduces number of section mappings, but,
-> probably, will be a bit cleaner and less error-prune.
-> 
-> > > Does Linux VM still expect one PTE table per page?
-> > 
-> > Yes, and as far as I can see probably always will.  Hence why we need
-> > to put two L1 entries in one page and lie to the kernel about the sizes
-> > of the hardware entries.
-> 
-> Another option is leave half of page with PTE table free. Is it very bad
-> idea?
-> 
-> How other architectures handle it? Or only on ARM PTL table size is less
-> than page size?
+Hi
 
-Russell, any comments? I would like to fix it in a right way.
+Randy Dunlap wrote:
+> Lars-Peter Clausen wrote:
+>> This patch adds support for the mmc controller on JZ4740 SoCs.
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+>> Acked-by: Matt Fleming <matt@console-pimps.org>
+>> Cc: Andrew Morton <akpm@linux-foundation.org>
+>> Cc: Matt Fleming <matt@console-pimps.org>
+>> Cc: linux-mmc@vger.kernel.org
+>>
+>> ---
+>>  arch/mips/include/asm/mach-jz4740/jz4740_mmc.h |   15 +
+>>  drivers/mmc/host/Kconfig                       |    8 +
+>>  drivers/mmc/host/Makefile                      |    1 +
+>>  drivers/mmc/host/jz4740_mmc.c                  | 1024 ++++++++++++++++++++++++
+>>  4 files changed, 1048 insertions(+), 0 deletions(-)
+>>  create mode 100644 arch/mips/include/asm/mach-jz4740/jz4740_mmc.h
+>>  create mode 100644 drivers/mmc/host/jz4740_mmc.c
+>>
+>> diff --git a/arch/mips/include/asm/mach-jz4740/jz4740_mmc.h b/arch/mips/include/asm/mach-jz4740/jz4740_mmc.h
+>> new file mode 100644
+>> index 0000000..8543f43
+>> --- /dev/null
+>> +++ b/arch/mips/include/asm/mach-jz4740/jz4740_mmc.h
+>> @@ -0,0 +1,15 @@
+>> +#ifndef __LINUX_MMC_JZ4740_MMC
+>> +#define __LINUX_MMC_JZ4740_MMC
+>> +
+>> +struct jz4740_mmc_platform_data {
+>> +	int gpio_power;
+>> +	int gpio_card_detect;
+>> +	int gpio_read_only;
+>> +	unsigned card_detect_active_low:1;
+>> +	unsigned read_only_active_low:1;
+>> +	unsigned power_active_low:1;
+>> +
+>> +	unsigned data_1bit:1;
+>> +};
+>> +
+>> +#endif
+>> diff --git a/drivers/mmc/host/Kconfig b/drivers/mmc/host/Kconfig
+>> index f06d06e..546fc49 100644
+>> --- a/drivers/mmc/host/Kconfig
+>> +++ b/drivers/mmc/host/Kconfig
+>> @@ -81,6 +81,14 @@ config MMC_RICOH_MMC
+>>  
+>>  	  If unsure, say Y.
+>>  
+>> +config MMC_JZ4740
+>> +	tristate "JZ4740 SD/Multimedia Card Interface support"
+>> +	depends on MACH_JZ4740
+> 
+> What tree has the kconfig symbol MACH_JZ4740 in it?
+> I can't seem to find it...
+> 
+> Should the depends also say anything about GPIO?
+> I only ask because the header file above mentions gpio.
+> 
 
--- 
- Kirill A. Shutemov
+None yet, mips hopefully soon. Version 1 of this patch was part of a series adding
+support for the JZ4740.
+Since the jz4740 platform code provides the gpio functions I don't think it is
+necessary to add an additional depends on GENERIC_GPIO.
+
+>> +	help
+>> +	  This selects the Ingenic Z4740 SD/Multimedia card Interface.
+>> +	  If you have an ngenic platform with a Multimedia Card slot,
+> 
+> 	                 Ingenic ?
+> 
+
+Woops, yes.
+
+>> +	  say Y or M here.
+>> +
+>>  config MMC_SDHCI_OF
+>>  	tristate "SDHCI support on OpenFirmware platforms"
+>>  	depends on MMC_SDHCI && PPC_OF
+> 
+> 
+
+Thanks for reviewing
+- Lars
