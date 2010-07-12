@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755300Ab0GLUvO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 16:51:14 -0400
-Received: from mail.perches.com ([173.55.12.10]:1799 "EHLO mail.perches.com"
+	id S1755407Ab0GLUvU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 16:51:20 -0400
+Received: from mail.perches.com ([173.55.12.10]:1800 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755106Ab0GLUvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 16:51:07 -0400
+	id S1755109Ab0GLUvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 16:51:08 -0400
 From: Joe Perches <joe@perches.com>
 To: Jiri Kosina <trivial@kernel.org>
-Cc: linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
-        netdev@vger.kernel.org
-Subject: [PATCH 31/36] net/core: Remove unnecessary casts of private_data
-Date: Mon, 12 Jul 2010 13:50:23 -0700
-Message-Id: <217e404708d336ed1ad3254c5ea6626ee94b6a3d.1278967121.git.joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, Samuel Ortiz <samuel@sortiz.org>,
+        "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org
+Subject: [PATCH 32/36] net/irda: Remove unnecessary casts of private_data
+Date: Mon, 12 Jul 2010 13:50:24 -0700
+Message-Id: <0f791bb0d02971908720f0d09b4d8ff9140bb6d0.1278967121.git.joe@perches.com>
 X-Mailer: git-send-email 1.7.1.337.g6068.dirty
 In-Reply-To: <cover.1278967120.git.joe@perches.com>
 References: <cover.1278967120.git.joe@perches.com>
@@ -22,31 +22,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Signed-off-by: Joe Perches <joe@perches.com>
 ---
- net/core/pktgen.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ net/irda/irnet/irnet_ppp.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
-diff --git a/net/core/pktgen.c b/net/core/pktgen.c
-index 1ee2ebd..24a19de 100644
---- a/net/core/pktgen.c
-+++ b/net/core/pktgen.c
-@@ -846,7 +846,7 @@ static ssize_t pktgen_if_write(struct file *file,
- 			       const char __user * user_buffer, size_t count,
- 			       loff_t * offset)
+diff --git a/net/irda/irnet/irnet_ppp.c b/net/irda/irnet/irnet_ppp.c
+index 6a1a202..800bc53 100644
+--- a/net/irda/irnet/irnet_ppp.c
++++ b/net/irda/irnet/irnet_ppp.c
+@@ -527,7 +527,7 @@ static int
+ dev_irnet_close(struct inode *	inode,
+ 		struct file *	file)
  {
--	struct seq_file *seq = (struct seq_file *)file->private_data;
-+	struct seq_file *seq = file->private_data;
- 	struct pktgen_dev *pkt_dev = seq->private;
- 	int i = 0, max, len;
- 	char name[16], valstr[32];
-@@ -1776,7 +1776,7 @@ static ssize_t pktgen_thread_write(struct file *file,
- 				   const char __user * user_buffer,
- 				   size_t count, loff_t * offset)
+-  irnet_socket *	ap = (struct irnet_socket *) file->private_data;
++  irnet_socket *	ap = file->private_data;
+ 
+   DENTER(FS_TRACE, "(file=0x%p, ap=0x%p)\n",
+ 	 file, ap);
+@@ -564,7 +564,7 @@ dev_irnet_write(struct file *	file,
+ 		size_t		count,
+ 		loff_t *	ppos)
  {
--	struct seq_file *seq = (struct seq_file *)file->private_data;
-+	struct seq_file *seq = file->private_data;
- 	struct pktgen_thread *t = seq->private;
- 	int i = 0, max, len, ret;
- 	char name[40];
+-  irnet_socket *	ap = (struct irnet_socket *) file->private_data;
++  irnet_socket *	ap = file->private_data;
+ 
+   DPASS(FS_TRACE, "(file=0x%p, ap=0x%p, count=%Zd)\n",
+ 	file, ap, count);
+@@ -588,7 +588,7 @@ dev_irnet_read(struct file *	file,
+ 	       size_t		count,
+ 	       loff_t *		ppos)
+ {
+-  irnet_socket *	ap = (struct irnet_socket *) file->private_data;
++  irnet_socket *	ap = file->private_data;
+ 
+   DPASS(FS_TRACE, "(file=0x%p, ap=0x%p, count=%Zd)\n",
+ 	file, ap, count);
+@@ -609,7 +609,7 @@ static unsigned int
+ dev_irnet_poll(struct file *	file,
+ 	       poll_table *	wait)
+ {
+-  irnet_socket *	ap = (struct irnet_socket *) file->private_data;
++  irnet_socket *	ap = file->private_data;
+   unsigned int		mask;
+ 
+   DENTER(FS_TRACE, "(file=0x%p, ap=0x%p)\n",
+@@ -638,7 +638,7 @@ dev_irnet_ioctl(
+ 		unsigned int	cmd,
+ 		unsigned long	arg)
+ {
+-  irnet_socket *	ap = (struct irnet_socket *) file->private_data;
++  irnet_socket *	ap = file->private_data;
+   int			err;
+   int			val;
+   void __user *argp = (void __user *)arg;
 -- 
 1.7.1.337.g6068.dirty
 
