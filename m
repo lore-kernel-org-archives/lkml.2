@@ -1,52 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755057Ab0GLGvk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 02:51:40 -0400
-Received: from hawking.rebel.net.au ([203.20.69.83]:55338 "EHLO
-	hawking.rebel.net.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754170Ab0GLGvj (ORCPT
+	id S1754922Ab0GLG5n (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 02:57:43 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:62840 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752145Ab0GLG5m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 02:51:39 -0400
-X-Greylist: delayed 308 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jul 2010 02:51:39 EDT
-Message-ID: <4C3ABA35.7020507@davidnewall.com>
-Date: Mon, 12 Jul 2010 16:16:13 +0930
-From: David Newall <davidn@davidnewall.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: "Ted Ts'o" <tytso@mit.edu>, Martin Steigerwald <Martin@lichtvoll.de>,
+	Mon, 12 Jul 2010 02:57:42 -0400
+From: Thomas Weber <weber@corscience.de>
+To: lenb@kernel.org
+Cc: Thomas Weber <weber@corscience.de>, linux-pm@lists.linux-foundation.org,
         linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-References: <201007110918.42120.Martin@lichtvoll.de> <20100711131640.GA3503@thunk.org>
-In-Reply-To: <20100711131640.GA3503@thunk.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Subject: [PATCH] idle: intel_idle: Change mode 755 => 644
+Date: Mon, 12 Jul 2010 08:56:43 +0200
+Message-Id: <1278917804-4456-1-git-send-email-weber@corscience.de>
+X-Mailer: git-send-email 1.7.1
+X-Provags-ID: V02:K0:MWKzVglHXVEs4ej5P6i/T0pmCzWJPGJoez1Py35MzuZ
+ MCRGkk7d2G/d745NAqpvCqCYPXlCUh18M6XOGj9oGRm2IsBN42
+ bFd1mJZoxSSFy7JBkW30q5jxSYdjOzKR8DJPSlHbTo3DSU/mzu
+ JMmxyuC+CCd+yTQZTIaaFrkfbq/8E5A0gClom98p2mo78h1ZiQ
+ E4Zi6iaOrV7iKzmEc0JaA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ted Ts'o wrote:
-> It is possible to do other types of release strategies, but look at
-> Debian Obsolete^H^H^H^H^H^H^H^H Stable if you want to see what happens
-> if you insist on waiting until all release blockers are fixed
+Remove execution permission from source file.
 
-I don't know if Ted intended to be snide, but that is how he sounded.  
-And yet, his comment was a fair reflection of how core developers seem 
-to feel about stability, namely that a stable kernel is obsolete and 
-therefore not particularly desirable.  (I use the word "stable" in it's 
-common English meaning, not the almost inexplicable Tux variation.)
+Signed-off-by: Thomas Weber <weber@corscience.de>
+---
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+ mode change 100755 => 100644 drivers/idle/intel_idle.c
 
-I think the truth is that linux kernels are only ever stable as released 
-by distributions, and then only the more conservative of them.  What 
-comes direct from kernel.org, I mean those called "latest stable", are 
-an exercise in dissembling.  It's stable because someone calls it 
-stable, even though it crashes and has regressions?  That's not stable, 
-that's just misleading.
+diff --git a/drivers/idle/intel_idle.c b/drivers/idle/intel_idle.c
+old mode 100755
+new mode 100644
+-- 
+1.7.1
 
-Stable kernels *could* be stable.  Debian succeeds.  If it takes them a 
-long time, that is only because the core developers fail to release 
-reasonable quality kernels.  Don't sneer at them because they do the 
-right thing; do the right thing yourself so that they can produce more 
-timely updates.
-
-I don't expect fair consideration of these comments; why change when 
-shooting the messenger is so much more satisfying?
