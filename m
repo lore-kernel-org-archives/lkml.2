@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab0GLCTZ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 11 Jul 2010 22:19:25 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:35964 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324Ab0GLCTX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 11 Jul 2010 22:19:23 -0400
-Subject: Re: [PATCH 1/2] Add a common struct clk
-From: Jeremy Kerr <jeremy.kerr@canonical.com>
-To: MyungJoo Ham <myungjoo.ham@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Ben Herrenchmidt <benh@kernel.crashing.org>,
-        linux-arm-kernel@lists.infradead.org
-In-Reply-To: <AANLkTilitnz8eiBclky74FTOeKua3LjM3cbRdfwzkpnW@mail.gmail.com>
-References: <1277098513.947165.104554431018.0.gpush@pororo>
-	 <1277098513.947633.945838133095.1.gpush@pororo>
-	 <AANLkTilitnz8eiBclky74FTOeKua3LjM3cbRdfwzkpnW@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Jul 2010 10:19:13 +0800
-Message-ID: <1278901153.9235.6.camel@pororo.lan>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755599Ab0GLCUF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 11 Jul 2010 22:20:05 -0400
+Received: from ozlabs.org ([203.10.76.45]:47114 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755324Ab0GLCUE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 11 Jul 2010 22:20:04 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC PATCH] x86-64: software IRQ masking and handling
+Date: Mon, 12 Jul 2010 11:49:57 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; i686; ; )
+Cc: Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        "the arch/x86 maintainers" <x86@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+References: <4C3A06E3.50402@kernel.org> <AANLkTik8EHarsrnAisuj9SKbeXddlA6Dz-KzDOPsmBxh@mail.gmail.com>
+In-Reply-To: <AANLkTik8EHarsrnAisuj9SKbeXddlA6Dz-KzDOPsmBxh@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007121149.58129.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi MyungJoo,
+On Mon, 12 Jul 2010 05:59:48 am Linus Torvalds wrote:
+> On Sun, Jul 11, 2010 at 11:01 AM, Tejun Heo <tj@kernel.org> wrote:
+> >
+> > I just got it working and it behaves pretty good on qemu.  Actual
+> > machines can't idle but seem to work otherwise.  I'll fix up idle, get
+> > paravirt working and try to get some perf measurements but I'll be
+> > mostly off next week, so it will take some time.  In the meantime,
+> > what do you guys think?
+> 
+> You need to show some real improvement on real hardware.
 
-> > +int clk_enable(struct clk *clk)
-> > +{
-> > +       int ret = 0;
-> > +
-> > +       if (!clk->ops->enable)
-> > +               return 0;
-> 
-> Wouldn't it be better (safer?) to check "clk" and "clk->ops" before
-> accessing clk->ops->enable?
-> For example,
-> 
->         if (IS_ERR_OR_NULL(clk))
->                 return -EINVAL;
-> 
->         if (!clk->ops || !clk->ops->enable)
->                 return 0;
-> 
-> Or, do you think it'd be better not to check and save some time?
-> 
-> Anyway, if we intend to check the input, the patch for the patch
-> including kernel/clk.c would be...
+Also, is it worth trying to implement this soft disable generically?
+I know at least ppc64 does it today...
 
-I think that we should leave it as-is; although it may be 'safer', it
-may mean more subtle bugs can arise because we've been handed an invalid
-clock pointer.
+(Y'know, because your initial patch wasn't ambitious enough...)
 
-I'd rather the code oops on first usage so that the developer realises
-that something is broken, rather than fail with an error code.
-
-BTW - nice work on the samsung implementation, I will check it out soon.
+It might reduce the use of NMIs.  But maybe not.
 
 Cheers,
-
-
-Jeremy
-
+Rusty.
+PS.  When did we start top-commenting and quoting the whole patch?
