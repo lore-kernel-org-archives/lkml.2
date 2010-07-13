@@ -1,169 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754491Ab0GMVNg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 17:13:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:46250 "EHLO hera.kernel.org"
+	id S1756125Ab0GMVPo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 17:15:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36521 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751076Ab0GMVNe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 17:13:34 -0400
-Date: Tue, 13 Jul 2010 21:12:50 GMT
-From: tip-bot for Yinghai Lu <yinghai@kernel.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinghai@kernel.org, penberg@cs.helsinki.fi, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinghai@kernel.org, penberg@cs.helsinki.fi, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <4C3CCE05.4090505@kernel.org>
-References: <4C3CCE05.4090505@kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/setup] x86, setup: Make the setup code also accept console=uart8250
-Message-ID: <tip-ce0aa5dd20e44372f9617dd67c984f41fcdbed88@git.kernel.org>
-Git-Commit-ID: ce0aa5dd20e44372f9617dd67c984f41fcdbed88
-X-Mailer: tip-git-log-daemon
+	id S1751537Ab0GMVPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 17:15:42 -0400
+Message-ID: <4C3CD77B.9050108@redhat.com>
+Date: Tue, 13 Jul 2010 11:15:39 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 13 Jul 2010 21:12:51 +0000 (UTC)
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/18] Robust TSC compensation
+References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-10-git-send-email-zamsden@redhat.com> <20100713203418.GA903@amt.cnet>
+In-Reply-To: <20100713203418.GA903@amt.cnet>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ce0aa5dd20e44372f9617dd67c984f41fcdbed88
-Gitweb:     http://git.kernel.org/tip/ce0aa5dd20e44372f9617dd67c984f41fcdbed88
-Author:     Yinghai Lu <yinghai@kernel.org>
-AuthorDate: Tue, 13 Jul 2010 13:35:17 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 13 Jul 2010 14:08:12 -0700
+On 07/13/2010 10:34 AM, Marcelo Tosatti wrote:
+> On Mon, Jul 12, 2010 at 04:25:29PM -1000, Zachary Amsden wrote:
+>    
+>> Make the match of TSC find TSC writes that are close to each other
+>> instead of perfectly identical; this allows the compensator to also
+>> work in migration / suspend scenarios.
+>>
+>> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+>> ---
+>>   arch/x86/kvm/x86.c |   14 ++++++++++----
+>>   1 files changed, 10 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+>> index 79c4608..51d3f3e 100644
+>> --- a/arch/x86/kvm/x86.c
+>> +++ b/arch/x86/kvm/x86.c
+>> @@ -926,21 +926,27 @@ void guest_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+>>   	struct kvm *kvm = vcpu->kvm;
+>>   	u64 offset, ns, elapsed;
+>>   	struct timespec ts;
+>> +	s64 sdiff;
+>>
+>>   	spin_lock(&kvm->arch.tsc_write_lock);
+>>   	offset = data - native_read_tsc();
+>>   	ns = get_kernel_ns();
+>>   	elapsed = ns - kvm->arch.last_tsc_nsec;
+>> +	sdiff = data - kvm->arch.last_tsc_write;
+>> +	if (sdiff<  0)
+>> +		sdiff = -sdiff;
+>>
+>>   	/*
+>> -	 * Special case: identical write to TSC within 5 seconds of
+>> +	 * Special case: close write to TSC within 5 seconds of
+>>   	 * another CPU is interpreted as an attempt to synchronize
+>> -	 * (the 5 seconds is to accomodate host load / swapping).
+>> +	 * The 5 seconds is to accomodate host load / swapping as
+>> +	 * well as any reset of TSC during the boot process.
+>>   	 *
+>>   	 * In that case, for a reliable TSC, we can match TSC offsets,
+>> -	 * or make a best guest using kernel_ns value.
+>> +	 * or make a best guest using elapsed value.
+>>   	 */
+>> -	if (data == kvm->arch.last_tsc_write&&  elapsed<  5ULL * NSEC_PER_SEC) {
+>> +	if (sdiff<  nsec_to_cycles(5ULL * NSEC_PER_SEC)&&
+>> +	    elapsed<  5ULL * NSEC_PER_SEC) {
+>>   		if (!check_tsc_unstable()) {
+>>   			offset = kvm->arch.last_tsc_offset;
+>>   			pr_debug("kvm: matched tsc offset for %llu\n", data);
+>>      
+> What prevents a vcpu from seeing its TSC go backwards, in case the first
+> write in the 5 second window is smaller than the victim vcpu's last
+> visible TSC value ?
+>    
 
-x86, setup: Make the setup code also accept console=uart8250
+Nothing, unfortunately.  However, the TSC would already have to be out 
+of sync in order for the problem to occur.  It can never happen in 
+normal circumstances on a stable hardware TSC except in one case; 
+migration.  During the CPU state transfer phase of migration, however, 
+all the VCPUs should already be stopped, so the maximum TSC that can be 
+observed by any CPU is bounded.
 
-Make the boot code also accept the console=uart8250,io,0x2f8,115200n
-form of early console.
+The problem, of course is that the TSC write will latch the first TSC to 
+be written, which, if you stop in order, and start in order, will be the 
+lowest TSC; so later VCPUs can observe a negative TSC drift (timing is 
+additionally complicated by the VCPU teardown / create time).
 
-Also add back simple_guess_base(), otherwise those simple_strtoull(,,0)
-are not going to work.
+There are a couple solutions; some of which are ugly and some of which 
+are very ugly.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-LKML-Reference: <4C3CCE05.4090505@kernel.org>
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/boot/string.c |   22 ++++++++++++++++++
- arch/x86/boot/tty.c    |   59 +++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 80 insertions(+), 1 deletions(-)
+1) Make some global state available about whether the VM is running or 
+not, use the global TSC lock and record the last TSC when the VM is 
+stopped.  Return this TSC from any reads when the VM is stopped.  I'm 
+not sure the kernel model is equipped to do this properly; in theory, 
+userspace could stop and start running VCPUs using the ioctls whenever 
+it feels like and requires no protocol to do so.
 
-diff --git a/arch/x86/boot/string.c b/arch/x86/boot/string.c
-index aba29df..3cbc405 100644
---- a/arch/x86/boot/string.c
-+++ b/arch/x86/boot/string.c
-@@ -68,10 +68,32 @@ unsigned int atou(const char *s)
- /* Works only for digits and letters, but small and fast */
- #define TOLOWER(x) ((x) | 0x20)
- 
-+static unsigned int simple_guess_base(const char *cp)
-+{
-+	if (cp[0] == '0') {
-+		if (TOLOWER(cp[1]) == 'x' && isxdigit(cp[2]))
-+			return 16;
-+		else
-+			return 8;
-+	} else {
-+		return 10;
-+	}
-+}
-+
-+/**
-+ * simple_strtoull - convert a string to an unsigned long long
-+ * @cp: The start of the string
-+ * @endp: A pointer to the end of the parsed string will be placed here
-+ * @base: The number base to use
-+ */
-+
- unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base)
- {
- 	unsigned long long result = 0;
- 
-+	if (!base)
-+		base = simple_guess_base(cp);
-+
- 	if (base == 16 && cp[0] == '0' && TOLOWER(cp[1]) == 'x')
- 		cp += 2;
- 
-diff --git a/arch/x86/boot/tty.c b/arch/x86/boot/tty.c
-index f3ceee2..f6d52e6 100644
---- a/arch/x86/boot/tty.c
-+++ b/arch/x86/boot/tty.c
-@@ -170,7 +170,7 @@ static void early_serial_init(int baud)
- 	outb(c & ~DLAB, early_serial_base + LCR);
- }
- 
--void console_init(void)
-+static int parse_earlyprintk(void)
- {
- 	int baud = DEFAULT_BAUD;
- 	char arg[32];
-@@ -208,6 +208,63 @@ void console_init(void)
- 			baud = DEFAULT_BAUD;
- 	}
- 
-+	return baud;
-+}
-+
-+#define BASE_BAUD (1843200/16)
-+static unsigned int probe_baud(int port)
-+{
-+	unsigned char lcr, dll, dlh;
-+	unsigned int quot;
-+
-+	lcr = inb(port + LCR);
-+	outb(lcr | DLAB, port + LCR);
-+	dll = inb(port + DLL);
-+	dlh = inb(port + DLH);
-+	outb(lcr, port + LCR);
-+	quot = (dlh << 8) | dll;
-+
-+	return BASE_BAUD / quot;
-+}
-+
-+static int parse_console_uart8250(void)
-+{
-+	char optstr[64], *options;
-+	int baud = DEFAULT_BAUD;
-+
-+	/*
-+	 * console=uart8250,io,0x3f8,115200n8
-+	 * need to make sure it is last one console !
-+	 */
-+	if (cmdline_find_option("console", optstr, sizeof optstr) <= 0)
-+		return baud;
-+
-+	options = optstr;
-+
-+	if (!strncmp(options, "uart8250,io,", 12))
-+		early_serial_base = simple_strtoull(options + 12, &options, 0);
-+	else if (!strncmp(options, "uart,io,", 8))
-+		early_serial_base = simple_strtoull(options + 8, &options, 0);
-+	else
-+		return baud;
-+
-+	if (options && (options[0] == ','))
-+		baud = simple_strtoull(options + 1, &options, 0);
-+	else
-+		baud = probe_baud(early_serial_base);
-+
-+	return baud;
-+}
-+
-+void console_init(void)
-+{
-+	int baud;
-+
-+	baud = parse_earlyprintk();
-+
-+	if (!early_serial_base)
-+		baud = parse_console_uart8250();
-+
- 	if (early_serial_base != 0)
- 		early_serial_init(baud);
- }
+2) Make userspace deal with it; when starting up a VM, read the VCPU 
+state for all VCPUs in first, then take the maximum TSC and set all TSCs 
+to this value before starting the VCPUs.  I'm not sure the userspace 
+model is equipped to do this properly, it could start running earlier 
+CPUs before reading later CPU states...
+
+3) Drop passthrough TSC altogether and switch to trap / emulate TSC.
+
+4) Pray to a deity of your choice.
+
+Of course, none of these solutions work for a guest which deliberately 
+runs with desynchronized TSCs, but we needn't really be concerned with 
+that, no guest does it on purpose.
