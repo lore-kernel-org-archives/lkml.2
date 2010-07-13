@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751572Ab0GMFEq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 01:04:46 -0400
-Received: from mail.perches.com ([173.55.12.10]:1851 "EHLO mail.perches.com"
+	id S1751895Ab0GMFRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 01:17:06 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:47168 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab0GMFEp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 01:04:45 -0400
-Subject: Re: [PATCH 16/36] drivers/sbus: Remove unnecessary casts of
- private_data
-From: Joe Perches <joe@perches.com>
-To: David Miller <davem@davemloft.net>
-Cc: trivial@kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100712.211856.24591640.davem@davemloft.net>
-References: <cover.1278967120.git.joe@perches.com>
-	 <135e39325e4dd5c7fc4ac9481575ab03c6ce04f6.1278967121.git.joe@perches.com>
-	 <20100712.211856.24591640.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 12 Jul 2010 22:04:42 -0700
-Message-ID: <1278997482.1501.368.camel@Joe-Laptop.home>
+	id S1750830Ab0GMFRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 01:17:03 -0400
+Date: Mon, 12 Jul 2010 22:16:55 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: Shreyas Bhatewara <sbhatewara@vmware.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Pankaj Thakkar <pthakkar@vmware.com>,
+        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Message-ID: <20100712221655.1873954d@nehalam>
+In-Reply-To: <1278990388.32650.22.camel@eng-rhel5-64>
+References: <20100504230225.GP8323@vmware.com>
+	<201005051029.42052.dtor@vmware.com>
+	<20100505173120.GA1752@infradead.org>
+	<201005051035.29831.dtor@vmware.com>
+	<20100505173951.GA8388@infradead.org>
+	<20100505105253.0a8bc465@nehalam>
+	<20100506202113.GC17922@infradead.org>
+	<1278990388.32650.22.camel@eng-rhel5-64>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-07-12 at 21:18 -0700, David Miller wrote:
-> Looks like we need a pattern for drivers/sbus in MAINTAINERS, I'll add it.
+On Mon, 12 Jul 2010 20:06:28 -0700
+Shreyas Bhatewara <sbhatewara@vmware.com> wrote:
 
-Oh good, thanks.
+> 
+> On Thu, 2010-05-06 at 13:21 -0700, Christoph Hellwig wrote:
+> > On Wed, May 05, 2010 at 10:52:53AM -0700, Stephen Hemminger wrote:
+> > > Let me put it bluntly. Any design that allows external code to run
+> > > in the kernel is not going to be accepted.  Out of tree kernel modules are enough
+> > > of a pain already, why do you expect the developers to add another
+> > > interface.
+> > 
+> > Exactly.  Until our friends at VMware get this basic fact it's useless
+> > to continue arguing.
+> > 
+> > Pankaj and Dmitry: you're fine to waste your time on this, but it's not
+> > going to go anywhere until you address that fundamental problem.  The
+> > first thing you need to fix in your archicture is to integrate the VF
+> > function code into the kernel tree, and we can work from there.
+> > 
+> > Please post patches doing this if you want to resume the discussion.
+> > 
+> > _______________________________________________
+> > Pv-drivers mailing list
+> > Pv-drivers@vmware.com
+> > http://mailman2.vmware.com/mailman/listinfo/pv-drivers
+> 
+> 
+> As discussed, following is the patch to give you an idea
+> about implementation of NPA for vmxnet3 driver. Although the
+> patch is big, I have verified it with checkpatch.pl. It gave
+> 0 errors / warnings.
+> 
+> Signed-off-by: Matthieu Bucchaineri <matthieu@vmware.com>
+> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
 
-Unsurprisingly, it looks like it should be you...
+I think the concept won't fly.
 
-$ git log --format=%an drivers/sbus  | sort | uniq -c | sort -rn | head -5
-     54 David S. Miller
-     12 Christoph Hellwig
-     11 Arnd Bergmann
-     11 Al Viro
-      6 Tejun Heo
+But you should really at least try running checkpatch to make sure
+the style conforms.
 
 
+-- 
