@@ -1,247 +1,183 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756841Ab0GMOKE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 10:10:04 -0400
-Received: from eu1sys200aog105.obsmtp.com ([207.126.144.119]:32844 "EHLO
-	eu1sys200aog105.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756774Ab0GMOKC (ORCPT
+	id S1756836Ab0GMOLl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 10:11:41 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:47045 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab0GMOLk convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 10:10:02 -0400
-From: Sundar Iyer <sundar.iyer@stericsson.com>
-To: <lrg@slimlogic.co.uk>, <broonie@opensource.wolfsonmicro.com>,
-        <sameo@linux.intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <STEricsson_nomadik_linux@list.st.com>,
-        Sundar R Iyer <sundar.iyer@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
-Subject: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific data
-Date: Tue, 13 Jul 2010 19:39:33 +0530
-Message-ID: <1279030173-3086-2-git-send-email-sundar.iyer@stericsson.com>
-X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1279030173-3086-1-git-send-email-sundar.iyer@stericsson.com>
-References: <1279030173-3086-1-git-send-email-sundar.iyer@stericsson.com>
+	Tue, 13 Jul 2010 10:11:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=BVGDh+foeBo2vC6+1TJTXr0qXSJvZ8HRWjKy9/EoMTOrSMJed+UiqAdG5m8g4tEWSe
+         sw2+8gAZZyL9u9fTEyDyEUB9YndOXy71wSlifq542iSAQtFS2VXUn3QbXKqooKFJ3B37
+         x6HMIwMF2W8ZqylVKVvSRsJ9zdjgR8ugB0IME=
 MIME-Version: 1.0
-Content-Type: text/plain
+Date: Tue, 13 Jul 2010 15:11:37 +0100
+Message-ID: <AANLkTik8ayaGvOHfjATDGl2vLjToLFgnFvKtcXcMK9RD@mail.gmail.com>
+Subject: Re: [2.6.35-rc5] select useful number of entries for DMA debugging 
+	v3...
+From: Daniel J Blueman <daniel.blueman@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>
+Cc: Joerg Roedel <joro@8bytes.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        John Stoffel <john@stoffel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sundar R Iyer <sundar.iyer@stericsson.com>
+On 12 July 2010 15:39, John Stoffel <john@stoffel.org> wrote:
+>>>>>> "Daniel" == Daniel J Blueman <daniel.blueman@gmail.com> writes:
+>
+> Daniel> On 11 July 2010 12:54, Daniel J Blueman <daniel.blueman@gmail.com> wrote:
+>>> On 10 July 2010 16:43, Joerg Roedel <joro@8bytes.org> wrote:
+>>>> On Sat, Jul 10, 2010 at 03:52:04PM +0100, Daniel J Blueman wrote:
+>>>>> On 9 July 2010 22:33, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>>>>> > On Mon, Jul 5, 2010 at 1:35 AM, Daniel J Blueman
+>>>>> > <daniel.blueman@gmail.com> wrote:
+>>>>> >> When booting 2.6.35-rc3 on some different x86 boxes with DMA debugging
+>>>>> >> enabled, I've consistently seen it exhaust the allocated entries during
+>>>>> >> boot, giving 'DMA-API: debugging out of memory - disabling'.
+>>>>> >>
+>>>>> >> Increase number of entries to allow DMA debugging again.
+>>>>> >
+>>>>> > Rather than increase the default that gets allocated whenever anybody
+>>>>> > enables the DMA debugging, I'd really prefer to see people use the
+>>>>> > kernel command line option if they run out. After all, it's a (pretty
+>>>>> > esoteric) debug option, and the number of required entries depends on
+>>>>> > machine configuration. I'd rather not make the default cover a huge
+>>>>> > number, when you could just add
+>>>>> >
+>>>>> >   dma_debug_entries=65536
+>>>>> >
+>>>>> > on the kernel boot command line instead for machines that want/need it..
+>>>>>
+>>>>> That said, I am seeing the DMA pool exhaust on a single socket Core i5
+>>>>> system with Intel graphics and no other adapters - seems like a fairly
+>>>>> common case. If eg 25% of developers will be using similar to this,
+>>>>> maybe it's good to make DMA debugging less immediately esoteric?
+>>>>>
+>>>>> On the other hand, I would immediately agree if the exhaustion
+>>>>> occurred on an atypical setup.
+>>>>
+>>>> How much memory do you have in this machine? We could probably make the
+>>>> number of pre-allocated entries dependent on the memory available in the
+>>>> machine like Ingo suggested some time ago to avoid such problems.
+>>>
+>>> I have 4GB. Since this change is specific to x86, I guess the only
+>>> corner case we need to protect from this change is developers on small
+>>> x86 embedded systems such as MIDs, so lowering the allocated size on
+>>> <1GB systems makes sense.
+>
+> Daniel> How about something like this? If you think ~18800 entries on a 1GB
+> Daniel> system is better, let me know and I'll quickly respin. The calculation
+> Daniel> seems reasonable for other arches.
+>
+> Daniel> When booting 2.6.35-rc3 on some different x86 boxes with DMA debugging
+> Daniel> enabled, I've seen consistent exhaustion of the allocated entries during
+> Daniel> boot, giving 'DMA-API: debugging out of memory - disabling'.
+>
+> Daniel> Increase the default number of entries to allow DMA debugging again, but
+> Daniel> assign a reasonable lower limit for systems with less memory (eg ~37600
+> Daniel> entries on a 1GB system), to prevent excessive use.
+>
+> Daniel> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+>
+> Daniel> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+> Daniel> index a4ac764..0766fcf 100644
+> Daniel> --- a/arch/x86/kernel/pci-dma.c
+> Daniel> +++ b/arch/x86/kernel/pci-dma.c
+> Daniel> @@ -52,7 +52,7 @@ struct device x86_dma_fallback_dev = {
+> Daniel>  EXPORT_SYMBOL(x86_dma_fallback_dev);
+>
+> Daniel>  /* Number of entries preallocated for DMA-API debugging */
+> Daniel> -#define PREALLOC_DMA_DEBUG_ENTRIES       32768
+> Daniel> +#define PREALLOC_DMA_DEBUG_ENTRIES       65536
+>
+> Daniel>  int dma_set_mask(struct device *dev, u64 mask)
+> Daniel>  {
+> Daniel> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+> Daniel> index ba8b670..2d1f965 100644
+> Daniel> --- a/lib/dma-debug.c
+> Daniel> +++ b/lib/dma-debug.c
+> Daniel> @@ -736,6 +736,10 @@ void dma_debug_init(u32 num_entries)
+>
+> Daniel>         if (req_entries)
+> Daniel>                 num_entries = req_entries;
+> Daniel> +       else
+> Daniel> +               /* for systems with less memory, limit to a proportional amount of memory */
+> Daniel> +               /* eg 1GB memory, 4KB pages ~ 37600 entries */
+> Daniel> +               num_entries = min(num_entries, (unsigned int)(totalram_pages >>
+> Daniel> (PAGE_SHIFT - 10)));
+>
+> Daniel>         if (prealloc_memory(num_entries) != 0) {
+> Daniel>                 pr_err("DMA-API: debugging out of memory error - disabled\n");
+>
+> Maybe you could update this to mention the kernel parameter
+> "dma_debug_entries=xxxxx" so that people could use to increase this
+> value?  It would make it simpler and easier to find it it's logged
+> nicely?
 
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Acked-by: Bengt JONSSON <bengt.g.jonsson@stericsson.com>
-Signed-off-by: Sundar R Iyer <sundar.iyer@stericsson.com>
+Good comment. Fixed checkpatch compliance and rediffed against
+2.6.35-rc5. Linus/Ingo - is this more acceptable?
+
 ---
- arch/arm/mach-ux500/Makefile                  |    1 +
- arch/arm/mach-ux500/board-mop500-regulators.c |  189 +++++++++++++++++++++++++
- 2 files changed, 190 insertions(+), 0 deletions(-)
- create mode 100644 arch/arm/mach-ux500/board-mop500-regulators.c
 
-diff --git a/arch/arm/mach-ux500/Makefile b/arch/arm/mach-ux500/Makefile
-index 0753a69..311f996 100644
---- a/arch/arm/mach-ux500/Makefile
-+++ b/arch/arm/mach-ux500/Makefile
-@@ -12,3 +12,4 @@ obj-$(CONFIG_LOCAL_TIMERS)	+= localtimer.o
- obj-$(CONFIG_HOTPLUG_CPU)       += hotplug.o
- obj-$(CONFIG_CPU_FREQ)		+= cpufreq.o
- obj-$(CONFIG_AB8500_PRCMU_I2C)	+= ab8500-prcmu-i2c.o
-+obj-$(CONFIG_REGULATOR_AB8500)	+= board-mop500-regulators.o
-diff --git a/arch/arm/mach-ux500/board-mop500-regulators.c b/arch/arm/mach-ux500/board-mop500-regulators.c
-new file mode 100644
-index 0000000..34d16c6
---- /dev/null
-+++ b/arch/arm/mach-ux500/board-mop500-regulators.c
-@@ -0,0 +1,189 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * License Terms: GNU General Public License v2
-+ *
-+ * Author: Sundar Iyer <sundar.iyer@stericsson.com> for ST-Ericsson
-+ *
-+ * MOP500 board specific initialization for regulators
-+ */
-+#include <linux/kernel.h>
-+#include <linux/regulator/machine.h>
-+
-+static struct regulator_consumer_supply ab8500_vaux1_consumers[] = {
-+	{ .supply = "vaux1", },
-+};
-+
-+struct regulator_init_data ab8500_vaux1_regulator = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vaux1",
-+		.min_uV = 1100000,
-+		.max_uV = 3300000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vaux1_consumers),
-+	.consumer_supplies = ab8500_vaux1_consumers,
-+};
-+
-+static struct regulator_consumer_supply ab8500_vaux2_consumers[] = {
-+	{ .supply = "vaux2", },
-+};
-+
-+struct regulator_init_data ab8500_vaux2_regulator = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vaux2",
-+		.min_uV = 1100000,
-+		.max_uV = 3300000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vaux2_consumers),
-+	.consumer_supplies = ab8500_vaux2_consumers,
-+};
-+
-+static struct regulator_consumer_supply ab8500_vaux3_consumers[] = {
-+	{ .supply = "vaux3", },
-+};
-+
-+struct regulator_init_data ab8500_vaux3_regulator = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vaux3",
-+		.min_uV = 1100000,
-+		.max_uV = 3300000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vaux3_consumers),
-+	.consumer_supplies = ab8500_vaux3_consumers,
-+};
-+
-+/* supply for tvout, gpadc, TVOUT LDO */
-+static struct regulator_consumer_supply ab8500_vtvout_consumers[] = {
-+	{ .supply = "vtvout", },
-+};
-+
-+struct regulator_init_data ab8500_vtvout_init = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vtvout",
-+		.min_uV = 1900000,
-+		.max_uV = 2100000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vtvout_consumers),
-+	.consumer_supplies = ab8500_vtvout_consumers,
-+};
-+
-+/* supply for ab8500-vaudio, VAUDIO LDO */
-+static struct regulator_consumer_supply ab8500_vaudio_consumers[] = {
-+	{ .supply = "vaudio", },
-+};
-+
-+struct regulator_init_data ab8500_vaudio_init = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vaudio",
-+		.min_uV = 1925000,
-+		.max_uV = 2075000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vaudio_consumers),
-+	.consumer_supplies = ab8500_vaudio_consumers,
-+};
-+
-+/* supply for v-anamic1 VAMic1-LDO */
-+static struct regulator_consumer_supply ab8500_vamic1_consumers[] = {
-+	{ .supply = "vana-mic1", },
-+};
-+
-+struct regulator_init_data ab8500_vamic1_init = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vamic1",
-+		.min_uV = 2000000,
-+		.max_uV = 2100000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vamic1_consumers),
-+	.consumer_supplies = ab8500_vamic1_consumers,
-+};
-+
-+/* supply for v-amic2, VAMIC2 LDO*/
-+static struct regulator_consumer_supply ab8500_vamic2_consumers[] = {
-+	{ .supply = "vana-mic2", },
-+};
-+
-+struct regulator_init_data ab8500_vamic2_init = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vamic2",
-+		.min_uV = 2000000,
-+		.max_uV = 2100000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vamic2_consumers),
-+	.consumer_supplies = ab8500_vamic2_consumers,
-+};
-+
-+/* supply for v-dmic, VDMIC LDO */
-+static struct regulator_consumer_supply ab8500_vdmic_consumers[] = {
-+	{ .supply = "vdig-mic", },
-+};
-+
-+struct regulator_init_data ab8500_vdmic_init = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vdmic",
-+		.min_uV = 1700000,
-+		.max_uV = 1950000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vdmic_consumers),
-+	.consumer_supplies = ab8500_vdmic_consumers,
-+};
-+
-+/* supply for v-intcore12, VINTCORE12 LDO */
-+static struct regulator_consumer_supply ab8500_vintcore_consumers[] = {
-+	{ .supply = "vintcore", },
-+};
-+
-+struct regulator_init_data ab8500_vintcore_init = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vintcore",
-+		.min_uV = 1200000,
-+		.max_uV = 1350000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vintcore_consumers),
-+	.consumer_supplies = ab8500_vintcore_consumers,
-+};
-+
-+/* supply for U8500 CSI/DSI, VANA LDO */
-+static struct regulator_consumer_supply ab8500_vana_consumers[] = {
-+	{ .supply = "vana", },
-+};
-+
-+struct regulator_init_data ab8500_vana_init = {
-+	.supply_regulator_dev = NULL,
-+	.constraints = {
-+		.name = "ab8500-vana",
-+		.min_uV = 0,
-+		.max_uV = 1200000,
-+		.valid_ops_mask = REGULATOR_CHANGE_VOLTAGE|
-+					REGULATOR_CHANGE_STATUS,
-+	},
-+	.num_consumer_supplies = ARRAY_SIZE(ab8500_vana_consumers),
-+	.consumer_supplies = ab8500_vana_consumers,
-+};
-+
+When booting 2.6.35-rc3 on some different x86 boxes with DMA debugging
+enabled, I've seen consistent exhaustion of the allocated entries during
+boot, giving 'DMA-API: debugging out of memory - disabling'.
+
+Increase the default number of entries to allow DMA debugging again, but
+assign a reasonable lower limit for systems with less memory (eg ~38000
+entries on a 1GB system), to prevent excessive use.
+
+Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+
+diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+index 4b7e3d8..5ff7f12 100644
+--- a/arch/x86/kernel/pci-dma.c
++++ b/arch/x86/kernel/pci-dma.c
+@@ -53,7 +53,7 @@ struct device x86_dma_fallback_dev = {
+ EXPORT_SYMBOL(x86_dma_fallback_dev);
+
+ /* Number of entries preallocated for DMA-API debugging */
+-#define PREALLOC_DMA_DEBUG_ENTRIES       32768
++#define PREALLOC_DMA_DEBUG_ENTRIES       65536
+
+ int dma_set_mask(struct device *dev, u64 mask)
+ {
+diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+index 01e6427..b689ac7 100644
+--- a/lib/dma-debug.c
++++ b/lib/dma-debug.c
+@@ -487,7 +487,8 @@ static int prealloc_memory(u32 num_entries)
+ 	num_free_entries = num_entries;
+ 	min_free_entries = num_entries;
+
+-	pr_info("DMA-API: preallocated %d debug entries\n", num_entries);
++	pr_info("DMA-API: preallocated %d debug entries; boot with "
++		"dma_debug_entries=N to change\n", num_entries);
+
+ 	return 0;
+
+@@ -736,6 +737,13 @@ void dma_debug_init(u32 num_entries)
+
+ 	if (req_entries)
+ 		num_entries = req_entries;
++	else
++		/*
++		 * For systems with less memory, limit to a proportional
++		 * amount of memory, eg 1GB memory, 4KB pages ~ 38000 entries
++		 */
++		num_entries = min(num_entries,
++			(unsigned int)(totalram_pages >> (PAGE_SHIFT - 10)));
+
+ 	if (prealloc_memory(num_entries) != 0) {
+ 		pr_err("DMA-API: debugging out of memory error - disabled\n");
 -- 
-1.7.0
-
+Daniel J Blueman
