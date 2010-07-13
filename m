@@ -1,68 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756560Ab0GMM3d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 08:29:33 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:54035 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752956Ab0GMM3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 08:29:31 -0400
-Date: Tue, 13 Jul 2010 21:29:25 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Ismael Luque Valencia <isma.luque@gmail.com>
-Cc: Patrick McHardy <kaber@trash.net>, Michal Marek <mmarek@suse.cz>,
-        lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        Julian Anastasov <ja@ssi.bg>, Wensong Zhang <wensong@linux-vs.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: IPVS scheduler algorithms (was: [PATCH] ipvs: Kconfig cleanup)
-Message-ID: <20100713122925.GA8903@verge.net.au>
-References: <1278102728-20217-1-git-send-email-mmarek@suse.cz>
- <20100704070516.GA9437@verge.net.au>
- <20100704071347.GB9437@verge.net.au>
- <4C319B18.10409@trash.net>
- <AANLkTim3FfgxTzQ36YYYA8QG605oNW3skHZlSLKAZcjl@mail.gmail.com>
+	id S1756571Ab0GMMgy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 08:36:54 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55168 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755391Ab0GMMgx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 08:36:53 -0400
+Message-ID: <4C3C5DE3.7030306@suse.cz>
+Date: Tue, 13 Jul 2010 14:36:51 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim3FfgxTzQ36YYYA8QG605oNW3skHZlSLKAZcjl@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Martin Jansa <martin.jansa@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: setlocalversion should respect srctree param
+ when looking for auto.conf
+References: <1279013676-23887-1-git-send-email-Martin.Jansa@gmail.com>
+In-Reply-To: <1279013676-23887-1-git-send-email-Martin.Jansa@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 11, 2010 at 07:15:21PM -0500, Ismael Luque Valencia wrote:
-> Hi my name is Ismael, I am doing a paper about lvs algorithms but I dont
-> undernstand two of them Locality-Based Least-Connection and Locality-Based
-> Least-Connection with Replication
-> Someone, who can explain me that algorithms please
-> If it is in Spanish will better because my English is not good
+On 07/13/2010 11:34 AM, Martin Jansa wrote:
+> * it works properly only when CWD == scrtree
+> * with this patch:
+>   jama src # /usr/src/linux/scripts/setlocalversion /usr/src/linux
+>   -JaMa-00001-g18672de
+> * without:
+>   jama src # /usr/src/linux/scripts/setlocalversion /usr/src/linux
+>   Error: kernelrelease not valid - run 'make prepare' to update it
 
-Hi,
+This doesn't look correct, include/config/auto.conf is generated in the
+build directory (*), where this script is called from by the Makefile.
+If you call the script manually, you have to cd to the build directory
+first.
 
-Firstly, please don't reply to emails unless you are actually
-replying to the topic at hand. Instead just compose a fresh
-message to the people/lists that you want to address.
-This helps keep threads in mail-readers that support them sane.
+(*) which is different from the source directory if you build with O=.
 
-In any case this question would be better sent to the lvs-users list.
-
-But to your question.
-
-These schedulers are described briefly in the ipvsadm(8) man page
-and in pseudo code in the source files (ip_vs_lblc.c and ip_vs_lblcr.c)
-in the Linux kernel tree. And there is some discussion in the howto
-http://www.austintek.com/LVS/LVS-HOWTO/HOWTO/LVS-HOWTO.ipvsadm.html#DH
-
-The way that I think of these schedulers is as enhanced versions of wlc
-designed for use with transparent proxies. That is situations where
-there will be a lot of destination addresses.
-
-lblc works by keeping a cache that associates destination addresses with
-a real server. This allows accesses, potentially from different end-users,
-to be sent to the same real-server. As this is designed to be used
-with proxies, this means the request will be sent to a proxy that may
-have already retrieved the result.
-
-lblcr is similar, but instead of one real-server per destination, it
-allows for multiple real-servers per destination.
+Michal
+> 
+> Signed-off-by: Martin Jansa <Martin.Jansa@gmail.com>
+> ---
+>  scripts/setlocalversion |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+> index d6a866e..41864d1 100755
+> --- a/scripts/setlocalversion
+> +++ b/scripts/setlocalversion
+> @@ -135,7 +135,7 @@ if $scm_only; then
+>  	exit
+>  fi
+>  
+> -if test -e include/config/auto.conf; then
+> +if test -e "${srctree}/include/config/auto.conf"; then
+>  	source "$_"
+>  else
+>  	echo "Error: kernelrelease not valid - run 'make prepare' to update it"
 
