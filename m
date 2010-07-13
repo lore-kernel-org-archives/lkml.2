@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab0GMJuZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 05:50:25 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:59944 "EHLO
+	id S1756045Ab0GMJut (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 05:50:49 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:50177 "EHLO
 	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752917Ab0GMJuX (ORCPT
+	with ESMTP id S1753263Ab0GMJus (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 05:50:23 -0400
+	Tue, 13 Jul 2010 05:50:48 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:reply-to:to:cc:content-type:date:message-id
          :mime-version:x-mailer:content-transfer-encoding;
-        b=ZbRx1KVZwYf2O68cJMOMOaPZfYrOTygV0JwqdSUJjwGs2rkkoN5QUPknmHMrbS+Rok
-         NB2rDbT7GiUYX6ZhoNyTLG7qWrMXsQyQwNM6J6gIos8/PairLl6TNuwzl4KhE7EP7vnv
-         WuPYNAvBpdFIO00wYdEVPBlLpzG4MRNC8OwR0=
-Subject: [PATCH RESEND reiserfs] trivial typo fix
+        b=QdgXwlp2GwN4HZ8w85pWh9VhZO54HaboXycsxa1/RGEZLyDDLFuAY5XlE38tBz2NSp
+         QszM9pqKJyEtIltt9TuXZ8dzRSNKhtIjEcfrMDY5urxUzBNZWxWu2+WP/aiFY/rwOAtq
+         9q28BXhd+WBIafDwV5FhdwwOmPQ3yv2dytQA4=
+Subject: [PATCH RESEND] tools/usb: Add Makefile
 From: Davidlohr Bueso <dave.bueso@gmail.com>
 Reply-To: dave.bueso@gmail.com
-To: linux-kernel@vger.kernel.org
-Cc: reiserfs-devel@vger.kernel.org, trivial@vger.kernel.org
+To: m.nazarewicz@samsung.com, dbrownell@users.sourceforge.net
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Jul 2010 05:50:12 -0400
-Message-ID: <1279014612.18280.1.camel@cowboy>
+Date: Tue, 13 Jul 2010 05:50:42 -0400
+Message-ID: <1279014642.18280.2.camel@cowboy>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -29,32 +29,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix trivial typo in code comment (change adn for and), also change comment style for proper coding style.
+Hi,
+
+This patch adds a Makefile for building 'testusb'.
+
+I am wondering if it should really still use usbdevfs (deprecated), instead of usbfs?
 
 Thanks,
 Davidlohr
 
 Signed-off-by: Davidlohr Bueso <dave@gnu.org>
----
- include/linux/reiserfs_fs.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/reiserfs_fs.h b/include/linux/reiserfs_fs.h
-index 3b603f4..ba39416 100644
---- a/include/linux/reiserfs_fs.h
-+++ b/include/linux/reiserfs_fs.h
-@@ -360,7 +360,7 @@ int is_reiserfs_jr(struct reiserfs_super_block *rs);
- /* the spot for the super in versions 3.5 - 3.5.10 (inclusive) */
- #define REISERFS_OLD_DISK_OFFSET_IN_BYTES (8 * 1024)
- 
--// reiserfs internal error code (used by search_by_key adn fix_nodes))
-+/* reiserfs internal error code (used by search_by_key and fix_nodes)) */
- #define CARRY_ON      0
- #define REPEAT_SEARCH -1
- #define IO_ERROR      -2
+---
+ tools/usb/Makefile |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+ create mode 100644 tools/usb/Makefile
+
+diff --git a/tools/usb/Makefile b/tools/usb/Makefile
+new file mode 100644
+index 0000000..45b5cab
+--- /dev/null
++++ b/tools/usb/Makefile
+@@ -0,0 +1,14 @@
++# Makefile for building 'usbtest'
++
++CC = $(CROSS_COMPILE)gcc
++PTHREAD_LIBS = -lpthread
++WARNINGS = -Wall
++WARNINGS := $(WARNINGS) -Wextra
++CFLAGS = $(WARNINGS) -g $(PTHREAD_LIBS)
++
++all:
++	$(CC) $(CFLAGS) -o testusb testusb.c
++
++clean:
++	$(RM) testusb
++
 -- 
 1.7.0.4
-
-
 
 
