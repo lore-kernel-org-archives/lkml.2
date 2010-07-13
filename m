@@ -1,77 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755929Ab0GMVG5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 17:06:57 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:45484 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab0GMVGz (ORCPT
+	id S1755107Ab0GMVIg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 17:08:36 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27863 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751649Ab0GMVIe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 17:06:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Tk3YMAGGvLjlpqfjdMveJuaf3CvUfSl91TfWqOTYF0PQiLYRzYr2VNyfIk0wkMsf8Z
-         BUm9WCtsIsXV7b6OeVnL/11SZfk+wCoi2QjCfZoLoR8JWomuUdZvm6a3Ml4VDM62AWAT
-         R5zyDLJpA+/UhFYyXYNXZ8IAsEGHR2g/WiNu0=
+	Tue, 13 Jul 2010 17:08:34 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=gf+TFkwuXPq9clFpX2Dfd+RIicDZk59Fr8LIUBdQOJAwmHmdESCYCUlYfYym/fSYl
+	7jya4qx9BDrBDjUTTGH6w==
+Date: Tue, 13 Jul 2010 14:08:28 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+cc: Peter Zijlstra <peterz@infradead.org>,
+        Michel Lespinasse <walken@google.com>, linux-mm <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>, Divyesh Shah <dpshah@google.com>,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: FYI: mmap_sem OOM patch
+In-Reply-To: <20100713091333.EA3E.A69D9226@jp.fujitsu.com>
+Message-ID: <alpine.DEB.2.00.1007131349250.1821@chino.kir.corp.google.com>
+References: <20100708200324.CD4B.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1007121446500.8468@chino.kir.corp.google.com> <20100713091333.EA3E.A69D9226@jp.fujitsu.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilgxvDPpBJvwbw3PHZfXDaa2_6-TbJ8lujz5y3V@mail.gmail.com>
-References: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>
-	<AANLkTil49m6Ul2bauiH4Pwn-6ykrYTFmSO6_SxqQgD_e@mail.gmail.com>
-	<1278626921.2435.73.camel@edumazet-laptop>
-	<AANLkTiliBClahTfb41M5BDi1etg5pgkqEz_VfGrn_mK4@mail.gmail.com>
-	<1278695580.2696.55.camel@edumazet-laptop>
-	<AANLkTil39xHOhcdAo4h_jWtx_UuYdFHGdQVAdwPMd7QJ@mail.gmail.com>
-	<1278742649.2538.17.camel@edumazet-laptop>
-	<4C395459.6080407@redhat.com>
-	<1278835332.2538.51.camel@edumazet-laptop>
-	<AANLkTikEGuFtTlIKUfti6GDsdBz99PpKRCs5lEeEM86u@mail.gmail.com>
-	<AANLkTilbEkJWPqvJE72r9HdFQSU84S02BKZB0CH-8QwB@mail.gmail.com>
-	<AANLkTimn9x17g-4K7fS4MjmCgzHuBARurEoFVd_gId7m@mail.gmail.com>
-	<1279032023.2634.384.camel@edumazet-laptop>
-	<AANLkTilrIByt4xAHhsBsKo3nDfv0_c3sF-dCiTiYiPnu@mail.gmail.com>
-	<1279036193.2634.468.camel@edumazet-laptop>
-	<AANLkTilgxvDPpBJvwbw3PHZfXDaa2_6-TbJ8lujz5y3V@mail.gmail.com>
-Date: Tue, 13 Jul 2010 18:06:52 -0300
-Message-ID: <AANLkTilAHH_qUL481bG7R5lU9jDGK9_364SR-73oHoMb@mail.gmail.com>
-Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
-From: Felipe W Damasio <felipewd@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, David Miller <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 13 Jul 2010, KOSAKI Motohiro wrote:
 
-2010/7/13 Felipe W Damasio <felipewd@gmail.com>:
-> This is the dmesg message:
+> > > I disagree. __GFP_NOFAIL mean this allocation failure can makes really
+> > > dangerous result. Instead, OOM-Killer should try to kill next process.
+> > > I think.
+> > > 
+> > 
+> > That's not what happens, __alloc_pages_high_priority() will loop forever 
+> > for __GFP_NOFAIL, the oom killer is never recalled.
+> 
+> Yup, please reread the discusstion.
+> 
 
-This error happened at 17:19:59.
+There's nothing in the discussion that addresses the fact that 
+__alloc_pages_high_priority() loops infinitely for __GFP_NOFAIL without 
+again calling the oom killer.  You may be proposing a change to that when 
+you said "OOM-Killer should try to kill next process. I think," but I 
+can't speculate on that.  If you are, please propose a patch.
 
-A few seconds earlier, I have these on squid's logs:
+The success of whether we can allocate without watermarks is dependent on 
+where we set them and what types of exclusions we allow.  This isn't local 
+only to the page allocator but rather to the entire kernel since 
+GFP_ATOMIC allocations, for example, can deplete the min watermark by 
+~60%.  The remaining memory is what we allow access to for 
+ALLOC_NO_WATERMARKS: those allocations in the direct reclaim patch and 
+those that have been oom killed.
 
-2010/07/13 17:19:50| clientTryParseRequest: FD 1690
-(189.113.65.55:52681) Invalid Request
-2010/07/13 17:19:50| clientTryParseRequest: FD 5056
-(189.113.74.101:2420) Invalid Request
-2010/07/13 17:19:52| clientTryParseRequest: FD 26923
-(189.113.74.101:2419) Invalid Request
-2010/07/13 17:19:57| parseHttpRequest: Unsupported method 'PASS'
-2010/07/13 17:19:57| clientTryParseRequest: FD 17786
-(189.113.69.194:2422) Invalid Request
-2010/07/13 17:19:57| parseHttpRequest: Unsupported method '<D2>Yk'
-2010/07/13 17:19:57| clientTryParseRequest: FD 22554
-(189.113.79.151:4225) Invalid Request
-2010/07/13 17:19:59| httpReadReply: Excess data from "GET
-http://webcs.msg.yahoo.com/crossdomain.xml"
+Thus, it's important that oom killed tasks do not completely deplete 
+memory reserves, otherwise __GFP_NOFAIL allocations will loop forever 
+without killing additional tasks, as you say.  That's sane since oom 
+killing additional tasks wouldn't allow them access to any additional 
+memory, anyway, so the allocation would still fail (we only call the oom 
+killer for those allocations that are retried) and the victim could not 
+exit.
 
- Maybe with these two errors we can create some kind of trigger
-program to help us duplicate this on the lab setup?
+With that said, I'm not exactly sure what change you're proposing when you 
+say the oom killer should try to kill another process because it won't 
+lead to any future memory freeing unless the victim can exit without 
+allocating memory.  If that's not possible, you've proliferated a ton of 
+innocent kills that were triggered because of one __GFP_NOFAIL attempt.
 
- Cheers,
+I agree with Peter that it would be ideal to remove __GFP_NOFAIL, but I 
+think we require changes in the retry logic first before that is possible.  
+Right now, we insist on retrying all blockable !__GFP_NORETRY allocations 
+under PAGE_ALLOC_COSTLY_ORDER indefinitely.  That, in a sense, is already 
+__GFP_NOFAIL behavior that is implicit: that's why we typically see 
+__GFP_NOFAIL with GFP_NOFS instead.  With GFP_NOFS, we never kill the oom 
+killer in the first place, so memory allocation is only more successful on 
+a subsequent attempt by either direct reclaim or memory compaction.
 
-Felipe Damasio
+There's nothing preventing users from doing
+
+	do {
+		page = alloc_page(GFP_KERNEL);
+	} while (!page);
+
+if the retry logic were reworked to start failing allocations or we 
+removed __GFP_NOFAIL.  Thus, I think __GFP_NOFAIL should be substituted 
+with a different gfp flag that acts similar but failable: use compaction, 
+reclaim, and the oom killer where possible and in that order if there is 
+no success and then retry to a high watermark one final time.  If the 
+allocation is still unsuccessful, return NULL.  This allows users to do 
+what getblk() does, for instance, by implementing their own memory freeing 
+functions.  It also allows them to use all of the page allocator's powers 
+(compaction, reclaim, oom killer) without infinitely looping by either 
+using an order under PAGE_ALLOC_COSTLY_ORDER or insisting on __GFP_NOFAIL.
