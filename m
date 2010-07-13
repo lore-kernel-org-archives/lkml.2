@@ -1,220 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757251Ab0GMUlK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 16:41:10 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:32587 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754491Ab0GMUlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 16:41:07 -0400
-Message-ID: <4C3CCE05.4090505@kernel.org>
-Date: Tue, 13 Jul 2010 13:35:17 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1757239Ab0GMUml (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 16:42:41 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10052 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754491Ab0GMUmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 16:42:40 -0400
+Date: Tue, 13 Jul 2010 16:42:36 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, axboe@kernel.dk,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
+Message-ID: <20100713204236.GB21044@redhat.com>
+References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
+ <x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
+ <AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
+ <x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
+ <AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
+ <x49eif7p3z0.fsf@segfault.boston.devel.redhat.com>
+ <20100713195650.GA21044@redhat.com>
+ <x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86: Setup early console as early as possible
-References: <4C3A3B27.7020009@oracle.com> <4C3AD94C.7070807@cs.helsinki.fi> <4C3B38F7.1050400@zytor.com> <4C3B40F3.6070009@kernel.org> <4C3CA5A9.6000607@cs.helsinki.fi>
-In-Reply-To: <4C3CA5A9.6000607@cs.helsinki.fi>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C3CCF02.0050,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 10:43 AM, Pekka Enberg wrote:
-> Hi Yingahai,
+On Tue, Jul 13, 2010 at 04:30:23PM -0400, Jeff Moyer wrote:
+> Vivek Goyal <vgoyal@redhat.com> writes:
 > 
-> Yinghai Lu wrote:
->> On 07/12/2010 08:47 AM, H. Peter Anvin wrote:
->>> On 07/12/2010 01:58 AM, Pekka Enberg wrote:
->>>> Hi Yinghai,
->>>>
->>>> Yinghai Lu wrote:
->>>>> Analyze "console=uart8250,io,0x3f8,115200n8" in
->>>>> i386_start_kernel/x86_64_start_kernel,
->>>>> and call setup_early_serial8250_console() to init early serial
->>>>> console.
->>>>>
->>>>> only can handle io port kind of 8250. because mmio need ioremap.
->>>>>
->>>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>>> What's the purpose of this patch? Does it make my early boot I/O patch
->>>> obsolete?
->>>>
->>>>             Pekka
->>> No, they're complementary.  Your patch serial-port enables the RM
->>> kernel, whereas Yinghai pushes the initialization earlier in the PM
->>> kernel.
->>
->> yes. cover more range.
->>
->> Can you consider to ask Pekka to anaylze "console=uart8250,io,
->> 0x3f8,115200n8" instead?
->>
->> it looks like we can remove "earlyprintk=ttyS0,115200", or
->> "earlyprintk=serial" etc.
->>
->> earlycon=uart8250 or console=uart8250 should be better than earlyprintk.
->> because it is shared between different archs already.
+> > On Tue, Jul 13, 2010 at 03:38:11PM -0400, Jeff Moyer wrote:
+> >> Corrado Zoccolo <czoccolo@gmail.com> writes:
+> >> 
+> >> > Can you test the attached patch, where I also added your changes to
+> >> > make jbd(2) to perform sync writes?
+> >> 
+> >> I got new storage, so I have new numbers.  I only re-ran deadline and
+> >> vanilla cfq for the fs_mark only test.  The average of 10 runs comes out
+> >> like so:
+> >> 
+> >> deadline:    571.98
+> >> vanilla cfq: 107.42
+> >> patched cfq: 460.9
+> >> 
+> >> Mixed workload results with your suggested patch:
+> >> 
+> >> fs_mark: 15.65 files/sec
+> >> fio: 132.5 MB/s
+> >> 
+> >> So, again, not looking great for the mixed workload, but the patch
+> >> does improve the fs_mark only case.  Looking at the blktrace data shows
+> >> that the jbd2 thread preempts the fs_mark thread at all the right
+> >> times.  The only thing holding throughput back is the whole notion that
+> >> we need to only dispatch from one queue (even though the storage is
+> >> capable of serving both the reads and writes simultaneously).
+> >> 
+> >> I added in the patch that allows the simultaneous dispatch of both reads
+> >> and writes, and here are the results from that run:
+> >> 
+> >> fs_mark: 15.975 files/sec
+> >> fio: 132.4 MB/s
+> >> 
+> >> So, it looks like that didn't help.  The reason this patch doesn't come
+> >> close to the yield patch in the mixed workload is because the yield
+> >> patch set allows the fs_mark process to continue to issue I/O.  With
+> >> your patch, the fs_mark process does 64KB of I/O, the jbd2 thread does
+> >> the journal commit, and then the fio process runs again.  Given that the
+> >> fs_mark process typically only uses a small fraction of its time slice,
+> >> you end up with an unfair balance.
+> >
+> > Hi Jeff,
+> >
+> > This is little strange. Given the fact that now both fs_mark and jbd
+> > threads are on sync-noidle tree, we should have idled on sync-noidle
+> > tree to provide fairness and that should have made sure that fs_mark/jbd
+> > do more IO and slice is not lost to fio thread.
+> >
+> > Not sure what is happening though in practice. Only you can look at
+> > traces more closely and see if timer is being armed or not. 
 > 
-> So just to clarify: I wasn't ignoring your comment here. I simply
-> followed hpa's recommendation on which I also happen to agree with
-> completely. ;-)
+> Vivek, if you want to look at traces, just ask.  I'd be happy to show
+> them to you, upload them, whatever.  I'm not sure why you think
+> otherwise (though I wouldn't blame you for not wanting to look at
+> them!).
 
-never mind.
+I don't mind looking at traces. Do let me know where can I access those.
 
-following patch add that checking.
+> 
+> Now, to answer your question, the jbd2 thread runs and issues a barrier,
+> which causes a forced dispatch of requests.  After that a new queue is
+> selected, and since the fs_mark thread is blocked on the journal commit,
+> it's always the fio process that gets to run.
 
-also you missed simple_guess_base(), your patch may have problem with baud rate reading.
+Ok, that explains it.  So somehow after the barrier, fio always wins
+as issues next read request before the fs_mark is able to issue the
+next set of writes.
 
-                baud = simple_strtoull(arg + pos, &e, 0);
-                if (baud == 0 || arg + pos == e)
-                        baud = DEFAULT_BAUD;
+> 
+> This, of course, raises the question of why the blk_yield patches didn't
+> run into the same problem.  Looking back at some saved traces, I don't
+> see WBS (write barrier sync) requests, so I wonder if barriers weren't
+> supported by my last storage system.
 
-	and your copied simple_strtoull does not calling simple_guess_base(), so base will 0.
-	so you are always using DEFAULT_BAUD.
+I think that blk_yield patches will also run into the same issue if
+barriers are enabled.
 
 Thanks
-
-Yinghai Lu
-
-
-[PATCH] x86: make boot code to analyze console=uart8250 too
-
-So we use console=uart8250,io,0x2f8,115200n all the way
-
-Also add back simple_guess_base(), otherwise those simple_strtoull(,,0) are not
-going to work.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-
----
- arch/x86/boot/string.c |   22 ++++++++++++++++++
- arch/x86/boot/tty.c    |   59 ++++++++++++++++++++++++++++++++++++++++++++++++-
- 2 files changed, 80 insertions(+), 1 deletion(-)
-
-Index: linux-2.6/arch/x86/boot/tty.c
-===================================================================
---- linux-2.6.orig/arch/x86/boot/tty.c
-+++ linux-2.6/arch/x86/boot/tty.c
-@@ -170,7 +170,7 @@ static void early_serial_init(int baud)
- 	outb(c & ~DLAB, early_serial_base + LCR);
- }
- 
--void console_init(void)
-+static int parse_earlyprintk(void)
- {
- 	int baud = DEFAULT_BAUD;
- 	char arg[32];
-@@ -208,6 +208,63 @@ void console_init(void)
- 			baud = DEFAULT_BAUD;
- 	}
- 
-+	return baud;
-+}
-+
-+#define BASE_BAUD (1843200/16)
-+static unsigned int probe_baud(int port)
-+{
-+	unsigned char lcr, dll, dlh;
-+	unsigned int quot;
-+
-+	lcr = inb(port + LCR);
-+	outb(lcr | DLAB, port + LCR);
-+	dll = inb(port + DLL);
-+	dlh = inb(port + DLH);
-+	outb(lcr, port + LCR);
-+	quot = (dlh << 8) | dll;
-+
-+	return BASE_BAUD / quot;
-+}
-+
-+static int parse_console_uart8250(void)
-+{
-+	char optstr[64], *options;
-+	int baud = DEFAULT_BAUD;
-+
-+	/*
-+	 * console=uart8250,io,0x3f8,115200n8
-+	 * need to make sure it is last one console !
-+	 */
-+	if (cmdline_find_option("console", optstr, sizeof optstr) <= 0)
-+		return baud;
-+
-+	options = optstr;
-+
-+	if (!strncmp(options, "uart8250,io,", 12))
-+		early_serial_base = simple_strtoull(options + 12, &options, 0);
-+	else if (!strncmp(options, "uart,io,", 8))
-+		early_serial_base = simple_strtoull(options + 8, &options, 0);
-+	else
-+		return baud;
-+
-+	if (options && (options[0] == ','))
-+		baud = simple_strtoull(options + 1, &options, 0);
-+	else
-+		baud = probe_baud(early_serial_base);
-+
-+	return baud;
-+}
-+
-+void console_init(void)
-+{
-+	int baud;
-+
-+	baud = parse_earlyprintk();
-+
-+	if (!early_serial_base)
-+		baud = parse_console_uart8250();
-+
- 	if (early_serial_base != 0)
- 		early_serial_init(baud);
- }
-Index: linux-2.6/arch/x86/boot/string.c
-===================================================================
---- linux-2.6.orig/arch/x86/boot/string.c
-+++ linux-2.6/arch/x86/boot/string.c
-@@ -68,10 +68,32 @@ unsigned int atou(const char *s)
- /* Works only for digits and letters, but small and fast */
- #define TOLOWER(x) ((x) | 0x20)
- 
-+static unsigned int simple_guess_base(const char *cp)
-+{
-+	if (cp[0] == '0') {
-+		if (TOLOWER(cp[1]) == 'x' && isxdigit(cp[2]))
-+			return 16;
-+		else
-+			return 8;
-+	} else {
-+		return 10;
-+	}
-+}
-+
-+/**
-+ * simple_strtoull - convert a string to an unsigned long long
-+ * @cp: The start of the string
-+ * @endp: A pointer to the end of the parsed string will be placed here
-+ * @base: The number base to use
-+ */
-+
- unsigned long long simple_strtoull(const char *cp, char **endp, unsigned int base)
- {
- 	unsigned long long result = 0;
- 
-+	if (!base)
-+		base = simple_guess_base(cp);
-+
- 	if (base == 16 && cp[0] == '0' && TOLOWER(cp[1]) == 'x')
- 		cp += 2;
- 
-
-
-
+Vivek
