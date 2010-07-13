@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755774Ab0GMHWS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:22:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28642 "EHLO
+	id S1755767Ab0GMHWf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:22:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28588 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754062Ab0GMHQY (ORCPT
+	with ESMTP id S1753290Ab0GMHQX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:16:24 -0400
+	Tue, 13 Jul 2010 03:16:23 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,136 +15,113 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 20/50] memblock: split memblock_find_base() out of __memblock_alloc_base()
-Date: Tue, 13 Jul 2010 00:10:14 -0700
-Message-Id: <1279005044-24777-21-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 49/50] x86, memblock: Use memblock_memory_size()/memblock_free_memory_size() to get correct dma_reserve
+Date: Tue, 13 Jul 2010 00:10:43 -0700
+Message-Id: <1279005044-24777-50-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C3C1299.011D,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4C3C12A1.010F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+memblock_memory_size() will return memory size in memblock.memory.region.
+memblock_free_memory_size() will return free memory size in memblock.memory.region.
 
-This will be used by the array resize code and might prove useful
-to some arch code as well at which point it can be made non-static.
+So We can get exact reseved size in specified range.
 
-Also add comment as to why aligning size is important
+Set the size right after initmem_init(), because later bootmem API will
+get area above 16M. (except some fallback).
 
-[ Yinghai Lu ]: it should return MEMBLOCK_ERROR when it fail to find a range
+Later after we remove the bootmem, We could call that just before paging_init().
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- mm/memblock.c |   58 +++++++++++++++++++++++++++++++++++++-------------------
- 1 files changed, 38 insertions(+), 20 deletions(-)
+ arch/x86/include/asm/e820.h |    2 ++
+ arch/x86/kernel/e820.c      |   17 +++++++++++++++++
+ arch/x86/kernel/setup.c     |    1 +
+ arch/x86/mm/init_64.c       |    7 -------
+ 4 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 1283893..17403e6 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -345,12 +345,15 @@ phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int n
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 7186463..5be1542 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -117,6 +117,8 @@ extern unsigned long e820_end_of_low_ram_pfn(void);
+ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
  
- 	BUG_ON(0 == size);
- 
-+	/* We align the size to limit fragmentation. Without this, a lot of
-+	 * small allocs quickly eat up the whole reserve array on sparc
-+	 */
-+	size = memblock_align_up(size, align);
+ void memblock_x86_fill(void);
++void memblock_find_dma_reserve(void);
 +
- 	/* We do a bottom-up search for a region with the right
- 	 * nid since that's easier considering how memblock_nid_range()
- 	 * works
- 	 */
--	size = memblock_align_up(size, align);
--
- 	for (i = 0; i < mem->cnt; i++) {
- 		phys_addr_t ret = memblock_alloc_nid_region(&mem->regions[i],
- 					       size, align, nid);
-@@ -366,20 +369,7 @@ phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
- 	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
+ extern void finish_e820_parsing(void);
+ extern void e820_reserve_resources(void);
+ extern void e820_reserve_resources_late(void);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index d5fd894..f0db4c4 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1105,3 +1105,20 @@ void __init memblock_x86_fill(void)
+ 	memblock_analyze();
+ 	memblock_dump_all();
  }
- 
--phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
--{
--	phys_addr_t alloc;
--
--	alloc = __memblock_alloc_base(size, align, max_addr);
--
--	if (alloc == 0)
--		panic("ERROR: Failed to allocate 0x%llx bytes below 0x%llx.\n",
--		      (unsigned long long) size, (unsigned long long) max_addr);
--
--	return alloc;
--}
--
--phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
-+static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
- {
- 	long i;
- 	phys_addr_t base = 0;
-@@ -387,8 +377,6 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
- 
- 	BUG_ON(0 == size);
- 
--	size = memblock_align_up(size, align);
--
- 	/* Pump up max_addr */
- 	if (max_addr == MEMBLOCK_ALLOC_ACCESSIBLE)
- 		max_addr = memblock.current_limit;
-@@ -405,13 +393,43 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
- 			continue;
- 		base = min(memblockbase + memblocksize, max_addr);
- 		res_base = memblock_find_region(memblockbase, base, size, align);
--		if (res_base != MEMBLOCK_ERROR &&
--		    memblock_add_region(&memblock.reserved, res_base, size) >= 0)
-+		if (res_base != MEMBLOCK_ERROR)
- 			return res_base;
- 	}
-+	return MEMBLOCK_ERROR;
++
++void __init memblock_find_dma_reserve(void)
++{
++#ifdef CONFIG_X86_64
++	u64 free_size_pfn;
++	u64 mem_size_pfn;
++	/*
++	 * need to find out used area below MAX_DMA_PFN
++	 * need to use memblock to get free size in [0, MAX_DMA_PFN]
++	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
++	 */
++	mem_size_pfn = memblock_x86_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	free_size_pfn = memblock_x86_free_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	set_dma_reserve(mem_size_pfn - free_size_pfn);
++#endif
 +}
 +
-+phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
-+{	
-+	phys_addr_t found;
-+
-+	/* We align the size to limit fragmentation. Without this, a lot of
-+	 * small allocs quickly eat up the whole reserve array on sparc
-+	 */
-+	size = memblock_align_up(size, align);
-+
-+	found = memblock_find_base(size, align, max_addr);
-+	if (found != MEMBLOCK_ERROR &&
-+	    memblock_add_region(&memblock.reserved, found, size) >= 0)
-+		return found;
-+
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index a4f0173..924c8f7 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1013,6 +1013,7 @@ void __init setup_arch(char **cmdline_p)
+ #endif
+ 
+ 	initmem_init(0, max_pfn, acpi, k8);
++	memblock_find_dma_reserve();
+ #ifndef CONFIG_NO_BOOTMEM
+ 	memblock_x86_to_bootmem(0, max_low_pfn<<PAGE_SHIFT);
+ #endif
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 592b236..d6d4084 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -53,8 +53,6 @@
+ #include <asm/init.h>
+ #include <linux/bootmem.h>
+ 
+-static unsigned long dma_reserve __initdata;
+-
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+ 	direct_gbpages = 0;
+@@ -821,11 +819,6 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 
+ 	reserve_bootmem(phys, len, flags);
+ 
+-	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+-		dma_reserve += len / PAGE_SIZE;
+-		set_dma_reserve(dma_reserve);
+-	}
+-
  	return 0;
  }
- 
-+phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
-+{
-+	phys_addr_t alloc;
-+
-+	alloc = __memblock_alloc_base(size, align, max_addr);
-+
-+	if (alloc == 0)
-+		panic("ERROR: Failed to allocate 0x%llx bytes below 0x%llx.\n",
-+		      (unsigned long long) size, (unsigned long long) max_addr);
-+
-+	return alloc;
-+}
-+
-+
- /* You must call memblock_analyze() before this. */
- phys_addr_t __init memblock_phys_mem_size(void)
- {
+ #endif
 -- 
 1.6.4.2
 
