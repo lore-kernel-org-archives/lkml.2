@@ -1,64 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752853Ab0GMB3k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 21:29:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56297 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751116Ab0GMB3j (ORCPT
+	id S1751598Ab0GMBab (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 21:30:31 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:37060 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751116Ab0GMBaa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 21:29:39 -0400
-Date: Mon, 12 Jul 2010 18:29:10 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: axel.lin@gmail.com
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
+	Mon, 12 Jul 2010 21:30:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=DoSKAOqooPPjnTQmZSvyI91gkdFU4oiG60hyT9PSE9EsE9N0DU3J9cP6PueJ7QlvOl
+         AW/eUsJhBkn3VRhySinFiLR8gvIyZpdz7BupL/+8KFaVDdHGNMHcMqv2KVe7Jias3hqf
+         W1MBTBUI1NMGtO7j0l2H8XZb9Ow31Vdk4aJ+E=
+Subject: [PATCH v2] edd: fix possible memory leak in edd_init() error path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Stephen Hemminger <shemminger@vyatta.com>,
         Jens Axboe <jens.axboe@oracle.com>,
         David Teigland <teigland@redhat.com>,
         Pekka Enberg <penberg@cs.helsinki.fi>,
-        "Hans J. Koch" <hjk@linutronix.de>
-Subject: Re: [PATCH] edd: fix possible memory leak in edd_init() error path
-Message-Id: <20100712182910.7b69b493.akpm@linux-foundation.org>
-In-Reply-To: <AANLkTik3qDmpRS9HwFFzCfyHMrUd9ZnaR1A39jUo0cbt@mail.gmail.com>
-References: <1278672607.1335.3.camel@mola>
-	<20100712124904.d05242d2.akpm@linux-foundation.org>
-	<AANLkTik3qDmpRS9HwFFzCfyHMrUd9ZnaR1A39jUo0cbt@mail.gmail.com>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+        "Hans J. Koch" <hjk@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain
+Date: Tue, 13 Jul 2010 09:30:57 +0800
+Message-Id: <1278984657.28233.2.camel@mola>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010 09:17:58 +0800 Axel Lin <axel.lin@gmail.com> wrote:
+The error may happen at any iteration of the for loop,
+this patch properly unregisters already registed edd_devices in error path.
 
-> >> +
-> >> +out:
-> >> + __ __ while (--i >= 0) {
-> >> + __ __ __ __ __ __ edev = edd_devices[i];
-> >> + __ __ __ __ __ __ if (edev)
-> >
-> > This test is unneeded?
-> 
-> right. a revised version is on the way.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/firmware/edd.c |   21 ++++++++++++++-------
+ 1 files changed, 14 insertions(+), 7 deletions(-)
 
-I already did the below, which you were cc'ed on?
-
---- a/drivers/firmware/edd.c~edd-fix-possible-memory-leak-in-edd_init-error-path-fix
-+++ a/drivers/firmware/edd.c
-@@ -778,11 +778,8 @@ edd_init(void)
- 	return 0;
+diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+index 110e24e..37a56be 100644
+--- a/drivers/firmware/edd.c
++++ b/drivers/firmware/edd.c
+@@ -744,7 +744,7 @@ static inline int edd_num_devices(void)
+ static int __init
+ edd_init(void)
+ {
+-	unsigned int i;
++	int i;
+ 	int rc=0;
+ 	struct edd_device *edev;
  
- out:
--	while (--i >= 0) {
--		edev = edd_devices[i];
--		if (edev)
--			edd_device_unregister(edev);
--	}
-+	while (--i >= 0)
+@@ -760,21 +760,28 @@ edd_init(void)
+ 	if (!edd_kset)
+ 		return -ENOMEM;
+ 
+-	for (i = 0; i < edd_num_devices() && !rc; i++) {
++	for (i = 0; i < edd_num_devices(); i++) {
+ 		edev = kzalloc(sizeof (*edev), GFP_KERNEL);
+-		if (!edev)
+-			return -ENOMEM;
++		if (!edev) {
++			rc = -ENOMEM;
++			goto out;
++		}
+ 
+ 		rc = edd_device_register(edev, i);
+ 		if (rc) {
+ 			kfree(edev);
+-			break;
++			goto out;
+ 		}
+ 		edd_devices[i] = edev;
+ 	}
+ 
+-	if (rc)
+-		kset_unregister(edd_kset);
++	return 0;
++
++out:
++	while (--i >= 0) {
 +		edd_device_unregister(edd_devices[i]);
- 	kset_unregister(edd_kset);
++	}
++	kset_unregister(edd_kset);
  	return rc;
  }
-_
+ 
+-- 
+1.5.4.3
+
+
 
