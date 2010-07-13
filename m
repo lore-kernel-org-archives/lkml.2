@@ -1,83 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab0GMSGV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 14:06:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36793 "EHLO mx1.redhat.com"
+	id S1757186Ab0GMSK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 14:10:56 -0400
+Received: from mail.lixom.net ([70.86.134.90]:48770 "EHLO mail.lixom.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752725Ab0GMSGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 14:06:20 -0400
-Message-ID: <4C3CAAC6.501@redhat.com>
-Date: Tue, 13 Jul 2010 21:04:54 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1752001Ab0GMSKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 14:10:54 -0400
+X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jul 2010 14:10:54 EDT
+Date: Tue, 13 Jul 2010 13:04:02 -0500
+From: Olof Johansson <olof@lixom.net>
+To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-arm-msm@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org, Eric Miao <eric.miao@canonical.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: optimized script [Was: ARM defconfig files]
+Message-ID: <20100713180402.GA1422@lixom.net>
+References: <AANLkTilhI9O6YwnuAylo_jNgwR8VXmpSVJ1kylIYPCGT@mail.gmail.com> <20100712173228.GC9897@n2100.arm.linux.org.uk> <AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com> <20100712185029.GB14425@pengutronix.de> <AANLkTinOuU-VVXaMwMp69CBp2Y4wxpoWybEQ34H5j0lJ@mail.gmail.com> <alpine.LFD.2.00.1007121510260.10598@xanadu.home> <AANLkTim-O00n9YPv7w4VCKjN-ETLijyTHomWUn4mZtTV@mail.gmail.com> <AANLkTilDoGbCx_0oKKPOeGG7TKL2VSNVII5ydmnQ77B7@mail.gmail.com> <20100713070741.GB26442@pengutronix.de> <20100713080705.GA20978@pengutronix.de>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Palfrader <peter@palfrader.org>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
-        Zachary Amsden <zamsden@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
- 	for pvclock
-References: <20100701175144.GA2116@kroah.com>	<20100701173218.125822294@clark.site>	<20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com> <AANLkTim_xKrPSTNqS3JWipjlAkmeDnlEYcHt1cn90ggB@mail.gmail.com>
-In-Reply-To: <AANLkTim_xKrPSTNqS3JWipjlAkmeDnlEYcHt1cn90ggB@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100713080705.GA20978@pengutronix.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 07:34 PM, Linus Torvalds wrote:
->
-> I bet it is the same. And I have a suspicion: because the only write
-> access to that variable is in an asm that uses the "memory" clobber to
-> say it wrote to it (rather than say it writes to it directly), and
-> because the variable is marked 'static', gcc decides that nothing ever
-> writes to it in that compilation unit, and it can be made read-only.
->
-> Look at our definition for "xchg()" in
-> arch/x86/include/asm/cmpxchg_64.h. It boils down to
->
->                  asm volatile("xchgq %0,%1"                              \
->                               : "=r" (__x)                               \
->                               : "m" (*__xg(ptr)), "0" (__x)              \
->                               : "memory");                               \
->
-> for the 8-byte case (which is obviously what atomic64_xchg() uses).
-> And the _reason_ we do that thing where we use a memory _input_ and
-> then a clobber is that older versions of gcc did not accept the thing
-> we _want_ to use, namely using "+m" to say that we actually change the
-> memory.  So the above is "wrong", but has historical reasons - and
-> it's apparently never been changed.
->
-> However, the "+m" was fixed, and we use it elsewhere, so I think the
-> "m" plus memory clobber is now purely historical. Does a patch
-> something like the appended fix it? I also suspect we should look at
-> some other uses in this area. The atomic64_64.h file uses "=m" and
-> "m", which looks like another legacy thing (again, "+m" historically
-> wasn't allowed, and then later became the 'correct' way to do things).
->
->    
+On Tue, Jul 13, 2010 at 10:07:05AM +0200, Uwe Kleine-König wrote:
+> Hello,
+> 
+> On Tue, Jul 13, 2010 at 09:07:41AM +0200, Uwe Kleine-König wrote:
+> > Hi
+> > 
+> > On Mon, Jul 12, 2010 at 01:50:47PM -0600, Grant Likely wrote:
+> > > On Mon, Jul 12, 2010 at 1:34 PM, Linus Torvalds
+> > > <torvalds@linux-foundation.org> wrote:
+> > > > On Mon, Jul 12, 2010 at 12:17 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> > > >> I think Uwe could provide his script and add it to the kernel tree.
+> > > >> Then all architectures could benefit from it.  Having the defconfig
+> > > >> files contain only those options which are different from the defaults
+> > > >> is certainly more readable, even on x86.
+> > > >
+> > > > Quite possible. But maintainers would need to be on the lookout of
+> > > > people actually using the script, and refusing to apply patches that
+> > > > re-introduce the whole big thing.
+> > > 
+> > > I can (partially) speak for powerpc.  If ARM uses this approach, then
+> > > I think we can do the same.  After the defconfigs are trimmed, I
+> > > certainly won't pick up any more full defconfigs.
+> > I just restarted my script on the powerpc defconfigs basing on rc5, I
+> > assume they complete in a few days time.
+> So Stephen was faster than me.  I don't know yet how he optimised my
+> script, meanwhile I put some efforts into it, too by just checking lines
+> that match "^(# )?CONFIG_".
+> 
+> Find it attached.
+> 
+> I will start to reduce the remaining configs (i.e. all but arm and
+> powerpc).
 
-Well, current upstream uses "m":
+I added just a simple heuristic: If I could remove a line, I attempted
+to remove twice the amount next time around (and fall back to 1 if it failed).
 
->         case 8:                                                         \
->                 asm volatile(lock "cmpxchgq %1,%2"                      \
->                              : "=a"(__ret)                              \
->                              : "r"(__new), "m"(*__xg(ptr)), "0"(__old)  \
->                              : "memory");                               \
->                 break;                                                  \
+I.e. main loop:
 
-and works; I also failed to reproduce with 2.6.32.16.  So I expect some 
-toolchain involvement.
+i = 0
+lines = 1
 
-Peter, what gcc are you using?
+while i < len(config):
+    print 'test for %r + %d' % (config[i], lines)
+    defconfig = open(defconfig_src, 'w')
+    defconfig.writelines(config[:i])
+    defconfig.writelines(config[i + lines:])
+    defconfig.close()
+    subprocess.check_call(['make', '-s', 'ARCH=%s' % arch, target])
+    if os.stat('.config').st_size == config_size and list(open('.config')) == origconfig:
+        del config[i:i+lines]
+        lines *= 2
+    else:
+        if lines > 1:
+            lines = 1
+        else:
+            i += 1
 
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+I didn't measure what the actual improvement was, but I saw a fair amount
+of 2/4/8-attempts passing, so I let it run. Stephen beat me to posting
+the resulting patch though. :P
 
+While this script is great, it is somewhat painful to run given that it
+attempts one config per line. Even on a fast machine that tends to take
+a while.
+
+
+-Olof
