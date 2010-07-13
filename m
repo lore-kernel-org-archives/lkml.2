@@ -1,144 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab0GMOAv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 10:00:51 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:44284 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752138Ab0GMOAu (ORCPT
+	id S1756803Ab0GMOGB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 10:06:01 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:47688 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756759Ab0GMOF7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 10:00:50 -0400
-Message-ID: <4C3C718C.6080402@linux.vnet.ibm.com>
-Date: Tue, 13 Jul 2010 09:00:44 -0500
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Tue, 13 Jul 2010 10:05:59 -0400
+Message-ID: <4C3C72C6.4000005@canonical.com>
+Date: Tue, 13 Jul 2010 15:05:58 +0100
+From: Lee Jones <lee.jones@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Nathan Fontenot <nfont@austin.ibm.com>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 1/7] Split the memory_block structure
-References: <4C3B3446.5090302@austin.ibm.com> <4C3B37CE.50802@austin.ibm.com>
-In-Reply-To: <4C3B37CE.50802@austin.ibm.com>
+To: linux-kernel@vger.kernel.org
+CC: akpm@linuxfoundation.org
+Subject: [PATCH] Stop ARM boards crashing when CUPS is loaded - 2.6.35-rc5
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2010 10:42 AM, Nathan Fontenot wrote:
-> @@ -123,13 +130,20 @@
->  static ssize_t show_mem_removable(struct sys_device *dev,
->  			struct sysdev_attribute *attr, char *buf)
->  {
-> -	unsigned long start_pfn;
-> -	int ret;
-> -	struct memory_block *mem =
-> -		container_of(dev, struct memory_block, sysdev);
-> +	struct list_head *pos, *tmp;
-> +	struct memory_block *mem;
-> +	int ret = 1;
-> +
-> +	mem = container_of(dev, struct memory_block, sysdev);
-> +	list_for_each_safe(pos, tmp, &mem->sections) {
-> +		struct memory_block_section *mbs;
-> +		unsigned long start_pfn;
-> +
-> +		mbs = list_entry(pos, struct memory_block_section, next);
-> +		start_pfn = section_nr_to_pfn(mbs->phys_index);
-> +		ret &= is_mem_section_removable(start_pfn, PAGES_PER_SECTION);
-> +	}
+>From 219005d9522043bc42ddb51d59688959eed0d443 Mon Sep 17 00:00:00 2001
+From: Lee Jones <lee.jones@canonical.com>
+Date: Tue, 13 Jul 2010 15:02:17 +0100
+Subject: [PATCH] UBUNTU: [Upstream] Stop ARM boards crashing when CUPS is loaded
 
-I don't see you deleting anyting from the list in this loop. Why do you need
-to use list_for_each_safe? That won't protect you if someone else is messing
-with the list.
+BugLink: http://bugs.launchpad.net/bugs/601226
 
-> 
-> -	start_pfn = section_nr_to_pfn(mem->phys_index);
-> -	ret = is_mem_section_removable(start_pfn, PAGES_PER_SECTION);
->  	return sprintf(buf, "%d\n", ret);
->  }
-> 
+When CUPS loads, it tries to load several drivers that it may need.
+When one of these drivers, specifically parport_pc is loaded on ARM
+based systems, it causes a segmentation fault as the ISA addresses
+which are attempted are not writable on non-PC based architectures.
+This code prevents ISA addresses from being attempted except on x86.
 
+Signed-off-by: Lee Jones <lee.jones@canonical.com>
+---
+ arch/arm/include/asm/parport.h |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-> @@ -238,19 +252,40 @@
->  static int memory_block_change_state(struct memory_block *mem,
->  		unsigned long to_state, unsigned long from_state_req)
->  {
-> +	struct memory_block_section *mbs;
-> +	struct list_head *pos;
->  	int ret = 0;
-> +
->  	mutex_lock(&mem->state_mutex);
-> 
-> -	if (mem->state != from_state_req) {
-> -		ret = -EINVAL;
-> -		goto out;
-> +	list_for_each(pos, &mem->sections) {
-> +		mbs = list_entry(pos, struct memory_block_section, next);
-> +
-> +		if (mbs->state != from_state_req)
-> +			continue;
-> +
-> +		ret = memory_block_action(mbs, to_state);
-> +		if (ret)
-> +			break;
-> +	}
-
-Would it be better here to loop through all the sections and ensure they
-are in the proper state first before starting to change the state of any
-of them? Then you could easily return -EINVAL if one or more is in
-the incorrect state and wouldn't need to the code below.
-
-> +	if (ret) {
-> +		list_for_each(pos, &mem->sections) {
-> +			mbs = list_entry(pos, struct memory_block_section,
-> +					 next);
-> +
-> +			if (mbs->state == from_state_req)
-> +				continue;
-> +
-> +			if (memory_block_action(mbs, to_state))
-> +				printk(KERN_ERR "Could not re-enable memory "
-> +				       "section %lx\n", mbs->phys_index);
-> +		}
->  	}
-> 
-> -	ret = memory_block_action(mem, to_state);
->  	if (!ret)
->  		mem->state = to_state;
-> 
-> -out:
->  	mutex_unlock(&mem->state_mutex);
->  	return ret;
->  }
-
-
-> @@ -498,19 +496,97 @@
-> 
->  	return mem;
->  }
-> +static int add_mem_block_section(struct memory_block *mem,
-> +				 int section_nr, unsigned long state)
-> +{
-> +	struct memory_block_section *mbs;
-> +
-> +	mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
-> +	if (!mbs)
-> +		return -ENOMEM;
-> +
-> +	mbs->phys_index = section_nr;
-> +	mbs->state = state;
-> +
-> +	list_add(&mbs->next, &mem->sections);
-
-I don't think there is sufficient protection for this list. Don't we
-need to be holding a lock of some sort when adding/deleting/iterating
-through this list? 
-
-> +	return 0;
-> +}
-
+diff --git a/arch/arm/include/asm/parport.h b/arch/arm/include/asm/parport.h
+index 26e94b0..a1874f8 100644
+--- a/arch/arm/include/asm/parport.h
++++ b/arch/arm/include/asm/parport.h
+@@ -9,10 +9,13 @@
+ #ifndef __ASMARM_PARPORT_H
+ #define __ASMARM_PARPORT_H
+ 
+-static int __devinit parport_pc_find_isa_ports (int autoirq, int autodma);
+ static int __devinit parport_pc_find_nonpci_ports (int autoirq, int autodma)
+ {
+-	return parport_pc_find_isa_ports (autoirq, autodma);
++/* parport_pc_find_isa_ports uses direct register addresses which are
++ * only correct on x86 architectures. This may have undesirable
++ * consequences (including segfaults) when used on other architectures.
++ */
++	return 0;
+ }
+ 
+ #endif /* !(_ASMARM_PARPORT_H) */
 -- 
-Brian King
-Linux on Power Virtualization
-IBM Linux Technology Center
-
-
+1.7.0.4
