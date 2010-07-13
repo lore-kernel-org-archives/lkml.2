@@ -1,58 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755266Ab0GMKhr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 06:37:47 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:41949 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751116Ab0GMKhq (ORCPT
+	id S1752460Ab0GMKpy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:45:54 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:54922 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751119Ab0GMKpx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 06:37:46 -0400
-Date: Tue, 13 Jul 2010 06:37:38 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@lynx
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: why is "struct cdev *cdev" in char_device_struct listed as "will
- die"?
-Message-ID: <alpine.DEB.2.00.1007130635570.4840@lynx>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Tue, 13 Jul 2010 06:45:53 -0400
+Subject: Re: [PATCH 34/36] sound/soc/blackfin: Remove unnecessary casts of
+ private_data
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        alsa-devel@alsa-project.org
+In-Reply-To: <1c7c609ba4910da572c7888069707548af187651.1278967121.git.joe@perches.com>
+References: <cover.1278967120.git.joe@perches.com>
+	 <1c7c609ba4910da572c7888069707548af187651.1278967121.git.joe@perches.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Jul 2010 11:45:48 +0100
+Message-ID: <1279017948.3125.40.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-07-12 at 13:50 -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
 
-  just perusing fs/char_dev.c and noticed this:
+Fwiw, we are getting rid of the void * private_data in the ASoC
+multi-component patch series and will use dev_get_drvdata() style
+accessors.
 
-static struct char_device_struct {
-        struct char_device_struct *next;
-        unsigned int major;
-        unsigned int baseminor;
-        int minorct;
-        char name[64];
-        struct cdev *cdev;              /* will die */
-} *chrdevs[CHRDEV_MAJOR_HASH_SIZE];
+Both ASoC patches
 
-  so ... why "will die"?  deprecated?  obsolete?
-
-rday
-
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 -- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
-
-        Top-notch, inexpensive online Linux/OSS/kernel courses
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
