@@ -1,105 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752031Ab0GMFlc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 01:41:32 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43120 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab0GMFlb convert rfc822-to-8bit (ORCPT
+	id S1752054Ab0GMFrB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 01:47:01 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:34383 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751103Ab0GMFrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 01:41:31 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH v2 2/2] vmscan: shrink_slab() require number of lru_pages,  not page order
-Cc: kosaki.motohiro@jp.fujitsu.com,
-        Christoph Lameter <cl@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
-In-Reply-To: <AANLkTinwZfaQiTJhP8RcGhlSS-ynEXtbpzorrIZrNyIH@mail.gmail.com>
-References: <20100708163934.CD37.A69D9226@jp.fujitsu.com> <AANLkTinwZfaQiTJhP8RcGhlSS-ynEXtbpzorrIZrNyIH@mail.gmail.com>
-Message-Id: <20100713144008.EA52.A69D9226@jp.fujitsu.com>
+	Tue, 13 Jul 2010 01:47:00 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6041"; a="47143742"
+Message-ID: <4C3BFDD3.8040209@codeaurora.org>
+Date: Mon, 12 Jul 2010 22:46:59 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Tue, 13 Jul 2010 14:41:28 +0900 (JST)
+To: Joerg Roedel <joro@8bytes.org>
+CC: Daniel Walker <dwalker@codeaurora.org>, Andi Kleen <andi@firstfloor.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <1278021944.7738.43.camel@c-dwalke-linux.qualcomm.com> <4C2D965F.5000206@codeaurora.org> <20100710145639.GC10080@8bytes.org>
+In-Reply-To: <20100710145639.GC10080@8bytes.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Jul 8, 2010 at 4:40 PM, KOSAKI Motohiro
-> <kosaki.motohiro@jp.fujitsu.com> wrote:
-> > Fix simple argument error. Usually 'order' is very small value than
-> > lru_pages. then it can makes unnecessary icache dropping.
-> >
-> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Joerg Roedel wrote:
+> On Fri, Jul 02, 2010 at 12:33:51AM -0700, Zach Pfeffer wrote:
+>> Daniel Walker wrote:
 > 
-> With your test result, This patch makes sense to me.
-> Please, include your test result in description.
+>>> So if we include this code which "map implementations" could you
+>>> collapse into this implementations ? Generally , what currently existing
+>>> code can VCMM help to eliminate?
+>> In theory, it can eliminate all code the interoperates between IOMMU,
+>> CPU and non-IOMMU based devices and all the mapping code, alignment,
+>> mapping attribute and special block size support that's been
+>> implemented.
+> 
+> Thats a very abstract statement. Can you point to particular code files
+> and give a rough sketch how it could be improved using VCMM?
 
-How's this?
+I can. Not to single out a particular subsystem, but the video4linux
+code contains interoperation code to abstract the difference between
+sg buffers, vmalloc buffers and physically contiguous buffers. The
+VCMM is an attempt to provide a framework where these and all the
+other buffer types can be unified.
 
-==============================================================
->From 19872d74875e2331cbe7eca46c8ef65f5f00d7c4 Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 13 Jul 2010 13:39:11 +0900
-Subject: [PATCH] vmscan: shrink_slab() require number of lru_pages, not page order
-
-Now, shrink_slab() has following scanning equation.
-
-                            lru_scanned        max_pass
-  basic_scan_objects = 4 x -------------  x -----------------------------
-                            lru_pages        shrinker->seeks (default:2)
-
-  scan_objects = min(basic_scan_objects, max_pass * 2)
-
-Then, If we pass very small value as lru_pages instead real number of
-lru pages, shrink_slab() drop much objects rather than necessary. and
-now, __zone_reclaim() pass 'order' as lru_pages by mistake. that makes
-bad result.
-
-Example, If we receive very low memory pressure (scan = 32, order = 0),
-shrink_slab() via zone_reclaim() always drop _all_ icache/dcache
-objects. (see above equation, very small lru_pages make very big
-scan_objects result)
-
-This patch fixes it.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-Acked-by: Christoph Lameter <cl@linux-foundation.org>
-Acked-by: Rik van Riel <riel@redhat.com>
----
- mm/vmscan.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6ff51c0..1bf9f72 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -2612,6 +2612,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 
- 	nr_slab_pages0 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
- 	if (nr_slab_pages0 > zone->min_slab_pages) {
-+		unsigned long lru_pages = zone_reclaimable_pages(zone);
-+
- 		/*
- 		 * shrink_slab() does not currently allow us to determine how
- 		 * many pages were freed in this zone. So we take the current
-@@ -2622,7 +2624,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
- 		 * Note that shrink_slab will free memory on all zones and may
- 		 * take a long time.
- 		 */
--		while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
-+		while (shrink_slab(sc.nr_scanned, gfp_mask, lru_pages) &&
- 		       (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages >
- 			nr_slab_pages0))
- 			;
 -- 
-1.6.5.2
-
-
-
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
