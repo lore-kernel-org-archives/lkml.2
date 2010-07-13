@@ -1,162 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab0GMTMU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 15:12:20 -0400
-Received: from ip4-95-82-188-143.cust.nbox.cz ([95.82.188.143]:56991 "EHLO
-	localhost.localdomain" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751042Ab0GMTMS (ORCPT
+	id S1754565Ab0GMTTL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 15:19:11 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:50888 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752212Ab0GMTTJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 15:12:18 -0400
-From: Michal Schmidt <mschmidt@redhat.com>
-Subject: [PATCH 2/2] x86: remove c1e_mask
-To: linux-kernel@vger.kernel.org
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Date: Tue, 13 Jul 2010 21:00:03 +0200
-Message-ID: <20100713190003.2866.62404.stgit@localhost.localdomain>
-In-Reply-To: <20100713185816.2866.17837.stgit@localhost.localdomain>
-References: <20100713185816.2866.17837.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	Tue, 13 Jul 2010 15:19:09 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C3CBC0C.9020003@s5r6.in-berlin.de>
+Date: Tue, 13 Jul 2010 21:18:36 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+To: =?ISO-8859-1?Q?Alejandro_Riveira_Fern=E1ndez?= <ariveira@gmail.com>
+CC: Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: rt2x00: slow wifi with correct basic rate bitmap (was Re: stable?
+ quality assurance?)
+References: <201007110918.42120.Martin@lichtvoll.de>	<AANLkTimCwi2uJqqPaq3U30f3rvdDizu1BnaaXgvNeC9k@mail.gmail.com>	<201007111651.42963.Martin@lichtvoll.de>	<20100713131112.26a3da54@varda>	<4C3C6106.3000909@s5r6.in-berlin.de> <20100713200643.24ce019e@varda>
+In-Reply-To: <20100713200643.24ce019e@varda>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-c1e_mask is redundant. The information about activated timer broadcast for
-AMD C1E is kept in the CPU feature flags.
+Alejandro Riveira Fernández wrote:
+> El Tue, 13 Jul 2010 14:50:14 +0200
+> Stefan Richter <stefanr@s5r6.in-berlin.de> escribió:
+>> There were promises made in this thread?  Then I must have read a
+>> different mailinglist or so.
+> 
+>  Ok no promises.
+>  Maybe I read to much in to Mr Tso previous mail. My apologies
+>  [quote]
+>  > So I tend to use -rc3, -rc4, and -rc5 kernels on my laptops, and when
+>  > I find bugs, I report them and I help fix them.  If more people did
+>  > that, then the 2.6.X.0 releases would be more stable.  But kernel
+>  > development is a volunteer effort, so it's up to the volunteers to
+>  > test and fix bugs during the rc4, -rc5 and -rc6 time frame. 
+>  
+>  [...]
+>  > [...]                         Linux may be a very good bargain (look
+>  > at how much Oracle has increased its support contracts for Solaris!),
+>  > but it's still not a free lunch.  At the end of the day, you get what
+>  > you put into it.
+> 
+>   I tested the kernels i reported the bugs and helped (to the best of my
+>   knowledge; I'm not a programmer) 
+>   I got no result.
 
-Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
----
+"You get what you put into it" probably did not mean "report a bug, get
+it fixed, every time".  Often enough, kernel bugs or hardware quirks are
+very hard to fix without direct access to affected hardware.
 
- arch/x86/include/asm/cpufeature.h |    2 +-
- arch/x86/include/asm/idle.h       |    2 --
- arch/x86/include/asm/processor.h  |    1 -
- arch/x86/kernel/cpu/common.c      |    1 -
- arch/x86/kernel/process.c         |   25 +++++++++----------------
- arch/x86/kernel/smpboot.c         |    1 -
- 6 files changed, 10 insertions(+), 22 deletions(-)
-
-diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
-index 4681459..d826f48 100644
---- a/arch/x86/include/asm/cpufeature.h
-+++ b/arch/x86/include/asm/cpufeature.h
-@@ -89,7 +89,7 @@
- #define X86_FEATURE_LFENCE_RDTSC (3*32+18) /* "" Lfence synchronizes RDTSC */
- #define X86_FEATURE_11AP	(3*32+19) /* "" Bad local APIC aka 11AP */
- #define X86_FEATURE_NOPL	(3*32+20) /* The NOPL (0F 1F) instructions */
--#define X86_FEATURE_AMDC1E	(3*32+21) /* AMD C1E detected */
-+#define X86_FEATURE_AMDC1E	(3*32+21) /* Broken APIC timer in AMD C1E */
- #define X86_FEATURE_XTOPOLOGY	(3*32+22) /* cpu topology enum extensions */
- #define X86_FEATURE_TSC_RELIABLE (3*32+23) /* TSC is known to be reliable */
- #define X86_FEATURE_NONSTOP_TSC	(3*32+24) /* TSC does not stop in C states */
-diff --git a/arch/x86/include/asm/idle.h b/arch/x86/include/asm/idle.h
-index 38d8737..1ef7da2 100644
---- a/arch/x86/include/asm/idle.h
-+++ b/arch/x86/include/asm/idle.h
-@@ -16,6 +16,4 @@ static inline void enter_idle(void) { }
- static inline void exit_idle(void) { }
- #endif /* CONFIG_X86_64 */
- 
--void c1e_remove_cpu(int cpu);
--
- #endif /* _ASM_X86_IDLE_H */
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 7e5c6a6..c5e29a9 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -757,7 +757,6 @@ static inline void __sti_mwait(unsigned long eax, unsigned long ecx)
- extern void mwait_idle_with_hints(unsigned long eax, unsigned long ecx);
- 
- extern void select_idle_routine(const struct cpuinfo_x86 *c);
--extern void init_c1e_mask(void);
- 
- extern unsigned long		boot_option_idle_override;
- extern unsigned long		idle_halt;
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index 68e4a6f..7be2fbf 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -864,7 +864,6 @@ static void vgetcpu_set_mode(void)
- void __init identify_boot_cpu(void)
- {
- 	identify_cpu(&boot_cpu_data);
--	init_c1e_mask();
- #ifdef CONFIG_X86_32
- 	sysenter_setup();
- 	enable_sep_cpu();
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index f3520a8..cfe109d 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -561,15 +561,8 @@ no_c1e_idle:
- 	return 0;
- }
- 
--static cpumask_var_t c1e_mask;
- static int c1e_detected;
- 
--void c1e_remove_cpu(int cpu)
--{
--	if (c1e_mask != NULL)
--		cpumask_clear_cpu(cpu, c1e_mask);
--}
--
- /*
-  * C1E aware idle routine. We check for C1E active in the interrupt
-  * pending message MSR. If we detect C1E, then we handle it the same
-@@ -596,8 +589,7 @@ static void c1e_idle(void)
- 	if (c1e_detected) {
- 		int cpu = smp_processor_id();
- 
--		if (!cpumask_test_cpu(cpu, c1e_mask)) {
--			cpumask_set_cpu(cpu, c1e_mask);
-+		if (!cpu_has(&current_cpu_data, X86_FEATURE_AMDC1E)) {
- 			/*
- 			 * Force broadcast so ACPI can not interfere.
- 			 */
-@@ -630,6 +622,14 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
- 			" performance may degrade.\n");
- 	}
- #endif
-+	if (c1e_detected) {
-+		/*
-+		 * Broadcast can't have been activated on this CPU yet.
-+		 * Clear the flag to let c1e_idle() do it.
-+		 */
-+		clear_cpu_cap(&current_cpu_data, X86_FEATURE_AMDC1E);
-+	}
-+
- 	if (pm_idle)
- 		return;
- 
-@@ -646,13 +646,6 @@ void __cpuinit select_idle_routine(const struct cpuinfo_x86 *c)
- 		pm_idle = default_idle;
- }
- 
--void __init init_c1e_mask(void)
--{
--	/* If we're using c1e_idle, we need to allocate c1e_mask. */
--	if (pm_idle == c1e_idle)
--		zalloc_cpumask_var(&c1e_mask, GFP_KERNEL);
--}
--
- static int __init idle_setup(char *str)
- {
- 	if (!str)
-diff --git a/arch/x86/kernel/smpboot.c b/arch/x86/kernel/smpboot.c
-index c4f33b2..dd647bb 100644
---- a/arch/x86/kernel/smpboot.c
-+++ b/arch/x86/kernel/smpboot.c
-@@ -1355,7 +1355,6 @@ void play_dead_common(void)
- 	idle_task_exit();
- 	reset_lazy_tlbstate();
- 	irq_ctx_exit(raw_smp_processor_id());
--	c1e_remove_cpu(raw_smp_processor_id());
- 
- 	mb();
- 	/* Ack it */
-
+Here is how my involvement with Linux started:  I reported a bug but
+nobody reacted.  I collected some more information, reported the bug
+again, and it was immediately fixed by the driver authors.  From then on
+I kept following driver development as a tester and answered user
+questions.  A few years later, the driver authors all had left for other
+projects but there were still bugs to tackle.  So I started to write and
+submit bug fixes myself.  (I'm not a programmer either but by then I
+already knew a lot about the subsystem.)
+-- 
+Stefan Richter
+-=====-==-=- -=== -==-=
+http://arcgraph.de/sr/
