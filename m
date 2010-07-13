@@ -1,67 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756788Ab0GMN61 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 09:58:27 -0400
-Received: from mail.gmx.net ([213.165.64.20]:39610 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756760Ab0GMN6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 09:58:25 -0400
-X-Authenticated: #4463548
-X-Provags-ID: V01U2FsdGVkX18+9T9GKlA+nXZ4QYPCsmgnFUds/4gRAfjec18D4n
-	fGJUsIZHiNjo3B
-Date: Tue, 13 Jul 2010 17:00:21 +0300 (EEST)
-From: Dimitrios Apostolou <jimis@gmx.net>
-X-X-Sender: jimis@localhost.localdomain
-To: linux-kernel@vger.kernel.org
-cc: Dan Nicolaescu <dann@gnu.org>
-Subject: emacs and "linux" coding style
-Message-ID: <alpine.LNX.2.00.1007131644180.1500@localhost.localdomain>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756790Ab0GMOAv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 10:00:51 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:44284 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752138Ab0GMOAu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 10:00:50 -0400
+Message-ID: <4C3C718C.6080402@linux.vnet.ibm.com>
+Date: Tue, 13 Jul 2010 09:00:44 -0500
+From: Brian King <brking@linux.vnet.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; format=flowed; charset=US-ASCII
-X-Y-GMX-Trusted: 0
+To: Nathan Fontenot <nfont@austin.ibm.com>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 1/7] Split the memory_block structure
+References: <4C3B3446.5090302@austin.ibm.com> <4C3B37CE.50802@austin.ibm.com>
+In-Reply-To: <4C3B37CE.50802@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello list,
+On 07/12/2010 10:42 AM, Nathan Fontenot wrote:
+> @@ -123,13 +130,20 @@
+>  static ssize_t show_mem_removable(struct sys_device *dev,
+>  			struct sysdev_attribute *attr, char *buf)
+>  {
+> -	unsigned long start_pfn;
+> -	int ret;
+> -	struct memory_block *mem =
+> -		container_of(dev, struct memory_block, sysdev);
+> +	struct list_head *pos, *tmp;
+> +	struct memory_block *mem;
+> +	int ret = 1;
+> +
+> +	mem = container_of(dev, struct memory_block, sysdev);
+> +	list_for_each_safe(pos, tmp, &mem->sections) {
+> +		struct memory_block_section *mbs;
+> +		unsigned long start_pfn;
+> +
+> +		mbs = list_entry(pos, struct memory_block_section, next);
+> +		start_pfn = section_nr_to_pfn(mbs->phys_index);
+> +		ret &= is_mem_section_removable(start_pfn, PAGES_PER_SECTION);
+> +	}
 
-according to Documentation/CodingStyle the "linux" style of emacs is 
-broken because it uses tabs+spaces when continuing the argument list of a 
-function on a new line. So I reported that as a bug to bug-gnu-emacs 
-(bug#6617).
+I don't see you deleting anyting from the list in this loop. Why do you need
+to use list_for_each_safe? That won't protect you if someone else is messing
+with the list.
 
-However it's not clear if this is a bug of emacs or an inconsistency of 
-the linux kernel coding style. I can't find where exactly the usage *only* 
-of tabs is mandated, see for example the following quote:
-
-
-> Statements longer than 80 columns will be broken into sensible
-> chunks. Descendants are always substantially shorter than the parent
-> and are placed substantially to the right. The same applies to
-> function headers with a long argument list. Long strings are as well
-> broken into shorter strings. The only exception to this is where
-> exceeding 80 columns significantly increases readability and does not
-> hide information.
-
-
-Tabs are not mentioned anywhere, besides the specific part about emacs 
-which is so ironic that no emacs dev can read it fully. Moreover there are 
-many parts in the kernel that are aligned using both tabs and spaces. 
-Random example in the linux-2.6.34.1 kernel: kernel/sched.c
-
-
-static void update_group_shares_cpu(struct task_group *tg, int cpu,
-                                     unsigned long sd_shares,
-                                     unsigned long sd_rq_weight,
-                                     unsigned long *usd_rq_weight)
-{
-
-
-So what do you think? Should the current emacs "linux" style be fixed, or 
-are spaces allowed?
+> 
+> -	start_pfn = section_nr_to_pfn(mem->phys_index);
+> -	ret = is_mem_section_removable(start_pfn, PAGES_PER_SECTION);
+>  	return sprintf(buf, "%d\n", ret);
+>  }
+> 
 
 
-Thanks,
-Dimitris
+> @@ -238,19 +252,40 @@
+>  static int memory_block_change_state(struct memory_block *mem,
+>  		unsigned long to_state, unsigned long from_state_req)
+>  {
+> +	struct memory_block_section *mbs;
+> +	struct list_head *pos;
+>  	int ret = 0;
+> +
+>  	mutex_lock(&mem->state_mutex);
+> 
+> -	if (mem->state != from_state_req) {
+> -		ret = -EINVAL;
+> -		goto out;
+> +	list_for_each(pos, &mem->sections) {
+> +		mbs = list_entry(pos, struct memory_block_section, next);
+> +
+> +		if (mbs->state != from_state_req)
+> +			continue;
+> +
+> +		ret = memory_block_action(mbs, to_state);
+> +		if (ret)
+> +			break;
+> +	}
+
+Would it be better here to loop through all the sections and ensure they
+are in the proper state first before starting to change the state of any
+of them? Then you could easily return -EINVAL if one or more is in
+the incorrect state and wouldn't need to the code below.
+
+> +	if (ret) {
+> +		list_for_each(pos, &mem->sections) {
+> +			mbs = list_entry(pos, struct memory_block_section,
+> +					 next);
+> +
+> +			if (mbs->state == from_state_req)
+> +				continue;
+> +
+> +			if (memory_block_action(mbs, to_state))
+> +				printk(KERN_ERR "Could not re-enable memory "
+> +				       "section %lx\n", mbs->phys_index);
+> +		}
+>  	}
+> 
+> -	ret = memory_block_action(mem, to_state);
+>  	if (!ret)
+>  		mem->state = to_state;
+> 
+> -out:
+>  	mutex_unlock(&mem->state_mutex);
+>  	return ret;
+>  }
+
+
+> @@ -498,19 +496,97 @@
+> 
+>  	return mem;
+>  }
+> +static int add_mem_block_section(struct memory_block *mem,
+> +				 int section_nr, unsigned long state)
+> +{
+> +	struct memory_block_section *mbs;
+> +
+> +	mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
+> +	if (!mbs)
+> +		return -ENOMEM;
+> +
+> +	mbs->phys_index = section_nr;
+> +	mbs->state = state;
+> +
+> +	list_add(&mbs->next, &mem->sections);
+
+I don't think there is sufficient protection for this list. Don't we
+need to be holding a lock of some sort when adding/deleting/iterating
+through this list? 
+
+> +	return 0;
+> +}
+
+-- 
+Brian King
+Linux on Power Virtualization
+IBM Linux Technology Center
+
 
