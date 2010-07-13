@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab0GMHXn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:23:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24604 "EHLO
+	id S1755698Ab0GMHYI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:24:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24542 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752979Ab0GMHOg (ORCPT
+	with ESMTP id S1752906Ab0GMHOe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:14:36 -0400
+	Tue, 13 Jul 2010 03:14:34 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,189 +17,52 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 22/50] memblock: Add array resizing support
-Date: Tue, 13 Jul 2010 00:10:16 -0700
-Message-Id: <1279005044-24777-23-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 27/50] memblock: Make memblock_alloc_try_nid() fallback to MEMBLOCK_ALLOC_ANYWHERE
+Date: Tue, 13 Jul 2010 00:10:21 -0700
+Message-Id: <1279005044-24777-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C3C123F.00AE,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4C3C1243.021E,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-When one of the array gets full, we resize it. After much thinking and
-a few iterations of that code, I went back to on-demand resizing using
-the (new) internal memblock_find_base() function, which is pretty much what
-Yinghai initially proposed, though there some differences in the details.
+memblock_alloc_nid() used to fallback to allocating anywhere by using
+memblock_alloc() as a fallback.
 
-To work this relies on the default alloc limit being set sensibly by
-the architecture.
+However, some of my previous patches limit memblock_alloc() to the region
+covered by MEMBLOCK_ALLOC_ACCESSIBLE which is not quite what we want
+for memblock_alloc_try_nid().
+
+So we fix it by explicitely using MEMBLOCK_ALLOC_ANYWHERE.
+
+Not that so far only sparc uses memblock_alloc_nid() and it hasn't been updated
+to clamp the accessible zone yet. Thus the temporary "breakage" should have
+no effect.
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- mm/memblock.c |  104 +++++++++++++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 102 insertions(+), 2 deletions(-)
+ mm/memblock.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 80d8b85..8197f37 100644
+index c3c499e..424ca11 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -11,6 +11,7 @@
-  */
+@@ -546,7 +546,7 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
  
- #include <linux/kernel.h>
-+#include <linux/slab.h>
- #include <linux/init.h>
- #include <linux/bitops.h>
- #include <linux/poison.h>
-@@ -18,12 +19,23 @@
- 
- struct memblock memblock;
- 
--static int memblock_debug;
-+static int memblock_debug, memblock_can_resize;
- static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
- static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
- 
- #define MEMBLOCK_ERROR	(~(phys_addr_t)0)
- 
-+/* inline so we don't get a warning when pr_debug is compiled out */
-+static inline const char *memblock_type_name(struct memblock_type *type)
-+{
-+	if (type == &memblock.memory)
-+		return "memory";
-+	else if (type == &memblock.reserved)
-+		return "reserved";
-+	else
-+		return "unknown";
-+}
-+
- /*
-  * Address comparison utilities
-  */
-@@ -156,6 +168,79 @@ static void memblock_coalesce_regions(struct memblock_type *type,
- 	memblock_remove_region(type, r2);
+ 	if (res)
+ 		return res;
+-	return memblock_alloc(size, align);
++	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ANYWHERE);
  }
  
-+/* Defined below but needed now */
-+static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size);
-+
-+static int memblock_double_array(struct memblock_type *type)
-+{
-+	struct memblock_region *new_array, *old_array;
-+	phys_addr_t old_size, new_size, addr;
-+	int use_slab = slab_is_available();
-+
-+	/* We don't allow resizing until we know about the reserved regions
-+	 * of memory that aren't suitable for allocation
-+	 */
-+	if (!memblock_can_resize)
-+		return -1;
-+
-+	pr_debug("memblock: %s array full, doubling...", memblock_type_name(type));
-+
-+	/* Calculate new doubled size */
-+	old_size = type->max * sizeof(struct memblock_region);
-+	new_size = old_size << 1;
-+
-+	/* Try to find some space for it.
-+	 *
-+	 * WARNING: We assume that either slab_is_available() and we use it or
-+	 * we use MEMBLOCK for allocations. That means that this is unsafe to use
-+	 * when bootmem is currently active (unless bootmem itself is implemented
-+	 * on top of MEMBLOCK which isn't the case yet)
-+	 *
-+	 * This should however not be an issue for now, as we currently only
-+	 * call into MEMBLOCK while it's still active, or much later when slab is
-+	 * active for memory hotplug operations
-+	 */
-+	if (use_slab) {
-+		new_array = kmalloc(new_size, GFP_KERNEL);
-+		addr = new_array == NULL ? MEMBLOCK_ERROR : __pa(new_array);
-+	} else
-+		addr = memblock_find_base(new_size, sizeof(phys_addr_t), MEMBLOCK_ALLOC_ACCESSIBLE);
-+	if (addr == MEMBLOCK_ERROR) {
-+		pr_err("memblock: Failed to double %s array from %ld to %ld entries !\n",
-+		       memblock_type_name(type), type->max, type->max * 2);
-+		return -1;
-+	}
-+	new_array = __va(addr);
-+
-+	/* Found space, we now need to move the array over before
-+	 * we add the reserved region since it may be our reserved
-+	 * array itself that is full.
-+	 */
-+	memcpy(new_array, type->regions, old_size);
-+	memset(new_array + type->max, 0, old_size);
-+	old_array = type->regions;
-+	type->regions = new_array;
-+	type->max <<= 1;
-+
-+	/* If we use SLAB that's it, we are done */
-+	if (use_slab)
-+		return 0;
-+
-+	/* Add the new reserved region now. Should not fail ! */
-+	BUG_ON(memblock_add_region(&memblock.reserved, addr, new_size) < 0);
-+
-+	/* If the array wasn't our static init one, then free it. We only do
-+	 * that before SLAB is available as later on, we don't know whether
-+	 * to use kfree or free_bootmem_pages(). Shouldn't be a big deal
-+	 * anyways
-+	 */
-+	if (old_array != memblock_memory_init_regions &&
-+	    old_array != memblock_reserved_init_regions)
-+		memblock_free(__pa(old_array), old_size);
-+
-+	return 0;
-+}
-+
- static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
- {
- 	unsigned long coalesced = 0;
-@@ -196,7 +281,11 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
  
- 	if (coalesced)
- 		return coalesced;
--	if (type->cnt >= type->max)
-+
-+	/* If we are out of space, we fail. It's too late to resize the array
-+	 * but then this shouldn't have happened in the first place.
-+	 */
-+	if (WARN_ON(type->cnt >= type->max))
- 		return -1;
- 
- 	/* Couldn't coalesce the MEMBLOCK, so add it to the sorted table. */
-@@ -217,6 +306,14 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
- 	}
- 	type->cnt++;
- 
-+	/* The array is full ? Try to resize it. If that fails, we undo
-+	 * our allocation and return an error
-+	 */
-+	if (type->cnt == type->max && memblock_double_array(type)) {
-+		type->cnt--;
-+		return -1;
-+	}
-+
- 	return 0;
- }
- 
-@@ -515,6 +612,9 @@ void __init memblock_analyze(void)
- 
- 	for (i = 0; i < memblock.memory.cnt; i++)
- 		memblock.memory_size += memblock.memory.regions[i].size;
-+
-+	/* We allow resizing from there */
-+	memblock_can_resize = 1;
- }
- 
- void __init memblock_init(void)
 -- 
 1.6.4.2
 
