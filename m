@@ -1,351 +1,350 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751292Ab0GMEj5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 00:39:57 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:41332 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751032Ab0GMEjz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 00:39:55 -0400
-X-Sasl-enc: 30nHG9G0w29eCIX0f3r11proAgKMI+JRT2AqrkZyFTlG 1278995993
-Date: Tue, 13 Jul 2010 12:39:46 +0800
-From: Ian Kent <raven@themaw.net>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 19/38] union-mount: Introduce union_dir structure and
- basic operations
-Message-ID: <20100713043945.GE3949@zeus.themaw.net>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
- <1276627208-17242-20-git-send-email-vaurora@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1276627208-17242-20-git-send-email-vaurora@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1751667Ab0GMEkS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 00:40:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44017 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751421Ab0GMEkP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 00:40:15 -0400
+Date: Tue, 13 Jul 2010 14:40:07 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: linux-next@vger.kernel.org
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: linux-next: Tree for July 13
+Message-Id: <20100713144007.55d3abc9.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__13_Jul_2010_14_40_07_+1000_LIIRZgQQcXq4WY+J"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 11:39:49AM -0700, Valerie Aurora wrote:
-> This patch adds the basic structures and operations of VFS-based union
-> mounts (but not the ability to mount or lookup unioned file systems).
-> Each directory in a unioned file system has an associated union stack
-> created when the directory is first looked up.  The union stack is a
-> union_dir structure kept in a hash table indexed by mount and dentry
-> of the directory; thus, specific paths are unioned, not dentries
-> alone.  The union_dir keeps a pointer to the upper path and the lower
-> path and can be looked up by either path.  Currently only two layers
-> are supported, but the union_dir struct is flexible enough to allow
-> more than two layers.
-> 
-> This particular version of union mounts is based on ideas by Jan
-> Blunck, Bharata Rao, and many others.
-> 
-> Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-> ---
->  fs/Kconfig             |   13 +++++
->  fs/Makefile            |    1 +
->  fs/dcache.c            |    3 +
->  fs/union.c             |  119 ++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/union.h             |   66 ++++++++++++++++++++++++++
->  include/linux/dcache.h |    4 +-
->  include/linux/fs.h     |    1 +
->  7 files changed, 206 insertions(+), 1 deletions(-)
->  create mode 100644 fs/union.c
->  create mode 100644 fs/union.h
-> 
-> diff --git a/fs/Kconfig b/fs/Kconfig
-> index 5f85b59..f99c3a9 100644
-> --- a/fs/Kconfig
-> +++ b/fs/Kconfig
-> @@ -59,6 +59,19 @@ source "fs/notify/Kconfig"
->  
->  source "fs/quota/Kconfig"
->  
-> +config UNION_MOUNT
-> +       bool "Union mounts (writable overlasy) (EXPERIMENTAL)"
+--Signature=_Tue__13_Jul_2010_14_40_07_+1000_LIIRZgQQcXq4WY+J
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Spelling of overlay
+Hi all,
 
-> +       depends on EXPERIMENTAL
-> +       help
-> +         Union mounts allow you to mount a transparent writable
-> +	 layer over a read-only file system, for example, an ext3
-> +	 partition on a hard drive over a CD-ROM root file system
-> +	 image.
-> +
-> +	 See <file:Documentation/filesystems/union-mounts.txt> for details.
-> +
-> +	 If unsure, say N.
-> +
->  source "fs/autofs/Kconfig"
->  source "fs/autofs4/Kconfig"
->  source "fs/fuse/Kconfig"
-> diff --git a/fs/Makefile b/fs/Makefile
-> index 97f340f..1949af2 100644
-> --- a/fs/Makefile
-> +++ b/fs/Makefile
-> @@ -52,6 +52,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
->  obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
->  
->  obj-y				+= quota/
-> +obj-$(CONFIG_UNION_MOUNT)	+= union.o
->  
->  obj-$(CONFIG_PROC_FS)		+= proc/
->  obj-y				+= partitions/
-> diff --git a/fs/dcache.c b/fs/dcache.c
-> index 1575af4..54ff5a3 100644
-> --- a/fs/dcache.c
-> +++ b/fs/dcache.c
-> @@ -960,6 +960,9 @@ struct dentry *d_alloc(struct dentry * parent, const struct qstr *name)
->  	INIT_LIST_HEAD(&dentry->d_lru);
->  	INIT_LIST_HEAD(&dentry->d_subdirs);
->  	INIT_LIST_HEAD(&dentry->d_alias);
-> +#ifdef CONFIG_UNION_MOUNT
-> +	dentry->d_union_dir = NULL;
-> +#endif
->  
->  	if (parent) {
->  		dentry->d_parent = dget(parent);
-> diff --git a/fs/union.c b/fs/union.c
-> new file mode 100644
-> index 0000000..02abb7c
-> --- /dev/null
-> +++ b/fs/union.c
-> @@ -0,0 +1,119 @@
-> + /*
-> + * VFS-based union mounts for Linux
-> + *
-> + * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
-> + * Copyright (C) 2007-2009 Novell Inc.
-> + * Copyright (C) 2009-2010 Red Hat, Inc.
-> + *
-> + *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
-> + *              Valerie Aurora <vaurora@redhat.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; version 2
-> + * of the License.
-> + */
-> +
-> +#include <linux/bootmem.h>
-> +#include <linux/init.h>
-> +#include <linux/types.h>
-> +#include <linux/fs.h>
-> +#include <linux/mount.h>
-> +#include <linux/fs_struct.h>
-> +#include <linux/slab.h>
-> +
-> +#include "union.h"
-> +
-> +static struct kmem_cache *union_cache;
-> +
-> +static int __init init_union(void)
-> +{
-> +	union_cache = KMEM_CACHE(union_dir, SLAB_PANIC | SLAB_MEM_SPREAD);
+Not unexpectedly, we got some conflicts with the arm defconfig files
+today ...
 
-I know there are other places where we just assume KMEM_CACHE() returns
-non-null but is that really the right thing to do?
+Changes since 20100712:
 
-> +	return 0;
-> +}
-> +
-> +fs_initcall(init_union);
-> +
-> +/**
-> + * union_alloc - allocate a union_dir
-> + *
-> + * @path: path of directory underneath another directory
-> + *
-> + * Allocate a union_dir for this directory.  We only allocate
-> + * union_dirs for the second and lower layers - the read-only layers.
-> + * Top-level dentries don't have a union_dir, just a pointer to the
-> + * union_dir of the directory in the layer below it.  u_lower is
-> + * initialized to NULL by default.  If there is another layer below
-> + * this and a matching directory in the layer, then we allocate a
-> + * union_dir for it and then set u_lower of the above union_dir to
-> + * point to it.
-> + */
-> +
-> +static struct union_dir *union_alloc(struct path *path)
-> +{
-> +	struct union_dir *ud;
-> +
-> +	BUG_ON(!S_ISDIR(path->dentry->d_inode->i_mode));
-> +
-> +	ud = kmem_cache_alloc(union_cache, GFP_ATOMIC);
-> +	if (!ud)
-> +		return NULL;
-> +
-> +	ud->u_this = *path;
-> +	ud->u_lower = NULL;
-> +
-> +	return ud;
-> +}
-> +
-> +static void union_put(struct union_dir *ud)
-> +{
-> +	path_put(&ud->u_this);
-> +	kmem_cache_free(union_cache, ud);
-> +}
-> +
-> +/**
-> + * union_add_dir - Add another layer to a unioned directory
-> + *
-> + * @upper - directory in the previous layer
-> + * @lower - directory in the current layer
-> + * @next_ud - location of pointer to this union_dir
-> + *
-> + * Must have a reference (i.e., call path_get()) to @lower before
-> + * passing to this function.
-> + */
-> +
-> +int union_add_dir(struct path *upper, struct path *lower,
-> +		  struct union_dir **next_ud)
-> +{
-> +	struct union_dir *ud;
-> +
-> +	BUG_ON(*next_ud != NULL);
-> +
-> +	ud = union_alloc(lower);
-> +	if (!ud)
-> +		return -ENOMEM;
-> +	*next_ud = ud;
-> +
-> +	return 0;
-> +}
-> +
-> +/**
-> + * d_free_unions - free all unions for this dentry
-> + *
-> + * @dentry - topmost dentry in the union stack to remove
-> + *
-> + * This must be called when freeing a dentry.
-> + */
-> +void d_free_unions(struct dentry *dentry)
-> +{
-> +	struct union_dir *this, *next;
-> +
-> +	this = dentry->d_union_dir;
-> +
-> +	while (this != NULL) {
-> +		next = this->u_lower;
-> +		union_put(this);
-> +		this = next;
-> +	}
-> +	dentry->d_union_dir = NULL;
-> +}
-> diff --git a/fs/union.h b/fs/union.h
-> new file mode 100644
-> index 0000000..04efc1f
-> --- /dev/null
-> +++ b/fs/union.h
-> @@ -0,0 +1,66 @@
-> + /*
-> + * VFS-based union mounts for Linux
-> + *
-> + * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
-> + * Copyright (C) 2007-2009 Novell Inc.
-> + * Copyright (C) 2009-2010 Red Hat, Inc.
-> + *
-> + *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
-> + *              Valerie Aurora <vaurora@redhat.com>
-> + *
-> + * This program is free software; you can redistribute it and/or
-> + * modify it under the terms of the GNU General Public License
-> + * as published by the Free Software Foundation; version 2
-> + * of the License.
-> + */
-> +#ifndef __LINUX_UNION_H
-> +#define __LINUX_UNION_H
-> +#ifdef __KERNEL__
-> +
-> +#ifdef CONFIG_UNION_MOUNT
-> +
-> +/*
-> + * WARNING! Confusing terminology alert.
-> + *
-> + * Note that the directions "up" and "down" in union mounts are the
-> + * opposite of "up" and "down" in normal VFS operation terminology.
-> + * "up" in the rest of the VFS means "towards the root of the mount
-> + * tree."  If you mount B on top of A, following B "up" will get you
-> + * A.  In union mounts, "up" means "towards the most recently mounted
-> + * layer of the union stack."  If you union mount B on top of A,
-> + * following A "up" will get you to B.  Another way to put it is that
-> + * "up" in the VFS means going from this mount towards the direction
-> + * of its mnt->mnt_parent pointer, but "up" in union mounts means
-> + * going in the opposite direction (until you run out of union
-> + * layers).
-> + */
-> +
-> +/*
-> + * The union_dir structure.  Basically just a singly-linked list with
-> + * a pointer to the referenced dentry, whose head is d_union_dir in
-> + * the dentry of the topmost directory.  We can't link this list
-> + * purely through list elements in the dentry because lower layer
-> + * dentries can be part of multiple union stacks.  However, the
-> + * topmost dentry is only part of one union stack.  So we point at the
-> + * lower layer dentries through a linked list rooted in the topmost
-> + * dentry.
-> + */
-> +struct union_dir {
-> +	struct path u_this;		/* this is me */
-> +	struct union_dir *u_lower;	/* this is what I overlay */
-> +};
-> +
-> +#define IS_MNT_UNION(mnt)	((mnt)->mnt_flags & MNT_UNION)
-> +
-> +extern int union_add_dir(struct path *, struct path *, struct union_dir **);
-> +extern void d_free_unions(struct dentry *);
-> +
-> +#else /* CONFIG_UNION_MOUNT */
-> +
-> +#define IS_MNT_UNION(x)			(0)
-> +#define union_add_dir(x, y, z)		({ BUG(); (NULL); })
-> +#define d_free_unions(x)		do { } while (0)
-> +
-> +#endif	/* CONFIG_UNION_MOUNT */
-> +#endif	/* __KERNEL__ */
-> +#endif	/* __LINUX_UNION_H */
-> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-> index 01d6011..509a637 100644
-> --- a/include/linux/dcache.h
-> +++ b/include/linux/dcache.h
-> @@ -100,7 +100,9 @@ struct dentry {
->  	struct hlist_node d_hash;	/* lookup hash list */
->  	struct dentry *d_parent;	/* parent directory */
->  	struct qstr d_name;
-> -
-> +#ifdef CONFIG_UNION_MOUNT
-> +	struct union_dir *d_union_dir;	/* head of union stack */
-> +#endif
->  	struct list_head d_lru;		/* LRU list */
->  	/*
->  	 * d_child and d_rcu can share memory
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index dbd9881..32e6988 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -1395,6 +1395,7 @@ struct super_block {
->  	 * read-only.
->  	 */
->  	int s_hard_readonly_users;
-> +
+New tree: omfs
 
-Extra blank line, intended?
+The arm tree gained a conflict against Linus' tree.
 
->  };
->  
->  extern struct timespec current_fs_time(struct super_block *sb);
-> -- 
-> 1.6.3.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+The s5p tree gained 2 conflicts against Linus' tree.
+
+The tegra tree gained a conflict against the arm tree.
+
+The genesis tree gained 3 conflicts against Linus' tree.
+
+The vfs tree still has its build failure for which I applied a merge fix
+patch.
+
+The i2c quilt series failed to import so I used the version from
+next-20100712.
+
+The rr tree gained a conflict against the sound tree.
+
+----------------------------------------------------------------------------
+
+I have created today's linux-next tree at
+git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
+are tracking the linux-next tree using git, you should not use "git pull"
+to do so as that will try to merge the new linux-next release with the
+old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
+(see below).
+
+You can see which trees have been included by looking in the Next/Trees
+file in the source.  There are also quilt-import.log and merge.log files
+in the Next directory.  Between each merge, the tree was built with
+a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
+final fixups (if any), it is also built with powerpc allnoconfig (32 and
+64 bit), ppc44x_defconfig and allyesconfig (minus
+CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
+and sparc64 defconfig. These builds also have
+CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
+CONFIG_DEBUG_INFO disabled when necessary.
+
+Below is a summary of the state of the merge.
+
+We are up to 165 trees (counting Linus' and 22 trees of patches pending
+for Linus' tree), more are welcome (even if they are currently empty).
+Thanks to those who have contributed, and to those who haven't, please do.
+
+Status of my local build tests will be at
+http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
+advice about cross compilers/configs that work, we are always open to add
+more builds.
+
+Thanks to Jan Dittmer for adding the linux-next tree to his build tests
+at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
+Dunlap for doing many randconfig builds.
+
+There is a wiki covering stuff to do with linux-next at
+http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+
+$ git checkout master
+$ git reset --hard stable
+Merging origin/master
+Merging fixes/fixes
+Merging arm-current/master
+Merging m68k-current/for-linus
+Merging powerpc-merge/merge
+Merging sparc-current/master
+Merging scsi-rc-fixes/master
+Merging net-current/master
+Merging sound-current/for-linus
+Merging pci-current/for-linus
+Merging wireless-current/master
+Merging kbuild-current/rc-fixes
+Merging quilt/driver-core.current
+Merging quilt/tty.current
+Merging quilt/usb.current
+Merging quilt/staging.current
+Merging cpufreq-current/fixes
+Merging input-current/for-linus
+Merging md-current/for-linus
+Merging audit-current/for-linus
+Merging crypto-current/master
+Merging ide-curent/master
+Merging dwmw2/master
+Merging gcl-current/merge
+Merging arm/devel
+CONFLICT (delete/modify): arch/arm/configs/lusl7200_defconfig deleted in ar=
+m/devel and modified in HEAD. Version HEAD of arch/arm/configs/lusl7200_def=
+config left in tree.
+$ git rm -f arch/arm/configs/lusl7200_defconfig
+Merging davinci/davinci-next
+Merging i.MX/for-next
+Merging msm/for-next
+Merging omap/for-next
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-3430sdp.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-3630sdp.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-am3517evm.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-cm-t35.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-devkit8000.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-igep0020.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-ldp.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3beagle=
+.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3evm.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3pandor=
+a.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3touchb=
+ook.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-overo.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-zoom2.c
+CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-zoom3.c
+Merging pxa/for-next
+Merging samsung/next-samsung
+Merging s5p/for-next
+CONFLICT (delete/modify): arch/arm/configs/s5pc110_defconfig deleted in s5p=
+/for-next and modified in HEAD. Version HEAD of arch/arm/configs/s5pc110_de=
+fconfig left in tree.
+CONFLICT (content): Merge conflict in arch/arm/configs/s5pv210_defconfig
+$ git rm -f arch/arm/configs/s5pc110_defconfig
+Merging tegra/for-next
+CONFLICT (content): Merge conflict in arch/arm/Kconfig
+Merging avr32/avr32-arch
+Merging blackfin/for-linus
+Merging cris/for-next
+Merging ia64/test
+Merging m68k/for-next
+Merging m68knommu/for-next
+Merging microblaze/next
+Merging mips/mips-for-linux-next
+Merging parisc/next
+Merging powerpc/next
+Merging 4xx/next
+Merging 52xx-and-virtex/next
+CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
+Merging galak/next
+Merging s390/features
+Merging sh/master
+Merging genesis/master
+CONFLICT (content): Merge conflict in arch/arm/configs/ap4evb_defconfig
+CONFLICT (content): Merge conflict in arch/arm/configs/g3evm_defconfig
+CONFLICT (content): Merge conflict in arch/arm/configs/g4evm_defconfig
+Merging sparc/master
+Merging tile/master
+Merging xtensa/master
+Merging ceph/for-next
+Merging cifs/master
+Merging configfs/linux-next
+Merging ecryptfs/next
+Merging ext3/for_next
+Merging ext4/next
+Merging fatfs/master
+Merging fuse/for-next
+Merging gfs2/master
+Merging jfs/next
+Merging logfs/master
+CONFLICT (content): Merge conflict in fs/logfs/logfs.h
+Merging nfs/linux-next
+Merging nfsd/nfsd-next
+Merging nilfs2/for-next
+Merging ocfs2/linux-next
+Merging omfs/for-next
+Merging squashfs/master
+Merging udf/for_next
+Merging v9fs/for-next
+Merging ubifs/linux-next
+Merging xfs/master
+Merging vfs/for-next
+CONFLICT (content): Merge conflict in fs/nilfs2/super.c
+CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
+Applying: v9fs: fixup for inode_setattr being removed
+Applying: xfs: update tracing for clear_inode to evit_inode transition
+Applying: nilfs2: inode.c needs to include btnode.h directly now
+Merging pci/linux-next
+Merging hid/for-next
+Merging quilt/i2c
+CONFLICT (content): Merge conflict in drivers/i2c/i2c-core.c
+Merging bjdooks-i2c/next-i2c
+CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
+CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
+Merging quilt/jdelvare-hwmon
+Merging quilt/kernel-doc
+Merging v4l-dvb/master
+Merging kbuild/for-next
+Merging kconfig/for-next
+Merging ide/master
+Merging libata/NEXT
+Merging infiniband/for-next
+Merging acpi/test
+Merging idle-test/idle-test
+Merging ieee1394/for-next
+Merging ubi/linux-next
+Merging kvm/linux-next
+Merging dlm/next
+Merging ibft/master
+Merging swiotlb/master
+Merging scsi/master
+Merging async_tx/next
+Merging net/master
+Merging wireless/master
+CONFLICT (content): Merge conflict in drivers/net/wireless/wl12xx/wl1271_cm=
+d.h
+Merging mtd/master
+Merging crypto/master
+Merging sound/for-next
+CONFLICT (content): Merge conflict in Documentation/kernel-parameters.txt
+Merging cpufreq/next
+Merging quilt/rr
+CONFLICT (content): Merge conflict in arch/um/drivers/hostaudio_kern.c
+CONFLICT (content): Merge conflict in kernel/module.c
+Merging input/next
+Merging lsm/for-next
+Merging block/for-next
+CONFLICT (content): Merge conflict in drivers/block/virtio_blk.c
+Merging quilt/device-mapper
+CONFLICT (content): Merge conflict in drivers/md/dm.c
+Applying: device-mapper: fix for bio API change
+Merging embedded/master
+Merging firmware/master
+Merging pcmcia/master
+Merging battery/master
+Merging leds/for-mm
+Merging backlight/for-mm
+Merging kgdb/kgdb-next
+Merging slab/for-next
+Merging uclinux/for-next
+Merging md/for-next
+Merging mfd/for-next
+Merging hdlc/hdlc-next
+Merging drm/drm-next
+Merging viafb/viafb-next
+Merging voltage/for-next
+Merging security-testing/next
+Merging lblnet/master
+Merging agp/agp-next
+Merging uwb/for-upstream
+Merging watchdog/master
+Merging bdev/master
+Merging dwmw2-iommu/master
+Merging cputime/cputime
+Merging osd/linux-next
+Merging jc_docs/docs-next
+Merging nommu/master
+Merging trivial/for-next
+Merging audit/for-next
+Merging quilt/aoe
+Merging suspend/linux-next
+Merging bluetooth/master
+Merging fsnotify/for-next
+CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
+or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
+eft in tree.
+$ git rm -f fs/notify/inotify/inotify.c
+Applying: fsnotify: update gfp/slab.h includes
+Merging irda/for-next
+CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
+Merging catalin/for-next
+Merging alacrity/linux-next
+Merging i7core_edac/linux_next
+CONFLICT (content): Merge conflict in MAINTAINERS
+Merging devicetree/next-devicetree
+Merging spi/next-spi
+Merging omap_dss2/for-next
+Merging tip/auto-latest
+CONFLICT (content): Merge conflict in Makefile
+Merging edac-amd/for-next
+Merging oprofile/for-next
+Merging percpu/for-next
+Merging workqueues/for-next
+Merging sfi/sfi-test
+Merging asm-generic/next
+Merging drivers-x86/linux-next
+Merging hwpoison/hwpoison
+CONFLICT (content): Merge conflict in mm/memory-failure.c
+Merging sysctl/master
+Merging bkl-core/bkl/core
+Merging bkl-procfs/bkl/procfs
+Merging bkl-ioctl/bkl/ioctl
+Merging quilt/driver-core
+Merging quilt/tty
+CONFLICT (content): Merge conflict in include/linux/serial_core.h
+Merging quilt/usb
+CONFLICT (content): Merge conflict in drivers/media/video/uvc/uvcvideo.h
+CONFLICT (content): Merge conflict in include/linux/usb/video.h
+Merging staging-next/staging-next
+CONFLICT (content): Merge conflict in drivers/staging/batman-adv/bat_sysfs.c
+CONFLICT (delete/modify): drivers/staging/batman-adv/device.c deleted in st=
+aging-next/staging-next and modified in HEAD. Version HEAD of drivers/stagi=
+ng/batman-adv/device.c left in tree.
+CONFLICT (delete/modify): drivers/staging/cx25821/cx25821-audups11.c delete=
+d in HEAD and modified in staging-next/staging-next. Version staging-next/s=
+taging-next of drivers/staging/cx25821/cx25821-audups11.c left in tree.
+$ git rm -f drivers/staging/cx25821/cx25821-audups11.c
+$ git rm -f drivers/staging/batman-adv/device.c
+Merging slabh/slabh
+Merging scsi-post-merge/master
+
+--Signature=_Tue__13_Jul_2010_14_40_07_+1000_LIIRZgQQcXq4WY+J
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEbBAEBAgAGBQJMO+4nAAoJEDMEi1NhKgbsz6EH+JNfe2Yui4sEfZazf4r3+PDL
+VS5ppbvEvbQbjufllMS+YEcmJurDyn6zlatMQ6vw616h+WZ2VZn6z34CGQACqA4S
+4Q2EceVes/1xr5tHFPVDO3FlBRafkCCi+VBr6c9f4c2WnNZWRanAzXssPuUOzymZ
+JJCmCDT/NsMIs0VzpclsXqtGaAVdSuxBJV2AuHGdeXuHIKXpAjpIoRCKrLotTxOc
+AGv/03TQ7+DHQh4CSTN3oXv82NUo/XZlo6XMb86lcTINdiTFYCdgclyWsbBYp5lh
+t9YjCuoqfJqS4WnFKLZ9ux9mRIIaFnSJOI5cA8oqFa8VvCJfkx/x9KMudMTYVg==
+=K4Nc
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__13_Jul_2010_14_40_07_+1000_LIIRZgQQcXq4WY+J--
