@@ -1,146 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756669Ab0GMKWN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 06:22:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23085 "EHLO mx1.redhat.com"
+	id S1755498Ab0GMK3N (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:29:13 -0400
+Received: from www.tglx.de ([62.245.132.106]:43108 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755475Ab0GMKWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 06:22:08 -0400
-Date: Tue, 13 Jul 2010 06:21:10 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: linux-mm@kvack.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org
-Cc: riel@redhat.com, cl@linux-foundation.org, a.p.zijlstra@chello.nl,
-        Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
-        lwang@redhat.com, penberg@cs.helsinki.fi, akpm@linux-foundation.org,
-        davem@davemloft.net
-Message-Id: <20100713102110.2835.14816.sendpatchset@danny.redhat>
-In-Reply-To: <20100713101650.2835.15245.sendpatchset@danny.redhat>
-References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
-Subject: [PATCH -mmotm 23/30] mm: methods for teaching filesystems about PG_swapcache pages
+	id S1750942Ab0GMK3L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 06:29:11 -0400
+Date: Tue, 13 Jul 2010 12:28:32 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Darren Hart <dvhltc@us.ibm.com>
+cc: "lkml, " <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
+        linux-rt-users <linux-rt-users@vger.kernel.org>
+Subject: Re: [PATCH][RT] futex: protect against pi_blocked_on corruption
+ during requeue PI
+In-Reply-To: <alpine.LFD.2.00.1007131041230.3321@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1007131222430.3321@localhost.localdomain>
+References: <1278478019.10245.77.camel@marge.simson.net> <alpine.LFD.2.00.1007071356480.2604@localhost.localdomain> <4C3C1DCF.9090509@us.ibm.com> <alpine.LFD.2.00.1007131041230.3321@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 50e813068c51de733bbbdd04eb4af9c43919cd57 Mon Sep 17 00:00:00 2001
-From: Xiaotian Feng <dfeng@redhat.com>
-Date: Tue, 13 Jul 2010 13:09:50 +0800
-Subject: [PATCH 23/30]  mm: methods for teaching filesystems about PG_swapcache pages
+On Tue, 13 Jul 2010, Thomas Gleixner wrote:
+> On Tue, 13 Jul 2010, Darren Hart wrote:
+>
+> > --- a/kernel/rtmutex.c
+> > +++ b/kernel/rtmutex.c
+> > @@ -227,7 +227,7 @@ static int rt_mutex_adjust_prio_chain(struct task_struct *task,
+> >  	 * reached or the state of the chain has changed while we
+> >  	 * dropped the locks.
+> >  	 */
+> > -	if (!waiter || !waiter->task)
+> > +	if (!waiter || (long)waiter == PI_WAKEUP_INPROGRESS || !waiter->task)
+> >  		goto out_unlock_pi;
+> 
+>  Why do we need that check ? Either the requeue succeeded then
+>  task->pi_blocked_on is set to the real waiter or the wakeup won and
+>  we are in no lock chain.
+> 
+>  If we ever find a waiter with PI_WAKEUP_INPROGRESS set in
+>  rt_mutex_adjust_prio_chain() then it's a bug nothing else.
 
-In order to teach filesystems to handle swap cache pages, three new page
-functions are introduced:
+Grrr, I'm wrong. If we take hb->lock in the fast path then something
+else might try to boost us and trip over this :(
 
-  pgoff_t page_file_index(struct page *);
-  loff_t page_file_offset(struct page *);
-  struct address_space *page_file_mapping(struct page *);
+This code causes braindamage. I really wonder whether we need to
+remove it according to the "United Nations Convention against Torture
+and Other Cruel, Inhuman or Degrading Treatment or Punishment".
 
-page_file_index() - gives the offset of this page in the file in
-PAGE_CACHE_SIZE blocks. Like page->index is for mapped pages, this function
-also gives the correct index for PG_swapcache pages.
+> > @@ -6377,7 +6379,8 @@ void task_setprio(struct task_struct *p, int prio)
+> >  	 */
+> >  	if (unlikely(p == rq->idle)) {
+> >  		WARN_ON(p != rq->curr);
+> > -		WARN_ON(p->pi_blocked_on);
+> > +		WARN_ON(p->pi_blocked_on &&
+> > +		        (long)p->pi_blocked_on != PI_WAKEUP_INPROGRESS);
+> 
+>   Yuck. Paranoia ? If we ever requeue idle, then .....
 
-page_file_offset() - uses page_file_index(), so that it will give the expected
-result, even for PG_swapcache pages.
-
-page_file_mapping() - gives the mapping backing the actual page; that is for
-swap cache pages it will give swap_file->f_mapping.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
----
- include/linux/mm.h      |   25 +++++++++++++++++++++++++
- include/linux/pagemap.h |    5 +++++
- mm/swapfile.c           |   19 +++++++++++++++++++
- 3 files changed, 49 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index 32033ba..0cf97fc 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -663,6 +663,17 @@ static inline void *page_rmapping(struct page *page)
- 	return (void *)((unsigned long)page->mapping & ~PAGE_MAPPING_FLAGS);
- }
+  At least one which is bogus :)
  
-+extern struct address_space *__page_file_mapping(struct page *);
-+
-+static inline
-+struct address_space *page_file_mapping(struct page *page)
-+{
-+	if (unlikely(PageSwapCache(page)))
-+		return __page_file_mapping(page);
-+
-+	return page->mapping;
-+}
-+
- static inline int PageAnon(struct page *page)
- {
- 	return ((unsigned long)page->mapping & PAGE_MAPPING_ANON) != 0;
-@@ -679,6 +690,20 @@ static inline pgoff_t page_index(struct page *page)
- 	return page->index;
- }
- 
-+extern pgoff_t __page_file_index(struct page *page);
-+
-+/*
-+ * Return the file index of the page. Regular pagecache pages use ->index
-+ * whereas swapcache pages use swp_offset(->private)
-+ */
-+static inline pgoff_t page_file_index(struct page *page)
-+{
-+	if (unlikely(PageSwapCache(page)))
-+		return __page_file_index(page);
-+
-+	return page->index;
-+}
-+
- /*
-  * The atomic page->_mapcount, like _count, starts from -1:
-  * so that transitions both from it and to it can be tracked,
-diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
-index e12cdc6..64eda5b 100644
---- a/include/linux/pagemap.h
-+++ b/include/linux/pagemap.h
-@@ -285,6 +285,11 @@ static inline loff_t page_offset(struct page *page)
- extern pgoff_t linear_hugepage_index(struct vm_area_struct *vma,
- 				     unsigned long address);
- 
-+static inline loff_t page_file_offset(struct page *page)
-+{
-+	return ((loff_t)page_file_index(page)) << PAGE_CACHE_SHIFT;
-+}
-+
- static inline pgoff_t linear_page_index(struct vm_area_struct *vma,
- 					unsigned long address)
- {
-diff --git a/mm/swapfile.c b/mm/swapfile.c
-index a7baef1..d8a05e4 100644
---- a/mm/swapfile.c
-+++ b/mm/swapfile.c
-@@ -2261,6 +2261,25 @@ struct swap_info_struct *page_swap_info(struct page *page)
- }
- 
- /*
-+ * out-of-line __page_file_ methods to avoid include hell.
-+ */
-+
-+struct address_space *__page_file_mapping(struct page *page)
-+{
-+	VM_BUG_ON(!PageSwapCache(page));
-+	return page_swap_info(page)->swap_file->f_mapping;
-+}
-+EXPORT_SYMBOL_GPL(__page_file_mapping);
-+
-+pgoff_t __page_file_index(struct page *page)
-+{
-+	swp_entry_t swap = { .val = page_private(page) };
-+	VM_BUG_ON(!PageSwapCache(page));
-+	return swp_offset(swap);
-+}
-+EXPORT_SYMBOL_GPL(__page_file_index);
-+
-+/*
-  * swap_lock prevents swap_map being freed. Don't grab an extra
-  * reference on the swaphandle, it doesn't matter if it becomes unused.
-  */
--- 
-1.7.1.1
+Thanks,
 
+	tglx
