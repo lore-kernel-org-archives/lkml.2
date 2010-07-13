@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab0GMHYK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:24:10 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24401 "EHLO
+	id S1756089Ab0GMHYo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:24:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23336 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752833Ab0GMHO3 (ORCPT
+	with ESMTP id S1752540Ab0GMHOD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:14:29 -0400
+	Tue, 13 Jul 2010 03:14:03 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,236 +15,680 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v24 00/50] Use memblock with x86
-Date: Tue, 13 Jul 2010 00:09:54 -0700
-Message-Id: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 04/50] memblock: Rename memblock_region to memblock_type and memblock_property to memblock_region
+Date: Tue, 13 Jul 2010 00:09:58 -0700
+Message-Id: <1279005044-24777-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
+References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C3C123F.01C5,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4C3C1221.0203,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New memblock could be used to replace early_res in x86.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Suggested by: David, Ben, and Thomas
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ arch/microblaze/mm/init.c                |    4 +-
+ arch/powerpc/mm/hash_utils_64.c          |    2 +-
+ arch/powerpc/mm/mem.c                    |   26 +++---
+ arch/powerpc/platforms/embedded6xx/wii.c |    2 +-
+ arch/sparc/mm/init_64.c                  |    6 +-
+ include/linux/memblock.h                 |   24 ++--
+ mm/memblock.c                            |  168 +++++++++++++++---------------
+ 7 files changed, 115 insertions(+), 117 deletions(-)
 
--v18: change memblock_find_area to memblock_find_in_range
-      kill __memblock_find_area and use memblock_find_area directly
-      remove memblock_add_memory
-      change memblock_reserve_area to memblock_reserve_range
-      change memblock_free_area to memblock_free_range
-      don't clear memblock.reserved after converting
-      use for_each_memblock to replace for cycle
-      rebase to 06/15/2010 powerpc/memblock
+diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+index db59349..afd6494 100644
+--- a/arch/microblaze/mm/init.c
++++ b/arch/microblaze/mm/init.c
+@@ -77,8 +77,8 @@ void __init setup_memory(void)
+ 
+ 	/* Find main memory where is the kernel */
+ 	for (i = 0; i < memblock.memory.cnt; i++) {
+-		memory_start = (u32) memblock.memory.region[i].base;
+-		memory_end = (u32) memblock.memory.region[i].base
++		memory_start = (u32) memblock.memory.regions[i].base;
++		memory_end = (u32) memblock.memory.regions[i].base
+ 				+ (u32) memblock.memory.region[i].size;
+ 		if ((memory_start <= (u32)_text) &&
+ 					((u32)_text <= memory_end)) {
+diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
+index 98f262d..dbaacb7 100644
+--- a/arch/powerpc/mm/hash_utils_64.c
++++ b/arch/powerpc/mm/hash_utils_64.c
+@@ -660,7 +660,7 @@ static void __init htab_initialize(void)
+ 
+ 	/* create bolted the linear mapping in the hash table */
+ 	for (i=0; i < memblock.memory.cnt; i++) {
+-		base = (unsigned long)__va(memblock.memory.region[i].base);
++		base = (unsigned long)__va(memblock.memory.regions[i].base);
+ 		size = memblock.memory.region[i].size;
+ 
+ 		DBG("creating mapping for region: %lx..%lx (prot: %lx)\n",
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 1a84a8d..a33f5c1 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -86,10 +86,10 @@ int page_is_ram(unsigned long pfn)
+ 	for (i=0; i < memblock.memory.cnt; i++) {
+ 		unsigned long base;
+ 
+-		base = memblock.memory.region[i].base;
++		base = memblock.memory.regions[i].base;
+ 
+ 		if ((paddr >= base) &&
+-			(paddr < (base + memblock.memory.region[i].size))) {
++			(paddr < (base + memblock.memory.regions[i].size))) {
+ 			return 1;
+ 		}
+ 	}
+@@ -149,7 +149,7 @@ int
+ walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
+ 		void *arg, int (*func)(unsigned long, unsigned long, void *))
+ {
+-	struct memblock_property res;
++	struct memblock_region res;
+ 	unsigned long pfn, len;
+ 	u64 end;
+ 	int ret = -1;
+@@ -206,7 +206,7 @@ void __init do_init_bootmem(void)
+ 	/* Add active regions with valid PFNs */
+ 	for (i = 0; i < memblock.memory.cnt; i++) {
+ 		unsigned long start_pfn, end_pfn;
+-		start_pfn = memblock.memory.region[i].base >> PAGE_SHIFT;
++		start_pfn = memblock.memory.regions[i].base >> PAGE_SHIFT;
+ 		end_pfn = start_pfn + memblock_size_pages(&memblock.memory, i);
+ 		add_active_range(0, start_pfn, end_pfn);
+ 	}
+@@ -219,16 +219,16 @@ void __init do_init_bootmem(void)
+ 
+ 	/* reserve the sections we're already using */
+ 	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		unsigned long addr = memblock.reserved.region[i].base +
++		unsigned long addr = memblock.reserved.regions[i].base +
+ 				     memblock_size_bytes(&memblock.reserved, i) - 1;
+ 		if (addr < lowmem_end_addr)
+-			reserve_bootmem(memblock.reserved.region[i].base,
++			reserve_bootmem(memblock.reserved.regions[i].base,
+ 					memblock_size_bytes(&memblock.reserved, i),
+ 					BOOTMEM_DEFAULT);
+-		else if (memblock.reserved.region[i].base < lowmem_end_addr) {
++		else if (memblock.reserved.regions[i].base < lowmem_end_addr) {
+ 			unsigned long adjusted_size = lowmem_end_addr -
+-				      memblock.reserved.region[i].base;
+-			reserve_bootmem(memblock.reserved.region[i].base,
++				      memblock.reserved.regions[i].base;
++			reserve_bootmem(memblock.reserved.regions[i].base,
+ 					adjusted_size, BOOTMEM_DEFAULT);
+ 		}
+ 	}
+@@ -237,7 +237,7 @@ void __init do_init_bootmem(void)
+ 
+ 	/* reserve the sections we're already using */
+ 	for (i = 0; i < memblock.reserved.cnt; i++)
+-		reserve_bootmem(memblock.reserved.region[i].base,
++		reserve_bootmem(memblock.reserved.regions[i].base,
+ 				memblock_size_bytes(&memblock.reserved, i),
+ 				BOOTMEM_DEFAULT);
+ 
+@@ -257,10 +257,10 @@ static int __init mark_nonram_nosave(void)
+ 
+ 	for (i = 0; i < memblock.memory.cnt - 1; i++) {
+ 		memblock_region_max_pfn =
+-			(memblock.memory.region[i].base >> PAGE_SHIFT) +
+-			(memblock.memory.region[i].size >> PAGE_SHIFT);
++			(memblock.memory.regions[i].base >> PAGE_SHIFT) +
++			(memblock.memory.regions[i].size >> PAGE_SHIFT);
+ 		memblock_next_region_start_pfn =
+-			memblock.memory.region[i+1].base >> PAGE_SHIFT;
++			memblock.memory.regions[i+1].base >> PAGE_SHIFT;
+ 
+ 		if (memblock_region_max_pfn < memblock_next_region_start_pfn)
+ 			register_nosave_region(memblock_region_max_pfn,
+diff --git a/arch/powerpc/platforms/embedded6xx/wii.c b/arch/powerpc/platforms/embedded6xx/wii.c
+index 5cdcc7c..8450c29 100644
+--- a/arch/powerpc/platforms/embedded6xx/wii.c
++++ b/arch/powerpc/platforms/embedded6xx/wii.c
+@@ -65,7 +65,7 @@ static int __init page_aligned(unsigned long x)
+ 
+ void __init wii_memory_fixups(void)
+ {
+-	struct memblock_property *p = memblock.memory.region;
++	struct memblock_region *p = memblock.memory.region;
+ 
+ 	/*
+ 	 * This is part of a workaround to allow the use of two
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index f043451..16d8bee 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -978,7 +978,7 @@ static void __init add_node_ranges(void)
+ 		unsigned long size = memblock_size_bytes(&memblock.memory, i);
+ 		unsigned long start, end;
+ 
+-		start = memblock.memory.region[i].base;
++		start = memblock.memory.regions[i].base;
+ 		end = start + size;
+ 		while (start < end) {
+ 			unsigned long this_end;
+@@ -1299,7 +1299,7 @@ static void __init bootmem_init_nonnuma(void)
+ 		if (!size)
+ 			continue;
+ 
+-		start_pfn = memblock.memory.region[i].base >> PAGE_SHIFT;
++		start_pfn = memblock.memory.regions[i].base >> PAGE_SHIFT;
+ 		end_pfn = start_pfn + memblock_size_pages(&memblock.memory, i);
+ 		add_active_range(0, start_pfn, end_pfn);
+ 	}
+@@ -1339,7 +1339,7 @@ static void __init trim_reserved_in_node(int nid)
+ 	numadbg("  trim_reserved_in_node(%d)\n", nid);
+ 
+ 	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		unsigned long start = memblock.reserved.region[i].base;
++		unsigned long start = memblock.reserved.regions[i].base;
+ 		unsigned long size = memblock_size_bytes(&memblock.reserved, i);
+ 		unsigned long end = start + size;
+ 
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index a59faf2..86e7daf 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -18,22 +18,22 @@
+ 
+ #define MAX_MEMBLOCK_REGIONS 128
+ 
+-struct memblock_property {
++struct memblock_region {
+ 	u64 base;
+ 	u64 size;
+ };
+ 
+-struct memblock_region {
++struct memblock_type {
+ 	unsigned long cnt;
+ 	u64 size;
+-	struct memblock_property region[MAX_MEMBLOCK_REGIONS+1];
++	struct memblock_region regions[MAX_MEMBLOCK_REGIONS+1];
+ };
+ 
+ struct memblock {
+ 	unsigned long debug;
+ 	u64 rmo_size;
+-	struct memblock_region memory;
+-	struct memblock_region reserved;
++	struct memblock_type memory;
++	struct memblock_type reserved;
+ };
+ 
+ extern struct memblock memblock;
+@@ -56,27 +56,27 @@ extern u64 memblock_end_of_DRAM(void);
+ extern void __init memblock_enforce_memory_limit(u64 memory_limit);
+ extern int __init memblock_is_reserved(u64 addr);
+ extern int memblock_is_region_reserved(u64 base, u64 size);
+-extern int memblock_find(struct memblock_property *res);
++extern int memblock_find(struct memblock_region *res);
+ 
+ extern void memblock_dump_all(void);
+ 
+ static inline u64
+-memblock_size_bytes(struct memblock_region *type, unsigned long region_nr)
++memblock_size_bytes(struct memblock_type *type, unsigned long region_nr)
+ {
+-	return type->region[region_nr].size;
++	return type->regions[region_nr].size;
+ }
+ static inline u64
+-memblock_size_pages(struct memblock_region *type, unsigned long region_nr)
++memblock_size_pages(struct memblock_type *type, unsigned long region_nr)
+ {
+ 	return memblock_size_bytes(type, region_nr) >> PAGE_SHIFT;
+ }
+ static inline u64
+-memblock_start_pfn(struct memblock_region *type, unsigned long region_nr)
++memblock_start_pfn(struct memblock_type *type, unsigned long region_nr)
+ {
+-	return type->region[region_nr].base >> PAGE_SHIFT;
++	return type->regions[region_nr].base >> PAGE_SHIFT;
+ }
+ static inline u64
+-memblock_end_pfn(struct memblock_region *type, unsigned long region_nr)
++memblock_end_pfn(struct memblock_type *type, unsigned long region_nr)
+ {
+ 	return memblock_start_pfn(type, region_nr) +
+ 	       memblock_size_pages(type, region_nr);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 3024eb3..13d4a57 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -29,7 +29,7 @@ static int __init early_memblock(char *p)
+ }
+ early_param("memblock", early_memblock);
+ 
+-static void memblock_dump(struct memblock_region *region, char *name)
++static void memblock_dump(struct memblock_type *region, char *name)
+ {
+ 	unsigned long long base, size;
+ 	int i;
+@@ -37,8 +37,8 @@ static void memblock_dump(struct memblock_region *region, char *name)
+ 	pr_info(" %s.cnt  = 0x%lx\n", name, region->cnt);
+ 
+ 	for (i = 0; i < region->cnt; i++) {
+-		base = region->region[i].base;
+-		size = region->region[i].size;
++		base = region->regions[i].base;
++		size = region->regions[i].size;
+ 
+ 		pr_info(" %s[0x%x]\t0x%016llx - 0x%016llx, 0x%llx bytes\n",
+ 		    name, i, base, base + size - 1, size);
+@@ -74,34 +74,34 @@ static long memblock_addrs_adjacent(u64 base1, u64 size1, u64 base2, u64 size2)
+ 	return 0;
+ }
+ 
+-static long memblock_regions_adjacent(struct memblock_region *rgn,
++static long memblock_regions_adjacent(struct memblock_type *type,
+ 		unsigned long r1, unsigned long r2)
+ {
+-	u64 base1 = rgn->region[r1].base;
+-	u64 size1 = rgn->region[r1].size;
+-	u64 base2 = rgn->region[r2].base;
+-	u64 size2 = rgn->region[r2].size;
++	u64 base1 = type->regions[r1].base;
++	u64 size1 = type->regions[r1].size;
++	u64 base2 = type->regions[r2].base;
++	u64 size2 = type->regions[r2].size;
+ 
+ 	return memblock_addrs_adjacent(base1, size1, base2, size2);
+ }
+ 
+-static void memblock_remove_region(struct memblock_region *rgn, unsigned long r)
++static void memblock_remove_region(struct memblock_type *type, unsigned long r)
+ {
+ 	unsigned long i;
+ 
+-	for (i = r; i < rgn->cnt - 1; i++) {
+-		rgn->region[i].base = rgn->region[i + 1].base;
+-		rgn->region[i].size = rgn->region[i + 1].size;
++	for (i = r; i < type->cnt - 1; i++) {
++		type->regions[i].base = type->regions[i + 1].base;
++		type->regions[i].size = type->regions[i + 1].size;
+ 	}
+-	rgn->cnt--;
++	type->cnt--;
+ }
+ 
+ /* Assumption: base addr of region 1 < base addr of region 2 */
+-static void memblock_coalesce_regions(struct memblock_region *rgn,
++static void memblock_coalesce_regions(struct memblock_type *type,
+ 		unsigned long r1, unsigned long r2)
+ {
+-	rgn->region[r1].size += rgn->region[r2].size;
+-	memblock_remove_region(rgn, r2);
++	type->regions[r1].size += type->regions[r2].size;
++	memblock_remove_region(type, r2);
+ }
+ 
+ void __init memblock_init(void)
+@@ -109,13 +109,13 @@ void __init memblock_init(void)
+ 	/* Create a dummy zero size MEMBLOCK which will get coalesced away later.
+ 	 * This simplifies the memblock_add() code below...
+ 	 */
+-	memblock.memory.region[0].base = 0;
+-	memblock.memory.region[0].size = 0;
++	memblock.memory.regions[0].base = 0;
++	memblock.memory.regions[0].size = 0;
+ 	memblock.memory.cnt = 1;
+ 
+ 	/* Ditto. */
+-	memblock.reserved.region[0].base = 0;
+-	memblock.reserved.region[0].size = 0;
++	memblock.reserved.regions[0].base = 0;
++	memblock.reserved.regions[0].size = 0;
+ 	memblock.reserved.cnt = 1;
+ }
+ 
+@@ -126,24 +126,24 @@ void __init memblock_analyze(void)
+ 	memblock.memory.size = 0;
+ 
+ 	for (i = 0; i < memblock.memory.cnt; i++)
+-		memblock.memory.size += memblock.memory.region[i].size;
++		memblock.memory.size += memblock.memory.regions[i].size;
+ }
+ 
+-static long memblock_add_region(struct memblock_region *rgn, u64 base, u64 size)
++static long memblock_add_region(struct memblock_type *type, u64 base, u64 size)
+ {
+ 	unsigned long coalesced = 0;
+ 	long adjacent, i;
+ 
+-	if ((rgn->cnt == 1) && (rgn->region[0].size == 0)) {
+-		rgn->region[0].base = base;
+-		rgn->region[0].size = size;
++	if ((type->cnt == 1) && (type->regions[0].size == 0)) {
++		type->regions[0].base = base;
++		type->regions[0].size = size;
+ 		return 0;
+ 	}
+ 
+ 	/* First try and coalesce this MEMBLOCK with another. */
+-	for (i = 0; i < rgn->cnt; i++) {
+-		u64 rgnbase = rgn->region[i].base;
+-		u64 rgnsize = rgn->region[i].size;
++	for (i = 0; i < type->cnt; i++) {
++		u64 rgnbase = type->regions[i].base;
++		u64 rgnsize = type->regions[i].size;
+ 
+ 		if ((rgnbase == base) && (rgnsize == size))
+ 			/* Already have this region, so we're done */
+@@ -151,61 +151,59 @@ static long memblock_add_region(struct memblock_region *rgn, u64 base, u64 size)
+ 
+ 		adjacent = memblock_addrs_adjacent(base, size, rgnbase, rgnsize);
+ 		if (adjacent > 0) {
+-			rgn->region[i].base -= size;
+-			rgn->region[i].size += size;
++			type->regions[i].base -= size;
++			type->regions[i].size += size;
+ 			coalesced++;
+ 			break;
+ 		} else if (adjacent < 0) {
+-			rgn->region[i].size += size;
++			type->regions[i].size += size;
+ 			coalesced++;
+ 			break;
+ 		}
+ 	}
+ 
+-	if ((i < rgn->cnt - 1) && memblock_regions_adjacent(rgn, i, i+1)) {
+-		memblock_coalesce_regions(rgn, i, i+1);
++	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1)) {
++		memblock_coalesce_regions(type, i, i+1);
+ 		coalesced++;
+ 	}
+ 
+ 	if (coalesced)
+ 		return coalesced;
+-	if (rgn->cnt >= MAX_MEMBLOCK_REGIONS)
++	if (type->cnt >= MAX_MEMBLOCK_REGIONS)
+ 		return -1;
+ 
+ 	/* Couldn't coalesce the MEMBLOCK, so add it to the sorted table. */
+-	for (i = rgn->cnt - 1; i >= 0; i--) {
+-		if (base < rgn->region[i].base) {
+-			rgn->region[i+1].base = rgn->region[i].base;
+-			rgn->region[i+1].size = rgn->region[i].size;
++	for (i = type->cnt - 1; i >= 0; i--) {
++		if (base < type->regions[i].base) {
++			type->regions[i+1].base = type->regions[i].base;
++			type->regions[i+1].size = type->regions[i].size;
+ 		} else {
+-			rgn->region[i+1].base = base;
+-			rgn->region[i+1].size = size;
++			type->regions[i+1].base = base;
++			type->regions[i+1].size = size;
+ 			break;
+ 		}
+ 	}
+ 
+-	if (base < rgn->region[0].base) {
+-		rgn->region[0].base = base;
+-		rgn->region[0].size = size;
++	if (base < type->regions[0].base) {
++		type->regions[0].base = base;
++		type->regions[0].size = size;
+ 	}
+-	rgn->cnt++;
++	type->cnt++;
+ 
+ 	return 0;
+ }
+ 
+ long memblock_add(u64 base, u64 size)
+ {
+-	struct memblock_region *_rgn = &memblock.memory;
+-
+ 	/* On pSeries LPAR systems, the first MEMBLOCK is our RMO region. */
+ 	if (base == 0)
+ 		memblock.rmo_size = size;
+ 
+-	return memblock_add_region(_rgn, base, size);
++	return memblock_add_region(&memblock.memory, base, size);
+ 
+ }
+ 
+-static long __memblock_remove(struct memblock_region *rgn, u64 base, u64 size)
++static long __memblock_remove(struct memblock_type *type, u64 base, u64 size)
+ {
+ 	u64 rgnbegin, rgnend;
+ 	u64 end = base + size;
+@@ -214,34 +212,34 @@ static long __memblock_remove(struct memblock_region *rgn, u64 base, u64 size)
+ 	rgnbegin = rgnend = 0; /* supress gcc warnings */
+ 
+ 	/* Find the region where (base, size) belongs to */
+-	for (i=0; i < rgn->cnt; i++) {
+-		rgnbegin = rgn->region[i].base;
+-		rgnend = rgnbegin + rgn->region[i].size;
++	for (i=0; i < type->cnt; i++) {
++		rgnbegin = type->regions[i].base;
++		rgnend = rgnbegin + type->regions[i].size;
+ 
+ 		if ((rgnbegin <= base) && (end <= rgnend))
+ 			break;
+ 	}
+ 
+ 	/* Didn't find the region */
+-	if (i == rgn->cnt)
++	if (i == type->cnt)
+ 		return -1;
+ 
+ 	/* Check to see if we are removing entire region */
+ 	if ((rgnbegin == base) && (rgnend == end)) {
+-		memblock_remove_region(rgn, i);
++		memblock_remove_region(type, i);
+ 		return 0;
+ 	}
+ 
+ 	/* Check to see if region is matching at the front */
+ 	if (rgnbegin == base) {
+-		rgn->region[i].base = end;
+-		rgn->region[i].size -= size;
++		type->regions[i].base = end;
++		type->regions[i].size -= size;
+ 		return 0;
+ 	}
+ 
+ 	/* Check to see if the region is matching at the end */
+ 	if (rgnend == end) {
+-		rgn->region[i].size -= size;
++		type->regions[i].size -= size;
+ 		return 0;
+ 	}
+ 
+@@ -249,8 +247,8 @@ static long __memblock_remove(struct memblock_region *rgn, u64 base, u64 size)
+ 	 * We need to split the entry -  adjust the current one to the
+ 	 * beginging of the hole and add the region after hole.
+ 	 */
+-	rgn->region[i].size = base - rgn->region[i].base;
+-	return memblock_add_region(rgn, end, rgnend - end);
++	type->regions[i].size = base - type->regions[i].base;
++	return memblock_add_region(type, end, rgnend - end);
+ }
+ 
+ long memblock_remove(u64 base, u64 size)
+@@ -265,25 +263,25 @@ long __init memblock_free(u64 base, u64 size)
+ 
+ long __init memblock_reserve(u64 base, u64 size)
+ {
+-	struct memblock_region *_rgn = &memblock.reserved;
++	struct memblock_type *_rgn = &memblock.reserved;
+ 
+ 	BUG_ON(0 == size);
+ 
+ 	return memblock_add_region(_rgn, base, size);
+ }
+ 
+-long memblock_overlaps_region(struct memblock_region *rgn, u64 base, u64 size)
++long memblock_overlaps_region(struct memblock_type *type, u64 base, u64 size)
+ {
+ 	unsigned long i;
+ 
+-	for (i = 0; i < rgn->cnt; i++) {
+-		u64 rgnbase = rgn->region[i].base;
+-		u64 rgnsize = rgn->region[i].size;
++	for (i = 0; i < type->cnt; i++) {
++		u64 rgnbase = type->regions[i].base;
++		u64 rgnsize = type->regions[i].size;
+ 		if (memblock_addrs_overlap(base, size, rgnbase, rgnsize))
+ 			break;
+ 	}
+ 
+-	return (i < rgn->cnt) ? i : -1;
++	return (i < type->cnt) ? i : -1;
+ }
+ 
+ static u64 memblock_align_down(u64 addr, u64 size)
+@@ -311,7 +309,7 @@ static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
+ 				base = ~(u64)0;
+ 			return base;
+ 		}
+-		res_base = memblock.reserved.region[j].base;
++		res_base = memblock.reserved.regions[j].base;
+ 		if (res_base < size)
+ 			break;
+ 		base = memblock_align_down(res_base - size, align);
+@@ -320,7 +318,7 @@ static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
+ 	return ~(u64)0;
+ }
+ 
+-static u64 __init memblock_alloc_nid_region(struct memblock_property *mp,
++static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
+ 				       u64 (*nid_range)(u64, u64, int *),
+ 				       u64 size, u64 align, int nid)
+ {
+@@ -350,7 +348,7 @@ static u64 __init memblock_alloc_nid_region(struct memblock_property *mp,
+ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
+ 			 u64 (*nid_range)(u64 start, u64 end, int *nid))
+ {
+-	struct memblock_region *mem = &memblock.memory;
++	struct memblock_type *mem = &memblock.memory;
+ 	int i;
+ 
+ 	BUG_ON(0 == size);
+@@ -358,7 +356,7 @@ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
+ 	size = memblock_align_up(size, align);
+ 
+ 	for (i = 0; i < mem->cnt; i++) {
+-		u64 ret = memblock_alloc_nid_region(&mem->region[i],
++		u64 ret = memblock_alloc_nid_region(&mem->regions[i],
+ 					       nid_range,
+ 					       size, align, nid);
+ 		if (ret != ~(u64)0)
+@@ -402,8 +400,8 @@ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 		max_addr = MEMBLOCK_REAL_LIMIT;
+ 
+ 	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
+-		u64 memblockbase = memblock.memory.region[i].base;
+-		u64 memblocksize = memblock.memory.region[i].size;
++		u64 memblockbase = memblock.memory.regions[i].base;
++		u64 memblocksize = memblock.memory.regions[i].size;
+ 
+ 		if (memblocksize < size)
+ 			continue;
+@@ -423,7 +421,7 @@ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 					return 0;
+ 				return base;
+ 			}
+-			res_base = memblock.reserved.region[j].base;
++			res_base = memblock.reserved.regions[j].base;
+ 			if (res_base < size)
+ 				break;
+ 			base = memblock_align_down(res_base - size, align);
+@@ -442,7 +440,7 @@ u64 memblock_end_of_DRAM(void)
+ {
+ 	int idx = memblock.memory.cnt - 1;
+ 
+-	return (memblock.memory.region[idx].base + memblock.memory.region[idx].size);
++	return (memblock.memory.regions[idx].base + memblock.memory.regions[idx].size);
+ }
+ 
+ /* You must call memblock_analyze() after this. */
+@@ -450,7 +448,7 @@ void __init memblock_enforce_memory_limit(u64 memory_limit)
+ {
+ 	unsigned long i;
+ 	u64 limit;
+-	struct memblock_property *p;
++	struct memblock_region *p;
+ 
+ 	if (!memory_limit)
+ 		return;
+@@ -458,24 +456,24 @@ void __init memblock_enforce_memory_limit(u64 memory_limit)
+ 	/* Truncate the memblock regions to satisfy the memory limit. */
+ 	limit = memory_limit;
+ 	for (i = 0; i < memblock.memory.cnt; i++) {
+-		if (limit > memblock.memory.region[i].size) {
+-			limit -= memblock.memory.region[i].size;
++		if (limit > memblock.memory.regions[i].size) {
++			limit -= memblock.memory.regions[i].size;
+ 			continue;
+ 		}
+ 
+-		memblock.memory.region[i].size = limit;
++		memblock.memory.regions[i].size = limit;
+ 		memblock.memory.cnt = i + 1;
+ 		break;
+ 	}
+ 
+-	if (memblock.memory.region[0].size < memblock.rmo_size)
+-		memblock.rmo_size = memblock.memory.region[0].size;
++	if (memblock.memory.regions[0].size < memblock.rmo_size)
++		memblock.rmo_size = memblock.memory.regions[0].size;
+ 
+ 	memory_limit = memblock_end_of_DRAM();
+ 
+ 	/* And truncate any reserves above the limit also. */
+ 	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		p = &memblock.reserved.region[i];
++		p = &memblock.reserved.regions[i];
+ 
+ 		if (p->base > memory_limit)
+ 			p->size = 0;
+@@ -494,9 +492,9 @@ int __init memblock_is_reserved(u64 addr)
+ 	int i;
+ 
+ 	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		u64 upper = memblock.reserved.region[i].base +
+-			memblock.reserved.region[i].size - 1;
+-		if ((addr >= memblock.reserved.region[i].base) && (addr <= upper))
++		u64 upper = memblock.reserved.regions[i].base +
++			memblock.reserved.regions[i].size - 1;
++		if ((addr >= memblock.reserved.regions[i].base) && (addr <= upper))
+ 			return 1;
+ 	}
+ 	return 0;
+@@ -511,7 +509,7 @@ int memblock_is_region_reserved(u64 base, u64 size)
+  * Given a <base, len>, find which memory regions belong to this range.
+  * Adjust the request and return a contiguous chunk.
+  */
+-int memblock_find(struct memblock_property *res)
++int memblock_find(struct memblock_region *res)
+ {
+ 	int i;
+ 	u64 rstart, rend;
+@@ -520,8 +518,8 @@ int memblock_find(struct memblock_property *res)
+ 	rend = rstart + res->size - 1;
+ 
+ 	for (i = 0; i < memblock.memory.cnt; i++) {
+-		u64 start = memblock.memory.region[i].base;
+-		u64 end = start + memblock.memory.region[i].size - 1;
++		u64 start = memblock.memory.regions[i].base;
++		u64 end = start + memblock.memory.regions[i].size - 1;
+ 
+ 		if (start > rend)
+ 			return -1;
+-- 
+1.6.4.2
 
--v19: make the patchset only focus on memblock related.
-      will submit patches about bootmem/nobootmem seperating and other e820
-	 related later after this one.
-
--v20: put ben change together...
-      add memblock_dbg() according to Ingo
-
--v21: debug print add # for 0x
-      removed old bootmem support for x86 according to Ingo, Thomas and HPA
-      change MEMBLOCK_ERROR to 0 according to Linus
-
--v22: change x86 related memblock to memblock_x86_ instead of according to Ingo
-
--v23: rename lmb to memblock before Ben's cleanup patcheset, and x86 using patches.
-
--v24: fold memblock_find_base() return change to orig patch (patch 20)
-      change to -1 display
-
-patch 46: has to be done in one shoot to switch from early_res to memblock.
-First two patches are needed for 2.6.35. need to be applied at first.
-
-todo:
-     replace range handling (subtracting) with memblock.
-
-Thanks
-
-Yinghai Lu
-
-1e0e426: x86, numa: fix boot without RAM on node0 again
-2f2ce7e: x86,mm: fix 32bit numa sparsemem
-59245fa: lmb: rename to memblock
-8cfaf11: memblock: Rename memblock_region to memblock_type and memblock_property to memblock_region
-47f2a51: memblock: No reason to include asm/memblock.h late
-2d34839: memblock: Introduce for_each_memblock() and new accessors, and use it
-b090def: memblock: Remove nid_range argument, arch provides memblock_nid_range() instead
-22183f3: memblock: Factor the lowest level alloc function
-c8de2bc: memblock: Expose MEMBLOCK_ALLOC_ANYWHERE
-884620f: memblock: Introduce default allocation limit and use it to replace explicit ones
-095c662: memblock: Remove rmo_size, burry it in arch/powerpc where it belongs
-1e424c8: memblock: Change u64 to phys_addr_t
-c8b7e36: memblock: Remove unused memblock.debug struct member
-980d97a: memblock: Remove memblock_type.size and add memblock.memory_size instead
-5096a97: memblock: Move memblock arrays to static storage in memblock.c and make their size a variable
-5b25099: memblock: Add debug markers at the end of the array
-c2e266a: memblock: Make memblock_find_region() out of memblock_alloc_region()
-a982b7d: memblock: Define MEMBLOCK_ERROR internally instead of using ~(phys_addr_t)0
-80a5f51: memblock: Move memblock_init() to the bottom of the file
-78439ec: memblock: split memblock_find_base() out of __memblock_alloc_base()
-065abd0: memblock: Move functions around into a more sensible order
-8a83f93: memblock: Add array resizing support
-87e1c95: memblock: Add arch function to control coalescing of memblock memory regions
-384a83e: memblock: Add "start" argument to memblock_find_base()
-b5e35f2: memblock: NUMA allocate can now use early_pfn_map
-7d8061c: memblock: Separate memblock_alloc_nid() and memblock_alloc_try_nid()
-f74547c: memblock: Make memblock_alloc_try_nid() fallback to MEMBLOCK_ALLOC_ANYWHERE
-656c52a: memblock: Add debugfs files to dump the arrays content
-4c18442: memblock: Prepare x86 to use memblock to replace early_res
-ae37574: memblock: Print new doubled array location info
-afce580: memblock: Export MEMBLOCK_ERROR again
-3dd38a4: memblock: Prepare to include linux/memblock.h in core file
-5ef74ee: memblock: Add ARCH_DISCARD_MEMBLOCK to put memblock code to .init
-0863989: memblock: Add memblock_find_in_range()
-c7c4d1a: x86, memblock: Add memblock_x86_find_in_range_size()
-d3c8180: bootmem, x86: Add weak version of reserve_bootmem_generic
-22059ed: x86, memblock: Add memblock_x86_to_bootmem()
-d45a815: x86,memblock: Add memblock_x86_reserve_range/memblock_x86_free_range
-94aac0a: x86, memblock: Add get_free_all_memory_range()
-f5c84f7: x86, memblock: Add memblock_x86_register_active_regions() and memblock_x86_hole_size()
-f20deee: memblock: Add find_memory_core_early()
-d032e25: x86, memblock: Add memblock_x86_find_in_range_node()
-2d5f07f: x86, memblock: Add memblock_x86_free_memory_in_range()
-2b755bc: x86, memblock: Add memblock_x86_memory_in_range()
-c5b59e0: x86, memblock: Use memblock_debug to control debug message print out
-a33966d: x86: Use memblock to replace early_res
-383fd99: x86: Replace e820_/_early string with memblock_
-053b86d: x86: Remove not used early_res code
-2111e11: x86, memblock: Use memblock_memory_size()/memblock_free_memory_size() to get correct dma_reserve
-39ba82d: x86: remove old bootmem code
-
-
- Documentation/kernel-parameters.txt               |    2 +-
- arch/microblaze/Kconfig                           |    2 +-
- arch/microblaze/include/asm/{lmb.h => memblock.h} |    9 +-
- arch/microblaze/kernel/prom.c                     |   14 +-
- arch/microblaze/mm/init.c                         |   40 +-
- arch/powerpc/Kconfig                              |    2 +-
- arch/powerpc/include/asm/abs_addr.h               |    2 +-
- arch/powerpc/include/asm/lmb.h                    |   15 -
- arch/powerpc/include/asm/memblock.h               |    8 +
- arch/powerpc/include/asm/mmu.h                    |   12 +
- arch/powerpc/kernel/btext.c                       |    2 +-
- arch/powerpc/kernel/crash.c                       |    2 +-
- arch/powerpc/kernel/crash_dump.c                  |    4 +-
- arch/powerpc/kernel/dma-swiotlb.c                 |    2 +-
- arch/powerpc/kernel/dma.c                         |    4 +-
- arch/powerpc/kernel/head_40x.S                    |    6 +-
- arch/powerpc/kernel/machine_kexec.c               |   12 +-
- arch/powerpc/kernel/paca.c                        |    8 +-
- arch/powerpc/kernel/prom.c                        |   73 +-
- arch/powerpc/kernel/rtas.c                        |    6 +-
- arch/powerpc/kernel/setup-common.c                |    2 +-
- arch/powerpc/kernel/setup_32.c                    |   16 +-
- arch/powerpc/kernel/setup_64.c                    |   20 +-
- arch/powerpc/kernel/vdso.c                        |    4 +-
- arch/powerpc/mm/40x_mmu.c                         |   19 +-
- arch/powerpc/mm/44x_mmu.c                         |   14 +
- arch/powerpc/mm/fsl_booke_mmu.c                   |   12 +-
- arch/powerpc/mm/hash_utils_64.c                   |   53 +-
- arch/powerpc/mm/init_32.c                         |   57 +-
- arch/powerpc/mm/init_64.c                         |    3 +-
- arch/powerpc/mm/mem.c                             |  110 ++--
- arch/powerpc/mm/numa.c                            |   89 ++--
- arch/powerpc/mm/pgtable_32.c                      |    6 +-
- arch/powerpc/mm/pgtable_64.c                      |    4 +-
- arch/powerpc/mm/ppc_mmu_32.c                      |   20 +-
- arch/powerpc/mm/stab.c                            |    4 +-
- arch/powerpc/mm/tlb_nohash.c                      |   20 +-
- arch/powerpc/platforms/85xx/corenet_ds.c          |    4 +-
- arch/powerpc/platforms/85xx/mpc8536_ds.c          |    4 +-
- arch/powerpc/platforms/85xx/mpc85xx_ds.c          |    4 +-
- arch/powerpc/platforms/85xx/mpc85xx_mds.c         |    4 +-
- arch/powerpc/platforms/86xx/mpc86xx_hpcn.c        |    4 +-
- arch/powerpc/platforms/cell/iommu.c               |   10 +-
- arch/powerpc/platforms/embedded6xx/wii.c          |   12 +-
- arch/powerpc/platforms/maple/setup.c              |    2 +-
- arch/powerpc/platforms/pasemi/iommu.c             |    4 +-
- arch/powerpc/platforms/powermac/setup.c           |    4 +-
- arch/powerpc/platforms/ps3/htab.c                 |    2 +-
- arch/powerpc/platforms/ps3/mm.c                   |    6 +-
- arch/powerpc/platforms/ps3/os-area.c              |    4 +-
- arch/powerpc/platforms/pseries/hotplug-memory.c   |   38 +-
- arch/powerpc/platforms/pseries/iommu.c            |    2 +-
- arch/powerpc/platforms/pseries/phyp_dump.c        |    4 +-
- arch/powerpc/sysdev/dart_iommu.c                  |    8 +-
- arch/powerpc/sysdev/fsl_pci.c                     |    4 +-
- arch/sh/Kconfig                                   |    2 +-
- arch/sh/include/asm/lmb.h                         |    6 -
- arch/sh/include/asm/memblock.h                    |    4 +
- arch/sh/kernel/machine_kexec.c                    |   18 +-
- arch/sh/kernel/setup.c                            |    8 +-
- arch/sh/mm/init.c                                 |   44 +-
- arch/sh/mm/numa.c                                 |    8 +-
- arch/sparc/Kconfig                                |    2 +-
- arch/sparc/include/asm/lmb.h                      |   10 -
- arch/sparc/include/asm/memblock.h                 |    8 +
- arch/sparc/kernel/mdesc.c                         |   16 +-
- arch/sparc/kernel/prom_64.c                       |    4 +-
- arch/sparc/mm/init_64.c                           |   76 +--
- arch/x86/Kconfig                                  |   15 +-
- arch/x86/include/asm/e820.h                       |   20 +-
- arch/x86/include/asm/efi.h                        |    2 +-
- arch/x86/include/asm/memblock.h                   |   21 +
- arch/x86/kernel/acpi/sleep.c                      |    7 +-
- arch/x86/kernel/apic/numaq_32.c                   |    3 +-
- arch/x86/kernel/check.c                           |   16 +-
- arch/x86/kernel/e820.c                            |  192 ++----
- arch/x86/kernel/efi.c                             |    5 +-
- arch/x86/kernel/head.c                            |    3 +-
- arch/x86/kernel/head32.c                          |   10 +-
- arch/x86/kernel/head64.c                          |    7 +-
- arch/x86/kernel/mpparse.c                         |    5 +-
- arch/x86/kernel/setup.c                           |   78 ++-
- arch/x86/kernel/setup_percpu.c                    |   23 +-
- arch/x86/kernel/trampoline.c                      |    8 +-
- arch/x86/mm/Makefile                              |    2 +
- arch/x86/mm/init.c                                |    7 +-
- arch/x86/mm/init_32.c                             |   66 +--
- arch/x86/mm/init_64.c                             |   67 +--
- arch/x86/mm/k8topology_64.c                       |    4 +-
- arch/x86/mm/memblock.c                            |  359 ++++++++++
- arch/x86/mm/memtest.c                             |    7 +-
- arch/x86/mm/numa_32.c                             |   28 +-
- arch/x86/mm/numa_64.c                             |   84 +--
- arch/x86/mm/srat_32.c                             |    3 +-
- arch/x86/mm/srat_64.c                             |   11 +-
- arch/x86/xen/mmu.c                                |    5 +-
- arch/x86/xen/setup.c                              |    3 +-
- include/linux/early_res.h                         |   23 -
- include/linux/lmb.h                               |   89 ---
- include/linux/memblock.h                          |  165 +++++
- include/linux/mm.h                                |    2 +
- kernel/Makefile                                   |    1 -
- kernel/early_res.c                                |  584 ----------------
- lib/Kconfig                                       |    3 -
- lib/Makefile                                      |    2 -
- lib/lmb.c                                         |  541 --------------
- mm/Kconfig                                        |    3 +
- mm/Makefile                                       |    2 +
- mm/bootmem.c                                      |   35 +-
- mm/memblock.c                                     |  775 +++++++++++++++++++++
- mm/page_alloc.c                                   |   73 ++-
- mm/sparse-vmemmap.c                               |   11 -
- 112 files changed, 2146 insertions(+), 2228 deletions(-)
- rename arch/microblaze/include/asm/{lmb.h => memblock.h} (61%)
- delete mode 100644 arch/powerpc/include/asm/lmb.h
- create mode 100644 arch/powerpc/include/asm/memblock.h
- delete mode 100644 arch/sh/include/asm/lmb.h
- create mode 100644 arch/sh/include/asm/memblock.h
- delete mode 100644 arch/sparc/include/asm/lmb.h
- create mode 100644 arch/sparc/include/asm/memblock.h
- create mode 100644 arch/x86/include/asm/memblock.h
- create mode 100644 arch/x86/mm/memblock.c
- delete mode 100644 include/linux/early_res.h
- delete mode 100644 include/linux/lmb.h
- create mode 100644 include/linux/memblock.h
- delete mode 100644 kernel/early_res.c
- delete mode 100644 lib/lmb.c
- create mode 100644 mm/memblock.c
