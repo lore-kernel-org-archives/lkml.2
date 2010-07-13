@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754728Ab0GMHQy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:16:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29227 "EHLO
+	id S1754018Ab0GMHRH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:17:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29283 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754526Ab0GMHQp (ORCPT
+	with ESMTP id S1753448Ab0GMHQw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:16:45 -0400
+	Tue, 13 Jul 2010 03:16:52 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,48 +16,113 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 32/50] memblock: Prepare to include linux/memblock.h in core file
-Date: Tue, 13 Jul 2010 00:10:26 -0700
-Message-Id: <1279005044-24777-33-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 36/50] bootmem, x86: Add weak version of reserve_bootmem_generic
+Date: Tue, 13 Jul 2010 00:10:30 -0700
+Message-Id: <1279005044-24777-37-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C3C12BB.0098,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090205.4C3C12C2.01B1,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Need to add protection in linux/memblock.h, to prepare to include it in
- mm/page_alloc.c and mm/bootmem.c etc.
+It will be used memblock_x86_to_bootmem converting
+
+It is an wrapper for reserve_bootmem, and x86 64bit is using special one.
+
+Also clean up that version for x86_64. We don't need to take care of numa
+path for that, bootmem can handle it how
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/memblock.h |    3 +++
- 1 files changed, 3 insertions(+), 0 deletions(-)
+ arch/x86/mm/init_32.c |    6 ------
+ arch/x86/mm/init_64.c |   20 ++------------------
+ mm/bootmem.c          |    6 ++++++
+ 3 files changed, 8 insertions(+), 24 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 89749c4..4aaaf0d 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -2,6 +2,7 @@
- #define _LINUX_MEMBLOCK_H
- #ifdef __KERNEL__
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index bca7909..90e0545 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -1069,9 +1069,3 @@ void mark_rodata_ro(void)
+ #endif
+ }
+ #endif
+-
+-int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+-				   int flags)
+-{
+-	return reserve_bootmem(phys, len, flags);
+-}
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index ee41bba..634fa08 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -799,13 +799,10 @@ void mark_rodata_ro(void)
  
-+#ifdef CONFIG_HAVE_MEMBLOCK
- /*
-  * Logical memory blocks.
-  *
-@@ -147,6 +148,8 @@ static inline unsigned long memblock_region_pages(const struct memblock_region *
- 	     region++)
+ #endif
  
++#ifndef CONFIG_NO_BOOTMEM
+ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 				   int flags)
+ {
+-#ifdef CONFIG_NUMA
+-	int nid, next_nid;
+-	int ret;
+-#endif
+ 	unsigned long pfn = phys >> PAGE_SHIFT;
  
-+#endif /* CONFIG_HAVE_MEMBLOCK */
+ 	if (pfn >= max_pfn) {
+@@ -821,21 +818,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 		return -EFAULT;
+ 	}
+ 
+-	/* Should check here against the e820 map to avoid double free */
+-#ifdef CONFIG_NUMA
+-	nid = phys_to_nid(phys);
+-	next_nid = phys_to_nid(phys + len - 1);
+-	if (nid == next_nid)
+-		ret = reserve_bootmem_node(NODE_DATA(nid), phys, len, flags);
+-	else
+-		ret = reserve_bootmem(phys, len, flags);
+-
+-	if (ret != 0)
+-		return ret;
+-
+-#else
+ 	reserve_bootmem(phys, len, flags);
+-#endif
+ 
+ 	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+ 		dma_reserve += len / PAGE_SIZE;
+@@ -844,6 +827,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 
+ 	return 0;
+ }
++#endif
+ 
+ int kern_addr_valid(unsigned long addr)
+ {
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 142c84a..bde170d 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -526,6 +526,12 @@ int __init reserve_bootmem(unsigned long addr, unsigned long size,
+ }
+ 
+ #ifndef CONFIG_NO_BOOTMEM
++int __weak __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
++				   int flags)
++{
++	return reserve_bootmem(phys, len, flags);
++}
 +
- #endif /* __KERNEL__ */
- 
- #endif /* _LINUX_MEMBLOCK_H */
+ static unsigned long __init align_idx(struct bootmem_data *bdata,
+ 				      unsigned long idx, unsigned long step)
+ {
 -- 
 1.6.4.2
 
