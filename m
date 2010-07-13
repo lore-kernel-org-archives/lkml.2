@@ -1,91 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756944Ab0GMXdd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 19:33:33 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:52189 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756646Ab0GMXdb (ORCPT
+	id S1757241Ab0GMXjT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 19:39:19 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:60387 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756634Ab0GMXjS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 19:33:31 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6042"; a="47389395"
-Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for 
- defconfig
-From: Daniel Walker <dwalker@codeaurora.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: linuxppc-dev@lists.ozlabs.org, Nicolas Pitre <nico@fluxnic.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
+	Tue, 13 Jul 2010 19:39:18 -0400
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_JS+nGVNbhixVXVfB1SVY1A)"
+Date: Tue, 13 Jul 2010 19:39:15 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Olof Johansson <olof@lixom.net>
+Cc: =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-In-Reply-To: <AANLkTin69tN3NQHD2wvkA0G-lj3f9tSZEnhzdyJdTh9m@mail.gmail.com>
-References: <20100713230352.6781.18644.stgit@angua>
-	 <1279062881.4609.34.camel@c-dwalke-linux.qualcomm.com>
-	 <AANLkTin69tN3NQHD2wvkA0G-lj3f9tSZEnhzdyJdTh9m@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Jul 2010 16:33:28 -0700
-Message-ID: <1279064008.4609.48.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        Grant Likely <grant.likely@secretlab.ca>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-arm-msm@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org, Eric Miao <eric.miao@canonical.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org
+Subject: Re: optimized script [Was: ARM defconfig files]
+In-reply-to: <20100713180402.GA1422@lixom.net>
+Message-id: <alpine.LFD.2.00.1007131925010.10598@xanadu.home>
+References: <AANLkTilhI9O6YwnuAylo_jNgwR8VXmpSVJ1kylIYPCGT@mail.gmail.com>
+ <20100712173228.GC9897@n2100.arm.linux.org.uk>
+ <AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com>
+ <20100712185029.GB14425@pengutronix.de>
+ <AANLkTinOuU-VVXaMwMp69CBp2Y4wxpoWybEQ34H5j0lJ@mail.gmail.com>
+ <alpine.LFD.2.00.1007121510260.10598@xanadu.home>
+ <AANLkTim-O00n9YPv7w4VCKjN-ETLijyTHomWUn4mZtTV@mail.gmail.com>
+ <AANLkTilDoGbCx_0oKKPOeGG7TKL2VSNVII5ydmnQ77B7@mail.gmail.com>
+ <20100713070741.GB26442@pengutronix.de>
+ <20100713080705.GA20978@pengutronix.de> <20100713180402.GA1422@lixom.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-13 at 17:21 -0600, Grant Likely wrote:
-> On Tue, Jul 13, 2010 at 5:14 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> > On Tue, 2010-07-13 at 17:04 -0600, Grant Likely wrote:
-> >
-> >> - I haven't figured out a way for the fragment to force an option to
-> >>   be "n", or to set a value, for example "CONFIG_LOG_BUF_SHIFT=16".
-> >>   This may require changing the syntax.
-> >> - It still doesn't resolve dependencies.  A solver would help with this.
-> >>   For the time being I work around the problem by running the generated
-> >>   config through 'oldconfig' and looking for differences.  If the files
-> >>   differ (ignoring comments and generateconfig_* options) after oldconfig,
-> >>   then the <board>_defconfig target returns a failure.  (but leaves the
-> >>   new .config intact so the user can resolve it with menuconfig).  This
-> >>   way at least the user is told when a Kconfig fragment is invalid.
-> >
-> > The solver would fix the whole issues with the defconfigs , we wouldn't
-> > need this Kconfig change .. From my perspective we shouldn't be fooling
-> > around with anything but the solver approach ..
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
+
+--Boundary_(ID_JS+nGVNbhixVXVfB1SVY1A)
+Content-type: TEXT/PLAIN; charset=iso-8859-1
+Content-transfer-encoding: 8BIT
+
+On Tue, 13 Jul 2010, Olof Johansson wrote:
+
+> On Tue, Jul 13, 2010 at 10:07:05AM +0200, Uwe Kleine-König wrote:
+> > Hello,
+> > 
+> > On Tue, Jul 13, 2010 at 09:07:41AM +0200, Uwe Kleine-König wrote:
+> > > Hi
+> > > 
+> > > On Mon, Jul 12, 2010 at 01:50:47PM -0600, Grant Likely wrote:
+> > > > On Mon, Jul 12, 2010 at 1:34 PM, Linus Torvalds
+> > > > <torvalds@linux-foundation.org> wrote:
+> > > > > On Mon, Jul 12, 2010 at 12:17 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> > > > >> I think Uwe could provide his script and add it to the kernel tree.
+> > > > >> Then all architectures could benefit from it.  Having the defconfig
+> > > > >> files contain only those options which are different from the defaults
+> > > > >> is certainly more readable, even on x86.
+> > > > >
+> > > > > Quite possible. But maintainers would need to be on the lookout of
+> > > > > people actually using the script, and refusing to apply patches that
+> > > > > re-introduce the whole big thing.
+> > > > 
+> > > > I can (partially) speak for powerpc.  If ARM uses this approach, then
+> > > > I think we can do the same.  After the defconfigs are trimmed, I
+> > > > certainly won't pick up any more full defconfigs.
+> > > I just restarted my script on the powerpc defconfigs basing on rc5, I
+> > > assume they complete in a few days time.
+> > So Stephen was faster than me.  I don't know yet how he optimised my
+> > script, meanwhile I put some efforts into it, too by just checking lines
+> > that match "^(# )?CONFIG_".
+> > 
+> > Find it attached.
+> > 
+> > I will start to reduce the remaining configs (i.e. all but arm and
+> > powerpc).
 > 
-> The solver would complement Kconfig fragments, but it doesn't
-> implement all the functionality.  For instance, it doesn't help a
-> board config picking up a bunch of options from an SoC or Architecture
-> config file, especially things that are developer/maintainer choices
-> as opposed to hard requirements).  Solver on its own is an incremental
-> improvement over what we currently have, but it doesn't solve the
-> whole problem.
-
-I don't understand what your saying here.. Imagine a defconfig that you
-have now only drastically smaller. The solver picks the stuff that
-doesn't exist already in the defconfig. You would just apply the solver
-to whatever is in the defconfig.
-
-Then that allows us to keep the current defconfig format without mass
-converting to something else. It's would also be built on a solver that
-helps with other issues within Kconfig.
-
-> > It just doesn't feel like Kconfig was meant to do this, it feel like
-> > somewhat of an abuse ..
+> I added just a simple heuristic: If I could remove a line, I attempted
+> to remove twice the amount next time around (and fall back to 1 if it failed).
 > 
-> Why?  It uses the Kconfig language itself to specify additional
-> constraints on the final configuration.  Seems to be the essence of
-> elegance to me.  :-)
+[...]
+> 
+> While this script is great, it is somewhat painful to run given that it
+> attempts one config per line. Even on a fast machine that tends to take
+> a while.
 
-To my mind the only problem with the current defconfig formatting is the
-size of the files. If those files are 5-10 lines instead of 2000 lines,
-then I think the readability problem isn't really an issue any more..
+The optimal solution is to add that .config reduction ability straight 
+into the Kconfig parser (scripts/kconfig/*).  There you can find out 
+right away what are the non default state for each config option without 
+actually trying them out one by one.
 
-The point of using Kconfig was the readability..
 
-Daniel
+Nicolas
 
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+--Boundary_(ID_JS+nGVNbhixVXVfB1SVY1A)--
