@@ -1,113 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab0GMUml (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 16:42:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10052 "EHLO mx1.redhat.com"
+	id S1757268Ab0GMUmn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 16:42:43 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:58721 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754491Ab0GMUmk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 16:42:40 -0400
-Date: Tue, 13 Jul 2010 16:42:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, axboe@kernel.dk,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-Message-ID: <20100713204236.GB21044@redhat.com>
-References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
- <x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
- <AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
- <x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
- <AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
- <x49eif7p3z0.fsf@segfault.boston.devel.redhat.com>
- <20100713195650.GA21044@redhat.com>
- <x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
+	id S1756028Ab0GMUml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 16:42:41 -0400
+Date: Tue, 13 Jul 2010 22:42:35 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Branislav Gajdos <brianzee@gmail.com>
+Cc: Peter Feuerer <peter@piie.net>, linux-kernel@vger.kernel.org
+Subject: Re: acerhdf.c - unsupported notebook
+Message-ID: <20100713204235.GA32085@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Branislav Gajdos <brianzee@gmail.com>,
+	Peter Feuerer <peter@piie.net>, linux-kernel@vger.kernel.org
+References: <AANLkTin0mv0Z5vozJHkfVYCJTWMvj9JZnP_FcQ6vZBRV@mail.gmail.com>
+ <20100713124840.GA16427@a1.tnic>
+ <AANLkTimBhWKo0zxW6fX5RgLLAQVIdItS5RKpvxqkDlis@mail.gmail.com>
+ <20100713151329.GA17516@a1.tnic>
+ <cone.1279041124.439539.3902.1000@deskpiie>
+ <AANLkTimiZcGY04wDK0yLtGrDknP-amyUaWybqsD5DHqC@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <AANLkTimiZcGY04wDK0yLtGrDknP-amyUaWybqsD5DHqC@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 04:30:23PM -0400, Jeff Moyer wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
+From: Branislav Gajdos <brianzee@gmail.com>
+Date: Tue, Jul 13, 2010 at 10:30:14PM +0200
+
+> Hi Peter,
 > 
-> > On Tue, Jul 13, 2010 at 03:38:11PM -0400, Jeff Moyer wrote:
-> >> Corrado Zoccolo <czoccolo@gmail.com> writes:
-> >> 
-> >> > Can you test the attached patch, where I also added your changes to
-> >> > make jbd(2) to perform sync writes?
-> >> 
-> >> I got new storage, so I have new numbers.  I only re-ran deadline and
-> >> vanilla cfq for the fs_mark only test.  The average of 10 runs comes out
-> >> like so:
-> >> 
-> >> deadline:    571.98
-> >> vanilla cfq: 107.42
-> >> patched cfq: 460.9
-> >> 
-> >> Mixed workload results with your suggested patch:
-> >> 
-> >> fs_mark: 15.65 files/sec
-> >> fio: 132.5 MB/s
-> >> 
-> >> So, again, not looking great for the mixed workload, but the patch
-> >> does improve the fs_mark only case.  Looking at the blktrace data shows
-> >> that the jbd2 thread preempts the fs_mark thread at all the right
-> >> times.  The only thing holding throughput back is the whole notion that
-> >> we need to only dispatch from one queue (even though the storage is
-> >> capable of serving both the reads and writes simultaneously).
-> >> 
-> >> I added in the patch that allows the simultaneous dispatch of both reads
-> >> and writes, and here are the results from that run:
-> >> 
-> >> fs_mark: 15.975 files/sec
-> >> fio: 132.4 MB/s
-> >> 
-> >> So, it looks like that didn't help.  The reason this patch doesn't come
-> >> close to the yield patch in the mixed workload is because the yield
-> >> patch set allows the fs_mark process to continue to issue I/O.  With
-> >> your patch, the fs_mark process does 64KB of I/O, the jbd2 thread does
-> >> the journal commit, and then the fio process runs again.  Given that the
-> >> fs_mark process typically only uses a small fraction of its time slice,
-> >> you end up with an unfair balance.
+> On Tue, Jul 13, 2010 at 7:12 PM, Peter Feuerer <peter@piie.net> wrote:
+> >>
+> >>> >> acerhdf: unknown (unsupported) BIOS version Acer/Aspire 3810T/V1.04,
+> >>> >> please report, aborting!
 > >
-> > Hi Jeff,
-> >
-> > This is little strange. Given the fact that now both fs_mark and jbd
-> > threads are on sync-noidle tree, we should have idled on sync-noidle
-> > tree to provide fairness and that should have made sure that fs_mark/jbd
-> > do more IO and slice is not lost to fio thread.
-> >
-> > Not sure what is happening though in practice. Only you can look at
-> > traces more closely and see if timer is being armed or not. 
+> > Which distribution do you use? Does the distribution somehow autoload
+> > acerhdf? Or do you manually load the driver?
 > 
-> Vivek, if you want to look at traces, just ask.  I'd be happy to show
-> them to you, upload them, whatever.  I'm not sure why you think
-> otherwise (though I wouldn't blame you for not wanting to look at
-> them!).
-
-I don't mind looking at traces. Do let me know where can I access those.
-
+> I compiled the kernel myself and chose the driver as my notebook was
+> Acer Aspire, I didn't realize it was meant only for netbooks :-)
 > 
-> Now, to answer your question, the jbd2 thread runs and issues a barrier,
-> which causes a forced dispatch of requests.  After that a new queue is
-> selected, and since the fs_mark thread is blocked on the journal commit,
-> it's always the fio process that gets to run.
-
-Ok, that explains it.  So somehow after the barrier, fio always wins
-as issues next read request before the fs_mark is able to issue the
-next set of writes.
-
+> > I would propose to enhance the bios_tbl by the default temperatures. What do you think?
 > 
-> This, of course, raises the question of why the blk_yield patches didn't
-> run into the same problem.  Looking back at some saved traces, I don't
-> see WBS (write barrier sync) requests, so I wonder if barriers weren't
-> supported by my last storage system.
+> So that means you would keep there the definitions for Core 2 based
+> models as well, right?
 
-I think that blk_yield patches will also run into the same issue if
-barriers are enabled.
+You still didn't answer my question whether your fan is noisy? IOW, does
+it make sense for you to use this driver at all?
 
-Thanks
-Vivek
+-- 
+Regards/Gruss,
+    Boris.
