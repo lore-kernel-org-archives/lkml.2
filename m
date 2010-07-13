@@ -1,107 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab0GMUVO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 16:21:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46406 "EHLO mx1.redhat.com"
+	id S1756916Ab0GMUXB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 16:23:01 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60055 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751207Ab0GMUVN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 16:21:13 -0400
-From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH] inotify: allow users to request not to recieve events on
-	unlinked children
-To: linux-kernel@vger.kernel.org
-Cc: viro@zeniv.linux.org.uk
-Date: Tue, 13 Jul 2010 16:21:11 -0400
-Message-ID: <20100713202111.2155.21700.stgit@paris.rdu.redhat.com>
-User-Agent: StGIT/0.14.3
+	id S1752381Ab0GMUXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 16:23:00 -0400
+Message-ID: <4C3CCB1C.40206@suse.cz>
+Date: Tue, 13 Jul 2010 22:22:52 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Linus <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Catalin Marinas <catalin.marinas@arm.com>
+Subject: Re: [PATCH] kbuild: Enable building defconfigs from Kconfig files
+References: <20100713114322.57c8b166.sfr@canb.auug.org.au>
+In-Reply-To: <20100713114322.57c8b166.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-An inotify watch on a directory will send events for children even if those
-children have been unlinked.  This patch add a new inotify flag IN_EXCL_UNLINK
-which allows a watch to specificy they don't care about unlinked children.
-This should fix performance problems seen by tasks which add a watch to
-/tmp and then are overrun with events when other processes are reading and
-writing to unlinked files they created in /tmp.
+On 07/13/2010 03:43 AM, Stephen Rothwell wrote:
+> After this change, doing a "make xxx_defconfig" will check first for
+> a file called arch/<arch>/configs/Kconfig.xxx and use that to generate
+> the .config (effectively starting from an allnoconfig).  If that file
+> doesn't exist, it will use arch/<ARCH>/configs/xxx_defconfig as now.
+> 
+> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+> ---
+>  scripts/kconfig/Makefile |   14 +++++++++++++-
+>  1 files changed, 13 insertions(+), 1 deletions(-)
+> 
+> Hi Linus,
+> 
+> Is this more the direction you want to take?
+> 
+> There are still 2 main problems with is approach:
+> 
+> 	- there are some config options that are globally and
+> unconditionally enabled that some platforms may not want.  The only way
+> currently to turn them off is to reproduce the config entry with the
+> different default.  I am not sure if we need a wa to turn them off or to
+> just change them to being neede to be selected by those that do want them.
+> 	- we have no way to select options that are neither bool or
+> tristate to suitable values.  Again the only way to do that currently is
+> to reproduce the config entry with a different default value.
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16296
+Hi Stephen,
 
-Requested-by: Matthias Clasen <mclasen@redhat.com>
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
+how are these Kconfig.xxx files going look like? A list of 'select FOO'
+ and 'include "Kconfig.other"' statements?
 
- fs/notify/inotify/inotify_fsnotify.c |    9 +++++++++
- fs/notify/inotify/inotify_user.c     |    2 +-
- include/linux/fsnotify_backend.h     |    1 +
- include/linux/inotify.h              |    1 +
- 4 files changed, 12 insertions(+), 1 deletions(-)
+What about adding support for an include statement to the .config file
+format and using that in the defconfigs instead? The VARIABLE=VALUE
+grammar seems much more suitable for this than the kconfig language.
 
-diff --git a/fs/notify/inotify/inotify_fsnotify.c b/fs/notify/inotify/inotify_fsnotify.c
-index 388a150..9d332e7 100644
---- a/fs/notify/inotify/inotify_fsnotify.c
-+++ b/fs/notify/inotify/inotify_fsnotify.c
-@@ -22,6 +22,7 @@
-  * General Public License for more details.
-  */
- 
-+#include <linux/dcache.h> /* d_unlinked */
- #include <linux/fs.h> /* struct inode */
- #include <linux/fsnotify_backend.h>
- #include <linux/inotify.h>
-@@ -157,6 +158,14 @@ static bool inotify_should_send_event(struct fsnotify_group *group, struct inode
- 	mask = (mask & ~FS_EVENT_ON_CHILD);
- 	send = (fsn_mark->mask & mask);
- 
-+	if (send && (fsn_mark->mask & FS_EXCL_UNLINK) &&
-+	    (data_type == FSNOTIFY_EVENT_PATH)) {
-+		struct path *path  = data;
-+
-+		if (d_unlinked(path->dentry))
-+			send = false;
-+	}
-+
- 	/* find took a reference */
- 	fsnotify_put_mark(fsn_mark);
- 
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index f381daf..dfc80f7 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -97,7 +97,7 @@ static inline __u32 inotify_arg_to_mask(u32 arg)
- 	mask = (FS_IN_IGNORED | FS_EVENT_ON_CHILD | FS_UNMOUNT);
- 
- 	/* mask off the flags used to open the fd */
--	mask |= (arg & (IN_ALL_EVENTS | IN_ONESHOT));
-+	mask |= (arg & (IN_ALL_EVENTS | IN_ONESHOT | IN_EXCL_UNLINK));
- 
- 	return mask;
- }
-diff --git a/include/linux/fsnotify_backend.h b/include/linux/fsnotify_backend.h
-index b0d00fd..b06023a 100644
---- a/include/linux/fsnotify_backend.h
-+++ b/include/linux/fsnotify_backend.h
-@@ -44,6 +44,7 @@
- #define FS_OPEN_PERM		0x00010000	/* open event in an permission hook */
- #define FS_ACCESS_PERM		0x00020000	/* access event in a permissions hook */
- 
-+#define FS_EXCL_UNLINK		0x04000000	/* do not send events if object is unlinked */
- #define FS_IN_ISDIR		0x40000000	/* event occurred against dir */
- #define FS_IN_ONESHOT		0x80000000	/* only send event once */
- 
-diff --git a/include/linux/inotify.h b/include/linux/inotify.h
-index 94d209a..b74f2ef 100644
---- a/include/linux/inotify.h
-+++ b/include/linux/inotify.h
-@@ -51,6 +51,7 @@ struct inotify_event {
- /* special flags */
- #define IN_ONLYDIR		0x01000000	/* only watch the path if it is a directory */
- #define IN_DONT_FOLLOW		0x02000000	/* don't follow a sym link */
-+#define IN_EXCL_UNLINK		0x04000000	/* exclude events on unlinked objects */
- #define IN_MASK_ADD		0x20000000	/* add to the mask of an already existing watch */
- #define IN_ISDIR		0x40000000	/* event occurred against dir */
- #define IN_ONESHOT		0x80000000	/* only send event once */
-
+Michal
