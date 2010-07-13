@@ -1,109 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab0GMBSU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 21:18:20 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39239 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755425Ab0GMBST convert rfc822-to-8bit (ORCPT
+	id S1756153Ab0GMBSg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 21:18:36 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58062 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752449Ab0GMBSf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 21:18:19 -0400
+	Mon, 12 Jul 2010 21:18:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=lSzGmwTF+WQWT8Z5ukpkFmNayjqb9F7KfxmORoOQGKVI74sZkC4ZVO2DsGtTmDfkXm
-         6lspHms7qQFeeZ9RuuO57oLBgm5LAmiz6rbqKfUPYMofK0Ie6Vw4xXZCDxS9jJpxp5rh
-         hYTao7wNVqv/z3c7MQG5ru3skGUfLgopDK0Bs=
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=J8xgBG4519XtGnDdQGvb4FdfsVyqLM8wMpWIZE7Y3q5RGmDowJv+nryHFVc3DNkHS7
+         pWmfrLWzkQFul+E+dlMAfduPfDg3VxoincxdjqMkXvPc6Ppm+nZv5YECMqRSYDRmwu21
+         eE/XaOyUmbXI6r8fqqtOo2VDdvOsMS48lXSng=
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20100712124904.d05242d2.akpm@linux-foundation.org>
-References: <1278672607.1335.3.camel@mola> <20100712124904.d05242d2.akpm@linux-foundation.org>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 13 Jul 2010 09:17:58 +0800
-Message-ID: <AANLkTik3qDmpRS9HwFFzCfyHMrUd9ZnaR1A39jUo0cbt@mail.gmail.com>
-Subject: Re: [PATCH] edd: fix possible memory leak in edd_init() error path
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        David Teigland <teigland@redhat.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        "Hans J. Koch" <hjk@linutronix.de>
+In-Reply-To: <20100708210244.GA2266@kroah.com>
+References: <1278207986-14309-1-git-send-email-ehames@gmail.com>
+	<20100708210244.GA2266@kroah.com>
+Date: Mon, 12 Jul 2010 22:18:33 -0300
+Message-ID: <AANLkTin5QKRuKqklEgnn_UkW6AUbV_5clpFQLeioGdnC@mail.gmail.com>
+Subject: Re: [PATCH 1/2] Staging: wlan-ng: fix checkpatch warnings in 
+	hfa384x.h
+From: Edgardo Hames <ehames@gmail.com>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/13 Andrew Morton <akpm@linux-foundation.org>:
-> On Fri, 09 Jul 2010 18:50:07 +0800
-> Axel Lin <axel.lin@gmail.com> wrote:
+On Thu, Jul 8, 2010 at 6:02 PM, Greg KH <greg@kroah.com> wrote:
+> On Sat, Jul 03, 2010 at 10:46:25PM -0300, Edgardo Hames wrote:
+>> Fixed spaces before tabs, removed unused variables and all typedefs.
+>>
+>> Signed-off-by: Edgardo Hames <ehames@gmail.com>
 >
->> The error may happen at any iteration of the for loop,
->> this patch properly unregisters already registed edd_devices in error path.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->> ---
->>  drivers/firmware/edd.c |   23 ++++++++++++++++-------
->>  1 files changed, 16 insertions(+), 7 deletions(-)
->>
->> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
->> index 110e24e..b75082c 100644
->> --- a/drivers/firmware/edd.c
->> +++ b/drivers/firmware/edd.c
->> @@ -744,7 +744,7 @@ static inline int edd_num_devices(void)
->>  static int __init
->>  edd_init(void)
->>  {
->> -     unsigned int i;
->> +     int i;
->>       int rc=0;
->>       struct edd_device *edev;
->>
->> @@ -760,21 +760,30 @@ edd_init(void)
->>       if (!edd_kset)
->>               return -ENOMEM;
->>
->> -     for (i = 0; i < edd_num_devices() && !rc; i++) {
->> +     for (i = 0; i < edd_num_devices(); i++) {
->>               edev = kzalloc(sizeof (*edev), GFP_KERNEL);
->> -             if (!edev)
->> -                     return -ENOMEM;
->> +             if (!edev) {
->> +                     rc = -ENOMEM;
->> +                     goto out;
->> +             }
->>
->>               rc = edd_device_register(edev, i);
->>               if (rc) {
->>                       kfree(edev);
->> -                     break;
->> +                     goto out;
->>               }
->>               edd_devices[i] = edev;
->>       }
->>
->> -     if (rc)
->> -             kset_unregister(edd_kset);
->> +     return 0;
->> +
->> +out:
->> +     while (--i >= 0) {
->> +             edev = edd_devices[i];
->> +             if (edev)
->
-> This test is unneeded?
+> This doesn't apply against the latest linux-next tree, care to respin it
+> and resend both of these?
 
-right. a revised version is on the way.
+Shall I use linux-next/stable to respin the patch? I tried building
+linux-next/master and the module doesn't even build.
 
-Regards,
-Axel
-
->
->> +                     edd_device_unregister(edev);
->> +     }
->> +     kset_unregister(edd_kset);
->>       return rc;
->>  }
->
->
+Thanks,
+Edgardo
+-- 
+The mere formulation of a problem is far more essential than its solution,
+which may be merely a matter of mathematical or experimental skills.
+-- Albert Einstein
