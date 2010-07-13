@@ -1,252 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756204Ab0GMKTP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 06:19:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23580 "EHLO mx1.redhat.com"
+	id S1756239Ab0GMKTf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:19:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3719 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751502Ab0GMKTK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 06:19:10 -0400
-Date: Tue, 13 Jul 2010 06:18:21 -0400
+	id S1750711Ab0GMKTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 06:19:32 -0400
+Date: Tue, 13 Jul 2010 06:18:43 -0400
 From: Xiaotian Feng <dfeng@redhat.com>
 To: linux-mm@kvack.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org
 Cc: riel@redhat.com, cl@linux-foundation.org, a.p.zijlstra@chello.nl,
         Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
         lwang@redhat.com, penberg@cs.helsinki.fi, akpm@linux-foundation.org,
         davem@davemloft.net
-Message-Id: <20100713101821.2835.2568.sendpatchset@danny.redhat>
+Message-Id: <20100713101843.2835.12822.sendpatchset@danny.redhat>
 In-Reply-To: <20100713101650.2835.15245.sendpatchset@danny.redhat>
 References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
-Subject: [PATCH -mmotm 08/30] mm: emergency pool
+Subject: [PATCH -mmotm 10/30] mm: __GFP_MEMALLOC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 973ce2ee797025f055ccb61359180e53c3ecc681 Mon Sep 17 00:00:00 2001
+>From 78618cc83e6a21b876c30a8fb3940ccc1f5b99e1 Mon Sep 17 00:00:00 2001
 From: Xiaotian Feng <dfeng@redhat.com>
-Date: Tue, 13 Jul 2010 10:45:48 +0800
-Subject: [PATCH 08/30] mm: emergency pool
+Date: Tue, 13 Jul 2010 10:49:16 +0800
+Subject: [PATCH 10/30] mm: __GFP_MEMALLOC
 
-Provide means to reserve a specific amount of pages.
+__GFP_MEMALLOC will allow the allocation to disregard the watermarks,
+much like PF_MEMALLOC.
 
-The emergency pool is separated from the min watermark because ALLOC_HARDER
-and ALLOC_HIGH modify the watermark in a relative way and thus do not ensure
-a strict minimum.
+It allows one to pass along the memalloc state in object related allocation
+flags as opposed to task related flags, such as sk->sk_allocation.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
 ---
- include/linux/mmzone.h |    3 ++
- mm/page_alloc.c        |   84 ++++++++++++++++++++++++++++++++++++++++++------
- mm/vmstat.c            |    6 ++--
- 3 files changed, 80 insertions(+), 13 deletions(-)
+ include/linux/gfp.h |    3 ++-
+ mm/page_alloc.c     |    4 +++-
+ 2 files changed, 5 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-index 9ed9c45..75a0871 100644
---- a/include/linux/mmzone.h
-+++ b/include/linux/mmzone.h
-@@ -279,6 +279,7 @@ struct zone_reclaim_stat {
+diff --git a/include/linux/gfp.h b/include/linux/gfp.h
+index 975609c..c608e26 100644
+--- a/include/linux/gfp.h
++++ b/include/linux/gfp.h
+@@ -47,6 +47,7 @@ struct vm_area_struct;
+ #define __GFP_REPEAT	((__force gfp_t)0x400u)	/* See above */
+ #define __GFP_NOFAIL	((__force gfp_t)0x800u)	/* See above */
+ #define __GFP_NORETRY	((__force gfp_t)0x1000u)/* See above */
++#define __GFP_MEMALLOC  ((__force gfp_t)0x2000u)/* Use emergency reserves */
+ #define __GFP_COMP	((__force gfp_t)0x4000u)/* Add compound page metadata */
+ #define __GFP_ZERO	((__force gfp_t)0x8000u)/* Return zeroed page on success */
+ #define __GFP_NOMEMALLOC ((__force gfp_t)0x10000u) /* Don't use emergency reserves */
+@@ -98,7 +99,7 @@ struct vm_area_struct;
+ /* Control page allocator reclaim behavior */
+ #define GFP_RECLAIM_MASK (__GFP_WAIT|__GFP_HIGH|__GFP_IO|__GFP_FS|\
+ 			__GFP_NOWARN|__GFP_REPEAT|__GFP_NOFAIL|\
+-			__GFP_NORETRY|__GFP_NOMEMALLOC)
++			__GFP_NORETRY|__GFP_MEMALLOC|__GFP_NOMEMALLOC)
  
- struct zone {
- 	/* Fields commonly accessed by the page allocator */
-+	unsigned long           pages_emerg;    /* emergency pool */
- 
- 	/* zone watermarks, access with *_wmark_pages(zone) macros */
- 	unsigned long watermark[NR_WMARK];
-@@ -770,6 +771,8 @@ int sysctl_min_unmapped_ratio_sysctl_handler(struct ctl_table *, int,
- int sysctl_min_slab_ratio_sysctl_handler(struct ctl_table *, int,
- 			void __user *, size_t *, loff_t *);
- 
-+int adjust_memalloc_reserve(int pages);
-+
- extern int numa_zonelist_order_handler(struct ctl_table *, int,
- 			void __user *, size_t *, loff_t *);
- extern char numa_zonelist_order[];
+ /* Control slab gfp mask during early boot */
+ #define GFP_BOOT_MASK (__GFP_BITS_MASK & ~(__GFP_WAIT|__GFP_IO|__GFP_FS))
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 4b1fa10..6c85e9e 100644
+index 21d64f7..f7d3060 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -167,6 +167,8 @@ static char * const zone_names[MAX_NR_ZONES] = {
+@@ -1930,7 +1930,9 @@ int gfp_to_alloc_flags(gfp_t gfp_mask)
+ 		alloc_flags |= ALLOC_HARDER;
  
- static DEFINE_SPINLOCK(min_free_lock);
- int min_free_kbytes = 1024;
-+static DEFINE_MUTEX(var_free_mutex);
-+int var_free_kbytes;
- 
- static unsigned long __meminitdata nr_kernel_pages;
- static unsigned long __meminitdata nr_all_pages;
-@@ -1457,7 +1459,7 @@ int zone_watermark_ok(struct zone *z, int order, unsigned long mark,
- 	if (alloc_flags & ALLOC_HARDER)
- 		min -= min / 4;
- 
--	if (free_pages <= min + z->lowmem_reserve[classzone_idx])
-+	if (free_pages <= min+z->lowmem_reserve[classzone_idx]+z->pages_emerg)
- 		return 0;
- 	for (o = 0; o < order; o++) {
- 		/* At the next order, this order's pages become unavailable */
-@@ -1946,7 +1948,7 @@ __alloc_pages_slowpath(gfp_t gfp_mask, unsigned int order,
- {
- 	const gfp_t wait = gfp_mask & __GFP_WAIT;
- 	struct page *page = NULL;
--	int alloc_flags;
-+	int alloc_flags = 0;
- 	unsigned long pages_reclaimed = 0;
- 	unsigned long did_some_progress;
- 	struct task_struct *p = current;
-@@ -2078,8 +2080,8 @@ rebalance:
- nopage:
- 	if (!(gfp_mask & __GFP_NOWARN) && printk_ratelimit()) {
- 		printk(KERN_WARNING "%s: page allocation failure."
--			" order:%d, mode:0x%x\n",
--			p->comm, order, gfp_mask);
-+			" order:%d, mode:0x%x, alloc_flags:0x%x, pflags:0x%x\n",
-+			p->comm, order, gfp_mask, alloc_flags, p->flags);
- 		dump_stack();
- 		show_mem();
- 	}
-@@ -2414,9 +2416,9 @@ void show_free_areas(void)
- 			"\n",
- 			zone->name,
- 			K(zone_page_state(zone, NR_FREE_PAGES)),
--			K(min_wmark_pages(zone)),
--			K(low_wmark_pages(zone)),
--			K(high_wmark_pages(zone)),
-+			K(zone->pages_emerg + min_wmark_pages(zone)),
-+			K(zone->pages_emerg + low_wmark_pages(zone)),
-+			K(zone->pages_emerg + high_wmark_pages(zone)),
- 			K(zone_page_state(zone, NR_ACTIVE_ANON)),
- 			K(zone_page_state(zone, NR_INACTIVE_ANON)),
- 			K(zone_page_state(zone, NR_ACTIVE_FILE)),
-@@ -4779,7 +4781,7 @@ static void calculate_totalreserve_pages(void)
- 			}
- 
- 			/* we treat the high watermark as reserved pages. */
--			max += high_wmark_pages(zone);
-+			max += high_wmark_pages(zone) + zone->pages_emerg;
- 
- 			if (max > zone->present_pages)
- 				max = zone->present_pages;
-@@ -4837,7 +4839,8 @@ static void setup_per_zone_lowmem_reserve(void)
-  */
- static void __setup_per_zone_wmarks(void)
- {
--	unsigned long pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
-+	unsigned pages_min = min_free_kbytes >> (PAGE_SHIFT - 10);
-+	unsigned pages_emerg = var_free_kbytes >> (PAGE_SHIFT - 10);
- 	unsigned long lowmem_pages = 0;
- 	struct zone *zone;
- 	unsigned long flags;
-@@ -4849,11 +4852,13 @@ static void __setup_per_zone_wmarks(void)
- 	}
- 
- 	for_each_zone(zone) {
--		u64 tmp;
-+		u64 tmp, tmp_emerg;
- 
- 		spin_lock_irqsave(&zone->lock, flags);
- 		tmp = (u64)pages_min * zone->present_pages;
- 		do_div(tmp, lowmem_pages);
-+		tmp_emerg = (u64)pages_emerg * zone->present_pages;
-+		do_div(tmp_emerg, lowmem_pages);
- 		if (is_highmem(zone)) {
- 			/*
- 			 * __GFP_HIGH and PF_MEMALLOC allocations usually don't
-@@ -4872,12 +4877,14 @@ static void __setup_per_zone_wmarks(void)
- 			if (min_pages > 128)
- 				min_pages = 128;
- 			zone->watermark[WMARK_MIN] = min_pages;
-+			zone->pages_emerg = 0;
- 		} else {
- 			/*
- 			 * If it's a lowmem zone, reserve a number of pages
- 			 * proportionate to the zone's size.
- 			 */
- 			zone->watermark[WMARK_MIN] = tmp;
-+			zone->pages_emerg = tmp_emerg;
- 		}
- 
- 		zone->watermark[WMARK_LOW]  = min_wmark_pages(zone) + (tmp >> 2);
-@@ -4942,6 +4949,63 @@ void setup_per_zone_wmarks(void)
- 	spin_unlock_irqrestore(&min_free_lock, flags);
- }
- 
-+static void __adjust_memalloc_reserve(int pages)
-+{
-+	var_free_kbytes += pages << (PAGE_SHIFT - 10);
-+	BUG_ON(var_free_kbytes < 0);
-+	setup_per_zone_wmarks();
-+}
-+
-+static int test_reserve_limits(void)
-+{
-+	struct zone *zone;
-+	int node;
-+
-+	for_each_zone(zone)
-+		wakeup_kswapd(zone, 0);
-+
-+	for_each_online_node(node) {
-+		struct page *page = alloc_pages_node(node, GFP_KERNEL, 0);
-+		if (!page)
-+			return -ENOMEM;
-+
-+		__free_page(page);
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ *	adjust_memalloc_reserve - adjust the memalloc reserve
-+ *	@pages: number of pages to add
-+ *
-+ *	It adds a number of pages to the memalloc reserve; if
-+ *	the number was positive it kicks reclaim into action to
-+ *	satisfy the higher watermarks.
-+ *
-+ *	returns -ENOMEM when it failed to satisfy the watermarks.
-+ */
-+int adjust_memalloc_reserve(int pages)
-+{
-+	int err = 0;
-+
-+	mutex_lock(&var_free_mutex);
-+	__adjust_memalloc_reserve(pages);
-+	if (pages > 0) {
-+		err = test_reserve_limits();
-+		if (err) {
-+			__adjust_memalloc_reserve(-pages);
-+			goto unlock;
-+		}
-+	}
-+	printk(KERN_DEBUG "Emergency reserve: %d\n", var_free_kbytes);
-+
-+unlock:
-+	mutex_unlock(&var_free_mutex);
-+	return err;
-+}
-+EXPORT_SYMBOL_GPL(adjust_memalloc_reserve);
-+
- /*
-  * Initialise min_free_kbytes.
-  *
-diff --git a/mm/vmstat.c b/mm/vmstat.c
-index 15a14b1..af91d5c 100644
---- a/mm/vmstat.c
-+++ b/mm/vmstat.c
-@@ -814,9 +814,9 @@ static void zoneinfo_show_print(struct seq_file *m, pg_data_t *pgdat,
- 		   "\n        spanned  %lu"
- 		   "\n        present  %lu",
- 		   zone_page_state(zone, NR_FREE_PAGES),
--		   min_wmark_pages(zone),
--		   low_wmark_pages(zone),
--		   high_wmark_pages(zone),
-+		   zone->pages_emerg + min_wmark_pages(zone),
-+		   zone->pages_emerg + min_wmark_pages(zone),
-+		   zone->pages_emerg + high_wmark_pages(zone),
- 		   zone->pages_scanned,
- 		   zone->spanned_pages,
- 		   zone->present_pages);
+ 	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
+-		if (!in_irq() && (p->flags & PF_MEMALLOC))
++		if (gfp_mask & __GFP_MEMALLOC)
++			alloc_flags |= ALLOC_NO_WATERMARKS;
++		else if (!in_irq() && (p->flags & PF_MEMALLOC))
+ 			alloc_flags |= ALLOC_NO_WATERMARKS;
+ 		else if (!in_interrupt() &&
+ 				unlikely(test_thread_flag(TIF_MEMDIE)))
 -- 
 1.7.1.1
 
