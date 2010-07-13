@@ -1,71 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757180Ab0GMSA2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 14:00:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35208 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752654Ab0GMSA0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 14:00:26 -0400
+	id S1757196Ab0GMSGV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 14:06:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36793 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752725Ab0GMSGU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 14:06:20 -0400
+Message-ID: <4C3CAAC6.501@redhat.com>
+Date: Tue, 13 Jul 2010 21:04:54 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>
-References: <20100707124731.GJ15122@anguilla.noreply.org>
-	<4C359D5A.1050906@redhat.com>
-	<20100713102350.GW15122@anguilla.noreply.org>
-	<4C3C68C8.4060409@redhat.com>
-	<20100713141902.GB15122@anguilla.noreply.org>
-	<4C3C8CE5.1080705@redhat.com>
-	<20100713162207.GC15122@anguilla.noreply.org>
-	<4C3C9589.4090602@redhat.com>
-	<4C3C96EC.8060901@redhat.com>
-	<4C3C9839.4090404@redhat.com>
-	<20100713172526.GE15122@anguilla.noreply.org>
-	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>
-Date: Tue, 13 Jul 2010 10:59:49 -0700
-Message-ID: <AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point 
-	for pvclock
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Peter Palfrader <peter@palfrader.org>, Avi Kivity <avi@redhat.com>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org,
-        torvalds@linux-foundation.org, akpm@linux-foundation.org,
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Peter Palfrader <peter@palfrader.org>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
         Zachary Amsden <zamsden@redhat.com>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
         Marcelo Tosatti <mtosatti@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
+ 	for pvclock
+References: <20100701175144.GA2116@kroah.com>	<20100701173218.125822294@clark.site>	<20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com> <AANLkTim_xKrPSTNqS3JWipjlAkmeDnlEYcHt1cn90ggB@mail.gmail.com>
+In-Reply-To: <AANLkTim_xKrPSTNqS3JWipjlAkmeDnlEYcHt1cn90ggB@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 10:50 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On 07/13/2010 07:34 PM, Linus Torvalds wrote:
 >
-> No, you didn't back-port it wrong. I just didn't fix the right part. I
-> thought the PV code used xchg, not cmpxchg, so I only patched that.
-> But cmpxchg has the exact same issue.
+> I bet it is the same. And I have a suspicion: because the only write
+> access to that variable is in an asm that uses the "memory" clobber to
+> say it wrote to it (rather than say it writes to it directly), and
+> because the variable is marked 'static', gcc decides that nothing ever
+> writes to it in that compilation unit, and it can be made read-only.
 >
-> Does this fix it?
+> Look at our definition for "xchg()" in
+> arch/x86/include/asm/cmpxchg_64.h. It boils down to
+>
+>                  asm volatile("xchgq %0,%1"                              \
+>                               : "=r" (__x)                               \
+>                               : "m" (*__xg(ptr)), "0" (__x)              \
+>                               : "memory");                               \
+>
+> for the 8-byte case (which is obviously what atomic64_xchg() uses).
+> And the _reason_ we do that thing where we use a memory _input_ and
+> then a clobber is that older versions of gcc did not accept the thing
+> we _want_ to use, namely using "+m" to say that we actually change the
+> memory.  So the above is "wrong", but has historical reasons - and
+> it's apparently never been changed.
+>
+> However, the "+m" was fixed, and we use it elsewhere, so I think the
+> "m" plus memory clobber is now purely historical. Does a patch
+> something like the appended fix it? I also suspect we should look at
+> some other uses in this area. The atomic64_64.h file uses "=m" and
+> "m", which looks like another legacy thing (again, "+m" historically
+> wasn't allowed, and then later became the 'correct' way to do things).
+>
+>    
 
-Btw, this second patch was a bit more aggressive than the first one,
-and actually removes the "memory" clobber entirely, and the fake cast
-of the target type.
+Well, current upstream uses "m":
 
-That shouldn't matter _except_ if people actually use cmpxchg to
-implement their own locking, since now the compiler could potentially
-move unrelated memory references around the lock. Of course, if you
-use cmpxchg to implement your own locking, you're probably doing
-something wrong anyway (ie you'll get the wrong memory barriers on
-various architectures), so it should all be fine.
+>         case 8:                                                         \
+>                 asm volatile(lock "cmpxchgq %1,%2"                      \
+>                              : "=a"(__ret)                              \
+>                              : "r"(__new), "m"(*__xg(ptr)), "0"(__old)  \
+>                              : "memory");                               \
+>                 break;                                                  \
 
-But I thought I'd mention it. And I don't really know how much gcc
-moves memory accesses around a "asm volatile" - the gcc docs are
-historically very vague ("volatile asms aren't moved around
-'significantly'", whatever 'significant' means)
+and works; I also failed to reproduce with 2.6.32.16.  So I expect some 
+toolchain involvement.
 
-And btw, none of the above should be taken to mean that I have tested
-the patch or found it to be otherwise good. It might be totally broken
-for other reasons. Caveat emptor.
+Peter, what gcc are you using?
 
-                             Linus
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
