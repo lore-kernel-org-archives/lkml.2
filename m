@@ -1,57 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab0GMSM2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 14:12:28 -0400
-Received: from relay2-v.mail.gandi.net ([217.70.178.76]:43020 "EHLO
-	mrelay2-v.mgt.gandi.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751042Ab0GMSM0 (ORCPT
+	id S1753510Ab0GMSPG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 14:15:06 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:40823 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab0GMSPD convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 14:12:26 -0400
-X-Originating-IP: 217.70.178.39
-X-Originating-IP: 74.107.143.84
-Date: Tue, 13 Jul 2010 11:12:13 -0700
-From: Josh Triplett <josh@joshtriplett.org>
-To: Chris Li <christ.li@gmail.com>
-Cc: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
-        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org,
-        linux-sparse@vger.kernel.org
-Subject: Re: [PATCH 2/2] parser: define __builtin_unreachable
-Message-ID: <20100713181212.GB20289@feather>
-References: <AANLkTikFmeXz9og4t98jm6QcAdRa6rIeCAv3oeFnTgd8@mail.gmail.com>
- <1278751162-10053-2-git-send-email-jslaby@suse.cz>
- <20100710090705.GA14881@feather>
- <AANLkTimf821jhfhU-Rsj7xa2S4EzuP23weoUSZVWsD2u@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimf821jhfhU-Rsj7xa2S4EzuP23weoUSZVWsD2u@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 13 Jul 2010 14:15:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type:content-transfer-encoding;
+        b=fd7lph1iDcWD44+rDi/emlWKrbrC8IW0El9tJl0m1DquVNVuF63CGyog2s536NYDAf
+         dS0U8e+oQRxQLy76OB06AWy7QYPKXUtSE+mxdzMPchIKkef/pKypkpnYbltVewT+q+aH
+         OSA6B5bLgkeRGjDC33npSv+mnv+LC/7U8LVrc=
+Date: Tue, 13 Jul 2010 20:06:43 +0200
+From: Alejandro Riveira =?UTF-8?B?RmVybsOhbmRleg==?= 
+	<ariveira@gmail.com>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org
+Subject: Re: rt2x00: slow wifi with correct basic rate bitmap (was Re:
+ stable? quality assurance?)
+Message-ID: <20100713200643.24ce019e@varda>
+In-Reply-To: <4C3C6106.3000909@s5r6.in-berlin.de>
+References: <201007110918.42120.Martin@lichtvoll.de>
+	<AANLkTimCwi2uJqqPaq3U30f3rvdDizu1BnaaXgvNeC9k@mail.gmail.com>
+	<201007111651.42963.Martin@lichtvoll.de>
+	<20100713131112.26a3da54@varda>
+	<4C3C6106.3000909@s5r6.in-berlin.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 12:52:48AM -0700, Chris Li wrote:
-> On Sat, Jul 10, 2010 at 2:07 AM, Josh Triplett <josh@joshtriplett.org> wrote:
-> > __builtin_unreachable has special semantics beyond just a function.
-> > This definition will suffice to allow compilation, but
-> > __builtin_unreachable should have the same effect in sparse that it does
-> > in GCC: mark the point (and the remainder of the basic block) as
-> > unreachable. �Something like the mechanism used for handling noreturn
-> > would work here as well; declaring the function to have attribute
-> > noreturn would probably have almost the right semantics.
-> >
+El Tue, 13 Jul 2010 14:50:14 +0200
+Stefan Richter <stefanr@s5r6.in-berlin.de> escribió:
+
+> Alejandro Riveira Fernández wrote:
+> >  I for one stopped booting into -rc kernels.
+> >  The fact that still have to patch my kernels with a *one* liner
+> >  since 2.6.29 kernel [1] does not give me confidence on the "test
+> >  report/bisect and it will be fixed" promise some have made in this
+> >  threath
+> >  
+> >  [1] https://bugzilla.kernel.org/show_bug.cgi?id=13362
 > 
-> The attribute noreturn will apply to the whole function. The function
-> NEVER returns.
-> __builtin_unreachable only apply to current basic block. e.g. some
-> error handling path like panic. The function can still return a value on the
-> normal path. It has different meaning than attribute noreturn. So I don't think
-> automatically give the function noreturn attribute is the right thing to do.
+> There were promises made in this thread?  Then I must have read a
+> different mailinglist or so.
 
-No, I didn't mean that using __builtin_unreachable should mark the
-function calling it as noreturn.  I meant that as an approximation to
-the right behavior, __builtin_unreachable *itself* could have attribute
-noreturn.
+ Ok no promises.
+ Maybe I read to much in to Mr Tso previous mail. My apologies
+ [quote]
+ > So I tend to use -rc3, -rc4, and -rc5 kernels on my laptops, and when
+ > I find bugs, I report them and I help fix them.  If more people did
+ > that, then the 2.6.X.0 releases would be more stable.  But kernel
+ > development is a volunteer effort, so it's up to the volunteers to
+ > test and fix bugs during the rc4, -rc5 and -rc6 time frame. 
+ 
+ [...]
+ > [...]                         Linux may be a very good bargain (look
+ > at how much Oracle has increased its support contracts for Solaris!),
+ > but it's still not a free lunch.  At the end of the day, you get what
+ > you put into it.
 
-- Josh Triplett
+  I tested the kernels i reported the bugs and helped (to the best of my
+  knowledge; I'm not a programmer) 
+  I got no result.
+
