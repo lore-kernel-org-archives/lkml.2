@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752711Ab0GMHPl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:15:41 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26086 "EHLO
+	id S1753580Ab0GMHPj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:15:39 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26013 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab0GMHPg (ORCPT
+	with ESMTP id S1752574Ab0GMHPe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:15:36 -0400
+	Tue, 13 Jul 2010 03:15:34 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,166 +15,110 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 07/50] memblock: Remove nid_range argument, arch provides memblock_nid_range() instead
-Date: Tue, 13 Jul 2010 00:10:01 -0700
-Message-Id: <1279005044-24777-8-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 01/50] x86, numa: fix boot without RAM on node0 again
+Date: Tue, 13 Jul 2010 00:09:55 -0700
+Message-Id: <1279005044-24777-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C3C1271.01EB,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4C3C1272.01C2,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+|commit e534c7c5f8d6e9fc46f57fab067c7e48d8ceb172
+|Author: Lee Schermerhorn <lee.schermerhorn@hp.com>
+|Date:   Wed May 26 14:44:58 2010 -0700
+|
+|    numa: x86_64: use generic percpu var numa_node_id() implementation
+|
+|    x86 arch specific changes to use generic numa_node_id() based on generic
+|    percpu variable infrastructure.  Back out x86's custom version of
+|    numa_node_id()
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+broke numa system that doesn't have ram on node0 when MEMORY_HOTPLUG is enabled.
+
+because cpu_up() will call cpu_to_node() before per_cpu(numa_node) is setup for
+APs.
+
+When Node0 doesn't have RAM, on x86, cpus already round it to nearest node with
+RAM in x86_cpu_to_node_map. and per_cpu(numa_node) is not set up until in c_init for APs.
+
+when later cpu_up() calling cpu_to_node() will get 0 again, and make it online
+even there is no RAM on node0. so later all APs can not booted up, and later
+will have panic.
+
+[    1.611101] On node 0 totalpages: 0
+.........
+[    2.608558] On node 0 totalpages: 0
+[    2.612065] Brought up 1 CPUs
+[    2.615199] Total of 1 processors activated (3990.31 BogoMIPS).
+...
+   93.225341] calling  loop_init+0x0/0x1a4 @ 1
+[   93.229314] PERCPU: allocation failed, size=80 align=8, failed to populate
+[   93.246539] Pid: 1, comm: swapper Tainted: G        W   2.6.35-rc4-tip-yh-04371-gd64e6c4-dirty #354
+[   93.264621] Call Trace:
+[   93.266533]  [<ffffffff81125e43>] pcpu_alloc+0x83a/0x8e7
+[   93.270710]  [<ffffffff81125f15>] __alloc_percpu+0x10/0x12
+[   93.285849]  [<ffffffff8140786c>] alloc_disk_node+0x94/0x16d
+[   93.291811]  [<ffffffff81407956>] alloc_disk+0x11/0x13
+[   93.306157]  [<ffffffff81503e51>] loop_alloc+0xa7/0x180
+[   93.310538]  [<ffffffff8277ef48>] loop_init+0x9b/0x1a4
+[   93.324909]  [<ffffffff8277eead>] ? loop_init+0x0/0x1a4
+[   93.329650]  [<ffffffff810001f2>] do_one_initcall+0x57/0x136
+[   93.345197]  [<ffffffff827486d0>] kernel_init+0x184/0x20e
+[   93.348146]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
+[   93.365194]  [<ffffffff81c7cc3c>] ? restore_args+0x0/0x30
+[   93.369305]  [<ffffffff8274854c>] ? kernel_init+0x0/0x20e
+[   93.386011]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
+[   93.392047] loop: out of memory
+...
+
+Try to assign per_cpu(numa_node) early
+
+Signed-off-by: Yinghai <yinghai@kernel.org>
 ---
- arch/sparc/mm/init_64.c  |   16 ++++++----------
- include/linux/memblock.h |    7 +++++--
- mm/memblock.c            |   13 ++++++++-----
- 3 files changed, 19 insertions(+), 17 deletions(-)
+ arch/x86/kernel/setup_percpu.c |   17 +++++++++--------
+ 1 files changed, 9 insertions(+), 8 deletions(-)
 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index dd68025..0883113 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -785,8 +785,7 @@ static int find_node(unsigned long addr)
- 	return -1;
- }
+diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
+index de3b63a..b03959c 100644
+--- a/arch/x86/kernel/setup_percpu.c
++++ b/arch/x86/kernel/setup_percpu.c
+@@ -238,6 +238,15 @@ void __init setup_per_cpu_areas(void)
+ #ifdef CONFIG_NUMA
+ 		per_cpu(x86_cpu_to_node_map, cpu) =
+ 			early_per_cpu_map(x86_cpu_to_node_map, cpu);
++		/*
++		 * make sure boot cpu numa_node is right, when boot cpu is on
++		 *  the node that doesn't have mem installed
++		 * also cpu_up() will call cpu_to_node() for APs when
++		 *  MEMORY_HOTPLUG is defined, before per_cpu(numa_node) is set
++		 *  up later with c_init aka intel_init/amd_init
++		 * So set them all (boot cpu and all APs)
++		 */
++		set_cpu_numa_node(cpu, early_cpu_to_node(cpu));
+ #endif
+ #endif
+ 		/*
+@@ -257,14 +266,6 @@ void __init setup_per_cpu_areas(void)
+ 	early_per_cpu_ptr(x86_cpu_to_node_map) = NULL;
+ #endif
  
--static unsigned long long nid_range(unsigned long long start,
--				    unsigned long long end, int *nid)
-+u64 memblock_nid_range(u64 start, u64 end, int *nid)
- {
- 	*nid = find_node(start);
- 	start += PAGE_SIZE;
-@@ -804,8 +803,7 @@ static unsigned long long nid_range(unsigned long long start,
- 	return start;
- }
- #else
--static unsigned long long nid_range(unsigned long long start,
--				    unsigned long long end, int *nid)
-+u64 memblock_nid_range(u64 start, u64 end, int *nid)
- {
- 	*nid = 0;
- 	return end;
-@@ -822,8 +820,7 @@ static void __init allocate_node_data(int nid)
- 	struct pglist_data *p;
+-#if defined(CONFIG_X86_64) && defined(CONFIG_NUMA)
+-	/*
+-	 * make sure boot cpu numa_node is right, when boot cpu is on the
+-	 * node that doesn't have mem installed
+-	 */
+-	set_cpu_numa_node(boot_cpu_id, early_cpu_to_node(boot_cpu_id));
+-#endif
+-
+ 	/* Setup node to cpumask map */
+ 	setup_node_to_cpumask_map();
  
- #ifdef CONFIG_NEED_MULTIPLE_NODES
--	paddr = memblock_alloc_nid(sizeof(struct pglist_data),
--			      SMP_CACHE_BYTES, nid, nid_range);
-+	paddr = memblock_alloc_nid(sizeof(struct pglist_data), SMP_CACHE_BYTES, nid);
- 	if (!paddr) {
- 		prom_printf("Cannot allocate pglist_data for nid[%d]\n", nid);
- 		prom_halt();
-@@ -843,8 +840,7 @@ static void __init allocate_node_data(int nid)
- 	if (p->node_spanned_pages) {
- 		num_pages = bootmem_bootmap_pages(p->node_spanned_pages);
- 
--		paddr = memblock_alloc_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid,
--				      nid_range);
-+		paddr = memblock_alloc_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid);
- 		if (!paddr) {
- 			prom_printf("Cannot allocate bootmap for nid[%d]\n",
- 				  nid);
-@@ -984,7 +980,7 @@ static void __init add_node_ranges(void)
- 			unsigned long this_end;
- 			int nid;
- 
--			this_end = nid_range(start, end, &nid);
-+			this_end = memblock_nid_range(start, end, &nid);
- 
- 			numadbg("Adding active range nid[%d] "
- 				"start[%lx] end[%lx]\n",
-@@ -1317,7 +1313,7 @@ static void __init reserve_range_in_node(int nid, unsigned long start,
- 		unsigned long this_end;
- 		int n;
- 
--		this_end = nid_range(start, end, &n);
-+		this_end = memblock_nid_range(start, end, &n);
- 		if (n == nid) {
- 			numadbg("      MATCH reserving range [%lx:%lx]\n",
- 				start, this_end);
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index d948857..3e4a52f 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -46,8 +46,7 @@ extern long memblock_add(u64 base, u64 size);
- extern long memblock_remove(u64 base, u64 size);
- extern long __init memblock_free(u64 base, u64 size);
- extern long __init memblock_reserve(u64 base, u64 size);
--extern u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
--				u64 (*nid_range)(u64, u64, int *));
-+extern u64 __init memblock_alloc_nid(u64 size, u64 align, int nid);
- extern u64 __init memblock_alloc(u64 size, u64 align);
- extern u64 __init memblock_alloc_base(u64 size,
- 		u64, u64 max_addr);
-@@ -61,6 +60,10 @@ extern int memblock_is_region_reserved(u64 base, u64 size);
- 
- extern void memblock_dump_all(void);
- 
-+/* Provided by the architecture */
-+extern u64 memblock_nid_range(u64 start, u64 end, int *nid);
-+
-+
- /*
-  * pfn conversion functions
-  *
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 5df1400..83643f3 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -319,7 +319,6 @@ static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
- }
- 
- static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
--				       u64 (*nid_range)(u64, u64, int *),
- 				       u64 size, u64 align, int nid)
- {
- 	u64 start, end;
-@@ -332,7 +331,7 @@ static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
- 		u64 this_end;
- 		int this_nid;
- 
--		this_end = nid_range(start, end, &this_nid);
-+		this_end = memblock_nid_range(start, end, &this_nid);
- 		if (this_nid == nid) {
- 			u64 ret = memblock_alloc_nid_unreserved(start, this_end,
- 							   size, align);
-@@ -345,8 +344,7 @@ static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
- 	return ~(u64)0;
- }
- 
--u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
--			 u64 (*nid_range)(u64 start, u64 end, int *nid))
-+u64 __init memblock_alloc_nid(u64 size, u64 align, int nid)
- {
- 	struct memblock_type *mem = &memblock.memory;
- 	int i;
-@@ -357,7 +355,6 @@ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
- 
- 	for (i = 0; i < mem->cnt; i++) {
- 		u64 ret = memblock_alloc_nid_region(&mem->regions[i],
--					       nid_range,
- 					       size, align, nid);
- 		if (ret != ~(u64)0)
- 			return ret;
-@@ -505,3 +502,9 @@ int memblock_is_region_reserved(u64 base, u64 size)
- 	return memblock_overlaps_region(&memblock.reserved, base, size);
- }
- 
-+u64 __weak memblock_nid_range(u64 start, u64 end, int *nid)
-+{
-+	*nid = 0;
-+
-+	return end;
-+}
 -- 
 1.6.4.2
 
