@@ -1,54 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755941Ab0GMKAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 06:00:17 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33773 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754627Ab0GMKAO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 06:00:14 -0400
-Date: Tue, 13 Jul 2010 11:00:12 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sundar Iyer <sundar.iyer@stericsson.com>
-Cc: lrg@slimlogic.co.uk, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        STEricsson_nomadik_linux@list.st.com,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        "Acked-By: Bengt JONSSON" <bengt.g.jonsson@stericsson.com>
-Subject: Re: [PATCH 3/3] ux500: add ab8500-regulators machine specific data
-Message-ID: <20100713100012.GC12686@rakim.wolfsonmicro.main>
-References: <1279002090-11234-1-git-send-email-sundar.iyer@stericsson.com>
- <1279002090-11234-4-git-send-email-sundar.iyer@stericsson.com>
+	id S1756039Ab0GMKAw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:00:52 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:53191 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754627Ab0GMKAv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 06:00:51 -0400
+Date: Tue, 13 Jul 2010 11:00:34 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+Message-ID: <20100713100034.GF29885@csn.ul.ie>
+References: <20100712155348.GA2815@barrios-desktop> <20100713093700.GD29885@csn.ul.ie> <20100713094612.GF20590@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <1279002090-11234-4-git-send-email-sundar.iyer@stericsson.com>
-X-Cookie: BOFH excuse
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100713094612.GF20590@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 11:51:30AM +0530, Sundar Iyer wrote:
+On Tue, Jul 13, 2010 at 10:46:12AM +0100, Russell King - ARM Linux wrote:
+> On Tue, Jul 13, 2010 at 10:37:00AM +0100, Mel Gorman wrote:
+> > I prefer Kamezawa's suggestion of mapping on a ZERO_PAGE-like page full
+> > of PageReserved struct pages because it would have better performance
+> > and be more in line with maintaining the assumptions of the memory
+> > model. If we go in this direction, I would strongly prefer it was an
+> > ARM-only thing.
+> 
+> As I've said, this is not possible without doing some serious page
+> manipulation.
+> 
 
-> +static struct regulator_consumer_supply ab8500_vaux1_consumers[] = {
-> +	{ .dev = NULL, .supply = "vaux1", },
-> +};
+Yep, x86 used to do something like this for discontig. It wasn't pretty.
 
-All these supplies with NULL devices are bogus, supplies are in terms of
-the device being supplied not the labels on the board.  If you've got a
-supply with no device and the name of the supply on either the regulator
-or the board you're most likely doing it wrong.  The only exception is
-for supplies used in cpufreq since we don't have a struct device we can
-use there.
+> Plus the pages that where there become unusable as they don't correspond
+> with a PFN or obey phys_to_virt().  So there's absolutely no point to
+> this.
+> 
+> Now, why do we free the holes in the mem_map - because these holes can
+> be extremely large.  Every 512K of hole equates to one page of mem_map
+> array.
 
-> +struct regulator_init_data ab8500_vaux2_regulator = {
-> +	.supply_regulator_dev = NULL,
-> +	.constraints = {
-> +		.name = "ab8500-vaux2",
-> +		.min_uV = AB8500_VAUXN_LDO_MIN_VOLTAGE,
-> +		.max_uV = AB8500_VAUXN_LDO_MAX_VOLTAGE,
+Sure, the holes might be large but at least they are contiguous. Is
+there ever a case where you have
 
-I'm not convinced that these #defines help anything, they're used in
-exactly one place so don't add much to either legibility or ease of
-maintinance.
+512K_Valid 512K_Hole 512K_Valid 512K_Hole
+
+or is it typically
+
+512K_hole 512K_hole ...... 512K_Valid 512K_Valid etc
+
+If holes are typically contiguos, memmap is not allocated in the first place
+and the savings from punching holes in memmap in the latter configuration
+are minimal.
+
+I recognise if you have a 2M section with a hole in it, you are
+potentially wasting 3 pages on unused memmap. If this is really a problem,
+Minchan's modification to sparsemem to increase the size of mem_section on
+CONFIG_ARCH_HAS_HOLES_MEMORYMODEL is a messy option. I say messy because
+it only works if the hole is on either end of the section and it's adding
+quirks to the memory model.
+
+>  Balance that against memory placed at 0xc0000000 physical on
+> some platforms, and with PHYSMEM_BITS at 32 and SECTION_SIZE_BITS at
+> 19 - well, you do the maths.  The result is certainly not pretty.
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
