@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756741Ab0GMKXF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 06:23:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3697 "EHLO mx1.redhat.com"
+	id S1756786Ab0GMKXT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:23:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11206 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756591Ab0GMKW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 06:22:59 -0400
-Date: Tue, 13 Jul 2010 06:22:29 -0400
+	id S1756620Ab0GMKXD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 06:23:03 -0400
+Date: Tue, 13 Jul 2010 06:21:55 -0400
 From: Xiaotian Feng <dfeng@redhat.com>
 To: linux-mm@kvack.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org
 Cc: riel@redhat.com, cl@linux-foundation.org, a.p.zijlstra@chello.nl,
         Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
         lwang@redhat.com, penberg@cs.helsinki.fi, akpm@linux-foundation.org,
         davem@davemloft.net
-Message-Id: <20100713102228.2835.64815.sendpatchset@danny.redhat>
+Message-Id: <20100713102155.2835.71936.sendpatchset@danny.redhat>
 In-Reply-To: <20100713101650.2835.15245.sendpatchset@danny.redhat>
 References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
-Subject: [PATCH -mmotm 30/30] fix mess up on swap with multi files from same nfs server
+Subject: [PATCH -mmotm 27/30] nfs: fix various memory recursions possible with swap over NFS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From fd03848cadf5719228f617b72039cc8302d892ef Mon Sep 17 00:00:00 2001
+>From df0106f58d7ac2337f74efb1d8caaf27f635e050 Mon Sep 17 00:00:00 2001
 From: Xiaotian Feng <dfeng@redhat.com>
-Date: Tue, 13 Jul 2010 14:00:02 +0800
-Subject: [PATCH 30/30] fix mess up on swap with multi files from same nfs server
+Date: Tue, 13 Jul 2010 13:11:32 +0800
+Subject: [PATCH 27/30] nfs: fix various memory recursions possible with swap over NFS.
 
-xs_swapper() will set xprt->swapper when swapon nfs files, unset xprt->swapper
-when swapoff nfs files. This will lead a bug if we swapon multi files from
-the same nfs server, they had the same xprt, then the reserved memory could
-not be disconnected when we swapoff all files.
+GFP_NOFS is _more_ permissive than GFP_NOIO in that it will initiate IO,
+just not of any filesystem data.
 
+The problem is that previuosly NOFS was correct because that avoids
+recursion into the NFS code, it now is not, because also IO (swap) can
+lead to this recursion.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
 ---
- include/linux/sunrpc/xprt.h |    4 ++--
- net/sunrpc/xprtsock.c       |    4 ++--
+ fs/nfs/pagelist.c |    2 +-
+ fs/nfs/write.c    |    6 +++---
  2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
-index ba2330d..bc49091 100644
---- a/include/linux/sunrpc/xprt.h
-+++ b/include/linux/sunrpc/xprt.h
-@@ -171,8 +171,8 @@ struct rpc_xprt {
- 	unsigned int		max_reqs;	/* total slots */
- 	unsigned long		state;		/* transport state */
- 	unsigned char		shutdown   : 1,	/* being shut down */
--				resvport   : 1, /* use a reserved port */
--				swapper    : 1; /* we're swapping over this
-+				resvport   : 1;	/* use a reserved port */
-+	unsigned int		swapper;	/* we're swapping over this
- 						   transport */
- 	unsigned int		bind_index;	/* bind function index */
+diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
+index 2be94bb..c0247e9 100644
+--- a/fs/nfs/pagelist.c
++++ b/fs/nfs/pagelist.c
+@@ -27,7 +27,7 @@ static inline struct nfs_page *
+ nfs_page_alloc(void)
+ {
+ 	struct nfs_page	*p;
+-	p = kmem_cache_alloc(nfs_page_cachep, GFP_KERNEL);
++	p = kmem_cache_alloc(nfs_page_cachep, GFP_NOIO);
+ 	if (p) {
+ 		memset(p, 0, sizeof(*p));
+ 		INIT_LIST_HEAD(&p->wb_list);
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 5852b20..dfa08cb 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -50,7 +50,7 @@ static mempool_t *nfs_commit_mempool;
  
-diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
-index 5c8b918..30bb8ce 100644
---- a/net/sunrpc/xprtsock.c
-+++ b/net/sunrpc/xprtsock.c
-@@ -1662,11 +1662,11 @@ int xs_swapper(struct rpc_xprt *xprt, int enable)
- 		 */
- 		err = sk_adjust_memalloc(1, RPC_RESERVE_PAGES);
- 		if (!err) {
--			xprt->swapper = 1;
-+			xprt->swapper++;
- 			xs_set_memalloc(xprt);
- 		}
- 	} else if (xprt->swapper) {
--		xprt->swapper = 0;
-+		xprt->swapper--;
- 		sk_clear_memalloc(transport->inet);
- 		sk_adjust_memalloc(-1, -RPC_RESERVE_PAGES);
- 	}
+ struct nfs_write_data *nfs_commitdata_alloc(void)
+ {
+-	struct nfs_write_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOFS);
++	struct nfs_write_data *p = mempool_alloc(nfs_commit_mempool, GFP_NOIO);
+ 
+ 	if (p) {
+ 		memset(p, 0, sizeof(*p));
+@@ -69,7 +69,7 @@ void nfs_commit_free(struct nfs_write_data *p)
+ 
+ struct nfs_write_data *nfs_writedata_alloc(unsigned int pagecount)
+ {
+-	struct nfs_write_data *p = mempool_alloc(nfs_wdata_mempool, GFP_NOFS);
++	struct nfs_write_data *p = mempool_alloc(nfs_wdata_mempool, GFP_NOIO);
+ 
+ 	if (p) {
+ 		memset(p, 0, sizeof(*p));
+@@ -79,7 +79,7 @@ struct nfs_write_data *nfs_writedata_alloc(unsigned int pagecount)
+ 		if (pagecount <= ARRAY_SIZE(p->page_array))
+ 			p->pagevec = p->page_array;
+ 		else {
+-			p->pagevec = kcalloc(pagecount, sizeof(struct page *), GFP_NOFS);
++			p->pagevec = kcalloc(pagecount, sizeof(struct page *), GFP_NOIO);
+ 			if (!p->pagevec) {
+ 				mempool_free(p, nfs_wdata_mempool);
+ 				p = NULL;
 -- 
 1.7.1.1
 
