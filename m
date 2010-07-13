@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757220Ab0GMSkW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 14:40:22 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47631 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750921Ab0GMSkU (ORCPT
+	id S1757229Ab0GMSll (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 14:41:41 -0400
+Received: from avexcashub1.qlogic.com ([198.70.193.61]:43141 "EHLO
+	avexcashub1.qlogic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754110Ab0GMSlj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 14:40:20 -0400
-Date: Tue, 13 Jul 2010 19:39:32 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
-Message-ID: <20100713183932.GB31162@n2100.arm.linux.org.uk>
-References: <20100712155348.GA2815@barrios-desktop> <20100713121947.612bd656.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTiny7dz8ssDknI7y4JFcVP9SV1aNM7f0YMUxafv7@mail.gmail.com> <20100713132312.a7dfb100.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTinVwmo5pemz86nXaQT3V_ujaPLOsyNeQIFhL0Vu@mail.gmail.com> <20100713072009.GA19839@n2100.arm.linux.org.uk> <20100713163417.17895202.kamezawa.hiroyu@jp.fujitsu.com> <20100713165808.e340e6dc.kamezawa.hiroyu@jp.fujitsu.com> <20100713170222.9369e649.kamezawa.hiroyu@jp.fujitsu.com>
+	Tue, 13 Jul 2010 14:41:39 -0400
+Subject: Re: [PATCH 09/36] drivers/infiniband: Remove unnecessary casts of
+ private_data
+From: Ralph Campbell <ralph.campbell@qlogic.com>
+To: Joe Perches <joe@perches.com>
+CC: Jiri Kosina <trivial@kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Infinipath <Infinipath@qlogic.com>, Roland Dreier <rolandd@cisco.com>,
+        Sean Hefty <sean.hefty@intel.com>,
+        Hal Rosenstock <hal.rosenstock@gmail.com>,
+        "linux-rdma@vger.kernel.org" <linux-rdma@vger.kernel.org>
+In-Reply-To: <0074ff36bc27b141d3639e2d516cc6cd48364df6.1278967120.git.joe@perches.com>
+References: <cover.1278967120.git.joe@perches.com>
+	 <0074ff36bc27b141d3639e2d516cc6cd48364df6.1278967120.git.joe@perches.com>
+Content-Type: text/plain; charset="us-ascii"
+Organization: QLogic
+Date: Tue, 13 Jul 2010 11:41:37 -0700
+Message-ID: <1279046497.2296.170.camel@chromite.mv.qlogic.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100713170222.9369e649.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 05:02:22PM +0900, KAMEZAWA Hiroyuki wrote:
-> How about stop using SPARSEMEM ? What's the benefit ? It just eats up
-> memory for mem_section[].
+Acked-by: Ralph Campbell <ralph.campbell@qlogic.com>
 
-The problem with that approach is that sometimes the mem_map array
-doesn't fit into any memory banks.
+On Mon, 2010-07-12 at 13:50 -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+>  drivers/infiniband/hw/ipath/ipath_file_ops.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/infiniband/hw/ipath/ipath_file_ops.c b/drivers/infiniband/hw/ipath/ipath_file_ops.c
+> index 9c5c66d..65eb892 100644
+> --- a/drivers/infiniband/hw/ipath/ipath_file_ops.c
+> +++ b/drivers/infiniband/hw/ipath/ipath_file_ops.c
+> @@ -2055,7 +2055,7 @@ static int ipath_close(struct inode *in, struct file *fp)
+>  
+>  	mutex_lock(&ipath_mutex);
+>  
+> -	fd = (struct ipath_filedata *) fp->private_data;
+> +	fd = fp->private_data;
+>  	fp->private_data = NULL;
+>  	pd = fd->pd;
+>  	if (!pd) {
 
-We've gone around the loop of using flatmem with holes punched in it,
-to using discontigmem, and now to using sparsemem.  It seems none of
-these solutions does what we need for ARM.  I guess that's the price
-we pay for not having memory architected to be at any particular place
-in the physical memory map.
 
-We're even seeing lately setups now where system memory is split into
-two areas, where the second (higher physical address) is populated
-first before the lower bank...  These kinds of games are getting rather
-stupid and idiotic, but we're not the hardware designers and so we have
-to live with it - or just tell the folk who are porting the kernel to
-these platforms that we'll never take their patches.
