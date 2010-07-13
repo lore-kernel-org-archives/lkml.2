@@ -1,44 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756753Ab0GMKWo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 06:22:44 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:39313 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756521Ab0GMKWj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 06:22:39 -0400
-Subject: Re: [PATCH 01/25] r852: remove casts from void*
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Maxim Levitsky <maximlevitsky@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org, Tejun Heo <tj@kernel.org>,
-        David Woodhouse <dwmw2@infradead.org>
-In-Reply-To: <1277806498-30738-1-git-send-email-segooon@gmail.com>
-References: <1277806498-30738-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 13 Jul 2010 12:57:56 +0300
-Message-ID: <1279015076.31639.20.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 13 Jul 2010 10:02:56.0627 (UTC) FILETIME=[911AF430:01CB2272]
-X-Nokia-AV: Clean
+	id S1756706Ab0GMKWa (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:22:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25743 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756521Ab0GMKW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 06:22:26 -0400
+Date: Tue, 13 Jul 2010 06:21:33 -0400
+From: Xiaotian Feng <dfeng@redhat.com>
+To: linux-mm@kvack.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org
+Cc: riel@redhat.com, cl@linux-foundation.org, a.p.zijlstra@chello.nl,
+        Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
+        lwang@redhat.com, penberg@cs.helsinki.fi, akpm@linux-foundation.org,
+        davem@davemloft.net
+Message-Id: <20100713102132.2835.45692.sendpatchset@danny.redhat>
+In-Reply-To: <20100713101650.2835.15245.sendpatchset@danny.redhat>
+References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
+Subject: [PATCH -mmotm 25/30] nfs: disable data cache revalidation for swapfiles
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-06-29 at 14:14 +0400, Kulikov Vasiliy wrote:
-> Remove unnesessary casts from void*.
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+>From ee72952409a0b811d61f435682e6d161e3b5189b Mon Sep 17 00:00:00 2001
+From: Xiaotian Feng <dfeng@redhat.com>
+Date: Tue, 13 Jul 2010 13:10:49 +0800
+Subject: [PATCH 25/30] nfs: disable data cache revalidation for swapfiles
 
-Pushed whole series to l2-mtd-2.6.git / master.
+Do as Trond suggested:
+  http://lkml.org/lkml/2006/8/25/348
 
+Disable NFS data cache revalidation on swap files since it doesn't really
+make sense to have other clients change the file while you are using it.
+
+Thereby we can stop setting PG_private on swap pages, since there ought to
+be no further races with invalidate_inode_pages2() to deal with.
+
+And since we cannot set PG_private we cannot use page->private (which is
+already used by PG_swapcache pages anyway) to store the nfs_page. Thus
+augment the new nfs_page_find_request logic.
+
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+---
+ fs/nfs/inode.c |    6 +++++
+ fs/nfs/write.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++---------
+ 2 files changed, 63 insertions(+), 12 deletions(-)
+
+diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
+index 099b351..45293af 100644
+--- a/fs/nfs/inode.c
++++ b/fs/nfs/inode.c
+@@ -798,6 +798,12 @@ int nfs_revalidate_mapping(struct inode *inode, struct address_space *mapping)
+ 	struct nfs_inode *nfsi = NFS_I(inode);
+ 	int ret = 0;
+ 
++	/*
++	 * swapfiles are not supposed to be shared.
++	 */
++	if (IS_SWAPFILE(inode))
++		goto out;
++
+ 	if ((nfsi->cache_validity & NFS_INO_REVAL_PAGECACHE)
+ 			|| nfs_attribute_cache_expired(inode)
+ 			|| NFS_STALE(inode)) {
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 109a970..0d7ea95 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -109,25 +109,62 @@ static void nfs_context_set_write_error(struct nfs_open_context *ctx, int error)
+ 	set_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
+ }
+ 
+-static struct nfs_page *nfs_page_find_request_locked(struct page *page)
++static struct nfs_page *
++__nfs_page_find_request_locked(struct nfs_inode *nfsi, struct page *page, int get)
+ {
+ 	struct nfs_page *req = NULL;
+ 
+-	if (PagePrivate(page)) {
++	if (PagePrivate(page))
+ 		req = (struct nfs_page *)page_private(page);
+-		if (req != NULL)
+-			kref_get(&req->wb_kref);
+-	}
++	else if (unlikely(PageSwapCache(page)))
++		req = radix_tree_lookup(&nfsi->nfs_page_tree, page_file_index(page));
++
++	if (get && req)
++		kref_get(&req->wb_kref);
++
+ 	return req;
+ }
+ 
++static inline struct nfs_page *
++nfs_page_find_request_locked(struct nfs_inode *nfsi, struct page *page)
++{
++	return __nfs_page_find_request_locked(nfsi, page, 1);
++}
++
++static int __nfs_page_has_request(struct page *page)
++{
++	struct inode *inode = page_file_mapping(page)->host;
++	struct nfs_page *req = NULL;
++
++	spin_lock(&inode->i_lock);
++	req = __nfs_page_find_request_locked(NFS_I(inode), page, 0);
++	spin_unlock(&inode->i_lock);
++
++	/*
++	 * hole here plugged by the caller holding onto PG_locked
++	 */
++
++	return req != NULL;
++}
++
++static inline int nfs_page_has_request(struct page *page)
++{
++	if (PagePrivate(page))
++		return 1;
++
++	if (unlikely(PageSwapCache(page)))
++		return __nfs_page_has_request(page);
++
++	return 0;
++}
++
+ static struct nfs_page *nfs_page_find_request(struct page *page)
+ {
+ 	struct inode *inode = page_file_mapping(page)->host;
+ 	struct nfs_page *req = NULL;
+ 
+ 	spin_lock(&inode->i_lock);
+-	req = nfs_page_find_request_locked(page);
++	req = nfs_page_find_request_locked(NFS_I(inode), page);
+ 	spin_unlock(&inode->i_lock);
+ 	return req;
+ }
+@@ -230,7 +267,7 @@ static struct nfs_page *nfs_find_and_lock_request(struct page *page)
+ 
+ 	spin_lock(&inode->i_lock);
+ 	for (;;) {
+-		req = nfs_page_find_request_locked(page);
++		req = nfs_page_find_request_locked(NFS_I(inode), page);
+ 		if (req == NULL)
+ 			break;
+ 		if (nfs_set_page_tag_locked(req))
+@@ -383,8 +420,14 @@ static int nfs_inode_add_request(struct inode *inode, struct nfs_page *req)
+ 		if (nfs_have_delegation(inode, FMODE_WRITE))
+ 			nfsi->change_attr++;
+ 	}
+-	SetPagePrivate(req->wb_page);
+-	set_page_private(req->wb_page, (unsigned long)req);
++	/*
++	 * Swap-space should not get truncated. Hence no need to plug the race
++	 * with invalidate/truncate.
++	 */
++	if (likely(!PageSwapCache(req->wb_page))) {
++		SetPagePrivate(req->wb_page);
++		set_page_private(req->wb_page, (unsigned long)req);
++	}
+ 	nfsi->npages++;
+ 	kref_get(&req->wb_kref);
+ 	radix_tree_tag_set(&nfsi->nfs_page_tree, req->wb_index,
+@@ -406,8 +449,10 @@ static void nfs_inode_remove_request(struct nfs_page *req)
+ 	BUG_ON (!NFS_WBACK_BUSY(req));
+ 
+ 	spin_lock(&inode->i_lock);
+-	set_page_private(req->wb_page, 0);
+-	ClearPagePrivate(req->wb_page);
++	if (likely(!PageSwapCache(req->wb_page))) {
++		set_page_private(req->wb_page, 0);
++		ClearPagePrivate(req->wb_page);
++	}
+ 	radix_tree_delete(&nfsi->nfs_page_tree, req->wb_index);
+ 	nfsi->npages--;
+ 	if (!nfsi->npages) {
+@@ -575,7 +620,7 @@ static struct nfs_page *nfs_try_to_update_request(struct inode *inode,
+ 	spin_lock(&inode->i_lock);
+ 
+ 	for (;;) {
+-		req = nfs_page_find_request_locked(page);
++		req = nfs_page_find_request_locked(NFS_I(inode), page);
+ 		if (req == NULL)
+ 			goto out_unlock;
+ 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+1.7.1.1
 
