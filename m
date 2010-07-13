@@ -1,159 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab0GMDYf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 23:24:35 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:48226 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751708Ab0GMDYe (ORCPT
+	id S1753350Ab0GMDdy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 23:33:54 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33793 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753079Ab0GMDdw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 23:24:34 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 13 Jul 2010 12:19:47 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux@arm.linux.org.uk, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
-Message-Id: <20100713121947.612bd656.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100712155348.GA2815@barrios-desktop>
-References: <20100712155348.GA2815@barrios-desktop>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 12 Jul 2010 23:33:52 -0400
+Message-ID: <4C3BDDA3.2060900@kernel.org>
+Date: Mon, 12 Jul 2010 20:29:39 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: tip/master broken with x2apic and kexec
+References: <4C3BD6AA.3070908@kernel.org>
+In-Reply-To: <4C3BD6AA.3070908@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4C3BDE99.0028,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010 00:53:48 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
-
-> Kukjin, Could you test below patch?
-> I don't have any sparsemem system. Sorry. 
+On 07/12/2010 07:59 PM, Yinghai Lu wrote:
+> tip/master: 
+> system1: BIOS enabled x2apic, first kernel boot well, and when kexec second kernel will cause system instant reboot.
 > 
-> -- CUT DOWN HERE --
+> system2: BIOS not enable x2apic, first kernel boot well and enable x2apic, and kexec second kernel well. but when kexec third kernel will case system instant reboot.
 > 
-> Kukjin reported oops happen while he change min_free_kbytes
-> http://www.spinics.net/lists/arm-kernel/msg92894.html
-> It happen by memory map on sparsemem. 
+> linus' tree is ok.
 > 
-> The system has a memory map following as. 
->      section 0             section 1              section 2
-> 0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
-> SECTION_SIZE_BITS 28(256M)
+> but for system2 if boot with nox2apic ,intr-remaping off, iommu off, the kexec loop test will pass.
 > 
-> It means section 0 is an incompletely filled section.
-> Nontheless, current pfn_valid of sparsemem checks pfn loosely. 
+> the problem looks start in recent two or three weeks.
 > 
-> It checks only mem_section's validation.
-> So in above case, pfn on 0x25000000 can pass pfn_valid's validation check.
-> It's not what we want. 
-> 
-> The Following patch adds check valid pfn range check on pfn_valid of sparsemem.
-> 
-> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> Reported-by: Kukjin Kim <kgene.kim@samsung.com>
-> 
-> P.S) 
-> It is just RFC. If we agree with this, I will make the patch on mmotm.
-> 
-> --
-> 
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index b4d109e..6c2147a 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -979,6 +979,8 @@ struct mem_section {
->         struct page_cgroup *page_cgroup;
->         unsigned long pad;
->  #endif
-> +       unsigned long start_pfn;
-> +       unsigned long end_pfn;
->  };
->  
 
-I have 2 concerns.
- 1. This makes mem_section twice. Wasting too much memory and not good for cache.
-    But yes, you can put this under some CONFIG which has small number of mem_section[].
+offending patch is
 
- 2. This can't be help for a case where a section has multiple small holes.
+commit 83a7a2ad2a9173dcabc05df0f01d1d85b7ba1c2c
+Author: H. Peter Anvin <hpa@linux.intel.com>
+Date:   Thu Jun 10 00:10:43 2010 +0000
 
-
-Then, my proposal for HOLES_IN_MEMMAP sparsemem is below.
-==
-Some architectures unmap memmap[] for memory holes even with SPARSEMEM.
-To handle that, pfn_valid() should check there are really memmap or not.
-For that purpose, __get_user() can be used.
-This idea is from ia64_pfn_valid().
-
-Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- include/linux/mmzone.h |   12 ++++++++++++
- mm/sparse.c            |   17 +++++++++++++++++
- 2 files changed, 29 insertions(+)
-
-Index: mmotm-2.6.35-0701/include/linux/mmzone.h
-===================================================================
---- mmotm-2.6.35-0701.orig/include/linux/mmzone.h
-+++ mmotm-2.6.35-0701/include/linux/mmzone.h
-@@ -1047,12 +1047,24 @@ static inline struct mem_section *__pfn_
- 	return __nr_to_section(pfn_to_section_nr(pfn));
- }
- 
-+#ifndef CONFIG_ARCH_HAS_HOLES_IN_MEMMAP
- static inline int pfn_valid(unsigned long pfn)
- {
- 	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
- 		return 0;
- 	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
- }
-+#else
-+extern int pfn_valid_mapped(unsigned long pfn);
-+static inline int pfn_valid(unsigned long pfn)
-+{
-+	if (pfn_to_seciton_nr(pfn) >= NR_MEM_SECTIONS)
-+		return 0;
-+	if (!valid_section(__nr_to_section(pfn_to_section_nr(pfn))))
-+		return 0;
-+	return pfn_valid_mapped(pfn);
-+}
-+#endif
- 
- static inline int pfn_present(unsigned long pfn)
- {
-Index: mmotm-2.6.35-0701/mm/sparse.c
-===================================================================
---- mmotm-2.6.35-0701.orig/mm/sparse.c
-+++ mmotm-2.6.35-0701/mm/sparse.c
-@@ -799,3 +799,20 @@ void sparse_remove_one_section(struct zo
- 	free_section_usemap(memmap, usemap);
- }
- #endif
-+
-+#ifdef CONFIG_ARCH_HAS_HOLES_IN_MEMMAP
-+int pfn_valid_mapped(unsigned long pfn)
-+{
-+	struct page *page = pfn_to_page(pfn);
-+	char *lastbyte = (char *)(page+1)-1;
-+	char byte;
-+
-+	if(__get_user(byte, page) != 0)
-+		return 0;
-+
-+	if ((((unsigned long)page) & PAGE_MASK) ==
-+	    (((unsigned long)lastbyte) & PAGE_MASK))
-+		return 1;
-+	return (__get_user(byte,lastbyte) == 0);
-+}
-+#endif
-
-
-
-
+    x86, alternatives: Use 16-bit numbers for cpufeature index
+    
+    We already have cpufeature indicies above 255, so use a 16-bit number
+    for the alternatives index.  This consumes a padding field and so
+    doesn't add any size, but it means that abusing the padding field to
+    create assembly errors on overflow no longer works.  We can retain the
+    test simply by redirecting it to the .discard section, however.
+    
+    [ v3: updated to include open-coded locations ]
+    
+    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+    LKML-Reference: <tip-f88731e3068f9d1392ba71cc9f50f035d26a0d4f@git.kernel.org>
+    Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 
