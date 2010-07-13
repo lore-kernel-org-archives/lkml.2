@@ -1,63 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756606Ab0GMWJk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 18:09:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62146 "EHLO mx1.redhat.com"
+	id S1756556Ab0GMWLT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 18:11:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:10488 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755483Ab0GMWJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 18:09:38 -0400
-Date: Tue, 13 Jul 2010 18:28:01 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/4] KVM: MMU: fix forgot reserved bits check in
- speculative path
-Message-ID: <20100713212801.GA6370@amt.cnet>
-References: <4C3C3518.7080505@cn.fujitsu.com>
+	id S1753019Ab0GMWLS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 18:11:18 -0400
+Message-ID: <4C3CE482.1000707@redhat.com>
+Date: Tue, 13 Jul 2010 18:11:14 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C3C3518.7080505@cn.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: Zachary Amsden <zamsden@redhat.com>
+CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 03/18] TSC reset compensation
+References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-4-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1278987938-23873-4-git-send-email-zamsden@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 05:42:48PM +0800, Xiao Guangrong wrote:
-> In the speculative path, we should check guest pte's reserved bits just as
-> the real processor does
-> 
-> Reported-by: Marcelo Tosatti <mtosatti@redhat.com>
-> Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-> ---
->  arch/x86/kvm/mmu.c         |    8 ++++++++
->  arch/x86/kvm/paging_tmpl.h |    5 +++--
->  2 files changed, 11 insertions(+), 2 deletions(-)
-> 
-> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-> index b93b94f..9fc1524 100644
-> --- a/arch/x86/kvm/mmu.c
-> +++ b/arch/x86/kvm/mmu.c
-> @@ -2783,6 +2783,9 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  		break;
->  	}
->  
-> +	if (is_rsvd_bits_set(vcpu, gentry, PT_PAGE_TABLE_LEVEL))
-> +		gentry = 0;
-> +
->  	mmu_guess_page_from_pte_write(vcpu, gpa, gentry);
->  	spin_lock(&vcpu->kvm->mmu_lock);
->  	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
-> @@ -2851,6 +2854,11 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
->  		while (npte--) {
->  			entry = *spte;
->  			mmu_pte_write_zap_pte(vcpu, sp, spte);
-> +
-> +			if (!!is_pae(vcpu) != sp->role.cr4_pae ||
-> +			      is_nx(vcpu) != sp->role.nxe)
-> +				continue;
-> +
+On 07/12/2010 10:25 PM, Zachary Amsden wrote:
+> Attempt to synchronize TSCs which are reset to the same value.  In the
+> case of a reliable hardware TSC, we can just re-use the same offset, but
+> on non-reliable hardware, we can get closer by adjusting the offset to
+> match the elapsed time.
+>
+> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
 
-This breaks remote_flush assignment below.
+Acked-by: Rik van Riel <riel@redhat.com>
 
+-- 
+All rights reversed
