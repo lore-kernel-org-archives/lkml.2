@@ -1,95 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757157Ab0GMRNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 13:13:14 -0400
-Received: from ns.penguin.cz ([84.21.108.25]:45065 "EHLO ns.penguin.cz"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757112Ab0GMRNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 13:13:13 -0400
-X-Greylist: delayed 1553 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jul 2010 13:13:12 EDT
-Subject: Re: usb gadget on zaurus and kexec
-From: Stanislav Brabec <utx@penguin.cz>
-To: Cyril Hrubis <metan@ucw.cz>
-Cc: Robert Jarzmik <robert.jarzmik@free.fr>,
-        Marek Vasut <marek.vasut@gmail.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Eric Miao <eric.y.miao@gmail.com>, dbaryshkov@gmail.com,
-        arminlitzel@web.de, kernel list <linux-kernel@vger.kernel.org>,
-        lenz@cs.wisc.edu, rpurdie@rpsys.net, pave@ucw.cz,
-        thommycheck@gmail.com, zaurus-devel@www.linuxtogo.org,
-        omegamoon@gmail.com
-In-Reply-To: <20100713112649.GA17065@atrey.karlin.mff.cuni.cz>
-References: <20100519154618.GA26381@atrey.karlin.mff.cuni.cz>
-	 <AANLkTim49akRJK0BN_Qk1wL6e5mrdjZioDjGNWlrjUVQ@mail.gmail.com>
-	 <AANLkTilCvgvf9Ch55f878nTNTue8tHYmcrLEywsjnylY@mail.gmail.com>
-	 <201006100900.23981.marek.vasut@gmail.com> <87wru7xc4z.fsf@free.fr>
-	 <20100713112649.GA17065@atrey.karlin.mff.cuni.cz>
-Content-Type: text/plain; charset="ISO-8859-2"
-Date: Tue, 13 Jul 2010 18:47:06 +0200
-Message-ID: <1279039626.9908.50.camel@hammer.suse.cz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	id S1757145Ab0GMRRb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 13:17:31 -0400
+Received: from www17.your-server.de ([213.133.104.17]:46674 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754743Ab0GMRR3 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 13:17:29 -0400
+References: <1279037435.9846.17.camel@localhost> <AANLkTil6WK0m6DowcjVGRSk-EMPZlW98AhgPHwlFkB0v@mail.gmail.com>
+In-Reply-To: <AANLkTil6WK0m6DowcjVGRSk-EMPZlW98AhgPHwlFkB0v@mail.gmail.com>
+Mime-Version: 1.0 (iPod Mail 8A293)
+Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+	charset=us-ascii
+Message-Id: <A814D4DC-504F-44FC-A442-24599761D981@m3y3r.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+X-Mailer: iPod Mail (8A293)
+From: Thomas Meyer <thomas@m3y3r.de>
+Subject: Re: 2.6.35-rc5 seems hangs at "[drm] Loading REDWOOD Microcode"
+Date: Tue, 13 Jul 2010 19:17:43 +0200
+To: Alex Deucher <alexdeucher@gmail.com>
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Cyril Hrubis wrote:
 
-> Would be great. So far the GPIO for usb host/slave cable detection is not used
-> on spitz so there is no way to switch to USB slave for gadgets to work if you
-> don't want to play with devmem2.
+Am 13.07.2010 um 18:37 schrieb Alex Deucher <alexdeucher@gmail.com>:
 
-Well, just the driver is missing, the hardware is there. See attached
-usb-auto script using pxaregs utility.
+> On Tue, Jul 13, 2010 at 12:10 PM, Thomas Meyer <thomas@m3y3r.de> wrote:
+>> Hi.
+>> 
+>> I gave 2.6.35 a try and the last message I see before the boot process
+>> seems to hang is something like:
+>> "[drm] Loading REDWOOD Microcode"
+>> 
+>> 
+> 
+> The microcode needs to be included in your initrd otherwise the driver
+> can't find it when it loads.
+> 
 
-There is another issue in the gadget mode (probably including the latest
-kernels): If host mode is not active, it should turn USB power off. It
-does not, and it causes soft short circuit in client mode. It also makes
-impossible to differentiate between no cable and client cable.
+Oppsie! Dracut does only include firmware for modules, but I did link-in the driver into the kernel. Sorry. Cryptsetup in the initrd still fails to open /dev/sda4. 
 
-Here are GPIOs to control OTG:
-SPITZ_GPIO_USB_DEVICE	GPIO35	USB Client power is present
-SPITZ_GPIO_USB_HOST	GPIO37	USB OTG 5V Host power supply control
-SPITZ_GPIO_USB_CONNECT	GPIO41	USB Host Cable is connected
-
------------ usb-auto ----------
-#!/bin/sh
-
-if test -z "$CLIENT_MODULE" ; then
-# Uncomment client module you want by default (only one at a time is possible in 2.6.26RP):
-	CLIENT_MODULE=g_ether
-	#CLIENT_MODULE=g_file_storage
-fi
-
-if test `pxaregs GPLR1_41 | sed -n 's/.*\(.\)  GPIO.*/\1/p'` = 0 ; then
-	echo "Host cable is present."
-	pxaregs GPSR1_37 1 # Turn on USB power
-	rmmod g_file_storage g_ether pxa27x_udc 2>/dev/null
-	sleep 1
-	modprobe ohci-hcd 2>/dev/null
-else
-	pxaregs GPCR1_37 1 # Turn off USB power
-	sleep 1 # Wait a bit to discharge capacitors
-	if test `pxaregs GPLR1_35 | sed -n 's/.*\(.\)  GPIO.*/\1/p'` = 0 ; then
-		echo "No cable in USB."
-		ifdown usb0 2>/dev/null
-		sleep 1
-		rmmod g_file_storage g_ether pxa27x_udc 2>/dev/null
-		sleep 1
-		rmmod ohci-hcd 2>/dev/null
-	else
-		echo "Client cable is present."
-		rmmod ohci-hcd 2>/dev/null
-		sleep 1
-		modprobe pxa27x_udc
-		modprobe $CLIENT_MODULE
-		ifup usb0 2>/dev/null
-	fi
-fi
--------------------------------
-
--- 
-Stanislav Brabec
-http://www.penguin.cz/~utx/zaurus
-
+Thomas
