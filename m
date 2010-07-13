@@ -1,45 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756855Ab0GMPMV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 11:12:21 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38788 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756444Ab0GMPMT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 11:12:19 -0400
-Date: Tue, 13 Jul 2010 16:12:18 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sundar R IYER <sundar.iyer@stericsson.com>
-Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
-Subject: Re: [PATCH v2 1/2] regulator: add support for regulators on the
- ab8500 MFD
-Message-ID: <20100713151217.GA27358@rakim.wolfsonmicro.main>
-References: <1279030173-3086-1-git-send-email-sundar.iyer@stericsson.com>
- <20100713141709.GA24260@rakim.wolfsonmicro.main>
- <33A307AF30D7BF4F811B1568FE7A9B1810E7E880@EXDCVYMBSTM006.EQ1STM.local>
- <20100713145809.GC24626@rakim.wolfsonmicro.main>
- <20100713151115.GB13767@bnru01.bnr.st.com>
+	id S1756913Ab0GMPNe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 11:13:34 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:59860 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756850Ab0GMPNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 11:13:33 -0400
+Date: Tue, 13 Jul 2010 17:13:29 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Branislav Gajdos <brianzee@gmail.com>
+Cc: Peter Feuerer <peter@piie.net>, linux-kernel@vger.kernel.org
+Subject: Re: acerhdf.c - unsupported notebook
+Message-ID: <20100713151329.GA17516@a1.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Branislav Gajdos <brianzee@gmail.com>,
+	Peter Feuerer <peter@piie.net>, linux-kernel@vger.kernel.org
+References: <AANLkTin0mv0Z5vozJHkfVYCJTWMvj9JZnP_FcQ6vZBRV@mail.gmail.com>
+ <20100713124840.GA16427@a1.tnic>
+ <AANLkTimBhWKo0zxW6fX5RgLLAQVIdItS5RKpvxqkDlis@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100713151115.GB13767@bnru01.bnr.st.com>
-X-Cookie: Substantial risk of electric shock.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimBhWKo0zxW6fX5RgLLAQVIdItS5RKpvxqkDlis@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 08:41:16PM +0530, Sundar R IYER wrote:
+From: Branislav Gajdos <brianzee@gmail.com>
+Date: Tue, Jul 13, 2010 at 04:27:37PM +0200
 
-> To confirm, I replace all the error output mistaken as debug output and
-> repost. Any further comments which I have left out??(excuse me if I did
-> so)
+> >> acerhdf: unknown (unsupported) BIOS version Acer/Aspire 3810T/V1.04,
+> >> please report, aborting!
+> >
+> > It doesn't look to me like this machine is a netbook with an Atom cpu
+> > supported by this driver. Do as root:
+> 
+> That's possible, I'm not sure what exactly this driver does. However,
+> I've seen Aspire 1810T definitions in the file already (in bios_tbl
+> table) which is afaik 11" version of 3810T, so I decided to report it
+> for completeness.
 
-I think that's everything.
+Hmm, acerhdf is a driver for, originally, acer aspire one netbooks with
+noisy fans. We have static limits which turn on the fan at 63 °C and
+off again when the temperature reaches 58 °C - those are at least the
+defaults.
+
+Now you have a Core 2 Duo U9400 for which I can't find the specs after a
+quick search but it looks like something a little bit more powerful than
+a netbook cpu but still ultra low power. So, before we dig further into
+this, is your fan noisy at all?
+
+Peter, it looks like we support not only Atoms with that driver. Maybe
+we should check the cpu specs of the 1810T for example (and google says
+there are several different cpu types packaged with those laptops)
+before we enforce temperature limits on them...? And let me ask you
+this: are all those 1810T* entries in the bios_tbl there because of
+noisy fans ...?
+
+Thanks.
+
+-- 
+Regards/Gruss,
+Boris.
