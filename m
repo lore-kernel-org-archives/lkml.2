@@ -1,86 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752993Ab0GMINM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 04:13:12 -0400
-Received: from mga01.intel.com ([192.55.52.88]:49765 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751167Ab0GMINK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 04:13:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,192,1278313200"; 
-   d="scan'208";a="585491143"
-Subject: perf failed with kernel 2.6.35-rc
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Tue, 13 Jul 2010 16:14:09 +0800
-Message-Id: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
+	id S1754133Ab0GMINT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 04:13:19 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57568 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753482Ab0GMINO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 04:13:14 -0400
+Date: Tue, 13 Jul 2010 09:20:12 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: zpfeffer@codeaurora.org, joro@8bytes.org, dwalker@codeaurora.org,
+        andi@firstfloor.org, randy.dunlap@oracle.com, mel@csn.ul.ie,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+Message-ID: <20100713092012.7c1fe53e@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100713145852C.fujita.tomonori@lab.ntt.co.jp>
+References: <4C2D965F.5000206@codeaurora.org>
+	<20100710145639.GC10080@8bytes.org>
+	<4C3BFDD3.8040209@codeaurora.org>
+	<20100713145852C.fujita.tomonori@lab.ntt.co.jp>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter,
+> Why video4linux can't use the DMA API? Doing DMA with vmalloc'ed
+> buffers is a thing that we should avoid (there are some exceptions
+> like xfs though).
 
-perf doesn't work on my Nehalem EX machine.
-1) The 1st start of 'perf top' is ok;
-2) Kill the 1st perf and restart it. It doesn't work. No data is showed.
+Vmalloc is about the only API for creating virtually linear memory areas.
+The video stuff really needs that to avoid lots of horrible special cases
+when doing buffer processing and the like.
 
-I located below commit:
-commit 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
-Author: Peter Zijlstra <peterz@infradead.org>
-Date:   Fri Mar 26 14:08:44 2010 +0100
+Pretty much each driver using it has a pair of functions 'rvmalloc' and
+'rvfree' so given a proper "vmalloc_for_dma()" type interface can easily
+be switched
 
-    perf, x86: Add Nehelem PMU programming errata workaround
-    
-    workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-    Date: Fri Mar 26 13:59:41 CET 2010
-    
-    Implement the workaround for Intel Errata AAK100 and AAP53.
-    
-    Also, remove the Core-i7 name for Nehalem events since there are
-    also Westmere based i7 chips.
-
-
-If I comment out the workaround in function intel_pmu_nhm_enable_all,
-perf could work.
-
-A quick glance shows:
-wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
-should be:
-wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
-
-
-I triggered sysrq to dump PMU registers and found the last bit of
-global status register is 1. I added a status reset operation like below patch:
-
---- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 09:38:11.000000000 +0800
-+++ linux-2.6.35-rc5_fork/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 14:41:42.000000000 +0800
-@@ -505,8 +505,13 @@ static void intel_pmu_nhm_enable_all(int
- 		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
- 		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
- 
--		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
-+		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
- 		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
-+		/*
-+		 * Reset the last 3 bits of global status register in case
-+		 * previous enabling causes overflows.
-+		 */
-+		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
- 
- 		for (i = 0; i < 3; i++) {
- 			struct perf_event *event = cpuc->events[i];
-
-
-
-However, it still doesn't work. Current right way is to comment out
-the workaround.
-
-Yanmin
-
-
+Alan
