@@ -1,70 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751253Ab0GMElZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 00:41:25 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:51249 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750747Ab0GMElX (ORCPT
+	id S1751440Ab0GMEqz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 00:46:55 -0400
+Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:42214 "EHLO
+	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750747Ab0GMEqy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 00:41:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 13 Jul 2010 13:36:36 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Nauman Rafique <nauman@google.com>, Munehiro Ikeda <m-ikeda@ds.jp.nec.com>,
-        linux-kernel@vger.kernel.org, Ryo Tsuruta <ryov@valinux.co.jp>,
-        taka@valinux.co.jp, Andrea Righi <righi.andrea@gmail.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
-        balbir@linux.vnet.ibm.com
-Subject: Re: [RFC][PATCH 00/11] blkiocg async support
-Message-Id: <20100713133636.73367cae.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100712131805.GA12918@redhat.com>
-References: <4C369009.80503@ds.jp.nec.com>
-	<20100709134546.GC3672@redhat.com>
-	<4C37BC1A.20102@ds.jp.nec.com>
-	<AANLkTikECHfrksrk3QnD3X07pmgXdpo5-fv7hDLm2Zxw@mail.gmail.com>
-	<20100710132417.GA2752@redhat.com>
-	<20100712092004.3b27e13e.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100712131805.GA12918@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Jul 2010 00:46:54 -0400
+X-Cloudmark-SP-Filtered: true
+X-Cloudmark-SP-Result: v=1.0 c=1 a=QI05LW3Htw8A:10 a=yQWWgrYGNuUA:10 a=VphdPIyG4kEA:10
+ a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=pQQoM67POyd5uB6soKAA:9
+ a=a3Znw9EKSIoXF2OAfrvfjT1ErZUA:4 a=CjuIK1q_8ugA:10
+Subject: Re: [PATCH 2/2] OCFS2: Allow huge (> 16 TiB) volumes to mount
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <adilger@dilger.ca>
+In-Reply-To: <AANLkTikAEycm5PKTLPuRFcB0e4qNp5EuQbKUx5aruNrh@mail.gmail.com>
+Date: Mon, 12 Jul 2010 22:46:50 -0600
+Cc: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <DA64905D-C83B-4CF5-9405-65F7F82F9563@dilger.ca>
+References: <871vbax86w.fsf@patl.com> <87zkxyvtjt.fsf@patl.com> <3BB069D5-B193-43A4-B678-B3CEA4873B58@dilger.ca> <AANLkTikAEycm5PKTLPuRFcB0e4qNp5EuQbKUx5aruNrh@mail.gmail.com>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010 09:18:05 -0400
-Vivek Goyal <vgoyal@redhat.com> wrote:
+On 2010-07-12, at 19:08, Patrick J. LoPresti wrote:
+> On Mon, Jul 12, 2010 at 5:21 PM, Andreas Dilger <adilger@dilger.ca> wrote:
+>> On 2010-07-11, at 11:04, Patrick J. LoPresti wrote:
+>>> 
+>>> +     /* Absolute addressability check (borrowed from ext4/super.c) */
+>>> +     if ((max_block >
+>>> +          (sector_t)(~0LL) >> (osb->sb->s_blocksize_bits - 9)) ||
+>>> +         (max_block > (pgoff_t)(~0LL) >> (PAGE_CACHE_SHIFT -
+>>> +                                          osb->sb->s_blocksize_bits))) {
+>>> +             mlog(ML_ERROR, "Volume too large "
+>>> +                  "to mount safely on this system");
+>>> +             status = -EFBIG;
+>>> +             goto out;
+>>> +     }
+>> 
+>> This hunk of code is actually in several filesystems.  It wouldn't be a bad idea to make it a library function that can be called by the filesystem to check the kernel page cache and block layer can handle these large filesystems.
+> 
+> True, but some of them do it differently (e.g. see the #if switch in
+> xfs_sb_validate_fsb_count).  Tracking down all variants and changing
+> them is a much larger task than my simple patch.
+> 
+> Are you suggesting I need to do this before my patch is accepted at
+> all?  Or is this a refactoring that can happen later?
 
-> > I've just waited for dirty-ratio patches because I know someone is working on.
-> > But, hmm, I'll consider to start work by myself.
-> > 
-> 
-> If you can spare time to get it going, it would be great.
-> 
-> > (Off-topic)
-> > BTW, why io-cgroup's hierarchy level is limited to 2 ?
-> > Because of that limitation, libvirt can't work well...
-> 
-> Because current CFQ code is not written to support hierarchy. So it was
-> better to not allow creation of groups inside of groups to avoid suprises.
-> 
-> We need to figure out something for libvirt. One of the options would be
-> that libvirt allows blkio group creation in /root. Or one shall have to
-> look into hierarchical support in CFQ.
-> 
+I'm just suggesting it should be done at some point.  I thought it would be better to do it first, rather than add yet another copy of this code.  That said, I hate to block useful fixes because of cleanup (and I have no control over OCFS2 anyway :-).  However, I've found that once the fix is in people usually forget (or become too busy) to do the cleanup and it just lingers on unseen.
 
-Hmm, can't we start from a hierarchy which doesn't support inheritance ?
-IOW, blkio cgroup has children directories but all cgroups are treated as
-flat. In future, true hierarchy support may be added and you may able to
-use it via mount option....
-For example, memory cgroup's hierarchy support is optional..because it's slow.
+Cheers, Andreas
 
-Cgroup's feature as mounting several subsystems at a mount point at once
-is very useful in many case.
 
-Thanks
--Kame
+
+
 
