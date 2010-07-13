@@ -1,202 +1,260 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752630Ab0GMDpQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 23:45:16 -0400
-Received: from ishtar.tlinx.org ([173.164.175.65]:43750 "EHLO
-	Ishtar.sc.tlinx.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751598Ab0GMDpO (ORCPT
+	id S1752418Ab0GMDwa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 23:52:30 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:46192 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751399Ab0GMDw2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 23:45:14 -0400
-X-Greylist: delayed 307 seconds by postgrey-1.27 at vger.kernel.org; Mon, 12 Jul 2010 23:45:14 EDT
-Message-ID: <4C3BE00D.40907@tlinx.org>
-Date: Mon, 12 Jul 2010 20:39:57 -0700
-From: Linda Walsh <lkml@tlinx.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.8.1.24) Gecko/20100228 Lightning/0.9 Thunderbird/2.0.0.24 Mnenhy/0.7.6.666
+	Mon, 12 Jul 2010 23:52:28 -0400
+X-Sasl-enc: 01XQ4sWvJN3fPP+x4ca11oyg4m4k1VFQE6njgCWNMMJ7 1278993145
+Date: Tue, 13 Jul 2010 11:52:19 +0800
+From: Ian Kent <raven@themaw.net>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: [PATCH 06/38] whiteout: Add vfs_whiteout() and whiteout inode
+ operation
+Message-ID: <20100713035217.GA3949@zeus.themaw.net>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
+ <1276627208-17242-7-git-send-email-vaurora@redhat.com>
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: WARNING: at net/ipv4/tcp_input.c:2964 tcp_ack+0x104f/0x22d0()
-X-Stationery: 0.5.1
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276627208-17242-7-git-send-email-vaurora@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Anyone know what this might be warning me of?
 
-The line involved:
+Couple of comments below.
 
+On Tue, Jun 15, 2010 at 11:39:36AM -0700, Valerie Aurora wrote:
+> From: Jan Blunck <jblunck@suse.de>
+> 
+> Whiteout a given directory entry.  File systems that support whiteouts
+> must implement the new ->whiteout() directory inode operation.
+> 
+> XXX - Only whiteout when there is a matching entry in a lower layer.
+> 
+> XXX - MS_WHITEOUT only indicates whiteouts, but we also use it for
+> fallthrus.  Can we just check root->i_op->whiteout and ->fallthru?  Or
+> do we need an MS_FALLTHRU?
+> 
+> Signed-off-by: Jan Blunck <jblunck@suse.de>
+> Signed-off-by: David Woodhouse <dwmw2@infradead.org>
+> Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+> ---
+>  Documentation/filesystems/vfs.txt |   10 +++++-
+>  fs/dcache.c                       |    4 ++-
+>  fs/namei.c                        |   73 ++++++++++++++++++++++++++++++++++++-
+>  include/linux/dcache.h            |    6 +++
+>  include/linux/fs.h                |    2 +
+>  5 files changed, 92 insertions(+), 3 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
+> index 3de2f32..8846b4f 100644
+> --- a/Documentation/filesystems/vfs.txt
+> +++ b/Documentation/filesystems/vfs.txt
+> @@ -308,7 +308,7 @@ struct inode_operations
+>  -----------------------
+>  
+>  This describes how the VFS can manipulate an inode in your
+> -filesystem. As of kernel 2.6.22, the following members are defined:
+> +filesystem. As of kernel 2.6.33, the following members are defined:
+>  
+>  struct inode_operations {
+>  	int (*create) (struct inode *,struct dentry *,int, struct nameidata *);
+> @@ -319,6 +319,7 @@ struct inode_operations {
+>  	int (*mkdir) (struct inode *,struct dentry *,int);
+>  	int (*rmdir) (struct inode *,struct dentry *);
+>  	int (*mknod) (struct inode *,struct dentry *,int,dev_t);
+> +	int (*whiteout) (struct inode *, struct dentry *, struct dentry *);
+>  	int (*rename) (struct inode *, struct dentry *,
+>  			struct inode *, struct dentry *);
+>  	int (*readlink) (struct dentry *, char __user *,int);
+> @@ -382,6 +383,13 @@ otherwise noted.
+>  	will probably need to call d_instantiate() just as you would
+>  	in the create() method
+>  
+> +  whiteout: called by the rmdir(2) and unlink(2) system calls on a
+> +        layered file system.  Only required if you want to support
+> +        whiteouts.  The first dentry passed in is that for the old
+> +        dentry if it exists, and a negative dentry otherwise.  The
+> +        second is the dentry for the whiteout itself.  This method
+> +        must unlink() or rmdir() the original entry if it exists.
+> +
+>    rename: called by the rename(2) system call to rename the object to
+>  	have the parent and name given by the second inode and dentry.
+>  
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index f1358e5..265015d 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -992,8 +992,10 @@ EXPORT_SYMBOL(d_alloc_name);
+>  /* the caller must hold dcache_lock */
+>  static void __d_instantiate(struct dentry *dentry, struct inode *inode)
+>  {
+> -	if (inode)
+> +	if (inode) {
+> +		dentry->d_flags &= ~DCACHE_WHITEOUT;
+>  		list_add(&dentry->d_alias, &inode->i_dentry);
+> +	}
+>  	dentry->d_inode = inode;
+>  	fsnotify_d_instantiate(dentry, inode);
+>  }
+> diff --git a/fs/namei.c b/fs/namei.c
+> index f731108..2c723e2 100644
+> --- a/fs/namei.c
+> +++ b/fs/namei.c
+> @@ -1356,7 +1356,6 @@ static int may_delete(struct inode *dir,struct dentry *victim,int isdir)
+>  	if (!victim->d_inode)
+>  		return -ENOENT;
+>  
+> -	BUG_ON(victim->d_parent->d_inode != dir);
+>  	audit_inode_child(victim, dir);
+>  
+>  	error = inode_permission(dir, MAY_WRITE | MAY_EXEC);
+> @@ -2168,6 +2167,78 @@ SYSCALL_DEFINE2(mkdir, const char __user *, pathname, int, mode)
+>  	return sys_mkdirat(AT_FDCWD, pathname, mode);
+>  }
+>  
+> +/**
+> + * vfs_whiteout: create a whiteout for the given directory entry
+> + * @dir: parent inode
+> + * @dentry: directory entry to whiteout
+> + *
+> + * Create a whiteout for the given directory entry.  A whiteout
+> + * prevents lookup from dropping down to a lower layer of a union
+> + * mounted file system.
+> + *
+> + * There are two important cases: (a) The directory entry to be
+> + * whited-out may already exist, in which case it must first be
+> + * deleted before we create the whiteout, and (b) no such directory
+> + * entry exists and we only have to create the whiteout itself.
+> + *
+> + * The caller must pass in a dentry for the directory entry to be
+> + * whited-out - a positive one if it exists, and a negative if not.
+> + * When this function returns, the caller should dput() the old, now
+> + * defunct dentry it passed in.  The dentry for the whiteout itself is
+> + * created inside this function.
+> + */
+> +static int vfs_whiteout(struct inode *dir, struct dentry *old_dentry, int isdir)
+> +{
+> +	int err;
+> +	struct inode *old_inode = old_dentry->d_inode;
+> +	struct dentry *parent, *whiteout;
+> +
+> +	BUG_ON(old_dentry->d_parent->d_inode != dir);
+> +
+> +	if (!dir->i_op || !dir->i_op->whiteout)
+> +		return -EOPNOTSUPP;
+> +
+> +	/*
+> +	 * If the old dentry is positive, then we have to delete this
+> +	 * entry before we create the whiteout.  The file system
+> +	 * ->whiteout() op does the actual delete, but we do all the
+> +	 * VFS-level checks and changes here.
+> +	 */
+> +	if (old_inode) {
+> +		mutex_lock(&old_inode->i_mutex);
+> +		if (d_mountpoint(old_dentry)) {
+> +			mutex_unlock(&old_inode->i_mutex);
+> +			return -EBUSY;
+> +		}
+> +		if (isdir) {
+> +			dentry_unhash(old_dentry);
+> +			err = security_inode_rmdir(dir, old_dentry);
+> +		} else {
+> +				err = security_inode_unlink(dir, old_dentry);
 
+One to many tabs.
 
-unpatched 2.6.34
+> +		}
+> +	}
+> +
+> +	parent = dget_parent(old_dentry);
+> +	whiteout = d_alloc_name(parent, old_dentry->d_name.name);
+> +
+> +	if (!err)
+> +		err = dir->i_op->whiteout(dir, old_dentry, whiteout);
 
+err may be used unitialized.
 
-==> warn <==
-Jul 12 20:06:29 Ishtar kernel: [55475.419285] ------------[ cut here 
-]------------
-Jul 12 20:06:29 Ishtar kernel: [55475.419297] WARNING: at 
-net/ipv4/tcp_input.c:2964 tcp_ack+0x104f/0x22d0()
-Jul 12 20:06:29 Ishtar kernel: [55475.419300] Hardware name: PowerEdge T610
-Jul 12 20:06:29 Ishtar kernel: [55475.419302] Modules linked in: 
-iptable_filter ip6t_REJECT ip6t_LOG nf_conntrack_ipv6 ip6table_raw 
-xt_NOTRACK xt_limit iptable_raw ip6table_filter ip6_tables xt_state 
-[last unloaded: kvm]
-Jul 12 20:06:29 Ishtar kernel: [55475.419321] Pid: 0, comm: swapper Not 
-tainted 2.6.34T610-Vanilla-1 #1
-Jul 12 20:06:29 Ishtar kernel: [55475.419324] Call Trace:
-Jul 12 20:06:29 Ishtar kernel: [55475.419327]  <IRQ>  
-[<ffffffff81047feb>] warn_slowpath_common+0x7b/0xc0
-Jul 12 20:06:29 Ishtar kernel: [55475.419340]  [<ffffffff81048044>] 
-warn_slowpath_null+0x14/0x20
-Jul 12 20:06:29 Ishtar kernel: [55475.419344]  [<ffffffff815077bf>] 
-tcp_ack+0x104f/0x22d0
-Jul 12 20:06:29 Ishtar kernel: [55475.419350]  [<ffffffff815096a8>] 
-tcp_rcv_established+0x578/0xaa0
-Jul 12 20:06:29 Ishtar kernel: [55475.419357]  [<ffffffff815115ad>] 
-tcp_v4_do_rcv+0xcd/0x220
-Jul 12 20:06:29 Ishtar kernel: [55475.419364]  [<ffffffff815c2cde>] ? 
-_raw_spin_lock_nested+0x4e/0x60
-Jul 12 20:06:29 Ishtar kernel: [55475.419369]  [<ffffffff81511c9e>] 
-tcp_v4_rcv+0x59e/0x870
-Jul 12 20:06:29 Ishtar kernel: [55475.419374]  [<ffffffff814f12b0>] ? 
-ip_local_deliver_finish+0x0/0x270
-Jul 12 20:06:29 Ishtar kernel: [55475.419379]  [<ffffffff814f1398>] 
-ip_local_deliver_finish+0xe8/0x270
-Jul 12 20:06:29 Ishtar kernel: [55475.419383]  [<ffffffff814f12eb>] ? 
-ip_local_deliver_finish+0x3b/0x270
-Jul 12 20:06:29 Ishtar kernel: [55475.419388]  [<ffffffff814f15b0>] 
-ip_local_deliver+0x90/0xa0
-Jul 12 20:06:29 Ishtar kernel: [55475.419392]  [<ffffffff814f0c9d>] 
-ip_rcv_finish+0xfd/0x430
-Jul 12 20:06:29 Ishtar kernel: [55475.419397]  [<ffffffff814f11ed>] 
-ip_rcv+0x21d/0x2e0
-Jul 12 20:06:29 Ishtar kernel: [55475.419404]  [<ffffffff814b3d63>] 
-netif_receive_skb+0x3c3/0x6c0
-Jul 12 20:06:29 Ishtar kernel: [55475.419408]  [<ffffffff814b3b00>] ? 
-netif_receive_skb+0x160/0x6c0
-Jul 12 20:06:29 Ishtar kernel: [55475.419414]  [<ffffffff814b4be0>] 
-napi_skb_finish+0x50/0x70
-Jul 12 20:06:29 Ishtar kernel: [55475.419418]  [<ffffffff814b4c39>] 
-napi_gro_receive+0x39/0x50
-Jul 12 20:06:29 Ishtar kernel: [55475.419426]  [<ffffffff813ce93b>] 
-e1000_receive_skb+0x5b/0x90
-Jul 12 20:06:29 Ishtar kernel: [55475.419430]  [<ffffffff813cec07>] 
-e1000_clean_rx_irq+0x297/0x450
-Jul 12 20:06:29 Ishtar kernel: [55475.419436]  [<ffffffff813d0bae>] 
-e1000_clean+0x7e/0x280
-Jul 12 20:06:29 Ishtar kernel: [55475.419440]  [<ffffffff814b44d0>] 
-net_rx_action+0x190/0x320
-Jul 12 20:06:29 Ishtar kernel: [55475.419445]  [<ffffffff814b4447>] ? 
-net_rx_action+0x107/0x320
-Jul 12 20:06:29 Ishtar kernel: [55475.419450]  [<ffffffff81042ba7>] ? 
-scheduler_tick+0x47/0x290
-Jul 12 20:06:29 Ishtar kernel: [55475.419457]  [<ffffffff8104f444>] 
-__do_softirq+0x114/0x2c0
-Jul 12 20:06:29 Ishtar kernel: [55475.419462]  [<ffffffff81003f0c>] 
-call_softirq+0x1c/0x30
-Jul 12 20:06:29 Ishtar kernel: [55475.419467]  [<ffffffff8100615d>] 
-do_softirq+0x7d/0xb0
-Jul 12 20:06:29 Ishtar kernel: [55475.419471]  [<ffffffff8104eec5>] 
-irq_exit+0x95/0xa0
-Jul 12 20:06:29 Ishtar kernel: [55475.419476]  [<ffffffff815c432c>] 
-do_IRQ+0x7c/0xf0
-Jul 12 20:06:29 Ishtar kernel: [55475.419480]  [<ffffffff815c3c13>] 
-ret_from_intr+0x0/0xf
-Jul 12 20:06:29 Ishtar kernel: [55475.419483]  <EOI>  
-[<ffffffff8106f220>] ? __atomic_notifier_call_chain+0x0/0xd0
-Jul 12 20:06:29 Ishtar kernel: [55475.419496]  [<ffffffff8100c39e>] ? 
-mwait_idle+0x7e/0x100
-Jul 12 20:06:29 Ishtar kernel: [55475.419500]  [<ffffffff8100c395>] ? 
-mwait_idle+0x75/0x100
-Jul 12 20:06:29 Ishtar kernel: [55475.419505]  [<ffffffff81001fa6>] 
-cpu_idle+0x66/0xd0
-Jul 12 20:06:29 Ishtar kernel: [55475.419510]  [<ffffffff815bc677>] 
-start_secondary+0x1c3/0x1c8
-Jul 12 20:06:29 Ishtar kernel: [55475.419514] ---[ end trace 
-93de9c3e786d82ea ]---
+> +
+> +	if (old_inode) {
+> +		mutex_unlock(&old_inode->i_mutex);
+> +		if (!err) {
+> +			fsnotify_link_count(old_inode);
+> +			d_delete(old_dentry);
+> +		}
+> +		if (isdir)
+> +			dput(old_dentry);
+> +	}
+> +
+> +	dput(whiteout);
+> +	dput(parent);
+> +	return err;
+> +}
+> +
+>  /*
+>   * We try to drop the dentry early: we should have
+>   * a usage count of 2 if we're the only user of this
+> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+> index eebb617..630baef 100644
+> --- a/include/linux/dcache.h
+> +++ b/include/linux/dcache.h
+> @@ -183,6 +183,7 @@ d_iput:		no		no		no       yes
+>  #define DCACHE_INOTIFY_PARENT_WATCHED	0x0020 /* Parent inode is watched by inotify */
+>  
+>  #define DCACHE_COOKIE		0x0040	/* For use by dcookie subsystem */
+> +#define DCACHE_WHITEOUT		0x0080	/* This negative dentry is a whiteout */
+>  
+>  #define DCACHE_FSNOTIFY_PARENT_WATCHED	0x0080 /* Parent inode is watched by some fsnotify listener */
 
-==> messages <==
-Jul 12 20:06:29 Ishtar kernel: [55475.419285] ------------[ cut here 
-]------------
-Jul 12 20:06:29 Ishtar kernel: [55475.419297] WARNING: at 
-net/ipv4/tcp_input.c:2964 tcp_ack+0x104f/0x22d0()
-Jul 12 20:06:29 Ishtar kernel: [55475.419300] Hardware name: PowerEdge T610
-Jul 12 20:06:29 Ishtar kernel: [55475.419302] Modules linked in: 
-iptable_filter ip6t_REJECT ip6t_LOG nf_conntrack_ipv6 ip6table_raw 
-xt_NOTRACK xt_limit iptable_raw ip6table_filter ip6_tables xt_state 
-[last unloaded: kvm]
-Jul 12 20:06:29 Ishtar kernel: [55475.419321] Pid: 0, comm: swapper Not 
-tainted 2.6.34T610-Vanilla-1 #1
-Jul 12 20:06:29 Ishtar kernel: [55475.419324] Call Trace:
-Jul 12 20:06:29 Ishtar kernel: [55475.419327]  <IRQ>  
-[<ffffffff81047feb>] warn_slowpath_common+0x7b/0xc0
-Jul 12 20:06:29 Ishtar kernel: [55475.419340]  [<ffffffff81048044>] 
-warn_slowpath_null+0x14/0x20
-Jul 12 20:06:29 Ishtar kernel: [55475.419344]  [<ffffffff815077bf>] 
-tcp_ack+0x104f/0x22d0
-Jul 12 20:06:29 Ishtar kernel: [55475.419350]  [<ffffffff815096a8>] 
-tcp_rcv_established+0x578/0xaa0
-Jul 12 20:06:29 Ishtar kernel: [55475.419357]  [<ffffffff815115ad>] 
-tcp_v4_do_rcv+0xcd/0x220
-Jul 12 20:06:29 Ishtar kernel: [55475.419364]  [<ffffffff815c2cde>] ? 
-_raw_spin_lock_nested+0x4e/0x60
-Jul 12 20:06:29 Ishtar kernel: [55475.419369]  [<ffffffff81511c9e>] 
-tcp_v4_rcv+0x59e/0x870
-Jul 12 20:06:29 Ishtar kernel: [55475.419374]  [<ffffffff814f12b0>] ? 
-ip_local_deliver_finish+0x0/0x270
-Jul 12 20:06:29 Ishtar kernel: [55475.419379]  [<ffffffff814f1398>] 
-ip_local_deliver_finish+0xe8/0x270
-Jul 12 20:06:29 Ishtar kernel: [55475.419383]  [<ffffffff814f12eb>] ? 
-ip_local_deliver_finish+0x3b/0x270
-Jul 12 20:06:29 Ishtar kernel: [55475.419388]  [<ffffffff814f15b0>] 
-ip_local_deliver+0x90/0xa0
-Jul 12 20:06:29 Ishtar kernel: [55475.419392]  [<ffffffff814f0c9d>] 
-ip_rcv_finish+0xfd/0x430
-Jul 12 20:06:29 Ishtar kernel: [55475.419397]  [<ffffffff814f11ed>] 
-ip_rcv+0x21d/0x2e0
-Jul 12 20:06:29 Ishtar kernel: [55475.419404]  [<ffffffff814b3d63>] 
-netif_receive_skb+0x3c3/0x6c0
-Jul 12 20:06:29 Ishtar kernel: [55475.419408]  [<ffffffff814b3b00>] ? 
-netif_receive_skb+0x160/0x6c0
-Jul 12 20:06:29 Ishtar kernel: [55475.419414]  [<ffffffff814b4be0>] 
-napi_skb_finish+0x50/0x70
-Jul 12 20:06:29 Ishtar kernel: [55475.419418]  [<ffffffff814b4c39>] 
-napi_gro_receive+0x39/0x50
-Jul 12 20:06:29 Ishtar kernel: [55475.419426]  [<ffffffff813ce93b>] 
-e1000_receive_skb+0x5b/0x90
-Jul 12 20:06:29 Ishtar kernel: [55475.419430]  [<ffffffff813cec07>] 
-e1000_clean_rx_irq+0x297/0x450
-Jul 12 20:06:29 Ishtar kernel: [55475.419436]  [<ffffffff813d0bae>] 
-e1000_clean+0x7e/0x280
-Jul 12 20:06:29 Ishtar kernel: [55475.419440]  [<ffffffff814b44d0>] 
-net_rx_action+0x190/0x320
-Jul 12 20:06:29 Ishtar kernel: [55475.419445]  [<ffffffff814b4447>] ? 
-net_rx_action+0x107/0x320
-Jul 12 20:06:29 Ishtar kernel: [55475.419450]  [<ffffffff81042ba7>] ? 
-scheduler_tick+0x47/0x290
-Jul 12 20:06:29 Ishtar kernel: [55475.419457]  [<ffffffff8104f444>] 
-__do_softirq+0x114/0x2c0
-Jul 12 20:06:29 Ishtar kernel: [55475.419462]  [<ffffffff81003f0c>] 
-call_softirq+0x1c/0x30
-Jul 12 20:06:29 Ishtar kernel: [55475.419467]  [<ffffffff8100615d>] 
-do_softirq+0x7d/0xb0
-Jul 12 20:06:29 Ishtar kernel: [55475.419471]  [<ffffffff8104eec5>] 
-irq_exit+0x95/0xa0
-Jul 12 20:06:29 Ishtar kernel: [55475.419476]  [<ffffffff815c432c>] 
-do_IRQ+0x7c/0xf0
-Jul 12 20:06:29 Ishtar kernel: [55475.419480]  [<ffffffff815c3c13>] 
-ret_from_intr+0x0/0xf
-Jul 12 20:06:29 Ishtar kernel: [55475.419483]  <EOI>  
-[<ffffffff8106f220>] ? __atomic_notifier_call_chain+0x0/0xd0
-Jul 12 20:06:29 Ishtar kernel: [55475.419496]  [<ffffffff8100c39e>] ? 
-mwait_idle+0x7e/0x100
-Jul 12 20:06:29 Ishtar kernel: [55475.419500]  [<ffffffff8100c395>] ? 
-mwait_idle+0x75/0x100
-Jul 12 20:06:29 Ishtar kernel: [55475.419505]  [<ffffffff81001fa6>] 
-cpu_idle+0x66/0xd0
-Jul 12 20:06:29 Ishtar kernel: [55475.419510]  [<ffffffff815bc677>] 
-start_secondary+0x1c3/0x1c8
-Jul 12 20:06:29 Ishtar kernel: [55475.419514] ---[ end trace 
-93de9c3e786d82ea ]---
-Jul 12 20:07:01 Ishtar /usr/sbin/cron[8345]: (law) CMD 
-(/home/law/scripts/process_despam 2>&1 >/dev/null)
+DCACHE_WHITEOUT == DCACHE_FSNOTIFY_PARENT_WATCHED, is that intended?
+
+>  
+> @@ -372,6 +373,11 @@ static inline void dont_mount(struct dentry *dentry)
+>  	spin_unlock(&dentry->d_lock);
+>  }
+>  
+> +static inline int d_is_whiteout(struct dentry *dentry)
+> +{
+> +	return (dentry->d_flags & DCACHE_WHITEOUT);
+> +}
+> +
+>  static inline struct dentry *dget_parent(struct dentry *dentry)
+>  {
+>  	struct dentry *ret;
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index d7ef72a..7afdbd4 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -209,6 +209,7 @@ struct inodes_stat_t {
+>  #define MS_KERNMOUNT	(1<<22) /* this is a kern_mount call */
+>  #define MS_I_VERSION	(1<<23) /* Update inode I_version field */
+>  #define MS_STRICTATIME	(1<<24) /* Always perform atime updates */
+> +#define MS_WHITEOUT	(1<<25) /* FS supports whiteout filetype */
+>  #define MS_ACTIVE	(1<<30)
+>  #define MS_NOUSER	(1<<31)
+>  
+> @@ -1527,6 +1528,7 @@ struct inode_operations {
+>  	int (*mkdir) (struct inode *,struct dentry *,int);
+>  	int (*rmdir) (struct inode *,struct dentry *);
+>  	int (*mknod) (struct inode *,struct dentry *,int,dev_t);
+> +	int (*whiteout) (struct inode *, struct dentry *, struct dentry *);
+>  	int (*rename) (struct inode *, struct dentry *,
+>  			struct inode *, struct dentry *);
+>  	int (*readlink) (struct dentry *, char __user *,int);
+> -- 
+> 1.6.3.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
