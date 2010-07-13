@@ -1,59 +1,170 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754805Ab0GMSVI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 14:21:08 -0400
-Received: from claw.goop.org ([74.207.240.146]:33861 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752725Ab0GMSVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 14:21:06 -0400
-Message-ID: <4C3CAE8F.10900@goop.org>
-Date: Tue, 13 Jul 2010 11:21:03 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
-MIME-Version: 1.0
+	id S1753579Ab0GMSXg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 14:23:36 -0400
+Received: from anguilla.debian.or.at ([86.59.21.37]:33853 "EHLO
+	anguilla.debian.or.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750822Ab0GMSXf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 14:23:35 -0400
+Date: Tue, 13 Jul 2010 20:23:34 +0200
+From: Peter Palfrader <peter@palfrader.org>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Peter Palfrader <peter@palfrader.org>, Avi Kivity <avi@redhat.com>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
+Cc: Avi Kivity <avi@redhat.com>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
         alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
         Zachary Amsden <zamsden@redhat.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
         Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
- 	for pvclock
-References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com> <AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization
+	point for pvclock
+Message-ID: <20100713182333.GF15122@anguilla.noreply.org>
+Mail-Followup-To: Peter Palfrader <peter@palfrader.org>,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	Avi Kivity <avi@redhat.com>, Greg KH <gregkh@suse.de>,
+	linux-kernel@vger.kernel.org, stable@kernel.org,
+	stable-review@kernel.org, akpm@linux-foundation.org,
+	alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
+	Zachary Amsden <zamsden@redhat.com>,
+	Jeremy Fitzhardinge <jeremy@goop.org>,
+	Marcelo Tosatti <mtosatti@redhat.com>
+References: <4C3C68C8.4060409@redhat.com> <20100713141902.GB15122@anguilla.noreply.org> <4C3C8CE5.1080705@redhat.com> <20100713162207.GC15122@anguilla.noreply.org> <4C3C9589.4090602@redhat.com> <4C3C96EC.8060901@redhat.com> <4C3C9839.4090404@redhat.com> <20100713172526.GE15122@anguilla.noreply.org> <AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com> <AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="Dxnq1zWXvFF0Q93v"
+Content-Disposition: inline
 In-Reply-To: <AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
+X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
+X-Accept-Language: de, en
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 10:59 AM, Linus Torvalds wrote:
+
+--Dxnq1zWXvFF0Q93v
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+
+On Tue, 13 Jul 2010, Linus Torvalds wrote:
+
+> On Tue, Jul 13, 2010 at 10:50 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > No, you didn't back-port it wrong. I just didn't fix the right part. I
+> > thought the PV code used xchg, not cmpxchg, so I only patched that.
+> > But cmpxchg has the exact same issue.
+> >
+> > Does this fix it?
+
+It appears to, thanks a lot.
+
+[git|v2.6.32.16] weasel@thelma:/scratch/kernel/2.6.32.16$ nm arch/x86/kernel/pvclock.o
+0000000000000000 b last_value
+..
+
+And it did boot too.
+
 > Btw, this second patch was a bit more aggressive than the first one,
 > and actually removes the "memory" clobber entirely, and the fake cast
 > of the target type.
->
-> That shouldn't matter _except_ if people actually use cmpxchg to
-> implement their own locking, since now the compiler could potentially
-> move unrelated memory references around the lock. Of course, if you
-> use cmpxchg to implement your own locking, you're probably doing
-> something wrong anyway (ie you'll get the wrong memory barriers on
-> various architectures), so it should all be fine.
->   
 
-There are some places which rely on xchg/cmpxchg being a barrier in
-arch-specific code.  For example, the Xen code uses as part of the
-shared memory protocol with the hypervisor.
+Without the cast gcc spews a fair amount of warnings.  About four every
+time it hits the include file.
 
-> But I thought I'd mention it. And I don't really know how much gcc
-> moves memory accesses around a "asm volatile" - the gcc docs are
-> historically very vague ("volatile asms aren't moved around
-> 'significantly'", whatever 'significant' means)
->   
 
-"asm volatile"'s only real meaning is that it will not get elided if it
-appears its output is unused (assuming it is reachable at all).  I don't
-think you can consider it having any meaningful effects on ordering.
+Just for completeness' sake I attached the patch on top of 2.6.32.16
+that I built with.
+-- 
+                           |  .''`.  ** Debian GNU/Linux **
+      Peter Palfrader      | : :' :      The  universal
+ http://www.palfrader.org/ | `. `'      Operating System
+                           |   `-    http://www.debian.org/
 
-    J
+--Dxnq1zWXvFF0Q93v
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: attachment; filename="linus.diff.backported"
+
+diff --git a/arch/x86/include/asm/cmpxchg_64.h b/arch/x86/include/asm/cmpxchg_64.h
+index 52de72e..f0551c5 100644
+--- a/arch/x86/include/asm/cmpxchg_64.h
++++ b/arch/x86/include/asm/cmpxchg_64.h
+@@ -26,26 +26,26 @@ static inline unsigned long __xchg(unsigned long x, volatile void *ptr,
+ 	switch (size) {
+ 	case 1:
+ 		asm volatile("xchgb %b0,%1"
+-			     : "=q" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=q" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	case 2:
+ 		asm volatile("xchgw %w0,%1"
+-			     : "=r" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=r" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	case 4:
+ 		asm volatile("xchgl %k0,%1"
+-			     : "=r" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=r" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	case 8:
+ 		asm volatile("xchgq %0,%1"
+-			     : "=r" (x)
+-			     : "m" (*__xg(ptr)), "0" (x)
++			     : "=r" (x), "+m" (*__xg(ptr))
++			     : "0" (x)
+ 			     : "memory");
+ 		break;
+ 	}
+@@ -66,28 +66,24 @@ static inline unsigned long __cmpxchg(volatile void *ptr, unsigned long old,
+ 	unsigned long prev;
+ 	switch (size) {
+ 	case 1:
+-		asm volatile(LOCK_PREFIX "cmpxchgb %b1,%2"
+-			     : "=a"(prev)
+-			     : "q"(new), "m"(*__xg(ptr)), "0"(old)
+-			     : "memory");
++		asm volatile(LOCK_PREFIX "cmpxchgb %b2,%1"
++			     : "=a"(prev), "+m" (*__xg(ptr))
++			     : "q"(new), "0"(old));
+ 		return prev;
+ 	case 2:
+-		asm volatile(LOCK_PREFIX "cmpxchgw %w1,%2"
+-			     : "=a"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
+-			     : "memory");
++		asm volatile(LOCK_PREFIX "cmpxchgw %w2,%1"
++			     : "=a"(prev), "+m" (*__xg(ptr))
++			     : "r"(new), "0"(old));
+ 		return prev;
+ 	case 4:
+-		asm volatile(LOCK_PREFIX "cmpxchgl %k1,%2"
+-			     : "=a"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
+-			     : "memory");
++		asm volatile(LOCK_PREFIX "cmpxchgl %k2,%1"
++			     : "=a"(prev), "+m" (*__xg(ptr))
++			     : "r"(new), "0"(old));
+ 		return prev;
+ 	case 8:
+-		asm volatile(LOCK_PREFIX "cmpxchgq %1,%2"
+-			     : "=a"(prev)
+-			     : "r"(new), "m"(*__xg(ptr)), "0"(old)
+-			     : "memory");
++		asm volatile(LOCK_PREFIX "cmpxchgq %2,%1"
++			     : "=a"(prev), "+m" (*__xg(ptr))
++			     : "r"(new), "0"(old));
+ 		return prev;
+ 	}
+ 	return old;
+
+--Dxnq1zWXvFF0Q93v--
