@@ -1,139 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755153Ab0GMS3Q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 14:29:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:42532 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751717Ab0GMS3P convert rfc822-to-8bit (ORCPT
+	id S1757224Ab0GMSc7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 14:32:59 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:46115 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756866Ab0GMSc5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 14:29:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=NOFabR9/P0cYu8SKa63rx1C++aS3jwS5GT4hV3lHstkzI9ppsE4vNvdxwFzCM1gJEB
-         mfR//Ey140N6/Dd+DcAEVIIe2YY/OPuouYtRDVU8oh3KRW6D2VExS2xTekWqYIWxa1/6
-         E0WnIU1nwNMoN+Ns7y6KEzwUfeHVomGBjv2Bw=
+	Tue, 13 Jul 2010 14:32:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <AANLkTil58zbo28QL2ncTAXx9iHeQS20W8u0MuDgLaojj@mail.gmail.com>
-References: <AANLkTimkNg81yzxSHTcAa1QlTE9SYmvzL4eOTVHApWq3@mail.gmail.com>
-	<AANLkTilvbOb0n9l6F3EHwQg3VfNNmYB1BdFbzL2Cwg_P@mail.gmail.com>
-	<AANLkTinnlhzSGP8sRQ8Pr4CIuwn4d859rvSe1yO_3TEz@mail.gmail.com>
-	<AANLkTil58zbo28QL2ncTAXx9iHeQS20W8u0MuDgLaojj@mail.gmail.com>
-Date: Tue, 13 Jul 2010 20:29:13 +0200
-Message-ID: <AANLkTim-yNCtMnxzzA8yJnD6CLkF2Mz-aA4E5qbYMBlz@mail.gmail.com>
-Subject: Re: Regression 2.6.34->2.6.35-rc4: radeaon KMS an RS690 broken
-From: Torsten Kaiser <just.for.lkml@googlemail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <20100713070741.GB26442@pengutronix.de>
+References: <20100630104043.GG11746@pengutronix.de> <20100712155518.GA24144@pengutronix.de> 
+	<AANLkTilhI9O6YwnuAylo_jNgwR8VXmpSVJ1kylIYPCGT@mail.gmail.com> 
+	<20100712173228.GC9897@n2100.arm.linux.org.uk> <AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com> 
+	<20100712185029.GB14425@pengutronix.de> <AANLkTinOuU-VVXaMwMp69CBp2Y4wxpoWybEQ34H5j0lJ@mail.gmail.com> 
+	<alpine.LFD.2.00.1007121510260.10598@xanadu.home> <AANLkTim-O00n9YPv7w4VCKjN-ETLijyTHomWUn4mZtTV@mail.gmail.com> 
+	<AANLkTilDoGbCx_0oKKPOeGG7TKL2VSNVII5ydmnQ77B7@mail.gmail.com> 
+	<20100713070741.GB26442@pengutronix.de>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 13 Jul 2010 12:32:36 -0600
+X-Google-Sender-Auth: 1d8OSo5fnG2pfWonEtA1IUviWLo
+Message-ID: <AANLkTikudrURTxljZAigppSds0IhbUATA6sm7y-dL4GL@mail.gmail.com>
+Subject: Re: ARM defconfig files
+To: =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        linux-arm-msm@vger.kernel.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-omap@vger.kernel.org, Eric Miao <eric.miao@canonical.com>,
+        linux-arm-kernel@lists.infradead.org
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 11:38 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> On Mon, Jul 12, 2010 at 3:54 PM, Torsten Kaiser
-> <just.for.lkml@googlemail.com> wrote:
->> 0888e883ea5ff8fac27e813256d6c1eaede5a234 is the first bad commit
->> commit 0888e883ea5ff8fac27e813256d6c1eaede5a234
->> Author: Alex Deucher <alexdeucher@gmail.com>
->> Date:   Sat Jun 12 11:50:13 2010 -0400
+2010/7/13 Uwe Kleine-König <u.kleine-koenig@pengutronix.de>:
+> Hi
+>
+> On Mon, Jul 12, 2010 at 01:50:47PM -0600, Grant Likely wrote:
+>> On Mon, Jul 12, 2010 at 1:34 PM, Linus Torvalds
+>> <torvalds@linux-foundation.org> wrote:
+>> > On Mon, Jul 12, 2010 at 12:17 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+>> >> I think Uwe could provide his script and add it to the kernel tree.
+>> >> Then all architectures could benefit from it.  Having the defconfig
+>> >> files contain only those options which are different from the defaults
+>> >> is certainly more readable, even on x86.
+>> >
+>> > Quite possible. But maintainers would need to be on the lookout of
+>> > people actually using the script, and refusing to apply patches that
+>> > re-introduce the whole big thing.
 >>
->>    drm/radeon/kms: fix bandwidth calculation when sideport is present
->>
->>    Fixes fdo bug 27529:
->>    https://bugs.freedesktop.org/show_bug.cgi?id=27529
->>
->>    Reported-by: steckdenis@yahoo.fr
->>    Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
->>    Signed-off-by: Dave Airlie <airlied@redhat.com>
->>
->> :040000 040000 2ff9114469e4569e1bebd659c9632c5b59bfc238
->> b0eb9a29c698da1eeb8289ba1180b8135a94ecd7 M     drivers
->>
->> My system does not have any sideport memory.
->> The other revisions before this did boot into the correct KMS mode,
->> but I did not test X, because I'm using that system as a remote
->> desktop server and only sometimes the fb text console to debug
->> something that went wrong.
+>> I can (partially) speak for powerpc.  If ARM uses this approach, then
+>> I think we can do the same.  After the defconfigs are trimmed, I
+>> certainly won't pick up any more full defconfigs.
+> I just restarted my script on the powerpc defconfigs basing on rc5, I
+> assume they complete in a few days time.
+>
+>> Of course, I'm also operating under the assumption that this is a
+>> temporary measure until one of the better solutions is implemented.
+> ack
+>
+>>                                                                      I
+>> do suspect that the trimmed defconfigs will tend to be unstable and
+>> will still require manual maintenance.  I think the Kconfig fragments
+>> approach is the most promising if the dependencies issue can be
+>> solved.
+> I don't understand what you mean with unstable here.  They are sensible
+> to changed defaults in the Kconfig files which you can consider to be
+> good or bad.
 
->From the other mail:
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f892034a8ce80ed7098f667aae2eb6300e570603
-is part of vanilla 2.6.35-rc4 and -rc5, but neither kernel works for
-me.
+With the trimmed config, changes to default settings on config items
+will immediately picked up regardless of whether or not it was wanted,
+and potentially disabling things that were explicitly selected in
+defconfig.  But thinking about it more, that isn't really any worse
+than the old situation where defconfigs always override Kconfig
+defaults.  So either way, defconfigs are simply a broken concept.
 
-> Does this patch help?
-(0001-drm-radeon-kms-fix-possible-mis-detection-of-sidepor.patch)
+> And ack, I like the Kconfig approach, too.
 
-After adding this to 2.6.35-rc5 the system boots and works so far.
+Yeah, the problem goes away with Kconfig fragments.  A programmer can
+then explicitly state which CONFIG values need to be overridden.
 
-But the CP is still broken:
-[    0.426931] Linux agpgart interface v0.103
-[    0.427092] [drm] Initialized drm 1.1.0 20060810
-[    0.427196] [drm] radeon defaulting to kernel modesetting.
-[    0.427255] [drm] radeon kernel modesetting enabled.
-[    0.427372] radeon 0000:01:05.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
-[    0.429659] [drm] initializing kernel modesetting (RS690 0x1002:0x791E).
-[    0.429817] [drm] register mmio base: 0xFE9F0000
-[    0.429876] [drm] register mmio size: 65536
-[    0.430457] ATOM BIOS: ATI
-[    0.430532] radeon 0000:01:05.0: VRAM: 32M 0xDE000000 - 0xDFFFFFFF (32M used)
-[    0.430592] radeon 0000:01:05.0: GTT: 512M 0xBE000000 - 0xDDFFFFFF
-[    0.430675] [drm] radeon: irq initialized.
-[    0.430737] mtrr: type mismatch for fc000000,2000000 old:
-write-back new: write-comb
-ining
-[    0.430811] [drm] Detected VRAM RAM=32M, BAR=32M
-[    0.430868] [drm] RAM width 128bits DDR
-[    0.431011] [TTM] Zone  kernel: Available graphics memory: 2010234 kiB.
-[    0.431070] [TTM] Initializing pool allocator.
-[    0.431147] [drm] radeon: 32M of VRAM memory ready
-[    0.431205] [drm] radeon: 512M of GTT memory ready.
-[    0.431266] [drm] GART: num cpu pages 131072, num gpu pages 131072
-[    0.434654] [drm] radeon: 1 quad pipes, 1 z pipes initialized.
-[    0.441719] [drm] Loading RS690/RS740 Microcode
-[    0.441926] [drm] radeon: ring at 0x00000000BE000000
-[    0.577118] [drm:r100_ring_test] *ERROR* radeon: ring test failed
-(sracth(0x15E4)=0x
-CAFEDEAD)
-[    0.577192] [drm:r100_cp_init] *ERROR* radeon: cp isn't working (-22).
-[    0.577252] radeon 0000:01:05.0: failled initializing CP (-22).
-[    0.577310] radeon 0000:01:05.0: Disabling GPU acceleration
-[    0.577440] [drm] radeon: cp finalized
-[    0.578078] [drm] Default TV standard: NTSC
-[    0.578314] [drm] Default TV standard: NTSC
-[    0.578590] [drm] Radeon Display Connectors
-[    0.578648] [drm] Connector 0:
-[    0.578706] [drm]   VGA
-[    0.578764] [drm]   DDC: 0x7e50 0x7e40 0x7e54 0x7e44 0x7e58 0x7e48
-0x7e5c 0x7e4c
-[    0.578837] [drm]   Encoders:
-[    0.578894] [drm]     CRT1: INTERNAL_KLDSCP_DAC1
-[    0.578952] [drm] Connector 1:
-[    0.579010] [drm]   S-video
-[    0.579067] [drm]   Encoders:
-[    0.579124] [drm]     TV1: INTERNAL_KLDSCP_DAC1
-[    0.579182] [drm] Connector 2:
-[    0.579239] [drm]   HDMI-A
-[    0.579297] [drm]   DDC: 0x7e40 0x7e50 0x7e44 0x7e54 0x7e48 0x7e58
-0x7e4c 0x7e5c
-[    0.579369] [drm]   Encoders:
-[    0.579427] [drm]     DFP3: INTERNAL_LVTM1
-[    0.773375] [drm] fb mappable at 0xFC040000
-[    0.773434] [drm] vram apper at 0xFC000000
-[    0.773491] [drm] size 786432
-[    0.773549] [drm] fb depth is 8
-[    0.773606] [drm]    pitch is 1024
-[    0.773737] fbcon: radeondrmfb (fb0) is primary device
-[    0.793240] Console: switching to colour frame buffer device 128x48
-[    0.794833] fb0: radeondrmfb frame buffer device
-[    0.794852] drm: registered panic notifier
-[    0.794871] Slow work thread pool: Starting up
-[    0.794932] Slow work thread pool: Ready
-[    0.794953] [drm] Initialized radeon 2.5.0 20080528 for
-0000:01:05.0 on minor 0
-
-
-Torsten
+g.
