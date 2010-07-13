@@ -1,74 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756136Ab0GMJux (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 05:50:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51509 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756054Ab0GMJuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 05:50:50 -0400
-Message-ID: <4C3C360B.1050002@cn.fujitsu.com>
-Date: Tue, 13 Jul 2010 17:46:51 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755323Ab0GMJz7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 05:55:59 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:55948 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752231Ab0GMJz6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 05:55:58 -0400
+Date: Tue, 13 Jul 2010 10:55:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sundar Iyer <sundar.iyer@stericsson.com>
+Cc: lrg@slimlogic.co.uk, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        STEricsson_nomadik_linux@list.st.com,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "Acked-By: Bengt JONSSON" <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH 2/3] regulator: add support for regulators on the
+ ab8500 MFD
+Message-ID: <20100713095556.GB12686@rakim.wolfsonmicro.main>
+References: <1279002090-11234-1-git-send-email-sundar.iyer@stericsson.com>
+ <1279002090-11234-3-git-send-email-sundar.iyer@stericsson.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: [PATCH 4/4] KVM: MMU: remove valueless output message
-References: <4C3C3518.7080505@cn.fujitsu.com>
-In-Reply-To: <4C3C3518.7080505@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279002090-11234-3-git-send-email-sundar.iyer@stericsson.com>
+X-Cookie: BOFH excuse
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After commit 53383eaad08d, the '*spte' has updated before call
-rmap_remove()(in most case it's 'shadow_trap_nonpresent_pte'), so
-remove this information form error message
+On Tue, Jul 13, 2010 at 11:51:29AM +0530, Sundar Iyer wrote:
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/mmu.c |   11 +++++------
- 1 files changed, 5 insertions(+), 6 deletions(-)
+> + * @mask: mask to enable/disable regulator
+> + * @enable: enable bits to enable the regulator
 
-diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 5e9d4a0..c07a5eb 100644
---- a/arch/x86/kvm/mmu.c
-+++ b/arch/x86/kvm/mmu.c
-@@ -662,18 +662,17 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
- 	gfn = kvm_mmu_page_get_gfn(sp, spte - sp->spt);
- 	rmapp = gfn_to_rmap(kvm, gfn, sp->role.level);
- 	if (!*rmapp) {
--		printk(KERN_ERR "rmap_remove: %p %llx 0->BUG\n", spte, *spte);
-+		printk(KERN_ERR "rmap_remove: %p 0->BUG\n", spte);
- 		BUG();
- 	} else if (!(*rmapp & 1)) {
--		rmap_printk("rmap_remove:  %p %llx 1->0\n", spte, *spte);
-+		rmap_printk("rmap_remove:  %p 1->0\n", spte);
- 		if ((u64 *)*rmapp != spte) {
--			printk(KERN_ERR "rmap_remove:  %p %llx 1->BUG\n",
--			       spte, *spte);
-+			printk(KERN_ERR "rmap_remove:  %p 1->BUG\n", spte);
- 			BUG();
- 		}
- 		*rmapp = 0;
- 	} else {
--		rmap_printk("rmap_remove:  %p %llx many->many\n", spte, *spte);
-+		rmap_printk("rmap_remove:  %p many->many\n", spte);
- 		desc = (struct kvm_rmap_desc *)(*rmapp & ~1ul);
- 		prev_desc = NULL;
- 		while (desc) {
-@@ -687,7 +686,7 @@ static void rmap_remove(struct kvm *kvm, u64 *spte)
- 			prev_desc = desc;
- 			desc = desc->more;
- 		}
--		pr_err("rmap_remove: %p %llx many->many\n", spte, *spte);
-+		pr_err("rmap_remove: %p many->many\n", spte);
- 		BUG();
- 	}
- }
--- 
-1.6.1.2
+Presumably these two will always be identical?
 
+> + * @typical_voltages: typical supported voltage table
 
+Why typical - might the set of supported values change, and if they do
+how will that be detected and handled?
+
+> +	ret = ab8500_read(info->ab8500, info->update_reg);
+> +	if (ret < 0)
+> +		dev_dbg(rdev_get_dev(rdev),
+> +			"couldnt read 0x%x register\n", info->update_reg);
+> +
+> +	if (ret & info->mask)
+> +		return true;
+> +	else
+> +		return false;
+
+This should return the error code if the read failed.
+
+> +static int ab8500_get_best_voltage_index(struct regulator_dev *rdev,
+> +		int min_uV, int max_uV)
+> +{
+> +	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+> +	int i;
+> +
+> +	/* check the supported voltage */
+> +	for (i = 0; i < info->voltages_len; i++) {
+> +		if ((info->typical_voltages[i] >= min_uV) &&
+> +			(info->typical_voltages[i] <= max_uV))
+> +			return i;
+
+The indentation here is confusing - the second line of the if () is
+aligned with the return statement not the first line.
+
+> +	/* get the appropriate voltages within the range */
+> +	ret = ab8500_get_best_voltage_index(rdev, min_uV, max_uV);
+> +	if (ret < 0) {
+> +		dev_dbg(rdev_get_dev(rdev),
+> +				"coudlnt get best voltage for regulator\n");
+> +	}
+
+Should return an error here.
+
+> +	/* set the registers for the request */
+> +	ret = ab8500_set_bits(info->ab8500, info->voltage_reg,
+> +				info->voltage_mask, ret);
+> +	if (ret < 0) {
+> +		dev_dbg(rdev_get_dev(rdev),
+> +		"couldnt set voltage reg for regulator\n");
+> +		return -EINVAL;
+
+Should return the error you got back from set_bits() to provide maximum
+information to the caller (besides, this isn't an invalid value - it's
+an I/O issue).
+
+> +static int ab8500_fixed_get_voltage(struct regulator_dev *rdev)
+> +{
+> +	int regulator_id;
+> +	struct ab8500_regulator_info *info = rdev_get_drvdata(rdev);
+> +
+> +	regulator_id = rdev_get_id(rdev);
+> +	if (regulator_id >= AB8500_NUM_REGULATORS)
+> +		return -EINVAL;
+> +
+> +	return info->fixed_uV;
+> +}
+> +
+> +static struct regulator_ops ab8500_ldo_fixed_ops = {
+> +	.enable		= ab8500_regulator_enable,
+> +	.disable	= ab8500_regulator_disable,
+> +	.is_enabled	= ab8500_regulator_is_enabled,
+> +	.get_voltage	= ab8500_fixed_get_voltage,
+> +};
+
+Should have list_voltage() support also ideally.
