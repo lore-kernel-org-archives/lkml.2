@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756735Ab0GMC0K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 22:26:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20819 "EHLO mx1.redhat.com"
+	id S1756791Ab0GMC0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 22:26:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17335 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754091Ab0GMC0F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 22:26:05 -0400
+	id S1754091Ab0GMC0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 22:26:12 -0400
 From: Zachary Amsden <zamsden@redhat.com>
 To: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
@@ -14,65 +14,86 @@ Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
         Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Glauber Costa <glommer@redhat.com>
-Subject: [PATCH 10/18] Keep SMP VMs more in sync on unstable TSC
-Date: Mon, 12 Jul 2010 16:25:30 -1000
-Message-Id: <1278987938-23873-11-git-send-email-zamsden@redhat.com>
+Subject: [PATCH 13/18] Move scale_delta into common header
+Date: Mon, 12 Jul 2010 16:25:33 -1000
+Message-Id: <1278987938-23873-14-git-send-email-zamsden@redhat.com>
 In-Reply-To: <1278987938-23873-1-git-send-email-zamsden@redhat.com>
 References: <1278987938-23873-1-git-send-email-zamsden@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-SMP VMs on machines with unstable TSC have their TSC offset adjusted by the
-local offset delta from last measurement.  This does not take into account how
-long it has been since the measurement, leading to drift.  Minimize the drift
-by accounting for any time difference the kernel has observed.
+The scale_delta function for shift / multiply with 31-bit
+precision moves to a common header so it can be used by both
+kernel and kvm module.
 
 Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/include/asm/kvm_host.h |    1 +
- arch/x86/kvm/x86.c              |    8 +++++++-
- 2 files changed, 8 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/pvclock.h |   38 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/pvclock.c      |    3 ++-
+ 2 files changed, 40 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 324e892..d9e0aa0 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -339,6 +339,7 @@ struct kvm_vcpu_arch {
- 	unsigned int time_offset;
- 	struct page *time_page;
- 	u64 last_host_tsc;
-+	u64 last_host_ns;
+diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
+index cd02f32..7f7e577 100644
+--- a/arch/x86/include/asm/pvclock.h
++++ b/arch/x86/include/asm/pvclock.h
+@@ -12,4 +12,42 @@ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
+ 			    struct pvclock_vcpu_time_info *vcpu,
+ 			    struct timespec *ts);
  
- 	bool nmi_pending;
- 	bool nmi_injected;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 51d3f3e..a4d7cb9 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -1888,8 +1888,13 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
- 				native_read_tsc() - vcpu->arch.last_host_tsc;
- 		if (tsc_delta < 0)
- 			mark_tsc_unstable("KVM discovered backwards TSC");
--		if (check_tsc_unstable())
-+		if (check_tsc_unstable()) {
-+			/* Subtract elapsed cycle time */
-+			u64 ns = !vcpu->arch.last_host_ns ? 0 :
-+				  get_kernel_ns() - vcpu->arch.last_host_ns;
-+			tsc_delta -= nsec_to_cycles(ns);
- 			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
-+		}
- 		kvm_migrate_timers(vcpu);
- 		kvm_request_guest_time_update(vcpu);
- 		vcpu->cpu = cpu;
-@@ -1901,6 +1906,7 @@ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
- 	kvm_x86_ops->vcpu_put(vcpu);
- 	kvm_put_guest_fpu(vcpu);
- 	vcpu->arch.last_host_tsc = native_read_tsc();
-+	vcpu->arch.last_host_ns = get_kernel_ns();
++/*
++ * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
++ * yielding a 64-bit result.
++ */
++static inline u64 pvclock_scale_delta(u64 delta, u32 mul_frac, int shift)
++{
++	u64 product;
++#ifdef __i386__
++	u32 tmp1, tmp2;
++#endif
++
++	if (shift < 0)
++		delta >>= -shift;
++	else
++		delta <<= shift;
++
++#ifdef __i386__
++	__asm__ (
++		"mul  %5       ; "
++		"mov  %4,%%eax ; "
++		"mov  %%edx,%4 ; "
++		"mul  %5       ; "
++		"xor  %5,%5    ; "
++		"add  %4,%%eax ; "
++		"adc  %5,%%edx ; "
++		: "=A" (product), "=r" (tmp1), "=r" (tmp2)
++		: "a" ((u32)delta), "1" ((u32)(delta >> 32)), "2" (mul_frac) );
++#elif defined(__x86_64__)
++	__asm__ (
++		"mul %%rdx ; shrd $32,%%rdx,%%rax"
++		: "=a" (product) : "0" (delta), "d" ((u64)mul_frac) );
++#else
++#error implement me!
++#endif
++
++	return product;
++}
++
+ #endif /* _ASM_X86_PVCLOCK_H */
+diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
+index 239427c..bab3b9e 100644
+--- a/arch/x86/kernel/pvclock.c
++++ b/arch/x86/kernel/pvclock.c
+@@ -82,7 +82,8 @@ static inline u64 scale_delta(u64 delta, u32 mul_frac, int shift)
+ static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time *shadow)
+ {
+ 	u64 delta = native_read_tsc() - shadow->tsc_timestamp;
+-	return scale_delta(delta, shadow->tsc_to_nsec_mul, shadow->tsc_shift);
++	return pvclock_scale_delta(delta, shadow->tsc_to_nsec_mul,
++				   shadow->tsc_shift);
  }
  
- static int is_efer_nx(void)
+ /*
 -- 
 1.7.1
 
