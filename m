@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab0GMHWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:22:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28535 "EHLO
+	id S1755883Ab0GMHWx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:22:53 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28514 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab0GMHQV (ORCPT
+	with ESMTP id S1753780Ab0GMHQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Jul 2010 03:16:21 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -15,55 +15,94 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 31/50] memblock: Export MEMBLOCK_ERROR again
-Date: Tue, 13 Jul 2010 00:10:25 -0700
-Message-Id: <1279005044-24777-32-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 28/50] memblock: Add debugfs files to dump the arrays content
+Date: Tue, 13 Jul 2010 00:10:22 -0700
+Message-Id: <1279005044-24777-29-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C3C129E.0193,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4C3C129A.003A,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-will used by x86 memblock_x86_find_in_range_node and nobootmem replacement
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
--v2: use 0 instead -1ULL, Suggesed by Linus, so we don't need cast them later to unsigned long
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- include/linux/memblock.h |    1 +
- mm/memblock.c            |    2 --
- 2 files changed, 1 insertions(+), 2 deletions(-)
+ mm/memblock.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 51 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 70bc467..89749c4 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -19,6 +19,7 @@
- #include <asm/memblock.h>
- 
- #define INIT_MEMBLOCK_REGIONS 128
-+#define MEMBLOCK_ERROR		0
- 
- struct memblock_region {
- 	phys_addr_t base;
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 796ef8c..3d0a754 100644
+index 424ca11..b5eb901 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -27,8 +27,6 @@ int memblock_can_resize;
- static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
- struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+@@ -16,6 +16,8 @@
+ #include <linux/bitops.h>
+ #include <linux/poison.h>
+ #include <linux/pfn.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
+ #include <linux/memblock.h>
  
--#define MEMBLOCK_ERROR	(~(phys_addr_t)0)
--
- /* inline so we don't get a warning when pr_debug is compiled out */
- static inline const char *memblock_type_name(struct memblock_type *type)
- {
+ struct memblock memblock;
+@@ -714,3 +716,52 @@ static int __init early_memblock(char *p)
+ }
+ early_param("memblock", early_memblock);
+ 
++#ifdef CONFIG_DEBUG_FS
++
++static int memblock_debug_show(struct seq_file *m, void *private)
++{
++	struct memblock_type *type = m->private;
++	struct memblock_region *reg;
++	int i;
++
++	for (i = 0; i < type->cnt; i++) {
++		reg = &type->regions[i];
++		seq_printf(m, "%4d: ", i);
++		if (sizeof(phys_addr_t) == 4)
++			seq_printf(m, "0x%08lx..0x%08lx\n",
++				   (unsigned long)reg->base,
++				   (unsigned long)(reg->base + reg->size - 1));
++		else
++			seq_printf(m, "0x%016llx..0x%016llx\n",
++				   (unsigned long long)reg->base,
++				   (unsigned long long)(reg->base + reg->size - 1));
++
++	}
++	return 0;
++}
++
++static int memblock_debug_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, memblock_debug_show, inode->i_private);
++}
++
++static const struct file_operations memblock_debug_fops = {
++	.open = memblock_debug_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static int __init memblock_init_debugfs(void)
++{
++	struct dentry *root = debugfs_create_dir("memblock", NULL);
++	if (!root)
++		return -ENXIO;
++	debugfs_create_file("memory", S_IRUGO, root, &memblock.memory, &memblock_debug_fops);
++	debugfs_create_file("reserved", S_IRUGO, root, &memblock.reserved, &memblock_debug_fops);
++
++	return 0;
++}
++__initcall(memblock_init_debugfs);
++
++#endif /* CONFIG_DEBUG_FS */
 -- 
 1.6.4.2
 
