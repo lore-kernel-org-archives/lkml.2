@@ -1,107 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757186Ab0GMSK4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 14:10:56 -0400
-Received: from mail.lixom.net ([70.86.134.90]:48770 "EHLO mail.lixom.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752001Ab0GMSKy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 14:10:54 -0400
-X-Greylist: delayed 411 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jul 2010 14:10:54 EDT
-Date: Tue, 13 Jul 2010 13:04:02 -0500
-From: Olof Johansson <olof@lixom.net>
-To: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Grant Likely <grant.likely@secretlab.ca>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Kevin Hilman <khilman@deeprootsystems.com>,
-        linux-arm-msm@vger.kernel.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-omap@vger.kernel.org, Eric Miao <eric.miao@canonical.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev@lists.ozlabs.org
-Subject: Re: optimized script [Was: ARM defconfig files]
-Message-ID: <20100713180402.GA1422@lixom.net>
-References: <AANLkTilhI9O6YwnuAylo_jNgwR8VXmpSVJ1kylIYPCGT@mail.gmail.com> <20100712173228.GC9897@n2100.arm.linux.org.uk> <AANLkTinxUqzxClVDTyruJ6kzFTganXUGJJHJ5wRi9Iak@mail.gmail.com> <20100712185029.GB14425@pengutronix.de> <AANLkTinOuU-VVXaMwMp69CBp2Y4wxpoWybEQ34H5j0lJ@mail.gmail.com> <alpine.LFD.2.00.1007121510260.10598@xanadu.home> <AANLkTim-O00n9YPv7w4VCKjN-ETLijyTHomWUn4mZtTV@mail.gmail.com> <AANLkTilDoGbCx_0oKKPOeGG7TKL2VSNVII5ydmnQ77B7@mail.gmail.com> <20100713070741.GB26442@pengutronix.de> <20100713080705.GA20978@pengutronix.de>
+	id S1752393Ab0GMSM2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 14:12:28 -0400
+Received: from relay2-v.mail.gandi.net ([217.70.178.76]:43020 "EHLO
+	mrelay2-v.mgt.gandi.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751042Ab0GMSM0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 14:12:26 -0400
+X-Originating-IP: 217.70.178.39
+X-Originating-IP: 74.107.143.84
+Date: Tue, 13 Jul 2010 11:12:13 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: Chris Li <christ.li@gmail.com>
+Cc: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
+        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org,
+        linux-sparse@vger.kernel.org
+Subject: Re: [PATCH 2/2] parser: define __builtin_unreachable
+Message-ID: <20100713181212.GB20289@feather>
+References: <AANLkTikFmeXz9og4t98jm6QcAdRa6rIeCAv3oeFnTgd8@mail.gmail.com>
+ <1278751162-10053-2-git-send-email-jslaby@suse.cz>
+ <20100710090705.GA14881@feather>
+ <AANLkTimf821jhfhU-Rsj7xa2S4EzuP23weoUSZVWsD2u@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100713080705.GA20978@pengutronix.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTimf821jhfhU-Rsj7xa2S4EzuP23weoUSZVWsD2u@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 10:07:05AM +0200, Uwe Kleine-König wrote:
-> Hello,
+On Tue, Jul 13, 2010 at 12:52:48AM -0700, Chris Li wrote:
+> On Sat, Jul 10, 2010 at 2:07 AM, Josh Triplett <josh@joshtriplett.org> wrote:
+> > __builtin_unreachable has special semantics beyond just a function.
+> > This definition will suffice to allow compilation, but
+> > __builtin_unreachable should have the same effect in sparse that it does
+> > in GCC: mark the point (and the remainder of the basic block) as
+> > unreachable.  Something like the mechanism used for handling noreturn
+> > would work here as well; declaring the function to have attribute
+> > noreturn would probably have almost the right semantics.
+> >
 > 
-> On Tue, Jul 13, 2010 at 09:07:41AM +0200, Uwe Kleine-König wrote:
-> > Hi
-> > 
-> > On Mon, Jul 12, 2010 at 01:50:47PM -0600, Grant Likely wrote:
-> > > On Mon, Jul 12, 2010 at 1:34 PM, Linus Torvalds
-> > > <torvalds@linux-foundation.org> wrote:
-> > > > On Mon, Jul 12, 2010 at 12:17 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> > > >> I think Uwe could provide his script and add it to the kernel tree.
-> > > >> Then all architectures could benefit from it.  Having the defconfig
-> > > >> files contain only those options which are different from the defaults
-> > > >> is certainly more readable, even on x86.
-> > > >
-> > > > Quite possible. But maintainers would need to be on the lookout of
-> > > > people actually using the script, and refusing to apply patches that
-> > > > re-introduce the whole big thing.
-> > > 
-> > > I can (partially) speak for powerpc.  If ARM uses this approach, then
-> > > I think we can do the same.  After the defconfigs are trimmed, I
-> > > certainly won't pick up any more full defconfigs.
-> > I just restarted my script on the powerpc defconfigs basing on rc5, I
-> > assume they complete in a few days time.
-> So Stephen was faster than me.  I don't know yet how he optimised my
-> script, meanwhile I put some efforts into it, too by just checking lines
-> that match "^(# )?CONFIG_".
-> 
-> Find it attached.
-> 
-> I will start to reduce the remaining configs (i.e. all but arm and
-> powerpc).
+> The attribute noreturn will apply to the whole function. The function
+> NEVER returns.
+> __builtin_unreachable only apply to current basic block. e.g. some
+> error handling path like panic. The function can still return a value on the
+> normal path. It has different meaning than attribute noreturn. So I don't think
+> automatically give the function noreturn attribute is the right thing to do.
 
-I added just a simple heuristic: If I could remove a line, I attempted
-to remove twice the amount next time around (and fall back to 1 if it failed).
+No, I didn't mean that using __builtin_unreachable should mark the
+function calling it as noreturn.  I meant that as an approximation to
+the right behavior, __builtin_unreachable *itself* could have attribute
+noreturn.
 
-I.e. main loop:
-
-i = 0
-lines = 1
-
-while i < len(config):
-    print 'test for %r + %d' % (config[i], lines)
-    defconfig = open(defconfig_src, 'w')
-    defconfig.writelines(config[:i])
-    defconfig.writelines(config[i + lines:])
-    defconfig.close()
-    subprocess.check_call(['make', '-s', 'ARCH=%s' % arch, target])
-    if os.stat('.config').st_size == config_size and list(open('.config')) == origconfig:
-        del config[i:i+lines]
-        lines *= 2
-    else:
-        if lines > 1:
-            lines = 1
-        else:
-            i += 1
-
-
-I didn't measure what the actual improvement was, but I saw a fair amount
-of 2/4/8-attempts passing, so I let it run. Stephen beat me to posting
-the resulting patch though. :P
-
-While this script is great, it is somewhat painful to run given that it
-attempts one config per line. Even on a fast machine that tends to take
-a while.
-
-
--Olof
+- Josh Triplett
