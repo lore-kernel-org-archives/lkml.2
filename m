@@ -1,190 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756706Ab0GMKWa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 06:22:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25743 "EHLO mx1.redhat.com"
+	id S1756741Ab0GMKXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:23:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3697 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756521Ab0GMKW0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 06:22:26 -0400
-Date: Tue, 13 Jul 2010 06:21:33 -0400
+	id S1756591Ab0GMKW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 06:22:59 -0400
+Date: Tue, 13 Jul 2010 06:22:29 -0400
 From: Xiaotian Feng <dfeng@redhat.com>
 To: linux-mm@kvack.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org
 Cc: riel@redhat.com, cl@linux-foundation.org, a.p.zijlstra@chello.nl,
         Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
         lwang@redhat.com, penberg@cs.helsinki.fi, akpm@linux-foundation.org,
         davem@davemloft.net
-Message-Id: <20100713102132.2835.45692.sendpatchset@danny.redhat>
+Message-Id: <20100713102228.2835.64815.sendpatchset@danny.redhat>
 In-Reply-To: <20100713101650.2835.15245.sendpatchset@danny.redhat>
 References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
-Subject: [PATCH -mmotm 25/30] nfs: disable data cache revalidation for swapfiles
+Subject: [PATCH -mmotm 30/30] fix mess up on swap with multi files from same nfs server
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From ee72952409a0b811d61f435682e6d161e3b5189b Mon Sep 17 00:00:00 2001
+>From fd03848cadf5719228f617b72039cc8302d892ef Mon Sep 17 00:00:00 2001
 From: Xiaotian Feng <dfeng@redhat.com>
-Date: Tue, 13 Jul 2010 13:10:49 +0800
-Subject: [PATCH 25/30] nfs: disable data cache revalidation for swapfiles
+Date: Tue, 13 Jul 2010 14:00:02 +0800
+Subject: [PATCH 30/30] fix mess up on swap with multi files from same nfs server
 
-Do as Trond suggested:
-  http://lkml.org/lkml/2006/8/25/348
+xs_swapper() will set xprt->swapper when swapon nfs files, unset xprt->swapper
+when swapoff nfs files. This will lead a bug if we swapon multi files from
+the same nfs server, they had the same xprt, then the reserved memory could
+not be disconnected when we swapoff all files.
 
-Disable NFS data cache revalidation on swap files since it doesn't really
-make sense to have other clients change the file while you are using it.
-
-Thereby we can stop setting PG_private on swap pages, since there ought to
-be no further races with invalidate_inode_pages2() to deal with.
-
-And since we cannot set PG_private we cannot use page->private (which is
-already used by PG_swapcache pages anyway) to store the nfs_page. Thus
-augment the new nfs_page_find_request logic.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
 ---
- fs/nfs/inode.c |    6 +++++
- fs/nfs/write.c |   69 ++++++++++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 63 insertions(+), 12 deletions(-)
+ include/linux/sunrpc/xprt.h |    4 ++--
+ net/sunrpc/xprtsock.c       |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
 
-diff --git a/fs/nfs/inode.c b/fs/nfs/inode.c
-index 099b351..45293af 100644
---- a/fs/nfs/inode.c
-+++ b/fs/nfs/inode.c
-@@ -798,6 +798,12 @@ int nfs_revalidate_mapping(struct inode *inode, struct address_space *mapping)
- 	struct nfs_inode *nfsi = NFS_I(inode);
- 	int ret = 0;
+diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
+index ba2330d..bc49091 100644
+--- a/include/linux/sunrpc/xprt.h
++++ b/include/linux/sunrpc/xprt.h
+@@ -171,8 +171,8 @@ struct rpc_xprt {
+ 	unsigned int		max_reqs;	/* total slots */
+ 	unsigned long		state;		/* transport state */
+ 	unsigned char		shutdown   : 1,	/* being shut down */
+-				resvport   : 1, /* use a reserved port */
+-				swapper    : 1; /* we're swapping over this
++				resvport   : 1;	/* use a reserved port */
++	unsigned int		swapper;	/* we're swapping over this
+ 						   transport */
+ 	unsigned int		bind_index;	/* bind function index */
  
-+	/*
-+	 * swapfiles are not supposed to be shared.
-+	 */
-+	if (IS_SWAPFILE(inode))
-+		goto out;
-+
- 	if ((nfsi->cache_validity & NFS_INO_REVAL_PAGECACHE)
- 			|| nfs_attribute_cache_expired(inode)
- 			|| NFS_STALE(inode)) {
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index 109a970..0d7ea95 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -109,25 +109,62 @@ static void nfs_context_set_write_error(struct nfs_open_context *ctx, int error)
- 	set_bit(NFS_CONTEXT_ERROR_WRITE, &ctx->flags);
- }
- 
--static struct nfs_page *nfs_page_find_request_locked(struct page *page)
-+static struct nfs_page *
-+__nfs_page_find_request_locked(struct nfs_inode *nfsi, struct page *page, int get)
- {
- 	struct nfs_page *req = NULL;
- 
--	if (PagePrivate(page)) {
-+	if (PagePrivate(page))
- 		req = (struct nfs_page *)page_private(page);
--		if (req != NULL)
--			kref_get(&req->wb_kref);
--	}
-+	else if (unlikely(PageSwapCache(page)))
-+		req = radix_tree_lookup(&nfsi->nfs_page_tree, page_file_index(page));
-+
-+	if (get && req)
-+		kref_get(&req->wb_kref);
-+
- 	return req;
- }
- 
-+static inline struct nfs_page *
-+nfs_page_find_request_locked(struct nfs_inode *nfsi, struct page *page)
-+{
-+	return __nfs_page_find_request_locked(nfsi, page, 1);
-+}
-+
-+static int __nfs_page_has_request(struct page *page)
-+{
-+	struct inode *inode = page_file_mapping(page)->host;
-+	struct nfs_page *req = NULL;
-+
-+	spin_lock(&inode->i_lock);
-+	req = __nfs_page_find_request_locked(NFS_I(inode), page, 0);
-+	spin_unlock(&inode->i_lock);
-+
-+	/*
-+	 * hole here plugged by the caller holding onto PG_locked
-+	 */
-+
-+	return req != NULL;
-+}
-+
-+static inline int nfs_page_has_request(struct page *page)
-+{
-+	if (PagePrivate(page))
-+		return 1;
-+
-+	if (unlikely(PageSwapCache(page)))
-+		return __nfs_page_has_request(page);
-+
-+	return 0;
-+}
-+
- static struct nfs_page *nfs_page_find_request(struct page *page)
- {
- 	struct inode *inode = page_file_mapping(page)->host;
- 	struct nfs_page *req = NULL;
- 
- 	spin_lock(&inode->i_lock);
--	req = nfs_page_find_request_locked(page);
-+	req = nfs_page_find_request_locked(NFS_I(inode), page);
- 	spin_unlock(&inode->i_lock);
- 	return req;
- }
-@@ -230,7 +267,7 @@ static struct nfs_page *nfs_find_and_lock_request(struct page *page)
- 
- 	spin_lock(&inode->i_lock);
- 	for (;;) {
--		req = nfs_page_find_request_locked(page);
-+		req = nfs_page_find_request_locked(NFS_I(inode), page);
- 		if (req == NULL)
- 			break;
- 		if (nfs_set_page_tag_locked(req))
-@@ -383,8 +420,14 @@ static int nfs_inode_add_request(struct inode *inode, struct nfs_page *req)
- 		if (nfs_have_delegation(inode, FMODE_WRITE))
- 			nfsi->change_attr++;
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index 5c8b918..30bb8ce 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1662,11 +1662,11 @@ int xs_swapper(struct rpc_xprt *xprt, int enable)
+ 		 */
+ 		err = sk_adjust_memalloc(1, RPC_RESERVE_PAGES);
+ 		if (!err) {
+-			xprt->swapper = 1;
++			xprt->swapper++;
+ 			xs_set_memalloc(xprt);
+ 		}
+ 	} else if (xprt->swapper) {
+-		xprt->swapper = 0;
++		xprt->swapper--;
+ 		sk_clear_memalloc(transport->inet);
+ 		sk_adjust_memalloc(-1, -RPC_RESERVE_PAGES);
  	}
--	SetPagePrivate(req->wb_page);
--	set_page_private(req->wb_page, (unsigned long)req);
-+	/*
-+	 * Swap-space should not get truncated. Hence no need to plug the race
-+	 * with invalidate/truncate.
-+	 */
-+	if (likely(!PageSwapCache(req->wb_page))) {
-+		SetPagePrivate(req->wb_page);
-+		set_page_private(req->wb_page, (unsigned long)req);
-+	}
- 	nfsi->npages++;
- 	kref_get(&req->wb_kref);
- 	radix_tree_tag_set(&nfsi->nfs_page_tree, req->wb_index,
-@@ -406,8 +449,10 @@ static void nfs_inode_remove_request(struct nfs_page *req)
- 	BUG_ON (!NFS_WBACK_BUSY(req));
- 
- 	spin_lock(&inode->i_lock);
--	set_page_private(req->wb_page, 0);
--	ClearPagePrivate(req->wb_page);
-+	if (likely(!PageSwapCache(req->wb_page))) {
-+		set_page_private(req->wb_page, 0);
-+		ClearPagePrivate(req->wb_page);
-+	}
- 	radix_tree_delete(&nfsi->nfs_page_tree, req->wb_index);
- 	nfsi->npages--;
- 	if (!nfsi->npages) {
-@@ -575,7 +620,7 @@ static struct nfs_page *nfs_try_to_update_request(struct inode *inode,
- 	spin_lock(&inode->i_lock);
- 
- 	for (;;) {
--		req = nfs_page_find_request_locked(page);
-+		req = nfs_page_find_request_locked(NFS_I(inode), page);
- 		if (req == NULL)
- 			goto out_unlock;
- 
 -- 
 1.7.1.1
 
