@@ -1,90 +1,300 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751933Ab0GMEaF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 00:30:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26610 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750747Ab0GMEaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 00:30:01 -0400
-Message-ID: <4C3BEBC4.6000902@redhat.com>
-Date: Tue, 13 Jul 2010 07:29:56 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1751899Ab0GMEaz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 00:30:55 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:47305 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750747Ab0GMEay (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 00:30:54 -0400
+X-Sasl-enc: pdG2YKMpiMSZu4arVht5PWL48BB5h60qcknfWng7+upC 1278995450
+Date: Tue, 13 Jul 2010 12:30:43 +0800
+From: Ian Kent <raven@themaw.net>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
+Message-ID: <20100713043041.GD3949@zeus.themaw.net>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
+ <1276627208-17242-15-git-send-email-vaurora@redhat.com>
 MIME-Version: 1.0
-To: Giangiacomo Mariotti <gg.mariotti@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: BTRFS: Unbelievably slow with kvm/qemu
-References: <AANLkTin1uF6WbVvxJ84oO1NKnCU-6VHrmWU1XFYTlqtp@mail.gmail.com>
-In-Reply-To: <AANLkTin1uF6WbVvxJ84oO1NKnCU-6VHrmWU1XFYTlqtp@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1276627208-17242-15-git-send-email-vaurora@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2010 08:24 AM, Giangiacomo Mariotti wrote:
-> Hi, is it a known problem how much slow is Btrfs with kvm/qemu(meaning
-> that the image kvm/qemu uses as the hd is on a partition formatted
-> with Btrfs, not that the fs used by the hd inside the kvm environment
-> is Btrfs, in fact inside kvm the / partition is formatted with ext3)?
-> I haven't written down the exact numbers, because I forgot, but while
-> I was trying to make it work, after I noticed how much longer than
-> usual it was taking to just install the system, I took a look at iotop
-> and it was reporting a write speed of the kvm process of approximately
-> 3M/s, while the Btrfs kernel thread had an approximately write speed
-> of 7K/s! Just formatting the partitions during the debian installation
-> took minutes. When the actual installation of the distro started I had
-> to stop it, because it was taking hours! The iotop results made me
-> think that the problem could be Btrfs, but, to be sure that it wasn't
-> instead a kvm/qemu problem, I cut/pasted the same virtual hd on an
-> ext3 fs and started kvm with the same parameters as before. The
-> installation of debian inside kvm this time went smoothly and fast,
-> like normally it does. I've been using Btrfs for some time now and
-> while it has never been a speed champion(and I guess it's not supposed
-> to be one and I don't even really care that much about it), I've never
-> had any noticeable performance problem before and it has always been
-> quite stable. In this test case though, it seems to be doing very bad.
->
->    
+On Tue, Jun 15, 2010 at 11:39:44AM -0700, Valerie Aurora wrote:
+> Add support for fallthru directory entries to ext2.
+> 
+> XXX What to do for d_ino for fallthrus?  If we return the inode from
+> the the underlying file system, it comes from a different inode
+> "namespace" and that will produce spurious matches.  This argues for
+> implementation of fallthrus as symlinks because they have to allocate
+> an inode (and inode number) anyway, and we can later reuse it if we
+> copy the file up.
+> 
+> Cc: Theodore Tso <tytso@mit.edu>
+> Cc: linux-ext4@vger.kernel.org
+> Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+> Signed-off-by: Jan Blunck <jblunck@suse.de>
+> ---
+>  fs/ext2/dir.c           |   92 ++++++++++++++++++++++++++++++++++++++++++++--
+>  fs/ext2/ext2.h          |    1 +
+>  fs/ext2/namei.c         |   22 +++++++++++
+>  include/linux/ext2_fs.h |    1 +
+>  4 files changed, 112 insertions(+), 4 deletions(-)
+> 
+> diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
+> index 030bd46..f3b4aff 100644
+> --- a/fs/ext2/dir.c
+> +++ b/fs/ext2/dir.c
+> @@ -219,7 +219,8 @@ static inline int ext2_match (int len, const char * const name,
+>  {
+>  	if (len != de->name_len)
+>  		return 0;
+> -	if (!de->inode && (de->file_type != EXT2_FT_WHT))
+> +	if (!de->inode && ((de->file_type != EXT2_FT_WHT) &&
+> +			   (de->file_type != EXT2_FT_FALLTHRU)))
+>  		return 0;
+>  	return !memcmp(name, de->name, len);
+>  }
+> @@ -256,6 +257,7 @@ static unsigned char ext2_filetype_table[EXT2_FT_MAX] = {
+>  	[EXT2_FT_SOCK]		= DT_SOCK,
+>  	[EXT2_FT_SYMLINK]	= DT_LNK,
+>  	[EXT2_FT_WHT]		= DT_WHT,
+> +	[EXT2_FT_FALLTHRU]	= DT_UNKNOWN,
+>  };
+>  
+>  #define S_SHIFT 12
+> @@ -342,6 +344,24 @@ ext2_readdir (struct file * filp, void * dirent, filldir_t filldir)
+>  					ext2_put_page(page);
+>  					return 0;
+>  				}
+> +			} else if (de->file_type == EXT2_FT_FALLTHRU) {
+> +				int over;
+> +				unsigned char d_type = DT_UNKNOWN;
+> +
+> +				offset = (char *)de - kaddr;
+> +				/* XXX We don't know the inode number
+> +				 * of the directory entry in the
+> +				 * underlying file system.  Should
+> +				 * look it up, either on fallthru
+> +				 * creation at first readdir or now at
+> +				 * filldir time. */
+> +				over = filldir(dirent, de->name, de->name_len,
+> +					       (n<<PAGE_CACHE_SHIFT) | offset,
+> +					       123 /* Made up ino */, d_type);
+> +				if (over) {
+> +					ext2_put_page(page);
+> +					return 0;
+> +				}
+>  			}
+>  			filp->f_pos += ext2_rec_len_from_disk(de->rec_len);
+>  		}
+> @@ -463,6 +483,10 @@ ino_t ext2_inode_by_dentry(struct inode *dir, struct dentry *dentry)
+>  			spin_lock(&dentry->d_lock);
+>  			dentry->d_flags |= DCACHE_WHITEOUT;
+>  			spin_unlock(&dentry->d_lock);
+> +		} else if(!res && de->file_type == EXT2_FT_FALLTHRU) {
+> +			spin_lock(&dentry->d_lock);
+> +			dentry->d_flags |= DCACHE_FALLTHRU;
+> +			spin_unlock(&dentry->d_lock);
+>  		}
+>  		ext2_put_page(page);
+>  	}
+> @@ -532,6 +556,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
+>  				de->name_len = 0;
+>  				de->rec_len = ext2_rec_len_to_disk(chunk_size);
+>  				de->inode = 0;
+> +				de->file_type = 0;
+>  				goto got_it;
+>  			}
+>  			if (de->rec_len == 0) {
+> @@ -545,6 +570,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
+>  			name_len = EXT2_DIR_REC_LEN(de->name_len);
+>  			rec_len = ext2_rec_len_from_disk(de->rec_len);
+>  			if (!de->inode && (de->file_type != EXT2_FT_WHT) &&
+> +			    (de->file_type != EXT2_FT_FALLTHRU) &&
+>  			    (rec_len >= reclen))
+>  				goto got_it;
+>  			if (rec_len >= name_len + reclen)
+> @@ -587,7 +613,8 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+>  
+>  	err = -EEXIST;
+>  	if (ext2_match (namelen, name, de)) {
+> -		if (de->file_type == EXT2_FT_WHT)
+> +		if ((de->file_type == EXT2_FT_WHT) ||
+> +		    (de->file_type == EXT2_FT_FALLTHRU))
+>  			goto got_it;
+>  		goto out_unlock;
+>  	}
+> @@ -602,7 +629,8 @@ got_it:
+>  							&page, NULL);
+>  	if (err)
+>  		goto out_unlock;
+> -	if (de->inode || ((de->file_type == EXT2_FT_WHT) &&
+> +	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
+> +			   (de->file_type == EXT2_FT_FALLTHRU)) &&
+>  			  !ext2_match (namelen, name, de))) {
+>  		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+>  		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+> @@ -627,6 +655,60 @@ out_unlock:
+>  }
+>  
+>  /*
+> + * Create a fallthru entry.
+> + */
+> +int ext2_fallthru_entry (struct inode *dir, struct dentry *dentry)
+> +{
+> +	const char *name = dentry->d_name.name;
+> +	int namelen = dentry->d_name.len;
+> +	unsigned short rec_len, name_len;
+> +	ext2_dirent * de;
+> +	struct page *page;
+> +	loff_t pos;
+> +	int err;
+> +
+> +	de = ext2_append_entry(dentry, &page);
+> +	if (IS_ERR(de))
+> +		return PTR_ERR(de);
+> +
+> +	err = -EEXIST;
+> +	if (ext2_match (namelen, name, de))
+> +		goto out_unlock;
+> +
+> +	name_len = EXT2_DIR_REC_LEN(de->name_len);
+> +	rec_len = ext2_rec_len_from_disk(de->rec_len);
+> +
+> +	pos = page_offset(page) +
+> +		(char*)de - (char*)page_address(page);
+> +	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
+> +							&page, NULL);
+> +	if (err)
+> +		goto out_unlock;
+> +	if (de->inode || (de->file_type == EXT2_FT_WHT) ||
+> +	    (de->file_type == EXT2_FT_FALLTHRU)) {
+> +		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+> +		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+> +		de->rec_len = ext2_rec_len_to_disk(name_len);
+> +		de = de1;
+> +	}
 
-Btrfs is very slow on sync writes:
+And again, what's foing on here?
 
-$ fio --name=x --directory=/images --rw=randwrite --runtime=300 
---size=1G --filesize=1G --bs=4k --ioengine=psync --sync=1 --unlink=1
-x: (g=0): rw=randwrite, bs=4K-4K/4K-4K, ioengine=psync, iodepth=1
-Starting 1 process
-x: Laying out IO file(s) (1 file(s) / 1024MB)
-Jobs: 1 (f=1): [w] [1.3% done] [0K/0K /s] [0/0 iops] [eta 06h:18m:45s]
-x: (groupid=0, jobs=1): err= 0: pid=2086
-   write: io=13,752KB, bw=46,927B/s, iops=11, runt=300078msec
-     clat (msec): min=33, max=1,711, avg=87.26, stdev=60.00
-     bw (KB/s) : min=    5, max=  105, per=103.79%, avg=46.70, stdev=15.86
-   cpu          : usr=0.03%, sys=19.55%, ctx=47197, majf=0, minf=94
-   IO depths    : 1=100.0%, 2=0.0%, 4=0.0%, 8=0.0%, 16=0.0%, 32=0.0%, 
- >=64=0.0%
-      submit    : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, 
- >=64=0.0%
-      complete  : 0=0.0%, 4=100.0%, 8=0.0%, 16=0.0%, 32=0.0%, 64=0.0%, 
- >=64=0.0%
-      issued r/w: total=0/3438, short=0/0
-
-      lat (msec): 50=3.40%, 100=75.63%, 250=19.14%, 500=1.40%, 750=0.35%
-      lat (msec): 1000=0.06%, 2000=0.03%
-
-Run status group 0 (all jobs):
-   WRITE: io=13,752KB, aggrb=45KB/s, minb=46KB/s, maxb=46KB/s, 
-mint=300078msec, maxt=300078msec
-
-45KB/s, while 4-5MB/s traffic was actually going to the disk.  For every 
-4KB that the the application writes, 400KB+ of metadata is written.
-
-(It's actually worse, since it starts faster than the average and ends 
-up slower than the average).
-
-For kvm, you can try cache=writeback or cache=unsafe and get better 
-performance (though still slower than ext*).
-
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+> +	de->name_len = namelen;
+> +	memcpy(de->name, name, namelen);
+> +	de->inode = 0;
+> +	de->file_type = EXT2_FT_FALLTHRU;
+> +	err = ext2_commit_chunk(page, pos, rec_len);
+> +	dir->i_mtime = dir->i_ctime = CURRENT_TIME_SEC;
+> +	EXT2_I(dir)->i_flags &= ~EXT2_BTREE_FL;
+> +	mark_inode_dirty(dir);
+> +	/* OFFSET_CACHE */
+> +out_put:
+> +	ext2_put_page(page);
+> +	return err;
+> +out_unlock:
+> +	unlock_page(page);
+> +	goto out_put;
+> +}
+> +
+> +/*
+>   * ext2_delete_entry deletes a directory entry by merging it with the
+>   * previous entry. Page is up-to-date. Releases the page.
+>   */
+> @@ -711,7 +793,9 @@ int ext2_whiteout_entry (struct inode * dir, struct dentry * dentry,
+>  	 */
+>  	if (ext2_match (namelen, name, de))
+>  		de->inode = 0;
+> -	if (de->inode || (de->file_type == EXT2_FT_WHT)) {
+> +	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
+> +			   (de->file_type == EXT2_FT_FALLTHRU)) &&
+> +			  !ext2_match (namelen, name, de))) {
+>  		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
+>  		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
+>  		de->rec_len = ext2_rec_len_to_disk(name_len);
+> diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
+> index 44d190c..2fa32b3 100644
+> --- a/fs/ext2/ext2.h
+> +++ b/fs/ext2/ext2.h
+> @@ -108,6 +108,7 @@ extern struct ext2_dir_entry_2 * ext2_find_entry (struct inode *,struct qstr *,
+>  extern int ext2_delete_entry (struct ext2_dir_entry_2 *, struct page *);
+>  extern int ext2_whiteout_entry (struct inode *, struct dentry *,
+>  				struct ext2_dir_entry_2 *, struct page *);
+> +extern int ext2_fallthru_entry (struct inode *, struct dentry *);
+>  extern int ext2_empty_dir (struct inode *);
+>  extern struct ext2_dir_entry_2 * ext2_dotdot (struct inode *, struct page **);
+>  extern void ext2_set_link(struct inode *, struct ext2_dir_entry_2 *, struct page *, struct inode *, int);
+> diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
+> index 12195a5..f28154c 100644
+> --- a/fs/ext2/namei.c
+> +++ b/fs/ext2/namei.c
+> @@ -349,6 +349,7 @@ static int ext2_whiteout(struct inode *dir, struct dentry *dentry,
+>  		goto out;
+>  
+>  	spin_lock(&new_dentry->d_lock);
+> +	new_dentry->d_flags &= ~DCACHE_FALLTHRU;
+>  	new_dentry->d_flags |= DCACHE_WHITEOUT;
+>  	spin_unlock(&new_dentry->d_lock);
+>  	d_add(new_dentry, NULL);
+> @@ -367,6 +368,26 @@ out:
+>  	return err;
+>  }
+>  
+> +/*
+> + * Create a fallthru entry.
+> + */
+> +static int ext2_fallthru (struct inode *dir, struct dentry *dentry)
+> +{
+> +	int err;
+> +
+> +	dquot_initialize(dir);
+> +
+> +	err = ext2_fallthru_entry(dir, dentry);
+> +	if (err)
+> +		return err;
+> +
+> +	d_instantiate(dentry, NULL);
+> +	spin_lock(&dentry->d_lock);
+> +	dentry->d_flags |= DCACHE_FALLTHRU;
+> +	spin_unlock(&dentry->d_lock);
+> +	return 0;
+> +}
+> +
+>  static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
+>  	struct inode * new_dir,	struct dentry * new_dentry )
+>  {
+> @@ -470,6 +491,7 @@ const struct inode_operations ext2_dir_inode_operations = {
+>  	.rmdir		= ext2_rmdir,
+>  	.mknod		= ext2_mknod,
+>  	.whiteout	= ext2_whiteout,
+> +	.fallthru	= ext2_fallthru,
+>  	.rename		= ext2_rename,
+>  #ifdef CONFIG_EXT2_FS_XATTR
+>  	.setxattr	= generic_setxattr,
+> diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
+> index 20468bd..cb3d400 100644
+> --- a/include/linux/ext2_fs.h
+> +++ b/include/linux/ext2_fs.h
+> @@ -577,6 +577,7 @@ enum {
+>  	EXT2_FT_SOCK		= 6,
+>  	EXT2_FT_SYMLINK		= 7,
+>  	EXT2_FT_WHT		= 8,
+> +	EXT2_FT_FALLTHRU	= 9,
+>  	EXT2_FT_MAX
+>  };
+>  
+> -- 
+> 1.6.3.3
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
