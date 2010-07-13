@@ -1,103 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757129Ab0GMUae (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 16:30:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:47874 "EHLO mx1.redhat.com"
+	id S1757020Ab0GMUbf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 16:31:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51639 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755517Ab0GMUa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 16:30:28 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, axboe@kernel.dk,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
-	<x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
-	<x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
-	<x49eif7p3z0.fsf@segfault.boston.devel.redhat.com>
-	<20100713195650.GA21044@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 13 Jul 2010 16:30:23 -0400
-In-Reply-To: <20100713195650.GA21044@redhat.com> (Vivek Goyal's message of
-	"Tue, 13 Jul 2010 15:56:50 -0400")
-Message-ID: <x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754096Ab0GMUbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 16:31:34 -0400
+Date: Tue, 13 Jul 2010 16:31:17 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: catalin.marinas@arm.com
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] introduce a default off mode for kmemleak
+Message-ID: <20100713203116.GA25784@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+Hi,
 
-> On Tue, Jul 13, 2010 at 03:38:11PM -0400, Jeff Moyer wrote:
->> Corrado Zoccolo <czoccolo@gmail.com> writes:
->> 
->> > Can you test the attached patch, where I also added your changes to
->> > make jbd(2) to perform sync writes?
->> 
->> I got new storage, so I have new numbers.  I only re-ran deadline and
->> vanilla cfq for the fs_mark only test.  The average of 10 runs comes out
->> like so:
->> 
->> deadline:    571.98
->> vanilla cfq: 107.42
->> patched cfq: 460.9
->> 
->> Mixed workload results with your suggested patch:
->> 
->> fs_mark: 15.65 files/sec
->> fio: 132.5 MB/s
->> 
->> So, again, not looking great for the mixed workload, but the patch
->> does improve the fs_mark only case.  Looking at the blktrace data shows
->> that the jbd2 thread preempts the fs_mark thread at all the right
->> times.  The only thing holding throughput back is the whole notion that
->> we need to only dispatch from one queue (even though the storage is
->> capable of serving both the reads and writes simultaneously).
->> 
->> I added in the patch that allows the simultaneous dispatch of both reads
->> and writes, and here are the results from that run:
->> 
->> fs_mark: 15.975 files/sec
->> fio: 132.4 MB/s
->> 
->> So, it looks like that didn't help.  The reason this patch doesn't come
->> close to the yield patch in the mixed workload is because the yield
->> patch set allows the fs_mark process to continue to issue I/O.  With
->> your patch, the fs_mark process does 64KB of I/O, the jbd2 thread does
->> the journal commit, and then the fio process runs again.  Given that the
->> fs_mark process typically only uses a small fraction of its time slice,
->> you end up with an unfair balance.
->
-> Hi Jeff,
->
-> This is little strange. Given the fact that now both fs_mark and jbd
-> threads are on sync-noidle tree, we should have idled on sync-noidle
-> tree to provide fairness and that should have made sure that fs_mark/jbd
-> do more IO and slice is not lost to fio thread.
->
-> Not sure what is happening though in practice. Only you can look at
-> traces more closely and see if timer is being armed or not. 
+Kmemleak can be very useful in figuring out where a kernel leak is
+suspected, but I've run into issues it which makes it hard to enable 
+by default - reports false positives, oom kills on low memory systems (512 MB).
+Although these can be addressed, there is still the memory footprint,
+and runtime overhead, so I think it might make sense to create mode
+where it is disabled by default, but can still be enabled on the command
+line via: kmemleak=on.
 
-Vivek, if you want to look at traces, just ask.  I'd be happy to show
-them to you, upload them, whatever.  I'm not sure why you think
-otherwise (though I wouldn't blame you for not wanting to look at
-them!).
+thanks,
 
-Now, to answer your question, the jbd2 thread runs and issues a barrier,
-which causes a forced dispatch of requests.  After that a new queue is
-selected, and since the fs_mark thread is blocked on the journal commit,
-it's always the fio process that gets to run.
+-Jason
 
-This, of course, raises the question of why the blk_yield patches didn't
-run into the same problem.  Looking back at some saved traces, I don't
-see WBS (write barrier sync) requests, so I wonder if barriers weren't
-supported by my last storage system.
+Introduce a new DEBUG_KMEMLEAK_DEFAULT_OFF config parameter that allows
+kmemleak to be disabled by default, but enabled on the command line via:
+kmemleak=on. Although a reboot is required to turn it on, its still
+useful to not require a re-compile.
 
-Cheers,
-Jeff
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+---
+ lib/Kconfig.debug |    7 +++++++
+ mm/kmemleak.c     |   26 +++++++++++++++++++++++++-
+ 2 files changed, 32 insertions(+), 1 deletions(-)
+
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index e722e9d..95ab402 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -400,6 +400,13 @@ config DEBUG_KMEMLEAK_TEST
+ 
+ 	  If unsure, say N.
+ 
++config DEBUG_KMEMLEAK_DEFAULT_OFF
++	bool "Default kmemleak to off"
++	depends on DEBUG_KMEMLEAK
++	help
++	  Say Y here to disable kmemleak by default. It can then be enabled
++	  on the command line via kmemleak=on.
++
+ config DEBUG_PREEMPT
+ 	bool "Debug preemptible kernel"
+ 	depends on DEBUG_KERNEL && PREEMPT && TRACE_IRQFLAGS_SUPPORT
+diff --git a/mm/kmemleak.c b/mm/kmemleak.c
+index 2c0d032..1006267 100644
+--- a/mm/kmemleak.c
++++ b/mm/kmemleak.c
+@@ -211,6 +211,11 @@ static signed long jiffies_scan_wait;
+ static int kmemleak_stack_scan = 1;
+ /* protects the memory scanning, parameters and debug/kmemleak file access */
+ static DEFINE_MUTEX(scan_mutex);
++#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
++/* setting kmemleak=on, will set this var, skipping the disable */
++static int kmemleak_skip_disable;
++#endif
++
+ 
+ /*
+  * Early object allocation/freeing logging. Kmemleak is initialized after the
+@@ -1600,10 +1605,22 @@ static int kmemleak_boot_config(char *str)
+ {
+ 	if (!str)
+ 		return -EINVAL;
++
+ 	if (strcmp(str, "off") == 0)
++#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
++		return -EINVAL;
++#else
+ 		kmemleak_disable();
+-	else if (strcmp(str, "on") != 0)
++#endif
++	else if (strcmp(str, "on") == 0)
++#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
++		kmemleak_skip_disable = 1;
++#else
++		return -EINVAL;
++#endif
++	else
+ 		return -EINVAL;
++
+ 	return 0;
+ }
+ early_param("kmemleak", kmemleak_boot_config);
+@@ -1616,6 +1633,13 @@ void __init kmemleak_init(void)
+ 	int i;
+ 	unsigned long flags;
+ 
++#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
++	if (!kmemleak_skip_disable) {
++		kmemleak_disable();
++		return;
++	}
++#endif
++
+ 	jiffies_min_age = msecs_to_jiffies(MSECS_MIN_AGE);
+ 	jiffies_scan_wait = msecs_to_jiffies(SECS_SCAN_WAIT * 1000);
+ 
+-- 
+1.7.1
+
