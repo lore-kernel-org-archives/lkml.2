@@ -1,81 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756982Ab0GMQfI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 12:35:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6018 "EHLO mx1.redhat.com"
+	id S1757052Ab0GMQfq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 12:35:46 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:57018 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752211Ab0GMQfG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 12:35:06 -0400
-Message-ID: <4C3C9589.4090602@redhat.com>
-Date: Tue, 13 Jul 2010 19:34:17 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Peter Palfrader <peter@palfrader.org>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, torvalds@linux-foundation.org,
-        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-        Glauber Costa <glommer@redhat.com>,
-        Zachary Amsden <zamsden@redhat.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization	point
- for pvclock
-References: <20100701175144.GA2116@kroah.com> <20100701173218.125822294@clark.site> <20100707124731.GJ15122@anguilla.noreply.org> <4C359D5A.1050906@redhat.com> <20100713102350.GW15122@anguilla.noreply.org> <4C3C68C8.4060409@redhat.com> <20100713141902.GB15122@anguilla.noreply.org> <4C3C8CE5.1080705@redhat.com> <20100713162207.GC15122@anguilla.noreply.org>
-In-Reply-To: <20100713162207.GC15122@anguilla.noreply.org>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+	id S1757006Ab0GMQfo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 12:35:44 -0400
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux@arm.linux.org.uk,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100713154335.GB2815@barrios-desktop>
+References: <20100712155348.GA2815@barrios-desktop>
+	 <20100713093006.GB14504@cmpxchg.org>
+	 <20100713154335.GB2815@barrios-desktop>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 13 Jul 2010 09:35:33 -0700
+Message-ID: <1279038933.10995.9.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 07:22 PM, Peter Palfrader wrote:
->>>
->>> weasel@intrepid:~$ publish System.map
->>> http://asteria.noreply.org/~weasel/volatile/2010-07-13-mbm2xEdd8Q4/System.map
->>> weasel@intrepid:~$ grep -i last_value System.map
->>> ffffffff81712e80 r last_value
->>> ffffffff81b05240 b last_value.26163
->>>
->>>        
->> "r" = "read only"
->>
->> How does it look in 'nm arch/x86/kernel/pvclock.o'?
->>      
-> The same:
->
-> [git|v2.6.32.16] weasel@thelma:/scratch/kernel/2.6.32.16$ nm arch/x86/kernel/pvclock.o
-> 0000000000000000 r last_value
->                   U native_read_tsc
-> 0000000000000040 T pvclock_clocksource_read
-> 0000000000000100 T pvclock_read_wallclock
-> 0000000000000000 T pvclock_tsc_khz
->                   U set_normalized_timespec
->    
+On Wed, 2010-07-14 at 00:43 +0900, Minchan Kim wrote:
+> 3 is not a big deal than 2 about memory usage.
+> If the system use memory space fully(MAX_PHYSMEM_BITS 31), it just consumes
+> 1024(128 * 8) byte. So now I think best solution is 2. 
+> 
+> Russell. What do you think about it? 
 
-But it's
+I'm not Russell, but I'll tell you what I think. :)
 
->
-> static atomic64_t last_value = ATOMIC64_INIT(0);
->
+Make the sections 16MB.  You suggestion to add the start/end pfns
+_doubles_ the size of the structure, and its size overhead.  We have
+systems with a pretty tremendous amount of memory with 16MB sections.
 
-Doesn't make any sense.
+If you _really_ can't make the section size smaller, and the vast
+majority of the sections are fully populated, you could hack something
+in.  We could, for instance, have a global list that's mostly readonly
+which tells you which sections need to be have their sizes closely
+inspected.  That would work OK if, for instance, you only needed to
+check a couple of memory sections in the system.  It'll start to suck if
+you made the lists very long.
 
-Let's try to see if the toolchain is confused:
-
-- rename last_value to some random name
-- drop the 'static' qualifier
-- drop the '= ATOMIC64_INIT(0)'
-- all of the above
-
-(better start with the last).
-
-No need to rebuild everything, just look at the output of nm pvclock.o.
-
-My bet is that dropping 'static' will fix it.  We may have the wrong 
-constraints on atomic64_cmpxchg64(), so the compiler thinks we never 
-change last_value.
-
--- 
-error compiling committee.c: too many arguments to function
+-- Dave
 
