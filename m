@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753312Ab0GMHRu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:17:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29269 "EHLO
+	id S1755040Ab0GMHSO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:18:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29265 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754619Ab0GMHQu (ORCPT
+	with ESMTP id S1754613Ab0GMHQu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Jul 2010 03:16:50 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,152 +16,95 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 35/50] x86, memblock: Add memblock_x86_find_in_range_size()
-Date: Tue, 13 Jul 2010 00:10:29 -0700
-Message-Id: <1279005044-24777-36-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 45/50] x86, memblock: Use memblock_debug to control debug message print out
+Date: Tue, 13 Jul 2010 00:10:39 -0700
+Message-Id: <1279005044-24777-46-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C3C12BD.0093,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4C3C12BF.001F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-size is returned according free range.
-Will be used to find free ranges for early_memtest and memory corruption check
+Also let memblock_x86_reserve_range/memblock_x86_free_range could print out name if memblock=debug is
+specified
 
-Do not mess it up with lib/memblock.c yet.
+will also print ther name when reserve_memblock_area/free_memblock_area are called.
+
+-v2: according to Ingo, put " if (memblock_debug) " in one place
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/memblock.h |    8 ++++
- arch/x86/mm/Makefile            |    2 +
- arch/x86/mm/memblock.c          |   88 +++++++++++++++++++++++++++++++++++++++
- 3 files changed, 98 insertions(+), 0 deletions(-)
- create mode 100644 arch/x86/include/asm/memblock.h
- create mode 100644 arch/x86/mm/memblock.c
+ arch/x86/mm/memblock.c |   20 ++++++++++++--------
+ 1 files changed, 12 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-new file mode 100644
-index 0000000..c14219a
---- /dev/null
-+++ b/arch/x86/include/asm/memblock.h
-@@ -0,0 +1,8 @@
-+#ifndef _X86_MEMBLOCK_H
-+#define _X86_MEMBLOCK_H
-+
-+#define ARCH_DISCARD_MEMBLOCK
-+
-+u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
-+
-+#endif
-diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
-index a4c7683..5554339 100644
---- a/arch/x86/mm/Makefile
-+++ b/arch/x86/mm/Makefile
-@@ -26,4 +26,6 @@ obj-$(CONFIG_NUMA)		+= numa.o numa_$(BITS).o
- obj-$(CONFIG_K8_NUMA)		+= k8topology_64.o
- obj-$(CONFIG_ACPI_NUMA)		+= srat_$(BITS).o
- 
-+obj-$(CONFIG_HAVE_MEMBLOCK)		+= memblock.o
-+
- obj-$(CONFIG_MEMTEST)		+= memtest.o
 diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-new file mode 100644
-index 0000000..c602afb
---- /dev/null
+index 53b0f60..70a6bba 100644
+--- a/arch/x86/mm/memblock.c
 +++ b/arch/x86/mm/memblock.c
-@@ -0,0 +1,88 @@
-+#include <linux/kernel.h>
-+#include <linux/types.h>
-+#include <linux/init.h>
-+#include <linux/bitops.h>
-+#include <linux/memblock.h>
-+#include <linux/bootmem.h>
-+#include <linux/mm.h>
-+#include <linux/range.h>
+@@ -122,10 +122,10 @@ static void __init memblock_x86_subtract_reserved(struct range *range, int az)
+ 
+ 	count  = memblock.reserved.cnt;
+ 
+-	pr_info("Subtract (%d early reservations)\n", count);
++	memblock_dbg("Subtract (%d early reservations)\n", count);
+ 
+ 	for_each_memblock(reserved, r) {
+-		pr_info("  [%010llx-%010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
++		memblock_dbg("  [%#010llx-%#010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
+ 		final_start = PFN_DOWN(r->base);
+ 		final_end = PFN_UP(r->base + r->size);
+ 		if (final_start >= final_end)
+@@ -198,16 +198,16 @@ void __init memblock_x86_to_bootmem(u64 start, u64 end)
+ 		memblock_free(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
+ 
+ 	count  = memblock.reserved.cnt;
+-	pr_info("(%d early reservations) ==> bootmem [%010llx-%010llx]\n", count, start, end - 1);
++	memblock_dbg("(%d early reservations) ==> bootmem [%#010llx-%#010llx]\n", count, start, end - 1);
+ 	for_each_memblock(reserved, r) {
+-		pr_info("  [%010llx-%010llx] ", (u64)r->base, (u64)r->base + r->size - 1);
++		memblock_dbg("  [%#010llx-%#010llx] ", (u64)r->base, (u64)r->base + r->size - 1);
+ 		final_start = max(start, r->base);
+ 		final_end = min(end, r->base + r->size);
+ 		if (final_start >= final_end) {
+-			pr_cont("\n");
++			memblock_dbg("\n");
+ 			continue;
+ 		}
+-		pr_cont(" ==> [%010llx-%010llx]\n", final_start, final_end - 1);
++		memblock_dbg(" ==> [%#010llx-%#010llx]\n", final_start, final_end - 1);
+ 		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
+ 	}
+ 
+@@ -286,9 +286,11 @@ void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
+ 	if (start == end)
+ 		return;
+ 
+-	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx]\n", start, end))
++	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx)\n", start, end))
+ 		return;
+ 
++	memblock_dbg("    memblock_x86_reserve_range: [%#010llx-%#010llx] %16s\n", start, end - 1, name);
 +
-+/* Check for already reserved areas */
-+static inline bool __init bad_addr_size(u64 *addrp, u64 *sizep, u64 align)
-+{
-+	struct memblock_region *r;
-+	u64 addr = *addrp, last;
-+	u64 size = *sizep;
-+	bool changed = false;
+ 	memblock_reserve(start, end - start);
+ }
+ 
+@@ -297,9 +299,11 @@ void __init memblock_x86_free_range(u64 start, u64 end)
+ 	if (start == end)
+ 		return;
+ 
+-	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx]\n", start, end))
++	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx)\n", start, end))
+ 		return;
+ 
++	memblock_dbg("       memblock_x86_free_range: [%#010llx-%#010llx]\n", start, end - 1);
 +
-+again:
-+	last = addr + size;
-+	for_each_memblock(reserved, r) {
-+		if (last > r->base && addr < r->base) {
-+			size = r->base - addr;
-+			changed = true;
-+			goto again;
-+		}
-+		if (last > (r->base + r->size) && addr < (r->base + r->size)) {
-+			addr = round_up(r->base + r->size, align);
-+			size = last - addr;
-+			changed = true;
-+			goto again;
-+		}
-+		if (last <= (r->base + r->size) && addr >= r->base) {
-+			(*sizep)++;
-+			return false;
-+		}
-+	}
-+	if (changed) {
-+		*addrp = addr;
-+		*sizep = size;
-+	}
-+	return changed;
-+}
-+
-+static u64 __init __memblock_x86_find_in_range_size(u64 ei_start, u64 ei_last, u64 start,
-+			 u64 *sizep, u64 align)
-+{
-+	u64 addr, last;
-+
-+	addr = round_up(ei_start, align);
-+	if (addr < start)
-+		addr = round_up(start, align);
-+	if (addr >= ei_last)
-+		goto out;
-+	*sizep = ei_last - addr;
-+	while (bad_addr_size(&addr, sizep, align) && addr + *sizep <= ei_last)
-+		;
-+	last = addr + *sizep;
-+	if (last > ei_last)
-+		goto out;
-+
-+	return addr;
-+
-+out:
-+	return MEMBLOCK_ERROR;
-+}
-+
-+/*
-+ * Find next free range after start, and size is returned in *sizep
-+ */
-+u64 __init memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align)
-+{
-+	struct memblock_region *r;
-+
-+	for_each_memblock(memory, r) {
-+		u64 ei_start = r->base;
-+		u64 ei_last = ei_start + r->size;
-+		u64 addr;
-+
-+		addr = __memblock_x86_find_in_range_size(ei_start, ei_last, start,
-+					 sizep, align);
-+
-+		if (addr != MEMBLOCK_ERROR)
-+			return addr;
-+	}
-+
-+	return MEMBLOCK_ERROR;
-+}
-+
+ 	memblock_free(start, end - start);
+ }
+ 
 -- 
 1.6.4.2
 
