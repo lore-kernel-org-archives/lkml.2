@@ -1,295 +1,346 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751899Ab0GMEaz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 00:30:55 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:47305 "EHLO
+	id S1751292Ab0GMEj5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 00:39:57 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:41332 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750747Ab0GMEay (ORCPT
+	by vger.kernel.org with ESMTP id S1751032Ab0GMEjz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 00:30:54 -0400
-X-Sasl-enc: pdG2YKMpiMSZu4arVht5PWL48BB5h60qcknfWng7+upC 1278995450
-Date: Tue, 13 Jul 2010 12:30:43 +0800
+	Tue, 13 Jul 2010 00:39:55 -0400
+X-Sasl-enc: 30nHG9G0w29eCIX0f3r11proAgKMI+JRT2AqrkZyFTlG 1278995993
+Date: Tue, 13 Jul 2010 12:39:46 +0800
 From: Ian Kent <raven@themaw.net>
 To: Valerie Aurora <vaurora@redhat.com>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 14/38] fallthru: ext2 fallthru support
-Message-ID: <20100713043041.GD3949@zeus.themaw.net>
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 19/38] union-mount: Introduce union_dir structure and
+ basic operations
+Message-ID: <20100713043945.GE3949@zeus.themaw.net>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
- <1276627208-17242-15-git-send-email-vaurora@redhat.com>
+ <1276627208-17242-20-git-send-email-vaurora@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276627208-17242-15-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1276627208-17242-20-git-send-email-vaurora@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 11:39:44AM -0700, Valerie Aurora wrote:
-> Add support for fallthru directory entries to ext2.
+On Tue, Jun 15, 2010 at 11:39:49AM -0700, Valerie Aurora wrote:
+> This patch adds the basic structures and operations of VFS-based union
+> mounts (but not the ability to mount or lookup unioned file systems).
+> Each directory in a unioned file system has an associated union stack
+> created when the directory is first looked up.  The union stack is a
+> union_dir structure kept in a hash table indexed by mount and dentry
+> of the directory; thus, specific paths are unioned, not dentries
+> alone.  The union_dir keeps a pointer to the upper path and the lower
+> path and can be looked up by either path.  Currently only two layers
+> are supported, but the union_dir struct is flexible enough to allow
+> more than two layers.
 > 
-> XXX What to do for d_ino for fallthrus?  If we return the inode from
-> the the underlying file system, it comes from a different inode
-> "namespace" and that will produce spurious matches.  This argues for
-> implementation of fallthrus as symlinks because they have to allocate
-> an inode (and inode number) anyway, and we can later reuse it if we
-> copy the file up.
+> This particular version of union mounts is based on ideas by Jan
+> Blunck, Bharata Rao, and many others.
 > 
-> Cc: Theodore Tso <tytso@mit.edu>
-> Cc: linux-ext4@vger.kernel.org
 > Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-> Signed-off-by: Jan Blunck <jblunck@suse.de>
 > ---
->  fs/ext2/dir.c           |   92 ++++++++++++++++++++++++++++++++++++++++++++--
->  fs/ext2/ext2.h          |    1 +
->  fs/ext2/namei.c         |   22 +++++++++++
->  include/linux/ext2_fs.h |    1 +
->  4 files changed, 112 insertions(+), 4 deletions(-)
+>  fs/Kconfig             |   13 +++++
+>  fs/Makefile            |    1 +
+>  fs/dcache.c            |    3 +
+>  fs/union.c             |  119 ++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/union.h             |   66 ++++++++++++++++++++++++++
+>  include/linux/dcache.h |    4 +-
+>  include/linux/fs.h     |    1 +
+>  7 files changed, 206 insertions(+), 1 deletions(-)
+>  create mode 100644 fs/union.c
+>  create mode 100644 fs/union.h
 > 
-> diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
-> index 030bd46..f3b4aff 100644
-> --- a/fs/ext2/dir.c
-> +++ b/fs/ext2/dir.c
-> @@ -219,7 +219,8 @@ static inline int ext2_match (int len, const char * const name,
->  {
->  	if (len != de->name_len)
->  		return 0;
-> -	if (!de->inode && (de->file_type != EXT2_FT_WHT))
-> +	if (!de->inode && ((de->file_type != EXT2_FT_WHT) &&
-> +			   (de->file_type != EXT2_FT_FALLTHRU)))
->  		return 0;
->  	return !memcmp(name, de->name, len);
->  }
-> @@ -256,6 +257,7 @@ static unsigned char ext2_filetype_table[EXT2_FT_MAX] = {
->  	[EXT2_FT_SOCK]		= DT_SOCK,
->  	[EXT2_FT_SYMLINK]	= DT_LNK,
->  	[EXT2_FT_WHT]		= DT_WHT,
-> +	[EXT2_FT_FALLTHRU]	= DT_UNKNOWN,
->  };
+> diff --git a/fs/Kconfig b/fs/Kconfig
+> index 5f85b59..f99c3a9 100644
+> --- a/fs/Kconfig
+> +++ b/fs/Kconfig
+> @@ -59,6 +59,19 @@ source "fs/notify/Kconfig"
 >  
->  #define S_SHIFT 12
-> @@ -342,6 +344,24 @@ ext2_readdir (struct file * filp, void * dirent, filldir_t filldir)
->  					ext2_put_page(page);
->  					return 0;
->  				}
-> +			} else if (de->file_type == EXT2_FT_FALLTHRU) {
-> +				int over;
-> +				unsigned char d_type = DT_UNKNOWN;
-> +
-> +				offset = (char *)de - kaddr;
-> +				/* XXX We don't know the inode number
-> +				 * of the directory entry in the
-> +				 * underlying file system.  Should
-> +				 * look it up, either on fallthru
-> +				 * creation at first readdir or now at
-> +				 * filldir time. */
-> +				over = filldir(dirent, de->name, de->name_len,
-> +					       (n<<PAGE_CACHE_SHIFT) | offset,
-> +					       123 /* Made up ino */, d_type);
-> +				if (over) {
-> +					ext2_put_page(page);
-> +					return 0;
-> +				}
->  			}
->  			filp->f_pos += ext2_rec_len_from_disk(de->rec_len);
->  		}
-> @@ -463,6 +483,10 @@ ino_t ext2_inode_by_dentry(struct inode *dir, struct dentry *dentry)
->  			spin_lock(&dentry->d_lock);
->  			dentry->d_flags |= DCACHE_WHITEOUT;
->  			spin_unlock(&dentry->d_lock);
-> +		} else if(!res && de->file_type == EXT2_FT_FALLTHRU) {
-> +			spin_lock(&dentry->d_lock);
-> +			dentry->d_flags |= DCACHE_FALLTHRU;
-> +			spin_unlock(&dentry->d_lock);
->  		}
->  		ext2_put_page(page);
->  	}
-> @@ -532,6 +556,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
->  				de->name_len = 0;
->  				de->rec_len = ext2_rec_len_to_disk(chunk_size);
->  				de->inode = 0;
-> +				de->file_type = 0;
->  				goto got_it;
->  			}
->  			if (de->rec_len == 0) {
-> @@ -545,6 +570,7 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
->  			name_len = EXT2_DIR_REC_LEN(de->name_len);
->  			rec_len = ext2_rec_len_from_disk(de->rec_len);
->  			if (!de->inode && (de->file_type != EXT2_FT_WHT) &&
-> +			    (de->file_type != EXT2_FT_FALLTHRU) &&
->  			    (rec_len >= reclen))
->  				goto got_it;
->  			if (rec_len >= name_len + reclen)
-> @@ -587,7 +613,8 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
+>  source "fs/quota/Kconfig"
 >  
->  	err = -EEXIST;
->  	if (ext2_match (namelen, name, de)) {
-> -		if (de->file_type == EXT2_FT_WHT)
-> +		if ((de->file_type == EXT2_FT_WHT) ||
-> +		    (de->file_type == EXT2_FT_FALLTHRU))
->  			goto got_it;
->  		goto out_unlock;
->  	}
-> @@ -602,7 +629,8 @@ got_it:
->  							&page, NULL);
->  	if (err)
->  		goto out_unlock;
-> -	if (de->inode || ((de->file_type == EXT2_FT_WHT) &&
-> +	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
-> +			   (de->file_type == EXT2_FT_FALLTHRU)) &&
->  			  !ext2_match (namelen, name, de))) {
->  		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
->  		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
-> @@ -627,6 +655,60 @@ out_unlock:
->  }
->  
->  /*
-> + * Create a fallthru entry.
-> + */
-> +int ext2_fallthru_entry (struct inode *dir, struct dentry *dentry)
-> +{
-> +	const char *name = dentry->d_name.name;
-> +	int namelen = dentry->d_name.len;
-> +	unsigned short rec_len, name_len;
-> +	ext2_dirent * de;
-> +	struct page *page;
-> +	loff_t pos;
-> +	int err;
-> +
-> +	de = ext2_append_entry(dentry, &page);
-> +	if (IS_ERR(de))
-> +		return PTR_ERR(de);
-> +
-> +	err = -EEXIST;
-> +	if (ext2_match (namelen, name, de))
-> +		goto out_unlock;
-> +
-> +	name_len = EXT2_DIR_REC_LEN(de->name_len);
-> +	rec_len = ext2_rec_len_from_disk(de->rec_len);
-> +
-> +	pos = page_offset(page) +
-> +		(char*)de - (char*)page_address(page);
-> +	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
-> +							&page, NULL);
-> +	if (err)
-> +		goto out_unlock;
-> +	if (de->inode || (de->file_type == EXT2_FT_WHT) ||
-> +	    (de->file_type == EXT2_FT_FALLTHRU)) {
-> +		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
-> +		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
-> +		de->rec_len = ext2_rec_len_to_disk(name_len);
-> +		de = de1;
-> +	}
+> +config UNION_MOUNT
+> +       bool "Union mounts (writable overlasy) (EXPERIMENTAL)"
 
-And again, what's foing on here?
+Spelling of overlay
 
-> +	de->name_len = namelen;
-> +	memcpy(de->name, name, namelen);
-> +	de->inode = 0;
-> +	de->file_type = EXT2_FT_FALLTHRU;
-> +	err = ext2_commit_chunk(page, pos, rec_len);
-> +	dir->i_mtime = dir->i_ctime = CURRENT_TIME_SEC;
-> +	EXT2_I(dir)->i_flags &= ~EXT2_BTREE_FL;
-> +	mark_inode_dirty(dir);
-> +	/* OFFSET_CACHE */
-> +out_put:
-> +	ext2_put_page(page);
-> +	return err;
-> +out_unlock:
-> +	unlock_page(page);
-> +	goto out_put;
-> +}
+> +       depends on EXPERIMENTAL
+> +       help
+> +         Union mounts allow you to mount a transparent writable
+> +	 layer over a read-only file system, for example, an ext3
+> +	 partition on a hard drive over a CD-ROM root file system
+> +	 image.
 > +
-> +/*
->   * ext2_delete_entry deletes a directory entry by merging it with the
->   * previous entry. Page is up-to-date. Releases the page.
->   */
-> @@ -711,7 +793,9 @@ int ext2_whiteout_entry (struct inode * dir, struct dentry * dentry,
->  	 */
->  	if (ext2_match (namelen, name, de))
->  		de->inode = 0;
-> -	if (de->inode || (de->file_type == EXT2_FT_WHT)) {
-> +	if (de->inode || (((de->file_type == EXT2_FT_WHT) ||
-> +			   (de->file_type == EXT2_FT_FALLTHRU)) &&
-> +			  !ext2_match (namelen, name, de))) {
->  		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
->  		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
->  		de->rec_len = ext2_rec_len_to_disk(name_len);
-> diff --git a/fs/ext2/ext2.h b/fs/ext2/ext2.h
-> index 44d190c..2fa32b3 100644
-> --- a/fs/ext2/ext2.h
-> +++ b/fs/ext2/ext2.h
-> @@ -108,6 +108,7 @@ extern struct ext2_dir_entry_2 * ext2_find_entry (struct inode *,struct qstr *,
->  extern int ext2_delete_entry (struct ext2_dir_entry_2 *, struct page *);
->  extern int ext2_whiteout_entry (struct inode *, struct dentry *,
->  				struct ext2_dir_entry_2 *, struct page *);
-> +extern int ext2_fallthru_entry (struct inode *, struct dentry *);
->  extern int ext2_empty_dir (struct inode *);
->  extern struct ext2_dir_entry_2 * ext2_dotdot (struct inode *, struct page **);
->  extern void ext2_set_link(struct inode *, struct ext2_dir_entry_2 *, struct page *, struct inode *, int);
-> diff --git a/fs/ext2/namei.c b/fs/ext2/namei.c
-> index 12195a5..f28154c 100644
-> --- a/fs/ext2/namei.c
-> +++ b/fs/ext2/namei.c
-> @@ -349,6 +349,7 @@ static int ext2_whiteout(struct inode *dir, struct dentry *dentry,
->  		goto out;
+> +	 See <file:Documentation/filesystems/union-mounts.txt> for details.
+> +
+> +	 If unsure, say N.
+> +
+>  source "fs/autofs/Kconfig"
+>  source "fs/autofs4/Kconfig"
+>  source "fs/fuse/Kconfig"
+> diff --git a/fs/Makefile b/fs/Makefile
+> index 97f340f..1949af2 100644
+> --- a/fs/Makefile
+> +++ b/fs/Makefile
+> @@ -52,6 +52,7 @@ obj-$(CONFIG_NFS_COMMON)	+= nfs_common/
+>  obj-$(CONFIG_GENERIC_ACL)	+= generic_acl.o
 >  
->  	spin_lock(&new_dentry->d_lock);
-> +	new_dentry->d_flags &= ~DCACHE_FALLTHRU;
->  	new_dentry->d_flags |= DCACHE_WHITEOUT;
->  	spin_unlock(&new_dentry->d_lock);
->  	d_add(new_dentry, NULL);
-> @@ -367,6 +368,26 @@ out:
->  	return err;
->  }
+>  obj-y				+= quota/
+> +obj-$(CONFIG_UNION_MOUNT)	+= union.o
 >  
-> +/*
-> + * Create a fallthru entry.
+>  obj-$(CONFIG_PROC_FS)		+= proc/
+>  obj-y				+= partitions/
+> diff --git a/fs/dcache.c b/fs/dcache.c
+> index 1575af4..54ff5a3 100644
+> --- a/fs/dcache.c
+> +++ b/fs/dcache.c
+> @@ -960,6 +960,9 @@ struct dentry *d_alloc(struct dentry * parent, const struct qstr *name)
+>  	INIT_LIST_HEAD(&dentry->d_lru);
+>  	INIT_LIST_HEAD(&dentry->d_subdirs);
+>  	INIT_LIST_HEAD(&dentry->d_alias);
+> +#ifdef CONFIG_UNION_MOUNT
+> +	dentry->d_union_dir = NULL;
+> +#endif
+>  
+>  	if (parent) {
+>  		dentry->d_parent = dget(parent);
+> diff --git a/fs/union.c b/fs/union.c
+> new file mode 100644
+> index 0000000..02abb7c
+> --- /dev/null
+> +++ b/fs/union.c
+> @@ -0,0 +1,119 @@
+> + /*
+> + * VFS-based union mounts for Linux
+> + *
+> + * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
+> + * Copyright (C) 2007-2009 Novell Inc.
+> + * Copyright (C) 2009-2010 Red Hat, Inc.
+> + *
+> + *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
+> + *              Valerie Aurora <vaurora@redhat.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; version 2
+> + * of the License.
 > + */
-> +static int ext2_fallthru (struct inode *dir, struct dentry *dentry)
+> +
+> +#include <linux/bootmem.h>
+> +#include <linux/init.h>
+> +#include <linux/types.h>
+> +#include <linux/fs.h>
+> +#include <linux/mount.h>
+> +#include <linux/fs_struct.h>
+> +#include <linux/slab.h>
+> +
+> +#include "union.h"
+> +
+> +static struct kmem_cache *union_cache;
+> +
+> +static int __init init_union(void)
 > +{
-> +	int err;
-> +
-> +	dquot_initialize(dir);
-> +
-> +	err = ext2_fallthru_entry(dir, dentry);
-> +	if (err)
-> +		return err;
-> +
-> +	d_instantiate(dentry, NULL);
-> +	spin_lock(&dentry->d_lock);
-> +	dentry->d_flags |= DCACHE_FALLTHRU;
-> +	spin_unlock(&dentry->d_lock);
+> +	union_cache = KMEM_CACHE(union_dir, SLAB_PANIC | SLAB_MEM_SPREAD);
+
+I know there are other places where we just assume KMEM_CACHE() returns
+non-null but is that really the right thing to do?
+
 > +	return 0;
 > +}
 > +
->  static int ext2_rename (struct inode * old_dir, struct dentry * old_dentry,
->  	struct inode * new_dir,	struct dentry * new_dentry )
->  {
-> @@ -470,6 +491,7 @@ const struct inode_operations ext2_dir_inode_operations = {
->  	.rmdir		= ext2_rmdir,
->  	.mknod		= ext2_mknod,
->  	.whiteout	= ext2_whiteout,
-> +	.fallthru	= ext2_fallthru,
->  	.rename		= ext2_rename,
->  #ifdef CONFIG_EXT2_FS_XATTR
->  	.setxattr	= generic_setxattr,
-> diff --git a/include/linux/ext2_fs.h b/include/linux/ext2_fs.h
-> index 20468bd..cb3d400 100644
-> --- a/include/linux/ext2_fs.h
-> +++ b/include/linux/ext2_fs.h
-> @@ -577,6 +577,7 @@ enum {
->  	EXT2_FT_SOCK		= 6,
->  	EXT2_FT_SYMLINK		= 7,
->  	EXT2_FT_WHT		= 8,
-> +	EXT2_FT_FALLTHRU	= 9,
->  	EXT2_FT_MAX
+> +fs_initcall(init_union);
+> +
+> +/**
+> + * union_alloc - allocate a union_dir
+> + *
+> + * @path: path of directory underneath another directory
+> + *
+> + * Allocate a union_dir for this directory.  We only allocate
+> + * union_dirs for the second and lower layers - the read-only layers.
+> + * Top-level dentries don't have a union_dir, just a pointer to the
+> + * union_dir of the directory in the layer below it.  u_lower is
+> + * initialized to NULL by default.  If there is another layer below
+> + * this and a matching directory in the layer, then we allocate a
+> + * union_dir for it and then set u_lower of the above union_dir to
+> + * point to it.
+> + */
+> +
+> +static struct union_dir *union_alloc(struct path *path)
+> +{
+> +	struct union_dir *ud;
+> +
+> +	BUG_ON(!S_ISDIR(path->dentry->d_inode->i_mode));
+> +
+> +	ud = kmem_cache_alloc(union_cache, GFP_ATOMIC);
+> +	if (!ud)
+> +		return NULL;
+> +
+> +	ud->u_this = *path;
+> +	ud->u_lower = NULL;
+> +
+> +	return ud;
+> +}
+> +
+> +static void union_put(struct union_dir *ud)
+> +{
+> +	path_put(&ud->u_this);
+> +	kmem_cache_free(union_cache, ud);
+> +}
+> +
+> +/**
+> + * union_add_dir - Add another layer to a unioned directory
+> + *
+> + * @upper - directory in the previous layer
+> + * @lower - directory in the current layer
+> + * @next_ud - location of pointer to this union_dir
+> + *
+> + * Must have a reference (i.e., call path_get()) to @lower before
+> + * passing to this function.
+> + */
+> +
+> +int union_add_dir(struct path *upper, struct path *lower,
+> +		  struct union_dir **next_ud)
+> +{
+> +	struct union_dir *ud;
+> +
+> +	BUG_ON(*next_ud != NULL);
+> +
+> +	ud = union_alloc(lower);
+> +	if (!ud)
+> +		return -ENOMEM;
+> +	*next_ud = ud;
+> +
+> +	return 0;
+> +}
+> +
+> +/**
+> + * d_free_unions - free all unions for this dentry
+> + *
+> + * @dentry - topmost dentry in the union stack to remove
+> + *
+> + * This must be called when freeing a dentry.
+> + */
+> +void d_free_unions(struct dentry *dentry)
+> +{
+> +	struct union_dir *this, *next;
+> +
+> +	this = dentry->d_union_dir;
+> +
+> +	while (this != NULL) {
+> +		next = this->u_lower;
+> +		union_put(this);
+> +		this = next;
+> +	}
+> +	dentry->d_union_dir = NULL;
+> +}
+> diff --git a/fs/union.h b/fs/union.h
+> new file mode 100644
+> index 0000000..04efc1f
+> --- /dev/null
+> +++ b/fs/union.h
+> @@ -0,0 +1,66 @@
+> + /*
+> + * VFS-based union mounts for Linux
+> + *
+> + * Copyright (C) 2004-2007 IBM Corporation, IBM Deutschland Entwicklung GmbH.
+> + * Copyright (C) 2007-2009 Novell Inc.
+> + * Copyright (C) 2009-2010 Red Hat, Inc.
+> + *
+> + *   Author(s): Jan Blunck (j.blunck@tu-harburg.de)
+> + *              Valerie Aurora <vaurora@redhat.com>
+> + *
+> + * This program is free software; you can redistribute it and/or
+> + * modify it under the terms of the GNU General Public License
+> + * as published by the Free Software Foundation; version 2
+> + * of the License.
+> + */
+> +#ifndef __LINUX_UNION_H
+> +#define __LINUX_UNION_H
+> +#ifdef __KERNEL__
+> +
+> +#ifdef CONFIG_UNION_MOUNT
+> +
+> +/*
+> + * WARNING! Confusing terminology alert.
+> + *
+> + * Note that the directions "up" and "down" in union mounts are the
+> + * opposite of "up" and "down" in normal VFS operation terminology.
+> + * "up" in the rest of the VFS means "towards the root of the mount
+> + * tree."  If you mount B on top of A, following B "up" will get you
+> + * A.  In union mounts, "up" means "towards the most recently mounted
+> + * layer of the union stack."  If you union mount B on top of A,
+> + * following A "up" will get you to B.  Another way to put it is that
+> + * "up" in the VFS means going from this mount towards the direction
+> + * of its mnt->mnt_parent pointer, but "up" in union mounts means
+> + * going in the opposite direction (until you run out of union
+> + * layers).
+> + */
+> +
+> +/*
+> + * The union_dir structure.  Basically just a singly-linked list with
+> + * a pointer to the referenced dentry, whose head is d_union_dir in
+> + * the dentry of the topmost directory.  We can't link this list
+> + * purely through list elements in the dentry because lower layer
+> + * dentries can be part of multiple union stacks.  However, the
+> + * topmost dentry is only part of one union stack.  So we point at the
+> + * lower layer dentries through a linked list rooted in the topmost
+> + * dentry.
+> + */
+> +struct union_dir {
+> +	struct path u_this;		/* this is me */
+> +	struct union_dir *u_lower;	/* this is what I overlay */
+> +};
+> +
+> +#define IS_MNT_UNION(mnt)	((mnt)->mnt_flags & MNT_UNION)
+> +
+> +extern int union_add_dir(struct path *, struct path *, struct union_dir **);
+> +extern void d_free_unions(struct dentry *);
+> +
+> +#else /* CONFIG_UNION_MOUNT */
+> +
+> +#define IS_MNT_UNION(x)			(0)
+> +#define union_add_dir(x, y, z)		({ BUG(); (NULL); })
+> +#define d_free_unions(x)		do { } while (0)
+> +
+> +#endif	/* CONFIG_UNION_MOUNT */
+> +#endif	/* __KERNEL__ */
+> +#endif	/* __LINUX_UNION_H */
+> diff --git a/include/linux/dcache.h b/include/linux/dcache.h
+> index 01d6011..509a637 100644
+> --- a/include/linux/dcache.h
+> +++ b/include/linux/dcache.h
+> @@ -100,7 +100,9 @@ struct dentry {
+>  	struct hlist_node d_hash;	/* lookup hash list */
+>  	struct dentry *d_parent;	/* parent directory */
+>  	struct qstr d_name;
+> -
+> +#ifdef CONFIG_UNION_MOUNT
+> +	struct union_dir *d_union_dir;	/* head of union stack */
+> +#endif
+>  	struct list_head d_lru;		/* LRU list */
+>  	/*
+>  	 * d_child and d_rcu can share memory
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index dbd9881..32e6988 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -1395,6 +1395,7 @@ struct super_block {
+>  	 * read-only.
+>  	 */
+>  	int s_hard_readonly_users;
+> +
+
+Extra blank line, intended?
+
 >  };
 >  
+>  extern struct timespec current_fs_time(struct super_block *sb);
 > -- 
 > 1.6.3.3
 > 
