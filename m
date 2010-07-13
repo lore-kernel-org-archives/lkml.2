@@ -1,200 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756623Ab0GMCPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 22:15:06 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:33365 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754173Ab0GMCPD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 22:15:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=SSlqHVKzS33mKF01rd9QcY2MUOCVcgAWonB+6paa7VSvyThyE1FhGw+ODT9kQfEG5b
-         AO1XrkdQFOk86o3ALskW3UE55veHcZOmLeUS+b7z1Xk7A1iVTc2g7yixJCCpz3qLywj+
-         JfTZzLBOPtK2zfuKS7acqvZOzno1c5Jd2GOnM=
+	id S1756292Ab0GMCXc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 22:23:32 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62395 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753818Ab0GMCXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 22:23:31 -0400
+Message-ID: <4C3BCDA1.5040007@cn.fujitsu.com>
+Date: Tue, 13 Jul 2010 10:21:21 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20100712183547.2a873fac.akpm@linux-foundation.org>
-References: <1278650256.26099.4.camel@mola> <20100712183547.2a873fac.akpm@linux-foundation.org>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Tue, 13 Jul 2010 10:14:41 +0800
-Message-ID: <AANLkTinM51K1s9dMqcmqZebF-x_bOK0OlKADkparP-Ek@mail.gmail.com>
-Subject: Re: [PATCH v2] acer-wmi: fix memory leaks in wmab_execute error path
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Carlos Corbacho <carlos@strangeworlds.co.uk>,
-        Matthew Garrett <mjg@redhat.com>, Thomas Renninger <trenn@suse.de>,
-        Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
-        platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jens Axboe <jens.axboe@oracle.com>
+CC: Vivek Goyal <vgoyal@redhat.com>, Corrado Zoccolo <czoccolo@gmail.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] CFQ: Don't store left slice when slice used up or for a idle
+ workload
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/13 Andrew Morton <akpm@linux-foundation.org>:
-> On Fri, 09 Jul 2010 12:37:36 +0800 Axel Lin <axel.lin@gmail.com> wrote:
->
->> When acpi_evaluate_object() is passed ACPI_ALLOCATE_BUFFER,
->> the caller must kfree the returned buffer if AE_OK is returned.
->>
->> Call Trace:
->> wmab_execute
->>   -> wmi_evaluate_method
->>     -> acpi_evaluate_object
->>
->> Thus if callers of wmab_execute() pass ACPI_ALLOCATE_BUFFER,
->> the return buffer must be kfreed if wmab_execute return AE_OK.
->>
->> Signed-off-by: Axel Lin <axel.lin@gmail.com>
->> ---
->>  drivers/platform/x86/acer-wmi.c |   11 ++++++++++-
->>  1 files changed, 10 insertions(+), 1 deletions(-)
->>
->> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
->> index 1ea6c43..3f44446 100644
->> --- a/drivers/platform/x86/acer-wmi.c
->> +++ b/drivers/platform/x86/acer-wmi.c
->> @@ -555,6 +555,7 @@ static acpi_status AMW0_find_mailled(void)
->>       obj->buffer.length == sizeof(struct wmab_ret)) {
->>               ret = *((struct wmab_ret *) obj->buffer.pointer);
->>       } else {
->> +             kfree(out.pointer);
->>               return AE_ERROR;
->>       }
->>
->> @@ -598,6 +599,7 @@ static acpi_status AMW0_set_capabilities(void)
->>       obj->buffer.length == sizeof(struct wmab_ret)) {
->>               ret = *((struct wmab_ret *) obj->buffer.pointer);
->>       } else {
->> +             kfree(out.pointer);
->>               return AE_ERROR;
->>       }
->>
->> @@ -607,15 +609,22 @@ static acpi_status AMW0_set_capabilities(void)
->>       args.ebx = 2 << 8;
->>       args.ebx |= ACER_AMW0_BLUETOOTH_MASK;
->>
->> +     /*
->> +      * It's ok to use existing buffer for next wmab_execute call.
->> +      * But we need to kfree(out.pointer) if next wmab_execute fail.
->> +      */
->>       status = wmab_execute(&args, &out);
->> -     if (ACPI_FAILURE(status))
->> +     if (ACPI_FAILURE(status)) {
->> +             kfree(out.pointer);
->>               return status;
->> +     }
->>
->>       obj = (union acpi_object *) out.pointer;
->>       if (obj && obj->type == ACPI_TYPE_BUFFER
->>       && obj->buffer.length == sizeof(struct wmab_ret)) {
->>               ret = *((struct wmab_ret *) obj->buffer.pointer);
->>       } else {
->> +             kfree(out.pointer);
->>               return AE_ERROR;
->>       }
->
-> I think it's best to remove the multiple-return-points approach in
-> favour of the "goto single return point which undoes things" approach.
-> that way we reduce the risk of later introducing more leaks.
->
-> Please review:
->
-> From: Andrew Morton <akpm@linux-foundation.org>
->
-> avoid multiple return points
-> remove unneeded cast
-> remove unneeded initialisation of `status'
->
-> Cc: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
-> Cc: Axel Lin <axel.lin@gmail.com>
-> Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Thomas Renninger <trenn@suse.de>
-> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+It doesn't make sence to store left time slice for an idle workload
+or for the cfqq that uses up its slice.
 
-I'm not the author, but since I'm in the CC list and it looks good to me.
-Acked-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+---
+ block/cfq-iosched.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> ---
->
->  drivers/platform/x86/acer-wmi.c |   25 ++++++++++++-------------
->  1 file changed, 12 insertions(+), 13 deletions(-)
->
-> diff -puN drivers/platform/x86/acer-wmi.c~acer-wmi-fix-memory-leaks-in-wmab_execute-error-path-v2-fix drivers/platform/x86/acer-wmi.c
-> --- a/drivers/platform/x86/acer-wmi.c~acer-wmi-fix-memory-leaks-in-wmab_execute-error-path-v2-fix
-> +++ a/drivers/platform/x86/acer-wmi.c
-> @@ -571,7 +571,7 @@ static acpi_status AMW0_set_capabilities
->  {
->        struct wmab_args args;
->        struct wmab_ret ret;
-> -       acpi_status status = AE_OK;
-> +       acpi_status status;
->        struct acpi_buffer out = { ACPI_ALLOCATE_BUFFER, NULL };
->        union acpi_object *obj;
->
-> @@ -594,13 +594,13 @@ static acpi_status AMW0_set_capabilities
->        if (ACPI_FAILURE(status))
->                return status;
->
-> -       obj = (union acpi_object *) out.pointer;
-> +       obj = out.pointer;
->        if (obj && obj->type == ACPI_TYPE_BUFFER &&
->        obj->buffer.length == sizeof(struct wmab_ret)) {
->                ret = *((struct wmab_ret *) obj->buffer.pointer);
->        } else {
-> -               kfree(out.pointer);
-> -               return AE_ERROR;
-> +               status = AE_ERROR;
-> +               goto out;
->        }
->
->        if (ret.eax & 0x1)
-> @@ -614,25 +614,21 @@ static acpi_status AMW0_set_capabilities
->         * But we need to kfree(out.pointer) if next wmab_execute fail.
->         */
->        status = wmab_execute(&args, &out);
-> -       if (ACPI_FAILURE(status)) {
-> -               kfree(out.pointer);
-> -               return status;
-> -       }
-> +       if (ACPI_FAILURE(status))
-> +               goto out;
->
->        obj = (union acpi_object *) out.pointer;
->        if (obj && obj->type == ACPI_TYPE_BUFFER
->        && obj->buffer.length == sizeof(struct wmab_ret)) {
->                ret = *((struct wmab_ret *) obj->buffer.pointer);
->        } else {
-> -               kfree(out.pointer);
-> -               return AE_ERROR;
-> +               status = AE_ERROR;
-> +               goto out;
->        }
->
->        if (ret.eax & 0x1)
->                interface->capability |= ACER_CAP_BLUETOOTH;
->
-> -       kfree(out.pointer);
-> -
->        /*
->         * This appears to be safe to enable, since all Wistron based laptops
->         * appear to use the same EC register for brightness, even if they
-> @@ -641,7 +637,10 @@ static acpi_status AMW0_set_capabilities
->        if (quirks->brightness >= 0)
->                interface->capability |= ACER_CAP_BRIGHTNESS;
->
-> -       return AE_OK;
-> +       status = AE_OK;
-> +out:
-> +       kfree(out.pointer);
-> +       return status;
->  }
->
->  static struct wmi_interface AMW0_interface = {
-> _
->
->
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index eb4086f..d985e38 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -3418,7 +3418,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+ 		 * - when there is a close cooperator
+ 		 */
+ 		if (cfq_slice_used(cfqq) || cfq_class_idle(cfqq))
+-			cfq_slice_expired(cfqd, 1);
++			cfq_slice_expired(cfqd, 0);
+ 		else if (sync && cfqq_empty &&
+ 			 !cfq_close_cooperator(cfqd, cfqq)) {
+ 			cfqd->noidle_tree_requires_idle |=
+-- 
+1.5.4.rc3
+
