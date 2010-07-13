@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756665Ab0GMNFu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 09:05:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7880 "EHLO mx1.redhat.com"
+	id S1756703Ab0GMNKx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 09:10:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55417 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751253Ab0GMNFt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 09:05:49 -0400
-Message-ID: <4C3C648F.5010200@gmail.com>
-Date: Tue, 13 Jul 2010 15:05:19 +0200
-From: Edward Shishkin <edward.shishkin@gmail.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	id S1752620Ab0GMNKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 09:10:52 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <jens.axboe@oracle.com>, Vivek Goyal <vgoyal@redhat.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] CFQ: Don't store left slice when slice used up or for a idle workload
+References: <4C3BCDA1.5040007@cn.fujitsu.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 13 Jul 2010 09:10:37 -0400
+In-Reply-To: <4C3BCDA1.5040007@cn.fujitsu.com> (Gui Jianfeng's message of
+	"Tue, 13 Jul 2010 10:21:21 +0800")
+Message-ID: <x49r5j7plwy.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: dave.bueso@gmail.com
-CC: linux-kernel@vger.kernel.org, reiserfs-devel@vger.kernel.org,
-        trivial@vger.kernel.org
-Subject: Re: [PATCH RESEND reiserfs] trivial typo fix
-References: <1279014612.18280.1.camel@cowboy>
-In-Reply-To: <1279014612.18280.1.camel@cowboy>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Davidlohr Bueso wrote:
-> Fix trivial typo in code comment (change adn for and), also change comment style for proper coding style.
->
-> Thanks,
-> Davidlohr
->
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
->   
+Gui Jianfeng <guijianfeng@cn.fujitsu.com> writes:
 
-Acked-by: Edward Shishkin <edward.shishkin@gmail.com>
+> It doesn't make sence to store left time slice for an idle workload
+> or for the cfqq that uses up its slice.
 
-> ---
->  include/linux/reiserfs_fs.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/include/linux/reiserfs_fs.h b/include/linux/reiserfs_fs.h
-> index 3b603f4..ba39416 100644
-> --- a/include/linux/reiserfs_fs.h
-> +++ b/include/linux/reiserfs_fs.h
-> @@ -360,7 +360,7 @@ int is_reiserfs_jr(struct reiserfs_super_block *rs);
->  /* the spot for the super in versions 3.5 - 3.5.10 (inclusive) */
->  #define REISERFS_OLD_DISK_OFFSET_IN_BYTES (8 * 1024)
->  
-> -// reiserfs internal error code (used by search_by_key adn fix_nodes))
-> +/* reiserfs internal error code (used by search_by_key and fix_nodes)) */
->  #define CARRY_ON      0
->  #define REPEAT_SEARCH -1
->  #define IO_ERROR      -2
->   
+Did you actually observe any problems?  As I understand it, if you
+overrun your slice you get a negative offset, so I think we want to keep
+that.
 
+Cheers,
+Jeff
