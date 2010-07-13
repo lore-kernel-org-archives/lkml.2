@@ -1,63 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab0GMBZN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 21:25:13 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:53645 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755668Ab0GMBZL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 21:25:11 -0400
-Date: Tue, 13 Jul 2010 11:25:06 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: "Patrick J. LoPresti" <lopresti@gmail.com>
-Cc: Andreas Dilger <adilger@dilger.ca>, ocfs2-devel@oss.oracle.com,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 2/2] OCFS2: Allow huge (> 16 TiB) volumes to mount
-Message-ID: <20100713012506.GA30737@dastard>
-References: <871vbax86w.fsf@patl.com>
- <87zkxyvtjt.fsf@patl.com>
- <3BB069D5-B193-43A4-B678-B3CEA4873B58@dilger.ca>
- <AANLkTikAEycm5PKTLPuRFcB0e4qNp5EuQbKUx5aruNrh@mail.gmail.com>
+	id S1756111Ab0GMB0f (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 21:26:35 -0400
+Received: from MAILER.EUN.EG ([193.227.1.3]:50423 "EHLO mailer.eun.eg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449Ab0GMB0e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 21:26:34 -0400
+Message-ID: <3889.41.222.192.84.1278980695.squirrel@127.0.0.1>
+Date: Tue, 13 Jul 2010 03:24:55 +0300 (EEST)
+Subject: Your Well Deserved Compensation
+From: "Mrs.Rebecca Ault" <enquiry.boa20@yahoo.fr>
+Reply-To: rebecc425@live.com
+User-Agent: SquirrelMail/1.4.4-rc1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
+Content-Type: text/plain;charset=iso-8859-1
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikAEycm5PKTLPuRFcB0e4qNp5EuQbKUx5aruNrh@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 06:08:51PM -0700, Patrick J. LoPresti wrote:
-> On Mon, Jul 12, 2010 at 5:21 PM, Andreas Dilger <adilger@dilger.ca> wrote:
-> > On 2010-07-11, at 11:04, Patrick J. LoPresti wrote:
-> > >
-> >> +     /* Absolute addressability check (borrowed from ext4/super.c) */
-> >> +     if ((max_block >
-> >> +          (sector_t)(~0LL) >> (osb->sb->s_blocksize_bits - 9)) ||
-> >> +         (max_block > (pgoff_t)(~0LL) >> (PAGE_CACHE_SHIFT -
-> >> +                                          osb->sb->s_blocksize_bits))) {
-> >> +             mlog(ML_ERROR, "Volume too large "
-> >> +                  "to mount safely on this system");
-> >> +             status = -EFBIG;
-> >> +             goto out;
-> >> +     }
-> >
-> > This hunk of code is actually in several filesystems.  It wouldn't be a bad idea to make it a library function that can be called by the filesystem to check the kernel page cache and block layer can handle these large filesystems.
-> 
-> True, but some of them do it differently (e.g. see the #if switch in
-> xfs_sb_validate_fsb_count).  Tracking down all variants and changing
-> them is a much larger task than my simple patch.
+Dear Friend,
 
-The XFS code is different to the above because there is still a 16TB
-size limit on 32 bit systemsi (i.e. page cache address limits). IOWs,
-you can't just remove the above 16TB check unless you (i.e. OCFS2)
-handle >16TB block devices on 32 bit systems correctly...
+I did not forgot your past efforts and attempts to assist me, now I’m
+happy to inform you that I have succeeded in getting those funds
+transferred into my new partner's account.  Now Contact my secretary ask
+him for US$2.700, 000.00 (In Certified Draft) being your compensation. His
+Name is : Mr. Paul Flink. his contact information is as given below.
 
-Cheers,
+E-mail:  mr_paulflink@hotmail.com
+Phone:     +229 93816266
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Also proceed to reconfirm your personal information as below:
+
+You’re full Name: __________________
+Delivery address: __________________
+Mobile Telephone __________________
+Age: _____________________________
+Sex: ______________________________
+Occupation: ________________________
+
+
+Regards
+Mrs.Rebecca Ault
+
