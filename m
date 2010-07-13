@@ -1,96 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab0GMUFj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 16:05:39 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33757 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751207Ab0GMUFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 16:05:38 -0400
-Message-ID: <4C3CC6F2.7050406@zytor.com>
-Date: Tue, 13 Jul 2010 13:05:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757093Ab0GMUMX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 16:12:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52573 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754259Ab0GMUMV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 16:12:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SfmhKGuJTpSjE9Y3c/wVWJT5HID09pfoTFQxWEnsquM37j5rdcIeQhiVA9LiJ4ueSB
+         xuyS/FJGAWnL7Yj9b9fHJgO5kAOdqeLNI7lyVD7fUgP6aYlJ+LexFpmvdnPBr/87Rm7R
+         N6DH6F/4l1ghPUMxc3tmR486G/lrt1AE/MHy0=
 MIME-Version: 1.0
-To: Michal Schmidt <mschmidt@redhat.com>,
-        Borislav Petkov <borislav.petkov@amd.com>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>
-CC: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 1/2] x86: fix keeping track of AMD C1E
-References: <20100713185816.2866.17837.stgit@localhost.localdomain> <20100713185957.2866.50995.stgit@localhost.localdomain>
-In-Reply-To: <20100713185957.2866.50995.stgit@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTim9EQ9nPISuH5wNsrAd8bHM-xBnpgqAi-W_ZCTi@mail.gmail.com>
+References: <AANLkTimkNg81yzxSHTcAa1QlTE9SYmvzL4eOTVHApWq3@mail.gmail.com>
+	<AANLkTilvbOb0n9l6F3EHwQg3VfNNmYB1BdFbzL2Cwg_P@mail.gmail.com>
+	<AANLkTinnlhzSGP8sRQ8Pr4CIuwn4d859rvSe1yO_3TEz@mail.gmail.com>
+	<AANLkTil58zbo28QL2ncTAXx9iHeQS20W8u0MuDgLaojj@mail.gmail.com>
+	<AANLkTim-yNCtMnxzzA8yJnD6CLkF2Mz-aA4E5qbYMBlz@mail.gmail.com>
+	<AANLkTim9EQ9nPISuH5wNsrAd8bHM-xBnpgqAi-W_ZCTi@mail.gmail.com>
+Date: Tue, 13 Jul 2010 22:12:19 +0200
+Message-ID: <AANLkTily8yGpTu26fcsaYG0FTZ3sE8h07bkVk__ccjDz@mail.gmail.com>
+Subject: Re: Regression 2.6.34->2.6.35-rc4: radeaon KMS an RS690 broken
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Adding Borislav and Hans to the Cc: list]
+On Tue, Jul 13, 2010 at 9:10 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> On Tue, Jul 13, 2010 at 2:29 PM, Torsten Kaiser
+> <just.for.lkml@googlemail.com> wrote:
+>> On Mon, Jul 12, 2010 at 11:38 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>> On Mon, Jul 12, 2010 at 3:54 PM, Torsten Kaiser
+>>> <just.for.lkml@googlemail.com> wrote:
+>>>> 0888e883ea5ff8fac27e813256d6c1eaede5a234 is the first bad commit
+>>>> commit 0888e883ea5ff8fac27e813256d6c1eaede5a234
+>>>> Author: Alex Deucher <alexdeucher@gmail.com>
+>>>> Date:   Sat Jun 12 11:50:13 2010 -0400
+>>>>
+>>>>    drm/radeon/kms: fix bandwidth calculation when sideport is present
+>>>>
+>>>>    Fixes fdo bug 27529:
+>>>>    https://bugs.freedesktop.org/show_bug.cgi?id=27529
+>>>>
+>>>>    Reported-by: steckdenis@yahoo.fr
+>>>>    Signed-off-by: Alex Deucher <alexdeucher@gmail.com>
+>>>>    Signed-off-by: Dave Airlie <airlied@redhat.com>
+>>>>
+>>>> :040000 040000 2ff9114469e4569e1bebd659c9632c5b59bfc238
+>>>> b0eb9a29c698da1eeb8289ba1180b8135a94ecd7 M     drivers
+>>>>
+>>>> My system does not have any sideport memory.
+>>>> The other revisions before this did boot into the correct KMS mode,
+>>>> but I did not test X, because I'm using that system as a remote
+>>>> desktop server and only sometimes the fb text console to debug
+>>>> something that went wrong.
+>>
+>> From the other mail:
+>> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=f892034a8ce80ed7098f667aae2eb6300e570603
+>> is part of vanilla 2.6.35-rc4 and -rc5, but neither kernel works for
+>> me.
+>>
+>>> Does this patch help?
+>> (0001-drm-radeon-kms-fix-possible-mis-detection-of-sidepor.patch)
+>>
+>> After adding this to 2.6.35-rc5 the system boots and works so far.
+>
+> I've sent the patch to Dave.
 
-Any objections?  Otherwise I'm going to queue this up in the urgent queue.
+OK, thanks.
 
-	-hpa
+>> But the CP is still broken:
+>
+> Is this a regression?  If so, can you bisect it?
 
+Yes. But looking at my logs the regression did not happen from
+2.6.34->2.6.35 but from 2.6.33 to 2.6.34.
+The first failed ring test was with the Gentoo 2.6.34 kernel, but all
+the working bisect steps between 2.6.34 and 2.6.35-rc4 also failed.
 
-On 07/13/2010 11:59 AM, Michal Schmidt wrote:
-> On my system with AMD Phenom II X6 I am seeing pauses at boot (usually during
-> udev startup) which require a key press to continue. It only happens if C1E is
-> enabled in the BIOS.
-> 
-> It's caused by the APIC timer's inability to wake up the CPU from C1E (AMD
-> erratum #400). Linux has a workaround for it, but it's not being applied
-> correctly in this case. Though c1e_idle() detects C1E just fine, by the time
-> acpi_idle ('processor.ko' module) takes over, it is forgotten.
-> 
-> After AMD C1E is detected, it is not sufficient to flag it in boot_cpu_data,
-> because the flag will get cleared in identify_cpu() when more CPUs are brought
-> up later. The fix is to mark the flag as forced.
-> 
-> The additional call to set_cpu_cap() is just to make sure the flag is set even
-> on the CPUs that are already up and /proc/cpuinfo shows 'amdc1e' on all.
-> 
-> Also fix indentation in the function.
-> 
-> Signed-off-by: Michal Schmidt <mschmidt@redhat.com>
-> ---
-> 
->  arch/x86/kernel/process.c |    9 +++++----
->  1 files changed, 5 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-> index e7e3521..f3520a8 100644
-> --- a/arch/x86/kernel/process.c
-> +++ b/arch/x86/kernel/process.c
-> @@ -589,7 +589,7 @@ static void c1e_idle(void)
->  			if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
->  				mark_tsc_unstable("TSC halt in AMD C1E");
->  			printk(KERN_INFO "System has AMD C1E enabled\n");
-> -			set_cpu_cap(&boot_cpu_data, X86_FEATURE_AMDC1E);
-> +			setup_force_cpu_cap(X86_FEATURE_AMDC1E);
->  		}
->  	}
->  
-> @@ -605,6 +605,7 @@ static void c1e_idle(void)
->  					   &cpu);
->  			printk(KERN_INFO "Switch to broadcast mode on CPU%d\n",
->  			       cpu);
-> +			set_cpu_cap(&current_cpu_data, X86_FEATURE_AMDC1E);
->  		}
->  		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
->  
-> @@ -614,9 +615,9 @@ static void c1e_idle(void)
->  		 * The switch back from broadcast mode needs to be
->  		 * called with interrupts disabled.
->  		 */
-> -		 local_irq_disable();
-> -		 clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-> -		 local_irq_enable();
-> +		local_irq_disable();
-> +		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_EXIT, &cpu);
-> +		local_irq_enable();
->  	} else
->  		default_idle();
->  }
-> 
+I will try to bisect this tomorrow, but I'm not sure if this will
+work, because 2.6.34 is not really working for me.
+( https://bugzilla.kernel.org/show_bug.cgi?id=16371 )
 
+Torsten
+
+>> [    0.426931] Linux agpgart interface v0.103
+>> [    0.427092] [drm] Initialized drm 1.1.0 20060810
+>> [    0.427196] [drm] radeon defaulting to kernel modesetting.
+>> [    0.427255] [drm] radeon kernel modesetting enabled.
+>> [    0.427372] radeon 0000:01:05.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
+>> [    0.429659] [drm] initializing kernel modesetting (RS690 0x1002:0x791E).
+>> [    0.429817] [drm] register mmio base: 0xFE9F0000
+>> [    0.429876] [drm] register mmio size: 65536
+>> [    0.430457] ATOM BIOS: ATI
+>> [    0.430532] radeon 0000:01:05.0: VRAM: 32M 0xDE000000 - 0xDFFFFFFF (32M used)
+>> [    0.430592] radeon 0000:01:05.0: GTT: 512M 0xBE000000 - 0xDDFFFFFF
+>> [    0.430675] [drm] radeon: irq initialized.
+>> [    0.430737] mtrr: type mismatch for fc000000,2000000 old:
+>> write-back new: write-comb
+>> ining
+>> [    0.430811] [drm] Detected VRAM RAM=32M, BAR=32M
+>> [    0.430868] [drm] RAM width 128bits DDR
+>> [    0.431011] [TTM] Zone  kernel: Available graphics memory: 2010234 kiB.
+>> [    0.431070] [TTM] Initializing pool allocator.
+>> [    0.431147] [drm] radeon: 32M of VRAM memory ready
+>> [    0.431205] [drm] radeon: 512M of GTT memory ready.
+>> [    0.431266] [drm] GART: num cpu pages 131072, num gpu pages 131072
+>> [    0.434654] [drm] radeon: 1 quad pipes, 1 z pipes initialized.
+>> [    0.441719] [drm] Loading RS690/RS740 Microcode
+>> [    0.441926] [drm] radeon: ring at 0x00000000BE000000
+>> [    0.577118] [drm:r100_ring_test] *ERROR* radeon: ring test failed
+>> (sracth(0x15E4)=0x
+>> CAFEDEAD)
+>> [    0.577192] [drm:r100_cp_init] *ERROR* radeon: cp isn't working (-22).
+>> [    0.577252] radeon 0000:01:05.0: failled initializing CP (-22).
+>> [    0.577310] radeon 0000:01:05.0: Disabling GPU acceleration
+>> [    0.577440] [drm] radeon: cp finalized
+>> [    0.578078] [drm] Default TV standard: NTSC
+>> [    0.578314] [drm] Default TV standard: NTSC
+>> [    0.578590] [drm] Radeon Display Connectors
+>> [    0.578648] [drm] Connector 0:
+>> [    0.578706] [drm]   VGA
+>> [    0.578764] [drm]   DDC: 0x7e50 0x7e40 0x7e54 0x7e44 0x7e58 0x7e48
+>> 0x7e5c 0x7e4c
+>> [    0.578837] [drm]   Encoders:
+>> [    0.578894] [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+>> [    0.578952] [drm] Connector 1:
+>> [    0.579010] [drm]   S-video
+>> [    0.579067] [drm]   Encoders:
+>> [    0.579124] [drm]     TV1: INTERNAL_KLDSCP_DAC1
+>> [    0.579182] [drm] Connector 2:
+>> [    0.579239] [drm]   HDMI-A
+>> [    0.579297] [drm]   DDC: 0x7e40 0x7e50 0x7e44 0x7e54 0x7e48 0x7e58
+>> 0x7e4c 0x7e5c
+>> [    0.579369] [drm]   Encoders:
+>> [    0.579427] [drm]     DFP3: INTERNAL_LVTM1
+>> [    0.773375] [drm] fb mappable at 0xFC040000
+>> [    0.773434] [drm] vram apper at 0xFC000000
+>> [    0.773491] [drm] size 786432
+>> [    0.773549] [drm] fb depth is 8
+>> [    0.773606] [drm]    pitch is 1024
+>> [    0.773737] fbcon: radeondrmfb (fb0) is primary device
+>> [    0.793240] Console: switching to colour frame buffer device 128x48
+>> [    0.794833] fb0: radeondrmfb frame buffer device
+>> [    0.794852] drm: registered panic notifier
+>> [    0.794871] Slow work thread pool: Starting up
+>> [    0.794932] Slow work thread pool: Ready
+>> [    0.794953] [drm] Initialized radeon 2.5.0 20080528 for
+>> 0000:01:05.0 on minor 0
+>>
+>>
+>> Torsten
+>>
+>
