@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756766Ab0GMSg7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 14:36:59 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:7330 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750822Ab0GMSg5 convert rfc822-to-8bit (ORCPT
+	id S1757220Ab0GMSkW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 14:40:22 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47631 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750921Ab0GMSkU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 14:36:57 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.0 c=1 a=WOutPEdcbCgA:10 a=1CvaPgNKC-EA:10 a=VphdPIyG4kEA:10
- a=kj9zAlcOel0A:10 a=c23vf5CSMVc0QQz9B4a6RA==:17 a=w8LdrSwyXEh_Tlm2u5cA:9
- a=-7QN37LdeZ8Z8klIZvQAuNVW9EYA:4 a=CjuIK1q_8ugA:10
-Subject: Re: [PATCH] ext2: return -ENODATA for NULL i_file_acl in ext2_xattr_list
-Mime-Version: 1.0 (Apple Message framework v1078)
+	Tue, 13 Jul 2010 14:40:20 -0400
+Date: Tue, 13 Jul 2010 19:39:32 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+Message-ID: <20100713183932.GB31162@n2100.arm.linux.org.uk>
+References: <20100712155348.GA2815@barrios-desktop> <20100713121947.612bd656.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTiny7dz8ssDknI7y4JFcVP9SV1aNM7f0YMUxafv7@mail.gmail.com> <20100713132312.a7dfb100.kamezawa.hiroyu@jp.fujitsu.com> <AANLkTinVwmo5pemz86nXaQT3V_ujaPLOsyNeQIFhL0Vu@mail.gmail.com> <20100713072009.GA19839@n2100.arm.linux.org.uk> <20100713163417.17895202.kamezawa.hiroyu@jp.fujitsu.com> <20100713165808.e340e6dc.kamezawa.hiroyu@jp.fujitsu.com> <20100713170222.9369e649.kamezawa.hiroyu@jp.fujitsu.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <4C3C7E59.8040905@gmail.com>
-Date: Tue, 13 Jul 2010 12:36:54 -0600
-Cc: kernel-janitors <kernel-janitors@vger.kernel.org>,
-        linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7D4617C2-565E-4F34-94B4-3F308EB75D18@dilger.ca>
-References: <4C3C7E59.8040905@gmail.com>
-To: Wang Sheng-Hui <crosslonelyover@gmail.com>
-X-Mailer: Apple Mail (2.1078)
+Content-Disposition: inline
+In-Reply-To: <20100713170222.9369e649.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-13, at 08:55, Wang Sheng-Hui wrote:
-> In ext2_xattr_list, if (!EXT2_I(inode)->i_file_acl)
-> is true, we should return -ENODATA instead of 0.
-> 
-> @@ -263,7 +263,7 @@ ext2_xattr_list(struct dentry *dentry, char *buffer,
->          size_t buffer_size)
-> 
->          down_read(&EXT2_I(inode)->xattr_sem);
-> -        error = 0;
-> +        error = -ENODATA;
->          if (!EXT2_I(inode)->i_file_acl)
->                  goto cleanup;
->          ea_idebug(inode, "reading block %d", EXT2_I(inode)->i_file_acl);
+On Tue, Jul 13, 2010 at 05:02:22PM +0900, KAMEZAWA Hiroyuki wrote:
+> How about stop using SPARSEMEM ? What's the benefit ? It just eats up
+> memory for mem_section[].
 
-The "error" value gets overwritten almost immediately with -EIO, and then at the end of the function if there is an xattr block but it doesn't contain any attributes (I'm not sure if this could happen, but it seems possible) it will return "error = buffer_size - rest;  /* total size */", so 0 if "rest" was not changed from its initial value of buffer_size.
+The problem with that approach is that sometimes the mem_map array
+doesn't fit into any memory banks.
 
-The question is why this return value should be changed to -ENODATA in the first place?  This isn't true for ext3_xattr_list() or ext4_xattr_list().  I tend to think it is not an error to get back an empty list, and applications shouldn't treat it as such.  Most applications will check "if (rc < 0)" and treat it as an error.  This is different than e.g. requesting a specific value by name (which does return -ENODATA) because it would otherwise be ambiguous whether the xattr existed but had zero size or didn't exist at all.
+We've gone around the loop of using flatmem with holes punched in it,
+to using discontigmem, and now to using sparsemem.  It seems none of
+these solutions does what we need for ARM.  I guess that's the price
+we pay for not having memory architected to be at any particular place
+in the physical memory map.
 
-Cheers, Andreas
-
-
-
-
-
+We're even seeing lately setups now where system memory is split into
+two areas, where the second (higher physical address) is populated
+first before the lower bank...  These kinds of games are getting rather
+stupid and idiotic, but we're not the hardware designers and so we have
+to live with it - or just tell the folk who are porting the kernel to
+these platforms that we'll never take their patches.
