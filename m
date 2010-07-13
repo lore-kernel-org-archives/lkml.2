@@ -1,96 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752011Ab0GMGZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 02:25:26 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55931 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751128Ab0GMGZZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 02:25:25 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 13 Jul 2010 15:20:44 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Nathan Fontenot <nfont@austin.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 3/7] Update the [register,unregister]_memory routines
-Message-Id: <20100713152044.7ec8c9ae.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4C3B384A.4000902@austin.ibm.com>
-References: <4C3B3446.5090302@austin.ibm.com>
-	<4C3B384A.4000902@austin.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1751875Ab0GMG3S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 02:29:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24061 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751128Ab0GMG3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 02:29:17 -0400
+Message-ID: <4C3C07B6.1020802@redhat.com>
+Date: Tue, 13 Jul 2010 09:29:10 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v5 6/9] KVM: MMU: introduce pte_prefetch_topup_memory_cache()
+References: <4C330918.6040709@cn.fujitsu.com> <4C330A37.8080709@cn.fujitsu.com> <4C39C1AB.6000606@redhat.com> <4C3A8694.1000401@cn.fujitsu.com> <4C3B09FD.3060307@redhat.com> <4C3BBE84.30708@cn.fujitsu.com> <4C3BE9BD.40007@redhat.com> <4C3BEAC3.9000501@cn.fujitsu.com> <4C3BFB25.2010602@redhat.com> <4C3BFE12.4060009@cn.fujitsu.com> <4C3C021E.1000709@redhat.com> <4C3C036B.5060108@cn.fujitsu.com>
+In-Reply-To: <4C3C036B.5060108@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010 10:44:10 -0500
-Nathan Fontenot <nfont@austin.ibm.com> wrote:
+On 07/13/2010 09:10 AM, Xiao Guangrong wrote:
+>
+>> What about the Linux accessed and dirty bits?  Need to instantiate the
+>> speculative sptes with accessed and dirty bits clear (and later examine
+>> them when we release the page).
+>>
+>>      
+> I see, will do :-)
+>    
 
-> This patch moves the register/unregister_memory routines to
-> avoid a forward declaration.  It also moves the sysfs file
-> creation and deletion for each directory into the register/
-> unregister routines to avoid duplicating it with these updates.
-> 
-> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
-> ---
->  drivers/base/memory.c |   93 +++++++++++++++++++++++++-------------------------
->  1 file changed, 48 insertions(+), 45 deletions(-)
-> 
-> Index: linux-2.6/drivers/base/memory.c
-> ===================================================================
-> --- linux-2.6.orig/drivers/base/memory.c	2010-07-09 14:23:17.000000000 -0500
-> +++ linux-2.6/drivers/base/memory.c	2010-07-09 14:23:20.000000000 -0500
-> @@ -87,31 +87,6 @@
->  EXPORT_SYMBOL(unregister_memory_isolate_notifier);
->  
->  /*
-> - * register_memory - Setup a sysfs device for a memory block
-> - */
-> -static
-> -int register_memory(struct memory_block *memory, struct mem_section *section)
-> -{
-> -	int error;
-> -
-> -	memory->sysdev.cls = &memory_sysdev_class;
-> -	memory->sysdev.id = __section_nr(section);
-> -
-> -	error = sysdev_register(&memory->sysdev);
-> -	return error;
-> -}
-> -
-> -static void
-> -unregister_memory(struct memory_block *memory)
-> -{
-> -	BUG_ON(memory->sysdev.cls != &memory_sysdev_class);
-> -
-> -	/* drop the ref. we got in remove_memory_block() */
-> -	kobject_put(&memory->sysdev.kobj);
-> -	sysdev_unregister(&memory->sysdev);
-> -}
-> -
-> -/*
->   * use this as the physical section index that this memsection
->   * uses.
->   */
-> @@ -346,6 +321,53 @@
->  	sysdev_remove_file(&mem->sysdev, &attr_##attr_name)
->  
->  /*
-> + * register_memory - Setup a sysfs device for a memory block
-> + */
-> +static
-> +int register_memory(struct memory_block *memory, struct mem_section *section,
-> +		    int nid, enum mem_add_context context)
-> +{
-> +	int ret;
-> +
-> +	memory->sysdev.cls = &memory_sysdev_class;
-> +	memory->sysdev.id = __section_nr(section);
-> +
-Why not block-ID  but section-ID ?
+This is getting bigger and bigger...
 
--Kame
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
