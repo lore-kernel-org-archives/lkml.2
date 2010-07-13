@@ -1,471 +1,394 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756685Ab0GMKWR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 06:22:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21095 "EHLO mx1.redhat.com"
+	id S1756730Ab0GMKWg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:22:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18490 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756464Ab0GMKWI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 06:22:08 -0400
-Date: Tue, 13 Jul 2010 06:21:21 -0400
+	id S1756521Ab0GMKWd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 06:22:33 -0400
+Date: Tue, 13 Jul 2010 06:21:44 -0400
 From: Xiaotian Feng <dfeng@redhat.com>
 To: linux-mm@kvack.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org
 Cc: riel@redhat.com, cl@linux-foundation.org, a.p.zijlstra@chello.nl,
         Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
         lwang@redhat.com, penberg@cs.helsinki.fi, akpm@linux-foundation.org,
         davem@davemloft.net
-Message-Id: <20100713102121.2835.77887.sendpatchset@danny.redhat>
+Message-Id: <20100713102144.2835.5915.sendpatchset@danny.redhat>
 In-Reply-To: <20100713101650.2835.15245.sendpatchset@danny.redhat>
 References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
-Subject: [PATCH -mmotm 24/30] nfs: teach the NFS client how to treat PG_swapcache pages
+Subject: [PATCH -mmotm 26/30] nfs: enable swap on NFS
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 743090cf0c129f3c83506260866f525a9f181f99 Mon Sep 17 00:00:00 2001
+>From 61388a8872071bb5b0015b9f5e3183410a98d949 Mon Sep 17 00:00:00 2001
 From: Xiaotian Feng <dfeng@redhat.com>
-Date: Tue, 13 Jul 2010 13:10:26 +0800
-Subject: [PATCH 24/30] nfs: teach the NFS client how to treat PG_swapcache pages
+Date: Tue, 13 Jul 2010 13:11:13 +0800
+Subject: [PATCH 26/30] nfs: enable swap on NFS
 
-Replace all relevant occurences of page->index and page->mapping in the NFS
-client with the new page_file_index() and page_file_mapping() functions.
+Implement all the new swapfile a_ops for NFS. This will set the NFS socket to
+SOCK_MEMALLOC and run socket reconnect under PF_MEMALLOC as well as reset
+SOCK_MEMALLOC before engaging the protocol ->connect() method.
+
+PF_MEMALLOC should allow the allocation of struct socket and related objects
+and the early (re)setting of SOCK_MEMALLOC should allow us to receive the
+packets required for the TCP connection buildup.
+
+(swapping continues over a server reset during heavy network traffic)
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
 ---
- fs/nfs/dir.c           |    4 ++--
- fs/nfs/file.c          |   14 +++++++-------
- fs/nfs/fscache-index.c |    2 +-
- fs/nfs/fscache.c       |   14 +++++++-------
- fs/nfs/internal.h      |    7 ++++---
- fs/nfs/pagelist.c      |    6 +++---
- fs/nfs/read.c          |    6 +++---
- fs/nfs/write.c         |   45 +++++++++++++++++++++++----------------------
- 8 files changed, 50 insertions(+), 48 deletions(-)
+ fs/nfs/Kconfig              |   10 ++++++
+ fs/nfs/file.c               |   18 +++++++++++
+ fs/nfs/write.c              |   22 ++++++++++++++
+ include/linux/nfs_fs.h      |    2 +
+ include/linux/sunrpc/xprt.h |    5 ++-
+ mm/page_io.c                |    1 +
+ net/sunrpc/Kconfig          |    5 +++
+ net/sunrpc/sched.c          |    9 ++++-
+ net/sunrpc/xprtsock.c       |   68 +++++++++++++++++++++++++++++++++++++++++++
+ 9 files changed, 137 insertions(+), 3 deletions(-)
 
-diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
-index 782b431..0305786 100644
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -182,7 +182,7 @@ int nfs_readdir_filler(nfs_readdir_descriptor_t *desc, struct page *page)
+diff --git a/fs/nfs/Kconfig b/fs/nfs/Kconfig
+index a43d07e..b022858 100644
+--- a/fs/nfs/Kconfig
++++ b/fs/nfs/Kconfig
+@@ -74,6 +74,16 @@ config NFS_V4
  
- 	dfprintk(DIRCACHE, "NFS: %s: reading cookie %Lu into page %lu\n",
- 			__func__, (long long)desc->entry->cookie,
--			page->index);
-+			page_file_index(page));
+ 	  If unsure, say N.
  
-  again:
- 	timestamp = jiffies;
-@@ -207,7 +207,7 @@ int nfs_readdir_filler(nfs_readdir_descriptor_t *desc, struct page *page)
- 	 * Note: assumes we have exclusive access to this mapping either
- 	 *	 through inode->i_mutex or some other mechanism.
- 	 */
--	if (invalidate_inode_pages2_range(inode->i_mapping, page->index + 1, -1) < 0) {
-+	if (invalidate_inode_pages2_range(inode->i_mapping, page_file_index(page) + 1, -1) < 0) {
- 		/* Should never happen */
- 		nfs_zap_mapping(inode, inode->i_mapping);
- 	}
++config NFS_SWAP
++	bool "Provide swap over NFS support"
++	default n
++	depends on NFS_FS
++	select SUNRPC_SWAP
++	help
++	  This option enables swapon to work on files located on NFS mounts.
++
++	  For more details, see Documentation/network-swap.txt
++
+ config NFS_V4_1
+ 	bool "NFS client support for NFSv4.1 (DEVELOPER ONLY)"
+ 	depends on NFS_V4 && EXPERIMENTAL
 diff --git a/fs/nfs/file.c b/fs/nfs/file.c
-index 36a5e74..8f066fe 100644
+index 8f066fe..319c2b3 100644
 --- a/fs/nfs/file.c
 +++ b/fs/nfs/file.c
-@@ -480,9 +480,9 @@ static void nfs_invalidate_page(struct page *page, unsigned long offset)
- 	if (offset != 0)
- 		return;
- 	/* Cancel any unstarted writes on this page */
--	nfs_wb_page_cancel(page->mapping->host, page);
-+	nfs_wb_page_cancel(page_file_mapping(page)->host, page);
+@@ -524,6 +524,18 @@ static int nfs_launder_page(struct page *page)
+ 	return nfs_wb_page(inode, page);
+ }
  
--	nfs_fscache_invalidate_page(page, page->mapping->host);
-+	nfs_fscache_invalidate_page(page, page_file_mapping(page)->host);
++#ifdef CONFIG_NFS_SWAP
++static int nfs_swapon(struct file *file)
++{
++	return xs_swapper(NFS_CLIENT(file->f_mapping->host)->cl_xprt, 1);
++}
++
++static int nfs_swapoff(struct file *file)
++{
++	return xs_swapper(NFS_CLIENT(file->f_mapping->host)->cl_xprt, 0);
++}
++#endif
++
+ const struct address_space_operations nfs_file_aops = {
+ 	.readpage = nfs_readpage,
+ 	.readpages = nfs_readpages,
+@@ -538,6 +550,12 @@ const struct address_space_operations nfs_file_aops = {
+ 	.migratepage = nfs_migrate_page,
+ 	.launder_page = nfs_launder_page,
+ 	.error_remove_page = generic_error_remove_page,
++#ifdef CONFIG_NFS_SWAP
++	.swapon = nfs_swapon,
++	.swapoff = nfs_swapoff,
++	.swap_out = nfs_swap_out,
++	.swap_in = nfs_readpage,
++#endif
+ };
+ 
+ /*
+diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+index 0d7ea95..5852b20 100644
+--- a/fs/nfs/write.c
++++ b/fs/nfs/write.c
+@@ -355,6 +355,28 @@ int nfs_writepage(struct page *page, struct writeback_control *wbc)
+ 	return ret;
+ }
+ 
++static int nfs_writepage_setup(struct nfs_open_context *ctx, struct page *page,
++		unsigned int offset, unsigned int count);
++
++int nfs_swap_out(struct file *file, struct page *page,
++		 struct writeback_control *wbc)
++{
++	struct nfs_open_context *ctx = nfs_file_open_context(file);
++	int status;
++
++	status = nfs_writepage_setup(ctx, page, 0, nfs_page_length(page));
++	if (status < 0) {
++		nfs_set_pageerror(page);
++		goto out;
++	}
++
++	status = nfs_writepage_locked(page, wbc);
++
++out:
++	unlock_page(page);
++	return status;
++}
++
+ static int nfs_writepages_callback(struct page *page, struct writeback_control *wbc, void *data)
+ {
+ 	int ret;
+diff --git a/include/linux/nfs_fs.h b/include/linux/nfs_fs.h
+index 77c2ae5..fc1bbfb 100644
+--- a/include/linux/nfs_fs.h
++++ b/include/linux/nfs_fs.h
+@@ -484,6 +484,8 @@ extern int  nfs_writepages(struct address_space *, struct writeback_control *);
+ extern int  nfs_flush_incompatible(struct file *file, struct page *page);
+ extern int  nfs_updatepage(struct file *, struct page *, unsigned int, unsigned int);
+ extern int nfs_writeback_done(struct rpc_task *, struct nfs_write_data *);
++extern int  nfs_swap_out(struct file *file, struct page *page,
++			 struct writeback_control *wbc);
+ 
+ /*
+  * Try to write back everything synchronously (but check the
+diff --git a/include/linux/sunrpc/xprt.h b/include/linux/sunrpc/xprt.h
+index b514703..ba2330d 100644
+--- a/include/linux/sunrpc/xprt.h
++++ b/include/linux/sunrpc/xprt.h
+@@ -171,7 +171,9 @@ struct rpc_xprt {
+ 	unsigned int		max_reqs;	/* total slots */
+ 	unsigned long		state;		/* transport state */
+ 	unsigned char		shutdown   : 1,	/* being shut down */
+-				resvport   : 1; /* use a reserved port */
++				resvport   : 1, /* use a reserved port */
++				swapper    : 1; /* we're swapping over this
++						   transport */
+ 	unsigned int		bind_index;	/* bind function index */
+ 
+ 	/*
+@@ -303,6 +305,7 @@ void			xprt_release_rqst_cong(struct rpc_task *task);
+ void			xprt_disconnect_done(struct rpc_xprt *xprt);
+ void			xprt_force_disconnect(struct rpc_xprt *xprt);
+ void			xprt_conditional_disconnect(struct rpc_xprt *xprt, unsigned int cookie);
++int			xs_swapper(struct rpc_xprt *xprt, int enable);
+ 
+ /*
+  * Reserved bit positions in xprt->state
+diff --git a/mm/page_io.c b/mm/page_io.c
+index 012b9ef..c8d7d8d 100644
+--- a/mm/page_io.c
++++ b/mm/page_io.c
+@@ -94,6 +94,7 @@ int swap_writepage(struct page *page, struct writeback_control *wbc)
+ {
+ 	struct bio *bio;
+ 	int ret = 0, rw = WRITE;
++	struct swap_info_struct *sis = page_swap_info(page);
+ 
+ 	if (try_to_free_swap(page)) {
+ 		unlock_page(page);
+diff --git a/net/sunrpc/Kconfig b/net/sunrpc/Kconfig
+index 443c161..521eadb 100644
+--- a/net/sunrpc/Kconfig
++++ b/net/sunrpc/Kconfig
+@@ -17,6 +17,11 @@ config SUNRPC_XPRT_RDMA
+ 
+ 	  If unsure, say N.
+ 
++config SUNRPC_SWAP
++	def_bool n
++	depends on SUNRPC
++	select NETVM
++
+ config RPCSEC_GSS_KRB5
+ 	tristate "Secure RPC: Kerberos V mechanism (EXPERIMENTAL)"
+ 	depends on SUNRPC && EXPERIMENTAL
+diff --git a/net/sunrpc/sched.c b/net/sunrpc/sched.c
+index 4a843b8..6a16dc0 100644
+--- a/net/sunrpc/sched.c
++++ b/net/sunrpc/sched.c
+@@ -742,7 +742,10 @@ static void rpc_async_schedule(struct work_struct *work)
+ void *rpc_malloc(struct rpc_task *task, size_t size)
+ {
+ 	struct rpc_buffer *buf;
+-	gfp_t gfp = RPC_IS_SWAPPER(task) ? GFP_ATOMIC : GFP_NOWAIT;
++	gfp_t gfp = GFP_NOWAIT;
++
++	if (RPC_IS_SWAPPER(task))
++		gfp |= __GFP_MEMALLOC;
+ 
+ 	size += sizeof(struct rpc_buffer);
+ 	if (size <= RPC_BUFFER_MAXSIZE)
+@@ -813,6 +816,8 @@ static void rpc_init_task(struct rpc_task *task, const struct rpc_task_setup *ta
+ 		kref_get(&task->tk_client->cl_kref);
+ 		if (task->tk_client->cl_softrtry)
+ 			task->tk_flags |= RPC_TASK_SOFT;
++		if (task->tk_client->cl_xprt->swapper)
++			task->tk_flags |= RPC_TASK_SWAPPER;
+ 	}
+ 
+ 	if (task->tk_ops->rpc_call_prepare != NULL)
+@@ -838,7 +843,7 @@ static void rpc_init_task(struct rpc_task *task, const struct rpc_task_setup *ta
+ static struct rpc_task *
+ rpc_alloc_task(void)
+ {
+-	return (struct rpc_task *)mempool_alloc(rpc_task_mempool, GFP_NOFS);
++	return (struct rpc_task *)mempool_alloc(rpc_task_mempool, GFP_NOIO);
  }
  
  /*
-@@ -497,7 +497,7 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
- 
- 	/* Only do I/O if gfp is a superset of GFP_KERNEL */
- 	if ((gfp & GFP_KERNEL) == GFP_KERNEL)
--		nfs_wb_page(page->mapping->host, page);
-+		nfs_wb_page(page_file_mapping(page)->host, page);
- 	/* If PagePrivate() is set, then the page is not freeable */
- 	if (PagePrivate(page))
- 		return 0;
-@@ -514,11 +514,11 @@ static int nfs_release_page(struct page *page, gfp_t gfp)
-  */
- static int nfs_launder_page(struct page *page)
- {
--	struct inode *inode = page->mapping->host;
-+	struct inode *inode = page_file_mapping(page)->host;
- 	struct nfs_inode *nfsi = NFS_I(inode);
- 
- 	dfprintk(PAGECACHE, "NFS: launder_page(%ld, %llu)\n",
--		inode->i_ino, (long long)page_offset(page));
-+		inode->i_ino, (long long)page_file_offset(page));
- 
- 	nfs_fscache_wait_on_page_write(nfsi, page);
- 	return nfs_wb_page(inode, page);
-@@ -557,13 +557,13 @@ static int nfs_vm_page_mkwrite(struct vm_area_struct *vma, struct vm_fault *vmf)
- 	dfprintk(PAGECACHE, "NFS: vm_page_mkwrite(%s/%s(%ld), offset %lld)\n",
- 		dentry->d_parent->d_name.name, dentry->d_name.name,
- 		filp->f_mapping->host->i_ino,
--		(long long)page_offset(page));
-+		(long long)page_file_offset(page));
- 
- 	/* make sure the cache has finished storing the page */
- 	nfs_fscache_wait_on_page_write(NFS_I(dentry->d_inode), page);
- 
- 	lock_page(page);
--	mapping = page->mapping;
-+	mapping = page_file_mapping(page);
- 	if (mapping != dentry->d_inode->i_mapping)
- 		goto out_unlock;
- 
-diff --git a/fs/nfs/fscache-index.c b/fs/nfs/fscache-index.c
-index 5b10064..9aa62a0 100644
---- a/fs/nfs/fscache-index.c
-+++ b/fs/nfs/fscache-index.c
-@@ -283,7 +283,7 @@ static void nfs_fscache_inode_now_uncached(void *cookie_netfs_data)
- 		for (loop = 0; loop < nr_pages; loop++)
- 			ClearPageFsCache(pvec.pages[loop]);
- 
--		first = pvec.pages[nr_pages - 1]->index + 1;
-+		first = page_file_index(pvec.pages[nr_pages - 1]) + 1;
- 
- 		pvec.nr = nr_pages;
- 		pagevec_release(&pvec);
-diff --git a/fs/nfs/fscache.c b/fs/nfs/fscache.c
-index ce153a6..c6642ea 100644
---- a/fs/nfs/fscache.c
-+++ b/fs/nfs/fscache.c
-@@ -356,7 +356,7 @@ void nfs_fscache_reset_inode_cookie(struct inode *inode)
- int nfs_fscache_release_page(struct page *page, gfp_t gfp)
- {
- 	if (PageFsCache(page)) {
--		struct nfs_inode *nfsi = NFS_I(page->mapping->host);
-+		struct nfs_inode *nfsi = NFS_I(page_file_mapping(page)->host);
- 		struct fscache_cookie *cookie = nfsi->fscache;
- 
- 		BUG_ON(!cookie);
-@@ -366,7 +366,7 @@ int nfs_fscache_release_page(struct page *page, gfp_t gfp)
- 		if (!fscache_maybe_release_page(cookie, page, gfp))
- 			return 0;
- 
--		nfs_add_fscache_stats(page->mapping->host,
-+		nfs_add_fscache_stats(page_file_mapping(page)->host,
- 				      NFSIOS_FSCACHE_PAGES_UNCACHED, 1);
- 	}
- 
-@@ -391,7 +391,7 @@ void __nfs_fscache_invalidate_page(struct page *page, struct inode *inode)
- 
- 	BUG_ON(!PageLocked(page));
- 	fscache_uncache_page(cookie, page);
--	nfs_add_fscache_stats(page->mapping->host,
-+	nfs_add_fscache_stats(page_file_mapping(page)->host,
- 			      NFSIOS_FSCACHE_PAGES_UNCACHED, 1);
+diff --git a/net/sunrpc/xprtsock.c b/net/sunrpc/xprtsock.c
+index 49a62f0..5c8b918 100644
+--- a/net/sunrpc/xprtsock.c
++++ b/net/sunrpc/xprtsock.c
+@@ -1631,6 +1631,55 @@ static inline void xs_reclassify_socket6(struct socket *sock)
  }
+ #endif
  
-@@ -413,7 +413,7 @@ static void nfs_readpage_from_fscache_complete(struct page *page,
- 		SetPageUptodate(page);
- 		unlock_page(page);
- 	} else {
--		error = nfs_readpage_async(context, page->mapping->host, page);
-+		error = nfs_readpage_async(context, page_file_mapping(page)->host, page);
- 		if (error)
- 			unlock_page(page);
++#ifdef CONFIG_SUNRPC_SWAP
++static void xs_set_memalloc(struct rpc_xprt *xprt)
++{
++	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++
++	if (xprt->swapper)
++		sk_set_memalloc(transport->inet);
++}
++
++#define RPC_BUF_RESERVE_PAGES \
++	kmalloc_estimate_objs(sizeof(struct rpc_rqst), GFP_KERNEL, RPC_MAX_SLOT_TABLE)
++#define RPC_RESERVE_PAGES	(RPC_BUF_RESERVE_PAGES + TX_RESERVE_PAGES)
++
++/**
++ * xs_swapper - Tag this transport as being used for swap.
++ * @xprt: transport to tag
++ * @enable: enable/disable
++ *
++ */
++int xs_swapper(struct rpc_xprt *xprt, int enable)
++{
++	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
++	int err = 0;
++
++	if (enable) {
++		/*
++		 * keep one extra sock reference so the reserve won't dip
++		 * when the socket gets reconnected.
++		 */
++		err = sk_adjust_memalloc(1, RPC_RESERVE_PAGES);
++		if (!err) {
++			xprt->swapper = 1;
++			xs_set_memalloc(xprt);
++		}
++	} else if (xprt->swapper) {
++		xprt->swapper = 0;
++		sk_clear_memalloc(transport->inet);
++		sk_adjust_memalloc(-1, -RPC_RESERVE_PAGES);
++	}
++
++	return err;
++}
++EXPORT_SYMBOL_GPL(xs_swapper);
++#else
++static void xs_set_memalloc(struct rpc_xprt *xprt)
++{
++}
++#endif
++
+ static void xs_udp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
+ {
+ 	struct sock_xprt *transport = container_of(xprt, struct sock_xprt, xprt);
+@@ -1655,6 +1704,8 @@ static void xs_udp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
+ 		transport->sock = sock;
+ 		transport->inet = sk;
+ 
++		xs_set_memalloc(xprt);
++
+ 		write_unlock_bh(&sk->sk_callback_lock);
  	}
-@@ -429,7 +429,7 @@ int __nfs_readpage_from_fscache(struct nfs_open_context *ctx,
+ 	xs_udp_do_set_buffer_size(xprt);
+@@ -1672,11 +1723,15 @@ static void xs_udp_connect_worker4(struct work_struct *work)
+ 		container_of(work, struct sock_xprt, connect_worker.work);
+ 	struct rpc_xprt *xprt = &transport->xprt;
+ 	struct socket *sock = transport->sock;
++	unsigned long pflags = current->flags;
+ 	int err, status = -EIO;
  
- 	dfprintk(FSCACHE,
- 		 "NFS: readpage_from_fscache(fsc:%p/p:%p(i:%lx f:%lx)/0x%p)\n",
--		 NFS_I(inode)->fscache, page, page->index, page->flags, inode);
-+		 NFS_I(inode)->fscache, page, page_file_index(page), page->flags, inode);
- 
- 	ret = fscache_read_or_alloc_page(NFS_I(inode)->fscache,
- 					 page,
-@@ -518,12 +518,12 @@ void __nfs_readpage_to_fscache(struct inode *inode, struct page *page, int sync)
- 
- 	dfprintk(FSCACHE,
- 		 "NFS: readpage_to_fscache(fsc:%p/p:%p(i:%lx f:%lx)/%d)\n",
--		 NFS_I(inode)->fscache, page, page->index, page->flags, sync);
-+		 NFS_I(inode)->fscache, page, page_file_index(page), page->flags, sync);
- 
- 	ret = fscache_write_page(NFS_I(inode)->fscache, page, GFP_KERNEL);
- 	dfprintk(FSCACHE,
- 		 "NFS:     readpage_to_fscache: p:%p(i:%lu f:%lx) ret %d\n",
--		 page, page->index, page->flags, ret);
-+		 page, page_file_index(page), page->flags, ret);
- 
- 	if (ret != 0) {
- 		fscache_uncache_page(NFS_I(inode)->fscache, page);
-diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
-index d8bd619..1110617 100644
---- a/fs/nfs/internal.h
-+++ b/fs/nfs/internal.h
-@@ -342,13 +342,14 @@ void nfs_super_set_maxbytes(struct super_block *sb, __u64 maxfilesize)
- static inline
- unsigned int nfs_page_length(struct page *page)
- {
--	loff_t i_size = i_size_read(page->mapping->host);
-+	loff_t i_size = i_size_read(page_file_mapping(page)->host);
- 
- 	if (i_size > 0) {
-+		pgoff_t page_index = page_file_index(page);
- 		pgoff_t end_index = (i_size - 1) >> PAGE_CACHE_SHIFT;
--		if (page->index < end_index)
-+		if (page_index < end_index)
- 			return PAGE_CACHE_SIZE;
--		if (page->index == end_index)
-+		if (page_index == end_index)
- 			return ((i_size - 1) & ~PAGE_CACHE_MASK) + 1;
- 	}
- 	return 0;
-diff --git a/fs/nfs/pagelist.c b/fs/nfs/pagelist.c
-index a3654e5..2be94bb 100644
---- a/fs/nfs/pagelist.c
-+++ b/fs/nfs/pagelist.c
-@@ -70,11 +70,11 @@ nfs_create_request(struct nfs_open_context *ctx, struct inode *inode,
- 	 * update_nfs_request below if the region is not locked. */
- 	req->wb_page    = page;
- 	atomic_set(&req->wb_complete, 0);
--	req->wb_index	= page->index;
-+	req->wb_index	= page_file_index(page);
- 	page_cache_get(page);
- 	BUG_ON(PagePrivate(page));
- 	BUG_ON(!PageLocked(page));
--	BUG_ON(page->mapping->host != inode);
-+	BUG_ON(page_file_mapping(page)->host != inode);
- 	req->wb_offset  = offset;
- 	req->wb_pgbase	= offset;
- 	req->wb_bytes   = count;
-@@ -363,7 +363,7 @@ void nfs_pageio_cond_complete(struct nfs_pageio_descriptor *desc, pgoff_t index)
-  * nfs_scan_list - Scan a list for matching requests
-  * @nfsi: NFS inode
-  * @dst: Destination list
-- * @idx_start: lower bound of page->index to scan
-+ * @idx_start: lower bound of page_file_index(page) to scan
-  * @npages: idx_start + npages sets the upper bound to scan.
-  * @tag: tag to scan for
-  *
-diff --git a/fs/nfs/read.c b/fs/nfs/read.c
-index 5a33a92..5cbae00 100644
---- a/fs/nfs/read.c
-+++ b/fs/nfs/read.c
-@@ -501,11 +501,11 @@ static const struct rpc_call_ops nfs_read_full_ops = {
- int nfs_readpage(struct file *file, struct page *page)
- {
- 	struct nfs_open_context *ctx;
--	struct inode *inode = page->mapping->host;
-+	struct inode *inode = page_file_mapping(page)->host;
- 	int		error;
- 
- 	dprintk("NFS: nfs_readpage (%p %ld@%lu)\n",
--		page, PAGE_CACHE_SIZE, page->index);
-+		page, PAGE_CACHE_SIZE, page_file_index(page));
- 	nfs_inc_stats(inode, NFSIOS_VFSREADPAGE);
- 	nfs_add_stats(inode, NFSIOS_READPAGES, 1);
- 
-@@ -559,7 +559,7 @@ static int
- readpage_async_filler(void *data, struct page *page)
- {
- 	struct nfs_readdesc *desc = (struct nfs_readdesc *)data;
--	struct inode *inode = page->mapping->host;
-+	struct inode *inode = page_file_mapping(page)->host;
- 	struct nfs_page *new;
- 	unsigned int len;
- 	int error;
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index 03df228..109a970 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -123,7 +123,7 @@ static struct nfs_page *nfs_page_find_request_locked(struct page *page)
- 
- static struct nfs_page *nfs_page_find_request(struct page *page)
- {
--	struct inode *inode = page->mapping->host;
-+	struct inode *inode = page_file_mapping(page)->host;
- 	struct nfs_page *req = NULL;
- 
- 	spin_lock(&inode->i_lock);
-@@ -135,16 +135,16 @@ static struct nfs_page *nfs_page_find_request(struct page *page)
- /* Adjust the file length if we're writing beyond the end */
- static void nfs_grow_file(struct page *page, unsigned int offset, unsigned int count)
- {
--	struct inode *inode = page->mapping->host;
-+	struct inode *inode = page_file_mapping(page)->host;
- 	loff_t end, i_size;
- 	pgoff_t end_index;
- 
- 	spin_lock(&inode->i_lock);
- 	i_size = i_size_read(inode);
- 	end_index = (i_size - 1) >> PAGE_CACHE_SHIFT;
--	if (i_size > 0 && page->index < end_index)
-+	if (i_size > 0 && page_file_index(page) < end_index)
+ 	if (xprt->shutdown)
  		goto out;
--	end = ((loff_t)page->index << PAGE_CACHE_SHIFT) + ((loff_t)offset+count);
-+	end = page_file_offset(page) + ((loff_t)offset+count);
- 	if (i_size >= end)
+ 
++	if (xprt->swapper)
++		current->flags |= PF_MEMALLOC;
++
+ 	/* Start by resetting any existing state */
+ 	xs_reset_transport(transport);
+ 
+@@ -1703,6 +1758,7 @@ static void xs_udp_connect_worker4(struct work_struct *work)
+ out:
+ 	xprt_clear_connecting(xprt);
+ 	xprt_wake_pending_tasks(xprt, status);
++	tsk_restore_flags(current, pflags, PF_MEMALLOC);
+ }
+ 
+ /**
+@@ -1717,11 +1773,15 @@ static void xs_udp_connect_worker6(struct work_struct *work)
+ 		container_of(work, struct sock_xprt, connect_worker.work);
+ 	struct rpc_xprt *xprt = &transport->xprt;
+ 	struct socket *sock = transport->sock;
++	unsigned long pflags = current->flags;
+ 	int err, status = -EIO;
+ 
+ 	if (xprt->shutdown)
  		goto out;
- 	i_size_write(inode, end);
-@@ -157,7 +157,7 @@ out:
- static void nfs_set_pageerror(struct page *page)
- {
- 	SetPageError(page);
--	nfs_zap_mapping(page->mapping->host, page->mapping);
-+	nfs_zap_mapping(page_file_mapping(page)->host, page_file_mapping(page));
+ 
++	if (xprt->swapper)
++		current->flags |= PF_MEMALLOC;
++
+ 	/* Start by resetting any existing state */
+ 	xs_reset_transport(transport);
+ 
+@@ -1748,6 +1808,7 @@ static void xs_udp_connect_worker6(struct work_struct *work)
+ out:
+ 	xprt_clear_connecting(xprt);
+ 	xprt_wake_pending_tasks(xprt, status);
++	tsk_restore_flags(current, pflags, PF_MEMALLOC);
  }
  
- /* We can set the PG_uptodate flag if we see that a write request
-@@ -198,7 +198,7 @@ static int nfs_set_page_writeback(struct page *page)
- 	int ret = test_set_page_writeback(page);
+ /*
+@@ -1822,6 +1883,8 @@ static int xs_tcp_finish_connecting(struct rpc_xprt *xprt, struct socket *sock)
+ 	if (!xprt_bound(xprt))
+ 		return -ENOTCONN;
  
- 	if (!ret) {
--		struct inode *inode = page->mapping->host;
-+		struct inode *inode = page_file_mapping(page)->host;
- 		struct nfs_server *nfss = NFS_SERVER(inode);
- 
- 		page_cache_get(page);
-@@ -213,7 +213,7 @@ static int nfs_set_page_writeback(struct page *page)
- 
- static void nfs_end_page_writeback(struct page *page)
++	xs_set_memalloc(xprt);
++
+ 	/* Tell the socket layer to start connecting... */
+ 	xprt->stat.connect_count++;
+ 	xprt->stat.connect_start = jiffies;
+@@ -1842,11 +1905,15 @@ static void xs_tcp_setup_socket(struct rpc_xprt *xprt,
+ 			struct sock_xprt *))
  {
--	struct inode *inode = page->mapping->host;
-+	struct inode *inode = page_file_mapping(page)->host;
- 	struct nfs_server *nfss = NFS_SERVER(inode);
+ 	struct socket *sock = transport->sock;
++	unsigned long pflags = current->flags;
+ 	int status = -EIO;
  
- 	end_page_writeback(page);
-@@ -224,7 +224,7 @@ static void nfs_end_page_writeback(struct page *page)
+ 	if (xprt->shutdown)
+ 		goto out;
  
- static struct nfs_page *nfs_find_and_lock_request(struct page *page)
- {
--	struct inode *inode = page->mapping->host;
-+	struct inode *inode = page_file_mapping(page)->host;
- 	struct nfs_page *req;
- 	int ret;
- 
-@@ -282,12 +282,12 @@ out:
- 
- static int nfs_do_writepage(struct page *page, struct writeback_control *wbc, struct nfs_pageio_descriptor *pgio)
- {
--	struct inode *inode = page->mapping->host;
-+	struct inode *inode = page_file_mapping(page)->host;
- 
- 	nfs_inc_stats(inode, NFSIOS_VFSWRITEPAGE);
- 	nfs_add_stats(inode, NFSIOS_WRITEPAGES, 1);
- 
--	nfs_pageio_cond_complete(pgio, page->index);
-+	nfs_pageio_cond_complete(pgio, page_file_index(page));
- 	return nfs_page_async_flush(pgio, page);
++	if (xprt->swapper)
++		current->flags |= PF_MEMALLOC;
++
+ 	if (!sock) {
+ 		clear_bit(XPRT_CONNECTION_ABORT, &xprt->state);
+ 		sock = create_sock(xprt, transport);
+@@ -1907,6 +1974,7 @@ out_eagain:
+ out:
+ 	xprt_clear_connecting(xprt);
+ 	xprt_wake_pending_tasks(xprt, status);
++	tsk_restore_flags(current, pflags, PF_MEMALLOC);
  }
  
-@@ -299,7 +299,7 @@ static int nfs_writepage_locked(struct page *page, struct writeback_control *wbc
- 	struct nfs_pageio_descriptor pgio;
- 	int err;
- 
--	nfs_pageio_init_write(&pgio, page->mapping->host, wb_priority(wbc));
-+	nfs_pageio_init_write(&pgio, page_file_mapping(page)->host, wb_priority(wbc));
- 	err = nfs_do_writepage(page, wbc, &pgio);
- 	nfs_pageio_complete(&pgio);
- 	if (err < 0)
-@@ -423,7 +423,7 @@ static void
- nfs_mark_request_dirty(struct nfs_page *req)
- {
- 	__set_page_dirty_nobuffers(req->wb_page);
--	__mark_inode_dirty(req->wb_page->mapping->host, I_DIRTY_DATASYNC);
-+	__mark_inode_dirty(page_file_mapping(req->wb_page)->host, I_DIRTY_DATASYNC);
- }
- 
- #if defined(CONFIG_NFS_V3) || defined(CONFIG_NFS_V4)
-@@ -444,7 +444,8 @@ nfs_mark_request_commit(struct nfs_page *req)
- 	nfsi->ncommit++;
- 	spin_unlock(&inode->i_lock);
- 	inc_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
--	inc_bdi_stat(req->wb_page->mapping->backing_dev_info, BDI_RECLAIMABLE);
-+	inc_bdi_stat(page_file_mapping(req->wb_page)->backing_dev_info,
-+			BDI_RECLAIMABLE);
- 	__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
- }
- 
-@@ -455,7 +456,7 @@ nfs_clear_request_commit(struct nfs_page *req)
- 
- 	if (test_and_clear_bit(PG_CLEAN, &(req)->wb_flags)) {
- 		dec_zone_page_state(page, NR_UNSTABLE_NFS);
--		dec_bdi_stat(page->mapping->backing_dev_info, BDI_RECLAIMABLE);
-+		dec_bdi_stat(page_file_mapping(page)->backing_dev_info, BDI_RECLAIMABLE);
- 		return 1;
- 	}
- 	return 0;
-@@ -516,7 +517,7 @@ nfs_need_commit(struct nfs_inode *nfsi)
-  * nfs_scan_commit - Scan an inode for commit requests
-  * @inode: NFS inode to scan
-  * @dst: destination list
-- * @idx_start: lower bound of page->index to scan.
-+ * @idx_start: lower bound of page_file_index(page) to scan.
-  * @npages: idx_start + npages sets the upper bound to scan.
-  *
-  * Moves requests from the inode's 'commit' request list.
-@@ -636,7 +637,7 @@ out_err:
- static struct nfs_page * nfs_setup_write_request(struct nfs_open_context* ctx,
- 		struct page *page, unsigned int offset, unsigned int bytes)
- {
--	struct inode *inode = page->mapping->host;
-+	struct inode *inode = page_file_mapping(page)->host;
- 	struct nfs_page	*req;
- 	int error;
- 
-@@ -693,7 +694,7 @@ int nfs_flush_incompatible(struct file *file, struct page *page)
- 		nfs_release_request(req);
- 		if (!do_flush)
- 			return 0;
--		status = nfs_wb_page(page->mapping->host, page);
-+		status = nfs_wb_page(page_file_mapping(page)->host, page);
- 	} while (status == 0);
- 	return status;
- }
-@@ -719,7 +720,7 @@ int nfs_updatepage(struct file *file, struct page *page,
- 		unsigned int offset, unsigned int count)
- {
- 	struct nfs_open_context *ctx = nfs_file_open_context(file);
--	struct inode	*inode = page->mapping->host;
-+	struct inode	*inode = page_file_mapping(page)->host;
- 	int		status = 0;
- 
- 	nfs_inc_stats(inode, NFSIOS_VFSUPDATEPAGE);
-@@ -727,7 +728,7 @@ int nfs_updatepage(struct file *file, struct page *page,
- 	dprintk("NFS:       nfs_updatepage(%s/%s %d@%lld)\n",
- 		file->f_path.dentry->d_parent->d_name.name,
- 		file->f_path.dentry->d_name.name, count,
--		(long long)(page_offset(page) + offset));
-+		(long long)(page_file_offset(page) + offset));
- 
- 	/* If we're not using byte range locks, and we know the page
- 	 * is up to date, it may be more efficient to extend the write
-@@ -1009,7 +1010,7 @@ static void nfs_writeback_release_partial(void *calldata)
- 	}
- 
- 	if (nfs_write_need_commit(data)) {
--		struct inode *inode = page->mapping->host;
-+		struct inode *inode = page_file_mapping(page)->host;
- 
- 		spin_lock(&inode->i_lock);
- 		if (test_bit(PG_NEED_RESCHED, &req->wb_flags)) {
-@@ -1307,7 +1308,7 @@ nfs_commit_list(struct inode *inode, struct list_head *head, int how)
- 		nfs_list_remove_request(req);
- 		nfs_mark_request_commit(req);
- 		dec_zone_page_state(req->wb_page, NR_UNSTABLE_NFS);
--		dec_bdi_stat(req->wb_page->mapping->backing_dev_info,
-+		dec_bdi_stat(page_file_mapping(req->wb_page)->backing_dev_info,
- 				BDI_RECLAIMABLE);
- 		nfs_clear_page_tag_locked(req);
- 	}
-@@ -1508,7 +1509,7 @@ int nfs_wb_page_cancel(struct inode *inode, struct page *page)
-  */
- int nfs_wb_page(struct inode *inode, struct page *page)
- {
--	loff_t range_start = page_offset(page);
-+	loff_t range_start = page_file_offset(page);
- 	loff_t range_end = range_start + (loff_t)(PAGE_CACHE_SIZE - 1);
- 	struct writeback_control wbc = {
- 		.sync_mode = WB_SYNC_ALL,
+ static struct socket *xs_create_tcp_sock4(struct rpc_xprt *xprt,
 -- 
 1.7.1.1
 
