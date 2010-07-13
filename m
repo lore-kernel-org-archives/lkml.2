@@ -1,69 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756636Ab0GMMzM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 08:55:12 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59658 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752956Ab0GMMzK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 08:55:10 -0400
-Message-ID: <4C3C6232.5090509@kernel.dk>
-Date: Tue, 13 Jul 2010 14:55:14 +0200
-From: Jens Axboe <axboe@kernel.dk>
+	id S1756641Ab0GMM5s (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 08:57:48 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:37801 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752956Ab0GMM5r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 08:57:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=X9KKqikog5qzSw1VFNkCl5zRhLvV7l2AG816tuJjFh25phq84WsCmFz3LOLfTWMeuA
+         5epjFZoiX3EjmDIsGVmgDO/0PNOXPNZ3Dn06QafOXTJ5Xv28tN8hidUVrVuRcAt5mvg5
+         50lJOycrGb67Jfb1yRPYDlyPuoWhCGlal5OiM=
+Date: Tue, 13 Jul 2010 14:57:09 +0200
+From: Martin Jansa <martin.jansa@gmail.com>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] kbuild: setlocalversion should respect srctree param
+ when looking for auto.conf
+Message-ID: <20100713125709.GK15231@jama>
+References: <1279013676-23887-1-git-send-email-Martin.Jansa@gmail.com>
+ <4C3C5DE3.7030306@suse.cz>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] blkdev: check for valid request queue before issuing
- flush
-References: <1279007450-10457-1-git-send-email-david@fromorbit.com> <1279007450-10457-3-git-send-email-david@fromorbit.com>
-In-Reply-To: <1279007450-10457-3-git-send-email-david@fromorbit.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3C5DE3.7030306@suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-13 09:50, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
+On Tue, Jul 13, 2010 at 02:36:51PM +0200, Michal Marek wrote:
+> On 07/13/2010 11:34 AM, Martin Jansa wrote:
+> > * it works properly only when CWD == scrtree
+> > * with this patch:
+> >   jama src # /usr/src/linux/scripts/setlocalversion /usr/src/linux
+> >   -JaMa-00001-g18672de
+> > * without:
+> >   jama src # /usr/src/linux/scripts/setlocalversion /usr/src/linux
+> >   Error: kernelrelease not valid - run 'make prepare' to update it
 > 
-> Issuing a blkdev_issue_flush() on an unconfigured loop device causes a panic as
-> q->make_request_fn is not configured. This can occur when trying to mount the
-> unconfigured loop device as an XFS filesystem. There are no guards that catch
-> the bio before the request function is called because we don't add a payload to
-> the bio. Instead, manually check this case as soon as we have a pointer to the
-> queue to flush.
+> This doesn't look correct, include/config/auto.conf is generated in the
+> build directory (*), where this script is called from by the Makefile.
+> If you call the script manually, you have to cd to the build directory
+> first.
 > 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  block/blk-barrier.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/block/blk-barrier.c b/block/blk-barrier.c
-> index 0d710c9..0fd766e 100644
-> --- a/block/blk-barrier.c
-> +++ b/block/blk-barrier.c
-> @@ -319,6 +319,15 @@ int blkdev_issue_flush(struct block_device *bdev, gfp_t gfp_mask,
->  	if (!q)
->  		return -ENXIO;
->  
-> +	/*
-> +	 * some block devices may not have their queue correctly set up here
-> +	 * (e.g. loop device without a backing file) and so issuing a flush
-> +	 * here will panic. Ensure there is a request function before issuing
-> +	 * the barrier.
-> +	 */
-> +	if (!q->make_request_fn)
-> +		return -ENXIO;
-> +
->  	bio = bio_alloc(gfp_mask, 0);
->  	bio->bi_end_io = bio_end_empty_barrier;
->  	bio->bi_bdev = bdev;
+> (*) which is different from the source directory if you build with O=.
 
-This may appear ugly, but I think the patch is fine since there's not
-much we can do about the loop crap (outside of changing how you do
-setup/configure of it).
+Ah OK, I didn't notice that auto.conf should be generated in build
+directory (in my case build dir == source dir).
 
-I'll apply this, thanks.
+I just noticed broken kernel module builds in gentoo, because local
+version is also checked without changing CWD
+KV_LOCAL="${KV_LOCAL}$(sh ${KV_DIR}/scripts/setlocalversion ${KV_DIR})"
+in get_version()
+http://sources.gentoo.org/cgi-bin/viewvc.cgi/gentoo-x86/eclass/linux-info.eclass?view=markup
+
+So if scripts/* behavior is not considered as "API" then it should be
+fixed in gentoo eclass. It also appends LOCALVERSION twice now, because
+first appends LOCALVERSION from config and then calls setlocalversion
+also returning it at the beginning.
+
+Thanks
+
+Regards,
 
 -- 
-Jens Axboe
-
+Martin 'JaMa' Jansa     jabber: Martin.Jansa@gmail.com
