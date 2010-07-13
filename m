@@ -1,46 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754133Ab0GMINT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 04:13:19 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57568 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753482Ab0GMINO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 04:13:14 -0400
-Date: Tue, 13 Jul 2010 09:20:12 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: zpfeffer@codeaurora.org, joro@8bytes.org, dwalker@codeaurora.org,
-        andi@firstfloor.org, randy.dunlap@oracle.com, mel@csn.ul.ie,
-        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
-Message-ID: <20100713092012.7c1fe53e@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100713145852C.fujita.tomonori@lab.ntt.co.jp>
-References: <4C2D965F.5000206@codeaurora.org>
-	<20100710145639.GC10080@8bytes.org>
-	<4C3BFDD3.8040209@codeaurora.org>
-	<20100713145852C.fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+	id S1754325Ab0GMINq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 04:13:46 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:26080 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753599Ab0GMINo (ORCPT
+	<rfc822;groupwise-jlee@novell.com:3:2>);
+	Tue, 13 Jul 2010 04:13:44 -0400
+Message-Id: <4C3CACD3020000230001CDCE@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.2 
+Date: Tue, 13 Jul 2010 02:13:39 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <mjg59@srcf.ucam.org>
+Cc: <dri-devel@lists.sourceforge.net>, <linux-acpi@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, <Dennis.Jansen@web.de>
+Subject: Re: [PATCH] Add intel drm blacklist to intel_opregion_present
+ detect
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Why video4linux can't use the DMA API? Doing DMA with vmalloc'ed
-> buffers is a thing that we should avoid (there are some exceptions
-> like xfs though).
+Hi Matthew, 
 
-Vmalloc is about the only API for creating virtually linear memory areas.
-The video stuff really needs that to avoid lots of horrible special cases
-when doing buffer processing and the like.
+First, thank's for your kindly suggestion.
 
-Pretty much each driver using it has a pair of functions 'rvmalloc' and
-'rvfree' so given a proper "vmalloc_for_dma()" type interface can easily
-be switched
+於 一，2010-07-12 於 16:19 +0100，Matthew Garrett 提到：
+> 
+> > On the other hand, the Poulsbo is a old and stop ship chip, do we still
+> > want to add a special driver for it?
+> 
+> Yeah, that's my concern. There's millions of things in the wild and 
+> Intel continue to refuse to take responsibility for them, so it's not 
+> clear to me that it's worth putting the effort into writing a "correct" 
+> driver.
+> 
 
-Alan
+Yes, fully agreed! 
+
+> > Thank's for your remind, I fully agreed cann't guarantee all poulsbo
+> > systems have working acpi method. But, I am sure the MSI U110/U115 have
+> > workable acpi backlight method.
+> > Do you think it's good to put the special DMI detection in msi-laptop
+> > driver to enable the the acpi backlight control by call
+> > acpi_video_register in acpi video? But will cause msi-laptop driver
+> > dependency to acpi video driver.
+> 
+> Mm. Well, we *know* that opregion won't work on Poulsbo as is (even 
+> Intel's driver doesn't implement it), so there's no way this patch can 
+> make things any worse. On the other hand, if anyone ships an OS with 
+> this hack *and* a native psb driver, I'm going to look sad for some 
+> time.
+> 
+
+Please then me add the MSI U110/U115 support in msi-laptop driver. I am
+sure the acpi baclight method works fine on U110/U115 and I hope the
+_REAL_ opensource kernel user will not have a invalid backlight control
+function.
+
+For the native psb driver, if have anyone want to ship it with newest
+msi-laptop driver, then he must need take care anything in KMP, like:
+disable msi-laptop or put it to modprobe blacklist.
+Because the native psb driver doesn't not included in kernel mainline.
+
+On the other hand, the Poulsbo already stop to chip, there will not have
+many machine ship the native psb driver with newest msi-laptop.
+
+
+Thank's a lot!
+Joey Lee
+
+
