@@ -1,169 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752510Ab0GMHJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:09:57 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56462 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075Ab0GMHJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:09:56 -0400
-Date: Tue, 13 Jul 2010 17:09:45 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        =?UTF-8?B?IlV3ZSBLbGVpbmUtS8O2bmlnIg==?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Olof Johansson <olof@lixom.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH] powerpc: reduce the size of the defconfigs
-Message-Id: <20100713170945.26d95641.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__13_Jul_2010_17_09_45_+1000_17jFtFQAUEbAHRS0"
+	id S1752055Ab0GMHMx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:12:53 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:36879 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750943Ab0GMHMv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 03:12:51 -0400
+Message-ID: <4C3C11DD.4030308@us.ibm.com>
+Date: Tue, 13 Jul 2010 00:12:29 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Mike Galbraith <efault@gmx.de>
+CC: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
+        Steven Rostedt <rostedt@goodmis.org>, linux-rt-users@vger.kernel.org
+Subject: Re: [PATCH 4/4] futex: convert hash_bucket locks to raw_spinlock_t
+References: <1278714780-788-1-git-send-email-dvhltc@us.ibm.com> <1278714780-788-5-git-send-email-dvhltc@us.ibm.com> <1278790882.7352.101.camel@marge.simson.net> <4C3B68B9.5060404@us.ibm.com> <alpine.LFD.2.00.1007122226230.3321@localhost.localdomain> <1278990560.7516.50.camel@marge.simson.net>
+In-Reply-To: <1278990560.7516.50.camel@marge.simson.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__13_Jul_2010_17_09_45_+1000_17jFtFQAUEbAHRS0
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/12/2010 08:09 PM, Mike Galbraith wrote:
+> On Mon, 2010-07-12 at 22:40 +0200, Thomas Gleixner wrote:
+>> On Mon, 12 Jul 2010, Darren Hart wrote:
+>>> On 07/10/2010 12:41 PM, Mike Galbraith wrote:
+>>>> On Fri, 2010-07-09 at 15:33 -0700, Darren Hart wrote:
+>>>>>> Out of curiosity, what's wrong with holding his pi_lock across the
+>>>>>> wakeup?  He can _try_ to block, but can't until pi state is stable.
+>>>>>>
+>>>>>> I presume there's a big fat gotcha that's just not obvious to futex
+>>>>>> locking newbie :)
+>>>
+>>> Nor to some of us that have been engrossed in futexes for the last couple
+>>> years! I discussed the pi_lock across the wakeup issue with Thomas. While this
+>>> fixes the problem for this particular failure case, it doesn't protect
+>>> against:
+>>>
+>>> <tglx>  assume the following:
+>>> <tglx>  t1 is on the condvar
+>>> <tglx>  t2 does the requeue dance and t1 is now blocked on the outer futex
+>>> <tglx>  t3 takes hb->lock for a futex in the same bucket
+>>> <tglx>  t2 wakes due to signal/timeout
+>>> <tglx>  t2 blocks on hb->lock
+>>>
+>>> You are likely to have not hit the above scenario because you only had one
+>>> condvar, so the hash_buckets were not heavily shared and you weren't likely to
+>>> hit:
+>>>
+>>> <tglx>  t3 takes hb->lock for a futex in the same bucket
+>>>
+>>>
+>>> I'm going to roll up a patchset with your (Mike) spin_trylock patch and run it
+>>> through some tests. I'd still prefer a way to detect early wakeup without
+>>> having to grab the hb->lock(), but I haven't found it yet.
+>>>
+>>> +	while(!spin_trylock(&hb->lock))
+>>> +		cpu_relax();
+>>>   	ret = handle_early_requeue_pi_wakeup(hb,&q,&key2, to);
+>>>   	spin_unlock(&hb->lock);
+>>
+>> And this is nasty as it will create unbound priority inversion :(
+>
+> Oh ma gawd, _it's a train_ :>
 
-This uses Uwe's script (modified by Olof Johansson to speed it up
-somewhat) to reduce the size of all the powerpc defconfigs.  The resulting
-files have been verified to produce the same .config files by generating
-them before and after this patch and comparing the results.
+Seriously.
 
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- arch/powerpc/configs/40x/acadia_defconfig         | 1002 ----------
- arch/powerpc/configs/40x/ep405_defconfig          | 1211 ------------
- arch/powerpc/configs/40x/hcu4_defconfig           | 1064 ----------
- arch/powerpc/configs/40x/kilauea_defconfig        | 1197 -----------
- arch/powerpc/configs/40x/makalu_defconfig         | 1005 ----------
- arch/powerpc/configs/40x/virtex_defconfig         | 1105 -----------
- arch/powerpc/configs/40x/walnut_defconfig         | 1089 ----------
- arch/powerpc/configs/44x/arches_defconfig         | 1059 ----------
- arch/powerpc/configs/44x/bamboo_defconfig         | 1020 ----------
- arch/powerpc/configs/44x/canyonlands_defconfig    | 1263 ------------
- arch/powerpc/configs/44x/ebony_defconfig          | 1103 -----------
- arch/powerpc/configs/44x/eiger_defconfig          | 1177 -----------
- arch/powerpc/configs/44x/icon_defconfig           | 1335 -------------
- arch/powerpc/configs/44x/iss476-smp_defconfig     |  938 ---------
- arch/powerpc/configs/44x/katmai_defconfig         | 1088 ----------
- arch/powerpc/configs/44x/rainier_defconfig        | 1090 ----------
- arch/powerpc/configs/44x/redwood_defconfig        | 1168 -----------
- arch/powerpc/configs/44x/sam440ep_defconfig       | 1319 -------------
- arch/powerpc/configs/44x/sequoia_defconfig        | 1111 -----------
- arch/powerpc/configs/44x/taishan_defconfig        | 1097 -----------
- arch/powerpc/configs/44x/virtex5_defconfig        | 1111 -----------
- arch/powerpc/configs/44x/warp_defconfig           | 1389 -------------
- arch/powerpc/configs/52xx/cm5200_defconfig        | 1232 ------------
- arch/powerpc/configs/52xx/lite5200b_defconfig     | 1257 ------------
- arch/powerpc/configs/52xx/motionpro_defconfig     | 1265 ------------
- arch/powerpc/configs/52xx/pcm030_defconfig        | 1219 ------------
- arch/powerpc/configs/52xx/tqm5200_defconfig       | 1367 -------------
- arch/powerpc/configs/83xx/asp8347_defconfig       | 1432 --------------
- arch/powerpc/configs/83xx/kmeter1_defconfig       |  927 ---------
- arch/powerpc/configs/83xx/mpc8313_rdb_defconfig   | 1729 ----------------
- arch/powerpc/configs/83xx/mpc8315_rdb_defconfig   | 1798 -----------------
- arch/powerpc/configs/83xx/mpc832x_mds_defconfig   | 1328 -------------
- arch/powerpc/configs/83xx/mpc832x_rdb_defconfig   | 1475 --------------
- arch/powerpc/configs/83xx/mpc834x_itx_defconfig   | 1567 ---------------
- arch/powerpc/configs/83xx/mpc834x_itxgp_defconfig | 1453 --------------
- arch/powerpc/configs/83xx/mpc834x_mds_defconfig   | 1262 ------------
- arch/powerpc/configs/83xx/mpc836x_mds_defconfig   | 1403 -------------
- arch/powerpc/configs/83xx/mpc836x_rdk_defconfig   | 1304 ------------
- arch/powerpc/configs/83xx/mpc837x_mds_defconfig   | 1333 -------------
- arch/powerpc/configs/83xx/mpc837x_rdb_defconfig   | 1471 --------------
- arch/powerpc/configs/83xx/sbc834x_defconfig       | 1398 -------------
- arch/powerpc/configs/85xx/ksi8560_defconfig       | 1119 -----------
- arch/powerpc/configs/85xx/mpc8540_ads_defconfig   |  992 ----------
- arch/powerpc/configs/85xx/mpc8560_ads_defconfig   | 1139 -----------
- arch/powerpc/configs/85xx/mpc85xx_cds_defconfig   | 1155 -----------
- arch/powerpc/configs/85xx/sbc8548_defconfig       | 1001 ----------
- arch/powerpc/configs/85xx/sbc8560_defconfig       | 1029 ----------
- arch/powerpc/configs/85xx/socrates_defconfig      | 1645 ----------------
- arch/powerpc/configs/85xx/stx_gp3_defconfig       | 1528 --------------
- arch/powerpc/configs/85xx/tqm8540_defconfig       | 1318 -------------
- arch/powerpc/configs/85xx/tqm8541_defconfig       | 1364 -------------
- arch/powerpc/configs/85xx/tqm8548_defconfig       | 1355 +-------------
- arch/powerpc/configs/85xx/tqm8555_defconfig       | 1364 -------------
- arch/powerpc/configs/85xx/tqm8560_defconfig       | 1364 -------------
- arch/powerpc/configs/85xx/xes_mpc85xx_defconfig   | 1786 -----------------
- arch/powerpc/configs/86xx/gef_ppc9a_defconfig     | 1736 ----------------
- arch/powerpc/configs/86xx/gef_sbc310_defconfig    | 1625 ---------------
- arch/powerpc/configs/86xx/gef_sbc610_defconfig    | 1819 -----------------
- arch/powerpc/configs/86xx/mpc8610_hpcd_defconfig  | 1634 ---------------
- arch/powerpc/configs/86xx/mpc8641_hpcn_defconfig  | 1640 ----------------
- arch/powerpc/configs/86xx/sbc8641d_defconfig      | 1432 --------------
- arch/powerpc/configs/adder875_defconfig           |  913 ---------
- arch/powerpc/configs/amigaone_defconfig           | 1490 --------------
- arch/powerpc/configs/c2k_defconfig                | 1608 ---------------
- arch/powerpc/configs/cell_defconfig               | 1314 +------------
- arch/powerpc/configs/celleb_defconfig             | 1195 +-----------
- arch/powerpc/configs/chrp32_defconfig             | 1469 --------------
- arch/powerpc/configs/ep8248e_defconfig            | 1118 -----------
- arch/powerpc/configs/ep88xc_defconfig             |  858 --------
- arch/powerpc/configs/g5_defconfig                 | 1549 ---------------
- arch/powerpc/configs/gamecube_defconfig           |  945 ---------
- arch/powerpc/configs/holly_defconfig              |  879 ---------
- arch/powerpc/configs/iseries_defconfig            | 1056 ----------
- arch/powerpc/configs/linkstation_defconfig        | 1782 -----------------
- arch/powerpc/configs/maple_defconfig              | 1371 -------------
- arch/powerpc/configs/mgcoge_defconfig             | 1158 -----------
- arch/powerpc/configs/mgsuvd_defconfig             |  937 ---------
- arch/powerpc/configs/mpc512x_defconfig            | 1559 ---------------
- arch/powerpc/configs/mpc5200_defconfig            | 1849 -----------------
- arch/powerpc/configs/mpc7448_hpc2_defconfig       | 1194 -----------
- arch/powerpc/configs/mpc8272_ads_defconfig        | 1185 -----------
- arch/powerpc/configs/mpc83xx_defconfig            | 1662 ----------------
- arch/powerpc/configs/mpc85xx_defconfig            | 1704 ----------------
- arch/powerpc/configs/mpc85xx_smp_defconfig        | 1708 ----------------
- arch/powerpc/configs/mpc866_ads_defconfig         |  950 ---------
- arch/powerpc/configs/mpc86xx_defconfig            | 1680 ----------------
- arch/powerpc/configs/mpc885_ads_defconfig         |  863 --------
- arch/powerpc/configs/pasemi_defconfig             | 1931 +----------------=
---
- arch/powerpc/configs/pmac32_defconfig             | 1884 +----------------=
---
- arch/powerpc/configs/ppc40x_defconfig             | 1332 -------------
- arch/powerpc/configs/ppc44x_defconfig             | 1471 --------------
- arch/powerpc/configs/ppc64_defconfig              | 1724 +----------------
- arch/powerpc/configs/ppc64e_defconfig             | 1803 -----------------
- arch/powerpc/configs/ppc6xx_defconfig             | 2186 +----------------=
-----
- arch/powerpc/configs/pq2fads_defconfig            | 1304 ------------
- arch/powerpc/configs/prpmc2800_defconfig          | 1674 ----------------
- arch/powerpc/configs/ps3_defconfig                | 1334 -------------
- arch/powerpc/configs/pseries_defconfig            | 1454 +--------------
- arch/powerpc/configs/storcenter_defconfig         | 1305 ------------
- arch/powerpc/configs/wii_defconfig                | 1262 ------------
- 100 files changed, 51 insertions(+), 133815 deletions(-)
+I have a fix. Cleaning it up as we speak, still hope to send out tonight.
 
-The patch is available at
-http://ozlabs.org/~sfr/powerpc-reduce-the-size-of-the-defconfigs.patch.bz2 .
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__13_Jul_2010_17_09_45_+1000_17jFtFQAUEbAHRS0
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMPBE5AAoJEDMEi1NhKgbshZoIAIhXqDjS3gjfk/qys6ozLC43
-1SVRjNzq+vGa3ZX/MjxGxiWurydf1yz8K1jymsE+ommP+Id/YzLpsfgJ/v88O+Hu
-2+z1B7j2mcQzWC6yaPm0SUxZhluzHvvBJ49l5Axx7/3IjVc2NamraZOFB6T8bcpT
-vDc0p8b5chGoU5uQvV0Y60xd65s4NVc1JCmCVBRj5L5faDLtYC1PZrUW6JamfP1Y
-qESoKHdTvFY7teGxQvOLy+tvqVgfWBNOlt1Rr9TXElePJMHSYv0wndg+9h9YdQTz
-UDQVR370U8bZKFqL8i/iGIXE5p5Vbr5eu2MSGTMSzEwhkKmeKj0Ur1K4rfCyLAI=
-=NaEl
------END PGP SIGNATURE-----
-
---Signature=_Tue__13_Jul_2010_17_09_45_+1000_17jFtFQAUEbAHRS0--
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
