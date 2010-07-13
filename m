@@ -1,92 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab0GMBnZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 21:43:25 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34045 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752230Ab0GMBnY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 21:43:24 -0400
-Date: Tue, 13 Jul 2010 11:43:22 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>, Michal Marek <mmarek@suse.cz>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Catalin Marinas <catalin.marinas@arm.com>
-Subject: [PATCH] kbuild: Enable building defconfigs from Kconfig files
-Message-Id: <20100713114322.57c8b166.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756040Ab0GMBz7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 21:55:59 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:36254 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751399Ab0GMBz6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 21:55:58 -0400
+Date: Tue, 13 Jul 2010 10:55:42 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Uwe Kleine-K??nig <u.kleine-koenig@pengutronix.de>
+Subject: Re: linux-next: manual merge of the genesis tree with Linus' tree
+Message-ID: <20100713015542.GB12728@linux-sh.org>
+References: <20100713112814.39dbd280.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100713112814.39dbd280.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After this change, doing a "make xxx_defconfig" will check first for
-a file called arch/<arch>/configs/Kconfig.xxx and use that to generate
-the .config (effectively starting from an allnoconfig).  If that file
-doesn't exist, it will use arch/<ARCH>/configs/xxx_defconfig as now.
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- scripts/kconfig/Makefile |   14 +++++++++++++-
- 1 files changed, 13 insertions(+), 1 deletions(-)
-
-Hi Linus,
-
-Is this more the direction you want to take?
-
-There are still 2 main problems with is approach:
-
-	- there are some config options that are globally and
-unconditionally enabled that some platforms may not want.  The only way
-currently to turn them off is to reproduce the config entry with the
-different default.  I am not sure if we need a wa to turn them off or to
-just change them to being neede to be selected by those that do want them.
-	- we have no way to select options that are neither bool or
-tristate to suitable values.  Again the only way to do that currently is
-to reproduce the config entry with a different default value.
-
-I am currently working towards using this to recreate the PowerPC
-defconfigs, but it is a slow process as they have some much stuff enabled
-in them and some of it is probably actually not relevant.
-
-This process is made easier by the recent commit "kbuild: Warn on
-selecting symbols with unmet direct dependencies" that is in the kbuild
-tree (and linux-next).
-
-diff --git a/scripts/kconfig/Makefile b/scripts/kconfig/Makefile
-index 7ea649d..1ab8f45 100644
---- a/scripts/kconfig/Makefile
-+++ b/scripts/kconfig/Makefile
-@@ -117,9 +117,21 @@ else
- 	$(Q)$< -D arch/$(SRCARCH)/configs/$(KBUILD_DEFCONFIG) $(Kconfig)
- endif
- 
--%_defconfig: $(obj)/conf
-+configs_dir := $(srctree)/arch/$(SRCARCH)/configs
-+# We check a level of sub directories because arch/powerpc
-+# has its defconfig files arranged that way
-+old_defconfigs := $(patsubst $(configs_dir)/%,%,\
-+	$(wildcard $(configs_dir)/*_defconfig) \
-+	$(wildcard $(configs_dir)/*/*_defconfig))
-+defconfigs := $(patsubst $(configs_dir)/Kconfig.%,%_defconfig,\
-+	$(wildcard $(configs_dir)/Kconfig.*))
-+
-+$(old_defconfigs): %_defconfig: $(obj)/conf
- 	$(Q)$< -D arch/$(SRCARCH)/configs/$@ $(Kconfig)
- 
-+$(defconfigs): %_defconfig: $(obj)/conf
-+	$(Q)$< -n arch/$(SRCARCH)/configs/Kconfig.$*
-+
- # Help text used by make help
- help:
- 	@echo  '  config	  - Update current config utilising a line-oriented program'
--- 
-1.7.1
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+On Tue, Jul 13, 2010 at 11:28:14AM +1000, Stephen Rothwell wrote:
+> Hi Paul,
+> 
+> Today's linux-next merge of the genesis tree got a conflict in
+> arch/arm/configs/ap4evb_defconfig arch/arm/configs/g3evm_defconfig
+> arch/arm/configs/g4evm_defconfig between commit
+> 07a8c03f3e06129e847acd068b8b89c13357ee64 ("ARM: reduce defconfigs") from
+> Linus' tree and commits 4a539a2023fd2f7384916ef6e7777ad234a00dcd ("ARM:
+> mach-shmobile: update defconfigs") and
+> 1ddb76fd29da170d77d70b94cdcba74b0d935152 ("ARM: mach-shmobile: update
+> ap4evb defconfig for MMC/DMA changes") from the genesis tree.
+> 
+> The changes are far to extensive for me to fix up, so I have used the
+> versions from the genesis tree for today.
+> 
+> Paul you should merge in Linus' tree (or rebase) and use Uwe's script on
+> your updated config files ...
+> 
+I'll take care of it today, sorry for the trouble!
