@@ -1,55 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab0GMVaa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 17:30:30 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45266 "EHLO ogre.sisk.pl"
+	id S1756391Ab0GMVdg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 17:33:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63629 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756549Ab0GMVa2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 17:30:28 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCH v2] pm: Add runtime PM statistics
-Date: Tue, 13 Jul 2010 23:28:28 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Ming Lei <tom.leiming@gmail.com>
-References: <20100710095254.5ab7291c@infradead.org> <201007112326.07541.rjw@sisk.pl> <20100711221646.35f11b70@infradead.org>
-In-Reply-To: <20100711221646.35f11b70@infradead.org>
+	id S1753613Ab0GMVde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 17:33:34 -0400
+Message-ID: <4C3CDBAB.209@redhat.com>
+Date: Tue, 13 Jul 2010 17:33:31 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Zachary Amsden <zamsden@redhat.com>
+CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 01/18] Make TSC offset writes non-preemptible
+References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-2-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1278987938-23873-2-git-send-email-zamsden@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007132328.28853.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday, July 12, 2010, Arjan van de Ven wrote:
-> On Sun, 11 Jul 2010 23:26:07 +0200
-> "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
-> 
-> > > +
-> > >  static DEVICE_ATTR(runtime_usage, 0444, rtpm_usagecount_show,
-> > > NULL); static DEVICE_ATTR(runtime_active_kids, 0444,
-> > > rtpm_children_show, NULL); static DEVICE_ATTR(runtime_status, 0444,
-> > > rtpm_status_show, NULL); +static DEVICE_ATTR(runtime_active_time,
-> > > 0444, rtpm_active_time_show, NULL); +static
-> > > DEVICE_ATTR(runtime_suspended_time, 0444, rtpm_suspended_time_show,
-> > > NULL); static DEVICE_ATTR(runtime_enabled, 0444, rtpm_enabled_show,
-> > > NULL);
-> > 
-> > On a second thought, "active_time" and "suspended_time" should be
-> > sufficient (ie. the "runtime_" prefix is not really necessary).
-> 
-> it's not necessary but it's consistent with the others... so yes
-> I can change it but then it's no longer consistent naming.. are you sure
-> you want this changed?
+On 07/12/2010 10:25 PM, Zachary Amsden wrote:
+> Ensure that the storing of the offset and the reading of the TSC
+> are never preempted by taking a spinlock.  While the lock is overkill
+> now, it is useful later in this patch series.
+>
+> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
 
-No, you're right, sorry.
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-But can you rebase your patch on top of linux-next, please, and move the
-definitions of the new attributes next to 'control' and 'runtime_status' (so
-that they don't depend on 'debug')?
-
-Rafael
+-- 
+All rights reversed
