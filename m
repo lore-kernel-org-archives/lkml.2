@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab0GMHPx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:15:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26262 "EHLO
+	id S1753164Ab0GMHOl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:14:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24501 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753268Ab0GMHPj (ORCPT
+	with ESMTP id S1752898Ab0GMHOd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:15:39 -0400
+	Tue, 13 Jul 2010 03:14:33 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,94 +15,131 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 44/50] x86, memblock: Add memblock_x86_memory_in_range()
-Date: Tue, 13 Jul 2010 00:10:38 -0700
-Message-Id: <1279005044-24777-45-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        stable@kernel.org
+Subject: [PATCH 02/50] x86,mm: fix 32bit numa sparsemem
+Date: Tue, 13 Jul 2010 00:09:56 -0700
+Message-Id: <1279005044-24777-3-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C3C1271.0043,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090205.4C3C123F.0259,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will return memory size in specified range according to memblock.memory.region
+Borislav Petkov <borislav.petkov@amd.com> reported his 32bit numa has problem:
 
-Try to share some code with memblock_x86_free_memory_in_range() by passing get_free to
-__memblock_x86_memory_in_range().
+[    0.000000] Reserving total of 4c00 pages for numa KVA remap
+[    0.000000] kva_start_pfn ~ 32800 max_low_pfn ~ 375fe
+[    0.000000] max_pfn = 238000
+[    0.000000] 8202MB HIGHMEM available.
+[    0.000000] 885MB LOWMEM available.
+[    0.000000]   mapped low ram: 0 - 375fe000
+[    0.000000]   low ram: 0 - 375fe000
+[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 1000 1000 => 34e7000
+[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 200 40 => 34c9d80
+[    0.000000] alloc (nid=0 100000 - 7ee00000) (1000000 - ffffffffffffffff) 180 40 => 34e6140
+[    0.000000] alloc (nid=1 80000000 - c7e60000) (1000000 - ffffffffffffffff) 240 40 => 80000000
+[    0.000000] BUG: unable to handle kernel paging request at 40000000
+[    0.000000] IP: [<c2c8cff1>] __alloc_memory_core_early+0x147/0x1d6
+[    0.000000] *pdpt = 0000000000000000 *pde = f000ff53f000ff00
+...
+[    0.000000] Call Trace:
+[    0.000000]  [<c2c8b4f8>] ? __alloc_bootmem_node+0x216/0x22f
+[    0.000000]  [<c2c90c9b>] ? sparse_early_usemaps_alloc_node+0x5a/0x10b
+[    0.000000]  [<c2c9149e>] ? sparse_init+0x1dc/0x499
+[    0.000000]  [<c2c79118>] ? paging_init+0x168/0x1df
+[    0.000000]  [<c2c780ff>] ? native_pagetable_setup_start+0xef/0x1bb
 
--v2: Ben want _in_range in the name instead of size
+looks like it allocate much high address for bootmem.
 
+try to cut limit with get_max_mapped()
+
+-v3: make alloc_bootmem_node could fallback to other node.
+     just like old alloc_bootmem_node did
+
+need this patch for 2.6.34 and 2.6.35
+
+Reported-by: Borislav Petkov <borislav.petkov@amd.com>
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org
 ---
- arch/x86/include/asm/memblock.h |    1 +
- arch/x86/mm/memblock.c          |   18 +++++++++++++++++-
- 2 files changed, 18 insertions(+), 1 deletions(-)
+ mm/bootmem.c    |   24 ++++++++++++++++++++----
+ mm/page_alloc.c |    3 +++
+ 2 files changed, 23 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-index fc3c230..2c304bb 100644
---- a/arch/x86/include/asm/memblock.h
-+++ b/arch/x86/include/asm/memblock.h
-@@ -16,5 +16,6 @@ void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
- u64 memblock_x86_hole_size(u64 start, u64 end);
- u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
- u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
-+u64 memblock_x86_memory_in_range(u64 addr, u64 limit);
- 
- #endif
-diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index 3882caa..53b0f60 100644
---- a/arch/x86/mm/memblock.c
-+++ b/arch/x86/mm/memblock.c
-@@ -217,7 +217,7 @@ void __init memblock_x86_to_bootmem(u64 start, u64 end)
- }
- #endif
- 
--u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
-+static u64 __init __memblock_x86_memory_in_range(u64 addr, u64 limit, bool get_free)
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index 58c66cc..142c84a 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -833,15 +833,24 @@ static void * __init ___alloc_bootmem_node(bootmem_data_t *bdata,
+ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+ 				   unsigned long align, unsigned long goal)
  {
- 	int i, count;
- 	struct range *range;
-@@ -246,6 +246,10 @@ u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
- 	}
- 	subtract_range(range, count, 0, addr);
- 	subtract_range(range, count, limit, -1ULL);
++	void *ptr;
 +
-+	/* Subtract memblock.reserved.region in range ? */
-+	if (!get_free)
-+		goto sort_and_count_them;
- 	for_each_memblock(reserved, r) {
- 		final_start = PFN_DOWN(r->base);
- 		final_end = PFN_UP(r->base + r->size);
-@@ -256,6 +260,8 @@ u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
+ 	if (WARN_ON_ONCE(slab_is_available()))
+ 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
  
- 		subtract_range(range, count, final_start, final_end);
- 	}
+ #ifdef CONFIG_NO_BOOTMEM
+-	return __alloc_memory_core_early(pgdat->node_id, size, align,
++	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
++					 goal, -1ULL);
++	if (ptr)
++		return ptr;
 +
-+sort_and_count_them:
- 	nr_range = clean_sort_range(range, count);
- 
- 	free_size = 0;
-@@ -265,6 +271,16 @@ u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
- 	return free_size << PAGE_SHIFT;
++	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
+ 					 goal, -1ULL);
+ #else
+-	return ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
++	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
+ #endif
++
++	return ptr;
  }
  
-+u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
-+{
-+	return __memblock_x86_memory_in_range(addr, limit, true);
-+}
-+
-+u64 __init memblock_x86_memory_in_range(u64 addr, u64 limit)
-+{
-+	return __memblock_x86_memory_in_range(addr, limit, false);
-+}
-+
- void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
+ void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
+@@ -977,14 +986,21 @@ void * __init __alloc_bootmem_low(unsigned long size, unsigned long align,
+ void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
+ 				       unsigned long align, unsigned long goal)
  {
- 	if (start == end)
++	void *ptr;
++
+ 	if (WARN_ON_ONCE(slab_is_available()))
+ 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+ 
+ #ifdef CONFIG_NO_BOOTMEM
+-	return __alloc_memory_core_early(pgdat->node_id, size, align,
++	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
++				goal, ARCH_LOW_ADDRESS_LIMIT);
++	if (ptr)
++		return ptr;
++	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
+ 				goal, ARCH_LOW_ADDRESS_LIMIT);
+ #else
+-	return ___alloc_bootmem_node(pgdat->bdata, size, align,
++	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align,
+ 				goal, ARCH_LOW_ADDRESS_LIMIT);
+ #endif
++	return ptr;
+ }
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 431214b..cee2d79 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3634,6 +3634,9 @@ void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+ 	int i;
+ 	void *ptr;
+ 
++	if (limit > get_max_mapped())
++		limit = get_max_mapped();
++
+ 	/* need to go over early_node_map to find out good range for node */
+ 	for_each_active_range_index_in_nid(i, nid) {
+ 		u64 addr;
 -- 
 1.6.4.2
 
