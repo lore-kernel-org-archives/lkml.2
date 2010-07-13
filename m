@@ -1,99 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab0GMIIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 04:08:34 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47425 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab0GMIIc (ORCPT
+	id S1753823Ab0GMILV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 04:11:21 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41284 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752350Ab0GMILQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 04:08:32 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Tue, 13 Jul 2010 17:03:42 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: linux@arm.linux.org.uk, Yinghai Lu <yinghai@kernel.org>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
-Message-Id: <20100713170342.2e9e0b6b.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTinxTojeckJpfLh9eMM4odK61-VzE2A0G9E3nRuQ@mail.gmail.com>
-References: <20100712155348.GA2815@barrios-desktop>
-	<20100713121947.612bd656.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTiny7dz8ssDknI7y4JFcVP9SV1aNM7f0YMUxafv7@mail.gmail.com>
-	<20100713132312.a7dfb100.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTinVwmo5pemz86nXaQT3V_ujaPLOsyNeQIFhL0Vu@mail.gmail.com>
-	<20100713154025.7c60c76b.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTinxTojeckJpfLh9eMM4odK61-VzE2A0G9E3nRuQ@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+	Tue, 13 Jul 2010 04:11:16 -0400
+Date: Tue, 13 Jul 2010 01:10:13 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: Andreas Dilger <adilger@dilger.ca>, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com
+Subject: Re: [Ocfs2-devel] [PATCH 2/2] OCFS2: Allow huge (> 16 TiB) volumes
+ to mount
+Message-ID: <20100713081013.GA31479@mail.oracle.com>
+Mail-Followup-To: "Patrick J. LoPresti" <lopresti@gmail.com>,
+	Andreas Dilger <adilger@dilger.ca>, linux-fsdevel@vger.kernel.org,
+	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+	ocfs2-devel@oss.oracle.com
+References: <871vbax86w.fsf@patl.com>
+ <87zkxyvtjt.fsf@patl.com>
+ <3BB069D5-B193-43A4-B678-B3CEA4873B58@dilger.ca>
+ <AANLkTikAEycm5PKTLPuRFcB0e4qNp5EuQbKUx5aruNrh@mail.gmail.com>
+ <DA64905D-C83B-4CF5-9405-65F7F82F9563@dilger.ca>
+ <AANLkTinsQjWD1t1lO_BHnM-afzYyl7TKKdIcNZEVMg6n@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinsQjWD1t1lO_BHnM-afzYyl7TKKdIcNZEVMg6n@mail.gmail.com>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4C3C1FA0.0036:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010 17:06:56 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
-
-> On Tue, Jul 13, 2010 at 3:40 PM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Tue, 13 Jul 2010 15:04:00 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> >
-> >> >> >  2. This can't be help for a case where a section has multiple small holes.
-> >> >>
-> >> >> I agree. But this(not punched hole but not filled section problem)
-> >> >> isn't such case. But it would be better to handle it altogether. :)
-> >> >>
-> >> >> >
-> >> >> > Then, my proposal for HOLES_IN_MEMMAP sparsemem is below.
-> >> >> > ==
-> >> >> > Some architectures unmap memmap[] for memory holes even with SPARSEMEM.
-> >> >> > To handle that, pfn_valid() should check there are really memmap or not.
-> >> >> > For that purpose, __get_user() can be used.
-> >> >>
-> >> >> Look at free_unused_memmap. We don't unmap pte of hole memmap.
-> >> >> Is __get_use effective, still?
-> >> >>
-> >> > __get_user() works with TLB and page table, the vaddr is really mapped or not.
-> >> > If you got SEGV, __get_user() returns -EFAULT. It works per page granule.
+On Mon, Jul 12, 2010 at 10:00:10PM -0700, Patrick J. LoPresti wrote:
+> On Mon, Jul 12, 2010 at 9:46 PM, Andreas Dilger <adilger@dilger.ca> wrote:
+> > On 2010-07-12, at 19:08, Patrick J. LoPresti wrote:
 > >>
-> >> I mean following as.
-> >> For example, there is a struct page in on 0x20000000.
-> >>
-> >> int pfn_valid_mapped(unsigned long pfn)
-> >> {
-> >>        struct page *page = pfn_to_page(pfn); /* hole page is 0x2000000 */
-> >>        char *lastbyte = (char *)(page+1)-1;  /* lastbyte is 0x2000001f */
-> >>        char byte;
-> >>
-> >>        /* We pass this test since free_unused_memmap doesn't unmap pte */
-> >>        if(__get_user(byte, page) != 0)
-> >>                return 0;
+> >> Are you suggesting I need to do this before my patch is accepted at
+> >> all? �Or is this a refactoring that can happen later?
 > >
-> > why ? When the page size is 4096 byte.
-> >
-> >      0x1ffff000 - 0x1ffffffff
-> >      0x20000000 - 0x200000fff are on the same page. And memory is mapped per page.
+> > I'm just suggesting it should be done at some point. �I thought it would be better to do it first, rather than add yet another copy of this code. �That said, I hate to block useful fixes because of cleanup (and I have no control over OCFS2 anyway :-). �However, I've found that once the fix is in people usually forget (or become too busy) to do the cleanup and it just lingers on unseen.
 > 
-> sizeof(struct page) is 32 byte.
-> So lastbyte is address of struct page + 32 byte - 1.
+> I hear you.
 > 
-> > What we access by above __get_user() is a byte at [0x20000000, 0x20000001)
-> 
-> Right.
-> 
-> > and it's unmapped if 0x20000000 is unmapped.
-> 
-> free_unused_memmap doesn't unmap pte although it returns the page to
-> free list of buddy.
-> 
-ok, I understood. please see my latest mail and ignore all others.
+> I do not object to factoring out the basic addressability test and
+> using it in my patch, leaving it for others -- like yourself :-) -- to
+> modify other file systems to invoke it.
 
--kame
+	I think you should modify ext3 and xfs, as they clearly are
+partaking of this functionality.  I'll happily review it for you.  Put
+the call in fs/libfs.c.  Call it generic_check_addressable(struct
+super_block *super).
 
+Joel
+
+
+-- 
+
+"The only way to get rid of a temptation is to yield to it."
+         - Oscar Wilde 
+
+Joel Becker
+Consulting Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
