@@ -1,64 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756115Ab0GMBPA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 21:15:00 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53567 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755598Ab0GMBOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 21:14:52 -0400
-Date: Tue, 13 Jul 2010 11:14:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Uwe =?UTF-8?B?S2xlaW5lLUvDtm5pZw==?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: linux-next: manual merge of the s5p tree with Linus' tree
-Message-Id: <20100713111451.8b6162e4.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756060Ab0GMBSU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 21:18:20 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39239 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755425Ab0GMBST convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 21:18:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=lSzGmwTF+WQWT8Z5ukpkFmNayjqb9F7KfxmORoOQGKVI74sZkC4ZVO2DsGtTmDfkXm
+         6lspHms7qQFeeZ9RuuO57oLBgm5LAmiz6rbqKfUPYMofK0Ie6Vw4xXZCDxS9jJpxp5rh
+         hYTao7wNVqv/z3c7MQG5ru3skGUfLgopDK0Bs=
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20100712124904.d05242d2.akpm@linux-foundation.org>
+References: <1278672607.1335.3.camel@mola> <20100712124904.d05242d2.akpm@linux-foundation.org>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 13 Jul 2010 09:17:58 +0800
+Message-ID: <AANLkTik3qDmpRS9HwFFzCfyHMrUd9ZnaR1A39jUo0cbt@mail.gmail.com>
+Subject: Re: [PATCH] edd: fix possible memory leak in edd_init() error path
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        David Teigland <teigland@redhat.com>,
+        Pekka Enberg <penberg@cs.helsinki.fi>,
+        "Hans J. Koch" <hjk@linutronix.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kukjin,
+2010/7/13 Andrew Morton <akpm@linux-foundation.org>:
+> On Fri, 09 Jul 2010 18:50:07 +0800
+> Axel Lin <axel.lin@gmail.com> wrote:
+>
+>> The error may happen at any iteration of the for loop,
+>> this patch properly unregisters already registed edd_devices in error path.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>> ---
+>>  drivers/firmware/edd.c |   23 ++++++++++++++++-------
+>>  1 files changed, 16 insertions(+), 7 deletions(-)
+>>
+>> diff --git a/drivers/firmware/edd.c b/drivers/firmware/edd.c
+>> index 110e24e..b75082c 100644
+>> --- a/drivers/firmware/edd.c
+>> +++ b/drivers/firmware/edd.c
+>> @@ -744,7 +744,7 @@ static inline int edd_num_devices(void)
+>>  static int __init
+>>  edd_init(void)
+>>  {
+>> -     unsigned int i;
+>> +     int i;
+>>       int rc=0;
+>>       struct edd_device *edev;
+>>
+>> @@ -760,21 +760,30 @@ edd_init(void)
+>>       if (!edd_kset)
+>>               return -ENOMEM;
+>>
+>> -     for (i = 0; i < edd_num_devices() && !rc; i++) {
+>> +     for (i = 0; i < edd_num_devices(); i++) {
+>>               edev = kzalloc(sizeof (*edev), GFP_KERNEL);
+>> -             if (!edev)
+>> -                     return -ENOMEM;
+>> +             if (!edev) {
+>> +                     rc = -ENOMEM;
+>> +                     goto out;
+>> +             }
+>>
+>>               rc = edd_device_register(edev, i);
+>>               if (rc) {
+>>                       kfree(edev);
+>> -                     break;
+>> +                     goto out;
+>>               }
+>>               edd_devices[i] = edev;
+>>       }
+>>
+>> -     if (rc)
+>> -             kset_unregister(edd_kset);
+>> +     return 0;
+>> +
+>> +out:
+>> +     while (--i >= 0) {
+>> +             edev = edd_devices[i];
+>> +             if (edev)
+>
+> This test is unneeded?
 
-Today's linux-next merge of the s5p tree got a conflict in
-arch/arm/configs/s5pv210_defconfig between commit
-07a8c03f3e06129e847acd068b8b89c13357ee64 ("ARM: reduce defconfigs") from
-Linus' tree and commit 2976beb1dd86974ae98a992ca23a626f8be7e7dd ("ARM:
-s5pv210_defconfig: Update for removing s5pc110_defconfig") from the s5p
-tree.
+right. a revised version is on the way.
 
-I fixed it up (see below - it may no longer be minimal) and can carry the
-fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Regards,
+Axel
 
-diff --git a/arch/arm/configs/s5pv210_defconfig b/arch/arm/configs/s5pv210_defconfig
-index 1753836..bbb1736 100644
---- a/arch/arm/configs/s5pv210_defconfig
-+++ b/arch/arm/configs/s5pv210_defconfig
-@@ -7,6 +7,10 @@ CONFIG_MODULE_UNLOAD=y
- # CONFIG_BLK_DEV_BSG is not set
- CONFIG_ARCH_S5PV210=y
- CONFIG_S3C_LOWLEVEL_UART_PORT=1
-+CONFIG_S3C_DEV_FB=y
-+CONFIG_S5PV210_SETUP_FB_24BPP=y
-+CONFIG_MACH_AQUILA=y
-+CONFIG_MACH_SMDKC110=y
- CONFIG_MACH_SMDKV210=y
- CONFIG_VMSPLIT_2G=y
- CONFIG_PREEMPT=y
-@@ -31,6 +35,9 @@ CONFIG_SERIAL_SAMSUNG=y
- CONFIG_SERIAL_SAMSUNG_CONSOLE=y
- CONFIG_HW_RANDOM=y
- # CONFIG_HWMON is not set
-+# CONFIG_RAMOOPS is not set
-+CONFIG_MFD_SUPPORT=y
-+# CONFIG_ABX500_CORE is not set
- # CONFIG_VGA_CONSOLE is not set
- # CONFIG_HID_SUPPORT is not set
- # CONFIG_USB_SUPPORT is not set
+>
+>> +                     edd_device_unregister(edev);
+>> +     }
+>> +     kset_unregister(edd_kset);
+>>       return rc;
+>>  }
+>
+>
