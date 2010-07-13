@@ -1,87 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753158Ab0GMLL0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 07:11:26 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:57180 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750830Ab0GMLLZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 07:11:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:in-reply-to:references:x-mailer
-         :mime-version:content-type;
-        b=TD4W0KxI3Fb+dmIFRZiGh/jBDIgDNEieo4MF3gsFkp77uXwNHYC7FIa+pKye/sSNGg
-         C69JuQN/+JGcUAIl34t6jq3Pce06l9v6ch7zdIHtgkC9VxfF/mhiFm84xRb5D3+5Nn9W
-         cT3dovoojqhLxwV/PCqOBGbvPcqgIh9ZAUrHg=
-Date: Tue, 13 Jul 2010 13:11:12 +0200
-From: Alejandro Riveira =?UTF-8?B?RmVybsOhbmRleg==?= 
-	<ariveira@gmail.com>
-To: Martin Steigerwald <Martin@lichtvoll.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: stable? quality assurance?
-Message-ID: <20100713131112.26a3da54@varda>
-In-Reply-To: <201007111651.42963.Martin@lichtvoll.de>
-References: <201007110918.42120.Martin@lichtvoll.de>
-	<AANLkTimCwi2uJqqPaq3U30f3rvdDizu1BnaaXgvNeC9k@mail.gmail.com>
-	<201007111651.42963.Martin@lichtvoll.de>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA256;
- boundary="Sig_/55dxYQzSeG=8sgaZ4NrtUFu"; protocol="application/pgp-signature"
+	id S1754248Ab0GMLPz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 07:15:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9481 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750942Ab0GMLPx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 07:15:53 -0400
+Date: Tue, 13 Jul 2010 14:09:39 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Sridhar Samudrala <sri@us.ibm.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+Message-ID: <20100713110939.GA3446@redhat.com>
+References: <20100701133956.GD32223@redhat.com>
+ <4C2CA5C5.4040402@kernel.org>
+ <20100701144624.GA11171@redhat.com>
+ <4C2CABF2.2020801@kernel.org>
+ <1277996135.1917.198.camel@laptop>
+ <4C2E2987.9040702@us.ibm.com>
+ <1278094270.1917.288.camel@laptop>
+ <20100702210637.GA12433@redhat.com>
+ <20100704090005.GA8078@redhat.com>
+ <4C3C0EBC.40305@us.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3C0EBC.40305@us.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Sig_/55dxYQzSeG=8sgaZ4NrtUFu
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+On Mon, Jul 12, 2010 at 11:59:08PM -0700, Sridhar Samudrala wrote:
+> On 7/4/2010 2:00 AM, Michael S. Tsirkin wrote:
+> >On Fri, Jul 02, 2010 at 11:06:37PM +0200, Oleg Nesterov wrote:
+> >>On 07/02, Peter Zijlstra wrote:
+> >>>On Fri, 2010-07-02 at 11:01 -0700, Sridhar Samudrala wrote:
+> >>>>  Does  it (Tejun's kthread_clone() patch) also  inherit the
+> >>>>cgroup of the caller?
+> >>>Of course, its a simple do_fork() which inherits everything just as you
+> >>>would expect from a similar sys_clone()/sys_fork() call.
+> >>Yes. And I'm afraid it can inherit more than we want. IIUC, this is called
+> >>from ioctl(), right?
+> >>
+> >>Then the new thread becomes the natural child of the caller, and it shares
+> >>->mm with the parent. And files, dup_fd() without CLONE_FS.
+> >>
+> >>Signals. Say, if you send SIGKILL to this new thread, it can't sleep in
+> >>TASK_INTERRUPTIBLE or KILLABLE after that. And this SIGKILL can be sent
+> >>just because the parent gets SIGQUIT or abother coredumpable signal.
+> >>Or the new thread can recieve SIGSTOP via ^Z.
+> >>
+> >>Perhaps this is OK, I do not know. Just to remind that kernel_thread()
+> >>is merely clone(CLONE_VM).
+> >>
+> >>Oleg.
+> >
+> >Right. Doing this might break things like flush.  The signal and exit
+> >behaviour needs to be examined carefully. I am also unsure whether
+> >using such threads might be more expensive than inheriting kthreadd.
+> >
+> Should we just leave it to the userspace to set the cgroup/cpumask
+> after qemu starts the guest and
+> the vhost threads?
+> 
+> Thanks
+> Sridhar
 
-El Sun, 11 Jul 2010 16:51:42 +0200
-Martin Steigerwald <Martin@lichtvoll.de> escribi=C3=B3:
+Yes but we can't trust userspace to do this. It's important
+to do it on thread creation: if we don't, malicious userspace
+can create large amount of work exceeding the cgroup limits.
 
+And the same applies so the affinity: if the qemu process
+is limited to a set of CPUs, it's important to make
+the kernel thread that does work our behalf limited to the same
+set of CPUs.
 
->=20
-> One reason for a demand for me is best expressed by this question: Does=20
-> the kernel developer community want to encourage that a group of advanced=
-=20
-> Linux users - but mostly non-developers - compile their own vanilla or=20
-> valnilla near kernels, provide wider testing and report a bug now and=20
-> then?
->=20
-> I can live with either answer. If not, I just will be much more reluctant=
-=20
-> to try out new kernels.
+This is not unique to vhost, it's just that virt scenarious are affected
+by this more: people seem to run untrusted applications and expect the
+damage to be contained.
 
- I for one stopped booting into -rc kernels.
- The fact that still have to patch my kernels with a *one* liner
- since 2.6.29 kernel [1] does not give me confidence on the "test
- report/bisect and it will be fixed" promise some have made in this
- threath
-=20
- [1] https://bugzilla.kernel.org/show_bug.cgi?id=3D13362
-=20
-
---Sig_/55dxYQzSeG=8sgaZ4NrtUFu
-Content-Type: application/pgp-signature; name=signature.asc
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIcBAEBCAAGBQJMPEnQAAoJEDO4iEReSTB2BJMP/3pH5br8uG2Oqo4rWtqpOWPH
-ysi+Y+RU9yyeYI/ffXKWZU1A5Mt+H5a5K7W9Cv9+yavNu3tcN8iP2Xtj9VvvhO5C
-la/NA75RiWrM4XgQani2lJEfbWI651L8cpxvPUnUFF7S9Uh86mdS8B2XJSi3QVIS
-MIgEp4uS7kurHq7LAWPVQR4P6zqhzxldamn/EczvBb1lQ04kg/jIVlQ7gGZ+9Ume
-NjaUL/FKE1mzYGsjeTXLDm7jtcZyvD3UKJkCewBXiJFjk8LBEkQO7o+xOsCdPxsm
-mcROJ0oCi6BHpZNuOi1WFULa+8ZK5BoDfNaSxp3WutfubVkEttE1/gg180SBuLtP
-Z4zkwL7T7DdV7IXbhoImjiMbqL+y4S7Ael7DgDxVyNHNx2xPwkqEUvHpNaGaBUsH
-v0ngjVXx+mLgQShBBoRd/bZgQhcMkjSEixwUTsmqxOY4315egGxqeDUHlVL2dtqd
-PMRJI9ecFUZtbqGfgKXh2AMU1z5Z64/qzMbR5NDC1QYx2DbTSE0njJ2L2arLrttb
-Is5b298hNhZxaMxHXtGY83T89E7QDGkE+ZG7TeBNjdT/T2H0KMy5ff0q4Gm0zQxV
-WorrMt1tpEh6zHZQuZRNSWKowblncziSp+GG+VAKqOJ9S/ZZWoykGXKC1UeNKx90
-x1Di15AieplcQn0cT40Q
-=tKaX
------END PGP SIGNATURE-----
-
---Sig_/55dxYQzSeG=8sgaZ4NrtUFu--
+-- 
+MST
