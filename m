@@ -1,60 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756149Ab0GMWc6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 18:32:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:35356 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753902Ab0GMWc4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 18:32:56 -0400
-X-Authority-Analysis: v=1.1 cv=o8sBXTxWt3Y8I13SYZ0pmcTcOViZ+nX/QX6HkgGmvUU= c=1 sm=0 a=MzoIMbBfYF4A:10 a=hO-oPbc3tlwA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=Dl0CFYAjAAAA:8 a=W2dsR15lED0eKjLB0wAA:9 a=I_9Gh8hpR2SQzO9zMqYIxMO9cx8A:4 a=CjuIK1q_8ugA:10 a=HfSKAa7qCvcA:10 a=suZm_t7RJsjZ8FWZ:21 a=KEcPHwYxAfIcpQ6j:21 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Tue, 13 Jul 2010 17:34:50 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pavel Emelyanov <xemul@openvz.org>, Oleg Nesterov <oleg@redhat.com>,
-        linux-kernel@vger.kernel.org,
-        Linux Containers <containers@lists.osdl.org>,
-        Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Subject: Re: [PATCH] pidns: Fix wait for zombies to be reaped in
- zap_pid_ns_processes
-Message-ID: <20100713223450.GA16889@hallyn.com>
-References: <20100625220713.GA31123@us.ibm.com>
- <m1r5jd5l0v.fsf_-_@fess.ebiederm.org>
- <m1mxu15kv4.fsf_-_@fess.ebiederm.org>
- <20100709121425.GB18586@hawkmoon.kerlabs.com>
- <m1lj9k4xfx.fsf@fess.ebiederm.org>
- <20100709141324.GC18586@hawkmoon.kerlabs.com>
- <m1aaq04ph2.fsf_-_@fess.ebiederm.org>
- <20100711141406.GD18586@hawkmoon.kerlabs.com>
- <m1tyo4shas.fsf_-_@fess.ebiederm.org>
- <20100713214234.GA21042@hawkmoon.kerlabs.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100713214234.GA21042@hawkmoon.kerlabs.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755557Ab0GMWsr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 18:48:47 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7160 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754822Ab0GMWsq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 18:48:46 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+References: <27282.1279058150@redhat.com>
+To: viro@ZenIV.linux.org.uk
+Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [RFC][PATCH] xstat: Add an AT_NO_AUTOMOUNT flag to suppress terminal automount
+Date: Tue, 13 Jul 2010 23:48:42 +0100
+Message-ID: <15112.1279061322@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Louis Rilling (Louis.Rilling@kerlabs.com):
-> Hi Eric,
-> 
-> On 12/07/10 11:09 -0700, Eric W. Biederman wrote:
-> This patch looks like it is working (only a small RCU issue shown below). I
-> couldn't try it yet though.
-> 
-> I must admit that I am using a similar back-off solution in Kerrighed (not to
-> solve the issue of proc_flush_task(), but for one of the reasons that you stated
-> above: we want to be sure that all tasks of the namespace have been reaped), but
-> I considered it too ugly to propose it for Linux ;)
-> 
-> That said, this is probably the least intrusive solution we have seen yet.
 
-Yeah I haven't had a chance to look at it in detail, but this looks
-right.  Thanks, Eric.
+[Based on the patch to add an automount dentry op]
 
--serge
+Add an AT_NO_AUTOMOUNT flag to suppress terminal automounting of directories
+with follow_link semantics.  This can be used by fstatat()/xstat() users to
+permit the gathering of attributes on an automount point and also prevent
+mass-automounting of a directory of automount points by ls.
+
+Not-yet-signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/namei.c            |   15 ++++++++++-----
+ fs/stat.c             |    4 +++-
+ include/linux/fcntl.h |    1 +
+ include/linux/namei.h |    2 ++
+ 4 files changed, 16 insertions(+), 6 deletions(-)
+
+
+diff --git a/fs/namei.c b/fs/namei.c
+index 19b99f9..a4deb2d 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -648,7 +648,8 @@ static int follow_automount(struct path *path, int res)
+ /* no need for dcache_lock, as serialization is taken care in
+  * namespace.c
+  */
+-static int __follow_mount(struct path *path, unsigned nofollow)
++static int __follow_mount(struct path *path, unsigned nofollow,
++			  struct nameidata *nd)
+ {
+ 	struct vfsmount *mounted;
+ 	int ret, res = 0;
+@@ -668,8 +669,12 @@ static int __follow_mount(struct path *path, unsigned nofollow)
+ 		}
+ 		if (!d_automount_point(path->dentry))
+ 			break;
+-		if (nofollow)
+-			return -ELOOP;
++		if (!(nd->flags & LOOKUP_CONTINUE)) {
++			if (nofollow)
++				return -ELOOP;
++			if (nd->flags & LOOKUP_NO_AUTOMOUNT)
++				break;
++		}
+ 		ret = follow_automount(path, res);
+ 		if (ret < 0)
+ 			return ret;
+@@ -763,7 +768,7 @@ static int do_lookup(struct nameidata *nd, struct qstr *name,
+ done:
+ 	path->mnt = mnt;
+ 	path->dentry = dentry;
+-	ret = __follow_mount(path, 0);
++	ret = __follow_mount(path, 0, nd);
+ 	if (unlikely(ret < 0))
+ 		path_put(path);
+ 	return ret;
+@@ -1756,7 +1761,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
+ 	if (open_flag & O_EXCL)
+ 		goto exit_dput;
+ 
+-	error = __follow_mount(path, open_flag & O_NOFOLLOW);
++	error = __follow_mount(path, open_flag & O_NOFOLLOW, nd);
+ 	if (error < 0)
+ 		goto exit_dput;
+ 
+diff --git a/fs/stat.c b/fs/stat.c
+index 89d72fc..d9d6fca 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -180,11 +180,13 @@ int vfs_xstat(int dfd, const char __user *filename, int flags,
+ 	struct path path;
+ 	int error, lookup_flags;
+ 
+-	if (flags & ~(AT_SYMLINK_NOFOLLOW | KSTAT_QUERY_FLAGS))
++	if (flags & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT |
++		      KSTAT_QUERY_FLAGS))
+ 		return -EINVAL;
+ 
+ 	stat->query_flags = flags & KSTAT_QUERY_FLAGS;
+ 	lookup_flags = (flags & AT_SYMLINK_NOFOLLOW) ? 0 : LOOKUP_FOLLOW;
++	lookup_flags |= (flags & AT_NO_AUTOMOUNT) ? LOOKUP_NO_AUTOMOUNT : 0;
+ 
+ 	error = user_path_at(dfd, filename, lookup_flags, &path);
+ 	if (!error) {
+diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
+index bcf8083..768b0fd 100644
+--- a/include/linux/fcntl.h
++++ b/include/linux/fcntl.h
+@@ -46,6 +46,7 @@
+                                            unlinking file.  */
+ #define AT_SYMLINK_FOLLOW	0x400   /* Follow symbolic links.  */
+ #define AT_FORCE_ATTR_SYNC	0x800	/* Force the attributes to be sync'd with the server */
++#define AT_NO_AUTOMOUNT		0x1000	/* Suppress terminal automount traversal */
+ 
+ #ifdef __KERNEL__
+ 
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 05b441d..1e1febf 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -43,12 +43,14 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+  *  - internal "there are more path components" flag
+  *  - locked when lookup done with dcache_lock held
+  *  - dentry cache is untrusted; force a real lookup
++ *  - suppress terminal automount
+  */
+ #define LOOKUP_FOLLOW		 1
+ #define LOOKUP_DIRECTORY	 2
+ #define LOOKUP_CONTINUE		 4
+ #define LOOKUP_PARENT		16
+ #define LOOKUP_REVAL		64
++#define LOOKUP_NO_AUTOMOUNT	128
+ /*
+  * Intent data
+  */
