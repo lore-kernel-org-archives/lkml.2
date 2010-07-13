@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754416Ab0GMI7a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 04:59:30 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:60714 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753707Ab0GMI72 (ORCPT
+	id S1754552Ab0GMJDV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 05:03:21 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:47824 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754248Ab0GMJDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 04:59:28 -0400
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: fengguang.wu@intel.com, hch@infradead.org, richard@rsk.demon.co.uk,
-        david@fromorbit.com, jack@suse.cz, a.p.zijlstra@chello.nl,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, miklos@szeredi.hu
-In-reply-to: <20100712145206.9808b411.akpm@linux-foundation.org> (message from
-	Andrew Morton on Mon, 12 Jul 2010 14:52:06 -0700)
-Subject: Re: [PATCH 1/6] writeback: take account of NR_WRITEBACK_TEMP in
- balance_dirty_pages()
-References: <20100711020656.340075560@intel.com>
-	<20100711021748.594522648@intel.com> <20100712145206.9808b411.akpm@linux-foundation.org>
-Message-Id: <E1OYbKB-0008UF-2J@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Tue, 13 Jul 2010 10:58:47 +0200
+	Tue, 13 Jul 2010 05:03:20 -0400
+Date: Tue, 13 Jul 2010 10:02:23 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: alan@lxorguk.ukuu.org.uk, randy.dunlap@oracle.com, dwalker@codeaurora.org,
+        mel@csn.ul.ie, linux-arm-msm@vger.kernel.org, joro@8bytes.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
+        zpfeffer@codeaurora.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+Message-ID: <20100713090223.GB20590@n2100.arm.linux.org.uk>
+References: <20100713092012.7c1fe53e@lxorguk.ukuu.org.uk> <20100713173028M.fujita.tomonori@lab.ntt.co.jp> <20100713094244.7eb84f1b@lxorguk.ukuu.org.uk> <20100713174519D.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100713174519D.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010, Andrew Morton wrote:
-> On Sun, 11 Jul 2010 10:06:57 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > 
-> > Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
-> > Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
-> > ---
-> >  mm/page-writeback.c |    7 ++++---
-> >  1 file changed, 4 insertions(+), 3 deletions(-)
-> > 
-> > --- linux-next.orig/mm/page-writeback.c	2010-07-11 08:41:37.000000000 +0800
-> > +++ linux-next/mm/page-writeback.c	2010-07-11 08:42:14.000000000 +0800
-> > @@ -503,11 +503,12 @@ static void balance_dirty_pages(struct a
-> >  		};
-> >  
-> >  		get_dirty_limits(&background_thresh, &dirty_thresh,
-> > -				&bdi_thresh, bdi);
-> > +				 &bdi_thresh, bdi);
-> >  
-> >  		nr_reclaimable = global_page_state(NR_FILE_DIRTY) +
-> > -					global_page_state(NR_UNSTABLE_NFS);
-> > -		nr_writeback = global_page_state(NR_WRITEBACK);
-> > +				 global_page_state(NR_UNSTABLE_NFS);
-> > +		nr_writeback = global_page_state(NR_WRITEBACK) +
-> > +			       global_page_state(NR_WRITEBACK_TEMP);
-> >  
-> >  		bdi_nr_reclaimable = bdi_stat(bdi, BDI_RECLAIMABLE);
-> >  		bdi_nr_writeback = bdi_stat(bdi, BDI_WRITEBACK);
-> > 
-> 
-> hm, OK.
+On Tue, Jul 13, 2010 at 05:45:39PM +0900, FUJITA Tomonori wrote:
+> Drivers can tell the USB layer that these are vmapped buffers? Adding
+> something to struct urb? I might be totally wrong since I don't know
+> anything about the USB layer.
 
-Hm, hm.  I'm not sure this is right.  The VM has absolutely no control
-over NR_WRITEBACK_TEMP pages, they may clear quickly or may not make
-any progress.  So it's usually wrong to make a decision based on
-NR_WRITEBACK_TEMP for an unrelated device.
+With non-DMA coherent aliasing caches, you need to know where the page
+is mapped into the virtual address space, so you can deal with aliases.
 
-Using it in throttle_vm_writeout() would actually be deadlocky, since
-the userspace filesystem will probably depend on memory allocations to
-complete the writeout.
+You'd need to tell the USB layer about the other mappings of the page
+which you'd like to be coherent (such as the vmalloc area - and there's
+also the possible userspace mapping to think about too, but that's
+a separate issue.)
 
-The only place where we should be taking NR_WRITEBACK_TEMP into
-account is calculating the remaining memory that can be devided
-between dirtyers, and that's (clip_bdi_dirty_limit) where it is
-already used.
+I wonder if we should have had:
 
-> I wonder whether we could/should have unified NR_WRITEBACK_TEMP and
-> NR_UNSTABLE_NFS.  Their "meanings" aren't quite the same, but perhaps
-> some "treat page as dirty because the fs is futzing with it" thing.
+	vmalloc_prepare_dma(void *, size_t, enum dma_direction)
+	vmalloc_finish_dma(void *, size_t, enum dma_direction)
 
-AFAICS NR_UNSTABLE_NFS is something akin to NR_DIRTY, only on the
-server side.  So nfs can very much do something about making
-NR_UNSTABLE_NFS go away, while there's nothing that can be done about
-NR_WRITEBACK_TEMP.
+rather than flush_kernel_vmap_range and invalidate_kernel_vmap_range,
+which'd make their use entirely obvious.
 
-Thanks,
-Miklos
+However, this brings up a question - how does the driver (eg, v4l, xfs)
+which is preparing the buffer for another driver (eg, usb host, block
+dev) know that DMA will be performed on the buffer rather than PIO?
+
+That's a very relevant question, because for speculatively prefetching
+CPUs, we need to invalidate caches after a DMA-from-device operation -
+but if PIO-from-device happened, this would destroy data read from the
+device.
+
+That problem goes away if we decide that PIO drivers must have the same
+apparant semantics as DMA drivers - in that data must end up beyond the
+point of DMA coherency (eg, physical page) - but that's been proven to
+be very hard to achieve, especially with block device drivers.
