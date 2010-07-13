@@ -1,136 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756395Ab0GMCJg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 22:09:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16148 "EHLO mx1.redhat.com"
+	id S1756718Ab0GMCJe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 22:09:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33471 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756398Ab0GMCJ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 22:09:27 -0400
+	id S1754663Ab0GMCJa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 22:09:30 -0400
 From: Zachary Amsden <zamsden@redhat.com>
 To: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Glauber Costa <glommer@redhat.com>
 Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
         Zachary Amsden <zamsden@redhat.com>
-Subject: [PATCH 14/18] Fix a possible backwards warp of kvmclock
-Date: Mon, 12 Jul 2010 16:08:08 -1000
-Message-Id: <1278986892-11733-15-git-send-email-zamsden@redhat.com>
+Subject: [PATCH 15/18] Implement getnsboottime kernel API
+Date: Mon, 12 Jul 2010 16:08:09 -1000
+Message-Id: <1278986892-11733-16-git-send-email-zamsden@redhat.com>
 In-Reply-To: <1278986892-11733-1-git-send-email-zamsden@redhat.com>
 References: <1278986892-11733-1-git-send-email-zamsden@redhat.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kernel time, which advances in discrete steps may progress much slower
-than TSC.  As a result, when kvmclock is adjusted to a new base, the
-apparent time to the guest, which runs at a much higher, nsec scaled
-rate based on the current TSC, may have already been observed to have
-a larger value (kernel_ns + scaled tsc) than the value to which we are
-setting it (kernel_ns + 0).
-
-We must instead compute the clock as potentially observed by the guest
-for kernel_ns to make sure it does not go backwards.
+Add a kernel call to get the number of nanoseconds since boot.  This
+is generally useful enough to make it a generic call.
 
 Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/include/asm/kvm_host.h |    2 +
- arch/x86/kvm/x86.c              |   43 +++++++++++++++++++++++++++++++++++++-
- 2 files changed, 43 insertions(+), 2 deletions(-)
+ include/linux/time.h      |    1 +
+ kernel/time/timekeeping.c |   27 +++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index d9e0aa0..94dd16b 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -340,6 +340,8 @@ struct kvm_vcpu_arch {
- 	struct page *time_page;
- 	u64 last_host_tsc;
- 	u64 last_host_ns;
-+	u64 last_guest_tsc;
-+	u64 last_kernel_ns;
+diff --git a/include/linux/time.h b/include/linux/time.h
+index ea3559f..5d04108 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -145,6 +145,7 @@ extern void getnstimeofday(struct timespec *tv);
+ extern void getrawmonotonic(struct timespec *ts);
+ extern void getboottime(struct timespec *ts);
+ extern void monotonic_to_bootbased(struct timespec *ts);
++extern s64 getnsboottime(void);
  
- 	bool nmi_pending;
- 	bool nmi_injected;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 574cb69..7b9fdf3 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -973,14 +973,15 @@ static int kvm_write_guest_time(struct kvm_vcpu *v)
- 	struct kvm_vcpu_arch *vcpu = &v->arch;
- 	void *shared_kaddr;
- 	unsigned long this_tsc_khz;
--	s64 kernel_ns;
-+	s64 kernel_ns, max_kernel_ns;
-+	u64 tsc_timestamp;
+ extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
+ extern int timekeeping_valid_for_hres(void);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index caf8d4d..d250f0a 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -285,6 +285,33 @@ void ktime_get_ts(struct timespec *ts)
+ }
+ EXPORT_SYMBOL_GPL(ktime_get_ts);
  
- 	if ((!vcpu->time_page))
- 		return 0;
- 
- 	/* Keep irq disabled to prevent changes to the clock */
- 	local_irq_save(flags);
--	kvm_get_msr(v, MSR_IA32_TSC, &vcpu->hv_clock.tsc_timestamp);
-+	kvm_get_msr(v, MSR_IA32_TSC, &tsc_timestamp);
- 	kernel_ns = get_kernel_ns();
- 	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
- 	local_irq_restore(flags);
-@@ -990,13 +991,49 @@ static int kvm_write_guest_time(struct kvm_vcpu *v)
- 		return 1;
- 	}
- 
-+	/*
-+	 * Time as measured by the TSC may go backwards when resetting the base
-+	 * tsc_timestamp.  The reason for this is that the TSC resolution is
-+	 * higher than the resolution of the other clock scales.  Thus, many
-+	 * possible measurments of the TSC correspond to one measurement of any
-+	 * other clock, and so a spread of values is possible.  This is not a
-+	 * problem for the computation of the nanosecond clock; with TSC rates
-+	 * around 1GHZ, there can only be a few cycles which correspond to one
-+	 * nanosecond value, and any path through this code will inevitably
-+	 * take longer than that.  However, with the kernel_ns value itself,
-+	 * the precision may be much lower, down to HZ granularity.  If the
-+	 * first sampling of TSC against kernel_ns ends in the low part of the
-+	 * range, and the second in the high end of the range, we can get:
-+	 *
-+	 * (TSC - offset_low) * S + kns_old > (TSC - offset_high) * S + kns_new
-+	 *
-+	 * As the sampling errors potentially range in the thousands of cycles,
-+	 * it is possible such a time value has already been observed by the
-+	 * guest.  To protect against this, we must compute the system time as
-+	 * observed by the guest and ensure the new system time is greater.
-+ 	 */
-+	max_kernel_ns = 0;
-+	if (vcpu->hv_clock.tsc_timestamp && vcpu->last_guest_tsc) {
-+		max_kernel_ns = vcpu->last_guest_tsc -
-+				vcpu->hv_clock.tsc_timestamp;
-+		max_kernel_ns = pvclock_scale_delta(max_kernel_ns,
-+				    vcpu->hv_clock.tsc_to_system_mul,
-+				    vcpu->hv_clock.tsc_shift);
-+		max_kernel_ns += vcpu->last_kernel_ns;
-+	}
 +
- 	if (unlikely(vcpu->hw_tsc_khz != this_tsc_khz)) {
- 		kvm_set_time_scale(this_tsc_khz, &vcpu->hv_clock);
- 		vcpu->hw_tsc_khz = this_tsc_khz;
- 	}
- 
-+	if (max_kernel_ns > kernel_ns)
-+		kernel_ns = max_kernel_ns;
++/**
++ * getnsboottime - get the bootbased clock in nsec format
++ *
++ * The function calculates the bootbased clock from the realtime
++ * clock and the wall_to_monotonic offset and stores the result
++ * in normalized timespec format in the variable pointed to by @ts.
++ */
++s64 getnsboottime(void)
++{
++	unsigned int seq;
++	s64 secs, nsecs;
 +
- 	/* With all the info we got, fill in the values */
-+	vcpu->hv_clock.tsc_timestamp = tsc_timestamp;
- 	vcpu->hv_clock.system_time = kernel_ns + v->kvm->arch.kvmclock_offset;
-+	vcpu->last_kernel_ns = kernel_ns;
- 	vcpu->hv_clock.flags = 0;
- 
- 	/*
-@@ -4917,6 +4954,8 @@ static int vcpu_enter_guest(struct kvm_vcpu *vcpu)
- 	if (hw_breakpoint_active())
- 		hw_breakpoint_restore();
- 
-+	kvm_get_msr(vcpu, MSR_IA32_TSC, &vcpu->arch.last_guest_tsc);
++	WARN_ON(timekeeping_suspended);
 +
- 	atomic_set(&vcpu->guest_mode, 0);
- 	smp_wmb();
- 	local_irq_enable();
++	do {
++		seq = read_seqbegin(&xtime_lock);
++		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
++		secs += total_sleep_time.tv_sec;
++		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
++		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
++
++	} while (read_seqretry(&xtime_lock, seq));
++	return nsecs + (secs * NSEC_PER_SEC);
++}
++EXPORT_SYMBOL_GPL(getnsboottime);
++
+ /**
+  * do_gettimeofday - Returns the time of day in a timeval
+  * @tv:		pointer to the timeval to be set
 -- 
 1.7.1
 
