@@ -1,146 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756790Ab0GMPdf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 11:33:35 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33998 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753965Ab0GMPde (ORCPT
+	id S1756853Ab0GMPnt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 11:43:49 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:63516 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab0GMPnr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 11:33:34 -0400
-Message-ID: <4C3C876A.5090005@infradead.org>
-Date: Tue, 13 Jul 2010 12:34:02 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Lightning/1.0b2 Thunderbird/3.1
+	Tue, 13 Jul 2010 11:43:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=epOpsw6x+tI6A8/J6cZ1wyYPa4ZxKTrzYV5gtLTtni0GRl+D+9qDt+RXdA3sYhqqie
+         LvY6S26xb9d68412INtoGnGJKJQ5IAlO035b0kRiStd1ofxZGJtfPqrYZ/pYnyGvIMnE
+         buyEk42Bbf1xzgJkI5WnTftRTwYV51yOIPoNM=
+Date: Wed, 14 Jul 2010 00:43:35 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: linux@arm.linux.org.uk, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+Message-ID: <20100713154335.GB2815@barrios-desktop>
+References: <20100712155348.GA2815@barrios-desktop>
+ <20100713093006.GB14504@cmpxchg.org>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the usb tree with the v4l-dvb tree
-References: <20100706175332.952fec90.sfr@canb.auug.org.au> <201007061018.21674.laurent.pinchart@ideasonboard.com> <20100706185132.7dd72993.sfr@canb.auug.org.au> <201007061310.06197.laurent.pinchart@ideasonboard.com> <4C3322EB.2050806@infradead.org> <20100707151355.GB2121@kroah.com>
-In-Reply-To: <20100707151355.GB2121@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100713093006.GB14504@cmpxchg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 07-07-2010 12:13, Greg KH escreveu:
-> On Tue, Jul 06, 2010 at 09:34:51AM -0300, Mauro Carvalho Chehab wrote:
->> Em 06-07-2010 08:10, Laurent Pinchart escreveu:
->>> Hi Stephen,
->>>
->>> On Tuesday 06 July 2010 10:51:32 Stephen Rothwell wrote:
->>>> On Tue, 6 Jul 2010 10:18:20 +0200 Laurent Pinchart wrote:
->>>>>> diff --cc include/linux/usb/video.h
->>>>>> index 2d5b7fc,429c91a..0000000
->>>>>> --- a/include/linux/usb/video.h
->>>>>> +++ b/include/linux/usb/video.h
->>>>>> @@@ -160,12 -160,402 +160,409 @@@
->>>>>
->>>>> [snip]
->>>>>
->>>>>>  +/* 4.1.2. Control Capabilities */
->>>>>>  +#define UVC_CONTROL_CAP_GET                           (1 << 0)
->>>>>>  +#define UVC_CONTROL_CAP_SET                           (1 << 1)
->>>>>>  +#define UVC_CONTROL_CAP_DISABLED                      (1 << 2)
->>>>>>  +#define UVC_CONTROL_CAP_AUTOUPDATE                    (1 << 3)
->>>>>>  +#define UVC_CONTROL_CAP_ASYNCHRONOUS                  (1 << 4)
->>>>>>  +
->>>>>
->>>>> Can you move those to the first part of the header file, with the other
->>>>> constants ?
->>>>
->>>> Sure, I just put it there because of the section numbering in the
->>>> comments.  This, of course, will not influence how the file looks after
->>>> Linus merges it - unless the conflict is fixed up by one of the
->>>> maintainers before Linus gets it.
->>>
->>> I had the impression that the conflict resolutions in linux-next would end up 
->>> in mainline. I must have been wrong, sorry.
->>>
->>> Mauro, can the uvc-gadget patches go through the linux-media tree ?
-
-It will not be simple to fix this conflict from my tree. I tried to apply them
-against a 2.6.35-rc5, but it failed:
-
-|diff --git a/drivers/media/video/uvc/uvcvideo.h b/drivers/media/video/uvc/uvcvideo.h
-|index 47b20e7..ac27245 100644
-|--- a/drivers/media/video/uvc/uvcvideo.h
-|+++ b/drivers/media/video/uvc/uvcvideo.h
---------------------------
-No file to patch.  Skipping patch.
-1 out of 1 hunk ignored
-can't find file to patch at input line 73
-Perhaps you used the wrong -p or --strip option?
-The text leading up to this was:
---------------------------
-|diff --git a/drivers/usb/gadget/f_uvc.c b/drivers/usb/gadget/f_uvc.c
-|index fc2611f..b6aed97 100644
-|--- a/drivers/usb/gadget/f_uvc.c
-|+++ b/drivers/usb/gadget/f_uvc.c
---------------------------
-No file to patch.  Skipping patch.
-5 out of 5 hunks ignored
-can't find file to patch at input line 138
-Perhaps you used the wrong -p or --strip option?
-The text leading up to this was:
---------------------------
-|diff --git a/drivers/usb/gadget/f_uvc.h b/drivers/usb/gadget/f_uvc.h
-|index 8a5db7c..e18a663 100644
-|--- a/drivers/usb/gadget/f_uvc.h
-|+++ b/drivers/usb/gadget/f_uvc.h
---------------------------
-No file to patch.  Skipping patch.
-1 out of 1 hunk ignored
-can't find file to patch at input line 501
-Perhaps you used the wrong -p or --strip option?
-The text leading up to this was:
---------------------------
-|diff --git a/drivers/usb/gadget/uvc.h b/drivers/usb/gadget/uvc.h
-|index 0a705e6..b05bcb7 100644
-|--- a/drivers/usb/gadget/uvc.h
-|+++ b/drivers/usb/gadget/uvc.h
---------------------------
-No file to patch.  Skipping patch.
-2 out of 2 hunks ignored
-can't find file to patch at input line 555
-Perhaps you used the wrong -p or --strip option?
-The text leading up to this was:
---------------------------
-|diff --git a/drivers/usb/gadget/webcam.c b/drivers/usb/gadget/webcam.c
-|index 417fd68..98e9c8b 100644
-|--- a/drivers/usb/gadget/webcam.c
-|+++ b/drivers/usb/gadget/webcam.c
---------------------------
-No file to patch.  Skipping patch.
-12 out of 12 hunks ignored
-can't find file to patch at input line 667
-Perhaps you used the wrong -p or --strip option?
-The text leading up to this was:
---------------------------
-|diff --git a/include/linux/usb/video.h b/include/linux/usb/video.h
-|index 2d5b7fc..3b3b95e 100644
-|--- a/include/linux/usb/video.h
-|+++ b/include/linux/usb/video.h
---------------------------
-No file to patch.  Skipping patch.
-2 out of 2 hunks ignored
->>> Patch patches/lmml_111238_for_2_6_36_uvc_move_constants_and_structures_definitions_to_linux_usb_video_h.patch doesn't apply
-
-It seems that the files you're patching at include/linux/usb & cia are not upstream
-yet. So, just adding this patch won't solve it.
-
->>
->> If Greg is ok, that's fine for me.
+On Tue, Jul 13, 2010 at 11:30:06AM +0200, Johannes Weiner wrote:
+> On Tue, Jul 13, 2010 at 12:53:48AM +0900, Minchan Kim wrote:
+> > Kukjin, Could you test below patch?
+> > I don't have any sparsemem system. Sorry. 
+> > 
+> > -- CUT DOWN HERE --
+> > 
+> > Kukjin reported oops happen while he change min_free_kbytes
+> > http://www.spinics.net/lists/arm-kernel/msg92894.html
+> > It happen by memory map on sparsemem. 
+> > 
+> > The system has a memory map following as. 
+> >      section 0             section 1              section 2
+> > 0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
+> > SECTION_SIZE_BITS 28(256M)
+> > 
+> > It means section 0 is an incompletely filled section.
+> > Nontheless, current pfn_valid of sparsemem checks pfn loosely. 
+> > 
+> > It checks only mem_section's validation.
+> > So in above case, pfn on 0x25000000 can pass pfn_valid's validation check.
+> > It's not what we want.
+> > 
+> > The Following patch adds check valid pfn range check on pfn_valid of sparsemem.
 > 
-> That's fine with me.  Let me know when you have them and then I'll drop
-> them from my tree.
+> Look at the declaration of struct mem_section for a second.  It is
+> meant to partition address space uniformly into backed and unbacked
+> areas.
+> 
+> It comes with implicit size and offset information by means of
+> SECTION_SIZE_BITS and the section's index in the section array.
+> 
+> Now you are not okay with the _granularity_ but propose to change _the
+> model_ by introducing a subsection within each section and at the same
+> time make the concept of a section completely meaningless: its size
+> becomes arbitrary and its associated mem_map and flags will apply to
+> the subsection only.
+> 
+> My question is: if the sections are not fine-grained enough, why not
+> just make them?
+> 
+> The biggest possible section size to describe the memory population on
+> this machine accurately is 16M.  Why not set SECTION_SIZE_BITS to 24?
 
-I'll be out for vacations for some days. Greg/Laurent, it seems that the better is
-to keep Stephen workaround for now, eventually applying it at Greg's tree.
+You're right. AFAIK, Kukjin tried it but Russell and others rejected it. 
+Let's wrap it up. 
 
-Cheers,
-Mauro.
+First of all, Thanks for joining good discussion, Kame, Hannes, Mel and 
+Russell. 
+
+The system has following memory map. 
+0x20000000-0x25000000,       0x40000000-0x50000000, 0x50000000-0x58000000
+       80M          hole : 432M      256M                   128M
+
+1) FLATMEM
+If it uses FLATMEM, it wastes 864(432M/512K) pages due to memmap on hole. 
+That's horrible. 
+
+2) SPARSEMEM(16M)
+It makes 56 mem_sections. It costs 448(56 * 8)byte.
+It doesn't make unused memmap. So good.
+
+3) SPARSEMEM(256M)
+It makes 3 mem_sections. It costs 24(3 * 8) byte. 
+And if we free unused memmap on 176M(256M - 80M), we can save 352 pages.
+
+3 is best about memory usage. but for 3, we should check pfn_valid more tightly.
+It can be checked by my patch. but mm guys didn't like it since it makes memory 
+model messy due to some funny architecture.(ie, sparsemem designed to not include
+hole.) and it still has a problem if there is a hole in the middle of section.
+
+3 is not a big deal than 2 about memory usage.
+If the system use memory space fully(MAX_PHYSMEM_BITS 31), it just consumes
+1024(128 * 8) byte. So now I think best solution is 2. 
+
+Russell. What do you think about it?
+
+-- 
+Kind regards,
+Minchan Kim
