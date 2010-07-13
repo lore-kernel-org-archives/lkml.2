@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756791Ab0GMC0Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 22:26:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17335 "EHLO mx1.redhat.com"
+	id S1756805Ab0GMC0U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 22:26:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19462 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754091Ab0GMC0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 22:26:12 -0400
+	id S1756478Ab0GMC0R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 22:26:17 -0400
 From: Zachary Amsden <zamsden@redhat.com>
 To: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
@@ -14,86 +14,74 @@ Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
         Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Glauber Costa <glommer@redhat.com>
-Subject: [PATCH 13/18] Move scale_delta into common header
-Date: Mon, 12 Jul 2010 16:25:33 -1000
-Message-Id: <1278987938-23873-14-git-send-email-zamsden@redhat.com>
+Subject: [PATCH 15/18] Implement getnsboottime kernel API
+Date: Mon, 12 Jul 2010 16:25:35 -1000
+Message-Id: <1278987938-23873-16-git-send-email-zamsden@redhat.com>
 In-Reply-To: <1278987938-23873-1-git-send-email-zamsden@redhat.com>
 References: <1278987938-23873-1-git-send-email-zamsden@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The scale_delta function for shift / multiply with 31-bit
-precision moves to a common header so it can be used by both
-kernel and kvm module.
+Add a kernel call to get the number of nanoseconds since boot.  This
+is generally useful enough to make it a generic call.
 
 Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/include/asm/pvclock.h |   38 ++++++++++++++++++++++++++++++++++++++
- arch/x86/kernel/pvclock.c      |    3 ++-
- 2 files changed, 40 insertions(+), 1 deletions(-)
+ include/linux/time.h      |    1 +
+ kernel/time/timekeeping.c |   27 +++++++++++++++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/pvclock.h b/arch/x86/include/asm/pvclock.h
-index cd02f32..7f7e577 100644
---- a/arch/x86/include/asm/pvclock.h
-+++ b/arch/x86/include/asm/pvclock.h
-@@ -12,4 +12,42 @@ void pvclock_read_wallclock(struct pvclock_wall_clock *wall,
- 			    struct pvclock_vcpu_time_info *vcpu,
- 			    struct timespec *ts);
+diff --git a/include/linux/time.h b/include/linux/time.h
+index ea3559f..5d04108 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -145,6 +145,7 @@ extern void getnstimeofday(struct timespec *tv);
+ extern void getrawmonotonic(struct timespec *ts);
+ extern void getboottime(struct timespec *ts);
+ extern void monotonic_to_bootbased(struct timespec *ts);
++extern s64 getnsboottime(void);
  
-+/*
-+ * Scale a 64-bit delta by scaling and multiplying by a 32-bit fraction,
-+ * yielding a 64-bit result.
-+ */
-+static inline u64 pvclock_scale_delta(u64 delta, u32 mul_frac, int shift)
-+{
-+	u64 product;
-+#ifdef __i386__
-+	u32 tmp1, tmp2;
-+#endif
-+
-+	if (shift < 0)
-+		delta >>= -shift;
-+	else
-+		delta <<= shift;
-+
-+#ifdef __i386__
-+	__asm__ (
-+		"mul  %5       ; "
-+		"mov  %4,%%eax ; "
-+		"mov  %%edx,%4 ; "
-+		"mul  %5       ; "
-+		"xor  %5,%5    ; "
-+		"add  %4,%%eax ; "
-+		"adc  %5,%%edx ; "
-+		: "=A" (product), "=r" (tmp1), "=r" (tmp2)
-+		: "a" ((u32)delta), "1" ((u32)(delta >> 32)), "2" (mul_frac) );
-+#elif defined(__x86_64__)
-+	__asm__ (
-+		"mul %%rdx ; shrd $32,%%rdx,%%rax"
-+		: "=a" (product) : "0" (delta), "d" ((u64)mul_frac) );
-+#else
-+#error implement me!
-+#endif
-+
-+	return product;
-+}
-+
- #endif /* _ASM_X86_PVCLOCK_H */
-diff --git a/arch/x86/kernel/pvclock.c b/arch/x86/kernel/pvclock.c
-index 239427c..bab3b9e 100644
---- a/arch/x86/kernel/pvclock.c
-+++ b/arch/x86/kernel/pvclock.c
-@@ -82,7 +82,8 @@ static inline u64 scale_delta(u64 delta, u32 mul_frac, int shift)
- static u64 pvclock_get_nsec_offset(struct pvclock_shadow_time *shadow)
- {
- 	u64 delta = native_read_tsc() - shadow->tsc_timestamp;
--	return scale_delta(delta, shadow->tsc_to_nsec_mul, shadow->tsc_shift);
-+	return pvclock_scale_delta(delta, shadow->tsc_to_nsec_mul,
-+				   shadow->tsc_shift);
+ extern struct timespec timespec_trunc(struct timespec t, unsigned gran);
+ extern int timekeeping_valid_for_hres(void);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index caf8d4d..d250f0a 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -285,6 +285,33 @@ void ktime_get_ts(struct timespec *ts)
  }
+ EXPORT_SYMBOL_GPL(ktime_get_ts);
  
- /*
++
++/**
++ * getnsboottime - get the bootbased clock in nsec format
++ *
++ * The function calculates the bootbased clock from the realtime
++ * clock and the wall_to_monotonic offset and stores the result
++ * in normalized timespec format in the variable pointed to by @ts.
++ */
++s64 getnsboottime(void)
++{
++	unsigned int seq;
++	s64 secs, nsecs;
++
++	WARN_ON(timekeeping_suspended);
++
++	do {
++		seq = read_seqbegin(&xtime_lock);
++		secs = xtime.tv_sec + wall_to_monotonic.tv_sec;
++		secs += total_sleep_time.tv_sec;
++		nsecs = xtime.tv_nsec + wall_to_monotonic.tv_nsec;
++		nsecs += total_sleep_time.tv_nsec + timekeeping_get_ns();
++
++	} while (read_seqretry(&xtime_lock, seq));
++	return nsecs + (secs * NSEC_PER_SEC);
++}
++EXPORT_SYMBOL_GPL(getnsboottime);
++
+ /**
+  * do_gettimeofday - Returns the time of day in a timeval
+  * @tv:		pointer to the timeval to be set
 -- 
 1.7.1
 
