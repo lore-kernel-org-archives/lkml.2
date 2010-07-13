@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab0GMUql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 16:46:41 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:64841 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751908Ab0GMUqk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 16:46:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=pri79IgfeBMypzqqkv2mCDod4TElGgEUrpwAy0lnDEWsBcND4BBeyqenBPz/2zPXqq
-         PpCpwOba/lKhUXix/Kuy6tmPwrGJ8D3zE3VcbzKYdg8N7n/4I+d6VsD9p5ZYNFvKOIS7
-         FOuA969wgoAUiqTlBg+iMMuyC7Ts08PF0VPh4=
-MIME-Version: 1.0
-In-Reply-To: <4C3CCE05.4090505@kernel.org>
-References: <4C3A3B27.7020009@oracle.com>
-	<4C3AD94C.7070807@cs.helsinki.fi>
-	<4C3B38F7.1050400@zytor.com>
-	<4C3B40F3.6070009@kernel.org>
-	<4C3CA5A9.6000607@cs.helsinki.fi>
-	<4C3CCE05.4090505@kernel.org>
-Date: Tue, 13 Jul 2010 23:46:38 +0300
-X-Google-Sender-Auth: FJ-VcPnpLo-YqZAlLrHSg9SopMU
-Message-ID: <AANLkTimYQPaF6YH2aMBf3nprmxLFVDDYLG4gxxD3VyBa@mail.gmail.com>
-Subject: Re: [PATCH] x86: Setup early console as early as possible
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>,
+	id S1755766Ab0GMUrM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 16:47:12 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:39299 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751908Ab0GMUrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 16:47:09 -0400
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Minchan Kim <minchan.kim@gmail.com>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20100713183932.GB31162@n2100.arm.linux.org.uk>
+References: <20100712155348.GA2815@barrios-desktop>
+	 <20100713121947.612bd656.kamezawa.hiroyu@jp.fujitsu.com>
+	 <AANLkTiny7dz8ssDknI7y4JFcVP9SV1aNM7f0YMUxafv7@mail.gmail.com>
+	 <20100713132312.a7dfb100.kamezawa.hiroyu@jp.fujitsu.com>
+	 <AANLkTinVwmo5pemz86nXaQT3V_ujaPLOsyNeQIFhL0Vu@mail.gmail.com>
+	 <20100713072009.GA19839@n2100.arm.linux.org.uk>
+	 <20100713163417.17895202.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100713165808.e340e6dc.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100713170222.9369e649.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100713183932.GB31162@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 13 Jul 2010 13:46:59 -0700
+Message-ID: <1279054019.10995.18.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 11:35 PM, Yinghai Lu <yinghai@kernel.org> wrote:
-> [PATCH] x86: make boot code to analyze console=uart8250 too
->
-> So we use console=uart8250,io,0x2f8,115200n all the way
->
-> Also add back simple_guess_base(), otherwise those simple_strtoull(,,0) are not
-> going to work.
->
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+On Tue, 2010-07-13 at 19:39 +0100, Russell King - ARM Linux wrote:
+> On Tue, Jul 13, 2010 at 05:02:22PM +0900, KAMEZAWA Hiroyuki wrote:
+> > How about stop using SPARSEMEM ? What's the benefit ? It just eats up
+> > memory for mem_section[].
+> 
+> The problem with that approach is that sometimes the mem_map array
+> doesn't fit into any memory banks.
+> 
+> We've gone around the loop of using flatmem with holes punched in it,
+> to using discontigmem, and now to using sparsemem.  It seems none of
+> these solutions does what we need for ARM.  I guess that's the price
+> we pay for not having memory architected to be at any particular place
+> in the physical memory map.
 
-Cool! Thanks Yinghai!
+What's the ARM hardware's maximum addressable memory these days? 4GB?
 
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+A 4GB system would have 256 sections, which means 256*2*sizeof(unsigned
+long) for the mem_section[].  That's a pretty small amount of RAM.
+
+What sizes are the holes that are being punched these days?  Smaller
+than 16MB?
+
+-- Dave
+
