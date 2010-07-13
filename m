@@ -1,61 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756511Ab0GMOfN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 10:35:13 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:54413 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755883Ab0GMOfL convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 10:35:11 -0400
-From: Sundar R IYER <sundar.iyer@stericsson.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
-Date: Tue, 13 Jul 2010 16:34:56 +0200
-Subject: RE: [PATCH v2 1/2] regulator: add support for regulators on the
- ab8500 MFD
-Thread-Topic: [PATCH v2 1/2] regulator: add support for regulators on the
- ab8500 MFD
-Thread-Index: AcsilhcQ0tdNu3arQAShUDPsIMvs2wAAXmEA
-Message-ID: <33A307AF30D7BF4F811B1568FE7A9B1810E7E880@EXDCVYMBSTM006.EQ1STM.local>
-References: <1279030173-3086-1-git-send-email-sundar.iyer@stericsson.com>
- <20100713141709.GA24260@rakim.wolfsonmicro.main>
-In-Reply-To: <20100713141709.GA24260@rakim.wolfsonmicro.main>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1756543Ab0GMOj6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 10:39:58 -0400
+Received: from Mycroft.westnet.com ([216.187.52.7]:52911 "EHLO
+	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755883Ab0GMOj4 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 10:39:56 -0400
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Message-ID: <19516.31370.717799.659547@stoffel.org>
+Date: Tue, 13 Jul 2010 10:39:06 -0400
+From: "John Stoffel" <john@stoffel.org>
+To: Daniel J Blueman <daniel.blueman@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, Joerg Roedel <joro@8bytes.org>,
+        Linux Kernel <linux-kernel@vger.kernel.org>,
+        John Stoffel <john@stoffel.org>
+Subject: Re: [2.6.35-rc5] select useful number of entries for DMA debugging 
+	v3...
+In-Reply-To: <AANLkTik8ayaGvOHfjATDGl2vLjToLFgnFvKtcXcMK9RD@mail.gmail.com>
+References: <AANLkTik8ayaGvOHfjATDGl2vLjToLFgnFvKtcXcMK9RD@mail.gmail.com>
+X-Mailer: VM 8.0.9 under Emacs 22.3.1 (i486-pc-linux-gnu)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Mark,
+Daniel> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
 
->> + * @mask: mask to enable/disable regulator
->> + * @enable: bits to enable the regulator in normal(high power) mode
->Have you addressed my comments here?
-Sorry that I couldn't inline my replies into the patch itself :(. I changed the comments for the variable
-from the previous patch set. But I agree I messed up!
+Signed-off-by: John Stoffel <john@stoffel.org>
 
-Yes. The mask here is different for the fact that we have two enable bits; enable LP(low power)
-mode and enable HP(high power). We enable only the HP modes and hence the different mask
-for enable/disable as well as for the enable.
+>> 
+Daniel> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+Daniel> index a4ac764..0766fcf 100644
+Daniel> --- a/arch/x86/kernel/pci-dma.c
+Daniel> +++ b/arch/x86/kernel/pci-dma.c
+Daniel> @@ -52,7 +52,7 @@ struct device x86_dma_fallback_dev = {
+Daniel>  EXPORT_SYMBOL(x86_dma_fallback_dev);
+>> 
+Daniel>  /* Number of entries preallocated for DMA-API debugging */
+Daniel> -#define PREALLOC_DMA_DEBUG_ENTRIES       32768
+Daniel> +#define PREALLOC_DMA_DEBUG_ENTRIES       65536
+>> 
+Daniel>  int dma_set_mask(struct device *dev, u64 mask)
+Daniel>  {
+Daniel> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+Daniel> index ba8b670..2d1f965 100644
+Daniel> --- a/lib/dma-debug.c
+Daniel> +++ b/lib/dma-debug.c
+Daniel> @@ -736,6 +736,10 @@ void dma_debug_init(u32 num_entries)
+>> 
+Daniel>         if (req_entries)
+Daniel>                 num_entries = req_entries;
+Daniel> +       else
+Daniel> +               /* for systems with less memory, limit to a proportional amount of memory */
+Daniel> +               /* eg 1GB memory, 4KB pages ~ 37600 entries */
+Daniel> +               num_entries = min(num_entries, (unsigned int)(totalram_pages >>
+Daniel> (PAGE_SHIFT - 10)));
+>> 
+Daniel>         if (prealloc_memory(num_entries) != 0) {
+Daniel>                 pr_err("DMA-API: debugging out of memory error - disabled\n");
+>> 
+>> Maybe you could update this to mention the kernel parameter
+>> "dma_debug_entries=xxxxx" so that people could use to increase this
+>> value?  It would make it simpler and easier to find it it's logged
+>> nicely?
 
->> +	ret = ab8500_get_best_voltage_index(rdev, min_uV, max_uV);
->> +	if (ret < 0) {
->> +		dev_dbg(rdev_get_dev(rdev),
->> +				"coudlnt get best voltage for regulator\n");
->
->Typo here.  Also, shouldn't your error messages be errors rather than
->debug output?
-Yes. I will correct this.
+Daniel> Good comment. Fixed checkpatch compliance and rediffed against
+Daniel> 2.6.35-rc5. Linus/Ingo - is this more acceptable?
+
+Daniel> ---
+
+Daniel> When booting 2.6.35-rc3 on some different x86 boxes with DMA debugging
+Daniel> enabled, I've seen consistent exhaustion of the allocated entries during
+Daniel> boot, giving 'DMA-API: debugging out of memory - disabling'.
+
+Daniel> Increase the default number of entries to allow DMA debugging again, but
+Daniel> assign a reasonable lower limit for systems with less memory (eg ~38000
+Daniel> entries on a 1GB system), to prevent excessive use.
+
+Daniel> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+
+Daniel> diff --git a/arch/x86/kernel/pci-dma.c b/arch/x86/kernel/pci-dma.c
+Daniel> index 4b7e3d8..5ff7f12 100644
+Daniel> --- a/arch/x86/kernel/pci-dma.c
+Daniel> +++ b/arch/x86/kernel/pci-dma.c
+Daniel> @@ -53,7 +53,7 @@ struct device x86_dma_fallback_dev = {
+Daniel>  EXPORT_SYMBOL(x86_dma_fallback_dev);
+
+Daniel>  /* Number of entries preallocated for DMA-API debugging */
+Daniel> -#define PREALLOC_DMA_DEBUG_ENTRIES       32768
+Daniel> +#define PREALLOC_DMA_DEBUG_ENTRIES       65536
+
+Daniel>  int dma_set_mask(struct device *dev, u64 mask)
+Daniel>  {
+Daniel> diff --git a/lib/dma-debug.c b/lib/dma-debug.c
+Daniel> index 01e6427..b689ac7 100644
+Daniel> --- a/lib/dma-debug.c
+Daniel> +++ b/lib/dma-debug.c
+Daniel> @@ -487,7 +487,8 @@ static int prealloc_memory(u32 num_entries)
+Daniel>  	num_free_entries = num_entries;
+Daniel>  	min_free_entries = num_entries;
+
+Daniel> -	pr_info("DMA-API: preallocated %d debug entries\n", num_entries);
+Daniel> +	pr_info("DMA-API: preallocated %d debug entries; boot with "
+Daniel> +		"dma_debug_entries=N to change\n", num_entries);
+
+Daniel>  	return 0;
+
+Daniel> @@ -736,6 +737,13 @@ void dma_debug_init(u32 num_entries)
+
+Daniel>  	if (req_entries)
+Daniel>  		num_entries = req_entries;
+Daniel> +	else
+Daniel> +		/*
+Daniel> +		 * For systems with less memory, limit to a proportional
+Daniel> +		 * amount of memory, eg 1GB memory, 4KB pages ~ 38000 entries
+Daniel> +		 */
+Daniel> +		num_entries = min(num_entries,
+Daniel> +			(unsigned int)(totalram_pages >> (PAGE_SHIFT - 10)));
+
+Daniel>  	if (prealloc_memory(num_entries) != 0) {
+Daniel>  		pr_err("DMA-API: debugging out of memory error - disabled\n");
+Daniel> -- 
+Daniel> Daniel J Blueman
