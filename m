@@ -1,131 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754361Ab0GMDJP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 23:09:15 -0400
-Received: from mail.gmx.net ([213.165.64.20]:48198 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753827Ab0GMDJN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 23:09:13 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX18PEQFRLZ8PYZh6OpnJexqz3gEuvwp5a48pMjLLGV
-	CO0toF1aJMu++4
-Subject: Re: [PATCH 4/4] futex: convert hash_bucket locks to raw_spinlock_t
-From: Mike Galbraith <efault@gmx.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Darren Hart <dvhltc@us.ibm.com>, linux-kernel@vger.kernel.org,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, linux-rt-users@vger.kernel.org
-In-Reply-To: <alpine.LFD.2.00.1007122226230.3321@localhost.localdomain>
-References: <1278714780-788-1-git-send-email-dvhltc@us.ibm.com>
-	 <1278714780-788-5-git-send-email-dvhltc@us.ibm.com>
-	 <1278790882.7352.101.camel@marge.simson.net> <4C3B68B9.5060404@us.ibm.com>
-	 <alpine.LFD.2.00.1007122226230.3321@localhost.localdomain>
-Content-Type: text/plain
-Date: Tue, 13 Jul 2010 05:09:20 +0200
-Message-Id: <1278990560.7516.50.camel@marge.simson.net>
+	id S1752510Ab0GMDYf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 23:24:35 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:48226 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751708Ab0GMDYe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 23:24:34 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 13 Jul 2010 12:19:47 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux@arm.linux.org.uk, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+Message-Id: <20100713121947.612bd656.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100712155348.GA2815@barrios-desktop>
+References: <20100712155348.GA2815@barrios-desktop>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-07-12 at 22:40 +0200, Thomas Gleixner wrote:
-> On Mon, 12 Jul 2010, Darren Hart wrote:
-> > On 07/10/2010 12:41 PM, Mike Galbraith wrote:
-> > > On Fri, 2010-07-09 at 15:33 -0700, Darren Hart wrote:
-> > > > > Out of curiosity, what's wrong with holding his pi_lock across the
-> > > > > wakeup?  He can _try_ to block, but can't until pi state is stable.
-> > > > > 
-> > > > > I presume there's a big fat gotcha that's just not obvious to futex
-> > > > > locking newbie :)
-> > 
-> > Nor to some of us that have been engrossed in futexes for the last couple
-> > years! I discussed the pi_lock across the wakeup issue with Thomas. While this
-> > fixes the problem for this particular failure case, it doesn't protect
-> > against:
-> > 
-> > <tglx> assume the following:
-> > <tglx> t1 is on the condvar
-> > <tglx> t2 does the requeue dance and t1 is now blocked on the outer futex
-> > <tglx> t3 takes hb->lock for a futex in the same bucket
-> > <tglx> t2 wakes due to signal/timeout
-> > <tglx> t2 blocks on hb->lock
-> > 
-> > You are likely to have not hit the above scenario because you only had one
-> > condvar, so the hash_buckets were not heavily shared and you weren't likely to
-> > hit:
-> > 
-> > <tglx> t3 takes hb->lock for a futex in the same bucket
-> > 
-> > 
-> > I'm going to roll up a patchset with your (Mike) spin_trylock patch and run it
-> > through some tests. I'd still prefer a way to detect early wakeup without
-> > having to grab the hb->lock(), but I haven't found it yet.
-> > 
-> > +	while(!spin_trylock(&hb->lock))
-> > +		cpu_relax();
-> >  	ret = handle_early_requeue_pi_wakeup(hb, &q, &key2, to);
-> >  	spin_unlock(&hb->lock);
-> 
-> And this is nasty as it will create unbound priority inversion :(
+On Tue, 13 Jul 2010 00:53:48 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Oh ma gawd, _it's a train_ :>
- 
-> We discussed another solution on IRC in meantime:
+> Kukjin, Could you test below patch?
+> I don't have any sparsemem system. Sorry. 
 > 
-> in futex_wait_requeue_pi()
+> -- CUT DOWN HERE --
 > 
->    futex_wait_queue_me(hb, &q, to);
+> Kukjin reported oops happen while he change min_free_kbytes
+> http://www.spinics.net/lists/arm-kernel/msg92894.html
+> It happen by memory map on sparsemem. 
 > 
->    raw_spin_lock(current->pi_lock);
->    if (current->pi_blocked_on) {
->       /*
->        * We know that we can only be blocked on the outer futex
->        * so we can skip the early wakeup check
->        */
->        raw_spin_unlock(current->pi_lock);
->        ret = 0;
->    } else {
->       current->pi_blocked_on = PI_WAKEUP_INPROGRESS;
->       raw_spin_unlock(current->pi_lock);
+> The system has a memory map following as. 
+>      section 0             section 1              section 2
+> 0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
+> SECTION_SIZE_BITS 28(256M)
 > 
->       spin_lock(&hb->lock);
->       ret = handle_early_requeue_pi_wakeup();
->       ....
->       spin_lock(&hb->lock);
->    }
+> It means section 0 is an incompletely filled section.
+> Nontheless, current pfn_valid of sparsemem checks pfn loosely. 
 > 
-> Now in the rtmutex magic we need in task_blocks_on_rt_mutex():
+> It checks only mem_section's validation.
+> So in above case, pfn on 0x25000000 can pass pfn_valid's validation check.
+> It's not what we want. 
 > 
->    raw_spin_lock(task->pi_lock);
+> The Following patch adds check valid pfn range check on pfn_valid of sparsemem.
 > 
->    /*
->     * Add big fat comment why this is only relevant to futex
->     * requeue_pi
->     */
+> Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+> Reported-by: Kukjin Kim <kgene.kim@samsung.com>
 > 
->    if (task != current && task->pi_blocked_on == PI_WAKEUP_INPROGRESS) {
->       raw_spin_lock(task->pi_lock);
+> P.S) 
+> It is just RFC. If we agree with this, I will make the patch on mmotm.
 > 
->       /*
->        * Returning 0 here is fine. the requeue code is just going to
->        * move the futex_q to the other bucket, but that'll be fixed
->        * up in handle_early_requeue_pi_wakeup()
->        */
-> 
->       return 0;
->    }
-> 
-> Thanks,
-> 
-> 	tglx
-> 
->     
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index b4d109e..6c2147a 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -979,6 +979,8 @@ struct mem_section {
+>         struct page_cgroup *page_cgroup;
+>         unsigned long pad;
+>  #endif
+> +       unsigned long start_pfn;
+> +       unsigned long end_pfn;
+>  };
+>  
+
+I have 2 concerns.
+ 1. This makes mem_section twice. Wasting too much memory and not good for cache.
+    But yes, you can put this under some CONFIG which has small number of mem_section[].
+
+ 2. This can't be help for a case where a section has multiple small holes.
+
+
+Then, my proposal for HOLES_IN_MEMMAP sparsemem is below.
+==
+Some architectures unmap memmap[] for memory holes even with SPARSEMEM.
+To handle that, pfn_valid() should check there are really memmap or not.
+For that purpose, __get_user() can be used.
+This idea is from ia64_pfn_valid().
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ include/linux/mmzone.h |   12 ++++++++++++
+ mm/sparse.c            |   17 +++++++++++++++++
+ 2 files changed, 29 insertions(+)
+
+Index: mmotm-2.6.35-0701/include/linux/mmzone.h
+===================================================================
+--- mmotm-2.6.35-0701.orig/include/linux/mmzone.h
++++ mmotm-2.6.35-0701/include/linux/mmzone.h
+@@ -1047,12 +1047,24 @@ static inline struct mem_section *__pfn_
+ 	return __nr_to_section(pfn_to_section_nr(pfn));
+ }
+ 
++#ifndef CONFIG_ARCH_HAS_HOLES_IN_MEMMAP
+ static inline int pfn_valid(unsigned long pfn)
+ {
+ 	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
+ 		return 0;
+ 	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
+ }
++#else
++extern int pfn_valid_mapped(unsigned long pfn);
++static inline int pfn_valid(unsigned long pfn)
++{
++	if (pfn_to_seciton_nr(pfn) >= NR_MEM_SECTIONS)
++		return 0;
++	if (!valid_section(__nr_to_section(pfn_to_section_nr(pfn))))
++		return 0;
++	return pfn_valid_mapped(pfn);
++}
++#endif
+ 
+ static inline int pfn_present(unsigned long pfn)
+ {
+Index: mmotm-2.6.35-0701/mm/sparse.c
+===================================================================
+--- mmotm-2.6.35-0701.orig/mm/sparse.c
++++ mmotm-2.6.35-0701/mm/sparse.c
+@@ -799,3 +799,20 @@ void sparse_remove_one_section(struct zo
+ 	free_section_usemap(memmap, usemap);
+ }
+ #endif
++
++#ifdef CONFIG_ARCH_HAS_HOLES_IN_MEMMAP
++int pfn_valid_mapped(unsigned long pfn)
++{
++	struct page *page = pfn_to_page(pfn);
++	char *lastbyte = (char *)(page+1)-1;
++	char byte;
++
++	if(__get_user(byte, page) != 0)
++		return 0;
++
++	if ((((unsigned long)page) & PAGE_MASK) ==
++	    (((unsigned long)lastbyte) & PAGE_MASK))
++		return 1;
++	return (__get_user(byte,lastbyte) == 0);
++}
++#endif
+
+
+
+
 
