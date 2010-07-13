@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756916Ab0GMSp1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 14:45:27 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:51358 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754039Ab0GMSpU (ORCPT
+	id S1756846Ab0GMStQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 14:49:16 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:45840 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753675Ab0GMStO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 14:45:20 -0400
-Date: Tue, 13 Jul 2010 14:38:52 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Alejandro Riveira =?iso-8859-1?Q?Fern=E1ndez?= 
-	<ariveira@gmail.com>
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-        Martin Steigerwald <Martin@lichtvoll.de>, linux-kernel@vger.kernel.org,
-        Johannes Berg <johannes@sipsolutions.net>,
-        linux-wireless@vger.kernel.org
-Subject: Re: rt2x00: slow wifi with correct basic rate bitmap (was Re:
- stable? quality assurance?)
-Message-ID: <20100713183851.GD3835@tuxdriver.com>
-References: <201007110918.42120.Martin@lichtvoll.de>
- <AANLkTimCwi2uJqqPaq3U30f3rvdDizu1BnaaXgvNeC9k@mail.gmail.com>
- <201007111651.42963.Martin@lichtvoll.de>
- <20100713131112.26a3da54@varda>
- <4C3C6106.3000909@s5r6.in-berlin.de>
- <20100713153530.GC3835@tuxdriver.com>
- <20100713201927.78674c4a@varda>
+	Tue, 13 Jul 2010 14:49:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=Dlxd85TKUXjUudiWE4r9lVCeRpMbgUMmbeLH0Yri5t3g82yat8U7T4vZu1SU1X1thM
+         fqesG4vII7IU57m8o2lN6Mu0k5dtTgc+FQw7dhwyEGbdKnUs9mYx+4boRE0T2AJww92V
+         8Zqx2OVl1dy150HYgjoo0Mqgrns4SkuEz7n9A=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100713201927.78674c4a@varda>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <20100713181212.GB20289@feather>
+References: <AANLkTikFmeXz9og4t98jm6QcAdRa6rIeCAv3oeFnTgd8@mail.gmail.com>
+	<1278751162-10053-2-git-send-email-jslaby@suse.cz>
+	<20100710090705.GA14881@feather>
+	<AANLkTimf821jhfhU-Rsj7xa2S4EzuP23weoUSZVWsD2u@mail.gmail.com>
+	<20100713181212.GB20289@feather>
+Date: Tue, 13 Jul 2010 11:49:12 -0700
+Message-ID: <AANLkTinC0TTj1KLp-l_GWO79V4tX4Q62WVEH77_imEtL@mail.gmail.com>
+Subject: Re: [PATCH 2/2] parser: define __builtin_unreachable
+From: Chris Li <christ.li@gmail.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: Jiri Slaby <jslaby@suse.cz>, jirislaby@gmail.com,
+        Larry Finger <Larry.Finger@lwfinger.net>, linux-kernel@vger.kernel.org,
+        linux-sparse@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 08:19:27PM +0200, Alejandro Riveira Fernández wrote:
-> El Tue, 13 Jul 2010 11:35:31 -0400
-> "John W. Linville" <linville@tuxdriver.com> escribió:
-> 
-> 
-> > 
-> > The patch (7e0986c1) corrects an obvious error.  Reverting it might
-> > improve your (i.e. Alejandro) performance, but it seems likely to
-> > cause connectivity problems for others.
-> > 
-> > The fact that reverting 7e098c1 helps you suggests that rt2500usb
->   
->   my card is pci so it would be rt2500pci
-  
-Sorry, typo...
+On Tue, Jul 13, 2010 at 11:12 AM, Josh Triplett <josh@joshtriplett.org> wrote:
+> No, I didn't mean that using __builtin_unreachable should mark the
+> function calling it as noreturn.  I meant that as an approximation to
+> the right behavior, __builtin_unreachable *itself* could have attribute
+> noreturn.
 
-> > isn't using the basic_rates map properly.  But after reviewing the
-> > code and the data I have, I can't see what would be causing that.
-> > It is at least possible that your AP is sending bad rate information.
-> > Have you tried this device with other APs?
->  
->  No; this is a desktop pc that connects to my home router/AP. A new wifi
->  card is cheaper than a new AP ...
+Ah, that make sense.
 
-Perhaps you could capture some beacons from that AP?
-
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+Chris
