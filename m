@@ -1,47 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751787Ab0GMFfm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 01:35:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1026 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751184Ab0GMFfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 01:35:40 -0400
-Message-ID: <4C3BFB25.2010602@redhat.com>
-Date: Tue, 13 Jul 2010 08:35:33 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1752031Ab0GMFlc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 01:41:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43120 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751004Ab0GMFlb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 01:41:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH v2 2/2] vmscan: shrink_slab() require number of lru_pages,  not page order
+Cc: kosaki.motohiro@jp.fujitsu.com,
+        Christoph Lameter <cl@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <AANLkTinwZfaQiTJhP8RcGhlSS-ynEXtbpzorrIZrNyIH@mail.gmail.com>
+References: <20100708163934.CD37.A69D9226@jp.fujitsu.com> <AANLkTinwZfaQiTJhP8RcGhlSS-ynEXtbpzorrIZrNyIH@mail.gmail.com>
+Message-Id: <20100713144008.EA52.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v5 6/9] KVM: MMU: introduce pte_prefetch_topup_memory_cache()
-References: <4C330918.6040709@cn.fujitsu.com> <4C330A37.8080709@cn.fujitsu.com> <4C39C1AB.6000606@redhat.com> <4C3A8694.1000401@cn.fujitsu.com> <4C3B09FD.3060307@redhat.com> <4C3BBE84.30708@cn.fujitsu.com> <4C3BE9BD.40007@redhat.com> <4C3BEAC3.9000501@cn.fujitsu.com>
-In-Reply-To: <4C3BEAC3.9000501@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 13 Jul 2010 14:41:28 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 07:25 AM, Xiao Guangrong wrote:
->
->> Regressions? no.  Or do you mean the problem already exists?  Where?
->>      
-> I mean this is a exist problem, likes invlpg, pte-write and sync-page, there are
-> speculative path that it's not real access, but marked dirty if pte is writable.
->    
+> On Thu, Jul 8, 2010 at 4:40 PM, KOSAKI Motohiro
+> <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > Fix simple argument error. Usually 'order' is very small value than
+> > lru_pages. then it can makes unnecessary icache dropping.
+> >
+> > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+> 
+> With your test result, This patch makes sense to me.
+> Please, include your test result in description.
 
-Right.  We should fix those too.
+How's this?
 
-Prefetch is much more worrying though, especially with ept.  If a guest 
-is using just 1/8 of the pages, it can look to migration as if it's 
-using 100% of the pages.  The impact can be pretty large.
+==============================================================
+>From 19872d74875e2331cbe7eca46c8ef65f5f00d7c4 Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Tue, 13 Jul 2010 13:39:11 +0900
+Subject: [PATCH] vmscan: shrink_slab() require number of lru_pages, not page order
 
-In contrast, I'm not too worried about invlpg, as most times an access 
-will follow a miss, and usually a write access if we set a writeable 
-pte.  Not sure about sync-page.
+Now, shrink_slab() has following scanning equation.
 
+                            lru_scanned        max_pass
+  basic_scan_objects = 4 x -------------  x -----------------------------
+                            lru_pages        shrinker->seeks (default:2)
+
+  scan_objects = min(basic_scan_objects, max_pass * 2)
+
+Then, If we pass very small value as lru_pages instead real number of
+lru pages, shrink_slab() drop much objects rather than necessary. and
+now, __zone_reclaim() pass 'order' as lru_pages by mistake. that makes
+bad result.
+
+Example, If we receive very low memory pressure (scan = 32, order = 0),
+shrink_slab() via zone_reclaim() always drop _all_ icache/dcache
+objects. (see above equation, very small lru_pages make very big
+scan_objects result)
+
+This patch fixes it.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+Acked-by: Christoph Lameter <cl@linux-foundation.org>
+Acked-by: Rik van Riel <riel@redhat.com>
+---
+ mm/vmscan.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 6ff51c0..1bf9f72 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -2612,6 +2612,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 
+ 	nr_slab_pages0 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
+ 	if (nr_slab_pages0 > zone->min_slab_pages) {
++		unsigned long lru_pages = zone_reclaimable_pages(zone);
++
+ 		/*
+ 		 * shrink_slab() does not currently allow us to determine how
+ 		 * many pages were freed in this zone. So we take the current
+@@ -2622,7 +2624,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
+ 		 * Note that shrink_slab will free memory on all zones and may
+ 		 * take a long time.
+ 		 */
+-		while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
++		while (shrink_slab(sc.nr_scanned, gfp_mask, lru_pages) &&
+ 		       (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages >
+ 			nr_slab_pages0))
+ 			;
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+1.6.5.2
+
+
+
 
