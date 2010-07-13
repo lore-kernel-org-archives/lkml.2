@@ -1,66 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757196Ab0GMUgc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 16:36:32 -0400
-Received: from mail.hq.newdream.net ([66.33.206.127]:57010 "EHLO
-	mail.hq.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755625Ab0GMUgb (ORCPT
+	id S1757226Ab0GMUiB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 16:38:01 -0400
+Received: from g1t0028.austin.hp.com ([15.216.28.35]:8077 "EHLO
+	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755324Ab0GMUh5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 16:36:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=hq.newdream.net; h=subject
-	:from:to:cc:in-reply-to:references:content-type:date:message-id
-	:mime-version:content-transfer-encoding; q=dns; s=drama; b=Xbzf5
-	bzSiEeSDwYC6jV/yNdqYSr8IEIiVN/qIn6LcTt1ZIkA4AB64QWG8Q4D42OiuNRfh
-	4N/q8Wv1xYQMxa6UajPvDgQh7/AG9EIAuxfZekgwxv5hS+/dmRcPCodtAjtl4Iiy
-	cVyFNqCbQ/0Vd2BSXvK0Dusjxh4w14XX+Oj5Ig=
-Subject: Re: Dynamic Debug broken on 2.6.35-rc3?
-From: Yehuda Sadeh <yehuda@hq.newdream.net>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Jason Baron <jbaron@redhat.com>, Thomas Renninger <trenn@suse.de>,
+	Tue, 13 Jul 2010 16:37:57 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Subject: Re: [PATCH 45/50] x86, memblock: Use memblock_debug to control debug message print out
+Date: Tue, 13 Jul 2010 14:37:55 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; x86_64; ; )
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Hannes Reinecke <hare@suse.de>
-In-Reply-To: <20100712214754.GC17978@basil.fritz.box>
-References: <201007011744.19564.trenn@suse.de>
-	 <201007091303.08693.trenn@suse.de> <20100709133019.GA2856@redhat.com>
-	 <201007121624.17543.trenn@suse.de> <20100712162140.GA2925@redhat.com>
-	 <20100712214754.GC17978@basil.fritz.box>
-Content-Type: text/plain
-Date: Tue, 13 Jul 2010 13:38:25 -0700
-Message-Id: <1279053505.16225.9.camel@yehudasa-desktop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.3 
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+References: <1279005044-24777-1-git-send-email-yinghai@kernel.org> <1279005044-24777-46-git-send-email-yinghai@kernel.org>
+In-Reply-To: <1279005044-24777-46-git-send-email-yinghai@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007131437.55808.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-07-12 at 23:47 +0200, Andi Kleen wrote:
-> On Mon, Jul 12, 2010 at 12:21:40PM -0400, Jason Baron wrote:
-> > On Mon, Jul 12, 2010 at 04:24:16PM +0200, Thomas Renninger wrote:
-> > > Hi,
-> > > 
-> > > it's this one:
-> > > commit ff49d74ad383f54041378144ca1a229ee9aeaa59
-> > > Author: Yehuda Sadeh <yehuda@hq.newdream.net>
-> > > Date:   Sat Jul 3 13:07:35 2010 +1000
-> > > 
-> > > which touches same code than Jason's fix does.
-> > > Possibly this patch also addresses (only parts of?) this problem?
-> > > Jason: Do you mind having a look at the latest git version and review
-> > > Yehuda's  and adjust your patch if still necessary.
-> > 
-> > So Yehuda's patch is meant to address this issue. I would still move the
-> > remove code to free_module(), for the case that load_module() fails as
-> > follows (on top of Yehuda's patch):
-> 
-> One of the known failures with this was a module that was just missing its exit
-> function, but otherwise working. Is the patch likely to address this
-> too? 
-> 
-I'm not sure about a known issue with a missing exit function. Looking
-at the latest git, it doesn't seem there is a problem there. However,
-there is an issue with the module init function returning an error.
-Jason's fix on top of my patch solves it.
+On Tuesday, July 13, 2010 01:10:39 am Yinghai Lu wrote:
+> -		pr_cont(" ==> [%010llx-%010llx]\n", final_start, final_end - 1);
+> +		memblock_dbg(" ==> [%#010llx-%#010llx]\n", final_start, final_end - 1);
+>  		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
+>  	}
+>  
+> @@ -286,9 +286,11 @@ void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
+>  	if (start == end)
+>  		return;
+>  
+> -	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx]\n", start, end))
+> +	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx)\n", start, end))
 
-Yehuda
+Can you print these ranges the same way as the others?  I think
+"invalid range" might be closer to what you mean than "wrong range." 
+
+I'm a little dubious about these "(start == end)" and "(start > end)"
+checks anyway.  Who are the callers of these functions?  If "start"
+and "end" are coming from an external source, e.g., some firmware
+interface like an e820 table, the message doesn't give enough of a
+clue about where the problem is.
+
+If "start" and "end" are internal things, I'd argue that the checks
+are just covering up Linux bugs, and it'd be better to fix those
+bugs and remove the checks.
+
+>  		return;
+>  
+> +	memblock_dbg("    memblock_x86_reserve_range: [%#010llx-%#010llx] %16s\n", start, end - 1, name);
+> +
+>  	memblock_reserve(start, end - start);
+>  }
+>  
+> @@ -297,9 +299,11 @@ void __init memblock_x86_free_range(u64 start, u64 end)
+>  	if (start == end)
+>  		return;
+>  
+> -	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx]\n", start, end))
+> +	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx)\n", start, end))
+>  		return;
 
