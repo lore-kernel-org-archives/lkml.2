@@ -1,78 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757148Ab0GMRXk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 13:23:40 -0400
-Received: from perceval.irobotique.be ([92.243.18.41]:48144 "EHLO
-	perceval.irobotique.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755955Ab0GMRXi (ORCPT
+	id S1757177Ab0GMRZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 13:25:28 -0400
+Received: from anguilla.debian.or.at ([86.59.21.37]:51639 "EHLO
+	anguilla.debian.or.at" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757103Ab0GMRZ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 13:23:38 -0400
-From: Laurent Pinchart <laurent.pinchart@ideasonboard.com>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: Re: linux-next: manual merge of the usb tree with the v4l-dvb tree
-Date: Tue, 13 Jul 2010 19:23:31 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; x86_64; ; )
-Cc: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100706175332.952fec90.sfr@canb.auug.org.au> <20100707151355.GB2121@kroah.com> <4C3C876A.5090005@infradead.org>
-In-Reply-To: <4C3C876A.5090005@infradead.org>
+	Tue, 13 Jul 2010 13:25:27 -0400
+Date: Tue, 13 Jul 2010 19:25:26 +0200
+From: Peter Palfrader <peter@palfrader.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, torvalds@linux-foundation.org,
+        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+        Glauber Costa <glommer@redhat.com>,
+        Zachary Amsden <zamsden@redhat.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization
+	point for pvclock
+Message-ID: <20100713172526.GE15122@anguilla.noreply.org>
+Mail-Followup-To: Peter Palfrader <peter@palfrader.org>,
+	Avi Kivity <avi@redhat.com>, Greg KH <gregkh@suse.de>,
+	linux-kernel@vger.kernel.org, stable@kernel.org,
+	stable-review@kernel.org, torvalds@linux-foundation.org,
+	akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+	Glauber Costa <glommer@redhat.com>,
+	Zachary Amsden <zamsden@redhat.com>,
+	Jeremy Fitzhardinge <jeremy@goop.org>,
+	Marcelo Tosatti <mtosatti@redhat.com>
+References: <20100707124731.GJ15122@anguilla.noreply.org> <4C359D5A.1050906@redhat.com> <20100713102350.GW15122@anguilla.noreply.org> <4C3C68C8.4060409@redhat.com> <20100713141902.GB15122@anguilla.noreply.org> <4C3C8CE5.1080705@redhat.com> <20100713162207.GC15122@anguilla.noreply.org> <4C3C9589.4090602@redhat.com> <4C3C96EC.8060901@redhat.com> <4C3C9839.4090404@redhat.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007131923.31877.laurent.pinchart@ideasonboard.com>
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4C3C9839.4090404@redhat.com>
+X-PGP: 1024D/94C09C7F 5B00 C96D 5D54 AEE1 206B  AF84 DE7A AF6E 94C0 9C7F
+X-Request-PGP: http://www.palfrader.org/keys/94C09C7F.asc
+X-Accept-Language: de, en
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mauro,
+On Tue, 13 Jul 2010, Avi Kivity wrote:
 
-On Tuesday 13 July 2010 17:34:02 Mauro Carvalho Chehab wrote:
-> Em 07-07-2010 12:13, Greg KH escreveu:
-> > On Tue, Jul 06, 2010 at 09:34:51AM -0300, Mauro Carvalho Chehab wrote:
-> >> Em 06-07-2010 08:10, Laurent Pinchart escreveu:
+> On 07/13/2010 07:40 PM, Avi Kivity wrote:
+>> On 07/13/2010 07:34 PM, Avi Kivity wrote:
+>>>
+>>> My bet is that dropping 'static' will fix it.  We may have the wrong  
+>>> constraints on atomic64_cmpxchg64(), so the compiler thinks we never  
+>>> change last_value.
+>>>
+>>
+>> The constraints are there, but maybe the toolchain is confused.
+>>
+>
+> No they aren't, as Linus just pointed out.  His patch should fix the  
+> problem.
 
-[snip]
+Linus's patch touches __xchg() whereas we're using __cmpxchg() in this
+particular case I think.
 
-> >>> Mauro, can the uvc-gadget patches go through the linux-media tree ?
-> 
-> It will not be simple to fix this conflict from my tree. I tried to apply
-> them against a 2.6.35-rc5, but it failed:
-> |diff --git a/drivers/media/video/uvc/uvcvideo.h
-> |b/drivers/media/video/uvc/uvcvideo.h index 47b20e7..ac27245 100644
-> |--- a/drivers/media/video/uvc/uvcvideo.h
-> |+++ b/drivers/media/video/uvc/uvcvideo.h
-> 
-> --------------------------
-> No file to patch.  Skipping patch.
-> 1 out of 1 hunk ignored
-> can't find file to patch at input line 73
-> Perhaps you used the wrong -p or --strip option?
-
-drivers/media/video/uvc/uvcvideo.h has been there for years. Perhaps you used 
-the wrong -p or --strip option? :-)
-
-[snip]
-
-> >>> Patch
-> >>> patches/lmml_111238_for_2_6_36_uvc_move_constants_and_structures_defin
-> >>> itions_to_linux_usb_video_h.patch doesn't apply
-> 
-> It seems that the files you're patching at include/linux/usb & cia are not
-> upstream yet. So, just adding this patch won't solve it.
-> 
-> >> If Greg is ok, that's fine for me.
-> > 
-> > That's fine with me.  Let me know when you have them and then I'll drop
-> > them from my tree.
-> 
-> I'll be out for vacations for some days. Greg/Laurent, it seems that the
-> better is to keep Stephen workaround for now, eventually applying it at
-> Greg's tree.
-
-If it's not too late, can you retry with the right -p option ?
-
+At least, applying it to my 2.6.32.16 tree didn't help, last_value was
+still read-only.  Or I backported it wrong.
 -- 
-Regards,
-
-Laurent Pinchart
+                           |  .''`.  ** Debian GNU/Linux **
+      Peter Palfrader      | : :' :      The  universal
+ http://www.palfrader.org/ | `. `'      Operating System
+                           |   `-    http://www.debian.org/
