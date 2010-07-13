@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756686Ab0GMXcv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 19:32:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57494 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756185Ab0GMXcu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 19:32:50 -0400
-Message-ID: <4C3CF79E.6040601@redhat.com>
-Date: Tue, 13 Jul 2010 13:32:46 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: "David S. Ahern" <daahern@cisco.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM <kvm@vger.kernel.org>,
-        Avi Kivity <avi@redhat.com>, Glauber Costa <glommer@redhat.com>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 09/18] Robust TSC compensation
-References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-10-git-send-email-zamsden@redhat.com> <20100713203418.GA903@amt.cnet> <4C3CD77B.9050108@redhat.com> <4C3CDDD4.6010009@cisco.com>
-In-Reply-To: <4C3CDDD4.6010009@cisco.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756944Ab0GMXdd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 19:33:33 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:52189 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756646Ab0GMXdb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 19:33:31 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6042"; a="47389395"
+Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for 
+ defconfig
+From: Daniel Walker <dwalker@codeaurora.org>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linuxppc-dev@lists.ozlabs.org, Nicolas Pitre <nico@fluxnic.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King <rmk@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+In-Reply-To: <AANLkTin69tN3NQHD2wvkA0G-lj3f9tSZEnhzdyJdTh9m@mail.gmail.com>
+References: <20100713230352.6781.18644.stgit@angua>
+	 <1279062881.4609.34.camel@c-dwalke-linux.qualcomm.com>
+	 <AANLkTin69tN3NQHD2wvkA0G-lj3f9tSZEnhzdyJdTh9m@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Jul 2010 16:33:28 -0700
+Message-ID: <1279064008.4609.48.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 11:42 AM, David S. Ahern wrote:
->
-> On 07/13/10 15:15, Zachary Amsden wrote:
->
->    
->>> What prevents a vcpu from seeing its TSC go backwards, in case the first
->>> write in the 5 second window is smaller than the victim vcpu's last
->>> visible TSC value ?
->>>
->>>        
->> Nothing, unfortunately.  However, the TSC would already have to be out
->> of sync in order for the problem to occur.  It can never happen in
->> normal circumstances on a stable hardware TSC except in one case;
->> migration.  During the CPU state transfer phase of migration, however,
->>      
-> What about across processor sockets? Aren't CPUs brought up at different
-> points such that their TSCs start at different times?
->    
+On Tue, 2010-07-13 at 17:21 -0600, Grant Likely wrote:
+> On Tue, Jul 13, 2010 at 5:14 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
+> > On Tue, 2010-07-13 at 17:04 -0600, Grant Likely wrote:
+> >
+> >> - I haven't figured out a way for the fragment to force an option to
+> >>   be "n", or to set a value, for example "CONFIG_LOG_BUF_SHIFT=16".
+> >>   This may require changing the syntax.
+> >> - It still doesn't resolve dependencies.  A solver would help with this.
+> >>   For the time being I work around the problem by running the generated
+> >>   config through 'oldconfig' and looking for differences.  If the files
+> >>   differ (ignoring comments and generateconfig_* options) after oldconfig,
+> >>   then the <board>_defconfig target returns a failure.  (but leaves the
+> >>   new .config intact so the user can resolve it with menuconfig).  This
+> >>   way at least the user is told when a Kconfig fragment is invalid.
+> >
+> > The solver would fix the whole issues with the defconfigs , we wouldn't
+> > need this Kconfig change .. From my perspective we shouldn't be fooling
+> > around with anything but the solver approach ..
+> 
+> The solver would complement Kconfig fragments, but it doesn't
+> implement all the functionality.  For instance, it doesn't help a
+> board config picking up a bunch of options from an SoC or Architecture
+> config file, especially things that are developer/maintainer choices
+> as opposed to hard requirements).  Solver on its own is an incremental
+> improvement over what we currently have, but it doesn't solve the
+> whole problem.
 
-It depends on the platform.  But it doesn't matter.  The definition we 
-use is different start TSCs == out of sync.  Some systems have 
-synchronized TSCs, some do not.
+I don't understand what your saying here.. Imagine a defconfig that you
+have now only drastically smaller. The solver picks the stuff that
+doesn't exist already in the defconfig. You would just apply the solver
+to whatever is in the defconfig.
 
-See patch 18/18 - "Timekeeping documentation" for details.
+Then that allows us to keep the current defconfig format without mass
+converting to something else. It's would also be built on a solver that
+helps with other issues within Kconfig.
+
+> > It just doesn't feel like Kconfig was meant to do this, it feel like
+> > somewhat of an abuse ..
+> 
+> Why?  It uses the Kconfig language itself to specify additional
+> constraints on the final configuration.  Seems to be the essence of
+> elegance to me.  :-)
+
+To my mind the only problem with the current defconfig formatting is the
+size of the files. If those files are 5-10 lines instead of 2000 lines,
+then I think the readability problem isn't really an issue any more..
+
+The point of using Kconfig was the readability..
+
+Daniel
+
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+
