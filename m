@@ -1,77 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753823Ab0GMILV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 04:11:21 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41284 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab0GMILQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 04:11:16 -0400
-Date: Tue, 13 Jul 2010 01:10:13 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: "Patrick J. LoPresti" <lopresti@gmail.com>
-Cc: Andreas Dilger <adilger@dilger.ca>, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com
-Subject: Re: [Ocfs2-devel] [PATCH 2/2] OCFS2: Allow huge (> 16 TiB) volumes
- to mount
-Message-ID: <20100713081013.GA31479@mail.oracle.com>
-Mail-Followup-To: "Patrick J. LoPresti" <lopresti@gmail.com>,
-	Andreas Dilger <adilger@dilger.ca>, linux-fsdevel@vger.kernel.org,
-	linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-	ocfs2-devel@oss.oracle.com
-References: <871vbax86w.fsf@patl.com>
- <87zkxyvtjt.fsf@patl.com>
- <3BB069D5-B193-43A4-B678-B3CEA4873B58@dilger.ca>
- <AANLkTikAEycm5PKTLPuRFcB0e4qNp5EuQbKUx5aruNrh@mail.gmail.com>
- <DA64905D-C83B-4CF5-9405-65F7F82F9563@dilger.ca>
- <AANLkTinsQjWD1t1lO_BHnM-afzYyl7TKKdIcNZEVMg6n@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinsQjWD1t1lO_BHnM-afzYyl7TKKdIcNZEVMg6n@mail.gmail.com>
-X-Burt-Line: Trees are cool.
-X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
- come to perfection.
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C3C1FA0.0036:SCFMA4539814,ss=1,fgs=0
+	id S1752993Ab0GMINM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 04:13:12 -0400
+Received: from mga01.intel.com ([192.55.52.88]:49765 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751167Ab0GMINK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 04:13:10 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,192,1278313200"; 
+   d="scan'208";a="585491143"
+Subject: perf failed with kernel 2.6.35-rc
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 13 Jul 2010 16:14:09 +0800
+Message-Id: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 10:00:10PM -0700, Patrick J. LoPresti wrote:
-> On Mon, Jul 12, 2010 at 9:46 PM, Andreas Dilger <adilger@dilger.ca> wrote:
-> > On 2010-07-12, at 19:08, Patrick J. LoPresti wrote:
-> >>
-> >> Are you suggesting I need to do this before my patch is accepted at
-> >> all?  Or is this a refactoring that can happen later?
-> >
-> > I'm just suggesting it should be done at some point.  I thought it would be better to do it first, rather than add yet another copy of this code.  That said, I hate to block useful fixes because of cleanup (and I have no control over OCFS2 anyway :-).  However, I've found that once the fix is in people usually forget (or become too busy) to do the cleanup and it just lingers on unseen.
-> 
-> I hear you.
-> 
-> I do not object to factoring out the basic addressability test and
-> using it in my patch, leaving it for others -- like yourself :-) -- to
-> modify other file systems to invoke it.
+Peter,
 
-	I think you should modify ext3 and xfs, as they clearly are
-partaking of this functionality.  I'll happily review it for you.  Put
-the call in fs/libfs.c.  Call it generic_check_addressable(struct
-super_block *super).
+perf doesn't work on my Nehalem EX machine.
+1) The 1st start of 'perf top' is ok;
+2) Kill the 1st perf and restart it. It doesn't work. No data is showed.
 
-Joel
+I located below commit:
+commit 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+Author: Peter Zijlstra <peterz@infradead.org>
+Date:   Fri Mar 26 14:08:44 2010 +0100
+
+    perf, x86: Add Nehelem PMU programming errata workaround
+    
+    workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+    Date: Fri Mar 26 13:59:41 CET 2010
+    
+    Implement the workaround for Intel Errata AAK100 and AAP53.
+    
+    Also, remove the Core-i7 name for Nehalem events since there are
+    also Westmere based i7 chips.
 
 
--- 
+If I comment out the workaround in function intel_pmu_nhm_enable_all,
+perf could work.
 
-"The only way to get rid of a temptation is to yield to it."
-         - Oscar Wilde 
+A quick glance shows:
+wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+should be:
+wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
 
-Joel Becker
-Consulting Software Developer
-Oracle
-E-mail: joel.becker@oracle.com
-Phone: (650) 506-8127
+
+I triggered sysrq to dump PMU registers and found the last bit of
+global status register is 1. I added a status reset operation like below patch:
+
+--- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 09:38:11.000000000 +0800
++++ linux-2.6.35-rc5_fork/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 14:41:42.000000000 +0800
+@@ -505,8 +505,13 @@ static void intel_pmu_nhm_enable_all(int
+ 		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
+ 		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
+ 
+-		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
++		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+ 		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
++		/*
++		 * Reset the last 3 bits of global status register in case
++		 * previous enabling causes overflows.
++		 */
++		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+ 
+ 		for (i = 0; i < 3; i++) {
+ 			struct perf_event *event = cpuc->events[i];
+
+
+
+However, it still doesn't work. Current right way is to comment out
+the workaround.
+
+Yanmin
+
+
