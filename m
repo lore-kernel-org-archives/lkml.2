@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab0GMC2n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 22:28:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61053 "EHLO mx1.redhat.com"
+	id S1756724Ab0GMC3A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 22:29:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42336 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756586Ab0GMC0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 22:26:01 -0400
+	id S1756587Ab0GMCZ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 22:25:56 -0400
 From: Zachary Amsden <zamsden@redhat.com>
 To: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
@@ -14,154 +14,244 @@ Cc: Linux-kernel <linux-kernel@vger.kernel.org>,
         Zachary Amsden <zamsden@redhat.com>, Avi Kivity <avi@redhat.com>,
         Marcelo Tosatti <mtosatti@redhat.com>,
         Glauber Costa <glommer@redhat.com>
-Subject: [PATCH 08/18] Add helper functions for time computation
-Date: Mon, 12 Jul 2010 16:25:28 -1000
-Message-Id: <1278987938-23873-9-git-send-email-zamsden@redhat.com>
+Subject: [PATCH 06/18] Unify TSC logic
+Date: Mon, 12 Jul 2010 16:25:26 -1000
+Message-Id: <1278987938-23873-7-git-send-email-zamsden@redhat.com>
 In-Reply-To: <1278987938-23873-1-git-send-email-zamsden@redhat.com>
 References: <1278987938-23873-1-git-send-email-zamsden@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a helper function to compute the kernel time and convert nanoseconds
-back to CPU specific cycles.  Note that these must not be called in preemptible
-context, as that would mean the kernel could enter software suspend state,
-which would cause non-atomic operation.
+Move the TSC control logic from the vendor backends into x86.c
+by adding adjust_tsc_offset to x86 ops.  Now all TSC decisions
+can be done in one place.
 
-Also, convert the KVM_SET_CLOCK / KVM_GET_CLOCK ioctls to use the kernel
-time helper, these should be bootbased as well.
+Also, rename some variable in the VCPU structure to more accurately
+reflect their actual content.
 
 Signed-off-by: Zachary Amsden <zamsden@redhat.com>
 ---
- arch/x86/kvm/x86.c |   47 ++++++++++++++++++++++++++++-------------------
- 1 files changed, 28 insertions(+), 19 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    5 +++--
+ arch/x86/kvm/svm.c              |   26 ++++++++++----------------
+ arch/x86/kvm/vmx.c              |   22 ++++++++--------------
+ arch/x86/kvm/x86.c              |   18 +++++++++++++++---
+ 4 files changed, 36 insertions(+), 35 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 4b42893..324e892 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -255,7 +255,6 @@ struct kvm_mmu {
+ };
+ 
+ struct kvm_vcpu_arch {
+-	u64 host_tsc;
+ 	/*
+ 	 * rip and regs accesses must go through
+ 	 * kvm_{register,rip}_{read,write} functions.
+@@ -336,9 +335,10 @@ struct kvm_vcpu_arch {
+ 
+ 	gpa_t time;
+ 	struct pvclock_vcpu_time_info hv_clock;
+-	unsigned int hv_clock_tsc_khz;
++	unsigned int hw_tsc_khz;
+ 	unsigned int time_offset;
+ 	struct page *time_page;
++	u64 last_host_tsc;
+ 
+ 	bool nmi_pending;
+ 	bool nmi_injected;
+@@ -520,6 +520,7 @@ struct kvm_x86_ops {
+ 	u64 (*get_mt_mask)(struct kvm_vcpu *vcpu, gfn_t gfn, bool is_mmio);
+ 	int (*get_lpage_level)(void);
+ 	bool (*rdtscp_supported)(void);
++	void (*adjust_tsc_offset)(struct kvm_vcpu *vcpu, s64 adjustment);
+ 
+ 	void (*set_supported_cpuid)(u32 func, struct kvm_cpuid_entry2 *entry);
+ 
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 7e7889d..b52222c 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -948,20 +948,6 @@ static void svm_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ 	int i;
+ 
+ 	if (unlikely(cpu != vcpu->cpu)) {
+-		u64 delta;
+-
+-		if (check_tsc_unstable()) {
+-			/*
+-			 * Make sure that the guest sees a monotonically
+-			 * increasing TSC.
+-			 */
+-			delta = vcpu->arch.host_tsc - native_read_tsc();
+-			svm->vmcb->control.tsc_offset += delta;
+-			if (is_nested(svm))
+-				svm->nested.hsave->control.tsc_offset += delta;
+-		}
+-		vcpu->cpu = cpu;
+-		kvm_migrate_timers(vcpu);
+ 		svm->asid_generation = 0;
+ 	}
+ 
+@@ -977,8 +963,6 @@ static void svm_vcpu_put(struct kvm_vcpu *vcpu)
+ 	++vcpu->stat.host_state_reload;
+ 	for (i = 0; i < NR_HOST_SAVE_USER_MSRS; i++)
+ 		wrmsrl(host_save_user_msrs[i], svm->host_user_msrs[i]);
+-
+-	vcpu->arch.host_tsc = native_read_tsc();
+ }
+ 
+ static unsigned long svm_get_rflags(struct kvm_vcpu *vcpu)
+@@ -3432,6 +3416,15 @@ static void svm_write_tsc_offset(struct kvm_vcpu *vcpu, u64 offset)
+ 	svm->vmcb->control.tsc_offset = offset + g_tsc_offset;
+ }
+ 
++static void svm_adjust_tsc_offset(struct kvm_vcpu *vcpu, s64 adjustment)
++{
++	struct vcpu_svm *svm = to_svm(vcpu);
++
++	svm->vmcb->control.tsc_offset += adjustment;
++	if (is_nested(svm))
++		svm->nested.hsave->control.tsc_offset += adjustment;
++}
++
+ static void svm_fpu_deactivate(struct kvm_vcpu *vcpu)
+ {
+ 	struct vcpu_svm *svm = to_svm(vcpu);
+@@ -3520,6 +3513,7 @@ static struct kvm_x86_ops svm_x86_ops = {
+ 	.has_wbinvd_exit = svm_has_wbinvd_exit,
+ 
+ 	.write_tsc_offset = svm_write_tsc_offset,
++	.adjust_tsc_offset = svm_adjust_tsc_offset,
+ };
+ 
+ static int __init svm_init(void)
+diff --git a/arch/x86/kvm/vmx.c b/arch/x86/kvm/vmx.c
+index 9055ca6..d8e23ab 100644
+--- a/arch/x86/kvm/vmx.c
++++ b/arch/x86/kvm/vmx.c
+@@ -504,7 +504,6 @@ static void __vcpu_clear(void *arg)
+ 		vmcs_clear(vmx->vmcs);
+ 	if (per_cpu(current_vmcs, cpu) == vmx->vmcs)
+ 		per_cpu(current_vmcs, cpu) = NULL;
+-	rdtscll(vmx->vcpu.arch.host_tsc);
+ 	list_del(&vmx->local_vcpus_link);
+ 	vmx->vcpu.cpu = -1;
+ 	vmx->launched = 0;
+@@ -887,7 +886,6 @@ static void vmx_load_host_state(struct vcpu_vmx *vmx)
+ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ {
+ 	struct vcpu_vmx *vmx = to_vmx(vcpu);
+-	u64 tsc_this, delta, new_offset;
+ 	u64 phys_addr = __pa(per_cpu(vmxarea, cpu));
+ 
+ 	if (!vmm_exclusive)
+@@ -904,14 +902,12 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ 		struct desc_ptr dt;
+ 		unsigned long sysenter_esp;
+ 
+-		kvm_migrate_timers(vcpu);
+ 		kvm_make_request(KVM_REQ_TLB_FLUSH, vcpu);
+ 		local_irq_disable();
+ 		list_add(&vmx->local_vcpus_link,
+ 			 &per_cpu(vcpus_on_cpu, cpu));
+ 		local_irq_enable();
+ 
+-		vcpu->cpu = cpu;
+ 		/*
+ 		 * Linux uses per-cpu TSS and GDT, so set these when switching
+ 		 * processors.
+@@ -922,16 +918,6 @@ static void vmx_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
+ 
+ 		rdmsrl(MSR_IA32_SYSENTER_ESP, sysenter_esp);
+ 		vmcs_writel(HOST_IA32_SYSENTER_ESP, sysenter_esp); /* 22.2.3 */
+-
+-		/*
+-		 * Make sure the time stamp counter is monotonous.
+-		 */
+-		rdtscll(tsc_this);
+-		if (tsc_this < vcpu->arch.host_tsc) {
+-			delta = vcpu->arch.host_tsc - tsc_this;
+-			new_offset = vmcs_read64(TSC_OFFSET) + delta;
+-			vmcs_write64(TSC_OFFSET, new_offset);
+-		}
+ 	}
+ }
+ 
+@@ -1160,6 +1146,12 @@ static void vmx_write_tsc_offset(struct kvm_vcpu *vcpu, u64 offset)
+ 	vmcs_write64(TSC_OFFSET, offset);
+ }
+ 
++static void vmx_adjust_tsc_offset(struct kvm_vcpu *vcpu, s64 adjustment)
++{
++	u64 offset = vmcs_read64(TSC_OFFSET);
++	vmcs_write64(TSC_OFFSET, offset + adjustment);
++}
++
+ /*
+  * Reads an msr value (of 'msr_index') into 'pdata'.
+  * Returns 0 on success, non-0 otherwise.
+@@ -4113,6 +4105,7 @@ static struct kvm_vcpu *vmx_create_vcpu(struct kvm *kvm, unsigned int id)
+ 
+ 	cpu = get_cpu();
+ 	vmx_vcpu_load(&vmx->vcpu, cpu);
++	vmx->vcpu.cpu = cpu;
+ 	err = vmx_vcpu_setup(vmx);
+ 	vmx_vcpu_put(&vmx->vcpu);
+ 	put_cpu();
+@@ -4352,6 +4345,7 @@ static struct kvm_x86_ops vmx_x86_ops = {
+ 	.has_wbinvd_exit = cpu_has_vmx_wbinvd_exit,
+ 
+ 	.write_tsc_offset = vmx_write_tsc_offset,
++	.adjust_tsc_offset = vmx_adjust_tsc_offset,
+ };
+ 
+ static int __init vmx_init(void)
 diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 666aef3..79c4608 100644
+index 36ef649..e718892 100644
 --- a/arch/x86/kvm/x86.c
 +++ b/arch/x86/kvm/x86.c
-@@ -891,6 +891,16 @@ static void kvm_set_time_scale(uint32_t tsc_khz, struct pvclock_vcpu_time_info *
- 		 hv_clock->tsc_to_system_mul);
- }
- 
-+static inline u64 get_kernel_ns(void)
-+{
-+	struct timespec ts;
-+
-+	WARN_ON(preemptible());
-+	ktime_get_ts(&ts);
-+	monotonic_to_bootbased(&ts);
-+	return timespec_to_ns(&ts);
-+}
-+
- static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
- 
- static inline int kvm_tsc_changes_freq(void)
-@@ -902,6 +912,15 @@ static inline int kvm_tsc_changes_freq(void)
- 	return ret;
- }
- 
-+static inline u64 nsec_to_cycles(u64 nsec)
-+{
-+	WARN_ON(preemptible());
-+	if (kvm_tsc_changes_freq())
-+		printk_once(KERN_WARNING
-+		 "kvm: unreliable cycle conversion on adjustable rate TSC\n");
-+	return (nsec * __get_cpu_var(cpu_tsc_khz)) / USEC_PER_SEC;
-+}
-+
- void guest_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- {
- 	struct kvm *kvm = vcpu->kvm;
-@@ -910,9 +929,7 @@ void guest_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 
- 	spin_lock(&kvm->arch.tsc_write_lock);
- 	offset = data - native_read_tsc();
--	ktime_get_ts(&ts);
--	monotonic_to_bootbased(&ts);
--	ns = timespec_to_ns(&ts);
-+	ns = get_kernel_ns();
- 	elapsed = ns - kvm->arch.last_tsc_nsec;
- 
- 	/*
-@@ -928,10 +945,9 @@ void guest_write_tsc(struct kvm_vcpu *vcpu, u64 data)
- 			offset = kvm->arch.last_tsc_offset;
- 			pr_debug("kvm: matched tsc offset for %llu\n", data);
- 		} else {
--			u64 tsc_delta = elapsed * __get_cpu_var(cpu_tsc_khz);
--			tsc_delta = tsc_delta / USEC_PER_SEC;
--			offset += tsc_delta;
--			pr_debug("kvm: adjusted tsc offset by %llu\n", tsc_delta);
-+			u64 delta = nsec_to_cycles(elapsed);
-+			offset += delta;
-+			pr_debug("kvm: adjusted tsc offset by %llu\n", delta);
- 		}
- 		ns = kvm->arch.last_tsc_nsec;
+@@ -970,9 +970,9 @@ static int kvm_write_guest_time(struct kvm_vcpu *v)
+ 		return 1;
  	}
-@@ -948,11 +964,11 @@ EXPORT_SYMBOL_GPL(guest_write_tsc);
  
- static int kvm_write_guest_time(struct kvm_vcpu *v)
- {
--	struct timespec ts;
- 	unsigned long flags;
- 	struct kvm_vcpu_arch *vcpu = &v->arch;
- 	void *shared_kaddr;
- 	unsigned long this_tsc_khz;
-+	s64 kernel_ns;
- 
- 	if ((!vcpu->time_page))
- 		return 0;
-@@ -960,8 +976,7 @@ static int kvm_write_guest_time(struct kvm_vcpu *v)
- 	/* Keep irq disabled to prevent changes to the clock */
- 	local_irq_save(flags);
- 	kvm_get_msr(v, MSR_IA32_TSC, &vcpu->hv_clock.tsc_timestamp);
--	ktime_get_ts(&ts);
--	monotonic_to_bootbased(&ts);
-+	kernel_ns = get_kernel_ns();
- 	this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
- 	local_irq_restore(flags);
- 
-@@ -976,9 +991,7 @@ static int kvm_write_guest_time(struct kvm_vcpu *v)
+-	if (unlikely(vcpu->hv_clock_tsc_khz != this_tsc_khz)) {
++	if (unlikely(vcpu->hw_tsc_khz != this_tsc_khz)) {
+ 		kvm_set_time_scale(this_tsc_khz, &vcpu->hv_clock);
+-		vcpu->hv_clock_tsc_khz = this_tsc_khz;
++		vcpu->hw_tsc_khz = this_tsc_khz;
  	}
  
  	/* With all the info we got, fill in the values */
--	vcpu->hv_clock.system_time = ts.tv_nsec +
--				     (NSEC_PER_SEC * (u64)ts.tv_sec) + v->kvm->arch.kvmclock_offset;
--
-+	vcpu->hv_clock.system_time = kernel_ns + v->kvm->arch.kvmclock_offset;
- 	vcpu->hv_clock.flags = 0;
- 
- 	/*
-@@ -3261,7 +3274,6 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 		break;
+@@ -1863,13 +1863,25 @@ void kvm_arch_vcpu_load(struct kvm_vcpu *vcpu, int cpu)
  	}
- 	case KVM_SET_CLOCK: {
--		struct timespec now;
- 		struct kvm_clock_data user_ns;
- 		u64 now_ns;
- 		s64 delta;
-@@ -3275,19 +3287,16 @@ long kvm_arch_vm_ioctl(struct file *filp,
- 			goto out;
  
- 		r = 0;
--		ktime_get_ts(&now);
--		now_ns = timespec_to_ns(&now);
-+		now_ns = get_kernel_ns();
- 		delta = user_ns.clock - now_ns;
- 		kvm->arch.kvmclock_offset = delta;
- 		break;
- 	}
- 	case KVM_GET_CLOCK: {
--		struct timespec now;
- 		struct kvm_clock_data user_ns;
- 		u64 now_ns;
+ 	kvm_x86_ops->vcpu_load(vcpu, cpu);
+-	kvm_request_guest_time_update(vcpu);
++	if (unlikely(vcpu->cpu != cpu)) {
++		/* Make sure TSC doesn't go backwards */
++		s64 tsc_delta = !vcpu->arch.last_host_tsc ? 0 : 
++				native_read_tsc() - vcpu->arch.last_host_tsc;
++		if (tsc_delta < 0)
++			mark_tsc_unstable("KVM discovered backwards TSC");
++		if (check_tsc_unstable())
++			kvm_x86_ops->adjust_tsc_offset(vcpu, -tsc_delta);
++		kvm_migrate_timers(vcpu);
++		kvm_request_guest_time_update(vcpu);
++		vcpu->cpu = cpu;
++	}
+ }
  
--		ktime_get_ts(&now);
--		now_ns = timespec_to_ns(&now);
-+		now_ns = get_kernel_ns();
- 		user_ns.clock = kvm->arch.kvmclock_offset + now_ns;
- 		user_ns.flags = 0;
+ void kvm_arch_vcpu_put(struct kvm_vcpu *vcpu)
+ {
+ 	kvm_x86_ops->vcpu_put(vcpu);
+ 	kvm_put_guest_fpu(vcpu);
++	vcpu->arch.last_host_tsc = native_read_tsc();
+ }
  
+ static int is_efer_nx(void)
 -- 
 1.7.1
 
