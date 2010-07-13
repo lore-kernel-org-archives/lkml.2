@@ -1,49 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756776Ab0GMO5b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 10:57:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:47966 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752510Ab0GMO53 (ORCPT
+	id S1756861Ab0GMO5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 10:57:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61755 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752510Ab0GMO5x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 10:57:29 -0400
-Date: Tue, 13 Jul 2010 15:57:28 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sundar R IYER <sundar.iyer@stericsson.com>
-Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
-Subject: Re: [PATCH v2 1/2] regulator: add support for regulators on the
- ab8500 MFD
-Message-ID: <20100713145727.GB24626@rakim.wolfsonmicro.main>
-References: <1279030173-3086-1-git-send-email-sundar.iyer@stericsson.com>
- <20100713141709.GA24260@rakim.wolfsonmicro.main>
- <33A307AF30D7BF4F811B1568FE7A9B1810E7E880@EXDCVYMBSTM006.EQ1STM.local>
+	Tue, 13 Jul 2010 10:57:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=EQ8JHm8TlopigPiH+VgqSvwcoxI1hXmlCPVsvGUvvekjnvvWaxK8K9Nbx8x6fWIoFI
+         D4Sbo0xyDYE7Z7ellfP+aTdxWz96835gPdElFidKwKB5yL/RYMm2TV82xUCsVH7wktJX
+         pz3dOIor/5s/XOjYcdHyIcf3tZJ647meh5YmI=
+Date: Tue, 13 Jul 2010 16:56:08 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: crosslonelyover <crosslonelyover@gmail.com>
+Cc: linux-ext4 <linux-ext4@vger.kernel.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        kernel-janitors <kernel-janitors@vger.kernel.org>
+Subject: Re: [PATCH] check name_len before down_read xattr_sem and sb_read
+	in ext2_xattr_get
+Message-ID: <20100713145608.GM5658@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	crosslonelyover <crosslonelyover@gmail.com>,
+	linux-ext4 <linux-ext4@vger.kernel.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	kernel-janitors <kernel-janitors@vger.kernel.org>
+References: <201007122229025316610@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <33A307AF30D7BF4F811B1568FE7A9B1810E7E880@EXDCVYMBSTM006.EQ1STM.local>
-X-Cookie: Goodbye, cool world.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <201007122229025316610@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 04:34:56PM +0200, Sundar R IYER wrote:
+On Mon, Jul 12, 2010 at 10:29:09PM +0800, crosslonelyover wrote:
+> Hi,
+>        I walked through ext2_xattr_get, and felt that we can
+> do some optimization on it. For name_len check, it's done
+> after down xattr_sem and sb_read, both of which are time
+> consuming operation compared with strlen:
+>          down_read(&EXT2_I(inode)->xattr_sem);
+>  ...
+>          bh = sb_bread(inode->i_sb, EXT2_I(inode)->i_file_acl);
+>  ...
+>          /* find named attribute */
+>          name_len = strlen(name);
+> 
+>          error = -ERANGE;
+>          if (name_len > 255)
+>                  goto cleanup;
+> 
+>        Most of the case, you'll get one valid block, but if the
+> name len > 255, then the xattr_sem down and sb_bread operation
+> can be seen as a waste of time. So I think we'd better do
+> name len check as early as possible.
+>        Following is my patch, and it's against 2.6.35-rc4.
+> Please check it.
+> 
+> Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
+> ---
+>  fs/ext2/xattr.c |   12 +++++++-----
+>  1 files changed, 7 insertions(+), 5 deletions(-)
 
-> >> + * @mask: mask to enable/disable regulator
-> >> + * @enable: bits to enable the regulator in normal(high power) mode
-> >Have you addressed my comments here?
-> Sorry that I couldn't inline my replies into the patch itself :(. I changed the comments for the variable
-> from the previous patch set. But I agree I messed up!
+For what it's worth, this change looks OK to me.
 
-> Yes. The mask here is different for the fact that we have two enable bits; enable LP(low power)
-> mode and enable HP(high power). We enable only the HP modes and hence the different mask
-> for enable/disable as well as for the enable.
+Reviewed-by: Dan Carpenter <error27@gmail.com>
 
-OK.
+regards,
+dan carpenter
+
+
