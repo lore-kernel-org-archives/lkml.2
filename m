@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755791Ab0GMHXR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:23:17 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28429 "EHLO
+	id S1755945Ab0GMHXl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:23:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24631 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753258Ab0GMHQU (ORCPT
+	with ESMTP id S1752982Ab0GMHOh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:16:20 -0400
+	Tue, 13 Jul 2010 03:14:37 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,770 +15,447 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 48/50] x86: Remove not used early_res code
-Date: Tue, 13 Jul 2010 00:10:42 -0700
-Message-Id: <1279005044-24777-49-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 12/50] memblock: Change u64 to phys_addr_t
+Date: Tue, 13 Jul 2010 00:10:06 -0700
+Message-Id: <1279005044-24777-13-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C3C129D.0059,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4C3C123F.029E,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-and some functions in e820.c that are not used anymore
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Let's not waste space and cycles on archs that don't support >32-bit
+physical address space.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- arch/x86/include/asm/e820.h |   14 -
- arch/x86/kernel/e820.c      |   52 ----
- include/linux/early_res.h   |   23 --
- kernel/Makefile             |    1 -
- kernel/early_res.c          |  584 -------------------------------------------
- 5 files changed, 0 insertions(+), 674 deletions(-)
- delete mode 100644 include/linux/early_res.h
- delete mode 100644 kernel/early_res.c
+ include/linux/memblock.h |   44 +++++++++---------
+ mm/memblock.c            |  114 +++++++++++++++++++++++----------------------
+ 2 files changed, 80 insertions(+), 78 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 388fed2..7186463 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -112,31 +112,17 @@ static inline void early_memtest(unsigned long start, unsigned long end)
- }
- #endif
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 767c198..3b41f61 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -21,19 +21,19 @@
+ #define MAX_MEMBLOCK_REGIONS 128
  
--extern unsigned long end_user_pfn;
--
--extern u64 find_e820_area(u64 start, u64 end, u64 size, u64 align);
--extern u64 find_e820_area_size(u64 start, u64 *sizep, u64 align);
--extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
--
- extern unsigned long e820_end_of_ram_pfn(void);
- extern unsigned long e820_end_of_low_ram_pfn(void);
--extern void e820_register_active_regions(int nid, unsigned long start_pfn,
--					 unsigned long end_pfn);
--extern u64 e820_hole_size(u64 start, u64 end);
--
- extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
- 
- void memblock_x86_fill(void);
--
- extern void finish_e820_parsing(void);
- extern void e820_reserve_resources(void);
- extern void e820_reserve_resources_late(void);
- extern void setup_memory_map(void);
- extern char *default_machine_specific_memory_setup(void);
- 
--void reserve_early(u64 start, u64 end, char *name);
--void free_early(u64 start, u64 end);
--
- /*
-  * Returns true iff the specified range [s,e) is completely contained inside
-  * the ISA region.
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index a9221d1..d5fd894 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -739,32 +739,6 @@ core_initcall(e820_mark_nvs_memory);
- #endif
- 
- /*
-- * Find a free area with specified alignment in a specific range.
-- */
--u64 __init find_e820_area(u64 start, u64 end, u64 size, u64 align)
--{
--	u64 mem = memblock_find_in_range(start, end, size, align);
--
--	if (mem == MEMBLOCK_ERROR)
--		return -1ULL;
--
--	return mem;
--}
--
--/*
-- * Find next free range after *start
-- */
--u64 __init find_e820_area_size(u64 start, u64 *sizep, u64 align)
--{
--	u64 mem = memblock_x86_find_in_range_size(start, sizep, align);
--
--	if (mem == MEMBLOCK_ERROR)
--		return -1ULL
--
--	return mem;
--}
--
--/*
-  * pre allocated 4k and reserved it in memblock and e820_saved
-  */
- u64 __init early_reserve_e820(u64 startt, u64 sizet, u64 align)
-@@ -856,32 +830,6 @@ unsigned long __init e820_end_of_low_ram_pfn(void)
- 	return e820_end_pfn(1UL<<(32 - PAGE_SHIFT), E820_RAM);
- }
- 
--/* Walk the e820 map and register active regions within a node */
--void __init e820_register_active_regions(int nid, unsigned long start_pfn,
--					 unsigned long last_pfn)
--{
--	memblock_x86_register_active_regions(nid, start_pfn, last_pfn);
--}
--
--/*
-- * Find the hole size (in bytes) in the memory range.
-- * @start: starting address of the memory range to scan
-- * @end: ending address of the memory range to scan
-- */
--u64 __init e820_hole_size(u64 start, u64 end)
--{
--	return memblock_x86_hole_size(start, end);
--}
--
--void reserve_early(u64 start, u64 end, char *name)
--{
--	memblock_x86_reserve_range(start, end, name);
--}
--void free_early(u64 start, u64 end)
--{
--	memblock_x86_free_range(start, end);
--}
--
- static void early_panic(char *msg)
- {
- 	early_printk(msg);
-diff --git a/include/linux/early_res.h b/include/linux/early_res.h
-deleted file mode 100644
-index 29c09f5..0000000
---- a/include/linux/early_res.h
-+++ /dev/null
-@@ -1,23 +0,0 @@
--#ifndef _LINUX_EARLY_RES_H
--#define _LINUX_EARLY_RES_H
--#ifdef __KERNEL__
--
--extern void reserve_early(u64 start, u64 end, char *name);
--extern void reserve_early_overlap_ok(u64 start, u64 end, char *name);
--extern void free_early(u64 start, u64 end);
--void free_early_partial(u64 start, u64 end);
--extern void early_res_to_bootmem(u64 start, u64 end);
--
--void reserve_early_without_check(u64 start, u64 end, char *name);
--u64 find_early_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
--			 u64 size, u64 align);
--u64 find_early_area_size(u64 ei_start, u64 ei_last, u64 start,
--			 u64 *sizep, u64 align);
--u64 find_fw_memmap_area(u64 start, u64 end, u64 size, u64 align);
--u64 get_max_mapped(void);
--#include <linux/range.h>
--int get_free_all_memory_range(struct range **rangep, int nodeid);
--
--#endif /* __KERNEL__ */
--
--#endif /* _LINUX_EARLY_RES_H */
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 057472f..80e61c3 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -11,7 +11,6 @@ obj-y     = sched.o fork.o exec_domain.o panic.o printk.o \
- 	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
- 	    notifier.o ksysfs.o pm_qos_params.o sched_clock.o cred.o \
- 	    async.o range.o
--obj-$(CONFIG_HAVE_EARLY_RES) += early_res.o
- obj-y += groups.o
- 
- ifdef CONFIG_FUNCTION_TRACER
-diff --git a/kernel/early_res.c b/kernel/early_res.c
-deleted file mode 100644
-index 31aa933..0000000
---- a/kernel/early_res.c
-+++ /dev/null
-@@ -1,584 +0,0 @@
--/*
-- * early_res, could be used to replace bootmem
-- */
--#include <linux/kernel.h>
--#include <linux/types.h>
--#include <linux/init.h>
--#include <linux/bootmem.h>
--#include <linux/mm.h>
--#include <linux/early_res.h>
--
--/*
-- * Early reserved memory areas.
-- */
--/*
-- * need to make sure this one is bigger enough before
-- * find_fw_memmap_area could be used
-- */
--#define MAX_EARLY_RES_X 32
--
--struct early_res {
--	u64 start, end;
--	char name[15];
--	char overlap_ok;
--};
--static struct early_res early_res_x[MAX_EARLY_RES_X] __initdata;
--
--static int max_early_res __initdata = MAX_EARLY_RES_X;
--static struct early_res *early_res __initdata = &early_res_x[0];
--static int early_res_count __initdata;
--
--static int __init find_overlapped_early(u64 start, u64 end)
--{
--	int i;
--	struct early_res *r;
--
--	for (i = 0; i < max_early_res && early_res[i].end; i++) {
--		r = &early_res[i];
--		if (end > r->start && start < r->end)
--			break;
--	}
--
--	return i;
--}
--
--/*
-- * Drop the i-th range from the early reservation map,
-- * by copying any higher ranges down one over it, and
-- * clearing what had been the last slot.
-- */
--static void __init drop_range(int i)
--{
--	int j;
--
--	for (j = i + 1; j < max_early_res && early_res[j].end; j++)
--		;
--
--	memmove(&early_res[i], &early_res[i + 1],
--	       (j - 1 - i) * sizeof(struct early_res));
--
--	early_res[j - 1].end = 0;
--	early_res_count--;
--}
--
--static void __init drop_range_partial(int i, u64 start, u64 end)
--{
--	u64 common_start, common_end;
--	u64 old_start, old_end;
--
--	old_start = early_res[i].start;
--	old_end = early_res[i].end;
--	common_start = max(old_start, start);
--	common_end = min(old_end, end);
--
--	/* no overlap ? */
--	if (common_start >= common_end)
--		return;
--
--	if (old_start < common_start) {
--		/* make head segment */
--		early_res[i].end = common_start;
--		if (old_end > common_end) {
--			char name[15];
--
--			/*
--			 * Save a local copy of the name, since the
--			 * early_res array could get resized inside
--			 * reserve_early_without_check() ->
--			 * __check_and_double_early_res(), which would
--			 * make the current name pointer invalid.
--			 */
--			strncpy(name, early_res[i].name,
--					 sizeof(early_res[i].name) - 1);
--			/* add another for left over on tail */
--			reserve_early_without_check(common_end, old_end, name);
--		}
--		return;
--	} else {
--		if (old_end > common_end) {
--			/* reuse the entry for tail left */
--			early_res[i].start = common_end;
--			return;
--		}
--		/* all covered */
--		drop_range(i);
--	}
--}
--
--/*
-- * Split any existing ranges that:
-- *  1) are marked 'overlap_ok', and
-- *  2) overlap with the stated range [start, end)
-- * into whatever portion (if any) of the existing range is entirely
-- * below or entirely above the stated range.  Drop the portion
-- * of the existing range that overlaps with the stated range,
-- * which will allow the caller of this routine to then add that
-- * stated range without conflicting with any existing range.
-- */
--static void __init drop_overlaps_that_are_ok(u64 start, u64 end)
--{
--	int i;
--	struct early_res *r;
--	u64 lower_start, lower_end;
--	u64 upper_start, upper_end;
--	char name[15];
--
--	for (i = 0; i < max_early_res && early_res[i].end; i++) {
--		r = &early_res[i];
--
--		/* Continue past non-overlapping ranges */
--		if (end <= r->start || start >= r->end)
--			continue;
--
--		/*
--		 * Leave non-ok overlaps as is; let caller
--		 * panic "Overlapping early reservations"
--		 * when it hits this overlap.
--		 */
--		if (!r->overlap_ok)
--			return;
--
--		/*
--		 * We have an ok overlap.  We will drop it from the early
--		 * reservation map, and add back in any non-overlapping
--		 * portions (lower or upper) as separate, overlap_ok,
--		 * non-overlapping ranges.
--		 */
--
--		/* 1. Note any non-overlapping (lower or upper) ranges. */
--		strncpy(name, r->name, sizeof(name) - 1);
--
--		lower_start = lower_end = 0;
--		upper_start = upper_end = 0;
--		if (r->start < start) {
--			lower_start = r->start;
--			lower_end = start;
--		}
--		if (r->end > end) {
--			upper_start = end;
--			upper_end = r->end;
--		}
--
--		/* 2. Drop the original ok overlapping range */
--		drop_range(i);
--
--		i--;		/* resume for-loop on copied down entry */
--
--		/* 3. Add back in any non-overlapping ranges. */
--		if (lower_end)
--			reserve_early_overlap_ok(lower_start, lower_end, name);
--		if (upper_end)
--			reserve_early_overlap_ok(upper_start, upper_end, name);
--	}
--}
--
--static void __init __reserve_early(u64 start, u64 end, char *name,
--						int overlap_ok)
--{
--	int i;
--	struct early_res *r;
--
--	i = find_overlapped_early(start, end);
--	if (i >= max_early_res)
--		panic("Too many early reservations");
--	r = &early_res[i];
--	if (r->end)
--		panic("Overlapping early reservations "
--		      "%llx-%llx %s to %llx-%llx %s\n",
--		      start, end - 1, name ? name : "", r->start,
--		      r->end - 1, r->name);
--	r->start = start;
--	r->end = end;
--	r->overlap_ok = overlap_ok;
--	if (name)
--		strncpy(r->name, name, sizeof(r->name) - 1);
--	early_res_count++;
--}
--
--/*
-- * A few early reservtations come here.
-- *
-- * The 'overlap_ok' in the name of this routine does -not- mean it
-- * is ok for these reservations to overlap an earlier reservation.
-- * Rather it means that it is ok for subsequent reservations to
-- * overlap this one.
-- *
-- * Use this entry point to reserve early ranges when you are doing
-- * so out of "Paranoia", reserving perhaps more memory than you need,
-- * just in case, and don't mind a subsequent overlapping reservation
-- * that is known to be needed.
-- *
-- * The drop_overlaps_that_are_ok() call here isn't really needed.
-- * It would be needed if we had two colliding 'overlap_ok'
-- * reservations, so that the second such would not panic on the
-- * overlap with the first.  We don't have any such as of this
-- * writing, but might as well tolerate such if it happens in
-- * the future.
-- */
--void __init reserve_early_overlap_ok(u64 start, u64 end, char *name)
--{
--	drop_overlaps_that_are_ok(start, end);
--	__reserve_early(start, end, name, 1);
--}
--
--static void __init __check_and_double_early_res(u64 ex_start, u64 ex_end)
--{
--	u64 start, end, size, mem;
--	struct early_res *new;
--
--	/* do we have enough slots left ? */
--	if ((max_early_res - early_res_count) > max(max_early_res/8, 2))
--		return;
--
--	/* double it */
--	mem = -1ULL;
--	size = sizeof(struct early_res) * max_early_res * 2;
--	if (early_res == early_res_x)
--		start = 0;
--	else
--		start = early_res[0].end;
--	end = ex_start;
--	if (start + size < end)
--		mem = find_fw_memmap_area(start, end, size,
--					 sizeof(struct early_res));
--	if (mem == -1ULL) {
--		start = ex_end;
--		end = get_max_mapped();
--		if (start + size < end)
--			mem = find_fw_memmap_area(start, end, size,
--						 sizeof(struct early_res));
--	}
--	if (mem == -1ULL)
--		panic("can not find more space for early_res array");
--
--	new = __va(mem);
--	/* save the first one for own */
--	new[0].start = mem;
--	new[0].end = mem + size;
--	new[0].overlap_ok = 0;
--	/* copy old to new */
--	if (early_res == early_res_x) {
--		memcpy(&new[1], &early_res[0],
--			 sizeof(struct early_res) * max_early_res);
--		memset(&new[max_early_res+1], 0,
--			 sizeof(struct early_res) * (max_early_res - 1));
--		early_res_count++;
--	} else {
--		memcpy(&new[1], &early_res[1],
--			 sizeof(struct early_res) * (max_early_res - 1));
--		memset(&new[max_early_res], 0,
--			 sizeof(struct early_res) * max_early_res);
--	}
--	memset(&early_res[0], 0, sizeof(struct early_res) * max_early_res);
--	early_res = new;
--	max_early_res *= 2;
--	printk(KERN_DEBUG "early_res array is doubled to %d at [%llx - %llx]\n",
--		max_early_res, mem, mem + size - 1);
--}
--
--/*
-- * Most early reservations come here.
-- *
-- * We first have drop_overlaps_that_are_ok() drop any pre-existing
-- * 'overlap_ok' ranges, so that we can then reserve this memory
-- * range without risk of panic'ing on an overlapping overlap_ok
-- * early reservation.
-- */
--void __init reserve_early(u64 start, u64 end, char *name)
--{
--	if (start >= end)
--		return;
--
--	__check_and_double_early_res(start, end);
--
--	drop_overlaps_that_are_ok(start, end);
--	__reserve_early(start, end, name, 0);
--}
--
--void __init reserve_early_without_check(u64 start, u64 end, char *name)
--{
--	struct early_res *r;
--
--	if (start >= end)
--		return;
--
--	__check_and_double_early_res(start, end);
--
--	r = &early_res[early_res_count];
--
--	r->start = start;
--	r->end = end;
--	r->overlap_ok = 0;
--	if (name)
--		strncpy(r->name, name, sizeof(r->name) - 1);
--	early_res_count++;
--}
--
--void __init free_early(u64 start, u64 end)
--{
--	struct early_res *r;
--	int i;
--
--	i = find_overlapped_early(start, end);
--	r = &early_res[i];
--	if (i >= max_early_res || r->end != end || r->start != start)
--		panic("free_early on not reserved area: %llx-%llx!",
--			 start, end - 1);
--
--	drop_range(i);
--}
--
--void __init free_early_partial(u64 start, u64 end)
--{
--	struct early_res *r;
--	int i;
--
--	if (start == end)
--		return;
--
--	if (WARN_ONCE(start > end, "  wrong range [%#llx, %#llx]\n", start, end))
--		return;
--
--try_next:
--	i = find_overlapped_early(start, end);
--	if (i >= max_early_res)
--		return;
--
--	r = &early_res[i];
--	/* hole ? */
--	if (r->end >= end && r->start <= start) {
--		drop_range_partial(i, start, end);
--		return;
--	}
--
--	drop_range_partial(i, start, end);
--	goto try_next;
--}
--
--#ifdef CONFIG_NO_BOOTMEM
--static void __init subtract_early_res(struct range *range, int az)
--{
--	int i, count;
--	u64 final_start, final_end;
--	int idx = 0;
--
--	count  = 0;
--	for (i = 0; i < max_early_res && early_res[i].end; i++)
--		count++;
--
--	/* need to skip first one ?*/
--	if (early_res != early_res_x)
--		idx = 1;
--
--#define DEBUG_PRINT_EARLY_RES 1
--
--#if DEBUG_PRINT_EARLY_RES
--	printk(KERN_INFO "Subtract (%d early reservations)\n", count);
--#endif
--	for (i = idx; i < count; i++) {
--		struct early_res *r = &early_res[i];
--#if DEBUG_PRINT_EARLY_RES
--		printk(KERN_INFO "  #%d [%010llx - %010llx] %15s\n", i,
--			r->start, r->end, r->name);
--#endif
--		final_start = PFN_DOWN(r->start);
--		final_end = PFN_UP(r->end);
--		if (final_start >= final_end)
--			continue;
--		subtract_range(range, az, final_start, final_end);
--	}
--
--}
--
--int __init get_free_all_memory_range(struct range **rangep, int nodeid)
--{
--	int i, count;
--	u64 start = 0, end;
+ struct memblock_region {
+-	u64 base;
 -	u64 size;
--	u64 mem;
--	struct range *range;
--	int nr_range;
--
--	count  = 0;
--	for (i = 0; i < max_early_res && early_res[i].end; i++)
--		count++;
--
--	count *= 2;
--
--	size = sizeof(struct range) * count;
--	end = get_max_mapped();
--#ifdef MAX_DMA32_PFN
--	if (end > (MAX_DMA32_PFN << PAGE_SHIFT))
--		start = MAX_DMA32_PFN << PAGE_SHIFT;
--#endif
--	mem = find_fw_memmap_area(start, end, size, sizeof(struct range));
--	if (mem == -1ULL)
--		panic("can not find more space for range free");
--
--	range = __va(mem);
--	/* use early_node_map[] and early_res to get range array at first */
--	memset(range, 0, size);
--	nr_range = 0;
--
--	/* need to go over early_node_map to find out good range for node */
--	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
--#ifdef CONFIG_X86_32
--	subtract_range(range, count, max_low_pfn, -1ULL);
--#endif
--	subtract_early_res(range, count);
--	nr_range = clean_sort_range(range, count);
--
--	/* need to clear it ? */
--	if (nodeid == MAX_NUMNODES) {
--		memset(&early_res[0], 0,
--			 sizeof(struct early_res) * max_early_res);
--		early_res = NULL;
--		max_early_res = 0;
--	}
--
--	*rangep = range;
--	return nr_range;
--}
--#else
--void __init early_res_to_bootmem(u64 start, u64 end)
--{
--	int i, count;
--	u64 final_start, final_end;
--	int idx = 0;
--
--	count  = 0;
--	for (i = 0; i < max_early_res && early_res[i].end; i++)
--		count++;
--
--	/* need to skip first one ?*/
--	if (early_res != early_res_x)
--		idx = 1;
--
--	printk(KERN_INFO "(%d/%d early reservations) ==> bootmem [%010llx - %010llx]\n",
--			 count - idx, max_early_res, start, end);
--	for (i = idx; i < count; i++) {
--		struct early_res *r = &early_res[i];
--		printk(KERN_INFO "  #%d [%010llx - %010llx] %16s", i,
--			r->start, r->end, r->name);
--		final_start = max(start, r->start);
--		final_end = min(end, r->end);
--		if (final_start >= final_end) {
--			printk(KERN_CONT "\n");
--			continue;
--		}
--		printk(KERN_CONT " ==> [%010llx - %010llx]\n",
--			final_start, final_end);
--		reserve_bootmem_generic(final_start, final_end - final_start,
--				BOOTMEM_DEFAULT);
--	}
--	/* clear them */
--	memset(&early_res[0], 0, sizeof(struct early_res) * max_early_res);
--	early_res = NULL;
--	max_early_res = 0;
--	early_res_count = 0;
--}
--#endif
--
--/* Check for already reserved areas */
--static inline int __init bad_addr(u64 *addrp, u64 size, u64 align)
--{
--	int i;
--	u64 addr = *addrp;
--	int changed = 0;
--	struct early_res *r;
--again:
--	i = find_overlapped_early(addr, addr + size);
--	r = &early_res[i];
--	if (i < max_early_res && r->end) {
--		*addrp = addr = round_up(r->end, align);
--		changed = 1;
--		goto again;
--	}
--	return changed;
--}
--
--/* Check for already reserved areas */
--static inline int __init bad_addr_size(u64 *addrp, u64 *sizep, u64 align)
--{
--	int i;
--	u64 addr = *addrp, last;
--	u64 size = *sizep;
--	int changed = 0;
--again:
--	last = addr + size;
--	for (i = 0; i < max_early_res && early_res[i].end; i++) {
--		struct early_res *r = &early_res[i];
--		if (last > r->start && addr < r->start) {
--			size = r->start - addr;
--			changed = 1;
--			goto again;
--		}
--		if (last > r->end && addr < r->end) {
--			addr = round_up(r->end, align);
--			size = last - addr;
--			changed = 1;
--			goto again;
--		}
--		if (last <= r->end && addr >= r->start) {
--			(*sizep)++;
--			return 0;
--		}
--	}
--	if (changed) {
--		*addrp = addr;
--		*sizep = size;
--	}
--	return changed;
--}
--
--/*
-- * Find a free area with specified alignment in a specific range.
-- * only with the area.between start to end is active range from early_node_map
-- * so they are good as RAM
-- */
--u64 __init find_early_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
--			 u64 size, u64 align)
--{
--	u64 addr, last;
--
--	addr = round_up(ei_start, align);
--	if (addr < start)
--		addr = round_up(start, align);
--	if (addr >= ei_last)
--		goto out;
--	while (bad_addr(&addr, size, align) && addr+size <= ei_last)
--		;
--	last = addr + size;
--	if (last > ei_last)
--		goto out;
--	if (last > end)
--		goto out;
--
--	return addr;
--
--out:
--	return -1ULL;
--}
--
--u64 __init find_early_area_size(u64 ei_start, u64 ei_last, u64 start,
--			 u64 *sizep, u64 align)
--{
--	u64 addr, last;
--
--	addr = round_up(ei_start, align);
--	if (addr < start)
--		addr = round_up(start, align);
--	if (addr >= ei_last)
--		goto out;
--	*sizep = ei_last - addr;
--	while (bad_addr_size(&addr, sizep, align) && addr + *sizep <= ei_last)
--		;
--	last = addr + *sizep;
--	if (last > ei_last)
--		goto out;
--
--	return addr;
--
--out:
--	return -1ULL;
--}
++	phys_addr_t base;
++	phys_addr_t size;
+ };
+ 
+ struct memblock_type {
+ 	unsigned long cnt;
+-	u64 size;
++	phys_addr_t size;
+ 	struct memblock_region regions[MAX_MEMBLOCK_REGIONS+1];
+ };
+ 
+ struct memblock {
+ 	unsigned long debug;
+-	u64 current_limit;
++	phys_addr_t current_limit;
+ 	struct memblock_type memory;
+ 	struct memblock_type reserved;
+ };
+@@ -42,32 +42,32 @@ extern struct memblock memblock;
+ 
+ extern void __init memblock_init(void);
+ extern void __init memblock_analyze(void);
+-extern long memblock_add(u64 base, u64 size);
+-extern long memblock_remove(u64 base, u64 size);
+-extern long __init memblock_free(u64 base, u64 size);
+-extern long __init memblock_reserve(u64 base, u64 size);
++extern long memblock_add(phys_addr_t base, phys_addr_t size);
++extern long memblock_remove(phys_addr_t base, phys_addr_t size);
++extern long __init memblock_free(phys_addr_t base, phys_addr_t size);
++extern long __init memblock_reserve(phys_addr_t base, phys_addr_t size);
+ 
+-extern u64 __init memblock_alloc_nid(u64 size, u64 align, int nid);
+-extern u64 __init memblock_alloc(u64 size, u64 align);
++extern phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid);
++extern phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align);
+ 
+ /* Flags for memblock_alloc_base() amd __memblock_alloc_base() */
+-#define MEMBLOCK_ALLOC_ANYWHERE	(~(u64)0)
++#define MEMBLOCK_ALLOC_ANYWHERE	(~(phys_addr_t)0)
+ #define MEMBLOCK_ALLOC_ACCESSIBLE	0
+ 
+-extern u64 __init memblock_alloc_base(u64 size,
+-		u64, u64 max_addr);
+-extern u64 __init __memblock_alloc_base(u64 size,
+-		u64 align, u64 max_addr);
+-extern u64 __init memblock_phys_mem_size(void);
+-extern u64 memblock_end_of_DRAM(void);
+-extern void __init memblock_enforce_memory_limit(u64 memory_limit);
+-extern int __init memblock_is_reserved(u64 addr);
+-extern int memblock_is_region_reserved(u64 base, u64 size);
++extern phys_addr_t __init memblock_alloc_base(phys_addr_t size,
++		phys_addr_t, phys_addr_t max_addr);
++extern phys_addr_t __init __memblock_alloc_base(phys_addr_t size,
++		phys_addr_t align, phys_addr_t max_addr);
++extern phys_addr_t __init memblock_phys_mem_size(void);
++extern phys_addr_t memblock_end_of_DRAM(void);
++extern void __init memblock_enforce_memory_limit(phys_addr_t memory_limit);
++extern int __init memblock_is_reserved(phys_addr_t addr);
++extern int memblock_is_region_reserved(phys_addr_t base, phys_addr_t size);
+ 
+ extern void memblock_dump_all(void);
+ 
+ /* Provided by the architecture */
+-extern u64 memblock_nid_range(u64 start, u64 end, int *nid);
++extern phys_addr_t memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid);
+ 
+ /**
+  * memblock_set_current_limit - Set the current allocation limit to allow
+@@ -75,7 +75,7 @@ extern u64 memblock_nid_range(u64 start, u64 end, int *nid);
+  *                         accessible during boot
+  * @limit: New limit value (physical address)
+  */
+-extern void memblock_set_current_limit(u64 limit);
++extern void memblock_set_current_limit(phys_addr_t limit);
+ 
+ 
+ /*
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 43fa162..0c0f787 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -55,13 +55,14 @@ void memblock_dump_all(void)
+ 	memblock_dump(&memblock.reserved, "reserved");
+ }
+ 
+-static unsigned long memblock_addrs_overlap(u64 base1, u64 size1, u64 base2,
+-					u64 size2)
++static unsigned long memblock_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
++				       phys_addr_t base2, phys_addr_t size2)
+ {
+ 	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
+ }
+ 
+-static long memblock_addrs_adjacent(u64 base1, u64 size1, u64 base2, u64 size2)
++static long memblock_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
++			       phys_addr_t base2, phys_addr_t size2)
+ {
+ 	if (base2 == base1 + size1)
+ 		return 1;
+@@ -72,12 +73,12 @@ static long memblock_addrs_adjacent(u64 base1, u64 size1, u64 base2, u64 size2)
+ }
+ 
+ static long memblock_regions_adjacent(struct memblock_type *type,
+-		unsigned long r1, unsigned long r2)
++				 unsigned long r1, unsigned long r2)
+ {
+-	u64 base1 = type->regions[r1].base;
+-	u64 size1 = type->regions[r1].size;
+-	u64 base2 = type->regions[r2].base;
+-	u64 size2 = type->regions[r2].size;
++	phys_addr_t base1 = type->regions[r1].base;
++	phys_addr_t size1 = type->regions[r1].size;
++	phys_addr_t base2 = type->regions[r2].base;
++	phys_addr_t size2 = type->regions[r2].size;
+ 
+ 	return memblock_addrs_adjacent(base1, size1, base2, size2);
+ }
+@@ -128,7 +129,7 @@ void __init memblock_analyze(void)
+ 		memblock.memory.size += memblock.memory.regions[i].size;
+ }
+ 
+-static long memblock_add_region(struct memblock_type *type, u64 base, u64 size)
++static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+ {
+ 	unsigned long coalesced = 0;
+ 	long adjacent, i;
+@@ -141,8 +142,8 @@ static long memblock_add_region(struct memblock_type *type, u64 base, u64 size)
+ 
+ 	/* First try and coalesce this MEMBLOCK with another. */
+ 	for (i = 0; i < type->cnt; i++) {
+-		u64 rgnbase = type->regions[i].base;
+-		u64 rgnsize = type->regions[i].size;
++		phys_addr_t rgnbase = type->regions[i].base;
++		phys_addr_t rgnsize = type->regions[i].size;
+ 
+ 		if ((rgnbase == base) && (rgnsize == size))
+ 			/* Already have this region, so we're done */
+@@ -192,16 +193,16 @@ static long memblock_add_region(struct memblock_type *type, u64 base, u64 size)
+ 	return 0;
+ }
+ 
+-long memblock_add(u64 base, u64 size)
++long memblock_add(phys_addr_t base, phys_addr_t size)
+ {
+ 	return memblock_add_region(&memblock.memory, base, size);
+ 
+ }
+ 
+-static long __memblock_remove(struct memblock_type *type, u64 base, u64 size)
++static long __memblock_remove(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+ {
+-	u64 rgnbegin, rgnend;
+-	u64 end = base + size;
++	phys_addr_t rgnbegin, rgnend;
++	phys_addr_t end = base + size;
+ 	int i;
+ 
+ 	rgnbegin = rgnend = 0; /* supress gcc warnings */
+@@ -246,17 +247,17 @@ static long __memblock_remove(struct memblock_type *type, u64 base, u64 size)
+ 	return memblock_add_region(type, end, rgnend - end);
+ }
+ 
+-long memblock_remove(u64 base, u64 size)
++long memblock_remove(phys_addr_t base, phys_addr_t size)
+ {
+ 	return __memblock_remove(&memblock.memory, base, size);
+ }
+ 
+-long __init memblock_free(u64 base, u64 size)
++long __init memblock_free(phys_addr_t base, phys_addr_t size)
+ {
+ 	return __memblock_remove(&memblock.reserved, base, size);
+ }
+ 
+-long __init memblock_reserve(u64 base, u64 size)
++long __init memblock_reserve(phys_addr_t base, phys_addr_t size)
+ {
+ 	struct memblock_type *_rgn = &memblock.reserved;
+ 
+@@ -265,13 +266,13 @@ long __init memblock_reserve(u64 base, u64 size)
+ 	return memblock_add_region(_rgn, base, size);
+ }
+ 
+-long memblock_overlaps_region(struct memblock_type *type, u64 base, u64 size)
++long memblock_overlaps_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+ {
+ 	unsigned long i;
+ 
+ 	for (i = 0; i < type->cnt; i++) {
+-		u64 rgnbase = type->regions[i].base;
+-		u64 rgnsize = type->regions[i].size;
++		phys_addr_t rgnbase = type->regions[i].base;
++		phys_addr_t rgnsize = type->regions[i].size;
+ 		if (memblock_addrs_overlap(base, size, rgnbase, rgnsize))
+ 			break;
+ 	}
+@@ -279,20 +280,20 @@ long memblock_overlaps_region(struct memblock_type *type, u64 base, u64 size)
+ 	return (i < type->cnt) ? i : -1;
+ }
+ 
+-static u64 memblock_align_down(u64 addr, u64 size)
++static phys_addr_t memblock_align_down(phys_addr_t addr, phys_addr_t size)
+ {
+ 	return addr & ~(size - 1);
+ }
+ 
+-static u64 memblock_align_up(u64 addr, u64 size)
++static phys_addr_t memblock_align_up(phys_addr_t addr, phys_addr_t size)
+ {
+ 	return (addr + (size - 1)) & ~(size - 1);
+ }
+ 
+-static u64 __init memblock_alloc_region(u64 start, u64 end,
+-				   u64 size, u64 align)
++static phys_addr_t __init memblock_alloc_region(phys_addr_t start, phys_addr_t end,
++					   phys_addr_t size, phys_addr_t align)
+ {
+-	u64 base, res_base;
++	phys_addr_t base, res_base;
+ 	long j;
+ 
+ 	base = memblock_align_down((end - size), align);
+@@ -301,7 +302,7 @@ static u64 __init memblock_alloc_region(u64 start, u64 end,
+ 		if (j < 0) {
+ 			/* this area isn't reserved, take it */
+ 			if (memblock_add_region(&memblock.reserved, base, size) < 0)
+-				base = ~(u64)0;
++				base = ~(phys_addr_t)0;
+ 			return base;
+ 		}
+ 		res_base = memblock.reserved.regions[j].base;
+@@ -310,42 +311,43 @@ static u64 __init memblock_alloc_region(u64 start, u64 end,
+ 		base = memblock_align_down(res_base - size, align);
+ 	}
+ 
+-	return ~(u64)0;
++	return ~(phys_addr_t)0;
+ }
+ 
+-u64 __weak __init memblock_nid_range(u64 start, u64 end, int *nid)
++phys_addr_t __weak __init memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid)
+ {
+ 	*nid = 0;
+ 
+ 	return end;
+ }
+ 
+-static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
+-				       u64 size, u64 align, int nid)
++static phys_addr_t __init memblock_alloc_nid_region(struct memblock_region *mp,
++					       phys_addr_t size,
++					       phys_addr_t align, int nid)
+ {
+-	u64 start, end;
++	phys_addr_t start, end;
+ 
+ 	start = mp->base;
+ 	end = start + mp->size;
+ 
+ 	start = memblock_align_up(start, align);
+ 	while (start < end) {
+-		u64 this_end;
++		phys_addr_t this_end;
+ 		int this_nid;
+ 
+ 		this_end = memblock_nid_range(start, end, &this_nid);
+ 		if (this_nid == nid) {
+-			u64 ret = memblock_alloc_region(start, this_end, size, align);
+-			if (ret != ~(u64)0)
++			phys_addr_t ret = memblock_alloc_region(start, this_end, size, align);
++			if (ret != ~(phys_addr_t)0)
+ 				return ret;
+ 		}
+ 		start = this_end;
+ 	}
+ 
+-	return ~(u64)0;
++	return ~(phys_addr_t)0;
+ }
+ 
+-u64 __init memblock_alloc_nid(u64 size, u64 align, int nid)
++phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid)
+ {
+ 	struct memblock_type *mem = &memblock.memory;
+ 	int i;
+@@ -359,23 +361,23 @@ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid)
+ 	size = memblock_align_up(size, align);
+ 
+ 	for (i = 0; i < mem->cnt; i++) {
+-		u64 ret = memblock_alloc_nid_region(&mem->regions[i],
++		phys_addr_t ret = memblock_alloc_nid_region(&mem->regions[i],
+ 					       size, align, nid);
+-		if (ret != ~(u64)0)
++		if (ret != ~(phys_addr_t)0)
+ 			return ret;
+ 	}
+ 
+ 	return memblock_alloc(size, align);
+ }
+ 
+-u64 __init memblock_alloc(u64 size, u64 align)
++phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
+ {
+ 	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
+ }
+ 
+-u64 __init memblock_alloc_base(u64 size, u64 align, u64 max_addr)
++phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
+ {
+-	u64 alloc;
++	phys_addr_t alloc;
+ 
+ 	alloc = __memblock_alloc_base(size, align, max_addr);
+ 
+@@ -386,11 +388,11 @@ u64 __init memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 	return alloc;
+ }
+ 
+-u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
++phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
+ {
+ 	long i;
+-	u64 base = 0;
+-	u64 res_base;
++	phys_addr_t base = 0;
++	phys_addr_t res_base;
+ 
+ 	BUG_ON(0 == size);
+ 
+@@ -405,26 +407,26 @@ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 	 * top of memory
+ 	 */
+ 	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
+-		u64 memblockbase = memblock.memory.regions[i].base;
+-		u64 memblocksize = memblock.memory.regions[i].size;
++		phys_addr_t memblockbase = memblock.memory.regions[i].base;
++		phys_addr_t memblocksize = memblock.memory.regions[i].size;
+ 
+ 		if (memblocksize < size)
+ 			continue;
+ 		base = min(memblockbase + memblocksize, max_addr);
+ 		res_base = memblock_alloc_region(memblockbase, base, size, align);
+-		if (res_base != ~(u64)0)
++		if (res_base != ~(phys_addr_t)0)
+ 			return res_base;
+ 	}
+ 	return 0;
+ }
+ 
+ /* You must call memblock_analyze() before this. */
+-u64 __init memblock_phys_mem_size(void)
++phys_addr_t __init memblock_phys_mem_size(void)
+ {
+ 	return memblock.memory.size;
+ }
+ 
+-u64 memblock_end_of_DRAM(void)
++phys_addr_t memblock_end_of_DRAM(void)
+ {
+ 	int idx = memblock.memory.cnt - 1;
+ 
+@@ -432,10 +434,10 @@ u64 memblock_end_of_DRAM(void)
+ }
+ 
+ /* You must call memblock_analyze() after this. */
+-void __init memblock_enforce_memory_limit(u64 memory_limit)
++void __init memblock_enforce_memory_limit(phys_addr_t memory_limit)
+ {
+ 	unsigned long i;
+-	u64 limit;
++	phys_addr_t limit;
+ 	struct memblock_region *p;
+ 
+ 	if (!memory_limit)
+@@ -472,12 +474,12 @@ void __init memblock_enforce_memory_limit(u64 memory_limit)
+ 	}
+ }
+ 
+-int __init memblock_is_reserved(u64 addr)
++int __init memblock_is_reserved(phys_addr_t addr)
+ {
+ 	int i;
+ 
+ 	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		u64 upper = memblock.reserved.regions[i].base +
++		phys_addr_t upper = memblock.reserved.regions[i].base +
+ 			memblock.reserved.regions[i].size - 1;
+ 		if ((addr >= memblock.reserved.regions[i].base) && (addr <= upper))
+ 			return 1;
+@@ -485,13 +487,13 @@ int __init memblock_is_reserved(u64 addr)
+ 	return 0;
+ }
+ 
+-int memblock_is_region_reserved(u64 base, u64 size)
++int memblock_is_region_reserved(phys_addr_t base, phys_addr_t size)
+ {
+ 	return memblock_overlaps_region(&memblock.reserved, base, size);
+ }
+ 
+ 
+-void __init memblock_set_current_limit(u64 limit)
++void __init memblock_set_current_limit(phys_addr_t limit)
+ {
+ 	memblock.current_limit = limit;
+ }
 -- 
 1.6.4.2
 
