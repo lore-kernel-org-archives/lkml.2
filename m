@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271Ab0GMVAW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 17:00:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18037 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752796Ab0GMVAV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 17:00:21 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, axboe@kernel.dk,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
-	<x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
-	<x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
-	<x49eif7p3z0.fsf@segfault.boston.devel.redhat.com>
-	<20100713195650.GA21044@redhat.com>
-	<x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Tue, 13 Jul 2010 17:00:16 -0400
-In-Reply-To: <x49aapvp1k0.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
-	message of "Tue, 13 Jul 2010 16:30:23 -0400")
-Message-ID: <x49630jp067.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1755963Ab0GMVCI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 17:02:08 -0400
+Received: from mx3-phx2.redhat.com ([209.132.183.24]:34129 "EHLO
+	mx01.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753237Ab0GMVCG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 17:02:06 -0400
+Date: Tue, 13 Jul 2010 17:01:57 -0400 (EDT)
+From: Michal Schmidt <mschmidt@redhat.com>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Hans Rosenfeld <hans.rosenfeld@amd.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Message-ID: <95386209.346271279054917131.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <909896077.345011279054483129.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
+Subject: Re: [PATCH 1/2] x86: fix keeping track of AMD C1E
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.71]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer <jmoyer@redhat.com> writes:
+----- "Borislav Petkov" <borislav.petkov@amd.com> wrote:
+> ... and this is strange, I didn't experience anything like that on
+> our X6 boxes here couple of months ago. But maybe something got changed
+> in later kernels to trigger that behavior. Michal, what chipset is that
+> and do you have the latest BIOS on it?
 
-> This, of course, raises the question of why the blk_yield patches didn't
-> run into the same problem.  Looking back at some saved traces, I don't
-> see WBS (write barrier sync) requests, so I wonder if barriers weren't
-> supported by my last storage system.
+The chipset is 890FX. Motherboard Asus M4A89TD PRO/USB3.
+BIOS is the latest version: 0901 (05/17/2010 according to dmidecode)
 
-So, I tested Corrado's approach with -o nobarrier, and here are the
-results:
+I found another person reporting the same symptoms on
+GIGABYTE GA-MA770T-UD3P AthlonXII 620 (4 cores) kernel 2.6.33.5 (Mandriva)
+(http://www.abclinuxu.cz/poradna/hardware/show/308799, in Czech)
 
-fs_mark: 363.291 files/sec
-fio: 38.5 MB/s
-
-I don't have time to analyze the data right now, and it's 600MB worth of
-binary output.  If you want, I can upload a representative sample
-somewhere, let me know.
-
-Anyway, I'll post an analysis tomorrow.
-
-Cheers,
-Jeff
+Michal
