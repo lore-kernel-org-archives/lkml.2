@@ -1,62 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757135Ab0GMRMK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 13:12:10 -0400
-Received: from smtprelay03.ispgateway.de ([80.67.31.30]:57593 "EHLO
-	smtprelay03.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757106Ab0GMRMI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 13:12:08 -0400
-References: <AANLkTin0mv0Z5vozJHkfVYCJTWMvj9JZnP_FcQ6vZBRV@mail.gmail.com> <20100713124840.GA16427@a1.tnic> <AANLkTimBhWKo0zxW6fX5RgLLAQVIdItS5RKpvxqkDlis@mail.gmail.com> <20100713151329.GA17516@a1.tnic>
-Message-ID: <cone.1279041124.439539.3902.1000@deskpiie>
-X-Mailer: http://www.courier-mta.org/cone/
-From: Peter Feuerer <peter@piie.net>
-To: Borislav Petkov <bp@alien8.de>
-Cc: Branislav Gajdos <brianzee@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: acerhdf.c - unsupported notebook
-Date: Tue, 13 Jul 2010 19:12:04 +0200
+	id S1757157Ab0GMRNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 13:13:14 -0400
+Received: from ns.penguin.cz ([84.21.108.25]:45065 "EHLO ns.penguin.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757112Ab0GMRNN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 13:13:13 -0400
+X-Greylist: delayed 1553 seconds by postgrey-1.27 at vger.kernel.org; Tue, 13 Jul 2010 13:13:12 EDT
+Subject: Re: usb gadget on zaurus and kexec
+From: Stanislav Brabec <utx@penguin.cz>
+To: Cyril Hrubis <metan@ucw.cz>
+Cc: Robert Jarzmik <robert.jarzmik@free.fr>,
+        Marek Vasut <marek.vasut@gmail.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Eric Miao <eric.y.miao@gmail.com>, dbaryshkov@gmail.com,
+        arminlitzel@web.de, kernel list <linux-kernel@vger.kernel.org>,
+        lenz@cs.wisc.edu, rpurdie@rpsys.net, pave@ucw.cz,
+        thommycheck@gmail.com, zaurus-devel@www.linuxtogo.org,
+        omegamoon@gmail.com
+In-Reply-To: <20100713112649.GA17065@atrey.karlin.mff.cuni.cz>
+References: <20100519154618.GA26381@atrey.karlin.mff.cuni.cz>
+	 <AANLkTim49akRJK0BN_Qk1wL6e5mrdjZioDjGNWlrjUVQ@mail.gmail.com>
+	 <AANLkTilCvgvf9Ch55f878nTNTue8tHYmcrLEywsjnylY@mail.gmail.com>
+	 <201006100900.23981.marek.vasut@gmail.com> <87wru7xc4z.fsf@free.fr>
+	 <20100713112649.GA17065@atrey.karlin.mff.cuni.cz>
+Content-Type: text/plain; charset="ISO-8859-2"
+Date: Tue, 13 Jul 2010 18:47:06 +0200
+Message-ID: <1279039626.9908.50.camel@hammer.suse.cz>
 Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset="US-ASCII"
-Content-Disposition: inline
+X-Mailer: Evolution 2.30.1.2 
 Content-Transfer-Encoding: 7bit
-X-Df-Sender: 404094
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Boris, Hi Branislav,
+Cyril Hrubis wrote:
 
-Borislav Petkov writes:
+> Would be great. So far the GPIO for usb host/slave cable detection is not used
+> on spitz so there is no way to switch to USB slave for gadgets to work if you
+> don't want to play with devmem2.
 
-> From: Branislav Gajdos <brianzee@gmail.com>
-> Date: Tue, Jul 13, 2010 at 04:27:37PM +0200
-> 
->> >> acerhdf: unknown (unsupported) BIOS version Acer/Aspire 3810T/V1.04,
->> >> please report, aborting!
+Well, just the driver is missing, the hardware is there. See attached
+usb-auto script using pxaregs utility.
 
-I'm wondering, why acerhdf is even loaded for your notebook, as no 
-MODULE_ALIAS matches:
+There is another issue in the gadget mode (probably including the latest
+kernels): If host mode is not active, it should turn USB power off. It
+does not, and it causes soft short circuit in client mode. It also makes
+impossible to differentiate between no cable and client cable.
 
-[...]
-MODULE_ALIAS("dmi:*:*Acer*:pnAOA*:");
-MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1410*:");
-MODULE_ALIAS("dmi:*:*Acer*:pnAspire 1810*:");
-MODULE_ALIAS("dmi:*:*Acer*:pnAO531*:");
-[...]
+Here are GPIOs to control OTG:
+SPITZ_GPIO_USB_DEVICE	GPIO35	USB Client power is present
+SPITZ_GPIO_USB_HOST	GPIO37	USB OTG 5V Host power supply control
+SPITZ_GPIO_USB_CONNECT	GPIO41	USB Host Cable is connected
 
-Which distribution do you use? Does the distribution somehow autoload acerhdf? Or do you manually load the driver?
+----------- usb-auto ----------
+#!/bin/sh
 
-> Peter, it looks like we support not only Atoms with that driver. Maybe
-> we should check the cpu specs of the 1810T for example (and google says
-> there are several different cpu types packaged with those laptops)
-> before we enforce temperature limits on them...? And let me ask you
-> this: are all those 1810T* entries in the bios_tbl there because of
-> noisy fans ...?
+if test -z "$CLIENT_MODULE" ; then
+# Uncomment client module you want by default (only one at a time is possible in 2.6.26RP):
+	CLIENT_MODULE=g_ether
+	#CLIENT_MODULE=g_file_storage
+fi
 
-Boris, I agree, we really should check the cpu specs. A quick search got me to this page: http://www.hardwaresecrets.com/article/Maximum-CPU-Temperature/143/5 where we clearly see, that the core 2 have much lower critical temperatures. 
-I added all those 1410* and 1810T* entries on behalf of people telling they'd have the fan control working with these lines for some weeks without problems and I didn't care about searching for the netbooks specifications. My fault.
+if test `pxaregs GPLR1_41 | sed -n 's/.*\(.\)  GPIO.*/\1/p'` = 0 ; then
+	echo "Host cable is present."
+	pxaregs GPSR1_37 1 # Turn on USB power
+	rmmod g_file_storage g_ether pxa27x_udc 2>/dev/null
+	sleep 1
+	modprobe ohci-hcd 2>/dev/null
+else
+	pxaregs GPCR1_37 1 # Turn off USB power
+	sleep 1 # Wait a bit to discharge capacitors
+	if test `pxaregs GPLR1_35 | sed -n 's/.*\(.\)  GPIO.*/\1/p'` = 0 ; then
+		echo "No cable in USB."
+		ifdown usb0 2>/dev/null
+		sleep 1
+		rmmod g_file_storage g_ether pxa27x_udc 2>/dev/null
+		sleep 1
+		rmmod ohci-hcd 2>/dev/null
+	else
+		echo "Client cable is present."
+		rmmod ohci-hcd 2>/dev/null
+		sleep 1
+		modprobe pxa27x_udc
+		modprobe $CLIENT_MODULE
+		ifup usb0 2>/dev/null
+	fi
+fi
+-------------------------------
 
-I would propose to enhance the bios_tbl by the default temperatures. What do you think?
+-- 
+Stanislav Brabec
+http://www.penguin.cz/~utx/zaurus
 
-thanks and kind regards,
---peter;
