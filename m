@@ -1,110 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab0GMJVl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 05:21:41 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:47421 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752600Ab0GMJVk (ORCPT
+	id S1754663Ab0GMJWS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 05:22:18 -0400
+Received: from esgaroth.petrovitsch.at ([78.47.184.11]:4694 "EHLO
+	esgaroth.petrovitsch.priv.at" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752414Ab0GMJWQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 05:21:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type;
-        b=qV6SG+itHbYmBpq9G6kivzSOW8OZoIe1VQ5/XgSG2nWdnDc9RF/g6ZG9ZhSsfRWLDK
-         DfyLtzjg7z44K4VWRP3ozjskfSDzM3EaubevNMeBawNqrHzXuIx+VjE719NpGJvrqBeU
-         bWtfArYVr3QJhaM5NmCNnSuoFMZcqhqHgcGyA=
-Message-ID: <4C3C3018.3080508@gmail.com>
-Date: Tue, 13 Jul 2010 11:21:28 +0200
-From: =?UTF-8?B?VmxhZGltaXIgJ8+GLWNvZGVyL3BoY29kZXInIFNlcmJpbmVua28=?= 
-	<phcoder@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
-MIME-Version: 1.0
-To: grub-devel@gnu.org
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Fix for relocatable PowerPC kernels
-References: <20100713054523.GC10155@kryten>
-In-Reply-To: <20100713054523.GC10155@kryten>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha512;
- protocol="application/pgp-signature";
- boundary="------------enig36EF15B636270CE21977E02E"
+	Tue, 13 Jul 2010 05:22:16 -0400
+X-DKIM: Sendmail DKIM Filter v2.8.3 unknown-host o6D9LuKl028414
+Subject: Re: [PATCH] Staging: vt6656: Change the define FALSE and TRUE to
+ the lower case variant.
+From: Bernd Petrovitsch <bernd@petrovitsch.priv.at>
+To: Roel Van Nyen <roel.vannyen@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Forest Bond <forest@alittletooquiet.net>, linux-kernel@vger.kernel.org
+In-Reply-To: <1278969997-24254-1-git-send-email-roel.vannyen@gmail.com>
+References: <1278969997-24254-1-git-send-email-roel.vannyen@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Jul 2010 11:21:55 +0200
+Message-ID: <1279012915.28403.235.camel@thorin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-DCC-wuwien-Metrics: esgaroth.petrovitsch.priv.at; whitelist
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enig36EF15B636270CE21977E02E
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+Hi!
 
-On 07/13/2010 07:45 AM, Anton Blanchard wrote:
-> Hi,
->
-> PowerPC Linux kernels can now be built relocatable so we need to check
-> for that in the loader.
->
-> Anton
->
->  =20
-Is building as ET_DYN supported upstream? We previously had reports of
-building system of some distros to be plainly borked and usualy the
-distro fixed their building system pretty fast. If upstream supports
-ET_DYN, then this patch is accepted with no further questions. But if
-it's a borked building system it may have subtle bugs and allowing it
-would probably just suppress an early symptom of other problems.
-> --
->
-> 2010-07-13  Anton Blanchard  <anton@samba.org>
->
-> 	* loader/powerpc/ieee1275/linux.c (grub_cmd_linux): Do not reject
-> 	ET_DYN files.
->
-> Index: grub/loader/powerpc/ieee1275/linux.c
-> =3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=
-=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D=3D
-> --- grub.orig/loader/powerpc/ieee1275/linux.c	2010-07-11 12:05:16.44324=
-2734 +1000
-> +++ grub/loader/powerpc/ieee1275/linux.c	2010-07-12 14:56:20.301991065 =
-+1000
-> @@ -220,7 +220,7 @@ grub_cmd_linux (grub_command_t cmd __att
->    if (! elf)
->      goto out;
-> =20
-> -  if (elf->ehdr.ehdr32.e_type !=3D ET_EXEC)
-> +  if (elf->ehdr.ehdr32.e_type !=3D ET_EXEC && elf->ehdr.ehdr32.e_type =
-!=3D ET_DYN)
->      {
->        grub_error (GRUB_ERR_UNKNOWN_OS,
->  		  "this ELF file is not of the right type");
->
-> _______________________________________________
-> Grub-devel mailing list
-> Grub-devel@gnu.org
-> http://lists.gnu.org/mailman/listinfo/grub-devel
->
->  =20
+On Mon, 2010-07-12 at 23:26 +0200, Roel Van Nyen wrote:
+[...]
+> @@ -178,7 +178,7 @@ vMgrDecodeBeacon(
+>              break;
+>          case WLAN_EID_RSN_WPA:
+>              if (pFrame->pRSNWPA == NULL) {
+> -                if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
+> +                if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == true)
+>                      pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
+>              }
+>              break;
 
+Am I the only one who thinks that this should better be
+----  snip  ----
+@@ -178,7 +178,7 @@ vMgrDecodeBeacon(
+             break;
+         case WLAN_EID_RSN_WPA:
+             if (pFrame->pRSNWPA == NULL) {
+-                if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem) == TRUE)
++                if (WPAb_Is_RSN((PWLAN_IE_RSN_EXT)pItem))
+                     pFrame->pRSNWPA = (PWLAN_IE_RSN_EXT)pItem;
+             }
+             break;
+----  snip  ----
+- if only for readability and understandability?
 
---=20
-Regards
-Vladimir '=CF=86-coder/phcoder' Serbinenko
+	Bernd
+-- 
+Bernd Petrovitsch                  Email : bernd@petrovitsch.priv.at
+                     LUGA : http://www.luga.at
 
-
-
---------------enig36EF15B636270CE21977E02E
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Using GnuPG with Mozilla - http://enigmail.mozdev.org/
-
-iF4EAREKAAYFAkw8MBgACgkQNak7dOguQgmL7wD/Y3OJ6bfC/WqgQwivbumZnPDC
-LOM0HXsT41f/tLbM/b4BAJSwc4PQ2AceqpqF9DSzv9dcftA67DJT4Ef3ROWG4LlF
-=c0kb
------END PGP SIGNATURE-----
-
---------------enig36EF15B636270CE21977E02E--
