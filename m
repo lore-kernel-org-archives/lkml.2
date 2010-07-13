@@ -1,59 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751825Ab0GME4p (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 00:56:45 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:36456 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751231Ab0GME4m (ORCPT
+	id S1751559Ab0GME7T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 00:59:19 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:52135 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751113Ab0GME7R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 00:56:42 -0400
-From: Conke Hu <conke@maxwit.com>
-To: support@simtec.co.uk, linux@simtec.co.uk, ben-linux@fluff.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-Cc: Conke Hu <conke@maxwit.com>
-Subject: [PATCH] s3c nand: parsing commad-line partitions prior to set->partitions
-Date: Tue, 13 Jul 2010 12:56:30 +0800
-Message-Id: <1278996990-4380-1-git-send-email-conke@maxwit.com>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 13 Jul 2010 00:59:17 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH] vmscan: stop meaningless loop iteration when no reclaimable slab
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <alpine.DEB.2.00.1007090859560.30663@router.home>
+References: <20100709191308.FA25.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1007090859560.30663@router.home>
+Message-Id: <20100713135817.EA4F.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Tue, 13 Jul 2010 13:59:11 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Current driver prevents command-line partitions from being parsed when built-in 
-partitions are defined in s3c2410_nand_set object, but it is not desirable in some 
-cases. This patch tries to parse commad-line partitions prior to the built-in.
+> On Fri, 9 Jul 2010, KOSAKI Motohiro wrote:
+> 
+> > If number of reclaimable slabs are zero, shrink_icache_memory() and
+> > shrink_dcache_memory() return 0. but strangely shrink_slab() ignore
+> > it and continue meaningless loop iteration.
+> 
+> There is also a per zone/node/global counter SLAB_RECLAIM_ACCOUNT that
+> could be used to determine if its worth looking at things at all. I saw
+> some effort going into making the shrinkers zone aware. If so then we may
+> be able to avoid scanning slabs.
 
-Signed-off-by: Conke Hu <conke@maxwit.com>
----
- drivers/mtd/nand/s3c2410.c |   15 ++++++---------
- 1 files changed, 6 insertions(+), 9 deletions(-)
+Yup.
+After to merge nick's effort, we can makes more imrovement. I bet :)
 
-diff --git a/drivers/mtd/nand/s3c2410.c b/drivers/mtd/nand/s3c2410.c
-index 239aadf..33d832d 100644
---- a/drivers/mtd/nand/s3c2410.c
-+++ b/drivers/mtd/nand/s3c2410.c
-@@ -727,15 +727,12 @@ static int s3c2410_nand_add_partition(struct s3c2410_nand_info *info,
- 	if (set == NULL)
- 		return add_mtd_device(&mtd->mtd);
- 
--	if (set->nr_partitions == 0) {
--		mtd->mtd.name = set->name;
--		nr_part = parse_mtd_partitions(&mtd->mtd, part_probes,
--						&part_info, 0);
--	} else {
--		if (set->nr_partitions > 0 && set->partitions != NULL) {
--			nr_part = set->nr_partitions;
--			part_info = set->partitions;
--		}
-+	mtd->mtd.name = set->name;
-+	nr_part = parse_mtd_partitions(&mtd->mtd, part_probes, &part_info, 0);
-+
-+	if (nr_part <= 0 && set->nr_partitions > 0) {
-+		nr_part = set->nr_partitions;
-+		part_info = set->partitions;
- 	}
- 
- 	if (nr_part > 0 && part_info)
--- 
-1.7.0.4
+
+
 
