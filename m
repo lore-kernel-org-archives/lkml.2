@@ -1,61 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753780Ab0GMIql (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 04:46:41 -0400
-Received: from sh.osrg.net ([192.16.179.4]:39418 "EHLO sh.osrg.net"
+	id S1753237Ab0GMIu3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 04:50:29 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:50779 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752829Ab0GMIqk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 04:46:40 -0400
-Date: Tue, 13 Jul 2010 17:45:39 +0900
-To: alan@lxorguk.ukuu.org.uk
-Cc: fujita.tomonori@lab.ntt.co.jp, zpfeffer@codeaurora.org, joro@8bytes.org,
-        dwalker@codeaurora.org, andi@firstfloor.org, randy.dunlap@oracle.com,
-        mel@csn.ul.ie, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-        linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100713094244.7eb84f1b@lxorguk.ukuu.org.uk>
-References: <20100713092012.7c1fe53e@lxorguk.ukuu.org.uk>
-	<20100713173028M.fujita.tomonori@lab.ntt.co.jp>
-	<20100713094244.7eb84f1b@lxorguk.ukuu.org.uk>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100713174519D.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Tue, 13 Jul 2010 17:45:43 +0900 (JST)
+	id S1751253Ab0GMIu2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 04:50:28 -0400
+Date: Tue, 13 Jul 2010 10:50:19 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+Subject: Re: perf failed with kernel 2.6.35-rc
+Message-ID: <20100713085019.GB7984@elte.hu>
+References: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010 09:42:44 +0100
-Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-> On Tue, 13 Jul 2010 17:30:43 +0900
-> FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> 
-> > On Tue, 13 Jul 2010 09:20:12 +0100
-> > Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> > 
-> > > > Why video4linux can't use the DMA API? Doing DMA with vmalloc'ed
-> > > > buffers is a thing that we should avoid (there are some exceptions
-> > > > like xfs though).
-> > > 
-> > > Vmalloc is about the only API for creating virtually linear memory areas.
-> > > The video stuff really needs that to avoid lots of horrible special cases
-> > > when doing buffer processing and the like.
-> > > 
-> > > Pretty much each driver using it has a pair of functions 'rvmalloc' and
-> > > 'rvfree' so given a proper "vmalloc_for_dma()" type interface can easily
-> > > be switched
-> > 
-> > We already have helper functions for DMA with vmap pages,
-> > flush_kernel_vmap_range and invalidate_kernel_vmap_range.
-> 
-> I'm not sure they help at all because the DMA user for these pages isn't
-> the video driver - it's the USB layer, and the USB layer isn't
-> specifically aware it is being passed vmap pages.
+* Zhang, Yanmin <yanmin_zhang@linux.intel.com> wrote:
 
-Drivers can tell the USB layer that these are vmapped buffers? Adding
-something to struct urb? I might be totally wrong since I don't know
-anything about the USB layer.
+> Peter,
+> 
+> perf doesn't work on my Nehalem EX machine.
+> 1) The 1st start of 'perf top' is ok;
+> 2) Kill the 1st perf and restart it. It doesn't work. No data is showed.
+> 
+> I located below commit:
+> commit 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+> Author: Peter Zijlstra <peterz@infradead.org>
+> Date:   Fri Mar 26 14:08:44 2010 +0100
+> 
+>     perf, x86: Add Nehelem PMU programming errata workaround
+>     
+>     workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>     Date: Fri Mar 26 13:59:41 CET 2010
+>     
+>     Implement the workaround for Intel Errata AAK100 and AAP53.
+>     
+>     Also, remove the Core-i7 name for Nehalem events since there are
+>     also Westmere based i7 chips.
+> 
+> 
+> If I comment out the workaround in function intel_pmu_nhm_enable_all,
+> perf could work.
+> 
+> A quick glance shows:
+> wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+> should be:
+> wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+
+> I triggered sysrq to dump PMU registers and found the last bit of
+> global status register is 1. I added a status reset operation like below patch:
+> 
+> --- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 09:38:11.000000000 +0800
+> +++ linux-2.6.35-rc5_fork/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 14:41:42.000000000 +0800
+> @@ -505,8 +505,13 @@ static void intel_pmu_nhm_enable_all(int
+>  		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
+>  		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
+>  
+> -		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+> +		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+>  		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
+> +		/*
+> +		 * Reset the last 3 bits of global status register in case
+> +		 * previous enabling causes overflows.
+> +		 */
+> +		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+>  
+>  		for (i = 0; i < 3; i++) {
+>  			struct perf_event *event = cpuc->events[i];
+>
+> 
+> However, it still doesn't work. Current right way is to comment out
+> the workaround.
+
+Well, how about doing it like this:
+
+		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+		/*
+		 * Reset the last 3 bits of global status register in case
+		 * previous enabling causes overflows.
+		 */
+		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+  
+ 		for (i = 0; i < 3; i++) {
+  			struct perf_event *event = cpuc->events[i];
+			...
+		}
+
+  		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
+
+I.e. global-mask, overflow-clear, explicit-enable, then global-enable?
+
+Thanks,
+
+	Ingo
