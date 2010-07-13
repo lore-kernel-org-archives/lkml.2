@@ -1,275 +1,423 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751255Ab0GMEwJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 00:52:09 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:38362 "EHLO
+	id S1751421Ab0GME4e (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 00:56:34 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:60311 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750830Ab0GMEwH (ORCPT
+	by vger.kernel.org with ESMTP id S1750747Ab0GME4c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 00:52:07 -0400
-X-Sasl-enc: UvL/nxolJrlFRUZhpoYBQscjYXVXzMnoYARd0iNY/ziH 1278996724
-Date: Tue, 13 Jul 2010 12:51:57 +0800
+	Tue, 13 Jul 2010 00:56:32 -0400
+X-Sasl-enc: QW1JyZvl4+SrP13C+tCFAUlLmp6yUOqk41URcek16UWT 1278996989
+Date: Tue, 13 Jul 2010 12:56:20 +0800
 From: Ian Kent <raven@themaw.net>
 To: Valerie Aurora <vaurora@redhat.com>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Felix Fietkau <nbd@openwrt.org>
-Subject: Re: [PATCH 24/38] union-mount: Copy up directory entries on first
- readdir()
-Message-ID: <20100713045156.GH3949@zeus.themaw.net>
+        linux-fsdevel@vger.kernel.org, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH 27/38] union-mount: In-kernel file copyup routines
+Message-ID: <20100713045619.GI3949@zeus.themaw.net>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
- <1276627208-17242-25-git-send-email-vaurora@redhat.com>
+ <1276627208-17242-28-git-send-email-vaurora@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276627208-17242-25-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1276627208-17242-28-git-send-email-vaurora@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 11:39:54AM -0700, Valerie Aurora wrote:
-> readdir() in union mounts is implemented by copying up all visible
-> directory entries from the lower level directories to the topmost
-> directory.  Directory entries that refer to lower level file system
-> objects are marked as "fallthru" in the topmost directory.
+On Tue, Jun 15, 2010 at 11:39:57AM -0700, Valerie Aurora wrote:
+> When a file on the read-only layer of a union mount is altered, it
+> must be copied up to the topmost read-write layer.  This patch creates
+> union_copyup() and its supporting routines.
 > 
-> Thanks to Felix Fietkau <nbd@openwrt.org> for a bug fix.
+> Thanks to Valdis Kletnieks for a bug fix.
 > 
-> XXX - How to deal with fallthrus in lower layers?
-> 
-> Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-> Signed-off-by: Felix Fietkau <nbd@openwrt.org>
+> Cc: Valdis.Kletnieks@vt.edu
 > ---
->  fs/readdir.c |    9 +++
->  fs/union.c   |  157 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
->  fs/union.h   |    2 +
->  3 files changed, 168 insertions(+), 0 deletions(-)
+>  fs/union.c |  323 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/union.h |    7 +-
+>  2 files changed, 329 insertions(+), 1 deletions(-)
 > 
-> diff --git a/fs/readdir.c b/fs/readdir.c
-> index 3a48491..dd3eae1 100644
-> --- a/fs/readdir.c
-> +++ b/fs/readdir.c
-> @@ -19,6 +19,8 @@
->  
->  #include <asm/uaccess.h>
->  
-> +#include "union.h"
-> +
->  int vfs_readdir(struct file *file, filldir_t filler, void *buf)
->  {
->  	struct inode *inode = file->f_path.dentry->d_inode;
-> @@ -36,9 +38,16 @@ int vfs_readdir(struct file *file, filldir_t filler, void *buf)
->  
->  	res = -ENOENT;
->  	if (!IS_DEADDIR(inode)) {
-> +		if (IS_DIR_UNIONED(file->f_path.dentry) && !IS_OPAQUE(inode)) {
-> +			res = union_copyup_dir(&file->f_path);
-> +			if (res)
-> +				goto out_unlock;
-> +		}
-> +
->  		res = file->f_op->readdir(file, buf, filler);
->  		file_accessed(file);
->  	}
-> +out_unlock:
->  	mutex_unlock(&inode->i_mutex);
->  out:
->  	return res;
 > diff --git a/fs/union.c b/fs/union.c
-> index c089c02..76a6c34 100644
+> index 76a6c34..0982446 100644
 > --- a/fs/union.c
 > +++ b/fs/union.c
-> @@ -22,6 +22,8 @@
->  #include <linux/fs_struct.h>
->  #include <linux/slab.h>
+> @@ -24,6 +24,8 @@
 >  #include <linux/namei.h>
-> +#include <linux/file.h>
-> +#include <linux/security.h>
+>  #include <linux/file.h>
+>  #include <linux/security.h>
+> +#include <linux/splice.h>
+> +#include <linux/xattr.h>
 >  
 >  #include "union.h"
 >  
-> @@ -211,3 +213,158 @@ int union_create_topmost_dir(struct path *parent, struct qstr *name,
+> @@ -191,6 +193,72 @@ int needs_lookup_union(struct path *parent_path, struct path *path)
+>  	return 1;
+>  }
 >  
+> +/**
+> + * union_copyup_xattr
+> + *
+> + * @old: dentry of original file
+> + * @new: dentry of new copy
+> + *
+> + * Copy up extended attributes from the original file to the new one.
+> + *
+> + * XXX - Permissions?  For now, copying up every xattr.
+> + */
+> +
+> +static int union_copyup_xattr(struct dentry *old, struct dentry *new)
+> +{
+> +	ssize_t list_size, size;
+> +	char *buf, *name, *value;
+> +	int error;
+> +
+> +	/* Check for xattr support */
+> +	if (!old->d_inode->i_op->getxattr ||
+> +	    !new->d_inode->i_op->getxattr)
+> +		return 0;
+> +
+> +	/* Find out how big the list of xattrs is */
+> +	list_size = vfs_listxattr(old, NULL, 0);
+> +	if (list_size <= 0)
+> +		return list_size;
+> +
+> +	/* Allocate memory for the list */
+> +	buf = kzalloc(list_size, GFP_KERNEL);
+> +	if (!buf)
+> +		return -ENOMEM;
+> +
+> +	/* Allocate memory for the xattr's value */
+> +	error = -ENOMEM;
+> +	value = kmalloc(XATTR_SIZE_MAX, GFP_KERNEL);
+> +	if (!value)
+> +		goto out;
+> +
+> +	/* Actually get the list of xattrs */
+> +	list_size = vfs_listxattr(old, buf, list_size);
+> +	if (list_size <= 0) {
+> +		error = list_size;
+> +		goto out_free_value;
+> +	}
+> +
+> +	for (name = buf; name < (buf + list_size); name += strlen(name) + 1) {
+> +		/* XXX Locking? old is on read-only fs */
+> +		size = vfs_getxattr(old, name, value, XATTR_SIZE_MAX);
+> +		if (size <= 0) {
+> +			error = size;
+> +			goto out_free_value;
+> +		}
+> +		/* XXX do we really need to check for size overflow? */
+> +		/* XXX locks new dentry, lock ordering problems? */
+> +		error = vfs_setxattr(new, name, value, size, 0);
+> +		if (error)
+> +			goto out_free_value;
+> +	}
+> +
+> +out_free_value:
+> +	kfree(value);
+> +out:
+> +	kfree(buf);
+> +	return error;
+> +}
+> +
+>  /*
+>   * union_create_topmost_dir - Create a matching dir in the topmost file system
+>   */
+> @@ -209,6 +277,13 @@ int union_create_topmost_dir(struct path *parent, struct qstr *name,
+>  
+>  	res = vfs_mkdir(parent->dentry->d_inode, topmost->dentry, mode);
+>  
+> +	if (res)
+> +		goto out;
+> +
+> +	res = union_copyup_xattr(lower->dentry, topmost->dentry);
+> +	if (res)
+> +		dput(topmost->dentry);
+> +out:
+>  	mnt_drop_write(parent->mnt);
+>  
+>  	return res;
+> @@ -368,3 +443,251 @@ out_fput:
+>  	mnt_drop_write(topmost_path->mnt);
 >  	return res;
 >  }
 > +
 > +/**
-> + * union_copyup_dir_one - copy up a single directory entry
+> + * union_create_file
 > + *
-> + * Individual directory entry copyup function for union_copyup_dir.
-> + * We get the entries from higher level layers first.
+> + * @nd: namediata for source file
+> + * @old: path of the source file
+> + * @new: path of the new file, negative dentry
+> + *
+> + * Must already have mnt_want_write() on the mnt and the parent's
+> + * i_mutex.
 > + */
 > +
-> +static int union_copyup_dir_one(void *buf, const char *name, int namlen,
-> +				loff_t offset, u64 ino, unsigned int d_type)
+> +static int union_create_file(struct nameidata *nd, struct path *old,
+> +			     struct dentry *new)
 > +{
-> +	struct dentry *topmost_dentry = (struct dentry *) buf;
-> +	struct dentry *dentry;
-> +	int err = 0;
+> +	struct path *parent = &nd->path;
+> +	BUG_ON(!mutex_is_locked(&parent->dentry->d_inode->i_mutex));
 > +
-> +	switch (namlen) {
-> +	case 2:
-> +		if (name[1] != '.')
-> +			break;
-> +	case 1:
-> +		if (name[0] != '.')
-> +			break;
-> +		return 0;
-> +	}
-> +
-> +	/* Lookup this entry in the topmost directory */
-> +	dentry = lookup_one_len(name, topmost_dentry, namlen);
-> +
-> +	if (IS_ERR(dentry)) {
-> +		printk(KERN_WARNING "%s: error looking up %s\n", __func__,
-> +		       dentry->d_name.name);
-> +		err = PTR_ERR(dentry);
-> +		goto out;
-> +	}
-> +
-> +	/*
-> +	 * If the entry already exists, one of the following is true:
-> +	 * it was already copied up (due to an earlier lookup), an
-> +	 * entry with the same name already exists on the topmost file
-> +	 * system, it is a whiteout, or it is a fallthru.  In each
-> +	 * case, the top level entry masks any entries from lower file
-> +	 * systems, so don't copy up this entry.
-> +	 */
-> +	if (dentry->d_inode || d_is_whiteout(dentry) || d_is_fallthru(dentry))
-> +		goto out_dput;
-> +
-> +	/*
-> +	 * If the entry doesn't exist, create a fallthru entry in the
-> +	 * topmost file system.  All possible directory types are
-> +	 * used, so each file system must implement its own way of
-> +	 * storing a fallthru entry.
-> +	 */
-> +	err = topmost_dentry->d_inode->i_op->fallthru(topmost_dentry->d_inode,
-> +						      dentry);
-
-There's a bit of indirection going on here so it isn't clear to me if
-it is possible for i_op->fallthru() to ever be NULL?
-
-> +out_dput:
-> +	dput(dentry);
-> +out:
-> +	return err;
+> +	return vfs_create(parent->dentry->d_inode, new,
+> +			  old->dentry->d_inode->i_mode, nd);
 > +}
 > +
 > +/**
-> + * union_copyup_dir - copy up low-level directory entries to topmost dir
+> + * union_create_symlink
 > + *
-> + * readdir() is difficult to support on union file systems for two
-> + * reasons: We must eliminate duplicates and apply whiteouts, and we
-> + * must return something in f_pos that lets us restart in the same
-> + * place when we return.  Our solution is to, on first readdir() of
-> + * the directory, copy up all visible entries from the low-level file
-> + * systems and mark the entries that refer to low-level file system
-> + * objects as "fallthru" entries.
+> + * @nd: namediata for source symlink
+> + * @old: path of the source symlink
+> + * @new: path of the new symlink, negative dentry
 > + *
-> + * Locking strategy: We hold the topmost dir's i_mutex on entry.  We
-> + * grab the i_mutex on lower directories one by one.  So the locking
-> + * order is:
-> + *
-> + * Writable/topmost layers > Read-only/lower layers
-> + *
-> + * So there is no problem with lock ordering for union stacks with
-> + * multiple lower layers.  E.g.:
-> + *
-> + * (topmost) A->B->C (bottom)
-> + * (topmost) D->C->B (bottom)
-> + *
-> + * (Not that we support more than two layers at the moment.)
+> + * Must already have mnt_want_write() on the mnt and the parent's
+> + * i_mutex.
 > + */
 > +
-> +int union_copyup_dir(struct path *topmost_path)
+> +static int union_create_symlink(struct nameidata *nd, struct path *old,
+> +				struct dentry *new)
 > +{
-> +	struct dentry *topmost_dentry = topmost_path->dentry;
-> +	struct union_dir *ud;
-> +	int res = 0;
+> +	void *cookie;
+> +	int error;
 > +
-> +	BUG_ON(IS_OPAQUE(topmost_dentry->d_inode));
-> +
-> +	res = mnt_want_write(topmost_path->mnt);
-> +	if (res)
-> +		return res;
+> +	BUG_ON(!mutex_is_locked(&nd->path.dentry->d_inode->i_mutex));
 > +	/*
-> +	 * Mark this dir opaque to show that we have already copied up
-> +	 * the lower entries.  Only fallthru entries pass through to
-> +	 * the underlying file system.
+> +	 * We want the contents of this symlink, not to follow it, so
+> +	 * this is modeled on generic_readlink() rather than
+> +	 * do_follow_link().
 > +	 */
-> +	topmost_dentry->d_inode->i_flags |= S_OPAQUE;
-> +	mark_inode_dirty(topmost_dentry->d_inode);
-> +
-> +	for (ud = topmost_path->dentry->d_union_dir; ud != NULL; ud = ud->u_lower) {
-> +		struct file * ftmp;
-> +		struct inode * inode;
-> +		struct path path;
-> +
-> +		BUG_ON(ud->u_this.dentry->d_count.counter == 0);
-> +		path = ud->u_this;
-> +		/* dentry_open() doesn't get a path reference itself */
-> +		path_get(&path);
-> +		ftmp = dentry_open(path.dentry, path.mnt,
-> +				   O_RDONLY | O_DIRECTORY | O_NOATIME,
-> +				   current_cred());
-> +		if (IS_ERR(ftmp)) {
-> +			printk (KERN_ERR "unable to open dir %s for "
-> +				"directory copyup: %ld\n",
-> +				path.dentry->d_name.name, PTR_ERR(ftmp));
-> +			path_put(&path);
-> +			continue;
-> +		}
-> +
-> +		inode = path.dentry->d_inode;
-> +		mutex_lock(&inode->i_mutex);
-> +
-> +		res = -ENOENT;
-> +		if (IS_DEADDIR(inode))
-> +			goto out_fput;
-> +		/*
-> +		 * Read the whole directory, calling our directory
-> +		 * entry copyup function on each entry.  Pass in the
-> +		 * topmost dentry as our private data so we can create
-> +		 * new entries in the topmost directory.
-> +		 */
-> +		res = ftmp->f_op->readdir(ftmp, topmost_dentry,
-> +					  union_copyup_dir_one);
-> +out_fput:
-> +		mutex_unlock(&inode->i_mutex);
-> +		fput(ftmp);
-> +
-> +		if (res)
-> +			break;
-> +
-> +		/* XXX Should process directories below an opaque
-> +		 * directory in case there are fallthrus in it */
-> +		if (IS_OPAQUE(path.dentry->d_inode))
-> +			break;
-> +
-> +	}
-> +	mnt_drop_write(topmost_path->mnt);
-> +	return res;
+> +	nd->depth = 0;
+> +	cookie = old->dentry->d_inode->i_op->follow_link(old->dentry, nd);
+> +	if (IS_ERR(cookie))
+> +		return PTR_ERR(cookie);
+> +	/* Create a copy of the link on the top layer */
+> +	error = vfs_symlink(nd->path.dentry->d_inode, new,
+> +			    nd_get_link(nd));
+> +	if (old->dentry->d_inode->i_op->put_link)
+> +		old->dentry->d_inode->i_op->put_link(old->dentry, nd, cookie);
+> +	return error;
 > +}
+> +
+> +/**
+> + * union_copyup_data - Copy up len bytes of old's data to new
+> + *
+> + * @old: path of source file
+> + * @new_mnt: vfsmount of target file
+> + * @new_dentry: dentry of target file
+> + * @len: number of bytes to copy
+> + */
+> +
+> +static int union_copyup_data(struct path *old, struct vfsmount *new_mnt,
+> +			     struct dentry *new_dentry, size_t len)
+> +{
+> +	struct file *old_file;
+> +	struct file *new_file;
+> +	const struct cred *cred = current_cred();
+> +	loff_t offset = 0;
+> +	long bytes;
+> +	int error = 0;
+> +
+> +	if (len == 0)
+> +		return 0;
+> +
+> +	/* Get reference to balance later fput() */
+> +	path_get(old);
+> +	old_file = dentry_open(old->dentry, old->mnt, O_RDONLY, cred);
+> +	if (IS_ERR(old_file))
+> +		return PTR_ERR(old_file);
+> +
+> +	mntget(new_mnt);
+> +	dget(new_dentry);
+> +	new_file = dentry_open(new_dentry, new_mnt, O_WRONLY, cred);
+> +	if (IS_ERR(new_file)) {
+> +		error = PTR_ERR(new_file);
+> +		goto out_fput;
+> +	}
+> +
+> +	bytes = do_splice_direct(old_file, &offset, new_file, len,
+> +				 SPLICE_F_MOVE);
+> +	if (bytes < 0)
+> +		error = bytes;
+> +
+> +	fput(new_file);
+> +out_fput:
+> +	fput(old_file);
+> +	return error;
+> +}
+> +
+> +/**
+> + * __union_copyup_len - Copy up a file and len bytes of data
+> + *
+> + * @nd: nameidata for topmost parent dir
+> + * @path: path of file to be copied up
+> + * @len: number of bytes of file data to copy up
+> + *
+> + * Parent's i_mutex must be held by caller.  Newly copied up path is
+> + * returned in @path and original is path_put().
+> + */
+> +
+> +static int __union_copyup_len(struct nameidata *nd, struct path *path,
+> +			      size_t len)
+> +{
+> +	struct path *parent = &nd->path;
+> +	struct dentry *dentry;
+> +	int error;
+> +
+> +	BUG_ON(!mutex_is_locked(&parent->dentry->d_inode->i_mutex));
+> +
+> +	dentry = lookup_one_len(path->dentry->d_name.name, parent->dentry,
+> +				path->dentry->d_name.len);
+> +	if (IS_ERR(dentry))
+> +		return PTR_ERR(dentry);
+> +
+> +	if (dentry->d_inode) {
+> +		/*
+> +		 * We raced with someone else and "lost."  That's
+> +		 * okay, they did all the work of copying up the file.
+> +		 * Note that currently data copyup happens under the
+> +		 * parent dir's i_mutex.  If we move it outside that,
+> +		 * we'll need some way of waiting for the data copyup
+> +		 * to complete here.
+> +		 */
+> +		error = 0;
+> +		goto out_newpath;
+> +	}
+> +	if (S_ISREG(path->dentry->d_inode->i_mode)) {
+> +		/* Create file */
+> +		error = union_create_file(nd, path, dentry);
+> +		if (error)
+> +			goto out_dput;
+> +		/* Copyup data */
+> +		error = union_copyup_data(path, parent->mnt, dentry, len);
+> +	} else {
+> +		BUG_ON(!S_ISLNK(path->dentry->d_inode->i_mode));
+> +		error = union_create_symlink(nd, path, dentry);
+> +	}
+> +	if (error) {
+> +		/* Most likely error: ENOSPC */
+> +		vfs_unlink(parent->dentry->d_inode, dentry);
+> +		goto out_dput;
+> +	}
+> +	/* XXX Copyup xattrs and any other dangly bits */
+> +	error = union_copyup_xattr(path->dentry, dentry);
+> +	if (error)
+> +		goto out_dput;
+> +out_newpath:
+> +	/* path_put() of original must happen before we copy in new */
+> +	path_put(path);
+> +	path->dentry = dentry;
+> +	path->mnt = mntget(parent->mnt);
+> +	return error;
+> +out_dput:
+> +	/* Don't path_put(path), let caller unwind */
+> +	dput(dentry);
+> +	return error;
+> +}
+> +
+> +/**
+> + * do_union_copyup_len - Copy up a file given its path (and its parent's)
+> + *
+> + * @nd: nameidata for topmost parent dir
+> + * @path: path of file to be copied up
+> + * @copy_all: if set, copy all of the file's data and ignore @len
+> + * @len: if @copy_all is not set, number of bytes of file data to copy up
+> + *
+> + * Newly copied up path is returned in @path.
+> + */
+> +
+> +static int do_union_copyup_len(struct nameidata *nd, struct path *path,
+> +			       int copy_all, size_t len)
+> +{
+> +	struct path *parent = &nd->path;
+> +	int error;
+> +
+> +	if (!IS_DIR_UNIONED(parent->dentry))
+> +		return 0;
+> +	if (parent->mnt == path->mnt)
+> +		return 0;
+> +	if (!S_ISREG(path->dentry->d_inode->i_mode) &&
+> +	    !S_ISLNK(path->dentry->d_inode->i_mode))
+> +		return 0;
+> +
+> +	BUG_ON(!S_ISDIR(parent->dentry->d_inode->i_mode));
+> +
+> +	mutex_lock(&parent->dentry->d_inode->i_mutex);
+> +	error = -ENOENT;
+> +	if (IS_DEADDIR(parent->dentry->d_inode))
+> +		goto out_unlock;
+> +
+> +	if (copy_all && S_ISREG(path->dentry->d_inode->i_mode)) {
+> +		error = -EFBIG;
+> +		len = i_size_read(path->dentry->d_inode);
+> +		if (((size_t)len != len) || ((ssize_t)len != len))
+> +			goto out_unlock;
+
+OK, call me dumb, but what does this comparison of len to len do?
+
+> +	}
+> +
+> +	error = __union_copyup_len(nd, path, len);
+> +
+> +out_unlock:
+> +	mutex_unlock(&parent->dentry->d_inode->i_mutex);
+> +	return error;
+> +}
+> +
+> +/*
+> + * Helper function to copy up all of a file
+> + */
+> +int union_copyup(struct nameidata *nd, struct path *path)
+> +{
+> +	return do_union_copyup_len(nd, path, 1, 0);
+> +}
+> +
+> +/*
+> + * Unlocked helper function to copy up all of a file
+> + */
+> +int __union_copyup(struct nameidata *nd, struct path *path)
+> +{
+> +	size_t len;
+> +	len = i_size_read(path->dentry->d_inode);
+> +	if (((size_t)len != len) || ((ssize_t)len != len))
+> +		return -EFBIG;
+> +
+> +	return __union_copyup_len(nd, path, len);
+> +}
+> +
+> +/*
+> + * Helper function to copy up part of a file
+> + */
+> +int union_copyup_len(struct nameidata *nd, struct path *path, size_t len)
+> +{
+> +	return do_union_copyup_len(nd, path, 0, len);
+> +}
+> +
 > diff --git a/fs/union.h b/fs/union.h
-> index 505f132..80c2421 100644
+> index 80c2421..01fa183 100644
 > --- a/fs/union.h
 > +++ b/fs/union.h
-> @@ -58,6 +58,7 @@ extern void d_free_unions(struct dentry *);
->  int needs_lookup_union(struct path *, struct path *);
+> @@ -59,7 +59,9 @@ int needs_lookup_union(struct path *, struct path *);
 >  int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
 >  			     struct path *);
-> +extern int union_copyup_dir(struct path *);
->  
+>  extern int union_copyup_dir(struct path *);
+> -
+> +extern int union_copyup(struct nameidata *, struct path *);
+> +extern int __union_copyup(struct nameidata *, struct path *);
+> +extern int union_copyup_len(struct nameidata *, struct path *, size_t len);
 >  #else /* CONFIG_UNION_MOUNT */
 >  
-> @@ -67,6 +68,7 @@ int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
->  #define d_free_unions(x)		do { } while (0)
+>  #define IS_MNT_UNION(x)			(0)
+> @@ -69,6 +71,9 @@ extern int union_copyup_dir(struct path *);
 >  #define needs_lookup_union(x, y)	({ (0); })
 >  #define union_create_topmost_dir(w, x, y, z)	({ BUG(); (NULL); })
-> +#define union_copyup_dir(x)		({ BUG(); (0); })
+>  #define union_copyup_dir(x)		({ BUG(); (0); })
+> +#define union_copyup(x, y)		({ BUG(); (NULL); })
+> +#define __union_copyup(x, y)		({ BUG(); (NULL); })
+> +#define union_copyup_len(x, y, z)	({ BUG(); (NULL); })
 >  
 >  #endif	/* CONFIG_UNION_MOUNT */
 >  #endif	/* __KERNEL__ */
