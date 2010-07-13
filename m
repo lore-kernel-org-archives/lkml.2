@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab0GMNpL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 09:45:11 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38238 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751494Ab0GMNpJ (ORCPT
+	id S1756749Ab0GMNr7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 09:47:59 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:41304 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751449Ab0GMNr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 09:45:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=PYiY5lQy4YrAcReHKIa2XmM9PATI2LKh+VOwi+d0yjVnV1os/0+GI2jB9u5e5OXnMX
-         KcXfm7FMJGvKUQrgKMWzdMliHS2iDac1Gc/kAH/OnKz2Ns9sli0eAmMgpxtZIVTHVETk
-         8y/pgv+mHpZDvlI1jS5eR1yfFLtLsioa/Kz2w=
+	Tue, 13 Jul 2010 09:47:58 -0400
+Date: Tue, 13 Jul 2010 09:46:09 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: linux-kernel@vger.kernel.org, kexec@lists.infradead.org, vgoyal@redhat.com,
+        hbabu@us.ibm.com, benh@kernel.crashing.org, paulus@samba.org,
+        linuxppc-dev@ozlabs.org
+Cc: nhorman@tuxdriver.com
+Subject: [PATCH] powerpc: Add vmcoreinfo symbols to allow makdumpfile to
+ filter core files properly
+Message-ID: <20100713134609.GA14514@hmsreliant.think-freely.org>
 MIME-Version: 1.0
-In-Reply-To: <4C3C52E2.1000801@ladisch.de>
-References: <AANLkTimTN3FZjRAjFDV-3pSnwq9EEPzfs5-xXBH5KomO@mail.gmail.com>
-	<4C3C52E2.1000801@ladisch.de>
-Date: Tue, 13 Jul 2010 21:45:06 +0800
-Message-ID: <AANLkTik2qIw7pFgsM8tnWmDZabO_BqPxFtYbh9h7Ohu_@mail.gmail.com>
-Subject: Re: Question on HPET timer reading from device driver?
-From: Samuel Xu <samuel.xu.tech@gmail.com>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Clemens!
-Besides calling ioremap() on specific HPET address, is there more
-elegant interface, "offically" for kernel mode driver accessing HPET?
+Hey all-
+	About 2 years ago now, I sent this patch upstream to allow makedumpfile
+to properly filter cores on ppc64:
+http://www.mail-archive.com/kexec@lists.infradead.org/msg02426.html
+It got acks from the kexec folks so I pulled it into RHEL, but I never checked
+back here to make sure it ever made it in, which apparently it didn't.  It still
+needs to be included, so I'm reposting it here, making sure to copy all the ppc
+folks this time.  I've retested it on the latest linus kernel and it works fine,
+allowing makedumpfile to find all the symbols it needs to properly strip a
+vmcore on ppc64.
+
+Neil
+
+Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
 
 
-2010/7/13 Clemens Ladisch <clemens@ladisch.de>:
-> Samuel Xu wrote:
->> While I failed to find a way to get time stamp value of HPET in Linux
->> kenerl (I am doing a driver and want to know elapsed cycle from driver
->> code).
->
-> The HPET is x86-specific any might not be available on every machine.
->
->> I tried hpet_readl() from my driver code, while hit compiling error.
->
-> This function is intended for internal use by the kernel and not for
-> drivers, so it is not exported for modules.
->
-> You can hack your own accessor function by calling ioremap() on the HPET
-> address (0xfed00000 or 0xfefff000 or whatever) and reading from that
-> memory.
->
-> A more portable way to get a time stamp is getrawmonotonic().
->
->> I also read the Linux Documentation of HPET, which contain a user mode
->> demo app to generate a periodic timer via HPET, while missing the time
->> stamp reading.
->
-> There is no ioctl for this; call mmap() on /dev/hpet and then read the
-> main counter value from offset 0xf0 of that memory.
->
-> A more portable way to get a time stamp is to use clock_gettime() with
-> CLOCK_MONOTONIC_RAW.
->
->
-> Regards,
-> Clemens
->
+ machine_kexec.c |   12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+
+diff --git a/arch/powerpc/kernel/machine_kexec.c b/arch/powerpc/kernel/machine_kexec.c
+index bb3d893..0df7031 100644
+--- a/arch/powerpc/kernel/machine_kexec.c
++++ b/arch/powerpc/kernel/machine_kexec.c
+@@ -45,6 +45,18 @@ void machine_kexec_cleanup(struct kimage *image)
+ 		ppc_md.machine_kexec_cleanup(image);
+ }
+ 
++void arch_crash_save_vmcoreinfo(void)
++{
++
++#ifdef CONFIG_NEED_MULTIPLE_NODES
++	VMCOREINFO_SYMBOL(node_data);
++	VMCOREINFO_LENGTH(node_data, MAX_NUMNODES);
++#endif
++#ifndef CONFIG_NEED_MULTIPLE_NODES
++	VMCOREINFO_SYMBOL(contig_page_data);
++#endif
++}
++
+ /*
+  * Do not allocate memory (or fail in any way) in machine_kexec().
+  * We are past the point of no return, committed to rebooting now.
