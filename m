@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab0GMHWf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:22:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28588 "EHLO
+	id S1755814Ab0GMHWu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:22:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28535 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab0GMHQX (ORCPT
+	with ESMTP id S1753208Ab0GMHQV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:16:23 -0400
+	Tue, 13 Jul 2010 03:16:21 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,112 +16,54 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 49/50] x86, memblock: Use memblock_memory_size()/memblock_free_memory_size() to get correct dma_reserve
-Date: Tue, 13 Jul 2010 00:10:43 -0700
-Message-Id: <1279005044-24777-50-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 31/50] memblock: Export MEMBLOCK_ERROR again
+Date: Tue, 13 Jul 2010 00:10:25 -0700
+Message-Id: <1279005044-24777-32-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C3C12A1.010F,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4C3C129E.0193,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-memblock_memory_size() will return memory size in memblock.memory.region.
-memblock_free_memory_size() will return free memory size in memblock.memory.region.
+will used by x86 memblock_x86_find_in_range_node and nobootmem replacement
 
-So We can get exact reseved size in specified range.
-
-Set the size right after initmem_init(), because later bootmem API will
-get area above 16M. (except some fallback).
-
-Later after we remove the bootmem, We could call that just before paging_init().
+-v2: use 0 instead -1ULL, Suggesed by Linus, so we don't need cast them later to unsigned long
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    2 ++
- arch/x86/kernel/e820.c      |   17 +++++++++++++++++
- arch/x86/kernel/setup.c     |    1 +
- arch/x86/mm/init_64.c       |    7 -------
- 4 files changed, 20 insertions(+), 7 deletions(-)
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |    2 --
+ 2 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 7186463..5be1542 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -117,6 +117,8 @@ extern unsigned long e820_end_of_low_ram_pfn(void);
- extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 70bc467..89749c4 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -19,6 +19,7 @@
+ #include <asm/memblock.h>
  
- void memblock_x86_fill(void);
-+void memblock_find_dma_reserve(void);
-+
- extern void finish_e820_parsing(void);
- extern void e820_reserve_resources(void);
- extern void e820_reserve_resources_late(void);
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index d5fd894..f0db4c4 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -1105,3 +1105,20 @@ void __init memblock_x86_fill(void)
- 	memblock_analyze();
- 	memblock_dump_all();
- }
-+
-+void __init memblock_find_dma_reserve(void)
-+{
-+#ifdef CONFIG_X86_64
-+	u64 free_size_pfn;
-+	u64 mem_size_pfn;
-+	/*
-+	 * need to find out used area below MAX_DMA_PFN
-+	 * need to use memblock to get free size in [0, MAX_DMA_PFN]
-+	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
-+	 */
-+	mem_size_pfn = memblock_x86_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
-+	free_size_pfn = memblock_x86_free_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
-+	set_dma_reserve(mem_size_pfn - free_size_pfn);
-+#endif
-+}
-+
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index a4f0173..924c8f7 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -1013,6 +1013,7 @@ void __init setup_arch(char **cmdline_p)
- #endif
+ #define INIT_MEMBLOCK_REGIONS 128
++#define MEMBLOCK_ERROR		0
  
- 	initmem_init(0, max_pfn, acpi, k8);
-+	memblock_find_dma_reserve();
- #ifndef CONFIG_NO_BOOTMEM
- 	memblock_x86_to_bootmem(0, max_low_pfn<<PAGE_SHIFT);
- #endif
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index 592b236..d6d4084 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -53,8 +53,6 @@
- #include <asm/init.h>
- #include <linux/bootmem.h>
+ struct memblock_region {
+ 	phys_addr_t base;
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 796ef8c..3d0a754 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -27,8 +27,6 @@ int memblock_can_resize;
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+ struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
  
--static unsigned long dma_reserve __initdata;
+-#define MEMBLOCK_ERROR	(~(phys_addr_t)0)
 -
- static int __init parse_direct_gbpages_off(char *arg)
+ /* inline so we don't get a warning when pr_debug is compiled out */
+ static inline const char *memblock_type_name(struct memblock_type *type)
  {
- 	direct_gbpages = 0;
-@@ -821,11 +819,6 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 
- 	reserve_bootmem(phys, len, flags);
- 
--	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
--		dma_reserve += len / PAGE_SIZE;
--		set_dma_reserve(dma_reserve);
--	}
--
- 	return 0;
- }
- #endif
 -- 
 1.6.4.2
 
