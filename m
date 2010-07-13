@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755040Ab0GMHSO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:18:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:29265 "EHLO
+	id S1754533Ab0GMHQp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:16:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29179 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754613Ab0GMHQu (ORCPT
+	with ESMTP id S1754425Ab0GMHQj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:16:50 -0400
+	Tue, 13 Jul 2010 03:16:39 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,95 +16,99 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 45/50] x86, memblock: Use memblock_debug to control debug message print out
-Date: Tue, 13 Jul 2010 00:10:39 -0700
-Message-Id: <1279005044-24777-46-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 41/50] memblock: Add find_memory_core_early()
+Date: Tue, 13 Jul 2010 00:10:35 -0700
+Message-Id: <1279005044-24777-42-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
 References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C3C12BF.001F,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4C3C12B7.02CF,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also let memblock_x86_reserve_range/memblock_x86_free_range could print out name if memblock=debug is
-specified
+According to node range in early_node_map[] with __memblock_find_in_range
+to find free range.
 
-will also print ther name when reserve_memblock_area/free_memblock_area are called.
+Will be used by memblock_x86_find_in_range_node()
 
--v2: according to Ingo, put " if (memblock_debug) " in one place
+memblock_x86_find_in_range_node will be used to find right buffer for NODE_DATA
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/memblock.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+ include/linux/mm.h |    2 ++
+ mm/page_alloc.c    |   36 ++++++++++++++++++++++++++++++++++++
+ 2 files changed, 38 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index 53b0f60..70a6bba 100644
---- a/arch/x86/mm/memblock.c
-+++ b/arch/x86/mm/memblock.c
-@@ -122,10 +122,10 @@ static void __init memblock_x86_subtract_reserved(struct range *range, int az)
- 
- 	count  = memblock.reserved.cnt;
- 
--	pr_info("Subtract (%d early reservations)\n", count);
-+	memblock_dbg("Subtract (%d early reservations)\n", count);
- 
- 	for_each_memblock(reserved, r) {
--		pr_info("  [%010llx-%010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
-+		memblock_dbg("  [%#010llx-%#010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
- 		final_start = PFN_DOWN(r->base);
- 		final_end = PFN_UP(r->base + r->size);
- 		if (final_start >= final_end)
-@@ -198,16 +198,16 @@ void __init memblock_x86_to_bootmem(u64 start, u64 end)
- 		memblock_free(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
- 
- 	count  = memblock.reserved.cnt;
--	pr_info("(%d early reservations) ==> bootmem [%010llx-%010llx]\n", count, start, end - 1);
-+	memblock_dbg("(%d early reservations) ==> bootmem [%#010llx-%#010llx]\n", count, start, end - 1);
- 	for_each_memblock(reserved, r) {
--		pr_info("  [%010llx-%010llx] ", (u64)r->base, (u64)r->base + r->size - 1);
-+		memblock_dbg("  [%#010llx-%#010llx] ", (u64)r->base, (u64)r->base + r->size - 1);
- 		final_start = max(start, r->base);
- 		final_end = min(end, r->base + r->size);
- 		if (final_start >= final_end) {
--			pr_cont("\n");
-+			memblock_dbg("\n");
- 			continue;
- 		}
--		pr_cont(" ==> [%010llx-%010llx]\n", final_start, final_end - 1);
-+		memblock_dbg(" ==> [%#010llx-%#010llx]\n", final_start, final_end - 1);
- 		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index b969efb..f493d29 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1164,6 +1164,8 @@ extern void free_bootmem_with_active_regions(int nid,
+ 						unsigned long max_low_pfn);
+ int add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid);
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit);
+ void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
+ 				 u64 goal, u64 limit);
+ typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index cee2d79..cd4f66d 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -21,6 +21,7 @@
+ #include <linux/pagemap.h>
+ #include <linux/jiffies.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/compiler.h>
+ #include <linux/kernel.h>
+ #include <linux/kmemcheck.h>
+@@ -3612,6 +3613,41 @@ void __init free_bootmem_with_active_regions(int nid,
  	}
- 
-@@ -286,9 +286,11 @@ void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
- 	if (start == end)
- 		return;
- 
--	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx]\n", start, end))
-+	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx)\n", start, end))
- 		return;
- 
-+	memblock_dbg("    memblock_x86_reserve_range: [%#010llx-%#010llx] %16s\n", start, end - 1, name);
-+
- 	memblock_reserve(start, end - start);
  }
  
-@@ -297,9 +299,11 @@ void __init memblock_x86_free_range(u64 start, u64 end)
- 	if (start == end)
- 		return;
- 
--	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx]\n", start, end))
-+	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx)\n", start, end))
- 		return;
- 
-+	memblock_dbg("       memblock_x86_free_range: [%#010llx-%#010llx]\n", start, end - 1);
++#ifdef CONFIG_HAVE_MEMBLOCK
++u64 __init find_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit)
++{
++	int i;
 +
- 	memblock_free(start, end - start);
- }
- 
++	/* Need to go over early_node_map to find out good range for node */
++	for_each_active_range_index_in_nid(i, nid) {
++		u64 addr;
++		u64 ei_start, ei_last;
++		u64 final_start, final_end;
++
++		ei_last = early_node_map[i].end_pfn;
++		ei_last <<= PAGE_SHIFT;
++		ei_start = early_node_map[i].start_pfn;
++		ei_start <<= PAGE_SHIFT;
++
++		final_start = max(ei_start, goal);
++		final_end = min(ei_last, limit);
++
++		if (final_start >= final_end)
++			continue;
++
++		addr = memblock_find_in_range(final_start, final_end, size, align);
++
++		if (addr == MEMBLOCK_ERROR)
++			continue;
++
++		return addr;
++	}
++
++	return MEMBLOCK_ERROR;
++}
++#endif
++
+ int __init add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid)
+ {
 -- 
 1.6.4.2
 
