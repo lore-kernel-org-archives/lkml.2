@@ -1,42 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755436Ab0GMJ7f (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 05:59:35 -0400
-Received: from www.tglx.de ([62.245.132.106]:35193 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754627Ab0GMJ7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 05:59:33 -0400
-Date: Tue, 13 Jul 2010 11:58:56 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhltc@us.ibm.com>
-cc: "lkml, " <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Eric Dumazet <eric.dumazet@gmail.com>, John Kacur <jkacur@redhat.com>,
-        Steven Rostedt <rostedt@goodmis.org>, Mike Galbraith <efault@gmx.de>,
-        linux-rt-users <linux-rt-users@vger.kernel.org>
-Subject: Re: [PATCH][RT] futex: protect against pi_blocked_on corruption
- during requeue PI
-In-Reply-To: <4C3C1DCF.9090509@us.ibm.com>
-Message-ID: <alpine.LFD.2.00.1007131158220.3321@localhost.localdomain>
-References: <1278478019.10245.77.camel@marge.simson.net> <alpine.LFD.2.00.1007071356480.2604@localhost.localdomain> <4C3C1DCF.9090509@us.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755941Ab0GMKAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:00:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33773 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754627Ab0GMKAO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 06:00:14 -0400
+Date: Tue, 13 Jul 2010 11:00:12 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sundar Iyer <sundar.iyer@stericsson.com>
+Cc: lrg@slimlogic.co.uk, sameo@linux.intel.com, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        STEricsson_nomadik_linux@list.st.com,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "Acked-By: Bengt JONSSON" <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH 3/3] ux500: add ab8500-regulators machine specific data
+Message-ID: <20100713100012.GC12686@rakim.wolfsonmicro.main>
+References: <1279002090-11234-1-git-send-email-sundar.iyer@stericsson.com>
+ <1279002090-11234-4-git-send-email-sundar.iyer@stericsson.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279002090-11234-4-git-send-email-sundar.iyer@stericsson.com>
+X-Cookie: BOFH excuse
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010, Darren Hart wrote:
-> diff --git a/kernel/futex.c b/kernel/futex.c
-> index a6cec32..c92978d 100644
-> --- a/kernel/futex.c
-> +++ b/kernel/futex.c
-> @@ -1336,6 +1336,9 @@ retry_private:
->  				requeue_pi_wake_futex(this, &key2, hb2);
->  				drop_count++;
->  				continue;
-> +			} else if (ret == -EAGAIN) {
-> +				/* Waiter woken by timeout or signal. */
+On Tue, Jul 13, 2010 at 11:51:30AM +0530, Sundar Iyer wrote:
 
-  This leaks the pi_state.
+> +static struct regulator_consumer_supply ab8500_vaux1_consumers[] = {
+> +	{ .dev = NULL, .supply = "vaux1", },
+> +};
 
+All these supplies with NULL devices are bogus, supplies are in terms of
+the device being supplied not the labels on the board.  If you've got a
+supply with no device and the name of the supply on either the regulator
+or the board you're most likely doing it wrong.  The only exception is
+for supplies used in cpufreq since we don't have a struct device we can
+use there.
+
+> +struct regulator_init_data ab8500_vaux2_regulator = {
+> +	.supply_regulator_dev = NULL,
+> +	.constraints = {
+> +		.name = "ab8500-vaux2",
+> +		.min_uV = AB8500_VAUXN_LDO_MIN_VOLTAGE,
+> +		.max_uV = AB8500_VAUXN_LDO_MAX_VOLTAGE,
+
+I'm not convinced that these #defines help anything, they're used in
+exactly one place so don't add much to either legibility or ease of
+maintinance.
