@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757226Ab0GMUiB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 16:38:01 -0400
-Received: from g1t0028.austin.hp.com ([15.216.28.35]:8077 "EHLO
-	g1t0028.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755324Ab0GMUh5 (ORCPT
+	id S1757241Ab0GMUi4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 16:38:56 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51805 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753316Ab0GMUiy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 16:37:57 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Subject: Re: [PATCH 45/50] x86, memblock: Use memblock_debug to control debug message print out
-Date: Tue, 13 Jul 2010 14:37:55 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org
-References: <1279005044-24777-1-git-send-email-yinghai@kernel.org> <1279005044-24777-46-git-send-email-yinghai@kernel.org>
-In-Reply-To: <1279005044-24777-46-git-send-email-yinghai@kernel.org>
+	Tue, 13 Jul 2010 16:38:54 -0400
+Date: Tue, 13 Jul 2010 21:38:52 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sundar R IYER <sundar.iyer@stericsson.com>
+Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific
+ data
+Message-ID: <20100713203852.GA1756@rakim.wolfsonmicro.main>
+References: <1279030173-3086-1-git-send-email-sundar.iyer@stericsson.com>
+ <1279030173-3086-2-git-send-email-sundar.iyer@stericsson.com>
+ <20100713141828.GB24260@rakim.wolfsonmicro.main>
+ <33A307AF30D7BF4F811B1568FE7A9B1810E7E88D@EXDCVYMBSTM006.EQ1STM.local>
+ <20100713145645.GA24626@rakim.wolfsonmicro.main>
+ <20100713150814.GA13767@bnru01.bnr.st.com>
+ <20100713150905.GD24626@rakim.wolfsonmicro.main>
+ <20100713161343.GA25342@bnru01.bnr.st.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007131437.55808.bjorn.helgaas@hp.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100713161343.GA25342@bnru01.bnr.st.com>
+X-Cookie: BOFH excuse
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday, July 13, 2010 01:10:39 am Yinghai Lu wrote:
-> -		pr_cont(" ==> [%010llx-%010llx]\n", final_start, final_end - 1);
-> +		memblock_dbg(" ==> [%#010llx-%#010llx]\n", final_start, final_end - 1);
->  		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
->  	}
->  
-> @@ -286,9 +286,11 @@ void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
->  	if (start == end)
->  		return;
->  
-> -	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx]\n", start, end))
-> +	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx)\n", start, end))
+On Tue, Jul 13, 2010 at 09:43:44PM +0530, Sundar R IYER wrote:
 
-Can you print these ranges the same way as the others?  I think
-"invalid range" might be closer to what you mean than "wrong range." 
+> Subject: [PATCH v3 2/2] ux500: add ab8500-regulators machine specific data
 
-I'm a little dubious about these "(start == end)" and "(start > end)"
-checks anyway.  Who are the callers of these functions?  If "start"
-and "end" are coming from an external source, e.g., some firmware
-interface like an e820 table, the message doesn't give enough of a
-clue about where the problem is.
+> Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+> Acked-by: Bengt JONSSON <bengt.g.jonsson@stericsson.com>
+> Signed-off-by: Sundar R Iyer <sundar.iyer@stericsson.com>
 
-If "start" and "end" are internal things, I'd argue that the checks
-are just covering up Linux bugs, and it'd be better to fix those
-bugs and remove the checks.
+> +static struct regulator_consumer_supply ab8500_vaux1_consumers[] = {
+> +};
 
->  		return;
->  
-> +	memblock_dbg("    memblock_x86_reserve_range: [%#010llx-%#010llx] %16s\n", start, end - 1, name);
-> +
->  	memblock_reserve(start, end - start);
->  }
->  
-> @@ -297,9 +299,11 @@ void __init memblock_x86_free_range(u64 start, u64 end)
->  	if (start == end)
->  		return;
->  
-> -	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx]\n", start, end))
-> +	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx)\n", start, end))
->  		return;
+You may as well just remove these if they're not used but still...
 
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
+One other thing...
+
+> +struct regulator_init_data ab8500_vaudio_init = {
+> +	.supply_regulator_dev = NULL,
+> +	.constraints = {
+> +		.name = "ab8500-vaudio",
+> +		.min_uV = 1925000,
+> +		.max_uV = 2075000,
+
+Are you *sure* that all these constraints are accurate for the board?
+It seems every single voltage is variable even though there are no
+consumers set up, and they can all be disabled too.
