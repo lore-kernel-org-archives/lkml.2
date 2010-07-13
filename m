@@ -1,42 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755342Ab0GMWJg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 18:09:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26987 "EHLO mx1.redhat.com"
+	id S1756606Ab0GMWJk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 18:09:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62146 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751829Ab0GMWJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 18:09:35 -0400
-Date: Tue, 13 Jul 2010 19:05:51 -0300
+	id S1755483Ab0GMWJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 18:09:38 -0400
+Date: Tue, 13 Jul 2010 18:28:01 -0300
 From: Marcelo Tosatti <mtosatti@redhat.com>
 To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
         KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] KVM: MMU: track dirty page in speculative path
- properly
-Message-ID: <20100713220551.GB6370@amt.cnet>
+Subject: Re: [PATCH 1/4] KVM: MMU: fix forgot reserved bits check in
+ speculative path
+Message-ID: <20100713212801.GA6370@amt.cnet>
 References: <4C3C3518.7080505@cn.fujitsu.com>
- <4C3C35B7.50101@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C3C35B7.50101@cn.fujitsu.com>
+In-Reply-To: <4C3C3518.7080505@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 05:45:27PM +0800, Xiao Guangrong wrote:
-> In speculative path, the page is not real write-access, no need mark it
-> dirty, so clear dirty bit in this path and later examine this bit when
-> we release the page
+On Tue, Jul 13, 2010 at 05:42:48PM +0800, Xiao Guangrong wrote:
+> In the speculative path, we should check guest pte's reserved bits just as
+> the real processor does
 > 
+> Reported-by: Marcelo Tosatti <mtosatti@redhat.com>
 > Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 > ---
->  arch/x86/kvm/mmu.c |   24 +++++++++++-------------
->  1 files changed, 11 insertions(+), 13 deletions(-)
+>  arch/x86/kvm/mmu.c         |    8 ++++++++
+>  arch/x86/kvm/paging_tmpl.h |    5 +++--
+>  2 files changed, 11 insertions(+), 2 deletions(-)
+> 
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index b93b94f..9fc1524 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2783,6 +2783,9 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  		break;
+>  	}
+>  
+> +	if (is_rsvd_bits_set(vcpu, gentry, PT_PAGE_TABLE_LEVEL))
+> +		gentry = 0;
+> +
+>  	mmu_guess_page_from_pte_write(vcpu, gpa, gentry);
+>  	spin_lock(&vcpu->kvm->mmu_lock);
+>  	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
+> @@ -2851,6 +2854,11 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>  		while (npte--) {
+>  			entry = *spte;
+>  			mmu_pte_write_zap_pte(vcpu, sp, spte);
+> +
+> +			if (!!is_pae(vcpu) != sp->role.cr4_pae ||
+> +			      is_nx(vcpu) != sp->role.nxe)
+> +				continue;
+> +
 
-Unfortunately all pages that kvm creates translations for are marked
-dirty due to get_user_pages(w=1), except KSM which makes them read-only
-later.
-
+This breaks remote_flush assignment below.
 
