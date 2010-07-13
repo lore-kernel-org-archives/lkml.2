@@ -1,67 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756548Ab0GMXWV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 19:22:21 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:33389 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752819Ab0GMXWU convert rfc822-to-8bit (ORCPT
+	id S1756607Ab0GMXaU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 19:30:20 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60911 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756130Ab0GMXaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 19:22:20 -0400
+	Tue, 13 Jul 2010 19:30:17 -0400
+Message-ID: <4C3CF650.30905@kernel.org>
+Date: Tue, 13 Jul 2010 16:27:12 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <1279062881.4609.34.camel@c-dwalke-linux.qualcomm.com>
-References: <20100713230352.6781.18644.stgit@angua> <1279062881.4609.34.camel@c-dwalke-linux.qualcomm.com>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Tue, 13 Jul 2010 17:21:59 -0600
-X-Google-Sender-Auth: LdqfArB7XFWltqX-lezX4odleVM
-Message-ID: <AANLkTin69tN3NQHD2wvkA0G-lj3f9tSZEnhzdyJdTh9m@mail.gmail.com>
-Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for 
-	defconfig
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linuxppc-dev@lists.ozlabs.org, Nicolas Pitre <nico@fluxnic.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: tip/master broken with x2apic and kexec
+References: <4C3BD6AA.3070908@kernel.org> <4C3CE210.2030902@zytor.com>
+In-Reply-To: <4C3CE210.2030902@zytor.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C3CF6FD.0028,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 5:14 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> On Tue, 2010-07-13 at 17:04 -0600, Grant Likely wrote:
->
->> - I haven't figured out a way for the fragment to force an option to
->>   be "n", or to set a value, for example "CONFIG_LOG_BUF_SHIFT=16".
->>   This may require changing the syntax.
->> - It still doesn't resolve dependencies.  A solver would help with this.
->>   For the time being I work around the problem by running the generated
->>   config through 'oldconfig' and looking for differences.  If the files
->>   differ (ignoring comments and generateconfig_* options) after oldconfig,
->>   then the <board>_defconfig target returns a failure.  (but leaves the
->>   new .config intact so the user can resolve it with menuconfig).  This
->>   way at least the user is told when a Kconfig fragment is invalid.
->
-> The solver would fix the whole issues with the defconfigs , we wouldn't
-> need this Kconfig change .. From my perspective we shouldn't be fooling
-> around with anything but the solver approach ..
+On 07/13/2010 03:00 PM, H. Peter Anvin wrote:
+> On 07/12/2010 07:59 PM, Yinghai Lu wrote:
+>> tip/master: 
+>> system1: BIOS enabled x2apic, first kernel boot well, and when kexec second kernel will cause system instant reboot.
+>>
+>> system2: BIOS not enable x2apic, first kernel boot well and enable x2apic, and kexec second kernel well. but when kexec third kernel will case system instant reboot.
+>>
+>> linus' tree is ok.
+>>
+>> but for system2 if boot with nox2apic ,intr-remaping off, iommu off, the kexec loop test will pass.
+>>
+>> the problem looks start in recent two or three weeks.
+>>
+>> Any idea?
+>>
+>> bisecting will take a while, because the system post take a while everytime.
+>>
+>> Thanks
+>>
+>> Yinghai Lu
+> 
+> OK, I found the bug... if you could test out the patch which will be
+> sent out shortly I would very much appreciate it.
 
-The solver would complement Kconfig fragments, but it doesn't
-implement all the functionality.  For instance, it doesn't help a
-board config picking up a bunch of options from an SoC or Architecture
-config file, especially things that are developer/maintainer choices
-as opposed to hard requirements).  Solver on its own is an incremental
-improvement over what we currently have, but it doesn't solve the
-whole problem.
+not sure if your patch is the offending one now.
 
-> It just doesn't feel like Kconfig was meant to do this, it feel like
-> somewhat of an abuse ..
+kL: kernel from linus tree
+kT1: kernel from tip
+kT2: kernel from tip with reverting your patch
 
-Why?  It uses the Kconfig language itself to specify additional
-constraints on the final configuration.  Seems to be the essence of
-elegance to me.  :-)
+BIOS-->kL ---> kL ---> kL....always working
+BIOS-->kT1 ---> kT1 --->  kT1 : between second one and third one system reset instant...
+BIOS-->kT2 ---> kT2 --->  kT2 : between second one and third one system reset instant...
 
-g.
+BIOS-->kL ---> kL ---> kL ---> then kT1 ---> kT1 .... always working
+BIOS-->kL ---> kL ---> kL ---> then kT2 ---> kT2 .... always working
+
+looks like first kernel and second one can not be kernel from tip.
+
+Yinghai
