@@ -1,75 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756485Ab0GMCNx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 22:13:53 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35855 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754173Ab0GMCNv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 22:13:51 -0400
-Date: Tue, 13 Jul 2010 12:13:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Arnd Bergmann <arnd@arndb.de>, Takashi Iwai <tiwai@suse.de>
-Subject: linux-next: manual merge of the rr tree with the sound tree
-Message-Id: <20100713121348.c9e76987.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756623Ab0GMCPG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 22:15:06 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33365 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754173Ab0GMCPD convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 22:15:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=SSlqHVKzS33mKF01rd9QcY2MUOCVcgAWonB+6paa7VSvyThyE1FhGw+ODT9kQfEG5b
+         AO1XrkdQFOk86o3ALskW3UE55veHcZOmLeUS+b7z1Xk7A1iVTc2g7yixJCCpz3qLywj+
+         JfTZzLBOPtK2zfuKS7acqvZOzno1c5Jd2GOnM=
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20100712183547.2a873fac.akpm@linux-foundation.org>
+References: <1278650256.26099.4.camel@mola> <20100712183547.2a873fac.akpm@linux-foundation.org>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 13 Jul 2010 10:14:41 +0800
+Message-ID: <AANLkTinM51K1s9dMqcmqZebF-x_bOK0OlKADkparP-Ek@mail.gmail.com>
+Subject: Re: [PATCH v2] acer-wmi: fix memory leaks in wmab_execute error path
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Carlos Corbacho <carlos@strangeworlds.co.uk>,
+        Matthew Garrett <mjg@redhat.com>, Thomas Renninger <trenn@suse.de>,
+        Alan Jenkins <alan-jenkins@tuffmail.co.uk>,
+        platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rusty,
+2010/7/13 Andrew Morton <akpm@linux-foundation.org>:
+> On Fri, 09 Jul 2010 12:37:36 +0800 Axel Lin <axel.lin@gmail.com> wrote:
+>
+>> When acpi_evaluate_object() is passed ACPI_ALLOCATE_BUFFER,
+>> the caller must kfree the returned buffer if AE_OK is returned.
+>>
+>> Call Trace:
+>> wmab_execute
+>>   -> wmi_evaluate_method
+>>     -> acpi_evaluate_object
+>>
+>> Thus if callers of wmab_execute() pass ACPI_ALLOCATE_BUFFER,
+>> the return buffer must be kfreed if wmab_execute return AE_OK.
+>>
+>> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+>> ---
+>>  drivers/platform/x86/acer-wmi.c |   11 ++++++++++-
+>>  1 files changed, 10 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/drivers/platform/x86/acer-wmi.c b/drivers/platform/x86/acer-wmi.c
+>> index 1ea6c43..3f44446 100644
+>> --- a/drivers/platform/x86/acer-wmi.c
+>> +++ b/drivers/platform/x86/acer-wmi.c
+>> @@ -555,6 +555,7 @@ static acpi_status AMW0_find_mailled(void)
+>>       obj->buffer.length == sizeof(struct wmab_ret)) {
+>>               ret = *((struct wmab_ret *) obj->buffer.pointer);
+>>       } else {
+>> +             kfree(out.pointer);
+>>               return AE_ERROR;
+>>       }
+>>
+>> @@ -598,6 +599,7 @@ static acpi_status AMW0_set_capabilities(void)
+>>       obj->buffer.length == sizeof(struct wmab_ret)) {
+>>               ret = *((struct wmab_ret *) obj->buffer.pointer);
+>>       } else {
+>> +             kfree(out.pointer);
+>>               return AE_ERROR;
+>>       }
+>>
+>> @@ -607,15 +609,22 @@ static acpi_status AMW0_set_capabilities(void)
+>>       args.ebx = 2 << 8;
+>>       args.ebx |= ACER_AMW0_BLUETOOTH_MASK;
+>>
+>> +     /*
+>> +      * It's ok to use existing buffer for next wmab_execute call.
+>> +      * But we need to kfree(out.pointer) if next wmab_execute fail.
+>> +      */
+>>       status = wmab_execute(&args, &out);
+>> -     if (ACPI_FAILURE(status))
+>> +     if (ACPI_FAILURE(status)) {
+>> +             kfree(out.pointer);
+>>               return status;
+>> +     }
+>>
+>>       obj = (union acpi_object *) out.pointer;
+>>       if (obj && obj->type == ACPI_TYPE_BUFFER
+>>       && obj->buffer.length == sizeof(struct wmab_ret)) {
+>>               ret = *((struct wmab_ret *) obj->buffer.pointer);
+>>       } else {
+>> +             kfree(out.pointer);
+>>               return AE_ERROR;
+>>       }
+>
+> I think it's best to remove the multiple-return-points approach in
+> favour of the "goto single return point which undoes things" approach.
+> that way we reduce the risk of later introducing more leaks.
+>
+> Please review:
+>
+> From: Andrew Morton <akpm@linux-foundation.org>
+>
+> avoid multiple return points
+> remove unneeded cast
+> remove unneeded initialisation of `status'
+>
+> Cc: Alan Jenkins <alan-jenkins@tuffmail.co.uk>
+> Cc: Axel Lin <axel.lin@gmail.com>
+> Cc: Carlos Corbacho <carlos@strangeworlds.co.uk>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Thomas Renninger <trenn@suse.de>
+> Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 
-Today's linux-next merge of the rr tree got a conflict in
-arch/um/drivers/hostaudio_kern.c between commit
-90dc763fef4c869e60b2a7ad92e1a7dab68575ea ("sound: push BKL into open
-functions") from the sound tree and commit
-6aad4054c113f2d8a8bbdee64e7167950dd06c92 ("param:lock-charp-simple") from
-the rr tree.
+I'm not the author, but since I'm in the CC list and it looks good to me.
+Acked-by: Axel Lin <axel.lin@gmail.com>
 
-Overlapping additions.  I fixed it up (see below) and carry the fix as necessary.
-
-I was not sure if the kparam_(un)block_sysfs_write() calls needed to be
-surrounded by the (un)lock_kernel() calls or vice verse.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc arch/um/drivers/hostaudio_kern.c
-index 68142df,162855c..0000000
---- a/arch/um/drivers/hostaudio_kern.c
-+++ b/arch/um/drivers/hostaudio_kern.c
-@@@ -199,10 -200,9 +201,12 @@@ static int hostaudio_open(struct inode 
-  	if (file->f_mode & FMODE_WRITE)
-  		w = 1;
-  
- +	lock_kernel();
-+ 	kparam_block_sysfs_write(dsp);
-  	ret = os_open_file(dsp, of_set_rw(OPENFLAGS(), r, w), 0);
-+ 	kparam_unblock_sysfs_write(dsp);
- +	unlock_kernel();
- +
-  	if (ret < 0) {
-  		kfree(state);
-  		return ret;
-@@@ -258,13 -258,15 +262,17 @@@ static int hostmixer_open_mixdev(struc
-  	if (file->f_mode & FMODE_WRITE)
-  		w = 1;
-  
- +	lock_kernel();
-+ 	kparam_block_sysfs_write(mixer);
-  	ret = os_open_file(mixer, of_set_rw(OPENFLAGS(), r, w), 0);
-+ 	kparam_unblock_sysfs_write(mixer);
- +	unlock_kernel();
-  
-  	if (ret < 0) {
-+ 		kparam_block_sysfs_write(dsp);
-  		printk(KERN_ERR "hostaudio_open_mixdev failed to open '%s', "
-  		       "err = %d\n", dsp, -ret);
-+ 		kparam_unblock_sysfs_write(dsp);
-  		kfree(state);
-  		return ret;
-  	}
+> ---
+>
+>  drivers/platform/x86/acer-wmi.c |   25 ++++++++++++-------------
+>  1 file changed, 12 insertions(+), 13 deletions(-)
+>
+> diff -puN drivers/platform/x86/acer-wmi.c~acer-wmi-fix-memory-leaks-in-wmab_execute-error-path-v2-fix drivers/platform/x86/acer-wmi.c
+> --- a/drivers/platform/x86/acer-wmi.c~acer-wmi-fix-memory-leaks-in-wmab_execute-error-path-v2-fix
+> +++ a/drivers/platform/x86/acer-wmi.c
+> @@ -571,7 +571,7 @@ static acpi_status AMW0_set_capabilities
+>  {
+>        struct wmab_args args;
+>        struct wmab_ret ret;
+> -       acpi_status status = AE_OK;
+> +       acpi_status status;
+>        struct acpi_buffer out = { ACPI_ALLOCATE_BUFFER, NULL };
+>        union acpi_object *obj;
+>
+> @@ -594,13 +594,13 @@ static acpi_status AMW0_set_capabilities
+>        if (ACPI_FAILURE(status))
+>                return status;
+>
+> -       obj = (union acpi_object *) out.pointer;
+> +       obj = out.pointer;
+>        if (obj && obj->type == ACPI_TYPE_BUFFER &&
+>        obj->buffer.length == sizeof(struct wmab_ret)) {
+>                ret = *((struct wmab_ret *) obj->buffer.pointer);
+>        } else {
+> -               kfree(out.pointer);
+> -               return AE_ERROR;
+> +               status = AE_ERROR;
+> +               goto out;
+>        }
+>
+>        if (ret.eax & 0x1)
+> @@ -614,25 +614,21 @@ static acpi_status AMW0_set_capabilities
+>         * But we need to kfree(out.pointer) if next wmab_execute fail.
+>         */
+>        status = wmab_execute(&args, &out);
+> -       if (ACPI_FAILURE(status)) {
+> -               kfree(out.pointer);
+> -               return status;
+> -       }
+> +       if (ACPI_FAILURE(status))
+> +               goto out;
+>
+>        obj = (union acpi_object *) out.pointer;
+>        if (obj && obj->type == ACPI_TYPE_BUFFER
+>        && obj->buffer.length == sizeof(struct wmab_ret)) {
+>                ret = *((struct wmab_ret *) obj->buffer.pointer);
+>        } else {
+> -               kfree(out.pointer);
+> -               return AE_ERROR;
+> +               status = AE_ERROR;
+> +               goto out;
+>        }
+>
+>        if (ret.eax & 0x1)
+>                interface->capability |= ACER_CAP_BLUETOOTH;
+>
+> -       kfree(out.pointer);
+> -
+>        /*
+>         * This appears to be safe to enable, since all Wistron based laptops
+>         * appear to use the same EC register for brightness, even if they
+> @@ -641,7 +637,10 @@ static acpi_status AMW0_set_capabilities
+>        if (quirks->brightness >= 0)
+>                interface->capability |= ACER_CAP_BRIGHTNESS;
+>
+> -       return AE_OK;
+> +       status = AE_OK;
+> +out:
+> +       kfree(out.pointer);
+> +       return status;
+>  }
+>
+>  static struct wmi_interface AMW0_interface = {
+> _
+>
+>
