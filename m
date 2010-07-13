@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756168Ab0GMBXS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 21:23:18 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:35292 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825Ab0GMBXQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 21:23:16 -0400
-Date: Tue, 13 Jul 2010 11:23:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Erik Gilling <konkers@android.com>, Colin Cross <ccross@android.com>,
-        Olof Johansson <olof@lixom.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Will Deacon <will.deacon@arm.com>, Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the tegra tree with the arm tree
-Message-Id: <20100713112314.2d468a71.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756223Ab0GMBZN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 21:25:13 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:53645 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755668Ab0GMBZL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 21:25:11 -0400
+Date: Tue, 13 Jul 2010 11:25:06 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: Andreas Dilger <adilger@dilger.ca>, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 2/2] OCFS2: Allow huge (> 16 TiB) volumes to mount
+Message-ID: <20100713012506.GA30737@dastard>
+References: <871vbax86w.fsf@patl.com>
+ <87zkxyvtjt.fsf@patl.com>
+ <3BB069D5-B193-43A4-B678-B3CEA4873B58@dilger.ca>
+ <AANLkTikAEycm5PKTLPuRFcB0e4qNp5EuQbKUx5aruNrh@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikAEycm5PKTLPuRFcB0e4qNp5EuQbKUx5aruNrh@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Mon, Jul 12, 2010 at 06:08:51PM -0700, Patrick J. LoPresti wrote:
+> On Mon, Jul 12, 2010 at 5:21 PM, Andreas Dilger <adilger@dilger.ca> wrote:
+> > On 2010-07-11, at 11:04, Patrick J. LoPresti wrote:
+> > >
+> >> +     /* Absolute addressability check (borrowed from ext4/super.c) */
+> >> +     if ((max_block >
+> >> +          (sector_t)(~0LL) >> (osb->sb->s_blocksize_bits - 9)) ||
+> >> +         (max_block > (pgoff_t)(~0LL) >> (PAGE_CACHE_SHIFT -
+> >> +                                          osb->sb->s_blocksize_bits))) {
+> >> +             mlog(ML_ERROR, "Volume too large "
+> >> +                  "to mount safely on this system");
+> >> +             status = -EFBIG;
+> >> +             goto out;
+> >> +     }
+> >
+> > This hunk of code is actually in several filesystems.  It wouldn't be a bad idea to make it a library function that can be called by the filesystem to check the kernel page cache and block layer can handle these large filesystems.
+> 
+> True, but some of them do it differently (e.g. see the #if switch in
+> xfs_sb_validate_fsb_count).  Tracking down all variants and changing
+> them is a much larger task than my simple patch.
 
-Today's linux-next merge of the tegra tree got a conflict in
-arch/arm/Kconfig between commit bde28b846e7e0ea6fea78f6ad1c43091fdf4d3e0
-("ARM: 6218/1: Versatile Express: add support for local timers on CA9X4
-daughterboard") from the arm tree and commit
-c9dfc86214ffc3bcd0155b38bfe04383accc054a ("[ARM] tegra: SMP support")
-from the tegra tree.
+The XFS code is different to the above because there is still a 16TB
+size limit on 32 bit systemsi (i.e. page cache address limits). IOWs,
+you can't just remove the above 16TB check unless you (i.e. OCFS2)
+handle >16TB block devices on 32 bit systems correctly...
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
 Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc arch/arm/Kconfig
-index 7e73d07,c8f28f8..0000000
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@@ -1155,9 -1187,10 +1170,10 @@@ config LOCAL_TIMER
-  	bool "Use local timer interrupts"
-  	depends on SMP && (REALVIEW_EB_ARM11MP || MACH_REALVIEW_PB11MP || \
-  		REALVIEW_EB_A9MP || MACH_REALVIEW_PBX || ARCH_OMAP4 || \
-- 		ARCH_U8500 || ARCH_VEXPRESS_CA9X4)
- -		ARCH_U8500 || ARCH_TEGRA)
-++		ARCH_U8500 || ARCH_VEXPRESS_CA9X4 || ARCH_TEGRA)
-  	default y
-- 	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_VEXPRESS || ARCH_OMAP4 || ARCH_U8500)
- -	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_OMAP4 || ARCH_U8500 || \
-++	select HAVE_ARM_TWD if (ARCH_REALVIEW || ARCH_VEXPRESS || ARCH_OMAP4 || ARCH_U8500 || \
-+ 		ARCH_TEGRA)
-  	help
-  	  Enable support for local timers on SMP platforms, rather then the
-  	  legacy IPI broadcast method.  Local timers allows the system
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
