@@ -1,81 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab0GMKTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 06:19:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3719 "EHLO mx1.redhat.com"
+	id S1756293Ab0GMKTi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 06:19:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24164 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750711Ab0GMKTc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 06:19:32 -0400
-Date: Tue, 13 Jul 2010 06:18:43 -0400
+	id S1753173Ab0GMKS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 06:18:59 -0400
+Date: Tue, 13 Jul 2010 06:18:10 -0400
 From: Xiaotian Feng <dfeng@redhat.com>
 To: linux-mm@kvack.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org
 Cc: riel@redhat.com, cl@linux-foundation.org, a.p.zijlstra@chello.nl,
         Xiaotian Feng <dfeng@redhat.com>, linux-kernel@vger.kernel.org,
         lwang@redhat.com, penberg@cs.helsinki.fi, akpm@linux-foundation.org,
         davem@davemloft.net
-Message-Id: <20100713101843.2835.12822.sendpatchset@danny.redhat>
+Message-Id: <20100713101810.2835.45256.sendpatchset@danny.redhat>
 In-Reply-To: <20100713101650.2835.15245.sendpatchset@danny.redhat>
 References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
-Subject: [PATCH -mmotm 10/30] mm: __GFP_MEMALLOC
+Subject: [PATCH -mmotm 07/30] mm: allow PF_MEMALLOC from softirq context
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 78618cc83e6a21b876c30a8fb3940ccc1f5b99e1 Mon Sep 17 00:00:00 2001
+>From 32f474cffc76551ddb792454845bd473634219b5 Mon Sep 17 00:00:00 2001
 From: Xiaotian Feng <dfeng@redhat.com>
-Date: Tue, 13 Jul 2010 10:49:16 +0800
-Subject: [PATCH 10/30] mm: __GFP_MEMALLOC
+Date: Tue, 13 Jul 2010 10:41:53 +0800
+Subject: [PATCH 07/30] mm: allow PF_MEMALLOC from softirq context
 
-__GFP_MEMALLOC will allow the allocation to disregard the watermarks,
-much like PF_MEMALLOC.
+This is needed to allow network softirq packet processing to make use of
+PF_MEMALLOC.
 
-It allows one to pass along the memalloc state in object related allocation
-flags as opposed to task related flags, such as sk->sk_allocation.
+Currently softirq context cannot use PF_MEMALLOC due to it not being associated
+with a task, and therefore not having task flags to fiddle with - thus the gfp
+to alloc flag mapping ignores the task flags when in interrupts (hard or soft)
+context.
+
+Allowing softirqs to make use of PF_MEMALLOC therefore requires some trickery.
+We basically borrow the task flags from whatever process happens to be
+preempted by the softirq.
+
+So we modify the gfp to alloc flags mapping to not exclude task flags in
+softirq context, and modify the softirq code to save, clear and restore the
+PF_MEMALLOC flag.
+
+The save and clear, ensures the preempted task's PF_MEMALLOC flag doesn't
+leak into the softirq. The restore ensures a softirq's PF_MEMALLOC flag cannot
+leak back into the preempted process.
 
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Signed-off-by: Suresh Jayaraman <sjayaraman@suse.de>
 Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
 ---
- include/linux/gfp.h |    3 ++-
- mm/page_alloc.c     |    4 +++-
- 2 files changed, 5 insertions(+), 2 deletions(-)
+ include/linux/sched.h |    7 +++++++
+ kernel/softirq.c      |    3 +++
+ mm/page_alloc.c       |    7 ++++---
+ 3 files changed, 14 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/gfp.h b/include/linux/gfp.h
-index 975609c..c608e26 100644
---- a/include/linux/gfp.h
-+++ b/include/linux/gfp.h
-@@ -47,6 +47,7 @@ struct vm_area_struct;
- #define __GFP_REPEAT	((__force gfp_t)0x400u)	/* See above */
- #define __GFP_NOFAIL	((__force gfp_t)0x800u)	/* See above */
- #define __GFP_NORETRY	((__force gfp_t)0x1000u)/* See above */
-+#define __GFP_MEMALLOC  ((__force gfp_t)0x2000u)/* Use emergency reserves */
- #define __GFP_COMP	((__force gfp_t)0x4000u)/* Add compound page metadata */
- #define __GFP_ZERO	((__force gfp_t)0x8000u)/* Return zeroed page on success */
- #define __GFP_NOMEMALLOC ((__force gfp_t)0x10000u) /* Don't use emergency reserves */
-@@ -98,7 +99,7 @@ struct vm_area_struct;
- /* Control page allocator reclaim behavior */
- #define GFP_RECLAIM_MASK (__GFP_WAIT|__GFP_HIGH|__GFP_IO|__GFP_FS|\
- 			__GFP_NOWARN|__GFP_REPEAT|__GFP_NOFAIL|\
--			__GFP_NORETRY|__GFP_NOMEMALLOC)
-+			__GFP_NORETRY|__GFP_MEMALLOC|__GFP_NOMEMALLOC)
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 1f25798..85b74b0 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1765,6 +1765,13 @@ static inline void rcu_copy_process(struct task_struct *p)
  
- /* Control slab gfp mask during early boot */
- #define GFP_BOOT_MASK (__GFP_BITS_MASK & ~(__GFP_WAIT|__GFP_IO|__GFP_FS))
+ #endif
+ 
++static inline void tsk_restore_flags(struct task_struct *p,
++				     unsigned long pflags, unsigned long mask)
++{
++	p->flags &= ~mask;
++	p->flags |= pflags & mask;
++}
++
+ #ifdef CONFIG_SMP
+ extern int set_cpus_allowed_ptr(struct task_struct *p,
+ 				const struct cpumask *new_mask);
+diff --git a/kernel/softirq.c b/kernel/softirq.c
+index 07b4f1b..0770e78 100644
+--- a/kernel/softirq.c
++++ b/kernel/softirq.c
+@@ -194,6 +194,8 @@ asmlinkage void __do_softirq(void)
+ 	__u32 pending;
+ 	int max_restart = MAX_SOFTIRQ_RESTART;
+ 	int cpu;
++	unsigned long pflags = current->flags;
++	current->flags &= ~PF_MEMALLOC;
+ 
+ 	pending = local_softirq_pending();
+ 	account_system_vtime(current);
+@@ -246,6 +248,7 @@ restart:
+ 
+ 	account_system_vtime(current);
+ 	_local_bh_enable();
++	tsk_restore_flags(current, pflags, PF_MEMALLOC);
+ }
+ 
+ #ifndef __ARCH_HAS_DO_SOFTIRQ
 diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 21d64f7..f7d3060 100644
+index b9989c5..4b1fa10 100644
 --- a/mm/page_alloc.c
 +++ b/mm/page_alloc.c
-@@ -1930,7 +1930,9 @@ int gfp_to_alloc_flags(gfp_t gfp_mask)
+@@ -1928,9 +1928,10 @@ int gfp_to_alloc_flags(gfp_t gfp_mask)
  		alloc_flags |= ALLOC_HARDER;
  
  	if (likely(!(gfp_mask & __GFP_NOMEMALLOC))) {
--		if (!in_irq() && (p->flags & PF_MEMALLOC))
-+		if (gfp_mask & __GFP_MEMALLOC)
+-		if (!in_interrupt() &&
+-		    ((p->flags & PF_MEMALLOC) ||
+-		     unlikely(test_thread_flag(TIF_MEMDIE))))
++		if (!in_irq() && (p->flags & PF_MEMALLOC))
 +			alloc_flags |= ALLOC_NO_WATERMARKS;
-+		else if (!in_irq() && (p->flags & PF_MEMALLOC))
++		else if (!in_interrupt() &&
++				unlikely(test_thread_flag(TIF_MEMDIE)))
  			alloc_flags |= ALLOC_NO_WATERMARKS;
- 		else if (!in_interrupt() &&
- 				unlikely(test_thread_flag(TIF_MEMDIE)))
+ 	}
+ 
 -- 
 1.7.1.1
 
