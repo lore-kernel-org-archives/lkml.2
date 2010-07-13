@@ -1,116 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab0GMHYm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 03:24:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24306 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab0GMHO1 (ORCPT
+	id S1752829Ab0GMH3P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 03:29:15 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:45949 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752313Ab0GMH3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 03:14:27 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	Tue, 13 Jul 2010 03:29:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=eVEpBnr0nJPdZf0U2PtbG2PCGqpge38x3dYK9o6mjgOtndB2k4hb2s1YwWxQKRu9vc
+         sRlIy2V0IExXRKzuFLr/tyuJxKocL6nGKpSt2mh0R/NOpB4XC1AHZ22LN4krjExVsZE3
+         j4f/X7GZ5LnOhMsvyBkaSOM4yqpmHzrxRqApU=
+From: Changli Gao <xiaosuo@gmail.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Alexander Beregalov <a.beregalov@gmail.com>, Ingo Molnar <mingo@elte.hu>,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 14/50] memblock: Remove memblock_type.size and add memblock.memory_size instead
-Date: Tue, 13 Jul 2010 00:10:08 -0700
-Message-Id: <1279005044-24777-15-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
-References: <1279005044-24777-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C3C123F.010B,ss=1,fgs=0
+        Jens Axboe <jens.axboe@oracle.com>, reiserfs-devel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH, resend] reiserfs: remove unused variable wait
+Date: Tue, 13 Jul 2010 15:26:30 +0800
+Message-Id: <1279005990-11185-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+remove unused variable wait
 
-Right now, both the "memory" and "reserved" memblock_type structures have
-a "size" member. It's unused in the later case, and represent the
-calculated memory size in the later case.
+remove unused variable wait
 
-This moves it out to the main memblock structure instead
-
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- arch/powerpc/mm/mem.c    |    2 +-
- include/linux/memblock.h |    2 +-
- mm/memblock.c            |    8 ++++----
- 3 files changed, 6 insertions(+), 6 deletions(-)
-
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 52df542..f661f6c 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -301,7 +301,7 @@ void __init mem_init(void)
- 		swiotlb_init(1);
- #endif
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+----
+ fs/reiserfs/journal.c |    1 -
+ 1 file changed, 1 deletion(-)
+diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
+index 19fbc81..1ec952b 100644
+--- a/fs/reiserfs/journal.c
++++ b/fs/reiserfs/journal.c
+@@ -983,7 +983,6 @@ static int flush_older_commits(struct super_block *s,
  
--	num_physpages = memblock.memory.size >> PAGE_SHIFT;
-+	num_physpages = memblock_phys_mem_size() >> PAGE_SHIFT;
- 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
- 
- #ifdef CONFIG_NEED_MULTIPLE_NODES
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 5abb06b..e849d31 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -27,12 +27,12 @@ struct memblock_region {
- 
- struct memblock_type {
- 	unsigned long cnt;
--	phys_addr_t size;
- 	struct memblock_region regions[MAX_MEMBLOCK_REGIONS+1];
- };
- 
- struct memblock {
- 	phys_addr_t current_limit;
-+	phys_addr_t memory_size;	/* Updated by memblock_analyze() */
- 	struct memblock_type memory;
- 	struct memblock_type reserved;
- };
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 0c0f787..78c2394 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -49,7 +49,7 @@ void memblock_dump_all(void)
- 		return;
- 
- 	pr_info("MEMBLOCK configuration:\n");
--	pr_info(" memory.size = 0x%llx\n", (unsigned long long)memblock.memory.size);
-+	pr_info(" memory size = 0x%llx\n", (unsigned long long)memblock.memory_size);
- 
- 	memblock_dump(&memblock.memory, "memory");
- 	memblock_dump(&memblock.reserved, "reserved");
-@@ -123,10 +123,10 @@ void __init memblock_analyze(void)
+ static int reiserfs_async_progress_wait(struct super_block *s)
  {
- 	int i;
+-	DEFINE_WAIT(wait);
+ 	struct reiserfs_journal *j = SB_JOURNAL(s);
  
--	memblock.memory.size = 0;
-+	memblock.memory_size = 0;
- 
- 	for (i = 0; i < memblock.memory.cnt; i++)
--		memblock.memory.size += memblock.memory.regions[i].size;
-+		memblock.memory_size += memblock.memory.regions[i].size;
- }
- 
- static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-@@ -423,7 +423,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
- /* You must call memblock_analyze() before this. */
- phys_addr_t __init memblock_phys_mem_size(void)
- {
--	return memblock.memory.size;
-+	return memblock.memory_size;
- }
- 
- phys_addr_t memblock_end_of_DRAM(void)
--- 
-1.6.4.2
-
+ 	if (atomic_read(&j->j_async_throttle)) {
