@@ -1,66 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab0GMPNe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 11:13:34 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:59860 "EHLO mail.skyhub.de"
+	id S1756921Ab0GMPO1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 11:14:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57356 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756850Ab0GMPNd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 11:13:33 -0400
-Date: Tue, 13 Jul 2010 17:13:29 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Branislav Gajdos <brianzee@gmail.com>
-Cc: Peter Feuerer <peter@piie.net>, linux-kernel@vger.kernel.org
-Subject: Re: acerhdf.c - unsupported notebook
-Message-ID: <20100713151329.GA17516@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Branislav Gajdos <brianzee@gmail.com>,
-	Peter Feuerer <peter@piie.net>, linux-kernel@vger.kernel.org
-References: <AANLkTin0mv0Z5vozJHkfVYCJTWMvj9JZnP_FcQ6vZBRV@mail.gmail.com>
- <20100713124840.GA16427@a1.tnic>
- <AANLkTimBhWKo0zxW6fX5RgLLAQVIdItS5RKpvxqkDlis@mail.gmail.com>
+	id S1756511Ab0GMPO0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 11:14:26 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: [PATCH|RFC] deadline: don't allow aliased requests to starve others
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 13 Jul 2010 11:14:19 -0400
+Message-ID: <x49mxtvpg6s.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimBhWKo0zxW6fX5RgLLAQVIdItS5RKpvxqkDlis@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Branislav Gajdos <brianzee@gmail.com>
-Date: Tue, Jul 13, 2010 at 04:27:37PM +0200
+Hi,
 
-> >> acerhdf: unknown (unsupported) BIOS version Acer/Aspire 3810T/V1.04,
-> >> please report, aborting!
-> >
-> > It doesn't look to me like this machine is a netbook with an Atom cpu
-> > supported by this driver. Do as root:
-> 
-> That's possible, I'm not sure what exactly this driver does. However,
-> I've seen Aspire 1810T definitions in the file already (in bios_tbl
-> table) which is afaik 11" version of 3810T, so I decided to report it
-> for completeness.
+In running a test case that tries to trip up the kernel's AIO
+implementation, we ran into a situation where no other I/O to the device
+under test would be completed.  The test program spawned (in this case)
+100 threads, each of which performed the following in a loop:
 
-Hmm, acerhdf is a driver for, originally, acer aspire one netbooks with
-noisy fans. We have static limits which turn on the fan at 63 °C and
-off again when the temperature reaches 58 °C - those are at least the
-defaults.
+open file O_DIRECT
+queue 1MB of read I/O from file using 16 iocbs
+close file
+repeat
 
-Now you have a Core 2 Duo U9400 for which I can't find the specs after a
-quick search but it looks like something a little bit more powerful than
-a netbook cpu but still ultra low power. So, before we dig further into
-this, is your fan noisy at all?
+The program does NOT wait for the I/O to complete.  The file length is
+only 4MB, meaning that you have 25 threads performing I/O on each of the
+4 1MB regions.
 
-Peter, it looks like we support not only Atoms with that driver. Maybe
-we should check the cpu specs of the 1810T for example (and google says
-there are several different cpu types packaged with those laptops)
-before we enforce temperature limits on them...? And let me ask you
-this: are all those 1810T* entries in the bios_tbl there because of
-noisy fans ...?
+Both deadline and cfq check for aliased requests in the sorted list of
+I/Os, and when an alias is found, the request in the rb tree is moved to
+the dispatch list.  So, what happens is that, with this workload, only
+requests from this program are moved to the dispatch list, starving out
+all other I/O.
 
-Thanks.
+I've attached a patch that fixes this using one approach.  The patch
+just implements a counter for aliased requests served in sequence, and
+dispatches from the fifo once the number of aliased requests serviced
+exceeds a certain value.  What that value should be set to is difficult
+to determine.  This should be a rare case, and you don't really want to
+go outside of the normal scheduling mechanism for I/Os.  So, there is a
+balance to be struck between dispatching requests in the alised request
+code path and allowing this starvation to go on, hoping it is a
+temporary situation (but ensuring progress).
 
--- 
-Regards/Gruss,
-Boris.
+Another approach I've implemented gets rid of the counter, and simply
+checks the fifo when dispatching an aliased request.
+
+Jens, let me know which approach is more palatable and I'll spin up the
+appropriate patch for CFQ.
+
+Cheers,
+Jeff
+
+diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
+index b547cbc..7950319 100644
+--- a/block/deadline-iosched.c
++++ b/block/deadline-iosched.c
+@@ -23,6 +23,12 @@ static const int writes_starved = 2;    /* max times reads can starve a write */
+ static const int fifo_batch = 16;       /* # of sequential requests treated as one
+ 				     by the above parameters. For throughput. */
+ 
++/*
++ * If this many alias requests are served without dispatching from the
++ * normal dispatch routine, dispatch any expired requests.
++ */
++#define ALIAS_MAX_BATCH		8
++
+ struct deadline_data {
+ 	/*
+ 	 * run time data
+@@ -41,7 +47,7 @@ struct deadline_data {
+ 	unsigned int batching;		/* number of sequential requests made */
+ 	sector_t last_sector;		/* head position */
+ 	unsigned int starved;		/* times reads have starved writes */
+-
++	unsigned int alias_served;	/* number of alias dispatches in a row */
+ 	/*
+ 	 * settings that change how the i/o scheduler behaves
+ 	 */
+@@ -73,14 +79,44 @@ deadline_latter_request(struct request *rq)
+ 	return NULL;
+ }
+ 
++/*
++ * deadline_check_fifo returns 0 if there are no expired requests on the fifo,
++ * 1 otherwise. Requires !list_empty(&dd->fifo_list[data_dir])
++ */
++static inline int deadline_check_fifo(struct deadline_data *dd, int ddir)
++{
++	struct request *rq = rq_entry_fifo(dd->fifo_list[ddir].next);
++
++	/*
++	 * rq is expired!
++	 */
++	if (time_after(jiffies, rq_fifo_time(rq)))
++		return 1;
++
++	return 0;
++}
++
+ static void
+ deadline_add_rq_rb(struct deadline_data *dd, struct request *rq)
+ {
+ 	struct rb_root *root = deadline_rb_root(dd, rq);
+ 	struct request *__alias;
+ 
+-	while (unlikely(__alias = elv_rb_add(root, rq)))
++	while (unlikely(__alias = elv_rb_add(root, rq))) {
++
+ 		deadline_move_request(dd, __alias);
++
++		if (++dd->alias_served >= ALIAS_MAX_BATCH) {
++			int data_dir = rq_data_dir(rq);
++			while (!list_empty(&dd->fifo_list[data_dir]) &&
++			       deadline_check_fifo(dd, data_dir)) {
++				struct request *__rq;
++				__rq = rq_entry_fifo(dd->fifo_list[data_dir].next);
++				deadline_move_request(dd, __rq);
++			}
++			dd->alias_served = 0;
++		}
++	}
+ }
+ 
+ static inline void
+@@ -222,23 +258,6 @@ deadline_move_request(struct deadline_data *dd, struct request *rq)
+ }
+ 
+ /*
+- * deadline_check_fifo returns 0 if there are no expired requests on the fifo,
+- * 1 otherwise. Requires !list_empty(&dd->fifo_list[data_dir])
+- */
+-static inline int deadline_check_fifo(struct deadline_data *dd, int ddir)
+-{
+-	struct request *rq = rq_entry_fifo(dd->fifo_list[ddir].next);
+-
+-	/*
+-	 * rq is expired!
+-	 */
+-	if (time_after(jiffies, rq_fifo_time(rq)))
+-		return 1;
+-
+-	return 0;
+-}
+-
+-/*
+  * deadline_dispatch_requests selects the best request according to
+  * read/write expire, fifo_batch, etc
+  */
