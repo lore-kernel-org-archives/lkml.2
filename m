@@ -1,48 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756292Ab0GMCXc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 12 Jul 2010 22:23:32 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62395 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753818Ab0GMCXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 12 Jul 2010 22:23:31 -0400
-Message-ID: <4C3BCDA1.5040007@cn.fujitsu.com>
-Date: Tue, 13 Jul 2010 10:21:21 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Jens Axboe <jens.axboe@oracle.com>
-CC: Vivek Goyal <vgoyal@redhat.com>, Corrado Zoccolo <czoccolo@gmail.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: [PATCH] CFQ: Don't store left slice when slice used up or for a idle
- workload
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756045Ab0GMCZp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 12 Jul 2010 22:25:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:5675 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752460Ab0GMCZo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 12 Jul 2010 22:25:44 -0400
+From: Zachary Amsden <zamsden@redhat.com>
+To: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>
+Cc: Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: KVM timekeeping fixes, V2
+Date: Mon, 12 Jul 2010 16:25:20 -1000
+Message-Id: <1278987938-23873-1-git-send-email-zamsden@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It doesn't make sence to store left time slice for an idle workload
-or for the cfqq that uses up its slice.
-
-Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
----
- block/cfq-iosched.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index eb4086f..d985e38 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -3418,7 +3418,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
- 		 * - when there is a close cooperator
- 		 */
- 		if (cfq_slice_used(cfqq) || cfq_class_idle(cfqq))
--			cfq_slice_expired(cfqd, 1);
-+			cfq_slice_expired(cfqd, 0);
- 		else if (sync && cfqq_empty &&
- 			 !cfq_close_cooperator(cfqd, cfqq)) {
- 			cfqd->noidle_tree_requires_idle |=
--- 
-1.5.4.rc3
+Discovered brammage in patches due to unresolved merge.
+Also, had to move 09/18 past 08/18 to resolve compile issue.
 
