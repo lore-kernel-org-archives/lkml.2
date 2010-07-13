@@ -1,399 +1,275 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751807Ab0GMEtU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 00:49:20 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:45070 "EHLO
+	id S1751255Ab0GMEwJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 00:52:09 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:38362 "EHLO
 	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750830Ab0GMEtT (ORCPT
+	by vger.kernel.org with ESMTP id S1750830Ab0GMEwH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 00:49:19 -0400
-X-Sasl-enc: gF+Fy8/Wdop2PxnndfZyA1xrNeFmhBId7KbEBKBS1I+v 1278996556
-Date: Tue, 13 Jul 2010 12:49:10 +0800
+	Tue, 13 Jul 2010 00:52:07 -0400
+X-Sasl-enc: UvL/nxolJrlFRUZhpoYBQscjYXVXzMnoYARd0iNY/ziH 1278996724
+Date: Tue, 13 Jul 2010 12:51:57 +0800
 From: Ian Kent <raven@themaw.net>
 To: Valerie Aurora <vaurora@redhat.com>
 Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
         Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
         Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 22/38] union-mount: Implement union lookup
-Message-ID: <20100713044909.GG3949@zeus.themaw.net>
+        linux-fsdevel@vger.kernel.org, Felix Fietkau <nbd@openwrt.org>
+Subject: Re: [PATCH 24/38] union-mount: Copy up directory entries on first
+ readdir()
+Message-ID: <20100713045156.GH3949@zeus.themaw.net>
 References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
- <1276627208-17242-23-git-send-email-vaurora@redhat.com>
+ <1276627208-17242-25-git-send-email-vaurora@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1276627208-17242-23-git-send-email-vaurora@redhat.com>
+In-Reply-To: <1276627208-17242-25-git-send-email-vaurora@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jun 15, 2010 at 11:39:52AM -0700, Valerie Aurora wrote:
-> Implement unioned directories, whiteouts, and fallthrus in pathname
-> lookup routines.  do_lookup() and lookup_hash() call lookup_union()
-> after looking up the dentry from the top-level file system.
-> lookup_union() is centered around __lookup_hash(), which does cached
-> and/or real lookups and revalidates each dentry in the union stack.
+On Tue, Jun 15, 2010 at 11:39:54AM -0700, Valerie Aurora wrote:
+> readdir() in union mounts is implemented by copying up all visible
+> directory entries from the lower level directories to the topmost
+> directory.  Directory entries that refer to lower level file system
+> objects are marked as "fallthru" in the topmost directory.
 > 
-> XXX - implement negative union cache entries
+> Thanks to Felix Fietkau <nbd@openwrt.org> for a bug fix.
 > 
-> XXX - What about different permissions on different layers on the same
-> directory name?  Should complain, fail, test permissions on all
-> layers, what?
+> XXX - How to deal with fallthrus in lower layers?
+> 
+> Signed-off-by: Valerie Aurora <vaurora@redhat.com>
+> Signed-off-by: Felix Fietkau <nbd@openwrt.org>
 > ---
->  fs/namei.c |  171 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
->  fs/union.c |   94 +++++++++++++++++++++++++++++++++
->  fs/union.h |    7 +++
->  3 files changed, 271 insertions(+), 1 deletions(-)
+>  fs/readdir.c |    9 +++
+>  fs/union.c   |  157 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+>  fs/union.h   |    2 +
+>  3 files changed, 168 insertions(+), 0 deletions(-)
 > 
-> diff --git a/fs/namei.c b/fs/namei.c
-> index 06aad7e..45be5e5 100644
-> --- a/fs/namei.c
-> +++ b/fs/namei.c
-> @@ -35,6 +35,7 @@
+> diff --git a/fs/readdir.c b/fs/readdir.c
+> index 3a48491..dd3eae1 100644
+> --- a/fs/readdir.c
+> +++ b/fs/readdir.c
+> @@ -19,6 +19,8 @@
+>  
 >  #include <asm/uaccess.h>
 >  
->  #include "internal.h"
 > +#include "union.h"
+> +
+>  int vfs_readdir(struct file *file, filldir_t filler, void *buf)
+>  {
+>  	struct inode *inode = file->f_path.dentry->d_inode;
+> @@ -36,9 +38,16 @@ int vfs_readdir(struct file *file, filldir_t filler, void *buf)
 >  
->  /* [Feb-1997 T. Schoebel-Theuer]
->   * Fundamental changes in the pathname lookup mechanisms (namei)
-> @@ -722,6 +723,160 @@ static __always_inline void follow_dotdot(struct nameidata *nd)
->  	follow_mount(&nd->path);
->  }
->  
-> +static struct dentry *__lookup_hash(struct qstr *name, struct dentry *base,
-> +				    struct nameidata *nd);
-> +
-> +/*
-> + * __lookup_union - Given a path from the topmost layer, lookup and
-> + * revalidate each dentry in its union stack, building it if necessary
-> + *
-> + * @nd - nameidata for the parent of @topmost
-> + * @name - pathname from this element on
-> + * @topmost - path of the topmost matching dentry
-> + *
-> + * Given the nameidata and the path of the topmost dentry for this
-> + * pathname, lookup, revalidate, and build the associated union stack.
-> + * @topmost must be either a negative dentry or a directory, and not a
-> + * whiteout.
-> + *
-> + * This function may stomp nd->path with the path of the parent
-> + * directory of lower layer, so the caller must save nd->path and
-> + * restore it afterwards.  You probably want to use lookup_union(),
-> + * not __lookup_union().
-> + */
-> +
-> +static int __lookup_union(struct nameidata *nd, struct qstr *name,
-> +			  struct path *topmost)
-> +{
-> +	struct path parent = nd->path;
-> +	struct path lower, upper;
-> +	struct union_dir *ud;
-> +	/* new_ud is the tail of the list of union dirs for this dentry */
-
-Should new_ud be next_ud, since there is no new_ud defined?
-
-> +	struct union_dir **next_ud = &topmost->dentry->d_union_dir;
-> +	int err = 0;
-> +
-> +	/*
-> +	 * upper is either a negative dentry from the top layer, or it
-> +	 * is the most recent positive dentry for a directory that
-> +	 * we've seen.
-> +	 */
-> +	upper = *topmost;
-> +
-> +	/* Go through each dir underlying the parent, looking for a match */
-> +	for (ud = nd->path.dentry->d_union_dir; ud != NULL; ud = ud->u_lower) {
-> +		BUG_ON(ud->u_this.dentry->d_count.counter == 0);
-> +		/* Change the nameidata to point to this level's dir */
-> +		nd->path = ud->u_this;
-> +		/* Lookup the child in this level */
-> +		lower.mnt = mntget(nd->path.mnt);
-> +		mutex_lock(&nd->path.dentry->d_inode->i_mutex);
-> +		lower.dentry = __lookup_hash(name, nd->path.dentry, nd);
-> +		mutex_unlock(&nd->path.dentry->d_inode->i_mutex);
-> +
-> +		if (IS_ERR(lower.dentry)) {
-> +			mntput(lower.mnt);
-> +			err = PTR_ERR(lower.dentry);
-> +			goto out;
+>  	res = -ENOENT;
+>  	if (!IS_DEADDIR(inode)) {
+> +		if (IS_DIR_UNIONED(file->f_path.dentry) && !IS_OPAQUE(inode)) {
+> +			res = union_copyup_dir(&file->f_path);
+> +			if (res)
+> +				goto out_unlock;
 > +		}
 > +
-> +		if (!lower.dentry->d_inode) {
-> +			if (d_is_whiteout(lower.dentry))
-> +				break;
-> +			if (IS_OPAQUE(nd->path.dentry->d_inode) &&
-> +			    !d_is_fallthru(lower.dentry))
-> +				break;
-> +			/* Plain old negative! Keep looking */
-> +			path_put(&lower);
-> +			continue;
-> +		}
-> +
-> +		/* Finding a non-dir ends the lookup, one way or another */
-> +		if (!S_ISDIR(lower.dentry->d_inode->i_mode)) {
-> +			/* Ignore file below dir - invalid */
-> +			if (upper.dentry->d_inode &&
-> +			    S_ISDIR(upper.dentry->d_inode->i_mode)) {
-> +				path_put(&lower);
-> +				break;
-> +			}
-> +			/* Bingo, found our target */
-> +			dput(topmost->dentry);
-> +			/* mntput(topmost) done in link_path_walk() */
-> +			*topmost = lower;
-> +			break;
-> +		}
-> +
-> +		/* Found a directory. Create the topmost version if it doesn't exist */
-> +		if (!topmost->dentry->d_inode) {
-> +			err = union_create_topmost_dir(&parent, name, topmost,
-> +						       &lower);
-> +			if (err) {
-> +				path_put(&lower);
-> +				return err;
-> +			}
-> +		}
-> +
-> +		err = union_add_dir(&upper, &lower, next_ud);
-> +		if (err)
-> +			break;
-> +
-> +		next_ud = &(*next_ud)->u_lower;
-> +		upper = lower;
-> +	}
-> +out:
-> +	return 0;
-> +}
-> +
-> +/*
-> + * lookup_union - revalidate and build union stack for this path
-> + *
-> + * We borrow the nameidata struct from the topmost layer to do the
-> + * revalidation on lower dentries, replacing the topmost parent
-> + * directory's path with that of the matching parent dir in each lower
-> + * layer.  This wrapper for __lookup_union() saves the topmost layer's
-> + * path and restores it when we are done.
-> + */
-> +static int lookup_union(struct nameidata *nd, struct qstr *name,
-> +			struct path *topmost)
-> +{
-> +	struct path saved_path;
-> +	int err;
-> +
-> +	BUG_ON(!IS_MNT_UNION(nd->path.mnt) && !IS_MNT_UNION(topmost->mnt));
-> +	BUG_ON(!mutex_is_locked(&nd->path.dentry->d_inode->i_mutex));
-> +
-> +	saved_path = nd->path;
-> +	path_get(&saved_path);
-> +
-> +	err = __lookup_union(nd, name, topmost);
-> +
-> +	nd->path = saved_path;
-> +	path_put(&saved_path);
-> +
-> +	return err;
-> +}
-> +
-> +/*
-> + * do_union_lookup - union mount-aware part of do_lookup
-> + *
-> + * do_lookup()-style wrapper for lookup_union().  Follows mounts.
-> + */
-> +
-> +static int do_lookup_union(struct nameidata *nd, struct qstr *name,
-> +			   struct path *topmost)
-> +{
-> +	struct dentry *parent = nd->path.dentry;
-> +	struct inode *dir = parent->d_inode;
-> +	int err;
-> +
-> +	mutex_lock(&dir->i_mutex);
-> +	err = lookup_union(nd, name, topmost);
-> +	mutex_unlock(&dir->i_mutex);
-> +
-> +	__follow_mount(topmost);
-> +
-> +	return err;
-> +}
-> +
->  /*
->   *  It's more convoluted than I'd like it to be, but... it's still fairly
->   *  small and for now I'd prefer to have fast path as straight as possible.
-> @@ -752,6 +907,11 @@ done:
->  	path->mnt = mnt;
->  	path->dentry = dentry;
->  	__follow_mount(path);
-> +	if (needs_lookup_union(&nd->path, path)) {
-> +		int err = do_lookup_union(nd, name, path);
-> +		if (err < 0)
-> +			return err;
-> +	}
->  	return 0;
->  
->  need_lookup:
-> @@ -1223,8 +1383,13 @@ static int lookup_hash(struct nameidata *nd, struct qstr *name,
->  		err = PTR_ERR(path->dentry);
->  		path->dentry = NULL;
->  		path->mnt = NULL;
-> +		return err;
+>  		res = file->f_op->readdir(file, buf, filler);
+>  		file_accessed(file);
 >  	}
-> +
-> +	if (needs_lookup_union(&nd->path, path))
-> +		err = lookup_union(nd, name, path);
->  	return err;
-> +
->  }
->  
->  static int __lookup_one_len(const char *name, struct qstr *this,
-> @@ -2888,7 +3053,11 @@ SYSCALL_DEFINE4(renameat, int, olddfd, const char __user *, oldname,
->  	error = -EXDEV;
->  	if (oldnd.path.mnt != newnd.path.mnt)
->  		goto exit2;
-> -
-> +	/* Rename on union mounts not implemented yet */
-> +	/* XXX much harsher check than necessary - can do some renames */
-> +	if (IS_DIR_UNIONED(oldnd.path.dentry) ||
-> +	    IS_DIR_UNIONED(newnd.path.dentry))
-> +		goto exit2;
->  	old_dir = oldnd.path.dentry;
->  	error = -EBUSY;
->  	if (oldnd.last_type != LAST_NORM)
+> +out_unlock:
+>  	mutex_unlock(&inode->i_mutex);
+>  out:
+>  	return res;
 > diff --git a/fs/union.c b/fs/union.c
-> index 02abb7c..c089c02 100644
+> index c089c02..76a6c34 100644
 > --- a/fs/union.c
 > +++ b/fs/union.c
-> @@ -21,6 +21,7 @@
->  #include <linux/mount.h>
+> @@ -22,6 +22,8 @@
 >  #include <linux/fs_struct.h>
 >  #include <linux/slab.h>
-> +#include <linux/namei.h>
+>  #include <linux/namei.h>
+> +#include <linux/file.h>
+> +#include <linux/security.h>
 >  
 >  #include "union.h"
 >  
-> @@ -117,3 +118,96 @@ void d_free_unions(struct dentry *dentry)
->  	}
->  	dentry->d_union_dir = NULL;
+> @@ -211,3 +213,158 @@ int union_create_topmost_dir(struct path *parent, struct qstr *name,
+>  
+>  	return res;
 >  }
 > +
 > +/**
-> + * needs_lookup_union - Avoid union lookup when not necessary
+> + * union_copyup_dir_one - copy up a single directory entry
 > + *
-> + * @parent_path: path of the parent directory
-> + * @path: path of the lookup target
-> + *
-> + * Check to see if the target needs union lookup.  Two cases need
-> + * union lookup: the target is a directory, and the target is a
-> + * negative dentry.
-> + *
-> + * Returns 0 if this dentry is definitely not unioned.  Returns 1 if
-> + * it is possible this dentry is unioned.
+> + * Individual directory entry copyup function for union_copyup_dir.
+> + * We get the entries from higher level layers first.
 > + */
 > +
-> +int needs_lookup_union(struct path *parent_path, struct path *path)
+> +static int union_copyup_dir_one(void *buf, const char *name, int namlen,
+> +				loff_t offset, u64 ino, unsigned int d_type)
 > +{
-> +	/*
-> +	 * If the target is the root of the mount, then its union
-> +	 * stack was already created at mount time (if this is a union
-> +	 * mount).
-> +	 */
-> +	if (IS_ROOT(path->dentry))
-> +		return 0;
+> +	struct dentry *topmost_dentry = (struct dentry *) buf;
+> +	struct dentry *dentry;
+> +	int err = 0;
 > +
-> +	/* Only dentries in a unioned directory need a union lookup. */
-> +	if (!IS_DIR_UNIONED(parent_path->dentry))
+> +	switch (namlen) {
+> +	case 2:
+> +		if (name[1] != '.')
+> +			break;
+> +	case 1:
+> +		if (name[0] != '.')
+> +			break;
 > +		return 0;
+> +	}
 > +
-> +	/* Whiteouts cover up everything below */
-> +	if (d_is_whiteout(path->dentry))
-> +		return 0;
+> +	/* Lookup this entry in the topmost directory */
+> +	dentry = lookup_one_len(name, topmost_dentry, namlen);
 > +
-> +	/* Opaque dirs cover except if this is a fallthru */
-> +	if (IS_OPAQUE(parent_path->dentry->d_inode) &&
-> +	    !d_is_fallthru(path->dentry))
-> +		return 0;
-> +
-> +	/*
-> +	 * XXX Negative dentries in unioned directories must always go
-> +	 * through a full union lookup because there might be a
-> +	 * matching entry below it.  To improve performance, we should
-> +	 * mark negative dentries in some way to show they have
-> +	 * already been looked up in the union and nothing was found.
-> +	 * Maybe mark it opaque?
-> +	 */
-> +	if (!path->dentry->d_inode)
-> +		return 1;
+> +	if (IS_ERR(dentry)) {
+> +		printk(KERN_WARNING "%s: error looking up %s\n", __func__,
+> +		       dentry->d_name.name);
+> +		err = PTR_ERR(dentry);
+> +		goto out;
+> +	}
 > +
 > +	/*
-> +	 * If it's not a directory and it's a positive dentry, then we
-> +	 * already have the topmost dentry and we don't need to do any
-> +	 * lookup in lower layers.
+> +	 * If the entry already exists, one of the following is true:
+> +	 * it was already copied up (due to an earlier lookup), an
+> +	 * entry with the same name already exists on the topmost file
+> +	 * system, it is a whiteout, or it is a fallthru.  In each
+> +	 * case, the top level entry masks any entries from lower file
+> +	 * systems, so don't copy up this entry.
 > +	 */
-> +
-> +	if (!S_ISDIR(path->dentry->d_inode->i_mode))
-> +		return 0;
-> +
-> +	/* Is the union stack already constructed? */
-> +	if (IS_DIR_UNIONED(path->dentry))
-> +		return 0;
+> +	if (dentry->d_inode || d_is_whiteout(dentry) || d_is_fallthru(dentry))
+> +		goto out_dput;
 > +
 > +	/*
-> +	 * XXX This is like the negative dentry case.  This directory
-> +	 * may have no matching directories in the lower layers, or
-> +	 * this may just be the first time we looked it up.  We can't
-> +	 * tell the difference.
+> +	 * If the entry doesn't exist, create a fallthru entry in the
+> +	 * topmost file system.  All possible directory types are
+> +	 * used, so each file system must implement its own way of
+> +	 * storing a fallthru entry.
 > +	 */
-> +	return 1;
+> +	err = topmost_dentry->d_inode->i_op->fallthru(topmost_dentry->d_inode,
+> +						      dentry);
+
+There's a bit of indirection going on here so it isn't clear to me if
+it is possible for i_op->fallthru() to ever be NULL?
+
+> +out_dput:
+> +	dput(dentry);
+> +out:
+> +	return err;
 > +}
 > +
-> +/*
-> + * union_create_topmost_dir - Create a matching dir in the topmost file system
+> +/**
+> + * union_copyup_dir - copy up low-level directory entries to topmost dir
+> + *
+> + * readdir() is difficult to support on union file systems for two
+> + * reasons: We must eliminate duplicates and apply whiteouts, and we
+> + * must return something in f_pos that lets us restart in the same
+> + * place when we return.  Our solution is to, on first readdir() of
+> + * the directory, copy up all visible entries from the low-level file
+> + * systems and mark the entries that refer to low-level file system
+> + * objects as "fallthru" entries.
+> + *
+> + * Locking strategy: We hold the topmost dir's i_mutex on entry.  We
+> + * grab the i_mutex on lower directories one by one.  So the locking
+> + * order is:
+> + *
+> + * Writable/topmost layers > Read-only/lower layers
+> + *
+> + * So there is no problem with lock ordering for union stacks with
+> + * multiple lower layers.  E.g.:
+> + *
+> + * (topmost) A->B->C (bottom)
+> + * (topmost) D->C->B (bottom)
+> + *
+> + * (Not that we support more than two layers at the moment.)
 > + */
 > +
-> +int union_create_topmost_dir(struct path *parent, struct qstr *name,
-> +			     struct path *topmost, struct path *lower)
+> +int union_copyup_dir(struct path *topmost_path)
 > +{
-> +	int mode = lower->dentry->d_inode->i_mode;
-> +	int res;
+> +	struct dentry *topmost_dentry = topmost_path->dentry;
+> +	struct union_dir *ud;
+> +	int res = 0;
 > +
-> +	BUG_ON(topmost->dentry->d_inode);
+> +	BUG_ON(IS_OPAQUE(topmost_dentry->d_inode));
 > +
-> +	res = mnt_want_write(parent->mnt);
+> +	res = mnt_want_write(topmost_path->mnt);
 > +	if (res)
 > +		return res;
+> +	/*
+> +	 * Mark this dir opaque to show that we have already copied up
+> +	 * the lower entries.  Only fallthru entries pass through to
+> +	 * the underlying file system.
+> +	 */
+> +	topmost_dentry->d_inode->i_flags |= S_OPAQUE;
+> +	mark_inode_dirty(topmost_dentry->d_inode);
 > +
-> +	res = vfs_mkdir(parent->dentry->d_inode, topmost->dentry, mode);
+> +	for (ud = topmost_path->dentry->d_union_dir; ud != NULL; ud = ud->u_lower) {
+> +		struct file * ftmp;
+> +		struct inode * inode;
+> +		struct path path;
 > +
-> +	mnt_drop_write(parent->mnt);
+> +		BUG_ON(ud->u_this.dentry->d_count.counter == 0);
+> +		path = ud->u_this;
+> +		/* dentry_open() doesn't get a path reference itself */
+> +		path_get(&path);
+> +		ftmp = dentry_open(path.dentry, path.mnt,
+> +				   O_RDONLY | O_DIRECTORY | O_NOATIME,
+> +				   current_cred());
+> +		if (IS_ERR(ftmp)) {
+> +			printk (KERN_ERR "unable to open dir %s for "
+> +				"directory copyup: %ld\n",
+> +				path.dentry->d_name.name, PTR_ERR(ftmp));
+> +			path_put(&path);
+> +			continue;
+> +		}
 > +
+> +		inode = path.dentry->d_inode;
+> +		mutex_lock(&inode->i_mutex);
+> +
+> +		res = -ENOENT;
+> +		if (IS_DEADDIR(inode))
+> +			goto out_fput;
+> +		/*
+> +		 * Read the whole directory, calling our directory
+> +		 * entry copyup function on each entry.  Pass in the
+> +		 * topmost dentry as our private data so we can create
+> +		 * new entries in the topmost directory.
+> +		 */
+> +		res = ftmp->f_op->readdir(ftmp, topmost_dentry,
+> +					  union_copyup_dir_one);
+> +out_fput:
+> +		mutex_unlock(&inode->i_mutex);
+> +		fput(ftmp);
+> +
+> +		if (res)
+> +			break;
+> +
+> +		/* XXX Should process directories below an opaque
+> +		 * directory in case there are fallthrus in it */
+> +		if (IS_OPAQUE(path.dentry->d_inode))
+> +			break;
+> +
+> +	}
+> +	mnt_drop_write(topmost_path->mnt);
 > +	return res;
 > +}
 > diff --git a/fs/union.h b/fs/union.h
-> index 04efc1f..505f132 100644
+> index 505f132..80c2421 100644
 > --- a/fs/union.h
 > +++ b/fs/union.h
-> @@ -51,15 +51,22 @@ struct union_dir {
->  };
->  
->  #define IS_MNT_UNION(mnt)	((mnt)->mnt_flags & MNT_UNION)
-> +#define IS_DIR_UNIONED(dentry)	((dentry)->d_union_dir)
->  
->  extern int union_add_dir(struct path *, struct path *, struct union_dir **);
->  extern void d_free_unions(struct dentry *);
-> +int needs_lookup_union(struct path *, struct path *);
-> +int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
-> +			     struct path *);
+> @@ -58,6 +58,7 @@ extern void d_free_unions(struct dentry *);
+>  int needs_lookup_union(struct path *, struct path *);
+>  int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
+>  			     struct path *);
+> +extern int union_copyup_dir(struct path *);
 >  
 >  #else /* CONFIG_UNION_MOUNT */
 >  
->  #define IS_MNT_UNION(x)			(0)
-> +#define IS_DIR_UNIONED(x)		(0)
->  #define union_add_dir(x, y, z)		({ BUG(); (NULL); })
+> @@ -67,6 +68,7 @@ int union_create_topmost_dir(struct path *, struct qstr *, struct path *,
 >  #define d_free_unions(x)		do { } while (0)
-> +#define needs_lookup_union(x, y)	({ (0); })
-> +#define union_create_topmost_dir(w, x, y, z)	({ BUG(); (NULL); })
+>  #define needs_lookup_union(x, y)	({ (0); })
+>  #define union_create_topmost_dir(w, x, y, z)	({ BUG(); (NULL); })
+> +#define union_copyup_dir(x)		({ BUG(); (0); })
 >  
 >  #endif	/* CONFIG_UNION_MOUNT */
 >  #endif	/* __KERNEL__ */
