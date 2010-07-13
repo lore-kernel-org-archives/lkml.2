@@ -1,122 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757020Ab0GMUbf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 16:31:35 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51639 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754096Ab0GMUbe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 16:31:34 -0400
-Date: Tue, 13 Jul 2010 16:31:17 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: catalin.marinas@arm.com
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] introduce a default off mode for kmemleak
-Message-ID: <20100713203116.GA25784@redhat.com>
+	id S1757165Ab0GMUdS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 16:33:18 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62441 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753168Ab0GMUdR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 16:33:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=lyuwCFq+iRSeYjlvGaIBhCIz4MX4OU8RY2MuPStKDmfJgmCY5HFP7PQEBpYLyzSCTC
+         9KOHEUFgip6nDQiqf7Xm0inMPsJr8qZpsZlNXVMtphq6UyxGKb94Ps28yZiaPyHXmiRK
+         9yFk6R9YdXGCCYbEK6OKSA6MXQBgtEUwC6fVM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100713101747.2835.45722.sendpatchset@danny.redhat>
+References: <20100713101650.2835.15245.sendpatchset@danny.redhat>
+	<20100713101747.2835.45722.sendpatchset@danny.redhat>
+Date: Tue, 13 Jul 2010 23:33:14 +0300
+X-Google-Sender-Auth: 4uQYfpYHj0XaJ958TKr01jbSIBY
+Message-ID: <AANLkTilj5GrhbRJZfSsfXP1v9cQSRlARFmxpys1vUelr@mail.gmail.com>
+Subject: Re: [PATCH -mmotm 05/30] mm: sl[au]b: add knowledge of reserve pages
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Xiaotian Feng <dfeng@redhat.com>
+Cc: linux-mm@kvack.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        riel@redhat.com, cl@linux-foundation.org, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, lwang@redhat.com,
+        akpm@linux-foundation.org, davem@davemloft.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hi Xiaotian!
 
-Kmemleak can be very useful in figuring out where a kernel leak is
-suspected, but I've run into issues it which makes it hard to enable 
-by default - reports false positives, oom kills on low memory systems (512 MB).
-Although these can be addressed, there is still the memory footprint,
-and runtime overhead, so I think it might make sense to create mode
-where it is disabled by default, but can still be enabled on the command
-line via: kmemleak=on.
+I would actually prefer that the SLAB, SLOB, and SLUB changes were in
+separate patches to make reviewing easier.
 
-thanks,
+Looking at SLUB:
 
--Jason
+On Tue, Jul 13, 2010 at 1:17 PM, Xiaotian Feng <dfeng@redhat.com> wrote:
+> diff --git a/mm/slub.c b/mm/slub.c
+> index 7bb7940..7a5d6dc 100644
+> --- a/mm/slub.c
+> +++ b/mm/slub.c
+> @@ -27,6 +27,8 @@
+>  #include <linux/memory.h>
+>  #include <linux/math64.h>
+>  #include <linux/fault-inject.h>
+> +#include "internal.h"
+> +
+>
+>  /*
+>  * Lock order:
+> @@ -1139,7 +1141,8 @@ static void setup_object(struct kmem_cache *s, struct page *page,
+>                s->ctor(object);
+>  }
+>
+> -static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+> +static
+> +struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node, int *reserve)
+>  {
+>        struct page *page;
+>        void *start;
+> @@ -1153,6 +1156,8 @@ static struct page *new_slab(struct kmem_cache *s, gfp_t flags, int node)
+>        if (!page)
+>                goto out;
+>
+> +       *reserve = page->reserve;
+> +
+>        inc_slabs_node(s, page_to_nid(page), page->objects);
+>        page->slab = s;
+>        page->flags |= 1 << PG_slab;
+> @@ -1606,10 +1611,20 @@ static void *__slab_alloc(struct kmem_cache *s, gfp_t gfpflags, int node,
+>  {
+>        void **object;
+>        struct page *new;
+> +       int reserve;
+>
+>        /* We handle __GFP_ZERO in the caller */
+>        gfpflags &= ~__GFP_ZERO;
+>
+> +       if (unlikely(c->reserve)) {
+> +               /*
+> +                * If the current slab is a reserve slab and the current
+> +                * allocation context does not allow access to the reserves we
+> +                * must force an allocation to test the current levels.
+> +                */
+> +               if (!(gfp_to_alloc_flags(gfpflags) & ALLOC_NO_WATERMARKS))
+> +                       goto grow_slab;
 
-Introduce a new DEBUG_KMEMLEAK_DEFAULT_OFF config parameter that allows
-kmemleak to be disabled by default, but enabled on the command line via:
-kmemleak=on. Although a reboot is required to turn it on, its still
-useful to not require a re-compile.
+OK, so assume that:
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- lib/Kconfig.debug |    7 +++++++
- mm/kmemleak.c     |   26 +++++++++++++++++++++++++-
- 2 files changed, 32 insertions(+), 1 deletions(-)
+  (1) c->reserve is set to one
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index e722e9d..95ab402 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -400,6 +400,13 @@ config DEBUG_KMEMLEAK_TEST
- 
- 	  If unsure, say N.
- 
-+config DEBUG_KMEMLEAK_DEFAULT_OFF
-+	bool "Default kmemleak to off"
-+	depends on DEBUG_KMEMLEAK
-+	help
-+	  Say Y here to disable kmemleak by default. It can then be enabled
-+	  on the command line via kmemleak=on.
-+
- config DEBUG_PREEMPT
- 	bool "Debug preemptible kernel"
- 	depends on DEBUG_KERNEL && PREEMPT && TRACE_IRQFLAGS_SUPPORT
-diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index 2c0d032..1006267 100644
---- a/mm/kmemleak.c
-+++ b/mm/kmemleak.c
-@@ -211,6 +211,11 @@ static signed long jiffies_scan_wait;
- static int kmemleak_stack_scan = 1;
- /* protects the memory scanning, parameters and debug/kmemleak file access */
- static DEFINE_MUTEX(scan_mutex);
-+#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
-+/* setting kmemleak=on, will set this var, skipping the disable */
-+static int kmemleak_skip_disable;
-+#endif
-+
- 
- /*
-  * Early object allocation/freeing logging. Kmemleak is initialized after the
-@@ -1600,10 +1605,22 @@ static int kmemleak_boot_config(char *str)
- {
- 	if (!str)
- 		return -EINVAL;
-+
- 	if (strcmp(str, "off") == 0)
-+#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
-+		return -EINVAL;
-+#else
- 		kmemleak_disable();
--	else if (strcmp(str, "on") != 0)
-+#endif
-+	else if (strcmp(str, "on") == 0)
-+#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
-+		kmemleak_skip_disable = 1;
-+#else
-+		return -EINVAL;
-+#endif
-+	else
- 		return -EINVAL;
-+
- 	return 0;
- }
- early_param("kmemleak", kmemleak_boot_config);
-@@ -1616,6 +1633,13 @@ void __init kmemleak_init(void)
- 	int i;
- 	unsigned long flags;
- 
-+#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
-+	if (!kmemleak_skip_disable) {
-+		kmemleak_disable();
-+		return;
-+	}
-+#endif
-+
- 	jiffies_min_age = msecs_to_jiffies(MSECS_MIN_AGE);
- 	jiffies_scan_wait = msecs_to_jiffies(SECS_SCAN_WAIT * 1000);
- 
--- 
-1.7.1
+  (2) GFP flags don't allow dipping into the reserves
 
+  (3) we've managed to free enough pages so normal
+       allocations are fine
+
+  (4) the page from reserves is not yet empty
+
+we will call flush_slab() and put the "emergency page" on partial list
+and clear c->reserve. This effectively means that now some other
+allocation can fetch the partial page and start to use it. Is this OK?
+Who makes sure the emergency reserves are large enough for the next
+out-of-memory condition where we swap over NFS?
+
+> +       }
+>        if (!c->page)
+>                goto new_slab;
+>
+> @@ -1623,8 +1638,8 @@ load_freelist:
+>        object = c->page->freelist;
+>        if (unlikely(!object))
+>                goto another_slab;
+> -       if (unlikely(SLABDEBUG && PageSlubDebug(c->page)))
+> -               goto debug;
+> +       if (unlikely(SLABDEBUG && PageSlubDebug(c->page) || c->reserve))
+> +               goto slow_path;
+>
+>        c->freelist = get_freepointer(s, object);
+>        c->page->inuse = c->page->objects;
+> @@ -1646,16 +1661,18 @@ new_slab:
+>                goto load_freelist;
+>        }
+>
+> +grow_slab:
+>        if (gfpflags & __GFP_WAIT)
+>                local_irq_enable();
+>
+> -       new = new_slab(s, gfpflags, node);
+> +       new = new_slab(s, gfpflags, node, &reserve);
+>
+>        if (gfpflags & __GFP_WAIT)
+>                local_irq_disable();
+>
+>        if (new) {
+>                c = __this_cpu_ptr(s->cpu_slab);
+> +               c->reserve = reserve;
+>                stat(s, ALLOC_SLAB);
+>                if (c->page)
+>                        flush_slab(s, c);
+> @@ -1667,10 +1684,20 @@ new_slab:
+>        if (!(gfpflags & __GFP_NOWARN) && printk_ratelimit())
+>                slab_out_of_memory(s, gfpflags, node);
+>        return NULL;
+> -debug:
+> -       if (!alloc_debug_processing(s, c->page, object, addr))
+> +
+> +slow_path:
+> +       if (!c->reserve && !alloc_debug_processing(s, c->page, object, addr))
+>                goto another_slab;
+>
+> +       /*
+> +        * Avoid the slub fast path in slab_alloc() by not setting
+> +        * c->freelist and the fast path in slab_free() by making
+> +        * node_match() fail by setting c->node to -1.
+> +        *
+> +        * We use this for for debug and reserve checks which need
+> +        * to be done for each allocation.
+> +        */
+> +
+>        c->page->inuse++;
+>        c->page->freelist = get_freepointer(s, object);
+>        c->node = -1;
+> @@ -2095,10 +2122,11 @@ static void early_kmem_cache_node_alloc(gfp_t gfpflags, int node)
+>        struct page *page;
+>        struct kmem_cache_node *n;
+>        unsigned long flags;
+> +       int reserve;
+>
+>        BUG_ON(kmalloc_caches->size < sizeof(struct kmem_cache_node));
+>
+> -       page = new_slab(kmalloc_caches, gfpflags, node);
+> +       page = new_slab(kmalloc_caches, gfpflags, node, &reserve);
+>
+>        BUG_ON(!page);
+>        if (page_to_nid(page) != node) {
+> --
+> 1.7.1.1
+>
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>
