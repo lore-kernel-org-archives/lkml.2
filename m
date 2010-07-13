@@ -1,45 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752205Ab0GMGmN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 02:42:13 -0400
-Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:43652 "EHLO
-	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751128Ab0GMGmK (ORCPT
+	id S1752001Ab0GMGpO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 02:45:14 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44926 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751128Ab0GMGpM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 02:42:10 -0400
-From: Sundar Iyer <sundar.iyer@stericsson.com>
-To: <lrg@slimlogic.co.uk>, <broonie@opensource.wolfsonmicro.com>,
-        <sameo@linux.intel.com>
-Cc: <linux-kernel@vger.kernel.org>, <linux-arm-kernel@lists.infradead.org>,
-        <STEricsson_nomadik_linux@list.st.com>,
-        Sundar R Iyer <sundar.iyer@stericsson.com>
-Subject: [PATCH 0/3] ab8500-mfd: add regulator support
-Date: Tue, 13 Jul 2010 11:51:27 +0530
-Message-ID: <1279002090-11234-1-git-send-email-sundar.iyer@stericsson.com>
-X-Mailer: git-send-email 1.7.0
-MIME-Version: 1.0
-Content-Type: text/plain
+	Tue, 13 Jul 2010 02:45:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 13 Jul 2010 15:40:25 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: linux@arm.linux.org.uk, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+Message-Id: <20100713154025.7c60c76b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTinVwmo5pemz86nXaQT3V_ujaPLOsyNeQIFhL0Vu@mail.gmail.com>
+References: <20100712155348.GA2815@barrios-desktop>
+	<20100713121947.612bd656.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTiny7dz8ssDknI7y4JFcVP9SV1aNM7f0YMUxafv7@mail.gmail.com>
+	<20100713132312.a7dfb100.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTinVwmo5pemz86nXaQT3V_ujaPLOsyNeQIFhL0Vu@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sundar R Iyer <sundar.iyer@stericsson.com>
+On Tue, 13 Jul 2010 15:04:00 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-Sundar R Iyer (3):
-  ab8500-mfd: add regulator support to ab8500 mfd device
-  regulator: add support for regulators on the ab8500 MFD
-  ux500: add ab8500-regulators machine specific data
+> >> >  2. This can't be help for a case where a section has multiple small holes.
+> >>
+> >> I agree. But this(not punched hole but not filled section problem)
+> >> isn't such case. But it would be better to handle it altogether. :)
+> >>
+> >> >
+> >> > Then, my proposal for HOLES_IN_MEMMAP sparsemem is below.
+> >> > ==
+> >> > Some architectures unmap memmap[] for memory holes even with SPARSEMEM.
+> >> > To handle that, pfn_valid() should check there are really memmap or not.
+> >> > For that purpose, __get_user() can be used.
+> >>
+> >> Look at free_unused_memmap. We don't unmap pte of hole memmap.
+> >> Is __get_use effective, still?
+> >>
+> > __get_user() works with TLB and page table, the vaddr is really mapped or not.
+> > If you got SEGV, __get_user() returns -EFAULT. It works per page granule.
+> 
+> I mean following as.
+> For example, there is a struct page in on 0x20000000.
+> 
+> int pfn_valid_mapped(unsigned long pfn)
+> {
+>        struct page *page = pfn_to_page(pfn); /* hole page is 0x2000000 */
+>        char *lastbyte = (char *)(page+1)-1;  /* lastbyte is 0x2000001f */
+>        char byte;
+> 
+>        /* We pass this test since free_unused_memmap doesn't unmap pte */
+>        if(__get_user(byte, page) != 0)				
+>                return 0;
 
- arch/arm/mach-ux500/Makefile                  |    1 +
- arch/arm/mach-ux500/board-mop500-regulators.c |  214 +++++++++++++
- drivers/mfd/ab8500-core.c                     |    4 +-
- drivers/regulator/Kconfig                     |    8 +
- drivers/regulator/Makefile                    |    1 +
- drivers/regulator/ab8500.c                    |  414 +++++++++++++++++++++++++
- include/linux/mfd/ab8500.h                    |    6 +
- include/linux/regulator/ab8500.h              |   25 ++
- 8 files changed, 672 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-ux500/board-mop500-regulators.c
- create mode 100644 drivers/regulator/ab8500.c
- create mode 100644 include/linux/regulator/ab8500.h
+why ? When the page size is 4096 byte.
+
+      0x1ffff000 - 0x1ffffffff
+      0x20000000 - 0x200000fff are on the same page. And memory is mapped per page.
+
+What we access by above __get_user() is a byte at [0x20000000, 0x20000001)
+and it's unmapped if 0x20000000 is unmapped.
+
+Thanks,
+-Kame
 
