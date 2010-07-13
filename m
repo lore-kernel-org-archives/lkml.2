@@ -1,80 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751895Ab0GMFRG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 01:17:06 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:47168 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750830Ab0GMFRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 01:17:03 -0400
-Date: Mon, 12 Jul 2010 22:16:55 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Shreyas Bhatewara <sbhatewara@vmware.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Pankaj Thakkar <pthakkar@vmware.com>,
-        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
-Message-ID: <20100712221655.1873954d@nehalam>
-In-Reply-To: <1278990388.32650.22.camel@eng-rhel5-64>
-References: <20100504230225.GP8323@vmware.com>
-	<201005051029.42052.dtor@vmware.com>
-	<20100505173120.GA1752@infradead.org>
-	<201005051035.29831.dtor@vmware.com>
-	<20100505173951.GA8388@infradead.org>
-	<20100505105253.0a8bc465@nehalam>
-	<20100506202113.GC17922@infradead.org>
-	<1278990388.32650.22.camel@eng-rhel5-64>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752172Ab0GMFVI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 01:21:08 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:32655 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751540Ab0GMFVG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 01:21:06 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6041"; a="47295344"
+Message-ID: <4C3BF7C1.9040904@codeaurora.org>
+Date: Mon, 12 Jul 2010 22:21:05 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Joerg Roedel <joro@8bytes.org>
+CC: Hari Kanigeri <hari.kanigeri@gmail.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Randy Dunlap <randy.dunlap@oracle.com>, mel@csn.ul.ie,
+        linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+        linux-arm-msm@vger.kernel.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+References: <1277877350-2147-1-git-send-email-zpfeffer@codeaurora.org> <1277877350-2147-3-git-send-email-zpfeffer@codeaurora.org> <20100701101746.3810cc3b.randy.dunlap@oracle.com> <20100701180241.GA3594@basil.fritz.box> <AANLkTinABCSdN6hnXVOvVZ12f1QBMR_UAi62qW8GmlkL@mail.gmail.com> <4C2D908E.9030309@codeaurora.org> <20100710143635.GA10080@8bytes.org>
+In-Reply-To: <20100710143635.GA10080@8bytes.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010 20:06:28 -0700
-Shreyas Bhatewara <sbhatewara@vmware.com> wrote:
-
+Joerg Roedel wrote:
+> On Fri, Jul 02, 2010 at 12:09:02AM -0700, Zach Pfeffer wrote:
+>> Hari Kanigeri wrote:
+>>>> He demonstrated the usage of his code in one of the emails he sent out
+>>>> initially. Did you go over that, and what (or how many) step would you
+>>>> use with the current code to do the same thing?
+>>> -- So is this patch set adding layers and abstractions to help the User ?
+>>>
+>>> If the idea is to share some memory across multiple devices, I guess
+>>> you can achieve the same by calling the map function provided by iommu
+>>> module and sharing the mapped address to the 10's or 100's of devices
+>>> to access the buffers. You would only need a dedicated virtual pool
+>>> per IOMMU device to manage its virtual memory allocations.
+>> Yeah, you can do that. My idea is to get away from explicit addressing
+>> and encapsulate the "device address to physical address" link into a
+>> mapping.
 > 
-> On Thu, 2010-05-06 at 13:21 -0700, Christoph Hellwig wrote:
-> > On Wed, May 05, 2010 at 10:52:53AM -0700, Stephen Hemminger wrote:
-> > > Let me put it bluntly. Any design that allows external code to run
-> > > in the kernel is not going to be accepted.  Out of tree kernel modules are enough
-> > > of a pain already, why do you expect the developers to add another
-> > > interface.
-> > 
-> > Exactly.  Until our friends at VMware get this basic fact it's useless
-> > to continue arguing.
-> > 
-> > Pankaj and Dmitry: you're fine to waste your time on this, but it's not
-> > going to go anywhere until you address that fundamental problem.  The
-> > first thing you need to fix in your archicture is to integrate the VF
-> > function code into the kernel tree, and we can work from there.
-> > 
-> > Please post patches doing this if you want to resume the discussion.
-> > 
-> > _______________________________________________
-> > Pv-drivers mailing list
-> > Pv-drivers@vmware.com
-> > http://mailman2.vmware.com/mailman/listinfo/pv-drivers
-> 
-> 
-> As discussed, following is the patch to give you an idea
-> about implementation of NPA for vmxnet3 driver. Although the
-> patch is big, I have verified it with checkpatch.pl. It gave
-> 0 errors / warnings.
-> 
-> Signed-off-by: Matthieu Bucchaineri <matthieu@vmware.com>
-> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+> The DMA-API already does this with the help of IOMMUs if they are
+> present. What is the benefit of your approach over that?
 
-I think the concept won't fly.
-
-But you should really at least try running checkpatch to make sure
-the style conforms.
-
+The grist to the DMA-API mill is the opaque scatterlist. Each
+scatterlist element brings together a physical address and a bus
+address that may be different. The set of scatterlist elements
+constitute both the set of physical buffers and the mappings to those
+buffers. My approach separates these two things into a struct physmem
+which contains the set of physical buffers and a struct reservation
+which contains the set of bus addresses (or device addresses). Each
+element in the struct physmem may be of various lengths (without
+resorting to chaining). A map call maps the one set to the other. 
 
 -- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
