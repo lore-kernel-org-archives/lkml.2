@@ -1,78 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab0GNWFf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:05:35 -0400
-Received: from mail1.nippynetworks.com ([212.227.250.41]:58757 "EHLO
-	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab0GNWFd (ORCPT
+	id S1757245Ab0GNWHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:07:06 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:54154 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756571Ab0GNWHC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:05:33 -0400
-Message-ID: <4C3E34AB.2060405@wildgooses.com>
-Date: Wed, 14 Jul 2010 23:05:31 +0100
-From: Ed W <lists@wildgooses.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.10) Gecko/20100512 Lightning/1.0b1 Thunderbird/3.0.5
+	Wed, 14 Jul 2010 18:07:02 -0400
+Date: Wed, 14 Jul 2010 23:05:36 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+	memory management
+Message-ID: <20100714220536.GE18138@n2100.arm.linux.org.uk>
+References: <4C3C0032.5020702@codeaurora.org> <20100713150311B.fujita.tomonori@lab.ntt.co.jp> <20100713121420.GB4263@codeaurora.org> <20100714104353B.fujita.tomonori@lab.ntt.co.jp> <20100714201149.GA14008@codeaurora.org>
 MIME-Version: 1.0
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-CC: Rick Jones <rick.jones2@hp.com>, David Miller <davem@davemloft.net>,
-        davidsen@tmr.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3D94E3.9080103@wildgooses.com> <4C3DD5EB.9070908@tmr.com> <20100714.111553.104052157.davem@davemloft.net> <4C3E0684.5060409@wildgooses.com> <4C3E1B54.40604@hp.com> <20100714203919.GD6682@nuttenaction>
-In-Reply-To: <20100714203919.GD6682@nuttenaction>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100714201149.GA14008@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/07/2010 21:39, Hagen Paul Pfeifer wrote:
-> * Rick Jones | 2010-07-14 13:17:24 [-0700]:
->
->    
->> There is an effort under way, lead by some folks at Google and
->> including some others, to get the RFC's enhanced in support of the
->> concept of larger initial congestion windows.  Some of the discussion
->> may be in the "tcpm" mailing list (assuming I've not gotten my
->> mailing lists confused).  There may be some previous discussion of
->> that work in the netdev archives as well.
->>      
-> tcpm is the right mailing list but there is currently no effort to develop
-> this topic. Why? Because is not a standardization issue, rather it is a
-> technical issue. You cannot rise the initial CWND and expect a fair behavior.
-> This was discussed several times and is documented in several documents and
-> RFCs.
->    
+On Wed, Jul 14, 2010 at 01:11:49PM -0700, Zach Pfeffer wrote:
+> If the DMA-API contained functions to allocate virtual space separate
+> from physical space and reworked how chained buffers functioned it
+> would probably work - but then things start to look like the VCM API
+> which does graph based map management.
 
-I'm sure you have covered this to the point you are fed up, but my 
-searches turn up only a smattering of posts covering this - could you 
-summarise why "you cannot raise the initial cwnd and expect a fair 
-behaviour"?
+Every additional virtual mapping of a physical buffer results in
+additional cache aliases on aliasing caches, and more workload for
+developers to sort out the cache aliasing issues.
 
-Initial cwnd was changed (increased) in the past (rfc3390) and the RFC 
-claims that studies then suggested that the benefits were all positive. 
-Some reasonably smart people have suggested that it might be time to 
-review the status quo again so it doesn't seem completely obvious that 
-the current number is optimal?
-
-> RFC 5681 Section 3.1. Google employees should start with Section 3. This topic
-> pop's of every two months in netdev and until now I _never_ read a
-> consolidated contribution.
->    
-
-Sorry, what do you mean by a "consolidated contribution"?
-
-That RFC is a subtle read - it appears to give more specific guidance on 
-what to do in certain situations, but I'm not sure I see that it 
-improves slow start convergence speed for my situation (large RTT)?  
-Would you mind highlighting the new bits for those of us a bit newer to 
-the subject?
-
-> Partial local issues can already be "fixed" via route specific ip options -
-> see initcwnd.
->    
-
-Oh, excellent.  This seems like exactly what I'm after.  (Thanks Stephen 
-Hemminger!)
-
-Many thanks
-
-Ed W
+What does VCM to do mitigate that?
