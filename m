@@ -1,58 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757638Ab0GNUYp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:24:45 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:59401 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756791Ab0GNUYn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:24:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=opsxSwjMvnmlaUbFdvE2mDMC1+yeOyu/Z9QJKHmIVNakaLLtdv2wtIj2p/ipYT7UoO
-         gCzROw2QybUMByjyrD2mNa4y3V/XowLj6qml/CP9llB0SJ9TG+00RSEoDr24tm1G3y1a
-         ALDP2CHIOBuhpDqngngb/uRhH5ICLuaECmixU=
-From: Chihau Chau <chihau@gmail.com>
-To: davem@davemloft.net
-Cc: tj@kernel.org, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Chihau Chau <chihau@gmail.com>
-Subject: [PATCH] Net: ethernet: pe2.c: fix EXPORT_SYMBOL macro code style issue
-Date: Wed, 14 Jul 2010 16:24:34 -0400
-Message-Id: <1279139074-13040-1-git-send-email-chihau@gmail.com>
-X-Mailer: git-send-email 1.5.6.3
+	id S1756876Ab0GNU2J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:28:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36815 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752566Ab0GNU2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 16:28:06 -0400
+Message-ID: <4C3E1DD1.4070400@redhat.com>
+Date: Wed, 14 Jul 2010 10:28:01 -1000
+From: Zachary Amsden <zamsden@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
+CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 18/18] Add timekeeping documentation
+References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-19-git-send-email-zamsden@redhat.com> <4C3D643D.6070705@oss.ntt.co.jp>
+In-Reply-To: <4C3D643D.6070705@oss.ntt.co.jp>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Chihau Chau <chihau@gmail.com>
+On 07/13/2010 09:16 PM, Takuya Yoshikawa wrote:
+> Hi,
+>
+> (2010/07/13 11:25), Zachary Amsden wrote:
+>> +
+>> +2.3) APIC
+>> +
+>> +On Pentium and later processors, an on-board timer is available to 
+>> each CPU
+>> +as part of the Advanced Programmable Interrupt Controller.  The APIC is
+>> +accessed through memory-mapped registers and provides interrupt 
+>> service to each
+>> +CPU, used for IPIs and local timer interrupts.
+>> +
+>> +Although in theory the APIC is a safe and stable source for local 
+>> interrupts,
+>> +in practice, many bugs and glitches have occurred due to the special 
+>> nature of
+>> +the APIC CPU-local memory-mapped hardware.  Beware that CPU errata 
+>> may affect
+>> +the use of the APIC and that workarounds may be required.  In 
+>> addition, some of
+>> +these workarounds pose unique constraints for virtualization - 
+>> requiring either
+>> +extra overhead incurred from extra reads of memory-mapped I/O or 
+>> additional
+>> +functionality that may be more computationally expensive to implement.
+>> +
+>> +Since the APIC is documented quite well in the Intel and AMD 
+>> manuals, we will
+>> +avoid repititon of the detail here.  It should be pointed out that 
+>> the APIC
+>
+>          repetition?
+>
+>> +timer is programmed through the LVT (local vector timer) register, 
+>> is capable
+>> +of one-shot or periodic operation, and is based on the bus clock 
+>> divided down
+>> +by the programmable divider register.
+>> +
+>> +2.4) HPET
+>> +
+>> +HPET is quite complex, and was originally intended to replace the 
+>> PIT / RTC
+>> +support of the X86 PC.  It remains to be seen whether that will be 
+>> the case, as
+>> +the de facto standard of PC hardware is to emulate these older 
+>> devices.  Some
+>> +systems designated as legacy free may support only the HPET as a 
+>> hardware timer
+>> +device.
+>> +
+>> +The HPET spec is rather loose and vague, requiring at least 3 
+>> hardware timers,
+>> +but allowing implementation freedom to support many more.  It also 
+>> imposes no
+>> +fixed rate on the timer frequency, but does impose some extremal 
+>> values on
+>> +frequency, error and slew.
+>> +
+>> +In general, the HPET is recommended as a high precision (compared to 
+>> PIT /RTC)
+>> +time source which is independent of local variation (as there is 
+>> only one HPET
+>> +in any given system).  The HPET is also memory-mapped, and its 
+>> presence is
+>> +indicated through ACPI tables by the BIOS.
+>> +
+>> +Detailed specification of the HPET is beyond the current scope of this
+>> +document, as it is also very well documented elsewhere.
+>> +
+>
+>
+>> +3.6) TSC and STPCLK / T-states
+>> +
+>> +External signals given to the processor may also have the affect of 
+>> stopping
+>
+>                                                              effect?
+>
+>> +the TSC.  This is typically done for thermal emergency power control 
+>> to prevent
+>> +an overheating condition, and typically, there is no way to detect 
+>> that this
+>> +condition has happened.
+>> +
+>
+>
+>> +4.4) Migration
+>> +
+>> +Migration of a virtual machine raises problems for timekeeping in 
+>> two ways.
+>> +First, the migration itself may take time, during which interrupts 
+>> cannot be
+>> +delivered, and after which, the guest time may need to be caught 
+>> up.  NTP may
+>> +be able to help to some degree here, as the clock correction 
+>> required is
+>> +typically small enough to fall in the NTP-correctable window.
+>> +
+>> +An additional concern is that timers based off the TSC (or HPET, if 
+>> the raw bus
+>> +clock is exposed) may now be running at different rates, requiring 
+>> compensation
+>> +in some may in the hypervisor by virtualizing these timers.  In 
+>> addition,
+>
+>            way?
+>
+>> +migrating to a faster machine may preclude the use of a passthrough 
+>> TSC, as a
+>> +faster clock cannot be made visible to a guest without the potential 
+>> of time
+>> +advancing faster than usual.  A slower clock is less of a problem, 
+>> as it can
+>> +always be caught up to the original rate.  KVM clock avoids these 
+>> problems by
+>> +simply storing multipliers and offsets gainst the TSC for the guest 
+>> to convert
+>
+>                                           against?
+>
+>> +back into nanosecond resolution values.
+>> +
+>
+>
+>   Takuya
+>
+>     -- I'm not English speaker, so not so sure about some places.
 
-This patch fix a code style issuei, if a function is exported, the
-EXPORT_SYMBOL macro for it should follow immediately after the closing
-function brace line.
+Thanks, you found some mistakes anyway, will fix.
 
-Signed-off-by: Chihau Chau <chihau@gmail.com>
----
- net/ethernet/pe2.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+Cheers,
 
-diff --git a/net/ethernet/pe2.c b/net/ethernet/pe2.c
-index eb00796..85d574a 100644
---- a/net/ethernet/pe2.c
-+++ b/net/ethernet/pe2.c
-@@ -28,11 +28,10 @@ struct datalink_proto *make_EII_client(void)
- 
- 	return proto;
- }
-+EXPORT_SYMBOL(make_EII_client);
- 
- void destroy_EII_client(struct datalink_proto *dl)
- {
- 	kfree(dl);
- }
--
- EXPORT_SYMBOL(destroy_EII_client);
--EXPORT_SYMBOL(make_EII_client);
--- 
-1.5.6.3
-
+Zach
