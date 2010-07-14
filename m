@@ -1,158 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757219Ab0GNOrZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 10:47:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:34779 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751489Ab0GNOrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 10:47:24 -0400
-Message-ID: <4C3DCDC7.1000802@ds.jp.nec.com>
-Date: Wed, 14 Jul 2010 10:46:31 -0400
-From: Munehiro IKEDA <m-ikeda@ds.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	id S1756007Ab0GNOvP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 10:51:15 -0400
+Received: from eu1sys200aog104.obsmtp.com ([207.126.144.117]:35065 "EHLO
+	eu1sys200aog104.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751489Ab0GNOvN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 10:51:13 -0400
+Date: Wed, 14 Jul 2010 20:20:54 +0530
+From: Sundar R IYER <sundar.iyer@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific
+ data
+Message-ID: <20100714145053.GA1689@bnru01.bnr.st.com>
+References: <1279030173-3086-1-git-send-email-sundar.iyer@stericsson.com>
+ <1279030173-3086-2-git-send-email-sundar.iyer@stericsson.com>
+ <20100713141828.GB24260@rakim.wolfsonmicro.main>
+ <33A307AF30D7BF4F811B1568FE7A9B1810E7E88D@EXDCVYMBSTM006.EQ1STM.local>
+ <20100713145645.GA24626@rakim.wolfsonmicro.main>
+ <20100713150814.GA13767@bnru01.bnr.st.com>
+ <20100713150905.GD24626@rakim.wolfsonmicro.main>
+ <20100713161343.GA25342@bnru01.bnr.st.com>
+ <20100713203852.GA1756@rakim.wolfsonmicro.main>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
-        Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
-        Andrea Righi <righi.andrea@gmail.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
-        balbir@linux.vnet.ibm.com
-Subject: Re: [RFC][PATCH 02/11] blkiocg async: The main part of iotrack
-References: <4C369009.80503@ds.jp.nec.com>	<4C369452.2070103@ds.jp.nec.com>	<20100709163552.3eef1d62.kamezawa.hiroyu@jp.fujitsu.com>	<4C37AB74.7030401@ds.jp.nec.com> <20100712091155.c379cfe4.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100712091155.c379cfe4.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100713203852.GA1756@rakim.wolfsonmicro.main>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-KAMEZAWA Hiroyuki wrote: 
-> On Fri, 09 Jul 2010 19:06:28 -0400
-> Munehiro Ikeda <m-ikeda@ds.jp.nec.com> wrote:
-> 
->> OK, we can do it like:
->>
->> do {
->> 	old =  pc->flags;
->> 	new = old & ((1UL << PAGE_TRACKING_ID_SHIFT) - 1);
->> 	new |= (unsigned long)(id << PAGE_TRACKING_ID_SHIFT);
->> } while (cmpxchg(&pc->flags, old, new)  != old);
->>
->>
->>> IIUC, there is an generic version now even if it's heavy.
->> I couldn't find it out...is there already?  Or you mean we should
->> have generic one?
->>
-> 
-> generic cmpxchg in /include/asm-generic/cmpxchg.h
-> But...ahh...in some arch, you can't use cmpxchg, sorry.
-> 
-> How about start from "a new field" for I/O cgroup in page_cgroup ?
-> 
-> struct page_cgroup {
->         unsigned long flags;
->         struct mem_cgroup *mem_cgroup;
-> 	unsigned short blkio_cgroup_id;
->         struct page *page;
->         struct list_head lru;           /* per cgroup LRU list */
-> };
-> 
-> We can consider how we optimize it out, later.
-> (And, it's easier to debug and make development smooth.)
-> 
-> For example, If we can create a vmalloced-array of mem_cgroup,
-> id->mem_cgroup lookup can be very fast and we can replace
-> pc->mem_cgroup link with pc->mem_cgroup_id.
+Hello Mark,
 
-Nice suggestion.  Thanks Kame-san.
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Thanks
 
-
->>>> +unsigned long page_cgroup_get_owner(struct page *page);
->>>> +int page_cgroup_set_owner(struct page *page, unsigned long id);
->>>> +int page_cgroup_copy_owner(struct page *npage, struct page *opage);
->>>> +
->>>>   void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat);
->>>>
->>>>   #ifdef CONFIG_SPARSEMEM
->>>> diff --git a/init/Kconfig b/init/Kconfig
->>>> index 2e40f2f..337ee01 100644
->>>> --- a/init/Kconfig
->>>> +++ b/init/Kconfig
->>>> @@ -650,7 +650,7 @@ endif # CGROUPS
->>>>
->>>>   config CGROUP_PAGE
->>>>   	def_bool y
->>>> -	depends on CGROUP_MEM_RES_CTLR
->>>> +	depends on CGROUP_MEM_RES_CTLR || GROUP_IOSCHED_ASYNC
->>>>
->>>>   config MM_OWNER
->>>>   	bool
->>>> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
->>>> index 6c00814..69e080c 100644
->>>> --- a/mm/page_cgroup.c
->>>> +++ b/mm/page_cgroup.c
->>>> @@ -9,6 +9,7 @@
->>>>   #include<linux/vmalloc.h>
->>>>   #include<linux/cgroup.h>
->>>>   #include<linux/swapops.h>
->>>> +#include<linux/blk-iotrack.h>
->>>>
->>>>   static void __meminit
->>>>   __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
->>>> @@ -74,7 +75,7 @@ void __init page_cgroup_init_flatmem(void)
->>>>
->>>>   	int nid, fail;
->>>>
->>>> -	if (mem_cgroup_disabled())
->>>> +	if (mem_cgroup_disabled()&&  blk_iotrack_disabled())
->>>>   		return;
->>>>
->>>>   	for_each_online_node(nid)  {
->>>> @@ -83,12 +84,13 @@ void __init page_cgroup_init_flatmem(void)
->>>>   			goto fail;
->>>>   	}
->>>>   	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
->>>> -	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
->>>> -	" don't want memory cgroups\n");
->>>> +	printk(KERN_INFO "please try 'cgroup_disable=memory,blkio' option"
->>>> +	" if you don't want memory and blkio cgroups\n");
->>>>   	return;
->>>>   fail:
->>>>   	printk(KERN_CRIT "allocation of page_cgroup failed.\n");
->>>> -	printk(KERN_CRIT "please try 'cgroup_disable=memory' boot option\n");
->>>> +	printk(KERN_CRIT
->>>> +		"please try 'cgroup_disable=memory,blkio' boot option\n");
->>>>   	panic("Out of memory");
->>>>   }
->>> Hmm, io-track is always done if blkio-cgroup is used, Right ?
->> No, iotrack is enabled only when CONFIG_GROUP_IOSCHED_ASYNC=y.
->> If =n, iotrack is disabled even if blkio-cgroup is enabled.
->>
+> > +struct regulator_init_data ab8500_vaudio_init = {
+> > +	.supply_regulator_dev = NULL,
+> > +	.constraints = {
+> > +		.name = "ab8500-vaudio",
+> > +		.min_uV = 1925000,
+> > +		.max_uV = 2075000,
 > 
-> 
->>> Then, why you have extra config as CONFIG_GROUP_IOSCHED_ASYNC ?
->>> Is it necessary ?
->> Current purpose of the option is only for debug because it is
->> experimental functionality.
->> It can be removed if this work is completed, or dynamic switch
->> might be useful.
->>
->> In fact, just "cgroup_disable=memory" is enough for the failure
->> case.  Let me think right messages.
->>
-> 
-> IMHO, once you add boot-option or sysctl, it's very hard to remove it, lator.
-> So, if you think you'll remove it lator, don't add it or just add CONFIG.
+> Are you *sure* that all these constraints are accurate for the board?
+As far as the min/max values of the voltage go, yes they are as per the
+data sheet.
 
-OK.  I understand we need to seriously think over to add a new boot option.
-
+> It seems every single voltage is variable even though there are no
+> consumers set up, and they can all be disabled too.
+Yes. all these regulators can be disabled/enabled. does this answer your
+qeury? ( or i didnt understand it properly??)
 
 Thanks,
-Muuhh
-
-
--- 
-IKEDA, Munehiro
-  NEC Corporation of America
-    m-ikeda@ds.jp.nec.com
-
+Sundar
