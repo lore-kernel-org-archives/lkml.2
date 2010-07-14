@@ -1,109 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757182Ab0GNSKq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:10:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48248 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751721Ab0GNSKp convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:10:45 -0400
+	id S1757279Ab0GNSMP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:12:15 -0400
+Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:48173 "EHLO
+	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756779Ab0GNSMN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 14:12:13 -0400
+X-SpamScore: -45
+X-BigFish: VPS-45(zz1432N98dN179dN140eM9371P15bfMzz1202hzz15d4Rz32i2a8h43h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L5K7W4-01-DL0-02
+X-M-MSG: 
+Date: Wed, 14 Jul 2010 20:11:52 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Stephan Wolf <stephan@letzte-bankreihe.de>, <linux-kernel@vger.kernel.org>,
+        <tglx@linutronix.de>, Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH] enable readback to get HPET working on ATI SB4x00,
+ kernel 2.6.35_rc5
+Message-ID: <20100714181152.GB15651@aftab>
+References: <4C3DDDFF.5040302@letzte-bankreihe.de>
+ <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <20100714170617.GB4955@Krystal>
-References: <20100714154923.947138065@efficios.com>
-	<20100714155804.049012415@efficios.com>
-	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-	<20100714170617.GB4955@Krystal>
-Date: Wed, 14 Jul 2010 11:10:20 -0700
-Message-ID: <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="iso-8859-1"
+Content-Disposition: inline
+In-Reply-To: <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Content-Transfer-Encoding: 8BIT
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 10:06 AM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
->>
->> This patch (1/2) doesn't look horrible per se. I have no problems with
->> it. I just want to understand why it is needed.
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Wed, Jul 14, 2010 at 09:13:39AM -0700
 
-[ And patch 2/2 is much more intrusive, and touches a critical path
-too.. If it was just the 1/2 series, I don't think I would care. For
-the 2/2, I think I'd want to explore all the alternative options ]
+> On Wed, Jul 14, 2010 at 8:55 AM, Stephan Wolf
+> <stephan@letzte-bankreihe.de> wrote:
+> >
+> >  After commit 30a564be9d9554c168a654eddc2165869cc0d7bf "x86, hpet: Restrict
+> > read back to affected ATI chipsets" hpet did not work anymore on HP nx6325.
+> > The machine hangs on booting until a keystroke was taken. After a short time
+> > machine hangs again until next keystroke. Applying the following patch
+> > solves the issue for me.
+> 
+> Ok, this makes sense. Bugs in the ATI chipset is why
+> 'hpet_readback_cmp' exists in the first place. HOWEVER, clearly that
+> commit changed it to be about too few ATI chipsets.
+> 
+> So right now, for
+> 
+>  - PCI_DEVICE_ID_ATI_SBX00_SMBUS:
+>      force disable HPET MSI
+>      force HPET readback
+> 
+>  - PCI_DEVICE_ID_ATI_IXP400_SMBU
+>      force-enable HPET
+>      ...and than your patch makes it force HPET readback
+> 
+> but that doesn't actually make much sense in the bigger picture,
+> because there are other ATI chipsets that are related and presumably
+> also affected. What about IXP[23]00_SMBUS? And what about the IXP7
+> series (SBX00 is IXP6, afaik)?
 
-> The problem originally addressed by this patch is the case where a NMI handler
-> try to access vmalloc'd per-cpu data, which goes as follow:
->
-> - One CPU does a fork(), which copies the basic kernel mappings.
-> - Perf allocates percpu memory for buffer control data structures.
->  This mapping does not get copied.
-> - Tracing is activated.
-> - switch_to() to the newly forked process which missed the new percpu
->  allocation.
-> - We take a NMI, which touches the vmalloc'd percpu memory in the Perf tracing
->  handler, therefore leading to a page fault in NMI context. Here, we might be
->  in the middle of switch_to(), where ->current might not be in sync with the
->  current cr3 register.
+Right, so the original commit introducing the readback did it for all
+ATI chipsets: 72d43d9bc9210d24d09202eaf219eac09e17b339. We've been
+running fine with it so far modulo the Intel ICH9 issue.
 
-Ok. I was wondering why anybody would allocate core percpu variables
-so late that this would ever be an issue, but I guess perf is a
-reasonable such case. And reasonable to do from NMI.
+I'll try to find out which chipsets are actually affected but in the
+meantime we might want to do a temporary fix by enabling the readback
+back(!) on all ATI chipsets so that we don't uncover anymore bugs like
+the one above, hmmm?
 
-That said - grr. I really wish there was some other alternative than
-adding yet more complexity to the exception return path. That "iret
-re-enables NMI's unconditionally" thing annoys me.
+> And I added Andreas to the cc, maybe he knows what's up.
 
-In fact, I wonder if we couldn't just do a software NMI disable
-instead? Hav ea per-cpu variable (in the _core_ percpu areas that get
-allocated statically) that points to the NMI stack frame, and just
-make the NMI code itself do something like
+He'll be back on Mo.
 
- NMI entry:
- - load percpu NMI stack frame pointer
- - if non-zero we know we're nested, and should ignore this NMI:
-    - we're returning to kernel mode, so return immediately by using
-"popf/ret", which also keeps NMI's disabled in the hardware until the
-"real" NMI iret happens.
-    - before the popf/iret, use the NMI stack pointer to make the NMI
-return stack be invalid and cause a fault
-  - set the NMI stack pointer to the current stack pointer
+-- 
+Regards/Gruss,
+Boris.
 
- NMI exit (not the above "immediate exit because we nested"):
-   clear the percpu NMI stack pointer
-   Just do the iret.
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
 
-Now, the thing is, now the "iret" is atomic. If we had a nested NMI,
-we'll take a fault, and that re-does our "delayed" NMI - and NMI's
-will stay masked.
-
-And if we didn't have a nested NMI, that iret will now unmask NMI's,
-and everything is happy.
-
-Doesn't the above sound like a good solution? In other words, we solve
-the whole problem by simply _fixing_ the crazy Intel "iret-vs-NMI"
-semantics. And we don't need to change the hotpath, and we'll just
-_allow_ nested faults within NMI's.
-
-Am I missing something? Maybe I'm not as clever as I think I am... But
-I _feel_ clever.
-
-                   Linus
