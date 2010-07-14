@@ -1,53 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756028Ab0GNCP0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 22:15:26 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:34777 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110Ab0GNCPY (ORCPT
+	id S1756210Ab0GNCPh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 22:15:37 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:56852 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756109Ab0GNCPf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 22:15:24 -0400
-X-Authority-Analysis: v=1.1 cv=eWk9bc5BAcy1KEyGm/gc5mmqTM7Cp/ADlcqpp9MTMWU= c=1 sm=0 a=YKZikld1fm8A:10 a=UBIxAjGgU1YA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=DfNHnWVPAAAA:8 a=QnIE056V78Ksjp_6yw8A:9 a=CYcrMIZWTZfe3dFatuTFGKK6MpcA:4 a=CjuIK1q_8ugA:10 a=lBRciGGoxdUA:10 wl=env:18 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Tue, 13 Jul 2010 21:17:20 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: Kees Cook <kees.cook@canonical.com>
-Cc: Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>,
-        linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH] Yama: turn process ancestry check into function
-Message-ID: <20100714021720.GA17686@hallyn.com>
-References: <20100713173339.GA6104@outflux.net>
- <201007140019.o6E0J9gQ060582@www262.sakura.ne.jp>
- <20100714003049.GO6104@outflux.net>
+	Tue, 13 Jul 2010 22:15:35 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH v2 1/2] vmscan: don't subtraction of unsined
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Johannes Weiner <hannes@cmpxchg.org>
+In-Reply-To: <alpine.DEB.2.00.1007132047001.14067@router.home>
+References: <20100713182918.EA67.A69D9226@jp.fujitsu.com> <alpine.DEB.2.00.1007132047001.14067@router.home>
+Message-Id: <20100714110614.EA7B.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100714003049.GO6104@outflux.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 14 Jul 2010 11:15:29 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting Kees Cook (kees.cook@canonical.com):
-> On Wed, Jul 14, 2010 at 09:19:09AM +0900, Tetsuo Handa wrote:
-> > > +	if (mode == PTRACE_MODE_ATTACH &&
-> > > +	    ptrace_scope &&
-> > > +	    !task_is_descendant(current, child) &&
-> > > +	    !capable(CAP_SYS_PTRACE))
-> > > +		rc = -EPERM;
-> > 
-> > I don't know how heavy capable(CAP_SYS_PTRACE) is.
-> > But checking !capable(CAP_SYS_PTRACE) before
-> > !task_is_descendant(current, child) might be lighter.
+> On Tue, 13 Jul 2010, KOSAKI Motohiro wrote:
 > 
-> That's the order I had before, but in looking at some of the other code, it
-> seemed like moving it to the end made more logical sense.  Since checking
-> PTRACE attach isn't a common or time-sensitive operation, I figured trying
-> to tune it wasn't critical.
+> > Christoph, Can we hear your opinion about to add new branch in slab-free path?
+> > I think this is ok, because reclaim makes a lot of cache miss then branch
+> > mistaken is relatively minor penalty. thought?
+> 
+> Its on the slow path so I would think that should be okay. But is this
+> really necessary? Working with the per zone slab reclaim counters is not
+> enough? We are adding counter after counter that have similar purposes and
+> the handling gets more complex.
+> 
+> Maybe we can get rid of the code in the slabs instead by just relying on
+> the difference of the zone counters?
 
-Yes the reason to keep it like this is that capable(CAP_SYS_PTRACE)
-will set PF_SUPERPRIV if it passes.  You don't want to do that unless
-the capability was actually required.
+Okey, I agree. I'm pending this work at once. and I'll (probably) resume it
+after Nick's work merged.
 
--serge
+Thanks.
+
+
+
+
