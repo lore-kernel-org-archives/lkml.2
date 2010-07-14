@@ -1,64 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757305Ab0GNXI5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:08:57 -0400
-Received: from sh.osrg.net ([192.16.179.4]:40947 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753236Ab0GNXIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:08:54 -0400
-Date: Thu, 15 Jul 2010 08:07:28 +0900
-To: zpfeffer@codeaurora.org
-Cc: fujita.tomonori@lab.ntt.co.jp, linux@arm.linux.org.uk,
-        ebiederm@xmission.com, linux-arch@vger.kernel.org,
-        dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
- memory management
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100714201149.GA14008@codeaurora.org>
-References: <20100713121420.GB4263@codeaurora.org>
-	<20100714104353B.fujita.tomonori@lab.ntt.co.jp>
-	<20100714201149.GA14008@codeaurora.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100715080710T.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 15 Jul 2010 08:07:31 +0900 (JST)
+	id S1758007Ab0GNXJV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:09:21 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:60885 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755436Ab0GNXJT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 19:09:19 -0400
+Date: Thu, 15 Jul 2010 01:09:13 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+Message-ID: <20100714230913.GG22373@basil.fritz.box>
+References: <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+ <20100714170617.GB4955@Krystal>
+ <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+ <20100714184642.GA9728@elte.hu>
+ <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
+ <AANLkTinfmoKvi1SauDA5_RiTmu6bztTDk8b_ycS-lr8S@mail.gmail.com>
+ <20100714195617.GC22373@basil.fritz.box>
+ <20100714200552.GA22096@Krystal>
+ <20100714223116.GB14533@nowhere>
+ <AANLkTik-sJL_pAJg38Hzpl_jpn2v90t7tppYqOGmu6p-@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik-sJL_pAJg38Hzpl_jpn2v90t7tppYqOGmu6p-@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010 13:11:49 -0700
-Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
-
-> On Wed, Jul 14, 2010 at 10:59:38AM +0900, FUJITA Tomonori wrote:
-> > On Tue, 13 Jul 2010 05:14:21 -0700
-> > Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
-> > 
-> > > > You mean that you want to specify this alignment attribute every time
-> > > > you create an IOMMU mapping? Then you can set segment_boundary_mask
-> > > > every time you create an IOMMU mapping. It's odd but it should work.
-> > > 
-> > > Kinda. I want to forget about IOMMUs, devices and CPUs. I just want to
-> > > create a mapping that has the alignment I specify, regardless of the
-> > > mapper. The mapping is created on a VCM and the VCM is associated with
-> > > a mapper: a CPU, an IOMMU'd device or a direct mapped device.
-> > 
-> > Sounds like you can do the above with the combination of the current
-> > APIs, create a virtual address and then an I/O address.
-> > 
+>  - at vmalloc time, when adding a new page directory entry, walk all
+> the tens of thousands of existing page tables under a lock that
+> guarantees that we don't add any new ones (ie it will lock out fork())
+> and add the required pgd entry to them.
 > 
-> Yes, and that's what the implementation does - and all the other
-> implementations that need to do this same thing. Why not solve the
-> problem once?
+>  - or just take the fault and do the "fill the page tables" on demand.
+> 
+> Quite frankly, most of the time it's probably better to make that last
+> choice (unless your hardware makes it easy to make the first choice,
 
-Why we we need a new abstraction layer to solve the problem that the
-current API can handle?
+Adding new PGDs should happen only very rarely (in fact 
+at most once per boot on i386-PAE36 with only 4 entries, most used by user 
+space), most of the time when you do a vmalloc it changes only lower level 
+tables. 
 
-The above two operations don't sound too complicated. The combination
-of the current API sounds much simpler than your new abstraction.
+The PGD for the kernel mappings is already set up. On x86-64 it can happen 
+more often in theory, but in practice it should be also extremly rare because
+a PGD is so large.
 
-Please show how the combination of the current APIs doesn't
-work. Otherwise, we can't see what's the benefit of your new
-abstraction.
+That's why I'm not sure this problem even happened. It should 
+be extremly rare that you exactly add that PGD during the per cpu
+allocation. 
+
+It can happen in theory, but for such a rare case take a lock
+and walking everything should be fine.
+
+-Andi
+
