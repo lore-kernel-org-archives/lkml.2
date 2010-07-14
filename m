@@ -1,65 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757097Ab0GNNXy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 09:23:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4307 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756541Ab0GNNXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 09:23:52 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] CFQ: Don't store left slice when slice used up or for a idle workload
-References: <4C3BCDA1.5040007@cn.fujitsu.com>
-	<x49r5j7plwy.fsf@segfault.boston.devel.redhat.com>
-	<4C3D0762.2060807@cn.fujitsu.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 14 Jul 2010 09:23:40 -0400
-In-Reply-To: <4C3D0762.2060807@cn.fujitsu.com> (Gui Jianfeng's message of
-	"Wed, 14 Jul 2010 08:40:02 +0800")
-Message-ID: <x49aapuci3n.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1756913Ab0GNN2w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 09:28:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53761 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754734Ab0GNN2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 09:28:51 -0400
+Message-ID: <4C3DBA97.40908@cn.fujitsu.com>
+Date: Wed, 14 Jul 2010 21:24:39 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Avi Kivity <avi@redhat.com>
+CC: LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH 1/4] KVM: MMU: fix forgot reserved bits check in speculative
+ path
+References: <4C3C3518.7080505@cn.fujitsu.com> <4C3DB671.1090802@redhat.com>
+In-Reply-To: <4C3DB671.1090802@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gui Jianfeng <guijianfeng@cn.fujitsu.com> writes:
 
-> Jeff Moyer wrote:
->> Gui Jianfeng <guijianfeng@cn.fujitsu.com> writes:
->> 
->>> It doesn't make sence to store left time slice for an idle workload
->>> or for the cfqq that uses up its slice.
->> 
->> Did you actually observe any problems?  As I understand it, if you
->> overrun your slice you get a negative offset, so I think we want to keep
->> that.
->
-> Hi Jeff
->
-> If that's the case, do we also need to store the negative offset when slice
-> used up in cfq_select_queue() and cfq_idle_slice_timer()?
 
-Good question;  the code is inconsistent as it stands.
+Avi Kivity wrote:
 
-        /*
-         * store what was left of this slice, if the queue idled/timed out
-         */
+>> +
+>> +            if (!!is_pae(vcpu) != sp->role.cr4_pae ||
+>> +                  is_nx(vcpu) != sp->role.nxe)
+>> +                continue;
+>> +
+>>    
+> 
+> Do we also need to check cr0.wp?  I think so.
 
-If we are to believe that comment, then yes, we should also call
-cfq_slice_expired with timed_out set to 1 in cfq_idle_slice_timer when
-the slice is used, and for certain cases in select_queue.
+I think it's not too bad since we just decrease the access right, for example,
+we mark the mapping readonly for cr0.wp=0's page, the later write-access will
+cause #PF, and the read-access is OK.
 
-I find this counter-intuitive, actually.  I would have stored residual
-for quite the opposite situation: where you are preempted and so don't
-get to run for your fair share.  But, there must be some
-logic/experience behind the current mechanism....
+> 
+>>               if (gentry)
+>>                   mmu_pte_write_new_pte(vcpu, sp, spte,&gentry);
+>>    
+> 
+> Please move the checks to mmu_pte_write_new_pte(), it's a more logical
+> place.
+> 
+> It means the reserved bits check happens multiple times, but that's ok.
+> 
 
-Cheers,
-Jeff
+OK
+
+> Also, you can use arch.mmu.base_role to compare:
+> 
+>     static const kvm_mmu_page_role mask = { .level = -1U, .cr4_pae = 1,
+> ... };
+> 
+>     if ((sp->role.word ^ base_role.word) & mask.word)
+>          return;
+
+OK, will update it :-)
