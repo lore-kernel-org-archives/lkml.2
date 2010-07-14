@@ -1,90 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755351Ab0GNAHF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:07:05 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:25395 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751253Ab0GNAHB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 20:07:01 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Tue, 13 Jul 2010 20:07:00 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Grant Likely <grant.likely@secretlab.ca>, linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for
- defconfig
-In-reply-to: <1279064008.4609.48.camel@c-dwalke-linux.qualcomm.com>
-Message-id: <alpine.LFD.2.00.1007131941140.10598@xanadu.home>
-References: <20100713230352.6781.18644.stgit@angua>
- <1279062881.4609.34.camel@c-dwalke-linux.qualcomm.com>
- <AANLkTin69tN3NQHD2wvkA0G-lj3f9tSZEnhzdyJdTh9m@mail.gmail.com>
- <1279064008.4609.48.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752146Ab0GNAMk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:12:40 -0400
+Received: from mga02.intel.com ([134.134.136.20]:41891 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751042Ab0GNAMi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 20:12:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,198,1278313200"; 
+   d="scan'208";a="535277719"
+Subject: Re: perf failed with kernel 2.6.35-rc
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTilu4fi68DQpbzsKJrrAVUq_ZFbm2AVNvaPK7VKu@mail.gmail.com>
+References: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
+	 <AANLkTilu4fi68DQpbzsKJrrAVUq_ZFbm2AVNvaPK7VKu@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 14 Jul 2010 08:13:41 +0800
+Message-Id: <1279066421.2096.920.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010, Daniel Walker wrote:
-> On Tue, 2010-07-13 at 17:21 -0600, Grant Likely wrote:
-> > On Tue, Jul 13, 2010 at 5:14 PM, Daniel Walker <dwalker@codeaurora.org> wrote:
-> > > It just doesn't feel like Kconfig was meant to do this, it feel like
-> > > somewhat of an abuse ..
-> > 
-> > Why?  It uses the Kconfig language itself to specify additional
-> > constraints on the final configuration.  Seems to be the essence of
-> > elegance to me.  :-)
+On Tue, 2010-07-13 at 17:16 +0200, Stephane Eranian wrote:
+> On Tue, Jul 13, 2010 at 10:14 AM, Zhang, Yanmin
+> <yanmin_zhang@linux.intel.com> wrote:
+> > Peter,
+> >
+> > perf doesn't work on my Nehalem EX machine.
+> > 1) The 1st start of 'perf top' is ok;
+> > 2) Kill the 1st perf and restart it. It doesn't work. No data is showed.
+> >
+> > I located below commit:
+> > commit 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+> > Author: Peter Zijlstra <peterz@infradead.org>
+> > Date:   Fri Mar 26 14:08:44 2010 +0100
+> >
+> >    perf, x86: Add Nehelem PMU programming errata workaround
+> >
+> >    workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >    Date: Fri Mar 26 13:59:41 CET 2010
+> >
+> >    Implement the workaround for Intel Errata AAK100 and AAP53.
+> >
+> >    Also, remove the Core-i7 name for Nehalem events since there are
+> >    also Westmere based i7 chips.
+> >
+> >
+> > If I comment out the workaround in function intel_pmu_nhm_enable_all,
+> > perf could work.
+> >
+> > A quick glance shows:
+> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+> > should be:
+> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+> >
+> >
+> > I triggered sysrq to dump PMU registers and found the last bit of
+> > global status register is 1. I added a status reset operation like below patch:
+> >
+> What do you call the last bit? bit0 or bit63?
+Sorry for confusing you. It's bit0, mapping to PERFMON_EVENTSEL0.
+
 > 
-> To my mind the only problem with the current defconfig formatting is the
-> size of the files. If those files are 5-10 lines instead of 2000 lines,
-> then I think the readability problem isn't really an issue any more..
+> > --- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c     2010-07-14 09:38:11.000000000 +0800
+> > +++ linux-2.6.35-rc5_fork/arch/x86/kernel/cpu/perf_event_intel.c        2010-07-14 14:41:42.000000000 +0800
+> > @@ -505,8 +505,13 @@ static void intel_pmu_nhm_enable_all(int
+> >                wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
+> >                wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
+> >
+> > -               wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+> > +               wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+> >                wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
+> > +               /*
+> > +                * Reset the last 3 bits of global status register in case
+> > +                * previous enabling causes overflows.
+> > +                */
+> 
+> The workaround cannot cause on overflow because the associated counters
+> won't count anything given their umask value is 0 (which does not correspond
+> to anything for event 0xB1, event 0xB5 is undocumented). This is for the events
+> described in table A.2. If NHM-EX has a different definition for 0xB1, 0xB5,
+> then that's another story.
+I found the status bit is set by triggering sysrq to dump PMU registers.
 
-That's one issue indeed.
+If I start perf by gdb, sometimes, perf could work. I found one processor's 1st status
+register is equal to 0 while other processors' are 1. If just starting perf, all 1st
+status registers are equal to 1.
 
-But there is another issue that is somewhat related, which is to be able 
-to categorize config options.
-
-Currently the defconfig files carry information about the proper driver 
-to enable in order to support devices soldered on the board and 
-therefore which are not "optional".  That might be a particular RTC 
-chip, or a particular ethernet block integrated into a SOC, etc.  Of 
-course we want to preserve the ability to disable support for those 
-things, but by default people want to have all the right drivers 
-selected for all the built-in hardware when selecting a target 
-machine/board without having to dig into a datasheet for that target.
-
-The defconfig files also carry config options that are totally 
-arbitrary.  What type of filesystem, what kind of network protocol, what 
-USB device drivers (not host controller driver), what amount of 
-debugging options, all those are unrelated to the actual hardware and 
-may vary from one user to another.
-
-Furthermore, in order to reduce the number of defconfig files, we tried 
-to combine as many targets into a single kernel image.  That increases 
-build test coverage with fewer builds which is good, but then the info 
-about specific drivers required for a specific target but not for 
-another target in the same defconfig is now lost.  It is therefore quite 
-hard to produce a highly optimized configuration for a single target 
-without doing some digging again.
-
-So it is really in the Kconfig file that all those hardware specific 
-options can be expressed in a clear and readable way.  When BOARD_XYZ is 
-selected and STD_CONFIG is selected, then automatically select RTC_FOO, 
-select ETH_BAR, select LED_BAZ, etc. Of course we would want required 
-dependencies to be automatically selected as well.
-
-But all the rest is arbitrary and could be part of common shared 
-profiles or the like in defconfig format.
+> 
+> 
+> > +               wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+> >
+> >                for (i = 0; i < 3; i++) {
+> >                        struct perf_event *event = cpuc->events[i];
+> >
+> >
+> >
+> > However, it still doesn't work. Current right way is to comment out
+> > the workaround.
 
 
-Nicolas
