@@ -1,49 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757481Ab0GNTCZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 15:02:25 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46804
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755436Ab0GNTCX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 15:02:23 -0400
-Date: Wed, 14 Jul 2010 12:02:38 -0700 (PDT)
-Message-Id: <20100714.120238.112604503.davem@davemloft.net>
-To: tglx@linutronix.de
-Cc: hch@lst.de, mingo@elte.hu, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org,
-        rostedt@goodmis.org
-Subject: Re: [tip:x86/irq] x86: Always use irq stacks
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LFD.2.00.1007141719130.3321@localhost.localdomain>
-References: <20100708205302.GA23961@lst.de>
-	<20100714151215.GA31825@lst.de>
-	<alpine.LFD.2.00.1007141719130.3321@localhost.localdomain>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1757496Ab0GNTCh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 15:02:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32868 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757484Ab0GNTCf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 15:02:35 -0400
+Message-ID: <4C3E09C8.2020806@redhat.com>
+Date: Wed, 14 Jul 2010 15:02:32 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Zachary Amsden <zamsden@redhat.com>
+CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 08/18] Add helper functions for time computation
+References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-9-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1278987938-23873-9-git-send-email-zamsden@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Wed, 14 Jul 2010 17:27:01 +0200 (CEST)
+On 07/12/2010 10:25 PM, Zachary Amsden wrote:
+> Add a helper function to compute the kernel time and convert nanoseconds
+> back to CPU specific cycles.  Note that these must not be called in preemptible
+> context, as that would mean the kernel could enter software suspend state,
+> which would cause non-atomic operation.
+>
+> Also, convert the KVM_SET_CLOCK / KVM_GET_CLOCK ioctls to use the kernel
+> time helper, these should be bootbased as well.
+>
+> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
 
-> On Wed, 14 Jul 2010, Christoph Hellwig wrote:
-> 
->> Turns out this wasn't a regression introduced by a commit, but it
->> happens when CONFIG_FUNCTION_GRAPH_TRACER is enabled.  From a quick
->> look I have no idea why these would interact badly, especially as
->> CONFIG_FUNCTION_GRAPH_TRACER works fine with irq stacks if the
->> CONFIG_4KSTACKS options is set.
-> 
-> So you're saying, that the problem appears when
-> CONFIG_FUNCTION_GRAPH_TRACER is enabled w/o being used and that it
-> exists prior to your patches with irq stacks and 8k stack size, but
-> works with 4k stacks. That's definitely more than odd.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Some hard-coded check somewhere assuming kernel stack pages
-won't straddle a page boundary?
-
-Just a guess...
+-- 
+All rights reversed
