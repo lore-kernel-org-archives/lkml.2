@@ -1,68 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757434Ab0GNTAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 15:00:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35371 "EHLO mx1.redhat.com"
+	id S1757442Ab0GNTBM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 15:01:12 -0400
+Received: from mga11.intel.com ([192.55.52.93]:41314 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757419Ab0GNTAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 15:00:41 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] deadline-iosched: don't allow aliased requests to starve others
-References: <x494og2cfjd.fsf@segfault.boston.devel.redhat.com>
-	<x49vd8iatee.fsf@segfault.boston.devel.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 14 Jul 2010 15:00:37 -0400
-In-Reply-To: <x49vd8iatee.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
-	message of "Wed, 14 Jul 2010 13:02:33 -0400")
-Message-ID: <x49lj9dc2i2.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754264Ab0GNTBL convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 15:01:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,203,1278313200"; 
+   d="scan'208";a="818138136"
+From: "Pan, Jacob jun" <jacob.jun.pan@intel.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Ben Greear <greearb@candelatech.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Date: Wed, 14 Jul 2010 12:01:04 -0700
+Subject: RE: Regression:  2.6.34 boot fails on E5405 system, bisected:
+  de08e2c26
+Thread-Topic: Regression:  2.6.34 boot fails on E5405 system, bisected:
+  de08e2c26
+Thread-Index: Acsjhqzl8+1PTdkwRt2Xv4eNAau1FQAAAtMQ
+Message-ID: <43F901BD926A4E43B106BF17856F0755EA8EEA9B@orsmsx508.amr.corp.intel.com>
+References: <4C3D067C.10507@candelatech.com>
+	<4C3D101E.5010605@candelatech.com>
+	<20100713191958.260478c0@virtuousgeek.org>	<4C3E077C.9040609@zytor.com>
+ <20100714115904.7004be74@virtuousgeek.org>
+In-Reply-To: <20100714115904.7004be74@virtuousgeek.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer <jmoyer@redhat.com> writes:
 
-> Jeff Moyer <jmoyer@redhat.com> writes:
+
+>-----Original Message-----
+>From: Jesse Barnes [mailto:jbarnes@virtuousgeek.org]
+>Sent: Wednesday, July 14, 2010 11:59 AM
+>To: H. Peter Anvin
+>Cc: Ben Greear; linux-kernel; Pan, Jacob jun
+>Subject: Re: Regression: 2.6.34 boot fails on E5405 system, bisected:
+>de08e2c26
 >
->> Hi,
->>
->> In running a test case that tries to trip up the kernel's AIO
->> implementation, we ran into a situation where no other I/O to the device
->> under test would be completed.  The test program spawned (in this case)
->> 100 threads, each of which performed the following in a loop:
->>
->> open file O_DIRECT
->> queue 1MB of read I/O from file using 16 iocbs
->> close file
->> repeat
->>
->> The program does NOT wait for the I/O to complete.  The file length is
->> only 4MB, meaning that you have 25 threads performing I/O on each of the
->> 4 1MB regions.
->>
->> Both deadline and cfq check for aliased requests in the sorted list of
->> I/Os, and when an alias is found, the request in the rb tree is moved to
->> the dispatch list.  So, what happens is that, with this workload, only
->> requests from this program are moved to the dispatch list, starving out
->> all other I/O.
->>
->> The attached patch fixes this problem by issuing all expired requests in
->> the aliased request handling code.  The reason I opted to issue all
->> expired requsts is because if we only service a single one, I still see
->> really awful interactivity;  an ls would take over 5 minutes to
->> complete.  With the attached patch, the ls took about 7 seconds to
->> complete.
+>On Wed, 14 Jul 2010 11:52:44 -0700
+>"H. Peter Anvin" <hpa@zytor.com> wrote:
 >
-> It occured to me that this doesn't solve the problem of starving WRITE
-> I/O.  So, this patch fixes that as well, tested with a dd if=/dev/zero
-> of=outfile bs=1M count=1 oflag=sync while.
+>> So I suggest the following changes...
+>>
+>> On 07/13/2010 07:19 PM, Jesse Barnes wrote:
+>> >>
+>> >> static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
+>> >> {
+>> >> 	int pos;
+>> >> 	u32 pcie_cap = 0, cap_data;
+>> >> 	printk("fixed_bar_cap, bus: %p  devfn: %u\n", bus, devfn);
+>> >> 	pos = PCIE_CAP_OFFSET;
+>> >> 	while (pos) {
+>>
+>> while (pos >= PCIE_CAP_OFFSET) {
+>>
+>> >> 		printk("Before read..\n");
+>> >> 		if (raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
+>> >> 					  devfn, pos, 4, &pcie_cap))
+>> >> 			return 0;
+>> >> 		printk("pcie_cap: %u", pcie_cap);
+>> >>
+>>    -		if (pcie_cap == 0xffffffff)
+>>    -			return 0;
+>>
+>>    +		if (PCI_EXT_CAP_ID(pcie_cap) == 0x0000 ||
+>>    +		    PCI_EXT_CAP_ID(pcie_cap) == 0xffff)
+>>    +			break;
+>>
+>> >> 		printk("Checking vendor..\n");
+>>
+>> >> 		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
+>> >> 			printk("reading domain_nr\n");
+>> >> 			raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
+>> >> 					      devfn, pos + 4, 4, &cap_data);
+>> >> 			printk("cap_data: %u\n", cap_data);
+>> >> 			if ((cap_data & 0xffff) == PCIE_VNDR_CAP_ID_FIXED_BAR)
+>> >> 				return pos;
+>> >> 		}
+>> >>
+>> >> 		pos = pcie_cap >> 20;
+>>
+>> 		pos = (pcie_cap >> 20) & 0xffc;
+>>
+>> >> 		printk("pos after shift: %i\n", pos);
+>> >> 	}
+>> >>
+>> >> 	printk("Returning from fixed_bar_cap\n");
+>> >> 	return 0;
+>> >> }
+>> >>
+>> >>
+>> >
+>> > I thought a related bug was fixed already; the code should be
+>returning
+>> > all zeros for non-existent BAR reads.
+>
+>Changes look ok to me, though I'd prefer not hitting this code at all
+>on non-Moorestown if at all possible.
 
-Gah.  Forgot:
-
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+Can we use PCI_EXT_CAP_NEXT to replace this line?
+pos = (pcie_cap >> 20) & 0xffc
