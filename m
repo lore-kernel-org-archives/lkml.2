@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756473Ab0GNQmY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:42:24 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:35850 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752378Ab0GNQmW (ORCPT
+	id S1756082Ab0GNQrq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 12:47:46 -0400
+Received: from eu1sys200aog101.obsmtp.com ([207.126.144.111]:54881 "EHLO
+	eu1sys200aog101.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753187Ab0GNQrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:42:22 -0400
-Date: Wed, 14 Jul 2010 17:42:21 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, akpm@osdl.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-In-Reply-To: <20100714155804.252253097@efficios.com>
-Message-ID: <alpine.LFD.2.00.1007141732200.11778@eddie.linux-mips.org>
-References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 14 Jul 2010 12:47:45 -0400
+Date: Wed, 14 Jul 2010 22:17:09 +0530
+From: Sundar R IYER <sundar.iyer@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific
+ data
+Message-ID: <20100714164708.GD1689@bnru01.bnr.st.com>
+References: <20100713150814.GA13767@bnru01.bnr.st.com>
+ <20100713150905.GD24626@rakim.wolfsonmicro.main>
+ <20100713161343.GA25342@bnru01.bnr.st.com>
+ <20100713203852.GA1756@rakim.wolfsonmicro.main>
+ <20100714145053.GA1689@bnru01.bnr.st.com>
+ <20100714145748.GF31073@rakim.wolfsonmicro.main>
+ <20100714153643.GB1689@bnru01.bnr.st.com>
+ <20100714154726.GH31073@rakim.wolfsonmicro.main>
+ <20100714160941.GC1689@bnru01.bnr.st.com>
+ <20100714162048.GA27512@rakim.wolfsonmicro.main>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100714162048.GA27512@rakim.wolfsonmicro.main>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010, Mathieu Desnoyers wrote:
+> Are you positive that in your system it is sensible for consumers to
+> enable and disable all the supplies?  Usually there are restrictions on
+> what can sensibly be done on a given system.  For example, disabling the
+> CPU core or RAM supplies from software would normally not work terribly
+> well.
+As I said earlier, there are other supplies which I havent exposed here,
+simply because,
+ 1. they are controlled out of the kernel, which makes it meaningless
+    to include them for kernel modules
+ 2. Even if those were included, the risk of mis-controlling them due
+    to bad SW is very high as you say and hence safely out of SW control.
 
-> This patch makes all faults, traps and exception safe to be called from NMI
-> context *except* single-stepping, which requires iret to restore the TF (trap
-> flag) and jump to the return address in a single instruction. Sorry, no kprobes
+I assure you that such supplies are *not* included in this list.
 
- Watch out for the RF flag too, that is not set correctly by POPFD -- that 
-may be important for faulting instructions that also have a hardware 
-breakpoint set at their address.
+> CPU core or RAM supplies from software would normally not work terribly
+Also, usually the deepest(lowest) power state for the CPU core is
+~0V(atleast on our platform); which can be possible only by switching
+off the supplies to the core; thus effectively resulting in being
+controlled by SW. Further, I dont see the point of running full supplies
+to the RAM in a system idle state, when it is okay for the RAM to be
+powered @ a half rating OIW accountable to the idle state latencies.
 
-> support in NMI handlers because of this limitation. This cannot be emulated
-> with popf/lret, because lret would be single-stepped. It does not apply to
-> "immediate values" because they do not use single-stepping. This code detects if
-> the TF flag is set and uses the iret path for single-stepping, even if it
-> reactivates NMIs prematurely.
+> Right, but think about the case I'm talking about: if you've only hooked
+> up some but not all of the consumers then the core has no idea about the
+> consumers you didn't hook up.  You can only do power control when *all*
+> the consumers needed are configured.
+I see your point. But from an other perspective - it is *not* neccessary
+to have power control only when *all* consumers are in. For eg: we have
+2 peripherals sharing one of the VAUX supplies. At this moment, both the
+peripherals drivers are integrated with the regulator APIs; which means
+the core handles most of the work regarding control. If, one of the
+peripherals isnt included in the final configuration, still, IMO, it
+*does* make sense that the other active peripheral optimally manage the
+supply control; which is gauranteed by the core. IOW & IMO, a consumer
+that hasnt hooked up to the regulator and thus is *aware* that it isnt
+sourced can be safely assumed to be non-existent. 
 
- What about the VM flag for VM86 tasks?  It cannot be changed by POPFD 
-either.
-
- How about only using the special return path when a nested exception is 
-about to return to the NMI handler?  You'd avoid all the odd cases then 
-that do not happen in the NMI context.
-
-  Maciej
+Regards,
+Sundar 
