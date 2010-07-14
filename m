@@ -1,75 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752873Ab0GNAkb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:40:31 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:41194 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751184Ab0GNAka (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 20:40:30 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Jul 2010 09:35:50 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Nathan Fontenot <nfont@austin.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/7] Allow sysfs memory directories to be split
-Message-Id: <20100714093550.40036034.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4C3C8B9E.7000208@austin.ibm.com>
-References: <4C3B3446.5090302@austin.ibm.com>
-	<4C3B3895.3040209@austin.ibm.com>
-	<20100713152854.ec1f4d6a.kamezawa.hiroyu@jp.fujitsu.com>
-	<4C3C8B9E.7000208@austin.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753316Ab0GNAmO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:42:14 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62866 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751184Ab0GNAmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 20:42:13 -0400
+Message-ID: <4C3D0762.2060807@cn.fujitsu.com>
+Date: Wed, 14 Jul 2010 08:40:02 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Jeff Moyer <jmoyer@redhat.com>
+CC: Jens Axboe <axboe@kernel.dk>, Vivek Goyal <vgoyal@redhat.com>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] CFQ: Don't store left slice when slice used up or for
+ a idle workload
+References: <4C3BCDA1.5040007@cn.fujitsu.com> <x49r5j7plwy.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x49r5j7plwy.fsf@segfault.boston.devel.redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010 10:51:58 -0500
-Nathan Fontenot <nfont@austin.ibm.com> wrote:
-
-> > 
-> > And for what purpose this interface is ? Does this split memory block into 2 pieces
-> > of the same size ?? sounds __very__ strange interface to me.
+Jeff Moyer wrote:
+> Gui Jianfeng <guijianfeng@cn.fujitsu.com> writes:
 > 
-> Yes, this splits the memory_block into two blocks of the same size.  This was
-> suggested as something we may want to do.  From ppc perspective I am not sure we
-> would use this.
+>> It doesn't make sence to store left time slice for an idle workload
+>> or for the cfqq that uses up its slice.
 > 
-> The split functionality is not required.  The main goal of the patch set is to
-> reduce the number of memory sysfs directories created.  From a ppc perspective
-> the split functionality is not really needed.
+> Did you actually observe any problems?  As I understand it, if you
+> overrun your slice you get a negative offset, so I think we want to keep
+> that.
+
+Hi Jeff
+
+If that's the case, do we also need to store the negative offset when slice
+used up in cfq_select_queue() and cfq_idle_slice_timer()?
+
+Thanks
+Gui
+
 > 
-
-Okay, this is an offer from me.
-
-  1. I think you can add an boot option as "don't create memory sysfs".
-     please do.
-
-  2. I'd like to write a configfs module for handling memory hotplug even when
-     sysfs directroy is not created.
-     Because configfs support rmdir/mkdir, the user (ppc's daemon?) has to do
-     
-     When offlining section X.
-     # insmod configfs_memory.ko
-     # mount -t configfs none /configfs
-     # mkdir /configfs/memoryX
-     # echo offline > /configfs/memoryX/state
-     # rmdir /configfs/memoryX
-
-  And making this operation as the default bahavior for all arch's memory hotplug may
-  be better...
-
-Dave, how do you think ? Because ppc guys uses "probe" interface already,
-this can be handled... no ?
-
-One problem is that I don't have enough knowledge about configfs..it seems complex.
-
-Thanks,
--Kame
-  
-
+> Cheers,
+> Jeff
+> 
+> 
