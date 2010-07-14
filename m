@@ -1,89 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752665Ab0GNG4Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 02:56:25 -0400
-Received: from elasmtp-kukur.atl.sa.earthlink.net ([209.86.89.65]:42895 "EHLO
-	elasmtp-kukur.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751380Ab0GNG4X (ORCPT
+	id S1752516Ab0GNHPs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 03:15:48 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41778 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751739Ab0GNHPr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 02:56:23 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=dk20050327; d=mindspring.com;
-  b=OqQ0JoIUXWijWna5b7mMJMwDbiBfjjpANkIn4iqU7UdhyT2UioNxZa5fje1ORkYS;
-  h=Received:Date:From:To:Cc:Subject:Message-Id:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-ELNK-Trace:X-Originating-IP;
-Date: Wed, 14 Jul 2010 02:56:18 -0400
-From: Bill Fink <billfink@mindspring.com>
-To: Felipe W Damasio <felipewd@gmail.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>, Avi Kivity <avi@redhat.com>,
-        David Miller <davem@davemloft.net>, Patrick McHardy <kaber@trash.net>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
-Message-Id: <20100714025618.181eacc5.billfink@mindspring.com>
-In-Reply-To: <AANLkTikmuK0iWDjmG6lVgPyoZAHQ7ZdJmQobVrAQmgNh@mail.gmail.com>
-References: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>
-	<1278695580.2696.55.camel@edumazet-laptop>
-	<AANLkTil39xHOhcdAo4h_jWtx_UuYdFHGdQVAdwPMd7QJ@mail.gmail.com>
-	<1278742649.2538.17.camel@edumazet-laptop>
-	<4C395459.6080407@redhat.com>
-	<1278835332.2538.51.camel@edumazet-laptop>
-	<AANLkTikEGuFtTlIKUfti6GDsdBz99PpKRCs5lEeEM86u@mail.gmail.com>
-	<AANLkTilbEkJWPqvJE72r9HdFQSU84S02BKZB0CH-8QwB@mail.gmail.com>
-	<AANLkTimn9x17g-4K7fS4MjmCgzHuBARurEoFVd_gId7m@mail.gmail.com>
-	<1279032023.2634.384.camel@edumazet-laptop>
-	<AANLkTilrIByt4xAHhsBsKo3nDfv0_c3sF-dCiTiYiPnu@mail.gmail.com>
-	<1279036193.2634.468.camel@edumazet-laptop>
-	<AANLkTilgxvDPpBJvwbw3PHZfXDaa2_6-TbJ8lujz5y3V@mail.gmail.com>
-	<1279077678.2444.95.camel@edumazet-laptop>
-	<AANLkTikkcaionMp3SJLgo3JmCjxQ7rPZv3-3_RbxCx_4@mail.gmail.com>
-	<1279078985.2444.105.camel@edumazet-laptop>
-	<AANLkTikmuK0iWDjmG6lVgPyoZAHQ7ZdJmQobVrAQmgNh@mail.gmail.com>
-X-Mailer: Sylpheed 2.6.0 (GTK+ 2.16.6; x86_64-redhat-linux-gnu)
+	Wed, 14 Jul 2010 03:15:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Jul 2010 16:10:45 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux@arm.linux.org.uk,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+Message-Id: <20100714161045.ef028769.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTin8tdw4VmfCPHE0TR3f-l7ao8ngQJcepTDPpMAC@mail.gmail.com>
+References: <20100712155348.GA2815@barrios-desktop>
+	<20100713093006.GB14504@cmpxchg.org>
+	<20100713154335.GB2815@barrios-desktop>
+	<1279038933.10995.9.camel@nimitz>
+	<20100713164423.GC2815@barrios-desktop>
+	<20100714092301.69e7e628.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTin8tdw4VmfCPHE0TR3f-l7ao8ngQJcepTDPpMAC@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-ELNK-Trace: c598f748b88b6fd49c7f779228e2f6aeda0071232e20db4d27eaa24b7a6d093a462792c66386c9c9350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
-X-Originating-IP: 71.166.62.12
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010, Felipe W Damasio wrote:
+On Wed, 14 Jul 2010 15:44:41 +0900
+Minchan Kim <minchan.kim@gmail.com> wrote:
 
-> Hi,
+> Hi, Kame.
 > 
-> 2010/7/14 Eric Dumazet <eric.dumazet@gmail.com>:
-> >> I can, but my bosses will kick my ass if I bring down the ISP again :)
+> On Wed, Jul 14, 2010 at 9:23 AM, KAMEZAWA Hiroyuki
+> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> > On Wed, 14 Jul 2010 01:44:23 +0900
+> > Minchan Kim <minchan.kim@gmail.com> wrote:
 > >
-> > I have no guarantee at all, even if we find the bug.
-> 
-> Ok :-)
-> 
-> >> If you think it's the only way to find the problem I'll tell them that
-> >> I need to do it. In this case, please tell me what other config
-> >> options/tools I can use to get as much info as possible...since I'll
-> >> probably be able to test this only once more on the production
-> >> environment for debugging purposes.
+> >> > If you _really_ can't make the section size smaller, and the vast
+> >> > majority of the sections are fully populated, you could hack something
+> >> > in.  We could, for instance, have a global list that's mostly readonly
+> >> > which tells you which sections need to be have their sizes closely
+> >> > inspected.  That would work OK if, for instance, you only needed to
+> >> > check a couple of memory sections in the system.  It'll start to suck if
+> >> > you made the lists very long.
+> >>
+> >> Thanks for advise. As I say, I hope Russell accept 16M section.
+> >>
 > >
-> > You really should try to setup a lab to trigger the bug, and not doing
-> > experiments on production :)
+> > It seems what I needed was good sleep....
+> > How about this if 16M section is not acceptable ?
+> >
+> > == NOT TESTED AT ALL, EVEN NOT COMPILED ==
+> >
+> > register address of mem_section to memmap itself's page struct's pg->private field.
+> > This means the page is used for memmap of the section.
+> > Otherwise, the page is used for other purpose and memmap has a hole.
 > 
-> Right, I'm trying.
-> 
-> The thing is: The ISP is a 200Mbps network with 10,000 users. The
-> first time it took around 2 minutes to trigger the bug. The second
-> time it took around 17 minutes.
-> 
-> So I *think* it's some TCP flag with some weird content...but I can't
-> find out what it is so I can trigger it on the lab.
-> 
-> So my only guess is to enable every possible debug flag I can think of
-> to track the bug down on the production environment. Any hints here
-> would be appreciated :)
+> It's a very good idea. :)
+> But can this handle case that a page on memmap pages have struct page
+> descriptor of hole?
+> I mean one page can include 128 page descriptor(4096 / 32).
+yes.
 
-Is it possible for you to mirror the production traffic to another
-port, and then do a tcpdump capture to a series of files, so that
-you might possibly be able to correlate the kernel crash to the
-actual packets on the wire (and the Invalid Request squid errors)?
-Just a suggestion.
+> In there, 64 page descriptor is valid but remain 64 page descriptor is on hole.
+> In this case, free_memmap doesn't free the page.
 
-						-Bill
+yes. but in that case, there are valid page decriptor for 64pages of holes.
+pfn_valid() should return true but PG_reserved is set.
+(This is usual behavior.)
+
+My intention is that
+
+ - When all 128 page descriptors are unused, free_memmap() will free it.
+   In that case, clear page->private of a page for freed page descriptors.
+
+ - When some of page descriptors are used, free_memmap() can't free it
+   and page->private points to &mem_section. We may have memmap for memory
+   hole but pfn_valid() is a function to check there is memmap or not.
+   The bahavior of pfn_valid() is valid.
+   Anyway, you can't free only half of page.
+
+If my code doesn't seem to work as above, it's bug.
+
+
+Thanks,
+-Kame
+
