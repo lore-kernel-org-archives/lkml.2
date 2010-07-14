@@ -1,89 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757279Ab0GNSMP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:12:15 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:48173 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756779Ab0GNSMN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:12:13 -0400
-X-SpamScore: -45
-X-BigFish: VPS-45(zz1432N98dN179dN140eM9371P15bfMzz1202hzz15d4Rz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L5K7W4-01-DL0-02
-X-M-MSG: 
-Date: Wed, 14 Jul 2010 20:11:52 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Stephan Wolf <stephan@letzte-bankreihe.de>, <linux-kernel@vger.kernel.org>,
-        <tglx@linutronix.de>, Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH] enable readback to get HPET working on ATI SB4x00,
- kernel 2.6.35_rc5
-Message-ID: <20100714181152.GB15651@aftab>
-References: <4C3DDDFF.5040302@letzte-bankreihe.de>
- <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
+	id S1757298Ab0GNSMZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:12:25 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:37440 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757317Ab0GNSMX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 14:12:23 -0400
+Date: Wed, 14 Jul 2010 14:12:20 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: "Maciej W. Rozycki" <macro@linux-mips.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+Message-ID: <20100714181220.GA32279@Krystal>
+References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <alpine.LFD.2.00.1007141732200.11778@eddie.linux-mips.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="iso-8859-1"
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Content-Transfer-Encoding: 8BIT
-X-Reverse-DNS: unknown
+In-Reply-To: <alpine.LFD.2.00.1007141732200.11778@eddie.linux-mips.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:06:47 up 172 days, 20:43,  7 users,  load average: 0.00, 0.03,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Wed, Jul 14, 2010 at 09:13:39AM -0700
-
-> On Wed, Jul 14, 2010 at 8:55 AM, Stephan Wolf
-> <stephan@letzte-bankreihe.de> wrote:
-> >
-> >  After commit 30a564be9d9554c168a654eddc2165869cc0d7bf "x86, hpet: Restrict
-> > read back to affected ATI chipsets" hpet did not work anymore on HP nx6325.
-> > The machine hangs on booting until a keystroke was taken. After a short time
-> > machine hangs again until next keystroke. Applying the following patch
-> > solves the issue for me.
+* Maciej W. Rozycki (macro@linux-mips.org) wrote:
+> On Wed, 14 Jul 2010, Mathieu Desnoyers wrote:
 > 
-> Ok, this makes sense. Bugs in the ATI chipset is why
-> 'hpet_readback_cmp' exists in the first place. HOWEVER, clearly that
-> commit changed it to be about too few ATI chipsets.
+> > This patch makes all faults, traps and exception safe to be called from NMI
+> > context *except* single-stepping, which requires iret to restore the TF (trap
+> > flag) and jump to the return address in a single instruction. Sorry, no kprobes
 > 
-> So right now, for
+>  Watch out for the RF flag too, that is not set correctly by POPFD -- that 
+> may be important for faulting instructions that also have a hardware 
+> breakpoint set at their address.
 > 
->  - PCI_DEVICE_ID_ATI_SBX00_SMBUS:
->      force disable HPET MSI
->      force HPET readback
+> > support in NMI handlers because of this limitation. This cannot be emulated
+> > with popf/lret, because lret would be single-stepped. It does not apply to
+> > "immediate values" because they do not use single-stepping. This code detects if
+> > the TF flag is set and uses the iret path for single-stepping, even if it
+> > reactivates NMIs prematurely.
 > 
->  - PCI_DEVICE_ID_ATI_IXP400_SMBU
->      force-enable HPET
->      ...and than your patch makes it force HPET readback
+>  What about the VM flag for VM86 tasks?  It cannot be changed by POPFD 
+> either.
 > 
-> but that doesn't actually make much sense in the bigger picture,
-> because there are other ATI chipsets that are related and presumably
-> also affected. What about IXP[23]00_SMBUS? And what about the IXP7
-> series (SBX00 is IXP6, afaik)?
+>  How about only using the special return path when a nested exception is 
+> about to return to the NMI handler?  You'd avoid all the odd cases then 
+> that do not happen in the NMI context.
 
-Right, so the original commit introducing the readback did it for all
-ATI chipsets: 72d43d9bc9210d24d09202eaf219eac09e17b339. We've been
-running fine with it so far modulo the Intel ICH9 issue.
+This is exactly what this patch does :-)
 
-I'll try to find out which chipsets are actually affected but in the
-meantime we might want to do a temporary fix by enabling the readback
-back(!) on all ATI chipsets so that we don't uncover anymore bugs like
-the one above, hmmm?
+It selects the return path with
 
-> And I added Andreas to the cc, maybe he knows what's up.
++       testl $NMI_MASK,TI_preempt_count(%ebp)
++       jz resume_kernel                /* Not nested over NMI ? */
 
-He'll be back on Mo.
+In addition, about int3 breakpoints use in the kernel, AFAIK the handler does
+not explicitly set the RF flag, and the breakpoint instruction (int3) appears
+not to set it. (from my understanding of Intel's
+Intel Architecture Software Developerâ€™s Manual Volume 3: System Programming
+15.3.1.1. INSTRUCTION-BREAKPOINT EXCEPTION C)
+
+So it should be safe to set a int3 breakpoint in a NMI handler with this patch.
+It's just the "single-stepping" feature of kprobes which is problematic.
+Luckily, only int3 is needed for code patching bypass.
+
+Thanks,
+
+Mathieu
+
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
