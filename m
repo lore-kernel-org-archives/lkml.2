@@ -1,49 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab0GNXFv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:05:51 -0400
-Received: from mail1.nippynetworks.com ([212.227.250.41]:46084 "EHLO
-	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754567Ab0GNXFu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:05:50 -0400
-Message-ID: <4C3E42CC.4010704@wildgooses.com>
-Date: Thu, 15 Jul 2010 00:05:48 +0100
-From: Ed W <lists@wildgooses.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.10) Gecko/20100512 Lightning/1.0b1 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-CC: David Miller <davem@davemloft.net>, rick.jones2@hp.com, davidsen@tmr.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3E0684.5060409@wildgooses.com> <4C3E1B54.40604@hp.com> <20100714203919.GD6682@nuttenaction> <20100714.145547.102555471.davem@davemloft.net> <20100714221301.GI6682@nuttenaction> <4C3E3F92.2090506@wildgooses.com> <20100714230100.GL6682@nuttenaction>
-In-Reply-To: <20100714230100.GL6682@nuttenaction>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1757305Ab0GNXI5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:08:57 -0400
+Received: from sh.osrg.net ([192.16.179.4]:40947 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753236Ab0GNXIy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 19:08:54 -0400
+Date: Thu, 15 Jul 2010 08:07:28 +0900
+To: zpfeffer@codeaurora.org
+Cc: fujita.tomonori@lab.ntt.co.jp, linux@arm.linux.org.uk,
+        ebiederm@xmission.com, linux-arch@vger.kernel.org,
+        dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100714201149.GA14008@codeaurora.org>
+References: <20100713121420.GB4263@codeaurora.org>
+	<20100714104353B.fujita.tomonori@lab.ntt.co.jp>
+	<20100714201149.GA14008@codeaurora.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100715080710T.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 15 Jul 2010 08:07:31 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15/07/2010 00:01, Hagen Paul Pfeifer wrote:
-> It is quite late here so I will quickly write two sentence about ECN: one
-> month ago Lars Eggers posted a link at the tcpm maillinglist where google (not
-> really sure if it was google) analysed the employment of ECN - the usage was
-> really low. Search the PDF, it is quite interesting one.
->    
+On Wed, 14 Jul 2010 13:11:49 -0700
+Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
 
-I would speculate that this is because there is a big warning on ECN 
-saying that it may cause you to loose customers who can't connect to 
-you... Businesses are driven by needing to support the most common case, 
-not the most optimal (witness the pain of html development and needing 
-to consider IE6...)
+> On Wed, Jul 14, 2010 at 10:59:38AM +0900, FUJITA Tomonori wrote:
+> > On Tue, 13 Jul 2010 05:14:21 -0700
+> > Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
+> > 
+> > > > You mean that you want to specify this alignment attribute every time
+> > > > you create an IOMMU mapping? Then you can set segment_boundary_mask
+> > > > every time you create an IOMMU mapping. It's odd but it should work.
+> > > 
+> > > Kinda. I want to forget about IOMMUs, devices and CPUs. I just want to
+> > > create a mapping that has the alignment I specify, regardless of the
+> > > mapper. The mapping is created on a VCM and the VCM is associated with
+> > > a mapper: a CPU, an IOMMU'd device or a direct mapped device.
+> > 
+> > Sounds like you can do the above with the combination of the current
+> > APIs, create a virtual address and then an I/O address.
+> > 
+> 
+> Yes, and that's what the implementation does - and all the other
+> implementations that need to do this same thing. Why not solve the
+> problem once?
 
-What would be more useful is for google to survey how many devices are 
-unable to interoperate with ECN and if that number turned out to be 
-extremely low, and this fact were advertised, then I suspect we might 
-see a mass increase in it's deployment?  I know I have it turned off on 
-all my servers because I worry more about loosing one customer than 
-improving the experience for all customers...
+Why we we need a new abstraction layer to solve the problem that the
+current API can handle?
 
-Cheers
+The above two operations don't sound too complicated. The combination
+of the current API sounds much simpler than your new abstraction.
 
-Ed W
+Please show how the combination of the current APIs doesn't
+work. Otherwise, we can't see what's the benefit of your new
+abstraction.
