@@ -1,15 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757617Ab0GNVTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 17:19:34 -0400
-Received: from relay4-v.mail.gandi.net ([217.70.178.78]:45623 "EHLO
-	mrelay4-v.mgt.gandi.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753103Ab0GNVTd (ORCPT
+	id S1757622Ab0GNVWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 17:22:04 -0400
+Received: from slow3-v.mail.gandi.net ([217.70.178.89]:59834 "EHLO
+	slow3-v.mail.gandi.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752566Ab0GNVWB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 17:19:33 -0400
-X-Originating-IP: 217.70.178.44
+	Wed, 14 Jul 2010 17:22:01 -0400
+X-WhiteListed: mail was accepted with no delay
+X-WhiteListed: mail was accepted with no delay
+X-Originating-IP: 217.70.178.41
 X-Originating-IP: 74.107.143.84
-Date: Wed, 14 Jul 2010 14:19:02 -0700
+Date: Wed, 14 Jul 2010 14:16:06 -0700
 From: Josh Triplett <josh@joshtriplett.org>
 To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
@@ -17,54 +19,55 @@ Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
         mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
         tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
         Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 0/30] RCU commits queued for 2.6.36/7
-Message-ID: <20100714211901.GC4624@feather>
+Subject: Re: [PATCH RFC tip/core/rcu 29/30] rcu: add boot parameter to
+ suppress RCU CPU stall warning messages
+Message-ID: <20100714211606.GB4624@feather>
 References: <20100714200945.GA10535@linux.vnet.ibm.com>
+ <1279138204-12849-29-git-send-email-paulmck@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100714200945.GA10535@linux.vnet.ibm.com>
+In-Reply-To: <1279138204-12849-29-git-send-email-paulmck@linux.vnet.ibm.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 01:09:45PM -0700, Paul E. McKenney wrote:
-> This patchset shows the patches queued for 2.6.36/7.  These are not
-> yet ready to move upstream due to dependencies on commits moving up other
-> trees.  The patches are as follows:
+On Wed, Jul 14, 2010 at 01:10:03PM -0700, Paul E. McKenney wrote:
+> Although the RCU CPU stall warning messages are a very good way to alert
+> people to a problem, once alerted, it is sometimes helpful to shut them
+> off in order to avoid obscuring other messages that might be being used
+> to track down the problem.  Although you can rebuild the kernel with
+> CONFIG_RCU_CPU_STALL_DETECTOR=n, this is sometimes inconvenient.  This
+> commit therefore adds a boot parameter named "rcu_cpu_stall_suppress"
+> that shuts these messages off without requiring a rebuild (though a
+> reboot might be needed for those not brave enough to patch their kernel
+> while it is running).
 > 
-> 1-19.	These are the remaining patches implementing Arnd's sparse-checking
-> 	work.  #1 needs to go up the networking tree, but
-> 	will cause regressions until f5155b33277 ("rcu: add an
-> 	rcu_dereference_index_check()") reaches mainline.  #2 depends
-> 	on #1, and many of the later patches (#3-#30) depend on #2.
-> 	Many of #3-#19 will go up non-tip trees.
-> 20.	Update Documentation/RCU to remove the now-deprecated rcu_head
-> 	initialization macros.
-> 21.	Fix long-standing DocBook example showing long-dead three-argument
-> 	variant of call_rcu().
-> 22.	Make the CPU stall warning timeout configurable at build time
-> 	with new RCU_CPU_STALL_TIMEOUT config parameter.
-> 23.	Remove the now-deprecated rcu_head initialization macros.
-> 	This depends on a couple of patches removing their use that
-> 	are making their way up other maintainer trees.
-> 24.	Document the new debug assists from Arnd, Mathieu, and myself.
-> 25.	Add random preemption to rcutorture testing of preemptible
-> 	RCU, courtesy of Lai Jiangshan.
-> 26.	Remove TREE_RCU's ->rda[] array in favor of the new __percpu
-> 	facility, also courtesy of Lai Jiangshan.
-> 27.	Fixlet to #26 for RCU tracing.
-> 28.	Rename __do_rcu_dereference_check() to rcu_lockdep_assert(),
-> 	given that Tetsuo Handa has found outside-of-RCU use for this
-> 	function.
-> 29.	Add a boot parameter to suppress RCU CPU stall warnings.
-> 30.	Update kerneldoc or rcu_read_lock(), call_rcu(), and
-> 	synchronize_rcu().
+> This message-suppression was already in place for the panic case, so this
+> commit need only rename the variable and export it via module_param().
+> 
+> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> ---
+>  kernel/rcutree.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> index 5b1c3c2..f3d5906 100644
+> --- a/kernel/rcutree.c
+> +++ b/kernel/rcutree.c
+> @@ -143,6 +143,11 @@ module_param(blimit, int, 0);
+>  module_param(qhimark, int, 0);
+>  module_param(qlowmark, int, 0);
+>  
+> +#ifdef CONFIG_RCU_CPU_STALL_DETECTOR
+> +int rcu_cpu_stall_suppress __read_mostly;
+> +module_param(rcu_cpu_stall_suppress, int, 0);
+> +#endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
 
-I replied to patches 27 and 29 with suggested changes.  For all the
-rest:
-
-Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+In theory, you could change the permissions on this module_param from 0
+to 0644, making it appear under /sys as a writable file.  That would
+allow changing it at runtime rather than just at boot time.  Looking at
+the use of this variable, changing it dynamically should work.
 
 - Josh Triplett
