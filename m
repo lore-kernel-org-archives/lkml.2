@@ -1,50 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756815Ab0GNRGz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 13:06:55 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:50972 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab0GNRGy (ORCPT
+	id S1756860Ab0GNRHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 13:07:18 -0400
+Received: from mta-mad.optenet.com ([130.117.93.253]:61215 "EHLO
+	mta-mad.optenet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab0GNRHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 13:06:54 -0400
-Message-ID: <4C3DEEAB.8090106@candelatech.com>
-Date: Wed, 14 Jul 2010 10:06:51 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Wed, 14 Jul 2010 13:07:16 -0400
+Date: Wed, 14 Jul 2010 19:07:14 +0200 (CEST)
+From: Unai Uribarri <unai.uribarri@optenet.com>
+To: Marin Mitov <mitov@issp.bas.bg>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Message-ID: <12797200.68401279127234158.JavaMail.root@mail1-md.optenet.com>
+In-Reply-To: <28112199.68371279127209288.JavaMail.root@mail1-md.optenet.com>
+Subject: Re: Workaround hardware bug addressing physical address
 MIME-Version: 1.0
-To: "Pan, Jacob jun" <jacob.jun.pan@intel.com>
-CC: Robert Hancock <hancockrwd@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>
-Subject: Re: Regression: 2.6.34 boot fails on E5405 system, bisected: 	de08e2c26
-References: <4C3D067C.10507@candelatech.com>	<4C3D101E.5010605@candelatech.com>	<4C3D1942.1090207@gmail.com>	<4C3D1F82.1040907@candelatech.com> <AANLkTinDv7I4v51j-Lev9Ry_3DyVVv58lAyCQXZV1CwB@mail.gmail.com> <4C3DC64F.5040505@candelatech.com> <43F901BD926A4E43B106BF17856F0755EA8EE7E2@orsmsx508.amr.corp.intel.com>
-In-Reply-To: <43F901BD926A4E43B106BF17856F0755EA8EE7E2@orsmsx508.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 7bit
+X-Originating-IP: [192.168.3.29]
+X-Mailer: Zimbra 5.0.11_GA_2695.UBUNTU8 (ZimbraWebClient - FF3.0 (Linux)/5.0.11_GA_2695.UBUNTU8)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 08:36 AM, Pan, Jacob jun wrote:
-> what is the config size of 10.1?
-> ls -l /sys/bus/pci/devices/0000:00:10.1/config
->
-> if that is 256, it might be related to this patch.
+----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
 
-That patch is already in 2.6.34.y (with slight white-space
-change it seems:  space before <).
+| Hi,
+| 
+| This is pci driver. You can set dma mask:
+| 
+| dma_set_coheren_mask(pdev, DMA_BIT_MASK(31)) 
+| 
+| All further alloc_coherent() should be from the region 0-2GB.
+| 
 
-I just posted a patch to lkml that fixes the problem for me,
-based on a suggestion by Robert Hancock.
+But I'm using a 64 bit operating system with 32GB of RAM. It's a pity to be unable to use 4GB-32GB range because the 2-4GB range is unusable. So I've written this code to skip invalid areas. Do you think this code could be useful for other drivers?
 
-I think this or something similar should to go 2.6.34.y stable
-as well.
 
-Thanks,
-Ben
+/** Structure used to store all the information about a DMA allocation which is
+ * needed to free it. It also has a next field to chain the allocations.
+ */
+typedef struct dma_allocation
+{
+    struct device *dev;
+    size_t size;
+    dma_addr_t dma_handle;
+    struct list_head list;
+} dma_allocation_t;
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+/** Validates a dma allocation
+ * @param{in} ptr is the pointer to the allocated dma memory
+ * @param{in} dma_handle is the handle to the allocated dma memory
+ * @return 0 if the allocation isn't valid.
+ */
+typedef int (*dma_validator_t)(void *ptr, struct device *dev, size_t size, dma_addr_t handle);
 
+/** Allocates validated coherent DMA memory.
+ *
+ * Same paremeters and return value as dma_alloc_coherent, and:
+ *  @param{in} invalid_allocs is a pointer to a list where invalid allocations are enqueued
+ *  @param{in} validator is the validation function
+ *
+ * While the chunk of memory allocated by dma_alloc_coherent doesn't pass the validator filter,
+ * it's queued in invalid_allocs and another chunk of memory is allocated.
+ */
+static void *dma_validated_alloc_coherent(struct list_head *invalid_allocs, dma_validator_t validator,
+     struct device *dev, size_t size, dma_addr_t *dma_handle, gfp_t flag)
+{
+    void *res = dma_alloc_coherent(dev, size, dma_handle, flag);
+
+    while (!IS_ERR(res) && !validator(res, dev, size, *dma_handle)) {
+        dma_allocation_t *entry = res;
+        entry->dev = dev;
+        entry->size = size;
+        entry->dma_handle = *dma_handle;
+        list_add_tail(&entry->list, invalid_allocs);
+
+        res = dma_alloc_coherent(dev, size, dma_handle, flag);
+    }
+    return res;
+}
+
+/** Frees all the coherent dma allocations contained in list */
+static void dma_list_free_coherent(struct list_head *list)
+{
+    dma_allocation_t *cur, *next;
+    list_for_each_entry_safe(cur, next, list, list) {
+        dma_free_coherent(cur->dev, cur->size, cur, cur->dma_handle);
+    }
+}
