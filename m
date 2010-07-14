@@ -1,566 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756742Ab0GNQAU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:00:20 -0400
-Received: from smtp.polymtl.ca ([132.207.4.11]:57480 "EHLO smtp.polymtl.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753467Ab0GNQAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:00:16 -0400
-Message-Id: <20100714155804.252253097@efficios.com>
-User-Agent: quilt/0.48-1
-Date: Wed, 14 Jul 2010 11:49:25 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, akpm@osdl.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-References: <20100714154923.947138065@efficios.com>
-Content-Disposition: inline; filename=x86-nmi-safe-int3-and-page-fault.patch
-X-Poly-FromMTA: (test.casi.polymtl.ca [132.207.72.60]) at Wed, 14 Jul 2010 15:58:04 +0000
+	id S1754185Ab0GNQHR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 12:07:17 -0400
+Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:45399
+	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751541Ab0GNQHO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 12:07:14 -0400
+X-SpamScore: -14
+X-BigFish: VPS-14(zz1432N936eM8b9cnzz1202hzz15d4Rz32i2a8h61h)
+X-Spam-TCS-SCL: 0:0
+X-WSS-ID: 0L5K23P-01-8V8-02
+X-M-MSG: 
+Date: Wed, 14 Jul 2010 18:07:05 +0200
+From: Borislav Petkov <borislav.petkov@amd.com>
+To: Michal Schmidt <mschmidt@redhat.com>
+CC: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] x86: fix keeping track of AMD C1E
+Message-ID: <20100714160704.GA10473@kryptos.osrc.amd.com>
+References: <20100713185816.2866.17837.stgit@localhost.localdomain>
+ <20100713185957.2866.50995.stgit@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100713185957.2866.50995.stgit@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implements an alternative iret with popf and return so trap and exception
-handlers can return to the NMI handler without issuing iret. iret would cause
-NMIs to be reenabled prematurely. x86_32 uses popf and far return. x86_64 has to
-copy the return instruction pointer to the top of the previous stack, issue a
-popf, loads the previous esp and issue a near return (ret).
+From: Michal Schmidt <mschmidt@redhat.com>
+Date: Tue, Jul 13, 2010 at 08:59:58PM +0200
 
-It allows placing dynamically patched static jumps in asm gotos, which will be
-used for optimized tracepoints, in NMI code since returning from a breakpoint
-would be valid. Accessing vmalloc'd memory, which allows executing module code
-or accessing vmapped or vmalloc'd areas from NMI context, would also be valid.
-This is very useful to tracers like LTTng.
+Hi,
 
-This patch makes all faults, traps and exception safe to be called from NMI
-context *except* single-stepping, which requires iret to restore the TF (trap
-flag) and jump to the return address in a single instruction. Sorry, no kprobes
-support in NMI handlers because of this limitation. This cannot be emulated
-with popf/lret, because lret would be single-stepped. It does not apply to
-"immediate values" because they do not use single-stepping. This code detects if
-the TF flag is set and uses the iret path for single-stepping, even if it
-reactivates NMIs prematurely.
+> On my system with AMD Phenom II X6 I am seeing pauses at boot (usually during
+> udev startup) which require a key press to continue. It only happens if C1E is
+> enabled in the BIOS.
+> 
+> It's caused by the APIC timer's inability to wake up the CPU from C1E (AMD
+> erratum #400). Linux has a workaround for it, but it's not being applied
+> correctly in this case. Though c1e_idle() detects C1E just fine, by the time
+> acpi_idle ('processor.ko' module) takes over, it is forgotten.
+> 
+> After AMD C1E is detected, it is not sufficient to flag it in boot_cpu_data,
+> because the flag will get cleared in identify_cpu() when more CPUs are brought
+> up later. The fix is to mark the flag as forced.
 
-Test to detect if nested under a NMI handler is only done upon the return from
-trap/exception to kernel, which is not frequent. Other return paths (return from
-trap/exception to userspace, return from interrupt) keep the exact same behavior
-(no slowdown).
+I don't think that the workaround is wrong, assuming I'm not missing
+something. I'm seeing the following sequence on my machine here in which
+the cores are brought up and checked for c1e:
 
-alpha and avr32 use the active count bit 31. This patch moves them to 28.
+The BSP does
 
-TODO : test alpha and avr32 active count modification
-TODO : test with lguest, xen, kvm.
+start_kernel()
+|->check_bugs()
+   |->identify_boot_cpu() 	# here we do select_idle_routine(), i.e. pm_idle = c1e_idle
+...
+|->rest_init()
+   |->kernel_thread(kernel_init,... )
 
-tested on x86_32 (tests implemented in a separate patch) :
-- instrumented the return path to export the EIP, CS and EFLAGS values when
-  taken so we know the return path code has been executed.
-- trace_mark, using immediate values, with 10ms delay with the breakpoint
-  activated. Runs well through the return path.
-- tested vmalloc faults in NMI handler by placing a non-optimized marker in the
-  NMI handler (so no breakpoint is executed) and connecting a probe which
-  touches every pages of a 20MB vmalloc'd buffer. It executes trough the return
-  path without problem.
-- Tested with and without preemption
+and kernel_init() does smp_init() where we init the rest of the cores.
 
-tested on x86_64
-- instrumented the return path to export the EIP, CS and EFLAGS values when
-  taken so we know the return path code has been executed.
-- trace_mark, using immediate values, with 10ms delay with the breakpoint
-  activated. Runs well through the return path.
+Now, each core does
 
-To test on x86_64 :
-- Test without preemption
-- Test vmalloc faults
-- Test on Intel 64 bits CPUs. (AMD64 was fine)
+start_secondary()
+|->smp_callin()
+   |->smp_store_cpu_info	# here we copy boot_cpu_data for the starting AP
+     |->identify_secondary_cpu
+        |->identify_cpu
+	   |->select_idle_routine() # here we exit early since pm_idle is set already
 
-Changelog since v1 :
-- x86_64 fixes.
-Changelog since v2 :
-- fix paravirt build
-Changelog since v3 :
-- Include modifications suggested by Jeremy
-Changelog since v4 :
-- including hardirq.h in entry_32/64.S is a bad idea (non ifndef'd C code),
-  define NMI_MASK in the .S files directly.
-Changelog since v5 :
-- Add NMI_MASK to irq_count() and make die() more verbose for NMIs.
-Changelog since v7 :
-- Implement paravirtualized nmi_return.
-Changelog since v8 :
-- refreshed the patch for asm-offsets. Those were left out of v8.
-- now depends on "Stringify support commas" patch.
-Changelog since v9 :
-- Only test the nmi nested preempt count flag upon return from exceptions, not
-  on return from interrupts. Only the kernel return path has this test.
-- Add Xen, VMI, lguest support. Use their iret pavavirt ops in lieu of
-  nmi_return.
 
-- update for 2.6.30-rc1
-Follow NMI_MASK bits merged in mainline.
+now all the cores except the BSP do cpu_idle but since bits 27,28 in the
+int pending MSR (see below) are not set yet, they spin a bit in cpu_idle
+doing default_idle. You can see this with my debugging patch below.
 
-- update for 2.6.35-rc4-tip
+Now here comes the key moment - the BSP enters cpu_idle _after_ all APs
+have been initialized and does set X86_FEATURE_AMDC1E. We haven't set
+the c1e_detected variable earlier since the hardware sets bit 28 in
+MSR_K8_INT_PENDING_MSG, C1eOnCmpHalt only after all cores have entered
+halt. After this bit is set, we set c1e_detected and switch to broadcast
+mode on each core.
 
-Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-CC: akpm@osdl.org
-CC: mingo@elte.hu
-CC: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Steven Rostedt <rostedt@goodmis.org>
-CC: "Frank Ch. Eigler" <fche@redhat.com>
+Now the question is, why does your system doesn't do that in that order?
+And I don't think your patch is the right fix - it doesn't change
+anything in the above sequence on my system except enabling the "amdc1e"
+feature string in /proc/cpuinfo which we don't need actually since dmesg
+already contains that info.
+
+And the more puzzling question is, how does your patch fix your
+system...?
+
+So, IMHO, what is more likely is that it has something to do with
+https://bugzilla.kernel.org/show_bug.cgi?id=15289, as John pointed out
+earlier (thanks John, Michal's situation looks quite similar).
+
+So, please apply the debug patch below and send me your whole dmesg to
+see what happens. Also, I'd like to see whether the SMI bit (27) in that
+same MSR is set so please do when the machine is up
+
+for i in $(seq 0 5); do lsmsr -c $i Int -V 3; done
+
+after installing the x86info tool.
+
+Thanks.
+
+C1E dbg patch:
+
 ---
- arch/alpha/include/asm/thread_info.h  |    2 -
- arch/avr32/include/asm/thread_info.h  |    2 -
- arch/x86/include/asm/irqflags.h       |   56 ++++++++++++++++++++++++++++++++++
- arch/x86/include/asm/paravirt.h       |    4 ++
- arch/x86/include/asm/paravirt_types.h |    1 
- arch/x86/kernel/asm-offsets_32.c      |    1 
- arch/x86/kernel/asm-offsets_64.c      |    1 
- arch/x86/kernel/dumpstack.c           |    2 +
- arch/x86/kernel/entry_32.S            |   30 ++++++++++++++++++
- arch/x86/kernel/entry_64.S            |   33 ++++++++++++++++++--
- arch/x86/kernel/paravirt.c            |    3 +
- arch/x86/kernel/paravirt_patch_32.c   |    6 +++
- arch/x86/kernel/paravirt_patch_64.c   |    6 +++
- arch/x86/kernel/vmi_32.c              |    2 +
- arch/x86/lguest/boot.c                |    1 
- arch/x86/xen/enlighten.c              |    1 
- 16 files changed, 145 insertions(+), 6 deletions(-)
+ arch/x86/include/asm/acpi.h |   11 +++++++++--
+ arch/x86/kernel/process.c   |   12 ++++++++++++
+ 2 files changed, 21 insertions(+), 2 deletions(-)
 
-Index: linux.trees.git/arch/x86/kernel/entry_32.S
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/entry_32.S	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/kernel/entry_32.S	2010-07-14 08:02:11.000000000 -0400
-@@ -80,6 +80,8 @@
- 
- #define nr_syscalls ((syscall_table_size)/4)
- 
-+#define NMI_MASK 0x04000000
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index aa2c39d..39b8348 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -123,6 +123,9 @@ extern void acpi_reserve_wakeup_memory(void);
+  */
+ static inline unsigned int acpi_processor_cstate_check(unsigned int max_cstate)
+ {
 +
- #ifdef CONFIG_PREEMPT
- #define preempt_stop(clobbers)	DISABLE_INTERRUPTS(clobbers); TRACE_IRQS_OFF
- #else
-@@ -348,8 +350,32 @@ END(ret_from_fork)
- 	# userspace resumption stub bypassing syscall exit tracing
- 	ALIGN
- 	RING0_PTREGS_FRAME
++	pr_err("%s: enter\n", __func__);
 +
- ret_from_exception:
- 	preempt_stop(CLBR_ANY)
-+	GET_THREAD_INFO(%ebp)
-+	movl PT_EFLAGS(%esp), %eax	# mix EFLAGS and CS
-+	movb PT_CS(%esp), %al
-+	andl $(X86_EFLAGS_VM | SEGMENT_RPL_MASK), %eax
-+	cmpl $USER_RPL, %eax
-+	jae resume_userspace	# returning to v8086 or userspace
-+	testl $NMI_MASK,TI_preempt_count(%ebp)
-+	jz resume_kernel		/* Not nested over NMI ? */
-+	testw $X86_EFLAGS_TF, PT_EFLAGS(%esp)
-+	jnz resume_kernel		/*
-+					 * If single-stepping an NMI handler,
-+					 * use the normal iret path instead of
-+					 * the popf/lret because lret would be
-+					 * single-stepped. It should not
-+					 * happen : it will reactivate NMIs
-+					 * prematurely.
-+					 */
-+	TRACE_IRQS_IRET
-+	RESTORE_REGS
-+	addl $4, %esp			# skip orig_eax/error_code
-+	CFI_ADJUST_CFA_OFFSET -4
-+	INTERRUPT_RETURN_NMI_SAFE
-+
- ret_from_intr:
- 	GET_THREAD_INFO(%ebp)
- check_userspace:
-@@ -949,6 +975,10 @@ ENTRY(native_iret)
- .previous
- END(native_iret)
+ 	/*
+ 	 * Early models (<=5) of AMD Opterons are not supposed to go into
+ 	 * C2 state.
+@@ -134,10 +137,14 @@ static inline unsigned int acpi_processor_cstate_check(unsigned int max_cstate)
+ 	    boot_cpu_data.x86_model <= 0x05 &&
+ 	    boot_cpu_data.x86_mask < 0x0A)
+ 		return 1;
+-	else if (boot_cpu_has(X86_FEATURE_AMDC1E))
++	else if (boot_cpu_has(X86_FEATURE_AMDC1E)) {
++		pr_err("%s: C1E\n", __func__);
+ 		return 1;
+-	else
++	}
++	else {
++		pr_err("%s: max_cstate: %d\n", __func__, max_cstate);
+ 		return max_cstate;
++	}
+ }
  
-+ENTRY(native_nmi_return)
-+	NATIVE_INTERRUPT_RETURN_NMI_SAFE # Should we deal with popf exception ?
-+END(native_nmi_return)
-+
- ENTRY(native_irq_enable_sysexit)
- 	sti
- 	sysexit
-Index: linux.trees.git/arch/x86/kernel/entry_64.S
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/entry_64.S	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/kernel/entry_64.S	2010-07-14 08:02:11.000000000 -0400
-@@ -163,6 +163,8 @@ GLOBAL(return_to_handler)
- #endif
- 
- 
-+#define NMI_MASK 0x04000000
-+
- #ifndef CONFIG_PREEMPT
- #define retint_kernel retint_restore_args
- #endif
-@@ -875,6 +877,9 @@ ENTRY(native_iret)
- 	.section __ex_table,"a"
- 	.quad native_iret, bad_iret
- 	.previous
-+
-+ENTRY(native_nmi_return)
-+	NATIVE_INTERRUPT_RETURN_NMI_SAFE
- #endif
- 
- 	.section .fixup,"ax"
-@@ -929,6 +934,24 @@ retint_signal:
- 	GET_THREAD_INFO(%rcx)
- 	jmp retint_with_reschedule
- 
-+	/* Returning to kernel space from exception. */
-+	/* rcx:	 threadinfo. interrupts off. */
-+ENTRY(retexc_kernel)
-+	testl $NMI_MASK,TI_preempt_count(%rcx)
-+	jz retint_kernel		/* Not nested over NMI ? */
-+	testw $X86_EFLAGS_TF,EFLAGS-ARGOFFSET(%rsp)	/* trap flag? */
-+	jnz retint_kernel		/*
-+					 * If single-stepping an NMI handler,
-+					 * use the normal iret path instead of
-+					 * the popf/lret because lret would be
-+					 * single-stepped. It should not
-+					 * happen : it will reactivate NMIs
-+					 * prematurely.
-+					 */
-+	RESTORE_ARGS 0,8,0
-+	TRACE_IRQS_IRETQ
-+	INTERRUPT_RETURN_NMI_SAFE
-+
- #ifdef CONFIG_PREEMPT
- 	/* Returning to kernel space. Check if we need preemption */
- 	/* rcx:	 threadinfo. interrupts off. */
-@@ -1375,12 +1398,18 @@ ENTRY(paranoid_exit)
- paranoid_swapgs:
- 	TRACE_IRQS_IRETQ 0
- 	SWAPGS_UNSAFE_STACK
-+paranoid_restore_no_nmi:
- 	RESTORE_ALL 8
- 	jmp irq_return
- paranoid_restore:
-+	GET_THREAD_INFO(%rcx)
- 	TRACE_IRQS_IRETQ 0
-+	testl $NMI_MASK,TI_preempt_count(%rcx)
-+	jz paranoid_restore_no_nmi              /* Nested over NMI ? */
-+	testw $X86_EFLAGS_TF,EFLAGS-0(%rsp)     /* trap flag? */
-+	jnz paranoid_restore_no_nmi
- 	RESTORE_ALL 8
--	jmp irq_return
-+	INTERRUPT_RETURN_NMI_SAFE
- paranoid_userspace:
- 	GET_THREAD_INFO(%rcx)
- 	movl TI_flags(%rcx),%ebx
-@@ -1479,7 +1508,7 @@ ENTRY(error_exit)
- 	TRACE_IRQS_OFF
- 	GET_THREAD_INFO(%rcx)
- 	testl %eax,%eax
--	jne retint_kernel
-+	jne retexc_kernel
- 	LOCKDEP_SYS_EXIT_IRQ
- 	movl TI_flags(%rcx),%edx
- 	movl $_TIF_WORK_MASK,%edi
-Index: linux.trees.git/arch/x86/include/asm/irqflags.h
-===================================================================
---- linux.trees.git.orig/arch/x86/include/asm/irqflags.h	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/include/asm/irqflags.h	2010-07-14 08:02:11.000000000 -0400
-@@ -56,6 +56,61 @@ static inline void native_halt(void)
- 
- #endif
- 
-+#ifdef CONFIG_X86_64
-+/*
-+ * Only returns from a trap or exception to a NMI context (intra-privilege
-+ * level near return) to the same SS and CS segments. Should be used
-+ * upon trap or exception return when nested over a NMI context so no iret is
-+ * issued. It takes care of modifying the eflags, rsp and returning to the
-+ * previous function.
-+ *
-+ * The stack, at that point, looks like :
-+ *
-+ * 0(rsp)  RIP
-+ * 8(rsp)  CS
-+ * 16(rsp) EFLAGS
-+ * 24(rsp) RSP
-+ * 32(rsp) SS
-+ *
-+ * Upon execution :
-+ * Copy EIP to the top of the return stack
-+ * Update top of return stack address
-+ * Pop eflags into the eflags register
-+ * Make the return stack current
-+ * Near return (popping the return address from the return stack)
-+ */
-+#define NATIVE_INTERRUPT_RETURN_NMI_SAFE	pushq %rax;		\
-+						movq %rsp, %rax;	\
-+						movq 24+8(%rax), %rsp;	\
-+						pushq 0+8(%rax);	\
-+						pushq 16+8(%rax);	\
-+						movq (%rax), %rax;	\
-+						popfq;			\
-+						ret
-+#else
-+/*
-+ * Protected mode only, no V8086. Implies that protected mode must
-+ * be entered before NMIs or MCEs are enabled. Only returns from a trap or
-+ * exception to a NMI context (intra-privilege level far return). Should be used
-+ * upon trap or exception return when nested over a NMI context so no iret is
-+ * issued.
-+ *
-+ * The stack, at that point, looks like :
-+ *
-+ * 0(esp) EIP
-+ * 4(esp) CS
-+ * 8(esp) EFLAGS
-+ *
-+ * Upon execution :
-+ * Copy the stack eflags to top of stack
-+ * Pop eflags into the eflags register
-+ * Far return: pop EIP and CS into their register, and additionally pop EFLAGS.
-+ */
-+#define NATIVE_INTERRUPT_RETURN_NMI_SAFE	pushl 8(%esp);	\
-+						popfl;		\
-+						lret $4
-+#endif
-+
- #ifdef CONFIG_PARAVIRT
- #include <asm/paravirt.h>
- #else
-@@ -114,6 +169,7 @@ static inline unsigned long __raw_local_
- 
- #define ENABLE_INTERRUPTS(x)	sti
- #define DISABLE_INTERRUPTS(x)	cli
-+#define INTERRUPT_RETURN_NMI_SAFE	NATIVE_INTERRUPT_RETURN_NMI_SAFE
- 
- #ifdef CONFIG_X86_64
- #define SWAPGS	swapgs
-Index: linux.trees.git/arch/alpha/include/asm/thread_info.h
-===================================================================
---- linux.trees.git.orig/arch/alpha/include/asm/thread_info.h	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/alpha/include/asm/thread_info.h	2010-07-14 08:02:11.000000000 -0400
-@@ -56,7 +56,7 @@ register struct thread_info *__current_t
- #define THREAD_SIZE_ORDER 1
- #define THREAD_SIZE (2*PAGE_SIZE)
- 
--#define PREEMPT_ACTIVE		0x40000000
-+#define PREEMPT_ACTIVE		0x10000000
- 
- /*
-  * Thread information flags:
-Index: linux.trees.git/arch/avr32/include/asm/thread_info.h
-===================================================================
---- linux.trees.git.orig/arch/avr32/include/asm/thread_info.h	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/avr32/include/asm/thread_info.h	2010-07-14 08:02:11.000000000 -0400
-@@ -66,7 +66,7 @@ static inline struct thread_info *curren
- 
- #endif /* !__ASSEMBLY__ */
- 
--#define PREEMPT_ACTIVE		0x40000000
-+#define PREEMPT_ACTIVE		0x10000000
- 
- /*
-  * Thread information flags
-Index: linux.trees.git/arch/x86/include/asm/paravirt.h
-===================================================================
---- linux.trees.git.orig/arch/x86/include/asm/paravirt.h	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/include/asm/paravirt.h	2010-07-14 08:02:11.000000000 -0400
-@@ -943,6 +943,10 @@ extern void default_banner(void);
- 	PARA_SITE(PARA_PATCH(pv_cpu_ops, PV_CPU_iret), CLBR_NONE,	\
- 		  jmp PARA_INDIRECT(pv_cpu_ops+PV_CPU_iret))
- 
-+#define INTERRUPT_RETURN_NMI_SAFE					\
-+	PARA_SITE(PARA_PATCH(pv_cpu_ops, PV_CPU_nmi_return), CLBR_NONE,	\
-+		  jmp *%cs:pv_cpu_ops+PV_CPU_nmi_return)
-+
- #define DISABLE_INTERRUPTS(clobbers)					\
- 	PARA_SITE(PARA_PATCH(pv_irq_ops, PV_IRQ_irq_disable), clobbers, \
- 		  PV_SAVE_REGS(clobbers | CLBR_CALLEE_SAVE);		\
-Index: linux.trees.git/arch/x86/kernel/paravirt.c
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/paravirt.c	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/kernel/paravirt.c	2010-07-14 08:02:11.000000000 -0400
-@@ -156,6 +156,7 @@ unsigned paravirt_patch_default(u8 type,
- 		ret = paravirt_patch_ident_64(insnbuf, len);
- 
- 	else if (type == PARAVIRT_PATCH(pv_cpu_ops.iret) ||
-+		 type == PARAVIRT_PATCH(pv_cpu_ops.nmi_return) ||
- 		 type == PARAVIRT_PATCH(pv_cpu_ops.irq_enable_sysexit) ||
- 		 type == PARAVIRT_PATCH(pv_cpu_ops.usergs_sysret32) ||
- 		 type == PARAVIRT_PATCH(pv_cpu_ops.usergs_sysret64))
-@@ -204,6 +205,7 @@ static void native_flush_tlb_single(unsi
- 
- /* These are in entry.S */
- extern void native_iret(void);
-+extern void native_nmi_return(void);
- extern void native_irq_enable_sysexit(void);
- extern void native_usergs_sysret32(void);
- extern void native_usergs_sysret64(void);
-@@ -373,6 +375,7 @@ struct pv_cpu_ops pv_cpu_ops = {
- 	.usergs_sysret64 = native_usergs_sysret64,
- #endif
- 	.iret = native_iret,
-+	.nmi_return = native_nmi_return,
- 	.swapgs = native_swapgs,
- 
- 	.set_iopl_mask = native_set_iopl_mask,
-Index: linux.trees.git/arch/x86/kernel/paravirt_patch_32.c
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/paravirt_patch_32.c	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/kernel/paravirt_patch_32.c	2010-07-14 08:02:11.000000000 -0400
-@@ -1,10 +1,13 @@
--#include <asm/paravirt.h>
-+#include <linux/stringify.h>
-+#include <linux/irqflags.h>
- 
- DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
- DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
- DEF_NATIVE(pv_irq_ops, restore_fl, "push %eax; popf");
- DEF_NATIVE(pv_irq_ops, save_fl, "pushf; pop %eax");
- DEF_NATIVE(pv_cpu_ops, iret, "iret");
-+DEF_NATIVE(pv_cpu_ops, nmi_return,
-+	__stringify(NATIVE_INTERRUPT_RETURN_NMI_SAFE));
- DEF_NATIVE(pv_cpu_ops, irq_enable_sysexit, "sti; sysexit");
- DEF_NATIVE(pv_mmu_ops, read_cr2, "mov %cr2, %eax");
- DEF_NATIVE(pv_mmu_ops, write_cr3, "mov %eax, %cr3");
-@@ -41,6 +44,7 @@ unsigned native_patch(u8 type, u16 clobb
- 		PATCH_SITE(pv_irq_ops, restore_fl);
- 		PATCH_SITE(pv_irq_ops, save_fl);
- 		PATCH_SITE(pv_cpu_ops, iret);
-+		PATCH_SITE(pv_cpu_ops, nmi_return);
- 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
- 		PATCH_SITE(pv_mmu_ops, read_cr2);
- 		PATCH_SITE(pv_mmu_ops, read_cr3);
-Index: linux.trees.git/arch/x86/kernel/paravirt_patch_64.c
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/paravirt_patch_64.c	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/kernel/paravirt_patch_64.c	2010-07-14 08:02:11.000000000 -0400
-@@ -1,12 +1,15 @@
-+#include <linux/irqflags.h>
-+#include <linux/stringify.h>
- #include <asm/paravirt.h>
- #include <asm/asm-offsets.h>
--#include <linux/stringify.h>
- 
- DEF_NATIVE(pv_irq_ops, irq_disable, "cli");
- DEF_NATIVE(pv_irq_ops, irq_enable, "sti");
- DEF_NATIVE(pv_irq_ops, restore_fl, "pushq %rdi; popfq");
- DEF_NATIVE(pv_irq_ops, save_fl, "pushfq; popq %rax");
- DEF_NATIVE(pv_cpu_ops, iret, "iretq");
-+DEF_NATIVE(pv_cpu_ops, nmi_return,
-+	__stringify(NATIVE_INTERRUPT_RETURN_NMI_SAFE));
- DEF_NATIVE(pv_mmu_ops, read_cr2, "movq %cr2, %rax");
- DEF_NATIVE(pv_mmu_ops, read_cr3, "movq %cr3, %rax");
- DEF_NATIVE(pv_mmu_ops, write_cr3, "movq %rdi, %cr3");
-@@ -51,6 +54,7 @@ unsigned native_patch(u8 type, u16 clobb
- 		PATCH_SITE(pv_irq_ops, irq_enable);
- 		PATCH_SITE(pv_irq_ops, irq_disable);
- 		PATCH_SITE(pv_cpu_ops, iret);
-+		PATCH_SITE(pv_cpu_ops, nmi_return);
- 		PATCH_SITE(pv_cpu_ops, irq_enable_sysexit);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret32);
- 		PATCH_SITE(pv_cpu_ops, usergs_sysret64);
-Index: linux.trees.git/arch/x86/kernel/asm-offsets_32.c
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/asm-offsets_32.c	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/kernel/asm-offsets_32.c	2010-07-14 08:02:11.000000000 -0400
-@@ -113,6 +113,7 @@ void foo(void)
- 	OFFSET(PV_IRQ_irq_disable, pv_irq_ops, irq_disable);
- 	OFFSET(PV_IRQ_irq_enable, pv_irq_ops, irq_enable);
- 	OFFSET(PV_CPU_iret, pv_cpu_ops, iret);
-+	OFFSET(PV_CPU_nmi_return, pv_cpu_ops, nmi_return);
- 	OFFSET(PV_CPU_irq_enable_sysexit, pv_cpu_ops, irq_enable_sysexit);
- 	OFFSET(PV_CPU_read_cr0, pv_cpu_ops, read_cr0);
- #endif
-Index: linux.trees.git/arch/x86/kernel/asm-offsets_64.c
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/asm-offsets_64.c	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/kernel/asm-offsets_64.c	2010-07-14 08:02:11.000000000 -0400
-@@ -58,6 +58,7 @@ int main(void)
- 	OFFSET(PV_IRQ_irq_enable, pv_irq_ops, irq_enable);
- 	OFFSET(PV_IRQ_adjust_exception_frame, pv_irq_ops, adjust_exception_frame);
- 	OFFSET(PV_CPU_iret, pv_cpu_ops, iret);
-+	OFFSET(PV_CPU_nmi_return, pv_cpu_ops, nmi_return);
- 	OFFSET(PV_CPU_usergs_sysret32, pv_cpu_ops, usergs_sysret32);
- 	OFFSET(PV_CPU_usergs_sysret64, pv_cpu_ops, usergs_sysret64);
- 	OFFSET(PV_CPU_irq_enable_sysexit, pv_cpu_ops, irq_enable_sysexit);
-Index: linux.trees.git/arch/x86/xen/enlighten.c
-===================================================================
---- linux.trees.git.orig/arch/x86/xen/enlighten.c	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/xen/enlighten.c	2010-07-14 08:02:12.000000000 -0400
-@@ -953,6 +953,7 @@ static const struct pv_cpu_ops xen_cpu_o
- 	.read_pmc = native_read_pmc,
- 
- 	.iret = xen_iret,
-+	.nmi_return = xen_iret,
- 	.irq_enable_sysexit = xen_sysexit,
- #ifdef CONFIG_X86_64
- 	.usergs_sysret32 = xen_sysret32,
-Index: linux.trees.git/arch/x86/kernel/vmi_32.c
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/vmi_32.c	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/kernel/vmi_32.c	2010-07-14 08:02:12.000000000 -0400
-@@ -154,6 +154,8 @@ static unsigned vmi_patch(u8 type, u16 c
- 					      insns, ip);
- 		case PARAVIRT_PATCH(pv_cpu_ops.iret):
- 			return patch_internal(VMI_CALL_IRET, len, insns, ip);
-+		case PARAVIRT_PATCH(pv_cpu_ops.nmi_return):
-+			return patch_internal(VMI_CALL_IRET, len, insns, ip);
- 		case PARAVIRT_PATCH(pv_cpu_ops.irq_enable_sysexit):
- 			return patch_internal(VMI_CALL_SYSEXIT, len, insns, ip);
- 		default:
-Index: linux.trees.git/arch/x86/lguest/boot.c
-===================================================================
---- linux.trees.git.orig/arch/x86/lguest/boot.c	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/lguest/boot.c	2010-07-14 08:02:12.000000000 -0400
-@@ -1270,6 +1270,7 @@ __init void lguest_init(void)
- 	pv_cpu_ops.cpuid = lguest_cpuid;
- 	pv_cpu_ops.load_idt = lguest_load_idt;
- 	pv_cpu_ops.iret = lguest_iret;
-+	pv_cpu_ops.nmi_return = lguest_iret;
- 	pv_cpu_ops.load_sp0 = lguest_load_sp0;
- 	pv_cpu_ops.load_tr_desc = lguest_load_tr_desc;
- 	pv_cpu_ops.set_ldt = lguest_set_ldt;
-Index: linux.trees.git/arch/x86/kernel/dumpstack.c
-===================================================================
---- linux.trees.git.orig/arch/x86/kernel/dumpstack.c	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/kernel/dumpstack.c	2010-07-14 08:02:12.000000000 -0400
-@@ -258,6 +258,8 @@ void __kprobes oops_end(unsigned long fl
- 
- 	if (!signr)
+ static inline bool arch_has_acpi_pdc(void)
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index cfe109d..116c8bd 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -573,6 +573,18 @@ static void c1e_idle(void)
+ 	if (need_resched())
  		return;
-+	if (in_nmi())
-+		panic("Fatal exception in non-maskable interrupt");
- 	if (in_interrupt())
- 		panic("Fatal exception in interrupt");
- 	if (panic_on_oops)
-Index: linux.trees.git/arch/x86/include/asm/paravirt_types.h
-===================================================================
---- linux.trees.git.orig/arch/x86/include/asm/paravirt_types.h	2010-07-09 00:10:14.000000000 -0400
-+++ linux.trees.git/arch/x86/include/asm/paravirt_types.h	2010-07-14 08:02:12.000000000 -0400
-@@ -181,6 +181,7 @@ struct pv_cpu_ops {
- 	/* Normal iret.  Jump to this with the standard iret stack
- 	   frame set up. */
- 	void (*iret)(void);
-+	void (*nmi_return)(void);
  
- 	void (*swapgs)(void);
++	if (!boot_cpu_has(X86_FEATURE_AMDC1E)) {
++		u32 lo, hi;
++
++		rdmsr(MSR_K8_INT_PENDING_MSG, lo, hi);
++
++		pr_err("%s: bits 0x%08x\n",
++			__func__, lo & K8_INTP_C1E_ACTIVE_MASK);
++
++		pr_err("%s: cpu: %d, c1e_detected: %d\n",
++			__func__, raw_smp_processor_id(), c1e_detected);
++	}
++
+ 	if (!c1e_detected) {
+ 		u32 lo, hi;
  
+-- 
+1.7.0
+
+
+
+-- 
+Regards/Gruss,
+Boris.
+
+Advanced Micro Devices GmbH
+Einsteinring 24, 85609 Dornach
+General Managers: Alberto Bozzo, Andrew Bowd
+Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
+Registergericht Muenchen, HRB Nr. 43632
 
