@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755516Ab0GNB4Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 21:56:25 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:54991 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755146Ab0GNB4V (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 21:56:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=vDTwQw7JKdeLfEH7ZQ4Hq5TF2gc/Zzf7vzbSGa/ZjSScXrh6pUMNSAi7SezTk6oRXw
-         ESlWee7XjcxLXifOQyC1Ng/O6WDSCHEgWdnH7wn8aUP3gC5kYc1+PQJsxFXZ4MUVP0ae
-         8CGpyNYUbFM7vHUEg5YpqCJvJfoSFfJXJQDFk=
-Message-ID: <4C3D1942.1090207@gmail.com>
-Date: Tue, 13 Jul 2010 19:56:18 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc13 Thunderbird/3.1
-MIME-Version: 1.0
-To: Ben Greear <greearb@candelatech.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, jbarnes@virtuousgeek.org,
-        jacob.jun.pan@intel.com
-Subject: Re: Regression:  2.6.34 boot fails on E5405 system, bisected:  de08e2c26
-References: <4C3D067C.10507@candelatech.com> <4C3D101E.5010605@candelatech.com>
-In-Reply-To: <4C3D101E.5010605@candelatech.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1755328Ab0GNCA6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 22:00:58 -0400
+Received: from sh.osrg.net ([192.16.179.4]:34860 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752853Ab0GNCA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 22:00:56 -0400
+Date: Wed, 14 Jul 2010 10:59:38 +0900
+To: zpfeffer@codeaurora.org
+Cc: fujita.tomonori@lab.ntt.co.jp, linux@arm.linux.org.uk,
+        ebiederm@xmission.com, linux-arch@vger.kernel.org,
+        dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100713121420.GB4263@codeaurora.org>
+References: <4C3C0032.5020702@codeaurora.org>
+	<20100713150311B.fujita.tomonori@lab.ntt.co.jp>
+	<20100713121420.GB4263@codeaurora.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 14 Jul 2010 10:59:43 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 07:17 PM, Ben Greear wrote:
-> On 07/13/2010 05:36 PM, Ben Greear wrote:
->> We're seeing boot failures on multiple machines, running FC8 and
->> F11. I bisected on an FC8 32-bit system. Newer hardware works,
->> but these older ones do not.
->>
->> A console log of the hang is found later in this email.
->>
->> Please let me know if you would like any additional information,
->> and I will be happy to test patches.
->>
->> The same failure happens in 2.6.34.1, so the fix does not appear to
->> be in the stable tree yet.
->
->
-> I added some printks to the offending code. It seems the problem
-> is that the fixed_bar_cap method in arch/x86/pci/mrst.c loops forever:
->
-> # Endless loop of this spewing to console...
->
-> pcie_cap: 268435456Checking vendor..
-> pos after shift: 256
-> Before read..
+On Tue, 13 Jul 2010 05:14:21 -0700
+Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
 
-Can you print out bus->number and devfn and look that up in lspci to 
-find out which device it's hitting? It looks like there's a device with 
-a PCI Express extended capability header that has a extended capability 
-ID of 0000h and a next capability offset of 100h, which points to 
-itself, causing the infinite loop. I'm guessing that if pcie_cap >> 20 
-<= pos then it should give up and break out of the loop, since it means 
-that the next capability pointer is invalidly pointing to the same or a 
-previous entry..
+> > You mean that you want to specify this alignment attribute every time
+> > you create an IOMMU mapping? Then you can set segment_boundary_mask
+> > every time you create an IOMMU mapping. It's odd but it should work.
+> 
+> Kinda. I want to forget about IOMMUs, devices and CPUs. I just want to
+> create a mapping that has the alignment I specify, regardless of the
+> mapper. The mapping is created on a VCM and the VCM is associated with
+> a mapper: a CPU, an IOMMU'd device or a direct mapped device.
+
+Sounds like you can do the above with the combination of the current
+APIs, create a virtual address and then an I/O address.
+
+The above can't be a reason to add a new infrastructure includes more
+than 3,000 lines.
+ 
+
+> > Another possible solution is extending struct dma_attrs. We could add
+> > the alignment attribute to it.
+> 
+> That may be useful, but in the current DMA-API may be seen as
+> redundant info.
+
+If there is real requirement, we can extend the DMA-API.
