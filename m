@@ -1,159 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757467Ab0GNWMQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:12:16 -0400
-Received: from claw.goop.org ([74.207.240.146]:37232 "EHLO claw.goop.org"
+	id S1757770Ab0GNWM1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:12:27 -0400
+Received: from www.tglx.de ([62.245.132.106]:36616 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757299Ab0GNWMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:12:13 -0400
-Message-ID: <4C3E363B.7060804@goop.org>
-Date: Wed, 14 Jul 2010 15:12:11 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+	id S1757603Ab0GNWMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 18:12:24 -0400
+Date: Thu, 15 Jul 2010 00:12:02 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+cc: john stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
+Subject: Re: 2.6.33.5 rt23: sleeping function called from invalid context
+In-Reply-To: <1279145211.3018.0.camel@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1007150008170.3321@localhost.localdomain>
+References: <1278561270.5448.2.camel@localhost.localdomain>  <1278610624.3008.2.camel@localhost.localdomain>  <1278639872.3008.36.camel@localhost.localdomain> <1279145211.3018.0.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Glauber Costa <glommer@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Avi Kivity <avi@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86: fix ordering constraints on crX read/writes
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Change d3ca901f94b3299 introduces a new mechanism for sequencing
-accesses to the control registers using a variable to act as a
-dependency.  (However, the patch description only says it is unifying
-parts of system.h and makes no mention of this new code.)
+On Wed, 14 Jul 2010, Fernando Lopez-Lezcano wrote:
+> On Thu, 2010-07-08 at 18:44 -0700, john stultz wrote:
+> > On Thu, 2010-07-08 at 10:37 -0700, john stultz wrote:
+> > > On Wed, 2010-07-07 at 20:54 -0700, Fernando Lopez-Lezcano wrote:
+> > > > After a suspend/wake up cycle, just after upgrading to fc12 (I did not
+> > > > see this with the same basic kernel - that is, compiled from the same
+> > > > source + patches - under fc11). 
+> > > > 
+> > > > BUG: sleeping function called from invalid context at
+> > > > kernel/rtmutex.c:684
+> > > > pcnt: 0 0 in_atomic(): 0, irqs_disabled(): 1, pid: 10582, name:
+> > > > pm-suspend
+> > > > Pid: 10582, comm: pm-suspend Not tainted
+> > > > 2.6.33.5-120.rt23.1.fc11.ccrma.i686.rtPAE #1
+> > > > Call Trace:
+> > > > [<c042eced>] __might_sleep+0xcc/0xd4
+> > > > [<c0464f57>] rt_spin_lock_fastlock.clone.1+0x26/0x5f
+> > > > [<c0792862>] rt_spin_lock+0x8/0xa
+> > > > [<c040dddc>] read_persistent_clock+0x11/0x30
+> > > > [<c045d1de>] timekeeping_suspend+0xe/0x4e
+> > > > [<c0640c9e>] sysdev_suspend+0x15c/0x356
+> > > > [<c0792906>] ? _mutex_unlock+0x8/0xa
+> > > > [<c046afc1>] suspend_devices_and_enter+0xea/0x17f
+> > > 
+> > > Huh. Looks like the lock protecting the RTC/CMOS might need to be
+> > > converted to a raw spinlock, since suspend/resume is probably done with
+> > > irqs off.
+> > 
+> > Oof. The rtc_lock is used all over the place. Not sure if we really want
+> > to convert it to a raw_spinlock. 
+> > 
+> > However, sysdev_suspend() wants interrupts off on all the .suspend
+> > calls. I'm surprised we haven't hit this issue with more drivers. Maybe
+> > no one is testing suspend w/ -rt? Or am I just missing an obvious
+> > solution?
+> >
+> > Thomas, any thoughts on this? 
 
-This sequencing implementation is flawed in two ways:
- - Firstly, it gets the input/outputs for __force_order wrong on
-   the asm statements.  __force_order is a proxy for the control
-   registers themselves, so a write_crX should write __force_order,
-   and conversely for read_crX.  The original code got this backwards,
-   making write_crX read from __force_order, which in principle would
-   allow gcc to eliminate a "redundant" write_crX.
+Yep, it's basically the same scenario which we have during bootup
+where we know that we cannot run into lock contention, so we can apply
+the same rules. Still working on a sane solution for this.
+ 
+> (BTW, this is still happening in rt26...)
 
- - Secondly, writes to control registers can have drastic
-   side-effects on all memory operations (write to cr3 changes the
-   current pagetable and redefines the meaning of all addresses,
-   for example), so they must clobber "memory" in order to be
-   ordered with respect to memory operations.
+See announce mail :)
 
-We seem to have been saved by the implicit ordering that "asm volatile"
-gives us.
+> There are some pending issues:
+> - rtc_lock suspend/resume (working on a patch)
+> ...
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Cc: Glauber de Oliveira Costa <gcosta@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Zachary Amsden <zamsden@redhat.com>
+Thanks,
 
-diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
-index e7f4d33..b782af2 100644
---- a/arch/x86/include/asm/system.h
-+++ b/arch/x86/include/asm/system.h
-@@ -212,53 +212,68 @@ static inline void native_clts(void)
- 
- /*
-  * Volatile isn't enough to prevent the compiler from reordering the
-- * read/write functions for the control registers and messing everything up.
-- * A memory clobber would solve the problem, but would prevent reordering of
-- * all loads stores around it, which can hurt performance. Solution is to
-- * use a variable and mimic reads and writes to it to enforce serialization
-+ * read/write functions for the control registers and messing
-+ * everything up.  A memory clobber would solve the problem, but would
-+ * prevent reordering of all loads stores around it, which can hurt
-+ * performance (however, control register writes can have drastic
-+ * effects on memory accesses - like switching pagetables and thereby
-+ * redefining what an address means - so they still need to clobber
-+ * memory).
-+ *
-+ * Solution is to use a variable and mimic reads and writes to it to
-+ * enforce serialization.  __force_order acts as a proxy for the
-+ * control registers, so a read_crX reads __force_order, and write_crX
-+ * writes it (actually both reads and writes it to indicate that
-+ * write-over-write can't be "optimised" away).
-+ *
-+ * This assumes there's no global optimisation between object files,
-+ * so using a static per-file "__force_order" is OK.  (In theory we
-+ * don't need __force_order to be instantiated at all, since it is
-+ * never actually read or written to.  But gcc might decide to
-+ * generate a reference to it anyway, so we need to keep it around.)
-  */
- static unsigned long __force_order;
- 
- static inline unsigned long native_read_cr0(void)
- {
- 	unsigned long val;
--	asm volatile("mov %%cr0,%0\n\t" : "=r" (val), "=m" (__force_order));
-+	asm volatile("mov %%cr0,%0\n\t" : "=r" (val) : "m" (__force_order));
- 	return val;
- }
- 
- static inline void native_write_cr0(unsigned long val)
- {
--	asm volatile("mov %0,%%cr0": : "r" (val), "m" (__force_order));
-+	asm volatile("mov %1,%%cr0": "+m" (__force_order) : "r" (val) : "memory");
- }
- 
- static inline unsigned long native_read_cr2(void)
- {
- 	unsigned long val;
--	asm volatile("mov %%cr2,%0\n\t" : "=r" (val), "=m" (__force_order));
-+	asm volatile("mov %%cr2,%0\n\t" : "=r" (val) : "m" (__force_order));
- 	return val;
- }
- 
- static inline void native_write_cr2(unsigned long val)
- {
--	asm volatile("mov %0,%%cr2": : "r" (val), "m" (__force_order));
-+	asm volatile("mov %1,%%cr2": "+m" (__force_order) : "r" (val) : "memory");
- }
- 
- static inline unsigned long native_read_cr3(void)
- {
- 	unsigned long val;
--	asm volatile("mov %%cr3,%0\n\t" : "=r" (val), "=m" (__force_order));
-+	asm volatile("mov %%cr3,%0\n\t" : "=r" (val) : "m" (__force_order));
- 	return val;
- }
- 
- static inline void native_write_cr3(unsigned long val)
- {
--	asm volatile("mov %0,%%cr3": : "r" (val), "m" (__force_order));
-+	asm volatile("mov %1,%%cr3": "+m" (__force_order) : "r" (val) : "memory");
- }
- 
- static inline unsigned long native_read_cr4(void)
- {
- 	unsigned long val;
--	asm volatile("mov %%cr4,%0\n\t" : "=r" (val), "=m" (__force_order));
-+	asm volatile("mov %%cr4,%0\n\t" : "=r" (val) : "m" (__force_order));
- 	return val;
- }
- 
-@@ -271,7 +286,7 @@ static inline unsigned long native_read_cr4_safe(void)
- 	asm volatile("1: mov %%cr4, %0\n"
- 		     "2:\n"
- 		     _ASM_EXTABLE(1b, 2b)
--		     : "=r" (val), "=m" (__force_order) : "0" (0));
-+		     : "=r" (val) : "m" (__force_order), "0" (0));
- #else
- 	val = native_read_cr4();
- #endif
-@@ -280,7 +295,7 @@ static inline unsigned long native_read_cr4_safe(void)
- 
- static inline void native_write_cr4(unsigned long val)
- {
--	asm volatile("mov %0,%%cr4": : "r" (val), "m" (__force_order));
-+	asm volatile("mov %1,%%cr4": "+m" (__force_order) : "r" (val) : "memory");
- }
- 
- #ifdef CONFIG_X86_64
-
-
+	tglx
