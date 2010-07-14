@@ -1,54 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757034Ab0GNOZN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 10:25:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51975 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab0GNOZL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 10:25:11 -0400
-Message-ID: <4C3DC8C1.1060706@redhat.com>
-Date: Wed, 14 Jul 2010 17:25:05 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757224Ab0GNOZn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 10:25:43 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:57133 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757108Ab0GNOZl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 10:25:41 -0400
+Date: Wed, 14 Jul 2010 16:25:21 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: Christoph Lameter <cl@linux-foundation.org>
+Cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+        linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
+        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
+Subject: Re: [S+Q2 00/19] SLUB with queueing (V2) beats SLAB netperf TCP_RR
+Message-ID: <20100714142521.GA19289@fancy-poultry.org>
+Mail-Followup-To: Christoph Lameter <cl@linux-foundation.org>,
+	Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
+	linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
+	David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
+References: <20100709190706.938177313@quilx.com>
+ <20100710195621.GA13720@fancy-poultry.org>
+ <alpine.DEB.2.00.1007121010420.14328@router.home>
+ <20100712163900.GA8513@fancy-poultry.org>
+ <alpine.DEB.2.00.1007121156160.18621@router.home>
+ <20100713135650.GA6444@fancy-poultry.org>
+ <alpine.DEB.2.00.1007132055470.14067@router.home>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] KVM: MMU: track dirty page in speculative path properly
-References: <4C3C3518.7080505@cn.fujitsu.com> <4C3C35B7.50101@cn.fujitsu.com> <20100713220551.GB6370@amt.cnet> <4C3D11C6.4000101@cn.fujitsu.com> <20100714110926.GA26033@amt.cnet> <4C3DB942.3010709@cn.fujitsu.com> <20100714140626.GA28485@amt.cnet>
-In-Reply-To: <20100714140626.GA28485@amt.cnet>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1007132055470.14067@router.home>
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.20+20100619 (GNU/Linux)
+X-Provags-ID: V02:K0:lW4MeLbWDA1hWjbETui0fbSCBR2rdWqkjD0tyHos9I3
+ r+DZepuYUdqoppApD1qJUjPhSplfQFMeG9ICuRrpN3MN0gwIGm
+ y+alszvaHvtTKHMvMSxmesEhkERoEChwnUhmk+XItGx5LB5yYj
+ pzUiGnZ7K14LNy3Xmhi6ireKKt5NcnBoE5Bb6Rcfb2oQ7PK6wJ
+ a2jUvX7eaVgrnhgRxADNg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 05:06 PM, Marcelo Tosatti wrote:
->
->> Yeah, you are right, and i want to use another way to do it since track dirty bit
->> is too heavy, also it's dangerous if we miss to set page dirty.
->>
->> How about just track access bit for speculative path, we set page both accessed and
->> dirty(if it's writable) only if the access bit is set?
->>      
-> A useful thing to do would be to allow read-only mappings, in the fault
-> path (Lai sent a few patches in that direction sometime ago but there
-> was no follow up).
->
-> So in the case of a read-only fault from the guest, you'd inform
-> get_user_pages() that read-only access is acceptable (so swapcache pages
-> can be mapped, or qemu can mprotect(PROT_READ) guest memory).
->    
+On 14.07.2010, Christoph Lameter wrote: 
 
-I'd like get_user_pages_ptes_fast(), that returns the pte along with the 
-page.  It can be used for a couple of purposes:
+> I dont see anything in there at first glance that would cause slub to
+> increase its percpu usage. This is straight upstream?
 
-- on read faults or speculative mappings, ask for read access, but allow 
-write if the pte is writeable
-- stick the page size into  free bits (need 2 to support 1G pages) to 
-speed up host_mapping_level()
+Yes ,it's plain vanilla 2.6.35-rc4/-rc5 from kernel.org.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+> Try to just comment out the BUILD_BUG_ON.
 
+I first bumped it up to 24k, but that was obviously not enough, so I
+commented out the BUILD_BUG_ON which triggers the build error. Now It builds
+fine, and I'll do some testing.
+
+Thanks,
+Heinz.
