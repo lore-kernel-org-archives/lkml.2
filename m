@@ -1,113 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756675Ab0GND3y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 23:29:54 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:41044 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756168Ab0GND3v convert rfc822-to-8bit (ORCPT
+	id S1752471Ab0GNDnN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 23:43:13 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:65468 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751253Ab0GNDnL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 23:29:51 -0400
+	Tue, 13 Jul 2010 23:43:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JGJ0h9MB7l7Ara5kqgEYTbERbxo61bca29I2O/cTaG06M2AnBNNzEa6//KuAxRYFjm
-         YF7+i09vrQTkGTpMe36U9PfU/DZ11NGjnG+o9KTxTfyjy+op+lHqpZzlMRWKI2xjsvOf
-         TsYG2lcOV+WGmQde6tTiC0TPlulVTr7U/GmBo=
-MIME-Version: 1.0
-In-Reply-To: <4C3D1F82.1040907@candelatech.com>
-References: <4C3D067C.10507@candelatech.com>
-	<4C3D101E.5010605@candelatech.com>
-	<4C3D1942.1090207@gmail.com>
-	<4C3D1F82.1040907@candelatech.com>
-Date: Tue, 13 Jul 2010 21:29:50 -0600
-Message-ID: <AANLkTinDv7I4v51j-Lev9Ry_3DyVVv58lAyCQXZV1CwB@mail.gmail.com>
-Subject: Re: Regression: 2.6.34 boot fails on E5405 system, bisected: 
-	de08e2c26
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Ben Greear <greearb@candelatech.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, jbarnes@virtuousgeek.org,
-        jacob.jun.pan@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=F43/3ezNFyxuhEI5G7ycfSgOQs8h+/KTdOS7HVrSRgEYjhzDvQ2z5R4VjPKsGvkwHW
+         JEh47RkMF2bBp4LTJOjlq/nIXl4vuGBIaRXbZh7v3lpx35XXi1l5PA9djgSuSd9gHN+w
+         JhU9rrEWJXLQk3Q0krpWLWr0vggqainbfCCEE=
+Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Felipe W Damasio <felipewd@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, David Miller <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTikkcaionMp3SJLgo3JmCjxQ7rPZv3-3_RbxCx_4@mail.gmail.com>
+References: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>
+	 <AANLkTil49m6Ul2bauiH4Pwn-6ykrYTFmSO6_SxqQgD_e@mail.gmail.com>
+	 <1278626921.2435.73.camel@edumazet-laptop>
+	 <AANLkTiliBClahTfb41M5BDi1etg5pgkqEz_VfGrn_mK4@mail.gmail.com>
+	 <1278695580.2696.55.camel@edumazet-laptop>
+	 <AANLkTil39xHOhcdAo4h_jWtx_UuYdFHGdQVAdwPMd7QJ@mail.gmail.com>
+	 <1278742649.2538.17.camel@edumazet-laptop> <4C395459.6080407@redhat.com>
+	 <1278835332.2538.51.camel@edumazet-laptop>
+	 <AANLkTikEGuFtTlIKUfti6GDsdBz99PpKRCs5lEeEM86u@mail.gmail.com>
+	 <AANLkTilbEkJWPqvJE72r9HdFQSU84S02BKZB0CH-8QwB@mail.gmail.com>
+	 <AANLkTimn9x17g-4K7fS4MjmCgzHuBARurEoFVd_gId7m@mail.gmail.com>
+	 <1279032023.2634.384.camel@edumazet-laptop>
+	 <AANLkTilrIByt4xAHhsBsKo3nDfv0_c3sF-dCiTiYiPnu@mail.gmail.com>
+	 <1279036193.2634.468.camel@edumazet-laptop>
+	 <AANLkTilgxvDPpBJvwbw3PHZfXDaa2_6-TbJ8lujz5y3V@mail.gmail.com>
+	 <1279077678.2444.95.camel@edumazet-laptop>
+	 <AANLkTikkcaionMp3SJLgo3JmCjxQ7rPZv3-3_RbxCx_4@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Jul 2010 05:43:05 +0200
+Message-ID: <1279078985.2444.105.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 8:22 PM, Ben Greear <greearb@candelatech.com> wrote:
->> Can you print out bus->number and devfn and look that up in lspci to
->> find out which device it's hitting? It looks like there's a device with
->> a PCI Express extended capability header that has a extended capability
->> ID of 0000h and a next capability offset of 100h, which points to
->> itself, causing the infinite loop. I'm guessing that if pcie_cap >> 20
->> <= pos then it should give up and break out of the loop, since it means
->> that the next capability pointer is invalidly pointing to the same or a
->> previous entry..
->
-> Bailing out like that does let it boot.
->
-> As for the bus and devfn:  bus: 0   devfn: 129 (decimal)
->
-> I'm not sure what to look for in lspci, but here is the output with -n:
+Le mercredi 14 juillet 2010 Ã  00:27 -0300, Felipe W Damasio a Ã©crit :
+> Hi Mr. Dumazet,
+> 
+> 2010/7/14 Eric Dumazet <eric.dumazet@gmail.com>:
+> > RDX being the sk pointer (and sk+0x38 contains the corrupted "sk_prot" value)
+> > , we notice RBP contains same "sk" value + 0x200000  (2 Mbytes).
+> >
+> > (same remark on your initial bug report)
+> >
+> > Could you enable CONFIG_FRAME_POINTER=y in your config ?
+> 
+> I can, but my bosses will kick my ass if I bring down the ISP again :)
+> 
 
-That will be device 0x10 function 1, this one:
+I have no guarantee at all, even if we find the bug.
 
-00:10.1 0600: 8086:25f0 (rev b1)
+> If you think it's the only way to find the problem I'll tell them that
+> I need to do it. In this case, please tell me what other config
+> options/tools I can use to get as much info as possible...since I'll
+> probably be able to test this only once more on the production
+> environment for debugging purposes.
+> 
 
-Intel 5000 Series Chipset FSB Registers, apparently.. What does lspci
--vv show for that device?
+You really should try to setup a lab to trigger the bug, and not doing
+experiments on production :)
 
->
-> [root@ice-si-dmz ~]# lspci -n
-> 00:00.0 0600: 8086:25d8 (rev b1)
-> 00:02.0 0604: 8086:25f7 (rev b1)
-> 00:04.0 0604: 8086:25f8 (rev b1)
-> 00:06.0 0604: 8086:25f9 (rev b1)
-> 00:08.0 0880: 8086:1a38 (rev b1)
-> 00:10.0 0600: 8086:25f0 (rev b1)
-> 00:10.1 0600: 8086:25f0 (rev b1)
-> 00:10.2 0600: 8086:25f0 (rev b1)
-> 00:11.0 0600: 8086:25f1 (rev b1)
-> 00:13.0 0600: 8086:25f3 (rev b1)
-> 00:15.0 0600: 8086:25f5 (rev b1)
-> 00:16.0 0600: 8086:25f6 (rev b1)
-> 00:1d.0 0c03: 8086:2688 (rev 09)
-> 00:1d.1 0c03: 8086:2689 (rev 09)
-> 00:1d.2 0c03: 8086:268a (rev 09)
-> 00:1d.7 0c03: 8086:268c (rev 09)
-> 00:1e.0 0604: 8086:244e (rev d9)
-> 00:1f.0 0601: 8086:2670 (rev 09)
-> 00:1f.1 0101: 8086:269e (rev 09)
-> 00:1f.2 0106: 8086:2681 (rev 09)
-> 00:1f.3 0c05: 8086:269b (rev 09)
-> 01:00.0 0604: 8086:3500 (rev 01)
-> 01:00.3 0604: 8086:350c (rev 01)
-> 02:00.0 0604: 8086:3510 (rev 01)
-> 02:02.0 0604: 8086:3518 (rev 01)
-> 04:00.0 0200: 8086:1096 (rev 01)
-> 04:00.1 0200: 8086:1096 (rev 01)
-> 06:00.0 0604: 111d:8018 (rev 04)
-> 07:00.0 0604: 111d:8018 (rev 04)
-> 07:01.0 0604: 111d:8018 (rev 04)
-> 08:00.0 0200: 8086:10a4 (rev 06)
-> 08:00.1 0200: 8086:10a4 (rev 06)
-> 09:00.0 0200: 8086:10a4 (rev 06)
-> 09:00.1 0200: 8086:10a4 (rev 06)
-> 0a:00.0 0604: 111d:8018 (rev 04)
-> 0b:00.0 0604: 111d:8018 (rev 04)
-> 0b:01.0 0604: 111d:8018 (rev 04)
-> 0c:00.0 0200: 8086:10a4 (rev 06)
-> 0c:00.1 0200: 8086:10a4 (rev 06)
-> 0d:00.0 0200: 8086:10a4 (rev 06)
-> 0d:00.1 0200: 8086:10a4 (rev 06)
-> 0e:01.0 0300: 1002:515e (rev 02)
->
->
-> Thanks,
-> Ben
->
->
-> --
-> Ben Greear <greearb@candelatech.com>
-> Candela Technologies Inc  http://www.candelatech.com
->
+
+
