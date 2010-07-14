@@ -1,353 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757370Ab0GNSl3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:41:29 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:50901 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756506Ab0GNSl1 (ORCPT
+	id S1757388Ab0GNSmy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:42:54 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:46609 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751721Ab0GNSmx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:41:27 -0400
-Message-ID: <4C3E04D3.4000901@candelatech.com>
-Date: Wed, 14 Jul 2010 11:41:23 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	Wed, 14 Jul 2010 14:42:53 -0400
+Date: Wed, 14 Jul 2010 19:42:51 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sundar R IYER <sundar.iyer@stericsson.com>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Subject: Re: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific
+	data
+Message-ID: <20100714184251.GG5933@sirena.org.uk>
+References: <20100713203852.GA1756@rakim.wolfsonmicro.main> <20100714145053.GA1689@bnru01.bnr.st.com> <20100714145748.GF31073@rakim.wolfsonmicro.main> <20100714153643.GB1689@bnru01.bnr.st.com> <20100714154726.GH31073@rakim.wolfsonmicro.main> <20100714160941.GC1689@bnru01.bnr.st.com> <20100714162048.GA27512@rakim.wolfsonmicro.main> <20100714164708.GD1689@bnru01.bnr.st.com> <20100714170323.GF5933@sirena.org.uk> <20100714173650.GA21893@bnru01.bnr.st.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Robert Hancock <hancockrwd@gmail.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, jbarnes@virtuousgeek.org,
-        jacob.jun.pan@intel.com
-Subject: Re: Regression: 2.6.34 boot fails on E5405 system, bisected: 	de08e2c26
-References: <4C3D067C.10507@candelatech.com>	<4C3D101E.5010605@candelatech.com>	<4C3D1942.1090207@gmail.com>	<4C3D1F82.1040907@candelatech.com> <AANLkTinDv7I4v51j-Lev9Ry_3DyVVv58lAyCQXZV1CwB@mail.gmail.com> <4C3DC64F.5040505@candelatech.com> <4C3E0376.4090707@zytor.com>
-In-Reply-To: <4C3E0376.4090707@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100714173650.GA21893@bnru01.bnr.st.com>
+X-Cookie: You will wish you hadn't.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 11:35 AM, H. Peter Anvin wrote:
-> On 07/14/2010 07:14 AM, Ben Greear wrote:
->> On 07/13/2010 08:29 PM, Robert Hancock wrote:
->>> On Tue, Jul 13, 2010 at 8:22 PM, Ben Greear<greearb@candelatech.com>   wrote:
->>>>> Can you print out bus->number and devfn and look that up in lspci to
->>>>> find out which device it's hitting? It looks like there's a device with
->>>>> a PCI Express extended capability header that has a extended capability
->>>>> ID of 0000h and a next capability offset of 100h, which points to
->>>>> itself, causing the infinite loop. I'm guessing that if pcie_cap>>   20
->>>>> <= pos then it should give up and break out of the loop, since it means
->>>>> that the next capability pointer is invalidly pointing to the same or a
->>>>> previous entry..
->>>>
->>>> Bailing out like that does let it boot.
->>>>
->>>> As for the bus and devfn:  bus: 0   devfn: 129 (decimal)
->>>>
->>>> I'm not sure what to look for in lspci, but here is the output with -n:
->>>
->>> That will be device 0x10 function 1, this one:
->>>
->>> 00:10.1 0600: 8086:25f0 (rev b1)
->>>
->>> Intel 5000 Series Chipset FSB Registers, apparently.. What does lspci
->>> -vv show for that device?
->>
->> 00:10.1 Host bridge: Intel Corporation 5000 Series Chipset FSB Registers (rev b1)
->> 	Subsystem: Super Micro Computer Inc Unknown device 9780
->> 	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
->> 	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast>TAbort-<TAbort-<MAbort->SERR-<PERR- INTx-
->> 	Kernel modules: i5000_edac, i5k_amb
->>
->
-> Could you get the output of lspci -vv -xxxx for this device?  I'm
-> confused why this device would identify as having extended config space...
->
-> 	-hpa
+On Wed, Jul 14, 2010 at 11:06:51PM +0530, Sundar R IYER wrote:
 
+> > OK, but your current set of supplies is *very* suspect since you're
+> > offering all this control to lists of consumers that don't exist, and
 
-00:10.1 Host bridge: Intel Corporation 5000 Series Chipset FSB Registers (rev b1)
-         Subsystem: Super Micro Computer Inc Unknown device 9780
-         Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-         Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-         Kernel modules: i5000_edac, i5k_amb
-00: 86 80 f0 25 00 00 00 00 b1 00 00 06 00 00 80 00
-10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-20: 00 00 00 00 00 00 00 00 00 00 00 00 d9 15 80 97
-30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-40: f0 01 34 46 00 00 00 00 37 23 54 45 42 59 03 00
-50: ff ff ff ff c8 00 04 00 16 1a d8 76 08 00 00 00
-60: 00 00 00 00 00 00 00 00 00 00 00 00 00 d0 00 00
-70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-80: 03 02 00 00 00 02 00 00 00 02 00 00 00 00 00 00
-90: 00 00 00 00 00 00 00 00 00 00 00 20 00 00 00 00
-a0: 00 00 00 20 00 00 00 00 00 00 00 00 ff 7f ff 0f
-b0: ff 7f ff 0f ff 7f f0 0f ff 7f ff 0f 00 00 07 28
-c0: 1a 09 04 00 00 08 00 00 ff ff ff 00 0f 00 ff 0f
-d0: 00 ff 0f 00 00 f0 ff ff 00 00 c0 0f ff 60 d9 62
-e0: 00 00 06 00 60 0c b4 01 00 08 00 00 00 00 00 ff
-f0: f0 ff ff 0f ff 00 f0 ff 00 00 00 00 0f 00 3f 00
-100: 00 00 00 10 00 00 00 00 00 00 00 10 00 00 00 00
-110: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-120: 00 00 00 00 00 00 00 00 ff ff ff ff ff ff ff ff
-130: 00 00 0f 0f 00 00 00 00 00 00 00 00 00 00 00 00
-140: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-150: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-160: 11 11 11 11 00 00 00 00 11 11 11 11 00 00 00 00
-170: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-180: 00 00 00 18 00 00 00 00 00 00 00 00 00 00 00 00
-190: 00 00 00 00 82 00 51 00 40 00 00 00 0c 01 08 00
-1a0: 00 00 00 00 00 00 00 00 ff ff ff ff ff ff ff ff
-1b0: 00 00 0f 0f 00 00 00 00 00 00 00 00 00 00 00 00
-1c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-1d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-1e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-1f0: 00 00 00 00 00 08 00 00 00 00 00 00 00 00 00 00
-200: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-210: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-220: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-230: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-240: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-250: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-260: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-270: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-280: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-290: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-2a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-2b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-1c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-1d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-1e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-1f0: 00 00 00 00 00 08 00 00 00 00 00 00 00 00 00 00
-200: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-210: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-220: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-230: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-240: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-250: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-260: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-270: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-280: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-290: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-2a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-2b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-2c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-2d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-2e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-2f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-300: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-310: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-320: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-330: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-340: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-350: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-360: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-370: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-380: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-390: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-3a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-3b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-3c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-3d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-3e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-3f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-400: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-410: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-420: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-430: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-440: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-450: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-460: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-470: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-480: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-490: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-4a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-4b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-4c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-4d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-4e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-4f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-500: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-510: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-520: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-530: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-540: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-550: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-560: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-570: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-580: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-590: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-5a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-5b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-5c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-5d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-5e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-5f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-600: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-610: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-620: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-630: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-640: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-650: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-660: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-670: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-680: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-690: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-6a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-6b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-6c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-6d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-6e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-6f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-700: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-710: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-720: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-730: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-740: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-750: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-760: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-770: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-780: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-790: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-7a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-7b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-7c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-7d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-7e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-7f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-800: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-810: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-820: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-830: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-840: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-850: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-860: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-870: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-880: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-890: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-8a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-8b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-8c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-8d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-8e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-8f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-900: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-910: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-920: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-930: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-940: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-950: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-960: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-970: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-980: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-990: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-9a0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-9b0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-9c0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-9d0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-9e0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-9f0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-a90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-aa0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ab0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ac0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ad0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ae0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-af0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-b90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ba0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-bb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-bc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-bd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-be0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-bf0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-c90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ca0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-cb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-cc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-cd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ce0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-cf0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-d90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-da0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-db0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-dc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-dd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-de0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-df0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-e90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ea0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-eb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ec0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ed0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ee0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ef0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f10: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f20: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f30: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f40: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f50: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f60: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f70: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-f90: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-fa0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-fb0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-fc0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-fd0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-fe0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
-ff0: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+> As said, dont exist for *now*.
 
+This comes back to my point about the control only making sense when the
+consumers are present - if you've got missing or partial consumer setup
+done then control is questionable.
 
-Thanks,
-Ben
+> Probably, I should remove the REGULATOR_CHANGE_VOLTAGE flag for the fixed
+> supplies (as in the driver) to clear up any confusing link. Should I?
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+Yes.
 
+> > This is normal, but for fairly obvious reasons the very lowest power
+> > states are generally handled outside of the regulator API at a hardware
+> > level via hardware signals to the regulator.  It's not normally part of
+> > the runtime constraints for use while the CPU is live.
+
+> Yes. But my point was that even at a lower level than kernel (BIOS/firmware?)
+> the switching would happen via SW. Please correct me if I am wrong!
+
+Well, ultimately it's always triggered by software but the actual signal
+to the regulator is often a logic level output by the SoC as the
+processor enters a low power state rather than an I2C/SPI write.
+
+> > I'm not sure how you expect this to actually work in practice?  It's
+> > going to be pretty hard for a driver to do anything constructive if the
+> > power to the hardware gets cut, for example.  Unless you can guarantee
+> > that there will never be any use of the hardware without a driver with
+> > regulator support one driver's idea of optimal may not join up with what
+> > the other consumers need at all.
+
+> Very true. But, I think this will *enforce* drivers using/sharing
+> regulators to adhere to the framework to avoid surprises and sole-owner
+> misuses, which is good, now that the AB8500 regulators *are* supported.
+
+If you think your users will be sympathetic to this approach then I
+guess...  obviously, it does have the potential to go rather badly wrong
+especially if there are some drivers without regulator support out
+there.
