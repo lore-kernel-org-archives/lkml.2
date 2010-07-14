@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754264Ab0GNRRO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 13:17:14 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:52201 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab0GNRRM (ORCPT
+	id S1756821Ab0GNRTN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 13:19:13 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:32420 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751786Ab0GNRTL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 13:17:12 -0400
-Message-ID: <4C3DF105.1050404@austin.ibm.com>
-Date: Wed, 14 Jul 2010 12:16:53 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Wed, 14 Jul 2010 13:19:11 -0400
+Date: Wed, 14 Jul 2010 10:19:10 -0700 (PDT)
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+X-X-Sender: sbhatewara@localhost.localdomain
+To: Greg KH <greg@kroah.com>
+cc: Christoph Hellwig <hch@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Pankaj Thakkar <pthakkar@vmware.com>,
+        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for
+ vmxnet3
+In-Reply-To: <20100714094952.GA16209@kroah.com>
+Message-ID: <alpine.LRH.2.00.1007141015330.1613@localhost.localdomain>
+References: <20100504230225.GP8323@vmware.com> <201005051029.42052.dtor@vmware.com> <20100505173120.GA1752@infradead.org> <201005051035.29831.dtor@vmware.com> <20100505173951.GA8388@infradead.org> <20100505105253.0a8bc465@nehalam> <20100506202113.GC17922@infradead.org>
+ <1278990388.32650.22.camel@eng-rhel5-64> <20100714094952.GA16209@kroah.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 4/7] Allow sysfs memory directories to be split
-References: <4C3B3446.5090302@austin.ibm.com>	 <4C3B3895.3040209@austin.ibm.com>	 <20100713152854.ec1f4d6a.kamezawa.hiroyu@jp.fujitsu.com>	 <4C3C8B9E.7000208@austin.ibm.com>	 <20100714093550.40036034.kamezawa.hiroyu@jp.fujitsu.com> <1279078016.10995.58.camel@nimitz>
-In-Reply-To: <1279078016.10995.58.camel@nimitz>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 10:26 PM, Dave Hansen wrote:
-> On Wed, 2010-07-14 at 09:35 +0900, KAMEZAWA Hiroyuki wrote:
->>   2. I'd like to write a configfs module for handling memory hotplug even when
->>      sysfs directroy is not created.
->>      Because configfs support rmdir/mkdir, the user (ppc's daemon?) has to do
->>      
->>      When offlining section X.
->>      # insmod configfs_memory.ko
->>      # mount -t configfs none /configfs
->>      # mkdir /configfs/memoryX
->>      # echo offline > /configfs/memoryX/state
->>      # rmdir /configfs/memoryX
->>
->>   And making this operation as the default bahavior for all arch's memory hotplug may
->>   be better...
->>
->> Dave, how do you think ? Because ppc guys uses "probe" interface already,
->> this can be handled... no ?
+
+
+On Wed, 14 Jul 2010, Greg KH wrote:
+
+> On Mon, Jul 12, 2010 at 08:06:28PM -0700, Shreyas Bhatewara wrote:
+> >  drivers/net/vmxnet3/vmxnet3_drv.c     | 1845
+> > +++++++++++++++++++--------------
 > 
-> I think creating a interface to duplicate the existing sysfs one is a
-> bad idea.  I also think removing the existing sysfs one isn't feasible
-> since there are users, and it's truly part of the ABI.  So, I'm not
-> really a fan on the configfs interface. :(
+> Your patch is line-wrapped and can not be applied :(
 > 
-> I really do think the sysfs interface is fixable.  We should at least
-> give it a good shot before largely duplicating its functionality.
+> Care to fix your email client?
+> 
+> One thing just jumped out at me when glancing at this:
+> 
+> > +static INLINE void
+> > +MoveMemory(void *dst,
+> > +		void *src,
+> > +		size_t length)
+> > +{
+> > +	size_t i;
+> > +	for (i = 0; i < length; ++i)
+> > +		((u8 *)dst)[i] = ((u8 *)src)[i];
+> > +}
+> > +
+> > +static INLINE void
+> > +ZeroMemory(void *memory,
+> > +		size_t length)
+> > +{
+> > +	size_t i;
+> > +	for (i = 0; i < length; ++i)
+> > +		((u8 *)memory)[i] = 0;
+> > +}
+> 
+> Is there some reason that our in-kernel functions that do this type of
+> logic are not working for you to require you to reimplement this?
+> 
+> thanks,
+> 
+> greg k-h
+> 
 
-I agree with Dave, I don't think another memory hotplug interface is needed.
+Greg,
 
-I am working to update the patchset to remove the split functionality and
-fix other items commented on.  this new patch will just split the memory_block
-structure so that a memory_block can span multiple memory sections.
+Thanks for pointing out. I will fix both these issues and repost the patch.
 
-Kame, I understand that offlining 16 MB is easier than 256 MB.  From the ppc
-perspective though, we are still offlining 256 MB.  We do memory add/remove
-on LMB size chunks, so we have to add/remove all of the memory sections contained
-in an LMB.  If any one memory section covered by a LMB fails to add/remove, we
-restore the memory sections to their orignal state an fail the add/remove operation.
-NOTE: the code doing this is not in the kernel, but in the user-space drmgr
-command (from powerpc-utils package).
-
--Nathan 
-
+->Shreyas
