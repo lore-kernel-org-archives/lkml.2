@@ -1,66 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756338Ab0GNNLy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 09:11:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:57141 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753371Ab0GNNLw (ORCPT
+	id S1756740Ab0GNNNi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 09:13:38 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:32948 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754818Ab0GNNNg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 09:11:52 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Subject: sound/oss-msnd-pinnacle: ioctl needs the inode
-Date: Wed, 14 Jul 2010 15:11:39 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Takashi Iwai <tiwai@suse.de>,
-        Jaroslav Kysela <perex@perex.cz>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-References: <20100713144007.55d3abc9.sfr@canb.auug.org.au> <20100713103623.bfb0d9b8.randy.dunlap@oracle.com>
-In-Reply-To: <20100713103623.bfb0d9b8.randy.dunlap@oracle.com>
+	Wed, 14 Jul 2010 09:13:36 -0400
+Date: Wed, 14 Jul 2010 14:13:34 +0100
+From: Andy Whitcroft <apw@canonical.com>
+To: Larry Finger <Larry.Finger@lwfinger.net>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: Possible false positive from checkpatch.pl
+Message-ID: <20100714131334.GB20746@shadowen.org>
+References: <4C3B5660.8020405@lwfinger.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007141511.39507.arnd@arndb.de>
-X-Provags-ID: V02:K0:E/E91t7SV4veK+2jQw1P2ON1RHoRvHXB1fqVJyl/Xp0
- mh1K5xvC7LnBIYyp3OfZnBPwYZP3uuYAoh6xY1Hv90z+R9/JLb
- 84HJQZSjBGl+gVY5niHbZH989UqF8GPiE1tVCutxEUZTzfyhqo
- uufKfUfMQj3XtBA3ggkzF7nN8nwjkKGEl4/ME6SytXWfQw3p72
- 1Gg2Urdmbuouvi01I5fWw==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3B5660.8020405@lwfinger.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This broke in sound/oss: convert to unlocked_ioctl, when I missed one
-of the ioctl functions still using the inode pointer.
-
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
----
-On Tuesday 13 July 2010, Randy Dunlap wrote:
-> On Tue, 13 Jul 2010 14:40:07 +1000 Stephen Rothwell wrote:
+On Mon, Jul 12, 2010 at 12:52:32PM -0500, Larry Finger wrote:
+> Andy,
 > 
-> > Hi all,
-> > 
-> > Not unexpectedly, we got some conflicts with the arm defconfig files
-> > today ...
+> In preparing a vendor driver for submission to staging, I am getting
+> the following from checkpatch.pl:
 > 
+> ERROR: Macros with multiple statements should be enclosed in a do - while loop
+> #377: FILE: staging/rtl8712/rtl871x_mp_ioctl.h:377:
+> +#define GEN_MP_IOCTL_HANDLER(sz, hdl, oid) {sz, hdl, oid},
 > 
-> sound/oss/msnd_pinnacle.c:644:error: 'inode' undeclared (first use in this function)
+> ERROR: Macros with multiple statements should be enclosed in a do - while loop
+> #378: FILE: staging/rtl8712/rtl871x_mp_ioctl.h:378:
+> +#define EXT_MP_IOCTL_HANDLER(sz, subcode, oid) {sz, &mp_ioctl_ \
+> +       ## subcode ## _hdl, oid},
 > 
+> total: 2 errors, 0 warnings, 466 lines checked
+> 
+> Enclosing these macros in a do {...} while (0) is definitely wrong
+> and will not compile. Moving the comma from the end of the macro to
+> the lines that invoke it fixes the problem, but should not be
+> necessary.
 
-Sorry about that, my fault. Please apply.
+They do look like a false positive to me.  Its not entirly obvious id we
+cna detect them as valid exceptions.  Always remember that checkpatch is
+an advisor, if its wrong it can and should be ignored.
 
-I checked all the other files I touched in the same patch, they either did
-not have this problem, or I had done it correctly.
+I will think on this some.
 
---- a/sound/oss/msnd_pinnacle.c
-+++ b/sound/oss/msnd_pinnacle.c
-@@ -641,7 +641,7 @@ static int mixer_ioctl(unsigned int cmd, unsigned long arg)
- 
- static long dev_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- {
--	int minor = iminor(inode);
-+	int minor = iminor(file->f_path.dentry->d_inode);
- 	int ret;
- 
- 	if (cmd == OSS_GETVERSION) {
+-apw
