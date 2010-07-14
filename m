@@ -1,100 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752516Ab0GNHPs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 03:15:48 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:41778 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751739Ab0GNHPr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 03:15:47 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Jul 2010 16:10:45 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux@arm.linux.org.uk,
-        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+	id S1752464Ab0GNHXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 03:23:00 -0400
+Received: from gate.crashing.org ([63.228.1.57]:57812 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751426Ab0GNHW6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 03:22:58 -0400
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
-        Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
-Message-Id: <20100714161045.ef028769.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <AANLkTin8tdw4VmfCPHE0TR3f-l7ao8ngQJcepTDPpMAC@mail.gmail.com>
-References: <20100712155348.GA2815@barrios-desktop>
-	<20100713093006.GB14504@cmpxchg.org>
-	<20100713154335.GB2815@barrios-desktop>
-	<1279038933.10995.9.camel@nimitz>
-	<20100713164423.GC2815@barrios-desktop>
-	<20100714092301.69e7e628.kamezawa.hiroyu@jp.fujitsu.com>
-	<AANLkTin8tdw4VmfCPHE0TR3f-l7ao8ngQJcepTDPpMAC@mail.gmail.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+        Russell King <linux@arm.linux.org.uk>,
+        Linux Kernel list <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Jul 2010 17:22:43 +1000
+Message-ID: <1279092163.28659.464.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010 15:44:41 +0900
-Minchan Kim <minchan.kim@gmail.com> wrote:
+Hi Linus !
 
-> Hi, Kame.
-> 
-> On Wed, Jul 14, 2010 at 9:23 AM, KAMEZAWA Hiroyuki
-> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > On Wed, 14 Jul 2010 01:44:23 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> >
-> >> > If you _really_ can't make the section size smaller, and the vast
-> >> > majority of the sections are fully populated, you could hack something
-> >> > in.  We could, for instance, have a global list that's mostly readonly
-> >> > which tells you which sections need to be have their sizes closely
-> >> > inspected.  That would work OK if, for instance, you only needed to
-> >> > check a couple of memory sections in the system.  It'll start to suck if
-> >> > you made the lists very long.
-> >>
-> >> Thanks for advise. As I say, I hope Russell accept 16M section.
-> >>
-> >
-> > It seems what I needed was good sleep....
-> > How about this if 16M section is not acceptable ?
-> >
-> > == NOT TESTED AT ALL, EVEN NOT COMPILED ==
-> >
-> > register address of mem_section to memmap itself's page struct's pg->private field.
-> > This means the page is used for memmap of the section.
-> > Otherwise, the page is used for other purpose and memmap has a hole.
-> 
-> It's a very good idea. :)
-> But can this handle case that a page on memmap pages have struct page
-> descriptor of hole?
-> I mean one page can include 128 page descriptor(4096 / 32).
-yes.
+Here are some late fixed for some freescale embedded platforms
+for 2.6.35. A bit late but since it only touch their platform
+code I don't really have an objection.
 
-> In there, 64 page descriptor is valid but remain 64 page descriptor is on hole.
-> In this case, free_memmap doesn't free the page.
+Cheers,
+Ben.
 
-yes. but in that case, there are valid page decriptor for 64pages of holes.
-pfn_valid() should return true but PG_reserved is set.
-(This is usual behavior.)
+The following changes since commit 1c5474a65bf15a4cb162dfff86d6d0b5a08a740c:
+  Linus Torvalds (1):
+        Linux 2.6.35-rc5
 
-My intention is that
+are available in the git repository at:
 
- - When all 128 page descriptors are unused, free_memmap() will free it.
-   In that case, clear page->private of a page for freed page descriptors.
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
 
- - When some of page descriptors are used, free_memmap() can't free it
-   and page->private points to &mem_section. We may have memmap for memory
-   hole but pfn_valid() is a function to check there is memmap or not.
-   The bahavior of pfn_valid() is valid.
-   Anyway, you can't free only half of page.
+Anton Vorontsov (3):
+      powerpc/cpm: Reintroduce global spi_pram struct (fixes build issue)
+      powerpc/cpm1: Fix build with various CONFIG_*_UCODE_PATCH combinations
+      powerpc/cpm1: Mark micropatch code/data static and __init
 
-If my code doesn't seem to work as above, it's bug.
+Matthew McClintock (1):
+      powerpc/fsl-booke: Fix address issue when using relocatable kernels
 
+ arch/powerpc/include/asm/cpm.h                |   24 ++++++++++++++++++++
+ arch/powerpc/include/asm/cpm1.h               |    3 +-
+ arch/powerpc/kernel/fsl_booke_entry_mapping.S |    4 +--
+ arch/powerpc/sysdev/micropatch.c              |   30 +++++++++++++++----------
+ drivers/spi/spi_mpc8xxx.c                     |   22 ------------------
+ 5 files changed, 45 insertions(+), 38 deletions(-)
 
-Thanks,
--Kame
 
