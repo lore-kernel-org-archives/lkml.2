@@ -1,57 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab0GNSJo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:09:44 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:34023 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754160Ab0GNSJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:09:43 -0400
-Message-ID: <4C3DFD12.3050700@zytor.com>
-Date: Wed, 14 Jul 2010 11:08:18 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757182Ab0GNSKq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:10:46 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48248 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751721Ab0GNSKp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 14:10:45 -0400
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Palfrader <peter@palfrader.org>, Avi Kivity <avi@redhat.com>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
-        Zachary Amsden <zamsden@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
- 	for pvclock
-References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org> <AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com> <4C3DF1BE.2070404@goop.org> <4C3DF447.1000801@zytor.com> <4C3DF519.6030406@goop.org> <4C3DF7AF.7010402@zytor.com> <4C3DFA88.5020007@goop.org>
-In-Reply-To: <4C3DFA88.5020007@goop.org>
+In-Reply-To: <20100714170617.GB4955@Krystal>
+References: <20100714154923.947138065@efficios.com>
+	<20100714155804.049012415@efficios.com>
+	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	<20100714170617.GB4955@Krystal>
+Date: Wed, 14 Jul 2010 11:10:20 -0700
+Message-ID: <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[Adding H.J. to the Cc: list]
+On Wed, Jul 14, 2010 at 10:06 AM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
+>>
+>> This patch (1/2) doesn't look horrible per se. I have no problems with
+>> it. I just want to understand why it is needed.
 
-On 07/14/2010 10:57 AM, Jeremy Fitzhardinge wrote:
->>>     
->> I/O ports, for example.
->>   
-> 
-> Yes, it looks like they should have memory barriers if we want them to
-> be ordered with respect to normal writes; afaict "asm volatile" has
-> never had strict ordering wrt memory ops.
-> 
+[ And patch 2/2 is much more intrusive, and touches a critical path
+too.. If it was just the 1/2 series, I don't think I would care. For
+the 2/2, I think I'd want to explore all the alternative options ]
 
-Noone has talked about strict ordering between volatiles and
-(non-volatile) memory ops in general.  I have been talking about
-volatile to volatile ordering, and I thought I'd been very clear about that.
+> The problem originally addressed by this patch is the case where a NMI handler
+> try to access vmalloc'd per-cpu data, which goes as follow:
+>
+> - One CPU does a fork(), which copies the basic kernel mappings.
+> - Perf allocates percpu memory for buffer control data structures.
+>  This mapping does not get copied.
+> - Tracing is activated.
+> - switch_to() to the newly forked process which missed the new percpu
+>  allocation.
+> - We take a NMI, which touches the vmalloc'd percpu memory in the Perf tracing
+>  handler, therefore leading to a page fault in NMI context. Here, we might be
+>  in the middle of switch_to(), where ->current might not be in sync with the
+>  current cr3 register.
 
-H.J., we're having a debate about the actual semantics of "volatile",
-especially "asm volatile" in gcc.  In particular, I believe that
-volatile operations should not be possible to reorder with regards to
-each other, and the kernel depends on that fact.
+Ok. I was wondering why anybody would allocate core percpu variables
+so late that this would ever be an issue, but I guess perf is a
+reasonable such case. And reasonable to do from NMI.
 
-	-hpa
+That said - grr. I really wish there was some other alternative than
+adding yet more complexity to the exception return path. That "iret
+re-enables NMI's unconditionally" thing annoys me.
 
-P.S: gcc 4.4 seems to handle "const volatile" incorrectly, probably by
-applying CSE to those values.
+In fact, I wonder if we couldn't just do a software NMI disable
+instead? Hav ea per-cpu variable (in the _core_ percpu areas that get
+allocated statically) that points to the NMI stack frame, and just
+make the NMI code itself do something like
 
+ NMI entry:
+ - load percpu NMI stack frame pointer
+ - if non-zero we know we're nested, and should ignore this NMI:
+    - we're returning to kernel mode, so return immediately by using
+"popf/ret", which also keeps NMI's disabled in the hardware until the
+"real" NMI iret happens.
+    - before the popf/iret, use the NMI stack pointer to make the NMI
+return stack be invalid and cause a fault
+  - set the NMI stack pointer to the current stack pointer
+
+ NMI exit (not the above "immediate exit because we nested"):
+   clear the percpu NMI stack pointer
+   Just do the iret.
+
+Now, the thing is, now the "iret" is atomic. If we had a nested NMI,
+we'll take a fault, and that re-does our "delayed" NMI - and NMI's
+will stay masked.
+
+And if we didn't have a nested NMI, that iret will now unmask NMI's,
+and everything is happy.
+
+Doesn't the above sound like a good solution? In other words, we solve
+the whole problem by simply _fixing_ the crazy Intel "iret-vs-NMI"
+semantics. And we don't need to change the hotpath, and we'll just
+_allow_ nested faults within NMI's.
+
+Am I missing something? Maybe I'm not as clever as I think I am... But
+I _feel_ clever.
+
+                   Linus
