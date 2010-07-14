@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757596Ab0GNUKY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:10:24 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:36537 "EHLO e6.ny.us.ibm.com"
+	id S1757654Ab0GNUKt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:10:49 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:36584 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757473Ab0GNUKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:10:14 -0400
+	id S1757590Ab0GNUKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 16:10:23 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -14,10 +14,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
         Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
         Arnd Bergmann <arnd@arndb.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 06/30] keys: __rcu annotations
-Date: Wed, 14 Jul 2010 13:09:40 -0700
-Message-Id: <1279138204-12849-6-git-send-email-paulmck@linux.vnet.ibm.com>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Al Viro <viro@ZenIV.linux.org.uk>, Jens Axboe <jens.axboe@oracle.com>
+Subject: [PATCH RFC tip/core/rcu 16/30] kernel: __rcu annotations
+Date: Wed, 14 Jul 2010 13:09:50 -0700
+Message-Id: <1279138204-12849-16-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100714200945.GA10535@linux.vnet.ibm.com>
 References: <20100714200945.GA10535@linux.vnet.ibm.com>
@@ -27,42 +28,131 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnd Bergmann <arnd@arndb.de>
 
+This adds annotations for RCU operations in core kernel components
+
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: David Howells <dhowells@redhat.com>
+Cc: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Jens Axboe <jens.axboe@oracle.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>
 ---
- include/linux/cred.h |    2 +-
- include/linux/key.h  |    3 ++-
- 2 files changed, 3 insertions(+), 2 deletions(-)
+ include/linux/fdtable.h   |    6 +++---
+ include/linux/fs.h        |    2 +-
+ include/linux/genhd.h     |    6 +++---
+ include/linux/init_task.h |    4 ++--
+ include/linux/iocontext.h |    2 +-
+ include/linux/mm_types.h  |    2 +-
+ 6 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/include/linux/cred.h b/include/linux/cred.h
-index 75c0fa8..94d2301 100644
---- a/include/linux/cred.h
-+++ b/include/linux/cred.h
-@@ -84,7 +84,7 @@ struct thread_group_cred {
- 	atomic_t	usage;
- 	pid_t		tgid;			/* thread group process ID */
- 	spinlock_t	lock;
--	struct key	*session_keyring;	/* keyring inherited over fork */
-+	struct key __rcu *session_keyring;	/* keyring inherited over fork */
- 	struct key	*process_keyring;	/* keyring private to this process */
- 	struct rcu_head	rcu;			/* RCU deletion hook */
- };
-diff --git a/include/linux/key.h b/include/linux/key.h
-index cd50dfa..3db0adc 100644
---- a/include/linux/key.h
-+++ b/include/linux/key.h
-@@ -178,8 +178,9 @@ struct key {
- 	 */
- 	union {
- 		unsigned long		value;
-+		void __rcu		*rcudata;
- 		void			*data;
--		struct keyring_list	*subscriptions;
-+		struct keyring_list __rcu *subscriptions;
- 	} payload;
+diff --git a/include/linux/fdtable.h b/include/linux/fdtable.h
+index 551671e..3e4c4f4 100644
+--- a/include/linux/fdtable.h
++++ b/include/linux/fdtable.h
+@@ -31,7 +31,7 @@ struct embedded_fd_set {
+ 
+ struct fdtable {
+ 	unsigned int max_fds;
+-	struct file ** fd;      /* current fd array */
++	struct file __rcu **fd;      /* current fd array */
+ 	fd_set *close_on_exec;
+ 	fd_set *open_fds;
+ 	struct rcu_head rcu;
+@@ -46,7 +46,7 @@ struct files_struct {
+    * read mostly part
+    */
+ 	atomic_t count;
+-	struct fdtable *fdt;
++	struct fdtable __rcu *fdt;
+ 	struct fdtable fdtab;
+   /*
+    * written part on a separate cache line in SMP
+@@ -55,7 +55,7 @@ struct files_struct {
+ 	int next_fd;
+ 	struct embedded_fd_set close_on_exec_init;
+ 	struct embedded_fd_set open_fds_init;
+-	struct file * fd_array[NR_OPEN_DEFAULT];
++	struct file __rcu * fd_array[NR_OPEN_DEFAULT];
  };
  
+ #define rcu_dereference_check_fdtable(files, fdtfd) \
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 471e1ff..65ed90f 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1381,7 +1381,7 @@ struct super_block {
+ 	 * Saved mount options for lazy filesystems using
+ 	 * generic_show_options()
+ 	 */
+-	char *s_options;
++	char __rcu *s_options;
+ };
+ 
+ extern struct timespec current_fs_time(struct super_block *sb);
+diff --git a/include/linux/genhd.h b/include/linux/genhd.h
+index 5f2f4c4..af3f06b 100644
+--- a/include/linux/genhd.h
++++ b/include/linux/genhd.h
+@@ -129,8 +129,8 @@ struct blk_scsi_cmd_filter {
+ struct disk_part_tbl {
+ 	struct rcu_head rcu_head;
+ 	int len;
+-	struct hd_struct *last_lookup;
+-	struct hd_struct *part[];
++	struct hd_struct __rcu *last_lookup;
++	struct hd_struct __rcu *part[];
+ };
+ 
+ struct gendisk {
+@@ -149,7 +149,7 @@ struct gendisk {
+ 	 * non-critical accesses use RCU.  Always access through
+ 	 * helpers.
+ 	 */
+-	struct disk_part_tbl *part_tbl;
++	struct disk_part_tbl __rcu *part_tbl;
+ 	struct hd_struct part0;
+ 
+ 	const struct block_device_operations *fops;
+diff --git a/include/linux/init_task.h b/include/linux/init_task.h
+index 1f43fa5..6460fc6 100644
+--- a/include/linux/init_task.h
++++ b/include/linux/init_task.h
+@@ -137,8 +137,8 @@ extern struct cred init_cred;
+ 	.children	= LIST_HEAD_INIT(tsk.children),			\
+ 	.sibling	= LIST_HEAD_INIT(tsk.sibling),			\
+ 	.group_leader	= &tsk,						\
+-	.real_cred	= &init_cred,					\
+-	.cred		= &init_cred,					\
++	RCU_INIT_POINTER(.real_cred, &init_cred),			\
++	RCU_INIT_POINTER(.cred, &init_cred),				\
+ 	.cred_guard_mutex =						\
+ 		 __MUTEX_INITIALIZER(tsk.cred_guard_mutex),		\
+ 	.comm		= "swapper",					\
+diff --git a/include/linux/iocontext.h b/include/linux/iocontext.h
+index 64d5291..3e70b21 100644
+--- a/include/linux/iocontext.h
++++ b/include/linux/iocontext.h
+@@ -53,7 +53,7 @@ struct io_context {
+ 
+ 	struct radix_tree_root radix_root;
+ 	struct hlist_head cic_list;
+-	void *ioc_data;
++	void __rcu *ioc_data;
+ };
+ 
+ static inline struct io_context *ioc_task_link(struct io_context *ioc)
+diff --git a/include/linux/mm_types.h b/include/linux/mm_types.h
+index b8bb9a6..05537a5 100644
+--- a/include/linux/mm_types.h
++++ b/include/linux/mm_types.h
+@@ -299,7 +299,7 @@ struct mm_struct {
+ 	 * new_owner->mm == mm
+ 	 * new_owner->alloc_lock is held
+ 	 */
+-	struct task_struct *owner;
++	struct task_struct __rcu *owner;
+ #endif
+ 
+ #ifdef CONFIG_PROC_FS
 -- 
 1.7.0.6
 
