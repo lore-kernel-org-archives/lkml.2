@@ -1,61 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752040Ab0GNGMT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 02:12:19 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:51314 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751248Ab0GNGMS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 02:12:18 -0400
-Date: Tue, 13 Jul 2010 23:12:16 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: linux-security-module@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Yama: verify inode is symlink to avoid bind mounts
-Message-ID: <20100714061216.GV6104@outflux.net>
-References: <20100713223021.GK6104@outflux.net>
-MIME-Version: 1.0
+	id S1752257Ab0GNGMX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 02:12:23 -0400
+Received: from DMZ-MAILSEC-SCANNER-2.MIT.EDU ([18.9.25.13]:56685 "EHLO
+	dmz-mailsec-scanner-2.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751248Ab0GNGMU convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 02:12:20 -0400
+X-AuditID: 1209190d-b7c19ae0000009ea-5d-4c3d5543d6ba
+Subject: Re: emacs and "linux" coding style
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100713223021.GK6104@outflux.net>
-Organization: Canonical
-X-HELO: www.outflux.net
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <20100713151902.ca37fc2b.rdunlap@xenotime.net>
+Date: Wed, 14 Jul 2010 02:12:13 -0400
+Cc: Dimitrios Apostolou <jimis@gmx.net>, linux-kernel@vger.kernel.org,
+        Dan Nicolaescu <dann@gnu.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <0A4C5074-D482-42EE-98D1-93C636BC80B8@mit.edu>
+References: <alpine.LNX.2.00.1007131644180.1500@localhost.localdomain> <20100713151902.ca37fc2b.rdunlap@xenotime.net>
+To: Randy Dunlap <rdunlap@xenotime.net>
+X-Mailer: Apple Mail (2.1081)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 03:30:21PM -0700, Kees Cook wrote:
-> The inode_follow_link LSM hook is called in bind mount situations as
-> well as for symlink situations, so we must explicitly check for the
-> inode being a symlink to not reject bind mounts in 1777 directories,
-> which seems to be a common NFSv4 configuration.
+
+On Jul 13, 2010, at 6:19 PM, Randy Dunlap wrote:
 > 
-> Signed-off-by: Kees Cook <kees.cook@canonical.com>
-> ---
->  security/yama/yama_lsm.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+> See CodingStyle, Chapter 1, Indentation:
 > 
-> diff --git a/security/yama/yama_lsm.c b/security/yama/yama_lsm.c
-> index 3b76386..c70eb10 100644
-> --- a/security/yama/yama_lsm.c
-> +++ b/security/yama/yama_lsm.c
-> @@ -116,6 +116,10 @@ static int yama_inode_follow_link(struct dentry *dentry,
->  	if (!protected_sticky_symlinks)
->  		return 0;
->  
-> +	/* if inode isn't a symlink, don't try to evaluate blocking it */
-> +	if (!S_ISLNK(inode->i_mode))
-> +		return 0;
-> +
->  	/* owner and follower match? */
->  	cred = current_cred();
->  	inode = dentry->d_inode;
+> "Outside of comments, documentation and except in Kconfig, spaces are never
+> used for indentation, and the above example is deliberately broken."
+> 
+> which to me means "spaces alone are never used (unless the indentation is less than
+> 8 columns)".
 
-Erg, please ignore this -- I tested a slightly different version of this
-patch.  This version doesn't have inode set yet.  I will follow up with the
-correct one in a moment...
+There is a huge amount of code --- including code which I submitted
+back in the 0.12 days of Linux --- which uses spaces to align continuation
+lines for function parameters, i.e.
 
--Kees
+static int foo(struct inode inode, struct file *file, int flags,
+		       size_t len)
 
--- 
-Kees Cook
-Ubuntu Security Team
+such that "struct" and "size_t" are aligned on the same column, and also so that:
+
+	unsigned int num = ((len + sizeof(struct foobaz) - 3) /
+					     (4 + sizeof(struct foobaz)));
+
+I've always read indentation as referring to indentation for the beginning of
+code lines, but not to making function parameters or paraenthesis line
+up.   This is something which emacs does automatically, but vi does not.
+
+People who are anal enough to worry about this sort of thing, in general,
+IMHO, really should find better things to do.   And if checkpatch.pl were to
+be "improved" to start issue warnings about code not adhering to this 
+CodingStyle assertion, #1, you would find out how much code doesn't 
+adhere to this, and #2, I think a lot of people, including myself, would be
+complaining vociferously and agitating to have that language removed
+from CodingStyle as being an actively harmful and incorrect recommendation.
+
+-- Ted
+
+
