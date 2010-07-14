@@ -1,79 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756464Ab0GNA5Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:57:25 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:54138 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061Ab0GNA4c (ORCPT
+	id S1756685Ab0GNA5z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:57:55 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:54483 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754869Ab0GNA4b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 20:56:32 -0400
+	Tue, 13 Jul 2010 20:56:31 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, Paul Mackerras <paulus@samba.org>,
-        Anton Blanchard <anton@samba.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 05/11] powerpc: Cleanup xtime usage
-Date: Tue, 13 Jul 2010 17:56:22 -0700
-Message-Id: <1279068988-21864-6-git-send-email-johnstul@us.ibm.com>
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 02/11] Implement timespec_add
+Date: Tue, 13 Jul 2010 17:56:19 -0700
+Message-Id: <1279068988-21864-3-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1279068988-21864-5-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
 References: <1279068988-21864-1-git-send-email-johnstul@us.ibm.com>
  <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
- <1279068988-21864-3-git-send-email-johnstul@us.ibm.com>
- <1279068988-21864-4-git-send-email-johnstul@us.ibm.com>
- <1279068988-21864-5-git-send-email-johnstul@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This removes powerpc's direct xtime usage, allowing for further
-generic timeekeping cleanups
-
-Compiled but otherwise untested.
-
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Anton Blanchard <anton@samba.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
+After accidentally misusing timespec_add_safe, I wanted to make sure
+we don't accidently trip over that issue again, so I created a simple
+timespec_add() function which we can use to replace the instances
+of timespec_add_safe() that don't want the overflow detection.
 
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
----
- arch/powerpc/kernel/time.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+CC: Thomas Gleixner <tglx@linutronix.de>
 
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 6fcd648..0711d60 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -864,9 +864,9 @@ void update_vsyscall(struct timespec *wall_time, struct clocksource *clock,
- 	/* XXX this assumes clock->shift == 22 */
- 	/* 4611686018 ~= 2^(20+64-22) / 1e9 */
- 	new_tb_to_xs = (u64) mult * 4611686018ULL;
--	new_stamp_xsec = (u64) xtime.tv_nsec * XSEC_PER_SEC;
-+	new_stamp_xsec = (u64) wall_time->tv_nsec * XSEC_PER_SEC;
- 	do_div(new_stamp_xsec, 1000000000);
--	new_stamp_xsec += (u64) xtime.tv_sec * XSEC_PER_SEC;
-+	new_stamp_xsec += (u64) wall_time->tv_sec * XSEC_PER_SEC;
+---
+ include/linux/time.h      |   16 ++++++++++++++++
+ kernel/time/timekeeping.c |    6 +++---
+ 2 files changed, 19 insertions(+), 3 deletions(-)
+
+diff --git a/include/linux/time.h b/include/linux/time.h
+index ea3559f..36b42f5 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -76,9 +76,25 @@ extern unsigned long mktime(const unsigned int year, const unsigned int mon,
+ 			    const unsigned int min, const unsigned int sec);
  
- 	/*
- 	 * tb_update_count is used to allow the userspace gettimeofday code
-@@ -884,7 +884,7 @@ void update_vsyscall(struct timespec *wall_time, struct clocksource *clock,
- 	vdso_data->tb_to_xs = new_tb_to_xs;
- 	vdso_data->wtom_clock_sec = wall_to_monotonic.tv_sec;
- 	vdso_data->wtom_clock_nsec = wall_to_monotonic.tv_nsec;
--	vdso_data->stamp_xtime = xtime;
-+	vdso_data->stamp_xtime = *wall_time;
- 	smp_wmb();
- 	++(vdso_data->tb_update_count);
+ extern void set_normalized_timespec(struct timespec *ts, time_t sec, s64 nsec);
++
++/*
++ * timespec_add_safe assumes both values are positive and checks 
++ * for overflow. It will return TIME_T_MAX if the reutrn would be
++ * smaller then either of the arguments.
++ */
+ extern struct timespec timespec_add_safe(const struct timespec lhs,
+ 					 const struct timespec rhs);
+ 
++
++static inline struct timespec timespec_add(struct timespec lhs,
++						struct timespec rhs)
++{
++	struct timespec ts_delta;
++	set_normalized_timespec(&ts_delta, lhs.tv_sec + rhs.tv_sec,
++				lhs.tv_nsec + rhs.tv_nsec);
++	return ts_delta;
++}
++
+ /*
+  * sub = lhs - rhs, in normalized form
+  */
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index caf8d4d..623fe3d 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -579,9 +579,9 @@ static int timekeeping_resume(struct sys_device *dev)
+ 
+ 	if (timespec_compare(&ts, &timekeeping_suspend_time) > 0) {
+ 		ts = timespec_sub(ts, timekeeping_suspend_time);
+-		xtime = timespec_add_safe(xtime, ts);
++		xtime = timespec_add(xtime, ts);
+ 		wall_to_monotonic = timespec_sub(wall_to_monotonic, ts);
+-		total_sleep_time = timespec_add_safe(total_sleep_time, ts);
++		total_sleep_time = timespec_add(total_sleep_time, ts);
+ 	}
+ 	/* re-base the last cycle value */
+ 	timekeeper.clock->cycle_last = timekeeper.clock->read(timekeeper.clock);
+@@ -887,7 +887,7 @@ EXPORT_SYMBOL_GPL(getboottime);
+  */
+ void monotonic_to_bootbased(struct timespec *ts)
+ {
+-	*ts = timespec_add_safe(*ts, total_sleep_time);
++	*ts = timespec_add(*ts, total_sleep_time);
  }
-@@ -1093,7 +1093,7 @@ void __init time_init(void)
- 	vdso_data->tb_orig_stamp = tb_last_jiffy;
- 	vdso_data->tb_update_count = 0;
- 	vdso_data->tb_ticks_per_sec = tb_ticks_per_sec;
--	vdso_data->stamp_xsec = (u64) xtime.tv_sec * XSEC_PER_SEC;
-+	vdso_data->stamp_xsec = (u64) get_seconds() * XSEC_PER_SEC;
- 	vdso_data->tb_to_xs = tb_to_xs;
+ EXPORT_SYMBOL_GPL(monotonic_to_bootbased);
  
- 	write_sequnlock_irqrestore(&xtime_lock, flags);
 -- 
 1.6.0.4
 
