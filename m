@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753514Ab0GNLl1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 07:41:27 -0400
-Received: from stinky.trash.net ([213.144.137.162]:51235 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab0GNLl0 (ORCPT
+	id S1754019Ab0GNLmM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 07:42:12 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:59246 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753600Ab0GNLmK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 07:41:26 -0400
-Message-ID: <4C3DA268.20008@trash.net>
-Date: Wed, 14 Jul 2010 13:41:28 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
-MIME-Version: 1.0
-To: Eric Dumazet <eric.dumazet@gmail.com>
-CC: Felipe W Damasio <felipewd@gmail.com>, David Miller <davem@davemloft.net>,
-        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
-Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
-References: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>	 <AANLkTil49m6Ul2bauiH4Pwn-6ykrYTFmSO6_SxqQgD_e@mail.gmail.com>	 <1278626921.2435.73.camel@edumazet-laptop>	 <AANLkTiliBClahTfb41M5BDi1etg5pgkqEz_VfGrn_mK4@mail.gmail.com> <1278695580.2696.55.camel@edumazet-laptop>
-In-Reply-To: <1278695580.2696.55.camel@edumazet-laptop>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 8bit
+	Wed, 14 Jul 2010 07:42:10 -0400
+Date: Wed, 14 Jul 2010 12:50:27 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 1/3] usb/gadget: Remove dead CONFIG_USB_LANGWELL_OTG
+Message-ID: <20100714125027.20108731@lxorguk.ukuu.org.uk>
+In-Reply-To: <4dd884f3ca70240035a8810d430e35ccf7d54ac3.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
+References: <cover.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<4dd884f3ca70240035a8810d430e35ccf7d54ac3.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 09.07.2010 19:13, Eric Dumazet wrote:
-> Le vendredi 09 juillet 2010 à 12:03 -0300, Felipe W Damasio a écrit :
->> Hi,
->>
->> 2010/7/8 Eric Dumazet <eric.dumazet@gmail.com>:
->>> Please try to reproduce a new report.
->>>
->>> It looks like a memory corruption, and it would be good to see if a
->>> common pattern is occurring.
->>
->> I'm trying..the thing is the freeze occured on the machine that sits
->> on a 200Mbps ISP in bridge-mode. Since the machine frooze, and the
->> whole ISP went down for a few minutes, I'm not allowed to run any
->> tests on it.
->>
->> I've setup the same scenario on a lab, but since last night been
->> unable to reproduce the bug. Maybe there's a clue on the this crash
->> below that can help me write some program to trigger the problem?
->>
-> 
-> Reviewing tproxy stuff I spotted a problem in nf_tproxy_assign_sock()
-> but I could not see how it could explain your crash.
-> 
-> We can read uninitialized memory and trigger a fault in
-> nf_tproxy_assign_sock(), not later in tcp_recvmsg()...
-> 
-> David, Patrick, what do you think ?
-> 
-> Thanks
-> 
-> [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
-> 
-> transparent field of a socket is either inet_twsk(sk)->tw_transparent
-> for timewait sockets, or inet_sk(sk)->transparent for other sockets
-> (TCP/UDP).
+On Wed, 14 Jul 2010 13:31:55 +0200
+Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de> wrote:
 
-I don't see anything preventing use of timewait sockets, so the
-patch looks correct to me.
+> CONFIG_USB_LANGWELL_OTG doesn't exist in Kconfig, therefore removing all
+> references for it from the source code.
 
-Applied to nf-2.6.git, thanks Eric.
+NAK
+
+If you followed the USB list you would be aware this was work currently
+being moved towards merge.
+
