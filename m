@@ -1,89 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754121Ab0GNLcS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 07:32:18 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40393 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753514Ab0GNLcO (ORCPT
+	id S1753514Ab0GNLl1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 07:41:27 -0400
+Received: from stinky.trash.net ([213.144.137.162]:51235 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab0GNLl0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 07:32:14 -0400
-Date: Wed, 14 Jul 2010 13:32:12 +0200
-From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: Russell King <linux@arm.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Lothar Wassmann <LW@KARO-electronics.de>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Bryan Wu <cooloney@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
-Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 3/3] usb/host || arch/arm: Remove dead CONFIG_ARCH_KARO
-Message-ID: <9df7166bb950e7fbc12d1be9f2b9f9cbb9961187.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	Wed, 14 Jul 2010 07:41:26 -0400
+Message-ID: <4C3DA268.20008@trash.net>
+Date: Wed, 14 Jul 2010 13:41:28 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100620 Icedove/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <cover.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: Felipe W Damasio <felipewd@gmail.com>, David Miller <davem@davemloft.net>,
+        linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>
+Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
+References: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>	 <AANLkTil49m6Ul2bauiH4Pwn-6ykrYTFmSO6_SxqQgD_e@mail.gmail.com>	 <1278626921.2435.73.camel@edumazet-laptop>	 <AANLkTiliBClahTfb41M5BDi1etg5pgkqEz_VfGrn_mK4@mail.gmail.com> <1278695580.2696.55.camel@edumazet-laptop>
+In-Reply-To: <1278695580.2696.55.camel@edumazet-laptop>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_ARCH_KARO doesn't exist in Kconfig and is never defined anywhere
-else, therefore removing all references for it from the source code.
+On 09.07.2010 19:13, Eric Dumazet wrote:
+> Le vendredi 09 juillet 2010 à 12:03 -0300, Felipe W Damasio a écrit :
+>> Hi,
+>>
+>> 2010/7/8 Eric Dumazet <eric.dumazet@gmail.com>:
+>>> Please try to reproduce a new report.
+>>>
+>>> It looks like a memory corruption, and it would be good to see if a
+>>> common pattern is occurring.
+>>
+>> I'm trying..the thing is the freeze occured on the machine that sits
+>> on a 200Mbps ISP in bridge-mode. Since the machine frooze, and the
+>> whole ISP went down for a few minutes, I'm not allowed to run any
+>> tests on it.
+>>
+>> I've setup the same scenario on a lab, but since last night been
+>> unable to reproduce the bug. Maybe there's a clue on the this crash
+>> below that can help me write some program to trigger the problem?
+>>
+> 
+> Reviewing tproxy stuff I spotted a problem in nf_tproxy_assign_sock()
+> but I could not see how it could explain your crash.
+> 
+> We can read uninitialized memory and trigger a fault in
+> nf_tproxy_assign_sock(), not later in tcp_recvmsg()...
+> 
+> David, Patrick, what do you think ?
+> 
+> Thanks
+> 
+> [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
+> 
+> transparent field of a socket is either inet_twsk(sk)->tw_transparent
+> for timewait sockets, or inet_sk(sk)->transparent for other sockets
+> (TCP/UDP).
 
-Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
----
- arch/arm/tools/mach-types  |    1 -
- drivers/usb/host/isp1362.h |   24 +-----------------------
- 2 files changed, 1 insertions(+), 24 deletions(-)
+I don't see anything preventing use of timewait sockets, so the
+patch looks correct to me.
 
-diff --git a/arch/arm/tools/mach-types b/arch/arm/tools/mach-types
-index 8f10d24..3d86318 100644
---- a/arch/arm/tools/mach-types
-+++ b/arch/arm/tools/mach-types
-@@ -204,7 +204,6 @@ omaha			ARCH_OMAHA		OMAHA			186
- ta7			ARCH_TA7		TA7			187
- nova			SA1100_NOVA		NOVA			188
- hmk			ARCH_HMK		HMK			189
--karo			ARCH_KARO		KARO			190
- fester			SA1100_FESTER		FESTER			191
- gpi			ARCH_GPI		GPI			192
- smdk2410		ARCH_SMDK2410		SMDK2410		193
-diff --git a/drivers/usb/host/isp1362.h b/drivers/usb/host/isp1362.h
-index d995351..0f97820 100644
---- a/drivers/usb/host/isp1362.h
-+++ b/drivers/usb/host/isp1362.h
-@@ -8,29 +8,7 @@
- /*
-  * Platform specific compile time options
-  */
--#if defined(CONFIG_ARCH_KARO)
--#include <asm/arch/hardware.h>
--#include <asm/arch/pxa-regs.h>
--#include <asm/arch/karo.h>
--
--#define USE_32BIT		1
--
--
--/* These options are mutually eclusive */
--#define USE_PLATFORM_DELAY	1
--#define USE_NDELAY		0
--/*
-- * MAX_ROOT_PORTS: Number of downstream ports
-- *
-- * The chip has two USB ports, one of which can be configured as
-- * an USB device port, so the value of this constant is implementation
-- * specific.
-- */
--#define MAX_ROOT_PORTS		2
--#define DUMMY_DELAY_ACCESS do {} while (0)
--
--/* insert platform specific definitions for other machines here */
--#elif defined(CONFIG_BLACKFIN)
-+#if defined(CONFIG_BLACKFIN)
- 
- #include <linux/io.h>
- #define USE_32BIT		0
--- 
-1.7.0.4
-
+Applied to nf-2.6.git, thanks Eric.
