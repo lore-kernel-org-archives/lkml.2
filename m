@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757080Ab0GNRyY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 13:54:24 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:36788 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692Ab0GNRyJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 13:54:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=gBiEVzwYiJSj8P+SnUKipBhweUYViyRBWI/sNdeo5uXMT9qRuu4cthqC+ohkIgcUNs
-         OybB9Fjd62re6gSk8GufdkWXwup/qLznwxCD+7RFwq/f0s8bcb/Y9opjEdXooYwjT49J
-         xMyAGT5BW6B55S/Th26g8RCJHkDaViRQzBxYU=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Julia Lawall <julia@diku.dk>, Frederic Weisbecker <fweisbec@gmail.com>,
-        John Kacur <jkacur@redhat.com>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] scsi: dpt_i2o: fix memory leak
-Date: Wed, 14 Jul 2010 21:53:27 +0400
-Message-Id: <1279130008-9934-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1757044Ab0GNR5a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 13:57:30 -0400
+Received: from claw.goop.org ([74.207.240.146]:57874 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752502Ab0GNR53 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 13:57:29 -0400
+Message-ID: <4C3DFA88.5020007@goop.org>
+Date: Wed, 14 Jul 2010 10:57:28 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Palfrader <peter@palfrader.org>, Avi Kivity <avi@redhat.com>,
+        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
+        Zachary Amsden <zamsden@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
+ 	for pvclock
+References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org> <AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com> <4C3DF1BE.2070404@goop.org> <4C3DF447.1000801@zytor.com> <4C3DF519.6030406@goop.org> <4C3DF7AF.7010402@zytor.com>
+In-Reply-To: <4C3DF7AF.7010402@zytor.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Free allocated memory if adpt_ioctl_to_context() failed.
+On 07/14/2010 10:45 AM, H. Peter Anvin wrote:
+> On 07/14/2010 10:34 AM, Jeremy Fitzhardinge wrote:
+>   
+>> On 07/14/2010 10:30 AM, H. Peter Anvin wrote:
+>>     
+>>> If gcc ever starts reordering volatile operations, including "asm
+>>> volatile", the kernel will break, and will be unfixable.  Just about
+>>> every single driver will break.  All over the kernel we're explicitly or
+>>> implicitly making the assumption that volatile operations are strictly
+>>> ordered by the compiler with respect to each other.
+>>>       
+>> Can you give an example?  All the cases I've seen rely on the ordering
+>> properties of "memory" clobbers, which is sound.  (And volatile
+>> variables are a completely unrelated issue, of course.)
+>>
+>>     
+> I/O ports, for example.
+>   
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/scsi/dpt_i2o.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+Yes, it looks like they should have memory barriers if we want them to
+be ordered with respect to normal writes; afaict "asm volatile" has
+never had strict ordering wrt memory ops.
 
-diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
-index f2d4df1..dd9a43b 100644
---- a/drivers/scsi/dpt_i2o.c
-+++ b/drivers/scsi/dpt_i2o.c
-@@ -1839,8 +1839,10 @@ static int adpt_i2o_passthru(adpt_hba* pHba, u32 __user *arg)
- 	sg_offset = (msg[0]>>4)&0xf;
- 	msg[2] = 0x40000000; // IOCTL context
- 	msg[3] = adpt_ioctl_to_context(pHba, reply);
--	if (msg[3] == (u32)-1)
-+	if (msg[3] == (u32)-1) {
-+		kfree(reply);
- 		return -EBUSY;
-+	}
- 
- 	memset(sg_list,0, sizeof(sg_list[0])*pHba->sg_tablesize);
- 	if(sg_offset) {
--- 
-1.7.0.4
+Anything else?
 
+    J
