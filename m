@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab0GNSmy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:42:54 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:46609 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751721Ab0GNSmx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:42:53 -0400
-Date: Wed, 14 Jul 2010 19:42:51 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sundar R IYER <sundar.iyer@stericsson.com>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>
-Subject: Re: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific
-	data
-Message-ID: <20100714184251.GG5933@sirena.org.uk>
-References: <20100713203852.GA1756@rakim.wolfsonmicro.main> <20100714145053.GA1689@bnru01.bnr.st.com> <20100714145748.GF31073@rakim.wolfsonmicro.main> <20100714153643.GB1689@bnru01.bnr.st.com> <20100714154726.GH31073@rakim.wolfsonmicro.main> <20100714160941.GC1689@bnru01.bnr.st.com> <20100714162048.GA27512@rakim.wolfsonmicro.main> <20100714164708.GD1689@bnru01.bnr.st.com> <20100714170323.GF5933@sirena.org.uk> <20100714173650.GA21893@bnru01.bnr.st.com>
+	id S1756779Ab0GNSr0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:47:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57258 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752341Ab0GNSrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 14:47:25 -0400
+Date: Wed, 14 Jul 2010 20:46:42 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+Message-ID: <20100714184642.GA9728@elte.hu>
+References: <20100714154923.947138065@efficios.com>
+ <20100714155804.049012415@efficios.com>
+ <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+ <20100714170617.GB4955@Krystal>
+ <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100714173650.GA21893@bnru01.bnr.st.com>
-X-Cookie: You will wish you hadn't.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0002]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 11:06:51PM +0530, Sundar R IYER wrote:
 
-> > OK, but your current set of supplies is *very* suspect since you're
-> > offering all this control to lists of consumers that don't exist, and
+* Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
-> As said, dont exist for *now*.
+> Ok. I was wondering why anybody would allocate core percpu variables so late 
+> that this would ever be an issue, but I guess perf is a reasonable such 
+> case. And reasonable to do from NMI.
 
-This comes back to my point about the control only making sense when the
-consumers are present - if you've got missing or partial consumer setup
-done then control is questionable.
+Yeah.
 
-> Probably, I should remove the REGULATOR_CHANGE_VOLTAGE flag for the fixed
-> supplies (as in the driver) to clear up any confusing link. Should I?
+Frederic (re-)discovered this problem via very hard to debug crashes when he 
+extended perf call-graph tracing to have a bit larger buffer and used 
+percpu_alloc() for it (which is entirely reasonable in itself).
 
-Yes.
+> That said - grr. I really wish there was some other alternative than adding 
+> yet more complexity to the exception return path. That "iret re-enables 
+> NMI's unconditionally" thing annoys me.
 
-> > This is normal, but for fairly obvious reasons the very lowest power
-> > states are generally handled outside of the regulator API at a hardware
-> > level via hardware signals to the regulator.  It's not normally part of
-> > the runtime constraints for use while the CPU is live.
+Ok. We can solve it by allocating the space from the non-vmalloc percpu area - 
+8K per CPU.
 
-> Yes. But my point was that even at a lower level than kernel (BIOS/firmware?)
-> the switching would happen via SW. Please correct me if I am wrong!
+> In fact, I wonder if we couldn't just do a software NMI disable
+> instead? Hav ea per-cpu variable (in the _core_ percpu areas that get
+> allocated statically) that points to the NMI stack frame, and just
+> make the NMI code itself do something like
+> 
+>  NMI entry:
 
-Well, ultimately it's always triggered by software but the actual signal
-to the regulator is often a logic level output by the SoC as the
-processor enters a low power state rather than an I2C/SPI write.
+I think at this point [NMI re-entry] we've corrupted the top of the NMI kernel 
+stack already, due to entering via the IST stack mechanism, which is 
+non-nesting and which enters at the same point - right?
 
-> > I'm not sure how you expect this to actually work in practice?  It's
-> > going to be pretty hard for a driver to do anything constructive if the
-> > power to the hardware gets cut, for example.  Unless you can guarantee
-> > that there will never be any use of the hardware without a driver with
-> > regulator support one driver's idea of optimal may not join up with what
-> > the other consumers need at all.
+We could solve that by copying that small stack frame off before entering the 
+'generic' NMI routine - but it all feels a bit pulled in by the hair.
 
-> Very true. But, I think this will *enforce* drivers using/sharing
-> regulators to adhere to the framework to avoid surprises and sole-owner
-> misuses, which is good, now that the AB8500 regulators *are* supported.
+I feel uneasy about taking pagefaults from the NMI handler. Even if we 
+implemented it all correctly, who knows what CPU erratas are waiting there to 
+be discovered, etc ...
 
-If you think your users will be sympathetic to this approach then I
-guess...  obviously, it does have the potential to go rather badly wrong
-especially if there are some drivers without regulator support out
-there.
+I think we should try to muddle through by preventing these situations from 
+happening (and adding a WARN_ONCE() to the vmalloc page-fault handler would 
+certainly help as well), and only go to more clever schemes if no other option 
+looks sane anymore?
+
+Thanks,
+
+	Ingo
