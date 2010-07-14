@@ -1,73 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab0GNWgh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:36:37 -0400
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:42135 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756735Ab0GNWgg (ORCPT
+	id S1757983Ab0GNWhu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:37:50 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47297 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757083Ab0GNWhs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:36:36 -0400
-Date: Thu, 15 Jul 2010 00:36:33 +0200
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: Ed W <lists@wildgooses.com>
-Cc: Rick Jones <rick.jones2@hp.com>, David Miller <davem@davemloft.net>,
-        davidsen@tmr.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-Message-ID: <20100714223633.GJ6682@nuttenaction>
-References: <4C3D94E3.9080103@wildgooses.com>
- <4C3DD5EB.9070908@tmr.com>
- <20100714.111553.104052157.davem@davemloft.net>
- <4C3E0684.5060409@wildgooses.com>
- <4C3E1B54.40604@hp.com>
- <20100714203919.GD6682@nuttenaction>
- <4C3E34AB.2060405@wildgooses.com>
+	Wed, 14 Jul 2010 18:37:48 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C3E34AB.2060405@wildgooses.com>
-X-Key-Id: 98350C22
-X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
-X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100714222115.GA30122@Krystal>
+References: <20100714154923.947138065@efficios.com>
+	<20100714155804.049012415@efficios.com>
+	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	<20100714170617.GB4955@Krystal>
+	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	<20100714203940.GC22096@Krystal>
+	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
+	<20100714222115.GA30122@Krystal>
+Date: Wed, 14 Jul 2010 15:37:38 -0700
+Message-ID: <AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Ed W | 2010-07-14 23:05:31 [+0100]:
-
->Initial cwnd was changed (increased) in the past (rfc3390) and the
->RFC claims that studies then suggested that the benefits were all
->positive. Some reasonably smart people have suggested that it might
->be time to review the status quo again so it doesn't seem completely
->obvious that the current number is optimal?
-
-Do you cite "An Argument for Increasing TCP's Initial Congestion Window"?
-People at google stated that a CWND of 10 seems to be fair in their
-measurements. 10 because the test setup was equipped with a reasonable large
-link capacity? Do they analyse their modification in environments with a small
-BDP (e.g. multihop MANET setup, ...)? I am curious, but We will see what
-happens if TCPM adopts this.
-
->That RFC is a subtle read - it appears to give more specific guidance
->on what to do in certain situations, but I'm not sure I see that it
->improves slow start convergence speed for my situation (large RTT)?
->Would you mind highlighting the new bits for those of us a bit newer
->to the subject?
-
-The objection/hint was more of general nature - not specific for larger RTTs.
-Environments with larger RTTs are disadvantaged because TCP is ACK clocked.
-Half-truth statement for my part because RTT fairness is and was an issue at
-the development of new congestion control algorithms: BIC, CUBIC and friends.
-
->>Partial local issues can already be "fixed" via route specific ip options -
->>see initcwnd.
+On Wed, Jul 14, 2010 at 3:21 PM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
 >
->Oh, excellent.  This seems like exactly what I'm after.  (Thanks
->Stephen Hemminger!)
+> If we can find a clean way to handle this NMI vs iret problem outside of the
+> entry_*.S code, within NMI-specific code, I'm indeed all for it. entry_*.s is
+> already complicated enough as it is. I think checking the %rip at NMI entry
+> could work out.
 
-Great, you are welcome! ;-)
+I think the %rip check should be pretty simple - exactly because there
+is only a single point where the race is open between that 'mov' and
+the 'iret'. So it's simpler than the (similar) thing we do for
+debug/nmi stack fixup for sysenter that has to check a range.
 
+The only worry is if that crazy paravirt code wants to paravirtualize
+the iretq. Afaik, paravirt does that exactly because they screw up
+iret handling themselves. Maybe we could stop doing that stupid iretq
+paravirtualization, and just tell the paravirt people to do the same
+thing I propose, and just allow nesting.
 
-Hagen
-
-
+                           Linus
