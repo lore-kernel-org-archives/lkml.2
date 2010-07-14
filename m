@@ -1,64 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab0GNOOu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 10:14:50 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:47058 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753161Ab0GNOOt (ORCPT
+	id S1756846Ab0GNOPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 10:15:39 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:65438 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753465Ab0GNOPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 10:14:49 -0400
-Message-ID: <4C3DC64F.5040505@candelatech.com>
-Date: Wed, 14 Jul 2010 07:14:39 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	Wed, 14 Jul 2010 10:15:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:message-id:content-type:content-transfer-encoding;
+        b=i8WeJXtiBzEjXgxlblqiCI630fjnAmY12Y3TG+7CIEhY7yRQ8khLUqjgMJBjnHNfj8
+         Gv5AUPSNTbTezsgwvOox1bYZGbYFc5k8q1qEamn44FIcrtuw9Ascav4O07/gj5AQ5Bk8
+         /CcSDSw09LBWCIeTd/yVZp8seE3UFxJ9hg7UI=
+From: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
+To: Ivo Van Doorn <ivdoorn@gmail.com>
+Subject: Re: [PATCH 01/11] Removing dead RT2800PCI_SOC
+Date: Wed, 14 Jul 2010 16:14:55 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33-0.1-desktop; KDE/4.3.5; x86_64; ; )
+Cc: Egger <siccegge@cs.fau.de>, Gertjan van Wingerde <gwingerde@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vamos-dev@i4.informatik.uni-erlangen.de,
+        Luis Correia <luis.f.correia@gmail.com>
+References: <cover.1279110894.git.siccegge@cs.fau.de> <AANLkTinO32CIe0HBTXjP_bcAz0nMEw6wvcZwcob1fX3r@mail.gmail.com> <AANLkTikCeDys9e1EnE9GdiJtDRcbqW3gzvsmjzvB_yDs@mail.gmail.com>
+In-Reply-To: <AANLkTikCeDys9e1EnE9GdiJtDRcbqW3gzvsmjzvB_yDs@mail.gmail.com>
 MIME-Version: 1.0
-To: Robert Hancock <hancockrwd@gmail.com>
-CC: linux-kernel <linux-kernel@vger.kernel.org>, jbarnes@virtuousgeek.org,
-        jacob.jun.pan@intel.com
-Subject: Re: Regression: 2.6.34 boot fails on E5405 system, bisected: 	de08e2c26
-References: <4C3D067C.10507@candelatech.com>	<4C3D101E.5010605@candelatech.com>	<4C3D1942.1090207@gmail.com>	<4C3D1F82.1040907@candelatech.com> <AANLkTinDv7I4v51j-Lev9Ry_3DyVVv58lAyCQXZV1CwB@mail.gmail.com>
-In-Reply-To: <AANLkTinDv7I4v51j-Lev9Ry_3DyVVv58lAyCQXZV1CwB@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Message-Id: <201007141614.55756.bzolnier@gmail.com>
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 08:29 PM, Robert Hancock wrote:
-> On Tue, Jul 13, 2010 at 8:22 PM, Ben Greear<greearb@candelatech.com>  wrote:
->>> Can you print out bus->number and devfn and look that up in lspci to
->>> find out which device it's hitting? It looks like there's a device with
->>> a PCI Express extended capability header that has a extended capability
->>> ID of 0000h and a next capability offset of 100h, which points to
->>> itself, causing the infinite loop. I'm guessing that if pcie_cap>>  20
->>> <= pos then it should give up and break out of the loop, since it means
->>> that the next capability pointer is invalidly pointing to the same or a
->>> previous entry..
->>
->> Bailing out like that does let it boot.
->>
->> As for the bus and devfn:  bus: 0   devfn: 129 (decimal)
->>
->> I'm not sure what to look for in lspci, but here is the output with -n:
->
-> That will be device 0x10 function 1, this one:
->
-> 00:10.1 0600: 8086:25f0 (rev b1)
->
-> Intel 5000 Series Chipset FSB Registers, apparently.. What does lspci
-> -vv show for that device?
 
-00:10.1 Host bridge: Intel Corporation 5000 Series Chipset FSB Registers (rev b1)
-	Subsystem: Super Micro Computer Inc Unknown device 9780
-	Control: I/O- Mem- BusMaster- SpecCycle- MemWINV- VGASnoop- ParErr- Stepping- SERR- FastB2B- DisINTx-
-	Status: Cap- 66MHz- UDF- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- >SERR- <PERR- INTx-
-	Kernel modules: i5000_edac, i5k_amb
+On Wednesday 14 July 2010 02:52:14 pm Ivo Van Doorn wrote:
+> On Wed, Jul 14, 2010 at 2:46 PM, Luis Correia <luis.f.correia@gmail.com> wrote:
+> > On Wed, Jul 14, 2010 at 13:39, Christoph Egger <siccegge@cs.fau.de> wrote:
+> >> While RT2800PCI_SOC exists in Kconfig, it depends on either
+> >> RALINK_RT288X or RALINK_RT305X which are both not available in Kconfig
+> >> so all Code depending on that can't ever be selected and, if there's
+> >> no plan to add these options, should be cleaned up
+> >>
+> >> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> >
+> > NAK,
+> >
+> > this is not dead code, it is needed for the Ralink System-on-Chip
+> > Platform devices.
+> >
+> > While I can't fix Kconfig errors and the current KConfig file may be
+> > wrong, this code cannot and will not be deleted.
+> 
+> When the config option was introduced, the config options RALINK_RT288X and
+> RALINK_RT305X were supposed to be merged as well soon after by somebody (Felix?)
+> 
+> But since testing is done on SoC boards by Helmut and Felix, I assume the code
+> isn't dead but actually in use.
+> 
+> Ivo
 
-Thanks,
-Ben
+I fully agree with Luis and Ivo that the proposed patch is invalid and
+shouldn't be applied (the "code cannot and will not be deleted" anyway)..
 
+[ Under "The New Normal" rules the code doesn't even have to work to be
+  merged and/or stay in the kernel so 9 months of code not being used by
+  any real user doesn't matter a tiny bit.. ]
 
--- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+--
+Bartlomiej Zolnierkiewicz
