@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757468Ab0GNTCH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 15:02:07 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53732 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754264Ab0GNTCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 15:02:04 -0400
-Message-ID: <4C3E096B.8050505@zytor.com>
-Date: Wed, 14 Jul 2010 12:00:59 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: "H.J. Lu" <hjl.tools@gmail.com>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Palfrader <peter@palfrader.org>, Avi Kivity <avi@redhat.com>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
-        Zachary Amsden <zamsden@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
- 	for pvclock
-References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org>	<AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com>	<4C3DF1BE.2070404@goop.org>	<4C3DF447.1000801@zytor.com>	<4C3DF519.6030406@goop.org>	<4C3DF7AF.7010402@zytor.com>	<4C3DFA88.5020007@goop.org>	<4C3DFD12.3050700@zytor.com> <AANLkTikA8SO42kOgHZb-6YuhM7GPnmg81IAX5vEk_Cqk@mail.gmail.com>
-In-Reply-To: <AANLkTikA8SO42kOgHZb-6YuhM7GPnmg81IAX5vEk_Cqk@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757481Ab0GNTCZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 15:02:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46804
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755436Ab0GNTCX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 15:02:23 -0400
+Date: Wed, 14 Jul 2010 12:02:38 -0700 (PDT)
+Message-Id: <20100714.120238.112604503.davem@davemloft.net>
+To: tglx@linutronix.de
+Cc: hch@lst.de, mingo@elte.hu, mingo@redhat.com, hpa@zytor.com,
+        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org,
+        rostedt@goodmis.org
+Subject: Re: [tip:x86/irq] x86: Always use irq stacks
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LFD.2.00.1007141719130.3321@localhost.localdomain>
+References: <20100708205302.GA23961@lst.de>
+	<20100714151215.GA31825@lst.de>
+	<alpine.LFD.2.00.1007141719130.3321@localhost.localdomain>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 11:18 AM, H.J. Lu wrote:
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Wed, 14 Jul 2010 17:27:01 +0200 (CEST)
+
+> On Wed, 14 Jul 2010, Christoph Hellwig wrote:
 > 
-> There are some discussions on:
+>> Turns out this wasn't a regression introduced by a commit, but it
+>> happens when CONFIG_FUNCTION_GRAPH_TRACER is enabled.  From a quick
+>> look I have no idea why these would interact badly, especially as
+>> CONFIG_FUNCTION_GRAPH_TRACER works fine with irq stacks if the
+>> CONFIG_4KSTACKS options is set.
 > 
-> http://gcc.gnu.org/ml/gcc-patches/2010-06/msg02001.html
-> http://gcc.gnu.org/ml/gcc-patches/2010-07/msg00001.html
-> 
-> Are they related?
-> 
+> So you're saying, that the problem appears when
+> CONFIG_FUNCTION_GRAPH_TRACER is enabled w/o being used and that it
+> exists prior to your patches with irq stacks and 8k stack size, but
+> works with 4k stacks. That's definitely more than odd.
 
-Not directly as far as I can tell.
+Some hard-coded check somewhere assuming kernel stack pages
+won't straddle a page boundary?
 
-The issue is if gcc can ever reorder, duplicate or elide a volatile
-operation (either asm volatile or a volatile-annotated memory
-reference.)  In my (and Linus') opinion, this would be an incredibly
-serious bug.
-
-The gcc 4.4 issue, which is separate from the definition issue, is that
-it seems to assume that it can elide references to "const volatile"
-objects.  "const volatile" should mean a value that could change at any
-time but which is a bug to write to -- for example a readonly hardware
-register.
-
-	-hpa
-
+Just a guess...
