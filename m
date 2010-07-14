@@ -1,54 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757349Ab0GNPj5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 11:39:57 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:50459 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752975Ab0GNPjz (ORCPT
+	id S1753346Ab0GNPrb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 11:47:31 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36171 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751427Ab0GNPr3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 11:39:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6042"; a="47461449"
-From: David Brown <davidb@codeaurora.org>
-To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Subject: Re: [PATCH 4/5] drivers/mmc/host/msm-sdcc: Remove dead config options
-Date: Wed, 14 Jul 2010 08:39:36 -0700
-User-Agent: KMail/1.13.5 (Linux/2.6.34.1; KDE/4.4.5; x86_64; ; )
-Cc: Daniel Walker <dwalker@codeaurora.org>,
-        Bryan Huntsman <bryanh@codeaurora.org>, San Mehat <san@google.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Joe Perches <joe@perches.com>, Pavel Machek <pavel@ucw.cz>,
-        linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
-References: <c3c850bed3f5714f1efcfad24ad4f8bfcb6b5b54.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de> <459cdebccb9bfaa88194b47608e7e739339aae55.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de>
-In-Reply-To: <459cdebccb9bfaa88194b47608e7e739339aae55.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	Wed, 14 Jul 2010 11:47:29 -0400
+Date: Wed, 14 Jul 2010 16:47:27 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sundar R IYER <sundar.iyer@stericsson.com>
+Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific
+ data
+Message-ID: <20100714154726.GH31073@rakim.wolfsonmicro.main>
+References: <20100713141828.GB24260@rakim.wolfsonmicro.main>
+ <33A307AF30D7BF4F811B1568FE7A9B1810E7E88D@EXDCVYMBSTM006.EQ1STM.local>
+ <20100713145645.GA24626@rakim.wolfsonmicro.main>
+ <20100713150814.GA13767@bnru01.bnr.st.com>
+ <20100713150905.GD24626@rakim.wolfsonmicro.main>
+ <20100713161343.GA25342@bnru01.bnr.st.com>
+ <20100713203852.GA1756@rakim.wolfsonmicro.main>
+ <20100714145053.GA1689@bnru01.bnr.st.com>
+ <20100714145748.GF31073@rakim.wolfsonmicro.main>
+ <20100714153643.GB1689@bnru01.bnr.st.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007140839.37494.davidb@codeaurora.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100714153643.GB1689@bnru01.bnr.st.com>
+X-Cookie: We have DIFFERENT amounts of HAIR --
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 14 July 2010 07:04:53 Christian Dietrich wrote:
+On Wed, Jul 14, 2010 at 09:06:44PM +0530, Sundar R IYER wrote:
 
-> CONFIG_MMC_MSM7X00A_RESUME_IN_WQ and CONFIG_MMC_EMBEDDED_SDIO don't
-> exist in Kconfig and is never defined anywhere else, therefore removing
-> all references for it from the source code.
-> 
-> Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-> ---
->  drivers/mmc/host/msm_sdcc.c |   25 -------------------------
->  drivers/mmc/host/msm_sdcc.h |    4 ----
->  2 files changed, 0 insertions(+), 29 deletions(-)
+> > Which datasheet, and will the system design actually be varying them at
+> > runtime - if it will how will it do so?  This is the settings for the
 
-Acked-by: David Brown <davidb@codeaurora.org>
+> I am referring to the AB8500 device data sheet; not sure if its
+> available open.  I have taken the minimal/maximum figures as what is
+> mentioned for each supplies.
 
-We'll put appropriate versions of this code back in when we get the
-rest of the functionality in the kernel.
+OK, you're missing the point here.  The system constraints say what's
+going to be used on this actual system not what an individual component
+is capable of supporting.  Regulators are almost always vastly more
+flexible than any system can use and so the constraints are used to tell
+the regulator core what configurations can be used on a given system.
+You need to check what makes sense on the system for the things that are
+connected.
 
-David
+> > Again, is it really the case that this will happen in this system?
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> Yes, if you are referring to regulator enable/disable.
+
+For *all* supplies?
+
+> > Nothing is currently able to actually do that, and unless every consumer
+> > using a given supply is hooked into the regulator API things will go
+> > wrong when some of them start doing so.
+
+> As i said earlier, my intention is to hard code the machine constraints.
+> The actual control in terms of enable/disable, controlling supply
+> voltages will happen, as you say when consumers are hooked up.
+
+Again, you need to think about what's actually hooked up.  Permission to
+do any of this stuff depends heavily on the set of consumers that are
+actually hooked up - think about the example I mentioned above where
+some of the consumers on a shared supply are hooked up and doing enables
+and disables, for example.  What happens when they cause the supply to
+be disabled but another consumer is running?
