@@ -1,124 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755989Ab0GNA4g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:56:36 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:39756 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754713Ab0GNA4b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 20:56:31 -0400
+	id S1756267Ab0GNA4z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:56:55 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:39494 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755731Ab0GNA4f (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 20:56:35 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: LKML <linux-kernel@vger.kernel.org>
-Cc: John Stultz <johnstul@us.ibm.com>, Anton Blanchard <anton@samba.org>,
-        Paul Mackerras <paulus@samba.org>,
+Cc: John Stultz <johnstul@us.ibm.com>, Jeff Dike <jdike@addtoit.com>,
         Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 04/11] powerpc: Simplify update_vsyscall
-Date: Tue, 13 Jul 2010 17:56:21 -0700
-Message-Id: <1279068988-21864-5-git-send-email-johnstul@us.ibm.com>
+Subject: [PATCH 07/11] Convert um to use read_persistent_clock
+Date: Tue, 13 Jul 2010 17:56:24 -0700
+Message-Id: <1279068988-21864-8-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1279068988-21864-4-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1279068988-21864-7-git-send-email-johnstul@us.ibm.com>
 References: <1279068988-21864-1-git-send-email-johnstul@us.ibm.com>
  <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
  <1279068988-21864-3-git-send-email-johnstul@us.ibm.com>
  <1279068988-21864-4-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-5-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-6-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-7-git-send-email-johnstul@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently powerpc's update_vsyscall calls an inline update_gtod.
-However, both are straightforward, and there are no other users,
-so this patch merges update_gtod into update_vsyscall.
+This patch converts the um arch to use read_persistent_clock().
+This allows it to avoid accessing xtime and wall_to_monotonic
+directly.
 
-Compiles, but otherwise untested.
+This patch is un-tested, so any help by testers or maintainers would
+be greatly appreciated!
 
-Cc: Anton Blanchard <anton@samba.org>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
+CC: Jeff Dike <jdike@addtoit.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/powerpc/kernel/time.c |   55 ++++++++++++++++++++------------------------
- 1 files changed, 25 insertions(+), 30 deletions(-)
+ arch/um/kernel/time.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/arch/powerpc/kernel/time.c b/arch/powerpc/kernel/time.c
-index 0441bbd..6fcd648 100644
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -423,30 +423,6 @@ void udelay(unsigned long usecs)
+diff --git a/arch/um/kernel/time.c b/arch/um/kernel/time.c
+index c8b9c46..2b8b262 100644
+--- a/arch/um/kernel/time.c
++++ b/arch/um/kernel/time.c
+@@ -102,16 +102,17 @@ static void __init setup_itimer(void)
+ 	clockevents_register_device(&itimer_clockevent);
  }
- EXPORT_SYMBOL(udelay);
  
--static inline void update_gtod(u64 new_tb_stamp, u64 new_stamp_xsec,
--			       u64 new_tb_to_xs)
--{
--	/*
--	 * tb_update_count is used to allow the userspace gettimeofday code
--	 * to assure itself that it sees a consistent view of the tb_to_xs and
--	 * stamp_xsec variables.  It reads the tb_update_count, then reads
--	 * tb_to_xs and stamp_xsec and then reads tb_update_count again.  If
--	 * the two values of tb_update_count match and are even then the
--	 * tb_to_xs and stamp_xsec values are consistent.  If not, then it
--	 * loops back and reads them again until this criteria is met.
--	 * We expect the caller to have done the first increment of
--	 * vdso_data->tb_update_count already.
--	 */
--	vdso_data->tb_orig_stamp = new_tb_stamp;
--	vdso_data->stamp_xsec = new_stamp_xsec;
--	vdso_data->tb_to_xs = new_tb_to_xs;
--	vdso_data->wtom_clock_sec = wall_to_monotonic.tv_sec;
--	vdso_data->wtom_clock_nsec = wall_to_monotonic.tv_nsec;
--	vdso_data->stamp_xtime = xtime;
--	smp_wmb();
--	++(vdso_data->tb_update_count);
--}
--
- #ifdef CONFIG_SMP
- unsigned long profile_pc(struct pt_regs *regs)
- {
-@@ -876,7 +852,7 @@ static cycle_t timebase_read(struct clocksource *cs)
- void update_vsyscall(struct timespec *wall_time, struct clocksource *clock,
- 		     u32 mult)
- {
--	u64 t2x, stamp_xsec;
-+	u64 new_tb_to_xs, new_stamp_xsec;
- 
- 	if (clock != &clocksource_timebase)
- 		return;
-@@ -887,11 +863,30 @@ void update_vsyscall(struct timespec *wall_time, struct clocksource *clock,
- 
- 	/* XXX this assumes clock->shift == 22 */
- 	/* 4611686018 ~= 2^(20+64-22) / 1e9 */
--	t2x = (u64) mult * 4611686018ULL;
--	stamp_xsec = (u64) xtime.tv_nsec * XSEC_PER_SEC;
--	do_div(stamp_xsec, 1000000000);
--	stamp_xsec += (u64) xtime.tv_sec * XSEC_PER_SEC;
--	update_gtod(clock->cycle_last, stamp_xsec, t2x);
-+	new_tb_to_xs = (u64) mult * 4611686018ULL;
-+	new_stamp_xsec = (u64) xtime.tv_nsec * XSEC_PER_SEC;
-+	do_div(new_stamp_xsec, 1000000000);
-+	new_stamp_xsec += (u64) xtime.tv_sec * XSEC_PER_SEC;
++void read_persistent_clock(struct timespec *ts)
++{
++	nsecs = os_nsecs();
++	set_normalized_timespec(ts, nsecs / NSEC_PER_SEC,
++				nsecs % NSEC_PER_SEC);
++}
 +
-+	/*
-+	 * tb_update_count is used to allow the userspace gettimeofday code
-+	 * to assure itself that it sees a consistent view of the tb_to_xs and
-+	 * stamp_xsec variables.  It reads the tb_update_count, then reads
-+	 * tb_to_xs and stamp_xsec and then reads tb_update_count again.  If
-+	 * the two values of tb_update_count match and are even then the
-+	 * tb_to_xs and stamp_xsec values are consistent.  If not, then it
-+	 * loops back and reads them again until this criteria is met.
-+	 * We expect the caller to have done the first increment of
-+	 * vdso_data->tb_update_count already.
-+	 */
-+	vdso_data->tb_orig_stamp = clock->cycle_last;
-+	vdso_data->stamp_xsec = new_stamp_xsec;
-+	vdso_data->tb_to_xs = new_tb_to_xs;
-+	vdso_data->wtom_clock_sec = wall_to_monotonic.tv_sec;
-+	vdso_data->wtom_clock_nsec = wall_to_monotonic.tv_nsec;
-+	vdso_data->stamp_xtime = xtime;
-+	smp_wmb();
-+	++(vdso_data->tb_update_count);
- }
+ void __init time_init(void)
+ {
+ 	long long nsecs;
  
- void update_vsyscall_tz(void)
+ 	timer_init();
+-
+-	nsecs = os_nsecs();
+-	set_normalized_timespec(&wall_to_monotonic, -nsecs / NSEC_PER_SEC,
+-				-nsecs % NSEC_PER_SEC);
+-	set_normalized_timespec(&xtime, nsecs / NSEC_PER_SEC,
+-				nsecs % NSEC_PER_SEC);
+ 	late_time_init = setup_itimer;
+ }
 -- 
 1.6.0.4
 
