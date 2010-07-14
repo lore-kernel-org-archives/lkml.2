@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757855Ab0GNUON (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:14:13 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:42174 "EHLO e4.ny.us.ibm.com"
+	id S1757886Ab0GNUOQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:14:16 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:43944 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756815Ab0GNUKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757530Ab0GNUKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jul 2010 16:10:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -13,10 +13,12 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
         tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
         Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 25/30] rcutorture: add random preemption
-Date: Wed, 14 Jul 2010 13:09:59 -0700
-Message-Id: <1279138204-12849-25-git-send-email-paulmck@linux.vnet.ibm.com>
+        Arnd Bergmann <arnd@arndb.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+        Nick Piggin <npiggin@suse.de>
+Subject: [PATCH RFC tip/core/rcu 11/30] radix-tree: __rcu annotations
+Date: Wed, 14 Jul 2010 13:09:45 -0700
+Message-Id: <1279138204-12849-11-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100714200945.GA10535@linux.vnet.ibm.com>
 References: <20100714200945.GA10535@linux.vnet.ibm.com>
@@ -24,45 +26,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Lai Jiangshan <laijs@cn.fujitsu.com>
+From: Arnd Bergmann <arnd@arndb.de>
 
-Add random preemption to help we to torture the preemptable rcu.
-
-srcu_read_delay() also calls rcu_read_delay() for shorter delays.
-
-Added comment to preempt_schedule() call indicating that no quiescent
-states happen if preemption is disabled.
-
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Cc: Nick Piggin <npiggin@suse.de>
 ---
- kernel/rcutorture.c |    6 ++++++
- 1 files changed, 6 insertions(+), 0 deletions(-)
+ include/linux/radix-tree.h |    4 +++-
+ lib/radix-tree.c           |    2 +-
+ 2 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index 6535ac8..430cb7f 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -304,6 +304,10 @@ static void rcu_read_delay(struct rcu_random_state *rrsp)
- 		mdelay(longdelay_ms);
- 	if (!(rcu_random(rrsp) % (nrealreaders * 2 * shortdelay_us)))
- 		udelay(shortdelay_us);
-+#ifdef CONFIG_PREEMPT
-+	if (!preempt_count() && !(rcu_random(rrsp) % (nrealreaders * 20000)))
-+		preempt_schedule();  /* No QS if preempt_disable() in effect */
-+#endif
+diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
+index 55ca73c..d801044 100644
+--- a/include/linux/radix-tree.h
++++ b/include/linux/radix-tree.h
+@@ -47,6 +47,8 @@ static inline void *radix_tree_indirect_to_ptr(void *ptr)
+ {
+ 	return (void *)((unsigned long)ptr & ~RADIX_TREE_INDIRECT_PTR);
  }
++#define radix_tree_indirect_to_ptr(ptr) \
++	radix_tree_indirect_to_ptr((void __force *)(ptr))
  
- static void rcu_torture_read_unlock(int idx) __releases(RCU)
-@@ -537,6 +541,8 @@ static void srcu_read_delay(struct rcu_random_state *rrsp)
- 	delay = rcu_random(rrsp) % (nrealreaders * 2 * longdelay * uspertick);
- 	if (!delay)
- 		schedule_timeout_interruptible(longdelay);
-+	else
-+		rcu_read_delay(rrsp);
- }
+ static inline int radix_tree_is_indirect_ptr(void *ptr)
+ {
+@@ -61,7 +63,7 @@ static inline int radix_tree_is_indirect_ptr(void *ptr)
+ struct radix_tree_root {
+ 	unsigned int		height;
+ 	gfp_t			gfp_mask;
+-	struct radix_tree_node	*rnode;
++	struct radix_tree_node	__rcu *rnode;
+ };
  
- static void srcu_torture_read_unlock(int idx) __releases(&srcu_ctl)
+ #define RADIX_TREE_INIT(mask)	{					\
+diff --git a/lib/radix-tree.c b/lib/radix-tree.c
+index 05da38b..8bd7ae3 100644
+--- a/lib/radix-tree.c
++++ b/lib/radix-tree.c
+@@ -49,7 +49,7 @@ struct radix_tree_node {
+ 	unsigned int	height;		/* Height from the bottom */
+ 	unsigned int	count;
+ 	struct rcu_head	rcu_head;
+-	void		*slots[RADIX_TREE_MAP_SIZE];
++	void __rcu	*slots[RADIX_TREE_MAP_SIZE];
+ 	unsigned long	tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
+ };
+ 
 -- 
 1.7.0.6
 
