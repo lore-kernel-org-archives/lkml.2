@@ -1,117 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757939Ab0GNUsU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:48:20 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:57351 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757224Ab0GNUsT (ORCPT
+	id S1757871Ab0GNUuG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:50:06 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:56295 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754606Ab0GNUuE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:48:19 -0400
-Date: Wed, 14 Jul 2010 13:53:24 -0700
-From: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Containers <containers@lists.osdl.org>,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH] pidns: Fix wait for zombies to be reaped in
-	zap_pid_ns_processes
-Message-ID: <20100714205324.GA13956@us.ibm.com>
-References: <20100625212758.GA30474@redhat.com> <20100625220713.GA31123@us.ibm.com> <m1r5jd5l0v.fsf_-_@fess.ebiederm.org> <m1mxu15kv4.fsf_-_@fess.ebiederm.org> <20100709121425.GB18586@hawkmoon.kerlabs.com> <m1lj9k4xfx.fsf@fess.ebiederm.org> <20100709141324.GC18586@hawkmoon.kerlabs.com> <m1aaq04ph2.fsf_-_@fess.ebiederm.org> <20100711141406.GD18586@hawkmoon.kerlabs.com> <m1tyo4shas.fsf_-_@fess.ebiederm.org>
+	Wed, 14 Jul 2010 16:50:04 -0400
+Date: Wed, 14 Jul 2010 16:50:02 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 10/13]  perf: Re-Add make_absolute_path
+Message-ID: <20100714205001.GA2298@Krystal>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6> <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6> <20100712140023.GC25238@ghostprotocols.net> <1278945036.1537.189.camel@gandalf.stny.rr.com> <20100712161239.GF25238@ghostprotocols.net> <1279075767.4190.1.camel@localhost> <20100714162332.GA4000@ghostprotocols.net> <20100714204531.GA14474@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1tyo4shas.fsf_-_@fess.ebiederm.org>
-X-Operating-System: Linux 2.0.32 on an i486
+In-Reply-To: <20100714204531.GA14474@elte.hu>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 16:46:52 up 172 days, 23:23,  6 users,  load average: 0.11, 0.05,
+	0.01
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Eric W. Biederman [ebiederm@xmission.com] wrote:
-| 
-|   Changing zap_pid_ns_processes to fix the problem instead of
-|   changing the code elsewhere is one of the few solutions I have
-|   seen that does not increase the cost of the lat_proc test from
-|   lmbench.
+* Ingo Molnar (mingo@elte.hu) wrote:
+> 
+> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> 
+> > Em Tue, Jul 13, 2010 at 10:49:27PM -0400, Steven Rostedt escreveu:
+> > > On Mon, 2010-07-12 at 13:12 -0300, Arnaldo Carvalho de Melo wrote:
+> > > > Em Mon, Jul 12, 2010 at 10:30:36AM -0400, Steven Rostedt escreveu:
+> > 
+> > > > Well, I prefer to follow the kernel way of doing things, i.e. to
+> > > > propagate as much as possible up the callchain the error return value,
+> > > > so that the apps can handle it in any way they prefer, i.e. die() calls
+> > > > in tools/perf/builtin-foo.c are okayish, but not on tools/perf/util/.
+> > 
+> > > Ah, yes, die is a bit strong. And I have been starting to avoid them
+> > > too. Although, when malloc fails, it's almost certain that the app will
+> > > die soon anyway ;-)
+> > 
+> > The interesting thing is that years ago, when modules were being introduced 
+> > in the kernel and panic() calls for things like out of memory conditions 
+> > were being removed, some people made the same comments, 'if that happens, 
+> > you're doomed anyway!' :-)
+> > 
+> > I can see things like trying to load a huge perf.data file in the TUI 
+> > interface failing and the user just being warned about it and going on with 
+> > life loading some other file, etc.
+> > 
+> > Certainly it is interesting to try to apply as much as possible of the 
+> > mindset (and fear of criticism) present when coding for the kernel when one 
+> > codes for userland.
+> 
+> Yeah, and especially for perf the absolutely most important quality is 
+> reliability. It's not just an app - it's a measurement tool. People rely on it 
+> to reject or apply patches, on a daily basis.
+> 
+> perf must be very reliable and very dependable (and i'm happy that we managed 
+> to achieve that goal so far :), and if it fails it should be apparent that it 
+> failed and that results should not be relied on.
+> 
+> With other tools that are statistical i've sometimes seen a special type of 
+> dangerous attitude of: "hey, it's just a sample, no biggie if it's lost, it's 
+> just statistical anyway, lost in the noise" - but that's really a slippery 
+> slope leading to a sloppy tool we cannot depend on 110%.
+> 
+> Just like physicists or engineers want to be able to trust their measurement 
+> instruments, do we want kernel hackers to be able to trust the results of 
+> perf.
 
-I think its a good fix for the problem. but I have a nit and a minor
-comment below.
+I'm glad to see we're on the exact same page here. :)
+
+Having reliable trace analysis tools is crucially important for both kernel
+developers and end-users, especially when, as an example, someone try to use the
+results to find out which is the "one" odd-case longest/shortest interrupt
+handler during a day-long trace while trying to pinpoint a bug.
 
 Thanks,
 
-Sukadev
+Mathieu
 
-| 
-| Reported-by: Louis Rilling <Louis.Rilling@kerlabs.com>
+> 
+> Thanks,
+> 
+> 	Ingo
 
-Reviewed-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-
-| Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-| ---
-|  kernel/pid_namespace.c |   50 ++++++++++++++++++++++++++++++++++++-----------
-|  1 files changed, 38 insertions(+), 12 deletions(-)
-| 
-| diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-| index a5aff94..aaf2ab0 100644
-| --- a/kernel/pid_namespace.c
-| +++ b/kernel/pid_namespace.c
-| @@ -139,16 +139,20 @@ void free_pid_ns(struct kref *kref)
-| 
-|  void zap_pid_ns_processes(struct pid_namespace *pid_ns)
-|  {
-| +	struct task_struct *me = current;
-|  	int nr;
-|  	int rc;
-|  	struct task_struct *task;
-| 
-|  	/*
-| -	 * The last thread in the cgroup-init thread group is terminating.
-| -	 * Find remaining pid_ts in the namespace, signal and wait for them
-| -	 * to exit.
-| +	 * The last task in the pid namespace-init threa group is terminating.
-
-nit:                                               thread
-
-| +	 * Find remaining pids in the namespace, signal and wait for them
-| +	 * to to be reaped.
-|  	 *
-| -	 * Note:  This signals each threads in the namespace - even those that
-| +	 * By waiting for all of the tasks to be reaped before init is reaped
-| +	 * we provide the invariant that no task can escape the pid namespace.
-| +	 *
-| +	 * Note:  This signals each task in the namespace - even those that
-|  	 * 	  belong to the same thread group, To avoid this, we would have
-|  	 * 	  to walk the entire tasklist looking a processes in this
-|  	 * 	  namespace, but that could be unnecessarily expensive if the
-| @@ -157,28 +161,50 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
-|  	 *
-|  	 */
-|  	read_lock(&tasklist_lock);
-| -	nr = next_pidmap(pid_ns, 1);
-| -	while (nr > 0) {
-| -		rcu_read_lock();
-| +	for (nr = next_pidmap(pid_ns, 0); nr > 0; nr = next_pidmap(pid_ns, nr)) {
-
-Is it necessary to start the search at nr == 0 ? We will find nr == 1
-first and then immediately skip over it - bc same_thread_group() will
-be TRUE.
-
-| 
-|  		/*
-|  		 * Any nested-container's init processes won't ignore the
-|  		 * SEND_SIG_NOINFO signal, see send_signal()->si_fromuser().
-|  		 */
-| -		task = pid_task(find_vpid(nr), PIDTYPE_PID);
-| -		if (task)
-| +		rcu_read_lock();
-| +		task = pid_task(find_pid_ns(nr, pid_ns), PIDTYPE_PID);
-| +		if (task && !same_thread_group(task, me))
-|  			send_sig_info(SIGKILL, SEND_SIG_NOINFO, task);
-
-Also, if we start the search at 1, we could skip the only the other possible
-thread in the group with
-
-	(nr != my_pid_nr)
-
-but its not really an optimization.
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
