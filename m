@@ -1,70 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756581Ab0GND16 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 23:27:58 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43607 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756487Ab0GND15 convert rfc822-to-8bit (ORCPT
+	id S1756609Ab0GND3u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 23:29:50 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40093 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756168Ab0GND3s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 23:27:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=KsbvYYHfEoWFPSqMYAZ6nHz9aHaJVs/3vaXQURRapu+X5d36E7hcSbnm4PFAYuG4hC
-         lzIGpTDFPfAEXpIX7d3NCcq/7T5usaU/LghKwSxqsmD3QUfIy0lCIHheQHgFIpFI6hJl
-         aNGNElNpdTn57yeMsoBF+7a4hIEl8fNTd5fC8=
-MIME-Version: 1.0
-In-Reply-To: <1279077678.2444.95.camel@edumazet-laptop>
-References: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>
-	<AANLkTil49m6Ul2bauiH4Pwn-6ykrYTFmSO6_SxqQgD_e@mail.gmail.com>
-	<1278626921.2435.73.camel@edumazet-laptop>
-	<AANLkTiliBClahTfb41M5BDi1etg5pgkqEz_VfGrn_mK4@mail.gmail.com>
-	<1278695580.2696.55.camel@edumazet-laptop>
-	<AANLkTil39xHOhcdAo4h_jWtx_UuYdFHGdQVAdwPMd7QJ@mail.gmail.com>
-	<1278742649.2538.17.camel@edumazet-laptop>
-	<4C395459.6080407@redhat.com>
-	<1278835332.2538.51.camel@edumazet-laptop>
-	<AANLkTikEGuFtTlIKUfti6GDsdBz99PpKRCs5lEeEM86u@mail.gmail.com>
-	<AANLkTilbEkJWPqvJE72r9HdFQSU84S02BKZB0CH-8QwB@mail.gmail.com>
-	<AANLkTimn9x17g-4K7fS4MjmCgzHuBARurEoFVd_gId7m@mail.gmail.com>
-	<1279032023.2634.384.camel@edumazet-laptop>
-	<AANLkTilrIByt4xAHhsBsKo3nDfv0_c3sF-dCiTiYiPnu@mail.gmail.com>
-	<1279036193.2634.468.camel@edumazet-laptop>
-	<AANLkTilgxvDPpBJvwbw3PHZfXDaa2_6-TbJ8lujz5y3V@mail.gmail.com>
-	<1279077678.2444.95.camel@edumazet-laptop>
-Date: Wed, 14 Jul 2010 00:27:56 -0300
-Message-ID: <AANLkTikkcaionMp3SJLgo3JmCjxQ7rPZv3-3_RbxCx_4@mail.gmail.com>
-Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
-From: Felipe W Damasio <felipewd@gmail.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>
-Cc: Avi Kivity <avi@redhat.com>, David Miller <davem@davemloft.net>,
-        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
-        netdev <netdev@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 13 Jul 2010 23:29:48 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 14 Jul 2010 12:25:03 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        Dave Hansen <dave@linux.vnet.ibm.com>
+Subject: Re: [PATCH 4/7] Allow sysfs memory directories to be split
+Message-Id: <20100714122503.74f746a2.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C3D2C6B.3050203@austin.ibm.com>
+References: <4C3B3446.5090302@austin.ibm.com>
+	<4C3B3895.3040209@austin.ibm.com>
+	<20100713152854.ec1f4d6a.kamezawa.hiroyu@jp.fujitsu.com>
+	<4C3C8B9E.7000208@austin.ibm.com>
+	<20100714093550.40036034.kamezawa.hiroyu@jp.fujitsu.com>
+	<4C3D2C6B.3050203@austin.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mr. Dumazet,
+On Tue, 13 Jul 2010 22:18:03 -0500
+Nathan Fontenot <nfont@austin.ibm.com> wrote:
 
-2010/7/14 Eric Dumazet <eric.dumazet@gmail.com>:
-> RDX being the sk pointer (and sk+0x38 contains the corrupted "sk_prot" value)
-> , we notice RBP contains same "sk" value + 0x200000  (2 Mbytes).
->
-> (same remark on your initial bug report)
->
-> Could you enable CONFIG_FRAME_POINTER=y in your config ?
+> On 07/13/2010 07:35 PM, KAMEZAWA Hiroyuki wrote:
+> > On Tue, 13 Jul 2010 10:51:58 -0500
+> > Nathan Fontenot <nfont@austin.ibm.com> wrote:
+> > 
+> >>>
+> >>> And for what purpose this interface is ? Does this split memory block into 2 pieces
+> >>> of the same size ?? sounds __very__ strange interface to me.
+> >>
+> >> Yes, this splits the memory_block into two blocks of the same size.  This was
+> >> suggested as something we may want to do.  From ppc perspective I am not sure we
+> >> would use this.
+> >>
+> >> The split functionality is not required.  The main goal of the patch set is to
+> >> reduce the number of memory sysfs directories created.  From a ppc perspective
+> >> the split functionality is not really needed.
+> >>
+> > 
+> > Okay, this is an offer from me.
+> > 
+> >   1. I think you can add an boot option as "don't create memory sysfs".
+> >      please do.
+> 
+> I posted a patch to do that a week or so ago, it didn't go over very well.
+> 
+> > 
+> >   2. I'd like to write a configfs module for handling memory hotplug even when
+> >      sysfs directroy is not created.
+> >      Because configfs support rmdir/mkdir, the user (ppc's daemon?) has to do
+> >      
+> >      When offlining section X.
+> >      # insmod configfs_memory.ko
+> >      # mount -t configfs none /configfs
+> >      # mkdir /configfs/memoryX
+> >      # echo offline > /configfs/memoryX/state
+> >      # rmdir /configfs/memoryX
+> > 
+> >   And making this operation as the default bahavior for all arch's memory hotplug may
+> >   be better...
+> > 
+> > Dave, how do you think ? Because ppc guys uses "probe" interface already,
+> > this can be handled... no ?
+> 
+> ppc would still require the existance of the 'probe' interface.
+> 
+> Are you objecting to the 'split' functionality? 
+yes.
 
-I can, but my bosses will kick my ass if I bring down the ISP again :)
+> If so I do not see any reason from ppc
+> perspective that it is needed.  This was something Dave suggested, unless I am missing
+> something.
+> 
+> Since ppc needs the 'probe' interface in sysfs, and for ppc having mutliple 
+> memory_block_sections reside under a single memory_block makes memory hotplug
+> simpler.  On ppc we do emory hotplug operations on an LMB size basis.  With my
+> patches this now lets us set each memory_block to span an LMB's worth of
+> memory.  Now we could do emory hotplug in a single operation instead of multiple
+> operations to offline/online all of the memory sections in an LMB.
+> 
 
-If you think it's the only way to find the problem I'll tell them that
-I need to do it. In this case, please tell me what other config
-options/tools I can use to get as much info as possible...since I'll
-probably be able to test this only once more on the production
-environment for debugging purposes.
+Why per-section memory offlining is provided is for allowing good success-rate of
+memory offlining. Because memory-hotplug has to "migrate or free" all used page
+under a section, possibility of memory unplug depends on usage of memory.
+If a section contains unmovable page(kernel page), we can't offline sectin.
 
-Cheers,
+For example, comparing
+  1. offlining 128MB of memory at once
+  2. offlining 8 chunks of 16MB memory
+"2" can get very good possibility and system-busy time can be much reduced.
 
-Felipe Damasio
+IIUC, ppc's 1st requirement is "resizing" not "hot-removing some memory device",
+"2" is much welcomed. So, some fine-grained interface to section_size is
+appreciated. So, "multiple operations" is much better than single operation.
+
+As I posted show/hide patch, I'm writing it in configfs. I think it meets IBM's
+requirements.
+_But_, it's IBM's issue not Fujitsu's. So, final decistion will depend on you guys.
+
+Anyway, I don't like a too fancy interface as "split".
+
+Thanks,
+-Kame
+
