@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757203Ab0GNSPu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:15:50 -0400
-Received: from claw.goop.org ([74.207.240.146]:51528 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757007Ab0GNSPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:15:48 -0400
-Message-ID: <4C3DFED2.5000807@goop.org>
-Date: Wed, 14 Jul 2010 11:15:46 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+	id S1757019Ab0GNSSF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:18:05 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45682 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754220Ab0GNSSE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 14:18:04 -0400
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Palfrader <peter@palfrader.org>, Avi Kivity <avi@redhat.com>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
-        Zachary Amsden <zamsden@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>, "H.J. Lu" <hjl.tools@gmail.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
- 	for pvclock
-References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org> <AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com> <4C3DF1BE.2070404@goop.org> <4C3DF447.1000801@zytor.com> <4C3DF519.6030406@goop.org> <4C3DF7AF.7010402@zytor.com> <4C3DFA88.5020007@goop.org> <4C3DFD12.3050700@zytor.com>
-In-Reply-To: <4C3DFD12.3050700@zytor.com>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <20100714181152.GB15651@aftab>
+References: <4C3DDDFF.5040302@letzte-bankreihe.de>
+	<AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
+	<20100714181152.GB15651@aftab>
+Date: Wed, 14 Jul 2010 11:17:27 -0700
+Message-ID: <AANLkTin71FbM5Eh7TDUHN0WvYHA5RubycflTxM5EWlvj@mail.gmail.com>
+Subject: Re: [PATCH] enable readback to get HPET working on ATI SB4x00, kernel 
+	2.6.35_rc5
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: Stephan Wolf <stephan@letzte-bankreihe.de>, linux-kernel@vger.kernel.org,
+        tglx@linutronix.de, Andreas Herrmann <andreas.herrmann3@amd.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 11:08 AM, H. Peter Anvin wrote:
-> Noone has talked about strict ordering between volatiles and
-> (non-volatile) memory ops in general.  I have been talking about
-> volatile to volatile ordering, and I thought I'd been very clear about that.
->   
+On Wed, Jul 14, 2010 at 11:11 AM, Borislav Petkov
+<borislav.petkov@amd.com> wrote:
+>
+> I'll try to find out which chipsets are actually affected but in the
+> meantime we might want to do a temporary fix by enabling the readback
+> back(!) on all ATI chipsets so that we don't uncover anymore bugs like
+> the one above, hmmm?
 
-OK.
+That sounds like the right solution for now, yes.  Rather than make
+the readback quirk depend on one particular SMBUS revision, make it
+happen unconditionally for an AMD northbridge (or is the HPET in the
+SB? I forget - somebody who knows the details and can test it on a
+machine or two should do the actual patch).
 
-> H.J., we're having a debate about the actual semantics of "volatile",
-> especially "asm volatile" in gcc.  In particular, I believe that
-> volatile operations should not be possible to reorder with regards to
-> each other, and the kernel depends on that fact.
->   
+Thomas?
 
-I think we should consider that deprecated and rely on dependencies and
-clobbers.
-
-    J
+                Linus
