@@ -1,118 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab0GND3u (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 23:29:50 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:40093 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756168Ab0GND3s (ORCPT
+	id S1756675Ab0GND3y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 23:29:54 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:41044 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756168Ab0GND3v convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 23:29:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Jul 2010 12:25:03 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Nathan Fontenot <nfont@austin.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/7] Allow sysfs memory directories to be split
-Message-Id: <20100714122503.74f746a2.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4C3D2C6B.3050203@austin.ibm.com>
-References: <4C3B3446.5090302@austin.ibm.com>
-	<4C3B3895.3040209@austin.ibm.com>
-	<20100713152854.ec1f4d6a.kamezawa.hiroyu@jp.fujitsu.com>
-	<4C3C8B9E.7000208@austin.ibm.com>
-	<20100714093550.40036034.kamezawa.hiroyu@jp.fujitsu.com>
-	<4C3D2C6B.3050203@austin.ibm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 13 Jul 2010 23:29:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JGJ0h9MB7l7Ara5kqgEYTbERbxo61bca29I2O/cTaG06M2AnBNNzEa6//KuAxRYFjm
+         YF7+i09vrQTkGTpMe36U9PfU/DZ11NGjnG+o9KTxTfyjy+op+lHqpZzlMRWKI2xjsvOf
+         TsYG2lcOV+WGmQde6tTiC0TPlulVTr7U/GmBo=
+MIME-Version: 1.0
+In-Reply-To: <4C3D1F82.1040907@candelatech.com>
+References: <4C3D067C.10507@candelatech.com>
+	<4C3D101E.5010605@candelatech.com>
+	<4C3D1942.1090207@gmail.com>
+	<4C3D1F82.1040907@candelatech.com>
+Date: Tue, 13 Jul 2010 21:29:50 -0600
+Message-ID: <AANLkTinDv7I4v51j-Lev9Ry_3DyVVv58lAyCQXZV1CwB@mail.gmail.com>
+Subject: Re: Regression: 2.6.34 boot fails on E5405 system, bisected: 
+	de08e2c26
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Ben Greear <greearb@candelatech.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>, jbarnes@virtuousgeek.org,
+        jacob.jun.pan@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010 22:18:03 -0500
-Nathan Fontenot <nfont@austin.ibm.com> wrote:
+On Tue, Jul 13, 2010 at 8:22 PM, Ben Greear <greearb@candelatech.com> wrote:
+>> Can you print out bus->number and devfn and look that up in lspci to
+>> find out which device it's hitting? It looks like there's a device with
+>> a PCI Express extended capability header that has a extended capability
+>> ID of 0000h and a next capability offset of 100h, which points to
+>> itself, causing the infinite loop. I'm guessing that if pcie_cap >> 20
+>> <= pos then it should give up and break out of the loop, since it means
+>> that the next capability pointer is invalidly pointing to the same or a
+>> previous entry..
+>
+> Bailing out like that does let it boot.
+>
+> As for the bus and devfn:  bus: 0   devfn: 129 (decimal)
+>
+> I'm not sure what to look for in lspci, but here is the output with -n:
 
-> On 07/13/2010 07:35 PM, KAMEZAWA Hiroyuki wrote:
-> > On Tue, 13 Jul 2010 10:51:58 -0500
-> > Nathan Fontenot <nfont@austin.ibm.com> wrote:
-> > 
-> >>>
-> >>> And for what purpose this interface is ? Does this split memory block into 2 pieces
-> >>> of the same size ?? sounds __very__ strange interface to me.
-> >>
-> >> Yes, this splits the memory_block into two blocks of the same size.  This was
-> >> suggested as something we may want to do.  From ppc perspective I am not sure we
-> >> would use this.
-> >>
-> >> The split functionality is not required.  The main goal of the patch set is to
-> >> reduce the number of memory sysfs directories created.  From a ppc perspective
-> >> the split functionality is not really needed.
-> >>
-> > 
-> > Okay, this is an offer from me.
-> > 
-> >   1. I think you can add an boot option as "don't create memory sysfs".
-> >      please do.
-> 
-> I posted a patch to do that a week or so ago, it didn't go over very well.
-> 
-> > 
-> >   2. I'd like to write a configfs module for handling memory hotplug even when
-> >      sysfs directroy is not created.
-> >      Because configfs support rmdir/mkdir, the user (ppc's daemon?) has to do
-> >      
-> >      When offlining section X.
-> >      # insmod configfs_memory.ko
-> >      # mount -t configfs none /configfs
-> >      # mkdir /configfs/memoryX
-> >      # echo offline > /configfs/memoryX/state
-> >      # rmdir /configfs/memoryX
-> > 
-> >   And making this operation as the default bahavior for all arch's memory hotplug may
-> >   be better...
-> > 
-> > Dave, how do you think ? Because ppc guys uses "probe" interface already,
-> > this can be handled... no ?
-> 
-> ppc would still require the existance of the 'probe' interface.
-> 
-> Are you objecting to the 'split' functionality? 
-yes.
+That will be device 0x10 function 1, this one:
 
-> If so I do not see any reason from ppc
-> perspective that it is needed.  This was something Dave suggested, unless I am missing
-> something.
-> 
-> Since ppc needs the 'probe' interface in sysfs, and for ppc having mutliple 
-> memory_block_sections reside under a single memory_block makes memory hotplug
-> simpler.  On ppc we do emory hotplug operations on an LMB size basis.  With my
-> patches this now lets us set each memory_block to span an LMB's worth of
-> memory.  Now we could do emory hotplug in a single operation instead of multiple
-> operations to offline/online all of the memory sections in an LMB.
-> 
+00:10.1 0600: 8086:25f0 (rev b1)
 
-Why per-section memory offlining is provided is for allowing good success-rate of
-memory offlining. Because memory-hotplug has to "migrate or free" all used page
-under a section, possibility of memory unplug depends on usage of memory.
-If a section contains unmovable page(kernel page), we can't offline sectin.
+Intel 5000 Series Chipset FSB Registers, apparently.. What does lspci
+-vv show for that device?
 
-For example, comparing
-  1. offlining 128MB of memory at once
-  2. offlining 8 chunks of 16MB memory
-"2" can get very good possibility and system-busy time can be much reduced.
-
-IIUC, ppc's 1st requirement is "resizing" not "hot-removing some memory device",
-"2" is much welcomed. So, some fine-grained interface to section_size is
-appreciated. So, "multiple operations" is much better than single operation.
-
-As I posted show/hide patch, I'm writing it in configfs. I think it meets IBM's
-requirements.
-_But_, it's IBM's issue not Fujitsu's. So, final decistion will depend on you guys.
-
-Anyway, I don't like a too fancy interface as "split".
-
-Thanks,
--Kame
-
+>
+> [root@ice-si-dmz ~]# lspci -n
+> 00:00.0 0600: 8086:25d8 (rev b1)
+> 00:02.0 0604: 8086:25f7 (rev b1)
+> 00:04.0 0604: 8086:25f8 (rev b1)
+> 00:06.0 0604: 8086:25f9 (rev b1)
+> 00:08.0 0880: 8086:1a38 (rev b1)
+> 00:10.0 0600: 8086:25f0 (rev b1)
+> 00:10.1 0600: 8086:25f0 (rev b1)
+> 00:10.2 0600: 8086:25f0 (rev b1)
+> 00:11.0 0600: 8086:25f1 (rev b1)
+> 00:13.0 0600: 8086:25f3 (rev b1)
+> 00:15.0 0600: 8086:25f5 (rev b1)
+> 00:16.0 0600: 8086:25f6 (rev b1)
+> 00:1d.0 0c03: 8086:2688 (rev 09)
+> 00:1d.1 0c03: 8086:2689 (rev 09)
+> 00:1d.2 0c03: 8086:268a (rev 09)
+> 00:1d.7 0c03: 8086:268c (rev 09)
+> 00:1e.0 0604: 8086:244e (rev d9)
+> 00:1f.0 0601: 8086:2670 (rev 09)
+> 00:1f.1 0101: 8086:269e (rev 09)
+> 00:1f.2 0106: 8086:2681 (rev 09)
+> 00:1f.3 0c05: 8086:269b (rev 09)
+> 01:00.0 0604: 8086:3500 (rev 01)
+> 01:00.3 0604: 8086:350c (rev 01)
+> 02:00.0 0604: 8086:3510 (rev 01)
+> 02:02.0 0604: 8086:3518 (rev 01)
+> 04:00.0 0200: 8086:1096 (rev 01)
+> 04:00.1 0200: 8086:1096 (rev 01)
+> 06:00.0 0604: 111d:8018 (rev 04)
+> 07:00.0 0604: 111d:8018 (rev 04)
+> 07:01.0 0604: 111d:8018 (rev 04)
+> 08:00.0 0200: 8086:10a4 (rev 06)
+> 08:00.1 0200: 8086:10a4 (rev 06)
+> 09:00.0 0200: 8086:10a4 (rev 06)
+> 09:00.1 0200: 8086:10a4 (rev 06)
+> 0a:00.0 0604: 111d:8018 (rev 04)
+> 0b:00.0 0604: 111d:8018 (rev 04)
+> 0b:01.0 0604: 111d:8018 (rev 04)
+> 0c:00.0 0200: 8086:10a4 (rev 06)
+> 0c:00.1 0200: 8086:10a4 (rev 06)
+> 0d:00.0 0200: 8086:10a4 (rev 06)
+> 0d:00.1 0200: 8086:10a4 (rev 06)
+> 0e:01.0 0300: 1002:515e (rev 02)
+>
+>
+> Thanks,
+> Ben
+>
+>
+> --
+> Ben Greear <greearb@candelatech.com>
+> Candela Technologies Inc  http://www.candelatech.com
+>
