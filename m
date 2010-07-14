@@ -1,54 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758020Ab0GNXBk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:01:40 -0400
-Received: from mail1.nippynetworks.com ([212.227.250.41]:59492 "EHLO
-	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754185Ab0GNXBj (ORCPT
+	id S1758031Ab0GNXCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:02:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34941 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753187Ab0GNXCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:01:39 -0400
-Message-ID: <4C3E41D1.1090609@wildgooses.com>
-Date: Thu, 15 Jul 2010 00:01:37 +0100
-From: Ed W <lists@wildgooses.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.10) Gecko/20100512 Lightning/1.0b1 Thunderbird/3.0.5
+	Wed, 14 Jul 2010 19:02:47 -0400
 MIME-Version: 1.0
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-CC: Rick Jones <rick.jones2@hp.com>, David Miller <davem@davemloft.net>,
-        davidsen@tmr.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3D94E3.9080103@wildgooses.com> <4C3DD5EB.9070908@tmr.com> <20100714.111553.104052157.davem@davemloft.net> <4C3E0684.5060409@wildgooses.com> <4C3E1B54.40604@hp.com> <20100714203919.GD6682@nuttenaction> <4C3E34AB.2060405@wildgooses.com> <20100714223633.GJ6682@nuttenaction>
-In-Reply-To: <20100714223633.GJ6682@nuttenaction>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C3E3F77.1090109@goop.org>
+References: <20100714154923.947138065@efficios.com>
+	<20100714155804.049012415@efficios.com>
+	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	<20100714170617.GB4955@Krystal>
+	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	<20100714203940.GC22096@Krystal>
+	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
+	<20100714222115.GA30122@Krystal>
+	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
+	<4C3E3F77.1090109@goop.org>
+Date: Wed, 14 Jul 2010 16:02:10 -0700
+Message-ID: <AANLkTinIJGHYtxWXGEN_pBxoIy0lhl_eRW0QSbuSuMQQ@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, Jul 14, 2010 at 3:51 PM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
+>
+> We screw around with iret because there's a separate interrupt mask flag
+> which can't be set atomically with respect to a stack/ring change (well,
+> there's more to it, but I won't confuse matters).
 
-> Do you cite "An Argument for Increasing TCP's Initial Congestion Window"?
-> People at google stated that a CWND of 10 seems to be fair in their
-> measurements. 10 because the test setup was equipped with a reasonable large
-> link capacity? Do they analyse their modification in environments with a small
-> BDP (e.g. multihop MANET setup, ...)? I am curious, but We will see what
-> happens if TCPM adopts this.
->    
+Umm, I know. It's what this whole discussion (non-paravirtualized) is
+all about. And I have a suggestion that should fix the
+non-paravirtualized case _without_ actually touching anything but the
+NMI code itself.
 
-Well, I personally would shoot for starting from the position of 
-assuming better than zero knowledge about our link and incorporating 
-that into the initial cwnd estimate...
+What I tried to say is that the paravirtualized people should take a
+look at my suggestion, and see if they can apply the logic to their
+NMI handling too. And in the process totally remove the need for
+paravirtualizing iret, exactly because the approach handles the magic
+NMI lock logic entirely in the NMI handler itself.
 
-We know something about the RTT from the syn/ack times, speed of the 
-local link and quickly we will learn about median window sizes to other 
-destinations, plus additionally the kernel has some knowledge of other 
-connections currently in progress.  With all that information perhaps we 
-can make a more informed option than just a hard coded magic number? (Oh 
-and lets make the option pluggable so that we can soon have 10 different 
-kernel options...)
+Because I think the same thing that would make us not need to worry
+about nested page faults _during_ NMI (because we could make the NMI
+code do the right thing even when the hardware doesn't lock out NMI's
+for us) is also the exact same logic that the paravirt monitor could
+do for its own NMI handling.
 
-Seems like there is evidence that networks are starting to cluster into groups that would benefit from a range of cwnd options (higher/lower) - perhaps there is some way to choose a reasonable heuristic to cluster these and choose a better starting option?
+Wouldn't it be nice to be able to remove the need to paravirtualize iret?
 
-Cheers
-
-Ed W
-
-
+                  Linus
