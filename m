@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757361Ab0GNSVu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:21:50 -0400
-Received: from mail.perches.com ([173.55.12.10]:1878 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754365Ab0GNSVs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:21:48 -0400
-Subject: Re: [PATCH 09/11] staging: msm: formatting of pointers in printk()
-From: Joe Perches <joe@perches.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Alexander Kurz <linux@kbdbabel.org>, Jiri Kosina <jkosina@suse.cz>,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1279130717-15755-1-git-send-email-segooon@gmail.com>
-References: <1279130717-15755-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Jul 2010 11:21:44 -0700
-Message-ID: <1279131704.5816.3.camel@Joe-Laptop.home>
+	id S1756895Ab0GNSPj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:15:39 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48897
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751721Ab0GNSPi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 14:15:38 -0400
+Date: Wed, 14 Jul 2010 11:15:53 -0700 (PDT)
+Message-Id: <20100714.111553.104052157.davem@davemloft.net>
+To: davidsen@tmr.com
+Cc: lists@wildgooses.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Raise initial congestion window size / speedup slow start?
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C3DD5EB.9070908@tmr.com>
+References: <4C3D94E3.9080103@wildgooses.com>
+	<4C3DD5EB.9070908@tmr.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-14 at 22:05 +0400, Kulikov Vasiliy wrote:
-> Use %p instead of %08x in printk().
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/quatech_daqp_cs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/quatech_daqp_cs.c b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-> index 8d16380..8b49cb1 100644
-> --- a/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-> +++ b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-> @@ -208,7 +208,7 @@ static void hex_dump(char *str, void *ptr, int len)
->  
->  	for (i = 0; i < len; i++) {
->  		if (i % 16 == 0)
-> -			printk("\n0x%08x:", (unsigned int)cptr);
-> +			printk("\n%p:", cptr);
->  
->  		printk(" %02x", *(cptr++));
->  	}
+From: Bill Davidsen <davidsen@tmr.com>
+Date: Wed, 14 Jul 2010 11:21:15 -0400
 
-I was originally going to suggest a conversion
-to print_hex_dump, but this function isn't used
-and it and daqp_dump might as well be removed.
+> You may have to go into /proc/sys/net/core and crank up the
+> rmem_* settings, depending on your distribution.
 
+You should never, ever, have to touch the various networking sysctl
+values to get good performance in any normal setup.  If you do, it's a
+bug, report it so we can fix it.
 
+I cringe every time someone says to do this, so please do me a favor
+and don't spread this further. :-)
+
+For one thing, TCP dynamically adjusts the socket buffer sizes based
+upon the behavior of traffic on the connection.
+
+And the TCP memory limit sysctls (not the core socket ones) are sized
+based upon available memory.  They are there to protect you from
+situations such as having so much memory dedicated to socket buffers
+that there is none left to do other things effectively.  It's a
+protective limit, rather than a setting meant to increase or improve
+performance.  So like the others, leave these alone too.
