@@ -1,53 +1,189 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755503Ab0GNCE4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 22:04:56 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:39584 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754110Ab0GNCEz (ORCPT
+	id S1755763Ab0GNCMq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 22:12:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:23186 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753641Ab0GNCMp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 22:04:55 -0400
-Date: Tue, 13 Jul 2010 21:01:19 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Heinz Diehl <htd@fancy-poultry.org>
-cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [S+Q2 00/19] SLUB with queueing (V2) beats SLAB netperf TCP_RR
-In-Reply-To: <20100713135650.GA6444@fancy-poultry.org>
-Message-ID: <alpine.DEB.2.00.1007132055470.14067@router.home>
-References: <20100709190706.938177313@quilx.com> <20100710195621.GA13720@fancy-poultry.org> <alpine.DEB.2.00.1007121010420.14328@router.home> <20100712163900.GA8513@fancy-poultry.org> <alpine.DEB.2.00.1007121156160.18621@router.home>
- <20100713135650.GA6444@fancy-poultry.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 13 Jul 2010 22:12:45 -0400
+Message-ID: <4C3D1BC4.5020102@kernel.org>
+Date: Tue, 13 Jul 2010 19:07:00 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=US-ASCII
-Content-ID: <alpine.DEB.2.00.1007132055472.14067@router.home>
-Content-Disposition: INLINE
+To: Pekka Enberg <penberg@cs.helsinki.fi>, "H. Peter Anvin" <hpa@zytor.com>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: only set early_serial_base after port is initialized
+References: <4C3A3B27.7020009@oracle.com>	<4C3AD94C.7070807@cs.helsinki.fi>	<4C3B38F7.1050400@zytor.com>	<4C3B40F3.6070009@kernel.org>	<4C3CA5A9.6000607@cs.helsinki.fi>	<4C3CCE05.4090505@kernel.org> <AANLkTimYQPaF6YH2aMBf3nprmxLFVDDYLG4gxxD3VyBa@mail.gmail.com>
+In-Reply-To: <AANLkTimYQPaF6YH2aMBf3nprmxLFVDDYLG4gxxD3VyBa@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0202.4C3D1C85.0058,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010, Heinz Diehl wrote:
-
-> On 13.07.2010, Christoph Lameter wrote:
->
-> > Can you get us the config file. What is the value of
-> > PERCPU_DYMAMIC_EARLY_SIZE?
->
-> My .config file is attached. I don't know how to find out what value
-> PERCPU_DYNAMIC_EARLY_SIZE is actually on, how could I do that? There's
-> no such thing in my .config.
-
-I dont see anything in there at first glance that would cause slub to
-increase its percpu usage. This is straight upstream?
-
-Try to just comment out the BUILD_BUG_ON. I had it misfire before and
-fixed the formulae to no longer give false positives. Maybe that is
-another case. Tejun wanted that but never was able to give me an exact
-formular to check for.
-
-At the Ottawa Linux Symposium right now so responses may be delayed.
-Hotels Internet connection keeps getting clogged for some reason.
 
 
+putchar is using early_serial_base to check if port is initialized.
+
+So we only assign it after early_serial_init() is called.
+
+in case we need use VGA to debug early serial console.
+
+Also add display for port addr and baud.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+
+---
+ arch/x86/boot/tty.c |   64 ++++++++++++++++++++++++++--------------------------
+ 1 file changed, 33 insertions(+), 31 deletions(-)
+
+Index: linux-2.6/arch/x86/boot/tty.c
+===================================================================
+--- linux-2.6.orig/arch/x86/boot/tty.c
++++ linux-2.6/arch/x86/boot/tty.c
+@@ -152,35 +152,40 @@ int getchar_timeout(void)
+ 	return 0;		/* Timeout! */
+ }
+ 
+-static void early_serial_init(int baud)
++static void early_serial_init(int port, int baud)
+ {
+ 	unsigned char c;
+ 	unsigned divisor;
+ 
+-	outb(0x3, early_serial_base + LCR);	/* 8n1 */
+-	outb(0, early_serial_base + IER);	/* no interrupt */
+-	outb(0, early_serial_base + FCR);	/* no fifo */
+-	outb(0x3, early_serial_base + MCR);	/* DTR + RTS */
++	outb(0x3, port + LCR);	/* 8n1 */
++	outb(0, port + IER);	/* no interrupt */
++	outb(0, port + FCR);	/* no fifo */
++	outb(0x3, port + MCR);	/* DTR + RTS */
+ 
+ 	divisor	= 115200 / baud;
+-	c = inb(early_serial_base + LCR);
+-	outb(c | DLAB, early_serial_base + LCR);
+-	outb(divisor & 0xff, early_serial_base + DLL);
+-	outb((divisor >> 8) & 0xff, early_serial_base + DLH);
+-	outb(c & ~DLAB, early_serial_base + LCR);
++	c = inb(port + LCR);
++	outb(c | DLAB, port + LCR);
++	outb(divisor & 0xff, port + DLL);
++	outb((divisor >> 8) & 0xff, port + DLH);
++	outb(c & ~DLAB, port + LCR);
++
++	early_serial_base = port;
++
++	printf("Early serial console at I/O port 0x%x baud: %d\n", port, baud);
+ }
+ 
+-static int parse_earlyprintk(void)
++static void parse_earlyprintk(void)
+ {
+ 	int baud = DEFAULT_BAUD;
+ 	char arg[32];
+ 	int pos = 0;
++	int port = 0;
+ 
+ 	if (cmdline_find_option("earlyprintk", arg, sizeof arg) > 0) {
+ 		char *e;
+ 
+ 		if (!strncmp(arg, "serial", 6)) {
+-			early_serial_base = DEFAULT_SERIAL_PORT;
++			port = DEFAULT_SERIAL_PORT;
+ 			pos += 6;
+ 		}
+ 
+@@ -189,15 +194,15 @@ static int parse_earlyprintk(void)
+ 
+ 		if (!strncmp(arg, "ttyS", 4)) {
+ 			static const int bases[] = { 0x3f8, 0x2f8 };
+-			int port = 0;
++			int idx = 0;
+ 
+ 			if (!strncmp(arg + pos, "ttyS", 4))
+ 				pos += 4;
+ 
+ 			if (arg[pos++] == '1')
+-				port = 1;
++				idx = 1;
+ 
+-			early_serial_base = bases[port];
++			port = bases[idx];
+ 		}
+ 
+ 		if (arg[pos] == ',')
+@@ -208,7 +213,8 @@ static int parse_earlyprintk(void)
+ 			baud = DEFAULT_BAUD;
+ 	}
+ 
+-	return baud;
++	if (port)
++		early_serial_init(port, baud);
+ }
+ 
+ #define BASE_BAUD (1843200/16)
+@@ -227,45 +233,41 @@ static unsigned int probe_baud(int port)
+ 	return BASE_BAUD / quot;
+ }
+ 
+-static int parse_console_uart8250(void)
++static void parse_console_uart8250(void)
+ {
+ 	char optstr[64], *options;
+ 	int baud = DEFAULT_BAUD;
++	int port = 0;
+ 
+ 	/*
+ 	 * console=uart8250,io,0x3f8,115200n8
+ 	 * need to make sure it is last one console !
+ 	 */
+ 	if (cmdline_find_option("console", optstr, sizeof optstr) <= 0)
+-		return baud;
++		return;
+ 
+ 	options = optstr;
+ 
+ 	if (!strncmp(options, "uart8250,io,", 12))
+-		early_serial_base = simple_strtoull(options + 12, &options, 0);
++		port = simple_strtoull(options + 12, &options, 0);
+ 	else if (!strncmp(options, "uart,io,", 8))
+-		early_serial_base = simple_strtoull(options + 8, &options, 0);
++		port = simple_strtoull(options + 8, &options, 0);
+ 	else
+-		return baud;
++		return;
+ 
+ 	if (options && (options[0] == ','))
+ 		baud = simple_strtoull(options + 1, &options, 0);
+ 	else
+-		baud = probe_baud(early_serial_base);
++		baud = probe_baud(port);
+ 
+-	return baud;
++	if (port)
++		early_serial_init(port, baud);
+ }
+ 
+ void console_init(void)
+ {
+-	int baud;
+-
+-	baud = parse_earlyprintk();
++	parse_earlyprintk();
+ 
+ 	if (!early_serial_base)
+-		baud = parse_console_uart8250();
+-
+-	if (early_serial_base != 0) {
+-		early_serial_init(baud);
+-	}
++		parse_console_uart8250();
+ }
