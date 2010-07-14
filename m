@@ -1,54 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756565Ab0GNCjk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 22:39:40 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:45001 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756473Ab0GNCji convert rfc822-to-8bit (ORCPT
+	id S1756571Ab0GNCko (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 22:40:44 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:58087 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756308Ab0GNCkm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 22:39:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=oLql/Ro4s4krZ9GSUIS4P4YmUJRFW+NyLXQSzVbNmeX32A5CH483xaSZPv0Qtsmhrm
-         lSu4nBxORh0xagS1q3wHWNRmmFVu/XBxRpmjEOYGs2QxwEMAw45OUTt/zdVklTTw2qgj
-         XROd/NMulx8NyVN1FPcspQszjhjVG39ulPzYg=
+	Tue, 13 Jul 2010 22:40:42 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: John Stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH 01/11] x86: Fix vtime/file timestamp inconsistencies
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
+References: <1279068988-21864-1-git-send-email-johnstul@us.ibm.com> <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
+Message-Id: <20100714113527.EA8A.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <4C3BEBC4.6000902@redhat.com>
-References: <AANLkTin1uF6WbVvxJ84oO1NKnCU-6VHrmWU1XFYTlqtp@mail.gmail.com>
-	<4C3BEBC4.6000902@redhat.com>
-Date: Wed, 14 Jul 2010 04:39:35 +0200
-Message-ID: <AANLkTikXpAxDvb-tm7Aq8y96ceCs3CKXmKTl-DidojD6@mail.gmail.com>
-Subject: Re: BTRFS: Unbelievably slow with kvm/qemu
-From: Giangiacomo Mariotti <gg.mariotti@gmail.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 14 Jul 2010 11:40:39 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 6:29 AM, Avi Kivity <avi@redhat.com> wrote:
-> Btrfs is very slow on sync writes:
->
-> 45KB/s, while 4-5MB/s traffic was actually going to the disk.  For every 4KB
-> that the the application writes, 400KB+ of metadata is written.
->
-> (It's actually worse, since it starts faster than the average and ends up
-> slower than the average).
->
-> For kvm, you can try cache=writeback or cache=unsafe and get better
-> performance (though still slower than ext*).
->
-Yeah, well I've already moved the virtual hd file to an ext3
-partition, so the problem for me was actually already "solved" before
-posting the first post. I posted the first message just to report the
-particularly bad performances of Btrfs for this test-case, so that, if
-not already known, they could be investigated and hopefully solved.
+Hi
 
-By the way, thanks to everyone who answered!
+> Due to vtime calling vgettimeofday(), its possible that an application
+> could call  time();create("stuff",O_RDRW);  only to see the file's
+> creation timestamp to be before the value returned by time.
 
--- 
-Giangiacomo
+Just dumb question.
+
+Almost application are using gettimeofday() instead time(). It mean
+your fix don't solve almost application.
+
+So, Why can't we fix vgettimeofday() vs create() inconsistency?
+This is just question, I don't intend to disagree you.
+
+
+> 
+> A similar way to reproduce the issue is to compare the vsyscall time()
+> with the syscall time(), and observe ordering issues.
+> 
+> The modified test case from Oleg Nesterov below can illustrate this:
+> 
+> int main(void)
+> {
+> 	time_t sec1,sec2;
+> 	do {
+> 		sec1 = time(&sec2);
+> 		sec2 = syscall(__NR_time, NULL);
+> 	} while (sec1 <= sec2);
+> 
+> 	printf("vtime: %d.000000\n", sec1);
+> 	printf("time: %d.000000\n", sec2);
+> 	return 0;
+> }
+> 
+> The proper fix is to make vtime use the same time value as
+> current_kernel_time() (which is exported via update_vsyscall) instead of
+> vgettime().
+> 
+> Thanks to Jiri Olsa for bringing up the issue and catching bugs in
+> earlier verisons of this fix.
+> 
+> Signed-off-by: John Stultz <johnstul@us.ibm.com>
+> 
+> CC: Jiri Olsa <jolsa@redhat.com>
+> CC: Thomas Gleixner <tglx@linutronix.de>
+> CC: Oleg Nesterov <oleg@redhat.com>
+> ---
+>  arch/x86/kernel/vsyscall_64.c |   11 ++++++++---
+>  1 files changed, 8 insertions(+), 3 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/vsyscall_64.c b/arch/x86/kernel/vsyscall_64.c
+> index 1c0c6ab..dce0c3c 100644
+> --- a/arch/x86/kernel/vsyscall_64.c
+> +++ b/arch/x86/kernel/vsyscall_64.c
+> @@ -169,13 +169,18 @@ int __vsyscall(0) vgettimeofday(struct timeval * tv, struct timezone * tz)
+>   * unlikely */
+>  time_t __vsyscall(1) vtime(time_t *t)
+>  {
+> -	struct timeval tv;
+> +	unsigned seq;
+>  	time_t result;
+>  	if (unlikely(!__vsyscall_gtod_data.sysctl_enabled))
+>  		return time_syscall(t);
+>  
+> -	vgettimeofday(&tv, NULL);
+> -	result = tv.tv_sec;
+> +	do {
+> +		seq = read_seqbegin(&__vsyscall_gtod_data.lock);
+> +
+> +		result = __vsyscall_gtod_data.wall_time_sec;
+> +
+> +	} while (read_seqretry(&__vsyscall_gtod_data.lock, seq));
+> +
+>  	if (t)
+>  		*t = result;
+>  	return result;
+> -- 
+> 1.6.0.4
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
+
