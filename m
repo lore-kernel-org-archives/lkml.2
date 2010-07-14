@@ -1,40 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757994Ab0GNUoC (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:44:02 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41024
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757333Ab0GNUoA (ORCPT
+	id S1757909Ab0GNUqF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:46:05 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:44514 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757496Ab0GNUqA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:44:00 -0400
-Date: Wed, 14 Jul 2010 13:44:15 -0700 (PDT)
-Message-Id: <20100714.134415.183043981.davem@davemloft.net>
-To: siccegge@cs.fau.de
-Cc: nico@fluxnic.net, tony@atomide.com, dwalker@codeaurora.org,
-        rubini@unipv.it, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 11/11] Removing dead REDWOOD_{5,6}
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <adba61f63f4439ac17f2e428429f01ae5e65ab15.1279110895.git.siccegge@cs.fau.de>
-References: <cover.1279110894.git.siccegge@cs.fau.de>
-	<adba61f63f4439ac17f2e428429f01ae5e65ab15.1279110895.git.siccegge@cs.fau.de>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Jul 2010 16:46:00 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jul 2010 16:46:00 EDT
+Date: Wed, 14 Jul 2010 22:39:19 +0200
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+To: Rick Jones <rick.jones2@hp.com>
+Cc: Ed W <lists@wildgooses.com>, David Miller <davem@davemloft.net>,
+        davidsen@tmr.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Raise initial congestion window size / speedup slow start?
+Message-ID: <20100714203919.GD6682@nuttenaction>
+References: <4C3D94E3.9080103@wildgooses.com>
+ <4C3DD5EB.9070908@tmr.com>
+ <20100714.111553.104052157.davem@davemloft.net>
+ <4C3E0684.5060409@wildgooses.com>
+ <4C3E1B54.40604@hp.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3E1B54.40604@hp.com>
+X-Key-Id: 98350C22
+X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
+X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Christoph Egger <siccegge@cs.fau.de>
-Date: Wed, 14 Jul 2010 14:41:31 +0200
+* Rick Jones | 2010-07-14 13:17:24 [-0700]:
 
-> REDWOOD_{5,6} doesn't exist in Kconfig, therefore removing all
-> references for it from the source code.
-> 
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+>There is an effort under way, lead by some folks at Google and
+>including some others, to get the RFC's enhanced in support of the
+>concept of larger initial congestion windows.  Some of the discussion
+>may be in the "tcpm" mailing list (assuming I've not gotten my
+>mailing lists confused).  There may be some previous discussion of
+>that work in the netdev archives as well.
 
-Again, if you're going to kill this off you should also delete the
-references in drivers/net/Kconfig at the same time.
+tcpm is the right mailing list but there is currently no effort to develop
+this topic. Why? Because is not a standardization issue, rather it is a
+technical issue. You cannot rise the initial CWND and expect a fair behavior.
+This was discussed several times and is documented in several documents and
+RFCs.
 
-Please fix this up and resubmit your patch, thanks.
+RFC 5681 Section 3.1. Google employees should start with Section 3. This topic
+pop's of every two months in netdev and until now I _never_ read a
+consolidated contribution.
+
+Partial local issues can already be "fixed" via route specific ip options -
+see initcwnd.
+
+HGN
+
+
+
+
+
+
