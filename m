@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756913Ab0GNN2w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 09:28:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:53761 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754734Ab0GNN2v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 09:28:51 -0400
-Message-ID: <4C3DBA97.40908@cn.fujitsu.com>
-Date: Wed, 14 Jul 2010 21:24:39 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1753395Ab0GNNaU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 09:30:20 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:38797 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750959Ab0GNNaS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 09:30:18 -0400
+Date: Wed, 14 Jul 2010 09:15:27 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Ivo Van Doorn <ivdoorn@gmail.com>
+Cc: Christoph Egger <siccegge@cs.fau.de>,
+        Gertjan van Wingerde <gwingerde@gmail.com>,
+        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vamos-dev@i4.informatik.uni-erlangen.de,
+        Luis Correia <luis.f.correia@gmail.com>
+Subject: Re: [PATCH 01/11] Removing dead RT2800PCI_SOC
+Message-ID: <20100714131527.GB2352@tuxdriver.com>
+References: <cover.1279110894.git.siccegge@cs.fau.de>
+ <29013fb6eab9e95e95d61df894797d2455dfa10c.1279110894.git.siccegge@cs.fau.de>
+ <AANLkTinO32CIe0HBTXjP_bcAz0nMEw6wvcZwcob1fX3r@mail.gmail.com>
+ <AANLkTikCeDys9e1EnE9GdiJtDRcbqW3gzvsmjzvB_yDs@mail.gmail.com>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [PATCH 1/4] KVM: MMU: fix forgot reserved bits check in speculative
- path
-References: <4C3C3518.7080505@cn.fujitsu.com> <4C3DB671.1090802@redhat.com>
-In-Reply-To: <4C3DB671.1090802@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTikCeDys9e1EnE9GdiJtDRcbqW3gzvsmjzvB_yDs@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Avi Kivity wrote:
-
->> +
->> +            if (!!is_pae(vcpu) != sp->role.cr4_pae ||
->> +                  is_nx(vcpu) != sp->role.nxe)
->> +                continue;
->> +
->>    
+On Wed, Jul 14, 2010 at 02:52:14PM +0200, Ivo Van Doorn wrote:
+> On Wed, Jul 14, 2010 at 2:46 PM, Luis Correia <luis.f.correia@gmail.com> wrote:
+> > On Wed, Jul 14, 2010 at 13:39, Christoph Egger <siccegge@cs.fau.de> wrote:
+> >> While RT2800PCI_SOC exists in Kconfig, it depends on either
+> >> RALINK_RT288X or RALINK_RT305X which are both not available in Kconfig
+> >> so all Code depending on that can't ever be selected and, if there's
+> >> no plan to add these options, should be cleaned up
+> >>
+> >> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> >
+> > NAK,
+> >
+> > this is not dead code, it is needed for the Ralink System-on-Chip
+> > Platform devices.
+> >
+> > While I can't fix Kconfig errors and the current KConfig file may be
+> > wrong, this code cannot and will not be deleted.
 > 
-> Do we also need to check cr0.wp?  I think so.
+> When the config option was introduced, the config options RALINK_RT288X and
+> RALINK_RT305X were supposed to be merged as well soon after by somebody (Felix?)
+> 
+> But since testing is done on SoC boards by Helmut and Felix, I assume the code
+> isn't dead but actually in use.
 
-I think it's not too bad since we just decrease the access right, for example,
-we mark the mapping readonly for cr0.wp=0's page, the later write-access will
-cause #PF, and the read-access is OK.
+Perhaps Helmut and Felix can send us the missing code?
 
-> 
->>               if (gentry)
->>                   mmu_pte_write_new_pte(vcpu, sp, spte,&gentry);
->>    
-> 
-> Please move the checks to mmu_pte_write_new_pte(), it's a more logical
-> place.
-> 
-> It means the reserved bits check happens multiple times, but that's ok.
-> 
-
-OK
-
-> Also, you can use arch.mmu.base_role to compare:
-> 
->     static const kvm_mmu_page_role mask = { .level = -1U, .cr4_pae = 1,
-> ... };
-> 
->     if ((sp->role.word ^ base_role.word) & mask.word)
->          return;
-
-OK, will update it :-)
+John
+-- 
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
