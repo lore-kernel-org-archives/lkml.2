@@ -1,179 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754615Ab0GNAww (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:52:52 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:54853 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752718Ab0GNAwv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 20:52:51 -0400
-Date: Tue, 13 Jul 2010 17:52:51 -0700 (PDT)
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-X-X-Sender: sbhatewara@localhost.localdomain
-To: linux-kernel@vger.kernel.org
-Subject: [PATCH 2.6.35-rc1] net-next: vmxnet3 fixes [1/5] Spare skb to avoid
- starvation (fwd)
-Message-ID: <alpine.LRH.2.00.1007131751530.32055@localhost.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1754819Ab0GNAzB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:55:01 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60846 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753902Ab0GNAy7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 20:54:59 -0400
+Date: Wed, 14 Jul 2010 00:54:41 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        yinhai@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        yinhai@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        hpa@linux.intel.com
+In-Reply-To: <4C3BDDA3.2060900@kernel.org>
+References: <4C3BDDA3.2060900@kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/alternatives] x86, alternatives: Fix one more open-coded 8-bit alternative number
+Message-ID: <tip-df378ccfc4dd04e263426ad805516915874774aa@git.kernel.org>
+Git-Commit-ID: df378ccfc4dd04e263426ad805516915874774aa
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Jul 2010 00:54:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  df378ccfc4dd04e263426ad805516915874774aa
+Gitweb:     http://git.kernel.org/tip/df378ccfc4dd04e263426ad805516915874774aa
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Tue, 13 Jul 2010 14:55:11 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Tue, 13 Jul 2010 14:56:16 -0700
 
-skb_alloc() failure can cause the ring to loose all packet reception. Avoid
-this by introducing a spare buffer. The spare skb is only used when the ring
-is "empty" and an skb allocation failure would cause the ring to starve. It is
-never handed up to netif_rx(), and instead, when the rx_interrupt occurs, the
-skb is shuffled back to reuse. Further use the incoming receive packet
-interrupts as events to poll for skb allocation.
+x86, alternatives: Fix one more open-coded 8-bit alternative number
 
+Fix a missing case of an 8-bit alternative number, buried inside an
+assembly macro.
 
-Signed-off-by: Michael Stolarchuk <stolarchuk@vmware.com>
-Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
-
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Reported-by: Yinghai Lu <yinhai@kernel.org>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+LKML-Reference: <4C3BDDA3.2060900@kernel.org>
 ---
- drivers/net/vmxnet3/vmxnet3_drv.c |   61 +++++++++++++++++++++++++++++++++++--
- drivers/net/vmxnet3/vmxnet3_int.h |   12 ++++++-
- 2 files changed, 68 insertions(+), 5 deletions(-)
+ arch/x86/lib/copy_user_64.S |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 989b742..5a50d10 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -541,7 +541,12 @@ vmxnet3_rq_alloc_rx_buf(struct vmxnet3_rx_queue *rq, u32 ring_idx,
- 							 NET_IP_ALIGN);
- 				if (unlikely(rbi->skb == NULL)) {
- 					rq->stats.rx_buf_alloc_failure++;
--					break;
-+					/* starvation prevention */
-+					if (vmxnet3_cmd_ring_desc_empty(
-+							rq->rx_ring + ring_idx))
-+						rbi->skb = rq->spare_skb;
-+					else
-+						break;
- 				}
- 				rbi->skb->dev = adapter->netdev;
- 
-@@ -611,6 +616,29 @@ vmxnet3_append_frag(struct sk_buff *skb, struct Vmxnet3_RxCompDesc *rcd,
- }
- 
- 
-+/*
-+ * Free any pages which were attached to the frags of the spare skb.  This can
-+ * happen when the spare skb is attached to the rx ring to prevent starvation,
-+ * but there was no issue with page allocation.
-+ */
-+
-+static void
-+vmxnet3_rx_spare_skb_free_frags(struct vmxnet3_adapter *adapter)
-+{
-+	struct sk_buff *skb = adapter->rx_queue.spare_skb;
-+	int i;
-+	for (i = 0; i < skb_shinfo(skb)->nr_frags; i++) {
-+		struct skb_frag_struct *frag = &skb_shinfo(skb)->frags[i];
-+		BUG_ON(frag->page != 0);
-+		put_page(frag->page);
-+		frag->page = 0;
-+		frag->size = 0;
-+	}
-+	skb_shinfo(skb)->nr_frags = 0;
-+	skb->data_len = 0;
-+}
-+
-+
- static void
- vmxnet3_map_pkt(struct sk_buff *skb, struct vmxnet3_tx_ctx *ctx,
- 		struct vmxnet3_tx_queue *tq, struct pci_dev *pdev,
-@@ -1060,8 +1088,12 @@ vmxnet3_rx_error(struct vmxnet3_rx_queue *rq, struct Vmxnet3_RxCompDesc *rcd,
- 	 * ctx->skb may be NULL if this is the first and the only one
- 	 * desc for the pkt
- 	 */
--	if (ctx->skb)
--		dev_kfree_skb_irq(ctx->skb);
-+	if (ctx->skb) {
-+		if (ctx->skb == rq->spare_skb)
-+			vmxnet3_rx_spare_skb_free_frags(adapter);
-+		else
-+			dev_kfree_skb_irq(ctx->skb);
-+	}
- 
- 	ctx->skb = NULL;
- }
-@@ -1159,6 +1191,12 @@ vmxnet3_rq_rx_complete(struct vmxnet3_rx_queue *rq,
- 
- 		skb = ctx->skb;
- 		if (rcd->eop) {
-+			if (skb == rq->spare_skb) {
-+				rq->stats.drop_total++;
-+				vmxnet3_rx_spare_skb_free_frags(adapter);
-+				ctx->skb = NULL;
-+				goto rcd_done;
-+			}
- 			skb->len += skb->data_len;
- 			skb->truesize += skb->data_len;
- 
-@@ -1244,6 +1282,14 @@ vmxnet3_rq_cleanup(struct vmxnet3_rx_queue *rq,
- 		rq->uncommitted[ring_idx] = 0;
- 	}
- 
-+	/* free starvation prevention skb if allocated */
-+	if (rq->spare_skb) {
-+		vmxnet3_rx_spare_skb_free_frags(adapter);
-+		dev_kfree_skb(rq->spare_skb);
-+		rq->spare_skb = NULL;
-+	}
-+
-+
- 	rq->comp_ring.gen = VMXNET3_INIT_GEN;
- 	rq->comp_ring.next2proc = 0;
- }
-@@ -1325,6 +1371,15 @@ vmxnet3_rq_init(struct vmxnet3_rx_queue *rq,
- 	}
- 	vmxnet3_rq_alloc_rx_buf(rq, 1, rq->rx_ring[1].size - 1, adapter);
- 
-+	/* allocate ring starvation protection */
-+	rq->spare_skb = dev_alloc_skb(PAGE_SIZE);
-+	if (rq->spare_skb == NULL) {
-+		vmxnet3_rq_cleanup(rq, adapter);
-+		return -ENOMEM;
-+	}
-+
-+
-+
- 	/* reset the comp ring */
- 	rq->comp_ring.next2proc = 0;
- 	memset(rq->comp_ring.base, 0, rq->comp_ring.size *
-diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
-index 34f392f..bbed330 100644
---- a/drivers/net/vmxnet3/vmxnet3_int.h
-+++ b/drivers/net/vmxnet3/vmxnet3_int.h
-@@ -149,6 +149,13 @@ vmxnet3_cmd_ring_desc_avail(struct vmxnet3_cmd_ring *ring)
- 		ring->next2comp - ring->next2fill - 1;
- }
- 
-+static inline bool
-+vmxnet3_cmd_ring_desc_empty(struct vmxnet3_cmd_ring *ring)
-+{
-+	return (ring->next2comp == ring->next2fill);
-+}
-+
-+
- struct vmxnet3_comp_ring {
- 	union Vmxnet3_GenericDesc *base;
- 	u32               size;
-@@ -266,9 +273,10 @@ struct vmxnet3_rx_queue {
- 	u32 qid2;           /* rqID in RCD for buffer from 2nd ring */
- 	u32 uncommitted[2]; /* # of buffers allocated since last RXPROD
- 				* update */
--	struct vmxnet3_rx_buf_info     *buf_info[2];
--	struct Vmxnet3_RxQueueCtrl            *shared;
-+	struct vmxnet3_rx_buf_info	*buf_info[2];
-+	struct Vmxnet3_RxQueueCtrl	*shared;
- 	struct vmxnet3_rq_driver_stats  stats;
-+	struct sk_buff			*spare_skb;      /* starvation skb */
- } __attribute__((__aligned__(SMP_CACHE_BYTES)));
- 
- #define VMXNET3_LINUX_MAX_MSIX_VECT     1
-
+diff --git a/arch/x86/lib/copy_user_64.S b/arch/x86/lib/copy_user_64.S
+index 71100c9..a460158 100644
+--- a/arch/x86/lib/copy_user_64.S
++++ b/arch/x86/lib/copy_user_64.S
+@@ -29,7 +29,7 @@
+ 	.align 8
+ 	.quad  0b
+ 	.quad  2b
+-	.byte  \feature			/* when feature is set */
++	.word  \feature			/* when feature is set */
+ 	.byte  5
+ 	.byte  5
+ 	.previous
