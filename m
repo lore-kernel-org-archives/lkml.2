@@ -1,56 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab0GNLnf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 07:43:35 -0400
-Received: from smtp2.it.da.ut.ee ([193.40.5.67]:50515 "EHLO smtp2.it.da.ut.ee"
+	id S1753794Ab0GNLrJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 07:47:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49698 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753236Ab0GNLnd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 07:43:33 -0400
-Date: Wed, 14 Jul 2010 14:43:31 +0300 (EEST)
-From: Meelis Roos <mroos@linux.ee>
-To: Yinghai Lu <yinghai@kernel.org>
-cc: Linux Kernel list <linux-kernel@vger.kernel.org>,
-        Ingo Molnar <mingo@elte.hu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: 2.6.35-rc* regression: ERROR: Unable to locate IOAPIC for GSI
- *
-In-Reply-To: <AANLkTikYc5N5ihRBJI_n3yGfcRxjplxbYGtGzJZ1ufzc@mail.gmail.com>
-Message-ID: <alpine.SOC.1.00.1007141441460.18009@math.ut.ee>
-References: <alpine.SOC.1.00.1007081644200.15817@math.ut.ee> <AANLkTinwbPAsCAwrbYVj7_K-YsgKAPyjXlUlQNDZ7eqa@mail.gmail.com> <AANLkTikYc5N5ihRBJI_n3yGfcRxjplxbYGtGzJZ1ufzc@mail.gmail.com>
-User-Agent: Alpine 1.00 (SOC 882 2007-12-20)
+	id S1752454Ab0GNLrI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 07:47:08 -0400
+Message-ID: <4C3DA38A.7010003@kernel.org>
+Date: Wed, 14 Jul 2010 13:46:18 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Christoph Lameter <cl@linux-foundation.org>
+CC: Heinz Diehl <htd@fancy-poultry.org>, linux-kernel@vger.kernel.org,
+        Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
+        Nick Piggin <npiggin@suse.de>, David Rientjes <rientjes@google.com>
+Subject: Re: [S+Q2 00/19] SLUB with queueing (V2) beats SLAB netperf TCP_RR
+References: <20100709190706.938177313@quilx.com> <20100710195621.GA13720@fancy-poultry.org> <alpine.DEB.2.00.1007121010420.14328@router.home>
+In-Reply-To: <alpine.DEB.2.00.1007121010420.14328@router.home>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Jul 2010 11:46:24 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> related commit:
-> 
-> commit 9a0a91bb56d2915cdb8585717de38376ad20fef9
-> Author: Eric W. Biederman <ebiederm@xmission.com>
-> Date:   Tue Mar 30 01:07:03 2010 -0700
-> 
->     x86, acpi/irq: Teach acpi_get_override_irq to take a gsi not an isa_irq
-> 
->     In perverse acpi implementations the isa irqs are not identity mapped
->     to the first 16 gsi.  Furthermore at least the extended interrupt
->     resource capability may return gsi's and not isa irqs.  So since
->     what we get from acpi is a gsi teach acpi_get_overrride_irq to
->     operate on a gsi instead of an isa_irq.
-> 
->     Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
->     LKML-Reference: <1269936436-7039-2-git-send-email-ebiederm@xmission.com>
->     Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+Hello,
 
-[2c2df8418ac7908eec4558407b83f16739006c54] x86, acpi/irq: Introduce apci_isa_irq_to_gsi
+On 07/12/2010 05:11 PM, Christoph Lameter wrote:
+> You need a sufficient PERCPU_DYNAMIC_EARLY_SIZE to be configured. What
+> platform is this? Tejon: You suggested the BUILD_BUG_ON(). How can he
+> increase the early size?
 
-This ise the commit that introduces the ERROR: lines in dmesg. Related 
-to the same irq mapping changes.
+The size is determined by PERCPU_DYNAMIC_EARLY_SIZE, so bumping it up
+should do it but it would probably be wiser to bump
+PERCPU_DYNAMIC_RESERVE too.  PERCPU_DYNAMIC_EARLY_SIZE is currently
+12k.  How high should it be?
 
-The right way to silence these error lines in dmesg is the change 
-proposed by hpa, about only trying to ouse ioapic whet we are in ioapic 
-mode?
+Thanks.
 
 -- 
-Meelis Roos (mroos@linux.ee)
+tejun
