@@ -1,56 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab0GNSGB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:06:01 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:23184 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab0GNSF7 (ORCPT
+	id S1757415Ab0GNSGe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:06:34 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50565 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751822Ab0GNSGc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:05:59 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6043"; a="47476437"
-Message-ID: <4C3DFC7A.8020002@codeaurora.org>
-Date: Wed, 14 Jul 2010 11:05:46 -0700
-From: Stephen Boyd <sboyd@codeaurora.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
-MIME-Version: 1.0
-To: linux-arm-kernel@lists.infradead.org
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org, Russell King <rmk@arm.linux.org.uk>,
-        Saravana Kannan <skannan@codeaurora.org>,
-        David Brownell <david-b@pacbell.net>
-Subject: Meaning of clk_round_rate()?
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Jul 2010 14:06:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=t2kA5QaUIlQ6U5BzGMvPo5PdJcXkuMN4HUEBQDCL8clpW/pzPhWlGeqoLVf7RCVKY2
+         nLNJU+aInpkvhvtXcg/PEGbAzaLi3nSkOtO4CbhlSCg/eamuheINMIG/E6/hUkudqPeh
+         kKpZl48ggbWTIrakQF+iNShjbhIoR2auffBwg=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Stepan Moskovchenko <stepanm@codeaurora.org>,
+        Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
+        David Brown <davidb@codeaurora.org>, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 10/11] staging: msm: formatting of pointers in printk()
+Date: Wed, 14 Jul 2010 22:05:58 +0400
+Message-Id: <1279130759-17608-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  What is the meaning of clk_round_rate() in the clk API 
-(include/linux/clk.h)? The function documentation says "adjust a rate to 
-the exact rate a clock can provide". That seems pretty vague. I'm lead 
-to believe that it rounds the rate to the closest rate supported. Is 
-that correct? Is there some sort of error margin where beyond that it's 
-no longer possible to be rounded? 0.5%? 1%?
+Use %p instead of %08x in printk().
 
-Assuming it's doing closest matching, I don't see how it's very useful 
-in practice. Some users of clk_round_rate() are blindly searching up and 
-down in the frequency space until they find a suitable rate (see 
-sound/atmel/abdac.c and sound/spi/at73c213.c). These drivers might be 
-better served by something like a clk_round_rate_up() and a 
-clk_round_rate_down() which would round the rate to the nearest higher 
-and lower frequency respectively without requiring complex loops around 
-clk_round_rate().
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/staging/msm/mdp4_overlay.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-In addition, an up/down rounding approach would make it simpler for 
-drivers to find a min/max rate (for example display panels have a max 
-frequency they can support).
-
-A similar approach was suggested by David Brownell [1] but nothing came 
-of it.
-
-[1] http://article.gmane.org/gmane.linux.ports.arm.kernel/38076
-
+diff --git a/drivers/staging/msm/mdp4_overlay.c b/drivers/staging/msm/mdp4_overlay.c
+index 304bb82..de284c2 100644
+--- a/drivers/staging/msm/mdp4_overlay.c
++++ b/drivers/staging/msm/mdp4_overlay.c
+@@ -874,8 +874,8 @@ struct mdp4_overlay_pipe *mdp4_overlay_pipe_alloc(void)
+ 		if (pipe->pipe_ndx == 0) {
+ 			pipe->pipe_ndx = i + 1;	/* start from 1 */
+ 			init_completion(&pipe->comp);
+-	printk(KERN_INFO "mdp4_overlay_pipe_alloc: pipe=%x ndx=%d\n",
+-					(int)pipe, pipe->pipe_ndx);
++	printk(KERN_INFO "mdp4_overlay_pipe_alloc: pipe=%p ndx=%d\n",
++					pipe, pipe->pipe_ndx);
+ 			return pipe;
+ 		}
+ 		pipe++;
+@@ -887,8 +887,8 @@ struct mdp4_overlay_pipe *mdp4_overlay_pipe_alloc(void)
+ 
+ void mdp4_overlay_pipe_free(struct mdp4_overlay_pipe *pipe)
+ {
+-	printk(KERN_INFO "mdp4_overlay_pipe_free: pipe=%x ndx=%d\n",
+-					(int)pipe, pipe->pipe_ndx);
++	printk(KERN_INFO "mdp4_overlay_pipe_free: pipe=%p ndx=%d\n",
++					pipe, pipe->pipe_ndx);
+ 	memset(pipe, 0, sizeof(*pipe));
+ }
+ 
 -- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.7.0.4
 
