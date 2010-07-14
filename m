@@ -1,87 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757868Ab0GNVFx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 17:05:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25501 "EHLO mx1.redhat.com"
+	id S1757942Ab0GNVF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 17:05:57 -0400
+Received: from kroah.org ([198.145.64.141]:57849 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757370Ab0GNVFw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 17:05:52 -0400
-Date: Wed, 14 Jul 2010 17:05:19 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: tip/master broken with x2apic and kexec
-Message-ID: <20100714210519.GT5381@redhat.com>
-References: <4C3BD6AA.3070908@kernel.org>
- <4C3CE210.2030902@zytor.com>
- <4C3CF650.30905@kernel.org>
- <4C3E1FA0.9000107@kernel.org>
+	id S1757885Ab0GNVFy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 17:05:54 -0400
+Date: Wed, 14 Jul 2010 14:06:06 -0700
+From: Greg KH <greg@kroah.com>
+To: Shreyas Bhatewara <sbhatewara@vmware.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Pankaj Thakkar <pthakkar@vmware.com>,
+        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "virtualization@lists.linux-foundation.org" 
+	<virtualization@lists.linux-foundation.org>
+Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
+Message-ID: <20100714210606.GA29786@kroah.com>
+References: <20100504230225.GP8323@vmware.com> <201005051029.42052.dtor@vmware.com> <20100505173120.GA1752@infradead.org> <201005051035.29831.dtor@vmware.com> <20100505173951.GA8388@infradead.org> <20100505105253.0a8bc465@nehalam> <20100506202113.GC17922@infradead.org> <1278990388.32650.22.camel@eng-rhel5-64> <20100714094952.GA16209@kroah.com> <alpine.LRH.2.00.1007141335570.12881@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C3E1FA0.9000107@kernel.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <alpine.LRH.2.00.1007141335570.12881@localhost.localdomain>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 01:35:44PM -0700, Yinghai Lu wrote:
-> On 07/13/2010 04:27 PM, Yinghai Lu wrote:
-> > On 07/13/2010 03:00 PM, H. Peter Anvin wrote:
-> >> On 07/12/2010 07:59 PM, Yinghai Lu wrote:
-> >>> tip/master: 
-> >>> system1: BIOS enabled x2apic, first kernel boot well, and when kexec second kernel will cause system instant reboot.
-> >>>
-> >>> system2: BIOS not enable x2apic, first kernel boot well and enable x2apic, and kexec second kernel well. but when kexec third kernel will case system instant reboot.
-> >>>
-> >>> linus' tree is ok.
-> >>>
-> >>> but for system2 if boot with nox2apic ,intr-remaping off, iommu off, the kexec loop test will pass.
-> >>>
-> >>> the problem looks start in recent two or three weeks.
-> >>>
-> >>> Any idea?
-> >>>
-> >>> bisecting will take a while, because the system post take a while everytime.
-> >>>
-> >>> Thanks
-> >>>
-> >>> Yinghai Lu
-> >>
-> >> OK, I found the bug... if you could test out the patch which will be
-> >> sent out shortly I would very much appreciate it.
-> > 
-> > not sure if your patch is the offending one now.
-> > 
-> > kL: kernel from linus tree
-> > kT1: kernel from tip
-> > kT2: kernel from tip with reverting your patch
-> > 
-> > BIOS-->kL ---> kL ---> kL....always working
-> > BIOS-->kT1 ---> kT1 --->  kT1 : between second one and third one system reset instant...
-> > BIOS-->kT2 ---> kT2 --->  kT2 : between second one and third one system reset instant...
-> > 
-> > BIOS-->kL ---> kL ---> kL ---> then kT1 ---> kT1 .... always working
-> > BIOS-->kL ---> kL ---> kL ---> then kT2 ---> kT2 .... always working
-> > 
-> 
-> bisecting said:
-> 
-> > git bisect good
-> 58687acba59266735adb8ccd9b5b9aa2c7cd205b is the first bad commit
-> commit 58687acba59266735adb8ccd9b5b9aa2c7cd205b
-> Author: Don Zickus <dzickus@redhat.com>
-> Date:   Fri May 7 17:11:44 2010 -0400
+On Wed, Jul 14, 2010 at 01:42:59PM -0700, Shreyas Bhatewara wrote:
+> +/* vmkernel and device backend shared definitions */
+> +
+> +#define VMXNET3_PLUGIN_NAME_LEN  256
+> +#define VMXNET3_PLUGIN_REPOSITORY "/usr/lib/vmware/npa_plugins"
 
-What do you mean by instant reboot?  This code isn't really exercised
-until the cpus come online.
+Why would the kernel care about this file path?  And since when do we
+hard-code file paths in the kernel in the first place (yeah, in some
+places we do, but not like this...)
 
-I'll dig through the history of this thread to see if there is a boot log
-or something to look at.
+> +#define NPA_MEMIO_REGIONS_u64X    6
+> +
+> +typedef u32 VF_ID;
+> +
+> +struct Vmxnet3_VFInfo {
+> +	char     pluginName[VMXNET3_PLUGIN_NAME_LEN];
 
-Cheers,
-Don
+This is never used.
+
+> +	u32   deviceInfo[VMXNET3_PLUGIN_INFO_LEN];	/* opaque data returned
+> +							 * by PF driver */
+
+This is happily copied around and zeroed out, but never actually used by
+anything.
+
+
+> +	u64       memioAddr;
+> +	u32   memioLen;
+
+This field is never used.
+
+Why have fields in a structure that are never used?
+
+> +};
+
+<...>
+
+> +/*
+> + * Easy shell API calling macros.
+> + */
+> +#define Shell_AllocSmallBuffer(_state, _handle, _ringOffset)		\
+> +	((_state)->shellApi.allocSmallBuffer((_handle), (_ringOffset)))
+> +#define Shell_AllocLargeBuffer(_state, _handle, _ringOffset)		\
+> +	((_state)->shellApi.allocLargeBuffer((_handle), (_ringOffset)))
+> +#define Shell_FreeBuffer(_state, _handle, _ringOffset)			\
+> +	((_state)->shellApi.freeBuffer((_handle), (_ringOffset)))
+> +#define Shell_CompleteSend(_state, _handle, _numPkt)			\
+> +	((_state)->shellApi.completeSend((_handle), (_numPkt)))
+> +#define Shell_IndicateRecv(_state, _handle, _frame)			\
+> +	((_state)->shellApi.indicateRecv((_handle), (_frame)))
+> +#define Shell_Log(_state, _loglevel, _n, _fmt, ...)			\
+> +	do {								\
+> +		if (logEnabled && (_loglevel) <= (u32)logLevel) {	\
+> +			(_state)->shellApi.log((_n) + 1,		\
+> +					"%s: " _fmt,		\
+> +					__func__,		\
+> +##__VA_ARGS__);		\
+> +		}							\
+> +	} while (0)
+
+
+This hiding of functions kind of implies that something odd is going on
+here, right?  At the least, make them inline functions so you get the
+proper typechecking warnings/errors in a format that you can understand.
+
+> +/*
+> + * Some standard definitions
+> + */
+> +#ifndef NULL
+> +#define NULL (void *)0
+> +#endif
+
+What's wrong with the kernel-provided version of this?
+
+> +/*
+> + * Utility macro to write a register's value (BAR0)
+> + */
+> +#define VMXNET3_WRITE_REG(_state, _offset, _value)		\
+> +	(*(u32 *)((u8 *)(_state)->memioAddr + (_offset)) =	\
+> +	(_value))
+
+This will never work, sorry.  Please use the proper functions for doing
+this type of access.  I'm amazed that anyone even thought this would
+succeed...
+
+> +/*
+> + * Utility macro to align a virtual address
+> + */
+> +#define ALIGN_VA(_ptr, _align) ((void *)(((uintptr_t)(_ptr) + ((_align) - 1)) &\
+> +			~((_align) - 1)))
+
+What's wrong with the kernel provided function for this?
+
+Anyway, just randomly poking at the code like this turns up these types
+of trivial issues, has this code ever been run?
+
+wierd,
+
+greg k-h
