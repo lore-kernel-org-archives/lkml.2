@@ -1,70 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab0GNOqs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 10:46:48 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:54432 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753612Ab0GNOqr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 10:46:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=DuvHUm5PcmhDU47fTQApaHGUqqoCqVGzv6qD4KfbBhZTMKyKHW0hyH6eXUIeBnIioD
-         O3wRsk6wmIfVuWXZ42nC8+QrlomJtnPhLpBKARcbsjDM0b5V0e87LECgNkmUaZHSSoux
-         wj74ad0PFIzzD9OZ6GYfpLIGbx8N8FF10V5tQ=
+	id S1757219Ab0GNOrZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 10:47:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34779 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751489Ab0GNOrY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 10:47:24 -0400
+Message-ID: <4C3DCDC7.1000802@ds.jp.nec.com>
+Date: Wed, 14 Jul 2010 10:46:31 -0400
+From: Munehiro IKEDA <m-ikeda@ds.jp.nec.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-In-Reply-To: <20100714143625.GA30721@srcf.ucam.org>
-References: <4C3DCAA4.9050602@gmail.com>
-	<20100714143625.GA30721@srcf.ucam.org>
-Date: Wed, 14 Jul 2010 15:46:46 +0100
-Message-ID: <AANLkTikHjd3SZKCdTABO7Aw_Y1BMC2EYJTvLD83Ta34r@mail.gmail.com>
-Subject: Re: [PATCH] Remove 9 second reboot delay on Lenovo T400/T500
-From: Pedro Ribeiro <pedrib@gmail.com>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Cc: ibm-acpi-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-        toralf.foerster@gmx.de
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, Vivek Goyal <vgoyal@redhat.com>,
+        Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
+        Andrea Righi <righi.andrea@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+        balbir@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH 02/11] blkiocg async: The main part of iotrack
+References: <4C369009.80503@ds.jp.nec.com>	<4C369452.2070103@ds.jp.nec.com>	<20100709163552.3eef1d62.kamezawa.hiroyu@jp.fujitsu.com>	<4C37AB74.7030401@ds.jp.nec.com> <20100712091155.c379cfe4.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100712091155.c379cfe4.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 July 2010 15:36, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
-> On Wed, Jul 14, 2010 at 03:33:08PM +0100, Pedro Ribeiro wrote:
->>  Please consider this patch. Let me know if you would like me to change
->>  anything or if you don't agree with it. It applies cleanly to 2.6.35-rc5.
+KAMEZAWA Hiroyuki wrote: 
+> On Fri, 09 Jul 2010 19:06:28 -0400
+> Munehiro Ikeda <m-ikeda@ds.jp.nec.com> wrote:
+> 
+>> OK, we can do it like:
 >>
->>  The Lenovo T400 and T500 have an annoying 9 second delay when
->>  rebooting, unless reboot=pci is passed to the kernel command line.
->>  This delay happens from at least kernel 2.6.20.
+>> do {
+>> 	old =  pc->flags;
+>> 	new = old & ((1UL << PAGE_TRACKING_ID_SHIFT) - 1);
+>> 	new |= (unsigned long)(id << PAGE_TRACKING_ID_SHIFT);
+>> } while (cmpxchg(&pc->flags, old, new)  != old);
 >>
->>  Make this change permanent by hardcoding the Tx00 on the
->>  arch/kernel/reboot.c pci quirks table.
->
-> There's two possibilities here:
->
-> 1) Lenovo's firmware is broken and the 9-second delay is always going to
-> be there. In that case we should try to use the ACPI reboot vector
-> first.
->
-> 2) We're doing something wrong in our shutdown sequence which then
-> triggers this problem as a result.
->
-> Either way, I think this patch is wrong.
->
-> --
-> Matthew Garrett | mjg59@srcf.ucam.org
->
+>>
+>>> IIUC, there is an generic version now even if it's heavy.
+>> I couldn't find it out...is there already?  Or you mean we should
+>> have generic one?
+>>
+> 
+> generic cmpxchg in /include/asm-generic/cmpxchg.h
+> But...ahh...in some arch, you can't use cmpxchg, sorry.
+> 
+> How about start from "a new field" for I/O cgroup in page_cgroup ?
+> 
+> struct page_cgroup {
+>         unsigned long flags;
+>         struct mem_cgroup *mem_cgroup;
+> 	unsigned short blkio_cgroup_id;
+>         struct page *page;
+>         struct list_head lru;           /* per cgroup LRU list */
+> };
+> 
+> We can consider how we optimize it out, later.
+> (And, it's easier to debug and make development smooth.)
+> 
+> For example, If we can create a vmalloced-array of mem_cgroup,
+> id->mem_cgroup lookup can be very fast and we can replace
+> pc->mem_cgroup link with pc->mem_cgroup_id.
 
-Hi Matthew,
+Nice suggestion.  Thanks Kame-san.
 
-by acpi reboot vector you mean using reboot=acpi?
-I tried it and does not solve the problem.
-Check here http://marc.info/?l=linux-kernel&m=127590255224570&w=2
 
-Can you please tell me how to debug this?
+>>>> +unsigned long page_cgroup_get_owner(struct page *page);
+>>>> +int page_cgroup_set_owner(struct page *page, unsigned long id);
+>>>> +int page_cgroup_copy_owner(struct page *npage, struct page *opage);
+>>>> +
+>>>>   void __meminit pgdat_page_cgroup_init(struct pglist_data *pgdat);
+>>>>
+>>>>   #ifdef CONFIG_SPARSEMEM
+>>>> diff --git a/init/Kconfig b/init/Kconfig
+>>>> index 2e40f2f..337ee01 100644
+>>>> --- a/init/Kconfig
+>>>> +++ b/init/Kconfig
+>>>> @@ -650,7 +650,7 @@ endif # CGROUPS
+>>>>
+>>>>   config CGROUP_PAGE
+>>>>   	def_bool y
+>>>> -	depends on CGROUP_MEM_RES_CTLR
+>>>> +	depends on CGROUP_MEM_RES_CTLR || GROUP_IOSCHED_ASYNC
+>>>>
+>>>>   config MM_OWNER
+>>>>   	bool
+>>>> diff --git a/mm/page_cgroup.c b/mm/page_cgroup.c
+>>>> index 6c00814..69e080c 100644
+>>>> --- a/mm/page_cgroup.c
+>>>> +++ b/mm/page_cgroup.c
+>>>> @@ -9,6 +9,7 @@
+>>>>   #include<linux/vmalloc.h>
+>>>>   #include<linux/cgroup.h>
+>>>>   #include<linux/swapops.h>
+>>>> +#include<linux/blk-iotrack.h>
+>>>>
+>>>>   static void __meminit
+>>>>   __init_page_cgroup(struct page_cgroup *pc, unsigned long pfn)
+>>>> @@ -74,7 +75,7 @@ void __init page_cgroup_init_flatmem(void)
+>>>>
+>>>>   	int nid, fail;
+>>>>
+>>>> -	if (mem_cgroup_disabled())
+>>>> +	if (mem_cgroup_disabled()&&  blk_iotrack_disabled())
+>>>>   		return;
+>>>>
+>>>>   	for_each_online_node(nid)  {
+>>>> @@ -83,12 +84,13 @@ void __init page_cgroup_init_flatmem(void)
+>>>>   			goto fail;
+>>>>   	}
+>>>>   	printk(KERN_INFO "allocated %ld bytes of page_cgroup\n", total_usage);
+>>>> -	printk(KERN_INFO "please try 'cgroup_disable=memory' option if you"
+>>>> -	" don't want memory cgroups\n");
+>>>> +	printk(KERN_INFO "please try 'cgroup_disable=memory,blkio' option"
+>>>> +	" if you don't want memory and blkio cgroups\n");
+>>>>   	return;
+>>>>   fail:
+>>>>   	printk(KERN_CRIT "allocation of page_cgroup failed.\n");
+>>>> -	printk(KERN_CRIT "please try 'cgroup_disable=memory' boot option\n");
+>>>> +	printk(KERN_CRIT
+>>>> +		"please try 'cgroup_disable=memory,blkio' boot option\n");
+>>>>   	panic("Out of memory");
+>>>>   }
+>>> Hmm, io-track is always done if blkio-cgroup is used, Right ?
+>> No, iotrack is enabled only when CONFIG_GROUP_IOSCHED_ASYNC=y.
+>> If =n, iotrack is disabled even if blkio-cgroup is enabled.
+>>
+> 
+> 
+>>> Then, why you have extra config as CONFIG_GROUP_IOSCHED_ASYNC ?
+>>> Is it necessary ?
+>> Current purpose of the option is only for debug because it is
+>> experimental functionality.
+>> It can be removed if this work is completed, or dynamic switch
+>> might be useful.
+>>
+>> In fact, just "cgroup_disable=memory" is enough for the failure
+>> case.  Let me think right messages.
+>>
+> 
+> IMHO, once you add boot-option or sysctl, it's very hard to remove it, lator.
+> So, if you think you'll remove it lator, don't add it or just add CONFIG.
+
+OK.  I understand we need to seriously think over to add a new boot option.
+
 
 Thanks,
-Pedro
+Muuhh
+
+
+-- 
+IKEDA, Munehiro
+  NEC Corporation of America
+    m-ikeda@ds.jp.nec.com
+
