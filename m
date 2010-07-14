@@ -1,73 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757683Ab0GNXae (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:30:34 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:39059 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756776Ab0GNXad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:30:33 -0400
-Date: Wed, 14 Jul 2010 16:30:29 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 29/30] rcu: add boot parameter to
- suppress RCU CPU stall warning messages
-Message-ID: <20100714233029.GK2417@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100714200945.GA10535@linux.vnet.ibm.com>
- <1279138204-12849-29-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100714211606.GB4624@feather>
+	id S1757734Ab0GNXcf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:32:35 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57172 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755328Ab0GNXce (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 19:32:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=cgu/+69/4oHSpgrO51Oa/MxOUmY9D8wXsnBzhgwpRjQjfGz1UxnMJC7qeZLnGVYDvI
+         yKPVd/t9uTUOdILHvtJF68nrGmY5ZAvyMKWd0y5EQ8832CtJgtbVajOsx31jNRg+HB4g
+         /n7sYmUPhgOeT/lBl6+OQThjXwbvL+2m910VA=
+Message-ID: <4C3E490B.4000702@gmail.com>
+Date: Thu, 15 Jul 2010 01:32:27 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100714211606.GB4624@feather>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Andi Kleen <andi@firstfloor.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+References: <20100714154923.947138065@efficios.com> <20100714155804.049012415@efficios.com> <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com> <20100714170617.GB4955@Krystal> <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com> <20100714184642.GA9728@elte.hu> <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com> <AANLkTinfmoKvi1SauDA5_RiTmu6bztTDk8b_ycS-lr8S@mail.gmail.com> <20100714195617.GC22373@basil.fritz.box> <20100714200552.GA22096@Krystal> <20100714200745.GD22373@basil.fritz.box> <4C3E194C.90602@zytor.com>
+In-Reply-To: <4C3E194C.90602@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 02:16:06PM -0700, Josh Triplett wrote:
-> On Wed, Jul 14, 2010 at 01:10:03PM -0700, Paul E. McKenney wrote:
-> > Although the RCU CPU stall warning messages are a very good way to alert
-> > people to a problem, once alerted, it is sometimes helpful to shut them
-> > off in order to avoid obscuring other messages that might be being used
-> > to track down the problem.  Although you can rebuild the kernel with
-> > CONFIG_RCU_CPU_STALL_DETECTOR=n, this is sometimes inconvenient.  This
-> > commit therefore adds a boot parameter named "rcu_cpu_stall_suppress"
-> > that shuts these messages off without requiring a rebuild (though a
-> > reboot might be needed for those not brave enough to patch their kernel
-> > while it is running).
-> > 
-> > This message-suppression was already in place for the panic case, so this
-> > commit need only rename the variable and export it via module_param().
-> > 
-> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > ---
-> >  kernel/rcutree.c |   11 ++++++++---
-> >  1 files changed, 8 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-> > index 5b1c3c2..f3d5906 100644
-> > --- a/kernel/rcutree.c
-> > +++ b/kernel/rcutree.c
-> > @@ -143,6 +143,11 @@ module_param(blimit, int, 0);
-> >  module_param(qhimark, int, 0);
-> >  module_param(qlowmark, int, 0);
-> >  
-> > +#ifdef CONFIG_RCU_CPU_STALL_DETECTOR
-> > +int rcu_cpu_stall_suppress __read_mostly;
-> > +module_param(rcu_cpu_stall_suppress, int, 0);
-> > +#endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+Hello,
+
+On 07/14/2010 10:08 PM, H. Peter Anvin wrote:
+>> I suspect the low level per cpu allocation functions should 
+>> just call it.
+>>
 > 
-> In theory, you could change the permissions on this module_param from 0
-> to 0644, making it appear under /sys as a writable file.  That would
-> allow changing it at runtime rather than just at boot time.  Looking at
-> the use of this variable, changing it dynamically should work.
+> Yes, specifically the point at which we allocate new per cpu memory
+> blocks.
 
-Will give it a try!
+We can definitely do that but walking whole page table list is too
+heavy to do automatically at that level especially when all users
+other than NMI would be fine w/ the default lazy approach.  If Linus'
+approach doesn't pan out, I think the right thing to do would be
+adding a wrapper to vmalloc_sync_all() and let perf code call it after
+percpu allocation.
 
-							Thanx, Paul
+Thanks.
+
+-- 
+tejun
