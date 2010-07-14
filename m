@@ -1,90 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab0GNPiF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 11:38:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56107 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753161Ab0GNPiD convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 11:38:03 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimYDDviG2no6RVPZZj8rD2d2URMAPUCWuftiFiB@mail.gmail.com>
-References: <20100713114322.57c8b166.sfr@canb.auug.org.au>
-	<AANLkTimC_vXCAOrfTSndZyk8lgkjTlILVSYVYeIg6cUt@mail.gmail.com>
-	<AANLkTik-QCXFnjma3J28B9h27uajOcDhthTGz99zKgVi@mail.gmail.com>
-	<AANLkTimYDDviG2no6RVPZZj8rD2d2URMAPUCWuftiFiB@mail.gmail.com>
-Date: Wed, 14 Jul 2010 08:37:23 -0700
-Message-ID: <AANLkTinhMmYi2l29Rlb11yfRlmsv4YAC50JBlXkdjmKh@mail.gmail.com>
-Subject: Re: [PATCH] kbuild: Enable building defconfigs from Kconfig files
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Grant Likely <grant.likely@secretlab.ca>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Michal Marek <mmarek@suse.cz>,
+	id S1757349Ab0GNPj5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 11:39:57 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:50459 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752975Ab0GNPjz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 11:39:55 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6042"; a="47461449"
+From: David Brown <davidb@codeaurora.org>
+To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: Re: [PATCH 4/5] drivers/mmc/host/msm-sdcc: Remove dead config options
+Date: Wed, 14 Jul 2010 08:39:36 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.34.1; KDE/4.4.5; x86_64; ; )
+Cc: Daniel Walker <dwalker@codeaurora.org>,
+        Bryan Huntsman <bryanh@codeaurora.org>, San Mehat <san@google.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Joe Perches <joe@perches.com>, Pavel Machek <pavel@ucw.cz>,
+        linux-arm-msm@vger.kernel.org, linux-mmc@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
+References: <c3c850bed3f5714f1efcfad24ad4f8bfcb6b5b54.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de> <459cdebccb9bfaa88194b47608e7e739339aae55.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de>
+In-Reply-To: <459cdebccb9bfaa88194b47608e7e739339aae55.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007140839.37494.davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 10:47 PM, Grant Likely
-<grant.likely@secretlab.ca> wrote:
->
-> Okay, well I advocate for the -D /dev/null approach then.  I think
-> that validating our defaults, and looking for the subtle interactions
-> are exactly what we want to be doing when it comes to defconfigs.  The
-> fact that a defconfig does *not* want the default value is exactly
-> what the defconfigs should be capturing.
+On Wednesday 14 July 2010 07:04:53 Christian Dietrich wrote:
 
-Sure. That does have the downside that it absolutely _requires_
-changes to the Kconfig language. Because currently "select" can only
-set a config variable, it cannot clear it or downgrade it from the
-defaults - so if you start from anything but a noconfig, you can't
-unset anything.
+> CONFIG_MMC_MSM7X00A_RESUME_IN_WQ and CONFIG_MMC_EMBEDDED_SDIO don't
+> exist in Kconfig and is never defined anywhere else, therefore removing
+> all references for it from the source code.
+> 
+> Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+> ---
+>  drivers/mmc/host/msm_sdcc.c |   25 -------------------------
+>  drivers/mmc/host/msm_sdcc.h |    4 ----
+>  2 files changed, 0 insertions(+), 29 deletions(-)
 
-But that's not a big downside, since honestly either approach will
-want it anyway (even -n wants it for setting integer or string options
-- never mind the whole issue of making it easier/cleaner to write the
-files in the first place).
+Acked-by: David Brown <davidb@codeaurora.org>
 
->>          set NODES_SHIFT 10
->
-> I'm partial to extending select statements myself because it fits
-> nicely into the existing grammer; but I can see value in having a set
-> statement too.
+We'll put appropriate versions of this code back in when we get the
+rest of the functionality in the kernel.
 
-If it turns out easier to just implement the "set value" as a "select
-with a value", that's fine by me too. If the syntax for setting a
-particular value ends up being
+David
 
-   select NODES_SHIFT 10
-
-that still works (with or without a "=" there). It looks a bit odd to
-me, but that's probably just because it's new. It doesn't look _wrong_
-by any stretch.
-
-> It would eliminate the temporary config options that
-> both my and Stephen's patch would add.
-
-I don't think there is anything wrong with having the extra config
-option just to drive the "select" syntax. In fact, in many cases I
-think it would be "documentation", because I think the extra config
-option should generally be named by the platform that you're actually
-selecting for - even if that name may not be used for anything else.
-
-So having the basic syntax for a Kconfig.xyz file be something like
-
-         config SIDEWINDER_PLATFORM
-              def_bool y
-              select ...
-
-where that initial config/def_bool is strictly not needed for the
-actual end result, but is used to get to the select statements, and to
-include that "SIDEWINDER_PLATFORM=y" in the resulting .config as a
-kind of top-level comment all looks fine.
-
-                 Linus
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
