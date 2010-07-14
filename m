@@ -1,106 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755207Ab0GNL2I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 07:28:08 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:37638 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753600Ab0GNL2G convert rfc822-to-8bit (ORCPT
+	id S1752895Ab0GNLbg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 07:31:36 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40307 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751945Ab0GNLbf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 07:28:06 -0400
-Date: Wed, 14 Jul 2010 13:29:19 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH RESEND] tools/usb: Add Makefile
-In-reply-to: <1279014642.18280.2.camel@cowboy>
-To: dbrownell@users.sourceforge.net, Davidlohr Bueso <dave.bueso@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Message-id: <op.vftzi5ku7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <1279014642.18280.2.camel@cowboy>
+	Wed, 14 Jul 2010 07:31:35 -0400
+Date: Wed, 14 Jul 2010 13:31:29 +0200
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: Russell King <linux@arm.linux.org.uk>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Eric Miao <eric.y.miao@gmail.com>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        =?iso-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Mike Frysinger <vapier@gentoo.org>,
+        Lothar Wassmann <LW@KARO-electronics.de>,
+        Michael Hennerich <michael.hennerich@analog.com>,
+        Bryan Wu <cooloney@kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        linux-usb@vger.kernel.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: [PATCH 0/3] Removing dead code
+Message-ID: <cover.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-You should Cc it to linux-usb@vger.kernel.org as well.
+Hi all!
+       
+        As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-On Tue, 13 Jul 2010 11:50:42 +0200, Davidlohr Bueso <dave.bueso@gmail.com> wrote:
-> Hi,
->
-> This patch adds a Makefile for building 'testusb'.
->
-> I am wondering if it should really still use usbdevfs (deprecated),
-> instead of usbfs?
+        I've been running a check on the drivers/usb sourcetree for
+config Items not defined in Kconfig and found 3 such cases. Sourcecode
+blocks depending on these Items are not reachable from a vanilla
+kernel -- dead code. I've seen such dead blocks made on purpose
+e.g. while integrating new features into the kernel but generally
+they're just useless.
 
-Patches welcome... ;)  Personally I dunno, I just took David's code
-and changes it a bit.
+        Each of the patches in this patchset removes on such dead
+config Item, I'd be glad if you consider applying them. I've been
+doing deeper analysis of such issues before and can do so again but
+I'm not so sure they were fastly usefull.
 
-> Thanks,
-> Davidlohr
->
-> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
+        I build the patches against a vanilla kernel in order to
+try if the kernel compiles with this patches
 
-I'd say the above is not acceptable as a commit message.  Please
-include only the text that is intended to go to the commit message
-above.  All additional comments may go under the “---” marker.
+        Please keep me informed of this patch getting confirmed /
+merged so we can keep track of it.
 
-> ---
->  tools/usb/Makefile |   14 ++++++++++++++
->  1 files changed, 14 insertions(+), 0 deletions(-)
->  create mode 100644 tools/usb/Makefile
->
-> diff --git a/tools/usb/Makefile b/tools/usb/Makefile
-> new file mode 100644
-> index 0000000..45b5cab
-> --- /dev/null
-> +++ b/tools/usb/Makefile
-> @@ -0,0 +1,14 @@
-> +# Makefile for building 'usbtest'
-> +
-> +CC = $(CROSS_COMPILE)gcc
-> +PTHREAD_LIBS = -lpthread
-> +WARNINGS = -Wall
-> +WARNINGS := $(WARNINGS) -Wextra
+Regards
 
-Is it necessary?  Wouldn't plain
+        Christian Dietrich
 
-WARNINGS = -Wall -Wextra
+[0] http://vamos1.informatik.uni-erlangen.de/
 
-suffice?  I am aware “=” can be overridden by command line and
-“:=” cannot but I'd use single line anyway.
+Christian Dietrich (3):
+  usb/gadget: Remove dead CONFIG_USB_LANGWELL_OTG
+  usb/{gadget,host}: Remove dead CONFIG_CPU_PXA27x
+  usb/host || arch/arm: Remove dead CONFIG_ARCH_KARO
 
-> +CFLAGS = $(WARNINGS) -g $(PTHREAD_LIBS)
-> +
-> +all:
-> +	$(CC) $(CFLAGS) -o testusb testusb.c
+ arch/arm/tools/mach-types         |    1 -
+ drivers/usb/gadget/langwell_udc.c |   84 +------------------------------------
+ drivers/usb/gadget/langwell_udc.h |    5 --
+ drivers/usb/gadget/pxa27x_udc.c   |   16 -------
+ drivers/usb/host/isp1362.h        |   24 +----------
+ drivers/usb/host/ohci-pxa27x.c    |    8 ----
+ 6 files changed, 2 insertions(+), 136 deletions(-)
 
-IMO, you should also include a rule for ffs-test, ie:
-
-+all: testusb ffs-test
-+
-+%: %.c
-+	$(CC) $(CFLAGS) -o $@ $^
-
-Not tested.
-
-> +
-> +clean:
-> +	$(RM) testusb
-
-Instead:
-
-> +	$(RM) testusb ffs-test
-
-> +
-
-Unnecessary empty line at EOF.
-
-Other then that, I see no reason why not to include it.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
