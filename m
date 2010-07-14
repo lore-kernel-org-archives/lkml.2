@@ -1,84 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab0GNUMD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:12:03 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:11963 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757758Ab0GNUL5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:11:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6043"; a="47488456"
-Date: Wed, 14 Jul 2010 13:11:49 -0700
-From: Zach Pfeffer <zpfeffer@codeaurora.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux@arm.linux.org.uk, ebiederm@xmission.com, linux-arch@vger.kernel.org,
-        dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
- memory management
-Message-ID: <20100714201149.GA14008@codeaurora.org>
-References: <4C3C0032.5020702@codeaurora.org>
- <20100713150311B.fujita.tomonori@lab.ntt.co.jp>
- <20100713121420.GB4263@codeaurora.org>
- <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757853Ab0GNUM7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:12:59 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:36558 "EHLO e6.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757552Ab0GNUKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 16:10:19 -0400
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+        akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
+        josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 22/30] rcu: make CPU stall warning timeout configurable
+Date: Wed, 14 Jul 2010 13:09:56 -0700
+Message-Id: <1279138204-12849-22-git-send-email-paulmck@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.0.6
+In-Reply-To: <20100714200945.GA10535@linux.vnet.ibm.com>
+References: <20100714200945.GA10535@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 10:59:38AM +0900, FUJITA Tomonori wrote:
-> On Tue, 13 Jul 2010 05:14:21 -0700
-> Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
-> 
-> > > You mean that you want to specify this alignment attribute every time
-> > > you create an IOMMU mapping? Then you can set segment_boundary_mask
-> > > every time you create an IOMMU mapping. It's odd but it should work.
-> > 
-> > Kinda. I want to forget about IOMMUs, devices and CPUs. I just want to
-> > create a mapping that has the alignment I specify, regardless of the
-> > mapper. The mapping is created on a VCM and the VCM is associated with
-> > a mapper: a CPU, an IOMMU'd device or a direct mapped device.
-> 
-> Sounds like you can do the above with the combination of the current
-> APIs, create a virtual address and then an I/O address.
-> 
+Also set the default to 60 seconds, up from the previous hard-coded timeout
+of 10 seconds.  This allows people who care to set short timeouts, while
+avoiding people with unusual configurations (make randconfig!!!) from being
+bothered with spurious CPU stall warnings.
 
-Yes, and that's what the implementation does - and all the other
-implementations that need to do this same thing. Why not solve the
-problem once?
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+---
+ kernel/rcutree.h  |    5 +++--
+ lib/Kconfig.debug |   11 +++++++++++
+ 2 files changed, 14 insertions(+), 2 deletions(-)
 
-> The above can't be a reason to add a new infrastructure includes more
-> than 3,000 lines.
+diff --git a/kernel/rcutree.h b/kernel/rcutree.h
+index 14c040b..5d68e17 100644
+--- a/kernel/rcutree.h
++++ b/kernel/rcutree.h
+@@ -254,9 +254,10 @@ struct rcu_data {
+ #define RCU_STALL_DELAY_DELTA	       0
+ #endif
+ 
+-#define RCU_SECONDS_TILL_STALL_CHECK   (10 * HZ + RCU_STALL_DELAY_DELTA)
++#define RCU_SECONDS_TILL_STALL_CHECK   (CONFIG_RCU_CPU_STALL_TIMEOUT * HZ + \
++					RCU_STALL_DELAY_DELTA)
+ 						/* for rsp->jiffies_stall */
+-#define RCU_SECONDS_TILL_STALL_RECHECK (30 * HZ + RCU_STALL_DELAY_DELTA)
++#define RCU_SECONDS_TILL_STALL_RECHECK (3 * RCU_SECONDS_TILL_STALL_CHECK + 30)
+ 						/* for rsp->jiffies_stall */
+ #define RCU_STALL_RAT_DELAY		2	/* Allow other CPUs time */
+ 						/*  to take at least one */
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index a8a272a..af8b9c5 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -821,6 +821,17 @@ config RCU_CPU_STALL_DETECTOR
+ 
+ 	  Say Y if you are unsure.
+ 
++config RCU_CPU_STALL_TIMEOUT
++	int "RCU CPU stall timeout in seconds"
++	depends on RCU_CPU_STALL_DETECTOR
++	range 3 300
++	default 60
++	help
++	  If a given RCU grace period extends more than the specified
++	  number of seconds, a CPU stall warning is printed.  If the
++	  RCU grace period persists, additional CPU stall warnings are
++	  printed at more widely spaced intervals.
++
+ config RCU_CPU_STALL_VERBOSE
+ 	bool "Print additional per-task information for RCU_CPU_STALL_DETECTOR"
+ 	depends on RCU_CPU_STALL_DETECTOR && TREE_PREEMPT_RCU
+-- 
+1.7.0.6
 
-Right now its 3000 lines because I haven't converted to a function
-pointer based implementation. Once I do that the size of the
-implementation will shrink and the code will act as a lib. Users pass
-buffer mappers and the lib will ease the management of of those
-buffers.
-
->  
-> 
-> > > Another possible solution is extending struct dma_attrs. We could add
-> > > the alignment attribute to it.
-> > 
-> > That may be useful, but in the current DMA-API may be seen as
-> > redundant info.
-> 
-> If there is real requirement, we can extend the DMA-API.
-
-If the DMA-API contained functions to allocate virtual space separate
-from physical space and reworked how chained buffers functioned it
-would probably work - but then things start to look like the VCM API
-which does graph based map management.
-
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
