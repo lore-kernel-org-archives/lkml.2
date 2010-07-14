@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab0GNQQU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:16:20 -0400
-Received: from mail.perches.com ([173.55.12.10]:1873 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756753Ab0GNQQT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:16:19 -0400
-Subject: Re: Possible false positive from checkpatch.pl
-From: Joe Perches <joe@perches.com>
-To: Andy Whitcroft <apw@canonical.com>
-Cc: Larry Finger <Larry.Finger@lwfinger.net>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100714131447.GC20746@shadowen.org>
-References: <4C3B5660.8020405@lwfinger.net>
-	 <1278959315.1501.261.camel@Joe-Laptop.home> <4C3B608B.9010501@lwfinger.net>
-	 <1278961381.1501.284.camel@Joe-Laptop.home> <4C3B6F03.8060708@lwfinger.net>
-	 <1278964147.1501.291.camel@Joe-Laptop.home>
-	 <20100714131447.GC20746@shadowen.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Jul 2010 09:16:17 -0700
-Message-ID: <1279124177.11873.46.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756991Ab0GNQSS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 12:18:18 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:37520 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754305Ab0GNQSQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 12:18:16 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jul 2010 12:18:16 EDT
+Date: Wed, 14 Jul 2010 19:17:04 +0300
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Sam Ravnborg <sam@ravnborg.org>
+Cc: linux-kbuild@vger.kernel.org, Sebastian Dalfu? <sd@sedf.de>,
+        Oliver Hartkopp <oliver@hartkopp.net>,
+        Michael Guntsche <mike@it-loops.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Michael Tokarev <mjt@tls.msk.ru>,
+        Alek Du <alek.du@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, Russell King <rmk@arm.linux.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] implement size_append in perl
+Message-ID: <20100714161704.GE23436@shisha.kicks-ass.net>
+References: <1279116063-4499-1-git-send-email-virtuoso@slind.org>
+ <20100714152337.GA13125@merkur.ravnborg.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100714152337.GA13125@merkur.ravnborg.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-14 at 14:14 +0100, Andy Whitcroft wrote:
-> On Mon, Jul 12, 2010 at 12:49:07PM -0700, Joe Perches wrote:
-> > On Mon, 2010-07-12 at 14:37 -0500, Larry Finger wrote:
-> > > That looks good. At least it makes clear what is wrong.
-> > > Should it be an error, or just a warning?
-> > I don't much care.
-> > If Andy wants to do anything, let him decide.
-> > Perhaps the new test should be
-> > 	if ($rest =~ /\s*,\s*$/)
-> I am not sure these are even invalid are they?  Macro abuse of this sort
-> is always going to throw up exceptions.  Hrmm.
+On Wed, Jul 14, 2010 at 05:23:37 +0200, Sam Ravnborg wrote:
+> On Wed, Jul 14, 2010 at 05:01:03PM +0300, Alexander Shishkin wrote:
+> > The current implementation has been several times fixed to work around
+> > different shells and build environments and it remains a somewhat tricky
+> > shell script. This patch replaces all the dependencies by a single line
+> > of perl. Build dependency on perl is not new, so that shouldn't be a
+> > problem.
+> > 
+> > The new implementation does exactly what it's supposed to: it outputs
+> > a little-endian 32-bit unsigned integer of a file's length.
+> > 
+> > This might simplify matters with different build environments and
+> > different shells and is also considerably shorter and hopefully more
+> > readable.
+> 
+> Reminds me that I had a patch that moved this to mkpiggy.c.
+> Goggle gave this hit:
+> 
+>     http://lists.openwall.net/linux-kernel/2009/12/20/92
 
-This seems to work better.
+Ok, thanks for the reference.
 
----
-diff --git a/scripts/checkpatch.pl b/scripts/checkpatch.pl
-index bd88f11..548f8d9 100755
---- a/scripts/checkpatch.pl
-+++ b/scripts/checkpatch.pl
-@@ -2393,6 +2393,9 @@ sub process {
- 				^\"|\"$
- 			}x;
- 			#print "REST<$rest> dstat<$dstat>\n";
-+			if ($rest =~ /,\s*$/ || $dstat =~ /,\s*$/) {
-+			    ERROR("Macros should not end with a trailing comma\n" . "$here\n$ctx\n");
-+			}
- 			if ($rest ne '') {
- 				if ($rest !~ /while\s*\(/ &&
- 				    $dstat !~ /$exceptions/)
+> I will try to update this to cover arm also and check
+> if other archs needs this.
+> 
+> In other word - move thes size stuff to mkpiggy so we
+> skip this extra step.
 
+Hm, maybe this mkpiggy can be made arch-independent and moved to scripts/
+as well?
 
-
+Regards,
+--
+Alex
