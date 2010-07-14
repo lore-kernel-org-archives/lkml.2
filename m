@@ -1,235 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753153Ab0GNIOi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 04:14:38 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44543 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752702Ab0GNIOf (ORCPT
+	id S1753254Ab0GNIS6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 04:18:58 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:61485 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753124Ab0GNISz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 04:14:35 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Jul 2010 17:09:48 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Kukjin Kim <kgene.kim@samsung.com>
-Cc: "'Minchan Kim'" <minchan.kim@gmail.com>,
-        "'Dave Hansen'" <dave@linux.vnet.ibm.com>,
-        "'Johannes Weiner'" <hannes@cmpxchg.org>, linux@arm.linux.org.uk,
-        "'Yinghai Lu'" <yinghai@kernel.org>,
-        "'H. Peter Anvin'" <hpa@zytor.com>,
-        "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Shaohua Li'" <shaohua.li@intel.com>,
-        "'Yakui Zhao'" <yakui.zhao@intel.com>, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, arm-kernel@lists.infradead.org,
-        "'Mel Gorman'" <mel@csn.ul.ie>
-Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
-Message-Id: <20100714170948.3eac9132.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <000e01cb2329$3d8c5770$b8a50650$%kim@samsung.com>
-References: <20100712155348.GA2815@barrios-desktop>
-	<20100713093006.GB14504@cmpxchg.org>
-	<20100713154335.GB2815@barrios-desktop>
-	<1279038933.10995.9.camel@nimitz>
-	<20100713164423.GC2815@barrios-desktop>
-	<20100714092301.69e7e628.kamezawa.hiroyu@jp.fujitsu.com>
-	<000e01cb2329$3d8c5770$b8a50650$%kim@samsung.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Jul 2010 04:18:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NZ+PwrKQyFTc8wfddbSTZTEj7tXs/rYFy6DzOskiwb8Gw/fuuT0h3+ffYoibADiR6K
+         v+M4ez4+pcx1DBhTxzTKBedq4XHMJ5GBycRoQxW/ofVMNdWA91c4/+TymjIqhno3I79D
+         gyi5A8ICWXMwYggecqdSwvZL5HVT9Qy5+OsYE=
+Date: Wed, 14 Jul 2010 01:18:48 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 4/4] input: dynamically allocate ABS information
+Message-ID: <20100714081848.GC2712@core.coreip.homeip.net>
+References: <1274289757-2723-1-git-send-email-daniel@caiaq.de>
+ <1274289757-2723-5-git-send-email-daniel@caiaq.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274289757-2723-5-git-send-email-daniel@caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010 16:50:25 +0900
-Kukjin Kim <kgene.kim@samsung.com> wrote:
+On Wed, May 19, 2010 at 07:22:37PM +0200, Daniel Mack wrote:
+>  
+>  /**
+> + * input_alloc_absinfo - allocates an input_absinfo struct
+> + * @dev: the input device
+> + * @axis: the ABS axis
+> + *
+> + * If the absinfo struct the caller asked for is already allocated, this
+> + * functions will not do anything but return it.
+> + */
+> +struct input_absinfo *input_alloc_absinfo(struct input_dev *dev, int axis)
+> +{
+> +	if (!dev->absinfo[axis])
+> +		dev->absinfo[axis] =
+> +			kzalloc(sizeof(struct input_absinfo), GFP_KERNEL);
+> +
+> +	WARN(!dev->absinfo[axis], "%s(): kzalloc() failed?\n", __func__);
+> +	return dev->absinfo[axis];
 
-> KAMEZAWA Hiroyuki wrote:
-> > 
-> > On Wed, 14 Jul 2010 01:44:23 +0900
-> > Minchan Kim <minchan.kim@gmail.com> wrote:
-> > 
-> > > > If you _really_ can't make the section size smaller, and the vast
-> > > > majority of the sections are fully populated, you could hack something
-> > > > in.  We could, for instance, have a global list that's mostly readonly
-> > > > which tells you which sections need to be have their sizes closely
-> > > > inspected.  That would work OK if, for instance, you only needed to
-> > > > check a couple of memory sections in the system.  It'll start to suck
-> if
-> > > > you made the lists very long.
-> > >
-> > > Thanks for advise. As I say, I hope Russell accept 16M section.
-> > >
-> Hi,
-> 
-> Thanks for your inputs.
-> > 
-> > It seems what I needed was good sleep....
-> > How about this if 16M section is not acceptable ?
-> > 
-> > == NOT TESTED AT ALL, EVEN NOT COMPILED ==
-> 
-> Yeah...
-> 
-> Couldn't build with s5pv210_defconfig when used mmotm tree,
-> And couldn't apply your patch against latest mainline 35-rc5.
-> 
-> Could you please remake your patch against mainline 35-rc5?
-> Or...please let me know how I can test on my board(smdkv210).
-> 
-Ahh..how brave you are.
+This causes us to allocate every absinfo structure separately and use
+64 additional pointers (256 bytes on 32 bit boxes and even more on 64 bit
+boxes). If device uses enough axis we end up eating up most savings.
 
-my patch was against mmotm-07-01.
-select SPARSEMEM_HAS_PIT in config.
-(in menuconfig it will appear under Processor type and features.)
+I think we should simply alloctate ABS_CNT worth of absinfo first time
+we try to set up abs parameters and be done with it so we'll be saving
+space for devices not reporting absolute events.
 
-This is a fixed one, maybe mm/sparce.o can be compiled.
-At least, arch-generic part is compiled.
+Another optionw woudl be to allow drivers specify size of absinfo array
+but I am not sure if it worth it.
 
-(This config should be selected automatically via arm's config.
- this patch is just for test.)
+Thanks.
 
-Signed-off-by: KAMEZAWA hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
----
- arch/arm/mm/init.c     |   11 ++++++++++-
- include/linux/mmzone.h |   19 ++++++++++++++++++-
- mm/Kconfig             |    5 +++++
- mm/sparse.c            |   38 +++++++++++++++++++++++++++++++++++++-
- 4 files changed, 70 insertions(+), 3 deletions(-)
-
-Index: mmotm-2.6.35-0701/include/linux/mmzone.h
-===================================================================
---- mmotm-2.6.35-0701.orig/include/linux/mmzone.h
-+++ mmotm-2.6.35-0701/include/linux/mmzone.h
-@@ -1047,11 +1047,28 @@ static inline struct mem_section *__pfn_
- 	return __nr_to_section(pfn_to_section_nr(pfn));
- }
- 
-+#ifdef CONFIG_SPARSEMEM_HAS_PIT
-+void mark_memmap_pit(unsigned long start, unsigned long end, bool valid);
-+static inline int page_valid(struct mem_section *ms, unsigned long pfn)
-+{
-+	struct page *page = pfn_to_page(pfn);
-+	struct page *__pg = virt_to_page(page);
-+	return __pg->private == ms;
-+}
-+#else
-+static inline int page_valid(struct mem_section *ms, unsigned long pfn)
-+{
-+	return 1;
-+}
-+#endif
-+
- static inline int pfn_valid(unsigned long pfn)
- {
-+	struct mem_section *ms;
- 	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
- 		return 0;
--	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
-+	ms = __nr_to_section(pfn_to_section_nr(pfn));
-+	return valid_section(ms) && page_valid(ms, pfn);
- }
- 
- static inline int pfn_present(unsigned long pfn)
-Index: mmotm-2.6.35-0701/mm/sparse.c
-===================================================================
---- mmotm-2.6.35-0701.orig/mm/sparse.c
-+++ mmotm-2.6.35-0701/mm/sparse.c
-@@ -13,7 +13,6 @@
- #include <asm/dma.h>
- #include <asm/pgalloc.h>
- #include <asm/pgtable.h>
--
- /*
-  * Permanent SPARSEMEM data:
-  *
-@@ -615,6 +614,43 @@ void __init sparse_init(void)
- 	free_bootmem(__pa(usemap_map), size);
- }
- 
-+#ifdef CONFIG_SPARSEMEM_HAS_PIT
-+/*
-+ * Fill memmap's pg->private with a pointer to mem_section.
-+ * pfn_valid() will check this later. (see include/linux/mmzone.h)
-+ * The caller should call
-+ * 	mark_memmap_pit(start, end, true) # for all allocated mem_map
-+ * 	and, after that,
-+ * 	mark_memmap_pit(start, end, false) # for all pits in mem_map.
-+ * please see usage in ARM.
-+ */
-+void mark_memmap_pit(unsigned long start, unsigned long end, bool valid)
-+{
-+	struct mem_section *ms;
-+	unsigned long pos, next;
-+	struct page *pg;
-+	void *memmap, *mapend;
-+
-+	for (pos = start;
-+	     pos < end; pos = next) {
-+		next = (pos + PAGES_PER_SECTION) & PAGE_SECTION_MASK;
-+		ms = __pfn_to_section(pos);
-+		if (!valid_section(ms))
-+			continue;
-+		for (memmap = (void*)pfn_to_page(pos),
-+		     mapend = pfn_to_page(next-1); /* the last page in section*/
-+		     memmap < mapend;
-+		     memmap += PAGE_SIZE) {
-+			pg = virt_to_page(memmap);
-+			if (valid)
-+				pg->private = (unsigned long)ms;
-+			else
-+				pg->private = 0;
-+		}
-+	}
-+}
-+#endif
-+
- #ifdef CONFIG_MEMORY_HOTPLUG
- #ifdef CONFIG_SPARSEMEM_VMEMMAP
- static inline struct page *kmalloc_section_memmap(unsigned long pnum, int nid,
-Index: mmotm-2.6.35-0701/arch/arm/mm/init.c
-===================================================================
---- mmotm-2.6.35-0701.orig/arch/arm/mm/init.c
-+++ mmotm-2.6.35-0701/arch/arm/mm/init.c
-@@ -234,6 +234,13 @@ static void __init arm_bootmem_free(stru
- 	arch_adjust_zones(zone_size, zhole_size);
- 
- 	free_area_init_node(0, zone_size, min, zhole_size);
-+
-+#ifdef CONFIG_SPARSEMEM
-+	for_each_bank(i, mi) {
-+		mark_memmap_pit(bank_start_pfn(mi->bank[i]),
-+				bank_end_pfn(mi->bank[i]), true);
-+	}
-+#endif
- }
- 
- #ifndef CONFIG_SPARSEMEM
-@@ -386,8 +393,10 @@ free_memmap(unsigned long start_pfn, uns
- 	 * If there are free pages between these,
- 	 * free the section of the memmap array.
- 	 */
--	if (pg < pgend)
-+	if (pg < pgend) {
-+		mark_memap_pit(pg >> PAGE_SHIFT, pgend >> PAGE_SHIFT, false);
- 		free_bootmem(pg, pgend - pg);
-+	}
- }
- 
- /*
-Index: mmotm-2.6.35-0701/mm/Kconfig
-===================================================================
---- mmotm-2.6.35-0701.orig/mm/Kconfig
-+++ mmotm-2.6.35-0701/mm/Kconfig
-@@ -128,6 +128,11 @@ config SPARSEMEM_VMEMMAP
- 	 pfn_to_page and page_to_pfn operations.  This is the most
- 	 efficient option when sufficient kernel resources are available.
- 
-+config SPAESEMEM_HAS_PIT
-+	bool "allow holes in sparsemem's memmap"
-+	depends on SPARSEMEM && !SPARSEMEM_VMEMMAP
-+	default n
-+
- # eventually, we can have this option just 'select SPARSEMEM'
- config MEMORY_HOTPLUG
- 	bool "Allow for memory hot-add"
-
+-- 
+Dmitry
