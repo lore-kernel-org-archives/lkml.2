@@ -1,40 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757723Ab0GNWTj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:19:39 -0400
-Received: from g1t0029.austin.hp.com ([15.216.28.36]:21966 "EHLO
-	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab0GNWTi (ORCPT
+	id S1757930Ab0GNWVA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:21:00 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36040 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757417Ab0GNWU6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:19:38 -0400
-Message-ID: <4C3E37F7.3020607@hp.com>
-Date: Wed, 14 Jul 2010 15:19:35 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; HP-UX 9000/785; en-US; rv:1.7.13) Gecko/20060601
-X-Accept-Language: en-us, en
-MIME-Version: 1.0
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-CC: David Miller <davem@davemloft.net>, lists@wildgooses.com, davidsen@tmr.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3E0684.5060409@wildgooses.com> <4C3E1B54.40604@hp.com>	<20100714203919.GD6682@nuttenaction>	<20100714.145547.102555471.davem@davemloft.net> <20100714221301.GI6682@nuttenaction>
-In-Reply-To: <20100714221301.GI6682@nuttenaction>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	Wed, 14 Jul 2010 18:20:58 -0400
+Date: Wed, 14 Jul 2010 15:20:42 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
+        Jens Axboe <axboe@kernel.dk>, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: Tree for July 7
+Message-Id: <20100714152042.5b83f03b.akpm@linux-foundation.org>
+In-Reply-To: <20100707172136.3658fb17.akpm@linux-foundation.org>
+References: <20100707165539.957e7d1c.sfr@canb.auug.org.au>
+	<20100707172136.3658fb17.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hagen Paul Pfeifer wrote:
-> * David Miller | 2010-07-14 14:55:47 [-0700]:
->>But for all we know this side discussion about initial CWND settings
->>could have nothing to do with the issue being reported at the start of
->>this thread. :-)
-> 
-> 
-> ;-) sure, but it is often wise to thwart these kind of discussions. It seems
-> these CWND discussions turn up once every other month. ;-)
+On Wed, 7 Jul 2010 17:21:36 -0700
+Andrew Morton <akpm@linux-foundation.org> wrote:
 
-Which suggests there is a constant "force" out there yet to be rekoned with. :)
+> (resend with viro cc)
+> 
+> On Wed, 7 Jul 2010 16:55:39 +1000
+> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> 
+> > I have created today's linux-next tree at
+> > git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
+> > (patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).
+> 
+> I'm getting a vast stream of BUG()s from the
+> 
+> 	BUG_ON(inode->i_state != (I_FREEING | I_CLEAR));
+> 
+> in iput_final().
+> 
+> After turning it into a WARN_ON():
+> 
+> [   49.780786] inode->i_state=0x67
+> [   49.780945] ------------[ cut here ]------------
+> [   49.781113] WARNING: at fs/inode.c:1246 iput+0x232/0x23f()
+> [   49.781279] Modules linked in: dm_mirror dm_region_hash dm_log dm_multipath dm_mod video output sbs sbshc battery ac lp parport sg ide_cd_mod cdrom option usb_wwan usbserial serio_raw floppy snd_hda_intel snd_hda_codec snd_seq_oss snd_seq_midi_event snd_seq button snd_seq_device snd_pcm_oss snd_mixer_oss snd_pcm snd_timer i2c_i801 i2c_core snd soundcore snd_page_alloc pcspkr shpchp ehci_hcd ohci_hcd uhci_hcd
+> [   49.783960] Pid: 2418, comm: mount Tainted: G        W   2.6.35-rc4 #3
+> [   49.784127] Call Trace:
+> [   49.784288]  [<ffffffff810cec31>] ? iput+0x1fe/0x23f
+> [   49.784454]  [<ffffffff810cec65>] ? iput+0x232/0x23f
+> [   49.784623]  [<ffffffff81036283>] warn_slowpath_common+0x7e/0x97
+> [   49.784790]  [<ffffffff810362b1>] warn_slowpath_null+0x15/0x17
+> [   49.784958]  [<ffffffff810cec65>] iput+0x232/0x23f
+> [   49.785134]  [<ffffffff810c59a5>] do_unlinkat+0x104/0x15a
+> [   49.785301]  [<ffffffff81002a1c>] ? sysret_check+0x27/0x62
+> [   49.785470]  [<ffffffff8137518b>] ? trace_hardirqs_on_thunk+0x3a/0x3f
+> [   49.785639]  [<ffffffff810c5a0c>] sys_unlink+0x11/0x13
+> [   49.785806]  [<ffffffff810029eb>] system_call_fastpath+0x16/0x1b
+> [   49.785973] ---[ end trace 6458c1d95dac3fde ]---
+> 
+> So I_DIRTY_SYNC, I_DIRTY_DATASYNC and I_DIRTY_PAGES are set.
+> 
+> Config: http://userweb.kernel.org/~akpm/stuff/config-akpm2.txt
 
-rick jones
+Bug is still there.  Reverting ""Make ->drop_inode() just return
+whether inode needs to be dropped" makes it go away.
+
+Al, please don't just dump crap in linux-next and then ignore bug reports. 
+People are trying to get work done here.
+
