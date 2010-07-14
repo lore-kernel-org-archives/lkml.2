@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab0GNRLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 13:11:36 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:60445 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab0GNRLf convert rfc822-to-8bit (ORCPT
+	id S1754264Ab0GNRRO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 13:17:14 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:52201 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab0GNRRM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 13:11:35 -0400
-Date: Wed, 14 Jul 2010 19:12:49 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv2] usb: gadget: storage: optional SCSI WRITE FUA bit
-In-reply-to: <AANLkTilnIRCgyiSbLVbPubU38CSLwVan17GAHqNMX1Ir@mail.gmail.com>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-kernel@vger.kernel.org,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        Denis Karpov <ext-denis.2.karpov@nokia.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
-Message-id: <op.vfuffnzb7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <Pine.LNX.4.44L0.1007131003560.1568-100000@iolanthe.rowland.org>
- <1279098331-7872-1-git-send-email-ext-andriy.shevchenko@nokia.com>
- <op.vft2p6do7p4s8u@pikus>
- <AANLkTil1eG5yzBxvryf-TZINYjeGph-rNz8eELQtm5tj@mail.gmail.com>
- <op.vft7mxqm7p4s8u@pikus>
- <AANLkTilnIRCgyiSbLVbPubU38CSLwVan17GAHqNMX1Ir@mail.gmail.com>
+	Wed, 14 Jul 2010 13:17:12 -0400
+Message-ID: <4C3DF105.1050404@austin.ibm.com>
+Date: Wed, 14 Jul 2010 12:16:53 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 4/7] Allow sysfs memory directories to be split
+References: <4C3B3446.5090302@austin.ibm.com>	 <4C3B3895.3040209@austin.ibm.com>	 <20100713152854.ec1f4d6a.kamezawa.hiroyu@jp.fujitsu.com>	 <4C3C8B9E.7000208@austin.ibm.com>	 <20100714093550.40036034.kamezawa.hiroyu@jp.fujitsu.com> <1279078016.10995.58.camel@nimitz>
+In-Reply-To: <1279078016.10995.58.camel@nimitz>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> 2010/7/14 Michał Nazarewicz <m.nazarewicz@samsung.com>:
->> Ah, OK, I see why this is per LUN.  You want to be able not to ignore
->> FUA if the backing storage is a removable media, right?
+On 07/13/2010 10:26 PM, Dave Hansen wrote:
+> On Wed, 2010-07-14 at 09:35 +0900, KAMEZAWA Hiroyuki wrote:
+>>   2. I'd like to write a configfs module for handling memory hotplug even when
+>>      sysfs directroy is not created.
+>>      Because configfs support rmdir/mkdir, the user (ppc's daemon?) has to do
+>>      
+>>      When offlining section X.
+>>      # insmod configfs_memory.ko
+>>      # mount -t configfs none /configfs
+>>      # mkdir /configfs/memoryX
+>>      # echo offline > /configfs/memoryX/state
+>>      # rmdir /configfs/memoryX
+>>
+>>   And making this operation as the default bahavior for all arch's memory hotplug may
+>>   be better...
+>>
+>> Dave, how do you think ? Because ppc guys uses "probe" interface already,
+>> this can be handled... no ?
+> 
+> I think creating a interface to duplicate the existing sysfs one is a
+> bad idea.  I also think removing the existing sysfs one isn't feasible
+> since there are users, and it's truly part of the ABI.  So, I'm not
+> really a fan on the configfs interface. :(
+> 
+> I really do think the sysfs interface is fixable.  We should at least
+> give it a good shot before largely duplicating its functionality.
 
-On Wed, 14 Jul 2010 17:05:07 +0200, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
-> In instance, or vise versa.
+I agree with Dave, I don't think another memory hotplug interface is needed.
 
-I actually see the most sense in disabling FUA on devices with their
-own power supply for logical units which backing file is not (on) a
-removable device unless the removable device has some kind of lock
-(like CD-ROM's door).
+I am working to update the patchset to remove the split functionality and
+fix other items commented on.  this new patch will just split the memory_block
+structure so that a memory_block can span multiple memory sections.
 
-Either way, I now see the point of having this option per-LUN.
+Kame, I understand that offlining 16 MB is easier than 256 MB.  From the ppc
+perspective though, we are still offlining 256 MB.  We do memory add/remove
+on LMB size chunks, so we have to add/remove all of the memory sections contained
+in an LMB.  If any one memory section covered by a LMB fails to add/remove, we
+restore the memory sections to their orignal state an fail the add/remove operation.
+NOTE: the code doing this is not in the kernel, but in the user-space drmgr
+command (from powerpc-utils package).
 
->>> Actually fua = 1 means ignorance of that flag.
+-Nathan 
 
->> ignore_fua would be better name then I think.  This also stands for
->> module parameter.
-
-Or even “nofua”.  The other solution would be to change the meaning
-to the opposite (1 meaning that FUA is not ignored).
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
