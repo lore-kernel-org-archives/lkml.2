@@ -1,81 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756506Ab0GNTVd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 15:21:33 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:39706 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751822Ab0GNTVc (ORCPT
+	id S1757428Ab0GNTWc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 15:22:32 -0400
+Received: from mga02.intel.com ([134.134.136.20]:52426 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754090Ab0GNTWa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 15:21:32 -0400
-Date: Wed, 14 Jul 2010 20:21:30 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-In-Reply-To: <20100714181220.GA32279@Krystal>
-Message-ID: <alpine.LFD.2.00.1007142009280.11778@eddie.linux-mips.org>
-References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <alpine.LFD.2.00.1007141732200.11778@eddie.linux-mips.org> <20100714181220.GA32279@Krystal>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=utf-8
+	Wed, 14 Jul 2010 15:22:30 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,203,1278313200"; 
+   d="scan'208";a="638538379"
+From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
+To: Nico Schottelius <nico-linux-20100702@schottelius.org>,
+        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
+        "e1000-devel@lists.sourceforge.net" 
+	<e1000-devel@lists.sourceforge.net>,
+        "Allan, Bruce W" <bruce.w.allan@intel.com>
+Date: Wed, 14 Jul 2010 13:22:25 -0600
+Subject: RE: e1000e: receives no packets after resume
+ (2.6.35-rc3-00262-g984bc96)
+Thread-Topic: e1000e: receives no packets after resume
+ (2.6.35-rc3-00262-g984bc96)
+Thread-Index: AcsaiDS/CyaUolK+RJeykIFybnm7dQJATXjg
+Message-ID: <EA929A9653AAE14F841771FB1DE5A1365FF4B057A0@rrsmsx501.amr.corp.intel.com>
+References: <20100702072826.GB16856@schottelius.org>
+ <AANLkTikO8yXXBC9Wt4LKZeu1JD5TKMOW5reB3jpk8Ahp@mail.gmail.com>
+ <20100703081732.GA24281@schottelius.org>
+In-Reply-To: <20100703081732.GA24281@schottelius.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010, Mathieu Desnoyers wrote:
-
-> >  How about only using the special return path when a nested exception is 
-> > about to return to the NMI handler?  You'd avoid all the odd cases then 
-> > that do not happen in the NMI context.
+Nico Schottelius wrote:
+> Hey Jeff,
 > 
-> This is exactly what this patch does :-)
-
- Ah, OK then -- I understood you actually tested the value of TF in the 
-image to be restored.
-
-> It selects the return path with
+> Jeff Kirsher [Fri, Jul 02, 2010 at 02:47:26PM -0700]:
+>> On Fri, Jul 2, 2010 at 00:28, Nico Schottelius
+>> <nico-linux-20100702@schottelius.org> wrote:
+>> [...]
+>> Adding the Networking Kernel mailing list (netdev) and Intel Linux
+>> LAN Driver mailing list (e1000-patches)...
+>> 
+>> Would it be possible to get more information about the system/setup?
+>> 
+>> For example, can you provide the following information:
+>>      - full lspci output (lspci -vvv)
+>>      - ethtool -i ethX
+>>      - dmesg  - after loading the driver and configuring the
+>> interfaces 
+>>      - kernel config
 > 
-> +       testl $NMI_MASK,TI_preempt_count(%ebp)
-> +       jz resume_kernel                /* Not nested over NMI ? */
+> Attached!
 > 
-> In addition, about int3 breakpoints use in the kernel, AFAIK the handler does
-> not explicitly set the RF flag, and the breakpoint instruction (int3) appears
-> not to set it. (from my understanding of Intel's
-> Intel Architecture Software Developer’s Manual Volume 3: System Programming
-> 15.3.1.1. INSTRUCTION-BREAKPOINT EXCEPTION C)
-
- The CPU only sets RF itself in the image saved in certain cases -- you'd 
-see it set in the page fault handler for example, so that once the handler 
-has finished any instruction breakpoint does not hit (presumably again, 
-because the instruction breakpoint debug exception has the highest 
-priority).  You mentioned the need to handle these faults.
-
-> So it should be safe to set a int3 breakpoint in a NMI handler with this patch.
+> Cheers,
 > 
-> It's just the "single-stepping" feature of kprobes which is problematic.
-> Luckily, only int3 is needed for code patching bypass.
+> Nico
 
- Actually the breakpoint exception handler should actually probably set RF 
-explicitly, but that depends on the exact debugging scenario, so I can't 
-comment on it further.  I don't know how INT3 is used in this context, so 
-I'm just noting this may be a danger zone.
+<snip>
 
-  Maciej
+>[   12.228826] e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
+>[   12.279610] e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
+>[   12.280200] ADDRCONF(NETDEV_UP): eth0: link is not ready
+>[   18.282340] e1000e 0000:00:19.0: eth0: Error reading PHY register
+
+Note the error from your dmesg log. This is a known issue and we are working on it.
+In meantime you should be able to w/a it by reloading the driver.
+
+Thanks,
+Emil
