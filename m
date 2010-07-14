@@ -1,114 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757687Ab0GNV1u (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 17:27:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21968 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757013Ab0GNV1s (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 17:27:48 -0400
-Message-ID: <4C3E2AE6.30406@kernel.org>
-Date: Wed, 14 Jul 2010 14:23:50 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: tip/master broken with x2apic and kexec
-References: <4C3BD6AA.3070908@kernel.org> <4C3CE210.2030902@zytor.com> <4C3CF650.30905@kernel.org> <4C3E1FA0.9000107@kernel.org>
-In-Reply-To: <4C3E1FA0.9000107@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1757621Ab0GNVbL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 17:31:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62963 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757356Ab0GNVbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 17:31:09 -0400
+Date: Wed, 14 Jul 2010 23:31:02 +0200
+From: Michal Schmidt <mschmidt@redhat.com>
+To: Borislav Petkov <borislav.petkov@amd.com>
+Cc: <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH 1/2] x86: fix keeping track of AMD C1E
+Message-ID: <20100714233102.0f64614b@hammerfall>
+In-Reply-To: <20100714232201.00433aa9@hammerfall>
+References: <20100713185816.2866.17837.stgit@localhost.localdomain>
+	<20100713185957.2866.50995.stgit@localhost.localdomain>
+	<20100714160704.GA10473@kryptos.osrc.amd.com>
+	<20100714232201.00433aa9@hammerfall>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C3E2BB6.0148,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 01:35 PM, Yinghai Lu wrote:
-> On 07/13/2010 04:27 PM, Yinghai Lu wrote:
->> On 07/13/2010 03:00 PM, H. Peter Anvin wrote:
->>> On 07/12/2010 07:59 PM, Yinghai Lu wrote:
->>>> tip/master: 
->>>> system1: BIOS enabled x2apic, first kernel boot well, and when kexec second kernel will cause system instant reboot.
->>>>
->>>> system2: BIOS not enable x2apic, first kernel boot well and enable x2apic, and kexec second kernel well. but when kexec third kernel will case system instant reboot.
->>>>
->>>> linus' tree is ok.
->>>>
->>>> but for system2 if boot with nox2apic ,intr-remaping off, iommu off, the kexec loop test will pass.
->>>>
->>>> the problem looks start in recent two or three weeks.
->>>>
->>>> Any idea?
->>>>
->>>> bisecting will take a while, because the system post take a while everytime.
->>>>
->>>> Thanks
->>>>
->>>> Yinghai Lu
->>>
->>> OK, I found the bug... if you could test out the patch which will be
->>> sent out shortly I would very much appreciate it.
->>
->> not sure if your patch is the offending one now.
->>
->> kL: kernel from linus tree
->> kT1: kernel from tip
->> kT2: kernel from tip with reverting your patch
->>
->> BIOS-->kL ---> kL ---> kL....always working
->> BIOS-->kT1 ---> kT1 --->  kT1 : between second one and third one system reset instant...
->> BIOS-->kT2 ---> kT2 --->  kT2 : between second one and third one system reset instant...
->>
->> BIOS-->kL ---> kL ---> kL ---> then kT1 ---> kT1 .... always working
->> BIOS-->kL ---> kL ---> kL ---> then kT2 ---> kT2 .... always working
->>
-> 
-> bisecting said:
-> 
->> git bisect good
-> 58687acba59266735adb8ccd9b5b9aa2c7cd205b is the first bad commit
-> commit 58687acba59266735adb8ccd9b5b9aa2c7cd205b
-> Author: Don Zickus <dzickus@redhat.com>
-> Date:   Fri May 7 17:11:44 2010 -0400
-> 
->     lockup_detector: Combine nmi_watchdog and softlockup detector
->     
->     The new nmi_watchdog (which uses the perf event subsystem) is very
->     similar in structure to the softlockup detector.  Using Ingo's
->     suggestion, I combined the two functionalities into one file:
->     kernel/watchdog.c.
->     
->     Now both the nmi_watchdog (or hardlockup detector) and softlockup
->     detector sit on top of the perf event subsystem, which is run every
->     60 seconds or so to see if there are any lockups.
->     
->     To detect hardlockups, cpus not responding to interrupts, I
->     implemented an hrtimer that runs 5 times for every perf event
->     overflow event.  If that stops counting on a cpu, then the cpu is
->     most likely in trouble.
->     
->     To detect softlockups, tasks not yielding to the scheduler, I used the
->     previous kthread idea that now gets kicked every time the hrtimer fires.
->     If the kthread isn't being scheduled neither is anyone else and the
->     warning is printed to the console.
->     
->     I tested this on x86_64 and both the softlockup and hardlockup paths
->     work.
->     
+On Wed, 14 Jul 2010 23:22:01 +0200 Michal Schmidt wrote:
+> identify_cpu: before ANDing, c1e_detected: 0, boot_cpu_has(C1E): 0
+> identify_cpu:  after ANDing, c1e_detected: 0, boot_cpu_has(C1E): 0
+> c1e_idle: cpu: 1, bits 0x10000000, c1e_detected: 0,
+> boot_cpu_has(C1E): 0 lockdep: fixing up alternatives.
+>  #2
+> System has AMD C1E enabled
+> Switch to broadcast mode on CPU1
+> identify_cpu: before ANDing, c1e_detected: 1, boot_cpu_has(C1E): 1
+> identify_cpu:  after ANDing, c1e_detected: 1, boot_cpu_has(C1E): 0
+> Switch to broadcast mode on CPU2
+> lockdep: fixing up alternatives.
+>  #3
+> identify_cpu: before ANDing, c1e_detected: 1, boot_cpu_has(C1E): 0
+> identify_cpu:  after ANDing, c1e_detected: 1, boot_cpu_has(C1E): 0
+> Switch to broadcast mode on CPU3
+> lockdep: fixing up alternatives.
+>  #4
+> identify_cpu: before ANDing, c1e_detected: 1, boot_cpu_has(C1E): 0
+> identify_cpu:  after ANDing, c1e_detected: 1, boot_cpu_has(C1E): 0
+> Switch to broadcast mode on CPU4
+> lockdep: fixing up alternatives.
+>  #5 Ok.
+> identify_cpu: before ANDing, c1e_detected: 1, boot_cpu_has(C1E): 0
+> identify_cpu:  after ANDing, c1e_detected: 1, boot_cpu_has(C1E): 0
+> Brought up 6 CPUs
+> Switch to broadcast mode on CPU5
+> Total of 6 processors activated (38528.67 BogoMIPS).
+> Switch to broadcast mode on CPU0
 
-with
-# CONFIG_LOCKUP_DETECTOR is not set
-# CONFIG_HARDLOCKUP_DETECTOR is not set
+This suggests that another way to fix my problem would be this (tested):
 
-kexec loop test could passed.
-
-also that patch will break x2apic preenabled system 's kexec/kdump.
-
-Yinghai
+diff --git a/arch/x86/include/asm/acpi.h b/arch/x86/include/asm/acpi.h
+index aa2c39d..92091de 100644
+--- a/arch/x86/include/asm/acpi.h
++++ b/arch/x86/include/asm/acpi.h
+@@ -134,7 +134,7 @@ static inline unsigned int acpi_processor_cstate_check(unsigned int max_cstate)
+ 	    boot_cpu_data.x86_model <= 0x05 &&
+ 	    boot_cpu_data.x86_mask < 0x0A)
+ 		return 1;
+-	else if (boot_cpu_has(X86_FEATURE_AMDC1E))
++	else if (c1e_detected)
+ 		return 1;
+ 	else
+ 		return max_cstate;
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 7e5c6a6..336851e 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -762,6 +762,7 @@ extern void init_c1e_mask(void);
+ extern unsigned long		boot_option_idle_override;
+ extern unsigned long		idle_halt;
+ extern unsigned long		idle_nomwait;
++extern int			c1e_detected;
+ 
+ /*
+  * on systems with caches, caches must be flashed as the absolute
+diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
+index e7e3521..7667977 100644
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -561,8 +561,10 @@ no_c1e_idle:
+ 	return 0;
+ }
+ 
++int c1e_detected;
++EXPORT_SYMBOL(c1e_detected);
++
+ static cpumask_var_t c1e_mask;
+-static int c1e_detected;
+ 
+ void c1e_remove_cpu(int cpu)
+ {
+@@ -589,7 +591,6 @@ static void c1e_idle(void)
+ 			if (!boot_cpu_has(X86_FEATURE_NONSTOP_TSC))
+ 				mark_tsc_unstable("TSC halt in AMD C1E");
+ 			printk(KERN_INFO "System has AMD C1E enabled\n");
+-			set_cpu_cap(&boot_cpu_data, X86_FEATURE_AMDC1E);
+ 		}
+ 	}
+ 
+diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+index b1b3856..7cd95eb 100644
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -159,7 +159,7 @@ static void lapic_timer_check_state(int state, struct acpi_processor *pr,
+ 	if (cpu_has(&cpu_data(pr->id), X86_FEATURE_ARAT))
+ 		return;
+ 
+-	if (boot_cpu_has(X86_FEATURE_AMDC1E))
++	if (c1e_detected)
+ 		type = ACPI_STATE_C1;
+ 
+ 	/*
