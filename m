@@ -1,109 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757919Ab0GNUjp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:39:45 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:51960 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757902Ab0GNUjn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:39:43 -0400
-Date: Wed, 14 Jul 2010 16:39:40 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100714203940.GC22096@Krystal>
-References: <20100714154923.947138065@efficios.com> <20100714155804.049012415@efficios.com> <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com> <20100714170617.GB4955@Krystal> <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	id S1757926Ab0GNUkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:40:22 -0400
+Received: from claw.goop.org ([74.207.240.146]:37709 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757519Ab0GNUkV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 16:40:21 -0400
+Message-ID: <4C3E20B3.6020007@goop.org>
+Date: Wed, 14 Jul 2010 13:40:19 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 16:22:09 up 172 days, 22:58,  6 users,  load average: 0.04, 0.06,
-	0.05
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Avi Kivity <avi@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Palfrader <peter@palfrader.org>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
+        Zachary Amsden <zamsden@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
+ 	for pvclock
+References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org> <AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com> <4C3DF1BE.2070404@goop.org> <4C3DF447.1000801@zytor.com> <4C3DF519.6030406@goop.org> <4C3DF7AF.7010402@zytor.com> <4C3DFA88.5020007@goop.org> <4C3E1B13.5030304@redhat.com>
+In-Reply-To: <4C3E1B13.5030304@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote
-[...]
-> In fact, I wonder if we couldn't just do a software NMI disable
-> instead? Hav ea per-cpu variable (in the _core_ percpu areas that get
-> allocated statically) that points to the NMI stack frame, and just
-> make the NMI code itself do something like
-> 
->  NMI entry:
+On 07/14/2010 01:16 PM, Avi Kivity wrote:
+> On 07/14/2010 08:57 PM, Jeremy Fitzhardinge wrote:
+>> Anything else?
+>
+> 1. set up a mapping
+> 2. invlpg or set cr3
+> 3. use the mapping
+>
+> Moving the invlpg will break your code.
 
-Let's try to figure out how far we can go with this idea. First, to answer
-Ingo's critic, let's assume we do a stack frame copy before entering the
-"generic" nmi handler routine.
+invlpg uses memory clobbers.  All the crX ops seem to use a
+__force_order variable to sequence them - but it looks like it's done
+precisely backwards and it's barking mad to do allow write_crX to be
+reordered with respect to memory ops.
 
->  - load percpu NMI stack frame pointer
->  - if non-zero we know we're nested, and should ignore this NMI:
->     - we're returning to kernel mode, so return immediately by using
-> "popf/ret", which also keeps NMI's disabled in the hardware until the
-> "real" NMI iret happens.
-
-Maybe incrementing a per-cpu missed NMIs count could be appropriate here so we
-know how many NMIs should be replayed at iret ?
-
->     - before the popf/iret, use the NMI stack pointer to make the NMI
-> return stack be invalid and cause a fault
-
-I assume you mean "popf/ret" here. So assuming we use a frame copy, we should
-change the nmi stack pointer in the nesting 0 nmi stack copy, so the nesting 0
-NMI iret will trigger the fault.
-
->   - set the NMI stack pointer to the current stack pointer
-
-That would mean bringing back the NMI stack pointer to the (nesting - 1) nmi
-stack copy.
-
-> 
->  NMI exit (not the above "immediate exit because we nested"):
->    clear the percpu NMI stack pointer
-
-This would be rather:
-- Copy the nesting 0 stack copy back onto the real nmi stack.
-- clear the percpu nmi stack pointer
-
-** !
-
->    Just do the iret.
-
-Which presumably faults if we changed the return stack for an invalid one and
-executes as many NMIs as there are "missed nmis" counted (missed nmis should
-probably be read with an xchg() instruction).
-
-So, one question persists, regarding the "** !" comment: what do we do if an NMI
-comes in exactly at that point ? I'm afraid it will overwrite the "real" nmi
-stack, and therefore drop all the "pending" nmis by setting the nmi stack return
-address to a valid one.
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Hm, looks like glommer added it surreptitiously while unifying
+system_32.h and system_64.h (system_32.h relied on asm volatile not
+being reordered; system_64.h used memory clobbers).
+    J
