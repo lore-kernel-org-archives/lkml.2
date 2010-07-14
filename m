@@ -1,34 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754544Ab0GNLVJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 07:21:09 -0400
-Received: from mta-mad.optenet.com ([130.117.93.253]:52174 "EHLO
-	mta-mad.optenet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752454Ab0GNLVH (ORCPT
+	id S1755207Ab0GNL2I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 07:28:08 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:37638 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753600Ab0GNL2G convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 07:21:07 -0400
-X-Greylist: delayed 1845 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jul 2010 07:21:07 EDT
-Date: Wed, 14 Jul 2010 12:50:18 +0200 (CEST)
-From: Unai Uribarri <unai.uribarri@optenet.com>
-To: linux-kernel@vger.kernel.org
-Message-ID: <7112439.65171279104617973.JavaMail.root@mail1-md.optenet.com>
-In-Reply-To: <3152203.65151279104029659.JavaMail.root@mail1-md.optenet.com>
-Subject: Workaround hardware bug addressing physical address
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.3.29]
-X-Mailer: Zimbra 5.0.11_GA_2695.UBUNTU8 (ZimbraWebClient - FF3.0 (Linux)/5.0.11_GA_2695.UBUNTU8)
+	Wed, 14 Jul 2010 07:28:06 -0400
+Date: Wed, 14 Jul 2010 13:29:19 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH RESEND] tools/usb: Add Makefile
+In-reply-to: <1279014642.18280.2.camel@cowboy>
+To: dbrownell@users.sourceforge.net, Davidlohr Bueso <dave.bueso@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Message-id: <op.vftzi5ku7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <1279014642.18280.2.camel@cowboy>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, 
+You should Cc it to linux-usb@vger.kernel.org as well.
 
-I'm writing a device driver for a Cavium Octeon 56xx network adapter, which has a silicon bug: it sends invalid PCI Express TLP headers when writing to physical addresses between 2GB and 4GB. It sends a 64 bit memory write when the PCI specs mandates a 32 bit memory write, and some PCIe bridges refuses such transactions (at least Intel 5520/X58 refuses them). 
+On Tue, 13 Jul 2010 11:50:42 +0200, Davidlohr Bueso <dave.bueso@gmail.com> wrote:
+> Hi,
+>
+> This patch adds a Makefile for building 'testusb'.
+>
+> I am wondering if it should really still use usbdevfs (deprecated),
+> instead of usbfs?
 
-Now, when allocating memory using alloc_page, I check the allocated memory and leak the unusable pages. This "solution" works but I'm leaking huge amounts of memory, so I'm planning to adopt a more elegant solution. I'm going to link together all the unusable pages and, after all the memory is allocated, free the unusable pages.
+Patches welcome... ;)  Personally I dunno, I just took David's code
+and changes it a bit.
 
-Do someone knows if more hardware shares this bug? Will a generic solution be useful for other hardware that doesn't accept certain zones of memory? Has anyone already developed such solution?
+> Thanks,
+> Davidlohr
+>
+> Signed-off-by: Davidlohr Bueso <dave@gnu.org>
 
-Thanks.
+I'd say the above is not acceptable as a commit message.  Please
+include only the text that is intended to go to the commit message
+above.  All additional comments may go under the “---” marker.
+
+> ---
+>  tools/usb/Makefile |   14 ++++++++++++++
+>  1 files changed, 14 insertions(+), 0 deletions(-)
+>  create mode 100644 tools/usb/Makefile
+>
+> diff --git a/tools/usb/Makefile b/tools/usb/Makefile
+> new file mode 100644
+> index 0000000..45b5cab
+> --- /dev/null
+> +++ b/tools/usb/Makefile
+> @@ -0,0 +1,14 @@
+> +# Makefile for building 'usbtest'
+> +
+> +CC = $(CROSS_COMPILE)gcc
+> +PTHREAD_LIBS = -lpthread
+> +WARNINGS = -Wall
+> +WARNINGS := $(WARNINGS) -Wextra
+
+Is it necessary?  Wouldn't plain
+
+WARNINGS = -Wall -Wextra
+
+suffice?  I am aware “=” can be overridden by command line and
+“:=” cannot but I'd use single line anyway.
+
+> +CFLAGS = $(WARNINGS) -g $(PTHREAD_LIBS)
+> +
+> +all:
+> +	$(CC) $(CFLAGS) -o testusb testusb.c
+
+IMO, you should also include a rule for ffs-test, ie:
+
++all: testusb ffs-test
++
++%: %.c
++	$(CC) $(CFLAGS) -o $@ $^
+
+Not tested.
+
+> +
+> +clean:
+> +	$(RM) testusb
+
+Instead:
+
+> +	$(RM) testusb ffs-test
+
+> +
+
+Unnecessary empty line at EOF.
+
+Other then that, I see no reason why not to include it.
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
