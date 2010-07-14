@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757999Ab0GNWbR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:31:17 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:42098 "EHLO
-	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108Ab0GNWbM (ORCPT
+	id S1757836Ab0GNWcQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:32:16 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:13127 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752392Ab0GNWcO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:31:12 -0400
-Date: Wed, 14 Jul 2010 23:31:10 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-In-Reply-To: <AANLkTilIkE_88jn-DwoXB462wtNzJZSFI9B_x-Sh53EG@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1007142313460.11778@eddie.linux-mips.org>
-References: <20100714154923.947138065@efficios.com>        <20100714155804.049012415@efficios.com>        <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>        <20100714170617.GB4955@Krystal>        <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-        <20100714203940.GC22096@Krystal>        <AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>        <alpine.LFD.2.00.1007142240560.11778@eddie.linux-mips.org> <AANLkTilIkE_88jn-DwoXB462wtNzJZSFI9B_x-Sh53EG@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 14 Jul 2010 18:32:14 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6043"; a="47349221"
+From: David Brown <davidb@codeaurora.org>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Subject: Re: [PATCH 09/11] staging: msm: formatting of pointers in printk()
+Date: Wed, 14 Jul 2010 15:32:13 -0700
+User-Agent: KMail/1.13.5 (Linux/2.6.34.1; KDE/4.4.5; x86_64; ; )
+Cc: kernel-janitors@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
+        Dominik Brodowski <linux@dominikbrodowski.net>,
+        Alexander Kurz <linux@kbdbabel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Javier Martinez Canillas <martinez.javier@gmail.com>,
+        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <1279130717-15755-1-git-send-email-segooon@gmail.com>
+In-Reply-To: <1279130717-15755-1-git-send-email-segooon@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007141532.14072.davidb@codeaurora.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010, Linus Torvalds wrote:
+On Wednesday 14 July 2010 11:05:17 Kulikov Vasiliy wrote:
 
-> You just count differently. I don't count the first one (the "real"
-> NMI). That obviously happens. So I only count how many interrupts we
-> need to fake. That's my "one". That's the one that happens as a result
-> of the fault that we take on the iret in the emulated model.
+> Use %p instead of %08x in printk().
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  drivers/staging/comedi/drivers/quatech_daqp_cs.c |    2 +-
 
- Ah, I see -- so we are on the same page after all.
+Did you mean to have an 'msm:' in the subject?  This driver isn't part
+of the msm subsystem?
 
-> (Yeah, yeah, you can call it a "one-bit counter", but I don't think
-> that's a counter. It's just a bit of information).
+Thanks,
+David Brown
 
- Hardware has something like a strapped-high D flip-flop (NMI goes to the 
-clock input) with an extra reset input I presume -- this dates back to 
-8086 when the transistor count mattered with accuracy higher than 1e6. ;)
-
-  Maciej
+-- 
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
