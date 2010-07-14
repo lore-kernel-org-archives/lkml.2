@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab0GNMlg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 08:41:36 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43714 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756872Ab0GNMld (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1756868Ab0GNMld (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 Jul 2010 08:41:33 -0400
-Date: Wed, 14 Jul 2010 14:41:31 +0200
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43702 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756840Ab0GNMl2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 08:41:28 -0400
+Date: Wed, 14 Jul 2010 14:41:26 +0200
 From: Christoph Egger <siccegge@cs.fau.de>
-To: Nicolas Pitre <nico@fluxnic.net>, "David S. Miller" <davem@davemloft.net>,
-        Tony Lindgren <tony@atomide.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Alessandro Rubini <rubini@unipv.it>, netdev@vger.kernel.org,
+To: Samuel Ortiz <samuel@sortiz.org>, "David S. Miller" <davem@davemloft.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Roel Kluin <roel.kluin@gmail.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 11/11] Removing dead REDWOOD_{5,6}
-Message-ID: <adba61f63f4439ac17f2e428429f01ae5e65ab15.1279110895.git.siccegge@cs.fau.de>
+Subject: [PATCH 10/11] Removing dead NETWINDER_{T,R}X_DMA_PROBLEMS
+Message-ID: <48e9743a02fc6630900d911d377002cbd1acb06e.1279110895.git.siccegge@cs.fau.de>
 References: <cover.1279110894.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -27,62 +28,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-REDWOOD_{5,6} doesn't exist in Kconfig, therefore removing all
-references for it from the source code.
+NETWINDER_{T,R}X_DMA_PROBLEMS doesn't exist in Kconfig, therefore
+removing all references for it from the source code.
 
 Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- drivers/net/smc91x.h |   37 -------------------------------------
- 1 files changed, 0 insertions(+), 37 deletions(-)
+ drivers/net/irda/w83977af_ir.c |   33 ++++-----------------------------
+ 1 files changed, 4 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/net/smc91x.h b/drivers/net/smc91x.h
-index 8d2772c..ee74791 100644
---- a/drivers/net/smc91x.h
-+++ b/drivers/net/smc91x.h
-@@ -83,43 +83,6 @@ static inline void SMC_outw(u16 val, void __iomem *ioaddr, int reg)
- 	}
- }
+diff --git a/drivers/net/irda/w83977af_ir.c b/drivers/net/irda/w83977af_ir.c
+index 1f9c3f0..05c6d79 100644
+--- a/drivers/net/irda/w83977af_ir.c
++++ b/drivers/net/irda/w83977af_ir.c
+@@ -61,10 +61,6 @@
+ #include "w83977af.h"
+ #include "w83977af_ir.h"
  
--#elif defined(CONFIG_REDWOOD_5) || defined(CONFIG_REDWOOD_6)
+-#ifdef  CONFIG_ARCH_NETWINDER            /* Adjust to NetWinder differences */
+-#undef  CONFIG_NETWINDER_TX_DMA_PROBLEMS /* Not needed */
+-#define CONFIG_NETWINDER_RX_DMA_PROBLEMS /* Must have this one! */
+-#endif
+ #define CONFIG_USE_W977_PNP        /* Currently needed */
+ #define PIO_MAX_SPEED       115200 
+ 
+@@ -565,11 +561,7 @@ static netdev_tx_t w83977af_hard_xmit(struct sk_buff *skb,
+ static void w83977af_dma_write(struct w83977af_ir *self, int iobase)
+ {
+ 	__u8 set;
+-#ifdef CONFIG_NETWINDER_TX_DMA_PROBLEMS
+-	unsigned long flags;
+-	__u8 hcr;
+-#endif
+-        IRDA_DEBUG(4, "%s(), len=%d\n", __func__ , self->tx_buff.len);
++	IRDA_DEBUG(4, "%s(), len=%d\n", __func__ , self->tx_buff.len);
+ 
+ 	/* Save current set */
+ 	set = inb(iobase+SSR);
+@@ -581,30 +573,13 @@ static void w83977af_dma_write(struct w83977af_ir *self, int iobase)
+ 	/* Choose transmit DMA channel  */ 
+ 	switch_bank(iobase, SET2);
+ 	outb(ADCR1_D_CHSW|/*ADCR1_DMA_F|*/ADCR1_ADV_SL, iobase+ADCR1);
+-#ifdef CONFIG_NETWINDER_TX_DMA_PROBLEMS
+-	spin_lock_irqsave(&self->lock, flags);
 -
--/* We can only do 16-bit reads and writes in the static memory space. */
--#define SMC_CAN_USE_8BIT	0
--#define SMC_CAN_USE_16BIT	1
--#define SMC_CAN_USE_32BIT	0
--#define SMC_NOWAIT		1
--
--#define SMC_IO_SHIFT		0
--
--#define SMC_inw(a, r)		in_be16((volatile u16 *)((a) + (r)))
--#define SMC_outw(v, a, r)	out_be16((volatile u16 *)((a) + (r)), v)
--#define SMC_insw(a, r, p, l) 						\
--	do {								\
--		unsigned long __port = (a) + (r);			\
--		u16 *__p = (u16 *)(p);					\
--		int __l = (l);						\
--		insw(__port, __p, __l);					\
--		while (__l > 0) {					\
--			*__p = swab16(*__p);				\
--			__p++;						\
--			__l--;						\
--		}							\
--	} while (0)
--#define SMC_outsw(a, r, p, l) 						\
--	do {								\
--		unsigned long __port = (a) + (r);			\
--		u16 *__p = (u16 *)(p);					\
--		int __l = (l);						\
--		while (__l > 0) {					\
--			/* Believe it or not, the swab isn't needed. */	\
--			outw( /* swab16 */ (*__p++), __port);		\
--			__l--;						\
--		}							\
--	} while (0)
--#define SMC_IRQ_FLAGS		(0)
--
- #elif defined(CONFIG_SA1100_PLEB)
- /* We can only do 16-bit reads and writes in the static memory space. */
- #define SMC_CAN_USE_8BIT	1
+-	disable_dma(self->io.dma);
+-	clear_dma_ff(self->io.dma);
+-	set_dma_mode(self->io.dma, DMA_MODE_READ);
+-	set_dma_addr(self->io.dma, self->tx_buff_dma);
+-	set_dma_count(self->io.dma, self->tx_buff.len);
+-#else
+ 	irda_setup_dma(self->io.dma, self->tx_buff_dma, self->tx_buff.len,
+ 		       DMA_MODE_WRITE);	
+-#endif
+ 	self->io.direction = IO_XMIT;
+ 	
+ 	/* Enable DMA */
+  	switch_bank(iobase, SET0);
+-#ifdef CONFIG_NETWINDER_TX_DMA_PROBLEMS
+-	hcr = inb(iobase+HCR);
+-	outb(hcr | HCR_EN_DMA, iobase+HCR);
+-	enable_dma(self->io.dma);
+-	spin_unlock_irqrestore(&self->lock, flags);
+-#else	
+ 	outb(inb(iobase+HCR) | HCR_EN_DMA | HCR_TX_WT, iobase+HCR);
+-#endif
+ 
+ 	/* Restore set register */
+ 	outb(set, iobase+SSR);
+@@ -713,7 +688,7 @@ static int w83977af_dma_receive(struct w83977af_ir *self)
+ {
+ 	int iobase;
+ 	__u8 set;
+-#ifdef CONFIG_NETWINDER_RX_DMA_PROBLEMS
++#ifdef CONFIG_ARCH_NETWINDER
+ 	unsigned long flags;
+ 	__u8 hcr;
+ #endif
+@@ -738,7 +713,7 @@ static int w83977af_dma_receive(struct w83977af_ir *self)
+ 	self->io.direction = IO_RECV;
+ 	self->rx_buff.data = self->rx_buff.head;
+ 
+-#ifdef CONFIG_NETWINDER_RX_DMA_PROBLEMS
++#ifdef CONFIG_ARCH_NETWINDER
+ 	spin_lock_irqsave(&self->lock, flags);
+ 
+ 	disable_dma(self->io.dma);
+@@ -761,7 +736,7 @@ static int w83977af_dma_receive(struct w83977af_ir *self)
+ 	
+ 	/* Enable DMA */
+ 	switch_bank(iobase, SET0);
+-#ifdef CONFIG_NETWINDER_RX_DMA_PROBLEMS
++#ifdef CONFIG_ARCH_NETWINDER
+ 	hcr = inb(iobase+HCR);
+ 	outb(hcr | HCR_EN_DMA, iobase+HCR);
+ 	enable_dma(self->io.dma);
 -- 
 1.7.0.4
 
