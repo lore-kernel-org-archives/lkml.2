@@ -1,74 +1,159 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757666Ab0GNWMY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:12:24 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:3840 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757402Ab0GNWMQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1757467Ab0GNWMQ (ORCPT <rfc822;w@1wt.eu>);
 	Wed, 14 Jul 2010 18:12:16 -0400
-From: David Daney <ddaney@caviumnetworks.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH] trace-cmd: Don't try to read unmapped memory.
-Date: Wed, 14 Jul 2010 15:12:10 -0700
-Message-Id: <1279145530-782-1-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.6.6.1
-X-OriginalArrivalTime: 14 Jul 2010 22:12:15.0576 (UTC) FILETIME=[9DE26D80:01CB23A1]
+Received: from claw.goop.org ([74.207.240.146]:37232 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757299Ab0GNWMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 18:12:13 -0400
+Message-ID: <4C3E363B.7060804@goop.org>
+Date: Wed, 14 Jul 2010 15:12:11 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Glauber Costa <glommer@redhat.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Avi Kivity <avi@redhat.com>, Zachary Amsden <zamsden@redhat.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [PATCH] x86: fix ordering constraints on crX read/writes
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When tracecmd_peek_data() reads the last event by calling
-translate_data(), it will get type_len = 0, length = -4.  It had to
-read 8 bytes of data, but it adjusts the index by -4, for a net
-increment of 4.  The invariant that the index points to an entire
-event ceases to hold.
+Change d3ca901f94b3299 introduces a new mechanism for sequencing
+accesses to the control registers using a variable to act as a
+dependency.  (However, the patch description only says it is unifying
+parts of system.h and makes no mention of this new code.)
 
-If the index were already at the last event in the mapped area, a
-subsequent tracecmd_peek_data() checks that the index is not beyond
-the end of the mapping (which it isn't), but it assumes that the
-entire event will fit (which it doesn't).  It then attempts to read an
-entire event (8 bytes), but the last 4 bytes are now beyond the end of
-the mapping causing a fault.
+This sequencing implementation is flawed in two ways:
+ - Firstly, it gets the input/outputs for __force_order wrong on
+   the asm statements.  __force_order is a proxy for the control
+   registers themselves, so a write_crX should write __force_order,
+   and conversely for read_crX.  The original code got this backwards,
+   making write_crX read from __force_order, which in principle would
+   allow gcc to eliminate a "redundant" write_crX.
 
-My fix is to keep the index pointing at the last record when the
-negative length is encountered.
+ - Secondly, writes to control registers can have drastic
+   side-effects on all memory operations (write to cr3 changes the
+   current pagetable and redefines the meaning of all addresses,
+   for example), so they must clobber "memory" in order to be
+   ordered with respect to memory operations.
 
-On my x86_64 workstation, the mappings of the trace data were always
-contiguous with other mapped memory, so the reading of 4 bytes past the
-end of the mapping always fell on another piece of mapped memory, so
-no fault was produced.  Running under valgrind or on a MIPS64 host was
-necessary to produce the fault.
+We seem to have been saved by the implicit ordering that "asm volatile"
+gives us.
 
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
----
- trace-input.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Cc: Glauber de Oliveira Costa <gcosta@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Zachary Amsden <zamsden@redhat.com>
 
-diff --git a/trace-input.c b/trace-input.c
-index 398d0f9..2ba346d 100644
---- a/trace-input.c
-+++ b/trace-input.c
-@@ -1530,6 +1530,18 @@ read_again:
+diff --git a/arch/x86/include/asm/system.h b/arch/x86/include/asm/system.h
+index e7f4d33..b782af2 100644
+--- a/arch/x86/include/asm/system.h
++++ b/arch/x86/include/asm/system.h
+@@ -212,53 +212,68 @@ static inline void native_clts(void)
  
- 	type_len = translate_data(handle, &ptr, &extend, &length);
+ /*
+  * Volatile isn't enough to prevent the compiler from reordering the
+- * read/write functions for the control registers and messing everything up.
+- * A memory clobber would solve the problem, but would prevent reordering of
+- * all loads stores around it, which can hurt performance. Solution is to
+- * use a variable and mimic reads and writes to it to enforce serialization
++ * read/write functions for the control registers and messing
++ * everything up.  A memory clobber would solve the problem, but would
++ * prevent reordering of all loads stores around it, which can hurt
++ * performance (however, control register writes can have drastic
++ * effects on memory accesses - like switching pagetables and thereby
++ * redefining what an address means - so they still need to clobber
++ * memory).
++ *
++ * Solution is to use a variable and mimic reads and writes to it to
++ * enforce serialization.  __force_order acts as a proxy for the
++ * control registers, so a read_crX reads __force_order, and write_crX
++ * writes it (actually both reads and writes it to indicate that
++ * write-over-write can't be "optimised" away).
++ *
++ * This assumes there's no global optimisation between object files,
++ * so using a static per-file "__force_order" is OK.  (In theory we
++ * don't need __force_order to be instantiated at all, since it is
++ * never actually read or written to.  But gcc might decide to
++ * generate a reference to it anyway, so we need to keep it around.)
+  */
+ static unsigned long __force_order;
  
-+	if (length < 0) {
-+		/*
-+		 * Negative length indicates the end.  Back up ptr so
-+		 * subsequent reads don't fall off the end of the
-+		 * mapping.
-+		 */
-+		ptr -= 8;
-+		handle->cpu_data[cpu].index = calc_index(handle, ptr, cpu);
-+		handle->cpu_data[cpu].next = NULL;
-+		return NULL;
-+	}
-+
- 	switch (type_len) {
- 	case RINGBUF_TYPE_PADDING:
- 		if (!extend) {
--- 
-1.6.6.1
+ static inline unsigned long native_read_cr0(void)
+ {
+ 	unsigned long val;
+-	asm volatile("mov %%cr0,%0\n\t" : "=r" (val), "=m" (__force_order));
++	asm volatile("mov %%cr0,%0\n\t" : "=r" (val) : "m" (__force_order));
+ 	return val;
+ }
+ 
+ static inline void native_write_cr0(unsigned long val)
+ {
+-	asm volatile("mov %0,%%cr0": : "r" (val), "m" (__force_order));
++	asm volatile("mov %1,%%cr0": "+m" (__force_order) : "r" (val) : "memory");
+ }
+ 
+ static inline unsigned long native_read_cr2(void)
+ {
+ 	unsigned long val;
+-	asm volatile("mov %%cr2,%0\n\t" : "=r" (val), "=m" (__force_order));
++	asm volatile("mov %%cr2,%0\n\t" : "=r" (val) : "m" (__force_order));
+ 	return val;
+ }
+ 
+ static inline void native_write_cr2(unsigned long val)
+ {
+-	asm volatile("mov %0,%%cr2": : "r" (val), "m" (__force_order));
++	asm volatile("mov %1,%%cr2": "+m" (__force_order) : "r" (val) : "memory");
+ }
+ 
+ static inline unsigned long native_read_cr3(void)
+ {
+ 	unsigned long val;
+-	asm volatile("mov %%cr3,%0\n\t" : "=r" (val), "=m" (__force_order));
++	asm volatile("mov %%cr3,%0\n\t" : "=r" (val) : "m" (__force_order));
+ 	return val;
+ }
+ 
+ static inline void native_write_cr3(unsigned long val)
+ {
+-	asm volatile("mov %0,%%cr3": : "r" (val), "m" (__force_order));
++	asm volatile("mov %1,%%cr3": "+m" (__force_order) : "r" (val) : "memory");
+ }
+ 
+ static inline unsigned long native_read_cr4(void)
+ {
+ 	unsigned long val;
+-	asm volatile("mov %%cr4,%0\n\t" : "=r" (val), "=m" (__force_order));
++	asm volatile("mov %%cr4,%0\n\t" : "=r" (val) : "m" (__force_order));
+ 	return val;
+ }
+ 
+@@ -271,7 +286,7 @@ static inline unsigned long native_read_cr4_safe(void)
+ 	asm volatile("1: mov %%cr4, %0\n"
+ 		     "2:\n"
+ 		     _ASM_EXTABLE(1b, 2b)
+-		     : "=r" (val), "=m" (__force_order) : "0" (0));
++		     : "=r" (val) : "m" (__force_order), "0" (0));
+ #else
+ 	val = native_read_cr4();
+ #endif
+@@ -280,7 +295,7 @@ static inline unsigned long native_read_cr4_safe(void)
+ 
+ static inline void native_write_cr4(unsigned long val)
+ {
+-	asm volatile("mov %0,%%cr4": : "r" (val), "m" (__force_order));
++	asm volatile("mov %1,%%cr4": "+m" (__force_order) : "r" (val) : "memory");
+ }
+ 
+ #ifdef CONFIG_X86_64
+
 
