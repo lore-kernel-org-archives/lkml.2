@@ -1,63 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757229Ab0GNPVS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 11:21:18 -0400
-Received: from mail.tmr.com ([64.65.253.246]:43520 "EHLO partygirl.tmr.com"
+	id S1757303Ab0GNPXA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 11:23:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33325 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753050Ab0GNPVR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 11:21:17 -0400
-Message-ID: <4C3DD5EB.9070908@tmr.com>
-Date: Wed, 14 Jul 2010 11:21:15 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 pango-text SeaMonkey/1.1.16
+	id S1754734Ab0GNPW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 11:22:59 -0400
+Message-ID: <4C3DD64B.10109@suse.cz>
+Date: Wed, 14 Jul 2010 17:22:51 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Ed W <lists@wildgooses.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3D94E3.9080103@wildgooses.com>
-In-Reply-To: <4C3D94E3.9080103@wildgooses.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Andi Kleen <andi@firstfloor.org>
+Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com
+Subject: Re: [PATCH] Kbuild: Add option to set -femit-struct-debug-baseonly
+References: <20100714134352.GA10341@basil.fritz.box>
+In-Reply-To: <20100714134352.GA10341@basil.fritz.box>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ed W wrote:
-> Hi, my network connection looks like 500Kbits with a round trip latency 
-> of perhaps 1s+ (it's a satellite link).
+On 07/14/2010 03:43 PM, Andi Kleen wrote:
+> Kbuild: Add option to set -femit-struct-debug-baseonly 
 > 
->  From what I can see the linux initial congestion window is signficantly 
-> limiting me here, with slow start taking many many seconds to open up 
-> the window wide enough to get the data flowing?  For protocols like http 
-> this is really hurting with all the short lived connections never really 
-> getting up to speed.  (throw in some random packet loss and things 
-> really screech to a halt)
+> Newer gcc has a -femit-struct-debug-baseonly option that dramatically
+> reduces the size of object files with debug info. What it does
+> is to only emit type information for structures when the structures
+> are defined in the same file or in a header file.
 > 
-> Reading around there appear to be several previous attempts to modify 
-> the kernel to start with a slightly wider initial congestion window, say 
-> 10 packets.  (Seems even google did some work on this and agreed that a 
-> small of initial cwd to 10 ish, would help even many non satellite 
-> users?) However, all the work I can find is quite old and doesn't seem 
-> to give me much of a leg up in terms of experimenting with such changes 
-> on a modern kernel?
+> This means the type information for most headers are not included.
+> This is not good when the type information is actually
+> needed (e.g. with kgdb or systemtap) 
 > 
-> Does someone have some pointers on where to look to modify initial 
-> congestion window please?
+> But often kernel hackers only care about line numbers and don't
+> need all the type information anyways. In this case setting
+> the option can be a big win:
 > 
-Are you sure that's the issue? The backlog is in incoming, is it not?
+> A build dir for a specific x86-64 configuration with gcc 4.5
+> shrunk from 2.3G to 1.2G. The compilation was also nearly a minute
+> faster.
+> 
+> Signed-off-by: Andi Kleen <ak@linux.intel.com>
+> 
+> ---
+>  Makefile          |    4 ++++
+>  lib/Kconfig.debug |   12 ++++++++++++
+>  2 files changed, 16 insertions(+)
+> 
+> Index: linux-2.6.34-ak/Makefile
+> ===================================================================
+> --- linux-2.6.34-ak.orig/Makefile
+> +++ linux-2.6.34-ak/Makefile
+> @@ -554,6 +554,10 @@ KBUILD_CFLAGS	+= -g
+>  KBUILD_AFLAGS	+= -gdwarf-2
+>  endif
+>  
+> +ifdef CONFIG_DEBUG_INFO_REDUCED
+> +KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly)
+> +endif
+> +
+>  ifdef CONFIG_FUNCTION_TRACER
+>  KBUILD_CFLAGS	+= -pg
+>  endif
+> Index: linux-2.6.34-ak/lib/Kconfig.debug
+> ===================================================================
+> --- linux-2.6.34-ak.orig/lib/Kconfig.debug
+> +++ linux-2.6.34-ak/lib/Kconfig.debug
+> @@ -616,6 +616,18 @@ config DEBUG_INFO
+>  
+>  	  If unsure, say N.
+>  
+> +config DEBUG_INFO_REDUCED
+> +	bool "Reduce debugging information"
+> +	depends on DEBUG_INFO
+> +	help
+> +	  If you say Y here gcc is instructed to generate less debugging information
+> +          for structure types. This means that tools that need full debugging information
+> +          (like kgdb or systemtap) won't be happy. But if you merely need debugging
+> +          information to resolve line numbers there is no loss.
+> +          Advantage is that build directory object sizes shrink dramatically over
+> +          a full DEBUG_INFO build and compile times are reduced too.
+> +          Only works with newer gcc versions.
+> +
 
-Having dealt with moderately long delays push TB between timezones, have you set 
-your window size up? Set /proc/sys/net/ipv4/tcp_adv_win_scale to 5 or 6 and see 
-if that helps. You may have to go into /proc/sys/net/core and crank up the 
-rmem_* settings, depending on your distribution.
+I reformatted this help text to not wrap in a 80-column terminal and
+applied the patch to the kbuild tree.
 
-This allows the server to push a lot of data without an ack, which is what you 
-want, the ack will be delayed by the long latency, so this helps. You can 
-calculate how large to make the setting, but "make it bigger until tcpdump never 
-shows the window size < 2k" is the best way, even a bit larger than that wont 
-hurt, although it will take a bit of memory.
-
--- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
+thanks,
+Michal
