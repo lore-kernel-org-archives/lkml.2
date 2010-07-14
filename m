@@ -1,98 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab0GNVxF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 17:53:05 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53751 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754606Ab0GNVxB convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 17:53:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1007142240560.11778@eddie.linux-mips.org>
-References: <20100714154923.947138065@efficios.com>
-	<20100714155804.049012415@efficios.com>
-	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-	<20100714170617.GB4955@Krystal>
-	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-	<20100714203940.GC22096@Krystal>
-	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
-	<alpine.LFD.2.00.1007142240560.11778@eddie.linux-mips.org>
-Date: Wed, 14 Jul 2010 14:52:24 -0700
-Message-ID: <AANLkTilIkE_88jn-DwoXB462wtNzJZSFI9B_x-Sh53EG@mail.gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Maciej W. Rozycki" <macro@linux-mips.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757502Ab0GNVzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 17:55:33 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:59716
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751404Ab0GNVzc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 17:55:32 -0400
+Date: Wed, 14 Jul 2010 14:55:47 -0700 (PDT)
+Message-Id: <20100714.145547.102555471.davem@davemloft.net>
+To: hagen@jauu.net
+Cc: rick.jones2@hp.com, lists@wildgooses.com, davidsen@tmr.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Raise initial congestion window size / speedup slow start?
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100714203919.GD6682@nuttenaction>
+References: <4C3E0684.5060409@wildgooses.com>
+	<4C3E1B54.40604@hp.com>
+	<20100714203919.GD6682@nuttenaction>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 2:45 PM, Maciej W. Rozycki <macro@linux-mips.org> wrote:
-> On Wed, 14 Jul 2010, Linus Torvalds wrote:
->
->> No. As mentioned, there is no such counter in real hardware either.
->
->  There is a 1-bit counter or actually a latch.
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+Date: Wed, 14 Jul 2010 22:39:19 +0200
 
-Well, that's what our single-word flag is too.
+> * Rick Jones | 2010-07-14 13:17:24 [-0700]:
+> 
+>>There is an effort under way, lead by some folks at Google and
+>>including some others, to get the RFC's enhanced in support of the
+>>concept of larger initial congestion windows.  Some of the discussion
+>>may be in the "tcpm" mailing list (assuming I've not gotten my
+>>mailing lists confused).  There may be some previous discussion of
+>>that work in the netdev archives as well.
+> 
+> tcpm is the right mailing list but there is currently no effort to develop
+> this topic. Why? Because is not a standardization issue, rather it is a
+> technical issue. You cannot rise the initial CWND and expect a fair behavior.
+> This was discussed several times and is documented in several documents and
+> RFCs.
+> 
+> RFC 5681 Section 3.1. Google employees should start with Section 3. This topic
+> pop's of every two months in netdev and until now I _never_ read a
+> consolidated contribution.
+> 
+> Partial local issues can already be "fixed" via route specific ip options -
+> see initcwnd.
 
->> Look at what happens for the not-nested case:
->>
->>  - NMI1 triggers. The CPU takes a fault, and runs the NMI handler with
->> NMI's disabled
->
->  Correct.
->
->>  - NMI2 triggers. Nothing happens, the NMI's are disabled.
->
->  The NMI latch records the second NMI.  Note this is edge-sensitive like
-> the NMI line itself.
->
->>  - NMI3 triggers. Again, nothing happens, the NMI's are still disabled
->
->  Correct.
->
->>  - the NMI handler returns.
->>
->>  - What happens now?
->
->  NMI2 latched above causes the NMI handler to be invoked as the next
-> instruction after IRET.  The latch is cleared as the interrupt is taken.
->
->> How many NMI interrupts do you get? ONE. Exactly like my "emulate it
->> in software" approach. The hardware doesn't have any counters for
->> pending NMI's either. Why should the software emulation have them?
->
->  Two. :)
+Although section 3 of RFC 5681 is a great text, it does not say at all
+that increasing the initial CWND would lead to fairness issues.
 
-You just count differently. I don't count the first one (the "real"
-NMI). That obviously happens. So I only count how many interrupts we
-need to fake. That's my "one". That's the one that happens as a result
-of the fault that we take on the iret in the emulated model.
+To be honest, I think google's proposal holds a lot of weight.  If
+over time link sizes and speeds are increasing (they are) then nudging
+the initial CWND every so often is a legitimate proposal.  Were
+someone to claim that utilization is lower than it could be because of
+the currenttly specified initial CWND, I would have no problem
+believing them.
 
-So there is no need to count anything. We take a fault on the iret if
-we got a nested NMI (regardless of how _many_ such nested NMI's we
-took). That's the "latch", exactly like in the hardware. No counter.
+And I'm happy to make Linux use an increased value once it has
+traction in the standardization community.
 
-(Yeah, yeah, you can call it a "one-bit counter", but I don't think
-that's a counter. It's just a bit of information).
+But for all we know this side discussion about initial CWND settings
+could have nothing to do with the issue being reported at the start of
+this thread. :-)
 
-                      Linus
