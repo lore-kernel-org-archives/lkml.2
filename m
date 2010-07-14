@@ -1,93 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab0GNWMH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:12:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44940 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752392Ab0GNWMF (ORCPT
+	id S1757666Ab0GNWMY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:12:24 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:3840 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757402Ab0GNWMQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:12:05 -0400
-Message-ID: <4C3E350C.1050008@kernel.org>
-Date: Wed, 14 Jul 2010 15:07:08 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Don Zickus <dzickus@redhat.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: tip/master broken with x2apic and kexec
-References: <4C3BD6AA.3070908@kernel.org> <4C3CE210.2030902@zytor.com> <4C3CF650.30905@kernel.org> <4C3E1FA0.9000107@kernel.org> <20100714210519.GT5381@redhat.com>
-In-Reply-To: <20100714210519.GT5381@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C3E3614.01F8,ss=1,fgs=0
+	Wed, 14 Jul 2010 18:12:16 -0400
+From: David Daney <ddaney@caviumnetworks.com>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH] trace-cmd: Don't try to read unmapped memory.
+Date: Wed, 14 Jul 2010 15:12:10 -0700
+Message-Id: <1279145530-782-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.6.6.1
+X-OriginalArrivalTime: 14 Jul 2010 22:12:15.0576 (UTC) FILETIME=[9DE26D80:01CB23A1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 02:05 PM, Don Zickus wrote:
-> On Wed, Jul 14, 2010 at 01:35:44PM -0700, Yinghai Lu wrote:
->> On 07/13/2010 04:27 PM, Yinghai Lu wrote:
->>> On 07/13/2010 03:00 PM, H. Peter Anvin wrote:
->>>> On 07/12/2010 07:59 PM, Yinghai Lu wrote:
->>>>> tip/master: 
->>>>> system1: BIOS enabled x2apic, first kernel boot well, and when kexec second kernel will cause system instant reboot.
->>>>>
->>>>> system2: BIOS not enable x2apic, first kernel boot well and enable x2apic, and kexec second kernel well. but when kexec third kernel will case system instant reboot.
->>>>>
->>>>> linus' tree is ok.
->>>>>
->>>>> but for system2 if boot with nox2apic ,intr-remaping off, iommu off, the kexec loop test will pass.
->>>>>
->>>>> the problem looks start in recent two or three weeks.
->>>>>
->>>>> Any idea?
->>>>>
->>>>> bisecting will take a while, because the system post take a while everytime.
->>>>>
->>>>> Thanks
->>>>>
->>>>> Yinghai Lu
->>>>
->>>> OK, I found the bug... if you could test out the patch which will be
->>>> sent out shortly I would very much appreciate it.
->>>
->>> not sure if your patch is the offending one now.
->>>
->>> kL: kernel from linus tree
->>> kT1: kernel from tip
->>> kT2: kernel from tip with reverting your patch
->>>
->>> BIOS-->kL ---> kL ---> kL....always working
->>> BIOS-->kT1 ---> kT1 --->  kT1 : between second one and third one system reset instant...
->>> BIOS-->kT2 ---> kT2 --->  kT2 : between second one and third one system reset instant...
->>>
->>> BIOS-->kL ---> kL ---> kL ---> then kT1 ---> kT1 .... always working
->>> BIOS-->kL ---> kL ---> kL ---> then kT2 ---> kT2 .... always working
->>>
->>
->> bisecting said:
->>
->>> git bisect good
->> 58687acba59266735adb8ccd9b5b9aa2c7cd205b is the first bad commit
->> commit 58687acba59266735adb8ccd9b5b9aa2c7cd205b
->> Author: Don Zickus <dzickus@redhat.com>
->> Date:   Fri May 7 17:11:44 2010 -0400
-> 
-> What do you mean by instant reboot?  This code isn't really exercised
-> until the cpus come online.
+When tracecmd_peek_data() reads the last event by calling
+translate_data(), it will get type_len = 0, length = -4.  It had to
+read 8 bytes of data, but it adjusts the index by -4, for a net
+increment of 4.  The invariant that the index points to an entire
+event ceases to hold.
 
-when call kexec -e
-get 
-Starting kernel ...
+If the index were already at the last event in the mapped area, a
+subsequent tracecmd_peek_data() checks that the index is not beyond
+the end of the mapping (which it isn't), but it assumes that the
+entire event will fit (which it doesn't).  It then attempts to read an
+entire event (8 bytes), but the last 4 bytes are now beyond the end of
+the mapping causing a fault.
 
-then should have second kernel booting
+My fix is to keep the index pointing at the last record when the
+negative length is encountered.
 
-instead, I get BIOS post.
+On my x86_64 workstation, the mappings of the trace data were always
+contiguous with other mapped memory, so the reading of 4 bytes past the
+end of the mapping always fell on another piece of mapped memory, so
+no fault was produced.  Running under valgrind or on a MIPS64 host was
+necessary to produce the fault.
 
-Yinghai
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+---
+ trace-input.c |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/trace-input.c b/trace-input.c
+index 398d0f9..2ba346d 100644
+--- a/trace-input.c
++++ b/trace-input.c
+@@ -1530,6 +1530,18 @@ read_again:
+ 
+ 	type_len = translate_data(handle, &ptr, &extend, &length);
+ 
++	if (length < 0) {
++		/*
++		 * Negative length indicates the end.  Back up ptr so
++		 * subsequent reads don't fall off the end of the
++		 * mapping.
++		 */
++		ptr -= 8;
++		handle->cpu_data[cpu].index = calc_index(handle, ptr, cpu);
++		handle->cpu_data[cpu].next = NULL;
++		return NULL;
++	}
++
+ 	switch (type_len) {
+ 	case RINGBUF_TYPE_PADDING:
+ 		if (!extend) {
+-- 
+1.6.6.1
+
