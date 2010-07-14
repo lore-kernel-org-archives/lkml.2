@@ -1,110 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757458Ab0GNTBW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 15:01:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24454 "EHLO mx1.redhat.com"
+	id S1757468Ab0GNTCH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 15:02:07 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53732 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757445Ab0GNTBU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 15:01:20 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: axboe@kernel.dk
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cfq-iosched: don't allow aliased requests to starve others
-References: <x49zkxuaymb.fsf@segfault.boston.devel.redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 14 Jul 2010 15:01:17 -0400
-In-Reply-To: <x49zkxuaymb.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
-	message of "Wed, 14 Jul 2010 11:09:48 -0400")
-Message-ID: <x49hbk1c2gy.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1754264Ab0GNTCE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 15:02:04 -0400
+Message-ID: <4C3E096B.8050505@zytor.com>
+Date: Wed, 14 Jul 2010 12:00:59 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Palfrader <peter@palfrader.org>, Avi Kivity <avi@redhat.com>,
+        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
+        Zachary Amsden <zamsden@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
+ 	for pvclock
+References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org>	<AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com>	<4C3DF1BE.2070404@goop.org>	<4C3DF447.1000801@zytor.com>	<4C3DF519.6030406@goop.org>	<4C3DF7AF.7010402@zytor.com>	<4C3DFA88.5020007@goop.org>	<4C3DFD12.3050700@zytor.com> <AANLkTikA8SO42kOgHZb-6YuhM7GPnmg81IAX5vEk_Cqk@mail.gmail.com>
+In-Reply-To: <AANLkTikA8SO42kOgHZb-6YuhM7GPnmg81IAX5vEk_Cqk@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer <jmoyer@redhat.com> writes:
+On 07/14/2010 11:18 AM, H.J. Lu wrote:
+> 
+> There are some discussions on:
+> 
+> http://gcc.gnu.org/ml/gcc-patches/2010-06/msg02001.html
+> http://gcc.gnu.org/ml/gcc-patches/2010-07/msg00001.html
+> 
+> Are they related?
+> 
 
-> Hi,
->
-> In running a test case that tries to trip up the kernel's AIO
-> implementation, we ran into a situation where no other I/O to the device
-> under test would be completed.  The test program spawned (in this case)
-> 100 threads, each of which performed the following in a loop:
->
-> open file O_DIRECT
-> queue 1MB of read I/O from file using 16 iocbs
-> close file
-> repeat
->
-> The program does NOT wait for the I/O to complete.  The file length is
-> only 4MB, meaning that you have 25 threads performing I/O on each of the
-> 4 1MB regions.
->
-> Both deadline and cfq check for aliased requests in the sorted list of
-> I/Os, and when an alias is found, the request in the rb tree is moved to
-> the dispatch list.  So, what happens is that, with this workload, only
-> requests from this program are moved to the dispatch list, starving out
-> all other I/O.
->
-> The attached patch fixes this problem by issuing all expired requests in
-> the aliased request handling code.  The reason I opted to issue all
-> expired requsts is because if we only service a single one, I still see
-> really awful interactivity;  an ls would take over 5 minutes to
-> complete.  With the attached patch, the ls took about 7 seconds to
-> complete.
->
-> Comments, as always, are welcome.
->
-> Cheers,
-> Jeff
+Not directly as far as I can tell.
 
-Forgot:
+The issue is if gcc can ever reorder, duplicate or elide a volatile
+operation (either asm volatile or a volatile-annotated memory
+reference.)  In my (and Linus') opinion, this would be an incredibly
+serious bug.
 
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+The gcc 4.4 issue, which is separate from the definition issue, is that
+it seems to assume that it can elide references to "const volatile"
+objects.  "const volatile" should mean a value that could change at any
+time but which is a bug to write to -- for example a readonly hardware
+register.
 
->
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 7982b83..0d8d2cd 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -417,6 +417,7 @@ static inline int cfqg_busy_async_queues(struct cfq_data *cfqd,
->  }
->  
->  static void cfq_dispatch_insert(struct request_queue *, struct request *);
-> +static struct request *cfq_check_fifo(struct cfq_queue *cfqq);
->  static struct cfq_queue *cfq_get_queue(struct cfq_data *, bool,
->  				       struct io_context *, gfp_t);
->  static struct cfq_io_context *cfq_cic_lookup(struct cfq_data *,
-> @@ -1394,10 +1395,22 @@ static void cfq_add_rq_rb(struct request *rq)
->  
->  	/*
->  	 * looks a little odd, but the first insert might return an alias.
-> -	 * if that happens, put the alias on the dispatch list
-> +	 * If that happens, put the alias on the dispatch list, but don't
-> +	 * allow issuing of aliased requests to starve out the queue.
->  	 */
-> -	while ((__alias = elv_rb_add(&cfqq->sort_list, rq)) != NULL)
-> +	while ((__alias = elv_rb_add(&cfqq->sort_list, rq)) != NULL) {
-> +		int fifo_checked = cfq_cfqq_fifo_expire(cfqq);
-> +		struct request *__rq;
-> +
->  		cfq_dispatch_insert(cfqd->queue, __alias);
-> +		cfq_clear_cfqq_fifo_expire(cfqq);
-> +		while ((__rq = cfq_check_fifo(cfqq))) {
-> +			cfq_dispatch_insert(cfqd->queue, __rq);
-> +			cfq_clear_cfqq_fifo_expire(cfqq);
-> +		}
-> +		if (fifo_checked)
-> +			cfq_mark_cfqq_fifo_expire(cfqq);
-> +	}
->  
->  	if (!cfq_cfqq_on_rr(cfqq))
->  		cfq_add_cfqq_rr(cfqd, cfqq);
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+	-hpa
+
