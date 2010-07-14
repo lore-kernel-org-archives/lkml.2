@@ -1,120 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752412Ab0GNHdE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 03:33:04 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:42550 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751880Ab0GNHdA (ORCPT
+	id S1752503Ab0GNHfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 03:35:25 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38222 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab0GNHfY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 03:33:00 -0400
-Message-ID: <4C3D643D.6070705@oss.ntt.co.jp>
-Date: Wed, 14 Jul 2010 16:16:13 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Wed, 14 Jul 2010 03:35:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kldS/p7xKEmtPx+k+SQlsHAccsSQCVv8vk7tydjbsBWH4Z4JJo1hG38IdVnRsJKn9s
+         02Nb6tM8BPHWNpN/jr94MTpbTfSmiA3+mTb02V5z0yY/BqQL2ARqJi60sqvrgmYJFSEW
+         kFLWLC4vQytcuam0d/mDBNtm7HAVObnLhclgU=
 MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>
-CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 18/18] Add timekeeping documentation
-References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-19-git-send-email-zamsden@redhat.com>
-In-Reply-To: <1278987938-23873-19-git-send-email-zamsden@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100714161045.ef028769.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100712155348.GA2815@barrios-desktop>
+	<20100713093006.GB14504@cmpxchg.org>
+	<20100713154335.GB2815@barrios-desktop>
+	<1279038933.10995.9.camel@nimitz>
+	<20100713164423.GC2815@barrios-desktop>
+	<20100714092301.69e7e628.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTin8tdw4VmfCPHE0TR3f-l7ao8ngQJcepTDPpMAC@mail.gmail.com>
+	<20100714161045.ef028769.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 14 Jul 2010 16:35:22 +0900
+Message-ID: <AANLkTilVVKdLNC0OJfVv5N5GGXL9bwXJfOLC5NHE-Qc4@mail.gmail.com>
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux@arm.linux.org.uk,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 14, 2010 at 4:10 PM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Wed, 14 Jul 2010 15:44:41 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> Hi, Kame.
+>>
+>> On Wed, Jul 14, 2010 at 9:23 AM, KAMEZAWA Hiroyuki
+>> <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+>> > On Wed, 14 Jul 2010 01:44:23 +0900
+>> > Minchan Kim <minchan.kim@gmail.com> wrote:
+>> >
+>> >> > If you _really_ can't make the section size smaller, and the vast
+>> >> > majority of the sections are fully populated, you could hack something
+>> >> > in.  We could, for instance, have a global list that's mostly readonly
+>> >> > which tells you which sections need to be have their sizes closely
+>> >> > inspected.  That would work OK if, for instance, you only needed to
+>> >> > check a couple of memory sections in the system.  It'll start to suck if
+>> >> > you made the lists very long.
+>> >>
+>> >> Thanks for advise. As I say, I hope Russell accept 16M section.
+>> >>
+>> >
+>> > It seems what I needed was good sleep....
+>> > How about this if 16M section is not acceptable ?
+>> >
+>> > == NOT TESTED AT ALL, EVEN NOT COMPILED ==
+>> >
+>> > register address of mem_section to memmap itself's page struct's pg->private field.
+>> > This means the page is used for memmap of the section.
+>> > Otherwise, the page is used for other purpose and memmap has a hole.
+>>
+>> It's a very good idea. :)
+>> But can this handle case that a page on memmap pages have struct page
+>> descriptor of hole?
+>> I mean one page can include 128 page descriptor(4096 / 32).
+> yes.
+>
+>> In there, 64 page descriptor is valid but remain 64 page descriptor is on hole.
+>> In this case, free_memmap doesn't free the page.
+>
+> yes. but in that case, there are valid page decriptor for 64pages of holes.
+> pfn_valid() should return true but PG_reserved is set.
+> (This is usual behavior.)
+>
+> My intention is that
+>
+>  - When all 128 page descriptors are unused, free_memmap() will free it.
+>   In that case, clear page->private of a page for freed page descriptors.
+>
+>  - When some of page descriptors are used, free_memmap() can't free it
+>   and page->private points to &mem_section. We may have memmap for memory
+>   hole but pfn_valid() is a function to check there is memmap or not.
+>   The bahavior of pfn_valid() is valid.
+>   Anyway, you can't free only half of page.
 
-(2010/07/13 11:25), Zachary Amsden wrote:
-> +
-> +2.3) APIC
-> +
-> +On Pentium and later processors, an on-board timer is available to each CPU
-> +as part of the Advanced Programmable Interrupt Controller.  The APIC is
-> +accessed through memory-mapped registers and provides interrupt service to each
-> +CPU, used for IPIs and local timer interrupts.
-> +
-> +Although in theory the APIC is a safe and stable source for local interrupts,
-> +in practice, many bugs and glitches have occurred due to the special nature of
-> +the APIC CPU-local memory-mapped hardware.  Beware that CPU errata may affect
-> +the use of the APIC and that workarounds may be required.  In addition, some of
-> +these workarounds pose unique constraints for virtualization - requiring either
-> +extra overhead incurred from extra reads of memory-mapped I/O or additional
-> +functionality that may be more computationally expensive to implement.
-> +
-> +Since the APIC is documented quite well in the Intel and AMD manuals, we will
-> +avoid repititon of the detail here.  It should be pointed out that the APIC
+Okay. I missed PageReserved.
+Your idea seems to be good. :)
 
-          repetition?
-
-> +timer is programmed through the LVT (local vector timer) register, is capable
-> +of one-shot or periodic operation, and is based on the bus clock divided down
-> +by the programmable divider register.
-> +
-> +2.4) HPET
-> +
-> +HPET is quite complex, and was originally intended to replace the PIT / RTC
-> +support of the X86 PC.  It remains to be seen whether that will be the case, as
-> +the de facto standard of PC hardware is to emulate these older devices.  Some
-> +systems designated as legacy free may support only the HPET as a hardware timer
-> +device.
-> +
-> +The HPET spec is rather loose and vague, requiring at least 3 hardware timers,
-> +but allowing implementation freedom to support many more.  It also imposes no
-> +fixed rate on the timer frequency, but does impose some extremal values on
-> +frequency, error and slew.
-> +
-> +In general, the HPET is recommended as a high precision (compared to PIT /RTC)
-> +time source which is independent of local variation (as there is only one HPET
-> +in any given system).  The HPET is also memory-mapped, and its presence is
-> +indicated through ACPI tables by the BIOS.
-> +
-> +Detailed specification of the HPET is beyond the current scope of this
-> +document, as it is also very well documented elsewhere.
-> +
-
-
-> +3.6) TSC and STPCLK / T-states
-> +
-> +External signals given to the processor may also have the affect of stopping
-
-                                                              effect?
-
-> +the TSC.  This is typically done for thermal emergency power control to prevent
-> +an overheating condition, and typically, there is no way to detect that this
-> +condition has happened.
-> +
-
-
-> +4.4) Migration
-> +
-> +Migration of a virtual machine raises problems for timekeeping in two ways.
-> +First, the migration itself may take time, during which interrupts cannot be
-> +delivered, and after which, the guest time may need to be caught up.  NTP may
-> +be able to help to some degree here, as the clock correction required is
-> +typically small enough to fall in the NTP-correctable window.
-> +
-> +An additional concern is that timers based off the TSC (or HPET, if the raw bus
-> +clock is exposed) may now be running at different rates, requiring compensation
-> +in some may in the hypervisor by virtualizing these timers.  In addition,
-
-            way?
-
-> +migrating to a faster machine may preclude the use of a passthrough TSC, as a
-> +faster clock cannot be made visible to a guest without the potential of time
-> +advancing faster than usual.  A slower clock is less of a problem, as it can
-> +always be caught up to the original rate.  KVM clock avoids these problems by
-> +simply storing multipliers and offsets gainst the TSC for the guest to convert
-
-                                           against?
-
-> +back into nanosecond resolution values.
-> +
+I looked at pagetypeinfo_showblockcount_print.
+It doesn't check PageReserved. Instead of it, it does ugly memmap_valid_within.
+Can't we remove it and change it with PageReserved?
 
 
-   Takuya
-
-     -- I'm not English speaker, so not so sure about some places.
+-- 
+Kind regards,
+Minchan Kim
