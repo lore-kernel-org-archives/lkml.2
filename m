@@ -1,85 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab0GNXOt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:14:49 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:58879 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751786Ab0GNXOs convert rfc822-to-8bit (ORCPT
+	id S1757253Ab0GNX0p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:26:45 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:51118 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752665Ab0GNX0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:14:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
-	:date:message-id:mime-version:content-type
-	:content-transfer-encoding; q=dns; s=sasl; b=YhpBpw6Q0I8tYRRtW3H
-	n41ysizWNICXREXRn+/UvV66Lkfk3ccmPbW4Q5TJSzKvIKHYLO+sd6gZ2/h805H5
-	minfYltnol2/RJoR0v2n1BHnrDp9B5L0IzWEdye9CmpF7u8DSYJwPlY2UB2MBjNF
-	aMse1Ud/fY0j4elv8xTKgO5I=
-To: git@vger.kernel.org
-Subject: [ANNOUNCE] Git 1.7.2.rc3
-From: Junio C Hamano <gitster@pobox.com>
-Date: Wed, 14 Jul 2010 16:14:37 -0700
-Message-ID: <7vmxttwt9e.fsf@alter.siamese.dyndns.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-X-Pobox-Relay-ID: 956EE828-8F9D-11DF-A8F5-9056EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Jul 2010 19:26:43 -0400
+Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
+From: Sridhar Samudrala <sri@us.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
+        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Andi Kleen <ak@linux.intel.com>
+In-Reply-To: <20100713110939.GA3446@redhat.com>
+References: <20100701133956.GD32223@redhat.com>
+	 <4C2CA5C5.4040402@kernel.org> <20100701144624.GA11171@redhat.com>
+	 <4C2CABF2.2020801@kernel.org> <1277996135.1917.198.camel@laptop>
+	 <4C2E2987.9040702@us.ibm.com> <1278094270.1917.288.camel@laptop>
+	 <20100702210637.GA12433@redhat.com> <20100704090005.GA8078@redhat.com>
+	 <4C3C0EBC.40305@us.ibm.com>  <20100713110939.GA3446@redhat.com>
+Content-Type: text/plain
+Date: Wed, 14 Jul 2010 16:26:36 -0700
+Message-Id: <1279149996.32374.5.camel@w-sridhar.beaverton.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A release candidate Git 1.7.2.rc3 is available at the usual places
-for testing:
+On Tue, 2010-07-13 at 14:09 +0300, Michael S. Tsirkin wrote: 
+> On Mon, Jul 12, 2010 at 11:59:08PM -0700, Sridhar Samudrala wrote:
+> > On 7/4/2010 2:00 AM, Michael S. Tsirkin wrote:
+> > >On Fri, Jul 02, 2010 at 11:06:37PM +0200, Oleg Nesterov wrote:
+> > >>On 07/02, Peter Zijlstra wrote:
+> > >>>On Fri, 2010-07-02 at 11:01 -0700, Sridhar Samudrala wrote:
+> > >>>>  Does  it (Tejun's kthread_clone() patch) also  inherit the
+> > >>>>cgroup of the caller?
+> > >>>Of course, its a simple do_fork() which inherits everything just as you
+> > >>>would expect from a similar sys_clone()/sys_fork() call.
+> > >>Yes. And I'm afraid it can inherit more than we want. IIUC, this is called
+> > >>from ioctl(), right?
+> > >>
+> > >>Then the new thread becomes the natural child of the caller, and it shares
+> > >>->mm with the parent. And files, dup_fd() without CLONE_FS.
+> > >>
+> > >>Signals. Say, if you send SIGKILL to this new thread, it can't sleep in
+> > >>TASK_INTERRUPTIBLE or KILLABLE after that. And this SIGKILL can be sent
+> > >>just because the parent gets SIGQUIT or abother coredumpable signal.
+> > >>Or the new thread can recieve SIGSTOP via ^Z.
+> > >>
+> > >>Perhaps this is OK, I do not know. Just to remind that kernel_thread()
+> > >>is merely clone(CLONE_VM).
+> > >>
+> > >>Oleg.
+> > >
+> > >Right. Doing this might break things like flush.  The signal and exit
+> > >behaviour needs to be examined carefully. I am also unsure whether
+> > >using such threads might be more expensive than inheriting kthreadd.
+> > >
+> > Should we just leave it to the userspace to set the cgroup/cpumask
+> > after qemu starts the guest and
+> > the vhost threads?
+> > 
+> > Thanks
+> > Sridhar
+> 
+> Yes but we can't trust userspace to do this. It's important
+> to do it on thread creation: if we don't, malicious userspace
+> can create large amount of work exceeding the cgroup limits.
+> 
+> And the same applies so the affinity: if the qemu process
+> is limited to a set of CPUs, it's important to make
+> the kernel thread that does work our behalf limited to the same
+> set of CPUs.
+> 
+> This is not unique to vhost, it's just that virt scenarious are affected
+> by this more: people seem to run untrusted applications and expect the
+> damage to be contained.
 
-  http://www.kernel.org/pub/software/scm/git/
+OK. So we want to create a thread that is a child of kthreadd, but inherits the cgroup/cpumask
+from the caller. How about an exported kthread function kthread_create_in_current_cg() 
+that does this?
 
-  git-1.7.2.rc3.tar.{gz,bz2}			(source tarball)
-  git-htmldocs-1.7.2.rc3.tar.{gz,bz2}		(preformatted docs)
-  git-manpages-1.7.2.rc3.tar.{gz,bz2}		(preformatted docs)
+diff --git a/include/linux/kthread.h b/include/linux/kthread.h
+index aabc8a1..e0616f0 100644
+--- a/include/linux/kthread.h
++++ b/include/linux/kthread.h
+@@ -9,6 +9,9 @@ struct task_struct *kthread_create(int (*threadfn)(void *data),
+ 				   const char namefmt[], ...)
+ 	__attribute__((format(printf, 3, 4)));
+ 
++struct task_struct *kthread_create_in_current_cg(int (*threadfn)(void *data),
++						 void *data, char *name);
++
+ /**
+  * kthread_run - create and wake a thread.
+  * @threadfn: the function to run until signal_pending(current).
+diff --git a/kernel/kthread.c b/kernel/kthread.c
+index 83911c7..ea4e737 100644
+--- a/kernel/kthread.c
++++ b/kernel/kthread.c
+@@ -15,6 +15,7 @@
+ #include <linux/module.h>
+ #include <linux/mutex.h>
+ #include <trace/events/sched.h>
++#include <linux/cgroup.h>
+ 
+ static DEFINE_SPINLOCK(kthread_create_lock);
+ static LIST_HEAD(kthread_create_list);
+@@ -149,6 +150,42 @@ struct task_struct *kthread_create(int (*threadfn)(void *data),
+ }
+ EXPORT_SYMBOL(kthread_create);
+ 
++struct task_struct *kthread_create_in_current_cg(int (*threadfn)(void *data),
++						 void *data, char *name)
++{
++	struct task_struct *worker;
++	cpumask_var_t mask;
++	int ret = -ENOMEM;
++
++	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
++		goto out_free_mask;
++
++	worker = kthread_create(threadfn, data, "%s-%d", name, current->pid);
++	if (IS_ERR(worker))
++		goto out_free_mask;
++
++	ret = sched_getaffinity(current->pid, mask);
++	if (ret)
++		goto out_stop_worker;
++
++	ret = sched_setaffinity(worker->pid, mask);
++	if (ret)
++		goto out_stop_worker;
++
++	ret = cgroup_attach_task_current_cg(worker);
++	if (ret)
++		goto out_stop_worker;
++
++	return worker;
++
++out_stop_worker:
++	kthread_stop(worker);
++out_free_mask:
++	free_cpumask_var(mask);
++	return ERR_PTR(ret);
++}
++EXPORT_SYMBOL(kthread_create_in_current_cg);
++
+ /**
+  * kthread_bind - bind a just-created kthread to a cpu.
+  * @p: thread created by kthread_create().
 
-The RPM binary packages for a few architectures are found in:
 
-  testing/git-*-1.7.2.rc3-1.fc11.$arch.rpm	(RPM)
-
-Hopefully this will be the last one before the final I'd like to have by
-the end of the week.
-
-----------------------------------------------------------------
-
-Changes since v1.7.2-rc2 are as follows:
-
-Bo Yang (1):
-      diff.c: fix a graph output bug
-
-Fredrik Skolmli (1):
-      Documentation: Spelling fix in protocol-capabilities.txt
-
-Johannes Sixt (1):
-      t0005: work around strange $? in ksh when program terminated by a signal
-
-Jonathan Nieder (1):
-      t9118 (git-svn): prevent early failure from taking down later tests
-
-Junio C Hamano (2):
-      Fix "read-tree -m A B" priming the cache-tree
-      Git 1.7.2-rc3
-
-Michael J Gruber (3):
-      t9118: avoid PEG revision identifier in tests
-      test-lib: simplify GIT_SKIP_TESTS loop
-      test-lib: TAP compliance for skipping tests on request
-
-Miklos Vajna (1):
-      format-patch: document the format.to configuration setting
-
-Nicolas Sebrecht (1):
-      checkout: accord documentation to what git does
-
-Oren Held (1):
-      git fetch documentation: describe short '-p' synonym to '--prune' option
-
-Raja R Harinath (1):
-      Use dev_t for device id (st_dev) from stat in setup_git_directory_gently()
-
-Ævar Arnfjörð Bjarmason (1):
-      tests: Use skip_all=* to skip tests
+Thanks
+Sridhar
 
