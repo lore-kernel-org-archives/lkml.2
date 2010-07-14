@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754181Ab0GNJpk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 05:45:40 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36528 "EHLO
+	id S1753798Ab0GNJtI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 05:49:08 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:62880 "EHLO
 	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753334Ab0GNJpj (ORCPT
+	with ESMTP id S1752748Ab0GNJtF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 05:45:39 -0400
+	Wed, 14 Jul 2010 05:49:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=BbFER1+oZCJqYFLzD9m4QUKJraXRzFvNhXcJj3H6EYQbkYw4jFDiY5LzDvfXL2HICB
-         X9glD8LpSZEpsY1ZVB8PFf/cJcM2dpqs+6/VezlTf4O+rwe6fNQ2v+OhcfFeGsLMVxVd
-         NiPotLKh/NKDP+JxyNGBJbpJ62SncJMQ2S+bc=
-From: Changli Gao <xiaosuo@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: "Jike Song" <albcamus@gmail.com>, linux-kernel@vger.kernel.org,
-        Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH v2] drivers: code cleanups
-Date: Wed, 14 Jul 2010 17:42:56 +0800
-Message-Id: <1279100576-8680-1-git-send-email-xiaosuo@gmail.com>
-X-Mailer: git-send-email 1.7.1
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=JLrJfdONmHc44k8XwGr1oSxGT5fX01LCNGBgQ+H0SrtkZNcfALxb2LDdo/H+2/YqsV
+         OjRc3yjUe6Lw3VOFRyUy2woti60xsIkwLDEU+lmVBtHJm//QQTVuzj2HnwUQzb39bttu
+         cNuOwJcx7R/WCtiECIabM1Z73x66QanZey58U=
+Message-ID: <4C3D87FD.6030101@gmail.com>
+Date: Wed, 14 Jul 2010 17:48:45 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: [PATCH] net/nuc900: enable Mac driver clock
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers: code cleanups
+This patch fixed a bug that Mac driver does not work,because I missed the clk enable.
 
-the first three goto clauses caused kfree(NULL), and the error code returned
-by kset->uevent_ops->uevent() wasn't passed to the caller of show_uevent().
-This patch also eliminates the unnecessary initializations of env and count.
+I have ever tested the driver when I submitted previous Mac driver patch,
+and it worked good, since my bootloader has enabled the clock in advance.
 
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-----
- drivers/base/core.c |   13 ++++++-------
- 1 file changed, 6 insertions(+), 7 deletions(-)
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 38bbbd0..76cd4f0 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -274,9 +274,8 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
- {
- 	struct kobject *top_kobj;
- 	struct kset *kset;
--	struct kobj_uevent_env *env = NULL;
-+	struct kobj_uevent_env *env;
- 	int i;
--	size_t count = 0;
- 	int retval;
- 
- 	/* search the kset, the device belongs to */
-@@ -284,16 +283,16 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
- 	while (!top_kobj->kset && top_kobj->parent)
- 		top_kobj = top_kobj->parent;
- 	if (!top_kobj->kset)
--		goto out;
-+		return 0;
- 
- 	kset = top_kobj->kset;
- 	if (!kset->uevent_ops || !kset->uevent_ops->uevent)
--		goto out;
-+		return 0;
- 
- 	/* respect filter */
- 	if (kset->uevent_ops && kset->uevent_ops->filter)
- 		if (!kset->uevent_ops->filter(kset, &dev->kobj))
--			goto out;
-+			return 0;
- 
- 	env = kzalloc(sizeof(struct kobj_uevent_env), GFP_KERNEL);
- 	if (!env)
-@@ -306,10 +305,10 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
- 
- 	/* copy keys to file */
- 	for (i = 0; i < env->envp_idx; i++)
--		count += sprintf(&buf[count], "%s\n", env->envp[i]);
-+		retval += sprintf(&buf[retval], "%s\n", env->envp[i]);
- out:
- 	kfree(env);
--	return count;
-+	return retval;
- }
- 
- static ssize_t store_uevent(struct device *dev, struct device_attribute *attr,
+But when I try to use other bootloader where clock engine was disabled,the
+Mac driver does not work, so I send this patch to fix this issue.
+
+Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+
+---
+ drivers/net/arm/w90p910_ether.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/arm/w90p910_ether.c b/drivers/net/arm/w90p910_ether.c
+index 2e85246..4545d5a 100644
+--- a/drivers/net/arm/w90p910_ether.c
++++ b/drivers/net/arm/w90p910_ether.c
+@@ -822,6 +822,9 @@ static int w90p910_ether_open(struct net_device *dev)
+ 	w90p910_set_global_maccmd(dev);
+ 	w90p910_enable_rx(dev, 1);
+
++	clk_enable(ether->rmiiclk);
++	clk_enable(ether->clk);
++
+ 	ether->rx_packets = 0x0;
+ 	ether->rx_bytes = 0x0;
+
+-- 
+1.6.3.3
