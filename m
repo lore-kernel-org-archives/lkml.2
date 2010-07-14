@@ -1,142 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757534Ab0GNVgF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 17:36:05 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:39793 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753462Ab0GNVgD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 17:36:03 -0400
-To: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Linux Containers <containers@lists.osdl.org>,
-        linux-kernel@vger.kernel.org, Pavel Emelyanov <xemul@openvz.org>,
-        Oleg Nesterov <oleg@redhat.com>, "Serge E. Hallyn" <serge@hallyn.com>
-Subject: Re: [PATCH] pidns: Fix wait for zombies to be reaped in zap_pid_ns_processes
-References: <20100625212758.GA30474@redhat.com>
-	<20100625220713.GA31123@us.ibm.com>
-	<m1r5jd5l0v.fsf_-_@fess.ebiederm.org>
-	<m1mxu15kv4.fsf_-_@fess.ebiederm.org>
-	<20100709121425.GB18586@hawkmoon.kerlabs.com>
-	<m1lj9k4xfx.fsf@fess.ebiederm.org>
-	<20100709141324.GC18586@hawkmoon.kerlabs.com>
-	<m1aaq04ph2.fsf_-_@fess.ebiederm.org>
-	<20100711141406.GD18586@hawkmoon.kerlabs.com>
-	<m1tyo4shas.fsf_-_@fess.ebiederm.org>
-	<20100714205324.GA13956@us.ibm.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 14 Jul 2010 14:35:52 -0700
-In-Reply-To: <20100714205324.GA13956@us.ibm.com> (Sukadev Bhattiprolu's message of "Wed\, 14 Jul 2010 13\:53\:24 -0700")
-Message-ID: <m14og1oifb.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+	id S1757739Ab0GNVg1 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 17:36:27 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:53639 "EHLO e3.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753462Ab0GNVgZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 17:36:25 -0400
+Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
+From: john stultz <johnstul@us.ibm.com>
+To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
+Cc: Thomas Gleixner <tglx@linutronix.de>, LKML <linux-kernel@vger.kernel.org>,
+        rt-users <linux-rt-users@vger.kernel.org>,
+        Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
+In-Reply-To: <1279143129.29524.39.camel@localhost.localdomain>
+References: <1278609590.7527.11.camel@localhost.localdomain>
+	 <1278628386.3008.11.camel@localhost.localdomain>
+	 <1278629044.12059.6.camel@localhost.localdomain>
+	 <1278630050.3008.18.camel@localhost.localdomain>
+	 <1278702134.5102.9.camel@localhost.localdomain>
+	 <1278705254.2349.14.camel@localhost.localdomain>
+	 <1278713600.7122.22.camel@localhost.localdomain>
+	 <1278716222.2349.20.camel@localhost.localdomain>
+	 <1278977858.6489.52.camel@localhost.localdomain>
+	 <1278978834.2404.12.camel@localhost.localdomain>
+	 <1278983426.6489.57.camel@localhost.localdomain>
+	 <1278985231.2404.60.camel@localhost.localdomain>
+	 <1278990381.11165.3.camel@localhost.localdomain>
+	 <1279143129.29524.39.camel@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 14 Jul 2010 14:36:03 -0700
+Message-ID: <1279143363.3372.2.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com> writes:
+On Wed, 2010-07-14 at 14:32 -0700, Fernando Lopez-Lezcano wrote:
+> On Mon, 2010-07-12 at 20:06 -0700, Fernando Lopez-Lezcano wrote:
+> > > > --------
+> > > > BUG: unable to handle kernel NULL pointer dereference at 0000008c
+> > > > IP: [<c045e50a>] rt_spin_lock_fastunlock.clone.2+0x6/0x3e
+> > > ...
+> > > > Pid: 2855, comm: nautilus Not tainted
+> > > > 2.6.33.6-147.rt23.3.fc12.ccrma.i686.rt #3 P5K/EPU/P5K/EPU
+> > > > EIP: 0060:[<c045e50a>] EFLAGS: 00210246 CPU: 0
+> > > > EIP is at rt_spin_lock_fastunlock.clone.2+0x6/0x3e
+> > > > EAX: 00000078 EBX: ef45393c ECX: 00000000 EDX: 00000078
+> > > > ESI: ef716edc EDI: 00000000 EBP: f1977c8c ESP: f1977c88
+> > > >  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068 preempt:00000000
+> > > > Process nautilus (pid: 2855, ti=f1976000 task=f2347130 task.ti=f1976000)
+> > > > Stack:
+> > > >  ef45393c f1977c94 c0781206 f1977cc8 c04d842e 00000000 ef703e54 faadd5bc
+> > > > <0> f1977cdc 126bc87a ef703ddc 00000000 ef45393c ef716edc ef6f5494
+> > > > faafdc6c
+> > > > <0> f1977df8 faad9041 c3604b5c faafdc6c ef452bfc 00007e7f f5eb41e8
+> > > > 00000007
+> > > > Call Trace:
+> > > >  [<c0781206>] ? rt_spin_unlock+0x8/0xa
+> > > >  [<c04d842e>] ? d_materialise_unique+0x210/0x2aa
+> > > 
+> > > Can you gdb list *0xc04d842e ?
+> > 
+> > (gdb) list *0xc04d842e
+> > 0xc04d842e is in d_materialise_unique (fs/dcache.c:2073).
+> > 2068	out_unalias:
+> > 2069		d_move_locked(alias, dentry);
+> > 2070		ret = alias;
+> > 2071	out_err:
+> > 2072		spin_unlock(&inode->i_lock);
+> > 2073		if (m2)
+> > 2074			mutex_unlock(m2);
+> > 2075		if (m1)
+> > 2076			mutex_unlock(m1);
+> > 2077		return ret;
+> > 
+> > > Thanks again for all the testing here! Its really appreciated!
+> 
+> I just tried building 2.6.33.6 rt26 (saw it this morning on the site)
+> and it does not exhibit this problem. Woohoo!
 
-> Eric W. Biederman [ebiederm@xmission.com] wrote:
-> | 
-> |   Changing zap_pid_ns_processes to fix the problem instead of
-> |   changing the code elsewhere is one of the few solutions I have
-> |   seen that does not increase the cost of the lat_proc test from
-> |   lmbench.
->
-> I think its a good fix for the problem. but I have a nit and a minor
-> comment below.
->
-> Thanks,
->
-> Sukadev
->
-> | 
-> | Reported-by: Louis Rilling <Louis.Rilling@kerlabs.com>
->
-> Reviewed-by: Sukadev Bhattiprolu <sukadev@linux.vnet.ibm.com>
->
-> | Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-> | ---
-> |  kernel/pid_namespace.c |   50 ++++++++++++++++++++++++++++++++++++-----------
-> |  1 files changed, 38 insertions(+), 12 deletions(-)
-> | 
-> | diff --git a/kernel/pid_namespace.c b/kernel/pid_namespace.c
-> | index a5aff94..aaf2ab0 100644
-> | --- a/kernel/pid_namespace.c
-> | +++ b/kernel/pid_namespace.c
-> | @@ -139,16 +139,20 @@ void free_pid_ns(struct kref *kref)
-> | 
-> |  void zap_pid_ns_processes(struct pid_namespace *pid_ns)
-> |  {
-> | +	struct task_struct *me = current;
-> |  	int nr;
-> |  	int rc;
-> |  	struct task_struct *task;
-> | 
-> |  	/*
-> | -	 * The last thread in the cgroup-init thread group is terminating.
-> | -	 * Find remaining pid_ts in the namespace, signal and wait for them
-> | -	 * to exit.
-> | +	 * The last task in the pid namespace-init threa group is terminating.
->
-> nit:                                               thread
+Yea. The vfs-scalability patches were dropped. Sort of a bummer, but I'm
+glad that fixes it for you.
 
-Agreed.
+We may run into the issue again when the patches can get beaten back
+into shape, but I'll try to hunt down the issue from your log output
+prior to that.
 
-> | +	 * Find remaining pids in the namespace, signal and wait for them
-> | +	 * to to be reaped.
-> |  	 *
-> | -	 * Note:  This signals each threads in the namespace - even those that
-> | +	 * By waiting for all of the tasks to be reaped before init is reaped
-> | +	 * we provide the invariant that no task can escape the pid namespace.
-> | +	 *
-> | +	 * Note:  This signals each task in the namespace - even those that
-> |  	 * 	  belong to the same thread group, To avoid this, we would have
-> |  	 * 	  to walk the entire tasklist looking a processes in this
-> |  	 * 	  namespace, but that could be unnecessarily expensive if the
-> | @@ -157,28 +161,50 @@ void zap_pid_ns_processes(struct pid_namespace *pid_ns)
-> |  	 *
-> |  	 */
-> |  	read_lock(&tasklist_lock);
-> | -	nr = next_pidmap(pid_ns, 1);
-> | -	while (nr > 0) {
-> | -		rcu_read_lock();
-> | +	for (nr = next_pidmap(pid_ns, 0); nr > 0; nr = next_pidmap(pid_ns, nr)) {
->
-> Is it necessary to start the search at nr == 0 ? We will find nr == 1
-> first and then immediately skip over it - bc same_thread_group() will
-> be TRUE.
+Thanks again for the testing and great feedback!
+-john
 
-Which means we exercise that code path, and ensure we have same_thread_group
-test working properly.  Given how rare threaded inits are every little bit
-of extra test coverage that doesn't really cost us anything seems important.
 
-> |  		/*
-> |  		 * Any nested-container's init processes won't ignore the
-> |  		 * SEND_SIG_NOINFO signal, see send_signal()->si_fromuser().
-> |  		 */
-> | -		task = pid_task(find_vpid(nr), PIDTYPE_PID);
-> | -		if (task)
-> | +		rcu_read_lock();
-> | +		task = pid_task(find_pid_ns(nr, pid_ns), PIDTYPE_PID);
-> | +		if (task && !same_thread_group(task, me))
-> |  			send_sig_info(SIGKILL, SEND_SIG_NOINFO, task);
->
-> Also, if we start the search at 1, we could skip the only the other possible
-> thread in the group with
->
-> 	(nr != my_pid_nr)
->
-> but its not really an optimization.
-
-It is possible that other threads of a multi-threaded init are in the PF_EXITING
-state and still visible for sending signals to.  I really don't want to send
-SIG_KILL to another thread of init.  There is a chance of messing up the return
-code if I do that, and do not want to need to think about that case.
-
-Eric
