@@ -1,46 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab0GNQdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:33:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35445 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962Ab0GNQdR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:33:17 -0400
-Message-ID: <4C3DE6C7.6040608@suse.cz>
-Date: Wed, 14 Jul 2010 18:33:11 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1754592Ab0GNQka (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 12:40:30 -0400
+Received: from gandalf.light-speed.de ([85.214.152.96]:60020 "EHLO
+	mail.light-speed.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab0GNQk3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 12:40:29 -0400
+Message-ID: <4C3DE870.4020503@letzte-bankreihe.de>
+Date: Wed, 14 Jul 2010 18:40:16 +0200
+From: Stephan Wolf <stephan@letzte-bankreihe.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Thunderbird/3.1
 MIME-Version: 1.0
-To: Alexander Shishkin <virtuoso@slind.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, linux-kbuild@vger.kernel.org,
-        =?ISO-8859-1?Q?Sebastian_Dalfu=DF?= <sd@sedf.de>,
-        Oliver Hartkopp <oliver@hartkopp.net>,
-        Michael Guntsche <mike@it-loops.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, Michael Tokarev <mjt@tls.msk.ru>,
-        Alek Du <alek.du@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] implement size_append in perl
-References: <1279116063-4499-1-git-send-email-virtuoso@slind.org> <4C3DCFB3.1090801@zytor.com> <20100714161201.GD23436@shisha.kicks-ass.net>
-In-Reply-To: <20100714161201.GD23436@shisha.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: linux-kernel@vger.kernel.org, tglx@linutronix.de,
+        Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Re: [PATCH] enable readback to get HPET working on ATI SB4x00, kernel
+ 	2.6.35_rc5
+References: <4C3DDDFF.5040302@letzte-bankreihe.de> <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
+In-Reply-To: <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 06:12 PM, Alexander Shishkin wrote:
-> On Wed, Jul 14, 2010 at 07:54:43 -0700, H. Peter Anvin wrote:
->> On 07/14/2010 07:01 AM, Alexander Shishkin wrote:
->>> +size_append = $(PERL) -e 'print pack("V", (stat "$(lastword $1)")[7])'
->>
->> Why the "lastword"?
-> 
-> There's a whitespace right after it due to it being part of the target
-> spec "$(obj)/piggy.$(suffix_y) FORCE", where "FORCE" is being filtered
-> out.
+  Am 14.07.2010 18:13, schrieb Linus Torvalds:
+> On Wed, Jul 14, 2010 at 8:55 AM, Stephan Wolf
+> <stephan@letzte-bankreihe.de>  wrote:
+>>   After commit 30a564be9d9554c168a654eddc2165869cc0d7bf "x86, hpet: Restrict
+>> read back to affected ATI chipsets" hpet did not work anymore on HP nx6325.
+>> The machine hangs on booting until a keystroke was taken. After a short time
+>> machine hangs again until next keystroke. Applying the following patch
+>> solves the issue for me.
+> Ok, this makes sense. Bugs in the ATI chipset is why
+> 'hpet_readback_cmp' exists in the first place. HOWEVER, clearly that
+> commit changed it to be about too few ATI chipsets.
+>
+> So right now, for
+>
+>   - PCI_DEVICE_ID_ATI_SBX00_SMBUS:
+>       force disable HPET MSI
+>       force HPET readback
+>
+>   - PCI_DEVICE_ID_ATI_IXP400_SMBU
+>       force-enable HPET
+>       ...and than your patch makes it force HPET readback
+>
+> but that doesn't actually make much sense in the bigger picture,
+> because there are other ATI chipsets that are related and presumably
+> also affected. What about IXP[23]00_SMBUS? And what about the IXP7
+> series (SBX00 is IXP6, afaik)?
+>
+> So I get the feeling that this is incomplete, or at least needs
+> thinking about those other ATI chipsets too.
+>
+> Thomas? And I added Andreas to the cc, maybe he knows what's up.
+>
+>                          Linus
+>
+Ok, I did not consider that msi is disabled at all on IXP400. Isn't it? 
+Maybe that the reason why it is works for me.
 
-Then you should use $(strip $1), which is more obvious IMO.
-
-Michal
+Stephan
