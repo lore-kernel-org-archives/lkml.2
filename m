@@ -1,78 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757770Ab0GNWM1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:12:27 -0400
-Received: from www.tglx.de ([62.245.132.106]:36616 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757603Ab0GNWMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:12:24 -0400
-Date: Thu, 15 Jul 2010 00:12:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-cc: john stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-Subject: Re: 2.6.33.5 rt23: sleeping function called from invalid context
-In-Reply-To: <1279145211.3018.0.camel@localhost.localdomain>
-Message-ID: <alpine.LFD.2.00.1007150008170.3321@localhost.localdomain>
-References: <1278561270.5448.2.camel@localhost.localdomain>  <1278610624.3008.2.camel@localhost.localdomain>  <1278639872.3008.36.camel@localhost.localdomain> <1279145211.3018.0.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757910Ab0GNWNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:13:07 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:42305 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757866Ab0GNWNF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 18:13:05 -0400
+Date: Thu, 15 Jul 2010 00:13:01 +0200
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+To: David Miller <davem@davemloft.net>
+Cc: rick.jones2@hp.com, lists@wildgooses.com, davidsen@tmr.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Raise initial congestion window size / speedup slow start?
+Message-ID: <20100714221301.GI6682@nuttenaction>
+References: <4C3E0684.5060409@wildgooses.com>
+ <4C3E1B54.40604@hp.com>
+ <20100714203919.GD6682@nuttenaction>
+ <20100714.145547.102555471.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100714.145547.102555471.davem@davemloft.net>
+X-Key-Id: 98350C22
+X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
+X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010, Fernando Lopez-Lezcano wrote:
-> On Thu, 2010-07-08 at 18:44 -0700, john stultz wrote:
-> > On Thu, 2010-07-08 at 10:37 -0700, john stultz wrote:
-> > > On Wed, 2010-07-07 at 20:54 -0700, Fernando Lopez-Lezcano wrote:
-> > > > After a suspend/wake up cycle, just after upgrading to fc12 (I did not
-> > > > see this with the same basic kernel - that is, compiled from the same
-> > > > source + patches - under fc11). 
-> > > > 
-> > > > BUG: sleeping function called from invalid context at
-> > > > kernel/rtmutex.c:684
-> > > > pcnt: 0 0 in_atomic(): 0, irqs_disabled(): 1, pid: 10582, name:
-> > > > pm-suspend
-> > > > Pid: 10582, comm: pm-suspend Not tainted
-> > > > 2.6.33.5-120.rt23.1.fc11.ccrma.i686.rtPAE #1
-> > > > Call Trace:
-> > > > [<c042eced>] __might_sleep+0xcc/0xd4
-> > > > [<c0464f57>] rt_spin_lock_fastlock.clone.1+0x26/0x5f
-> > > > [<c0792862>] rt_spin_lock+0x8/0xa
-> > > > [<c040dddc>] read_persistent_clock+0x11/0x30
-> > > > [<c045d1de>] timekeeping_suspend+0xe/0x4e
-> > > > [<c0640c9e>] sysdev_suspend+0x15c/0x356
-> > > > [<c0792906>] ? _mutex_unlock+0x8/0xa
-> > > > [<c046afc1>] suspend_devices_and_enter+0xea/0x17f
-> > > 
-> > > Huh. Looks like the lock protecting the RTC/CMOS might need to be
-> > > converted to a raw spinlock, since suspend/resume is probably done with
-> > > irqs off.
-> > 
-> > Oof. The rtc_lock is used all over the place. Not sure if we really want
-> > to convert it to a raw_spinlock. 
-> > 
-> > However, sysdev_suspend() wants interrupts off on all the .suspend
-> > calls. I'm surprised we haven't hit this issue with more drivers. Maybe
-> > no one is testing suspend w/ -rt? Or am I just missing an obvious
-> > solution?
-> >
-> > Thomas, any thoughts on this? 
+* David Miller | 2010-07-14 14:55:47 [-0700]:
 
-Yep, it's basically the same scenario which we have during bootup
-where we know that we cannot run into lock contention, so we can apply
-the same rules. Still working on a sane solution for this.
- 
-> (BTW, this is still happening in rt26...)
+>Although section 3 of RFC 5681 is a great text, it does not say at all
+>that increasing the initial CWND would lead to fairness issues.
 
-See announce mail :)
+Because it is only one side of the medal, probing conservative the available
+link capacity in conjunction with n simultaneous probing TCP/SCTP/DCCP
+instances is another.
 
-> There are some pending issues:
-> - rtc_lock suspend/resume (working on a patch)
-> ...
+>To be honest, I think google's proposal holds a lot of weight.  If
+>over time link sizes and speeds are increasing (they are) then nudging
+>the initial CWND every so often is a legitimate proposal.  Were
+>someone to claim that utilization is lower than it could be because of
+>the currenttly specified initial CWND, I would have no problem
+>believing them.
+>
+>And I'm happy to make Linux use an increased value once it has
+>traction in the standardization community.
 
-Thanks,
+Currently I know no working link capacity probing approach, without active
+network feedback, to conservatively probing the available link capacity with a
+high CWND. I am curious about any future trends.
 
-	tglx
+>But for all we know this side discussion about initial CWND settings
+>could have nothing to do with the issue being reported at the start of
+>this thread. :-)
+
+;-) sure, but it is often wise to thwart these kind of discussions. It seems
+these CWND discussions turn up once every other month. ;-)
+
+Hagen
+
