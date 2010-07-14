@@ -1,93 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757303Ab0GNPXA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 11:23:00 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33325 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754734Ab0GNPW7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 11:22:59 -0400
-Message-ID: <4C3DD64B.10109@suse.cz>
-Date: Wed, 14 Jul 2010 17:22:51 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1757313Ab0GNPXm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 11:23:42 -0400
+Received: from pfepa.post.tele.dk ([195.41.46.235]:42209 "EHLO
+	pfepa.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753668Ab0GNPXl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 11:23:41 -0400
+Date: Wed, 14 Jul 2010 17:23:37 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Alexander Shishkin <virtuoso@slind.org>
+Cc: linux-kbuild@vger.kernel.org, Sebastian Dalfu? <sd@sedf.de>,
+        Oliver Hartkopp <oliver@hartkopp.net>,
+        Michael Guntsche <mike@it-loops.com>,
+        Jonathan Nieder <jrnieder@gmail.com>, Michael Tokarev <mjt@tls.msk.ru>,
+        Alek Du <alek.du@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
+        Michal Marek <mmarek@suse.cz>, Russell King <rmk@arm.linux.org.uk>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] [RFC] implement size_append in perl
+Message-ID: <20100714152337.GA13125@merkur.ravnborg.org>
+References: <1279116063-4499-1-git-send-email-virtuoso@slind.org>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        ak@linux.intel.com
-Subject: Re: [PATCH] Kbuild: Add option to set -femit-struct-debug-baseonly
-References: <20100714134352.GA10341@basil.fritz.box>
-In-Reply-To: <20100714134352.GA10341@basil.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279116063-4499-1-git-send-email-virtuoso@slind.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 03:43 PM, Andi Kleen wrote:
-> Kbuild: Add option to set -femit-struct-debug-baseonly 
+On Wed, Jul 14, 2010 at 05:01:03PM +0300, Alexander Shishkin wrote:
+> The current implementation has been several times fixed to work around
+> different shells and build environments and it remains a somewhat tricky
+> shell script. This patch replaces all the dependencies by a single line
+> of perl. Build dependency on perl is not new, so that shouldn't be a
+> problem.
 > 
-> Newer gcc has a -femit-struct-debug-baseonly option that dramatically
-> reduces the size of object files with debug info. What it does
-> is to only emit type information for structures when the structures
-> are defined in the same file or in a header file.
+> The new implementation does exactly what it's supposed to: it outputs
+> a little-endian 32-bit unsigned integer of a file's length.
 > 
-> This means the type information for most headers are not included.
-> This is not good when the type information is actually
-> needed (e.g. with kgdb or systemtap) 
-> 
-> But often kernel hackers only care about line numbers and don't
-> need all the type information anyways. In this case setting
-> the option can be a big win:
-> 
-> A build dir for a specific x86-64 configuration with gcc 4.5
-> shrunk from 2.3G to 1.2G. The compilation was also nearly a minute
-> faster.
-> 
-> Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> 
-> ---
->  Makefile          |    4 ++++
->  lib/Kconfig.debug |   12 ++++++++++++
->  2 files changed, 16 insertions(+)
-> 
-> Index: linux-2.6.34-ak/Makefile
-> ===================================================================
-> --- linux-2.6.34-ak.orig/Makefile
-> +++ linux-2.6.34-ak/Makefile
-> @@ -554,6 +554,10 @@ KBUILD_CFLAGS	+= -g
->  KBUILD_AFLAGS	+= -gdwarf-2
->  endif
->  
-> +ifdef CONFIG_DEBUG_INFO_REDUCED
-> +KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly)
-> +endif
-> +
->  ifdef CONFIG_FUNCTION_TRACER
->  KBUILD_CFLAGS	+= -pg
->  endif
-> Index: linux-2.6.34-ak/lib/Kconfig.debug
-> ===================================================================
-> --- linux-2.6.34-ak.orig/lib/Kconfig.debug
-> +++ linux-2.6.34-ak/lib/Kconfig.debug
-> @@ -616,6 +616,18 @@ config DEBUG_INFO
->  
->  	  If unsure, say N.
->  
-> +config DEBUG_INFO_REDUCED
-> +	bool "Reduce debugging information"
-> +	depends on DEBUG_INFO
-> +	help
-> +	  If you say Y here gcc is instructed to generate less debugging information
-> +          for structure types. This means that tools that need full debugging information
-> +          (like kgdb or systemtap) won't be happy. But if you merely need debugging
-> +          information to resolve line numbers there is no loss.
-> +          Advantage is that build directory object sizes shrink dramatically over
-> +          a full DEBUG_INFO build and compile times are reduced too.
-> +          Only works with newer gcc versions.
-> +
+> This might simplify matters with different build environments and
+> different shells and is also considerably shorter and hopefully more
+> readable.
 
-I reformatted this help text to not wrap in a 80-column terminal and
-applied the patch to the kbuild tree.
+Reminds me that I had a patch that moved this to mkpiggy.c.
+Goggle gave this hit:
 
-thanks,
-Michal
+    http://lists.openwall.net/linux-kernel/2009/12/20/92
+
+I will try to update this to cover arm also and check
+if other archs needs this.
+
+In other word - move thes size stuff to mkpiggy so we
+skip this extra step.
+
+	Sam
