@@ -1,71 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757583Ab0GNX2f (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:28:35 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58433 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754522Ab0GNX2e (ORCPT
+	id S1757627Ab0GNX3a (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:29:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:40159 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754522Ab0GNX32 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:28:34 -0400
+	Wed, 14 Jul 2010 19:29:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=DeJF1MW2fSwqFoH3mtQ+W/BQM+85g/N4bvEBj+mff5bKnQXYb4jUKtTcnx3+eiJVFx
+         y/PqVgW4sZ6gOy22MPw9PPNp3AD18HxPdl+xn2jEGZ91N4hlshmrqISDnA1tyu3dWEt6
+         bqq3+1d5SUIxMdGnXBMc/aJ408T74pZrX4YwQ=
+Message-ID: <4C3E4852.9010306@gmail.com>
+Date: Thu, 15 Jul 2010 01:29:22 +0200
+From: Tejun Heo <htejun@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-In-Reply-To: <20100714230913.GG22373@basil.fritz.box>
-References: <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-	<20100714170617.GB4955@Krystal>
-	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-	<20100714184642.GA9728@elte.hu>
-	<AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
-	<AANLkTinfmoKvi1SauDA5_RiTmu6bztTDk8b_ycS-lr8S@mail.gmail.com>
-	<20100714195617.GC22373@basil.fritz.box>
-	<20100714200552.GA22096@Krystal>
-	<20100714223116.GB14533@nowhere>
-	<AANLkTik-sJL_pAJg38Hzpl_jpn2v90t7tppYqOGmu6p-@mail.gmail.com>
-	<20100714230913.GG22373@basil.fritz.box>
-Date: Wed, 14 Jul 2010 16:22:52 -0700
-Message-ID: <AANLkTinLbRqiLa6fcjsuC1b4yfAhAoLLk_0tzcV4K9jg@mail.gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
 To: Andi Kleen <andi@firstfloor.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
         Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
         Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
         Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
         Johannes Berg <johannes.berg@intel.com>,
         Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [patch 0/2] x86: NMI-safe trap handlers
+References: <20100714154923.947138065@efficios.com> <20100714170606.GA22373@basil.fritz.box> <20100714170805.GC4955@Krystal> <20100714185617.GB22373@basil.fritz.box>
+In-Reply-To: <20100714185617.GB22373@basil.fritz.box>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 4:09 PM, Andi Kleen <andi@firstfloor.org> wrote:
->
-> It can happen in theory, but for such a rare case take a lock
-> and walking everything should be fine.
+Hello,
 
-Actually, that's _exactly_ the wrong kind of thinking.
+On 07/14/2010 08:56 PM, Andi Kleen wrote:
+> On Wed, Jul 14, 2010 at 01:08:05PM -0400, Mathieu Desnoyers wrote:
+>> * Andi Kleen (andi@firstfloor.org) wrote:
+>>>> x86_32 cannot use vmalloc_sync_all() to sychronize the TLBs from
+>>>> every processes because the vmalloc area is mapped in a different
+>>>> address space for
+>>> That doesn't make sense. vmalloc_all_sync() should work on 32bit
+>>> too.  It just needs to walk all processes and fix up every page
+>>> table.
 
-Bad latency is bad latency, even when it happens rarely. So latency
-problems kill - even when they are rare. So you want to avoid them.
-And walking every possible page table is a _huge_ latency problem when
-it happens.
+Yeah, vmalloc_sync_all() synchronizes everything by walking every page
+table, so it should work.  I was saying that just flushing TLB
+wouldn't cut it because multiple top level page table entries can be
+used to map vmalloc areas.  It seems that both 32 and 64bit does that
+tho.
 
-In contrast, what's the advantage of doing thigns synchronously while
-holding a lock? It's that you can avoid a few page faults, and get
-better CPU use. But that's _stupid_ if it's something that is very
-rare to begin with.
+Thanks.
 
-So the very rarity argues for the lazy approach. If it wasn't rare,
-there would be a much stronger argument for trying to do things
-up-front.
-
-                   Linus
+-- 
+tejun
