@@ -1,65 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754592Ab0GNQka (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:40:30 -0400
-Received: from gandalf.light-speed.de ([85.214.152.96]:60020 "EHLO
-	mail.light-speed.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751962Ab0GNQk3 (ORCPT
+	id S1756473Ab0GNQmY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 12:42:24 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:35850 "EHLO
+	cvs.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752378Ab0GNQmW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:40:29 -0400
-Message-ID: <4C3DE870.4020503@letzte-bankreihe.de>
-Date: Wed, 14 Jul 2010 18:40:16 +0200
-From: Stephan Wolf <stephan@letzte-bankreihe.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Thunderbird/3.1
+	Wed, 14 Jul 2010 12:42:22 -0400
+Date: Wed, 14 Jul 2010 17:42:21 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>, akpm@osdl.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+In-Reply-To: <20100714155804.252253097@efficios.com>
+Message-ID: <alpine.LFD.2.00.1007141732200.11778@eddie.linux-mips.org>
+References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: linux-kernel@vger.kernel.org, tglx@linutronix.de,
-        Andreas Herrmann <andreas.herrmann3@amd.com>
-Subject: Re: [PATCH] enable readback to get HPET working on ATI SB4x00, kernel
- 	2.6.35_rc5
-References: <4C3DDDFF.5040302@letzte-bankreihe.de> <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
-In-Reply-To: <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Am 14.07.2010 18:13, schrieb Linus Torvalds:
-> On Wed, Jul 14, 2010 at 8:55 AM, Stephan Wolf
-> <stephan@letzte-bankreihe.de>  wrote:
->>   After commit 30a564be9d9554c168a654eddc2165869cc0d7bf "x86, hpet: Restrict
->> read back to affected ATI chipsets" hpet did not work anymore on HP nx6325.
->> The machine hangs on booting until a keystroke was taken. After a short time
->> machine hangs again until next keystroke. Applying the following patch
->> solves the issue for me.
-> Ok, this makes sense. Bugs in the ATI chipset is why
-> 'hpet_readback_cmp' exists in the first place. HOWEVER, clearly that
-> commit changed it to be about too few ATI chipsets.
->
-> So right now, for
->
->   - PCI_DEVICE_ID_ATI_SBX00_SMBUS:
->       force disable HPET MSI
->       force HPET readback
->
->   - PCI_DEVICE_ID_ATI_IXP400_SMBU
->       force-enable HPET
->       ...and than your patch makes it force HPET readback
->
-> but that doesn't actually make much sense in the bigger picture,
-> because there are other ATI chipsets that are related and presumably
-> also affected. What about IXP[23]00_SMBUS? And what about the IXP7
-> series (SBX00 is IXP6, afaik)?
->
-> So I get the feeling that this is incomplete, or at least needs
-> thinking about those other ATI chipsets too.
->
-> Thomas? And I added Andreas to the cc, maybe he knows what's up.
->
->                          Linus
->
-Ok, I did not consider that msi is disabled at all on IXP400. Isn't it? 
-Maybe that the reason why it is works for me.
+On Wed, 14 Jul 2010, Mathieu Desnoyers wrote:
 
-Stephan
+> This patch makes all faults, traps and exception safe to be called from NMI
+> context *except* single-stepping, which requires iret to restore the TF (trap
+> flag) and jump to the return address in a single instruction. Sorry, no kprobes
+
+ Watch out for the RF flag too, that is not set correctly by POPFD -- that 
+may be important for faulting instructions that also have a hardware 
+breakpoint set at their address.
+
+> support in NMI handlers because of this limitation. This cannot be emulated
+> with popf/lret, because lret would be single-stepped. It does not apply to
+> "immediate values" because they do not use single-stepping. This code detects if
+> the TF flag is set and uses the iret path for single-stepping, even if it
+> reactivates NMIs prematurely.
+
+ What about the VM flag for VM86 tasks?  It cannot be changed by POPFD 
+either.
+
+ How about only using the special return path when a nested exception is 
+about to return to the NMI handler?  You'd avoid all the odd cases then 
+that do not happen in the NMI context.
+
+  Maciej
