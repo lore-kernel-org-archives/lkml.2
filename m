@@ -1,63 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755146Ab0GNAzT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:55:19 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60869 "EHLO hera.kernel.org"
+	id S1756168Ab0GNA4h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:56:37 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:40193 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab0GNAzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 20:55:17 -0400
-Date: Wed, 14 Jul 2010 00:54:59 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        yinhai@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        yinhai@kernel.org, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <tip-df378ccfc4dd04e263426ad805516915874774aa@git.kernel.org>
-References: <tip-df378ccfc4dd04e263426ad805516915874774aa@git.kernel.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/alternatives] x86, alternatives: BUG on encountering an invalid CPU feature number
-Message-ID: <tip-3b770a2128423a687e6e9c57184a584fb4ba4c77@git.kernel.org>
-Git-Commit-ID: 3b770a2128423a687e6e9c57184a584fb4ba4c77
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Jul 2010 00:55:00 +0000 (UTC)
+	id S1754728Ab0GNA4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 20:56:31 -0400
+From: John Stultz <johnstul@us.ibm.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 09/11] Make xtime and wall_to_monotonic static
+Date: Tue, 13 Jul 2010 17:56:26 -0700
+Message-Id: <1279068988-21864-10-git-send-email-johnstul@us.ibm.com>
+X-Mailer: git-send-email 1.6.0.4
+In-Reply-To: <1279068988-21864-9-git-send-email-johnstul@us.ibm.com>
+References: <1279068988-21864-1-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-3-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-4-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-5-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-6-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-7-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-8-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-9-git-send-email-johnstul@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3b770a2128423a687e6e9c57184a584fb4ba4c77
-Gitweb:     http://git.kernel.org/tip/3b770a2128423a687e6e9c57184a584fb4ba4c77
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Tue, 13 Jul 2010 14:57:50 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 13 Jul 2010 14:57:50 -0700
+This patch makes xtime and wall_to_monotonic static, as planned in
+Documentation/feature-removal-schedule.txt. This will allow for
+further cleanups to the timekeeping core.
 
-x86, alternatives: BUG on encountering an invalid CPU feature number
+Signed-off-by: John Stultz <johnstul@us.ibm.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
 
-Make the alternatives-patching code BUG on encountering an invalid CPU
-feature number.  Should have done this a long time ago.
-
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: Yinghai Lu <yinhai@kernel.org>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <tip-df378ccfc4dd04e263426ad805516915874774aa@git.kernel.org>
 ---
- arch/x86/kernel/alternative.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ Documentation/feature-removal-schedule.txt |   10 ----------
+ include/linux/time.h                       |    2 --
+ kernel/time/timekeeping.c                  |    4 ++--
+ 3 files changed, 2 insertions(+), 14 deletions(-)
 
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index 7023773..f65ab8b 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -214,6 +214,7 @@ void __init_or_module apply_alternatives(struct alt_instr *start,
- 		u8 *instr = a->instr;
- 		BUG_ON(a->replacementlen > a->instrlen);
- 		BUG_ON(a->instrlen > sizeof(insnbuf));
-+		BUG_ON(a->cpuid >= NCAPINTS*32);
- 		if (!boot_cpu_has(a->cpuid))
- 			continue;
- #ifdef CONFIG_X86_64
+diff --git a/Documentation/feature-removal-schedule.txt b/Documentation/feature-removal-schedule.txt
+index c268783..0d91c6b 100644
+--- a/Documentation/feature-removal-schedule.txt
++++ b/Documentation/feature-removal-schedule.txt
+@@ -549,16 +549,6 @@ Who:	Avi Kivity <avi@redhat.com>
+ 
+ ----------------------------
+ 
+-What:	xtime, wall_to_monotonic
+-When:	2.6.36+
+-Files:	kernel/time/timekeeping.c include/linux/time.h
+-Why:	Cleaning up timekeeping internal values. Please use
+-	existing timekeeping accessor functions to access
+-	the equivalent functionality.
+-Who:	John Stultz <johnstul@us.ibm.com>
+-
+-----------------------------
+-
+ What:	KVM kernel-allocated memory slots
+ When:	July 2010
+ Why:	Since 2.6.25, kvm supports user-allocated memory slots, which are
+diff --git a/include/linux/time.h b/include/linux/time.h
+index 3a9c0bf..50b3cb0 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -113,8 +113,6 @@ static inline struct timespec timespec_sub(struct timespec lhs,
+ #define timespec_valid(ts) \
+ 	(((ts)->tv_sec >= 0) && (((unsigned long) (ts)->tv_nsec) < NSEC_PER_SEC))
+ 
+-extern struct timespec xtime;
+-extern struct timespec wall_to_monotonic;
+ extern seqlock_t xtime_lock;
+ 
+ extern void read_persistent_clock(struct timespec *ts);
+diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
+index fb61c2e..e14c839 100644
+--- a/kernel/time/timekeeping.c
++++ b/kernel/time/timekeeping.c
+@@ -153,8 +153,8 @@ __cacheline_aligned_in_smp DEFINE_SEQLOCK(xtime_lock);
+  * - wall_to_monotonic is no longer the boot time, getboottime must be
+  * used instead.
+  */
+-struct timespec xtime __attribute__ ((aligned (16)));
+-struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
++static struct timespec xtime __attribute__ ((aligned (16)));
++static struct timespec wall_to_monotonic __attribute__ ((aligned (16)));
+ static struct timespec total_sleep_time;
+ 
+ /*
+-- 
+1.6.0.4
+
