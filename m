@@ -1,94 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757132Ab0GNNVw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 09:21:52 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:45272 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757103Ab0GNNVu (ORCPT
+	id S1757203Ab0GNNWE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 09:22:04 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:45385 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757166Ab0GNNV7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 09:21:50 -0400
-Date: Wed, 14 Jul 2010 15:21:48 +0200
-From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: Jonathan Corbet <corbet@lwn.net>,
-        Mauro Carvalho Chehab <mchehab@infradead.org>,
-        Tejun Heo <tj@kernel.org>, linux-media@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 4/4] drivers/media/video: Remove dead CONFIG_OLPC_X0_1
-Message-ID: <966ac7deeee8b102b9b8d829ca14e177f9368f21.1279111369.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1279111369.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	Wed, 14 Jul 2010 09:21:59 -0400
+Date: Wed, 14 Jul 2010 15:20:46 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: David Brown <davidb@codeaurora.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Kevin Hilman <khilman@deeprootsystems.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Grant Likely <grant.likely@secretlab.ca>,
+        Eric Miao <eric.miao@canonical.com>, linux-omap@vger.kernel.org,
+        Nicolas Pitre <nico@fluxnic.net>
+Subject: Re: ARM defconfig files
+Message-ID: <20100714132046.GA18343@pengutronix.de>
+References: <alpine.LFD.2.00.1006030725420.8175@i5.linux-foundation.org> <201007121605.32462.davidb@codeaurora.org> <AANLkTimho3rcoCZZ2PlC3B3KIZZhsEiTnTk-__n1q_Dy@mail.gmail.com> <201007121634.04427.davidb@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <cover.1279111369.git.qy03fugy@stud.informatik.uni-erlangen.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201007121634.04427.davidb@codeaurora.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_OLPC_X0_1 doesn't exist in Kconfig and is never defined anywhere
-else, therefore removing all references for it from the source code.
+On Mon, Jul 12, 2010 at 04:34:04PM -0700, David Brown wrote:
+> On Monday 12 July 2010 16:18:01 Linus Torvalds wrote:
+> 
+> > 2010/7/12 David Brown <davidb@codeaurora.org>:
+> > >
+> > > Do you have scripts or tools that you did this with, or is a manual
+> > > process.  We're about to add several new (ARM) targets, and it'd be
+> > > nice to be able to make small defconfigs for those targets as well.
+> > 
+> > Uwe posted it earlier in this thread as an attachement, and I put the
+> > python script into the merge commit message too. And we should
+> > probably put it somewhere in scripts too, and/or make a 'make' target
+> > to create the small config files.
+> > 
+> > I pushed it all out, and tagged it as -rc5.
+> 
+> Got it, thanks.  I just pulled a bit soon.
+> 
+> It seems a bit brute force, probably not something I can make part of
+> our regular build process, but I can definitely run it before sending
+> patches out.
+> 
+> I wonder if there's a more efficient way of doing it that doesn't
+> involve invoking make for each line of the file.  It at least
+> shouldn't be necessary to actually build the kernel each time.
+Note that no kernel is built at all, only the config is regenerated once
+for each line.
 
-Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
----
- drivers/media/video/ov7670.c |   37 -------------------------------------
- 1 files changed, 0 insertions(+), 37 deletions(-)
+Best regards
+Uwe
 
-diff --git a/drivers/media/video/ov7670.c b/drivers/media/video/ov7670.c
-index 91c886a..309b272 100644
---- a/drivers/media/video/ov7670.c
-+++ b/drivers/media/video/ov7670.c
-@@ -409,42 +409,6 @@ static struct regval_list ov7670_fmt_raw[] = {
- 
- /*
-  * Low-level register I/O.
-- *
-- * Note that there are two versions of these.  On the XO 1, the
-- * i2c controller only does SMBUS, so that's what we use.  The
-- * ov7670 is not really an SMBUS device, though, so the communication
-- * is not always entirely reliable.
-- */
--#ifdef CONFIG_OLPC_XO_1
--static int ov7670_read(struct v4l2_subdev *sd, unsigned char reg,
--		unsigned char *value)
--{
--	struct i2c_client *client = v4l2_get_subdevdata(sd);
--	int ret;
--
--	ret = i2c_smbus_read_byte_data(client, reg);
--	if (ret >= 0) {
--		*value = (unsigned char)ret;
--		ret = 0;
--	}
--	return ret;
--}
--
--
--static int ov7670_write(struct v4l2_subdev *sd, unsigned char reg,
--		unsigned char value)
--{
--	struct i2c_client *client = v4l2_get_subdevdata(sd);
--	int ret = i2c_smbus_write_byte_data(client, reg, value);
--
--	if (reg == REG_COM7 && (value & COM7_RESET))
--		msleep(5);  /* Wait for reset to run */
--	return ret;
--}
--
--#else /* ! CONFIG_OLPC_XO_1 */
--/*
-- * On most platforms, we'd rather do straight i2c I/O.
-  */
- static int ov7670_read(struct v4l2_subdev *sd, unsigned char reg,
- 		unsigned char *value)
-@@ -498,7 +462,6 @@ static int ov7670_write(struct v4l2_subdev *sd, unsigned char reg,
- 		msleep(5);  /* Wait for reset to run */
- 	return ret;
- }
--#endif /* CONFIG_OLPC_XO_1 */
- 
- 
- /*
 -- 
-1.7.0.4
-
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
