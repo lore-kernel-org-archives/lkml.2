@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758007Ab0GNXJV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:09:21 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60885 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755436Ab0GNXJT (ORCPT
+	id S1757847Ab0GNXLV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:11:21 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:38457 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754294Ab0GNXLT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:09:19 -0400
-Date: Thu, 15 Jul 2010 01:09:13 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>,
+	Wed, 14 Jul 2010 19:11:19 -0400
+Date: Wed, 14 Jul 2010 19:11:17 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>,
         Peter Zijlstra <peterz@infradead.org>,
         Steven Rostedt <rostedt@goodmis.org>,
@@ -25,55 +23,87 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>,
         Arnaldo Carvalho de Melo <acme@infradead.org>,
         Tom Zanussi <tzanussi@gmail.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
         "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
 Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100714230913.GG22373@basil.fritz.box>
-References: <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
- <20100714170617.GB4955@Krystal>
- <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
- <20100714184642.GA9728@elte.hu>
- <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
- <AANLkTinfmoKvi1SauDA5_RiTmu6bztTDk8b_ycS-lr8S@mail.gmail.com>
- <20100714195617.GC22373@basil.fritz.box>
- <20100714200552.GA22096@Krystal>
- <20100714223116.GB14533@nowhere>
- <AANLkTik-sJL_pAJg38Hzpl_jpn2v90t7tppYqOGmu6p-@mail.gmail.com>
+Message-ID: <20100714231117.GA22341@Krystal>
+References: <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com> <20100714170617.GB4955@Krystal> <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com> <20100714184642.GA9728@elte.hu> <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com> <20100714193652.GA13630@nowhere> <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com> <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal> <20100714224853.GC14533@nowhere>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik-sJL_pAJg38Hzpl_jpn2v90t7tppYqOGmu6p-@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100714224853.GC14533@nowhere>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 19:08:36 up 173 days,  1:45,  6 users,  load average: 0.00, 0.01,
+	0.00
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->  - at vmalloc time, when adding a new page directory entry, walk all
-> the tens of thousands of existing page tables under a lock that
-> guarantees that we don't add any new ones (ie it will lock out fork())
-> and add the required pgd entry to them.
+* Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> On Wed, Jul 14, 2010 at 06:31:07PM -0400, Mathieu Desnoyers wrote:
+> > * Frederic Weisbecker (fweisbec@gmail.com) wrote:
+> > > On Wed, Jul 14, 2010 at 12:54:19PM -0700, Linus Torvalds wrote:
+> > > > On Wed, Jul 14, 2010 at 12:36 PM, Frederic Weisbecker
+> > > > <fweisbec@gmail.com> wrote:
+> > > > >
+> > > > > There is also the fact we need to handle the lost NMI, by defering its
+> > > > > treatment or so. That adds even more complexity.
+> > > > 
+> > > > I don't think your read my proposal very deeply. It already handles
+> > > > them by taking a fault on the iret of the first one (that's why we
+> > > > point to the stack frame - so that we can corrupt it and force a
+> > > > fault).
+> > > 
+> > > 
+> > > Ah right, I missed this part.
+> > 
+> > Hrm, Frederic, I hate to ask that but.. what are you doing with those percpu 8k
+> > data structures exactly ? :)
+> > 
+> > Mathieu
 > 
->  - or just take the fault and do the "fill the page tables" on demand.
 > 
-> Quite frankly, most of the time it's probably better to make that last
-> choice (unless your hardware makes it easy to make the first choice,
+> 
+> So, when an event triggers in perf, we sometimes want to capture the stacktrace
+> that led to the event.
+> 
+> We want this stacktrace (here we call that a callchain) to be recorded
+> locklessly. So we want this callchain buffer per cpu, with the following
+> type:
 
-Adding new PGDs should happen only very rarely (in fact 
-at most once per boot on i386-PAE36 with only 4 entries, most used by user 
-space), most of the time when you do a vmalloc it changes only lower level 
-tables. 
+Ah OK, so you mean that perf now has 2 different ring buffer implementations ?
+How about using a single one that is generic enough to handle perf and ftrace
+needs instead ?
 
-The PGD for the kernel mappings is already set up. On x86-64 it can happen 
-more often in theory, but in practice it should be also extremly rare because
-a PGD is so large.
+(/me runs away quickly before the lightning strikes) ;)
 
-That's why I'm not sure this problem even happened. It should 
-be extremly rare that you exactly add that PGD during the per cpu
-allocation. 
+Mathieu
 
-It can happen in theory, but for such a rare case take a lock
-and walking everything should be fine.
 
--Andi
+> 
+> 	#define PERF_MAX_STACK_DEPTH		255
+> 
+> 	struct perf_callchain_entry {
+> 		__u64				nr;
+> 		__u64				ip[PERF_MAX_STACK_DEPTH];
+> 	};
+> 
+> 
+> That makes 2048 bytes. But per cpu is not enough for the callchain to be recorded
+> locklessly, we also need one buffer per context: task, softirq, hardirq, nmi, as
+> an event can trigger in any of these.
+> Since we disable preemption, none of these contexts can nest locally. In
+> fact hardirqs can nest but we just don't care about this corner case.
+> 
+> So, it makes 2048 * 4 = 8192 bytes. And that per cpu.
+> 
 
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
