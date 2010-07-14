@@ -1,98 +1,139 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754970Ab0GNMjh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 08:39:37 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43507 "EHLO
+	id S1755963Ab0GNMjs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 08:39:48 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43527 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753553Ab0GNMjf (ORCPT
+	by vger.kernel.org with ESMTP id S1755228Ab0GNMjp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 08:39:35 -0400
-Date: Wed, 14 Jul 2010 14:39:29 +0200
+	Wed, 14 Jul 2010 08:39:45 -0400
+Date: Wed, 14 Jul 2010 14:39:43 +0200
 From: Christoph Egger <siccegge@cs.fau.de>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Jiri Pirko <jpirko@redhat.com>,
-        Joe Perches <joe@perches.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>,
-        Jesper Nilsson <jesper.nilsson@axis.com>, Tejun Heo <tj@kernel.org>,
-        Dongdong Deng <dongdong.deng@windriver.com>,
-        Jiri Kosina <jkosina@suse.cz>, Samuel Ortiz <samuel@sortiz.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Roel Kluin <roel.kluin@gmail.com>, Nicolas Pitre <nico@fluxnic.net>,
-        Tony Lindgren <tony@atomide.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        Alessandro Rubini <rubini@unipv.it>, Ivo van Doorn <IvDoorn@gmail.com>,
+To: Ivo van Doorn <IvDoorn@gmail.com>,
         Gertjan van Wingerde <gwingerde@gmail.com>,
         "John W. Linville" <linville@tuxdriver.com>,
         Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
         Felix Fietkau <nbd@openwrt.org>,
-        Helmut Schaa <helmut.schaa@googlemail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
-        users@rt2x00.serialmonkey.com
+        Helmut Schaa <helmut.schaa@googlemail.com>,
+        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 00/11] Removing dead code
-Message-ID: <cover.1279110894.git.siccegge@cs.fau.de>
+Subject: [PATCH 01/11] Removing dead RT2800PCI_SOC
+Message-ID: <29013fb6eab9e95e95d61df894797d2455dfa10c.1279110894.git.siccegge@cs.fau.de>
+References: <cover.1279110894.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1279110894.git.siccegge@cs.fau.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
-       
-        As part of the VAMOS[0] research project at the University of
-Erlangen we are looking at multiple integrity errors in linux'
-configuration system.
+While RT2800PCI_SOC exists in Kconfig, it depends on either
+RALINK_RT288X or RALINK_RT305X which are both not available in Kconfig
+so all Code depending on that can't ever be selected and, if there's
+no plan to add these options, should be cleaned up
 
-        I've been running a check on the drivers/net sourcetree for
-config Items not defined in Kconfig and found 11 such
-cases. Sourcecode blocks depending on these Items are not reachable
-from a vanilla kernel -- dead code. I've seen such dead blocks made on
-purpose e.g. while integrating new features into the kernel but
-generally they're just useless.
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ drivers/net/wireless/rt2x00/Kconfig     |    5 ----
+ drivers/net/wireless/rt2x00/rt2800pci.c |   39 -------------------------------
+ 2 files changed, 0 insertions(+), 44 deletions(-)
 
-        Each of the patches in this patchset removes on such dead
-config Item, I'd be glad if you consider applying them. I've been
-doing deeper analysis of such issues before and can do so again but
-I'm not so sure they were fastly usefull.
-
-        I build the patches against a vanilla kernel in order to
-try if the kernel compiles with this patches
-
-        Please keep me informed of this patch getting confirmed /
-merged so we can keep track of it.
-
-Regards
-
-        Christoph Egger
-
-[0] http://vamos1.informatik.uni-erlangen.de/
-
-Christoph Egger (11):
-  Removing dead RT2800PCI_SOC
-  Removing dead {AR,WAVE}LAN
-  Removing dead CASSINI_QGE_DEBUG
-  Removing dead CASSINI_MULTICAST_REG_WRITE
-  Removing dead CASSINI_NAPI
-  Removing dead CHELSIO_T1_COUGAR
-  Removing dead ARCH_PNX010X
-  Removing dead SH_HICOSH4
-  Removing dead ETRAX_NETWORK_RED_ON_NO_CONNECTION
-  Removing dead NETWINDER_{T,R}X_DMA_PROBLEMS
-  Removing dead REDWOOD_{5,6}
-
- drivers/net/Space.c                     |    6 --
- drivers/net/cassini.c                   |   25 +--------
- drivers/net/cassini.h                   |    4 -
- drivers/net/chelsio/subr.c              |   48 +---------------
- drivers/net/cris/eth_v10.c              |    4 -
- drivers/net/cs89x0.c                    |   96 +------------------------------
- drivers/net/cs89x0.h                    |    4 -
- drivers/net/irda/w83977af_ir.c          |   33 +---------
- drivers/net/smc91x.h                    |   37 ------------
- drivers/net/wireless/rt2x00/Kconfig     |    5 --
- drivers/net/wireless/rt2x00/rt2800pci.c |   39 -------------
- 11 files changed, 9 insertions(+), 292 deletions(-)
+diff --git a/drivers/net/wireless/rt2x00/Kconfig b/drivers/net/wireless/rt2x00/Kconfig
+index eea1ef2..d59195a 100644
+--- a/drivers/net/wireless/rt2x00/Kconfig
++++ b/drivers/net/wireless/rt2x00/Kconfig
+@@ -58,11 +58,6 @@ config RT2800PCI_PCI
+ 	depends on PCI
+ 	default y
+ 
+-config RT2800PCI_SOC
+-	boolean
+-	depends on RALINK_RT288X || RALINK_RT305X
+-	default y
+-
+ config RT2800PCI
+ 	tristate "Ralink rt28xx/rt30xx/rt35xx (PCI/PCIe/PCMCIA) support (EXPERIMENTAL)"
+ 	depends on (RT2800PCI_PCI || RT2800PCI_SOC) && EXPERIMENTAL
+diff --git a/drivers/net/wireless/rt2x00/rt2800pci.c b/drivers/net/wireless/rt2x00/rt2800pci.c
+index b2f2327..1445038 100644
+--- a/drivers/net/wireless/rt2x00/rt2800pci.c
++++ b/drivers/net/wireless/rt2x00/rt2800pci.c
+@@ -85,18 +85,9 @@ static void rt2800pci_mcu_status(struct rt2x00_dev *rt2x00dev, const u8 token)
+ 	rt2800_register_write(rt2x00dev, H2M_MAILBOX_CID, ~0);
+ }
+ 
+-#ifdef CONFIG_RT2800PCI_SOC
+-static void rt2800pci_read_eeprom_soc(struct rt2x00_dev *rt2x00dev)
+-{
+-	u32 *base_addr = (u32 *) KSEG1ADDR(0x1F040000); /* XXX for RT3052 */
+-
+-	memcpy_fromio(rt2x00dev->eeprom, base_addr, EEPROM_SIZE);
+-}
+-#else
+ static inline void rt2800pci_read_eeprom_soc(struct rt2x00_dev *rt2x00dev)
+ {
+ }
+-#endif /* CONFIG_RT2800PCI_SOC */
+ 
+ #ifdef CONFIG_RT2800PCI_PCI
+ static void rt2800pci_eepromregister_read(struct eeprom_93cx6 *eeprom)
+@@ -1160,25 +1151,6 @@ MODULE_DEVICE_TABLE(pci, rt2800pci_device_table);
+ #endif /* CONFIG_RT2800PCI_PCI */
+ MODULE_LICENSE("GPL");
+ 
+-#ifdef CONFIG_RT2800PCI_SOC
+-static int rt2800soc_probe(struct platform_device *pdev)
+-{
+-	return rt2x00soc_probe(pdev, &rt2800pci_ops);
+-}
+-
+-static struct platform_driver rt2800soc_driver = {
+-	.driver		= {
+-		.name		= "rt2800_wmac",
+-		.owner		= THIS_MODULE,
+-		.mod_name	= KBUILD_MODNAME,
+-	},
+-	.probe		= rt2800soc_probe,
+-	.remove		= __devexit_p(rt2x00soc_remove),
+-	.suspend	= rt2x00soc_suspend,
+-	.resume		= rt2x00soc_resume,
+-};
+-#endif /* CONFIG_RT2800PCI_SOC */
+-
+ #ifdef CONFIG_RT2800PCI_PCI
+ static struct pci_driver rt2800pci_driver = {
+ 	.name		= KBUILD_MODNAME,
+@@ -1194,17 +1166,9 @@ static int __init rt2800pci_init(void)
+ {
+ 	int ret = 0;
+ 
+-#ifdef CONFIG_RT2800PCI_SOC
+-	ret = platform_driver_register(&rt2800soc_driver);
+-	if (ret)
+-		return ret;
+-#endif
+ #ifdef CONFIG_RT2800PCI_PCI
+ 	ret = pci_register_driver(&rt2800pci_driver);
+ 	if (ret) {
+-#ifdef CONFIG_RT2800PCI_SOC
+-		platform_driver_unregister(&rt2800soc_driver);
+-#endif
+ 		return ret;
+ 	}
+ #endif
+@@ -1217,9 +1181,6 @@ static void __exit rt2800pci_exit(void)
+ #ifdef CONFIG_RT2800PCI_PCI
+ 	pci_unregister_driver(&rt2800pci_driver);
+ #endif
+-#ifdef CONFIG_RT2800PCI_SOC
+-	platform_driver_unregister(&rt2800soc_driver);
+-#endif
+ }
+ 
+ module_init(rt2800pci_init);
+-- 
+1.7.0.4
 
