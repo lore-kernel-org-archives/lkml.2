@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756895Ab0GNQO1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:14:27 -0400
-Received: from gandalf.light-speed.de ([85.214.152.96]:52481 "EHLO
-	mail.light-speed.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756815Ab0GNQOZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:14:25 -0400
-X-Greylist: delayed 1109 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jul 2010 12:14:25 EDT
-Message-ID: <4C3DDDFF.5040302@letzte-bankreihe.de>
-Date: Wed, 14 Jul 2010 17:55:43 +0200
-From: Stephan Wolf <stephan@letzte-bankreihe.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Thunderbird/3.1
+	id S1756942Ab0GNQO4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 12:14:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63701 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753346Ab0GNQOy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 12:14:54 -0400
+Message-ID: <4C3DE27B.6000005@redhat.com>
+Date: Wed, 14 Jul 2010 12:14:51 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-CC: torvalds@linux-foundation.org, tglx@linutronix.de
-Subject: [PATCH] enable readback to get HPET working on ATI SB4x00, kernel
- 2.6.35_rc5
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Zachary Amsden <zamsden@redhat.com>
+CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 07/18] Fix deep C-state TSC desynchronization
+References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-8-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1278987938-23873-8-git-send-email-zamsden@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  After commit 30a564be9d9554c168a654eddc2165869cc0d7bf 
-"x86, hpet: Restrict read back to affected ATI chipsets" hpet did not 
-work anymore on HP nx6325. The machine hangs on booting until a 
-keystroke was taken. After a short time machine hangs again until next 
-keystroke. Applying the following patch solves the issue for me.
+On 07/12/2010 10:25 PM, Zachary Amsden wrote:
+> When CPUs with unstable TSCs enter deep C-state, TSC may stop
+> running.  This causes us to require resynchronization.  Since
+> we can't tell when this may potentially happen, we assume the
+> worst by forcing re-compensation for it at every point the VCPU
+> task is descheduled.
+>
+> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
 
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index e72d3fc..8d28924 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -408,6 +408,7 @@ static void ati_force_enable_hpet(struct pci_dev *dev)
-      dev_printk(KERN_DEBUG, &dev->dev, "Force enabled HPET at 0x%lx\n",
-             force_hpet_address);
-      cached_dev = dev;
-+    hpet_readback_cmp = 1;
-  }
-  DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, 
-PCI_DEVICE_ID_ATI_IXP400_SMBUS,
-               ati_force_enable_hpet);
+Reviewed-by: Rik van Riel <riel@redhat.com>
 
-Signed-off-by: Stephan Wolf <stephan@letzte-bankreihe.de>
+-- 
+All rights reversed
