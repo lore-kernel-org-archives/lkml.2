@@ -1,165 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757253Ab0GNX0p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:26:45 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:51118 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752665Ab0GNX0n (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:26:43 -0400
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-From: Sridhar Samudrala <sri@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@elte.hu>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <20100713110939.GA3446@redhat.com>
-References: <20100701133956.GD32223@redhat.com>
-	 <4C2CA5C5.4040402@kernel.org> <20100701144624.GA11171@redhat.com>
-	 <4C2CABF2.2020801@kernel.org> <1277996135.1917.198.camel@laptop>
-	 <4C2E2987.9040702@us.ibm.com> <1278094270.1917.288.camel@laptop>
-	 <20100702210637.GA12433@redhat.com> <20100704090005.GA8078@redhat.com>
-	 <4C3C0EBC.40305@us.ibm.com>  <20100713110939.GA3446@redhat.com>
-Content-Type: text/plain
-Date: Wed, 14 Jul 2010 16:26:36 -0700
-Message-Id: <1279149996.32374.5.camel@w-sridhar.beaverton.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1757543Ab0GNX1T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:27:19 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:39362 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757479Ab0GNX1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 19:27:16 -0400
+Date: Wed, 14 Jul 2010 16:27:12 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 0/30] RCU commits queued for 2.6.36/7
+Message-ID: <20100714232712.GI2417@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100714200945.GA10535@linux.vnet.ibm.com>
+ <20100714211901.GC4624@feather>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100714211901.GC4624@feather>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-13 at 14:09 +0300, Michael S. Tsirkin wrote: 
-> On Mon, Jul 12, 2010 at 11:59:08PM -0700, Sridhar Samudrala wrote:
-> > On 7/4/2010 2:00 AM, Michael S. Tsirkin wrote:
-> > >On Fri, Jul 02, 2010 at 11:06:37PM +0200, Oleg Nesterov wrote:
-> > >>On 07/02, Peter Zijlstra wrote:
-> > >>>On Fri, 2010-07-02 at 11:01 -0700, Sridhar Samudrala wrote:
-> > >>>>  Does  it (Tejun's kthread_clone() patch) also  inherit the
-> > >>>>cgroup of the caller?
-> > >>>Of course, its a simple do_fork() which inherits everything just as you
-> > >>>would expect from a similar sys_clone()/sys_fork() call.
-> > >>Yes. And I'm afraid it can inherit more than we want. IIUC, this is called
-> > >>from ioctl(), right?
-> > >>
-> > >>Then the new thread becomes the natural child of the caller, and it shares
-> > >>->mm with the parent. And files, dup_fd() without CLONE_FS.
-> > >>
-> > >>Signals. Say, if you send SIGKILL to this new thread, it can't sleep in
-> > >>TASK_INTERRUPTIBLE or KILLABLE after that. And this SIGKILL can be sent
-> > >>just because the parent gets SIGQUIT or abother coredumpable signal.
-> > >>Or the new thread can recieve SIGSTOP via ^Z.
-> > >>
-> > >>Perhaps this is OK, I do not know. Just to remind that kernel_thread()
-> > >>is merely clone(CLONE_VM).
-> > >>
-> > >>Oleg.
-> > >
-> > >Right. Doing this might break things like flush.  The signal and exit
-> > >behaviour needs to be examined carefully. I am also unsure whether
-> > >using such threads might be more expensive than inheriting kthreadd.
-> > >
-> > Should we just leave it to the userspace to set the cgroup/cpumask
-> > after qemu starts the guest and
-> > the vhost threads?
+On Wed, Jul 14, 2010 at 02:19:02PM -0700, Josh Triplett wrote:
+> On Wed, Jul 14, 2010 at 01:09:45PM -0700, Paul E. McKenney wrote:
+> > This patchset shows the patches queued for 2.6.36/7.  These are not
+> > yet ready to move upstream due to dependencies on commits moving up other
+> > trees.  The patches are as follows:
 > > 
-> > Thanks
-> > Sridhar
+> > 1-19.	These are the remaining patches implementing Arnd's sparse-checking
+> > 	work.  #1 needs to go up the networking tree, but
+> > 	will cause regressions until f5155b33277 ("rcu: add an
+> > 	rcu_dereference_index_check()") reaches mainline.  #2 depends
+> > 	on #1, and many of the later patches (#3-#30) depend on #2.
+> > 	Many of #3-#19 will go up non-tip trees.
+> > 20.	Update Documentation/RCU to remove the now-deprecated rcu_head
+> > 	initialization macros.
+> > 21.	Fix long-standing DocBook example showing long-dead three-argument
+> > 	variant of call_rcu().
+> > 22.	Make the CPU stall warning timeout configurable at build time
+> > 	with new RCU_CPU_STALL_TIMEOUT config parameter.
+> > 23.	Remove the now-deprecated rcu_head initialization macros.
+> > 	This depends on a couple of patches removing their use that
+> > 	are making their way up other maintainer trees.
+> > 24.	Document the new debug assists from Arnd, Mathieu, and myself.
+> > 25.	Add random preemption to rcutorture testing of preemptible
+> > 	RCU, courtesy of Lai Jiangshan.
+> > 26.	Remove TREE_RCU's ->rda[] array in favor of the new __percpu
+> > 	facility, also courtesy of Lai Jiangshan.
+> > 27.	Fixlet to #26 for RCU tracing.
+> > 28.	Rename __do_rcu_dereference_check() to rcu_lockdep_assert(),
+> > 	given that Tetsuo Handa has found outside-of-RCU use for this
+> > 	function.
+> > 29.	Add a boot parameter to suppress RCU CPU stall warnings.
+> > 30.	Update kerneldoc or rcu_read_lock(), call_rcu(), and
+> > 	synchronize_rcu().
 > 
-> Yes but we can't trust userspace to do this. It's important
-> to do it on thread creation: if we don't, malicious userspace
-> can create large amount of work exceeding the cgroup limits.
+> I replied to patches 27 and 29 with suggested changes.  For all the
+> rest:
 > 
-> And the same applies so the affinity: if the qemu process
-> is limited to a set of CPUs, it's important to make
-> the kernel thread that does work our behalf limited to the same
-> set of CPUs.
-> 
-> This is not unique to vhost, it's just that virt scenarious are affected
-> by this more: people seem to run untrusted applications and expect the
-> damage to be contained.
+> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-OK. So we want to create a thread that is a child of kthreadd, but inherits the cgroup/cpumask
-from the caller. How about an exported kthread function kthread_create_in_current_cg() 
-that does this?
+Thank you very much for looking this over!
 
-diff --git a/include/linux/kthread.h b/include/linux/kthread.h
-index aabc8a1..e0616f0 100644
---- a/include/linux/kthread.h
-+++ b/include/linux/kthread.h
-@@ -9,6 +9,9 @@ struct task_struct *kthread_create(int (*threadfn)(void *data),
- 				   const char namefmt[], ...)
- 	__attribute__((format(printf, 3, 4)));
- 
-+struct task_struct *kthread_create_in_current_cg(int (*threadfn)(void *data),
-+						 void *data, char *name);
-+
- /**
-  * kthread_run - create and wake a thread.
-  * @threadfn: the function to run until signal_pending(current).
-diff --git a/kernel/kthread.c b/kernel/kthread.c
-index 83911c7..ea4e737 100644
---- a/kernel/kthread.c
-+++ b/kernel/kthread.c
-@@ -15,6 +15,7 @@
- #include <linux/module.h>
- #include <linux/mutex.h>
- #include <trace/events/sched.h>
-+#include <linux/cgroup.h>
- 
- static DEFINE_SPINLOCK(kthread_create_lock);
- static LIST_HEAD(kthread_create_list);
-@@ -149,6 +150,42 @@ struct task_struct *kthread_create(int (*threadfn)(void *data),
- }
- EXPORT_SYMBOL(kthread_create);
- 
-+struct task_struct *kthread_create_in_current_cg(int (*threadfn)(void *data),
-+						 void *data, char *name)
-+{
-+	struct task_struct *worker;
-+	cpumask_var_t mask;
-+	int ret = -ENOMEM;
-+
-+	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-+		goto out_free_mask;
-+
-+	worker = kthread_create(threadfn, data, "%s-%d", name, current->pid);
-+	if (IS_ERR(worker))
-+		goto out_free_mask;
-+
-+	ret = sched_getaffinity(current->pid, mask);
-+	if (ret)
-+		goto out_stop_worker;
-+
-+	ret = sched_setaffinity(worker->pid, mask);
-+	if (ret)
-+		goto out_stop_worker;
-+
-+	ret = cgroup_attach_task_current_cg(worker);
-+	if (ret)
-+		goto out_stop_worker;
-+
-+	return worker;
-+
-+out_stop_worker:
-+	kthread_stop(worker);
-+out_free_mask:
-+	free_cpumask_var(mask);
-+	return ERR_PTR(ret);
-+}
-+EXPORT_SYMBOL(kthread_create_in_current_cg);
-+
- /**
-  * kthread_bind - bind a just-created kthread to a cpu.
-  * @p: thread created by kthread_create().
-
-
-Thanks
-Sridhar
-
+							Thanx, Paul
