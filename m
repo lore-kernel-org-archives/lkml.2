@@ -1,64 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757910Ab0GNWNH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:13:07 -0400
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:42305 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757866Ab0GNWNF (ORCPT
+	id S1757412Ab0GNWOZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:14:25 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:46983 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752782Ab0GNWOX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:13:05 -0400
-Date: Thu, 15 Jul 2010 00:13:01 +0200
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-To: David Miller <davem@davemloft.net>
-Cc: rick.jones2@hp.com, lists@wildgooses.com, davidsen@tmr.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-Message-ID: <20100714221301.GI6682@nuttenaction>
-References: <4C3E0684.5060409@wildgooses.com>
- <4C3E1B54.40604@hp.com>
- <20100714203919.GD6682@nuttenaction>
- <20100714.145547.102555471.davem@davemloft.net>
+	Wed, 14 Jul 2010 18:14:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=aoLyDJorHlm5zQ7yebqkXwG38RcCOJcTyfEe3jfIlZlwgyyyBELYxHfrhouRAb74LC
+         Qogc6w//3DBSdlH3KAdMtprLGtJuxJANMdEPNIErjmuWVhvLYVaVtIntuO/+gSfnUb9E
+         a6P+aLiGMNwKTq1auSFt6xSDHRb4oUNI8f23g=
+Date: Thu, 15 Jul 2010 00:14:20 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Ingo Molnar <mingo@elte.hu>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+Message-ID: <20100714221418.GA14533@nowhere>
+References: <20100714154923.947138065@efficios.com> <20100714155804.049012415@efficios.com> <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com> <20100714170617.GB4955@Krystal> <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com> <20100714184642.GA9728@elte.hu> <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com> <20100714193652.GA13630@nowhere> <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100714.145547.102555471.davem@davemloft.net>
-X-Key-Id: 98350C22
-X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
-X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* David Miller | 2010-07-14 14:55:47 [-0700]:
+On Wed, Jul 14, 2010 at 12:54:19PM -0700, Linus Torvalds wrote:
+> On Wed, Jul 14, 2010 at 12:36 PM, Frederic Weisbecker
+> <fweisbec@gmail.com> wrote:
+> >
+> > There is also the fact we need to handle the lost NMI, by defering its
+> > treatment or so. That adds even more complexity.
+> 
+> I don't think your read my proposal very deeply. It already handles
+> them by taking a fault on the iret of the first one (that's why we
+> point to the stack frame - so that we can corrupt it and force a
+> fault).
 
->Although section 3 of RFC 5681 is a great text, it does not say at all
->that increasing the initial CWND would lead to fairness issues.
 
-Because it is only one side of the medal, probing conservative the available
-link capacity in conjunction with n simultaneous probing TCP/SCTP/DCCP
-instances is another.
-
->To be honest, I think google's proposal holds a lot of weight.  If
->over time link sizes and speeds are increasing (they are) then nudging
->the initial CWND every so often is a legitimate proposal.  Were
->someone to claim that utilization is lower than it could be because of
->the currenttly specified initial CWND, I would have no problem
->believing them.
->
->And I'm happy to make Linux use an increased value once it has
->traction in the standardization community.
-
-Currently I know no working link capacity probing approach, without active
-network feedback, to conservatively probing the available link capacity with a
-high CWND. I am curious about any future trends.
-
->But for all we know this side discussion about initial CWND settings
->could have nothing to do with the issue being reported at the start of
->this thread. :-)
-
-;-) sure, but it is often wise to thwart these kind of discussions. It seems
-these CWND discussions turn up once every other month. ;-)
-
-Hagen
+Ah right, I missed this part.
 
