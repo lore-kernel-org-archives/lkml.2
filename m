@@ -1,43 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab0GNBvk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 21:51:40 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:40235 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754121Ab0GNBvi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 21:51:38 -0400
-Date: Tue, 13 Jul 2010 20:50:14 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2 1/2] vmscan: don't subtraction of unsined
-In-Reply-To: <20100713182918.EA67.A69D9226@jp.fujitsu.com>
-Message-ID: <alpine.DEB.2.00.1007132047001.14067@router.home>
-References: <20100709090956.CD51.A69D9226@jp.fujitsu.com> <20100709152851.330bf2b2.akpm@linux-foundation.org> <20100713182918.EA67.A69D9226@jp.fujitsu.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754787Ab0GNB4U (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 21:56:20 -0400
+Received: from mail.perches.com ([173.55.12.10]:1869 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752347Ab0GNB4S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 21:56:18 -0400
+Subject: [PATCH] MAINTAINERS: Orphan BEFS
+From: Joe Perches <joe@perches.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 13 Jul 2010 18:56:17 -0700
+Message-ID: <1279072577.11873.7.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010, KOSAKI Motohiro wrote:
+This old address bounces and Sergey doesn't answer
+at another email address.
 
-> Christoph, Can we hear your opinion about to add new branch in slab-free path?
-> I think this is ok, because reclaim makes a lot of cache miss then branch
-> mistaken is relatively minor penalty. thought?
+Signed-off-by: Joe Perches <joe@perches.com>
+---
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 5884812..5b0a601 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -1255,8 +1255,7 @@ S:	Maintained
+ F:	drivers/net/hamradio/baycom*
+ 
+ BEFS FILE SYSTEM
+-M:	"Sergey S. Kostyliov" <rathamahata@php4.ru>
+-S:	Maintained
++S:	Orphan
+ F:	Documentation/filesystems/befs.txt
+ F:	fs/befs/
+ 
 
-Its on the slow path so I would think that should be okay. But is this
-really necessary? Working with the per zone slab reclaim counters is not
-enough? We are adding counter after counter that have similar purposes and
-the handling gets more complex.
-
-Maybe we can get rid of the code in the slabs instead by just relying on
-the difference of the zone counters?
 
