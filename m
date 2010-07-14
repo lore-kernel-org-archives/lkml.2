@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756882Ab0GNRIK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 13:08:10 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:39390 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751156Ab0GNRIH (ORCPT
+	id S1754039Ab0GNRLg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 13:11:36 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:60445 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751565Ab0GNRLf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 13:08:07 -0400
-Date: Wed, 14 Jul 2010 13:08:05 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 0/2] x86: NMI-safe trap handlers
-Message-ID: <20100714170805.GC4955@Krystal>
-References: <20100714154923.947138065@efficios.com> <20100714170606.GA22373@basil.fritz.box>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100714170606.GA22373@basil.fritz.box>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:06:35 up 172 days, 19:43,  8 users,  load average: 0.05, 0.05,
-	0.00
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 14 Jul 2010 13:11:35 -0400
+Date: Wed, 14 Jul 2010 19:12:49 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv2] usb: gadget: storage: optional SCSI WRITE FUA bit
+In-reply-to: <AANLkTilnIRCgyiSbLVbPubU38CSLwVan17GAHqNMX1Ir@mail.gmail.com>
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: linux-kernel@vger.kernel.org,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Denis Karpov <ext-denis.2.karpov@nokia.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
+Message-id: <op.vfuffnzb7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <Pine.LNX.4.44L0.1007131003560.1568-100000@iolanthe.rowland.org>
+ <1279098331-7872-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+ <op.vft2p6do7p4s8u@pikus>
+ <AANLkTil1eG5yzBxvryf-TZINYjeGph-rNz8eELQtm5tj@mail.gmail.com>
+ <op.vft7mxqm7p4s8u@pikus>
+ <AANLkTilnIRCgyiSbLVbPubU38CSLwVan17GAHqNMX1Ir@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andi Kleen (andi@firstfloor.org) wrote:
-> > x86_32 cannot use vmalloc_sync_all() to sychronize the TLBs from every
-> > processes because the vmalloc area is mapped in a different address space for
-> 
-> That doesn't make sense. vmalloc_all_sync() should work on 32bit too.
-> It just needs to walk all processes and fix up every page table.
+> 2010/7/14 Michał Nazarewicz <m.nazarewicz@samsung.com>:
+>> Ah, OK, I see why this is per LUN.  You want to be able not to ignore
+>> FUA if the backing storage is a removable media, right?
 
-Yeah, I've been taken aback when Tejun told me that a few moments ago. I
-initially thought that vmalloc_sync_all() synchronized all page mappings of all
-processes on x86_32. But apparently that does not seem to be the case. I'm
-adding him in CC.
+On Wed, 14 Jul 2010 17:05:07 +0200, Andy Shevchenko <andy.shevchenko@gmail.com> wrote:
+> In instance, or vise versa.
 
-Thanks,
+I actually see the most sense in disabling FUA on devices with their
+own power supply for logical units which backing file is not (on) a
+removable device unless the removable device has some kind of lock
+(like CD-ROM's door).
 
-Mathieu
+Either way, I now see the point of having this option per-LUN.
+
+>>> Actually fua = 1 means ignorance of that flag.
+
+>> ignore_fua would be better name then I think.  This also stands for
+>> module parameter.
+
+Or even “nofua”.  The other solution would be to change the meaning
+to the opposite (1 meaning that FUA is not ignored).
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
