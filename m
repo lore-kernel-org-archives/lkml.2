@@ -1,62 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224Ab0GNOZn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 10:25:43 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:57133 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757108Ab0GNOZl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 10:25:41 -0400
-Date: Wed, 14 Jul 2010 16:25:21 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: Christoph Lameter <cl@linux-foundation.org>
-Cc: Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [S+Q2 00/19] SLUB with queueing (V2) beats SLAB netperf TCP_RR
-Message-ID: <20100714142521.GA19289@fancy-poultry.org>
-Mail-Followup-To: Christoph Lameter <cl@linux-foundation.org>,
-	Tejun Heo <tj@kernel.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-	linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
-	David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
-References: <20100709190706.938177313@quilx.com>
- <20100710195621.GA13720@fancy-poultry.org>
- <alpine.DEB.2.00.1007121010420.14328@router.home>
- <20100712163900.GA8513@fancy-poultry.org>
- <alpine.DEB.2.00.1007121156160.18621@router.home>
- <20100713135650.GA6444@fancy-poultry.org>
- <alpine.DEB.2.00.1007132055470.14067@router.home>
+	id S1756972Ab0GNO13 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 10:27:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41093 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756007Ab0GNO11 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 10:27:27 -0400
+Message-ID: <4C3DC949.8040801@redhat.com>
+Date: Wed, 14 Jul 2010 17:27:21 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1007132055470.14067@router.home>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100619 (GNU/Linux)
-X-Provags-ID: V02:K0:lW4MeLbWDA1hWjbETui0fbSCBR2rdWqkjD0tyHos9I3
- r+DZepuYUdqoppApD1qJUjPhSplfQFMeG9ICuRrpN3MN0gwIGm
- y+alszvaHvtTKHMvMSxmesEhkERoEChwnUhmk+XItGx5LB5yYj
- pzUiGnZ7K14LNy3Xmhi6ireKKt5NcnBoE5Bb6Rcfb2oQ7PK6wJ
- a2jUvX7eaVgrnhgRxADNg==
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH 1/4] KVM: MMU: fix forgot reserved bits check in speculative
+ path
+References: <4C3C3518.7080505@cn.fujitsu.com> <4C3DB671.1090802@redhat.com> <4C3DBA97.40908@cn.fujitsu.com>
+In-Reply-To: <4C3DBA97.40908@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.07.2010, Christoph Lameter wrote: 
+On 07/14/2010 04:24 PM, Xiao Guangrong wrote:
+>
+> Avi Kivity wrote:
+>
+>    
+>>> +
+>>> +            if (!!is_pae(vcpu) != sp->role.cr4_pae ||
+>>> +                  is_nx(vcpu) != sp->role.nxe)
+>>> +                continue;
+>>> +
+>>>
+>>>        
+>> Do we also need to check cr0.wp?  I think so.
+>>      
+> I think it's not too bad since we just decrease the access right, for example,
+> we mark the mapping readonly for cr0.wp=0's page, the later write-access will
+> cause #PF, and the read-access is OK.
+>    
 
-> I dont see anything in there at first glance that would cause slub to
-> increase its percpu usage. This is straight upstream?
+If current cr0.wp=0 and sp->role.cr0_wp=1, that's fine, but the other 
+way round can relax permissions too much, marking a kernel page writeable.
 
-Yes ,it's plain vanilla 2.6.35-rc4/-rc5 from kernel.org.
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-> Try to just comment out the BUILD_BUG_ON.
-
-I first bumped it up to 24k, but that was obviously not enough, so I
-commented out the BUILD_BUG_ON which triggers the build error. Now It builds
-fine, and I'll do some testing.
-
-Thanks,
-Heinz.
