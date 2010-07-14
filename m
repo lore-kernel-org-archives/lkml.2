@@ -1,63 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757423Ab0GNTPt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 15:15:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43260 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754365Ab0GNTPs convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 15:15:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100714184642.GA9728@elte.hu>
-References: <20100714154923.947138065@efficios.com>
-	<20100714155804.049012415@efficios.com>
-	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-	<20100714170617.GB4955@Krystal>
-	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-	<20100714184642.GA9728@elte.hu>
-Date: Wed, 14 Jul 2010 12:14:01 -0700
-Message-ID: <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757473Ab0GNTRa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 15:17:30 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43564
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757173Ab0GNTR3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 15:17:29 -0400
+Date: Wed, 14 Jul 2010 12:17:43 -0700 (PDT)
+Message-Id: <20100714.121743.183038161.davem@davemloft.net>
+To: siccegge@cs.fau.de
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vamos-dev@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 02/11] Removing dead {AR,WAVE}LAN
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <3da4fcf94d2364af32c44a8442b756c8b525f6fc.1279110894.git.siccegge@cs.fau.de>
+References: <cover.1279110894.git.siccegge@cs.fau.de>
+	<3da4fcf94d2364af32c44a8442b756c8b525f6fc.1279110894.git.siccegge@cs.fau.de>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 11:46 AM, Ingo Molnar <mingo@elte.hu> wrote:
->>  NMI entry:
->
-> I think at this point [NMI re-entry] we've corrupted the top of the NMI kernel
-> stack already, due to entering via the IST stack mechanism, which is
-> non-nesting and which enters at the same point - right?
+From: Christoph Egger <siccegge@cs.fau.de>
+Date: Wed, 14 Jul 2010 14:39:52 +0200
 
-Yeah, you're right, but we could easily fix that up. We know we don't
-need any stack for the nested case, so all we would need to do is to
-just subtract a small bit off %rsp, and copy the three words or so to
-create a "new" stack for the non-nested case.
+> {AR,WAVE}LAN doesn't exist in Kconfig, therefore removing all
+> references for it from the source code.
+> 
+> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 
-> We could solve that by copying that small stack frame off before entering the
-> 'generic' NMI routine - but it all feels a bit pulled in by the hair.
-
-Why? It's much cleaner than making the _real_ codepaths much worse.
-
-                Linus
+Applied to net-next-2.6
