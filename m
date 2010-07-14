@@ -1,77 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab0GNAbI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:31:08 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:59018 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751525Ab0GNAbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 20:31:05 -0400
-Date: Tue, 13 Jul 2010 17:31:00 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Shreyas Bhatewara <sbhatewara@vmware.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Pankaj Thakkar <pthakkar@vmware.com>,
-        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "virtualization@lists.linux-foundation.org" 
-	<virtualization@lists.linux-foundation.org>
-Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
-Message-ID: <20100713173100.1d4fb42d@nehalam>
-In-Reply-To: <1278990388.32650.22.camel@eng-rhel5-64>
-References: <20100504230225.GP8323@vmware.com>
-	<201005051029.42052.dtor@vmware.com>
-	<20100505173120.GA1752@infradead.org>
-	<201005051035.29831.dtor@vmware.com>
-	<20100505173951.GA8388@infradead.org>
-	<20100505105253.0a8bc465@nehalam>
-	<20100506202113.GC17922@infradead.org>
-	<1278990388.32650.22.camel@eng-rhel5-64>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752600Ab0GNAgZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:36:25 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:49616 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751137Ab0GNAgY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 20:36:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=pzHVRRwImwitqJGRca6inL5mhIWHsXiy7pat3XQbe/xRqQkW8tkh8dQJXVwyKxCfM
+	zM3VmLmNw7+s2bmMa8yFg==
+MIME-Version: 1.0
+In-Reply-To: <1279066421.2096.920.camel@ymzhang.sh.intel.com>
+References: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
+	<AANLkTilu4fi68DQpbzsKJrrAVUq_ZFbm2AVNvaPK7VKu@mail.gmail.com>
+	<1279066421.2096.920.camel@ymzhang.sh.intel.com>
+Date: Wed, 14 Jul 2010 02:36:21 +0200
+Message-ID: <AANLkTilk4JHmS8BoNcI1Cfa59wX6_qUkyoQD540ic_Zl@mail.gmail.com>
+Subject: Re: perf failed with kernel 2.6.35-rc
+From: Stephane Eranian <eranian@google.com>
+To: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 12 Jul 2010 20:06:28 -0700
-Shreyas Bhatewara <sbhatewara@vmware.com> wrote:
+What about running simpler commands like perf stat?
 
-> 
-> On Thu, 2010-05-06 at 13:21 -0700, Christoph Hellwig wrote:
-> > On Wed, May 05, 2010 at 10:52:53AM -0700, Stephen Hemminger wrote:
-> > > Let me put it bluntly. Any design that allows external code to run
-> > > in the kernel is not going to be accepted.  Out of tree kernel modules are enough
-> > > of a pain already, why do you expect the developers to add another
-> > > interface.
-> > 
-> > Exactly.  Until our friends at VMware get this basic fact it's useless
-> > to continue arguing.
-> > 
-> > Pankaj and Dmitry: you're fine to waste your time on this, but it's not
-> > going to go anywhere until you address that fundamental problem.  The
-> > first thing you need to fix in your archicture is to integrate the VF
-> > function code into the kernel tree, and we can work from there.
-> > 
-> > Please post patches doing this if you want to resume the discussion.
-> > 
-> > _______________________________________________
-> > Pv-drivers mailing list
-> > Pv-drivers@vmware.com
-> > http://mailman2.vmware.com/mailman/listinfo/pv-drivers
-> 
-> 
-> As discussed, following is the patch to give you an idea
-> about implementation of NPA for vmxnet3 driver. Although the
-> patch is big, I have verified it with checkpatch.pl. It gave
-> 0 errors / warnings.
-> 
-> Signed-off-by: Matthieu Bucchaineri <matthieu@vmware.com>
-> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
-> ---
 
-I am surprised, the code seems to use lots of mixed case in places
-that don't really follow current kernel practice.
-
+On Wed, Jul 14, 2010 at 2:13 AM, Zhang, Yanmin
+<yanmin_zhang@linux.intel.com> wrote:
+> On Tue, 2010-07-13 at 17:16 +0200, Stephane Eranian wrote:
+>> On Tue, Jul 13, 2010 at 10:14 AM, Zhang, Yanmin
+>> <yanmin_zhang@linux.intel.com> wrote:
+>> > Peter,
+>> >
+>> > perf doesn't work on my Nehalem EX machine.
+>> > 1) The 1st start of 'perf top' is ok;
+>> > 2) Kill the 1st perf and restart it. It doesn't work. No data is showed.
+>> >
+>> > I located below commit:
+>> > commit 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+>> > Author: Peter Zijlstra <peterz@infradead.org>
+>> > Date:   Fri Mar 26 14:08:44 2010 +0100
+>> >
+>> >    perf, x86: Add Nehelem PMU programming errata workaround
+>> >
+>> >    workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+>> >    Date: Fri Mar 26 13:59:41 CET 2010
+>> >
+>> >    Implement the workaround for Intel Errata AAK100 and AAP53.
+>> >
+>> >    Also, remove the Core-i7 name for Nehalem events since there are
+>> >    also Westmere based i7 chips.
+>> >
+>> >
+>> > If I comment out the workaround in function intel_pmu_nhm_enable_all,
+>> > perf could work.
+>> >
+>> > A quick glance shows:
+>> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+>> > should be:
+>> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+>> >
+>> >
+>> > I triggered sysrq to dump PMU registers and found the last bit of
+>> > global status register is 1. I added a status reset operation like below patch:
+>> >
+>> What do you call the last bit? bit0 or bit63?
+> Sorry for confusing you. It's bit0, mapping to PERFMON_EVENTSEL0.
+>
+>>
+>> > --- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c     2010-07-14 09:38:11.000000000 +0800
+>> > +++ linux-2.6.35-rc5_fork/arch/x86/kernel/cpu/perf_event_intel.c        2010-07-14 14:41:42.000000000 +0800
+>> > @@ -505,8 +505,13 @@ static void intel_pmu_nhm_enable_all(int
+>> >                wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
+>> >                wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
+>> >
+>> > -               wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+>> > +               wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+>> >                wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
+>> > +               /*
+>> > +                * Reset the last 3 bits of global status register in case
+>> > +                * previous enabling causes overflows.
+>> > +                */
+>>
+>> The workaround cannot cause on overflow because the associated counters
+>> won't count anything given their umask value is 0 (which does not correspond
+>> to anything for event 0xB1, event 0xB5 is undocumented). This is for the events
+>> described in table A.2. If NHM-EX has a different definition for 0xB1, 0xB5,
+>> then that's another story.
+> I found the status bit is set by triggering sysrq to dump PMU registers.
+>
+> If I start perf by gdb, sometimes, perf could work. I found one processor's 1st status
+> register is equal to 0 while other processors' are 1. If just starting perf, all 1st
+> status registers are equal to 1.
+>
+>>
+>>
+>> > +               wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+>> >
+>> >                for (i = 0; i < 3; i++) {
+>> >                        struct perf_event *event = cpuc->events[i];
+>> >
+>> >
+>> >
+>> > However, it still doesn't work. Current right way is to comment out
+>> > the workaround.
+>
+>
+>
