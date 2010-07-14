@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab0GNVKk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 17:10:40 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53650
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751404Ab0GNVKj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 17:10:39 -0400
-Date: Wed, 14 Jul 2010 14:10:54 -0700 (PDT)
-Message-Id: <20100714.141054.48510602.davem@davemloft.net>
-To: sbhatewara@vmware.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pv-drivers@vmware.com
-Subject: Re: [PATCH 2.6.35-rc1] net-next: vmxnet3 fixes [3/5] Initialize
- link state at probe time
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LRH.2.00.1007131748180.32055@localhost.localdomain>
-References: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain>
-	<alpine.LRH.2.00.1007070202080.5939@localhost.localdomain>
-	<alpine.LRH.2.00.1007131748180.32055@localhost.localdomain>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1757728Ab0GNVLJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 17:11:09 -0400
+Received: from claw.goop.org ([74.207.240.146]:46821 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757551Ab0GNVLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 17:11:05 -0400
+Message-ID: <4C3E27E7.3010706@goop.org>
+Date: Wed, 14 Jul 2010 14:11:03 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+MIME-Version: 1.0
+To: "H.J. Lu" <hjl.tools@gmail.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Palfrader <peter@palfrader.org>, Avi Kivity <avi@redhat.com>,
+        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
+        Zachary Amsden <zamsden@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
+ 	for pvclock
+References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org>	<AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com>	<4C3DF1BE.2070404@goop.org>	<4C3DF447.1000801@zytor.com>	<4C3DF519.6030406@goop.org>	<4C3DF7AF.7010402@zytor.com>	<4C3DFA88.5020007@goop.org>	<4C3DFD12.3050700@zytor.com>	<AANLkTikA8SO42kOgHZb-6YuhM7GPnmg81IAX5vEk_Cqk@mail.gmail.com>	<4C3E096B.8050505@zytor.com>	<AANLkTil5uvr9sWc_o3HmOsJ0iaJJjaMkkrMwF0BsEdHg@mail.gmail.com>	<4C3E11BD.2090503@zytor.com> <AANLkTilKr6wr_wAE0nzXDsffWYWNdGf2_EqMXzRSKJMu@mail.gmail.com>
+In-Reply-To: <AANLkTilKr6wr_wAE0nzXDsffWYWNdGf2_EqMXzRSKJMu@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-Date: Tue, 13 Jul 2010 17:48:55 -0700 (PDT)
+On 07/14/2010 12:40 PM, H.J. Lu wrote:
+> On Wed, Jul 14, 2010 at 12:36 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>   
+>> On 07/14/2010 12:32 PM, H.J. Lu wrote:
+>>     
+>>> On Wed, Jul 14, 2010 at 12:00 PM, H. Peter Anvin <hpa@zytor.com> wrote:
+>>>       
+>>>> On 07/14/2010 11:18 AM, H.J. Lu wrote:
+>>>>         
+>>>>> There are some discussions on:
+>>>>>
+>>>>> http://gcc.gnu.org/ml/gcc-patches/2010-06/msg02001.html
+>>>>> http://gcc.gnu.org/ml/gcc-patches/2010-07/msg00001.html
+>>>>>
+>>>>> Are they related?
+>>>>>
+>>>>>           
+>>>> Not directly as far as I can tell.
+>>>>
+>>>> The issue is if gcc can ever reorder, duplicate or elide a volatile
+>>>> operation (either asm volatile or a volatile-annotated memory
+>>>> reference.)  In my (and Linus') opinion, this would be an incredibly
+>>>> serious bug.
+>>>>         
+>>> Is there a gcc bug for this?
+>>>
+>>>       
+>> Are you asking for a bug report against the documentation?  We're not
+>> sure what the semantics intended by the gcc team to be, which I guess is
+>> a documentation bug.
+>>
+>>     
+> Documentation bug is also a bug :-).
+>   
 
-> 
-> Initialize vmxnet3 link state at probe time
-> 
-> This change initializes the state of link at the time when driver is
-> loaded. The ethtool output for 'link detected' and 'link speed'
-> is thus valid even before the interface is brought up.
-> 
-> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+The question is "what are the real ordering semantics of asm volatile"? 
+What ordering is enforced between other asm volatiles?  What ordering is
+enforced between asm volatiles and regular memory accesses? asm volatile
+and other code?
 
-You should never, ever, call netif_start_queue() on a device which has
-not been brought up.
+The documentation discusses this to some extent, but mostly says "there
+are no ordering guarantees".  Older versions of gcc - 2.95, for example
+- are more explicit, saying that "asm volatiles" won't be moved out of
+their basic block (I think that's how I parse it, anyway).
 
-But that is what this patch is doing.
+Linux relies on "asm volatile" being ordered at least with respect to
+other asm volatiles.  Is this reasonable now?  Will gcc break this at
+some point in the future?  If we can't rely on "asm volatile" ordering
+semantics, what other mechanism can we use (for example, to order clts
+with respect to FPU-using code)?
+
+Thanks,
+    J
