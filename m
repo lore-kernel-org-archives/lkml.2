@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753688Ab0GNNgE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 09:36:04 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:64441 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751824Ab0GNNgB (ORCPT
+	id S1754253Ab0GNNoB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 09:44:01 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:34182 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752957Ab0GNNn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 09:36:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=WyIV2ioPKYQb4CE6+XNtfK+/Vgb9CxAsQ7dd+qctI2MUglZdM6UBfMMIeP/XgCITjx
-         e3ZZKMKEa7Fw7Sqrlc2+ShZXs3N6kllaA3TOUoCD+DSIeAr8FFEF5CdgDUYsBD8Dqn3X
-         Xtep4Yg1y48jVE/IZCTABK1n8LntW1XAzvUQ4=
+	Wed, 14 Jul 2010 09:43:59 -0400
+Date: Wed, 14 Jul 2010 15:43:52 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: mmarek@suse.cz, linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        ak@linux.intel.com
+Subject: [PATCH] Kbuild: Add option to set -femit-struct-debug-baseonly 
+Message-ID: <20100714134352.GA10341@basil.fritz.box>
 MIME-Version: 1.0
-In-Reply-To: <9df7166bb950e7fbc12d1be9f2b9f9cbb9961187.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de> 
-	<9df7166bb950e7fbc12d1be9f2b9f9cbb9961187.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 14 Jul 2010 09:35:39 -0400
-Message-ID: <AANLkTimsHAAvMI8euhr11n5JXX5iQTMG9hMx08Nfpemp@mail.gmail.com>
-Subject: Re: [PATCH 3/3] usb/host || arch/arm: Remove dead CONFIG_ARCH_KARO
-To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Cc: Russell King <linux@arm.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Lothar Wassmann <LW@karo-electronics.de>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Bryan Wu <cooloney@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        vamos-dev@i4.informatik.uni-erlangen.de
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o6EDaRKs008312
 
-On Wed, Jul 14, 2010 at 07:32, Christian Dietrich wrote:
-> CONFIG_ARCH_KARO doesn't exist in Kconfig and is never defined anywhere
-> else, therefore removing all references for it from the source code.
->
-> --- a/arch/arm/tools/mach-types
-> +++ b/arch/arm/tools/mach-types
-> @@ -204,7 +204,6 @@ omaha                       ARCH_OMAHA              OMAHA                   186
->  ta7                    ARCH_TA7                TA7                     187
->  nova                   SA1100_NOVA             NOVA                    188
->  hmk                    ARCH_HMK                HMK                     189
-> -karo                   ARCH_KARO               KARO                    190
->  fester                 SA1100_FESTER           FESTER                  191
->  gpi                    ARCH_GPI                GPI                     192
->  smdk2410               ARCH_SMDK2410           SMDK2410                193
+Kbuild: Add option to set -femit-struct-debug-baseonly 
 
-i dont think you should be modifying the arm registry.  there are
-probably a lot of boards listed here that you wont find referenced in
-the tree, but this is by design.
--mike
-���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+Newer gcc has a -femit-struct-debug-baseonly option that dramatically
+reduces the size of object files with debug info. What it does
+is to only emit type information for structures when the structures
+are defined in the same file or in a header file.
+
+This means the type information for most headers are not included.
+This is not good when the type information is actually
+needed (e.g. with kgdb or systemtap) 
+
+But often kernel hackers only care about line numbers and don't
+need all the type information anyways. In this case setting
+the option can be a big win:
+
+A build dir for a specific x86-64 configuration with gcc 4.5
+shrunk from 2.3G to 1.2G. The compilation was also nearly a minute
+faster.
+
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+
+---
+ Makefile          |    4 ++++
+ lib/Kconfig.debug |   12 ++++++++++++
+ 2 files changed, 16 insertions(+)
+
+Index: linux-2.6.34-ak/Makefile
+===================================================================
+--- linux-2.6.34-ak.orig/Makefile
++++ linux-2.6.34-ak/Makefile
+@@ -554,6 +554,10 @@ KBUILD_CFLAGS	+= -g
+ KBUILD_AFLAGS	+= -gdwarf-2
+ endif
+ 
++ifdef CONFIG_DEBUG_INFO_REDUCED
++KBUILD_CFLAGS 	+= $(call cc-option, -femit-struct-debug-baseonly)
++endif
++
+ ifdef CONFIG_FUNCTION_TRACER
+ KBUILD_CFLAGS	+= -pg
+ endif
+Index: linux-2.6.34-ak/lib/Kconfig.debug
+===================================================================
+--- linux-2.6.34-ak.orig/lib/Kconfig.debug
++++ linux-2.6.34-ak/lib/Kconfig.debug
+@@ -616,6 +616,18 @@ config DEBUG_INFO
+ 
+ 	  If unsure, say N.
+ 
++config DEBUG_INFO_REDUCED
++	bool "Reduce debugging information"
++	depends on DEBUG_INFO
++	help
++	  If you say Y here gcc is instructed to generate less debugging information
++          for structure types. This means that tools that need full debugging information
++          (like kgdb or systemtap) won't be happy. But if you merely need debugging
++          information to resolve line numbers there is no loss.
++          Advantage is that build directory object sizes shrink dramatically over
++          a full DEBUG_INFO build and compile times are reduced too.
++          Only works with newer gcc versions.
++
+ config DEBUG_VM
+ 	bool "Debug VM"
+ 	depends on DEBUG_KERNEL
