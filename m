@@ -1,596 +1,270 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753338Ab0GNIe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 04:34:56 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49329 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab0GNIes (ORCPT
+	id S1753465Ab0GNIfF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 04:35:05 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34187 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753294Ab0GNIe4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 04:34:48 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 14 Jul 2010 17:30:05 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: Nathan Fontenot <nfont@austin.ibm.com>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/7] Allow sysfs memory directories to be split
-Message-Id: <20100714173005.41950c92.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100714122503.74f746a2.kamezawa.hiroyu@jp.fujitsu.com>
-References: <4C3B3446.5090302@austin.ibm.com>
-	<4C3B3895.3040209@austin.ibm.com>
-	<20100713152854.ec1f4d6a.kamezawa.hiroyu@jp.fujitsu.com>
-	<4C3C8B9E.7000208@austin.ibm.com>
-	<20100714093550.40036034.kamezawa.hiroyu@jp.fujitsu.com>
-	<4C3D2C6B.3050203@austin.ibm.com>
-	<20100714122503.74f746a2.kamezawa.hiroyu@jp.fujitsu.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Jul 2010 04:34:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type;
+        b=mt/CnLlZZGq/guO9UsgEWYsShXQyRir/GhL6j4Fp/sPBv4E/QBOmZTth2vG+T0Nb23
+         +yH0Z0NcDZK1p4PRnj1wbp72Eg2Y21WtUshIREbNNhr/kvvdGh9qEetGBSK17No5UhI/
+         KnJ1X4dSwTtM2fMrEq7iGTgJwf53MY9fmOAE0=
+Message-ID: <4C3D76AE.6090509@polito.it>
+Date: Wed, 14 Jul 2010 10:34:54 +0200
+From: Roberto Sassu <roberto.sassu@polito.it>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Seiji Munetoh <seiji.munetoh@gmail.com>
+CC: Shaz <shazalive@gmail.com>, linux-ima-user@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org, Eric Paris <eparis@redhat.com>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [Linux-ima-user] [RFC][PATCH] ima: add default rule for initramfs
+ files
+References: <1278428902-27079-1-git-send-email-roberto.sassu@polito.it>	<1278594883.3313.33.camel@localhost.localdomain>	<AANLkTilMKH5M0d8iyACTDLMwZb1WgyJVrd9e04H2cy95@mail.gmail.com>	<AANLkTinWK9mX6lVUvWzgbh7QQ3ZItnrUE4WBJEkOqm2q@mail.gmail.com> <AANLkTilI8klNawzxVc-wxREJwktBKW2G4GvYeyMueGJM@mail.gmail.com>
+In-Reply-To: <AANLkTilI8klNawzxVc-wxREJwktBKW2G4GvYeyMueGJM@mail.gmail.com>
+Content-Type: multipart/signed; protocol="application/pkcs7-signature"; micalg=sha1; boundary="------------ms090401070804010801040700"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010 12:25:03 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+This is a cryptographically signed message in MIME format.
 
-> On Tue, 13 Jul 2010 22:18:03 -0500
-> Nathan Fontenot <nfont@austin.ibm.com> wrote:
-> 
-> > On 07/13/2010 07:35 PM, KAMEZAWA Hiroyuki wrote:
-> > > On Tue, 13 Jul 2010 10:51:58 -0500
-> > > Nathan Fontenot <nfont@austin.ibm.com> wrote:
-> > > 
-> > >>>
-> > >>> And for what purpose this interface is ? Does this split memory block into 2 pieces
-> > >>> of the same size ?? sounds __very__ strange interface to me.
-> > >>
-> > >> Yes, this splits the memory_block into two blocks of the same size.  This was
-> > >> suggested as something we may want to do.  From ppc perspective I am not sure we
-> > >> would use this.
-> > >>
-> > >> The split functionality is not required.  The main goal of the patch set is to
-> > >> reduce the number of memory sysfs directories created.  From a ppc perspective
-> > >> the split functionality is not really needed.
-> > >>
-> > > 
-> > > Okay, this is an offer from me.
-> > > 
-> > >   1. I think you can add an boot option as "don't create memory sysfs".
-> > >      please do.
-> > 
-> > I posted a patch to do that a week or so ago, it didn't go over very well.
-> > 
-> > > 
-> > >   2. I'd like to write a configfs module for handling memory hotplug even when
-> > >      sysfs directroy is not created.
-> > >      Because configfs support rmdir/mkdir, the user (ppc's daemon?) has to do
-> > >      
-> > >      When offlining section X.
-> > >      # insmod configfs_memory.ko
-> > >      # mount -t configfs none /configfs
-> > >      # mkdir /configfs/memoryX
-> > >      # echo offline > /configfs/memoryX/state
-> > >      # rmdir /configfs/memoryX
-> > > 
-> > >   And making this operation as the default bahavior for all arch's memory hotplug may
-> > >   be better...
-> > > 
-> > > Dave, how do you think ? Because ppc guys uses "probe" interface already,
-> > > this can be handled... no ?
-> > 
-> > ppc would still require the existance of the 'probe' interface.
-> > 
-> > Are you objecting to the 'split' functionality? 
-> yes.
-> 
-> > If so I do not see any reason from ppc
-> > perspective that it is needed.  This was something Dave suggested, unless I am missing
-> > something.
-> > 
-> > Since ppc needs the 'probe' interface in sysfs, and for ppc having mutliple 
-> > memory_block_sections reside under a single memory_block makes memory hotplug
-> > simpler.  On ppc we do emory hotplug operations on an LMB size basis.  With my
-> > patches this now lets us set each memory_block to span an LMB's worth of
-> > memory.  Now we could do emory hotplug in a single operation instead of multiple
-> > operations to offline/online all of the memory sections in an LMB.
-> > 
-> 
-> Why per-section memory offlining is provided is for allowing good success-rate of
-> memory offlining. Because memory-hotplug has to "migrate or free" all used page
-> under a section, possibility of memory unplug depends on usage of memory.
-> If a section contains unmovable page(kernel page), we can't offline sectin.
-> 
-> For example, comparing
->   1. offlining 128MB of memory at once
->   2. offlining 8 chunks of 16MB memory
-> "2" can get very good possibility and system-busy time can be much reduced.
-> 
-> IIUC, ppc's 1st requirement is "resizing" not "hot-removing some memory device",
-> "2" is much welcomed. So, some fine-grained interface to section_size is
-> appreciated. So, "multiple operations" is much better than single operation.
-> 
-> As I posted show/hide patch, I'm writing it in configfs. I think it meets IBM's
-> requirements.
-> _But_, it's IBM's issue not Fujitsu's. So, final decistion will depend on you guys.
-> 
-> Anyway, I don't like a too fancy interface as "split".
-> 
+--------------ms090401070804010801040700
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: quoted-printable
 
-This is a sample configfs for handling memory hotplug.
-I wrote this just for my fun and study. code-duplication was not as
-big as expected...most of codes are for configfs management.
+On 07/14/2010 08:29 AM, Seiji Munetoh wrote:
+> On Wed, Jul 14, 2010 at 2:42 PM, Shaz<shazalive@gmail.com>  wrote:
+>   =20
+>>
+>> On Wed, Jul 14, 2010 at 3:08 AM, Seiji Munetoh<seiji.munetoh@gmail.com=
+>
+>> wrote:
+>>     =20
+>>> On Thu, Jul 8, 2010 at 10:14 PM, Mimi Zohar<zohar@linux.vnet.ibm.com>=
 
-you can ignore this. but please avoid changing existing interace in fancy way.
+>>> wrote:
+>>>       =20
+>>>> On Tue, 2010-07-06 at 17:08 +0200, Roberto Sassu wrote:
+>>>>         =20
+>>>>> This patch modifies the default policy shipped with IMA, in order t=
+o
+>>>>> avoid measurements
+>>>>> of files in the initial ramdisk. Those files can be measured early =
+in
+>>>>> the boot process
+>>>>> by the bootloader.
+>>>>> The patch applies to latest version of the mainline kernel 2.6.35-r=
+c4.
+>>>>>           =20
+>>>> Yes, the initramfs measurements are therefore redundant, as they're
+>>>> already included in the initramfs measurement, but perhaps, as the
+>>>> number of initramfs is very limited and the individual file measurem=
+ents
+>>>> supplies additional information, it wouldn't hurt to keep the indivi=
+dual
+>>>> file measurements as well.  These measurements could potentially hel=
+p in
+>>>> identifying initramfs changes.
+>>>>
+>>>> Would appreciate other opinions before accepting this change.
+>>>>         =20
+>>> The hash value of the initramfs is unstable since it was generated
+>>> at the time of kernel installation.
+>>> So still I want to check  the individual used file in initramfs.
+>>>       =20
+>> If initrd is measured by boot loader then changes to individual files =
+should
+>> not be measured as this IS redundant. Use the new hash of the initrd a=
+s an
+>> integrity metric. Why would this not be enough?
+>>     =20
+> This depends on remote verifier.
+> Creating the initramfs is client side task and  the hash value of initr=
+amfs
+> will vary each clients.
+>
+> For me, validation of  current measurements is easier than validation o=
+f
+> initramfs. And it seems the overhead of this redundancy is less painful=
+=2E
+>
+> But some system can validate (or trust) the initramfs measured by IPL.
+> So, I would suggest that add Kconfig option to change the default polic=
+y.
+>
+> IMHO, if the eventlog contains fsmagic information for each measurement=
+s.
+> Verifier can skip the validation of RAMFS measurement easily.
+>
+>   =20
+This is true, the initramfs's digest cannot be validated by a remote=20
+verifier. But in my opinion there are three main reasons for don't=20
+include those files in the measurement list.
+First, this is a readonly system and measures don't change in time; so=20
+if you create the image under a controlled environment and its digest=20
+doesn't change you can assert it will behave correctly.
+Second, including those measurements may be very confusing for a=20
+verifier since there may be multiple versions of the same object (the=20
+initramfs changes very rarely in respect to other files).
+Lastly, a pratical use of IMA is to load a custom policy. The better=20
+place to do that is the initramfs but measurements cannot be taken until =
 
-==
-[root@bluextal kamezawa]# mount -t configfs none /configfs/
-[root@bluextal kamezawa]# mkdir /configfs/memory/72
-[root@bluextal kamezawa]# cat /configfs/memory/72/phys_index
-00000048
-[root@bluextal kamezawa]# cat /sys/devices/system/memory/memory72/phys_index
-00000048
-[root@bluextal kamezawa]# echo offline > /configfs/memory/72/state
-[root@bluextal kamezawa]# cat /configfs/memory/72/state
-offline
-[root@bluextal kamezawa]# cat /sys/devices/system/memory/memory72/state
-offline
-[root@bluextal kamezawa]# echo online > /configfs/memory/72/state
-[root@bluextal kamezawa]# cat /sys/devices/system/memory/memory72/state
-online
+the policy is loaded. The only way, as Shaz mentioned in a previous=20
+email, to keep track of all actions made during the boot process is that =
 
-No sign.
+you have the initramfs image measured early by the boot loader.
 
----
- drivers/base/Makefile        |    2 
- drivers/base/memory.c        |   87 +++++++++++++++++--
- drivers/base/memory_config.c |  192 +++++++++++++++++++++++++++++++++++++++++++
- include/linux/memory.h       |   10 ++
- mm/Kconfig                   |    1 
- 5 files changed, 280 insertions(+), 12 deletions(-)
 
-Index: mmotm-2.6.35-0701/drivers/base/memory.c
-===================================================================
---- mmotm-2.6.35-0701.orig/drivers/base/memory.c
-+++ mmotm-2.6.35-0701/drivers/base/memory.c
-@@ -23,12 +23,15 @@
- #include <linux/mutex.h>
- #include <linux/stat.h>
- #include <linux/slab.h>
-+#include <linux/radix-tree.h>
- 
- #include <asm/atomic.h>
- #include <asm/uaccess.h>
- 
- #define MEMORY_CLASS_NAME	"memory"
- 
-+
-+
- static struct sysdev_class memory_sysdev_class = {
- 	.name = MEMORY_CLASS_NAME,
- };
-@@ -104,17 +107,57 @@ unregister_memory(struct memory_block *m
- 	sysdev_unregister(&memory->sysdev);
- }
- 
-+/* routine for remember memory's status when configs is not used. */
-+
-+RADIX_TREE(hidden_mems, GFP_KERNEL);
-+DEFINE_MUTEX(hidden_mems_mutex);
-+int record_memory_state(unsigned long section_nr, int status)
-+{
-+	int ret = -ENOMEM;
-+	long lstat = status << 8; /* for avoid radix'trees special handling */
-+	mutex_lock(&hidden_mems_mutex);
-+	radix_tree_delete(&hidden_mems, section_nr);
-+	if (radix_tree_preload(GFP_KERNEL))
-+		goto out;
-+	ret = radix_tree_insert(&hidden_mems, section_nr, (void*)lstat);
-+	radix_tree_preload_end();
-+out:
-+	mutex_unlock(&hidden_mems_mutex);
-+	return ret;
-+}
-+
-+int lookup_memory_state(unsigned long section_nr)
-+{
-+	void *ptr;
-+	/* we already have big mutex */
-+	ptr= radix_tree_lookup(&hidden_mems, section_nr);
-+	/* treate not-recorded mems'state as ONLINE...? */
-+	return ((long)ptr) >> 8;
-+}
-+
-+void forget_memory_state(unsigned long section_nr)
-+{
-+	radix_tree_delete(&hidden_mems, section_nr);
-+}
-+
-+
- /*
-  * use this as the physical section index that this memsection
-  * uses.
-  */
- 
-+ssize_t show_memoryblock_phys_index(struct memory_block *mem,
-+	char *buf)
-+{
-+	return sprintf(buf, "%08lx\n", mem->phys_index);
-+}
-+
- static ssize_t show_mem_phys_index(struct sys_device *dev,
- 			struct sysdev_attribute *attr, char *buf)
- {
- 	struct memory_block *mem =
- 		container_of(dev, struct memory_block, sysdev);
--	return sprintf(buf, "%08lx\n", mem->phys_index);
-+	return show_memoryblock_phys_index(mem, buf);
- }
- 
- /*
-@@ -136,11 +179,8 @@ static ssize_t show_mem_removable(struct
- /*
-  * online, offline, going offline, etc.
-  */
--static ssize_t show_mem_state(struct sys_device *dev,
--			struct sysdev_attribute *attr, char *buf)
-+ssize_t show_memoryblock_state(struct memory_block *mem, char *buf)
- {
--	struct memory_block *mem =
--		container_of(dev, struct memory_block, sysdev);
- 	ssize_t len = 0;
- 
- 	/*
-@@ -167,6 +207,15 @@ static ssize_t show_mem_state(struct sys
- 	return len;
- }
- 
-+ssize_t show_mem_state(struct sys_device *dev,
-+		struct sysdev_attribute *attr, char *buf)
-+{
-+	struct memory_block *mem =
-+		container_of(dev, struct memory_block, sysdev);
-+	mem->state = lookup_memory_state(mem->phys_index);
-+	return show_memoryblock_state(mem, buf);
-+}
-+
- int memory_notify(unsigned long val, void *v)
- {
- 	return blocking_notifier_call_chain(&memory_chain, val, v);
-@@ -218,11 +267,14 @@ memory_block_action(struct memory_block 
- 			break;
- 		case MEM_OFFLINE:
- 			mem->state = MEM_GOING_OFFLINE;
-+			record_memory_state(mem->phys_index, mem->state);
- 			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
- 			ret = remove_memory(start_paddr,
- 					    PAGES_PER_SECTION << PAGE_SHIFT);
- 			if (ret) {
- 				mem->state = old_state;
-+				record_memory_state(mem->phys_index,
-+					mem->state);
- 				break;
- 			}
- 			break;
-@@ -241,6 +293,8 @@ static int memory_block_change_state(str
- 	int ret = 0;
- 	mutex_lock(&mem->state_mutex);
- 
-+	mem->state = lookup_memory_state(mem->phys_index);
-+
- 	if (mem->state != from_state_req) {
- 		ret = -EINVAL;
- 		goto out;
-@@ -249,21 +303,18 @@ static int memory_block_change_state(str
- 	ret = memory_block_action(mem, to_state);
- 	if (!ret)
- 		mem->state = to_state;
--
-+	record_memory_state(mem->phys_index, mem->state);
- out:
- 	mutex_unlock(&mem->state_mutex);
- 	return ret;
- }
- 
--static ssize_t
--store_mem_state(struct sys_device *dev,
--		struct sysdev_attribute *attr, const char *buf, size_t count)
-+ssize_t store_memoryblock_state(struct memory_block *mem,
-+				const char *buf, size_t count)
- {
--	struct memory_block *mem;
- 	unsigned int phys_section_nr;
- 	int ret = -EINVAL;
- 
--	mem = container_of(dev, struct memory_block, sysdev);
- 	phys_section_nr = mem->phys_index;
- 
- 	if (!present_section_nr(phys_section_nr))
-@@ -279,6 +330,16 @@ out:
- 	return count;
- }
- 
-+static ssize_t
-+store_mem_state(struct sys_device *dev,
-+		struct sysdev_attribute *attr, const char *buf, size_t count)
-+{
-+	struct memory_block *mem;
-+
-+	mem = container_of(dev, struct memory_block, sysdev);
-+	return store_memoryblock_state(mem, buf, count);
-+}
-+
- /*
-  * phys_device is a bad name for this.  What I really want
-  * is a way to differentiate between memory ranges that
-@@ -451,6 +512,8 @@ static int add_memory_block(int nid, str
- 	start_pfn = section_nr_to_pfn(mem->phys_index);
- 	mem->phys_device = arch_get_memory_phys_device(start_pfn);
- 
-+	record_memory_state(mem->phys_index, state);
-+
- 	ret = register_memory(mem, section);
- 	if (!ret)
- 		ret = mem_create_simple_file(mem, phys_index);
-@@ -505,6 +568,7 @@ int remove_memory_block(unsigned long no
- 	struct memory_block *mem;
- 
- 	mem = find_memory_block(section);
-+	forget_memory_state(mem->phys_index);
- 	unregister_mem_sect_under_nodes(mem);
- 	mem_remove_simple_file(mem, phys_index);
- 	mem_remove_simple_file(mem, state);
-@@ -573,3 +637,4 @@ out:
- 		printk(KERN_ERR "%s() failed: %d\n", __func__, ret);
- 	return ret;
- }
-+
-Index: mmotm-2.6.35-0701/drivers/base/memory_config.c
-===================================================================
---- /dev/null
-+++ mmotm-2.6.35-0701/drivers/base/memory_config.c
-@@ -0,0 +1,192 @@
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/mm.h>
-+#include <linux/memory.h>
-+#include <linux/slab.h>
-+#include <linux/radix-tree.h>
-+#include <linux/configfs.h>
-+
-+
-+
-+struct memory_hp_block {
-+	struct config_group group;
-+	struct memory_block mb;
-+};
-+struct memory_hp_attribute {
-+	struct configfs_attribute attr;
-+	ssize_t (*show)(struct memory_hp_block *, char *);
-+	ssize_t (*store)(struct memory_hp_block *, const char *);
-+};
-+
-+static struct memory_hp_block *to_mhp_block(struct config_item *item)
-+{
-+	if (!item)
-+		return NULL;
-+	return container_of(to_config_group(item),
-+		struct memory_hp_block, group);
-+}
-+
-+static ssize_t
-+memory_hp_phys_index_read(struct memory_hp_block *mhb, char *page)
-+{
-+        return show_memoryblock_phys_index(&mhb->mb, page);
-+}
-+
-+static struct memory_hp_attribute memory_hp_phys_index = {
-+	.attr = { .ca_owner = THIS_MODULE,
-+		  .ca_name = "phys_index",
-+		  .ca_mode = S_IRUGO },
-+	.show = memory_hp_phys_index_read,
-+};
-+
-+static ssize_t
-+memory_hp_state_read(struct memory_hp_block *mhb, char *page)
-+{
-+	/* synchronize */
-+	printk("lookup section %ld\n", mhb->mb.phys_index);
-+	mhb->mb.state = lookup_memory_state(mhb->mb.phys_index);
-+	return show_memoryblock_state(&mhb->mb, page);
-+}
-+
-+static ssize_t
-+memory_hp_state_store(struct memory_hp_block *mhb, const char *page)
-+{
-+	int len = strnlen(page, 8);
-+	printk("length %d str %s\n", len, page);
-+	if (len > 8) /* online/offline */
-+		return -EINVAL;
-+	/* synchronize */
-+	mhb->mb.state = lookup_memory_state(mhb->mb.phys_index);
-+	return store_memoryblock_state(&mhb->mb, page, len);
-+}
-+
-+static struct memory_hp_attribute memory_hp_state = {
-+	.attr = { .ca_owner = THIS_MODULE,
-+		  .ca_name = "state",
-+		  .ca_mode = S_IRUGO|S_IWUSR },
-+	.show = memory_hp_state_read,
-+	.store = memory_hp_state_store,
-+};
-+
-+static struct configfs_attribute *memory_hp_attrs[] = {
-+	&memory_hp_phys_index.attr,
-+	&memory_hp_state.attr,
-+	NULL,
-+};
-+
-+static ssize_t memory_hp_attr_show(struct config_item *item,
-+		struct configfs_attribute *attr,
-+		char *page)
-+{
-+	struct memory_hp_block *mhb = to_mhp_block(item);
-+	struct memory_hp_attribute *memhp_attr =
-+		container_of(attr, struct memory_hp_attribute, attr);
-+	ssize_t ret = 0;
-+
-+	if (memhp_attr->show)
-+		ret = memhp_attr->show(mhb, page);
-+	return ret;
-+}
-+
-+static ssize_t memory_hp_attr_store(struct config_item *item,
-+		struct configfs_attribute *attr,
-+		const char *page, size_t count)
-+{
-+	struct memory_hp_block *mhb = to_mhp_block(item);
-+	struct memory_hp_attribute *memhp_attr =
-+		container_of(attr, struct memory_hp_attribute, attr);
-+	ssize_t ret = 0;
-+
-+	if (memhp_attr->store)
-+		ret = memhp_attr->store(mhb, page);
-+	else
-+		ret = -EINVAL;
-+	return ret;
-+}
-+
-+static struct configfs_item_operations memory_hp_item_ops = {
-+	.show_attribute = memory_hp_attr_show,
-+	.store_attribute = memory_hp_attr_store,
-+};
-+
-+static struct  config_item_type memory_hp_type = {
-+	.ct_item_ops    = &memory_hp_item_ops,
-+	.ct_attrs       = memory_hp_attrs,
-+	.ct_owner       = THIS_MODULE,
-+};
-+
-+static struct config_group *
-+memory_hp_make_group(struct config_group *group, const char *name)
-+{
-+	struct memory_hp_block *mhb;
-+	unsigned long long section_id;
-+
-+
-+	if (strict_strtoull(name, 10, &section_id))
-+		return ERR_PTR(-EINVAL);
-+
-+	if (!valid_section_nr(section_id))
-+		return ERR_PTR(-EINVAL);
-+
-+	mhb = kzalloc(sizeof(*mhb), GFP_KERNEL);
-+	if (!mhb)
-+		return NULL;
-+
-+	config_group_init_type_name(&mhb->group, name, &memory_hp_type);
-+
-+	mhb->mb.phys_index = section_id;
-+	mutex_init(&mhb->mb.state_mutex);
-+	mhb->mb.state = lookup_memory_state(section_id);
-+
-+	return &mhb->group;
-+}
-+
-+static void memory_hp_drop_item(struct config_group *group,
-+		struct config_item *item)
-+{
-+	struct memory_hp_block *mhb;
-+
-+	mhb = container_of(group, struct memory_hp_block, group);
-+	config_item_put(item);
-+}
-+
-+static struct configfs_group_operations memory_hp_group_ops = {
-+        .make_group     = memory_hp_make_group,
-+	.drop_item	= memory_hp_drop_item,
-+};
-+
-+static struct config_item_type memory_hp_subsys_type = {
-+	.ct_group_ops = &memory_hp_group_ops,
-+	.ct_owner = THIS_MODULE,
-+};
-+
-+static struct configfs_subsystem memory_hp_subsys = {
-+	.su_group = {
-+		.cg_item = {
-+			.ci_namebuf = "memory",
-+			.ci_type = &memory_hp_subsys_type,
-+		},
-+	},
-+};
-+
-+static int __init memory_config_init(void)
-+{
-+	int ret;
-+
-+	config_group_init(&memory_hp_subsys.su_group);
-+	mutex_init(&memory_hp_subsys.su_mutex);
-+	ret =  configfs_register_subsystem(&memory_hp_subsys);
-+	if (ret) {
-+		printk(KERN_ERR "Error %d while registering memory configfs\n", ret);
-+		return ret;
-+	}
-+	return 0;
-+}
-+
-+#if 0
-+static void __exit memory_config_exit(void)
-+{
-+	configfs_unregister_subsystem(&memory_hp_subsys);
-+}
-+#endif
-+late_initcall(memory_config_init);
-Index: mmotm-2.6.35-0701/drivers/base/Makefile
-===================================================================
---- mmotm-2.6.35-0701.orig/drivers/base/Makefile
-+++ mmotm-2.6.35-0701/drivers/base/Makefile
-@@ -11,7 +11,7 @@ obj-$(CONFIG_HAVE_GENERIC_DMA_COHERENT) 
- obj-$(CONFIG_ISA)	+= isa.o
- obj-$(CONFIG_FW_LOADER)	+= firmware_class.o
- obj-$(CONFIG_NUMA)	+= node.o
--obj-$(CONFIG_MEMORY_HOTPLUG_SPARSE) += memory.o
-+obj-$(CONFIG_MEMORY_HOTPLUG_SPARSE) += memory.o memory_config.o
- obj-$(CONFIG_SMP)	+= topology.o
- obj-$(CONFIG_IOMMU_API) += iommu.o
- ifeq ($(CONFIG_SYSFS),y)
-Index: mmotm-2.6.35-0701/mm/Kconfig
-===================================================================
---- mmotm-2.6.35-0701.orig/mm/Kconfig
-+++ mmotm-2.6.35-0701/mm/Kconfig
-@@ -138,6 +138,7 @@ config MEMORY_HOTPLUG
- config MEMORY_HOTPLUG_SPARSE
- 	def_bool y
- 	depends on SPARSEMEM && MEMORY_HOTPLUG
-+	select CONFIGFS_FS
- 
- config MEMORY_HOTREMOVE
- 	bool "Allow for memory hot remove"
-Index: mmotm-2.6.35-0701/include/linux/memory.h
-===================================================================
---- mmotm-2.6.35-0701.orig/include/linux/memory.h
-+++ mmotm-2.6.35-0701/include/linux/memory.h
-@@ -68,6 +68,16 @@ struct memory_isolate_notify {
- struct notifier_block;
- struct mem_section;
- 
-+
-+ssize_t show_memoryblock_phys_index(struct memory_block *mb, char *buf);
-+ssize_t show_memoryblock_state(struct memory_block *mb, char *buf);
-+ssize_t store_memoryblock_state(struct memory_block *mb,
-+			const char *buf, size_t count);
-+
-+int record_memory_state(unsigned long section, int state);
-+int lookup_memory_state(unsigned long section);
-+void forget_memory_state(unsigned long section);
-+
- /*
-  * Priorities for the hotplug memory callback routines (stored in decreasing
-  * order in the callback chain)
+Roberto
+
+> --
+> Seiji
+>
+> -----------------------------------------------------------------------=
+-------
+> This SF.net email is sponsored by Sprint
+> What will you do first with EVO, the first 4G phone?
+> Visit sprint.com/first -- http://p.sf.net/sfu/sprint-com-first
+> _______________________________________________
+> Linux-ima-user mailing list
+> Linux-ima-user@lists.sourceforge.net
+> https://lists.sourceforge.net/lists/listinfo/linux-ima-user
+>   =20
 
 
 
+--------------ms090401070804010801040700
+Content-Type: application/pkcs7-signature; name="smime.p7s"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Description: S/MIME Cryptographic Signature
 
-
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIIWGDCC
+BLMwggOboAMCAQICARQwDQYJKoZIhvcNAQEFBQAwQTEQMA4GA1UEChMHRXVyb1BLSTEtMCsG
+A1UEAxMkRXVyb1BLSSBSb290IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA2MTAyNDEz
+MzEzM1oXDTEwMTIzMTEyNTk1OVowUTELMAkGA1UEBhMCSVQxEDAOBgNVBAoTB0V1cm9QS0kx
+MDAuBgNVBAMTJ0V1cm9QS0kgSXRhbGlhbiBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eTCCASIw
+DQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAPbJ3y5bE0iL2iFW59R4KGHS3iTc22mq2GlD
+aOZLE3Xz1wTvB/yBl5e4ntMZeEeWTW9JInNRTtfC3mcLk0gnEdK1rQZbe4lQwBVHdkG8LvRQ
+DWHIkZNuccoUpQXMv+JbZjI6m7rHfU2CN/YCvFY9QL08xXsfDxvX2Ee4S7EwJiSEEJSiy+R0
+0uTfvfn27d8a6LCqYLzlInRlz4C2CUbk+U2UAwjYEPTP2ziqFxztysbxC3fjqH8e6P5wIPXO
+S5cSYnVaEyp21VXhAOamVJEGlQCdVoTHs+pPBYqCBuNhBfienUPaEDHHUUYHZ2nS4eNzd9XO
+u+5hFi1/8hVZxN4sbdECAwEAAaOCAaQwggGgMEwGCWCGSAGG+EIBDQQ/Fj1Jc3N1ZWQgdW5k
+ZXIgcG9saWN5OgogaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9yb290L2Nwcy8xLjEvMGUG
+CCsGAQUFBwEBBFkwVzAoBggrBgEFBQcwAYYcaHR0cDovL29jc3AuZXVyb3BraS5vcmc6ODAy
+NjArBggrBgEFBQcwAoYfaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9yb290LzA7BgNVHR8E
+NDAyMDCgLqAshipodHRwOi8vd3d3LmV1cm9wa2kub3JnL2NhL3Jvb3QvY3JsL2NybC5kZXIw
+DAYDVR0TBAUwAwEB/zBOBgNVHSAERzBFMEMGCisGAQQBqQcBAQEwNTAzBggrBgEFBQcCARYn
+aHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9yb290L2Nwcy8xLjEvMA4GA1UdDwEB/wQEAwIB
+9jAdBgNVHQ4EFgQUjl4HtzG0Gbu5BJU0rMX9016KQsAwHwYDVR0jBBgwFoAUjNyLsaVKkOdO
+iHMYPJ3VXn7kss0wDQYJKoZIhvcNAQEFBQADggEBAFjlAWMiL7uhEAVcrPeMXsbQU+bQNbP1
+TBqyBoMCMJ4RakM7/67AsmqpKGIYwhjVkSNHhscRl5BuSiyviHOLbWUJ9tAAKt6hzMDr1J4O
+vWSHSn8y9fSlyQU8+fQE8FHxXT3Aa7aLYVqsqr0ppmxRDL/9b/mdUVcMXiKFAdopFzhXIigf
+ZFh6MW/o7/GEiDMGsovCiwKJ5ZL46zGRDaS+O0aRYQv2PHZaWrC8i0OPwghlTeB2DfUBzm0u
+rPijBATdjzP8yO3YGymFZOIG08Roe4bwzrANGzX5luBk3lNmtXTPHoUtRLn3ADa+IUGwK6VY
+WHYJe1+uUHRNziQu/Zsb858wggU/MIIEJ6ADAgECAgIJzzANBgkqhkiG9w0BAQUFADBRMQsw
+CQYDVQQGEwJJVDEQMA4GA1UEChMHRXVyb1BLSTEwMC4GA1UEAxMnRXVyb1BLSSBJdGFsaWFu
+IENlcnRpZmljYXRpb24gQXV0aG9yaXR5MB4XDTA2MTEwNjE3MTU1OVoXDTEwMTIzMTEyNTk1
+OVowZTELMAkGA1UEBhMCSVQxHjAcBgNVBAoTFVBvbGl0ZWNuaWNvIGRpIFRvcmlubzE2MDQG
+A1UEAxMtUG9saXRlY25pY28gZGkgVG9yaW5vIENlcnRpZmljYXRpb24gQXV0aG9yaXR5MIIB
+IjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEA/s1vopfmSp2eqKG/jW4H5YyfrZc/jWEn
+ctMMm7TlVT+ryxJ2ifYV/7VyuYVIGdnCBnmJiav6uhePqpHyuejEZ+IdCchk04BSBbgzkSbW
+akw2ekv1SKm8WfvhxHbiSo/t//LQEANMJ+XeeqGl1TRR8gdMC6erWFGdl5FcuOpMoaqW6Dsz
+VGlOAf7Uo/DExZ0/9cw77GTRoDTA3vi1QJEYGaAAvI2/flaU8gn4QoktjowchDXBylVsyqs+
+ux3v7m3H0cgC3q62t2om2badk40F9XH1w2WPLQB6rSl+TPDxkl2kkR4goQprXR0b0OujS5AD
+q5Ds2w7YPj5h4J6ebsbIUQIDAQABo4ICCzCCAgcwdQYJYIZIAYb4QgENBGgWZklzc3VlZCB1
+bmRlciBwb2xpY2llczoKIGh0dHA6Ly93d3cuZXVyb3BraS5vcmcvY2Evcm9vdC9jcHMvMS4x
+LwogaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9pdC9jcHMvMS4xLzBcBggrBgEFBQcBAQRQ
+ME4wKAYIKwYBBQUHMAGGHGh0dHA6Ly9vY3NwLmV1cm9wa2kub3JnOjgwMjYwIgYIKwYBBQUH
+MAKGFmh0dHA6Ly93d3cuZXVyb3BraS5vcmcwPAYDVR0fBDUwMzAxoC+gLYYraHR0cDovL3d3
+dy5ldXJvcGtpLm9yZy9jYS9pdDIvY3JsMDMvY3JsLmRlcjAPBgNVHRMBAf8EBTADAQH/MIGT
+BgNVHSAEgYswgYgwQwYKKwYBBAGpBwEBATA1MDMGCCsGAQUFBwIBFidodHRwOi8vd3d3LmV1
+cm9wa2kub3JnL2NhL3Jvb3QvY3BzLzEuMS8wQQYKKwYBBAGpBwIBATAzMDEGCCsGAQUFBwIB
+FiVodHRwOi8vd3d3LmV1cm9wa2kub3JnL2NhL2l0L2Nwcy8xLjEvMAsGA1UdDwQEAwIB9jAd
+BgNVHQ4EFgQUCf0lGW/jaHyCazVzvCgAviw8OjgwHwYDVR0jBBgwFoAUjl4HtzG0Gbu5BJU0
+rMX9016KQsAwDQYJKoZIhvcNAQEFBQADggEBANfGdD6B98NUwBOVYIiuo+SNfw8Afjr2oFHL
+YEHYhKdBED1WBckhK610v2zJctramnrqdd+xfyzmkyNm48OtkiVetYzXbgYeyMGxhO8HrJ1Z
+tf1yEN0lL8HgdK3lmJeLYNYH/cwZ5SlKwvTR/VENHLYlWsgWk47ut7W8+Zd/ESwzNdJUCBUM
+oQnGZ3giyhAXKAgIOckwL0g8KmnceY7JY4L1G++1OuOoUcgg2jRPxcVmHVEe/cM0WHfUcigD
+XSBTIxAiDwlQ7ni97yX1RqBV/6IVdRDYKyjgYkdYcwU9ZuOKUP4Pl5KKCegLOHRoo5kX6V1o
+7b2IZGBFoVmkag4m4kkwggYLMIIE86ADAgECAgIDwTANBgkqhkiG9w0BAQUFADBlMQswCQYD
+VQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQDEy1Qb2xp
+dGVjbmljbyBkaSBUb3Jpbm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwHhcNMDgxMjA1MTYw
+MDAwWhcNMTAxMjMwMTIwMDAwWjB5MQswCQYDVQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25p
+Y28gZGkgVG9yaW5vMTEwLwYDVQQLEyhEaXBhcnRpbWVudG8gZGkgQXV0b21hdGljYSBlIElu
+Zm9ybWF0aWNhMRcwFQYDVQQDEw5Sb2JlcnRvICBTYXNzdTCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBAOS/leMNzG5v7FG73ythWtNPOdq8MEFpzg7mjy4M7UsS9+scb7QE8TOX
+365q/+mBwxZ7qW+OhNKfgv14A3y/quju5P7mjTmTNvKWDpsUBjC+tCs+WpWsgIPc2xxWPrR7
+br04U/SYYNsxynh1TtO2gsQrHIj9S/wNiNRP8GGPCAiuYRlaL2CeSVn4JEKcT0zOeLIIqfDp
+3Ad3YeBhj+cR3TrmO9TyGTPCAb1oyq9wuA1Tx044rqSQNbp0e0RvOrwAIpD/2mNPP3ReTeB5
+3aSgq0pCHoH1s2AcY/jWJ1joYFC9hh/2DqZRvMNIsM7Uce5Iiz2sgl1I61IUD4658HYzCmMC
+AwEAAaOCAq8wggKrMIGVBglghkgBhvhCAQ0EgYcWgYRJc3N1ZWQgdW5kZXIgcG9saWNpZXM6
+CiBodHRwOi8vd3d3LmV1cm9wa2kub3JnL2NhL3Jvb3QvY3BzLzEuMS8KIGh0dHA6Ly93d3cu
+ZXVyb3BraS5vcmcvY2EvaXQvY3BzLzEuMS8KIGh0dHA6Ly9jYS5wb2xpdG8uaXQvY3BzLzIu
+MS8wEQYJYIZIAYb4QgEBBAQDAgCwMGMGCCsGAQUFBwEBBFcwVTAoBggrBgEFBQcwAYYcaHR0
+cDovL29jc3AuZXVyb3BraS5vcmc6ODAyNjApBggrBgEFBQcwAoYdaHR0cDovL3d3dy5ldXJv
+cGtpLm9yZy9jYS9pdC8wMgYDVR0fBCswKTAnoCWgI4YhaHR0cDovL2NhLnBvbGl0by5pdC9j
+cmwwMy9jcmwuZGVyMAwGA1UdEwEB/wQCMAAwOgYDVR0RBDMwMYEXcm9iZXJ0by5zYXNzdUBw
+b2xpdG8uaXSgFgYKKwYBBAGVYgIBAaAIFgYwMjEzMDUwgc0GA1UdIASBxTCBwjBDBgorBgEE
+AakHAQEBMDUwMwYIKwYBBQUHAgEWJ2h0dHA6Ly93d3cuZXVyb3BraS5vcmcvY2Evcm9vdC9j
+cHMvMS4xLzBBBgorBgEEAakHAgEBMDMwMQYIKwYBBQUHAgEWJWh0dHA6Ly93d3cuZXVyb3Br
+aS5vcmcvY2EvaXQvY3BzLzEuMS8wOAYKKwYBBAGVYgECATAqMCgGCCsGAQUFBwIBFhxodHRw
+Oi8vY2EucG9saXRvLml0L2Nwcy8yLjEvMAsGA1UdDwQEAwIE8DAdBgNVHQ4EFgQUP+37DpRL
+6r5BNjgsgFjI8MHvGTcwHwYDVR0jBBgwFoAUCf0lGW/jaHyCazVzvCgAviw8OjgwDQYJKoZI
+hvcNAQEFBQADggEBADRj0OWMglzLXTPuKND9gMTHd1iRPzRNI1TiYFN/WIyua3mNev65wKn3
+5VxbbMV6k7zuxxdC7o+iYRLepVOnpw90Af/SiJRc9QI4rk8tzSr5xII7vI0fPvclrjSMymXC
+vwKrbYwrKe0FhBnSZ8AoewXoHDQ8f64heLIU8mLWuwo1+brq0pJUH5Q+69WAGD03ln+lFhk2
+KqvVv8yAD21PydrS7Uk2ZLE7l7/+BTQBY8ZjpNRZ44C6+o7lou2zN6lkWtVHBwUNVdfu3wkS
+TdtCm/yxR8XUlFyZkLHfhY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAw
+ggYLMIIE86ADAgECAgIDwTANBgkqhkiG9w0BAQUFADBlMQswCQYDVQQGEwJJVDEeMBwGA1UE
+ChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTYwNAYDVQQDEy1Qb2xpdGVjbmljbyBkaSBUb3Jp
+bm8gQ2VydGlmaWNhdGlvbiBBdXRob3JpdHkwHhcNMDgxMjA1MTYwMDAwWhcNMTAxMjMwMTIw
+MDAwWjB5MQswCQYDVQQGEwJJVDEeMBwGA1UEChMVUG9saXRlY25pY28gZGkgVG9yaW5vMTEw
+LwYDVQQLEyhEaXBhcnRpbWVudG8gZGkgQXV0b21hdGljYSBlIEluZm9ybWF0aWNhMRcwFQYD
+VQQDEw5Sb2JlcnRvICBTYXNzdTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBAOS/
+leMNzG5v7FG73ythWtNPOdq8MEFpzg7mjy4M7UsS9+scb7QE8TOX365q/+mBwxZ7qW+OhNKf
+gv14A3y/quju5P7mjTmTNvKWDpsUBjC+tCs+WpWsgIPc2xxWPrR7br04U/SYYNsxynh1TtO2
+gsQrHIj9S/wNiNRP8GGPCAiuYRlaL2CeSVn4JEKcT0zOeLIIqfDp3Ad3YeBhj+cR3TrmO9Ty
+GTPCAb1oyq9wuA1Tx044rqSQNbp0e0RvOrwAIpD/2mNPP3ReTeB53aSgq0pCHoH1s2AcY/jW
+J1joYFC9hh/2DqZRvMNIsM7Uce5Iiz2sgl1I61IUD4658HYzCmMCAwEAAaOCAq8wggKrMIGV
+BglghkgBhvhCAQ0EgYcWgYRJc3N1ZWQgdW5kZXIgcG9saWNpZXM6CiBodHRwOi8vd3d3LmV1
+cm9wa2kub3JnL2NhL3Jvb3QvY3BzLzEuMS8KIGh0dHA6Ly93d3cuZXVyb3BraS5vcmcvY2Ev
+aXQvY3BzLzEuMS8KIGh0dHA6Ly9jYS5wb2xpdG8uaXQvY3BzLzIuMS8wEQYJYIZIAYb4QgEB
+BAQDAgCwMGMGCCsGAQUFBwEBBFcwVTAoBggrBgEFBQcwAYYcaHR0cDovL29jc3AuZXVyb3Br
+aS5vcmc6ODAyNjApBggrBgEFBQcwAoYdaHR0cDovL3d3dy5ldXJvcGtpLm9yZy9jYS9pdC8w
+MgYDVR0fBCswKTAnoCWgI4YhaHR0cDovL2NhLnBvbGl0by5pdC9jcmwwMy9jcmwuZGVyMAwG
+A1UdEwEB/wQCMAAwOgYDVR0RBDMwMYEXcm9iZXJ0by5zYXNzdUBwb2xpdG8uaXSgFgYKKwYB
+BAGVYgIBAaAIFgYwMjEzMDUwgc0GA1UdIASBxTCBwjBDBgorBgEEAakHAQEBMDUwMwYIKwYB
+BQUHAgEWJ2h0dHA6Ly93d3cuZXVyb3BraS5vcmcvY2Evcm9vdC9jcHMvMS4xLzBBBgorBgEE
+AakHAgEBMDMwMQYIKwYBBQUHAgEWJWh0dHA6Ly93d3cuZXVyb3BraS5vcmcvY2EvaXQvY3Bz
+LzEuMS8wOAYKKwYBBAGVYgECATAqMCgGCCsGAQUFBwIBFhxodHRwOi8vY2EucG9saXRvLml0
+L2Nwcy8yLjEvMAsGA1UdDwQEAwIE8DAdBgNVHQ4EFgQUP+37DpRL6r5BNjgsgFjI8MHvGTcw
+HwYDVR0jBBgwFoAUCf0lGW/jaHyCazVzvCgAviw8OjgwDQYJKoZIhvcNAQEFBQADggEBADRj
+0OWMglzLXTPuKND9gMTHd1iRPzRNI1TiYFN/WIyua3mNev65wKn35VxbbMV6k7zuxxdC7o+i
+YRLepVOnpw90Af/SiJRc9QI4rk8tzSr5xII7vI0fPvclrjSMymXCvwKrbYwrKe0FhBnSZ8Ao
+ewXoHDQ8f64heLIU8mLWuwo1+brq0pJUH5Q+69WAGD03ln+lFhk2KqvVv8yAD21PydrS7Uk2
+ZLE7l7/+BTQBY8ZjpNRZ44C6+o7lou2zN6lkWtVHBwUNVdfu3wkSTdtCm/yxR8XUlFyZkLHf
+hY19VW4luxb7KZ4GiPKDERdQwBb0kja4eqSOBkAPWZ9Y8zpv4bAxggNOMIIDSgIBATBrMGUx
+CzAJBgNVBAYTAklUMR4wHAYDVQQKExVQb2xpdGVjbmljbyBkaSBUb3Jpbm8xNjA0BgNVBAMT
+LVBvbGl0ZWNuaWNvIGRpIFRvcmlubyBDZXJ0aWZpY2F0aW9uIEF1dGhvcml0eQICA8EwCQYF
+Kw4DAhoFAKCCAbgwGAYJKoZIhvcNAQkDMQsGCSqGSIb3DQEHATAcBgkqhkiG9w0BCQUxDxcN
+MTAwNzE0MDgzNDU0WjAjBgkqhkiG9w0BCQQxFgQUVlwXG5KxhOBEaBeuswSb9nq0SqYwXwYJ
+KoZIhvcNAQkPMVIwUDALBglghkgBZQMEAQIwCgYIKoZIhvcNAwcwDgYIKoZIhvcNAwICAgCA
+MA0GCCqGSIb3DQMCAgFAMAcGBSsOAwIHMA0GCCqGSIb3DQMCAgEoMHoGCSsGAQQBgjcQBDFt
+MGswZTELMAkGA1UEBhMCSVQxHjAcBgNVBAoTFVBvbGl0ZWNuaWNvIGRpIFRvcmlubzE2MDQG
+A1UEAxMtUG9saXRlY25pY28gZGkgVG9yaW5vIENlcnRpZmljYXRpb24gQXV0aG9yaXR5AgID
+wTB8BgsqhkiG9w0BCRACCzFtoGswZTELMAkGA1UEBhMCSVQxHjAcBgNVBAoTFVBvbGl0ZWNu
+aWNvIGRpIFRvcmlubzE2MDQGA1UEAxMtUG9saXRlY25pY28gZGkgVG9yaW5vIENlcnRpZmlj
+YXRpb24gQXV0aG9yaXR5AgIDwTANBgkqhkiG9w0BAQEFAASCAQDAbBXeUGDHKKBn/lgLs7u+
+08IUBIGhu4Z+d4kxc2jDtbs9U6Gn6qXaQftd9E+jxNvPV0jgFpOK5vXKQyIS54t2/u4a/nCA
+02PZ88DgfvrgXXJIe3kT5CBjh6ysqOM3NmnV+nqT9anXohNfvRg18bH5MnI1vBoj8t3R/bvy
+Asmbj8v//N4gcokseZ74vSi0b1ALmp0cNGHyeNAfkCK7BD4P1i6s6N6RrrxsZozTvU2+9ZCU
+2UWxNM5R9LI5qG0b9H40jigRvC5+UC96UWMJ4tTDupwZQIomT9GhL6tFrqGRCUwfkLSEscad
+LEUUUMCRLH6jup+hV1qSu0mZdAXS6WmgAAAAAAAA
+--------------ms090401070804010801040700--
