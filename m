@@ -1,83 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab0GNL7H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 07:59:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37221 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752185Ab0GNL7E (ORCPT
+	id S1753794Ab0GNMaq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 08:30:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:37834 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752454Ab0GNMao convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 07:59:04 -0400
+	Wed, 14 Jul 2010 08:30:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=lmb+CcIaTN/KOpqe56nTHzI+aIJOvtc2B5R0XVgoM5m2d4Xku9VaxhueBPr5GTcjyd
-         XVUQVkawkH6TJvuqBHA6H++VF4NLTxhePLeAFaVnkitV1RKeDkgU2WOjvs/pgs5HN5v2
-         jWCrEsXZcqFc5xMpu3FyUuTBs7Ew3LT+PrjLY=
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=xk3iPmLeUE6D9xoC1OZ+xiNEqrdRvVk6Up7LLZFMxrUMO0ILgL3IwYi4nTXnTjn/9w
+         ItVHi4WasvCvkGbhJgha9XP8wP5yMFsS9AC5s7K4EaTySrTAfGHAAP+e0sM88iYC1/K8
+         4CDuI8v3JQL6rjL+/Ce3XIdyxjSNFHVBex7Nc=
 MIME-Version: 1.0
-In-Reply-To: <1279108443.8592.75.camel@e102109-lin.cambridge.arm.com>
-References: <AANLkTil6opQmTVVxuP1ngz72_ijpLzdlSFWDSyi4whOt@mail.gmail.com>
-	<tnx630ibd2q.fsf@e102109-lin.cambridge.arm.com>
-	<AANLkTilBdReJssNYLAx6sHtPTez57keWJl6QDOu5V986@mail.gmail.com>
-	<1279108443.8592.75.camel@e102109-lin.cambridge.arm.com>
-Date: Wed, 14 Jul 2010 13:59:01 +0200
-Message-ID: <AANLkTinlZ_yoG_MV8h5jyIW_DNSWDCo4-fYaP7j0QGLn@mail.gmail.com>
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-From: Zeno Davatz <zdavatz@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <e75b6cb0826c24f3c0583fb409473c494aff0f63.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
+References: <cover.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de> 
+	<e75b6cb0826c24f3c0583fb409473c494aff0f63.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Wed, 14 Jul 2010 20:30:23 +0800
+Message-ID: <AANLkTimQnt8_OLGOp8VIUk6A10wBDNT3H_prpWNuYhc9@mail.gmail.com>
+Subject: Re: [PATCH 2/3] usb/{gadget,host}: Remove dead CONFIG_CPU_PXA27x
+To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Cc: Russell King <linux@arm.linux.org.uk>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        Robert Jarzmik <robert.jarzmik@free.fr>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        =?UTF-8?Q?Andr=C3=A9_Goddard_Rosa?= <andre.goddard@gmail.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Mike Rapoport <mike@compulab.co.il>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 1:54 PM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> On Wed, 2010-07-14 at 11:04 +0100, Zeno Davatz wrote:
->> On Wed, Jul 14, 2010 at 11:57 AM, Catalin Marinas
->> <catalin.marinas@arm.com> wrote:
->> > Zeno Davatz <zdavatz@gmail.com> wrote:
->> >> Sometimes in the middle of nowhere all of a sudden all of my 8-cores
->> >> are at 100% CPU usage and my machine really lags and hangs and is not
->> >> useable anymore. Some random process just grabs a bunch CPUs according
->> >> to htop.
->> >
->> > These may be related to the NO_BOOTMEM configuration (I sent a patch in
->> > a separate reply).
->> >
->> > But even when kmemleak scans the memory, it only uses a single thread
->> > and you should only see a single CPU going to 100%. I don't think
->> > kmemleak scanning can explain why all the 8 cores are going up to 100%.
->>
->> I am doing:
->>
->> /usr/src/my2.6> sudo patch -p1 < patch_catalin
->> patching file mm/bootmem.c
->> Hunk #1 FAILED at 435.
->> Hunk #2 FAILED at 461.
->> 2 out of 2 hunks FAILED -- saving rejects to file mm/bootmem.c.rej
->> patching file mm/page_alloc.c
->> Hunk #1 FAILED at 3659.
->> 1 out of 1 hunk FAILED -- saving rejects to file mm/page_alloc.c.rej
->>
->> Any hints why it wont apply? Will this patch be in the next RC?
+On Wed, Jul 14, 2010 at 7:32 PM, Christian Dietrich
+<qy03fugy@stud.informatik.uni-erlangen.de> wrote:
+> CONFIG_CPU_PXA27x doesn't exist in Kconfig, therefore removing all
+> references for it from the source code.
 >
-> The patch is against 2.6.35-rc4. I'll send it to Linus and hopefully it
-> will get merged during rc.
+> Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+> ---
+>  drivers/usb/gadget/pxa27x_udc.c |   16 ----------------
+>  drivers/usb/host/ohci-pxa27x.c  |    8 --------
+>  2 files changed, 0 insertions(+), 24 deletions(-)
 >
-> BTW, you can disable kmemleak scanning by doing:
+> diff --git a/drivers/usb/gadget/pxa27x_udc.c b/drivers/usb/gadget/pxa27x_udc.c
+> index 85b0d89..73783f5 100644
+> --- a/drivers/usb/gadget/pxa27x_udc.c
+> +++ b/drivers/usb/gadget/pxa27x_udc.c
+> @@ -2561,12 +2561,6 @@ static void pxa_udc_shutdown(struct platform_device *_dev)
+>                udc_disable(udc);
+>  }
 >
-> # echo scan=off > /sys/kernel/debug/kmemleak
+> -#ifdef CONFIG_CPU_PXA27x
 
-Thank you for the hint!
-
-> Do you still get that high CPU usage?
-
-Not at the moment. I disabled
-
-CONFIG_NO_BOOTMEM:
-
-and rebooted onto the new bzImage. No "CPU-bad-mood" at the moment.
-
-Best
-Zeno
+This should be CONFIG_PXA27x, I'll prepare a patch on this.
