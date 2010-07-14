@@ -1,88 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751691Ab0GNFnG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 01:43:06 -0400
-Received: from coyote.quickmin.net ([217.14.112.24]:49922 "EHLO
-	coyote.quickmin.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751245Ab0GNFnE convert rfc822-to-8bit (ORCPT
+	id S1752084Ab0GNFsK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 01:48:10 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:37095 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751579Ab0GNFsH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 01:43:04 -0400
-Comment: DomainKeys? See http://antispam.yahoo.com/domainkeys
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=default; d=telemotive.de;
-  b=HJKb73ft4XKeNrVzk1giXvFvm9djPZeEohHc2L9wTyNNHplhTAWC8iY8AiXkChWsPQ0Rss+cI4oD+tMlo2Fc4E494kRXn7jOXStM++49CCC1eUMXVU5Rcm8xD9uAZp71P61fjvMvaNi/8OtE0LEhsvnUPnk7h65BJ2JZI432Cfk=  ;
-From: Roman Fietze <roman.fietze@telemotive.de>
-Organization: Telemotive AG
-To: Wan ZongShun <mcuos.com@gmail.com>
-Subject: [PATCH] rtc-isl12022: properly handle military hour format
-User-Agent: KMail/1.13.5 (Linux/2.6.31.12-0.2-default; KDE/4.4.5; x86_64; ; )
-Cc: rtc-linux@googlegroups.com, Alessandro Zummo <a.zummo@towertech.it>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <201006171123.31484.roman.fietze@telemotive.de> <AANLkTikvYWFRthn5gyppxYExKs8C-5FC-7ybnqO_sWTk@mail.gmail.com> <201006180727.06274.roman.fietze@telemotive.de>
-In-Reply-To: <201006180727.06274.roman.fietze@telemotive.de>
+	Wed, 14 Jul 2010 01:48:07 -0400
 MIME-Version: 1.0
-Message-ID: <201007140742.58766.roman.fietze@telemotive.de>
-Date: Wed, 14 Jul 2010 07:42:58 +0200
-X-MIMETrack: Itemize by SMTP Server on muc/Telemotive(Release 8.0.2FP1|January 12, 2009) at
- 14.07.2010 07:42:58,
-	Serialize by Router on muc/Telemotive(Release 8.0.2FP1|January 12, 2009) at
- 14.07.2010 07:42:59,
-	Serialize complete at 14.07.2010 07:42:59
+In-Reply-To: <AANLkTik-QCXFnjma3J28B9h27uajOcDhthTGz99zKgVi@mail.gmail.com>
+References: <20100713114322.57c8b166.sfr@canb.auug.org.au> 
+	<AANLkTimC_vXCAOrfTSndZyk8lgkjTlILVSYVYeIg6cUt@mail.gmail.com> 
+	<AANLkTik-QCXFnjma3J28B9h27uajOcDhthTGz99zKgVi@mail.gmail.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Tue, 13 Jul 2010 23:47:46 -0600
+X-Google-Sender-Auth: xoa5LbjmwEjUWaJTV308PeFlMYU
+Message-ID: <AANLkTimYDDviG2no6RVPZZj8rD2d2URMAPUCWuftiFiB@mail.gmail.com>
+Subject: Re: [PATCH] kbuild: Enable building defconfigs from Kconfig files
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Michal Marek <mmarek@suse.cz>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        Catalin Marinas <catalin.marinas@arm.com>,
+        linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Content-Type: Text/Plain;
-  charset="us-ascii"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Wan, hello list members,
+On Tue, Jul 13, 2010 at 10:04 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+> On Tue, Jul 13, 2010 at 7:26 PM, Grant Likely <grant.likely@secretlab.ca> wrote:
+>>
+>> I chose to use -D /dev/null (defconfig from an empty file) instead of
+>> -n (allnoconfig) so that default values in Kconfig would get
+>> respected.  For the benefit of everyone else, here's an excerpt from
+>> our IRC conversation this afternoon:
+>>
+>> 19:49 < gcl> sfr: [...] Your patch and my patch are
+>>             essentially doing exactly the same thing, except that I used '-d'
+>>             and you used '-n'.
+>> 19:50 < gcl> s/-d/-D/
+>> 19:55 < sfr> right
+>> 19:55 < sfr> Linus wanted us to use -n
+>
+> Just a note: Linus doesn't really care.
+>
+> IOW, I used -n not because of any fundamental belief that it is
+> correct, but just because ti happened to be how I happened to decide
+> to solve it. It's entirely possible that starting from the Kconfig
+> defaults (rather than "no") is the right way to go.
+>
+> I think either approach is likely fine. The -D /dev/null approach
+> would presumably give smaller Kconfig.xyz files, assuming our defaults
+> are sane (an maybe that could be at least a partial validation of the
+> defaults we do have). While the -n approach is in some ways more
+> stable, in that the resulting Kconfig.xyz entires would presumably be
+> more stand-alone, and there wouldn't be any subtle interactions when
+> somebody changes a default value int he Kconfig file.
 
-I found a bug in my rtc-isl12022. Seems I missed to test that driver
-thoroughly in the afternoons.
+Okay, well I advocate for the -D /dev/null approach then.  I think
+that validating our defaults, and looking for the subtle interactions
+are exactly what we want to be doing when it comes to defconfigs.  The
+fact that a defconfig does *not* want the default value is exactly
+what the defconfigs should be capturing.
 
->From 151b7d5413e189ec8f6dd578c253500d8814128e Mon Sep 17 00:00:00 2001
-From: Roman Fietze <roman.fietze@telemotive.de>
-Date: Wed, 14 Jul 2010 07:32:49 +0200
-Subject: [PATCH] rtc-isl12022: properly handle military hour format
+> So I can see advantages to either model. And either model clearly
+> would want the improvements to "select" that are independent (ie warn
+> about unsatisfied 'depends on' constraints, and select recursively.
+> Maybe we already fixed the recursive select thing, I forget).
+>
+> I also think we need to allow setting of actual values. I don't know
+> what the syntax would be. A "set" statement that overrides a default
+> in the Kconfig file, so that you can do
+>
+>          set NODES_SHIFT 10
+>
+> which would basically be equivalent to a "select" of a tristate
+> variable, but instead set the actual value? I dunno.
 
-Mask out PM flag when reading the hour, always set MIL bit when
-writing the hour.
+I'm partial to extending select statements myself because it fits
+nicely into the existing grammer; but I can see value in having a set
+statement too.  It would eliminate the temporary config options that
+both my and Stephen's patch would add.
 
-Signed-off-by: Roman Fietze <roman.fietze@telemotive.de>
----
- drivers/rtc/rtc-isl12022.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> And quite frankly, maybe somebody comes up with a better model
+> entirely. I like the Kconfig.xyz model, in that it should be
+> human-readable/writable and shouldn't introduce any fundamentally new
+> concepts (except the fairly simple extensions to the Kconfig
+> language), but maybe there are better models.
 
-diff --git a/drivers/rtc/rtc-isl12022.c b/drivers/rtc/rtc-isl12022.c
-index 293d2c1..0f300b4 100644
---- a/drivers/rtc/rtc-isl12022.c
-+++ b/drivers/rtc/rtc-isl12022.c
-@@ -126,7 +126,7 @@ static int isl12022_get_datetime(struct i2c_client 
-*client, struct rtc_time *tm)
- 
- 	tm->tm_sec = bcd2bin(buf[ISL12022_REG_SC] & 0x7F);
- 	tm->tm_min = bcd2bin(buf[ISL12022_REG_MN] & 0x7F);
--	tm->tm_hour = bcd2bin(buf[ISL12022_REG_HR] & 0x3F);
-+	tm->tm_hour = bcd2bin(buf[ISL12022_REG_HR] & 0x1F);
- 	tm->tm_mday = bcd2bin(buf[ISL12022_REG_DT] & 0x3F);
- 	tm->tm_wday = buf[ISL12022_REG_DW] & 0x07;
- 	tm->tm_mon = bcd2bin(buf[ISL12022_REG_MO] & 0x1F) - 1;
-@@ -192,7 +192,7 @@ static int isl12022_set_datetime(struct i2c_client 
-*client, struct rtc_time *tm)
- 	/* hours, minutes and seconds */
- 	buf[ISL12022_REG_SC] = bin2bcd(tm->tm_sec);
- 	buf[ISL12022_REG_MN] = bin2bcd(tm->tm_min);
--	buf[ISL12022_REG_HR] = bin2bcd(tm->tm_hour);
-+	buf[ISL12022_REG_HR] = bin2bcd(tm->tm_hour) | ISL12022_HR_MIL;
- 
- 	buf[ISL12022_REG_DT] = bin2bcd(tm->tm_mday);
- 
+Perhaps, but I can't think of anything and this one is simple,
+elegant, and easy to implement.
+
+> Regardless, I don't have anything against either set of patches
+> (Grant's or Stephen's).
+
+I think we should run with this.  Since the patch has been merged to
+warn on unmet Kconfig dependences, the only major hole left is being
+able to do negative selects and to select specific values.  Stephen,
+I'm happy to either keep working on this, or drop my patch in favor of
+yours.  Whichever you prefer.  I'll try to find some time to look at
+the Kconfig grammer.
+
+The solver would also be useful and could further reduce the size of
+the Kconfig fragments, but it isn't necessary so we don't need to wait
+for it to get implemented to take this approach..
+
+Cheers,
+g.
+
+
 -- 
-1.7.1
-
-
--- 
-Roman Fietze              Telemotive AG Buero Muehlhausen
-Breitwiesen                             73347 Muehlhausen
-Tel.: +49(0)7335/18493-45        http://www.telemotive.de
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
