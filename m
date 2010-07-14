@@ -1,86 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752702Ab0GNQ3T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:29:19 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42753 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751741Ab0GNQ3S convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:29:18 -0400
+	id S1754050Ab0GNQcT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 12:32:19 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:55220 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751962Ab0GNQcR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 12:32:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=K9hwk7FFQnKZb+VWnlhH1w4TGs9aN2WuRSzAKAVpaDRlhCdSUgpV10ErAdxztsz17s
+         ceRjW7B7iiTn6vBYVsDR++P/vY3tHMYaaMuX+VOj8Sm34uxjgtlXUPxzBaizr1FdiEEr
+         KpEcX2kD2pmsMnHgs9coUqsyQ/6z1V1QxXsw4=
+Date: Wed, 14 Jul 2010 09:32:02 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] input: Fix wrong dimensions check for synaptics
+Message-ID: <20100714163202.GB9957@core.coreip.homeip.net>
+References: <s5hwrsy2ie2.wl%tiwai@suse.de>
 MIME-Version: 1.0
-In-Reply-To: <20100714155804.049012415@efficios.com>
-References: <20100714154923.947138065@efficios.com>
-	<20100714155804.049012415@efficios.com>
-Date: Wed, 14 Jul 2010 09:28:41 -0700
-Message-ID: <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <s5hwrsy2ie2.wl%tiwai@suse.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 8:49 AM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
->> I think you're vastly overestimating what is sane to do from an NMI
->> context.  It is utterly and totally insane to assume vmalloc is available
->> in NMI.
+On Wed, Jul 14, 2010 at 05:27:33PM +0200, Takashi Iwai wrote:
+> The commit 83ba9ea8a04b72dfee2515428c15e7414ba4fc61 ommitted the return
+> line for the old synaptics model accidentally.  This resulted in a wrong
+> check, namely, the dimensions are checked for the old devices that don't
+> support the query properly.
+> 
+> This patch adds the return line back.
 
-I agree that NMI handlers shouldn't touch vmalloc space. But now that
-percpu data is mapped through the VM, I do agree that other CPU's may
-potentially need to touch that data, and an interrupt (including an
-NMI) might be the first to create the mapping.
+Oops. Thanks Takashi, applied.
 
-And that's why the faulting code needs to be interrupt-safe for the
-vmalloc area.
-
-However, it does look like the current scheduler should make it safe
-to access "current->mm->pgd" from regular interrupts, so the problem
-is apparently only an NMI issue. So exactly what are the circumstances
-that create and expose percpu data on a CPU _without_ mapping it on
-that CPU?
-
-IOW, I'm missing some background here. I agree that at least some
-basic percpu data should generally be available for an NMI handler,
-but at the same time I wonder how come that basic percpu data wasn't
-already mapped?
-
-The traditional irq vmalloc race was something like:
- - one CPU does a "fork()", which copies the basic kernel mappings
- - in another thread a driver does a vmalloc(), which creates a _new_
-mapping that didn't get copied.
- - later on a switch_to() switches to the newly forked process that
-missed the vmalloc initialization
- - we take an interrupt for the driver that needed the new vmalloc
-space, but now it doesn't have it, and we fill it in at run-time for
-the (rare) race.
-
-and I'm simply not seeing how fork() could ever race with percpu data setup.
-
-So please just document the sequence that actually needs the page
-table setup for the NMI/percpu case.
-
-This patch (1/2) doesn't look horrible per se. I have no problems with
-it. I just want to understand why it is needed.
-
-                        Linus
+-- 
+Dmitry
