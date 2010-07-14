@@ -1,75 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757277Ab0GNQYb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:24:31 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43566 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756343Ab0GNQY3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:24:29 -0400
-Date: Wed, 14 Jul 2010 13:23:32 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 10/13]  perf: Re-Add make_absolute_path
-Message-ID: <20100714162332.GA4000@ghostprotocols.net>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
- <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6>
- <20100712140023.GC25238@ghostprotocols.net>
- <1278945036.1537.189.camel@gandalf.stny.rr.com>
- <20100712161239.GF25238@ghostprotocols.net>
- <1279075767.4190.1.camel@localhost>
+	id S1757307Ab0GNQZe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 12:25:34 -0400
+Received: from mx2.sophos.com ([195.166.81.53]:57668 "EHLO mx2.sophos.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756870Ab0GNQZc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 12:25:32 -0400
+X-Greylist: delayed 344 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jul 2010 12:25:32 EDT
+From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Organization: Sophos Plc
+To: Greg KH <greg@kroah.com>
+Subject: Re: BUG: Securityfs and bind mounts (2.6.34)
+Date: Wed, 14 Jul 2010 17:19:46 +0100
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Al Viro <viro@zeniv.linux.org.uk>
+References: <201007081112.41252.tvrtko.ursulin@sophos.com> <201007081632.42069.tvrtko.ursulin@sophos.com> <20100708154648.GA13923@kroah.com>
+In-Reply-To: <20100708154648.GA13923@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279075767.4190.1.camel@localhost>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-ID: <201007141719.46488.tvrtko.ursulin@sophos.com>
+X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 14/07/2010 17:19:46,
+	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
+ 14/07/2010 17:19:46,
+	Serialize complete at 14/07/2010 17:19:46
+Content-Type: multipart/mixed; boundary="Boundary-00=_iOePM2mXbQp0324"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Tue, Jul 13, 2010 at 10:49:27PM -0400, Steven Rostedt escreveu:
-> On Mon, 2010-07-12 at 13:12 -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Mon, Jul 12, 2010 at 10:30:36AM -0400, Steven Rostedt escreveu:
+--Boundary-00=_iOePM2mXbQp0324
+Content-Transfer-Encoding: quoted-printable
+Content-Type: text/plain; charset="iso-8859-1"
 
-> > Well, I prefer to follow the kernel way of doing things, i.e. to
-> > propagate as much as possible up the callchain the error return value,
-> > so that the apps can handle it in any way they prefer, i.e. die() calls
-> > in tools/perf/builtin-foo.c are okayish, but not on tools/perf/util/.
+On Thursday 08 Jul 2010 16:46:48 Greg KH wrote:
+> On Thu, Jul 08, 2010 at 04:32:42PM +0100, Tvrtko Ursulin wrote:
+> > On Thursday 08 Jul 2010 16:20:59 Greg KH wrote:
+> > > > :) Well I do not know, but, it kind of smelled like a bug in the
+> > > > : vfs/mount
+> > > >
+> > > > handling/securityfs area so I thought to let experts know. I _think=
+_
+> > > > I did nothing that much wrong. Just used the exposed API
+> > > > (securityfs_remove) and some bind mount shuffling from userspace.
+> > >
+> > > securitfs just uses libfs underneath it, and really doesn't have any
+> > > bindings for module ownerships, so I wouldn't recommend doing what yo=
+u
+> > > just did.
+> >
+> > Just do double check what you are saying, securityfs is not safe for us=
+e
+> > from modules? If so I would then recommend removing the exports otherwi=
+se
+> > it is an invitation to shoot yourself into the foot.
+>
+> Hm, did you properly set the module owner of the file_operations that
+> you passed to securityfs?  That should protect if you have an open file,
+> but I doubt anyone thought you would do crazy things like bind mounts on
+> top of a ramfs and then think it was safe to unload a lower module :)
 
-> Ah, yes, die is a bit strong. And I have been starting to avoid them
-> too. Although, when malloc fails, it's almost certain that the app will
-> die soon anyway ;-)
+Hi again,
 
-The interesting thing is that years ago, when modules were being
-introduced in the kernel and panic() calls for things like out of memory
-conditions were being removed, some people made the same comments, 'if
-that happens, you're doomed anyway!' :-)
+Here is the reproducer. Build the attached test module and put test.ko in t=
+he
+cwd. Then run:
 
-I can see things like trying to load a huge perf.data file in the TUI
-interface failing and the user just being warned about it and going on
-with life loading some other file, etc.
+umount /sys/kernel/security
+mount none -t securityfs /sys/kernel/security/
+insmod test.ko
+mount file --bind /sys/kernel/security/test/file
+rmmod test
+insmod test.ko
+umount /sys/kernel/security/test/file
+umount /sys/kernel/security # <-------- BANG:
 
-Certainly it is interesting to try to apply as much as possible of the
-mindset (and fear of criticism) present when coding for the kernel when
-one codes for userland.
+It is a bit different than what I initially said. It looks like reference
+counting on a dentry gets messed up once securityfs_create_dir() in second
+insmod of test.ko fails with -EEXIST.
 
-- Arnaldo
+HTH,
+
+Tvrtko
+
+
+Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United=
+ Kingdom.
+Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+
+--Boundary-00=_iOePM2mXbQp0324
+Content-Transfer-Encoding: 7bit
+Content-Type: text/x-csrc; charset="UTF-8"; name="test.c"
+Content-Disposition: attachment; filename="test.c"
+
+#include <linux/kernel.h>
+#include <linux/module.h>
+#include <linux/fs.h>
+#include <linux/security.h>
+
+
+static struct dentry *root;
+static struct dentry *file;
+
+
+static int test_open(struct inode *inode, struct file *file)
+{
+    return -1;
+}
+
+static struct file_operations test_fops = {
+    .owner =    THIS_MODULE,
+    .open =     test_open,
+};
+
+
+static int __init test_init(void)
+{
+    root = securityfs_create_dir("test", NULL);
+    if (IS_ERR(root)) {
+        printk("error creating root %d\n", PTR_ERR(root));
+        return PTR_ERR(root);
+    }
+
+    file = securityfs_create_file("file", S_IRUSR, root, NULL, &test_fops);
+    if (IS_ERR(file)) {
+        printk("error creating file %d\n", PTR_ERR(file));
+        securityfs_remove(root);
+        return PTR_ERR(file);
+    }
+
+    return 0;
+}
+
+static void __exit test_exit(void)
+{
+    securityfs_remove(file);
+    securityfs_remove(root);
+}
+
+MODULE_LICENSE("GPL");
+
+module_init(test_init);
+module_exit(test_exit);
+
+--Boundary-00=_iOePM2mXbQp0324--
