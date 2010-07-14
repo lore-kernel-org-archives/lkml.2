@@ -1,62 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757375Ab0GNSsj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:48:39 -0400
-Received: from mail1.nippynetworks.com ([212.227.250.41]:45364 "EHLO
-	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752341Ab0GNSsi (ORCPT
+	id S1757229Ab0GNSvH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:51:07 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52598 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752530Ab0GNSvE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:48:38 -0400
-Message-ID: <4C3E0684.5060409@wildgooses.com>
-Date: Wed, 14 Jul 2010 19:48:36 +0100
-From: Ed W <lists@wildgooses.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.10) Gecko/20100512 Lightning/1.0b1 Thunderbird/3.0.5
+	Wed, 14 Jul 2010 14:51:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=UJi6nRYwkJZmty4USjufOR2UeGKTtQ3uaIWQQOC6iWN3wNnRiQJO9D3GV+9W8r0+q9
+         DGUJeiSZGUl/3aHGPexjiGfSQE8lg36waorunGU80GQAAaUZopH6lXNsZzEj8yTt4xOo
+         w44oN1N2KpKHyUEUJNbEMyHr91lTYM9DFkcBA=
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: davidsen@tmr.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3D94E3.9080103@wildgooses.com>	<4C3DD5EB.9070908@tmr.com> <20100714.111553.104052157.davem@davemloft.net>
-In-Reply-To: <20100714.111553.104052157.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTim9EQ9nPISuH5wNsrAd8bHM-xBnpgqAi-W_ZCTi@mail.gmail.com>
+References: <AANLkTimkNg81yzxSHTcAa1QlTE9SYmvzL4eOTVHApWq3@mail.gmail.com>
+	<AANLkTilvbOb0n9l6F3EHwQg3VfNNmYB1BdFbzL2Cwg_P@mail.gmail.com>
+	<AANLkTinnlhzSGP8sRQ8Pr4CIuwn4d859rvSe1yO_3TEz@mail.gmail.com>
+	<AANLkTil58zbo28QL2ncTAXx9iHeQS20W8u0MuDgLaojj@mail.gmail.com>
+	<AANLkTim-yNCtMnxzzA8yJnD6CLkF2Mz-aA4E5qbYMBlz@mail.gmail.com>
+	<AANLkTim9EQ9nPISuH5wNsrAd8bHM-xBnpgqAi-W_ZCTi@mail.gmail.com>
+Date: Wed, 14 Jul 2010 20:51:01 +0200
+Message-ID: <AANLkTikjXiBoR3c5g6QaNfQKfX4vWUW8mt0AdomMa8at@mail.gmail.com>
+Subject: Re: Regression 2.6.34->2.6.35-rc4: radeaon KMS an RS690 broken
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: DRI mailing list <dri-devel@lists.freedesktop.org>,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14/07/2010 19:15, David Miller wrote:
-> From: Bill Davidsen<davidsen@tmr.com>
-> Date: Wed, 14 Jul 2010 11:21:15 -0400
+On Tue, Jul 13, 2010 at 9:10 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> On Tue, Jul 13, 2010 at 2:29 PM, Torsten Kaiser
+> <just.for.lkml@googlemail.com> wrote:
+>> But the CP is still broken:
 >
->    
->> You may have to go into /proc/sys/net/core and crank up the
->> rmem_* settings, depending on your distribution.
->>      
-> You should never, ever, have to touch the various networking sysctl
-> values to get good performance in any normal setup.  If you do, it's a
-> bug, report it so we can fix it.
->    
+> Is this a regression?  If so, can you bisect it?
+>
+> Alex
 
-Just checking the basics here because I don't think this is a bug so 
-much as a, less common installation that differs from the "normal" case.
+I bisected it to this commit:
 
-- When we create a tcp connection we always start with tcp slow start
-- This sets the congestion window to effectively 4 packets?
-- This applies in both directions?
-- Remote sender responds to my hypothetical http request with the first 
-4 packets of data
-- We need to wait one RTT for the ack to come back and now we can send 
-the next 8 packets,
-- Wait for the next ack and at 16 packets we are now moving at a 
-sensible fraction of the bandwidth delay product?
+d594e46ace22afa1621254f6f669e65430048153 is the first bad commit
+commit d594e46ace22afa1621254f6f669e65430048153
+Author: Jerome Glisse <jglisse@redhat.com>
+Date:   Wed Feb 17 21:54:29 2010 +0000
 
-So just to be clear:
-- We don't seem to have any user-space tuning knobs to influence this 
-right now?
-- In this age of short attention spans, a couple of extra seconds 
-between clicking something and it responding is worth optimising (IMHO)
-- I think I need to take this to netdev, but anyone else with any ideas 
-happy to hear them?
+    drm/radeon/kms: simplify memory controller setup V2
 
-Thanks
+    Get rid of _location and use _start/_end also simplify the
+    computation of vram_start|end & gtt_start|end. For R1XX-R2XX
+    we place VRAM at the same address of PCI aperture, those GPU
+    shouldn't have much memory and seems to behave better when
+    setup that way. For R3XX and newer we place VRAM at 0. For
+    R6XX-R7XX AGP we place VRAM before or after AGP aperture this
+    might limit to limit the VRAM size but it's very unlikely.
+    For IGP we don't change the VRAM placement.
 
-Ed W
+    Tested on (compiz,quake3,suspend/resume):
+    PCI/PCIE:RV280,R420,RV515,RV570,RV610,RV710
+    AGP:RV100,RV280,R420,RV350,RV620(RPB*),RV730
+    IGP:RS480(RPB*),RS690,RS780(RPB*),RS880
+
+    RPB: resume previously broken
+
+    V2 correct commit message to reflect more accurately the bug
+    and move VRAM placement to 0 for most of the GPU to avoid
+    limiting VRAM.
+
+    Signed-off-by: Jerome Glisse <jglisse@redhat.com>
+    Signed-off-by: Dave Airlie <airlied@redhat.com>
+
+:040000 040000 05c1e456fcf6565aa8711e4933807956d0055cca
+792c6be2bd161a52500c5e8d685ee651cd5af07e M     drivers
+
+HTH, Torsten
+
+>> [    0.426931] Linux agpgart interface v0.103
+>> [    0.427092] [drm] Initialized drm 1.1.0 20060810
+>> [    0.427196] [drm] radeon defaulting to kernel modesetting.
+>> [    0.427255] [drm] radeon kernel modesetting enabled.
+>> [    0.427372] radeon 0000:01:05.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
+>> [    0.429659] [drm] initializing kernel modesetting (RS690 0x1002:0x791E).
+>> [    0.429817] [drm] register mmio base: 0xFE9F0000
+>> [    0.429876] [drm] register mmio size: 65536
+>> [    0.430457] ATOM BIOS: ATI
+>> [    0.430532] radeon 0000:01:05.0: VRAM: 32M 0xDE000000 - 0xDFFFFFFF (32M used)
+>> [    0.430592] radeon 0000:01:05.0: GTT: 512M 0xBE000000 - 0xDDFFFFFF
+>> [    0.430675] [drm] radeon: irq initialized.
+>> [    0.430737] mtrr: type mismatch for fc000000,2000000 old:
+>> write-back new: write-comb
+>> ining
+>> [    0.430811] [drm] Detected VRAM RAM=32M, BAR=32M
+>> [    0.430868] [drm] RAM width 128bits DDR
+>> [    0.431011] [TTM] Zone  kernel: Available graphics memory: 2010234 kiB.
+>> [    0.431070] [TTM] Initializing pool allocator.
+>> [    0.431147] [drm] radeon: 32M of VRAM memory ready
+>> [    0.431205] [drm] radeon: 512M of GTT memory ready.
+>> [    0.431266] [drm] GART: num cpu pages 131072, num gpu pages 131072
+>> [    0.434654] [drm] radeon: 1 quad pipes, 1 z pipes initialized.
+>> [    0.441719] [drm] Loading RS690/RS740 Microcode
+>> [    0.441926] [drm] radeon: ring at 0x00000000BE000000
+>> [    0.577118] [drm:r100_ring_test] *ERROR* radeon: ring test failed
+>> (sracth(0x15E4)=0x
+>> CAFEDEAD)
+>> [    0.577192] [drm:r100_cp_init] *ERROR* radeon: cp isn't working (-22).
+>> [    0.577252] radeon 0000:01:05.0: failled initializing CP (-22).
+>> [    0.577310] radeon 0000:01:05.0: Disabling GPU acceleration
+>> [    0.577440] [drm] radeon: cp finalized
+>> [    0.578078] [drm] Default TV standard: NTSC
+>> [    0.578314] [drm] Default TV standard: NTSC
+>> [    0.578590] [drm] Radeon Display Connectors
+>> [    0.578648] [drm] Connector 0:
+>> [    0.578706] [drm]   VGA
+>> [    0.578764] [drm]   DDC: 0x7e50 0x7e40 0x7e54 0x7e44 0x7e58 0x7e48
+>> 0x7e5c 0x7e4c
+>> [    0.578837] [drm]   Encoders:
+>> [    0.578894] [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+>> [    0.578952] [drm] Connector 1:
+>> [    0.579010] [drm]   S-video
+>> [    0.579067] [drm]   Encoders:
+>> [    0.579124] [drm]     TV1: INTERNAL_KLDSCP_DAC1
+>> [    0.579182] [drm] Connector 2:
+>> [    0.579239] [drm]   HDMI-A
+>> [    0.579297] [drm]   DDC: 0x7e40 0x7e50 0x7e44 0x7e54 0x7e48 0x7e58
+>> 0x7e4c 0x7e5c
+>> [    0.579369] [drm]   Encoders:
+>> [    0.579427] [drm]     DFP3: INTERNAL_LVTM1
+>> [    0.773375] [drm] fb mappable at 0xFC040000
+>> [    0.773434] [drm] vram apper at 0xFC000000
+>> [    0.773491] [drm] size 786432
+>> [    0.773549] [drm] fb depth is 8
+>> [    0.773606] [drm]    pitch is 1024
+>> [    0.773737] fbcon: radeondrmfb (fb0) is primary device
+>> [    0.793240] Console: switching to colour frame buffer device 128x48
+>> [    0.794833] fb0: radeondrmfb frame buffer device
+>> [    0.794852] drm: registered panic notifier
+>> [    0.794871] Slow work thread pool: Starting up
+>> [    0.794932] Slow work thread pool: Ready
+>> [    0.794953] [drm] Initialized radeon 2.5.0 20080528 for
+>> 0000:01:05.0 on minor 0
+>>
+>>
+>> Torsten
+>>
+>
