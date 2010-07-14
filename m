@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757886Ab0GNUOQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:14:16 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:43944 "EHLO e7.ny.us.ibm.com"
+	id S1757901Ab0GNUOU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:14:20 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:36552 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757530Ab0GNUKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757531Ab0GNUKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jul 2010 16:10:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -15,10 +15,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
         Arnd Bergmann <arnd@arndb.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Nick Piggin <npiggin@suse.de>
-Subject: [PATCH RFC tip/core/rcu 11/30] radix-tree: __rcu annotations
-Date: Wed, 14 Jul 2010 13:09:45 -0700
-Message-Id: <1279138204-12849-11-git-send-email-paulmck@linux.vnet.ibm.com>
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Subject: [PATCH RFC tip/core/rcu 13/30] input: __rcu annotations
+Date: Wed, 14 Jul 2010 13:09:47 -0700
+Message-Id: <1279138204-12849-13-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100714200945.GA10535@linux.vnet.ibm.com>
 References: <20100714200945.GA10535@linux.vnet.ibm.com>
@@ -30,47 +30,39 @@ From: Arnd Bergmann <arnd@arndb.de>
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Cc: Nick Piggin <npiggin@suse.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Acked-by: Dmitry Torokhov <dtor@mail.ru>
 ---
- include/linux/radix-tree.h |    4 +++-
- lib/radix-tree.c           |    2 +-
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ drivers/input/evdev.c |    2 +-
+ include/linux/input.h |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/radix-tree.h b/include/linux/radix-tree.h
-index 55ca73c..d801044 100644
---- a/include/linux/radix-tree.h
-+++ b/include/linux/radix-tree.h
-@@ -47,6 +47,8 @@ static inline void *radix_tree_indirect_to_ptr(void *ptr)
- {
- 	return (void *)((unsigned long)ptr & ~RADIX_TREE_INDIRECT_PTR);
- }
-+#define radix_tree_indirect_to_ptr(ptr) \
-+	radix_tree_indirect_to_ptr((void __force *)(ptr))
+diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
+index 2ee6c7a..73b1208 100644
+--- a/drivers/input/evdev.c
++++ b/drivers/input/evdev.c
+@@ -28,7 +28,7 @@ struct evdev {
+ 	int minor;
+ 	struct input_handle handle;
+ 	wait_queue_head_t wait;
+-	struct evdev_client *grab;
++	struct evdev_client __rcu *grab;
+ 	struct list_head client_list;
+ 	spinlock_t client_lock; /* protects client_list */
+ 	struct mutex mutex;
+diff --git a/include/linux/input.h b/include/linux/input.h
+index 6fcc910..4d2d239 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -1174,7 +1174,7 @@ struct input_dev {
+ 	int (*flush)(struct input_dev *dev, struct file *file);
+ 	int (*event)(struct input_dev *dev, unsigned int type, unsigned int code, int value);
  
- static inline int radix_tree_is_indirect_ptr(void *ptr)
- {
-@@ -61,7 +63,7 @@ static inline int radix_tree_is_indirect_ptr(void *ptr)
- struct radix_tree_root {
- 	unsigned int		height;
- 	gfp_t			gfp_mask;
--	struct radix_tree_node	*rnode;
-+	struct radix_tree_node	__rcu *rnode;
- };
+-	struct input_handle *grab;
++	struct input_handle __rcu *grab;
  
- #define RADIX_TREE_INIT(mask)	{					\
-diff --git a/lib/radix-tree.c b/lib/radix-tree.c
-index 05da38b..8bd7ae3 100644
---- a/lib/radix-tree.c
-+++ b/lib/radix-tree.c
-@@ -49,7 +49,7 @@ struct radix_tree_node {
- 	unsigned int	height;		/* Height from the bottom */
- 	unsigned int	count;
- 	struct rcu_head	rcu_head;
--	void		*slots[RADIX_TREE_MAP_SIZE];
-+	void __rcu	*slots[RADIX_TREE_MAP_SIZE];
- 	unsigned long	tags[RADIX_TREE_MAX_TAGS][RADIX_TREE_TAG_LONGS];
- };
- 
+ 	spinlock_t event_lock;
+ 	struct mutex mutex;
 -- 
 1.7.0.6
 
