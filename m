@@ -1,85 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752039Ab0GNGlt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 02:41:49 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52995 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750975Ab0GNGls (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 02:41:48 -0400
-Date: Wed, 14 Jul 2010 08:41:41 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: peter@piie.net
-Cc: Branislav Gajdos <brianzee@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: acerhdf.c - unsupported notebook
-Message-ID: <20100714064141.GA5076@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, peter@piie.net,
-	Branislav Gajdos <brianzee@gmail.com>, linux-kernel@vger.kernel.org
-References: <AANLkTin0mv0Z5vozJHkfVYCJTWMvj9JZnP_FcQ6vZBRV@mail.gmail.com>
- <20100713124840.GA16427@a1.tnic>
- <AANLkTimBhWKo0zxW6fX5RgLLAQVIdItS5RKpvxqkDlis@mail.gmail.com>
- <20100713151329.GA17516@a1.tnic>
- <cone.1279041124.439539.3902.1000@deskpiie>
- <AANLkTimiZcGY04wDK0yLtGrDknP-amyUaWybqsD5DHqC@mail.gmail.com>
- <20100713204235.GA32085@liondog.tnic>
- <20100714072012.21363okof2qiqomc@webmail.df.eu>
+	id S1752140Ab0GNGoo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 02:44:44 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58953 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751255Ab0GNGom convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 02:44:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ASg0wPIPsNMPGFMD92JdpxbUzWqonr9/uSsR/Dmm4nm6t6HnD1T3kZbQF7xWA3IYGH
+         g8Dcr+7NWEGnXmBxT98qIdfeFjRhlmLXKak3h44CWyfvCsUIC47cNSmE/yb48mKGyUN4
+         H8BREKU2GlqDfU4O8nK99oGEd7DcChQvceiRg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100714072012.21363okof2qiqomc@webmail.df.eu>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100714092301.69e7e628.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100712155348.GA2815@barrios-desktop>
+	<20100713093006.GB14504@cmpxchg.org>
+	<20100713154335.GB2815@barrios-desktop>
+	<1279038933.10995.9.camel@nimitz>
+	<20100713164423.GC2815@barrios-desktop>
+	<20100714092301.69e7e628.kamezawa.hiroyu@jp.fujitsu.com>
+Date: Wed, 14 Jul 2010 15:44:41 +0900
+Message-ID: <AANLkTin8tdw4VmfCPHE0TR3f-l7ao8ngQJcepTDPpMAC@mail.gmail.com>
+Subject: Re: [RFC] Tight check of pfn_valid on sparsemem
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux@arm.linux.org.uk,
+        Yinghai Lu <yinghai@kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Shaohua Li <shaohua.li@intel.com>, Yakui Zhao <yakui.zhao@intel.com>,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        arm-kernel@lists.infradead.org, kgene.kim@samsung.com,
+        Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: peter@piie.net
-Date: Wed, Jul 14, 2010 at 07:20:12AM +0200
+Hi, Kame.
 
-> >>So that means you would keep there the definitions for Core 2 based
-> >>models as well, right?
-> 
-> The 1810's are already supported by acerhdf and some people use it
-> for fan control, so we should keep it, but we should enhance the
-> bios_tbl by "default_fanon" and "default_fanoff". What do you think
-> Boris?
+On Wed, Jul 14, 2010 at 9:23 AM, KAMEZAWA Hiroyuki
+<kamezawa.hiroyu@jp.fujitsu.com> wrote:
+> On Wed, 14 Jul 2010 01:44:23 +0900
+> Minchan Kim <minchan.kim@gmail.com> wrote:
+>
+>> > If you _really_ can't make the section size smaller, and the vast
+>> > majority of the sections are fully populated, you could hack something
+>> > in.  We could, for instance, have a global list that's mostly readonly
+>> > which tells you which sections need to be have their sizes closely
+>> > inspected.  That would work OK if, for instance, you only needed to
+>> > check a couple of memory sections in the system.  It'll start to suck if
+>> > you made the lists very long.
+>>
+>> Thanks for advise. As I say, I hope Russell accept 16M section.
+>>
+>
+> It seems what I needed was good sleep....
+> How about this if 16M section is not acceptable ?
+>
+> == NOT TESTED AT ALL, EVEN NOT COMPILED ==
+>
+> register address of mem_section to memmap itself's page struct's pg->private field.
+> This means the page is used for memmap of the section.
+> Otherwise, the page is used for other purpose and memmap has a hole.
 
-Sure, we definitely need to do that, and more specifically:
+It's a very good idea. :)
+But can this handle case that a page on memmap pages have struct page
+descriptor of hole?
+I mean one page can include 128 page descriptor(4096 / 32).
+In there, 64 page descriptor is valid but remain 64 page descriptor is on hole.
+In this case, free_memmap doesn't free the page.
 
-1) we have to check first with how many different types of cpus are the
-1810s being shipped and
-
-2) whether the thermal settings of those cpus differ
-
-because if they do, you need to check for cpu types also and not only
-bios version and product info, which can get very hairy very fast.
-
-And for all those thermal settings we need official documentation and
-cannot accept any other sources.
-
-That's why I keep questioning whether it makes sense for 1810 users (or
-users of something else besides acer aspire netbooks with atom cpus, for
-that matter) to use this driver.
-
-> >You still didn't answer my question whether your fan is noisy? IOW, does
-> >it make sense for you to use this driver at all?
-> 
-> Haven't got any email from a 3810 user to add support for this
-> model, so for me it seems like the fan isn't noisy at all. - Usually
-> as soon as a new model with a noisy fan comes out the people are
-> spaming my inbox and crying ;)
-
-What models are those, are those only aspire one netbooks or anything
-else acer dumps out?
-
-Bottom line is: I'm trying to understand what this driver should and
-should not support? Frankly, I don't want to make it easy for users
-to do fan control and break their hardware while doing so. Actually,
-if acer's system builders would've done their job right in picking a
-quieter fan for their packaging we wouldn't be talking here in the first
-place. For example, I have also a lenovo edge and I almost can't hear
-the fan there but that's a different story.
-
-See what I'm sayin'?
-
+I think most of system will have aligned memory of 512K(4K * 128).
+But I am not sure.
 -- 
-Regards/Gruss,
-    Boris.
+Kind regards,
+Minchan Kim
