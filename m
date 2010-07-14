@@ -1,81 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757574Ab0GNVSt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 17:18:49 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:45466 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753103Ab0GNVSs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 17:18:48 -0400
-Date: Wed, 14 Jul 2010 23:18:05 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100714211805.GA5930@elte.hu>
-References: <20100714155804.049012415@efficios.com>
- <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
- <20100714170617.GB4955@Krystal>
- <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
- <20100714184642.GA9728@elte.hu>
- <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
- <20100714193652.GA13630@nowhere>
- <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
- <20100714201753.GB22096@Krystal>
- <AANLkTinDD83ngFttUSA590nDyWTrVu1FmP62QieEjR-6@mail.gmail.com>
+	id S1757617Ab0GNVTe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 17:19:34 -0400
+Received: from relay4-v.mail.gandi.net ([217.70.178.78]:45623 "EHLO
+	mrelay4-v.mgt.gandi.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753103Ab0GNVTd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 17:19:33 -0400
+X-Originating-IP: 217.70.178.44
+X-Originating-IP: 74.107.143.84
+Date: Wed, 14 Jul 2010 14:19:02 -0700
+From: Josh Triplett <josh@joshtriplett.org>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 0/30] RCU commits queued for 2.6.36/7
+Message-ID: <20100714211901.GC4624@feather>
+References: <20100714200945.GA10535@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinDD83ngFttUSA590nDyWTrVu1FmP62QieEjR-6@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100714200945.GA10535@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> On Wed, Jul 14, 2010 at 1:17 PM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> >
-> > It only handles the case of a single NMI coming in. What happens in this
-> > scenario?
+On Wed, Jul 14, 2010 at 01:09:45PM -0700, Paul E. McKenney wrote:
+> This patchset shows the patches queued for 2.6.36/7.  These are not
+> yet ready to move upstream due to dependencies on commits moving up other
+> trees.  The patches are as follows:
 > 
-> [ two nested NMI's ]
-> 
-> The _right_ thing happens.
-> 
-> What do you think the hardware would have done itself? The NMI was blocked. 
-> It wouldn't get replayed twice. If you have two NMI's happening while 
-> another NMI is active, you will get a single NMI after the first NMI has 
-> completed.
+> 1-19.	These are the remaining patches implementing Arnd's sparse-checking
+> 	work.  #1 needs to go up the networking tree, but
+> 	will cause regressions until f5155b33277 ("rcu: add an
+> 	rcu_dereference_index_check()") reaches mainline.  #2 depends
+> 	on #1, and many of the later patches (#3-#30) depend on #2.
+> 	Many of #3-#19 will go up non-tip trees.
+> 20.	Update Documentation/RCU to remove the now-deprecated rcu_head
+> 	initialization macros.
+> 21.	Fix long-standing DocBook example showing long-dead three-argument
+> 	variant of call_rcu().
+> 22.	Make the CPU stall warning timeout configurable at build time
+> 	with new RCU_CPU_STALL_TIMEOUT config parameter.
+> 23.	Remove the now-deprecated rcu_head initialization macros.
+> 	This depends on a couple of patches removing their use that
+> 	are making their way up other maintainer trees.
+> 24.	Document the new debug assists from Arnd, Mathieu, and myself.
+> 25.	Add random preemption to rcutorture testing of preemptible
+> 	RCU, courtesy of Lai Jiangshan.
+> 26.	Remove TREE_RCU's ->rda[] array in favor of the new __percpu
+> 	facility, also courtesy of Lai Jiangshan.
+> 27.	Fixlet to #26 for RCU tracing.
+> 28.	Rename __do_rcu_dereference_check() to rcu_lockdep_assert(),
+> 	given that Tetsuo Handa has found outside-of-RCU use for this
+> 	function.
+> 29.	Add a boot parameter to suppress RCU CPU stall warnings.
+> 30.	Update kerneldoc or rcu_read_lock(), call_rcu(), and
+> 	synchronize_rcu().
 
-If it ever became an issue, we could even do what softirqs do and re-execute 
-the NMI handler. At least for things like PMU NMIs we have to handle them once 
-they have been (re-)issued, or we'd get a stuck PMU.
+I replied to patches 27 and 29 with suggested changes.  For all the
+rest:
 
-But in any case it should be a non-issue.
+Reviewed-by: Josh Triplett <josh@joshtriplett.org>
 
-	Ingo
+- Josh Triplett
