@@ -1,97 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab0GNSr0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:47:26 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:57258 "EHLO mx3.mail.elte.hu"
+	id S1757253Ab0GNSrl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:47:41 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33806 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752341Ab0GNSrZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:47:25 -0400
-Date: Wed, 14 Jul 2010 20:46:42 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100714184642.GA9728@elte.hu>
-References: <20100714154923.947138065@efficios.com>
- <20100714155804.049012415@efficios.com>
- <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
- <20100714170617.GB4955@Krystal>
- <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	id S1757173Ab0GNSrk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 14:47:40 -0400
+Message-ID: <4C3E0641.4020706@zytor.com>
+Date: Wed, 14 Jul 2010 11:47:29 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0002]
+To: Ben Greear <greearb@candelatech.com>
+CC: "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+        Robert Hancock <hancockrwd@gmail.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>
+Subject: Re: Regression: 2.6.34 boot fails on E5405 system, bisected: 	de08e2c26
+References: <4C3D067C.10507@candelatech.com>	<4C3D101E.5010605@candelatech.com>	<4C3D1942.1090207@gmail.com>	<4C3D1F82.1040907@candelatech.com> <AANLkTinDv7I4v51j-Lev9Ry_3DyVVv58lAyCQXZV1CwB@mail.gmail.com> <4C3DC64F.5040505@candelatech.com> <43F901BD926A4E43B106BF17856F0755EA8EE7E2@orsmsx508.amr.corp.intel.com> <4C3DEEAB.8090106@candelatech.com> <43F901BD926A4E43B106BF17856F0755EA8EEA18@orsmsx508.amr.corp.intel.com> <4C3E0073.7070302@candelatech.com>
+In-Reply-To: <4C3E0073.7070302@candelatech.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Linus Torvalds <torvalds@linux-foundation.org> wrote:
-
-> Ok. I was wondering why anybody would allocate core percpu variables so late 
-> that this would ever be an issue, but I guess perf is a reasonable such 
-> case. And reasonable to do from NMI.
-
-Yeah.
-
-Frederic (re-)discovered this problem via very hard to debug crashes when he 
-extended perf call-graph tracing to have a bit larger buffer and used 
-percpu_alloc() for it (which is entirely reasonable in itself).
-
-> That said - grr. I really wish there was some other alternative than adding 
-> yet more complexity to the exception return path. That "iret re-enables 
-> NMI's unconditionally" thing annoys me.
-
-Ok. We can solve it by allocating the space from the non-vmalloc percpu area - 
-8K per CPU.
-
-> In fact, I wonder if we couldn't just do a software NMI disable
-> instead? Hav ea per-cpu variable (in the _core_ percpu areas that get
-> allocated statically) that points to the NMI stack frame, and just
-> make the NMI code itself do something like
+On 07/14/2010 11:22 AM, Ben Greear wrote:
 > 
->  NMI entry:
+> Is there at least a maximum number of capabilities that can exist so that
+> you can limit the loop by that?
+> 
 
-I think at this point [NMI re-entry] we've corrupted the top of the NMI kernel 
-stack already, due to entering via the IST stack mechanism, which is 
-non-nesting and which enters at the same point - right?
+Well, 3072 bytes and a minimum size of 4 bytes, so 768.  However, a
+capability ID of 0000 or FFFF means no capabilities (PCIe 2.01 sec
+7.9.1-2), so we should terminate the search on finding one of those
+capability ID.
 
-We could solve that by copying that small stack frame off before entering the 
-'generic' NMI routine - but it all feels a bit pulled in by the hair.
+[Also note: bits 21:20 are reserved and need to be masked, per PCIe 2.01
+7.9.3.]
 
-I feel uneasy about taking pagefaults from the NMI handler. Even if we 
-implemented it all correctly, who knows what CPU erratas are waiting there to 
-be discovered, etc ...
+The spec seems to imply that capabilities should be sequential, but I
+really don't know if that is actually the case in the field.
 
-I think we should try to muddle through by preventing these situations from 
-happening (and adding a WARN_ONCE() to the vmalloc page-fault handler would 
-certainly help as well), and only go to more clever schemes if no other option 
-looks sane anymore?
-
-Thanks,
-
-	Ingo
+	-hpa
