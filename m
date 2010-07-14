@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757313Ab0GNSDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:03:19 -0400
-Received: from claw.goop.org ([74.207.240.146]:49256 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754160Ab0GNSDS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:03:18 -0400
-Message-ID: <4C3DFBE5.2020705@goop.org>
-Date: Wed, 14 Jul 2010 11:03:17 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: pthakkar@vmware.com, pv-drivers@vmware.com, greg@kroah.com,
-        linux-kernel@vger.kernel.org,
-        virtualization@lists.linux-foundation.org, hch@infradead.org,
-        netdev@vger.kernel.org, shemminger@vyatta.com
-Subject: Re: [Pv-drivers] RFC: Network Plugin Architecture (NPA) for vmxnet3
-References: <1278990388.32650.22.camel@eng-rhel5-64>	<20100714094952.GA16209@kroah.com>	<F1354E79A137A24CBA60059AA65CB1B802A34EEB67@EXCH-MBX-2.vmware.com> <20100714.105423.226778756.davem@davemloft.net>
-In-Reply-To: <20100714.105423.226778756.davem@davemloft.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757343Ab0GNSD2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:03:28 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60272 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757321Ab0GNSDZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 14:03:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=Tbt7aHfx8FxAeQ/O+aE2ShMUc7/dLPldFMZotHNc2Bp1vnum3+dBX7Ie1NnNpiIWn7
+         X0jPyDfmxYjTMDZClQDOfBK8S6thZBTyN0W8bXmmTQyNfTHqW9H4FwC7cNXF+UqH3PQv
+         L24Po1Es4chm4u1ZVAnx87Z1y3h9kX15uy1Xg=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Grant Grundler <grundler@parisc-linux.org>,
+        Kyle McMartin <kyle@mcmartin.ca>,
+        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Jiri Pirko <jpirko@redhat.com>, Ben Hutchings <ben@decadent.org.uk>,
+        Grant Likely <grant.likely@secretlab.ca>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, devicetree-discuss@lists.ozlabs.org
+Subject: [PATCH 05/11] tulip: formatting of pointers in printk()
+Date: Wed, 14 Jul 2010 22:02:47 +0400
+Message-Id: <1279130568-10857-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 10:54 AM, David Miller wrote:
-> And doing what you're doing is foolish on so many levels.  One more
-> duplication of code, one more place for unnecessary bugs to live, one
-> more place that might need optimizations and thus require duplication
-> of even more work people have done over the years.
->   
+Use %p instead of %08x in printk().
 
-Not to mention calling a function "MoveMemory" when it doesn't do a
-memmove is just cruel.
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+---
+ drivers/net/tulip/tulip_core.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-    J
+diff --git a/drivers/net/tulip/tulip_core.c b/drivers/net/tulip/tulip_core.c
+index 03e96b9..14e5312 100644
+--- a/drivers/net/tulip/tulip_core.c
++++ b/drivers/net/tulip/tulip_core.c
+@@ -596,10 +596,10 @@ static void tulip_tx_timeout(struct net_device *dev)
+ 					pr_cont(" %02x", buf[j]);
+ 			pr_cont(" j=%d\n", j);
+ 		}
+-		printk(KERN_DEBUG "  Rx ring %08x: ", (int)tp->rx_ring);
++		printk(KERN_DEBUG "  Rx ring %p: ", tp->rx_ring);
+ 		for (i = 0; i < RX_RING_SIZE; i++)
+ 			pr_cont(" %08x", (unsigned int)tp->rx_ring[i].status);
+-		printk(KERN_DEBUG "  Tx ring %08x: ", (int)tp->tx_ring);
++		printk(KERN_DEBUG "  Tx ring %p: ", tp->tx_ring);
+ 		for (i = 0; i < TX_RING_SIZE; i++)
+ 			pr_cont(" %08x", (unsigned int)tp->tx_ring[i].status);
+ 		pr_cont("\n");
+-- 
+1.7.0.4
+
