@@ -1,45 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758056Ab0GNXLg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:11:36 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:53142 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754294Ab0GNXLe (ORCPT
+	id S1757050Ab0GNXOt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:14:49 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:58879 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab0GNXOs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:11:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=onk8K1GNNRpepKasLdDoG/T2GkRiX99y61XjyrsaKOrk8vpS5RJenVpLiY/IvR5PWl
-         6+0f4u8AvrhFBW1ft5tRwKZugzDdqI0fVAf0Bh+BNfzYh0FSm/BbB4hvnFVUETyHxnIx
-         PoYp6NimGsEnWmPc4djHzIKGwTaIyJCJOeajA=
+	Wed, 14 Jul 2010 19:14:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type
+	:content-transfer-encoding; q=dns; s=sasl; b=YhpBpw6Q0I8tYRRtW3H
+	n41ysizWNICXREXRn+/UvV66Lkfk3ccmPbW4Q5TJSzKvIKHYLO+sd6gZ2/h805H5
+	minfYltnol2/RJoR0v2n1BHnrDp9B5L0IzWEdye9CmpF7u8DSYJwPlY2UB2MBjNF
+	aMse1Ud/fY0j4elv8xTKgO5I=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.2.rc3
+From: Junio C Hamano <gitster@pobox.com>
+Date: Wed, 14 Jul 2010 16:14:37 -0700
+Message-ID: <7vmxttwt9e.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimYqUZvxaWVvT5FPsW36NTpqLLCqCiSuRAy_ER5@mail.gmail.com>
-References: <1277770577-11024-1-git-send-email-linus.walleij@stericsson.com>
-	<AANLkTimYqUZvxaWVvT5FPsW36NTpqLLCqCiSuRAy_ER5@mail.gmail.com>
-Date: Thu, 15 Jul 2010 01:11:32 +0200
-Message-ID: <AANLkTinqKHCYeGTLuTtKikcR2IA8TY0vy2tSznxLay0N@mail.gmail.com>
-Subject: Re: [PATCH 1/3] DMAENGINE: generic slave channel control
-From: Linus Walleij <linus.ml.walleij@gmail.com>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: linux-kernel@vger.kernel.org, Linus Walleij <linus.walleij@stericsson.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+X-Pobox-Relay-ID: 956EE828-8F9D-11DF-A8F5-9056EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping on this subject, I have the PL08x driver depending on this
-so if it's not OK I have to rewrite that patch soonish.
+A release candidate Git 1.7.2.rc3 is available at the usual places
+for testing:
 
-Also the DMA for PrimeCells use it so I would like to respin that
-patch series using this generic control if it is accepted.
+  http://www.kernel.org/pub/software/scm/git/
 
-As mentions something like this will be needed for us anyway,
-so in case it's not OK I'll likely go for more or less the same
-struct, just that it is for DMA40 and its clients solely, then on
-top of that a PrimeCell interface more or less redefining the
-same things again or wrapping it.
+  git-1.7.2.rc3.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.2.rc3.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.2.rc3.tar.{gz,bz2}		(preformatted docs)
 
-Yours,
-Linus Walleij
+The RPM binary packages for a few architectures are found in:
+
+  testing/git-*-1.7.2.rc3-1.fc11.$arch.rpm	(RPM)
+
+Hopefully this will be the last one before the final I'd like to have by
+the end of the week.
+
+----------------------------------------------------------------
+
+Changes since v1.7.2-rc2 are as follows:
+
+Bo Yang (1):
+      diff.c: fix a graph output bug
+
+Fredrik Skolmli (1):
+      Documentation: Spelling fix in protocol-capabilities.txt
+
+Johannes Sixt (1):
+      t0005: work around strange $? in ksh when program terminated by a signal
+
+Jonathan Nieder (1):
+      t9118 (git-svn): prevent early failure from taking down later tests
+
+Junio C Hamano (2):
+      Fix "read-tree -m A B" priming the cache-tree
+      Git 1.7.2-rc3
+
+Michael J Gruber (3):
+      t9118: avoid PEG revision identifier in tests
+      test-lib: simplify GIT_SKIP_TESTS loop
+      test-lib: TAP compliance for skipping tests on request
+
+Miklos Vajna (1):
+      format-patch: document the format.to configuration setting
+
+Nicolas Sebrecht (1):
+      checkout: accord documentation to what git does
+
+Oren Held (1):
+      git fetch documentation: describe short '-p' synonym to '--prune' option
+
+Raja R Harinath (1):
+      Use dev_t for device id (st_dev) from stat in setup_git_directory_gently()
+
+Ævar Arnfjörð Bjarmason (1):
+      tests: Use skip_all=* to skip tests
+
