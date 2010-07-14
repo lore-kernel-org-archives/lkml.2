@@ -1,55 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754056Ab0GNLv7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 07:51:59 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35663 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753137Ab0GNLv6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 07:51:58 -0400
-Message-ID: <4C3DA4B9.1060206@kernel.org>
-Date: Wed, 14 Jul 2010 13:51:21 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
-MIME-Version: 1.0
-To: Christoph Lameter <cl@linux-foundation.org>
-CC: Heinz Diehl <htd@fancy-poultry.org>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        linux-mm@kvack.org, Nick Piggin <npiggin@suse.de>,
-        David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org
-Subject: Re: [S+Q2 00/19] SLUB with queueing (V2) beats SLAB netperf TCP_RR
-References: <20100709190706.938177313@quilx.com> <20100710195621.GA13720@fancy-poultry.org> <alpine.DEB.2.00.1007121010420.14328@router.home> <20100712163900.GA8513@fancy-poultry.org> <alpine.DEB.2.00.1007121156160.18621@router.home> <20100713135650.GA6444@fancy-poultry.org> <alpine.DEB.2.00.1007132055470.14067@router.home>
-In-Reply-To: <alpine.DEB.2.00.1007132055470.14067@router.home>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754876Ab0GNLyL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 07:54:11 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:57306 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752185Ab0GNLyK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 07:54:10 -0400
+Subject: Re: kmemleak, cpu usage jump out of nowhere
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Zeno Davatz <zdavatz@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTilBdReJssNYLAx6sHtPTez57keWJl6QDOu5V986@mail.gmail.com>
+References: <AANLkTil6opQmTVVxuP1ngz72_ijpLzdlSFWDSyi4whOt@mail.gmail.com>
+	 <tnx630ibd2q.fsf@e102109-lin.cambridge.arm.com>
+	 <AANLkTilBdReJssNYLAx6sHtPTez57keWJl6QDOu5V986@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Wed, 14 Jul 2010 12:54:03 +0100
+Message-ID: <1279108443.8592.75.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 14 Jul 2010 11:51:25 +0000 (UTC)
+X-OriginalArrivalTime: 14 Jul 2010 11:54:03.0611 (UTC) FILETIME=[4159BAB0:01CB234B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, 2010-07-14 at 11:04 +0100, Zeno Davatz wrote:
+> On Wed, Jul 14, 2010 at 11:57 AM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > Zeno Davatz <zdavatz@gmail.com> wrote:
+> >> Sometimes in the middle of nowhere all of a sudden all of my 8-cores
+> >> are at 100% CPU usage and my machine really lags and hangs and is not
+> >> useable anymore. Some random process just grabs a bunch CPUs according
+> >> to htop.
+> >
+> > These may be related to the NO_BOOTMEM configuration (I sent a patch in
+> > a separate reply).
+> >
+> > But even when kmemleak scans the memory, it only uses a single thread
+> > and you should only see a single CPU going to 100%. I don't think
+> > kmemleak scanning can explain why all the 8 cores are going up to 100%.
+> 
+> I am doing:
+> 
+> /usr/src/my2.6> sudo patch -p1 < patch_catalin
+> patching file mm/bootmem.c
+> Hunk #1 FAILED at 435.
+> Hunk #2 FAILED at 461.
+> 2 out of 2 hunks FAILED -- saving rejects to file mm/bootmem.c.rej
+> patching file mm/page_alloc.c
+> Hunk #1 FAILED at 3659.
+> 1 out of 1 hunk FAILED -- saving rejects to file mm/page_alloc.c.rej
+> 
+> Any hints why it wont apply? Will this patch be in the next RC?
 
-On 07/14/2010 04:01 AM, Christoph Lameter wrote:
-> I dont see anything in there at first glance that would cause slub to
-> increase its percpu usage. This is straight upstream?
+The patch is against 2.6.35-rc4. I'll send it to Linus and hopefully it
+will get merged during rc.
 
-It's basically checking constant expressions there and
-PERCPU_DYNAMIC_EARLY_SIZE is defined as 12k, so slub is thinking that
-it's gonna use more memory on that build.
+BTW, you can disable kmemleak scanning by doing:
 
-> Try to just comment out the BUILD_BUG_ON. I had it misfire before and
-> fixed the formulae to no longer give false positives. Maybe that is
-> another case. Tejun wanted that but never was able to give me an exact
-> formular to check for.
+# echo scan=off > /sys/kernel/debug/kmemleak
 
-Yeah, unfortunately, due to alignment requirements, it can't be
-determined with accuracy.  We'll just have to size it sufficiently.
-
-> At the Ottawa Linux Symposium right now so responses may be delayed.
-> Hotels Internet connection keeps getting clogged for some reason.
-
-I'm in suse labs conf until next week so I don't think I'll be doing
-much till then either.
-
-Thanks.
+Do you still get that high CPU usage?
 
 -- 
-tejun
+Catalin
+
