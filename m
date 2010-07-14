@@ -1,87 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab0GNJkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 05:40:05 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:37212 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752895Ab0GNJkD (ORCPT
+	id S1754108Ab0GNJmo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 05:42:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:46339 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753294Ab0GNJmm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 05:40:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ldtCmuJoIS6E/SsUcqVCYt0GQGO5/1NZ6d+d2nNTaLBPURSZx/ArbCi5IEy+MUyC1F
-         dWpHnLGUq23a6Gcmc9KH8g9yJaw7KliaxcrBMGjjoMZnoGQkmobdjb3DJ7gyJElkIF53
-         wlE5Q4+zU77BNqVStDxJtJHUdmAhghSNbNFyc=
-From: Changli Gao <xiaosuo@gmail.com>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: "Jike Song" <albcamus@gmail.com>, linux-kernel@vger.kernel.org,
-        Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH] drivers: code cleanups
-Date: Wed, 14 Jul 2010 17:37:26 +0800
-Message-Id: <1279100246-5758-1-git-send-email-xiaosuo@gmail.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 14 Jul 2010 05:42:42 -0400
+Subject: Re: [PATCH] introduce a default off mode for kmemleak
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Jason Baron <jbaron@redhat.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20100713215528.GB25784@redhat.com>
+References: <20100713215528.GB25784@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Wed, 14 Jul 2010 10:42:22 +0100
+Message-ID: <1279100542.8592.49.camel@e102109-lin.cambridge.arm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 14 Jul 2010 09:42:22.0817 (UTC) FILETIME=[DC1C3D10:01CB2338]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-drivers: code cleanups
+On Tue, 2010-07-13 at 22:55 +0100, Jason Baron wrote:
+> Introduce a new DEBUG_KMEMLEAK_DEFAULT_OFF config parameter that allows
+> kmemleak to be disabled by default, but enabled on the command line
+> via: kmemleak=on. Although a reboot is required to turn it on, its still
+> useful to not require a re-compile.
+> 
+> Signed-off-by: Jason Baron <jbaron@redhat.com>
 
-the first three goto clauses caused kfree(NULL), and the error code returned
-by kset->uevent_ops->uevent() wasn't passed to the caller of show_uevent().
-This patch also eliminates the unnecessary initializations of env and count.
+Thanks, it looks fine to me. I'll merge it in my tree and send Linus a
+pull request during the merging window (unless you prefer to push it
+yourself, in which case I ack it).
 
-Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-----
- drivers/base/core.c |   14 +++++++-------
- 1 file changed, 7 insertions(+), 7 deletions(-)
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 38bbbd0..33fa36d 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -274,9 +274,8 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
- {
- 	struct kobject *top_kobj;
- 	struct kset *kset;
--	struct kobj_uevent_env *env = NULL;
-+	struct kobj_uevent_env *env;
- 	int i;
--	size_t count = 0;
- 	int retval;
- 
- 	/* search the kset, the device belongs to */
-@@ -284,16 +283,16 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
- 	while (!top_kobj->kset && top_kobj->parent)
- 		top_kobj = top_kobj->parent;
- 	if (!top_kobj->kset)
--		goto out;
-+		return 0;
- 
- 	kset = top_kobj->kset;
- 	if (!kset->uevent_ops || !kset->uevent_ops->uevent)
--		goto out;
-+		return 0;
- 
- 	/* respect filter */
- 	if (kset->uevent_ops && kset->uevent_ops->filter)
- 		if (!kset->uevent_ops->filter(kset, &dev->kobj))
--			goto out;
-+			return 0;
- 
- 	env = kzalloc(sizeof(struct kobj_uevent_env), GFP_KERNEL);
- 	if (!env)
-@@ -305,11 +304,12 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
- 		goto out;
- 
- 	/* copy keys to file */
-+	retval = 0;
- 	for (i = 0; i < env->envp_idx; i++)
--		count += sprintf(&buf[count], "%s\n", env->envp[i]);
-+		retval += sprintf(&buf[retval], "%s\n", env->envp[i]);
- out:
- 	kfree(env);
--	return count;
-+	return retval;
- }
- 
- static ssize_t store_uevent(struct device *dev, struct device_attribute *attr,
+-- 
+Catalin
+
