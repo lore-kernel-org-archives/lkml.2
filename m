@@ -1,66 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757402Ab0GNUBz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:01:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21624 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756815Ab0GNUBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:01:54 -0400
-Date: Wed, 14 Jul 2010 16:00:57 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org, hare@suse.de,
-        trenn@suse.de, yehuda@hq.newdream.net
-Subject: [PATCH] dynamic debug: move ddebug_remove_module() down into
-	free_module()
-Message-ID: <20100714200056.GB2871@redhat.com>
+	id S1757307Ab0GNUEK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:04:10 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:35014 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751404Ab0GNUEJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 16:04:09 -0400
+Date: Wed, 14 Jul 2010 21:03:24 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stephen Boyd <sboyd@codeaurora.org>
+Cc: linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        David Brownell <david-b@pacbell.net>
+Subject: Re: Meaning of clk_round_rate()?
+Message-ID: <20100714200324.GA18138@n2100.arm.linux.org.uk>
+References: <4C3DFC7A.8020002@codeaurora.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4C3DFC7A.8020002@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move the call to ddebug_remove_module() down into free_module(). In this way
-it should be called from all error paths. Currently, we are missing the
-remove if the module init routine fails.
+On Wed, Jul 14, 2010 at 11:05:46AM -0700, Stephen Boyd wrote:
+>  What is the meaning of clk_round_rate() in the clk API  
+> (include/linux/clk.h)? The function documentation says "adjust a rate to  
+> the exact rate a clock can provide". That seems pretty vague. I'm lead  
+> to believe that it rounds the rate to the closest rate supported. Is  
+> that correct? Is there some sort of error margin where beyond that it's  
+> no longer possible to be rounded? 0.5%? 1%?
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
-Reported-by: Thomas Renninger <trenn@suse.de>
-Tested-by: Thomas Renninger <trenn@suse.de>
-CC: akpm@linux-foundation.org
-CC: andi@firstfloor.org
-CC: hare@suse.de
-CC: trenn@suse.de
-CC: yehuda@hq.newdream.net
-CC: linux-kernel@vger.kernel.org
----
- kernel/module.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+clk_round_rate() returns the clock rate which will be set if you ask
+clk_set_rate() to set that rate.  It provides a way to query from
+the implementation exactly what rate you'll get if you use clk_set_rate()
+with that same argument.
 
-diff --git a/kernel/module.c b/kernel/module.c
-index 5d2d281..6c56282 100644
---- a/kernel/module.c
-+++ b/kernel/module.c
-@@ -787,7 +787,6 @@ SYSCALL_DEFINE2(delete_module, const char __user *, name_user,
- 
- 	/* Store the name of the last unloaded module for diagnostic purposes */
- 	strlcpy(last_unloaded_module, mod->name, sizeof(last_unloaded_module));
--	ddebug_remove_module(mod->name);
- 
- 	free_module(mod);
- 	return 0;
-@@ -1550,6 +1549,9 @@ static void free_module(struct module *mod)
- 	remove_sect_attrs(mod);
- 	mod_kobject_remove(mod);
- 
-+	/* Remove dynamic debug info */
-+	ddebug_remove_module(mod->name);
-+
- 	/* Arch-specific cleanup. */
- 	module_arch_cleanup(mod);
- 
--- 
-1.7.1
+So essentially, clk_set_rate() should be:
 
+static int clk_set_rate(struct clk *clk, unsigned long rate)
+{
+	rate = clk_round_rate(clk, rate);
+	return set_actual_rate(clk, rate);
+}
