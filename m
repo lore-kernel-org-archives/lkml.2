@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756714Ab0GNMlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 08:41:09 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43648 "EHLO
+	id S1756759Ab0GNMlQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 08:41:16 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43657 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756652Ab0GNMlG (ORCPT
+	by vger.kernel.org with ESMTP id S1756719Ab0GNMlL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 08:41:06 -0400
-Date: Wed, 14 Jul 2010 14:41:04 +0200
+	Wed, 14 Jul 2010 08:41:11 -0400
+Date: Wed, 14 Jul 2010 14:41:09 +0200
 From: Christoph Egger <siccegge@cs.fau.de>
-To: "David S. Miller" <davem@davemloft.net>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Joe Perches <joe@perches.com>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+To: "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Dongdong Deng <dongdong.deng@windriver.com>,
+        Jiri Kosina <jkosina@suse.cz>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 06/11] Removing dead CHELSIO_T1_COUGAR
-Message-ID: <f46378f51fe7128f755f6cb324a85e958106e3be.1279110895.git.siccegge@cs.fau.de>
+Subject: [PATCH 07/11] Removing dead ARCH_PNX010X
+Message-ID: <395890e97bb1e879725ea56562f362d4af61c463.1279110895.git.siccegge@cs.fau.de>
 References: <cover.1279110894.git.siccegge@cs.fau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,115 +27,91 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CHELSIO_T1_COUGAR doesn't exist in Kconfig, therefore removing all
+ARCH_PNX010X doesn't exist in Kconfig, therefore removing all
 references for it from the source code.
 
 Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- drivers/net/chelsio/subr.c |   48 +------------------------------------------
- 1 files changed, 2 insertions(+), 46 deletions(-)
+ drivers/net/cs89x0.c |   45 ---------------------------------------------
+ 1 files changed, 0 insertions(+), 45 deletions(-)
 
-diff --git a/drivers/net/chelsio/subr.c b/drivers/net/chelsio/subr.c
-index 53bde15..8ff621e 100644
---- a/drivers/net/chelsio/subr.c
-+++ b/drivers/net/chelsio/subr.c
-@@ -185,9 +185,6 @@ static int t1_pci_intr_handler(adapter_t *adapter)
- 	return 0;
+diff --git a/drivers/net/cs89x0.c b/drivers/net/cs89x0.c
+index 2ccb9f1..7a5d787 100644
+--- a/drivers/net/cs89x0.c
++++ b/drivers/net/cs89x0.c
+@@ -180,12 +180,6 @@ static unsigned int cs8900_irq_map[] = {IRQ_IXDP2351_CS8900, 0, 0, 0};
+ #elif defined(CONFIG_ARCH_IXDP2X01)
+ static unsigned int netcard_portlist[] __used __initdata = {IXDP2X01_CS8900_VIRT_BASE, 0};
+ static unsigned int cs8900_irq_map[] = {IRQ_IXDP2X01_CS8900, 0, 0, 0};
+-#elif defined(CONFIG_ARCH_PNX010X)
+-#include <mach/gpio.h>
+-#define CIRRUS_DEFAULT_BASE	IO_ADDRESS(EXT_STATIC2_s0_BASE + 0x200000)	/* = Physical address 0x48200000 */
+-#define CIRRUS_DEFAULT_IRQ	VH_INTC_INT_NUM_CASCADED_INTERRUPT_1 /* Event inputs bank 1 - ID 35/bit 3 */
+-static unsigned int netcard_portlist[] __used __initdata = {CIRRUS_DEFAULT_BASE, 0};
+-static unsigned int cs8900_irq_map[] = {CIRRUS_DEFAULT_IRQ, 0, 0, 0};
+ #elif defined(CONFIG_MACH_MX31ADS)
+ #include <mach/board-mx31ads.h>
+ static unsigned int netcard_portlist[] __used __initdata = {
+@@ -372,18 +366,6 @@ writeword(unsigned long base_addr, int portno, u16 value)
+ {
+ 	__raw_writel(value, base_addr + (portno << 1));
  }
- 
--#ifdef CONFIG_CHELSIO_T1_COUGAR
--#include "cspi.h"
--#endif
- #ifdef CONFIG_CHELSIO_T1_1G
- #include "fpga_defs.h"
- 
-@@ -280,7 +277,7 @@ static void mi1_mdio_init(adapter_t *adapter, const struct board_info *bi)
- 	t1_tpi_write(adapter, A_ELMER0_PORT0_MI1_CFG, val);
- }
- 
--#if defined(CONFIG_CHELSIO_T1_1G) || defined(CONFIG_CHELSIO_T1_COUGAR)
-+#if defined(CONFIG_CHELSIO_T1_1G)
- /*
-  * Elmer MI1 MDIO read/write operations.
-  */
-@@ -317,7 +314,7 @@ static int mi1_mdio_write(struct net_device *dev, int phy_addr, int mmd_addr,
- 	return 0;
- }
- 
--#if defined(CONFIG_CHELSIO_T1_1G) || defined(CONFIG_CHELSIO_T1_COUGAR)
-+#if defined(CONFIG_CHELSIO_T1_1G)
- static const struct mdio_ops mi1_mdio_ops = {
- 	.init = mi1_mdio_init,
- 	.read = mi1_mdio_read,
-@@ -752,31 +749,6 @@ int t1_elmer0_ext_intr_handler(adapter_t *adapter)
- 					 mod_detect ? "removed" : "inserted");
- 		}
- 		break;
--#ifdef CONFIG_CHELSIO_T1_COUGAR
--	case CHBT_BOARD_COUGAR:
--		if (adapter->params.nports == 1) {
--			if (cause & ELMER0_GP_BIT1) {         /* Vitesse MAC */
--				struct cmac *mac = adapter->port[0].mac;
--				mac->ops->interrupt_handler(mac);
--			}
--			if (cause & ELMER0_GP_BIT5) {     /* XPAK MOD_DETECT */
--			}
--		} else {
--			int i, port_bit;
+-#elif defined(CONFIG_ARCH_PNX010X)
+-static u16
+-readword(unsigned long base_addr, int portno)
+-{
+-	return inw(base_addr + (portno << 1));
+-}
 -
--			for_each_port(adapter, i) {
--				port_bit = i ? i + 1 : 0;
--				if (!(cause & (1 << port_bit)))
--					continue;
+-static void
+-writeword(unsigned long base_addr, int portno, u16 value)
+-{
+-	outw(value, base_addr + (portno << 1));
+-}
+ #else
+ static u16
+ readword(unsigned long base_addr, int portno)
+@@ -546,30 +528,6 @@ cs89x0_probe1(struct net_device *dev, int ioaddr, int modular)
+ #endif
+         }
+ 
+-#ifdef CONFIG_ARCH_PNX010X
+-	initialize_ebi();
 -
--				phy = adapter->port[i].phy;
--				phy_cause = phy->ops->interrupt_handler(phy);
--				if (phy_cause & cphy_cause_link_change)
--					t1_link_changed(adapter, i);
--			}
--		}
--		break;
--#endif
- 	}
- 	t1_tpi_write(adapter, A_ELMER0_INT_CAUSE, cause);
- 	return 0;
-@@ -1004,10 +976,6 @@ int t1_init_hw_modules(adapter_t *adapter)
- 		       adapter->regs + A_MC5_CONFIG);
- 	}
- 
--#ifdef CONFIG_CHELSIO_T1_COUGAR
--	if (adapter->cspi && t1_cspi_init(adapter->cspi))
--		goto out_err;
--#endif
- 	if (adapter->espi && t1_espi_init(adapter->espi, bi->chip_mac,
- 					  bi->espi_nports))
- 		goto out_err;
-@@ -1061,10 +1029,6 @@ void t1_free_sw_modules(adapter_t *adapter)
- 		t1_tp_destroy(adapter->tp);
- 	if (adapter->espi)
- 		t1_espi_destroy(adapter->espi);
--#ifdef CONFIG_CHELSIO_T1_COUGAR
--	if (adapter->cspi)
--		t1_cspi_destroy(adapter->cspi);
--#endif
- }
- 
- static void __devinit init_link_config(struct link_config *lc,
-@@ -1084,14 +1048,6 @@ static void __devinit init_link_config(struct link_config *lc,
- 	}
- }
- 
--#ifdef CONFIG_CHELSIO_T1_COUGAR
--	if (bi->clock_cspi && !(adapter->cspi = t1_cspi_create(adapter))) {
--		pr_err("%s: CSPI initialization failed\n",
--		       adapter->name);
--		goto error;
--	}
+-	/* Map GPIO registers for the pins connected to the CS8900a. */
+-	if (map_cirrus_gpio() < 0)
+-		return -ENODEV;
+-
+-	reset_cirrus();
+-
+-	/* Map event-router registers. */
+-	if (map_event_router() < 0)
+-		return -ENODEV;
+-
+-	enable_cirrus_irq();
+-
+-	unmap_cirrus_gpio();
+-	unmap_event_router();
+-
+-	dev->base_addr = ioaddr;
+-
+-	for (i = 0 ; i < 3 ; i++)
+-		readreg(dev, 0);
 -#endif
 -
- /*
-  * Allocate and initialize the data structures that hold the SW state of
-  * the Terminator HW modules.
+ 	/* Grab the region so we can find another board if autoIRQ fails. */
+ 	/* WTF is going on here? */
+ 	if (!request_region(ioaddr & ~3, NETCARD_IO_EXTENT, DRV_NAME)) {
+@@ -1391,9 +1349,6 @@ net_open(struct net_device *dev)
+ 	case A_CNF_MEDIA_10B_2: result = lp->adapter_cnf & A_CNF_10B_2; break;
+         default: result = lp->adapter_cnf & (A_CNF_10B_T | A_CNF_AUI | A_CNF_10B_2);
+         }
+-#ifdef CONFIG_ARCH_PNX010X
+-	result = A_CNF_10B_T;
+-#endif
+         if (!result) {
+                 printk(KERN_ERR "%s: EEPROM is configured for unavailable media\n", dev->name);
+ release_dma:
 -- 
 1.7.0.4
 
