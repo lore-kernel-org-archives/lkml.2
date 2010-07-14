@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757853Ab0GNUM7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:12:59 -0400
-Received: from e6.ny.us.ibm.com ([32.97.182.146]:36558 "EHLO e6.ny.us.ibm.com"
+	id S1757832Ab0GNUM5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:12:57 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:43958 "EHLO e7.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757552Ab0GNUKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757556Ab0GNUKT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jul 2010 16:10:19 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -14,9 +14,9 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
         Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: [PATCH RFC tip/core/rcu 22/30] rcu: make CPU stall warning timeout configurable
-Date: Wed, 14 Jul 2010 13:09:56 -0700
-Message-Id: <1279138204-12849-22-git-send-email-paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 26/30] rcu: simplify the usage of percpu data
+Date: Wed, 14 Jul 2010 13:10:00 -0700
+Message-Id: <1279138204-12849-26-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100714200945.GA10535@linux.vnet.ibm.com>
 References: <20100714200945.GA10535@linux.vnet.ibm.com>
@@ -24,56 +24,188 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also set the default to 60 seconds, up from the previous hard-coded timeout
-of 10 seconds.  This allows people who care to set short timeouts, while
-avoiding people with unusual configurations (make randconfig!!!) from being
-bothered with spurious CPU stall warnings.
+From: Lai Jiangshan <laijs@cn.fujitsu.com>
 
+&percpu_data is compatible with allocated percpu data.
+
+And we use it and remove the "->rda[NR_CPUS]" array, saving significant
+storage on systems with large numbers of CPUs.  This does add an additional
+level of indirection and thus an additional cache line referenced, but
+because ->rda is not used on the read side, this is OK.
+
+Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+Reviewed-by: Tejun Heo <tj@kernel.org>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
 ---
- kernel/rcutree.h  |    5 +++--
- lib/Kconfig.debug |   11 +++++++++++
- 2 files changed, 14 insertions(+), 2 deletions(-)
+ kernel/rcutree.c        |   42 +++++++++++++++---------------------------
+ kernel/rcutree.h        |    2 +-
+ kernel/rcutree_plugin.h |    4 ++--
+ 3 files changed, 18 insertions(+), 30 deletions(-)
 
+diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+index d5bc439..5b1c3c2 100644
+--- a/kernel/rcutree.c
++++ b/kernel/rcutree.c
+@@ -712,7 +712,7 @@ static void
+ rcu_start_gp(struct rcu_state *rsp, unsigned long flags)
+ 	__releases(rcu_get_root(rsp)->lock)
+ {
+-	struct rcu_data *rdp = rsp->rda[smp_processor_id()];
++	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
+ 	if (!cpu_needs_another_gp(rsp, rdp) || rsp->fqs_active) {
+@@ -960,7 +960,7 @@ rcu_check_quiescent_state(struct rcu_state *rsp, struct rcu_data *rdp)
+ static void rcu_send_cbs_to_orphanage(struct rcu_state *rsp)
+ {
+ 	int i;
+-	struct rcu_data *rdp = rsp->rda[smp_processor_id()];
++	struct rcu_data *rdp = this_cpu_ptr(rsp->rda);
+ 
+ 	if (rdp->nxtlist == NULL)
+ 		return;  /* irqs disabled, so comparison is stable. */
+@@ -984,7 +984,7 @@ static void rcu_adopt_orphan_cbs(struct rcu_state *rsp)
+ 	struct rcu_data *rdp;
+ 
+ 	raw_spin_lock_irqsave(&rsp->onofflock, flags);
+-	rdp = rsp->rda[smp_processor_id()];
++	rdp = this_cpu_ptr(rsp->rda);
+ 	if (rsp->orphan_cbs_list == NULL) {
+ 		raw_spin_unlock_irqrestore(&rsp->onofflock, flags);
+ 		return;
+@@ -1007,7 +1007,7 @@ static void __rcu_offline_cpu(int cpu, struct rcu_state *rsp)
+ 	unsigned long flags;
+ 	unsigned long mask;
+ 	int need_report = 0;
+-	struct rcu_data *rdp = rsp->rda[cpu];
++	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
+ 	struct rcu_node *rnp;
+ 
+ 	/* Exclude any attempts to start a new grace period. */
+@@ -1226,7 +1226,8 @@ static void force_qs_rnp(struct rcu_state *rsp, int (*f)(struct rcu_data *))
+ 		cpu = rnp->grplo;
+ 		bit = 1;
+ 		for (; cpu <= rnp->grphi; cpu++, bit <<= 1) {
+-			if ((rnp->qsmask & bit) != 0 && f(rsp->rda[cpu]))
++			if ((rnp->qsmask & bit) != 0 &&
++			    f(per_cpu_ptr(rsp->rda, cpu)))
+ 				mask |= bit;
+ 		}
+ 		if (mask != 0) {
+@@ -1402,7 +1403,7 @@ __call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu),
+ 	 * a quiescent state betweentimes.
+ 	 */
+ 	local_irq_save(flags);
+-	rdp = rsp->rda[smp_processor_id()];
++	rdp = this_cpu_ptr(rsp->rda);
+ 	rcu_process_gp_end(rsp, rdp);
+ 	check_for_new_grace_period(rsp, rdp);
+ 
+@@ -1701,7 +1702,7 @@ rcu_boot_init_percpu_data(int cpu, struct rcu_state *rsp)
+ {
+ 	unsigned long flags;
+ 	int i;
+-	struct rcu_data *rdp = rsp->rda[cpu];
++	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
+ 	/* Set up local state, ensuring consistent view of global state. */
+@@ -1729,7 +1730,7 @@ rcu_init_percpu_data(int cpu, struct rcu_state *rsp, int preemptable)
+ {
+ 	unsigned long flags;
+ 	unsigned long mask;
+-	struct rcu_data *rdp = rsp->rda[cpu];
++	struct rcu_data *rdp = per_cpu_ptr(rsp->rda, cpu);
+ 	struct rcu_node *rnp = rcu_get_root(rsp);
+ 
+ 	/* Set up local state, ensuring consistent view of global state. */
+@@ -1865,7 +1866,8 @@ static void __init rcu_init_levelspread(struct rcu_state *rsp)
+ /*
+  * Helper function for rcu_init() that initializes one rcu_state structure.
+  */
+-static void __init rcu_init_one(struct rcu_state *rsp)
++static void __init rcu_init_one(struct rcu_state *rsp,
++		struct rcu_data __percpu *rda)
+ {
+ 	static char *buf[] = { "rcu_node_level_0",
+ 			       "rcu_node_level_1",
+@@ -1918,37 +1920,23 @@ static void __init rcu_init_one(struct rcu_state *rsp)
+ 		}
+ 	}
+ 
++	rsp->rda = rda;
+ 	rnp = rsp->level[NUM_RCU_LVLS - 1];
+ 	for_each_possible_cpu(i) {
+ 		while (i > rnp->grphi)
+ 			rnp++;
+-		rsp->rda[i]->mynode = rnp;
++		per_cpu_ptr(rsp->rda, i)->mynode = rnp;
+ 		rcu_boot_init_percpu_data(i, rsp);
+ 	}
+ }
+ 
+-/*
+- * Helper macro for __rcu_init() and __rcu_init_preempt().  To be used
+- * nowhere else!  Assigns leaf node pointers into each CPU's rcu_data
+- * structure.
+- */
+-#define RCU_INIT_FLAVOR(rsp, rcu_data) \
+-do { \
+-	int i; \
+-	\
+-	for_each_possible_cpu(i) { \
+-		(rsp)->rda[i] = &per_cpu(rcu_data, i); \
+-	} \
+-	rcu_init_one(rsp); \
+-} while (0)
+-
+ void __init rcu_init(void)
+ {
+ 	int cpu;
+ 
+ 	rcu_bootup_announce();
+-	RCU_INIT_FLAVOR(&rcu_sched_state, rcu_sched_data);
+-	RCU_INIT_FLAVOR(&rcu_bh_state, rcu_bh_data);
++	rcu_init_one(&rcu_sched_state, &rcu_sched_data);
++	rcu_init_one(&rcu_bh_state, &rcu_bh_data);
+ 	__rcu_init_preempt();
+ 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
+ 
 diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 14c040b..5d68e17 100644
+index 5d68e17..183ebf4 100644
 --- a/kernel/rcutree.h
 +++ b/kernel/rcutree.h
-@@ -254,9 +254,10 @@ struct rcu_data {
- #define RCU_STALL_DELAY_DELTA	       0
- #endif
+@@ -284,7 +284,7 @@ struct rcu_state {
+ 	struct rcu_node *level[NUM_RCU_LVLS];	/* Hierarchy levels. */
+ 	u32 levelcnt[MAX_RCU_LVLS + 1];		/* # nodes in each level. */
+ 	u8 levelspread[NUM_RCU_LVLS];		/* kids/node in each level. */
+-	struct rcu_data *rda[NR_CPUS];		/* array of rdp pointers. */
++	struct rcu_data __percpu *rda;		/* pointer of percu rcu_data. */
  
--#define RCU_SECONDS_TILL_STALL_CHECK   (10 * HZ + RCU_STALL_DELAY_DELTA)
-+#define RCU_SECONDS_TILL_STALL_CHECK   (CONFIG_RCU_CPU_STALL_TIMEOUT * HZ + \
-+					RCU_STALL_DELAY_DELTA)
- 						/* for rsp->jiffies_stall */
--#define RCU_SECONDS_TILL_STALL_RECHECK (30 * HZ + RCU_STALL_DELAY_DELTA)
-+#define RCU_SECONDS_TILL_STALL_RECHECK (3 * RCU_SECONDS_TILL_STALL_CHECK + 30)
- 						/* for rsp->jiffies_stall */
- #define RCU_STALL_RAT_DELAY		2	/* Allow other CPUs time */
- 						/*  to take at least one */
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index a8a272a..af8b9c5 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -821,6 +821,17 @@ config RCU_CPU_STALL_DETECTOR
+ 	/* The following fields are guarded by the root rcu_node's lock. */
  
- 	  Say Y if you are unsure.
+diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
+index 0e4f420..9906f85 100644
+--- a/kernel/rcutree_plugin.h
++++ b/kernel/rcutree_plugin.h
+@@ -154,7 +154,7 @@ static void rcu_preempt_note_context_switch(int cpu)
+ 	    (t->rcu_read_unlock_special & RCU_READ_UNLOCK_BLOCKED) == 0) {
  
-+config RCU_CPU_STALL_TIMEOUT
-+	int "RCU CPU stall timeout in seconds"
-+	depends on RCU_CPU_STALL_DETECTOR
-+	range 3 300
-+	default 60
-+	help
-+	  If a given RCU grace period extends more than the specified
-+	  number of seconds, a CPU stall warning is printed.  If the
-+	  RCU grace period persists, additional CPU stall warnings are
-+	  printed at more widely spaced intervals.
-+
- config RCU_CPU_STALL_VERBOSE
- 	bool "Print additional per-task information for RCU_CPU_STALL_DETECTOR"
- 	depends on RCU_CPU_STALL_DETECTOR && TREE_PREEMPT_RCU
+ 		/* Possibly blocking in an RCU read-side critical section. */
+-		rdp = rcu_preempt_state.rda[cpu];
++		rdp = per_cpu_ptr(rcu_preempt_state.rda, cpu);
+ 		rnp = rdp->mynode;
+ 		raw_spin_lock_irqsave(&rnp->lock, flags);
+ 		t->rcu_read_unlock_special |= RCU_READ_UNLOCK_BLOCKED;
+@@ -771,7 +771,7 @@ static void rcu_preempt_send_cbs_to_orphanage(void)
+  */
+ static void __init __rcu_init_preempt(void)
+ {
+-	RCU_INIT_FLAVOR(&rcu_preempt_state, rcu_preempt_data);
++	rcu_init_one(&rcu_preempt_state, &rcu_preempt_data);
+ }
+ 
+ /*
 -- 
 1.7.0.6
 
