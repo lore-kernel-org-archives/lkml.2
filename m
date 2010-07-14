@@ -1,71 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757064Ab0GNQTg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:19:36 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:58825 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753947Ab0GNQTe (ORCPT
+	id S1757149Ab0GNQUx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 12:20:53 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:53057 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757007Ab0GNQUv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:19:34 -0400
-Subject: Re: [PATCH 01/11] x86: Fix vtime/file timestamp inconsistencies
-From: john stultz <johnstul@us.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jiri Olsa <jolsa@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <20100714113527.EA8A.A69D9226@jp.fujitsu.com>
-References: <1279068988-21864-1-git-send-email-johnstul@us.ibm.com>
-	 <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
-	 <20100714113527.EA8A.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Jul 2010 09:19:04 -0700
-Message-ID: <1279124344.1831.13.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 14 Jul 2010 12:20:51 -0400
+Date: Wed, 14 Jul 2010 17:20:49 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sundar R IYER <sundar.iyer@stericsson.com>
+Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        Linus WALLEIJ <linus.walleij@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
+Subject: Re: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific
+ data
+Message-ID: <20100714162048.GA27512@rakim.wolfsonmicro.main>
+References: <20100713145645.GA24626@rakim.wolfsonmicro.main>
+ <20100713150814.GA13767@bnru01.bnr.st.com>
+ <20100713150905.GD24626@rakim.wolfsonmicro.main>
+ <20100713161343.GA25342@bnru01.bnr.st.com>
+ <20100713203852.GA1756@rakim.wolfsonmicro.main>
+ <20100714145053.GA1689@bnru01.bnr.st.com>
+ <20100714145748.GF31073@rakim.wolfsonmicro.main>
+ <20100714153643.GB1689@bnru01.bnr.st.com>
+ <20100714154726.GH31073@rakim.wolfsonmicro.main>
+ <20100714160941.GC1689@bnru01.bnr.st.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100714160941.GC1689@bnru01.bnr.st.com>
+X-Cookie: Too ripped.  Gotta go.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-14 at 11:40 +0900, KOSAKI Motohiro wrote:
-> Hi
-> 
-> > Due to vtime calling vgettimeofday(), its possible that an application
-> > could call  time();create("stuff",O_RDRW);  only to see the file's
-> > creation timestamp to be before the value returned by time.
-> 
-> Just dumb question.
-> 
-> Almost application are using gettimeofday() instead time(). It mean
-> your fix don't solve almost application.
+On Wed, Jul 14, 2010 at 09:39:42PM +0530, Sundar R IYER wrote:
 
-Correct,  filesystem timestamps and gettimeofday can still seem
-inconsistently ordered. But that is expected.
+> > For *all* supplies?
 
-Because of granularity differences (one interface is only tick
-resolution, the other is clocksource resolution), we can't interleave
-the two interfaces (time and gettimeofday, respectively) and expect to
-get ordered results.
+> Yes. whatever supplies I have listed here all can be enabled/disabled by
+> their consumers. Sorry to ask, but please help me to understand the
+> emphasis of the question. There are other supplies, which are controlled
+> outside the kernel and so I haven't exposed them here.
 
-This is why the fix I'm proposing is important: Filesystem timestamps
-have always been tick granular, so when vtime() was made clocksource
-granular (by using vgettime internally) we broke the historic
-expectation that the time() interface could be interleaved with
-filesystem operations.
+Are you positive that in your system it is sensible for consumers to
+enable and disable all the supplies?  Usually there are restrictions on
+what can sensibly be done on a given system.  For example, disabling the
+CPU core or RAM supplies from software would normally not work terribly
+well.
 
-Side note: For full nanosecond resolution of the tick-granular
-timestamps, check out the clock_gettime(CLOCK_REALTIME_COARSE, ...)
-interface.
+> > some of the consumers on a shared supply are hooked up and doing enables
+> > and disables, for example.  What happens when they cause the supply to
+> > be disabled but another consumer is running?
 
+> Again, sorry to ask(this is confusing :() - but isn't this managed by
+> the core? It is the core's responsibility to effectively disable a
+> supply when none of the consumers are using it; and to block a disable
+> even when a single consumer is still using it.
 
-> So, Why can't we fix vgettimeofday() vs create() inconsistency?
-> This is just question, I don't intend to disagree you.
-
-The only way to make gettimeofday and create consistent is to use
-gettimeofday clocksource resolution timestamps for files. This however
-would potentially cause a large performance hit, since each every file
-timestamp would require a possibly expensive read of the clocksource.
-
-thanks
--john
-
-
+Right, but think about the case I'm talking about: if you've only hooked
+up some but not all of the consumers then the core has no idea about the
+consumers you didn't hook up.  You can only do power control when *all*
+the consumers needed are configured.
