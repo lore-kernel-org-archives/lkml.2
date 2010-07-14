@@ -1,82 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757413Ab0GNTAT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 15:00:19 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:41361 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754090Ab0GNTAQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 15:00:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=Nr7M2krvhPm6LFkLPB4TU56EoOKIsXs8pxgg7FpjhEwxg449h37TRwvC+7C9BpXRbt
-         l9ANEJfeitvGXMV+O1rMo7SSeBCnBigM9kBqcirE1hJYZlW06IOTjLl+TgoKfmBneZ78
-         Oivxfx9J5VU1DhRnH8glX9WrLG8YI8q7Xf75w=
-Date: Wed, 14 Jul 2010 20:58:31 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org,
-        Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Julia Lawall <julia@diku.dk>, Frederic Weisbecker <fweisbec@gmail.com>,
-        John Kacur <jkacur@redhat.com>,
-        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] scsi: dpt_i2o: fix memory leak
-Message-ID: <20100714185831.GA5164@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Kulikov Vasiliy <segooon@gmail.com>,
-	kernel-janitors@vger.kernel.org,
-	Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
-	"James E.J. Bottomley" <James.Bottomley@suse.de>,
-	Julia Lawall <julia@diku.dk>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	John Kacur <jkacur@redhat.com>,
-	OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <1279130008-9934-1-git-send-email-segooon@gmail.com>
+	id S1757434Ab0GNTAn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 15:00:43 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35371 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757419Ab0GNTAl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 15:00:41 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: axboe@kernel.dk
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] deadline-iosched: don't allow aliased requests to starve others
+References: <x494og2cfjd.fsf@segfault.boston.devel.redhat.com>
+	<x49vd8iatee.fsf@segfault.boston.devel.redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 14 Jul 2010 15:00:37 -0400
+In-Reply-To: <x49vd8iatee.fsf@segfault.boston.devel.redhat.com> (Jeff Moyer's
+	message of "Wed, 14 Jul 2010 13:02:33 -0400")
+Message-ID: <x49lj9dc2i2.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279130008-9934-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 09:53:27PM +0400, Kulikov Vasiliy wrote:
-> Free allocated memory if adpt_ioctl_to_context() failed.
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/scsi/dpt_i2o.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
-> index f2d4df1..dd9a43b 100644
-> --- a/drivers/scsi/dpt_i2o.c
-> +++ b/drivers/scsi/dpt_i2o.c
-> @@ -1839,8 +1839,10 @@ static int adpt_i2o_passthru(adpt_hba* pHba, u32 __user *arg)
->  	sg_offset = (msg[0]>>4)&0xf;
->  	msg[2] = 0x40000000; // IOCTL context
->  	msg[3] = adpt_ioctl_to_context(pHba, reply);
+Jeff Moyer <jmoyer@redhat.com> writes:
 
-This patch is wrong I'm afraid.  adpt_ioctl_to_context() frees "reply" if
-there is an error.
+> Jeff Moyer <jmoyer@redhat.com> writes:
+>
+>> Hi,
+>>
+>> In running a test case that tries to trip up the kernel's AIO
+>> implementation, we ran into a situation where no other I/O to the device
+>> under test would be completed.  The test program spawned (in this case)
+>> 100 threads, each of which performed the following in a loop:
+>>
+>> open file O_DIRECT
+>> queue 1MB of read I/O from file using 16 iocbs
+>> close file
+>> repeat
+>>
+>> The program does NOT wait for the I/O to complete.  The file length is
+>> only 4MB, meaning that you have 25 threads performing I/O on each of the
+>> 4 1MB regions.
+>>
+>> Both deadline and cfq check for aliased requests in the sorted list of
+>> I/Os, and when an alias is found, the request in the rb tree is moved to
+>> the dispatch list.  So, what happens is that, with this workload, only
+>> requests from this program are moved to the dispatch list, starving out
+>> all other I/O.
+>>
+>> The attached patch fixes this problem by issuing all expired requests in
+>> the aliased request handling code.  The reason I opted to issue all
+>> expired requsts is because if we only service a single one, I still see
+>> really awful interactivity;  an ls would take over 5 minutes to
+>> complete.  With the attached patch, the ls took about 7 seconds to
+>> complete.
+>
+> It occured to me that this doesn't solve the problem of starving WRITE
+> I/O.  So, this patch fixes that as well, tested with a dd if=/dev/zero
+> of=outfile bs=1M count=1 oflag=sync while.
 
-regards,
-dan carpenter
+Gah.  Forgot:
 
-> -	if (msg[3] == (u32)-1)
-> +	if (msg[3] == (u32)-1) {
-> +		kfree(reply);
->  		return -EBUSY;
-> +	}
->  
->  	memset(sg_list,0, sizeof(sg_list[0])*pHba->sg_tablesize);
->  	if(sg_offset) {
-> -- 
-
+Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
