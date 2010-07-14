@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757543Ab0GNX1T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:27:19 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:39362 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757479Ab0GNX1Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:27:16 -0400
-Date: Wed, 14 Jul 2010 16:27:12 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Josh Triplett <josh@joshtriplett.org>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-        dipankar@in.ibm.com, akpm@linux-foundation.org,
-        mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
-        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
-        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
-Subject: Re: [PATCH RFC tip/core/rcu 0/30] RCU commits queued for 2.6.36/7
-Message-ID: <20100714232712.GI2417@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100714200945.GA10535@linux.vnet.ibm.com>
- <20100714211901.GC4624@feather>
+	id S1757583Ab0GNX2f (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:28:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58433 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754522Ab0GNX2e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 19:28:34 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100714211901.GC4624@feather>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100714230913.GG22373@basil.fritz.box>
+References: <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	<20100714170617.GB4955@Krystal>
+	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	<20100714184642.GA9728@elte.hu>
+	<AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
+	<AANLkTinfmoKvi1SauDA5_RiTmu6bztTDk8b_ycS-lr8S@mail.gmail.com>
+	<20100714195617.GC22373@basil.fritz.box>
+	<20100714200552.GA22096@Krystal>
+	<20100714223116.GB14533@nowhere>
+	<AANLkTik-sJL_pAJg38Hzpl_jpn2v90t7tppYqOGmu6p-@mail.gmail.com>
+	<20100714230913.GG22373@basil.fritz.box>
+Date: Wed, 14 Jul 2010 16:22:52 -0700
+Message-ID: <AANLkTinLbRqiLa6fcjsuC1b4yfAhAoLLk_0tzcV4K9jg@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 02:19:02PM -0700, Josh Triplett wrote:
-> On Wed, Jul 14, 2010 at 01:09:45PM -0700, Paul E. McKenney wrote:
-> > This patchset shows the patches queued for 2.6.36/7.  These are not
-> > yet ready to move upstream due to dependencies on commits moving up other
-> > trees.  The patches are as follows:
-> > 
-> > 1-19.	These are the remaining patches implementing Arnd's sparse-checking
-> > 	work.  #1 needs to go up the networking tree, but
-> > 	will cause regressions until f5155b33277 ("rcu: add an
-> > 	rcu_dereference_index_check()") reaches mainline.  #2 depends
-> > 	on #1, and many of the later patches (#3-#30) depend on #2.
-> > 	Many of #3-#19 will go up non-tip trees.
-> > 20.	Update Documentation/RCU to remove the now-deprecated rcu_head
-> > 	initialization macros.
-> > 21.	Fix long-standing DocBook example showing long-dead three-argument
-> > 	variant of call_rcu().
-> > 22.	Make the CPU stall warning timeout configurable at build time
-> > 	with new RCU_CPU_STALL_TIMEOUT config parameter.
-> > 23.	Remove the now-deprecated rcu_head initialization macros.
-> > 	This depends on a couple of patches removing their use that
-> > 	are making their way up other maintainer trees.
-> > 24.	Document the new debug assists from Arnd, Mathieu, and myself.
-> > 25.	Add random preemption to rcutorture testing of preemptible
-> > 	RCU, courtesy of Lai Jiangshan.
-> > 26.	Remove TREE_RCU's ->rda[] array in favor of the new __percpu
-> > 	facility, also courtesy of Lai Jiangshan.
-> > 27.	Fixlet to #26 for RCU tracing.
-> > 28.	Rename __do_rcu_dereference_check() to rcu_lockdep_assert(),
-> > 	given that Tetsuo Handa has found outside-of-RCU use for this
-> > 	function.
-> > 29.	Add a boot parameter to suppress RCU CPU stall warnings.
-> > 30.	Update kerneldoc or rcu_read_lock(), call_rcu(), and
-> > 	synchronize_rcu().
-> 
-> I replied to patches 27 and 29 with suggested changes.  For all the
-> rest:
-> 
-> Reviewed-by: Josh Triplett <josh@joshtriplett.org>
+On Wed, Jul 14, 2010 at 4:09 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> It can happen in theory, but for such a rare case take a lock
+> and walking everything should be fine.
 
-Thank you very much for looking this over!
+Actually, that's _exactly_ the wrong kind of thinking.
 
-							Thanx, Paul
+Bad latency is bad latency, even when it happens rarely. So latency
+problems kill - even when they are rare. So you want to avoid them.
+And walking every possible page table is a _huge_ latency problem when
+it happens.
+
+In contrast, what's the advantage of doing thigns synchronously while
+holding a lock? It's that you can avoid a few page faults, and get
+better CPU use. But that's _stupid_ if it's something that is very
+rare to begin with.
+
+So the very rarity argues for the lazy approach. If it wasn't rare,
+there would be a much stronger argument for trying to do things
+up-front.
+
+                   Linus
