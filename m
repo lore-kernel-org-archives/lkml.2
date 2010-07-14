@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756705Ab0GNMwT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 08:52:19 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:56589 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754076Ab0GNMwR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 08:52:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=N6hU3ebgAD+vIiafj5vmIF9MBl6lFOEi05zMQlmG6MblEP5DeS+JJcRfjp59frpNIs
-         PeZyxOMp8UCJB9ACm75bGCy9B7f0GPixZTtGrBDZfBxfwREJrpDINBoKofKXAoRJRNwp
-         d5Nv+jLSzfetkI/cF+nbWBOOqObLxFKEhkZ8M=
+	id S1754818Ab0GNNHG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 09:07:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33698 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752900Ab0GNNHC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 09:07:02 -0400
+Message-ID: <4C3DB671.1090802@redhat.com>
+Date: Wed, 14 Jul 2010 16:06:57 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinO32CIe0HBTXjP_bcAz0nMEw6wvcZwcob1fX3r@mail.gmail.com>
-References: <cover.1279110894.git.siccegge@cs.fau.de>
-	<29013fb6eab9e95e95d61df894797d2455dfa10c.1279110894.git.siccegge@cs.fau.de>
-	<AANLkTinO32CIe0HBTXjP_bcAz0nMEw6wvcZwcob1fX3r@mail.gmail.com>
-Date: Wed, 14 Jul 2010 14:52:14 +0200
-Message-ID: <AANLkTikCeDys9e1EnE9GdiJtDRcbqW3gzvsmjzvB_yDs@mail.gmail.com>
-Subject: Re: [PATCH 01/11] Removing dead RT2800PCI_SOC
-From: Ivo Van Doorn <ivdoorn@gmail.com>
-To: Christoph Egger <siccegge@cs.fau.de>
-Cc: Gertjan van Wingerde <gwingerde@gmail.com>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        Helmut Schaa <helmut.schaa@googlemail.com>,
-        linux-wireless@vger.kernel.org, users@rt2x00.serialmonkey.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vamos-dev@i4.informatik.uni-erlangen.de,
-        Luis Correia <luis.f.correia@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH 1/4] KVM: MMU: fix forgot reserved bits check in speculative
+ path
+References: <4C3C3518.7080505@cn.fujitsu.com>
+In-Reply-To: <4C3C3518.7080505@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 2:46 PM, Luis Correia <luis.f.correia@gmail.com> wrote:
-> On Wed, Jul 14, 2010 at 13:39, Christoph Egger <siccegge@cs.fau.de> wrote:
->> While RT2800PCI_SOC exists in Kconfig, it depends on either
->> RALINK_RT288X or RALINK_RT305X which are both not available in Kconfig
->> so all Code depending on that can't ever be selected and, if there's
->> no plan to add these options, should be cleaned up
->>
->> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+On 07/13/2010 12:42 PM, Xiao Guangrong wrote:
+> In the speculative path, we should check guest pte's reserved bits just as
+> the real processor does
 >
-> NAK,
+> Reported-by: Marcelo Tosatti<mtosatti@redhat.com>
+> Signed-off-by: Xiao Guangrong<xiaoguangrong@cn.fujitsu.com>
+> ---
+>   arch/x86/kvm/mmu.c         |    8 ++++++++
+>   arch/x86/kvm/paging_tmpl.h |    5 +++--
+>   2 files changed, 11 insertions(+), 2 deletions(-)
 >
-> this is not dead code, it is needed for the Ralink System-on-Chip
-> Platform devices.
+> diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+> index b93b94f..9fc1524 100644
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -2783,6 +2783,9 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>   		break;
+>   	}
 >
-> While I can't fix Kconfig errors and the current KConfig file may be
-> wrong, this code cannot and will not be deleted.
+> +	if (is_rsvd_bits_set(vcpu, gentry, PT_PAGE_TABLE_LEVEL))
+> +		gentry = 0;
+> +
+>   	mmu_guess_page_from_pte_write(vcpu, gpa, gentry);
+>   	spin_lock(&vcpu->kvm->mmu_lock);
+>   	if (atomic_read(&vcpu->kvm->arch.invlpg_counter) != invlpg_counter)
+> @@ -2851,6 +2854,11 @@ void kvm_mmu_pte_write(struct kvm_vcpu *vcpu, gpa_t gpa,
+>   		while (npte--) {
+>   			entry = *spte;
+>   			mmu_pte_write_zap_pte(vcpu, sp, spte);
+> +
+> +			if (!!is_pae(vcpu) != sp->role.cr4_pae ||
+> +			      is_nx(vcpu) != sp->role.nxe)
+> +				continue;
+> +
+>    
 
-When the config option was introduced, the config options RALINK_RT288X and
-RALINK_RT305X were supposed to be merged as well soon after by somebody (Felix?)
+Do we also need to check cr0.wp?  I think so.
 
-But since testing is done on SoC boards by Helmut and Felix, I assume the code
-isn't dead but actually in use.
+>   			if (gentry)
+>   				mmu_pte_write_new_pte(vcpu, sp, spte,&gentry);
+>    
 
-Ivo
+Please move the checks to mmu_pte_write_new_pte(), it's a more logical 
+place.
+
+It means the reserved bits check happens multiple times, but that's ok.
+
+Also, you can use arch.mmu.base_role to compare:
+
+     static const kvm_mmu_page_role mask = { .level = -1U, .cr4_pae = 1, 
+... };
+
+     if ((sp->role.word ^ base_role.word) & mask.word)
+          return;
+
+> @@ -640,8 +640,9 @@ static int FNAME(sync_page)(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
+>   			return -EINVAL;
+>
+>   		gfn = gpte_to_gfn(gpte);
+> -		if (gfn != sp->gfns[i] ||
+> -		      !is_present_gpte(gpte) || !(gpte&  PT_ACCESSED_MASK)) {
+> +		if (is_rsvd_bits_set(vcpu, gpte, PT_PAGE_TABLE_LEVEL) ||
+> +		      gfn != sp->gfns[i] || !is_present_gpte(gpte) ||
+> +		      !(gpte&  PT_ACCESSED_MASK)) {
+>   			u64 nonpresent;
+>
+>   			if (is_present_gpte(gpte) || !clear_unsync)
+>    
+
+Eventually we have to reduce the number of paths.  But lets fix things 
+first.
+
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
+
