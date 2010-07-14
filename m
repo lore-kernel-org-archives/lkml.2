@@ -1,58 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754073Ab0GNJjn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 05:39:43 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35734 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753975Ab0GNJjl (ORCPT
+	id S1754090Ab0GNJkF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 05:40:05 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:37212 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752895Ab0GNJkD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 05:39:41 -0400
+	Wed, 14 Jul 2010 05:40:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=IZyc1Wz2Noz7wmVBIwr5DcNetH4UCIAnIqJ9TM1sotGPdKOfJihzfC7t3xrFHLK4IT
-         4qPuDagyt0zmFG1i6NL22qKvF1IjJrX6TnHq4DW6cxPAaCg5QWj9I5hHPYrlwFheQpQh
-         MCy//JNshp1f1WvoCOk78eljsHqj6kPLXCA2c=
-Message-ID: <4C3D85D4.4070702@gmail.com>
-Date: Wed, 14 Jul 2010 11:39:32 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
-MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>,
-        Arjan van de Ven <arjan@linux.intel.com>
-CC: Frederic Weisbecker <fweisbec@gmail.com>, torvalds@linux-foundation.org,
-        mingo@elte.hu, linux-kernel@vger.kernel.org, jeff@garzik.org,
-        akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
-        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
-        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
-References: <4C2A2688.1020206@kernel.org> <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <25085.1277847455@redhat.com> <4C2DAEBB.7090607@kernel.org> <4C34139B.6090204@gmail.com>
-In-Reply-To: <4C34139B.6090204@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=ldtCmuJoIS6E/SsUcqVCYt0GQGO5/1NZ6d+d2nNTaLBPURSZx/ArbCi5IEy+MUyC1F
+         dWpHnLGUq23a6Gcmc9KH8g9yJaw7KliaxcrBMGjjoMZnoGQkmobdjb3DJ7gyJElkIF53
+         wlE5Q4+zU77BNqVStDxJtJHUdmAhghSNbNFyc=
+From: Changli Gao <xiaosuo@gmail.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: "Jike Song" <albcamus@gmail.com>, linux-kernel@vger.kernel.org,
+        Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH] drivers: code cleanups
+Date: Wed, 14 Jul 2010 17:37:26 +0800
+Message-Id: <1279100246-5758-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+drivers: code cleanups
 
-On 07/07/2010 07:41 AM, Tejun Heo wrote:
-> On 07/02/2010 11:17 AM, Tejun Heo wrote:
->> Arjan, I still think we'll be better off using bound workqueues for
->> async but let's first convert without causing behavior difference.
->> Either way isn't gonna result in any noticeable difference anyway.  If
->> you're okay with the conversion, please ack it.
-> 
-> Ping, Arjan.
+the first three goto clauses caused kfree(NULL), and the error code returned
+by kset->uevent_ops->uevent() wasn't passed to the caller of show_uevent().
+This patch also eliminates the unnecessary initializations of env and count.
 
-Just for the record, I pinged Arjan again offlist and Arjan acked the
-conversion in the reply.  Added Acked-by and pushed the conversion to
-for-next-candidate which will be pushed into linux-next the next week.
-
-Thanks.
-
--- 
-tejun
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+----
+ drivers/base/core.c |   14 +++++++-------
+ 1 file changed, 7 insertions(+), 7 deletions(-)
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 38bbbd0..33fa36d 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -274,9 +274,8 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
+ {
+ 	struct kobject *top_kobj;
+ 	struct kset *kset;
+-	struct kobj_uevent_env *env = NULL;
++	struct kobj_uevent_env *env;
+ 	int i;
+-	size_t count = 0;
+ 	int retval;
+ 
+ 	/* search the kset, the device belongs to */
+@@ -284,16 +283,16 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
+ 	while (!top_kobj->kset && top_kobj->parent)
+ 		top_kobj = top_kobj->parent;
+ 	if (!top_kobj->kset)
+-		goto out;
++		return 0;
+ 
+ 	kset = top_kobj->kset;
+ 	if (!kset->uevent_ops || !kset->uevent_ops->uevent)
+-		goto out;
++		return 0;
+ 
+ 	/* respect filter */
+ 	if (kset->uevent_ops && kset->uevent_ops->filter)
+ 		if (!kset->uevent_ops->filter(kset, &dev->kobj))
+-			goto out;
++			return 0;
+ 
+ 	env = kzalloc(sizeof(struct kobj_uevent_env), GFP_KERNEL);
+ 	if (!env)
+@@ -305,11 +304,12 @@ static ssize_t show_uevent(struct device *dev, struct device_attribute *attr,
+ 		goto out;
+ 
+ 	/* copy keys to file */
++	retval = 0;
+ 	for (i = 0; i < env->envp_idx; i++)
+-		count += sprintf(&buf[count], "%s\n", env->envp[i]);
++		retval += sprintf(&buf[retval], "%s\n", env->envp[i]);
+ out:
+ 	kfree(env);
+-	return count;
++	return retval;
+ }
+ 
+ static ssize_t store_uevent(struct device *dev, struct device_attribute *attr,
