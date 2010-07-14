@@ -1,55 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab0GNAvT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:51:19 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:52859 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752853Ab0GNAvR (ORCPT
+	id S1754665Ab0GNAvl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:51:41 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:44934 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753209Ab0GNAvj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 20:51:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=xqiO62L9JlTsQ3FLFubjMl87t6nJM9c5cKuniC9p2+KKU0ljvUxSnRoHyD4hcsB9EK
-         /6Dzy+q5EZW/BX14Rk7CHyv70jj+7Ya0G1zIG0LwEY09RinDSjUAOcKiBmCpPnEqAKVM
-         /Abqq1Tp0RUX82HAMDf396CkMPiOq4KcIi63U=
-Message-ID: <4C3D0A00.4000900@gmail.com>
-Date: Wed, 14 Jul 2010 08:51:12 +0800
-From: shenghui <crosslonelyover@gmail.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Tue, 13 Jul 2010 20:51:39 -0400
+Date: Tue, 13 Jul 2010 17:51:39 -0700 (PDT)
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+X-X-Sender: sbhatewara@localhost.localdomain
+To: netdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com
+Subject: [PATCH 2.6.35-rc1] net-next: vmxnet3 fixes [5/5] Respect the interrupt
+ type in VM configuration
+In-Reply-To: <alpine.LRH.2.00.1007070232300.5939@localhost.localdomain>
+Message-ID: <alpine.LRH.2.00.1007131750060.32055@localhost.localdomain>
+References: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain> <alpine.LRH.2.00.1007070202080.5939@localhost.localdomain> <alpine.LRH.2.00.1007070232300.5939@localhost.localdomain>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: kernel-janitors@vger.kernel.org, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org, error27@gmail.com
-Subject: [PATCH]trivial: clear the comment on parameters for ext2_xattr_set
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry. I changed to another mail client.
-Please recheck the patch.
 
+Do not ignore interrupt type in VM configuration
 
-Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
+When interrupt type is not auto, do not ignore the interrupt type set from
+VM configuration.
+Driver may not always respect the interrupt type in configuration but it 
+will certainly try to. Eg: if MSIx is configured and enabling MSIx fails 
+in driver, it fall back on MSI and then on INTx.
+
+Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+
 ---
- fs/ext2/xattr.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
-index 7c39157..194269e 100644
---- a/fs/ext2/xattr.c
-+++ b/fs/ext2/xattr.c
-@@ -355,7 +355,7 @@ static void ext2_xattr_update_super_block(struct super_block *sb)
+ drivers/net/vmxnet3/vmxnet3_drv.c     |   13 ++++++++++---
+ drivers/net/vmxnet3/vmxnet3_ethtool.c |    2 +-
+ drivers/net/vmxnet3/vmxnet3_int.h     |    6 +++---
+ 3 files changed, 14 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index ffd6a9b..74fe3f0 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -2355,9 +2355,13 @@ vmxnet3_alloc_intr_resources(struct vmxnet3_adapter *adapter)
+ 	adapter->intr.mask_mode = (cfg >> 2) & 0x3;
+ 
+ 	if (adapter->intr.type == VMXNET3_IT_AUTO) {
+-		int err;
++		adapter->intr.type = VMXNET3_IT_MSIX;
++	}
+ 
+ #ifdef CONFIG_PCI_MSI
++	if (adapter->intr.type == VMXNET3_IT_MSIX) {
++		int err;
++
+ 		adapter->intr.msix_entries[0].entry = 0;
+ 		err = pci_enable_msix(adapter->pdev, adapter->intr.msix_entries,
+ 				      VMXNET3_LINUX_MAX_MSIX_VECT);
+@@ -2366,15 +2370,18 @@ vmxnet3_alloc_intr_resources(struct vmxnet3_adapter *adapter)
+ 			adapter->intr.type = VMXNET3_IT_MSIX;
+ 			return;
+ 		}
+-#endif
++		adapter->intr.type = VMXNET3_IT_MSI;
++	}
+ 
++	if (adapter->intr.type == VMXNET3_IT_MSI) {
++		int err;
+ 		err = pci_enable_msi(adapter->pdev);
+ 		if (!err) {
+ 			adapter->intr.num_intrs = 1;
+-			adapter->intr.type = VMXNET3_IT_MSI;
+ 			return;
+ 		}
+ 	}
++#endif /* CONFIG_PCI_MSI */
+ 
+ 	adapter->intr.type = VMXNET3_IT_INTX;
+ 
+diff --git a/drivers/net/vmxnet3/vmxnet3_ethtool.c b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+index de1ba14..52128c7 100644
+--- a/drivers/net/vmxnet3/vmxnet3_ethtool.c
++++ b/drivers/net/vmxnet3/vmxnet3_ethtool.c
+@@ -291,7 +291,7 @@ vmxnet3_set_flags(struct net_device *netdev, u32 data)
+ 
+ 		/* update harware LRO capability accordingly */
+ 		if (lro_requested)
+-			adapter->shared->devRead.misc.uptFeatures &= UPT1_F_LRO;
++			adapter->shared->devRead.misc.uptFeatures |= UPT1_F_LRO;
+ 		else
+ 			adapter->shared->devRead.misc.uptFeatures &=
+ 								~UPT1_F_LRO;
+diff --git a/drivers/net/vmxnet3/vmxnet3_int.h b/drivers/net/vmxnet3/vmxnet3_int.h
+index bbed330..d17fae6 100644
+--- a/drivers/net/vmxnet3/vmxnet3_int.h
++++ b/drivers/net/vmxnet3/vmxnet3_int.h
+@@ -68,10 +68,10 @@
  /*
-  * ext2_xattr_set()
-  *
-- * Create, replace or remove an extended attribute for this inode. Buffer
-+ * Create, replace or remove an extended attribute for this inode. Value
-  * is NULL to remove an existing extended attribute, and non-NULL to
-  * either replace an existing extended attribute, or create a new extended
-  * attribute. The flags XATTR_REPLACE and XATTR_CREATE
--- 
-1.6.3.3
+  * Version numbers
+  */
+-#define VMXNET3_DRIVER_VERSION_STRING   "1.0.5.0-k"
++#define VMXNET3_DRIVER_VERSION_STRING   "1.0.13.0-k"
+ 
+ /* a 32-bit int, each byte encode a verion number in VMXNET3_DRIVER_VERSION */
+-#define VMXNET3_DRIVER_VERSION_NUM      0x01000500
++#define VMXNET3_DRIVER_VERSION_NUM      0x01000B00
+ 
+ 
+ /*
+@@ -150,7 +150,7 @@ vmxnet3_cmd_ring_desc_avail(struct vmxnet3_cmd_ring *ring)
+ }
+ 
+ static inline bool
+-vmxnet3_cmd_ring_desc_empty(struct vmxnet3_cmd_ring *ring)
++vmxnet3_cmd_ring_desc_empty(const struct vmxnet3_cmd_ring *ring)
+ {
+ 	return (ring->next2comp == ring->next2fill);
+ }
 
