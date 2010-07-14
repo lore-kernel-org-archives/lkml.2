@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756902Ab0GNNIN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 09:08:13 -0400
-Received: from imap.ru.mvista.com ([213.79.90.228]:18756 "EHLO
+	id S1756944Ab0GNNIX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 09:08:23 -0400
+Received: from imap.ru.mvista.com ([213.79.90.228]:18767 "EHLO
 	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756834Ab0GNNII (ORCPT
+	by vger.kernel.org with ESMTP id S1756875Ab0GNNIM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 09:08:08 -0400
-Date: Wed, 14 Jul 2010 17:08:07 +0400
+	Wed, 14 Jul 2010 09:08:12 -0400
+Date: Wed, 14 Jul 2010 17:08:11 +0400
 From: Anton Vorontsov <avorontsov@mvista.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Wolfram Sang <w.sang@pengutronix.de>,
@@ -15,8 +15,8 @@ Cc: Wolfram Sang <w.sang@pengutronix.de>,
         Matt Fleming <matt@console-pimps.org>, Ben Dooks <ben-linux@fluff.org>,
         Pierre Ossman <pierre@ossman.eu>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: [PATCH 6/8] sdhci: Get rid of card detect work
-Message-ID: <20100714130807.GF517@oksana.dev.rtsoft.ru>
+Subject: [PATCH 8/8] sdhci: Use jiffies instead of a timeout counter
+Message-ID: <20100714130811.GH517@oksana.dev.rtsoft.ru>
 References: <20100714130728.GA27339@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -27,84 +27,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nowadays we can just call the card detection handler directly,
-no need for the separate work struct.
-
-We still need host->finish_work as sdhci_finish_work() calls
-mmc_request_done(), which tries to re-enter the driver.
+Just a cosmetic change, should not affect functionality.
 
 Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
 ---
- drivers/mmc/host/sdhci.c |   14 ++------------
- drivers/mmc/host/sdhci.h |    1 -
- 2 files changed, 2 insertions(+), 13 deletions(-)
+ drivers/mmc/host/sdhci.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
 
 diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 5eddbdb..56d5c56 100644
+index e6adda8..c754df1 100644
 --- a/drivers/mmc/host/sdhci.c
 +++ b/drivers/mmc/host/sdhci.c
-@@ -1239,14 +1239,8 @@ static const struct mmc_host_ops sdhci_ops = {
-  *                                                                           *
- \*****************************************************************************/
+@@ -22,6 +22,7 @@
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
+ #include <linux/scatterlist.h>
++#include <linux/jiffies.h>
  
--static void sdhci_card_detect_work(struct work_struct *wk)
-+static void sdhci_card_detect(struct sdhci_host *host)
- {
--	struct sdhci_host *host;
--
--	host = container_of(wk, struct sdhci_host, card_detect_work);
--
--	mutex_lock(&host->lock);
--
- 	if (!(sdhci_readl(host, SDHCI_PRESENT_STATE) & SDHCI_CARD_PRESENT)) {
- 		if (host->mrq) {
- 			printk(KERN_ERR "%s: Card removed during transfer!\n",
-@@ -1262,8 +1256,6 @@ static void sdhci_card_detect_work(struct work_struct *wk)
+ #include <linux/leds.h>
+ 
+@@ -160,17 +161,16 @@ static void sdhci_reset(struct sdhci_host *host, u8 mask)
+ 		host->clock = 0;
+ 
+ 	/* Wait max 100 ms */
+-	timeout = 100;
++	timeout = jiffies + msecs_to_jiffies(100);
+ 
+ 	/* hw clears the bit when it's done */
+ 	while (sdhci_readb(host, SDHCI_SOFTWARE_RESET) & mask) {
+-		if (timeout == 0) {
++		if (time_after(jiffies, timeout)) {
+ 			printk(KERN_ERR "%s: Reset 0x%x never completed.\n",
+ 				mmc_hostname(host->mmc), (int)mask);
+ 			sdhci_dumpregs(host);
+ 			return;
  		}
+-		timeout--;
+ 		msleep(1);
  	}
  
--	mutex_unlock(&host->lock);
--
- 	mmc_detect_change(host->mmc, msecs_to_jiffies(200));
- }
+@@ -884,7 +884,7 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+ 	WARN_ON(host->cmd);
  
-@@ -1511,7 +1503,7 @@ static irqreturn_t sdhci_irq_thread(int irq, void *dev_id)
- 	sdhci_writel(host, intmask, SDHCI_INT_STATUS);
+ 	/* Wait max 10 ms */
+-	timeout = 10;
++	timeout = jiffies + msecs_to_jiffies(10);
  
- 	if (intmask & (SDHCI_INT_CARD_INSERT | SDHCI_INT_CARD_REMOVE))
--		schedule_work(&host->card_detect_work);
-+		sdhci_card_detect(host);
+ 	mask = SDHCI_CMD_INHIBIT;
+ 	if ((cmd->data != NULL) || (cmd->flags & MMC_RSP_BUSY))
+@@ -896,7 +896,7 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+ 		mask &= ~SDHCI_DATA_INHIBIT;
  
- 	intmask &= ~(SDHCI_INT_CARD_INSERT | SDHCI_INT_CARD_REMOVE);
+ 	while (sdhci_readl(host, SDHCI_PRESENT_STATE) & mask) {
+-		if (timeout == 0) {
++		if (time_after(jiffies, timeout)) {
+ 			printk(KERN_ERR "%s: Controller never released "
+ 				"inhibit bit(s).\n", mmc_hostname(host->mmc));
+ 			sdhci_dumpregs(host);
+@@ -904,7 +904,6 @@ static void sdhci_send_command(struct sdhci_host *host, struct mmc_command *cmd)
+ 			schedule_work(&host->finish_work);
+ 			return;
+ 		}
+-		timeout--;
+ 		mdelay(1);
+ 	}
  
-@@ -1865,7 +1857,6 @@ int sdhci_add_host(struct sdhci_host *host)
- 	/*
- 	 * Init work structs.
- 	 */
--	INIT_WORK(&host->card_detect_work, sdhci_card_detect_work);
- 	INIT_WORK(&host->finish_work, sdhci_finish_work);
- 
- 	INIT_DELAYED_WORK(&host->timeout_work, sdhci_timeout_work);
-@@ -1950,7 +1941,6 @@ void sdhci_remove_host(struct sdhci_host *host, int dead)
- 
- 	flush_delayed_work(&host->timeout_work);
- 
--	flush_work(&host->card_detect_work);
- 	flush_work(&host->finish_work);
- 
- 	kfree(host->adma_desc);
-diff --git a/drivers/mmc/host/sdhci.h b/drivers/mmc/host/sdhci.h
-index 364d4e8..5f7d649 100644
---- a/drivers/mmc/host/sdhci.h
-+++ b/drivers/mmc/host/sdhci.h
-@@ -289,7 +289,6 @@ struct sdhci_host {
- 	dma_addr_t		adma_addr;	/* Mapped ADMA descr. table */
- 	dma_addr_t		align_addr;	/* Mapped bounce buffer */
- 
--	struct work_struct	card_detect_work;
- 	struct work_struct	finish_work;
- 
- 	struct delayed_work	timeout_work;	/* Work for timeouts */
 -- 
 1.7.0.5
-
