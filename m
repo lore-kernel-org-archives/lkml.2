@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756567Ab0GNA5x (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:57:53 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:59011 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754743Ab0GNA4b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756634Ab0GNA5u (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:57:50 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:43834 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754929Ab0GNA4b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 13 Jul 2010 20:56:31 -0400
 From: John Stultz <johnstul@us.ibm.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: John Stultz <johnstul@us.ibm.com>, Thomas Gleixner <tglx@linutronix.de>
-Subject: [PATCH 08/11] Cleanup hrtimer.c's direct access to wall_to_monotonic
-Date: Tue, 13 Jul 2010 17:56:25 -0700
-Message-Id: <1279068988-21864-9-git-send-email-johnstul@us.ibm.com>
+Subject: [PATCH 11/11] Add __clocksource_updatefreq_hz/khz methods
+Date: Tue, 13 Jul 2010 17:56:28 -0700
+Message-Id: <1279068988-21864-12-git-send-email-johnstul@us.ibm.com>
 X-Mailer: git-send-email 1.6.0.4
-In-Reply-To: <1279068988-21864-8-git-send-email-johnstul@us.ibm.com>
+In-Reply-To: <1279068988-21864-11-git-send-email-johnstul@us.ibm.com>
 References: <1279068988-21864-1-git-send-email-johnstul@us.ibm.com>
  <1279068988-21864-2-git-send-email-johnstul@us.ibm.com>
  <1279068988-21864-3-git-send-email-johnstul@us.ibm.com>
@@ -22,89 +23,111 @@ References: <1279068988-21864-1-git-send-email-johnstul@us.ibm.com>
  <1279068988-21864-6-git-send-email-johnstul@us.ibm.com>
  <1279068988-21864-7-git-send-email-johnstul@us.ibm.com>
  <1279068988-21864-8-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-9-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-10-git-send-email-johnstul@us.ibm.com>
+ <1279068988-21864-11-git-send-email-johnstul@us.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Provides an accessor function to replace hrtimer.c's
-direct access of wall_to_monotonic.
-
-This will allow wall_to_monotonic to be made static as
-planned in Documentation/feature-removal-schedule.txt
+To properly handle clocksources that change frequencies
+at the clocksource->enable() point, this patch adds
+a method that will update the clocksource's mult/shift and
+max_idle_ns values.
 
 Signed-off-by: John Stultz <johnstul@us.ibm.com>
 CC: Thomas Gleixner <tglx@linutronix.de>
----
- include/linux/time.h      |    3 ++-
- kernel/hrtimer.c          |    9 ++++-----
- kernel/time/timekeeping.c |    5 +++++
- 3 files changed, 11 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/time.h b/include/linux/time.h
-index 36b42f5..3a9c0bf 100644
---- a/include/linux/time.h
-+++ b/include/linux/time.h
-@@ -126,7 +126,8 @@ extern int timekeeping_suspended;
+---
+ include/linux/clocksource.h |   11 +++++++++++
+ kernel/time/clocksource.c   |   29 ++++++++++++++++++++++++-----
+ 2 files changed, 35 insertions(+), 5 deletions(-)
+
+diff --git a/include/linux/clocksource.h b/include/linux/clocksource.h
+index 21677d9..edd20e6 100644
+--- a/include/linux/clocksource.h
++++ b/include/linux/clocksource.h
+@@ -292,6 +292,8 @@ clocks_calc_mult_shift(u32 *mult, u32 *shift, u32 from, u32 to, u32 minsec);
+  */
+ extern int
+ __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq);
++extern void 
++__clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq);
  
- unsigned long get_seconds(void);
- struct timespec current_kernel_time(void);
--struct timespec __current_kernel_time(void); /* does not hold xtime_lock */
-+struct timespec __current_kernel_time(void); /* does not take xtime_lock */
-+struct timespec __get_wall_to_monotonic(void); /* does not take xtime_lock */
- struct timespec get_monotonic_coarse(void);
- 
- #define CURRENT_TIME		(current_kernel_time())
-diff --git a/kernel/hrtimer.c b/kernel/hrtimer.c
-index 5c69e99..809f48c 100644
---- a/kernel/hrtimer.c
-+++ b/kernel/hrtimer.c
-@@ -90,7 +90,7 @@ static void hrtimer_get_softirq_time(struct hrtimer_cpu_base *base)
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
- 		xts = __current_kernel_time();
--		tom = wall_to_monotonic;
-+		tom = __get_wall_to_monotonic();
- 	} while (read_seqretry(&xtime_lock, seq));
- 
- 	xtim = timespec_to_ktime(xts);
-@@ -612,7 +612,7 @@ static int hrtimer_reprogram(struct hrtimer *timer,
- static void retrigger_next_event(void *arg)
+ static inline int clocksource_register_hz(struct clocksource *cs, u32 hz)
  {
- 	struct hrtimer_cpu_base *base;
--	struct timespec realtime_offset;
-+	struct timespec realtime_offset, wtm;
- 	unsigned long seq;
- 
- 	if (!hrtimer_hres_active())
-@@ -620,10 +620,9 @@ static void retrigger_next_event(void *arg)
- 
- 	do {
- 		seq = read_seqbegin(&xtime_lock);
--		set_normalized_timespec(&realtime_offset,
--					-wall_to_monotonic.tv_sec,
--					-wall_to_monotonic.tv_nsec);
-+		wtm = __get_wall_to_monotonic();
- 	} while (read_seqretry(&xtime_lock, seq));
-+	set_normalized_timespec(&realtime_offset, -wtm.tv_sec, -wtm.tv_nsec);
- 
- 	base = &__get_cpu_var(hrtimer_bases);
- 
-diff --git a/kernel/time/timekeeping.c b/kernel/time/timekeeping.c
-index b15c3ac..fb61c2e 100644
---- a/kernel/time/timekeeping.c
-+++ b/kernel/time/timekeeping.c
-@@ -858,6 +858,11 @@ struct timespec __current_kernel_time(void)
- 	return xtime;
+@@ -303,6 +305,15 @@ static inline int clocksource_register_khz(struct clocksource *cs, u32 khz)
+ 	return __clocksource_register_scale(cs, 1000, khz);
  }
  
-+struct timespec __get_wall_to_monotonic(void)
++static inline void __clocksource_updatefreq_hz(struct clocksource *cs, u32 hz)
 +{
-+	return wall_to_monotonic;
++	__clocksource_updatefreq_scale(cs, 1, hz);
 +}
 +
- struct timespec current_kernel_time(void)
++static inline void __clocksource_updatefreq_khz(struct clocksource *cs, u32 khz)
++{
++	__clocksource_updatefreq_scale(cs, 1000, khz);
++}
+ 
+ static inline void
+ clocksource_calc_mult_shift(struct clocksource *cs, u32 freq, u32 minsec)
+diff --git a/kernel/time/clocksource.c b/kernel/time/clocksource.c
+index c543d21..c18d7ef 100644
+--- a/kernel/time/clocksource.c
++++ b/kernel/time/clocksource.c
+@@ -639,19 +639,18 @@ static void clocksource_enqueue(struct clocksource *cs)
+ #define MAX_UPDATE_LENGTH 5 /* Seconds */
+ 
+ /**
+- * __clocksource_register_scale - Used to install new clocksources
++ * __clocksource_updatefreq_scale - Used update clocksource with new freq
+  * @t:		clocksource to be registered
+  * @scale:	Scale factor multiplied against freq to get clocksource hz
+  * @freq:	clocksource frequency (cycles per second) divided by scale
+  *
+- * Returns -EBUSY if registration fails, zero otherwise.
++ * This should only be called from the clocksource->enable() method.
+  *
+  * This *SHOULD NOT* be called directly! Please use the
+- * clocksource_register_hz() or clocksource_register_khz helper functions.
++ * clocksource_updatefreq_hz() or clocksource_updatefreq_khz helper functions.
+  */
+-int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
++void __clocksource_updatefreq_scale(struct clocksource *cs, u32 scale, u32 freq)
  {
- 	struct timespec now;
+-
+ 	/*
+ 	 * Ideally we want to use  some of the limits used in
+ 	 * clocksource_max_deferment, to provide a more informed
+@@ -662,7 +661,27 @@ int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
+ 				      NSEC_PER_SEC/scale,
+ 				      MAX_UPDATE_LENGTH*scale);
+ 	cs->max_idle_ns = clocksource_max_deferment(cs);
++}
++EXPORT_SYMBOL_GPL(__clocksource_updatefreq_scale);
++
++/**
++ * __clocksource_register_scale - Used to install new clocksources
++ * @t:		clocksource to be registered
++ * @scale:	Scale factor multiplied against freq to get clocksource hz
++ * @freq:	clocksource frequency (cycles per second) divided by scale
++ *
++ * Returns -EBUSY if registration fails, zero otherwise.
++ *
++ * This *SHOULD NOT* be called directly! Please use the
++ * clocksource_register_hz() or clocksource_register_khz helper functions.
++ */
++int __clocksource_register_scale(struct clocksource *cs, u32 scale, u32 freq)
++{
++
++	/* Intialize mult/shift and max_idle_ns */
++	__clocksource_updatefreq_scale(cs, scale, freq);
+ 
++	/* Add clocksource to the clcoksource list */
+ 	mutex_lock(&clocksource_mutex);
+ 	clocksource_enqueue(cs);
+ 	clocksource_select();
 -- 
 1.6.0.4
 
