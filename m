@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753236Ab0GNQ6s (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 12:58:48 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:43521 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751399Ab0GNQ6q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 12:58:46 -0400
-Message-ID: <4C3DEC90.8060603@zytor.com>
-Date: Wed, 14 Jul 2010 09:57:52 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Alexander Shishkin <virtuoso@slind.org>
-CC: Sam Ravnborg <sam@ravnborg.org>, linux-kbuild@vger.kernel.org,
-        Sebastian Dalfu? <sd@sedf.de>, Oliver Hartkopp <oliver@hartkopp.net>,
-        Michael Guntsche <mike@it-loops.com>,
-        Jonathan Nieder <jrnieder@gmail.com>, Michael Tokarev <mjt@tls.msk.ru>,
-        Alek Du <alek.du@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
-        Michal Marek <mmarek@suse.cz>, Russell King <rmk@arm.linux.org.uk>,
-        Albin Tonnerre <albin.tonnerre@free-electrons.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] [RFC] implement size_append in perl
-References: <1279116063-4499-1-git-send-email-virtuoso@slind.org> <20100714152337.GA13125@merkur.ravnborg.org> <20100714161704.GE23436@shisha.kicks-ass.net>
-In-Reply-To: <20100714161704.GE23436@shisha.kicks-ass.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1754253Ab0GNRCJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 13:02:09 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:49786 "EHLO
+	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753612Ab0GNRCI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 13:02:08 -0400
+From: Ben Greear <greearb@candelatech.com>
+To: linux-kernel@vger.kernel.org
+Cc: Ben Greear <greearb@candelatech.com>
+Subject: [pci] pci/mrst:  Detect loops when reading fixed BAR cap.
+Date: Wed, 14 Jul 2010 10:02:03 -0700
+Message-Id: <1279126923-27926-1-git-send-email-greearb@candelatech.com>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 09:17 AM, Alexander Shishkin wrote:
-> 
-> Hm, maybe this mkpiggy can be made arch-independent and moved to scripts/
-> as well?
-> 
+The mrst logic introduced in 2.6.33-rc8 in commit
+a712ffbc199849364c46e9112b93b66de08e2c26 causes boot
+to hang on at least this platform:
 
-It depends on which architectures want this wrapping format.
+Intel E5405 CPU
+System Information
+	Manufacturer: Supermicro
+	Product Name: X7DBU
 
-	-hpa
+The cause of the hang is that pci_cap points to itself
+as the next capability, putting the fixed_bar_cap into
+an endless loop.
+
+This patch detects the loop, prints a warning, and
+continues on with useful work.  This strategy was
+suggested by Robert Hancock <hancockrwd@gmail.com>
+
+This should be a candidate for 2.6.34.y as well.
+
+Signed-off-by: Ben Greear <greearb@candelatech.com>
+---
+:100644 100644 1cdc02c... 9535ba9... M	arch/x86/pci/mrst.c
+ arch/x86/pci/mrst.c |   11 +++++++++++
+ 1 files changed, 11 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+index 1cdc02c..9535ba9 100644
+--- a/arch/x86/pci/mrst.c
++++ b/arch/x86/pci/mrst.c
+@@ -76,6 +76,17 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
+ 				return pos;
+ 		}
+ 
++		if ((pcie_cap >> 20) == 0)
++			break;
++		
++		if ((pcie_cap >> 20) <= pos) {
++			printk(KERN_WARNING "WARNING: mrst:  detected loop"
++			       " when searching for fixed BAR cap, previous"
++			       " position: 0x%x new position: 0x%x"
++			       " bus-number: %i  devfn: %i\n",
++			       pos, pcie_cap >> 20, bus->number, devfn);
++			break;
++		}
+ 		pos = pcie_cap >> 20;
+ 	}
+ 
+-- 
+1.6.2.5
+
