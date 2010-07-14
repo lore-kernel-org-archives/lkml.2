@@ -1,163 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756876Ab0GNU2J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:28:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36815 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752566Ab0GNU2G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:28:06 -0400
-Message-ID: <4C3E1DD1.4070400@redhat.com>
-Date: Wed, 14 Jul 2010 10:28:01 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757599Ab0GNUdP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:33:15 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54152 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375Ab0GNUdN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 16:33:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=Q8HzOutZi5twd0b5mlLpn252ALL6MHtf8kN4/aFIwFm8Py9T4Jr/rK3U8ePqevhmd3
+         hYmBKimsWvRqV90wKYRTd5zXmRJmghN6XDa8XzK02/i1J09I9/0jfAcS0jg4OK/ARIBu
+         2LMnJEhLSEagM9jzqcEmxfm7V0gMGfyQ5blFs=
 MIME-Version: 1.0
-To: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 18/18] Add timekeeping documentation
-References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-19-git-send-email-zamsden@redhat.com> <4C3D643D.6070705@oss.ntt.co.jp>
-In-Reply-To: <4C3D643D.6070705@oss.ntt.co.jp>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Wed, 14 Jul 2010 22:33:10 +0200
+Message-ID: <AANLkTikDF0TL6OyPVCzPlUTwxFehcrETn3ysgSSeTq92@mail.gmail.com>
+Subject: 2.6.35-rc5 inconsistent lock state
+From: Martin Pirker <lkml.collector@gmail.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 09:16 PM, Takuya Yoshikawa wrote:
-> Hi,
->
-> (2010/07/13 11:25), Zachary Amsden wrote:
->> +
->> +2.3) APIC
->> +
->> +On Pentium and later processors, an on-board timer is available to 
->> each CPU
->> +as part of the Advanced Programmable Interrupt Controller.  The APIC is
->> +accessed through memory-mapped registers and provides interrupt 
->> service to each
->> +CPU, used for IPIs and local timer interrupts.
->> +
->> +Although in theory the APIC is a safe and stable source for local 
->> interrupts,
->> +in practice, many bugs and glitches have occurred due to the special 
->> nature of
->> +the APIC CPU-local memory-mapped hardware.  Beware that CPU errata 
->> may affect
->> +the use of the APIC and that workarounds may be required.  In 
->> addition, some of
->> +these workarounds pose unique constraints for virtualization - 
->> requiring either
->> +extra overhead incurred from extra reads of memory-mapped I/O or 
->> additional
->> +functionality that may be more computationally expensive to implement.
->> +
->> +Since the APIC is documented quite well in the Intel and AMD 
->> manuals, we will
->> +avoid repititon of the detail here.  It should be pointed out that 
->> the APIC
->
->          repetition?
->
->> +timer is programmed through the LVT (local vector timer) register, 
->> is capable
->> +of one-shot or periodic operation, and is based on the bus clock 
->> divided down
->> +by the programmable divider register.
->> +
->> +2.4) HPET
->> +
->> +HPET is quite complex, and was originally intended to replace the 
->> PIT / RTC
->> +support of the X86 PC.  It remains to be seen whether that will be 
->> the case, as
->> +the de facto standard of PC hardware is to emulate these older 
->> devices.  Some
->> +systems designated as legacy free may support only the HPET as a 
->> hardware timer
->> +device.
->> +
->> +The HPET spec is rather loose and vague, requiring at least 3 
->> hardware timers,
->> +but allowing implementation freedom to support many more.  It also 
->> imposes no
->> +fixed rate on the timer frequency, but does impose some extremal 
->> values on
->> +frequency, error and slew.
->> +
->> +In general, the HPET is recommended as a high precision (compared to 
->> PIT /RTC)
->> +time source which is independent of local variation (as there is 
->> only one HPET
->> +in any given system).  The HPET is also memory-mapped, and its 
->> presence is
->> +indicated through ACPI tables by the BIOS.
->> +
->> +Detailed specification of the HPET is beyond the current scope of this
->> +document, as it is also very well documented elsewhere.
->> +
->
->
->> +3.6) TSC and STPCLK / T-states
->> +
->> +External signals given to the processor may also have the affect of 
->> stopping
->
->                                                              effect?
->
->> +the TSC.  This is typically done for thermal emergency power control 
->> to prevent
->> +an overheating condition, and typically, there is no way to detect 
->> that this
->> +condition has happened.
->> +
->
->
->> +4.4) Migration
->> +
->> +Migration of a virtual machine raises problems for timekeeping in 
->> two ways.
->> +First, the migration itself may take time, during which interrupts 
->> cannot be
->> +delivered, and after which, the guest time may need to be caught 
->> up.  NTP may
->> +be able to help to some degree here, as the clock correction 
->> required is
->> +typically small enough to fall in the NTP-correctable window.
->> +
->> +An additional concern is that timers based off the TSC (or HPET, if 
->> the raw bus
->> +clock is exposed) may now be running at different rates, requiring 
->> compensation
->> +in some may in the hypervisor by virtualizing these timers.  In 
->> addition,
->
->            way?
->
->> +migrating to a faster machine may preclude the use of a passthrough 
->> TSC, as a
->> +faster clock cannot be made visible to a guest without the potential 
->> of time
->> +advancing faster than usual.  A slower clock is less of a problem, 
->> as it can
->> +always be caught up to the original rate.  KVM clock avoids these 
->> problems by
->> +simply storing multipliers and offsets gainst the TSC for the guest 
->> to convert
->
->                                           against?
->
->> +back into nanosecond resolution values.
->> +
->
->
->   Takuya
->
->     -- I'm not English speaker, so not so sure about some places.
+Hi list...
 
-Thanks, you found some mistakes anyway, will fix.
+My shiny new kernel wants to tell me something.
+I do not understand him, but maybe you do.... see below
 
-Cheers,
+HTH,
+Martin
 
-Zach
+
+[   27.026441]
+[   27.026443] =================================
+[   27.029003] [ INFO: inconsistent lock state ]
+[   27.030490] 2.6.35-rc5 #1
+[   27.031984] ---------------------------------
+[   27.033520] inconsistent {SOFTIRQ-ON-W} -> {IN-SOFTIRQ-W} usage.
+[   27.035118] swapper/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
+[   27.035121]  (&(&bdi->wb_lock)->rlock){+.?...}, at:
+[<ffffffff8116cffe>] bdi_queue_work+0x2e/0xb0
+[   27.035133] {SOFTIRQ-ON-W} state was registered at:
+[   27.035136]   [<ffffffff81093fde>] __lock_acquire+0x5de/0x1470
+[   27.035144]   [<ffffffff81094f16>] lock_acquire+0xa6/0x160
+[   27.035149]   [<ffffffff81578ec1>] _raw_spin_lock+0x31/0x40
+[   27.035157]   [<ffffffff811132ce>] bdi_task_init+0x3e/0xa0
+[   27.035164]   [<ffffffff811136c1>] bdi_forker_task+0x31/0x390
+[   27.035169]   [<ffffffff8107dd26>] kthread+0xa6/0xb0
+[   27.035176]   [<ffffffff8100bee4>] kernel_thread_helper+0x4/0x10
+[   27.035183] irq event stamp: 114300
+[   27.035185] hardirqs last  enabled at (114300):
+[<ffffffff8113aa1d>] kmem_cache_alloc_notrace+0xcd/0x110
+[   27.035193] hardirqs last disabled at (114299):
+[<ffffffff8113a9a6>] kmem_cache_alloc_notrace+0x56/0x110
+[   27.035200] softirqs last  enabled at (114274):
+[<ffffffff81065a62>] __do_softirq+0x142/0x260
+[   27.035208] softirqs last disabled at (114287):
+[<ffffffff8100bfdc>] call_softirq+0x1c/0x30
+[   27.035213]
+[   27.035214] other info that might help us debug this:
+[   27.035217] 1 lock held by swapper/0:
+[   27.035219]  #0:
+(&q->backing_dev_info.laptop_mode_wb_timer){+.-...}, at:
+[<ffffffff8106e9f9>] run_timer_softirq+0x139/0x3f0
+[   27.035229]
+[   27.035230] stack backtrace:
+[   27.035234] Pid: 0, comm: swapper Not tainted 2.6.35-rc5 #1
+[   27.035237] Call Trace:
+[   27.035239]  <IRQ>  [<ffffffff810924aa>] print_usage_bug+0x18a/0x190
+[   27.035250]  [<ffffffff81018ccf>] ? save_stack_trace+0x2f/0x50
+[   27.035255]  [<ffffffff81092620>] ? check_usage_forwards+0x0/0xf0
+[   27.035260]  [<ffffffff810932a2>] mark_lock+0x322/0x3f0
+[   27.035265]  [<ffffffff81093f79>] __lock_acquire+0x579/0x1470
+[   27.035270]  [<ffffffff81018ccf>] ? save_stack_trace+0x2f/0x50
+[   27.035275]  [<ffffffff81090037>] ? graph_unlock+0x47/0xa0
+[   27.035280]  [<ffffffff81094f16>] lock_acquire+0xa6/0x160
+[   27.035284]  [<ffffffff8116cffe>] ? bdi_queue_work+0x2e/0xb0
+[   27.035289]  [<ffffffff810933db>] ? mark_held_locks+0x6b/0xa0
+[   27.035294]  [<ffffffff81578ec1>] _raw_spin_lock+0x31/0x40
+[   27.035298]  [<ffffffff8116cffe>] ? bdi_queue_work+0x2e/0xb0
+[   27.035303]  [<ffffffff8109373d>] ? trace_hardirqs_on+0xd/0x10
+[   27.035307]  [<ffffffff8116cffe>] bdi_queue_work+0x2e/0xb0
+[   27.035313]  [<ffffffff8116d508>] __bdi_start_writeback+0x88/0x110
+[   27.035317]  [<ffffffff8116d5d5>] bdi_start_writeback+0x15/0x20
+[   27.035324]  [<ffffffff8110345b>] laptop_mode_timer_fn+0x5b/0x70
+[   27.035329]  [<ffffffff8106ea7f>] run_timer_softirq+0x1bf/0x3f0
+[   27.035334]  [<ffffffff8106e9f9>] ? run_timer_softirq+0x139/0x3f0
+[   27.035339]  [<ffffffff81082516>] ? __run_hrtimer+0xa6/0x1b0
+[   27.035343]  [<ffffffff81103400>] ? laptop_mode_timer_fn+0x0/0x70
+[   27.035349]  [<ffffffff81065999>] ? __do_softirq+0x79/0x260
+[   27.035354]  [<ffffffff810659f2>] __do_softirq+0xd2/0x260
+[   27.035359]  [<ffffffff81082920>] ? hrtimer_interrupt+0x140/0x250
+[   27.035363]  [<ffffffff8100bfdc>] call_softirq+0x1c/0x30
+[   27.035368]  [<ffffffff8100daad>] do_softirq+0x9d/0xd0
+[   27.035373]  [<ffffffff810655b5>] irq_exit+0x95/0xa0
+[   27.035378]  [<ffffffff81580f30>] smp_apic_timer_interrupt+0x70/0x9b
+[   27.035386]  [<ffffffff8100ba93>] apic_timer_interrupt+0x13/0x20
+[   27.035389]  <EOI>  [<ffffffff812fdb8a>] ? intel_idle+0xfa/0x180
+[   27.035399]  [<ffffffff812fdb83>] ? intel_idle+0xf3/0x180
+[   27.035406]  [<ffffffff8157d6a0>] ? __atomic_notifier_call_chain+0x0/0xa0
+[   27.035412]  [<ffffffff81459a87>] cpuidle_idle_call+0xa7/0x140
+[   27.035418]  [<ffffffff81009dd8>] cpu_idle+0xb8/0x110
+[   27.035424]  [<ffffffff8157276b>] start_secondary+0x1fd/0x204
