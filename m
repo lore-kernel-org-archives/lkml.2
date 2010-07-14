@@ -1,112 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755945Ab0GNCUT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 22:20:19 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:58555 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754665Ab0GNCUS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 22:20:18 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=TJxnvZGBLaVhSmvr9qAxUoukuT/LJTAVe0Hkge46k1C4NgkYv7haWAEHiBeh/9guWMIen3CUToxzEpNW5njbrQDLoUSVafPTa1hOioVCpr9/hKJsSaGiOLr1oYRwzt23;
-Date: Tue, 13 Jul 2010 19:19:58 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Ben Greear <greearb@candelatech.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, jacob.jun.pan@intel.com
-Subject: Re: Regression:  2.6.34 boot fails on E5405 system, bisected: 
- de08e2c26
-Message-ID: <20100713191958.260478c0@virtuousgeek.org>
-In-Reply-To: <4C3D101E.5010605@candelatech.com>
-References: <4C3D067C.10507@candelatech.com>
-	<4C3D101E.5010605@candelatech.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	id S1756168Ab0GNCV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 22:21:56 -0400
+Received: from mga09.intel.com ([134.134.136.24]:63724 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754665Ab0GNCVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 22:21:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,199,1278313200"; 
+   d="scan'208";a="638284140"
+Subject: Re: perf failed with kernel 2.6.35-rc
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <AANLkTilk4JHmS8BoNcI1Cfa59wX6_qUkyoQD540ic_Zl@mail.gmail.com>
+References: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
+	 <AANLkTilu4fi68DQpbzsKJrrAVUq_ZFbm2AVNvaPK7VKu@mail.gmail.com>
+	 <1279066421.2096.920.camel@ymzhang.sh.intel.com>
+	 <AANLkTilk4JHmS8BoNcI1Cfa59wX6_qUkyoQD540ic_Zl@mail.gmail.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 14 Jul 2010 10:22:58 +0800
+Message-Id: <1279074178.2096.933.camel@ymzhang.sh.intel.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010 18:17:18 -0700
-Ben Greear <greearb@candelatech.com> wrote:
+On Wed, 2010-07-14 at 02:36 +0200, Stephane Eranian wrote:
+> What about running simpler commands like perf stat?
+'perf stat ls' seems ok.
+I compare the PMU register dumping info before and after 'perf stat ls'.
+Some processors' bit0 of status registers become 0 from 1.
 
-> On 07/13/2010 05:36 PM, Ben Greear wrote:
-> > We're seeing boot failures on multiple machines, running FC8 and
-> > F11. I bisected on an FC8 32-bit system. Newer hardware works,
-> > but these older ones do not.
-> >
-> > A console log of the hang is found later in this email.
-> >
-> > Please let me know if you would like any additional information,
-> > and I will be happy to test patches.
-> >
-> > The same failure happens in 2.6.34.1, so the fix does not appear to
-> > be in the stable tree yet.
-> 
-> 
-> I added some printks to the offending code.  It seems the problem
-> is that the fixed_bar_cap method in arch/x86/pci/mrst.c loops forever:
-> 
-> # Endless loop of this spewing to console...
-> 
-> pcie_cap: 268435456Checking vendor..
-> pos after shift: 256
-> Before read..
-> pcie_cap: 268435456Checking vendor..
-> pos after shift: 256
-> Before read..
-> pcie_cap: 268435456Checking vendor..
-> pos after shift: 256
-> Before read..
-> pcie_cap: 268435456Checking vendor..
-> pos after shift: 256
-> Before read..
-> pcie_cap: 268435456Checking vendor..
-> pos after shift: 256
-> Before read..
-> pcie_cap: 268435456Checking vendor..
-> 
-> 
-> static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
-> {
-> 	int pos;
-> 	u32 pcie_cap = 0, cap_data;
-> 	printk("fixed_bar_cap, bus: %p  devfn: %u\n", bus, devfn);
-> 	pos = PCIE_CAP_OFFSET;
-> 	while (pos) {
-> 		printk("Before read..\n");
-> 		if (raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
-> 					  devfn, pos, 4, &pcie_cap))
-> 			return 0;
-> 		printk("pcie_cap: %u", pcie_cap);
-> 		
-> 		if (pcie_cap == 0xffffffff)
-> 			return 0;
-> 
-> 		printk("Checking vendor..\n");
-> 		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
-> 			printk("reading domain_nr\n");
-> 			raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
-> 					      devfn, pos + 4, 4, &cap_data);
-> 			printk("cap_data: %u\n", cap_data);
-> 			if ((cap_data & 0xffff) == PCIE_VNDR_CAP_ID_FIXED_BAR)
-> 				return pos;
-> 		}
-> 
-> 		pos = pcie_cap >> 20;
-> 		printk("pos after shift: %i\n", pos);
-> 	}
-> 
-> 	printk("Returning from fixed_bar_cap\n");
-> 	return 0;
-> }
-> 
-> 
+I can't guarantee all 'perf stat' is ok because it seems some processors
+wouldn't collect perf statistics correctly while others seem ok.
 
-I thought a related bug was fixed already; the code should be returning
-all zeros for non-existent BAR reads.
+'gdb perf' could work because one processor seems ok while others couldn't.
+So 'gdb perf' actually miss some data.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> 
+> 
+> On Wed, Jul 14, 2010 at 2:13 AM, Zhang, Yanmin
+> <yanmin_zhang@linux.intel.com> wrote:
+> > On Tue, 2010-07-13 at 17:16 +0200, Stephane Eranian wrote:
+> >> On Tue, Jul 13, 2010 at 10:14 AM, Zhang, Yanmin
+> >> <yanmin_zhang@linux.intel.com> wrote:
+> >> > Peter,
+> >> >
+> >> > perf doesn't work on my Nehalem EX machine.
+> >> > 1) The 1st start of 'perf top' is ok;
+> >> > 2) Kill the 1st perf and restart it. It doesn't work. No data is showed.
+> >> >
+> >> > I located below commit:
+> >> > commit 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+> >> > Author: Peter Zijlstra <peterz@infradead.org>
+> >> > Date:   Fri Mar 26 14:08:44 2010 +0100
+> >> >
+> >> >    perf, x86: Add Nehelem PMU programming errata workaround
+> >> >
+> >> >    workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> >> >    Date: Fri Mar 26 13:59:41 CET 2010
+> >> >
+> >> >    Implement the workaround for Intel Errata AAK100 and AAP53.
+> >> >
+> >> >    Also, remove the Core-i7 name for Nehalem events since there are
+> >> >    also Westmere based i7 chips.
+> >> >
+> >> >
+> >> > If I comment out the workaround in function intel_pmu_nhm_enable_all,
+> >> > perf could work.
+> >> >
+> >> > A quick glance shows:
+> >> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+> >> > should be:
+> >> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+> >> >
+> >> >
+> >> > I triggered sysrq to dump PMU registers and found the last bit of
+> >> > global status register is 1. I added a status reset operation like below patch:
+> >> >
+> >> What do you call the last bit? bit0 or bit63?
+> > Sorry for confusing you. It's bit0, mapping to PERFMON_EVENTSEL0.
+> >
+> >>
+> >> > --- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c     2010-07-14 09:38:11.000000000 +0800
+> >> > +++ linux-2.6.35-rc5_fork/arch/x86/kernel/cpu/perf_event_intel.c        2010-07-14 14:41:42.000000000 +0800
+> >> > @@ -505,8 +505,13 @@ static void intel_pmu_nhm_enable_all(int
+> >> >                wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
+> >> >                wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
+> >> >
+> >> > -               wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+> >> > +               wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+> >> >                wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
+> >> > +               /*
+> >> > +                * Reset the last 3 bits of global status register in case
+> >> > +                * previous enabling causes overflows.
+> >> > +                */
+> >>
+> >> The workaround cannot cause on overflow because the associated counters
+> >> won't count anything given their umask value is 0 (which does not correspond
+> >> to anything for event 0xB1, event 0xB5 is undocumented). This is for the events
+> >> described in table A.2. If NHM-EX has a different definition for 0xB1, 0xB5,
+> >> then that's another story.
+> > I found the status bit is set by triggering sysrq to dump PMU registers.
+> >
+> > If I start perf by gdb, sometimes, perf could work. I found one processor's 1st status
+> > register is equal to 0 while other processors' are 1. If just starting perf, all 1st
+> > status registers are equal to 1.
+> >
+> >>
+> >>
+> >> > +               wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+> >> >
+> >> >                for (i = 0; i < 3; i++) {
+> >> >                        struct perf_event *event = cpuc->events[i];
+> >> >
+> >> >
+> >> >
+> >> > However, it still doesn't work. Current right way is to comment out
+> >> > the workaround.
+
+
