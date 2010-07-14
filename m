@@ -1,41 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab0GNKDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 06:03:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:50794 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753565Ab0GNKDe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 06:03:34 -0400
-From: Oliver Neukum <oneukum@suse.de>
-Organization: SUSE
-To: Changli Gao <xiaosuo@gmail.com>
-Subject: Re: [PATCH v2] drivers: code cleanups
-Date: Wed, 14 Jul 2010 12:02:46 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-Cc: "Greg Kroah-Hartman" <gregkh@suse.de>, "Jike Song" <albcamus@gmail.com>,
-        linux-kernel@vger.kernel.org
-References: <1279100576-8680-1-git-send-email-xiaosuo@gmail.com>
-In-Reply-To: <1279100576-8680-1-git-send-email-xiaosuo@gmail.com>
+	id S1754818Ab0GNKEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 06:04:13 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60509 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753574Ab0GNKEL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 06:04:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=V6CGx4k0pe0EAIz2Iku2gTCnUXlRFeYH44CunfbTtvGKdCOm3Sv+h64vjwSmMuwyNe
+         JYwP1xVShBcuNXfRcPsPFXtn3Xf7qDwfF+07XLB4jM9MciYjiSX0TXuvwODe6PZWbR09
+         pLgJo3rn4kKqiu2loJgMgPZXhoaLdWCIKeDes=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007141202.46492.oneukum@suse.de>
+In-Reply-To: <tnx630ibd2q.fsf@e102109-lin.cambridge.arm.com>
+References: <AANLkTil6opQmTVVxuP1ngz72_ijpLzdlSFWDSyi4whOt@mail.gmail.com>
+	<tnx630ibd2q.fsf@e102109-lin.cambridge.arm.com>
+Date: Wed, 14 Jul 2010 12:04:09 +0200
+Message-ID: <AANLkTilBdReJssNYLAx6sHtPTez57keWJl6QDOu5V986@mail.gmail.com>
+Subject: Re: kmemleak, cpu usage jump out of nowhere
+From: Zeno Davatz <zdavatz@gmail.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Mittwoch, 14. Juli 2010, 11:42:56 schrieb Changli Gao:
-> drivers: code cleanups
-> 
-> the first three goto clauses caused kfree(NULL), and the error code returned
-> by kset->uevent_ops->uevent() wasn't passed to the caller of show_uevent().
-> This patch also eliminates the unnecessary initializations of env and count.
+Dear Catalin
 
-This is not a good idea.
-If you are indeed fixing a bug of not returning an error, make a patch that does that.
-The other parts of your patch really are no improvement, because they make
-things harder to maintain if additional cleanups or locking must ever be added.
+On Wed, Jul 14, 2010 at 11:57 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> Zeno Davatz <zdavatz@gmail.com> wrote:
+>> I got a new Intel core-8 i7 processor.
+>>
+>> I am on kernel uname -a
+>>
+>> Linux zenogentoo 2.6.35-rc5 #97 SMP Tue Jul 13 16:13:25 CEST 2010 i686
+>> Intel(R) Core(TM) i7 CPU 960 @ 3.20GHz GenuineIntel GNU/Linux
+>>
+>> Sometimes in the middle of nowhere all of a sudden all of my 8-cores
+>> are at 100% CPU usage and my machine really lags and hangs and is not
+>> useable anymore. Some random process just grabs a bunch CPUs according
+>> to htop.
+>>
+>> dmesg tell me that
+>>
+>> kmemleak: 38 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+>> kmemleak: 2 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+>> kmemleak: 1 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+>> kmemleak: 2 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+>> kmemleak: 2 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+>> kmemleak: 1 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
+>
+> These may be related to the NO_BOOTMEM configuration (I sent a patch in
+> a separate reply).
+>
+> But even when kmemleak scans the memory, it only uses a single thread
+> and you should only see a single CPU going to 100%. I don't think
+> kmemleak scanning can explain why all the 8 cores are going up to 100%.
 
-	Regards
-		Oliver
+I am doing:
+
+/usr/src/my2.6> sudo patch -p1 < patch_catalin
+patching file mm/bootmem.c
+Hunk #1 FAILED at 435.
+Hunk #2 FAILED at 461.
+2 out of 2 hunks FAILED -- saving rejects to file mm/bootmem.c.rej
+patching file mm/page_alloc.c
+Hunk #1 FAILED at 3659.
+1 out of 1 hunk FAILED -- saving rejects to file mm/page_alloc.c.rej
+
+Any hints why it wont apply? Will this patch be in the next RC?
+
+Best
+Zeno
