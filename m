@@ -1,67 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab0GNUqB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:46:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56182 "EHLO mx1.redhat.com"
+	id S1757791Ab0GNUqR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:46:17 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57576 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757420Ab0GNUqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:46:00 -0400
-Message-ID: <4C3E21D1.3010207@redhat.com>
-Date: Wed, 14 Jul 2010 10:45:05 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	id S1757778Ab0GNUqE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 16:46:04 -0400
+Date: Wed, 14 Jul 2010 22:45:31 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+        Srikar Dronamraju <srikar@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Palfrader <peter@palfrader.org>, Greg KH <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org, stable@kernel.org,
-        stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
- 	for pvclock
-References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org> <AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com> <4C3DF1BE.2070404@goop.org> <4C3DF447.1000801@zytor.com> <4C3DF519.6030406@goop.org> <4C3DF7AF.7010402@zytor.com> <4C3DFA88.5020007@goop.org> <4C3E1B13.5030304@redhat.com> <4C3E20B3.6020007@goop.org>
-In-Reply-To: <4C3E20B3.6020007@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Christoph Hellwig <hch@infradead.org>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 10/13]  perf: Re-Add make_absolute_path
+Message-ID: <20100714204531.GA14474@elte.hu>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
+ <20100712103412.27491.18737.sendpatchset@localhost6.localdomain6>
+ <20100712140023.GC25238@ghostprotocols.net>
+ <1278945036.1537.189.camel@gandalf.stny.rr.com>
+ <20100712161239.GF25238@ghostprotocols.net>
+ <1279075767.4190.1.camel@localhost>
+ <20100714162332.GA4000@ghostprotocols.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100714162332.GA4000@ghostprotocols.net>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.9
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.9 required=5.9 tests=BAYES_00,FS_TIP_DDD autolearn=no SpamAssassin version=3.2.5
+	0.1 FS_TIP_DDD             Phrase: subject = tip ddd
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 10:40 AM, Jeremy Fitzhardinge wrote:
-> On 07/14/2010 01:16 PM, Avi Kivity wrote:
->    
->> On 07/14/2010 08:57 PM, Jeremy Fitzhardinge wrote:
->>      
->>> Anything else?
->>>        
->> 1. set up a mapping
->> 2. invlpg or set cr3
->> 3. use the mapping
->>
->> Moving the invlpg will break your code.
->>      
-> invlpg uses memory clobbers.  All the crX ops seem to use a
-> __force_order variable to sequence them - but it looks like it's done
-> precisely backwards and it's barking mad to do allow write_crX to be
-> reordered with respect to memory ops.
->
-> Hm, looks like glommer added it surreptitiously while unifying
-> system_32.h and system_64.h (system_32.h relied on asm volatile not
-> being reordered; system_64.h used memory clobbers).
->      J
->    
 
-clts() has no memory clobber; it is used to serialize execution of code 
-within kernel_fpu_begin() / kernel_fpu_end() blocks.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-If the code within is reordered before the clts(), we've corrupted guest 
-FPU state.
+> Em Tue, Jul 13, 2010 at 10:49:27PM -0400, Steven Rostedt escreveu:
+> > On Mon, 2010-07-12 at 13:12 -0300, Arnaldo Carvalho de Melo wrote:
+> > > Em Mon, Jul 12, 2010 at 10:30:36AM -0400, Steven Rostedt escreveu:
+> 
+> > > Well, I prefer to follow the kernel way of doing things, i.e. to
+> > > propagate as much as possible up the callchain the error return value,
+> > > so that the apps can handle it in any way they prefer, i.e. die() calls
+> > > in tools/perf/builtin-foo.c are okayish, but not on tools/perf/util/.
+> 
+> > Ah, yes, die is a bit strong. And I have been starting to avoid them
+> > too. Although, when malloc fails, it's almost certain that the app will
+> > die soon anyway ;-)
+> 
+> The interesting thing is that years ago, when modules were being introduced 
+> in the kernel and panic() calls for things like out of memory conditions 
+> were being removed, some people made the same comments, 'if that happens, 
+> you're doomed anyway!' :-)
+> 
+> I can see things like trying to load a huge perf.data file in the TUI 
+> interface failing and the user just being warned about it and going on with 
+> life loading some other file, etc.
+> 
+> Certainly it is interesting to try to apply as much as possible of the 
+> mindset (and fear of criticism) present when coding for the kernel when one 
+> codes for userland.
 
-That's the kind of bug I think Linus is talking about.  We've been 
-expecting volatile to work that way for over a decade, by my 
-recollection, and if it doesn't, there is going to be a lot of broken code.
+Yeah, and especially for perf the absolutely most important quality is 
+reliability. It's not just an app - it's a measurement tool. People rely on it 
+to reject or apply patches, on a daily basis.
 
-Shouldn't we at least get a compiler switch to force the volatile 
-behavior?  I'd suggest it default to conservative.
+perf must be very reliable and very dependable (and i'm happy that we managed 
+to achieve that goal so far :), and if it fails it should be apparent that it 
+failed and that results should not be relied on.
+
+With other tools that are statistical i've sometimes seen a special type of 
+dangerous attitude of: "hey, it's just a sample, no biggie if it's lost, it's 
+just statistical anyway, lost in the noise" - but that's really a slippery 
+slope leading to a sloppy tool we cannot depend on 110%.
+
+Just like physicists or engineers want to be able to trust their measurement 
+instruments, do we want kernel hackers to be able to trust the results of 
+perf.
+
+Thanks,
+
+	Ingo
