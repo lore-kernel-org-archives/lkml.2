@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756985Ab0GNNI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 09:08:27 -0400
-Received: from imap.ru.mvista.com ([213.79.90.228]:18762 "EHLO
+	id S1757052Ab0GNNJB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 09:09:01 -0400
+Received: from imap.ru.mvista.com ([213.79.90.228]:18731 "EHLO
 	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756861Ab0GNNIM (ORCPT
+	by vger.kernel.org with ESMTP id S1756741Ab0GNNIF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 09:08:12 -0400
-Date: Wed, 14 Jul 2010 17:08:09 +0400
+	Wed, 14 Jul 2010 09:08:05 -0400
+Date: Wed, 14 Jul 2010 17:08:01 +0400
 From: Anton Vorontsov <avorontsov@mvista.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: Wolfram Sang <w.sang@pengutronix.de>,
@@ -15,9 +15,8 @@ Cc: Wolfram Sang <w.sang@pengutronix.de>,
         Matt Fleming <matt@console-pimps.org>, Ben Dooks <ben-linux@fluff.org>,
         Pierre Ossman <pierre@ossman.eu>, linux-mmc@vger.kernel.org,
         linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: [PATCH 7/8] sdhci: Get rid of mdelay()s where it is safe and makes
- sense
-Message-ID: <20100714130809.GG517@oksana.dev.rtsoft.ru>
+Subject: [PATCH 3/8] sdhci: Clear interrupt status register just once
+Message-ID: <20100714130801.GC517@oksana.dev.rtsoft.ru>
 References: <20100714130728.GA27339@oksana.dev.rtsoft.ru>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=utf-8
@@ -28,67 +27,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Since we don't run in the atomic context any longer, we can
-turn mdelay()s into msleep()s.
-
-The only place where the driver is still using mdelay() is
-sdhci_send_command(). There it is possible to use sleepable
-delays too, but we don't actually want to force rescheduling
-in a hot path.
-
-Sure, we might end up calling msleep() there too, just not
-via this safe patch.
+There's no need to clear the interrupt status register bit-by-bit,
+we can just clear it once. This simplifies irq handler.
 
 Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
 ---
- drivers/mmc/host/sdhci-of-esdhc.c |    2 +-
- drivers/mmc/host/sdhci.c          |    6 +++---
- 2 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/mmc/host/sdhci.c |   23 ++++++-----------------
+ 1 files changed, 6 insertions(+), 17 deletions(-)
 
-diff --git a/drivers/mmc/host/sdhci-of-esdhc.c b/drivers/mmc/host/sdhci-of-esdhc.c
-index c8623de..e9f99fe 100644
---- a/drivers/mmc/host/sdhci-of-esdhc.c
-+++ b/drivers/mmc/host/sdhci-of-esdhc.c
-@@ -94,7 +94,7 @@ static void esdhc_set_clock(struct sdhci_host *host, unsigned int clock)
- 	setbits32(host->ioaddr + ESDHC_SYSTEM_CONTROL, ESDHC_CLOCK_IPGEN |
- 		  ESDHC_CLOCK_HCKEN | ESDHC_CLOCK_PEREN |
- 		  div << ESDHC_DIVIDER_SHIFT | pre_div << ESDHC_PREDIV_SHIFT);
--	mdelay(100);
-+	msleep(100);
- out:
- 	host->clock = clock;
- }
 diff --git a/drivers/mmc/host/sdhci.c b/drivers/mmc/host/sdhci.c
-index 56d5c56..e6adda8 100644
+index 748a2e3..9ec245c 100644
 --- a/drivers/mmc/host/sdhci.c
 +++ b/drivers/mmc/host/sdhci.c
-@@ -171,7 +171,7 @@ static void sdhci_reset(struct sdhci_host *host, u8 mask)
- 			return;
- 		}
- 		timeout--;
--		mdelay(1);
-+		msleep(1);
+@@ -1522,38 +1522,29 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+ 		goto out;
  	}
  
- 	if (host->quirks & SDHCI_QUIRK_RESTORE_IRQS_AFTER_RESET)
-@@ -1019,7 +1019,7 @@ static void sdhci_set_clock(struct sdhci_host *host, unsigned int clock)
- 			return;
- 		}
- 		timeout--;
--		mdelay(1);
-+		msleep(1);
++	sdhci_writel(host, intmask, SDHCI_INT_STATUS);
++
+ 	DBG("*** %s got interrupt: 0x%08x\n",
+ 		mmc_hostname(host->mmc), intmask);
+ 
+-	if (intmask & (SDHCI_INT_CARD_INSERT | SDHCI_INT_CARD_REMOVE)) {
+-		sdhci_writel(host, intmask & (SDHCI_INT_CARD_INSERT |
+-			SDHCI_INT_CARD_REMOVE), SDHCI_INT_STATUS);
++	if (intmask & (SDHCI_INT_CARD_INSERT | SDHCI_INT_CARD_REMOVE))
+ 		schedule_work(&host->card_detect_work);
+-	}
+ 
+ 	intmask &= ~(SDHCI_INT_CARD_INSERT | SDHCI_INT_CARD_REMOVE);
+ 
+-	if (intmask & SDHCI_INT_CMD_MASK) {
+-		sdhci_writel(host, intmask & SDHCI_INT_CMD_MASK,
+-			SDHCI_INT_STATUS);
++	if (intmask & SDHCI_INT_CMD_MASK)
+ 		sdhci_cmd_irq(host, intmask & SDHCI_INT_CMD_MASK);
+-	}
+ 
+-	if (intmask & SDHCI_INT_DATA_MASK) {
+-		sdhci_writel(host, intmask & SDHCI_INT_DATA_MASK,
+-			SDHCI_INT_STATUS);
++	if (intmask & SDHCI_INT_DATA_MASK)
+ 		sdhci_data_irq(host, intmask & SDHCI_INT_DATA_MASK);
+-	}
+ 
+ 	intmask &= ~(SDHCI_INT_CMD_MASK | SDHCI_INT_DATA_MASK);
+ 
+ 	intmask &= ~SDHCI_INT_ERROR;
+ 
+-	if (intmask & SDHCI_INT_BUS_POWER) {
++	if (intmask & SDHCI_INT_BUS_POWER)
+ 		printk(KERN_ERR "%s: Card is consuming too much power!\n",
+ 			mmc_hostname(host->mmc));
+-		sdhci_writel(host, SDHCI_INT_BUS_POWER, SDHCI_INT_STATUS);
+-	}
+ 
+ 	intmask &= ~SDHCI_INT_BUS_POWER;
+ 
+@@ -1566,8 +1557,6 @@ static irqreturn_t sdhci_irq(int irq, void *dev_id)
+ 		printk(KERN_ERR "%s: Unexpected interrupt 0x%08x.\n",
+ 			mmc_hostname(host->mmc), intmask);
+ 		sdhci_dumpregs(host);
+-
+-		sdhci_writel(host, intmask, SDHCI_INT_STATUS);
  	}
  
- 	clk |= SDHCI_CLOCK_CARD_EN;
-@@ -1086,7 +1086,7 @@ static void sdhci_set_power(struct sdhci_host *host, unsigned short power)
- 	 * can apply clock after applying power
- 	 */
- 	if (host->quirks & SDHCI_QUIRK_DELAY_AFTER_POWER)
--		mdelay(10);
-+		msleep(10);
- }
- 
- /*****************************************************************************\
+ 	result = IRQ_HANDLED;
 -- 
 1.7.0.5
 
