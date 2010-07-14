@@ -1,102 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758038Ab0GNWwI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:52:08 -0400
-Received: from mail1.nippynetworks.com ([212.227.250.41]:34662 "EHLO
-	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758005Ab0GNWwF (ORCPT
+	id S1757946Ab0GNWvz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:51:55 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57049 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756571Ab0GNWvx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:52:05 -0400
-Message-ID: <4C3E3F92.2090506@wildgooses.com>
-Date: Wed, 14 Jul 2010 23:52:02 +0100
-From: Ed W <lists@wildgooses.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.10) Gecko/20100512 Lightning/1.0b1 Thunderbird/3.0.5
+	Wed, 14 Jul 2010 18:51:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=vvenhb+X/gqzkLCxX95BROoK0yXYHaV5kyFsOFLC1jRxitUKpAyI95Y7711GnMDiYk
+         W1NIE22V1UPtkkN/4IuMM1KpSh+LWt2fsCdQl+PcsZUigm/aOpZPG3sUOSm1YTGjAkJU
+         ohD92MLWRtU6VO6r0iBGJR66p17riLErPpIbs=
 MIME-Version: 1.0
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-CC: David Miller <davem@davemloft.net>, rick.jones2@hp.com, davidsen@tmr.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3E0684.5060409@wildgooses.com> <4C3E1B54.40604@hp.com> <20100714203919.GD6682@nuttenaction> <20100714.145547.102555471.davem@davemloft.net> <20100714221301.GI6682@nuttenaction>
-In-Reply-To: <20100714221301.GI6682@nuttenaction>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100714184251.GG5933@sirena.org.uk>
+References: <20100713203852.GA1756@rakim.wolfsonmicro.main>
+	<20100714145053.GA1689@bnru01.bnr.st.com>
+	<20100714145748.GF31073@rakim.wolfsonmicro.main>
+	<20100714153643.GB1689@bnru01.bnr.st.com>
+	<20100714154726.GH31073@rakim.wolfsonmicro.main>
+	<20100714160941.GC1689@bnru01.bnr.st.com>
+	<20100714162048.GA27512@rakim.wolfsonmicro.main>
+	<20100714164708.GD1689@bnru01.bnr.st.com>
+	<20100714170323.GF5933@sirena.org.uk>
+	<20100714173650.GA21893@bnru01.bnr.st.com>
+	<20100714184251.GG5933@sirena.org.uk>
+Date: Thu, 15 Jul 2010 00:51:50 +0200
+X-Google-Sender-Auth: RJ-xZMHHimariSaGw_Xbq7V2SD8
+Message-ID: <AANLkTimWjozzhTG491JVLUIICh6YonO4Emp07AG1nMj-@mail.gmail.com>
+Subject: Re: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific data
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Sundar R IYER <sundar.iyer@stericsson.com>,
+        Bengt JONSSON <bengt.g.jonsson@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+        "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
+        "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+        "sameo@linux.intel.com" <sameo@linux.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2010/7/14 Mark Brown <broonie@opensource.wolfsonmicro.com>:
 
->> Although section 3 of RFC 5681 is a great text, it does not say at all
->> that increasing the initial CWND would lead to fairness issues.
->>      
-> Because it is only one side of the medal, probing conservative the available
-> link capacity in conjunction with n simultaneous probing TCP/SCTP/DCCP
-> instances is another.
->    
+>> > This is normal, but for fairly obvious reasons the very lowest power
+>> > states are generally handled outside of the regulator API at a hardware
+>> > level via hardware signals to the regulator.  It's not normally part of
+>> > the runtime constraints for use while the CPU is live.
+>
+>> Yes. But my point was that even at a lower level than kernel (BIOS/firmware?)
+>> the switching would happen via SW. Please correct me if I am wrong!
+>
+> Well, ultimately it's always triggered by software but the actual signal
+> to the regulator is often a logic level output by the SoC as the
+> processor enters a low power state rather than an I2C/SPI write.
 
-So lets define the problem more succinctly:
-- New TCP connections are assumed to have no knowledge of current 
-network conditions (bah)
-- We desire the connection to consume the maximum amount of bandwidth 
-possible, but staying ever so fractionally under the maximum link bandwidth
+I can answer this: on the U300 we had such autonomous signals that
+would augment the power state of the regulators by special sleep
+signals.
 
-> Currently I know no working link capacity probing approach, without active
-> network feedback, to conservatively probing the available link capacity with a
-> high CWND. I am curious about any future trends.
->    
+For U8500 there is a dedicated autonomous system in the silicon, called
+PRCMU (Power Reset Clock Management Unit) that will actually do
+this using I2C because it has its own CPU and can transmit I2C
+messages even when the ARM CPU cores are turned off. So this is
+indeed a first-timer and not strange that it looks unfamiliar ...
 
-Sounds like smarter people than I have played this game, but just to 
-chuck out one idea: How about attacking the idea that we have no 
-knowledge of network conditions?  After all we have a bunch of 
-information about:
-
-1) very good information about the size of the link to the first hop (eg 
-the modem/network card reported rate)
-2) often a reasonably good idea about the bandwidth to the first 
-"restrictive" router along our default path (ie usually the situation is 
-there is a pool of high speed network locally, then a more limited 
-connectivity between our network and other networks.  We can look at the 
-maximum flows through our network device to outside our subnet and infer 
-an approximate link speed from that)
-3) often moderate quality information about the size of the link between 
-us and a specific destination IP
-
-So here goes: the heuristic could be to examine current flows through 
-our interface, use this to offer hints to the remote end during SYN 
-handshake as to a recommended starting size, and additionally the client 
-side can examine the implied RTT of the SYN/ACK to further fine tune the 
-initial cwnd?
-
-In practice this could be implemented in other ways such as examining 
-recent TCP congestion windows and using some heuristic to start "near" 
-those.  Or remembering congestion windows recently used for popular 
-destinations?  Also we can benefit the receiver of our data - if we see 
-some app open up 16 http connections to some poor server then some of 
-those connections will NOT be given large initial cwnd.
-
-Essentially perhaps we can refine our initial cwnd heuristic somewhat if 
-we assume better than zero knowledge about the network link?
-
-
-Out of curiousity, why has it taken so long for active feedback to 
-appear?  If every router simply added a hint to the packet as to the max 
-bandwidth it can offer then we would appear to be able to make massively 
-better decisions on window sizes.  Furthermore routers have the ability 
-to put backpressure on classes of traffic as appropriate.  I guess the 
-speed at which ECN has been adopted answers the question of why nothing 
-more exotic has appeared?
-
->> But for all we know this side discussion about initial CWND settings
->> could have nothing to do with the issue being reported at the start of
->> this thread. :-)
->>      
-
-Actually the original question was mine and it was literally - can I 
-adjust the initial cwnd for users of my very specific satellite network 
-which has a high RTT.  I believe Stephen Hemminger has been kind enough 
-to recently add the facility to experiment with this to the ip utility 
-and so I am now in a position to go do some testing - thanks Stephen
-
-
-Cheers
-
-Ed W
+Yours,
+Linus Walleij
