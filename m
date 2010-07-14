@@ -1,103 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757526Ab0GNWCn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 18:02:43 -0400
-Received: from smtp1.Stanford.EDU ([171.67.219.81]:40708 "EHLO
-	smtp.stanford.edu" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757227Ab0GNWCm (ORCPT
+	id S1757534Ab0GNWFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 18:05:35 -0400
+Received: from mail1.nippynetworks.com ([212.227.250.41]:58757 "EHLO
+	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751786Ab0GNWFd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 18:02:42 -0400
-Subject: Re: 2.6.33.5 rt23: machine lockup (nfs/autofs related?)
-From: Fernando Lopez-Lezcano <nando@ccrma.Stanford.EDU>
-To: john stultz <johnstul@us.ibm.com>
-Cc: nando@ccrma.Stanford.EDU, Thomas Gleixner <tglx@linutronix.de>,
-        LKML <linux-kernel@vger.kernel.org>,
-        rt-users <linux-rt-users@vger.kernel.org>,
-        Steven Rostedt <rostedt@goodmis.org>, Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1279143363.3372.2.camel@localhost>
-References: <1278609590.7527.11.camel@localhost.localdomain>
-	 <1278628386.3008.11.camel@localhost.localdomain>
-	 <1278629044.12059.6.camel@localhost.localdomain>
-	 <1278630050.3008.18.camel@localhost.localdomain>
-	 <1278702134.5102.9.camel@localhost.localdomain>
-	 <1278705254.2349.14.camel@localhost.localdomain>
-	 <1278713600.7122.22.camel@localhost.localdomain>
-	 <1278716222.2349.20.camel@localhost.localdomain>
-	 <1278977858.6489.52.camel@localhost.localdomain>
-	 <1278978834.2404.12.camel@localhost.localdomain>
-	 <1278983426.6489.57.camel@localhost.localdomain>
-	 <1278985231.2404.60.camel@localhost.localdomain>
-	 <1278990381.11165.3.camel@localhost.localdomain>
-	 <1279143129.29524.39.camel@localhost.localdomain>
-	 <1279143363.3372.2.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 14 Jul 2010 15:02:12 -0700
-Message-ID: <1279144932.2248.1.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	Wed, 14 Jul 2010 18:05:33 -0400
+Message-ID: <4C3E34AB.2060405@wildgooses.com>
+Date: Wed, 14 Jul 2010 23:05:31 +0100
+From: Ed W <lists@wildgooses.com>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.10) Gecko/20100512 Lightning/1.0b1 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+CC: Rick Jones <rick.jones2@hp.com>, David Miller <davem@davemloft.net>,
+        davidsen@tmr.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Raise initial congestion window size / speedup slow start?
+References: <4C3D94E3.9080103@wildgooses.com> <4C3DD5EB.9070908@tmr.com> <20100714.111553.104052157.davem@davemloft.net> <4C3E0684.5060409@wildgooses.com> <4C3E1B54.40604@hp.com> <20100714203919.GD6682@nuttenaction>
+In-Reply-To: <20100714203919.GD6682@nuttenaction>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-14 at 14:36 -0700, john stultz wrote:
-> On Wed, 2010-07-14 at 14:32 -0700, Fernando Lopez-Lezcano wrote:
-> > On Mon, 2010-07-12 at 20:06 -0700, Fernando Lopez-Lezcano wrote:
-> > > > > --------
-> > > > > BUG: unable to handle kernel NULL pointer dereference at 0000008c
-> > > > > IP: [<c045e50a>] rt_spin_lock_fastunlock.clone.2+0x6/0x3e
-> > > > ...
-> > > > > Pid: 2855, comm: nautilus Not tainted
-> > > > > 2.6.33.6-147.rt23.3.fc12.ccrma.i686.rt #3 P5K/EPU/P5K/EPU
-> > > > > EIP: 0060:[<c045e50a>] EFLAGS: 00210246 CPU: 0
-> > > > > EIP is at rt_spin_lock_fastunlock.clone.2+0x6/0x3e
-> > > > > EAX: 00000078 EBX: ef45393c ECX: 00000000 EDX: 00000078
-> > > > > ESI: ef716edc EDI: 00000000 EBP: f1977c8c ESP: f1977c88
-> > > > >  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068 preempt:00000000
-> > > > > Process nautilus (pid: 2855, ti=f1976000 task=f2347130 task.ti=f1976000)
-> > > > > Stack:
-> > > > >  ef45393c f1977c94 c0781206 f1977cc8 c04d842e 00000000 ef703e54 faadd5bc
-> > > > > <0> f1977cdc 126bc87a ef703ddc 00000000 ef45393c ef716edc ef6f5494
-> > > > > faafdc6c
-> > > > > <0> f1977df8 faad9041 c3604b5c faafdc6c ef452bfc 00007e7f f5eb41e8
-> > > > > 00000007
-> > > > > Call Trace:
-> > > > >  [<c0781206>] ? rt_spin_unlock+0x8/0xa
-> > > > >  [<c04d842e>] ? d_materialise_unique+0x210/0x2aa
-> > > > 
-> > > > Can you gdb list *0xc04d842e ?
-> > > 
-> > > (gdb) list *0xc04d842e
-> > > 0xc04d842e is in d_materialise_unique (fs/dcache.c:2073).
-> > > 2068	out_unalias:
-> > > 2069		d_move_locked(alias, dentry);
-> > > 2070		ret = alias;
-> > > 2071	out_err:
-> > > 2072		spin_unlock(&inode->i_lock);
-> > > 2073		if (m2)
-> > > 2074			mutex_unlock(m2);
-> > > 2075		if (m1)
-> > > 2076			mutex_unlock(m1);
-> > > 2077		return ret;
-> > > 
-> > > > Thanks again for all the testing here! Its really appreciated!
-> > 
-> > I just tried building 2.6.33.6 rt26 (saw it this morning on the site)
-> > and it does not exhibit this problem. Woohoo!
-> 
-> Yea. The vfs-scalability patches were dropped. Sort of a bummer, but I'm
-> glad that fixes it for you.
-> 
-> We may run into the issue again when the patches can get beaten back
-> into shape, but I'll try to hunt down the issue from your log output
-> prior to that.
+On 14/07/2010 21:39, Hagen Paul Pfeifer wrote:
+> * Rick Jones | 2010-07-14 13:17:24 [-0700]:
+>
+>    
+>> There is an effort under way, lead by some folks at Google and
+>> including some others, to get the RFC's enhanced in support of the
+>> concept of larger initial congestion windows.  Some of the discussion
+>> may be in the "tcpm" mailing list (assuming I've not gotten my
+>> mailing lists confused).  There may be some previous discussion of
+>> that work in the netdev archives as well.
+>>      
+> tcpm is the right mailing list but there is currently no effort to develop
+> this topic. Why? Because is not a standardization issue, rather it is a
+> technical issue. You cannot rise the initial CWND and expect a fair behavior.
+> This was discussed several times and is documented in several documents and
+> RFCs.
+>    
 
-Ok, let me know if you need me to test again. I have the serial cable
-now! :-)
+I'm sure you have covered this to the point you are fed up, but my 
+searches turn up only a smattering of posts covering this - could you 
+summarise why "you cannot raise the initial cwnd and expect a fair 
+behaviour"?
 
-> Thanks again for the testing and great feedback!
+Initial cwnd was changed (increased) in the past (rfc3390) and the RFC 
+claims that studies then suggested that the benefits were all positive. 
+Some reasonably smart people have suggested that it might be time to 
+review the status quo again so it doesn't seem completely obvious that 
+the current number is optimal?
 
-Sure.
--- Fernando
+> RFC 5681 Section 3.1. Google employees should start with Section 3. This topic
+> pop's of every two months in netdev and until now I _never_ read a
+> consolidated contribution.
+>    
 
+Sorry, what do you mean by a "consolidated contribution"?
 
+That RFC is a subtle read - it appears to give more specific guidance on 
+what to do in certain situations, but I'm not sure I see that it 
+improves slow start convergence speed for my situation (large RTT)?  
+Would you mind highlighting the new bits for those of us a bit newer to 
+the subject?
+
+> Partial local issues can already be "fixed" via route specific ip options -
+> see initcwnd.
+>    
+
+Oh, excellent.  This seems like exactly what I'm after.  (Thanks Stephen 
+Hemminger!)
+
+Many thanks
+
+Ed W
