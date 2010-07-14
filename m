@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757619Ab0GNUK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:10:28 -0400
-Received: from e2.ny.us.ibm.com ([32.97.182.142]:54589 "EHLO e2.ny.us.ibm.com"
+	id S1757596Ab0GNUKY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:10:24 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:36537 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757527Ab0GNUKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:10:17 -0400
+	id S1757473Ab0GNUKO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 16:10:14 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
@@ -13,11 +13,11 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
         tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
         Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>
-Subject: [PATCH RFC tip/core/rcu 20/30] Update documentation to note the passage of INIT_RCU_HEAD()
-Date: Wed, 14 Jul 2010 13:09:54 -0700
-Message-Id: <1279138204-12849-20-git-send-email-paulmck@linux.vnet.ibm.com>
+        Arnd Bergmann <arnd@arndb.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: [PATCH RFC tip/core/rcu 06/30] keys: __rcu annotations
+Date: Wed, 14 Jul 2010 13:09:40 -0700
+Message-Id: <1279138204-12849-6-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100714200945.GA10535@linux.vnet.ibm.com>
 References: <20100714200945.GA10535@linux.vnet.ibm.com>
@@ -25,31 +25,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Alexey Dobriyan <adobriyan@gmail.com>
-Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
----
- Documentation/DocBook/kernel-locking.tmpl |    8 --------
- 1 files changed, 0 insertions(+), 8 deletions(-)
+From: Arnd Bergmann <arnd@arndb.de>
 
-diff --git a/Documentation/DocBook/kernel-locking.tmpl b/Documentation/DocBook/kernel-locking.tmpl
-index 084f6ad..e6cc574 100644
---- a/Documentation/DocBook/kernel-locking.tmpl
-+++ b/Documentation/DocBook/kernel-locking.tmpl
-@@ -1725,14 +1725,6 @@ the amount of locking which needs to be done.
-          if (++cache_num > MAX_CACHE_SIZE) {
-                  struct object *i, *outcast = NULL;
-                  list_for_each_entry(i, &amp;cache, list) {
--@@ -85,6 +94,7 @@
--         obj-&gt;popularity = 0;
--         atomic_set(&amp;obj-&gt;refcnt, 1); /* The cache holds a reference */
--         spin_lock_init(&amp;obj-&gt;lock);
--+        INIT_RCU_HEAD(&amp;obj-&gt;rcu);
--
--         spin_lock_irqsave(&amp;cache_lock, flags);
--         __cache_add(obj);
- @@ -104,12 +114,11 @@
-  struct object *cache_find(int id)
-  {
+Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Acked-by: David Howells <dhowells@redhat.com>
+---
+ include/linux/cred.h |    2 +-
+ include/linux/key.h  |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
+
+diff --git a/include/linux/cred.h b/include/linux/cred.h
+index 75c0fa8..94d2301 100644
+--- a/include/linux/cred.h
++++ b/include/linux/cred.h
+@@ -84,7 +84,7 @@ struct thread_group_cred {
+ 	atomic_t	usage;
+ 	pid_t		tgid;			/* thread group process ID */
+ 	spinlock_t	lock;
+-	struct key	*session_keyring;	/* keyring inherited over fork */
++	struct key __rcu *session_keyring;	/* keyring inherited over fork */
+ 	struct key	*process_keyring;	/* keyring private to this process */
+ 	struct rcu_head	rcu;			/* RCU deletion hook */
+ };
+diff --git a/include/linux/key.h b/include/linux/key.h
+index cd50dfa..3db0adc 100644
+--- a/include/linux/key.h
++++ b/include/linux/key.h
+@@ -178,8 +178,9 @@ struct key {
+ 	 */
+ 	union {
+ 		unsigned long		value;
++		void __rcu		*rcudata;
+ 		void			*data;
+-		struct keyring_list	*subscriptions;
++		struct keyring_list __rcu *subscriptions;
+ 	} payload;
+ };
+ 
 -- 
 1.7.0.6
 
