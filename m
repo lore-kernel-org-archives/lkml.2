@@ -1,91 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756109Ab0GNDSO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 23:18:14 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:59880 "EHLO e4.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754261Ab0GNDSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 23:18:13 -0400
-Message-ID: <4C3D2C6B.3050203@austin.ibm.com>
-Date: Tue, 13 Jul 2010 22:18:03 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
-        Dave Hansen <dave@linux.vnet.ibm.com>
-Subject: Re: [PATCH 4/7] Allow sysfs memory directories to be split
-References: <4C3B3446.5090302@austin.ibm.com>	<4C3B3895.3040209@austin.ibm.com>	<20100713152854.ec1f4d6a.kamezawa.hiroyu@jp.fujitsu.com>	<4C3C8B9E.7000208@austin.ibm.com> <20100714093550.40036034.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100714093550.40036034.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1756329Ab0GNDV0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 23:21:26 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64390 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516Ab0GNDVY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 23:21:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LuasE8vS4DzGOOJRJnR6OtcdDazNHhAows3kBOOpm3DGDR0AzAlOJJ2a9u7ETAAMLr
+         PpWaShh/cg6vdcjqNTG9K7pw9cxAP1asso/lbgJsFdjuJi3dE04PLc2CkQChLDGNJJIn
+         XKqIKEVJ/ZhYtzfciVXpaCAb+PDKtkpbcQgmI=
+Subject: Re: [PATCH] tproxy: nf_tproxy_assign_sock() can handle tw sockets
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Felipe W Damasio <felipewd@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>, David Miller <davem@davemloft.net>,
+        Patrick McHardy <kaber@trash.net>, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>
+In-Reply-To: <AANLkTilgxvDPpBJvwbw3PHZfXDaa2_6-TbJ8lujz5y3V@mail.gmail.com>
+References: <AANLkTimn8A0cYZmwNZYitRkBHKKFe4HQ5GU626DLugkk@mail.gmail.com>
+	 <AANLkTil49m6Ul2bauiH4Pwn-6ykrYTFmSO6_SxqQgD_e@mail.gmail.com>
+	 <1278626921.2435.73.camel@edumazet-laptop>
+	 <AANLkTiliBClahTfb41M5BDi1etg5pgkqEz_VfGrn_mK4@mail.gmail.com>
+	 <1278695580.2696.55.camel@edumazet-laptop>
+	 <AANLkTil39xHOhcdAo4h_jWtx_UuYdFHGdQVAdwPMd7QJ@mail.gmail.com>
+	 <1278742649.2538.17.camel@edumazet-laptop> <4C395459.6080407@redhat.com>
+	 <1278835332.2538.51.camel@edumazet-laptop>
+	 <AANLkTikEGuFtTlIKUfti6GDsdBz99PpKRCs5lEeEM86u@mail.gmail.com>
+	 <AANLkTilbEkJWPqvJE72r9HdFQSU84S02BKZB0CH-8QwB@mail.gmail.com>
+	 <AANLkTimn9x17g-4K7fS4MjmCgzHuBARurEoFVd_gId7m@mail.gmail.com>
+	 <1279032023.2634.384.camel@edumazet-laptop>
+	 <AANLkTilrIByt4xAHhsBsKo3nDfv0_c3sF-dCiTiYiPnu@mail.gmail.com>
+	 <1279036193.2634.468.camel@edumazet-laptop>
+	 <AANLkTilgxvDPpBJvwbw3PHZfXDaa2_6-TbJ8lujz5y3V@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Jul 2010 05:21:18 +0200
+Message-ID: <1279077678.2444.95.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/13/2010 07:35 PM, KAMEZAWA Hiroyuki wrote:
-> On Tue, 13 Jul 2010 10:51:58 -0500
-> Nathan Fontenot <nfont@austin.ibm.com> wrote:
+Le mardi 13 juillet 2010 à 17:55 -0300, Felipe W Damasio a écrit :
+> Hi Mr. Dumazet,
 > 
->>>
->>> And for what purpose this interface is ? Does this split memory block into 2 pieces
->>> of the same size ?? sounds __very__ strange interface to me.
->>
->> Yes, this splits the memory_block into two blocks of the same size.  This was
->> suggested as something we may want to do.  From ppc perspective I am not sure we
->> would use this.
->>
->> The split functionality is not required.  The main goal of the patch set is to
->> reduce the number of memory sysfs directories created.  From a ppc perspective
->> the split functionality is not really needed.
->>
+> I used the patched kernel on the production machine and squid frooze again.
 > 
-> Okay, this is an offer from me.
+> This is the dmesg message:
 > 
->   1. I think you can add an boot option as "don't create memory sysfs".
->      please do.
-
-I posted a patch to do that a week or so ago, it didn't go over very well.
-
 > 
->   2. I'd like to write a configfs module for handling memory hotplug even when
->      sysfs directroy is not created.
->      Because configfs support rmdir/mkdir, the user (ppc's daemon?) has to do
->      
->      When offlining section X.
->      # insmod configfs_memory.ko
->      # mount -t configfs none /configfs
->      # mkdir /configfs/memoryX
->      # echo offline > /configfs/memoryX/state
->      # rmdir /configfs/memoryX
+> general protection fault: 0000 [#1] SMP
+> last sysfs file: /sys/devices/pci0000:00/0000:00:1f.3/i2c-0/name
+> CPU 1
+> Modules linked in:
 > 
->   And making this operation as the default bahavior for all arch's memory hotplug may
->   be better...
+> Pid: 5533, comm: squid Not tainted 2.6.34 #6 DX58SO/
+> RIP: 0010:[<ffffffff81369b2a>]  [<ffffffff81369b2a>] sock_rfree+0x26/0x37
+> RSP: 0018:ffff88042287fc20  EFLAGS: 00010206
+> RAX: 66c86f938964c696 RBX: ffff88034e8f9a00 RCX: 0000000000000720
+> RDX: ffff8803f0ce05c0 RSI: ffff8803d441960c RDI: ffff88034e8f9a00
+> RBP: ffff8803f0ee05c0 R08: ffffea000dcb9998 R09: 0000000000000000
+> R10: 000000000003d830 R11: ffff8803f0ee05c0 R12: 00000000000005a8
+> R13: 00000000000005a8 R14: 0000000000004378 R15: 0000000000000000
+> FS:  00007f4cf33ee710(0000) GS:ffff880001840000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+> CR2: 00000000021d5fd0 CR3: 0000000422872000 CR4: 00000000000006e0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process squid (pid: 5533, threadinfo ffff88042287e000, task ffff88042eb61a40)
+> Stack:
+>  ffffffff8136ecda ffff88034e8f9a00 ffffffff8136ea8c ffff88034e8f9a00
+> <0> ffffffff813ab142 00000000000000d0 ffffffff8136f9f9 000000000eec60e2
+> <0> ffff88042eb61a40 ffff88042eb61a40 ffff88042eb61a40 00000000edca7300
+> Call Trace:
+>  [<ffffffff8136ecda>] ? skb_release_head_state+0x6d/0xb7
+>  [<ffffffff8136ea8c>] ? __kfree_skb+0x9/0x7d
+>  [<ffffffff813ab142>] ? tcp_recvmsg+0x6a3/0x89a
+>  [<ffffffff8136f9f9>] ? __alloc_skb+0x5e/0x14e
+>  [<ffffffff81369dde>] ? sock_common_recvmsg+0x30/0x45
+>  [<ffffffff81367b0f>] ? sock_aio_read+0xdd/0xf1
+>  [<ffffffff813b6c97>] ? tcp_write_xmit+0x93e/0x96c
+>  [<ffffffff810ac500>] ? do_sync_read+0xb0/0xf2
+>  [<ffffffff810acf32>] ? vfs_read+0xb9/0xff
+>  [<ffffffff810ad034>] ? sys_read+0x45/0x6e
+>  [<ffffffff8100292b>] ? system_call_fastpath+0x16/0x1b
+> Code: ff ff ff ff c3 48 8b 57 18 8b 87 d8 00 00 00 48 8d 8a ac 00 00
+> 00 f0 29 82 ac 00 00 00 48 8b 57 18 8b 8f d8 00 00 00 48 8b 42 38 <48>
+> 83 b8 b0 00 00 00 00 74 06 01 8a f4 00 00 00 c3 41 57 41 89
+> RIP  [<ffffffff81369b2a>] sock_rfree+0x26/0x37
+>  RSP <ffff88042287fc20>
+> ---[ end trace 22e6ca9ef825c0e6 ]---
 > 
-> Dave, how do you think ? Because ppc guys uses "probe" interface already,
-> this can be handled... no ?
-
-ppc would still require the existance of the 'probe' interface.
-
-Are you objecting to the 'split' functionality?  If so I do not see any reason from ppc
-perspective that it is needed.  This was something Dave suggested, unless I am missing
-something.
-
-Since ppc needs the 'probe' interface in sysfs, and for ppc having mutliple 
-memory_block_sections reside under a single memory_block makes memory hotplug
-simpler.  On ppc we do emory hotplug operations on an LMB size basis.  With my
-patches this now lets us set each memory_block to span an LMB's worth of
-memory.  Now we could do emory hotplug in a single operation instead of multiple
-operations to offline/online all of the memory sections in an LMB.
-
-Of course the easy solution would be to increase SECTION_SIZE_BITS, but we need
-support hardware that can have LMB's from 16 MB to 256 MB in size so the
-SECTION_SIZE_BITS value has to remain small. 
-
 > 
-> One problem is that I don't have enough knowledge about configfs..it seems complex.
+> Seems to be the same issue, right?
+> 
 
-Me neither, thoug I will take a look at it.
+Exactly the same. Only RAX value is different, its another chain.
 
--Nathan
+BTW, 0x720 is not skb->len like I said earlier, but skb->truesize, and
+0x720 is OK on a 64 bit machine for a regular packet.
+
+48 8b 57 18             mov    0x18(%rdi),%rdx     skb->sk
+8b 87 d8 00 00 00       mov    0xd8(%rdi),%eax     skb->truesize
+48 8d 8a ac 00 00 00    lea 0xac(%rdx),%rcx
+f0 29 82 ac 00 00 00    lock sub %eax,0xac(%rdx)
+48 8b 57 18             mov    0x18(%rdi),%rdx     skb->sk
+8b 8f d8 00 00 00       mov    0xd8(%rdi),%ecx     skb->truesize
+48 8b 42 38                  mov    0x38(%rdx),%rax  sk->sk_prot
+<48> 83 b8 b0 00 00 00 00    cmpq   $0x0,0xb0(%rax)
+74 06 					     je     .+6
+01 8a fa 00 00 00       add    %ecx,0xfa(%rdx)
+
+
+One thing to notice are the RDX and RBP values:
+
+RDX: ffff8803f0ce05c0 
+RBP: ffff8803f0ee05c0
+
+RDX being the sk pointer (and sk+0x38 contains the corrupted "sk_prot" value)
+, we notice RBP contains same "sk" value + 0x200000  (2 Mbytes).
+
+(same remark on your initial bug report)
+
+Could you enable CONFIG_FRAME_POINTER=y in your config ?
+
 
