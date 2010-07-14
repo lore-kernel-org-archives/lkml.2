@@ -1,79 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754818Ab0GNKEN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 06:04:13 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60509 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753574Ab0GNKEL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 06:04:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=V6CGx4k0pe0EAIz2Iku2gTCnUXlRFeYH44CunfbTtvGKdCOm3Sv+h64vjwSmMuwyNe
-         JYwP1xVShBcuNXfRcPsPFXtn3Xf7qDwfF+07XLB4jM9MciYjiSX0TXuvwODe6PZWbR09
-         pLgJo3rn4kKqiu2loJgMgPZXhoaLdWCIKeDes=
+	id S1754262Ab0GNKHW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 06:07:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:40481 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753363Ab0GNKHU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 06:07:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,201,1278313200"; 
+   d="scan'208";a="300018170"
+Date: Wed, 14 Jul 2010 12:07:14 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Hemanth V <hemanthv@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [RFC] [PATCH] mfd: Support  for TWL6030 PWM
+Message-ID: <20100714100713.GC2771@sortiz-mobl>
+References: <56025.10.24.255.17.1278591051.squirrel@dbdmail.itg.ti.com>
 MIME-Version: 1.0
-In-Reply-To: <tnx630ibd2q.fsf@e102109-lin.cambridge.arm.com>
-References: <AANLkTil6opQmTVVxuP1ngz72_ijpLzdlSFWDSyi4whOt@mail.gmail.com>
-	<tnx630ibd2q.fsf@e102109-lin.cambridge.arm.com>
-Date: Wed, 14 Jul 2010 12:04:09 +0200
-Message-ID: <AANLkTilBdReJssNYLAx6sHtPTez57keWJl6QDOu5V986@mail.gmail.com>
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-From: Zeno Davatz <zdavatz@gmail.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <56025.10.24.255.17.1278591051.squirrel@dbdmail.itg.ti.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Catalin
+Hi Hemanth,
 
-On Wed, Jul 14, 2010 at 11:57 AM, Catalin Marinas
-<catalin.marinas@arm.com> wrote:
-> Zeno Davatz <zdavatz@gmail.com> wrote:
->> I got a new Intel core-8 i7 processor.
->>
->> I am on kernel uname -a
->>
->> Linux zenogentoo 2.6.35-rc5 #97 SMP Tue Jul 13 16:13:25 CEST 2010 i686
->> Intel(R) Core(TM) i7 CPU 960 @ 3.20GHz GenuineIntel GNU/Linux
->>
->> Sometimes in the middle of nowhere all of a sudden all of my 8-cores
->> are at 100% CPU usage and my machine really lags and hangs and is not
->> useable anymore. Some random process just grabs a bunch CPUs according
->> to htop.
->>
->> dmesg tell me that
->>
->> kmemleak: 38 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
->> kmemleak: 2 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
->> kmemleak: 1 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
->> kmemleak: 2 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
->> kmemleak: 2 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
->> kmemleak: 1 new suspected memory leaks (see /sys/kernel/debug/kmemleak)
->
-> These may be related to the NO_BOOTMEM configuration (I sent a patch in
-> a separate reply).
->
-> But even when kmemleak scans the memory, it only uses a single thread
-> and you should only see a single CPU going to 100%. I don't think
-> kmemleak scanning can explain why all the 8 cores are going up to 100%.
+On Thu, Jul 08, 2010 at 05:40:51PM +0530, Hemanth V wrote:
+> From 2c6efcebf2790a4c968309360cfc3559b6d9c110 Mon Sep 17 00:00:00 2001
+> From: Hemanth V <hemanthv@ti.com>
+> Date: Thu, 8 Jul 2010 17:04:06 +0530
+> Subject: [PATCH] Add support for TWL6030 PWM
+> 
+> TWL6030 supports PWM (Pulse Width Modulator) which is used
+> to control charging LED. PWM allows for controlling brightness.
+> This patch implements the APIs required by leds-pwm driver.
+> 
+> Signed-off-by: Hemanth V <hemanthv@ti.com>
+> ---
+>  drivers/mfd/Kconfig       |    9 +++
+>  drivers/mfd/Makefile      |    3 +-
+>  drivers/mfd/twl6030-pwm.c |  163 +++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 174 insertions(+), 1 deletions(-)
+>  create mode 100644 drivers/mfd/twl6030-pwm.c
+> 
+> diff --git a/drivers/mfd/Kconfig b/drivers/mfd/Kconfig
+> index c7c11ef..4459fe5 100644
+> --- a/drivers/mfd/Kconfig
+> +++ b/drivers/mfd/Kconfig
+> @@ -162,6 +162,15 @@ config TWL6030_GPADC
+>  	  Say yes here if you want support for the TWL6030 General Purpose
+>  	  A/D Convertor.
+> 
+> +config TWL6030_PWM
+> +	tristate "TWL6030 PWM (Pulse Width Modulator) Support"
+> +	depends on TWL4030_CORE
+> +	select HAVE_PWM
+> +	default n
+> +	help
+> +	  Say yes here if you want support for TWL6030 PWM.
+> +	  This is used to control charging LED brightness.
+> +
+>  config MFD_TMIO
+>  	bool
+>  	default n
+> diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+> index 204a974..e697101 100644
+> --- a/drivers/mfd/Makefile
+> +++ b/drivers/mfd/Makefile
+> @@ -34,6 +34,7 @@ obj-$(CONFIG_TWL4030_CORE)	+= twl-core.o twl4030-irq.o twl6030-irq.o
+>  obj-$(CONFIG_TWL4030_POWER)    += twl4030-power.o
+>  obj-$(CONFIG_TWL4030_CODEC)	+= twl4030-codec.o
+>  obj-$(CONFIG_TWL6030_GPADC)	+= twl6030-gpadc.o
+I don't have this one on my tree, so the patch didnt apply cleanly.
+I fixed it up though, so the patch is applied.
 
-I am doing:
 
-/usr/src/my2.6> sudo patch -p1 < patch_catalin
-patching file mm/bootmem.c
-Hunk #1 FAILED at 435.
-Hunk #2 FAILED at 461.
-2 out of 2 hunks FAILED -- saving rejects to file mm/bootmem.c.rej
-patching file mm/page_alloc.c
-Hunk #1 FAILED at 3659.
-1 out of 1 hunk FAILED -- saving rejects to file mm/page_alloc.c.rej
+> +obj-$(CONFIG_TWL6030_PWM)	+= twl6030-pwm.o
+> 
+>  obj-$(CONFIG_MFD_MC13783)	+= mc13783-core.o
+> 
+> @@ -63,4 +64,4 @@ obj-$(CONFIG_AB3100_OTP)	+= ab3100-otp.o
+>  obj-$(CONFIG_AB4500_CORE)	+= ab4500-core.o
+>  obj-$(CONFIG_MFD_TIMBERDALE)    += timberdale.o
+>  obj-$(CONFIG_PMIC_ADP5520)	+= adp5520.o
+> -obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+> \ No newline at end of file
+> +obj-$(CONFIG_LPC_SCH)		+= lpc_sch.o
+Unrelated change, please avoid that.
 
-Any hints why it wont apply? Will this patch be in the next RC?
+Cheers,
+Samuel.
 
-Best
-Zeno
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
