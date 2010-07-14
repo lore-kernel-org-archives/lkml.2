@@ -1,115 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756391Ab0GNNpF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 09:45:05 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:60610 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab0GNNpB convert rfc822-to-8bit (ORCPT
+	id S1755328Ab0GNNxm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 09:53:42 -0400
+Received: from smtp-out-223.synserver.de ([212.40.180.223]:1229 "HELO
+	smtp-out-223.synserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753612Ab0GNNxk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 09:45:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=jQqn4DzWtL28z8kUBc6rSMuzBSvJ/j/1R8+dVfvsv5p99kre0H6VHjOSpu0BKt0S1w
-         DQWVT7+SJ39jzQd5Py379GSZbZ5G7Xq4UlfxSxLbmW1Qp9WbDCNIhzUx8wr6bEZvaSDu
-         NGqA+eOrK0Y9/lhyKbX/xnBFMujp9tt8umZSo=
+	Wed, 14 Jul 2010 09:53:40 -0400
+X-SynServer-TrustedSrc: 1
+X-SynServer-AuthUser: markus@trippelsdorf.de
+X-SynServer-PPID: 4497
+Date: Wed, 14 Jul 2010 15:52:17 +0200
+From: Markus Trippelsdorf <markus@trippelsdorf.de>
+To: jaxboe@fusionio.com
+Cc: linux-kernel@vger.kernel.org
+Subject: kernel BUG at fs/block_dev.c:765!
+Message-ID: <20100714135217.GA1797@arch.tripp.de>
 MIME-Version: 1.0
-In-Reply-To: <op.vft2p6do7p4s8u@pikus>
-References: <Pine.LNX.4.44L0.1007131003560.1568-100000@iolanthe.rowland.org>
-	<1279098331-7872-1-git-send-email-ext-andriy.shevchenko@nokia.com>
-	<op.vft2p6do7p4s8u@pikus>
-Date: Wed, 14 Jul 2010 16:44:58 +0300
-Message-ID: <AANLkTil1eG5yzBxvryf-TZINYjeGph-rNz8eELQtm5tj@mail.gmail.com>
-Subject: Re: [PATCHv2] usb: gadget: storage: optional SCSI WRITE FUA bit
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: =?UTF-8?Q?Micha=C5=82_Nazarewicz?= <m.nazarewicz@samsung.com>
-Cc: linux-kernel@vger.kernel.org,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        Denis Karpov <ext-denis.2.karpov@nokia.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/14 Michał Nazarewicz <m.nazarewicz@samsung.com>:
-> On Wed, 14 Jul 2010 11:05:31 +0200, Andy Shevchenko
-> <andy.shevchenko@gmail.com> wrote:
->>
->> MS Windows mounts removable storage in "Removal optimized mode" by
->> default. All the writes to the media are synchronous which is achieved
->> by setting FUA (Force Unit Access) bit in SCSI WRITE(10,12) commands.
->> This prevents I/O requests aggregation in block layer dramatically
->> decreasing performance.
->
->> diff --git a/drivers/usb/gadget/file_storage.c
->> b/drivers/usb/gadget/file_storage.c
->> index b49d86e..45f58d9 100644
->> --- a/drivers/usb/gadget/file_storage.c
->> +++ b/drivers/usb/gadget/file_storage.c
->> @@ -93,6 +93,8 @@
->>  *     removable               Default false, boolean for removable media
->>  *     luns=N                  Default N = number of filenames, number of
->>  *                                     LUNs to support
->> + *     fua=b[,b...]            Default false, booleans for ignore FUA
->> flag
->> + *                                     in SCSI WRITE(6,10,12) commands
->
-> I wonder if it makes sense to make it per-LUN.  I would imagine that it's
-> great
-> to ignore FUA if the device has its own power supply in which case after
-> disconnect
-> the data won't be lost.  This is a per-device property not really per-LUN.
->  As such
-> I'd make this option global for the gadget.
-Make sense only for removable media with one partition.
-Otherwise. why we have sync option per partition f.e., not per device?
+My machine just hanged (while browsing the web).
+After reboot I've found this in the logs:
 
->> @@ -743,6 +752,24 @@ static ssize_t fsg_store_ro(struct device *dev,
->> struct device_attribute *attr,
->>        return rc;
->>  }
->> +static ssize_t fsg_store_fua(struct device *dev, struct device_attribute
->> *attr,
->> +                            const char *buf, size_t count)
->> +{
->> +       ssize_t         rc = count;
->
-> Not really needed here.
-See below
-
->
->> +       struct fsg_lun  *curlun = fsg_lun_from_dev(dev);
->> +       int             i;
->> +
->> +       if (sscanf(buf, "%d", &i) != 1)
->> +               return -EINVAL;
->
-> Why not simple_strtol() directly?
-I did it in the same way like fsg_store_ro() does.
-I have no objections to back to previous solution.
-
->> +
->> +       if (curlun->fua)
->> +               fsg_lun_fsync_sub(curlun);
->
-> Shouldn't that read something like:
->
-> +       if (!curlun->fua && i)
-> +               fsg_lun_fsync_sub(curlun);
->
-> ie. there is no sense in syncing if FUA was active (in which case all
-> writes were synced already, right?) or if the new value is false (since
-> then user does not won't syncing).
-The idea is to sync data before switching from async mode.
-Actually fua = 1 means ignorance of that flag.
-
+Jul 14 15:29:13 arch kernel: ------------[ cut here ]------------
+Jul 14 15:29:13 arch kernel: kernel BUG at fs/block_dev.c:765!
+Jul 14 15:29:13 arch kernel: invalid opcode: 0000 [#1] SMP
+Jul 14 15:29:13 arch kernel: last sysfs file: /sys/devices/virtual/vc/vcsa9/uevent
+Jul 14 15:29:13 arch kernel: CPU 0
+Jul 14 15:29:13 arch kernel: Pid: 10176, comm: mount Not tainted 2.6.35-rc5-00006-gc9cc066 #26 M4A78T-E/System Product Name
+Jul 14 15:29:13 arch kernel: RIP: 0010:[<ffffffff810f66bf>]  [<ffffffff810f66bf>] __bd_abort_claiming+0x17/0x40
+Jul 14 15:29:13 arch kernel: RSP: 0018:ffff8800c9109d18  EFLAGS: 00010207
+Jul 14 15:29:13 arch kernel: RAX: 000000000000c3c3 RBX: ffff88012fb65380 RCX: 0000000000000002
+Jul 14 15:29:13 arch kernel: RDX: 0000000000000003 RSI: ffffffff8182f060 RDI: ffff88012fb65380
+Jul 14 15:29:13 arch kernel: RBP: ffff8800c9109d28 R08: ffff8800c9109b68 R09: ffffffff81877e68
+Jul 14 15:29:13 arch kernel: R10: ffff8800c9109cb8 R11: 0000000000000010 R12: ffff88012fb65380
+Jul 14 15:29:13 arch kernel: R13: 0000000000000001 R14: ffffffff8182f060 R15: 00000000ffffff85
+Jul 14 15:29:13 arch kernel: FS:  00007fd86f721740(0000) GS:ffff880001a00000(0000) knlGS:0000000000000000
+Jul 14 15:29:13 arch kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+Jul 14 15:29:13 arch kernel: CR2: 00007ffce705e000 CR3: 000000001051d000 CR4: 00000000000006f0
+Jul 14 15:29:13 arch kernel: DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+Jul 14 15:29:13 arch kernel: DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Jul 14 15:29:13 arch kernel: Process mount (pid: 10176, threadinfo ffff8800c9108000, task ffff88012ef82c20)
+Jul 14 15:29:13 arch kernel: Stack:
+Jul 14 15:29:13 arch kernel: ffff8800c9109d28 ffffffffffffff85 ffff8800c9109d68 ffffffff810f7b64
+Jul 14 15:29:13 arch kernel: <0> ffff8800c9109d98 0000000000000001 ffffffff8182f060 0000000000000001
+Jul 14 15:29:13 arch kernel: <0> ffff8800cbfec000 ffffffff8182f060 ffff8800c9109de8 ffffffff810d3da2
+Jul 14 15:29:13 arch kernel: Call Trace:
+Jul 14 15:29:13 arch kernel: [<ffffffff810f7b64>] open_bdev_exclusive+0xb3/0xc3
+Jul 14 15:29:13 arch kernel: [<ffffffff810d3da2>] get_sb_bdev+0x47/0x178
+Jul 14 15:29:13 arch kernel: [<ffffffff81131214>] ? ext4_fill_super+0x0/0x208d
+Jul 14 15:29:13 arch kernel: [<ffffffff8112e6b2>] ext4_get_sb+0x18/0x1a
+Jul 14 15:29:13 arch kernel: [<ffffffff810d40a7>] vfs_kern_mount+0x62/0xff
+Jul 14 15:29:13 arch kernel: [<ffffffff810d4313>] do_kern_mount+0x4d/0xef
+Jul 14 15:29:13 arch kernel: [<ffffffff810e86a5>] do_mount+0x6cb/0x744
+Jul 14 15:29:13 arch kernel: [<ffffffff810e87f3>] sys_mount+0x8c/0xcd
+Jul 14 15:29:13 arch kernel: [<ffffffff8102b93b>] system_call_fastpath+0x16/0x1b
+Jul 14 15:29:13 arch kernel: Code: c7 c3 f4 ff ff ff 5e 5f 48 89 d8 5b 41 5c 41 5d 41 5e c9 c3 55 48 89 e5 53 48 83 ec 08 e8 0a 50 f3 ff 48 39 77 50 48 89 fb 74 02 <0f> 0b 48 c7 47 50 00 00 00 00 48 8d 7f 50 31 f6 e8 8b ad f7 ff
+Jul 14 15:29:13 arch kernel: RIP  [<ffffffff810f66bf>] __bd_abort_claiming+0x17/0x40
+Jul 14 15:29:13 arch kernel: RSP <ffff8800c9109d18>
+Jul 14 15:29:13 arch kernel: ---[ end trace e3e601b81dcec19b ]---
 
 -- 
-With Best Regards,
-Andy Shevchenko
+Markus
