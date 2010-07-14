@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757627Ab0GNX3a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:29:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:40159 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754522Ab0GNX32 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:29:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=DeJF1MW2fSwqFoH3mtQ+W/BQM+85g/N4bvEBj+mff5bKnQXYb4jUKtTcnx3+eiJVFx
-         y/PqVgW4sZ6gOy22MPw9PPNp3AD18HxPdl+xn2jEGZ91N4hlshmrqISDnA1tyu3dWEt6
-         bqq3+1d5SUIxMdGnXBMc/aJ408T74pZrX4YwQ=
-Message-ID: <4C3E4852.9010306@gmail.com>
-Date: Thu, 15 Jul 2010 01:29:22 +0200
-From: Tejun Heo <htejun@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1757683Ab0GNXae (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:30:34 -0400
+Received: from e7.ny.us.ibm.com ([32.97.182.137]:39059 "EHLO e7.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756776Ab0GNXad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 19:30:33 -0400
+Date: Wed, 14 Jul 2010 16:30:29 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Josh Triplett <josh@joshtriplett.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
+        dipankar@in.ibm.com, akpm@linux-foundation.org,
+        mathieu.desnoyers@polymtl.ca, dvhltc@us.ibm.com, niv@us.ibm.com,
+        tglx@linutronix.de, peterz@infradead.org, rostedt@goodmis.org,
+        Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com
+Subject: Re: [PATCH RFC tip/core/rcu 29/30] rcu: add boot parameter to
+ suppress RCU CPU stall warning messages
+Message-ID: <20100714233029.GK2417@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100714200945.GA10535@linux.vnet.ibm.com>
+ <1279138204-12849-29-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100714211606.GB4624@feather>
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [patch 0/2] x86: NMI-safe trap handlers
-References: <20100714154923.947138065@efficios.com> <20100714170606.GA22373@basil.fritz.box> <20100714170805.GC4955@Krystal> <20100714185617.GB22373@basil.fritz.box>
-In-Reply-To: <20100714185617.GB22373@basil.fritz.box>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100714211606.GB4624@feather>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Wed, Jul 14, 2010 at 02:16:06PM -0700, Josh Triplett wrote:
+> On Wed, Jul 14, 2010 at 01:10:03PM -0700, Paul E. McKenney wrote:
+> > Although the RCU CPU stall warning messages are a very good way to alert
+> > people to a problem, once alerted, it is sometimes helpful to shut them
+> > off in order to avoid obscuring other messages that might be being used
+> > to track down the problem.  Although you can rebuild the kernel with
+> > CONFIG_RCU_CPU_STALL_DETECTOR=n, this is sometimes inconvenient.  This
+> > commit therefore adds a boot parameter named "rcu_cpu_stall_suppress"
+> > that shuts these messages off without requiring a rebuild (though a
+> > reboot might be needed for those not brave enough to patch their kernel
+> > while it is running).
+> > 
+> > This message-suppression was already in place for the panic case, so this
+> > commit need only rename the variable and export it via module_param().
+> > 
+> > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > ---
+> >  kernel/rcutree.c |   11 ++++++++---
+> >  1 files changed, 8 insertions(+), 3 deletions(-)
+> > 
+> > diff --git a/kernel/rcutree.c b/kernel/rcutree.c
+> > index 5b1c3c2..f3d5906 100644
+> > --- a/kernel/rcutree.c
+> > +++ b/kernel/rcutree.c
+> > @@ -143,6 +143,11 @@ module_param(blimit, int, 0);
+> >  module_param(qhimark, int, 0);
+> >  module_param(qlowmark, int, 0);
+> >  
+> > +#ifdef CONFIG_RCU_CPU_STALL_DETECTOR
+> > +int rcu_cpu_stall_suppress __read_mostly;
+> > +module_param(rcu_cpu_stall_suppress, int, 0);
+> > +#endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
+> 
+> In theory, you could change the permissions on this module_param from 0
+> to 0644, making it appear under /sys as a writable file.  That would
+> allow changing it at runtime rather than just at boot time.  Looking at
+> the use of this variable, changing it dynamically should work.
 
-On 07/14/2010 08:56 PM, Andi Kleen wrote:
-> On Wed, Jul 14, 2010 at 01:08:05PM -0400, Mathieu Desnoyers wrote:
->> * Andi Kleen (andi@firstfloor.org) wrote:
->>>> x86_32 cannot use vmalloc_sync_all() to sychronize the TLBs from
->>>> every processes because the vmalloc area is mapped in a different
->>>> address space for
->>> That doesn't make sense. vmalloc_all_sync() should work on 32bit
->>> too.  It just needs to walk all processes and fix up every page
->>> table.
+Will give it a try!
 
-Yeah, vmalloc_sync_all() synchronizes everything by walking every page
-table, so it should work.  I was saying that just flushing TLB
-wouldn't cut it because multiple top level page table entries can be
-used to map vmalloc areas.  It seems that both 32 and 64bit does that
-tho.
-
-Thanks.
-
--- 
-tejun
+							Thanx, Paul
