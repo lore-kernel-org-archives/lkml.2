@@ -1,42 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756836Ab0GNOSb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 10:18:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:51045 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753465Ab0GNOSa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 10:18:30 -0400
-Date: Wed, 14 Jul 2010 15:18:28 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Christian Dietrich <stettberger@dokucode.de>
-Cc: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Juha Keski-Saari <ext-juha.1.keski-saari@nokia.com>,
-        Rajendra Nayak <rnayak@ti.com>, Samuel Ortiz <sameo@linux.intel.com>,
-        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 1/5] drivers/regulator: Remove dead
- CONFIG_TWL4030_ALLOW_UNSUPPORTED
-Message-ID: <20100714141828.GD31073@rakim.wolfsonmicro.main>
-References: <c3c850bed3f5714f1efcfad24ad4f8bfcb6b5b54.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de>
- <20100714141108.GC31073@rakim.wolfsonmicro.main>
- <86fwzmm9m9.fsf@peer.zerties.org>
+	id S1757166Ab0GNOTI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 10:19:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18983 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756520Ab0GNOTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 10:19:06 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: [PATCH] deadline-iosched: don't allow aliased requests to starve others
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 14 Jul 2010 10:19:02 -0400
+Message-ID: <x494og2cfjd.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <86fwzmm9m9.fsf@peer.zerties.org>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 04:16:46PM +0200, Christian Dietrich wrote:
-> Mark Brown <broonie@opensource.wolfsonmicro.com> writes:
+Hi,
 
-> > Nack, you're missing the point of having this code here.
+In running a test case that tries to trip up the kernel's AIO
+implementation, we ran into a situation where no other I/O to the device
+under test would be completed.  The test program spawned (in this case)
+100 threads, each of which performed the following in a loop:
 
-> So if it isn't a config option, then perhaps it should be named CONFIG_?
+open file O_DIRECT
+queue 1MB of read I/O from file using 16 iocbs
+close file
+repeat
 
-I'm assuming you've got the wrong number negations there, but possibly.
-Really it ought to be platform data I guess.
+The program does NOT wait for the I/O to complete.  The file length is
+only 4MB, meaning that you have 25 threads performing I/O on each of the
+4 1MB regions.
+
+Both deadline and cfq check for aliased requests in the sorted list of
+I/Os, and when an alias is found, the request in the rb tree is moved to
+the dispatch list.  So, what happens is that, with this workload, only
+requests from this program are moved to the dispatch list, starving out
+all other I/O.
+
+The attached patch fixes this problem by issuing all expired requests in
+the aliased request handling code.  The reason I opted to issue all
+expired requsts is because if we only service a single one, I still see
+really awful interactivity;  an ls would take over 5 minutes to
+complete.  With the attached patch, the ls took about 7 seconds to
+complete.
+
+Comments, as always, are welcome.
+
+Cheers,
+Jeff
+
+diff --git a/block/deadline-iosched.c b/block/deadline-iosched.c
+index b547cbc..3f3649a 100644
+--- a/block/deadline-iosched.c
++++ b/block/deadline-iosched.c
+@@ -73,14 +73,41 @@ deadline_latter_request(struct request *rq)
+ 	return NULL;
+ }
+ 
++/*
++ * deadline_check_fifo returns 0 if there are no expired requests on the fifo,
++ * 1 otherwise. Requires !list_empty(&dd->fifo_list[data_dir])
++ */
++static inline int deadline_check_fifo(struct deadline_data *dd, int ddir)
++{
++	struct request *rq = rq_entry_fifo(dd->fifo_list[ddir].next);
++
++	/*
++	 * rq is expired!
++	 */
++	if (time_after(jiffies, rq_fifo_time(rq)))
++		return 1;
++
++	return 0;
++}
++
+ static void
+ deadline_add_rq_rb(struct deadline_data *dd, struct request *rq)
+ {
+ 	struct rb_root *root = deadline_rb_root(dd, rq);
+ 	struct request *__alias;
+ 
+-	while (unlikely(__alias = elv_rb_add(root, rq)))
++	while (unlikely(__alias = elv_rb_add(root, rq))) {
++		int data_dir = rq_data_dir(rq);
++
+ 		deadline_move_request(dd, __alias);
++
++		while (!list_empty(&dd->fifo_list[data_dir]) &&
++		       deadline_check_fifo(dd, data_dir)) {
++			struct request *__rq;
++			__rq = rq_entry_fifo(dd->fifo_list[data_dir].next);
++			deadline_move_request(dd, __rq);
++		}
++	}
+ }
+ 
+ static inline void
+@@ -222,23 +249,6 @@ deadline_move_request(struct deadline_data *dd, struct request *rq)
+ }
+ 
+ /*
+- * deadline_check_fifo returns 0 if there are no expired requests on the fifo,
+- * 1 otherwise. Requires !list_empty(&dd->fifo_list[data_dir])
+- */
+-static inline int deadline_check_fifo(struct deadline_data *dd, int ddir)
+-{
+-	struct request *rq = rq_entry_fifo(dd->fifo_list[ddir].next);
+-
+-	/*
+-	 * rq is expired!
+-	 */
+-	if (time_after(jiffies, rq_fifo_time(rq)))
+-		return 1;
+-
+-	return 0;
+-}
+-
+-/*
+  * deadline_dispatch_requests selects the best request according to
+  * read/write expire, fifo_batch, etc
+  */
