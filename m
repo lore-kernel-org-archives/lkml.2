@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633Ab0GNUOX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:14:23 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:35992 "EHLO e1.ny.us.ibm.com"
+	id S1757912Ab0GNUO0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:14:26 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:52430 "EHLO e5.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757526Ab0GNUKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757528Ab0GNUKR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 14 Jul 2010 16:10:17 -0400
 From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
@@ -15,10 +15,10 @@ Cc: mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
         Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
         Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>,
         "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: [PATCH RFC tip/core/rcu 14/30] net/netfilter: __rcu annotations
-Date: Wed, 14 Jul 2010 13:09:48 -0700
-Message-Id: <1279138204-12849-14-git-send-email-paulmck@linux.vnet.ibm.com>
+        Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
+Subject: [PATCH RFC tip/core/rcu 18/30] kvm: more __rcu annotations
+Date: Wed, 14 Jul 2010 13:09:52 -0700
+Message-Id: <1279138204-12849-18-git-send-email-paulmck@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.0.6
 In-Reply-To: <20100714200945.GA10535@linux.vnet.ibm.com>
 References: <20100714200945.GA10535@linux.vnet.ibm.com>
@@ -30,130 +30,48 @@ From: Arnd Bergmann <arnd@relay.de.ibm.com>
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-Acked-by: Patrick McHardy <kaber@trash.net>
-Cc: "David S. Miller" <davem@davemloft.net>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>
+Cc: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>
 ---
- include/net/netfilter/nf_conntrack.h |    2 +-
- net/ipv4/netfilter/nf_nat_core.c     |    2 +-
- net/netfilter/core.c                 |    2 +-
- net/netfilter/nf_conntrack_ecache.c  |    4 ++--
- net/netfilter/nf_conntrack_extend.c  |    2 +-
- net/netfilter/nf_conntrack_proto.c   |    4 ++--
- net/netfilter/nf_log.c               |    2 +-
- net/netfilter/nf_queue.c             |    2 +-
- 8 files changed, 10 insertions(+), 10 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    2 +-
+ include/linux/kvm_host.h        |    4 ++--
+ 2 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/include/net/netfilter/nf_conntrack.h b/include/net/netfilter/nf_conntrack.h
-index bde095f..92229d1 100644
---- a/include/net/netfilter/nf_conntrack.h
-+++ b/include/net/netfilter/nf_conntrack.h
-@@ -75,7 +75,7 @@ struct nf_conntrack_helper;
- /* nf_conn feature for connections that have a helper */
- struct nf_conn_help {
- 	/* Helper. if any */
--	struct nf_conntrack_helper *helper;
-+	struct nf_conntrack_helper __rcu *helper;
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 76f5483..66524cd 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -378,7 +378,7 @@ struct kvm_mem_aliases {
+ };
  
- 	union nf_conntrack_help help;
+ struct kvm_arch {
+-	struct kvm_mem_aliases *aliases;
++	struct kvm_mem_aliases __rcu *aliases;
  
-diff --git a/net/ipv4/netfilter/nf_nat_core.c b/net/ipv4/netfilter/nf_nat_core.c
-index 4f8bddb..1263f2a 100644
---- a/net/ipv4/netfilter/nf_nat_core.c
-+++ b/net/ipv4/netfilter/nf_nat_core.c
-@@ -38,7 +38,7 @@ static DEFINE_SPINLOCK(nf_nat_lock);
- static struct nf_conntrack_l3proto *l3proto __read_mostly;
- 
- #define MAX_IP_NAT_PROTO 256
--static const struct nf_nat_protocol *nf_nat_protos[MAX_IP_NAT_PROTO]
-+static const struct nf_nat_protocol __rcu *nf_nat_protos[MAX_IP_NAT_PROTO]
- 						__read_mostly;
- 
- static inline const struct nf_nat_protocol *
-diff --git a/net/netfilter/core.c b/net/netfilter/core.c
-index 78b505d..fdaec7d 100644
---- a/net/netfilter/core.c
-+++ b/net/netfilter/core.c
-@@ -27,7 +27,7 @@
- 
- static DEFINE_MUTEX(afinfo_mutex);
- 
--const struct nf_afinfo *nf_afinfo[NFPROTO_NUMPROTO] __read_mostly;
-+const struct nf_afinfo __rcu *nf_afinfo[NFPROTO_NUMPROTO] __read_mostly;
- EXPORT_SYMBOL(nf_afinfo);
- 
- int nf_register_afinfo(const struct nf_afinfo *afinfo)
-diff --git a/net/netfilter/nf_conntrack_ecache.c b/net/netfilter/nf_conntrack_ecache.c
-index cdcc764..5702de3 100644
---- a/net/netfilter/nf_conntrack_ecache.c
-+++ b/net/netfilter/nf_conntrack_ecache.c
-@@ -26,10 +26,10 @@
- 
- static DEFINE_MUTEX(nf_ct_ecache_mutex);
- 
--struct nf_ct_event_notifier *nf_conntrack_event_cb __read_mostly;
-+struct nf_ct_event_notifier __rcu *nf_conntrack_event_cb __read_mostly;
- EXPORT_SYMBOL_GPL(nf_conntrack_event_cb);
- 
--struct nf_exp_event_notifier *nf_expect_event_cb __read_mostly;
-+struct nf_exp_event_notifier __rcu *nf_expect_event_cb __read_mostly;
- EXPORT_SYMBOL_GPL(nf_expect_event_cb);
- 
- /* deliver cached events and clear cache entry - must be called with locally
-diff --git a/net/netfilter/nf_conntrack_extend.c b/net/netfilter/nf_conntrack_extend.c
-index fdc8fb4..9a0f75f 100644
---- a/net/netfilter/nf_conntrack_extend.c
-+++ b/net/netfilter/nf_conntrack_extend.c
-@@ -16,7 +16,7 @@
- #include <linux/skbuff.h>
- #include <net/netfilter/nf_conntrack_extend.h>
- 
--static struct nf_ct_ext_type *nf_ct_ext_types[NF_CT_EXT_NUM];
-+static struct nf_ct_ext_type __rcu *nf_ct_ext_types[NF_CT_EXT_NUM];
- static DEFINE_MUTEX(nf_ct_ext_type_mutex);
- 
- void __nf_ct_ext_destroy(struct nf_conn *ct)
-diff --git a/net/netfilter/nf_conntrack_proto.c b/net/netfilter/nf_conntrack_proto.c
-index 5886ba1..ed6d929 100644
---- a/net/netfilter/nf_conntrack_proto.c
-+++ b/net/netfilter/nf_conntrack_proto.c
-@@ -28,8 +28,8 @@
- #include <net/netfilter/nf_conntrack_l4proto.h>
- #include <net/netfilter/nf_conntrack_core.h>
- 
--static struct nf_conntrack_l4proto **nf_ct_protos[PF_MAX] __read_mostly;
--struct nf_conntrack_l3proto *nf_ct_l3protos[AF_MAX] __read_mostly;
-+static struct nf_conntrack_l4proto __rcu **nf_ct_protos[PF_MAX] __read_mostly;
-+struct nf_conntrack_l3proto __rcu *nf_ct_l3protos[AF_MAX] __read_mostly;
- EXPORT_SYMBOL_GPL(nf_ct_l3protos);
- 
- static DEFINE_MUTEX(nf_ct_proto_mutex);
-diff --git a/net/netfilter/nf_log.c b/net/netfilter/nf_log.c
-index 7df37fd..b07393e 100644
---- a/net/netfilter/nf_log.c
-+++ b/net/netfilter/nf_log.c
-@@ -16,7 +16,7 @@
- #define NF_LOG_PREFIXLEN		128
- #define NFLOGGER_NAME_LEN		64
- 
--static const struct nf_logger *nf_loggers[NFPROTO_NUMPROTO] __read_mostly;
-+static const struct nf_logger __rcu *nf_loggers[NFPROTO_NUMPROTO] __read_mostly;
- static struct list_head nf_loggers_l[NFPROTO_NUMPROTO] __read_mostly;
- static DEFINE_MUTEX(nf_log_mutex);
- 
-diff --git a/net/netfilter/nf_queue.c b/net/netfilter/nf_queue.c
-index 78b3cf9..74aebed 100644
---- a/net/netfilter/nf_queue.c
-+++ b/net/netfilter/nf_queue.c
-@@ -18,7 +18,7 @@
-  * long term mutex.  The handler must provide an an outfn() to accept packets
-  * for queueing and must reinject all packets it receives, no matter what.
-  */
--static const struct nf_queue_handler *queue_handler[NFPROTO_NUMPROTO] __read_mostly;
-+static const struct nf_queue_handler __rcu *queue_handler[NFPROTO_NUMPROTO] __read_mostly;
- 
- static DEFINE_MUTEX(queue_handler_mutex);
- 
+ 	unsigned int n_free_mmu_pages;
+ 	unsigned int n_requested_mmu_pages;
+diff --git a/include/linux/kvm_host.h b/include/linux/kvm_host.h
+index b34b1b4..b1964a8 100644
+--- a/include/linux/kvm_host.h
++++ b/include/linux/kvm_host.h
+@@ -175,7 +175,7 @@ struct kvm {
+ 	raw_spinlock_t requests_lock;
+ 	struct mutex slots_lock;
+ 	struct mm_struct *mm; /* userspace tied to this vm */
+-	struct kvm_memslots *memslots;
++	struct kvm_memslots __rcu *memslots;
+ 	struct srcu_struct srcu;
+ #ifdef CONFIG_KVM_APIC_ARCHITECTURE
+ 	u32 bsp_vcpu_id;
+@@ -185,7 +185,7 @@ struct kvm {
+ 	atomic_t online_vcpus;
+ 	struct list_head vm_list;
+ 	struct mutex lock;
+-	struct kvm_io_bus *buses[KVM_NR_BUSES];
++	struct kvm_io_bus __rcu *buses[KVM_NR_BUSES];
+ #ifdef CONFIG_HAVE_KVM_EVENTFD
+ 	struct {
+ 		spinlock_t        lock;
 -- 
 1.7.0.6
 
