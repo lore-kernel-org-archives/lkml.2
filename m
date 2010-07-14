@@ -1,114 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753965Ab0GNAsu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 13 Jul 2010 20:48:50 -0400
-Received: from mga02.intel.com ([134.134.136.20]:20348 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751576Ab0GNAst (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 13 Jul 2010 20:48:49 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,198,1278313200"; 
-   d="scan'208";a="535283187"
-Subject: Re: perf failed with kernel 2.6.35-rc
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Stephane Eranian <eranian@google.com>
-In-Reply-To: <20100713085019.GB7984@elte.hu>
-References: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
-	 <20100713085019.GB7984@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Wed, 14 Jul 2010 08:49:52 +0800
-Message-Id: <1279068592.2096.924.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1754261Ab0GNAs5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 13 Jul 2010 20:48:57 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:44890 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754035Ab0GNAsz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 13 Jul 2010 20:48:55 -0400
+Date: Tue, 13 Jul 2010 17:48:55 -0700 (PDT)
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+X-X-Sender: sbhatewara@localhost.localdomain
+To: netdev@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com
+Subject: [PATCH 2.6.35-rc1] net-next: vmxnet3 fixes [3/5] Initialize link
+ state at probe time
+In-Reply-To: <alpine.LRH.2.00.1007070202080.5939@localhost.localdomain>
+Message-ID: <alpine.LRH.2.00.1007131748180.32055@localhost.localdomain>
+References: <alpine.LRH.2.00.1007070125440.4652@localhost.localdomain> <alpine.LRH.2.00.1007070202080.5939@localhost.localdomain>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-13 at 10:50 +0200, Ingo Molnar wrote:
-> * Zhang, Yanmin <yanmin_zhang@linux.intel.com> wrote:
-> 
-> > Peter,
-> > 
-> > perf doesn't work on my Nehalem EX machine.
-> > 1) The 1st start of 'perf top' is ok;
-> > 2) Kill the 1st perf and restart it. It doesn't work. No data is showed.
-> > 
-> > I located below commit:
-> > commit 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
-> > Author: Peter Zijlstra <peterz@infradead.org>
-> > Date:   Fri Mar 26 14:08:44 2010 +0100
-> > 
-> >     perf, x86: Add Nehelem PMU programming errata workaround
-> >     
-> >     workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> >     Date: Fri Mar 26 13:59:41 CET 2010
-> >     
-> >     Implement the workaround for Intel Errata AAK100 and AAP53.
-> >     
-> >     Also, remove the Core-i7 name for Nehalem events since there are
-> >     also Westmere based i7 chips.
-> > 
-> > 
-> > If I comment out the workaround in function intel_pmu_nhm_enable_all,
-> > perf could work.
-> > 
-> > A quick glance shows:
-> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
-> > should be:
-> > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
-> 
-> > I triggered sysrq to dump PMU registers and found the last bit of
-> > global status register is 1. I added a status reset operation like below patch:
-> > 
-> > --- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 09:38:11.000000000 +0800
-> > +++ linux-2.6.35-rc5_fork/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 14:41:42.000000000 +0800
-> > @@ -505,8 +505,13 @@ static void intel_pmu_nhm_enable_all(int
-> >  		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
-> >  		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
-> >  
-> > -		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
-> > +		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
-> >  		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
-> > +		/*
-> > +		 * Reset the last 3 bits of global status register in case
-> > +		 * previous enabling causes overflows.
-> > +		 */
-> > +		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
-> >  
-> >  		for (i = 0; i < 3; i++) {
-> >  			struct perf_event *event = cpuc->events[i];
-> >
-> > 
-> > However, it still doesn't work. Current right way is to comment out
-> > the workaround.
-> 
-> Well, how about doing it like this:
-> 
-> 		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
-> 		/*
-> 		 * Reset the last 3 bits of global status register in case
-> 		 * previous enabling causes overflows.
-> 		 */
-> 		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
->   
->  		for (i = 0; i < 3; i++) {
->   			struct perf_event *event = cpuc->events[i];
-> 			...
-> 		}
-> 
->   		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
-> 
 
-> I.e. global-mask, overflow-clear, explicit-enable, then global-enable?
-Ingo,
+Initialize vmxnet3 link state at probe time
 
-wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7) is global enable. So it's
-global-enable, overflow-clear, explicit-enable, then global-disable?
+This change initializes the state of link at the time when driver is
+loaded. The ethtool output for 'link detected' and 'link speed'
+is thus valid even before the interface is brought up.
 
-Yanmin
+Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
 
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 7792a44..1e31d40 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -130,7 +130,7 @@ vmxnet3_tq_stop(struct vmxnet3_tx_queue *tq, struct vmxnet3_adapter *adapter)
+  * Check the link state. This may start or stop the tx queue.
+  */
+ static void
+-vmxnet3_check_link(struct vmxnet3_adapter *adapter)
++vmxnet3_check_link(struct vmxnet3_adapter *adapter, bool affectTxQueue)
+ {
+ 	u32 ret;
+ 
+@@ -143,14 +143,16 @@ vmxnet3_check_link(struct vmxnet3_adapter *adapter)
+ 		if (!netif_carrier_ok(adapter->netdev))
+ 			netif_carrier_on(adapter->netdev);
+ 
+-		vmxnet3_tq_start(&adapter->tx_queue, adapter);
++		if (affectTxQueue)
++			vmxnet3_tq_start(&adapter->tx_queue, adapter);
+ 	} else {
+ 		printk(KERN_INFO "%s: NIC Link is Down\n",
+ 		       adapter->netdev->name);
+ 		if (netif_carrier_ok(adapter->netdev))
+ 			netif_carrier_off(adapter->netdev);
+ 
+-		vmxnet3_tq_stop(&adapter->tx_queue, adapter);
++		if (affectTxQueue)
++			vmxnet3_tq_stop(&adapter->tx_queue, adapter);
+ 	}
+ }
+ 
+@@ -165,7 +167,7 @@ vmxnet3_process_events(struct vmxnet3_adapter *adapter)
+ 
+ 	/* Check if link state has changed */
+ 	if (events & VMXNET3_ECR_LINK)
+-		vmxnet3_check_link(adapter);
++		vmxnet3_check_link(adapter, true);
+ 
+ 	/* Check if there is an error on xmit/recv queues */
+ 	if (events & (VMXNET3_ECR_TQERR | VMXNET3_ECR_RQERR)) {
+@@ -1947,7 +1949,7 @@ vmxnet3_activate_dev(struct vmxnet3_adapter *adapter)
+ 	 * Check link state when first activating device. It will start the
+ 	 * tx queue if the link is up.
+ 	 */
+-	vmxnet3_check_link(adapter);
++	vmxnet3_check_link(adapter, true);
+ 
+ 	napi_enable(&adapter->napi);
+ 	vmxnet3_enable_all_intrs(adapter);
+@@ -2549,6 +2551,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
+ 	}
+ 
+ 	set_bit(VMXNET3_STATE_BIT_QUIESCED, &adapter->state);
++	vmxnet3_check_link(adapter, false);
+ 	atomic_inc(&devices_found);
+ 	return 0;
 
