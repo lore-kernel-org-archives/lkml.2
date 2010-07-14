@@ -1,30 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab0GNSEB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:04:01 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:36979 "EHLO
+	id S1757375Ab0GNSEm (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 14:04:42 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:47318 "EHLO
 	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755191Ab0GNSD6 (ORCPT
+	with ESMTP id S1756680Ab0GNSEk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:03:58 -0400
+	Wed, 14 Jul 2010 14:04:40 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=weciMyGrEULoTFTtpSN3f7oLOu6RTcqYcbaewh64GAFd81DIzQ8OR8f8dYJ/b6vrP8
-         m6mRyeeEh7ZBOrt1/444J8xezWYiBQBlJO79HF3UJ3ABNIa3vkYv/dQDa51YZ5RLXbel
-         OoIG9tYsIjr4y8Q61+ihWgnORKmDL7HdgT82I=
+        b=nFqfC3I6azxYirTJy8ZWEqr9H4AZjDWXcxKyc6GLnp+bNePGUj1SpPSDNGWZT3Ou9Z
+         HEBl/+ZYbU0idNlMh7db9Zxs0witw3j0ldCzIN13Alf9yJCNgJ6Up1572lRIwlVqpzYV
+         YQ27j00DxT3y8AmJNFD0i0X+mchWquZDAnfh8=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Grant Grundler <grundler@parisc-linux.org>,
-        Kyle McMartin <kyle@mcmartin.ca>,
-        "David S. Miller" <davem@davemloft.net>, Joe Perches <joe@perches.com>,
-        Jiri Pirko <jpirko@redhat.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 06/11] tulip: formatting of pointers in printk()
-Date: Wed, 14 Jul 2010 22:03:25 +0400
-Message-Id: <1279130606-10927-1-git-send-email-segooon@gmail.com>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 07/11] scsi: ultrastor: formatting of pointers in printk()
+Date: Wed, 14 Jul 2010 22:03:59 +0400
+Message-Id: <1279130640-11228-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -34,28 +29,53 @@ Use %p instead of %08x in printk().
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/net/tulip/winbond-840.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/scsi/ultrastor.c |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/net/tulip/winbond-840.c b/drivers/net/tulip/winbond-840.c
-index 608b279..66d41cf 100644
---- a/drivers/net/tulip/winbond-840.c
-+++ b/drivers/net/tulip/winbond-840.c
-@@ -1514,12 +1514,12 @@ static int netdev_close(struct net_device *dev)
- 	if (debug > 2) {
- 		int i;
+diff --git a/drivers/scsi/ultrastor.c b/drivers/scsi/ultrastor.c
+index 27aa40f..4715b7c 100644
+--- a/drivers/scsi/ultrastor.c
++++ b/drivers/scsi/ultrastor.c
+@@ -1061,7 +1061,7 @@ static void ultrastor_interrupt(void *dev_id)
+     mscp = (struct mscp *)isa_bus_to_virt(inl(config.icm_address));
+     mscp_index = mscp - config.mscp;
+     if (mscp_index >= ULTRASTOR_MAX_CMDS) {
+-	printk("Ux4F interrupt: bad MSCP address %x\n", (unsigned int) mscp);
++	printk("Ux4F interrupt: bad MSCP address %p\n", mscp);
+ 	/* A command has been lost.  Reset and report an error
+ 	   for all commands.  */
+ 	ultrastor_host_reset(dev_id);
+@@ -1074,8 +1074,8 @@ static void ultrastor_interrupt(void *dev_id)
+ 	unsigned char icm_status = inb(config.icm_address - 1);
+ #if ULTRASTOR_DEBUG & (UD_INTERRUPT|UD_ERROR|UD_ABORT)
+ 	if (icm_status != 1 && icm_status != 2)
+-	    printk("US24F: ICM status %x for MSCP %d (%x)\n", icm_status,
+-		   mscp_index, (unsigned int) mscp);
++		printk("US24F: ICM status %x for MSCP %d (%p)\n", icm_status,
++					mscp_index, mscp);
+ #endif
+ 	/* The manual says clear interrupt then write 0 to ICM status.
+ 	   This seems backwards, but I'll do it anyway.  --jfc */
+@@ -1104,7 +1104,7 @@ static void ultrastor_interrupt(void *dev_id)
+     if (!SCtmp)
+       {
+ #if ULTRASTOR_DEBUG & (UD_ABORT|UD_INTERRUPT)
+-	printk("MSCP %d (%x): no command\n", mscp_index, (unsigned int) mscp);
++	printk("MSCP %d (%p): no command\n", mscp_index, mscp);
+ #endif	
+ #if ULTRASTOR_MAX_CMDS == 1
+ 	config.mscp_busy = FALSE;
+@@ -1154,8 +1154,8 @@ static void ultrastor_interrupt(void *dev_id)
  
--		printk(KERN_DEBUG"  Tx ring at %08x:\n", (int)np->tx_ring);
-+		printk(KERN_DEBUG"  Tx ring at %p:\n", np->tx_ring);
- 		for (i = 0; i < TX_RING_SIZE; i++)
- 			printk(KERN_DEBUG " #%d desc. %04x %04x %08x\n",
- 			       i, np->tx_ring[i].length,
- 			       np->tx_ring[i].status, np->tx_ring[i].buffer1);
--		printk(KERN_DEBUG "  Rx ring %08x:\n", (int)np->rx_ring);
-+		printk(KERN_DEBUG "  Rx ring %p:\n", np->rx_ring);
- 		for (i = 0; i < RX_RING_SIZE; i++) {
- 			printk(KERN_DEBUG " #%d desc. %04x %04x %08x\n",
- 			       i, np->rx_ring[i].length,
+ #if ULTRASTOR_DEBUG & (UD_ABORT|UD_INTERRUPT)
+     if (config.aborted[mscp_index])
+-	printk("Ux4 interrupt: MSCP %d (%x) aborted = %d\n",
+-	       mscp_index, (unsigned int) mscp, config.aborted[mscp_index]);
++	printk("Ux4 interrupt: MSCP %d (%p) aborted = %d\n",
++	       mscp_index, mscp, config.aborted[mscp_index]);
+ #endif
+     config.aborted[mscp_index] = 0;
+ 
 -- 
 1.7.0.4
 
