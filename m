@@ -1,126 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756571Ab0GNXAz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:00:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52630 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753187Ab0GNXAx (ORCPT
+	id S1757495Ab0GNXBH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:01:07 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:44918 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757299Ab0GNXBD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:00:53 -0400
-Message-ID: <4C3E40EC.5060607@kernel.org>
-Date: Wed, 14 Jul 2010 15:57:48 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	Wed, 14 Jul 2010 19:01:03 -0400
+Date: Thu, 15 Jul 2010 01:01:00 +0200
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+To: Ed W <lists@wildgooses.com>
+Cc: David Miller <davem@davemloft.net>, rick.jones2@hp.com, davidsen@tmr.com,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: Raise initial congestion window size / speedup slow start?
+Message-ID: <20100714230100.GL6682@nuttenaction>
+References: <4C3E0684.5060409@wildgooses.com>
+ <4C3E1B54.40604@hp.com>
+ <20100714203919.GD6682@nuttenaction>
+ <20100714.145547.102555471.davem@davemloft.net>
+ <20100714221301.GI6682@nuttenaction>
+ <4C3E3F92.2090506@wildgooses.com>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Don Zickus <dzickus@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: tip/master broken with x2apic and kexec
-References: <4C3BD6AA.3070908@kernel.org> <4C3CE210.2030902@zytor.com> <4C3CF650.30905@kernel.org> <4C3E1FA0.9000107@kernel.org> <4C3E2AE6.30406@kernel.org>
-In-Reply-To: <4C3E2AE6.30406@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C3E4189.0216,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3E3F92.2090506@wildgooses.com>
+X-Key-Id: 98350C22
+X-Key-Fingerprint: 490F 557B 6C48 6D7E 5706 2EA2 4A22 8D45 9835 0C22
+X-GPG-Key: gpg --recv-keys --keyserver wwwkeys.eu.pgp.net 98350C22
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 02:23 PM, Yinghai Lu wrote:
-> On 07/14/2010 01:35 PM, Yinghai Lu wrote:
->> On 07/13/2010 04:27 PM, Yinghai Lu wrote:
->>> On 07/13/2010 03:00 PM, H. Peter Anvin wrote:
->>>> On 07/12/2010 07:59 PM, Yinghai Lu wrote:
->>>>> tip/master: 
->>>>> system1: BIOS enabled x2apic, first kernel boot well, and when kexec second kernel will cause system instant reboot.
->>>>>
->>>>> system2: BIOS not enable x2apic, first kernel boot well and enable x2apic, and kexec second kernel well. but when kexec third kernel will case system instant reboot.
->>>>>
->>>>> linus' tree is ok.
->>>>>
->>>>> but for system2 if boot with nox2apic ,intr-remaping off, iommu off, the kexec loop test will pass.
->>>>>
->>>>> the problem looks start in recent two or three weeks.
->>>>>
->>>>> Any idea?
->>>>>
->>>>> bisecting will take a while, because the system post take a while everytime.
->>>>>
->>>>> Thanks
->>>>>
->>>>> Yinghai Lu
->>>>
->>>> OK, I found the bug... if you could test out the patch which will be
->>>> sent out shortly I would very much appreciate it.
->>>
->>> not sure if your patch is the offending one now.
->>>
->>> kL: kernel from linus tree
->>> kT1: kernel from tip
->>> kT2: kernel from tip with reverting your patch
->>>
->>> BIOS-->kL ---> kL ---> kL....always working
->>> BIOS-->kT1 ---> kT1 --->  kT1 : between second one and third one system reset instant...
->>> BIOS-->kT2 ---> kT2 --->  kT2 : between second one and third one system reset instant...
->>>
->>> BIOS-->kL ---> kL ---> kL ---> then kT1 ---> kT1 .... always working
->>> BIOS-->kL ---> kL ---> kL ---> then kT2 ---> kT2 .... always working
->>>
->>
->> bisecting said:
->>
->>> git bisect good
->> 58687acba59266735adb8ccd9b5b9aa2c7cd205b is the first bad commit
->> commit 58687acba59266735adb8ccd9b5b9aa2c7cd205b
->> Author: Don Zickus <dzickus@redhat.com>
->> Date:   Fri May 7 17:11:44 2010 -0400
->>
->>     lockup_detector: Combine nmi_watchdog and softlockup detector
->>     
->>     The new nmi_watchdog (which uses the perf event subsystem) is very
->>     similar in structure to the softlockup detector.  Using Ingo's
->>     suggestion, I combined the two functionalities into one file:
->>     kernel/watchdog.c.
->>     
->>     Now both the nmi_watchdog (or hardlockup detector) and softlockup
->>     detector sit on top of the perf event subsystem, which is run every
->>     60 seconds or so to see if there are any lockups.
->>     
->>     To detect hardlockups, cpus not responding to interrupts, I
->>     implemented an hrtimer that runs 5 times for every perf event
->>     overflow event.  If that stops counting on a cpu, then the cpu is
->>     most likely in trouble.
->>     
->>     To detect softlockups, tasks not yielding to the scheduler, I used the
->>     previous kthread idea that now gets kicked every time the hrtimer fires.
->>     If the kthread isn't being scheduled neither is anyone else and the
->>     warning is printed to the console.
->>     
->>     I tested this on x86_64 and both the softlockup and hardlockup paths
->>     work.
->>     
-> 
-> with
-> # CONFIG_LOCKUP_DETECTOR is not set
-> # CONFIG_HARDLOCKUP_DETECTOR is not set
-> 
-> kexec loop test could passed.
-> 
-> also that patch will break x2apic preenabled system 's kexec/kdump.
+* Ed W | 2010-07-14 23:52:02 [+0100]:
 
-before the combining patch
+>Out of curiousity, why has it taken so long for active feedback to
+>appear?  If every router simply added a hint to the packet as to the
+>max bandwidth it can offer then we would appear to be able to make
+>massively better decisions on window sizes.  Furthermore routers have
+>the ability to put backpressure on classes of traffic as appropriate.
+>I guess the speed at which ECN has been adopted answers the question
+>of why nothing more exotic has appeared?
 
-CONFIG_DETECT_SOFTLOCKUP=y
-CONFIG_NMI_WATCHDOG=y
+It is quite late here so I will quickly write two sentence about ECN: one
+month ago Lars Eggers posted a link at the tcpm maillinglist where google (not
+really sure if it was google) analysed the employment of ECN - the usage was
+really low. Search the PDF, it is quite interesting one.
 
-will have the same problem.
-
-so the problem should come from NMI_WATCHDOG.
-
-Yinghai
+Hagen
 
 
