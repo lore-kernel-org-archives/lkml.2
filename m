@@ -1,79 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab0GNTWc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 15:22:32 -0400
-Received: from mga02.intel.com ([134.134.136.20]:52426 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754090Ab0GNTWa convert rfc822-to-8bit (ORCPT
+	id S1757332Ab0GNT0R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 15:26:17 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:33165 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752530Ab0GNT0Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 15:22:30 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,203,1278313200"; 
-   d="scan'208";a="638538379"
-From: "Tantilov, Emil S" <emil.s.tantilov@intel.com>
-To: Nico Schottelius <nico-linux-20100702@schottelius.org>,
-        "Kirsher, Jeffrey T" <jeffrey.t.kirsher@intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, netdev <netdev@vger.kernel.org>,
-        "e1000-devel@lists.sourceforge.net" 
-	<e1000-devel@lists.sourceforge.net>,
-        "Allan, Bruce W" <bruce.w.allan@intel.com>
-Date: Wed, 14 Jul 2010 13:22:25 -0600
-Subject: RE: e1000e: receives no packets after resume
- (2.6.35-rc3-00262-g984bc96)
-Thread-Topic: e1000e: receives no packets after resume
- (2.6.35-rc3-00262-g984bc96)
-Thread-Index: AcsaiDS/CyaUolK+RJeykIFybnm7dQJATXjg
-Message-ID: <EA929A9653AAE14F841771FB1DE5A1365FF4B057A0@rrsmsx501.amr.corp.intel.com>
-References: <20100702072826.GB16856@schottelius.org>
- <AANLkTikO8yXXBC9Wt4LKZeu1JD5TKMOW5reB3jpk8Ahp@mail.gmail.com>
- <20100703081732.GA24281@schottelius.org>
-In-Reply-To: <20100703081732.GA24281@schottelius.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 14 Jul 2010 15:26:16 -0400
+Date: Wed, 14 Jul 2010 20:26:12 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: Axel Lin <axel.lin@gmail.com>, linux-kernel <linux-kernel@vger.kernel.org>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Tejun Heo <tj@kernel.org>, Neil Jones <neil.jones@imgtec.com>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH] wm8727: add a missing return in wm8727_platform_probe
+Message-ID: <20100714192612.GA7532@rakim.wolfsonmicro.main>
+References: <1279105051.2290.5.camel@phoenix>
+ <1279119597.3080.120.camel@odin>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279119597.3080.120.camel@odin>
+X-Cookie: No line available at 300 baud.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nico Schottelius wrote:
-> Hey Jeff,
-> 
-> Jeff Kirsher [Fri, Jul 02, 2010 at 02:47:26PM -0700]:
->> On Fri, Jul 2, 2010 at 00:28, Nico Schottelius
->> <nico-linux-20100702@schottelius.org> wrote:
->> [...]
->> Adding the Networking Kernel mailing list (netdev) and Intel Linux
->> LAN Driver mailing list (e1000-patches)...
->> 
->> Would it be possible to get more information about the system/setup?
->> 
->> For example, can you provide the following information:
->>      - full lspci output (lspci -vvv)
->>      - ethtool -i ethX
->>      - dmesg  - after loading the driver and configuring the
->> interfaces 
->>      - kernel config
-> 
-> Attached!
-> 
-> Cheers,
-> 
-> Nico
+On Wed, Jul 14, 2010 at 03:59:57PM +0100, Liam Girdwood wrote:
+> On Wed, 2010-07-14 at 18:57 +0800, Axel Lin wrote:
+> > otherwise the error path will always be executed.
 
-<snip>
+> Both
 
->[   12.228826] e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
->[   12.279610] e1000e 0000:00:19.0: irq 44 for MSI/MSI-X
->[   12.280200] ADDRCONF(NETDEV_UP): eth0: link is not ready
->[   18.282340] e1000e 0000:00:19.0: eth0: Error reading PHY register
+> Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
 
-Note the error from your dmesg log. This is a known issue and we are working on it.
-In meantime you should be able to w/a it by reloading the driver.
-
-Thanks,
-Emil
+...and applied, thanks.
