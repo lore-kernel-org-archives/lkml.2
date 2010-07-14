@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757006Ab0GNS7Z (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 14:59:25 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:33156 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754153Ab0GNS7Y (ORCPT
+	id S1757413Ab0GNTAT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 15:00:19 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:41361 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754090Ab0GNTAQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 14:59:24 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=DIwbAAM36/fk1xG+8JNAeZ7JAq2gNetuLHmTmAGjXVAjKuFlGU5oEgbqLiInaVv4KO7PCJFhKPzxqM6Di9C0eF2NyGeTKzVPVijFMFJyB7PrrgxP8Q5ueElgfD3SzM3F;
-Date: Wed, 14 Jul 2010 11:59:04 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ben Greear <greearb@candelatech.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>, jacob.jun.pan@intel.com
-Subject: Re: Regression:  2.6.34 boot fails on E5405 system, bisected: 
- de08e2c26
-Message-ID: <20100714115904.7004be74@virtuousgeek.org>
-In-Reply-To: <4C3E077C.9040609@zytor.com>
-References: <4C3D067C.10507@candelatech.com>
-	<4C3D101E.5010605@candelatech.com>
-	<20100713191958.260478c0@virtuousgeek.org>
-	<4C3E077C.9040609@zytor.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Wed, 14 Jul 2010 15:00:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=Nr7M2krvhPm6LFkLPB4TU56EoOKIsXs8pxgg7FpjhEwxg449h37TRwvC+7C9BpXRbt
+         l9ANEJfeitvGXMV+O1rMo7SSeBCnBigM9kBqcirE1hJYZlW06IOTjLl+TgoKfmBneZ78
+         Oivxfx9J5VU1DhRnH8glX9WrLG8YI8q7Xf75w=
+Date: Wed, 14 Jul 2010 20:58:31 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Julia Lawall <julia@diku.dk>, Frederic Weisbecker <fweisbec@gmail.com>,
+        John Kacur <jkacur@redhat.com>,
+        OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] scsi: dpt_i2o: fix memory leak
+Message-ID: <20100714185831.GA5164@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Kulikov Vasiliy <segooon@gmail.com>,
+	kernel-janitors@vger.kernel.org,
+	Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+	"James E.J. Bottomley" <James.Bottomley@suse.de>,
+	Julia Lawall <julia@diku.dk>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	John Kacur <jkacur@redhat.com>,
+	OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+	linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <1279130008-9934-1-git-send-email-segooon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279130008-9934-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010 11:52:44 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
+On Wed, Jul 14, 2010 at 09:53:27PM +0400, Kulikov Vasiliy wrote:
+> Free allocated memory if adpt_ioctl_to_context() failed.
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  drivers/scsi/dpt_i2o.c |    4 +++-
+>  1 files changed, 3 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/scsi/dpt_i2o.c b/drivers/scsi/dpt_i2o.c
+> index f2d4df1..dd9a43b 100644
+> --- a/drivers/scsi/dpt_i2o.c
+> +++ b/drivers/scsi/dpt_i2o.c
+> @@ -1839,8 +1839,10 @@ static int adpt_i2o_passthru(adpt_hba* pHba, u32 __user *arg)
+>  	sg_offset = (msg[0]>>4)&0xf;
+>  	msg[2] = 0x40000000; // IOCTL context
+>  	msg[3] = adpt_ioctl_to_context(pHba, reply);
 
-> So I suggest the following changes...
-> 
-> On 07/13/2010 07:19 PM, Jesse Barnes wrote:
-> >>
-> >> static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
-> >> {
-> >> 	int pos;
-> >> 	u32 pcie_cap = 0, cap_data;
-> >> 	printk("fixed_bar_cap, bus: %p  devfn: %u\n", bus, devfn);
-> >> 	pos = PCIE_CAP_OFFSET;
-> >> 	while (pos) {
-> 
-> while (pos >= PCIE_CAP_OFFSET) {
-> 
-> >> 		printk("Before read..\n");
-> >> 		if (raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
-> >> 					  devfn, pos, 4, &pcie_cap))
-> >> 			return 0;
-> >> 		printk("pcie_cap: %u", pcie_cap);
-> >> 		
->    -		if (pcie_cap == 0xffffffff)
->    -			return 0;
-> 		
->    +		if (PCI_EXT_CAP_ID(pcie_cap) == 0x0000 ||
->    +		    PCI_EXT_CAP_ID(pcie_cap) == 0xffff)
->    +			break;
-> 		
-> >> 		printk("Checking vendor..\n");
-> 
-> >> 		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
-> >> 			printk("reading domain_nr\n");
-> >> 			raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
-> >> 					      devfn, pos + 4, 4, &cap_data);
-> >> 			printk("cap_data: %u\n", cap_data);
-> >> 			if ((cap_data & 0xffff) == PCIE_VNDR_CAP_ID_FIXED_BAR)
-> >> 				return pos;
-> >> 		}
-> >>
-> >> 		pos = pcie_cap >> 20;
-> 
-> 		pos = (pcie_cap >> 20) & 0xffc;
-> 
-> >> 		printk("pos after shift: %i\n", pos);
-> >> 	}
-> >>
-> >> 	printk("Returning from fixed_bar_cap\n");
-> >> 	return 0;
-> >> }
-> >>
-> >>
-> > 
-> > I thought a related bug was fixed already; the code should be returning
-> > all zeros for non-existent BAR reads.
+This patch is wrong I'm afraid.  adpt_ioctl_to_context() frees "reply" if
+there is an error.
 
-Changes look ok to me, though I'd prefer not hitting this code at all
-on non-Moorestown if at all possible.
+regards,
+dan carpenter
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+> -	if (msg[3] == (u32)-1)
+> +	if (msg[3] == (u32)-1) {
+> +		kfree(reply);
+>  		return -EBUSY;
+> +	}
+>  
+>  	memset(sg_list,0, sizeof(sg_list[0])*pHba->sg_tablesize);
+>  	if(sg_offset) {
+> -- 
+
