@@ -1,80 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753346Ab0GNPrb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 11:47:31 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36171 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751427Ab0GNPr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 11:47:29 -0400
-Date: Wed, 14 Jul 2010 16:47:27 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sundar R IYER <sundar.iyer@stericsson.com>
-Cc: "lrg@slimlogic.co.uk" <lrg@slimlogic.co.uk>,
-        "sameo@linux.intel.com" <sameo@linux.intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-        Linus WALLEIJ <linus.walleij@stericsson.com>,
-        Bengt JONSSON <bengt.g.jonsson@stericsson.com>
-Subject: Re: [PATCH v2 2/2] ux500: add ab8500-regulators machine specific
- data
-Message-ID: <20100714154726.GH31073@rakim.wolfsonmicro.main>
-References: <20100713141828.GB24260@rakim.wolfsonmicro.main>
- <33A307AF30D7BF4F811B1568FE7A9B1810E7E88D@EXDCVYMBSTM006.EQ1STM.local>
- <20100713145645.GA24626@rakim.wolfsonmicro.main>
- <20100713150814.GA13767@bnru01.bnr.st.com>
- <20100713150905.GD24626@rakim.wolfsonmicro.main>
- <20100713161343.GA25342@bnru01.bnr.st.com>
- <20100713203852.GA1756@rakim.wolfsonmicro.main>
- <20100714145053.GA1689@bnru01.bnr.st.com>
- <20100714145748.GF31073@rakim.wolfsonmicro.main>
- <20100714153643.GB1689@bnru01.bnr.st.com>
-MIME-Version: 1.0
+	id S1756082Ab0GNPsP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 11:48:15 -0400
+Received: from verein.lst.de ([213.95.11.210]:60671 "EHLO verein.lst.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751156Ab0GNPsO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 11:48:14 -0400
+Date: Wed, 14 Jul 2010 17:47:46 +0200
+From: Christoph Hellwig <hch@lst.de>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Christoph Hellwig <hch@lst.de>, Ingo Molnar <mingo@elte.hu>,
+        mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        linux-tip-commits@vger.kernel.org, rostedt@goodmis.org
+Subject: Re: [tip:x86/irq] x86: Always use irq stacks
+Message-ID: <20100714154746.GA2074@lst.de>
+References: <20100628121554.GA6605@lst.de> <tip-7974891db234467eaf1fec613ec0129cb4ac2332@git.kernel.org> <20100630074434.GA25509@elte.hu> <20100630075212.GA24658@lst.de> <20100630075818.GB25509@elte.hu> <20100630080453.GA14371@elte.hu> <20100708204251.GA13569@elte.hu> <20100708205302.GA23961@lst.de> <20100714151215.GA31825@lst.de> <alpine.LFD.2.00.1007141719130.3321@localhost.localdomain>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100714153643.GB1689@bnru01.bnr.st.com>
-X-Cookie: We have DIFFERENT amounts of HAIR --
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1007141719130.3321@localhost.localdomain>
+User-Agent: Mutt/1.3.28i
+X-Spam-Score: 0 () 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 09:06:44PM +0530, Sundar R IYER wrote:
+On Wed, Jul 14, 2010 at 05:27:01PM +0200, Thomas Gleixner wrote:
+> On Wed, 14 Jul 2010, Christoph Hellwig wrote:
+> 
+> > Turns out this wasn't a regression introduced by a commit, but it
+> > happens when CONFIG_FUNCTION_GRAPH_TRACER is enabled.  From a quick
+> > look I have no idea why these would interact badly, especially as
+> > CONFIG_FUNCTION_GRAPH_TRACER works fine with irq stacks if the
+> > CONFIG_4KSTACKS options is set.
+> 
+> So you're saying, that the problem appears when
+> CONFIG_FUNCTION_GRAPH_TRACER is enabled w/o being used and that it
+> exists prior to your patches with irq stacks and 8k stack size, but
+> works with 4k stacks. That's definitely more than odd.
 
-> > Which datasheet, and will the system design actually be varying them at
-> > runtime - if it will how will it do so?  This is the settings for the
+No, the problem does not show up with 8k stack size without irqstacks,
+and does not show up with 4k stacks with irq stacks, but does show up
+with 8k stacks with irqstacks as long as CONFIG_FUNCTION_GRAPH_TRACER is
+enabled. Just disabling it in Ingo's example config makes it work,
+and enabling it in my usual test configs makes the boot fail with
+similar messages to the one Ingo sees.
 
-> I am referring to the AB8500 device data sheet; not sure if its
-> available open.  I have taken the minimal/maximum figures as what is
-> mentioned for each supplies.
-
-OK, you're missing the point here.  The system constraints say what's
-going to be used on this actual system not what an individual component
-is capable of supporting.  Regulators are almost always vastly more
-flexible than any system can use and so the constraints are used to tell
-the regulator core what configurations can be used on a given system.
-You need to check what makes sense on the system for the things that are
-connected.
-
-> > Again, is it really the case that this will happen in this system?
-
-> Yes, if you are referring to regulator enable/disable.
-
-For *all* supplies?
-
-> > Nothing is currently able to actually do that, and unless every consumer
-> > using a given supply is hooked into the regulator API things will go
-> > wrong when some of them start doing so.
-
-> As i said earlier, my intention is to hard code the machine constraints.
-> The actual control in terms of enable/disable, controlling supply
-> voltages will happen, as you say when consumers are hooked up.
-
-Again, you need to think about what's actually hooked up.  Permission to
-do any of this stuff depends heavily on the set of consumers that are
-actually hooked up - think about the example I mentioned above where
-some of the consumers on a shared supply are hooked up and doing enables
-and disables, for example.  What happens when they cause the supply to
-be disabled but another consumer is running?
+> 
+> Thanks,
+> 
+> 	tglx
+---end quoted text---
