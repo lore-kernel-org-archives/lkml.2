@@ -1,98 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752813Ab0GNIJt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 04:09:49 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:39770 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752267Ab0GNIJq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 04:09:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lxDr/knvTr+DutOB8TKT0O1G1IezEfyRk4eWHBUF7GDeBtua/vib324pabIeWkrdDP
-         DV5zobDAmz/VwnKhJWTlpvtrPgWvysVFfTVAT24zAcEmFkzGB9mR14Sj8ELDzM15/+e9
-         v6sZm7xWggccNOHvq/3oEsQh8i2ZnghQhr65U=
-Date: Wed, 14 Jul 2010 01:09:39 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: [PATCH 3/4] input: switch to input_abs_*() access functions
-Message-ID: <20100714080939.GB2712@core.coreip.homeip.net>
-References: <1274289757-2723-1-git-send-email-daniel@caiaq.de>
- <1274289757-2723-4-git-send-email-daniel@caiaq.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274289757-2723-4-git-send-email-daniel@caiaq.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1752956Ab0GNIOD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 04:14:03 -0400
+Received: from mga03.intel.com ([143.182.124.21]:21505 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752341Ab0GNIN7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 04:13:59 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,200,1278313200"; 
+   d="scan'208";a="299987989"
+Subject: Re: perf failed with kernel 2.6.35-rc
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Stephane Eranian <eranian@google.com>
+In-Reply-To: <1279068592.2096.924.camel@ymzhang.sh.intel.com>
+References: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
+	 <20100713085019.GB7984@elte.hu>
+	 <1279068592.2096.924.camel@ymzhang.sh.intel.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Wed, 14 Jul 2010 16:15:02 +0800
+Message-Id: <1279095302.2096.1251.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Daniel,
+On Wed, 2010-07-14 at 08:49 +0800, Zhang, Yanmin wrote:
+> On Tue, 2010-07-13 at 10:50 +0200, Ingo Molnar wrote:
+> > * Zhang, Yanmin <yanmin_zhang@linux.intel.com> wrote:
+> > 
+> > > Peter,
+> > > 
+> > > perf doesn't work on my Nehalem EX machine.
+> > > 1) The 1st start of 'perf top' is ok;
+> > > 2) Kill the 1st perf and restart it. It doesn't work. No data is showed.
+> > > 
+> > > I located below commit:
+> > > commit 1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
+> > > Author: Peter Zijlstra <peterz@infradead.org>
+> > > Date:   Fri Mar 26 14:08:44 2010 +0100
+> > > 
+> > >     perf, x86: Add Nehelem PMU programming errata workaround
+> > >     
+> > >     workaround From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > >     Date: Fri Mar 26 13:59:41 CET 2010
+> > >     
+> > >     Implement the workaround for Intel Errata AAK100 and AAP53.
+> > >     
+> > >     Also, remove the Core-i7 name for Nehalem events since there are
+> > >     also Westmere based i7 chips.
+> > > 
+> > > 
+> > > If I comment out the workaround in function intel_pmu_nhm_enable_all,
+> > > perf could work.
+> > > 
+> > > A quick glance shows:
+> > > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+> > > should be:
+> > > wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+> > 
+> > > I triggered sysrq to dump PMU registers and found the last bit of
+> > > global status register is 1. I added a status reset operation like below patch:
+> > > 
+> > > --- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 09:38:11.000000000 +0800
+> > > +++ linux-2.6.35-rc5_fork/arch/x86/kernel/cpu/perf_event_intel.c	2010-07-14 14:41:42.000000000 +0800
+> > > @@ -505,8 +505,13 @@ static void intel_pmu_nhm_enable_all(int
+> > >  		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
+> > >  		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
+> > >  
+> > > -		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
+> > > +		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+> > >  		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
+> > > +		/*
+> > > +		 * Reset the last 3 bits of global status register in case
+> > > +		 * previous enabling causes overflows.
+> > > +		 */
+> > > +		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+> > >  
+> > >  		for (i = 0; i < 3; i++) {
+> > >  			struct perf_event *event = cpuc->events[i];
+> > >
+> > > 
+> > > However, it still doesn't work. Current right way is to comment out
+> > > the workaround.
+> > 
+> > Well, how about doing it like this:
+> > 
+> > 		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+> > 		/*
+> > 		 * Reset the last 3 bits of global status register in case
+> > 		 * previous enabling causes overflows.
+> > 		 */
+> > 		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+> >   
+> >  		for (i = 0; i < 3; i++) {
+> >   			struct perf_event *event = cpuc->events[i];
+> > 			...
+> > 		}
+> > 
+> >   		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
+> > 
+> 
+> > I.e. global-mask, overflow-clear, explicit-enable, then global-enable?
+> Ingo,
+> 
+> wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7) is global enable. So it's
+> global-enable, overflow-clear, explicit-enable, then global-disable?
+It doesn't work.
 
-On Wed, May 19, 2010 at 07:22:36PM +0200, Daniel Mack wrote:
->  		joydev->corr[i].type = JS_CORR_BROKEN;
-> -		joydev->corr[i].prec = dev->absfuzz[j];
-> -		joydev->corr[i].coef[0] =
-> -			(dev->absmax[j] + dev->absmin[j]) / 2 - dev->absflat[j];
-> -		joydev->corr[i].coef[1] =
-> -			(dev->absmax[j] + dev->absmin[j]) / 2 + dev->absflat[j];
-> +		joydev->corr[i].prec = input_abs_fuzz(dev, j);
-> +
-> +		t = (input_abs_max(dev, j) + input_abs_min(dev, j)) / 2
-> +			- input_abs_flat(dev, j);
-> +		joydev->corr[i].coef[0] = t;
-> +		joydev->corr[i].coef[1] = t;
+I copied the PMU dumping of logical processor 0.
 
-FYI: this is not equivalent transformation - note that original code
-either added or subtracted flat from the average to get coefficient.
+Besides status register's bit0 is equal to 0, PMC0 count is small. So it takes
+a long time to overflow.
 
-> @@ -128,17 +129,20 @@ static void mousedev_touchpad_event(struct input_dev *dev,
->  				    struct mousedev *mousedev,
->  				    unsigned int code, int value)
->  {
-> -	int size, tmp;
->  	enum { FRACTION_DENOM = 128 };
-> +	int tmp;
-> +
-> +	/* use X size for ABS_Y to keep the same scale */
-> +	int size = input_abs_max(dev, ABS_X) - input_abs_min(dev, ABS_X);
-> +
-> +	if (size == 0)
-> +		size = 256 * 2;
->  
->  	switch (code) {
->  
->  	case ABS_X:
->  		fx(0) = value;
->  		if (mousedev->touch && mousedev->pkt_count >= 2) {
-> -			size = dev->absmax[ABS_X] - dev->absmin[ABS_X];
-> -			if (size == 0)
-> -				size = 256 * 2;
->  			tmp = ((value - fx(2)) * 256 * FRACTION_DENOM) / size;
->  			tmp += mousedev->frac_dx;
->  			mousedev->packet.dx = tmp / FRACTION_DENOM;
-> @@ -150,10 +154,6 @@ static void mousedev_touchpad_event(struct input_dev *dev,
->  	case ABS_Y:
->  		fy(0) = value;
->  		if (mousedev->touch && mousedev->pkt_count >= 2) {
-> -			/* use X size to keep the same scale */
-> -			size = dev->absmax[ABS_X] - dev->absmin[ABS_X];
-> -			if (size == 0)
-> -				size = 256 * 2;
 
-The reason we had the repeating code blocks is that we don't do
-calculations for events we are not interested in. This especially
-important for multitouch devices generating lots of data.
+CPU#0: ctrl:       000000070000000f
+CPU#0: status:     0000000000000001
+CPU#0: overflow:   0000000000000000
+CPU#0: fixed:      0000000000000000
+CPU#0: pebs:       0000000000000000
+CPU#0: active:     0000000000000001
+CPU#0:   gen-PMC0 ctrl:  000000000053003c
+CPU#0:   gen-PMC0 count: 00000000549bffd9
+CPU#0:   gen-PMC0 left:  0000000000000002
+CPU#0:   gen-PMC1 ctrl:  00000000004300b1
+CPU#0:   gen-PMC1 count: 0000000000000000
+CPU#0:   gen-PMC1 left:  0000000000000000
+CPU#0:   gen-PMC2 ctrl:  00000000004300b5
+CPU#0:   gen-PMC2 count: 0000000000000000
+CPU#0:   gen-PMC2 left:  0000000000000000
+CPU#0:   gen-PMC3 ctrl:  0000000000000000
+CPU#0:   gen-PMC3 count: 0000000000000000
+CPU#0:   gen-PMC3 left:  0000000000000000
+CPU#0: fixed-PMC0 count: 0000000000000000
+CPU#0: fixed-PMC1 count: 0000000000000000
+CPU#0: fixed-PMC2 count: 0000000000000000
+SysRq : Show Regs
 
-I think I will keep it the way it was.
 
-No need to resubmit, I am working on the patches...
+I instrumented function intel_pmu_nhm_enable_all to check
+PMC0 count register before the workaround and after disabling
+the 3 bits of MSR_CORE_PERF_GLOBAL_CTRL. It's changed unexpectedly.
+below is a debug output about processor 0.
 
-Thanks.
+PMU register counter is changed. before[281474976710654] after[1]
 
--- 
-Dmitry
+So I think the event 0x4300D2 overflows. We need do a save and restore.
+Below patch fixes it.
+
+Yanmin
+
+---
+
+--- linux-2.6.35-rc5/arch/x86/kernel/cpu/perf_event_intel.c	2005-01-01 13:19:50.800000253 +0800
++++ linux-2.6.35-rc5_perf/arch/x86/kernel/cpu/perf_event_intel.c	2005-01-01 16:01:35.324000300 +0800
+@@ -499,21 +499,34 @@ static void intel_pmu_nhm_enable_all(int
+ {
+ 	if (added) {
+ 		struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
++		struct perf_event *event;
+ 		int i;
+ 
++		for (i = 0; i < 3; i++) {
++			event = cpuc->events[i];
++			if (!event)
++				continue;
++			x86_perf_event_update(event);
++		}
+ 		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 0, 0x4300D2);
+ 		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 1, 0x4300B1);
+ 		wrmsrl(MSR_ARCH_PERFMON_EVENTSEL0 + 2, 0x4300B5);
+ 
+-		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x3);
++		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x7);
+ 		wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0x0);
++		/*
++		 * Reset the last 3 bits of global status register in case
++		 * previous enabling causes overflows.
++		 */
++		wrmsrl(MSR_CORE_PERF_GLOBAL_OVF_CTRL, 0x7);
+ 
+ 		for (i = 0; i < 3; i++) {
+-			struct perf_event *event = cpuc->events[i];
++			event = cpuc->events[i];
+ 
+ 			if (!event)
+ 				continue;
+ 
++			x86_perf_event_set_period(event);
+ 			__x86_pmu_enable_event(&event->hw,
+ 					       ARCH_PERFMON_EVENTSEL_ENABLE);
+ 		}
+
+
