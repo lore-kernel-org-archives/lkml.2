@@ -1,114 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678Ab0GNU5p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 16:57:45 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:58128 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757338Ab0GNU5o (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 16:57:44 -0400
-Message-ID: <4C3E24DE.7050208@bluewatersys.com>
-Date: Thu, 15 Jul 2010 08:58:06 +1200
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1757799Ab0GNU4I (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 16:56:08 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:43459 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756860Ab0GNU4G convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 16:56:06 -0400
 MIME-Version: 1.0
-To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-CC: Russell King <linux@arm.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Mike Frysinger <vapier@gentoo.org>,
-        Lothar Wassmann <LW@KARO-electronics.de>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Bryan Wu <cooloney@kernel.org>, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org,
-        vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 3/3] usb/host || arch/arm: Remove dead CONFIG_ARCH_KARO
-References: <cover.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de> <9df7166bb950e7fbc12d1be9f2b9f9cbb9961187.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
-In-Reply-To: <9df7166bb950e7fbc12d1be9f2b9f9cbb9961187.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de>
-X-Enigmail-Version: 1.0.1
+In-Reply-To: <20100714201753.GB22096@Krystal>
+References: <20100714154923.947138065@efficios.com>
+	<20100714155804.049012415@efficios.com>
+	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	<20100714170617.GB4955@Krystal>
+	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	<20100714184642.GA9728@elte.hu>
+	<AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
+	<20100714193652.GA13630@nowhere>
+	<AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
+	<20100714201753.GB22096@Krystal>
+Date: Wed, 14 Jul 2010 13:55:25 -0700
+Message-ID: <AANLkTinDD83ngFttUSA590nDyWTrVu1FmP62QieEjR-6@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14/2010 11:32 PM, Christian Dietrich wrote:
-> CONFIG_ARCH_KARO doesn't exist in Kconfig and is never defined anywhere
-> else, therefore removing all references for it from the source code.
-> 
-> Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-> ---
->  arch/arm/tools/mach-types  |    1 -
->  drivers/usb/host/isp1362.h |   24 +-----------------------
->  2 files changed, 1 insertions(+), 24 deletions(-)
-> 
-> diff --git a/arch/arm/tools/mach-types b/arch/arm/tools/mach-types
-> index 8f10d24..3d86318 100644
-> --- a/arch/arm/tools/mach-types
-> +++ b/arch/arm/tools/mach-types
-> @@ -204,7 +204,6 @@ omaha			ARCH_OMAHA		OMAHA			186
->  ta7			ARCH_TA7		TA7			187
->  nova			SA1100_NOVA		NOVA			188
->  hmk			ARCH_HMK		HMK			189
-> -karo			ARCH_KARO		KARO			190
->  fester			SA1100_FESTER		FESTER			191
->  gpi			ARCH_GPI		GPI			192
->  smdk2410		ARCH_SMDK2410		SMDK2410		193
+On Wed, Jul 14, 2010 at 1:17 PM, Mathieu Desnoyers
+<mathieu.desnoyers@efficios.com> wrote:
+>
+> It only handles the case of a single NMI coming in. What happens in this
+> scenario?
 
-Don't post patches for the mach-types file. It is generated
-automatically from here the ARM machine registry:
-http://www.arm.linux.org.uk/developer/machines/.
+[ two nested NMI's ]
 
-It is perfectly fine to have a machine type defined in mach-types which
-is not supported in the mainline kernel. This allows developers to have
-a stable machine id even if their board is not yet supported in the
-mainline kernel.
+The _right_ thing happens.
 
-> diff --git a/drivers/usb/host/isp1362.h b/drivers/usb/host/isp1362.h
-> index d995351..0f97820 100644
-> --- a/drivers/usb/host/isp1362.h
-> +++ b/drivers/usb/host/isp1362.h
-> @@ -8,29 +8,7 @@
->  /*
->   * Platform specific compile time options
->   */
-> -#if defined(CONFIG_ARCH_KARO)
-> -#include <asm/arch/hardware.h>
-> -#include <asm/arch/pxa-regs.h>
-> -#include <asm/arch/karo.h>
-> -
-> -#define USE_32BIT		1
-> -
-> -
-> -/* These options are mutually eclusive */
-> -#define USE_PLATFORM_DELAY	1
-> -#define USE_NDELAY		0
-> -/*
-> - * MAX_ROOT_PORTS: Number of downstream ports
-> - *
-> - * The chip has two USB ports, one of which can be configured as
-> - * an USB device port, so the value of this constant is implementation
-> - * specific.
-> - */
-> -#define MAX_ROOT_PORTS		2
-> -#define DUMMY_DELAY_ACCESS do {} while (0)
-> -
-> -/* insert platform specific definitions for other machines here */
-> -#elif defined(CONFIG_BLACKFIN)
-> +#if defined(CONFIG_BLACKFIN)
->  
->  #include <linux/io.h>
->  #define USE_32BIT		0
+What do you think the hardware would have done itself? The NMI was
+blocked. It wouldn't get replayed twice. If you have two NMI's
+happening while another NMI is active, you will get a single NMI after
+the first NMI has completed.
 
-The rest of this patch looks fine. It appears the Karo stuff was added
-when the ISP1362 driver was first committed. Probably some left over
-development stuff that got missed.
+So stop these _idiotic_ complaints. And face the music:
 
-~Ryan
+ - NMI's aren't that important. They are a _hell_ of a lot less
+important than the standard page fault path, for example.
 
--- 
-Bluewater Systems Ltd - ARM Technology Solution Centre
+ - We do _not_ want to add more NMI magic outside of the NMI
+codepaths. It's much better to handle NMI special cases in the NMI
+code, rather than sprinkle them in random other codepaths (like percpu
+allocators) that have NOTHING WHAT-SO-EVER to do with NMI's!
 
-Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
-ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
-http://www.bluewatersys.com	New Zealand
-Phone: +64 3 3779127		Freecall: Australia 1800 148 751
-Fax:   +64 3 3779135			  USA 1800 261 2934
+                        Linus
+
+>
+> - NMI (1) comes in.
+> - takes a fault
+>    - iret
+> - NMI (2) comes in.
+>  - nesting detected, popf/ret
+> - takes another fault
+> - NMI (3) comes in.
+>  - nesting detected, popf/ret
+> - iret faults
+>  - executes only one extra NMI handler
+>
+> We miss NMI (3) here. I think this is an important change from a semantic where,
+> AFAIK, the hardware should be allowed to assume that the CPU will execute as
+> many nmi handlers are there are NMIs acknowledged.
+>
+> Thanks,
+>
+> Mathieu
+>
+> --
+> Mathieu Desnoyers
+> Operating System Efficiency R&D Consultant
+> EfficiOS Inc.
+> http://www.efficios.com
+>
