@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757674Ab0GNXkZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 19:40:25 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54328 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754396Ab0GNXkW (ORCPT
+	id S1757918Ab0GNXkx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 19:40:53 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:59803 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757743Ab0GNXkw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 19:40:22 -0400
-Date: Wed, 14 Jul 2010 16:38:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-        linux-scsi@vger.kernel.org, alsa-devel@alsa-project.org,
-        Jens Axboe <axboe@kernel.dk>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
-Message-Id: <20100714163852.b3c09930.akpm@linux-foundation.org>
-In-Reply-To: <20100709185450.GA29473@kroah.com>
-References: <20100709185450.GA29473@kroah.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Wed, 14 Jul 2010 19:40:52 -0400
+X-Authority-Analysis: v=1.1 cv=g9Y3NohClm0xo0Au7hiKM/lwvZwqTqjWC8eysRFNA3U= c=1 sm=0 a=ZI5MULQygNwA:10 a=ood2b7iyd8MA:10 a=IkcTkHD0fZMA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=Mg6adXEl9tgf5WbaUv4A:9 a=1eGiirTedtfo6eVo-0gA:7 a=m4yAjOr8uqzNIkJ87n1DXUDuaiQA:4 a=QEXdDO2ut3YA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+In-Reply-To: <20100714231117.GA22341@Krystal>
+References: <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	 <20100714170617.GB4955@Krystal>
+	 <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	 <20100714184642.GA9728@elte.hu>
+	 <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com>
+	 <20100714193652.GA13630@nowhere>
+	 <AANLkTilD4aYej_36lOCEvMNCdYc4jBIupi5-77oD9vD2@mail.gmail.com>
+	 <20100714221418.GA14533@nowhere> <20100714223107.GA2350@Krystal>
+	 <20100714224853.GC14533@nowhere>  <20100714231117.GA22341@Krystal>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 14 Jul 2010 19:40:44 -0400
+Message-ID: <1279150844.4190.29.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 9 Jul 2010 11:54:50 -0700
-Greg Kroah-Hartman <gregkh@suse.de> wrote:
+[ /me removes the duplicate email of himself! ]
 
-> This is no longer needed by any userspace tools, so it's safe to
-> remove.
+On Wed, 2010-07-14 at 19:11 -0400, Mathieu Desnoyers wrote:
+> > 
+> > So, when an event triggers in perf, we sometimes want to capture the stacktrace
+> > that led to the event.
+> > 
+> > We want this stacktrace (here we call that a callchain) to be recorded
+> > locklessly. So we want this callchain buffer per cpu, with the following
+> > type:
+> 
+> Ah OK, so you mean that perf now has 2 different ring buffer implementations ?
+> How about using a single one that is generic enough to handle perf and ftrace
+> needs instead ?
+> 
+> (/me runs away quickly before the lightning strikes) ;)
+> 
 
-Makes my FC6 test box not boot - can't find /dev/root.  Then when I go
-back to plain old mainline (2.6.35-rc5) and run `make oldconfig', the
-.config change sticks:
+To be fair, that's just a temp buffer.
 
-@@ -106,8 +106,7 @@
- CONFIG_LOG_BUF_SHIFT=17
- CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
- # CONFIG_CGROUPS is not set
--CONFIG_SYSFS_DEPRECATED=y
--CONFIG_SYSFS_DEPRECATED_V2=y
-+# CONFIG_SYSFS_DEPRECATED_V2 is not set
- CONFIG_RELAY=y
- CONFIG_NAMESPACES=y
- # CONFIG_UTS_NS is not set
+-- Steve
 
-and the box still won't boot.
+(/me sends this to try to remove the dup email he's getting )
+
