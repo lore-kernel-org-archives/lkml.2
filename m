@@ -1,75 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932108Ab0GOBvs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 21:51:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:42782 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758125Ab0GOBvr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 21:51:47 -0400
+	id S1758155Ab0GOCBe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 22:01:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56315 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758125Ab0GOCBc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 22:01:32 -0400
+Message-ID: <4C3E6B78.6070808@cn.fujitsu.com>
+Date: Thu, 15 Jul 2010 09:59:20 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
-References: <20100714154923.947138065@efficios.com>
-	<20100714155804.049012415@efficios.com>
-	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-	<20100714170617.GB4955@Krystal>
-	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-	<20100714203940.GC22096@Krystal>
-	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
-	<20100714222115.GA30122@Krystal>
-	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
-	<AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
-Date: Wed, 14 Jul 2010 18:45:28 -0700
-Message-ID: <AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Vivek Goyal <vgoyal@redhat.com>, Jens Axboe <axboe@kernel.dk>
+CC: Jeff Moyer <jmoyer@redhat.com>, Corrado Zoccolo <czoccolo@gmail.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: [PATCH] CFQ: delay getting cfq group at the very point we really
+ need it
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 6:23 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> So this is what I think it might look like, with the %rip in place.
->  [ ...]
-> Hmm?
+Delay searching or allocating a cfq group at the very point that
+we really need it. This change would save some cycles every time
+we're getting a cfq queue.
 
-I didn't fill in the iret fault details, because I thought that would
-be trivial. We get an exception, it's a slow case, how hard can it be
-to just call the NMI code?
+Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+---
+ block/cfq-iosched.c |    5 +++--
+ 1 files changed, 3 insertions(+), 2 deletions(-)
 
-But thinking some more about it, it doesn't feel as trivial any more.
-We want to set up that same nesting code for the faked NMI call, but
-now I made it be two separate variables, and they need to be set in an
-NMI-safe way without us actually having access to the whole NMI
-blocking that the CPU does for a real NMI.
-
-So there's a few subtleties there too. Probably need to make the two
-percpu values adjacent, and use cmpxchg16b in the "emulate NMI on
-exception" code to set them both atomically. Or something. So I think
-it's doable, but it's admittedly more complicated than I thought it
-would be.
-
-.. and obviously there's nothing that guarantees that the code I
-already posted is correct either. The whole concept might be total
-crap.
-
-                  Linus
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index eb4086f..9b0cf13 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -2820,10 +2820,8 @@ cfq_find_alloc_queue(struct cfq_data *cfqd, bool is_sync,
+ {
+ 	struct cfq_queue *cfqq, *new_cfqq = NULL;
+ 	struct cfq_io_context *cic;
+-	struct cfq_group *cfqg;
+ 
+ retry:
+-	cfqg = cfq_get_cfqg(cfqd, 1);
+ 	cic = cfq_cic_lookup(cfqd, ioc);
+ 	/* cic always exists here */
+ 	cfqq = cic_to_cfqq(cic, is_sync);
+@@ -2852,6 +2850,9 @@ retry:
+ 		}
+ 
+ 		if (cfqq) {
++			struct cfq_group *cfqg;
++
++			cfqg = cfq_get_cfqg(cfqd, 1);
+ 			cfq_init_cfqq(cfqd, cfqq, current->pid, is_sync);
+ 			cfq_init_prio_data(cfqq, ioc);
+ 			cfq_link_cfqq_cfqg(cfqq, cfqg);
+-- 1.5.4.rc3 
