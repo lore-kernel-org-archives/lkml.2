@@ -1,189 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab0GOCl1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 22:41:27 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:58793 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932129Ab0GOClZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 22:41:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=wrSBL8PhxODk8IZlNkgvFt7uULHgfzLurnxXfR5iTFqjDAt7c+fTLGUtxZ2KtTHtmM
-         NST6mwCyZiEkU97EziMzzt6n9Ic1VcqbIdPUEq/hV9u0zRNDBfRdjik+ti/WaVFnLT+l
-         Xxkes3rr6Wpe4NULH2zS3WEd+EkuPvQsMUSuw=
+	id S932171Ab0GOClg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 22:41:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60728 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932144Ab0GOCl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 22:41:26 -0400
+Message-ID: <4C3E7553.1060506@redhat.com>
+Date: Wed, 14 Jul 2010 22:41:23 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <50f719e6afc5504af06be41c057062f625615a0b.1278967121.git.joe@perches.com>
-References: <cover.1278967120.git.joe@perches.com>
-	<50f719e6afc5504af06be41c057062f625615a0b.1278967121.git.joe@perches.com>
-Date: Wed, 14 Jul 2010 21:41:24 -0500
-Message-ID: <AANLkTikkXoqO8WsMDSbuzTwxaKeT2N4o-ocV9lzIMoT4@mail.gmail.com>
-Subject: Re: [PATCH 22/36] fs/cifs: Remove unnecessary casts of private_data
-From: Steve French <smfrench@gmail.com>
-To: Joe Perches <joe@perches.com>
-Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
-        Steve French <sfrench@samba.org>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Zachary Amsden <zamsden@redhat.com>
+CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 15/18] Implement getnsboottime kernel API
+References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-16-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1278987938-23873-16-git-send-email-zamsden@redhat.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-merged into cifs-2.6.git
+On 07/12/2010 10:25 PM, Zachary Amsden wrote:
+> Add a kernel call to get the number of nanoseconds since boot.  This
+> is generally useful enough to make it a generic call.
+>
+> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
 
-On Mon, Jul 12, 2010 at 3:50 PM, Joe Perches <joe@perches.com> wrote:
-> Signed-off-by: Joe Perches <joe@perches.com>
-> ---
->  fs/cifs/file.c  |   24 ++++++++++--------------
->  fs/cifs/inode.c |    4 ++--
->  fs/cifs/ioctl.c |    3 +--
->  3 files changed, 13 insertions(+), 18 deletions(-)
->
-> diff --git a/fs/cifs/file.c b/fs/cifs/file.c
-> index 409e4f5..b5fb2a0 100644
-> --- a/fs/cifs/file.c
-> +++ b/fs/cifs/file.c
-> @@ -427,7 +427,7 @@ static int cifs_reopen_file(struct file *file, bool can_flush)
->        __u16 netfid;
->
->        if (file->private_data)
-> -               pCifsFile = (struct cifsFileInfo *)file->private_data;
-> +               pCifsFile = file->private_data;
->        else
->                return -EBADF;
->
-> @@ -565,8 +565,7 @@ int cifs_close(struct inode *inode, struct file *file)
->        int xid, timeout;
->        struct cifs_sb_info *cifs_sb;
->        struct cifsTconInfo *pTcon;
-> -       struct cifsFileInfo *pSMBFile =
-> -               (struct cifsFileInfo *)file->private_data;
-> +       struct cifsFileInfo *pSMBFile = file->private_data;
->
->        xid = GetXid();
->
-> @@ -641,8 +640,7 @@ int cifs_closedir(struct inode *inode, struct file *file)
->  {
->        int rc = 0;
->        int xid;
-> -       struct cifsFileInfo *pCFileStruct =
-> -           (struct cifsFileInfo *)file->private_data;
-> +       struct cifsFileInfo *pCFileStruct = file->private_data;
->        char *ptmp;
->
->        cFYI(1, "Closedir inode = 0x%p", inode);
-> @@ -863,8 +861,7 @@ int cifs_lock(struct file *file, int cmd, struct file_lock *pfLock)
->                                      length, pfLock,
->                                      posix_lock_type, wait_flag);
->        } else {
-> -               struct cifsFileInfo *fid =
-> -                       (struct cifsFileInfo *)file->private_data;
-> +               struct cifsFileInfo *fid = file->private_data;
->
->                if (numLock) {
->                        rc = CIFSSMBLock(xid, tcon, netfid, length,
-> @@ -965,7 +962,7 @@ ssize_t cifs_user_write(struct file *file, const char __user *write_data,
->
->        if (file->private_data == NULL)
->                return -EBADF;
-> -       open_file = (struct cifsFileInfo *) file->private_data;
-> +       open_file = file->private_data;
->
->        rc = generic_write_checks(file, poffset, &write_size, 0);
->        if (rc)
-> @@ -1067,7 +1064,7 @@ static ssize_t cifs_write(struct file *file, const char *write_data,
->
->        if (file->private_data == NULL)
->                return -EBADF;
-> -       open_file = (struct cifsFileInfo *)file->private_data;
-> +       open_file = file->private_data;
->
->        xid = GetXid();
->
-> @@ -1651,8 +1648,7 @@ int cifs_fsync(struct file *file, int datasync)
->        int xid;
->        int rc = 0;
->        struct cifsTconInfo *tcon;
-> -       struct cifsFileInfo *smbfile =
-> -               (struct cifsFileInfo *)file->private_data;
-> +       struct cifsFileInfo *smbfile = file->private_data;
->        struct inode *inode = file->f_path.dentry->d_inode;
->
->        xid = GetXid();
-> @@ -1756,7 +1752,7 @@ ssize_t cifs_user_read(struct file *file, char __user *read_data,
->                FreeXid(xid);
->                return rc;
->        }
-> -       open_file = (struct cifsFileInfo *)file->private_data;
-> +       open_file = file->private_data;
->
->        if ((file->f_flags & O_ACCMODE) == O_WRONLY)
->                cFYI(1, "attempting read on write only file instance");
-> @@ -1837,7 +1833,7 @@ static ssize_t cifs_read(struct file *file, char *read_data, size_t read_size,
->                FreeXid(xid);
->                return rc;
->        }
-> -       open_file = (struct cifsFileInfo *)file->private_data;
-> +       open_file = file->private_data;
->
->        if ((file->f_flags & O_ACCMODE) == O_WRONLY)
->                cFYI(1, "attempting read on write only file instance");
-> @@ -1968,7 +1964,7 @@ static int cifs_readpages(struct file *file, struct address_space *mapping,
->                FreeXid(xid);
->                return rc;
->        }
-> -       open_file = (struct cifsFileInfo *)file->private_data;
-> +       open_file = file->private_data;
->        cifs_sb = CIFS_SB(file->f_path.dentry->d_sb);
->        pTcon = cifs_sb->tcon;
->
-> diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
-> index 107c84d..ee08248 100644
-> --- a/fs/cifs/inode.c
-> +++ b/fs/cifs/inode.c
-> @@ -288,7 +288,7 @@ int cifs_get_file_info_unix(struct file *filp)
->        struct inode *inode = filp->f_path.dentry->d_inode;
->        struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
->        struct cifsTconInfo *tcon = cifs_sb->tcon;
-> -       struct cifsFileInfo *cfile = (struct cifsFileInfo *) filp->private_data;
-> +       struct cifsFileInfo *cfile = filp->private_data;
->
->        xid = GetXid();
->        rc = CIFSSMBUnixQFileInfo(xid, tcon, cfile->netfid, &find_data);
-> @@ -515,7 +515,7 @@ int cifs_get_file_info(struct file *filp)
->        struct inode *inode = filp->f_path.dentry->d_inode;
->        struct cifs_sb_info *cifs_sb = CIFS_SB(inode->i_sb);
->        struct cifsTconInfo *tcon = cifs_sb->tcon;
-> -       struct cifsFileInfo *cfile = (struct cifsFileInfo *) filp->private_data;
-> +       struct cifsFileInfo *cfile = filp->private_data;
->
->        xid = GetXid();
->        rc = CIFSSMBQFileInfo(xid, tcon, cfile->netfid, &find_data);
-> diff --git a/fs/cifs/ioctl.c b/fs/cifs/ioctl.c
-> index 505926f..9d38a71 100644
-> --- a/fs/cifs/ioctl.c
-> +++ b/fs/cifs/ioctl.c
-> @@ -41,8 +41,7 @@ long cifs_ioctl(struct file *filep, unsigned int command, unsigned long arg)
->        __u64   ExtAttrMask = 0;
->        __u64   caps;
->        struct cifsTconInfo *tcon;
-> -       struct cifsFileInfo *pSMBFile =
-> -               (struct cifsFileInfo *)filep->private_data;
-> +       struct cifsFileInfo *pSMBFile = filep->private_data;
->  #endif /* CONFIG_CIFS_POSIX */
->
->        xid = GetXid();
-> --
-> 1.7.1.337.g6068.dirty
->
->
-
-
+Acked-by: Rik van Riel <riel@redhat.com>
 
 -- 
-Thanks,
-
-Steve
+All rights reversed
