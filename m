@@ -1,39 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab0GOCOF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 22:14:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:32737 "EHLO mx1.redhat.com"
+	id S1758204Ab0GOCPS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 22:15:18 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54114 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758145Ab0GOCOB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 22:14:01 -0400
-Message-ID: <4C3E6EE6.2010606@redhat.com>
-Date: Wed, 14 Jul 2010 22:13:58 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Zachary Amsden <zamsden@redhat.com>
-CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 10/18] Keep SMP VMs more in sync on unstable TSC
-References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-11-git-send-email-zamsden@redhat.com>
-In-Reply-To: <1278987938-23873-11-git-send-email-zamsden@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758145Ab0GOCPP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 22:15:15 -0400
+Date: Thu, 15 Jul 2010 12:15:08 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: build failure after merge of the devicetree tree
+Message-Id: <20100715121508.61f66363.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__15_Jul_2010_12_15_08_+1000_i9vXKrbck4foN/QB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/12/2010 10:25 PM, Zachary Amsden wrote:
-> SMP VMs on machines with unstable TSC have their TSC offset adjusted by the
-> local offset delta from last measurement.  This does not take into account how
-> long it has been since the measurement, leading to drift.  Minimize the drift
-> by accounting for any time difference the kernel has observed.
->
-> Signed-off-by: Zachary Amsden<zamsden@redhat.com>
+--Signature=_Thu__15_Jul_2010_12_15_08_+1000_i9vXKrbck4foN/QB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Acked-by: Rik van Riel <riel@redhat.com>
+Hi Grant,
 
--- 
-All rights reversed
+After merging the devicetree tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
+
+drivers/of/platform.c: In function 'of_device_make_bus_id':
+drivers/of/platform.c:437: error: implicit declaration of function 'of_tran=
+slate_dcr_address'
+
+As you requested, I have dropped that tree form linux-next for today.
+
+Andrew, I hope this does not cause you too much pain.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__15_Jul_2010_12_15_08_+1000_i9vXKrbck4foN/QB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMPm8sAAoJEDMEi1NhKgbswjUIAI549YMkKow+94ttHgvgHA/l
+7Rkd22OGsurDHVEQbZTgYyEBZRPkNTCAgsKuOtlOE2khehjPdSUxgXdQPd0pS5nY
+NnVsmojvEQ53IIzhdBFsIggRCM00ikPDPrPIQ/cTa8fi5pgCVWJEeqF70EmLcrzf
+/QEGEyYtLL3+agrT8edbenGhv/QL+NSP+6unTvM6oLRX3VcNkuUvBLWbed2BJ4Vf
+JuI9cnYGJyV2td8ntW1KHCPltEKAh/VdYmHkThzWGfC76h9zVa3hPjaat1S+DsDt
+m49IGW8MiHAwGA7DQyEj3DxQ2hbC+LxEctrGMln90Qq1XPZ2UA1Iq+3UTxQtNBY=
+=ow4E
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__15_Jul_2010_12_15_08_+1000_i9vXKrbck4foN/QB--
