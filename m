@@ -1,99 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932930Ab0GOJi6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 05:38:58 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:34321 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932909Ab0GOJi5 convert rfc822-to-8bit (ORCPT
+	id S932950Ab0GOJjx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 05:39:53 -0400
+Received: from stinky.trash.net ([213.144.137.162]:40434 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932842Ab0GOJjv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 05:38:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=gUPuEEDDA8Cu5+Xfe3+GrxmOGeqy8qfxG7myObIIW1E3oQuZvKBOSX+4PqVkeK6bya
-         xH6DzAsGz2K2iQPmtSTEPF5fyu9mS+tnYCyuhJATevi2tV82pFVe6xH0a8tbKEqNIPIq
-         MPTtt/XOGWjYc6QYvCrPsPdhytXyrC7QRtLkM=
+	Thu, 15 Jul 2010 05:39:51 -0400
+Message-ID: <4C3ED764.3060301@trash.net>
+Date: Thu, 15 Jul 2010 11:39:48 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimQnt8_OLGOp8VIUk6A10wBDNT3H_prpWNuYhc9@mail.gmail.com>
-References: <cover.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de> 
-	<e75b6cb0826c24f3c0583fb409473c494aff0f63.1279104996.git.qy03fugy@stud.informatik.uni-erlangen.de> 
-	<AANLkTimQnt8_OLGOp8VIUk6A10wBDNT3H_prpWNuYhc9@mail.gmail.com>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Thu, 15 Jul 2010 17:38:36 +0800
-Message-ID: <AANLkTim6SD-dy6iK-QspagJeWQJPAJ-FrE0AW8pAlXTb@mail.gmail.com>
-Subject: Re: [PATCH 2/3] usb/{gadget,host}: Remove dead CONFIG_CPU_PXA27x
-To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Cc: Russell King <linux@arm.linux.org.uk>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>,
-        Robert Jarzmik <robert.jarzmik@free.fr>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        =?UTF-8?Q?Andr=C3=A9_Goddard_Rosa?= <andre.goddard@gmail.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Mike Rapoport <mike@compulab.co.il>,
-        Alexey Dobriyan <adobriyan@gmail.com>,
-        linux-arm-kernel@lists.infradead.org, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "David S. Miller" <davem@davemloft.net>,
+        Jan Engelhardt <jengelh@medozas.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org, kvm@vger.kernel.org,
+        herbert@gondor.hengli.com.au
+Subject: Re: [PATCHv3] extensions: libxt_CHECKSUM extension
+References: <20100711150623.GA7420@redhat.com> <20100711151453.GA7563@redhat.com>
+In-Reply-To: <20100711151453.GA7563@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 8:30 PM, Eric Miao <eric.y.miao@gmail.com> wrote:
-> On Wed, Jul 14, 2010 at 7:32 PM, Christian Dietrich
-> <qy03fugy@stud.informatik.uni-erlangen.de> wrote:
->> CONFIG_CPU_PXA27x doesn't exist in Kconfig, therefore removing all
->> references for it from the source code.
->>
->> Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
->> ---
->>  drivers/usb/gadget/pxa27x_udc.c |   16 ----------------
->>  drivers/usb/host/ohci-pxa27x.c  |    8 --------
->>  2 files changed, 0 insertions(+), 24 deletions(-)
->>
->> diff --git a/drivers/usb/gadget/pxa27x_udc.c b/drivers/usb/gadget/pxa27x_udc.c
->> index 85b0d89..73783f5 100644
->> --- a/drivers/usb/gadget/pxa27x_udc.c
->> +++ b/drivers/usb/gadget/pxa27x_udc.c
->> @@ -2561,12 +2561,6 @@ static void pxa_udc_shutdown(struct platform_device *_dev)
->>                udc_disable(udc);
->>  }
->>
->> -#ifdef CONFIG_CPU_PXA27x
->
-> This should be CONFIG_PXA27x, I'll prepare a patch on this.
->
+Am 11.07.2010 17:14, schrieb Michael S. Tsirkin:
+> diff --git a/extensions/libxt_CHECKSUM.c b/extensions/libxt_CHECKSUM.c
+> new file mode 100644
+> index 0000000..00fbd8f
+> --- /dev/null
+> +++ b/extensions/libxt_CHECKSUM.c
+> @@ -0,0 +1,99 @@
+> +/* Shared library add-on to xtables for CHECKSUM
+> + *
+> + * (C) 2002 by Harald Welte <laforge@gnumonks.org>
+> + * (C) 2010 by Red Hat, Inc
+> + * Author: Michael S. Tsirkin <mst@redhat.com>
+> + *
+> + * This program is distributed under the terms of GNU GPL v2, 1991
+> + *
+> + * libxt_CHECKSUM.c borrowed some bits from libipt_ECN.c
+> + *
+> + * $Id$
 
-    [ARM] pxa: fix incorrect CONFIG_CPU_PXA27x to CONFIG_PXA27x
+Please no CVS IDs.
 
-    Reported-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-    Signed-off-by: Eric Miao <eric.y.miao@gmail.com>
+> + */
+> +#include <stdio.h>
+> +#include <string.h>
+> +#include <stdlib.h>
+> +#include <getopt.h>
+> +
+> +#include <xtables.h>
+> +#include <linux/netfilter/xt_CHECKSUM.h>
+> +
+> +static void CHECKSUM_help(void)
+> +{
+> +	printf(
+> +"CHECKSUM target options\n"
+> +"  --checksum-fill			Fill in packet checksum.\n");
+> +}
+> +
+> +static const struct option CHECKSUM_opts[] = {
+> +	{ "checksum-fill", 0, NULL, 'F' },
+> +	{ .name = NULL }
+> +};
+> +
+> +static int CHECKSUM_parse(int c, char **argv, int invert, unsigned int *flags,
+> +                     const void *entry, struct xt_entry_target **target)
+> +{
+> +	struct xt_CHECKSUM_info *einfo
+> +		= (struct xt_CHECKSUM_info *)(*target)->data;
+> +
+> +	switch (c) {
+> +	case 'F':
+> +		if (*flags)
+> +			xtables_error(PARAMETER_PROBLEM,
+> +			        "CHECKSUM target: Only use --checksum-fill ONCE!");
 
-diff --git a/drivers/usb/gadget/pxa27x_udc.c b/drivers/usb/gadget/pxa27x_udc.c
-index 85b0d89..9807624 100644
---- a/drivers/usb/gadget/pxa27x_udc.c
-+++ b/drivers/usb/gadget/pxa27x_udc.c
-@@ -2561,7 +2561,7 @@ static void pxa_udc_shutdown(struct platform_device *_dev)
- 		udc_disable(udc);
- }
+There is a helper function called xtables_param_act for checking double
+arguments and printing a standarized error message.
 
--#ifdef CONFIG_CPU_PXA27x
-+#ifdef CONFIG_PXA27x
- extern void pxa27x_clear_otgph(void);
- #else
- #define pxa27x_clear_otgph()   do {} while (0)
-diff --git a/drivers/usb/host/ohci-pxa27x.c b/drivers/usb/host/ohci-pxa27x.c
-index a18debd..4181638 100644
---- a/drivers/usb/host/ohci-pxa27x.c
-+++ b/drivers/usb/host/ohci-pxa27x.c
-@@ -203,7 +203,7 @@ static inline void pxa27x_reset_hc(struct pxa27x_ohci *ohci)
- 	__raw_writel(uhchr & ~UHCHR_FHR, ohci->mmio_base + UHCHR);
- }
-
--#ifdef CONFIG_CPU_PXA27x
-+#ifdef CONFIG_PXA27x
- extern void pxa27x_clear_otgph(void);
- #else
- #define pxa27x_clear_otgph()	do {} while (0)
+> +		einfo->operation = XT_CHECKSUM_OP_FILL;
+> +		*flags |= XT_CHECKSUM_OP_FILL;
+> +		break;
+> +	default:
+> +		return 0;
+> +	}
+> +
+> +	return 1;
+> +}
+> +
