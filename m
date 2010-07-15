@@ -1,33 +1,33 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932207Ab0GOCuB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 22:50:01 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:63766 "EHLO
+	id S932212Ab0GOCve (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 22:51:34 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:64448 "EHLO
 	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932134Ab0GOCuA (ORCPT
+	with ESMTP id S932134Ab0GOCvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 22:50:00 -0400
+	Wed, 14 Jul 2010 22:51:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=PRMrmSntAVpS5pqRfvpaEyl1+7IVRt18321TcTuW6ZCb6GFqPMw/gJhBJytmoFUET+
-         A1uSawntICDmREgdkgxpqgWgNI6FL2L+ywXLJdFLfaXus5fRbl//Y7H8O0LITEEdZzPP
-         SbORBu4TlrjlNXrik5sZweZ6ihxMMS9QWcNIg=
-Subject: [PATCH 1/12] ad1836: fix a memory leak if another ad1836 is
-	registered
+        b=nd+gAslSOukPVINfkZKWP0yF6u2I62r+++nvBxyJykx4jrI4uZ3RvOEGRZI4o9ThxZ
+         2a7GpA/gxoHxn+crkbboJQTO/vOnvHmj3bR8klx1hdT3cXYMnZuhevtfpmfIf7/oUpZH
+         BRB6Pq7nIg3WU3NJVF01axrQGSS4hhj9Ma7dA=
+Subject: [PATCH 2/12] ak4642: fix a memory leak if failed to initialise
+	AK4642
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Barry Song <Barry.Song@analog.com>, Tejun Heo <tj@kernel.org>,
-        alsa-devel@alsa-project.org
+        Kuninori Morimoto <morimoto.kuninori@renesas.com>,
+        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
 In-Reply-To: <1279162147.29294.2.camel@mola>
 References: <1279162147.29294.2.camel@mola>
 Content-Type: text/plain
-Date: Thu, 15 Jul 2010 10:50:37 +0800
-Message-Id: <1279162237.29294.4.camel@mola>
+Date: Thu, 15 Jul 2010 10:52:09 +0800
+Message-Id: <1279162329.29294.6.camel@mola>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -35,26 +35,29 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ad1836 is allocated in ad1836_spi_probe() but is not freed if ad1836_register()
-return -EINVAL (if another ad1836 is registered).
+ak4642 should be kfreed if ak4642_init() return error.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- sound/soc/codecs/ad1836.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ sound/soc/codecs/ak4642.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/sound/soc/codecs/ad1836.c b/sound/soc/codecs/ad1836.c
-index 2175384..a01006c 100644
---- a/sound/soc/codecs/ad1836.c
-+++ b/sound/soc/codecs/ad1836.c
-@@ -272,6 +272,7 @@ static int ad1836_register(struct ad1836_priv *ad1836)
+diff --git a/sound/soc/codecs/ak4642.c b/sound/soc/codecs/ak4642.c
+index 7528a54..4feefa8 100644
+--- a/sound/soc/codecs/ak4642.c
++++ b/sound/soc/codecs/ak4642.c
+@@ -491,8 +491,10 @@ static int ak4642_i2c_probe(struct i2c_client *i2c,
+ 	codec->control_data = i2c;
  
- 	if (ad1836_codec) {
- 		dev_err(codec->dev, "Another ad1836 is registered\n");
-+		kfree(ad1836);
- 		return -EINVAL;
- 	}
+ 	ret = ak4642_init(ak4642);
+-	if (ret < 0)
++	if (ret < 0) {
+ 		printk(KERN_ERR "failed to initialise AK4642\n");
++		kfree(ak4642);
++	}
  
+ 	return ret;
+ }
 -- 
 1.5.4.3
 
