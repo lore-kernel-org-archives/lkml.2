@@ -1,178 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754220Ab0GOHEp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 03:04:45 -0400
-Received: from mail.gmx.net ([213.165.64.20]:36787 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752154Ab0GOHEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 03:04:44 -0400
-X-Authenticated: #20450766
-X-Provags-ID: V01U2FsdGVkX1+2brZP8RW2BnR2iOCoiqc7ivft0b5ZwzmmtyYSkS
-	1FyAmRTOLUT7YQ
-Date: Thu, 15 Jul 2010 09:04:51 +0200 (CEST)
-From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-To: Axel Lin <axel.lin@gmail.com>
-cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 7/12] wm8940: fix resource reclaim in wm8940_register
- error path
-In-Reply-To: <1279162893.29294.20.camel@mola>
-Message-ID: <Pine.LNX.4.64.1007150855200.5310@axis700.grange>
-References: <1279162147.29294.2.camel@mola> <1279162893.29294.20.camel@mola>
+	id S1755166Ab0GOHFA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 03:05:00 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52646 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754689Ab0GOHEy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 03:04:54 -0400
+Message-ID: <4C3EB22B.3000701@kernel.org>
+Date: Thu, 15 Jul 2010 00:00:59 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-Y-GMX-Trusted: 0
+To: Suresh Siddha <suresh.b.siddha@intel.com>,
+        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>
+CC: Don Zickus <dzickus@redhat.com>, Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@kernel.org>
+Subject: [PATCH] x86: fix x2apic preenabled system with kexec
+References: <4C3BD6AA.3070908@kernel.org> <4C3CE210.2030902@zytor.com>	 <4C3CF650.30905@kernel.org> <4C3E1FA0.9000107@kernel.org>	 <4C3E2AE6.30406@kernel.org>  <4C3E40EC.5060607@kernel.org> <1279152189.2849.260.camel@sbs-t61.sc.intel.com>
+In-Reply-To: <1279152189.2849.260.camel@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4C3EB2D0.01C9,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Axel
 
-On Thu, 15 Jul 2010, Axel Lin wrote:
+Found one x2apic system kexec loop test failed 
+when CONFIG_NMI_WATCHDOG=y (old) or CONFIG_LOCKUP_DETECTOR=y (current tip)
 
-> >>From 44c93254e5158e3086c4707148d24746067f6b14 Mon Sep 17 00:00:00 2001
-> From: Axel Lin <axel.lin@gmail.com>
-> Date: Thu, 15 Jul 2010 10:13:34 +0800
-> Subject: [PATCH] wm8940: fix resource reclaim in wm8940_register error path
-> 
-> This patch fixes the error path in wm8940_register to properly free resources.
-> 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+first kernel can kexec second kernel, but second kernel can not kexec third one.
 
-Ok, these bugs are real, but let's fix them properly, i.e., release 
-resources at the same level, where they have been acquired:
+it can be duplicated on another system with BIOS preenabled x2apic.
+First kernel can not kexec second kernel.
 
-static int register_codec(struct drv_priv *data)
-{
-	int ret = snd_soc_register_codec();
-	if (ret < 0)
-		return ret;
+It turns out, when kernel boot with pre-enabled x2apic, it will not execute
+disable_local_APIC on shutdown path.
 
-	ret = try();
-	if (failed)
-		goto err;
+when init_apic_mappings() is called in setup_arch, it will skip setting of
+apic_phys when x2apic_mode is set. ( x2apic_mode is much early check_x2apic())
+Then later, disable_local_APIC() will bail out early because !apic_phys.
 
-	...
+So check !x2apic_mode in x2apic_mode in disable_local_APIC with !apic_phys.
 
-err:
-	snd_soc_unregister_codec();
-}
+another solution could be updating init_apic_mappings() to set apic_phys even
+for preenabled x2apic system. Actually even for x2apic system, that lapic
+address is mapped already in early stage.
 
-static int probe()
-{
-	int ret;
-	struct drv_priv *data = kzalloc(sizeof(*data), GFP_KERNEL);
-	if (!data)
-		return -ENOMEM;
+BTW: is there any x2apic preenabled system with apicid of boot cpu > 255?
 
-	ret = register_codec(data);
-	if (ret < 0)
-		goto err;
-
-	...
-
-err:
-	kfree(data);
-	return ret;
-}
-
-That is, kfree() belongs to probe() and not to register_codec. This, of 
-course, concerns all aour patches, at least those of them, that I have 
-seen.
-
-Thanks
-Guennadi
-
-> ---
->  sound/soc/codecs/wm8940.c |   22 ++++++++++++++--------
->  1 files changed, 14 insertions(+), 8 deletions(-)
-> 
-> diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
-> index e3c4bbf..9673e6f 100644
-> --- a/sound/soc/codecs/wm8940.c
-> +++ b/sound/soc/codecs/wm8940.c
-> @@ -766,7 +766,8 @@ static int wm8940_register(struct wm8940_priv *wm8940,
->  	u16 reg;
->  	if (wm8940_codec) {
->  		dev_err(codec->dev, "Another WM8940 is registered\n");
-> -		return -EINVAL;
-> +		ret = -EINVAL;
-> +		goto err;
->  	}
->  
->  	INIT_LIST_HEAD(&codec->dapm_widgets);
-> @@ -785,7 +786,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
->  	ret = snd_soc_codec_set_cache_io(codec, 8, 16, control);
->  	if (ret < 0) {
->  		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
-> -		return ret;
-> +		goto err;
->  	}
->  
->  	memcpy(codec->reg_cache, wm8940_reg_defaults,
-> @@ -794,7 +795,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
->  	ret = wm8940_reset(codec);
->  	if (ret < 0) {
->  		dev_err(codec->dev, "Failed to issue reset\n");
-> -		return ret;
-> +		goto err;
->  	}
->  
->  	wm8940_dai.dev = codec->dev;
-> @@ -803,7 +804,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
->  
->  	ret = snd_soc_write(codec, WM8940_POWER1, 0x180);
->  	if (ret < 0)
-> -		return ret;
-> +		goto err;
->  
->  	if (!pdata)
->  		dev_warn(codec->dev, "No platform data supplied\n");
-> @@ -811,7 +812,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
->  		reg = snd_soc_read(codec, WM8940_OUTPUTCTL);
->  		ret = snd_soc_write(codec, WM8940_OUTPUTCTL, reg | pdata->vroi);
->  		if (ret < 0)
-> -			return ret;
-> +			goto err;
->  	}
->  
->  
-> @@ -820,17 +821,22 @@ static int wm8940_register(struct wm8940_priv *wm8940,
->  	ret = snd_soc_register_codec(codec);
->  	if (ret) {
->  		dev_err(codec->dev, "Failed to register codec: %d\n", ret);
-> -		return ret;
-> +		goto err;
->  	}
->  
->  	ret = snd_soc_register_dai(&wm8940_dai);
->  	if (ret) {
->  		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
-> -		snd_soc_unregister_codec(codec);
-> -		return ret;
-> +		goto err_codec;
->  	}
->  
->  	return 0;
-> +
-> +err_codec:
-> +	snd_soc_unregister_codec(codec);
-> +err:
-> +	kfree(wm8940);
-> +	return ret;
->  }
->  
->  static void wm8940_unregister(struct wm8940_priv *wm8940)
-> -- 
-> 1.5.4.3
-> 
-> 
-> 
-
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org
 ---
-Guennadi Liakhovetski, Ph.D.
-Freelance Open-Source Software Developer
-http://www.open-technology.de/
+ arch/x86/kernel/apic/apic.c |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+Index: linux-2.6/arch/x86/kernel/apic/apic.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/apic/apic.c
++++ linux-2.6/arch/x86/kernel/apic/apic.c
+@@ -921,7 +921,7 @@ void disable_local_APIC(void)
+ 	unsigned int value;
+ 
+ 	/* APIC hasn't been mapped yet */
+-	if (!apic_phys)
++	if (!x2apic_mode && !apic_phys)
+ 		return;
+ 
+ 	clear_local_APIC();
