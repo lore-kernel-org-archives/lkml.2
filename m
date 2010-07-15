@@ -1,90 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934941Ab0GOWud (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 18:50:33 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:39923 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934920Ab0GOWub (ORCPT
+	id S934960Ab0GOW6u (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 18:58:50 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:34748 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934946Ab0GOW6t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 18:50:31 -0400
-Date: Thu, 15 Jul 2010 18:50:20 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@lynx
-To: Michal Marek <mmarek@suse.cz>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-input@vger.kernel.org, Greg KH <greg@kroah.com>
-Subject: Re: any value in running my kernel scanning scripts before
- release?
-In-Reply-To: <4C3F0D1B.9060403@suse.cz>
-Message-ID: <alpine.DEB.2.00.1007151845490.11593@lynx>
-References: <alpine.DEB.2.00.1007150728520.13042@lynx> <4C3F0D1B.9060403@suse.cz>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+	Thu, 15 Jul 2010 18:58:49 -0400
+Date: Fri, 16 Jul 2010 00:58:44 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+Message-ID: <20100715225844.GA25420@one.firstfloor.org>
+References: <20100714222115.GA30122@Krystal> <AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com> <AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com> <AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com> <20100715183153.GA9276@Krystal> <AANLkTilfXUtQznSzOmO9ecoaviIt62Hv6jdUOMSRLdrF@mail.gmail.com> <AANLkTimAn0uMpeYKctO0qxM6nwbfev3RHARLZIbf991k@mail.gmail.com> <20100715220117.GA1499@Krystal> <AANLkTinL3S3iMSoP0fb6bxn9IY62OmytBtbqCKy9CZk2@mail.gmail.com> <AANLkTinOTwnSNgwX7PnalhzwWMjwie0Xk_Lnrn_0bLzz@mail.gmail.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinOTwnSNgwX7PnalhzwWMjwie0Xk_Lnrn_0bLzz@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Jul 2010, Michal Marek wrote:
+> Why do we force IST use for NMI, btw? Maybe we shouldn't, and just use
+> the normal kernel stack mechanisms?
 
-> On 07/15/2010 01:32 PM, Robert P. J. Day wrote:
-> >
-> >   normally i wait for the merge window, then run my kernel scanning
-> > scripts and post results.  any interest in me doing that earlier?  i
-> > just did a quick test and found a number of incongruities like, for
-> > example:
-> >
-> > $ grep -r "config QT2160" *
-> > drivers/input/keyboard/Kconfig:config QT2160
-> > $
-> >
-> > $ grep -r KEYBOARD_QT2160 *
-> > drivers/input/keyboard/Makefile:obj-$(CONFIG_KEYBOARD_QT2160) += qt2160.o
-> > $
->
-> These are plain bugs, so it's IMO OK to send fixes for these at any
-> time before the final release. In the worst case, it will be merged
-> after the final release.
+If you don't use IST the SYSCALL entry is racy during the window
+when RSP is not set up yet (same for MCE etc.)
 
-  i wasn't suggesting that was the only example, only that it was an
-obvious one.  there are others.  just for fun, here's the entire list
-of references specifically from *Makefiles* to Kconfig variables that
-don't exist (for whatever reason):
-
-===== ATHEROS_AR71XX =====
-./drivers/net/wireless/ath/ath9k/Makefile:ath9k-$(CONFIG_ATHEROS_AR71XX) += ahb.o
-===== KEYBOARD_QT2160 =====
-./drivers/input/keyboard/Makefile:obj-$(CONFIG_KEYBOARD_QT2160)		+= qt2160.o
-===== PCMCIA_IOCTL =====
-./drivers/pcmcia/Makefile:pcmcia-$(CONFIG_PCMCIA_IOCTL)			+= pcmcia_ioctl.o
-===== USB_ETH_FUNCTIONFS =====
-./drivers/usb/gadget/Makefile:obj-$(CONFIG_USB_ETH_FUNCTIONFS)	+= g_eth_ffs.o
-
-  in other words, none of that content is ever going to get compiled.
-mercifully, there are only four examples of that left in the tree.
-used to be a lot more.  clean up whatever catches your eye.
-
-rday
-
-p.s.  i cc'ed greg kh since i suspect he'll want to do something about
-that last one.  i need sleep.
-
+-Andi
 -- 
-
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
-
-        Top-notch, inexpensive online Linux/OSS/kernel courses
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+ak@linux.intel.com -- Speaking for myself only.
