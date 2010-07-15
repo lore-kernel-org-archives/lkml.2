@@ -1,76 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934504Ab0GOTIM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 15:08:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36263 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934488Ab0GOTIJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 15:08:09 -0400
+	id S934514Ab0GOTIj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 15:08:39 -0400
+Received: from mail.gmx.net ([213.165.64.20]:47906 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S934449Ab0GOTIg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 15:08:36 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19PduZxBK1P2jNMq+BKmFdR8NRaXDquq/kjL52hbB
+	QWRXhcYjG7vLjZ
+From: Peter Huewe <PeterHuewe@gmx.de>
+To: Kernel Janitors <kernel-janitors@vger.kernel.org>
+Subject: [PATCH 24/25] video/ivtv: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
+Date: Thu, 15 Jul 2010 21:08:26 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
+Cc: Andy Walls <awalls@md.metrocast.net>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Ian Armstrong <ian@iarmst.demon.co.uk>,
+        Douglas Schilling Landgraf <dougsland@redhat.com>,
+        Steven Toth <stoth@kernellabs.com>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20100715183153.GA9276@Krystal>
-References: <20100714155804.049012415@efficios.com>
-	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-	<20100714170617.GB4955@Krystal>
-	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-	<20100714203940.GC22096@Krystal>
-	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
-	<20100714222115.GA30122@Krystal>
-	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
-	<AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
-	<AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com>
-	<20100715183153.GA9276@Krystal>
-Date: Thu, 15 Jul 2010 11:43:10 -0700
-Message-ID: <AANLkTilfXUtQznSzOmO9ecoaviIt62Hv6jdUOMSRLdrF@mail.gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007152108.27175.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 11:31 AM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
->
-> Hrm, we could probably get away with only keeping the nmi_stack_nested per-cpu
-> variable. The nmi_stack_ptr could be known statically if we set it at a fixed
-> offset from the bottom of stack rather than using an offset relative to the top
-> (which can change depending if we are nested over the kernel or userspace).
-> We just have to reserve enough space for the bottom of stack.
+From: Peter Huewe <peterhuewe@gmx.de>
 
-I thought about trying that, but I don't think it's true. At least not
-for the 32-bit case.
+This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
+.subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
+PCI_VDEVICE macro, and thus improves readability.
 
-The thing is, the 32-bit case will re-use the kernel stack if it
-happens in kernel space, and will thus start from a random space (and
-won't push all the information anyway). So a nested NMI really doesn't
-know where the original NMI stack is to be found unless we save it
-off.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/media/video/ivtv/ivtv-driver.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-In the case of x86-64, I think the stack will always be at a fixed
-address, and push a fixed amount of data (because we use the IST
-thing). So there you could probably just use the flag, but you'd still
-have to handle the 32-bit case, and quite frankly, I think it would be
-much nicer if the logic could be shared for the 32-bit and 64-bit
-cases.
+diff --git a/drivers/media/video/ivtv/ivtv-driver.c b/drivers/media/video/ivtv/ivtv-driver.c
+index 90daa6e..8e73ab9 100644
+--- a/drivers/media/video/ivtv/ivtv-driver.c
++++ b/drivers/media/video/ivtv/ivtv-driver.c
+@@ -69,10 +69,8 @@ int ivtv_first_minor;
+ 
+ /* add your revision and whatnot here */
+ static struct pci_device_id ivtv_pci_tbl[] __devinitdata = {
+-	{PCI_VENDOR_ID_ICOMP, PCI_DEVICE_ID_IVTV15,
+-	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
+-	{PCI_VENDOR_ID_ICOMP, PCI_DEVICE_ID_IVTV16,
+-	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
++	{PCI_VDEVICE(ICOMP, PCI_DEVICE_ID_IVTV15), 0},
++	{PCI_VDEVICE(ICOMP, PCI_DEVICE_ID_IVTV16), 0},
+ 	{0,}
+ };
+ 
+-- 
+1.7.1
 
-But maybe I'm missing something.
-
-             Linus
