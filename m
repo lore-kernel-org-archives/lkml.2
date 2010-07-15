@@ -1,180 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933108Ab0GOL6F (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 07:58:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23303 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758459Ab0GOL55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 07:57:57 -0400
-Date: Thu, 15 Jul 2010 14:52:29 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Daniel P. Berrange" <berrange@redhat.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>
-Cc: Patrick McHardy <kaber@trash.net>, "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jan Engelhardt <jengelh@medozas.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: [PATCHv4] extensions: libxt_CHECKSUM extension
-Message-ID: <20100715115229.GB6737@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100715114434.GA6415@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S933123Ab0GOMFf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 08:05:35 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48824 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932486Ab0GOMFd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 08:05:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=LXiw3po7vmK7QIHWnhmPCnPm76Q3xNKX1h/jdp48AqrVCb+yAweI7hqxQJNAoREC5c
+         OE4cwI7ZvX6hnOBq0JTJ6xcQingSZugVJ1NPLrdVAf3/6g8nyk9nwNSJAM3bTZZJNKtm
+         KW0n8VkTNXcGhal4rOGnyvfN3Ml7yyXwPLqJk=
+Subject: Re: oops in tcp_xmit_retransmit_queue() w/ v2.6.32.15
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
+Cc: Ilpo =?ISO-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>,
+        Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
+        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
+In-Reply-To: <4C3EF7EA.2040900@nets.rwth-aachen.de>
+References: <4C358AAA.9080400@kernel.org>
+	 <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi>
+	 <4C3EF7EA.2040900@nets.rwth-aachen.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Jul 2010 14:05:28 +0200
+Message-ID: <1279195528.2496.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds a `CHECKSUM' target, which can be used in the iptables mangle
-table.
+Le jeudi 15 juillet 2010 à 13:58 +0200, Lennart Schulte a écrit :
+> I'm testing new reordering algorithms in a virtual testbed, that is the 
+> nodes are emulated with xen and all the network parameters can be tuned 
+> with queues.
+> With one of the algorithms I also got tracebacks which include 
+> tcp_xmit_retransmit_queue. It only happens with ACK loss. The kernel 
+> version however is 2.6.31.
+> When I read this thread I tried the debug patch and got the following:
+> 
+> [ 2754.413150] NULL head, pkts 0
+> [ 2754.413156] Errors caught so far 1
+> 
+> Hope that is of any help.
 
-You can use this target to compute and fill in the checksum in
-a packet that lacks a checksum.  This is particularly useful,
-if you need to work around old applications such as dhcp clients,
-that do not work well with checksum offloads, but don't want to disable
-checksum offload in your device.
+Not sure I understand. 
 
-The problem happens in the field with virtualized applications.
-For reference, see Red Hat bz 605555, as well as
-http://www.spinics.net/lists/kvm/msg37660.html
+Are you saying you reproduce same tcp_xmit_retransmit_queue()  bug, with
+a special tc qdisc/class droppping some ACK frames ?
 
-Typical expected use (helps old dhclient binary running in a VM):
-iptables -A POSTROUTING -t mangle -p udp --dport bootpc \
--j CHECKSUM --checksum-fill
+Could it be some sched problem and incorrect return codes in case of
+congestion ?
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-Includes fixes by Jan Engelhardt <jengelh@medozas.de>
----
 
-Changes from v3: fixed issues from review by Patrick McHardy
-Applied these fixes by Jan Engelhardt
-	Remove $$ cvs tags
-	Use xtables_param_act
-
- extensions/libxt_CHECKSUM.c   |   96 +++++++++++++++++++++++++++++++++++++++++
- extensions/libxt_CHECKSUM.man |    8 +++
- 2 files changed, 104 insertions(+), 0 deletions(-)
- create mode 100644 extensions/libxt_CHECKSUM.c
- create mode 100644 extensions/libxt_CHECKSUM.man
-
-diff --git a/extensions/libxt_CHECKSUM.c b/extensions/libxt_CHECKSUM.c
-new file mode 100644
-index 0000000..9a24443
---- /dev/null
-+++ b/extensions/libxt_CHECKSUM.c
-@@ -0,0 +1,96 @@
-+/* Shared library add-on to xtables for CHECKSUM
-+ *
-+ * (C) 2002 by Harald Welte <laforge@gnumonks.org>
-+ * (C) 2010 by Red Hat, Inc
-+ * Author: Michael S. Tsirkin <mst@redhat.com>
-+ *
-+ * This program is distributed under the terms of GNU GPL v2, 1991
-+ *
-+ * libxt_CHECKSUM.c borrowed some bits from libipt_ECN.c
-+ */
-+#include <stdio.h>
-+#include <string.h>
-+#include <stdlib.h>
-+#include <getopt.h>
-+
-+#include <xtables.h>
-+#include <linux/netfilter/xt_CHECKSUM.h>
-+
-+static void CHECKSUM_help(void)
-+{
-+	printf(
-+"CHECKSUM target options\n"
-+"  --checksum-fill			Fill in packet checksum.\n");
-+}
-+
-+static const struct option CHECKSUM_opts[] = {
-+	{ "checksum-fill", 0, NULL, 'F' },
-+	{ .name = NULL }
-+};
-+
-+static int CHECKSUM_parse(int c, char **argv, int invert, unsigned int *flags,
-+                     const void *entry, struct xt_entry_target **target)
-+{
-+	struct xt_CHECKSUM_info *einfo
-+		= (struct xt_CHECKSUM_info *)(*target)->data;
-+
-+	switch (c) {
-+	case 'F':
-+		xtables_param_act(XTF_ONLY_ONCE, "CHECKSUM", "--checksum-fill",
-+			*flags & XT_CHECKSUM_OP_FILL);
-+		einfo->operation = XT_CHECKSUM_OP_FILL;
-+		*flags |= XT_CHECKSUM_OP_FILL;
-+		break;
-+	default:
-+		return 0;
-+	}
-+
-+	return 1;
-+}
-+
-+static void CHECKSUM_check(unsigned int flags)
-+{
-+	if (!flags)
-+		xtables_error(PARAMETER_PROBLEM,
-+		           "CHECKSUM target: Parameter --checksum-fill is required");
-+}
-+
-+static void CHECKSUM_print(const void *ip, const struct xt_entry_target *target,
-+                      int numeric)
-+{
-+	const struct xt_CHECKSUM_info *einfo =
-+		(const struct xt_CHECKSUM_info *)target->data;
-+
-+	printf("CHECKSUM ");
-+
-+	if (einfo->operation & XT_CHECKSUM_OP_FILL)
-+		printf("fill ");
-+}
-+
-+static void CHECKSUM_save(const void *ip, const struct xt_entry_target *target)
-+{
-+	const struct xt_CHECKSUM_info *einfo =
-+		(const struct xt_CHECKSUM_info *)target->data;
-+
-+	if (einfo->operation & XT_CHECKSUM_OP_FILL)
-+		printf("--checksum-fill ");
-+}
-+
-+static struct xtables_target checksum_tg_reg = {
-+	.name		= "CHECKSUM",
-+	.version	= XTABLES_VERSION,
-+	.family		= NFPROTO_UNSPEC,
-+	.size		= XT_ALIGN(sizeof(struct xt_CHECKSUM_info)),
-+	.userspacesize	= XT_ALIGN(sizeof(struct xt_CHECKSUM_info)),
-+	.help		= CHECKSUM_help,
-+	.parse		= CHECKSUM_parse,
-+	.final_check	= CHECKSUM_check,
-+	.print		= CHECKSUM_print,
-+	.save		= CHECKSUM_save,
-+	.extra_opts	= CHECKSUM_opts,
-+};
-+
-+void _init(void)
-+{
-+	xtables_register_target(&checksum_tg_reg);
-+}
-diff --git a/extensions/libxt_CHECKSUM.man b/extensions/libxt_CHECKSUM.man
-new file mode 100644
-index 0000000..92ae700
---- /dev/null
-+++ b/extensions/libxt_CHECKSUM.man
-@@ -0,0 +1,8 @@
-+This target allows to selectively work around broken/old applications.
-+It can only be used in the mangle table.
-+.TP
-+\fB\-\-checksum\-fill\fP
-+Compute and fill in the checksum in a packet that lacks a checksum.
-+This is particularly useful, if you need to work around old applications
-+such as dhcp clients, that do not work well with checksum offloads,
-+but don't want to disable checksum offload in your device.
--- 
-1.7.2.rc0.14.g41c1c
