@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933578Ab0GOPRw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 11:17:52 -0400
-Received: from stinky.trash.net ([213.144.137.162]:46783 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933418Ab0GOPRu (ORCPT
+	id S933594Ab0GOPSJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 11:18:09 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:64116 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933560Ab0GOPSE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 11:17:50 -0400
-Message-ID: <4C3F268E.8050405@trash.net>
-Date: Thu, 15 Jul 2010 17:17:34 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	Thu, 15 Jul 2010 11:18:04 -0400
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "David S. Miller" <davem@davemloft.net>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        "Pekka Savola (ipv6)" <pekkas@netcore.fi>,
-        James Morris <jmorris@namei.org>,
-        Hideaki YOSHIFUJI <yoshfuji@linux-ipv6.org>,
-        linux-kernel@vger.kernel.org, netfilter-devel@vger.kernel.org,
-        netfilter@vger.kernel.org, coreteam@netfilter.org,
-        netdev@vger.kernel.org, herbert.xu@redhat.com, kvm@vger.kernel.org
-Subject: Re: [PATCH] netfilter: add CHECKSUM target
-References: <20100708222913.GA4475@redhat.com> <4C373D90.8070000@trash.net> <20100711104705.GA18017@redhat.com>
-In-Reply-To: <20100711104705.GA18017@redhat.com>
+In-Reply-To: <1279154621-25868-3-git-send-email-john.johansen@canonical.com>
+References: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
+	<1279154621-25868-3-git-send-email-john.johansen@canonical.com>
+Date: Thu, 15 Jul 2010 11:18:03 -0400
+Message-ID: <AANLkTimGhmUiCMMWaDs5aV4Hg86QvQJs3ZFUSqAdlKAt@mail.gmail.com>
+Subject: Re: [PATCH 02/13] AppArmor: basic auditing infrastructure.
+From: Eric Paris <eparis@parisplace.org>
+To: John Johansen <john.johansen@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 11.07.2010 12:47, schrieb Michael S. Tsirkin:
-> On Fri, Jul 09, 2010 at 05:17:36PM +0200, Patrick McHardy wrote:
->> Am 09.07.2010 00:29, schrieb Michael S. Tsirkin:
->>> This adds a `CHECKSUM' target, which can be used in the iptables mangle
->>> table.
->>>
->>> You can use this target to compute and fill in the checksum in
->>> an IP packet that lacks a checksum.  This is particularly useful,
->>> if you need to work around old applications such as dhcp clients,
->>> that do not work well with checksum offloads, but don't want to
->>> disable checksum offload in your device.
->>>
->>> The problem happens in the field with virtualized applications.
->>> For reference, see Red Hat bz 605555, as well as
->>> http://www.spinics.net/lists/kvm/msg37660.html
->>>
->>> Typical expected use (helps old dhclient binary running in a VM):
->>> iptables -A POSTROUTING -t mangle -p udp --dport 68 -j CHECKSUM
->>> --checksum-fill
->>
->> I'm not sure this is something we want to merge upstream and
->> support indefinitely. Dave suggested this as a temporary
->> out-of-tree workaround until the majority of guest dhcp clients
->> are fixed. Has anything changed that makes this course of
->> action impractical?
-> 
-> If I understand what Dave said correctly, it's up to you ...
-> 
-> The arguments for putting this upstream are:
-> 
-> Given the track record, I wouldn't hope for quick fix in the majority of
-> guest dhcp clients, unfortunately :(.  We are talking years here.
-> Even after that, one of the uses of virtualization is
-> to keep old guests running. So yes, I think we'll
-> keep using work-arounds for this for a very long time.
-> 
-> Further, since we have to add the module and we have to teach management
-> to program it, it will be much less painful for everyone
-> involved if we can put the code upstream, rather than forking
-> management code.
+On Wed, Jul 14, 2010 at 8:43 PM, John Johansen
+<john.johansen@canonical.com> wrote:
+> Update lsm_audit for AppArmor specific data, and add the core routines for
+> AppArmor uses for auditing.
+>
+> Signed-off-by: John Johansen <john.johansen@canonical.com>
 
-Fair enough, its simple enough that I don't expect much maintenance
-overhead.
+> + * Currently AppArmor auditing is fed straight into the audit framework.
+> + *
+> + * TODO:
+> + * convert to LSM audit
+
+
+TODO?
+
+> +       if (sa->aad.profile) {
+> +               struct aa_profile *profile = sa->aad.profile;
+> +               pid_t pid;
+> +               rcu_read_lock();
+> +               pid = tsk->real_parent->pid;
+> +               rcu_read_unlock();
+> +               audit_log_format(ab, " parent=%d", pid);
+> +               audit_log_format(ab, " profile=");
+> +               if (profile->ns != root_ns) {
+> +                       audit_log_format(ab, ":");
+> +                       audit_log_untrustedstring(ab, profile->ns->base.hname);
+> +                       audit_log_format(ab, "://");
+> +               }
+> +               audit_log_untrustedstring(ab, profile->base.hname);
+> +       }
+
+what does this message look like?  I don't think it fits the nice
+key=value rules of the audit system....   Are you sure this is what
+you want?
+
+> +#define COMMON_AUDIT_DATA_INIT_NONE(_d) \
+> +       do { \
+> +               memset((_d), 0, sizeof(struct common_audit_data)); \
+> +               (_d)->type = LSM_AUDIT_DATA_NONE; \
+> +       } while (0)
+> +
+> +#endif /* __AA_AUDIT_H */
+
+Why are you redefining this?  You should just use
+COMMON_AUDIT_DATA_INIT(sa, NONE);
