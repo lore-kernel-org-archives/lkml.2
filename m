@@ -1,61 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934301Ab0GOStj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:49:39 -0400
-Received: from mail.gmx.net ([213.165.64.20]:37686 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S934225Ab0GOStf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:49:35 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19jFpYAAFdjqs3rIhwBvb7qcKLoBcRcDJKF4ijKTj
-	3x08N1Kgr580jZ
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Subject: [PATCH 10/25] atm: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
-Date: Thu, 15 Jul 2010 20:49:32 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: Chas Williams <chas@cmf.nrl.navy.mil>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S934309Ab0GOSuP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:50:15 -0400
+Received: from nspiron-1.llnl.gov ([128.115.41.81]:10855 "EHLO
+	nspiron-1.llnl.gov" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934136Ab0GOSuM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 14:50:12 -0400
+X-Greylist: delayed 570 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jul 2010 14:50:12 EDT
+X-Attachments: None
+Date: Thu, 15 Jul 2010 11:34:44 -0700
+From: Ira Weiny <weiny2@llnl.gov>
+To: Patrick Mochel <mochel@osdl.org>, Mike Murphy <mamurph@cs.clemson.edu>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+        Phil Carmody <ext-phil.2.carmody@nokia.com>,
+        Lucian Adrian Grijincu <lgrijincu@ixiacom.com>,
+        linux-kernel@vger.kernel.org, linux-doc@vger.kernel.org
+Subject: [PATCH] Fix one more signature discrepancy between sysfs
+ implementation and docs.
+Message-Id: <20100715113444.68bbe2dd.weiny2@llnl.gov>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.4; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007152049.33395.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+This patch builds on the one submitted by Bart here: http://lkml.org/lkml/2010/7/10/72
 
-This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
-.subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
-PCI_VDEVICE macro, and thus improves readability.
+applies to linux-next.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Ira Weiny <weiny2@llnl.gov>
 ---
- drivers/atm/zatm.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ Documentation/filesystems/sysfs.txt |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/atm/zatm.c b/drivers/atm/zatm.c
-index 702acce..4e885d2 100644
---- a/drivers/atm/zatm.c
-+++ b/drivers/atm/zatm.c
-@@ -1637,10 +1637,8 @@ out_free:
- MODULE_LICENSE("GPL");
+diff --git a/Documentation/filesystems/sysfs.txt b/Documentation/filesystems/sysfs.txt
+index d78ed0b..5d1335f 100644
+--- a/Documentation/filesystems/sysfs.txt
++++ b/Documentation/filesystems/sysfs.txt
+@@ -4,7 +4,7 @@ sysfs - _The_ filesystem for exporting kernel objects.
+ Patrick Mochel	<mochel@osdl.org>
+ Mike Murphy <mamurph@cs.clemson.edu>
  
- static struct pci_device_id zatm_pci_tbl[] __devinitdata = {
--	{ PCI_VENDOR_ID_ZEITNET, PCI_DEVICE_ID_ZEITNET_1221,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, ZATM_COPPER },
--	{ PCI_VENDOR_ID_ZEITNET, PCI_DEVICE_ID_ZEITNET_1225,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
-+	{ PCI_VDEVICE(ZEITNET, PCI_DEVICE_ID_ZEITNET_1221), ZATM_COPPER },
-+	{ PCI_VDEVICE(ZEITNET, PCI_DEVICE_ID_ZEITNET_1225), 0 },
- 	{ 0, }
+-Revised:    10 July 2010
++Revised:    15 July 2010
+ Original:   10 January 2003
+ 
+ 
+@@ -333,7 +333,7 @@ Structure:
+ struct bus_attribute {
+         struct attribute        attr;
+         ssize_t (*show)(struct bus_type *, char * buf);
+-        ssize_t (*store)(struct bus_type *, const char * buf);
++        ssize_t (*store)(struct bus_type *, const char * buf, size_t count);
  };
- MODULE_DEVICE_TABLE(pci, zatm_pci_tbl);
+ 
+ Declaring:
 -- 
-1.7.1
+1.5.4.5
 
