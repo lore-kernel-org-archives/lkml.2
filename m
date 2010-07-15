@@ -1,104 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753022Ab0GOEaP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 00:30:15 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:54055 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751843Ab0GOEaN (ORCPT
+	id S932390Ab0GOEmO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 00:42:14 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:34746 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932353Ab0GOEmG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 00:30:13 -0400
-To: Greg KH <gregkh@suse.de>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        alsa-devel@alsa-project.org, Jens Axboe <axboe@kernel.dk>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Howells <dhowells@redhat.com>, Dave Airlie <airlied@gmail.com>
-Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
-References: <20100709185450.GA29473@kroah.com>
-	<20100714163852.b3c09930.akpm@linux-foundation.org>
-	<m1zkxtinlw.fsf@fess.ebiederm.org> <20100715041613.GB2583@suse.de>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Wed, 14 Jul 2010 21:29:53 -0700
-In-Reply-To: <20100715041613.GB2583@suse.de> (Greg KH's message of "Wed\, 14 Jul 2010 21\:16\:13 -0700")
-Message-ID: <m1aaptcqpq.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Thu, 15 Jul 2010 00:42:06 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: john stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH 01/11] x86: Fix vtime/file timestamp inconsistencies
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Oleg Nesterov <oleg@redhat.com>
+In-Reply-To: <1279162015.3372.61.camel@localhost>
+References: <20100715101317.CB56.A69D9226@jp.fujitsu.com> <1279162015.3372.61.camel@localhost>
+Message-Id: <20100715134058.B8F1.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 15 Jul 2010 13:41:59 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@suse.de> writes:
+> On Thu, 2010-07-15 at 10:51 +0900, KOSAKI Motohiro wrote:
+> > > On Wed, 2010-07-14 at 11:40 +0900, KOSAKI Motohiro wrote:
+> > > > Hi
+> > > > 
+> > > > > Due to vtime calling vgettimeofday(), its possible that an application
+> > > > > could call  time();create("stuff",O_RDRW);  only to see the file's
+> > > > > creation timestamp to be before the value returned by time.
+> > > > 
+> > > > Just dumb question.
+> > > > 
+> > > > Almost application are using gettimeofday() instead time(). It mean
+> > > > your fix don't solve almost application.
+> > > 
+> > > Correct,  filesystem timestamps and gettimeofday can still seem
+> > > inconsistently ordered. But that is expected.
+> > > 
+> > > Because of granularity differences (one interface is only tick
+> > > resolution, the other is clocksource resolution), we can't interleave
+> > > the two interfaces (time and gettimeofday, respectively) and expect to
+> > > get ordered results.
+> > 
+> > hmmm...
+> > Yes, times() vs gettimeofday() mekes no sense. nobody want this. but
+> > I don't understand why we can ignore gettimeofday() vs file-tiemstamp.
+> 
+> 
+> So, just to be clear, this discussion is really around the question of
+> "Why don't filesystems use a clocksource-granular (ie: getnstimeofday())
+> timestamps instead of tick-granular (ie current_kernel_time())
+> timestamps."
+> 
+> However, this is *not* what the patch that started this thread was
+> about. In the patch I'm simply fixing an inconsistency in the vtime
+> interface, where it does not align with what the syscall-time interface
+> provides. 
+> 
+> The issue was noticed via inconsistencies with filesystem timestamps,
+> but the patch does not change anything to do with filesystem timestamp
+> behavior.
 
-> On Wed, Jul 14, 2010 at 05:40:27PM -0700, Eric W. Biederman wrote:
->> Andrew Morton <akpm@linux-foundation.org> writes:
->> 
->> > On Fri, 9 Jul 2010 11:54:50 -0700
->> > Greg Kroah-Hartman <gregkh@suse.de> wrote:
->> >
->> >> This is no longer needed by any userspace tools, so it's safe to
->> >> remove.
->> >
->> > Makes my FC6 test box not boot - can't find /dev/root.  Then when I go
->> > back to plain old mainline (2.6.35-rc5) and run `make oldconfig', the
->> > .config change sticks:
->> >
->> > @@ -106,8 +106,7 @@
->> >  CONFIG_LOG_BUF_SHIFT=17
->> >  CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
->> >  # CONFIG_CGROUPS is not set
->> > -CONFIG_SYSFS_DEPRECATED=y
->> > -CONFIG_SYSFS_DEPRECATED_V2=y
->> > +# CONFIG_SYSFS_DEPRECATED_V2 is not set
->> >  CONFIG_RELAY=y
->> >  CONFIG_NAMESPACES=y
->> >  # CONFIG_UTS_NS is not set
->> >
->> > and the box still won't boot.
->> 
->> The reason FC6 doesn't boot is there is a userspace tool
->> I believe in the initrd that cares about symlinks when it should
->> not.
+Ah, I see. This patch is unrelated to filesystem timestamp. It fix inconsistency
+vsyscall with syscall. 
+
+I agree that it should be fixed. So yes, other parts of my mail is a bit offtopic.
+
+
+> > > This is why the fix I'm proposing is important: Filesystem timestamps
+> > > have always been tick granular, so when vtime() was made clocksource
+> > > granular (by using vgettime internally) we broke the historic
+> > > expectation that the time() interface could be interleaved with
+> > > filesystem operations.
+> > > 
+> > > Side note: For full nanosecond resolution of the tick-granular
+> > > timestamps, check out the clock_gettime(CLOCK_REALTIME_COARSE, ...)
+> > > interface.
+> > > 
+> > > 
+> > > > So, Why can't we fix vgettimeofday() vs create() inconsistency?
+> > > > This is just question, I don't intend to disagree you.
+> > > 
+> > > The only way to make gettimeofday and create consistent is to use
+> > > gettimeofday clocksource resolution timestamps for files. This however
+> > > would potentially cause a large performance hit, since each every file
+> > > timestamp would require a possibly expensive read of the clocksource.
+> > 
+> > Why clocksource() reading is so slow? the implementation of current
+> > tsc clocksource ->read method is here.
+> > 
+> > 
+> > 	static cycle_t read_tsc(struct clocksource *cs)
+> > 	{
+> > 	        cycle_t ret = (cycle_t)get_cycles();
+> > 	
+> > 	        return ret >= clocksource_tsc.cycle_last ?
+> > 	                ret : clocksource_tsc.cycle_last;
+> > 	}
+> > 
+> > It mean, the difference is almost only one rdtsc.
+> 
+> Sure, for hardware that can use the TSC clocksource, it is fairly cheap,
+> however there are numerous systems that cannot use the TSC (or
+> architectures that don't have a fast TSC like counter) and in those
+> cases a read can take more then a microsecond.
+
+I'm not timekeeping expert. but my first impression is, if clocksource->read
+need more than a microsecond, it's really problematic. ->read of such clocksource
+should always return 0 instead honestly reading h/w counter.
+
 >
-> Anyone happen to know which tool it is?  I remember we had had issues
-> with FC3 around this area, but I thought we resolved them, so it's
-> supprising to me that FC6 has issues.
+> Even with the TSC, the multiplication required to convert to nanoseconds
+> adds extra overhead that isn't seen when using the pre-calculated
+> tick-granular current_kernel_time() value.
+> 
+> It may not seem like much, but with filesystems each small delay adds
+> up. 
+> 
+> I'm not a filesystems guy, and maybe there are some filesystems that
+> really want very fine-grained timestamps. If so they can consider
+> switching from using current_kernel_time() to getnstimeofday(). But due
+> to the likely performance impact, its not something I'd suggest doing.
 
-It was something in the initrd, that didn't like the symlinks.  It
-has been a year or more since I looked at it.  At that point I just
-enabled SYSFS_DEPRECATED and moved on.
+Again, I'm not against you. I only would like to hear what you propose. because
+I'm not sure rough granularity time() vsyscall really makes userland happy.
+because (again) as far as iknow, alomsot applications don't use time().
 
->> What is more interesting is that currently there is a bug in
->> 2.6.35-rc5 where rmmod <netdriver> modprobe <netdriver> will in fact
->> fail.  There was an inadvertent regression and no one has noticed or
->> complained.  I spotted it by code review just a little bit ago and I
->> haven't had a chance to write and test the fix yet.
->> 
->> If the code is going to start bitrotting and no one is going to
->> notice or care simply removing the code instead of subjecting users
->> to weird unexpected breakage seems like a responsible thing to do.
->
-> Yeah, that's what prompted this removal.  After the s390 guys said that
-> they were all good to go, I figured no one else would have problems with
-> it :)
->
-> If it turns out there still are issues with older userspaces like FC6
-> that we can't resolve, I have no problem dropping this patch and then we
-> will have to fix up the regression.
+So, I worry about more big issue remained.
 
-I still have to test it but it looks like a one liner.  Actually two lines
-now that I have to fix the error in symlink creation as well.
 
-Eric
+
+
