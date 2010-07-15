@@ -1,58 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932690Ab0GOIWm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 04:22:42 -0400
-Received: from www.tglx.de ([62.245.132.106]:40490 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932653Ab0GOIWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 04:22:40 -0400
-Date: Thu, 15 Jul 2010 10:22:14 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Stephan Wolf <stephan@letzte-bankreihe.de>
-cc: Borislav Petkov <borislav.petkov@amd.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH] enable readback to get HPET working on ATI SB4x00, kernel
- 2.6.35_rc5
-In-Reply-To: <4C3EB365.4030205@letzte-bankreihe.de>
-Message-ID: <alpine.LFD.2.00.1007151011550.3321@localhost.localdomain>
-References: <4C3DDDFF.5040302@letzte-bankreihe.de> <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com> <20100714181152.GB15651@aftab> <AANLkTin71FbM5Eh7TDUHN0WvYHA5RubycflTxM5EWlvj@mail.gmail.com> <20100714183216.GC15651@aftab>
- <alpine.LFD.2.00.1007142134140.3321@localhost.localdomain> <4C3EB365.4030205@letzte-bankreihe.de>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932704Ab0GOIbk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 04:31:40 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:46105 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932615Ab0GOIbi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 04:31:38 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100715035230.GA2186@suse.de>
+References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> 
+	<20100715035230.GA2186@suse.de>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Thu, 15 Jul 2010 10:31:15 +0200
+Message-ID: <AANLkTilFLBpQR1BS8WFDXiLSOl08rI9DMpDhdkMXn1st@mail.gmail.com>
+Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
+To: Greg KH <gregkh@suse.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        alsa-devel@alsa-project.org, Jens Axboe <axboe@kernel.dk>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Howells <dhowells@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Jul 2010, Stephan Wolf wrote:
-> Am 14.07.2010 23:04, schrieb Thomas Gleixner:
-> 
-> > +static void __init ati_hpet_bugs(int num, int slot, int func)
-> > +{
-> > +#ifdef CONFIG_HPET_TIMER
-> > +	hpet_readback_cmp = 1;
-> > +#endif
-> > +}
-> > +
-> >   #define QFLAG_APPLY_ONCE 	0x1
-> >   #define QFLAG_APPLIED		0x2
-> >   #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
-> > @@ -220,6 +236,8 @@ static struct chipset early_qrk[] __init
-> >   	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
-> >   	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
-> >   	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
-> > +	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
-> > +	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_hpet_bugs },
-> >   	{}
-> 
-> Hi, the patch above solves the problem on my machine.
+On Thu, Jul 15, 2010 at 05:52, Greg KH <gregkh@suse.de> wrote:
+> On Wed, Jul 14, 2010 at 04:38:52PM -0700, Andrew Morton wrote:
 
-Thanks for testing. 
+>> and the box still won't boot.
+>
+> Ick, that sucks.
+>
+> What kernel was FC6 based on originally?
+>
+> Kay, I thought that Fedora had fixed the "can't find root" issue for
+> this type of sysfs configuation a long time ago.  Or was that something
+> else for PPC that I am thinking of?
 
-Borislav, any opinion ?
+It was fixed, and it's weird bug in nash.
 
-Thanks,
+If Andrew is still doing the same thing as years ago, he does not
+update the initramfs image, he boots with the old original initramfs
+along with the new kernel. :)
 
-	tglx
+It might be, that just dropping the entire initramfs, and let the
+kernel mount the rootfs, has a good chance to boot the box.
+
+Kay
