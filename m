@@ -1,47 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933603Ab0GOPdM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 11:33:12 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36207 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933418Ab0GOPdI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 11:33:08 -0400
+	id S933616Ab0GOPfi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 11:35:38 -0400
+Received: from mga01.intel.com ([192.55.52.88]:37670 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933418Ab0GOPfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 11:35:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,209,1278313200"; 
+   d="scan'208";a="586424257"
+Date: Thu, 15 Jul 2010 23:35:30 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
+        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 4/6] writeback: dont redirty tail an inode with dirty
+ pages
+Message-ID: <20100715153530.GC6511@localhost>
+References: <20100711020656.340075560@intel.com>
+ <20100711021749.021449821@intel.com>
+ <20100712020109.GB25335@dastard>
+ <20100712153127.GB30222@localhost>
+ <20100712151317.bd9d656c.akpm@linux-foundation.org>
 MIME-Version: 1.0
-In-Reply-To: <1279154621-25868-5-git-send-email-john.johansen@canonical.com>
-References: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
-	<1279154621-25868-5-git-send-email-john.johansen@canonical.com>
-Date: Thu, 15 Jul 2010 11:33:07 -0400
-Message-ID: <AANLkTim_l1RDI3icW1Ko7NWvECT1JzuM2c3Qqa8wvQR6@mail.gmail.com>
-Subject: Re: [PATCH 04/13] AppArmor: core policy routines
-From: Eric Paris <eparis@parisplace.org>
-To: John Johansen <john.johansen@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100712151317.bd9d656c.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 8:43 PM, John Johansen
-<john.johansen@canonical.com> wrote:
-> The basic routines and defines for AppArmor policy.  AppArmor policy
-> is defined by a few basic components.
->      profiles - the basic unit of confinement contain all the information
->                 to enforce policy on a task
->
->                 Profiles tend to be named after an executable that they
->                 will attach to but this is not required.
->      namespaces - a container for a set of profiles that will be used
->                 during attachment and transitions between profiles.
->      sids - which provide a unique id for each profile
->
-> Signed-off-by: John Johansen <john.johansen@canonical.com>
-> ---
+On Tue, Jul 13, 2010 at 06:13:17AM +0800, Andrew Morton wrote:
+> On Mon, 12 Jul 2010 23:31:27 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > > > +		} else if (inode->i_state & I_DIRTY) {
+> > > > +			/*
+> > > > +			 * At least XFS will redirty the inode during the
+> > > > +			 * writeback (delalloc) and on io completion (isize).
+> > > > +			 */
+> > > > +			redirty_tail(inode);
+> > > 
+> > > I'd drop the mention of XFS here - any filesystem that does delayed
+> > > allocation or unwritten extent conversion after Io completion will
+> > > cause this. Perhaps make the comment:
+> > > 
+> > > 	/*
+> > > 	 * Filesystems can dirty the inode during writeback
+> > > 	 * operations, such as delayed allocation during submission
+> > > 	 * or metadata updates after data IO completion.
+> > > 	 */
+> > 
+> > Thanks, comments updated accordingly.
+> > 
+> > ---
+> > writeback: don't redirty tail an inode with dirty pages
+> > 
+> > This avoids delaying writeback for an expired (XFS) inode with lots of
+> > dirty pages, but no active dirtier at the moment. Previously we only do
+> > that for the kupdate case.
+> > 
+> 
+> You didn't actually explain the _reason_ for making this change. 
+> Please always do that.
 
-> +       PFLAG_MMAP_MIN_ADDR = 0x80,     /* profile controls mmap_min_addr */
+OK. It's actually extending commit b3af9468ae from the kupdate-only case to
+both kupdate and !kupdate cases.
 
-You don't actually support this per ?domain? mmap_min_addr and I'm not
-sure how you ever can (given the nature of round_hint_to_min()) so
-maybe you should rip it all out rather than having the half
-implemented stuff in patches 4 and 6?
+The commit documented the reason:
+
+    Debug traces show that in per-bdi writeback, the inode under writeback
+    almost always get redirtied by a busy dirtier.  We used to call
+    redirty_tail() in this case, which could delay inode for up to 30s.
+    
+    This is unacceptable because it now happens so frequently for plain cp/dd,
+    that the accumulated delays could make writeback of big files very slow.
+
+    So let's distinguish between data redirty and metadata only redirty.
+    The first one is caused by a busy dirtier, while the latter one could
+    happen in XFS, NFS, etc. when they are doing delalloc or updating isize.
+
+Commit b3af9468ae only does that for kupdate case because requeue_io() was
+only called in the kupdate case. Now we are merging the kupdate and !kupdate
+cases in patch 6/6 (why not?), so is this patch.
+
+> The patch is...  surprisingly complicated, although the end result
+> looks OK.  This is not aided by the partial duplication between
+> mapping_tagged(PAGECACHE_TAG_DIRTY) and I_DIRTY_PAGES.  I don't think
+> we can easily remove I_DIRTY_PAGES because it's used for the
+> did-someone-just-dirty-a-page test here.
+
+I double checked I_DIRTY_PAGES. The main difference to PAGECACHE_TAG_DIRTY is:
+I_DIRTY_PAGES (at the line removed by this patch) means there are _new_ pages
+get dirtied during writeback, while PAGECACHE_TAG_DIRTY means there are dirty
+pages. In this sense, if the I_DIRTY_PAGES handling is the same as
+PAGECACHE_TAG_DIRTY, the code can be merged into PAGECACHE_TAG_DIRTY, as this
+patch does.
+
+The other minor differences are
+
+- in *_set_page_dirty*(), PAGECACHE_TAG_DIRTY is set racelessly, while
+  I_DIRTY_PAGES might be set on the inode for a page just truncated.
+  The difference has no real impact on this patch (it's actually
+  slightly better now).
+
+- afs_fsync() always set I_DIRTY_PAGES after calling afs_writepages().
+  The call was there in the first day (introduce by David Howells).
+  What was the intention, hmm..?
+
+> This code is way too complex and fragile and I fear that anything we do
+> to it will break something :(
+
+Agreed. Let's try to simplify it :)
+
+Thanks,
+Fengguang
