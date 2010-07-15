@@ -1,101 +1,442 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934099Ab0GOSb5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:31:57 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37961 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S934057Ab0GOSbz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:31:55 -0400
-Date: Thu, 15 Jul 2010 14:31:53 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100715183153.GA9276@Krystal>
-References: <20100714155804.049012415@efficios.com> <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com> <20100714170617.GB4955@Krystal> <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com> <20100714203940.GC22096@Krystal> <AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com> <20100714222115.GA30122@Krystal> <AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com> <AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com> <AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com>
+	id S934081Ab0GOSh4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:37:56 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:57128 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933977Ab0GOShz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 14:37:55 -0400
+Message-ID: <4C3F557F.3000304@austin.ibm.com>
+Date: Thu, 15 Jul 2010 13:37:51 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:06:48 up 173 days, 20:43,  6 users,  load average: 0.04, 0.05,
-	0.07
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 1/5] v2 Split the memory_block structure
+References: <4C3F53D1.3090001@austin.ibm.com>
+In-Reply-To: <4C3F53D1.3090001@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> On Wed, Jul 14, 2010 at 6:23 PM, Linus Torvalds
-> <torvalds@linux-foundation.org> wrote:
-> >
-> > So this is what I think it might look like, with the %rip in place.
-> >  [ ...]
-> > Hmm?
-> 
-> I didn't fill in the iret fault details, because I thought that would
-> be trivial. We get an exception, it's a slow case, how hard can it be
-> to just call the NMI code?
+Split the memory_block struct into a memory_block
+struct to cover each sysfs directory and a new memory_block_section
+struct for each memory section covered by the sysfs directory.
+This change allows for creation of memory sysfs directories that
+can span multiple memory sections.
 
-I'm wondering if we really have to handle this with a fault. Couldn't we just
-send iret to the following nmi handler instead ? (chaining nmis)
+This can be beneficial in that it can reduce the number of memory
+sysfs directories created at boot.  This also allows different
+architectures to define how many memory sections are covered by
+a sysfs directory.
 
-I think we can even find a way to handle the fact that the fake nmi does not run
-with nmis disabled. We could keep the nmi nested bit set if we find out that
-iret will branch to the fake nmi. We would then have to make sure the fake nmi
-entry point is a little further than the standard nmi entry point: somewhere
-after the initial nmi nesting check.
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+---
+ drivers/base/memory.c  |  222 ++++++++++++++++++++++++++++++++++---------------
+ include/linux/memory.h |   11 +-
+ 2 files changed, 167 insertions(+), 66 deletions(-)
 
-> 
-> But thinking some more about it, it doesn't feel as trivial any more.
-> We want to set up that same nesting code for the faked NMI call, but
-> now I made it be two separate variables, and they need to be set in an
-> NMI-safe way without us actually having access to the whole NMI
-> blocking that the CPU does for a real NMI.
-> 
-> So there's a few subtleties there too. Probably need to make the two
-> percpu values adjacent, and use cmpxchg16b in the "emulate NMI on
-> exception" code to set them both atomically. Or something. So I think
-> it's doable, but it's admittedly more complicated than I thought it
-> would be.
-
-Hrm, we could probably get away with only keeping the nmi_stack_nested per-cpu
-variable. The nmi_stack_ptr could be known statically if we set it at a fixed
-offset from the bottom of stack rather than using an offset relative to the top
-(which can change depending if we are nested over the kernel or userspace).
-We just have to reserve enough space for the bottom of stack.
-
-> 
-> .. and obviously there's nothing that guarantees that the code I
-> already posted is correct either. The whole concept might be total
-> crap.
-
-Call me optimistic if you want, but I think we're really getting somewhere. :)
-
-Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Index: linux-2.6/drivers/base/memory.c
+===================================================================
+--- linux-2.6.orig/drivers/base/memory.c	2010-07-15 08:48:41.000000000 -0500
++++ linux-2.6/drivers/base/memory.c	2010-07-15 09:55:54.000000000 -0500
+@@ -28,6 +28,14 @@
+ #include <asm/uaccess.h>
+ 
+ #define MEMORY_CLASS_NAME	"memory"
++#define MIN_MEMORY_BLOCK_SIZE	(1 << SECTION_SIZE_BITS)
++
++static int sections_per_block;
++
++static inline int base_memory_block_id(int section_nr)
++{
++	return (section_nr / sections_per_block) * sections_per_block;
++}
+ 
+ static struct sysdev_class memory_sysdev_class = {
+ 	.name = MEMORY_CLASS_NAME,
+@@ -94,10 +102,9 @@
+ }
+ 
+ static void
+-unregister_memory(struct memory_block *memory, struct mem_section *section)
++unregister_memory(struct memory_block *memory)
+ {
+ 	BUG_ON(memory->sysdev.cls != &memory_sysdev_class);
+-	BUG_ON(memory->sysdev.id != __section_nr(section));
+ 
+ 	/* drop the ref. we got in remove_memory_block() */
+ 	kobject_put(&memory->sysdev.kobj);
+@@ -123,13 +130,20 @@
+ static ssize_t show_mem_removable(struct sys_device *dev,
+ 			struct sysdev_attribute *attr, char *buf)
+ {
++	struct memory_block *mem;
++	struct memory_block_section *mbs;
+ 	unsigned long start_pfn;
+-	int ret;
+-	struct memory_block *mem =
+-		container_of(dev, struct memory_block, sysdev);
++	int ret = 1;
++
++	mem = container_of(dev, struct memory_block, sysdev);
++	mutex_lock(&mem->state_mutex);
+ 
+-	start_pfn = section_nr_to_pfn(mem->phys_index);
+-	ret = is_mem_section_removable(start_pfn, PAGES_PER_SECTION);
++	list_for_each_entry(mbs, &mem->sections, next) {
++		start_pfn = section_nr_to_pfn(mbs->phys_index);
++		ret &= is_mem_section_removable(start_pfn, PAGES_PER_SECTION);
++	}
++
++	mutex_unlock(&mem->state_mutex);
+ 	return sprintf(buf, "%d\n", ret);
+ }
+ 
+@@ -182,16 +196,16 @@
+  * OK to have direct references to sparsemem variables in here.
+  */
+ static int
+-memory_block_action(struct memory_block *mem, unsigned long action)
++memory_block_action(struct memory_block_section *mbs, unsigned long action)
+ {
+ 	int i;
+ 	unsigned long psection;
+ 	unsigned long start_pfn, start_paddr;
+ 	struct page *first_page;
+ 	int ret;
+-	int old_state = mem->state;
++	int old_state = mbs->state;
+ 
+-	psection = mem->phys_index;
++	psection = mbs->phys_index;
+ 	first_page = pfn_to_page(psection << PFN_SECTION_SHIFT);
+ 
+ 	/*
+@@ -217,18 +231,18 @@
+ 			ret = online_pages(start_pfn, PAGES_PER_SECTION);
+ 			break;
+ 		case MEM_OFFLINE:
+-			mem->state = MEM_GOING_OFFLINE;
++			mbs->state = MEM_GOING_OFFLINE;
+ 			start_paddr = page_to_pfn(first_page) << PAGE_SHIFT;
+ 			ret = remove_memory(start_paddr,
+ 					    PAGES_PER_SECTION << PAGE_SHIFT);
+ 			if (ret) {
+-				mem->state = old_state;
++				mbs->state = old_state;
+ 				break;
+ 			}
+ 			break;
+ 		default:
+ 			WARN(1, KERN_WARNING "%s(%p, %ld) unknown action: %ld\n",
+-					__func__, mem, action, action);
++					__func__, mbs, action, action);
+ 			ret = -EINVAL;
+ 	}
+ 
+@@ -238,19 +252,34 @@
+ static int memory_block_change_state(struct memory_block *mem,
+ 		unsigned long to_state, unsigned long from_state_req)
+ {
++	struct memory_block_section *mbs;
+ 	int ret = 0;
++
+ 	mutex_lock(&mem->state_mutex);
+ 
+-	if (mem->state != from_state_req) {
+-		ret = -EINVAL;
+-		goto out;
++	list_for_each_entry(mbs, &mem->sections, next) {
++		if (mbs->state != from_state_req)
++			continue;
++
++		ret = memory_block_action(mbs, to_state);
++		if (ret)
++			break;
++	}
++
++	if (ret) {
++		list_for_each_entry(mbs, &mem->sections, next) {
++			if (mbs->state == from_state_req)
++				continue;
++
++			if (memory_block_action(mbs, to_state))
++				printk(KERN_ERR "Could not re-enable memory "
++				       "section %lx\n", mbs->phys_index);
++		}
+ 	}
+ 
+-	ret = memory_block_action(mem, to_state);
+ 	if (!ret)
+ 		mem->state = to_state;
+ 
+-out:
+ 	mutex_unlock(&mem->state_mutex);
+ 	return ret;
+ }
+@@ -260,20 +289,15 @@
+ 		struct sysdev_attribute *attr, const char *buf, size_t count)
+ {
+ 	struct memory_block *mem;
+-	unsigned int phys_section_nr;
+ 	int ret = -EINVAL;
+ 
+ 	mem = container_of(dev, struct memory_block, sysdev);
+-	phys_section_nr = mem->phys_index;
+-
+-	if (!present_section_nr(phys_section_nr))
+-		goto out;
+ 
+ 	if (!strncmp(buf, "online", min((int)count, 6)))
+ 		ret = memory_block_change_state(mem, MEM_ONLINE, MEM_OFFLINE);
+ 	else if(!strncmp(buf, "offline", min((int)count, 7)))
+ 		ret = memory_block_change_state(mem, MEM_OFFLINE, MEM_ONLINE);
+-out:
++
+ 	if (ret)
+ 		return ret;
+ 	return count;
+@@ -435,39 +459,6 @@
+ 	return 0;
+ }
+ 
+-static int add_memory_block(int nid, struct mem_section *section,
+-			unsigned long state, enum mem_add_context context)
+-{
+-	struct memory_block *mem = kzalloc(sizeof(*mem), GFP_KERNEL);
+-	unsigned long start_pfn;
+-	int ret = 0;
+-
+-	if (!mem)
+-		return -ENOMEM;
+-
+-	mem->phys_index = __section_nr(section);
+-	mem->state = state;
+-	mutex_init(&mem->state_mutex);
+-	start_pfn = section_nr_to_pfn(mem->phys_index);
+-	mem->phys_device = arch_get_memory_phys_device(start_pfn);
+-
+-	ret = register_memory(mem, section);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, phys_index);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, state);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, phys_device);
+-	if (!ret)
+-		ret = mem_create_simple_file(mem, removable);
+-	if (!ret) {
+-		if (context == HOTPLUG)
+-			ret = register_mem_sect_under_node(mem, nid);
+-	}
+-
+-	return ret;
+-}
+-
+ /*
+  * For now, we have a linear search to go find the appropriate
+  * memory_block corresponding to a particular phys_index. If
+@@ -482,12 +473,13 @@
+ 	struct sys_device *sysdev;
+ 	struct memory_block *mem;
+ 	char name[sizeof(MEMORY_CLASS_NAME) + 9 + 1];
++	int block_id = base_memory_block_id(__section_nr(section));
+ 
+ 	/*
+ 	 * This only works because we know that section == sysdev->id
+ 	 * slightly redundant with sysdev_register()
+ 	 */
+-	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, __section_nr(section));
++	sprintf(&name[0], "%s%d", MEMORY_CLASS_NAME, block_id);
+ 
+ 	kobj = kset_find_obj(&memory_sysdev_class.kset, name);
+ 	if (!kobj)
+@@ -499,18 +491,98 @@
+ 	return mem;
+ }
+ 
++static int add_mem_block_section(struct memory_block *mem,
++				 int section_nr, unsigned long state)
++{
++	struct memory_block_section *mbs;
++
++	mbs = kzalloc(sizeof(*mbs), GFP_KERNEL);
++	if (!mbs)
++		return -ENOMEM;
++
++	mbs->phys_index = section_nr;
++	mbs->state = state;
++
++	list_add(&mbs->next, &mem->sections);
++	return 0;
++}
++
++static int add_memory_block(int nid, struct mem_section *section,
++			unsigned long state, enum mem_add_context context)
++{
++	struct memory_block *mem;
++	int ret = 0;
++
++	mem = find_memory_block(section);
++	if (!mem) {
++		unsigned long start_pfn;
++
++		mem = kzalloc(sizeof(*mem), GFP_KERNEL);
++		if (!mem)
++			return -ENOMEM;
++
++		mem->state = state;
++		mutex_init(&mem->state_mutex);
++		start_pfn = section_nr_to_pfn(__section_nr(section));
++		mem->phys_device = arch_get_memory_phys_device(start_pfn);
++		INIT_LIST_HEAD(&mem->sections);
++
++		mutex_lock(&mem->state_mutex);
++
++		ret = register_memory(mem, section);
++		if (!ret)
++			ret = mem_create_simple_file(mem, phys_index);
++		if (!ret)
++			ret = mem_create_simple_file(mem, state);
++		if (!ret)
++			ret = mem_create_simple_file(mem, phys_device);
++		if (!ret)
++			ret = mem_create_simple_file(mem, removable);
++		if (!ret) {
++			if (context == HOTPLUG)
++				ret = register_mem_sect_under_node(mem, nid);
++		}
++	} else {
++		kobject_put(&mem->sysdev.kobj);
++		mutex_lock(&mem->state_mutex);
++	}
++
++	if (!ret)
++		ret = add_mem_block_section(mem, __section_nr(section), state);
++
++	mutex_unlock(&mem->state_mutex);
++	return ret;
++}
++
+ int remove_memory_block(unsigned long node_id, struct mem_section *section,
+ 		int phys_device)
+ {
+ 	struct memory_block *mem;
++	struct memory_block_section *mbs, *tmp;
++	int section_nr = __section_nr(section);
+ 
+ 	mem = find_memory_block(section);
+-	unregister_mem_sect_under_nodes(mem);
+-	mem_remove_simple_file(mem, phys_index);
+-	mem_remove_simple_file(mem, state);
+-	mem_remove_simple_file(mem, phys_device);
+-	mem_remove_simple_file(mem, removable);
+-	unregister_memory(mem, section);
++	mutex_lock(&mem->state_mutex);
++
++	/* remove the specified section */
++	list_for_each_entry_safe(mbs, tmp, &mem->sections, next) {
++		if (mbs->phys_index == section_nr) {
++			list_del(&mbs->next);
++			kfree(mbs);
++		}
++	}
++
++	mutex_unlock(&mem->state_mutex);
++
++	if (list_empty(&mem->sections)) {
++		unregister_mem_sect_under_nodes(mem);
++		mem_remove_simple_file(mem, phys_index);
++		mem_remove_simple_file(mem, state);
++		mem_remove_simple_file(mem, phys_device);
++		mem_remove_simple_file(mem, removable);
++		unregister_memory(mem);
++		kfree(mem);
++	}
+ 
+ 	return 0;
+ }
+@@ -532,6 +604,24 @@
+ 	return remove_memory_block(0, section, 0);
+ }
+ 
++u32 __weak memory_block_size(void)
++{
++	return MIN_MEMORY_BLOCK_SIZE;
++}
++
++static u32 get_memory_block_size(void)
++{
++	u32 blk_sz;
++
++	blk_sz = memory_block_size();
++
++	/* Validate blk_sz is a power of 2 and not less than section size */
++	if ((blk_sz & (blk_sz - 1)) || (blk_sz < MIN_MEMORY_BLOCK_SIZE))
++		blk_sz = MIN_MEMORY_BLOCK_SIZE;
++
++	return blk_sz;
++}
++
+ /*
+  * Initialize the sysfs support for memory devices...
+  */
+@@ -540,12 +630,16 @@
+ 	unsigned int i;
+ 	int ret;
+ 	int err;
++	int block_sz;
+ 
+ 	memory_sysdev_class.kset.uevent_ops = &memory_uevent_ops;
+ 	ret = sysdev_class_register(&memory_sysdev_class);
+ 	if (ret)
+ 		goto out;
+ 
++	block_sz = get_memory_block_size();
++	sections_per_block = block_sz / MIN_MEMORY_BLOCK_SIZE;
++
+ 	/*
+ 	 * Create entries for memory sections that were found
+ 	 * during boot and have been initialized
+Index: linux-2.6/include/linux/memory.h
+===================================================================
+--- linux-2.6.orig/include/linux/memory.h	2010-07-15 08:48:41.000000000 -0500
++++ linux-2.6/include/linux/memory.h	2010-07-15 09:54:06.000000000 -0500
+@@ -19,9 +19,15 @@
+ #include <linux/node.h>
+ #include <linux/compiler.h>
+ #include <linux/mutex.h>
++#include <linux/list.h>
+ 
+-struct memory_block {
++struct memory_block_section {
++	unsigned long state;
+ 	unsigned long phys_index;
++	struct list_head next;
++};
++
++struct memory_block {
+ 	unsigned long state;
+ 	/*
+ 	 * This serializes all state change requests.  It isn't
+@@ -34,6 +40,7 @@
+ 	void *hw;			/* optional pointer to fw/hw data */
+ 	int (*phys_callback)(struct memory_block *);
+ 	struct sys_device sysdev;
++	struct list_head sections;
+ };
+ 
+ int arch_get_memory_phys_device(unsigned long start_pfn);
+@@ -113,7 +120,7 @@
+ extern int remove_memory_block(unsigned long, struct mem_section *, int);
+ extern int memory_notify(unsigned long val, void *v);
+ extern int memory_isolate_notify(unsigned long val, void *v);
+-extern struct memory_block *find_memory_block(unsigned long);
++extern struct memory_block *find_memory_block(struct mem_section *);
+ extern int memory_is_hidden(struct mem_section *);
+ #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
+ enum mem_add_context { BOOT, HOTPLUG };
