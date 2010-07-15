@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933863Ab0GORKz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 13:10:55 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48817 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933757Ab0GORKy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 13:10:54 -0400
-Date: Thu, 15 Jul 2010 18:10:29 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: Conke Hu <conke.hu@gmail.com>, CoffBeta <coffbeta@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        inux kernel <linux-kernel@vger.kernel.org>,
-        ext-jani.1.nikula@nokia.com,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: tq 2440
-Message-ID: <20100715171029.GK29322@n2100.arm.linux.org.uk>
-References: <AANLkTimyBHliUa62qmfja_ke6YTTysiVAtJcZfi8l2gG@mail.gmail.com> <AANLkTil8GE1OguyAfp3XgfJvEmH98yNrlvGAx684a-qL@mail.gmail.com> <20100715163526.GJ29322@n2100.arm.linux.org.uk> <20100715165141.GA21272@suse.de>
+	id S933870Ab0GORLt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 13:11:49 -0400
+Received: from kroah.org ([198.145.64.141]:51586 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933757Ab0GORLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 13:11:46 -0400
+Date: Thu, 15 Jul 2010 10:10:51 -0700
+From: Greg KH <greg@kroah.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: James Morris <jmorris@namei.org>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH][securityfs][2.6.34] Drop dentry reference count when
+	mknod fails
+Message-ID: <20100715171051.GA21798@kroah.com>
+References: <201007151325.06942.tvrtko.ursulin@sophos.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100715165141.GA21272@suse.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <201007151325.06942.tvrtko.ursulin@sophos.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 09:51:41AM -0700, Greg KH wrote:
-> On Thu, Jul 15, 2010 at 05:35:26PM +0100, Russell King - ARM Linux wrote:
-> > On Thu, Jul 15, 2010 at 11:16:30PM +0800, Conke Hu wrote:
-> > > ever notice to the following kernel log?
-> > > "Device 's3c2440-nand' does not have a release() function, it is
-> > > broken and must."
-> > > release() function should be implemented  in the platform_device.
-> > 
-> > That's not telling you to provide a release function.  The warning is
-> > telling you that a device is being unregistered which doesn't have a
-> > release function.
-> > 
-> > Consider this point - maybe it doesn't have a release function because
-> > it's not supposed to be unregistered?
+On Thu, Jul 15, 2010 at 01:25:06PM +0100, Tvrtko Ursulin wrote:
 > 
-> Heh, well, it is being unregistered, and at that point in time, the
-> kernel complains.
+> lookup_one_len increments dentry reference count which is not decremented
+> when the create operation fails. This can cause a kernel BUG at
+> fs/dcache.c:676 at unmount time. Also error code returned when new_inode()
+> fails was replaced with more appropriate -ENOMEM.
+> 
 
-The unregistration occurs because platform_register_devices() (which is
-used by arch code to register a block of platform devices) undoes its
-work if one of the devices fails to register.
+Nice, thanks for finding and fixing this, great job.
 
-I've long since thought, since I created that function, that this probably
-isn't desirable behaviour, and it should continue to register as many
-devices as it possibly can.
+> Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
 
-> All kobjects need a release function that actually frees it.  If not,
-> that is a logic bug.  Please see the Documentation/kobject.txt file for
-> details.
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-How do you free a statically declared platform device?
+thanks,
+
+greg k-h
