@@ -1,49 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932779Ab0GOI7g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 04:59:36 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44996 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932652Ab0GOI7f (ORCPT
+	id S932792Ab0GOJBn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 05:01:43 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:48634 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932753Ab0GOJBl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 04:59:35 -0400
-Date: Thu, 15 Jul 2010 09:59:32 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
-        alsa-devel@alsa-project.org
-Subject: Re: [PATCH 0/12] sound/alsa/soc/codec: fix memory leak and
- resource relaim in error path
-Message-ID: <20100715085932.GA23529@rakim.wolfsonmicro.main>
-References: <1279162147.29294.2.camel@mola>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279162147.29294.2.camel@mola>
-X-Cookie: There's only one everything.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 15 Jul 2010 05:01:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=oLJKO71u4maeGG6hEJ/WcwAht5QftiL4LCGP4XU2ROKmwUUhMVLs06jL7faFLwAB+x
+         AKrtjR3eZW5RR+v98H4L/GtKcuEqDTGbm2fAjsALj0SkLcNeJIupYTNas6zc49nWbsNt
+         0VrePRjOQ3E7g5t0tYWGKqAJAe+gVGVtYYiFg=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
+Subject: [PATCHv3 1/2] usb: gadget: storage: strict coversion of 'ro' parameter
+Date: Thu, 15 Jul 2010 12:07:20 +0300
+Message-Id: <1279184841-15097-1-git-send-email-ext-andriy.shevchenko@nokia.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <op.vft7mxqm7p4s8u@pikus>
+References: <op.vft7mxqm7p4s8u@pikus>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 10:49:07AM +0800, Axel Lin wrote:
+Bring a strict way to get the 'ro' parameter from the user.
+The idea was discussed in LKML [1].
 
-> [PATCH 1/12] ad1836: fix a memory leak if another ad1836 is registered
-> [PATCH 2/12] ak4642: fix a memory leak if failed to initialise AK4642
-> [PATCH 3/12] da7210: fix a memory leak if failed to initialise da7210 audio codec
-> [PATCH 4/12] wm8523: fix resource reclaim in wm8523_register error path
-> [PATCH 5/12] wm8711: fix a memory leak if another WM8711 is registered
-> [PATCH 6/12] wm8904: fix resource reclaim in wm8904_register error path
-> [PATCH 7/12] wm8940: fix resource reclaim in wm8940_register error path
-> [PATCH 8/12] wm8955: fix resource reclaim in wm8955_register error path
-> [PATCH 9/12] wm8961: fix resource reclaim in wm8961_register error path
-> [PATCH 10/12] wm8974: fix a memory leak if another WM8974 is registered
-> [PATCH 11/12] wm8978: fix a memory leak if another WM8978 is registered
-> [PATCH 12/12] wm9081: fix resource reclaim in wm9081_register error path
+[1] http://lkml.org/lkml/2010/7/13/143
 
-If you're going to be submiting large batches of small patches like this
-it would be really helpful if you could make sure you format the subject
-lines for your patches so that they match the standards for the area of
-the kernel you're updating.  This makes them much easier to apply.
+Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>
+Cc: David Brownell <dbrownell@users.sourceforge.net>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org
+---
+ drivers/usb/gadget/storage_common.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
+index 04c462f..7123929 100644
+--- a/drivers/usb/gadget/storage_common.c
++++ b/drivers/usb/gadget/storage_common.c
+@@ -723,9 +723,9 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+ 	ssize_t		rc = count;
+ 	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
+ 	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
+-	int		i;
++	unsigned long	ro;
+ 
+-	if (sscanf(buf, "%d", &i) != 1)
++	if (strict_strtoul(buf, 2, &ro))
+ 		return -EINVAL;
+ 
+ 	/* Allow the write-enable status to change only while the backing file
+@@ -735,8 +735,8 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
+ 		LDBG(curlun, "read-only status change prevented\n");
+ 		rc = -EBUSY;
+ 	} else {
+-		curlun->ro = !!i;
+-		curlun->initially_ro = !!i;
++		curlun->ro = ro;
++		curlun->initially_ro = ro;
+ 		LDBG(curlun, "read-only status set to %d\n", curlun->ro);
+ 	}
+ 	up_read(filesem);
+-- 
+1.6.3.3
+
