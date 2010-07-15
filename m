@@ -1,48 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934991Ab0GOXSQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 19:18:16 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40381 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934966Ab0GOXSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 19:18:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 16 Jul 2010 08:13:33 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Catalin Marinas <catalin.marinas@arm.com>
-Cc: linux-kernel@vger.kernel.org,
-        Adrien Dessemond <adrien.dessemond@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: Re: [PATCH] kmemleak: Annotate false positive in
- init_section_page_cgroup()
-Message-Id: <20100716081333.01efcc83.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100715150117.21293.45752.stgit@e102109-lin.cambridge.arm.com>
-References: <20100715150117.21293.45752.stgit@e102109-lin.cambridge.arm.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S935002Ab0GOXVW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 19:21:22 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60012 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933661Ab0GOXVV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 19:21:21 -0400
+Message-ID: <4C3F97A5.4020107@zytor.com>
+Date: Thu, 15 Jul 2010 16:20:05 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Andi Kleen <andi@firstfloor.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+References: <20100714222115.GA30122@Krystal> <AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com> <AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com> <AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com> <20100715183153.GA9276@Krystal> <AANLkTilfXUtQznSzOmO9ecoaviIt62Hv6jdUOMSRLdrF@mail.gmail.com> <AANLkTimAn0uMpeYKctO0qxM6nwbfev3RHARLZIbf991k@mail.gmail.com> <20100715220117.GA1499@Krystal> <AANLkTinL3S3iMSoP0fb6bxn9IY62OmytBtbqCKy9CZk2@mail.gmail.com> <AANLkTinOTwnSNgwX7PnalhzwWMjwie0Xk_Lnrn_0bLzz@mail.gmail.com> <20100715225844.GA25420@one.firstfloor.org>
+In-Reply-To: <20100715225844.GA25420@one.firstfloor.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Jul 2010 16:01:17 +0100
-Catalin Marinas <catalin.marinas@arm.com> wrote:
-
-> The pointer to the page_cgroup table allocated in
-> init_section_page_cgroup() is stored in section->page_cgroup as (base -
-> pfn). Since this value does not point to the beginning or inside the
-> allocated memory block, kmemleak reports a false positive.
+On 07/15/2010 03:58 PM, Andi Kleen wrote:
+>> Why do we force IST use for NMI, btw? Maybe we shouldn't, and just use
+>> the normal kernel stack mechanisms?
 > 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Reported-by: Adrien Dessemond <adrien.dessemond@gmail.com>
-> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> Cc: Andrew Morton <akpm@linux-foundation.org>
-> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> If you don't use IST the SYSCALL entry is racy during the window
+> when RSP is not set up yet (same for MCE etc.)
+> 
 
-Thank you!.
-Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Right, the kernel stack is not ready.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
