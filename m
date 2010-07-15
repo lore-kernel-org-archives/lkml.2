@@ -1,44 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932295Ab0GODE6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 23:04:58 -0400
-Received: from 1096.vh.cnolnic.com ([211.152.51.11]:37735 "EHLO
-	1096.vh.cnolnic.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932192Ab0GODE5 (ORCPT
+	id S932305Ab0GODGG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 23:06:06 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:52465 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932242Ab0GODGE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 23:04:57 -0400
-From: "MailScanner" <postmaster@1096.vh.cnolnic.com>
-To: linux-kernel@vger.kernel.org
-Subject: Warning: E-mail viruses detected
-X--MailScanner: generated, Not scanned: please contact your Internet E-Mail Service Provider for details
-Message-Id: <20100715015249.94A431EF18B@1096.vh.cnolnic.com>
-Date: Thu, 15 Jul 2010 09:52:49 +0800 (CST)
-X--MailScanner-Information: Please contact the ISP for more information
-X--MailScanner-From: 
+	Wed, 14 Jul 2010 23:06:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=MKBlCOECxy5oqaUtAvom7efJSUYKkH9NtBY3tnSAuqAdG6HS60KJ/ImFrgIdNXHRgs
+         Py0Q88cX0frrp4v+vHj/Dv8ONduAyxoRzxfmRC4eNs8vnfV6jcOVlWvVMe8kDPUdQFUJ
+         ig5KnD+rMsQhFYJ3po/WT1xk3mBppVNuNe0L8=
+Subject: [PATCH 9/12] wm8961: fix resource reclaim in wm8961_register error
+	path
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
+In-Reply-To: <1279162147.29294.2.camel@mola>
+References: <1279162147.29294.2.camel@mola>
+Content-Type: text/plain
+Date: Thu, 15 Jul 2010 11:06:40 +0800
+Message-Id: <1279163200.29294.25.camel@mola>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Our e-mail content detector has just been triggered by a message you sent:
-  To: sales@smart-magnet.com
-  Subject: RETURNED MAIL: DATA FORMAT ERROR
-  Date: Thu Jul 15 09:52:49 2010
+This patch fixes the error path in wm8961_register to properly free resources.
 
-One or more of the attachments (salessmart-magnet.com, sales@smart-magnet.com.zip) are on
-the list of unacceptable attachments for this site and will not have
-been delivered.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ sound/soc/codecs/wm8961.c |    9 +++++----
+ 1 files changed, 5 insertions(+), 4 deletions(-)
 
-Consider renaming the files to avoid this constraint.
-
-The virus detector said this about the message:
-Report: Report: MailScanner: Executable DOS/Windows programs are dangerous in email (salessmart-magnet.com)
-Report: No programs allowed (salessmart-magnet.com)
-
-
+diff --git a/sound/soc/codecs/wm8961.c b/sound/soc/codecs/wm8961.c
+index 5b9a756..2549d3a 100644
+--- a/sound/soc/codecs/wm8961.c
++++ b/sound/soc/codecs/wm8961.c
+@@ -1102,7 +1102,7 @@ static int wm8961_register(struct wm8961_priv *wm8961)
+ 	ret = wm8961_reset(codec);
+ 	if (ret < 0) {
+ 		dev_err(codec->dev, "Failed to issue reset\n");
+-		return ret;
++		goto err;
+ 	}
+ 
+ 	/* Enable class W */
+@@ -1147,18 +1147,19 @@ static int wm8961_register(struct wm8961_priv *wm8961)
+ 	ret = snd_soc_register_codec(codec);
+ 	if (ret != 0) {
+ 		dev_err(codec->dev, "Failed to register codec: %d\n", ret);
+-		return ret;
++		goto err;
+ 	}
+ 
+ 	ret = snd_soc_register_dai(&wm8961_dai);
+ 	if (ret != 0) {
+ 		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
+-		snd_soc_unregister_codec(codec);
+-		return ret;
++		goto err_codec;
+ 	}
+ 
+ 	return 0;
+ 
++err_codec:
++	snd_soc_unregister_codec(codec);
+ err:
+ 	kfree(wm8961);
+ 	return ret;
 -- 
-MailScanner
-Email Virus Scanner
+1.5.4.3
 
-www.
 
-For all your IT requirements visit: http://www.transtec.co.uk
+
