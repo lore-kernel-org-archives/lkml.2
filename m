@@ -1,44 +1,244 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933870Ab0GORLt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 13:11:49 -0400
-Received: from kroah.org ([198.145.64.141]:51586 "EHLO coco.kroah.org"
+	id S933873Ab0GORNc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 13:13:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40998 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933757Ab0GORLq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 13:11:46 -0400
-Date: Thu, 15 Jul 2010 10:10:51 -0700
-From: Greg KH <greg@kroah.com>
-To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Cc: James Morris <jmorris@namei.org>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        linux-security-module@vger.kernel.org
-Subject: Re: [PATCH][securityfs][2.6.34] Drop dentry reference count when
-	mknod fails
-Message-ID: <20100715171051.GA21798@kroah.com>
-References: <201007151325.06942.tvrtko.ursulin@sophos.com>
+	id S933757Ab0GORNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 13:13:31 -0400
+Date: Thu, 15 Jul 2010 14:13:13 -0300
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
+To: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>, linux-kernel@vger.kernel.org,
+        Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 1/3] perf probe: Fix error message if get_real_path()
+	failed
+Message-ID: <20100715171313.GF3834@ghostprotocols.net>
+References: <4C36EBDB.4020308@hitachi.com> <1278677899.21394.56.camel@mini> <4C3F39A3.2030103@hitachi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201007151325.06942.tvrtko.ursulin@sophos.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4C3F39A3.2030103@hitachi.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 01:25:06PM +0100, Tvrtko Ursulin wrote:
+Em Fri, Jul 16, 2010 at 01:38:59AM +0900, Masami Hiramatsu escreveu:
+> Hi Arnaldo,
 > 
-> lookup_one_len increments dentry reference count which is not decremented
-> when the create operation fails. This can cause a kernel BUG at
-> fs/dcache.c:676 at unmount time. Also error code returned when new_inode()
-> fails was replaced with more appropriate -ENOMEM.
+> Could you please merge this series, because this series
+> fixes some bugs which people easily hit ?
+
+I'll take a look at it, thanks for pointing it out.
+
+- Arnaldo
+ 
+> Thank you,
 > 
-
-Nice, thanks for finding and fixing this, great job.
-
-> Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-
-Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-thanks,
-
-greg k-h
+> Chase Douglas wrote:
+> > On Fri, 2010-07-09 at 18:28 +0900, Masami Hiramatsu wrote:
+> >> Perf probe -L shows incorrect error message (Dwarf error)
+> >> if it fails to find source file. This can confuse users.
+> >>
+> >> # ./perf probe -s /nowhere -L vfs_read
+> >> Debuginfo analysis failed. (-2)
+> >>   Error: Failed to show lines. (-2)
+> >>
+> >> With this patch, it shows correct message.
+> >>
+> >> # ./perf probe -s /nowhere -L vfs_read
+> >> Failed to find source file. (-2)
+> >>   Error: Failed to show lines. (-2)
+> >>
+> >> Signed-off-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+> >> Cc: Chase Douglas <chase.douglas@canonical.com>
+> >> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+> >> Cc: Ingo Molnar <mingo@elte.hu>
+> >> ---
+> >>
+> >>  tools/perf/util/probe-event.c  |   59 +++++++++++++++++++++++++++++++++++++++
+> >>  tools/perf/util/probe-finder.c |   61 +++-------------------------------------
+> >>  2 files changed, 64 insertions(+), 56 deletions(-)
+> >>
+> >> diff --git a/tools/perf/util/probe-event.c b/tools/perf/util/probe-event.c
+> >> index 09cf546..8d08e75 100644
+> >> --- a/tools/perf/util/probe-event.c
+> >> +++ b/tools/perf/util/probe-event.c
+> >> @@ -195,6 +195,55 @@ static int try_to_find_kprobe_trace_events(struct perf_probe_event *pev,
+> >>  	return ntevs;
+> >>  }
+> >>
+> >> +/*
+> >> + * Find a src file from a DWARF tag path. Prepend optional source path prefix
+> >> + * and chop off leading directories that do not exist. Result is passed back as
+> >> + * a newly allocated path on success.
+> >> + * Return 0 if file was found and readable, -errno otherwise.
+> >> + */
+> >> +static int get_real_path(const char *raw_path, char **new_path)
+> >> +{
+> >> +	if (!symbol_conf.source_prefix) {
+> >> +		if (access(raw_path, R_OK) == 0) {
+> >> +			*new_path = strdup(raw_path);
+> >> +			return 0;
+> >> +		} else
+> >> +			return -errno;
+> >> +	}
+> >> +
+> >> +	*new_path = malloc((strlen(symbol_conf.source_prefix) +
+> >> +			    strlen(raw_path) + 2));
+> >> +	if (!*new_path)
+> >> +		return -ENOMEM;
+> >> +
+> >> +	for (;;) {
+> >> +		sprintf(*new_path, "%s/%s", symbol_conf.source_prefix,
+> >> +			raw_path);
+> >> +
+> >> +		if (access(*new_path, R_OK) == 0)
+> >> +			return 0;
+> >> +
+> >> +		switch (errno) {
+> >> +		case ENAMETOOLONG:
+> >> +		case ENOENT:
+> >> +		case EROFS:
+> >> +		case EFAULT:
+> >> +			raw_path = strchr(++raw_path, '/');
+> >> +			if (!raw_path) {
+> >> +				free(*new_path);
+> >> +				*new_path = NULL;
+> >> +				return -ENOENT;
+> >> +			}
+> >> +			continue;
+> >> +
+> >> +		default:
+> >> +			free(*new_path);
+> >> +			*new_path = NULL;
+> >> +			return -errno;
+> >> +		}
+> >> +	}
+> >> +}
+> >> +
+> >>  #define LINEBUF_SIZE 256
+> >>  #define NR_ADDITIONAL_LINES 2
+> >>
+> >> @@ -244,6 +293,7 @@ int show_line_range(struct line_range *lr)
+> >>  	struct line_node *ln;
+> >>  	FILE *fp;
+> >>  	int fd, ret;
+> >> +	char *tmp;
+> >>
+> >>  	/* Search a line range */
+> >>  	ret = init_vmlinux();
+> >> @@ -266,6 +316,15 @@ int show_line_range(struct line_range *lr)
+> >>  		return ret;
+> >>  	}
+> >>
+> >> +	/* Convert source file path */
+> >> +	tmp = lr->path;
+> >> +	ret = get_real_path(tmp, &lr->path);
+> >> +	free(tmp);	/* Free old path */
+> >> +	if (ret < 0) {
+> >> +		pr_warning("Failed to find source file. (%d)\n", ret);
+> >> +		return ret;
+> >> +	}
+> >> +
+> >>  	setup_pager();
+> >>
+> >>  	if (lr->function)
+> >> diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
+> >> index 3e64e1f..a934a36 100644
+> >> --- a/tools/perf/util/probe-finder.c
+> >> +++ b/tools/perf/util/probe-finder.c
+> >> @@ -58,55 +58,6 @@ static int strtailcmp(const char *s1, const char *s2)
+> >>  	return 0;
+> >>  }
+> >>
+> >> -/*
+> >> - * Find a src file from a DWARF tag path. Prepend optional source path prefix
+> >> - * and chop off leading directories that do not exist. Result is passed back as
+> >> - * a newly allocated path on success.
+> >> - * Return 0 if file was found and readable, -errno otherwise.
+> >> - */
+> >> -static int get_real_path(const char *raw_path, char **new_path)
+> >> -{
+> >> -	if (!symbol_conf.source_prefix) {
+> >> -		if (access(raw_path, R_OK) == 0) {
+> >> -			*new_path = strdup(raw_path);
+> >> -			return 0;
+> >> -		} else
+> >> -			return -errno;
+> >> -	}
+> >> -
+> >> -	*new_path = malloc((strlen(symbol_conf.source_prefix) +
+> >> -			    strlen(raw_path) + 2));
+> >> -	if (!*new_path)
+> >> -		return -ENOMEM;
+> >> -
+> >> -	for (;;) {
+> >> -		sprintf(*new_path, "%s/%s", symbol_conf.source_prefix,
+> >> -			raw_path);
+> >> -
+> >> -		if (access(*new_path, R_OK) == 0)
+> >> -			return 0;
+> >> -
+> >> -		switch (errno) {
+> >> -		case ENAMETOOLONG:
+> >> -		case ENOENT:
+> >> -		case EROFS:
+> >> -		case EFAULT:
+> >> -			raw_path = strchr(++raw_path, '/');
+> >> -			if (!raw_path) {
+> >> -				free(*new_path);
+> >> -				*new_path = NULL;
+> >> -				return -ENOENT;
+> >> -			}
+> >> -			continue;
+> >> -
+> >> -		default:
+> >> -			free(*new_path);
+> >> -			*new_path = NULL;
+> >> -			return -errno;
+> >> -		}
+> >> -	}
+> >> -}
+> >> -
+> >>  /* Line number list operations */
+> >>
+> >>  /* Add a line to line number list */
+> >> @@ -1256,13 +1207,11 @@ end:
+> >>  static int line_range_add_line(const char *src, unsigned int lineno,
+> >>  			       struct line_range *lr)
+> >>  {
+> >> -	int ret;
+> >> -
+> >> -	/* Copy real path */
+> >> +	/* Copy source path */
+> >>  	if (!lr->path) {
+> >> -		ret = get_real_path(src, &lr->path);
+> >> -		if (ret != 0)
+> >> -			return ret;
+> >> +		lr->path = strdup(src);
+> >> +		if (lr->path == NULL)
+> >> +			return -ENOMEM;
+> >>  	}
+> >>  	return line_list__add_line(&lr->line_list, lineno);
+> >>  }
+> >> @@ -1460,7 +1409,7 @@ int find_line_range(int fd, struct line_range *lr)
+> >>  		}
+> >>  		off = noff;
+> >>  	}
+> >> -	pr_debug("path: %lx\n", (unsigned long)lr->path);
+> >> +	pr_debug("path: %s\n", lr->path);
+> >>  	dwarf_end(dbg);
+> >>
+> >>  	return (ret < 0) ? ret : lf.found;
+> > 
+> > This seems fine to me. I don't think any functionality has really
+> > changed, just moving the function into probe-event.c and printing out an
+> > accurate error message.
+> > 
+> > Acked-by: Chase Douglas <chase.douglas@canonical.com>
+> > 
+> > Thanks!
+> > 
