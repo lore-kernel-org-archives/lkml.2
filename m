@@ -1,87 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756759Ab0GOKD2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 06:03:28 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:39735 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753776Ab0GOKD0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 06:03:26 -0400
-X-SpamScore: -31
-X-BigFish: VPS-31(zz1432N98dN936eM148cMzz1202hzz15d4Rz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L5LFX3-02-06Y-02
-X-M-MSG: 
-Date: Thu, 15 Jul 2010 12:02:58 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Stephan Wolf <stephan@letzte-bankreihe.de>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
-Subject: Re: [PATCH] enable readback to get HPET working on ATI SB4x00,
- kernel 2.6.35_rc5
-Message-ID: <20100715100258.GA20469@aftab>
-References: <4C3DDDFF.5040302@letzte-bankreihe.de>
- <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com>
- <20100714181152.GB15651@aftab>
- <AANLkTin71FbM5Eh7TDUHN0WvYHA5RubycflTxM5EWlvj@mail.gmail.com>
- <20100714183216.GC15651@aftab>
- <alpine.LFD.2.00.1007142134140.3321@localhost.localdomain>
- <4C3EB365.4030205@letzte-bankreihe.de>
- <alpine.LFD.2.00.1007151011550.3321@localhost.localdomain>
+	id S932973Ab0GOKJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 06:09:25 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:36604 "EHLO mail.issp.bas.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756202Ab0GOKJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 06:09:24 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+To: Unai Uribarri <unai.uribarri@optenet.com>
+Subject: Re: Workaround hardware bug addressing physical memory
+Date: Thu, 15 Jul 2010 13:09:14 +0300
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
+References: <3586320.70351279181306029.JavaMail.root@mail1-md.optenet.com>
+In-Reply-To: <3586320.70351279181306029.JavaMail.root@mail1-md.optenet.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1007151011550.3321@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+Message-Id: <201007151309.14915.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Thu, Jul 15, 2010 at 04:22:14AM -0400
-
-> On Thu, 15 Jul 2010, Stephan Wolf wrote:
-> > Am 14.07.2010 23:04, schrieb Thomas Gleixner:
-> > 
-> > > +static void __init ati_hpet_bugs(int num, int slot, int func)
-> > > +{
-> > > +#ifdef CONFIG_HPET_TIMER
-> > > +	hpet_readback_cmp = 1;
-> > > +#endif
-> > > +}
-> > > +
-> > >   #define QFLAG_APPLY_ONCE 	0x1
-> > >   #define QFLAG_APPLIED		0x2
-> > >   #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
-> > > @@ -220,6 +236,8 @@ static struct chipset early_qrk[] __init
-> > >   	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
-> > >   	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
-> > >   	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
-> > > +	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
-> > > +	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_hpet_bugs },
-> > >   	{}
-> > 
-> > Hi, the patch above solves the problem on my machine.
+On 15.7.2010, Unai Uribarri wrote:
+> Thanks.
+> ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
 > 
-> Thanks for testing. 
+> | On Wednesday, July 14, 2010 08:06:49 pm you wrote:
+> | > ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
+> | > 
+> | > | Hi,
+> | > | 
+> | > | This is pci driver. You can set dma mask:
+> | > | 
+> | > | dma_set_coheren_mask(pdev, DMA_BIT_MASK(31)) 
+> | > | 
+> | > | All further alloc_coherent() should be from the region 0-2GB.
+> | > | 
+> | > 
+> | > But I'm using a 64 bit operating system with 32GB of RAM. It's a
+> | > pity to be unable to use 4GB-32GB range because the 2-4GB range is
+> | > unusable. So I've written this code to skip invalid areas. Do you
+> | > think this code could be useful for other drivers?
+> | 
+> | Let me summarize if I have correctly understood what you do.
+> | 
+> | First, your hardware has problems when the physical (bus) address
+> | is out of the 0-2GB region, so you cannot use buffers that are out 
+> | of this range in any case. And the defect is in the peripheral, not in
+> | the bridge between it and the memory.
 > 
-> Borislav, any opinion ?
+> The hardware works correctly for physical address in the ranges 0 to 2GB
+> AND 4GB to 32GB. Physical address in the 2-4GB range are read correctly
+> by the device. But when the device tries to write to them it issues 
+> invalid PCIe transaction headers: it tries to access such addresses using
+> a 64-bit transactions when the PCI Express standard mandates to use 32-bit
+> transactions for memory addresses below 4GB. Some bridges accept such
+> invalid transactions, but Intel 5500 chipset rejects them.
+> 
+> I'm allocating 256MB of RAM for I/O buffers; I'm fear that restricting all
+> the allocations to the first 2GB of memory will put too much pressure in
+> that zone of memory. But restricting it to 4GB and above will be okay. 
+> 
+> Is there any way to restrict to memory address above 4GB?
 
-Yep, good idea to match SMBus device class on ATI, cool. Quickly tested
-on my SB700.
+Would this work for you?
+From: Documentation/kernel-parameters.txt:
 
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+	memmap=nn[KMG]$ss[KMG]
+			[KNL,ACPI] Mark specific memory as reserved.
+			Region of memory to be used, from ss to ss+nn.
+			Example: Exclude memory from 0x18690000-0x1869ffff
+			         memmap=64K$0x18690000
+			         or
+			         memmap=0x10000$0x18690000
 
--- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
-
+Marin Mitov
