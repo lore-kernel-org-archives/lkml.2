@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab0GOMho (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 08:37:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49024 "EHLO
+	id S933160Ab0GOMiL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 08:38:11 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:32856 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab0GOMhl (ORCPT
+	with ESMTP id S1755721Ab0GOMhm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 08:37:41 -0400
+	Thu, 15 Jul 2010 08:37:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=bxxY8i6z1eHFcKqpjqwqlAn0HbYSowMo1q18tqgvY11VaRxahojVj+iIE1GIyJMoeS
-         5SFKeDdp10vHmnGiOFKgynNQg5NSoxS2ZkEneG+vaM2GPVcidaendxAdTb1ALyZ7tz+N
-         NHbfddIKVDZMLqR8jgkT4D+1Ae//R1PjshUmo=
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=bDV7VECELO+jEje6IFZFx8MmBpLu5lLO6R2RYkbQRum5lYvK+pib2EA0sJhOq+vFoj
+         v0LvHvqQOPjVQ/H07fO/VyNj1xobfwDOMPhh7zwlnHPIgCSD4tivLvKbCrcUjL921FVa
+         K1ok/AKKnLkaMhUH6ZUdbez4UkDwf8PU6TPa4=
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
 To: linux-kernel@vger.kernel.org
 Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Karsten Keil <isdn@linux-pingi.de>, Tilman Schmidt <tilman@imap.cc>,
-        netdev@vger.kernel.org
-Subject: [PATCH 1/3] drivers: isdn: use kernel macros to convert hex digit
-Date: Thu, 15 Jul 2010 15:37:18 +0300
-Message-Id: <1279197440-6585-1-git-send-email-andy.shevchenko@gmail.com>
+        Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org
+Subject: [PATCH 2/3] drivers: isdn: remove custom strtoul()
+Date: Thu, 15 Jul 2010 15:37:19 +0300
+Message-Id: <1279197440-6585-2-git-send-email-andy.shevchenko@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1279197440-6585-1-git-send-email-andy.shevchenko@gmail.com>
+References: <1279197440-6585-1-git-send-email-andy.shevchenko@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+In this case we safe to use strict_strtoul().
+
 Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
 Cc: Karsten Keil <isdn@linux-pingi.de>
-Cc: Tilman Schmidt <tilman@imap.cc>
 Cc: netdev@vger.kernel.org
 ---
- drivers/isdn/capi/capidrv.c |    7 ++-----
- drivers/isdn/hisax/q931.c   |   13 ++-----------
- 2 files changed, 4 insertions(+), 16 deletions(-)
+ drivers/isdn/hysdn/hysdn_proclog.c |   36 +++++++-----------------------------
+ 1 files changed, 7 insertions(+), 29 deletions(-)
 
-diff --git a/drivers/isdn/capi/capidrv.c b/drivers/isdn/capi/capidrv.c
-index bf55ed5..2978bda 100644
---- a/drivers/isdn/capi/capidrv.c
-+++ b/drivers/isdn/capi/capidrv.c
-@@ -1450,12 +1450,9 @@ static void handle_dtrace_data(capidrv_contr *card,
-     	}
+diff --git a/drivers/isdn/hysdn/hysdn_proclog.c b/drivers/isdn/hysdn/hysdn_proclog.c
+index 7003698..2ee93d0 100644
+--- a/drivers/isdn/hysdn/hysdn_proclog.c
++++ b/drivers/isdn/hysdn/hysdn_proclog.c
+@@ -16,6 +16,7 @@
+ #include <linux/sched.h>
+ #include <linux/slab.h>
+ #include <linux/mutex.h>
++#include <linux/kernel.h>
  
- 	for (p = data, end = data+len; p < end; p++) {
--		u8 w;
- 		PUTBYTE_TO_STATUS(card, ' ');
--		w = (*p >> 4) & 0xf;
--		PUTBYTE_TO_STATUS(card, (w < 10) ? '0'+w : 'A'-10+w);
--		w = *p & 0xf;
--		PUTBYTE_TO_STATUS(card, (w < 10) ? '0'+w : 'A'-10+w);
-+		PUTBYTE_TO_STATUS(card, hex_asc_hi(*p));
-+		PUTBYTE_TO_STATUS(card, hex_asc_lo(*p));
- 	}
- 	PUTBYTE_TO_STATUS(card, '\n');
+ #include "hysdn_defs.h"
  
-diff --git a/drivers/isdn/hisax/q931.c b/drivers/isdn/hisax/q931.c
-index 8b853d5..c0771f9 100644
---- a/drivers/isdn/hisax/q931.c
-+++ b/drivers/isdn/hisax/q931.c
-@@ -1152,20 +1152,11 @@ QuickHex(char *txt, u_char * p, int cnt)
+@@ -155,9 +156,8 @@ static ssize_t
+ hysdn_log_write(struct file *file, const char __user *buf, size_t count, loff_t * off)
  {
- 	register int i;
- 	register char *t = txt;
--	register u_char w;
+ 	unsigned long u = 0;
+-	int found = 0;
+-	unsigned char *cp, valbuf[128];
+-	long base = 10;
++	int rc;
++	unsigned char valbuf[128];
+ 	hysdn_card *card = file->private_data;
  
- 	for (i = 0; i < cnt; i++) {
- 		*t++ = ' ';
--		w = (p[i] >> 4) & 0x0f;
--		if (w < 10)
--			*t++ = '0' + w;
--		else
--			*t++ = 'A' - 10 + w;
--		w = p[i] & 0x0f;
--		if (w < 10)
--			*t++ = '0' + w;
--		else
--			*t++ = 'A' - 10 + w;
-+		*t++ = hex_asc_hi(p[i]);
-+		*t++ = hex_asc_lo(p[i]);
+ 	if (count > (sizeof(valbuf) - 1))
+@@ -166,32 +166,10 @@ hysdn_log_write(struct file *file, const char __user *buf, size_t count, loff_t
+ 		return (-EFAULT);	/* copy failed */
+ 
+ 	valbuf[count] = 0;	/* terminating 0 */
+-	cp = valbuf;
+-	if ((count > 2) && (valbuf[0] == '0') && (valbuf[1] == 'x')) {
+-		cp += 2;	/* pointer after hex modifier */
+-		base = 16;
+-	}
+-	/* scan the input for debug flags */
+-	while (*cp) {
+-		if ((*cp >= '0') && (*cp <= '9')) {
+-			found = 1;
+-			u *= base;	/* adjust to next digit */
+-			u += *cp++ - '0';
+-			continue;
+-		}
+-		if (base != 16)
+-			break;	/* end of number */
+-
+-		if ((*cp >= 'a') && (*cp <= 'f')) {
+-			found = 1;
+-			u *= base;	/* adjust to next digit */
+-			u += *cp++ - 'a' + 10;
+-			continue;
+-		}
+-		break;		/* terminated */
+-	}
+ 
+-	if (found) {
++	rc = strict_strtoul(valbuf, 0, &u);
++
++	if (rc == 0) {
+ 		card->debug_flags = u;	/* remember debug flags */
+ 		hysdn_addlog(card, "debug set to 0x%lx", card->debug_flags);
  	}
- 	*t++ = 0;
- 	return (t - txt);
 -- 
 1.7.1.1
 
