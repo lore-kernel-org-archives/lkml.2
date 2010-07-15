@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757019Ab0GOMZN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 08:25:13 -0400
-Received: from mx4.sophos.com ([74.202.89.161]:56710 "EHLO mx4.sophos.com"
+	id S1758489Ab0GOMZT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 08:25:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11489 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753692Ab0GOMZK convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 08:25:10 -0400
-From: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
-Organization: Sophos Plc
-To: James Morris <jmorris@namei.org>
-Subject: [PATCH][securityfs][2.6.34] Drop dentry reference count when mknod fails
-Date: Thu, 15 Jul 2010 13:25:06 +0100
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-CC: "greg@kroah.com" <greg@kroah.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        <linux-security-module@vger.kernel.org>
+	id S1753692Ab0GOMZP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 08:25:15 -0400
+Date: Thu, 15 Jul 2010 15:19:12 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+        Sridhar Samudrala <samudrala@us.ibm.com>,
+        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
+        virtualization@lists.osdl.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] vhost-net: avoid flush under lock
+Message-ID: <20100715121912.GA7176@redhat.com>
 MIME-Version: 1.0
-Message-ID: <201007151325.06942.tvrtko.ursulin@sophos.com>
-X-MIMETrack: Itemize by SMTP Server on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 15/07/2010 13:25:07,
-	Serialize by Router on Mercury/Servers/Sophos(Release 7.0.3|September 26, 2007) at
- 15/07/2010 13:25:07,
-	Serialize complete at 15/07/2010 13:25:07
-X-TNEFEvaluated: 1
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-12-10)
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+We flush under vq mutex when changing backends.
+This creates a deadlock as workqueue being flushed
+needs this lock as well.
 
-lookup_one_len increments dentry reference count which is not decremented
-when the create operation fails. This can cause a kernel BUG at
-fs/dcache.c:676 at unmount time. Also error code returned when new_inode()
-fails was replaced with more appropriate -ENOMEM.
+https://bugzilla.redhat.com/show_bug.cgi?id=612421
 
+Drop the vq mutex before flush: we have the device mutex
+which is sufficient to prevent another ioctl from touching
+the vq.
 
-Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 ---
- inode.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+ drivers/vhost/net.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff -upr linux-2.6.34/security/inode.c linux-2.6.34-new/security/inode.c
---- linux-2.6.34/security/inode.c       2010-05-16 22:17:36.000000000 +0100
-+++ linux-2.6.34-new/security/inode.c   2010-07-15 13:20:38.133783253 +0100
-@@ -86,7 +86,7 @@ static int mknod(struct inode *dir, stru
-                         int mode, dev_t dev)
- {
-        struct inode *inode;
--       int error = -EPERM;
-+       int error = -ENOMEM;
-
-        if (dentry->d_inode)
-                return -EEXIST;
-@@ -166,6 +166,8 @@ static int create_by_name(const char *na
-                        error = mkdir(parent->d_inode, *dentry, mode);
-                else
-                        error = create(parent->d_inode, *dentry, mode);
-+               if (error)
-+                       dput(dentry);
-        } else
-                error = PTR_ERR(*dentry);
-        mutex_unlock(&parent->d_inode->i_mutex);
-
-
-
-Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
-Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 28d7786..50df58e6 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -534,11 +534,16 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
+ 	rcu_assign_pointer(vq->private_data, sock);
+ 	vhost_net_enable_vq(n, vq);
+ done:
++	mutex_unlock(&vq->mutex);
++
+ 	if (oldsock) {
+ 		vhost_net_flush_vq(n, index);
+ 		fput(oldsock->file);
+ 	}
+ 
++	mutex_unlock(&n->dev.mutex);
++	return 0;
++
+ err_vq:
+ 	mutex_unlock(&vq->mutex);
+ err:
+-- 
+1.7.2.rc0.14.g41c1c
