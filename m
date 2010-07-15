@@ -1,54 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934077Ab0GOSbN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:31:13 -0400
-Received: from pfepb.post.tele.dk ([195.41.46.236]:45078 "EHLO
-	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934014Ab0GOSbI (ORCPT
+	id S934099Ab0GOSb5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:31:57 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:37961 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S934057Ab0GOSbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:31:08 -0400
-Date: Thu, 15 Jul 2010 20:31:05 +0200
-From: Sam Ravnborg <sam@ravnborg.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Zeev Tarantov <zeev.tarantov@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+	Thu, 15 Jul 2010 14:31:55 -0400
+Date: Thu, 15 Jul 2010 14:31:53 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [PATCH] tracing: properly align linker defined symbols
-Message-ID: <20100715183105.GA14167@merkur.ravnborg.org>
-References: <1278705402.1537.157.camel@gandalf.stny.rr.com> <20100709203301.GA13839@merkur.ravnborg.org> <AANLkTinWkfkXNVA2Sx-apVQMZa-5ehugtd7JQ36np7xM@mail.gmail.com> <1278721339.1537.166.camel@gandalf.stny.rr.com> <20100710063459.GA14596@merkur.ravnborg.org> <20100715150514.GB14073@merkur.ravnborg.org> <1279206959.4190.55.camel@localhost>
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+Message-ID: <20100715183153.GA9276@Krystal>
+References: <20100714155804.049012415@efficios.com> <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com> <20100714170617.GB4955@Krystal> <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com> <20100714203940.GC22096@Krystal> <AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com> <20100714222115.GA30122@Krystal> <AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com> <AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com> <AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279206959.4190.55.camel@localhost>
+In-Reply-To: <AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:06:48 up 173 days, 20:43,  6 users,  load average: 0.04, 0.05,
+	0.07
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 11:15:59AM -0400, Steven Rostedt wrote:
-> On Thu, 2010-07-15 at 17:05 +0200, Sam Ravnborg wrote:
-> > On Sat, Jul 10, 2010 at 08:34:59AM +0200, Sam Ravnborg wrote:
-> > > Zeev - please try this replacement patch.
-> > > The alignmnet is increased to 32 bytes compared to my previous version and
-> > > we introduce alignmnet for ftrace_events too.
-> > > 
-> > > 	Sam
-> > 
-> > Steven - Zeev reported that this fixed the boot problem.
-> > What is next step?
-> > Do you forward this patch or do you prefer another fix?
-> > 
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> On Wed, Jul 14, 2010 at 6:23 PM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+> >
+> > So this is what I think it might look like, with the %rip in place.
+> >  [ ...]
+> > Hmm?
 > 
-> Hi Sam,
+> I didn't fill in the iret fault details, because I thought that would
+> be trivial. We get an exception, it's a slow case, how hard can it be
+> to just call the NMI code?
+
+I'm wondering if we really have to handle this with a fault. Couldn't we just
+send iret to the following nmi handler instead ? (chaining nmis)
+
+I think we can even find a way to handle the fact that the fake nmi does not run
+with nmis disabled. We could keep the nmi nested bit set if we find out that
+iret will branch to the fake nmi. We would then have to make sure the fake nmi
+entry point is a little further than the standard nmi entry point: somewhere
+after the initial nmi nesting check.
+
 > 
-> I'm currently at OLS (yes it still exists!) I'll test it and send off
-> this fix to Ingo when I get back on Monday, as I believe Linus did
-> prefer this one.
+> But thinking some more about it, it doesn't feel as trivial any more.
+> We want to set up that same nesting code for the faked NMI call, but
+> now I made it be two separate variables, and they need to be set in an
+> NMI-safe way without us actually having access to the whole NMI
+> blocking that the CPU does for a real NMI.
+> 
+> So there's a few subtleties there too. Probably need to make the two
+> percpu values adjacent, and use cmpxchg16b in the "emulate NMI on
+> exception" code to set them both atomically. Or something. So I think
+> it's doable, but it's admittedly more complicated than I thought it
+> would be.
 
-Great. I'm most likely away from mail the next week so do not
-expect prompt responses from me.
+Hrm, we could probably get away with only keeping the nmi_stack_nested per-cpu
+variable. The nmi_stack_ptr could be known statically if we set it at a fixed
+offset from the bottom of stack rather than using an offset relative to the top
+(which can change depending if we are nested over the kernel or userspace).
+We just have to reserve enough space for the bottom of stack.
 
-	Sam
+> 
+> .. and obviously there's nothing that guarantees that the code I
+> already posted is correct either. The whole concept might be total
+> crap.
+
+Call me optimistic if you want, but I think we're really getting somewhere. :)
+
+Thanks,
+
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
