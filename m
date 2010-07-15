@@ -1,20 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758217Ab0GOCRT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 22:17:19 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38408 "EHLO mx1.redhat.com"
+	id S1758268Ab0GOCR3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 22:17:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51146 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758170Ab0GOCRP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 22:17:15 -0400
+	id S1758219Ab0GOCRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 22:17:25 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 00/18] Extended file stat functions [ver #6]
+Subject: [PATCH 08/18] xstat: CIFS: Return extended attributes [ver #6]
 To: viro@ZenIV.linux.org.uk
 Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
         linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
         linux-ext4@vger.kernel.org
-Date: Thu, 15 Jul 2010 03:17:09 +0100
-Message-ID: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+Date: Thu, 15 Jul 2010 03:17:19 +0100
+Message-ID: <20100715021719.5544.80265.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -23,249 +29,233 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement a pair of new system calls to provide extended and further extensible
-stat functions.
+Return extended attributes from the CIFS filesystem.  This includes the
+following:
 
-The second of the associated patches is the main patch that provides these new
-system calls:
+ (1) Return the file creation time as btime.  We assume that the creation time
+     won't change over the life of the inode.
 
-	ssize_t ret = xstat(int dfd,
-			    const char *filename,
-			    unsigned atflag,
-			    struct xstat_parameters *params,
-			    struct xstat *buffer,
-			    size_t bufsize);
+ (2) FS_AUTOMOUNT_FL on referral/submount directories.
 
-	ssize_t ret = fxstat(int fd,
-			     struct xstat_parameters *params,
-			     struct xstat *buffer,
-			     size_t bufsize);
+ (3) Deasserting XSTAT_REQUEST_INO in st_result_mask if we made up the inode
+     number and didn't get it from the server.
 
-which are more fully documented in that patch's description.
+ (4) Map various Windows file attributes to FS_xxx_FL flags in st_inode_flags,
+     fetching them from the server if we don't have them yet or don't have a
+     current copy.
 
-These new stat functions provide a number of useful features, in summary:
+Furthermore, what cifs_getattr() does can be controlled as follows:
 
- (1) More information: creation time, inode generation number, data version
-     number, flags/attributes.  A subset of these is available through each of:
-     CIFS, NFS, AFS, Ext4, BTRFS and others.
+ (1) If AT_FORCE_ATTR_SYNC is indicated, or if the inode flags or creation time
+     are requested but not yet collected, then the attributes will be reread
+     unconditionally.
 
- (2) Lightweight stat: Ask for just those details of interest, and allow a
-     netfs (such as NFS) to approximate anything not of interest, possibly
-     without going to the server.
+ (2) If the basic stats are requested or if the inode flags are requested and
+     have been collected previously, then the attributes will be reread if out
+     of date.
 
- (3) Heavyweight stat: Force a netfs to go to the server, even if it thinks its
-     cached attributes are up to date.
+ (3) Otherwise the cached attributes will be used - even if expired - without
+     reference to the server.
 
- (4) Allow the filesystem to indicate what it can/cannot provide: A filesystem
-     can now say it doesn't support a standard stat feature if that isn't
-     available.
+Note that cifs_revalidate_dentry() will issue an extra operation to get the
+FILE_ALL_INFO in addition to the FILE_UNIX_BASIC_INFO if it needs to collect
+creation time and attributes on behalf of cifs_getattr().
 
- (5) Make the fields a consistent size on all arches, and make them large.
+[NOTE: THIS PATCH IS UNTESTED!]
 
- (6) Can be extended by using more request flags and appending further data
-     after the end of the standard return data.
-
-Note that no lstat() equivalent is required as that can be implemented through
-xstat() with atflag == 0.
-
-
-==================
-ADDITIONAL PATCHES
-==================
-
-The first patch makes const a bunch of system call userspace string/buffer
-arguments.  I can then make sys_xstat()'s filename pointer const too (though
-the entire first patch is not required for that).
-
-The third patch makes the AFS filesystem use i_generation for the vnode ID
-uniquifier rather than i_version, and assigns i_version to hold the AFS data
-version number, making them more logical for when I want to get at them from
-afs_getattr().
-
-Patches 4-8 implement extended stat facilities for AFS, Ext4, NFS and CIFS, and
-make eCryptFS go to the lower filesystem for such details.
-
-Patches 9-11 set filesystem-level marks to be applied to all files on that
-filesystem.  These marks indicate special kernel inodes (such as are to be
-found in procfs, sysfs or the socket filesystem), remote inodes (such as are to
-be found in network filesystems) and automount inodes (such as are to be found
-in autofs*).
-
-Patch 12 implements a dentry operation to do automounting in __follow_mount()
-rather than abusing follow_link() on directories.  Patch 16 removes the
-directory follow_link kludges from pathwalk.  Patches 13-15 make AFS, NFS and
-CIFS use the d_automount() op.
-
-Patch 17 makes use of the d_automount path to add an AT_NO_AUTOMOUNT flag to
-suppress terminal path component automount, thus allowing you to stat the
-automount directory itself.  The automount directory is marked for what it is
-in st_inode_flags as returned by [f]xstat().  This will allow ls to avoid mass
-automounting in a directory full of automount points.
-
-Patch 18 is a way of providing extra results to [f]xstat() modelled on filldir.
-Currently no extra results are defined.
-
-
-=======
-TESTING
-=======
-
-There's a test program attached to the description for the main patch.  It can
-be run as follows:
-
-	[root@andromeda ~]# /tmp/xstat /afs/archive/linuxdev/fedora9/x86_64/kernel-devel-2.6.25.10-86.fc9.x86_64.rpm 
-	xstat(/afs/archive/linuxdev/fedora9/x86_64/kernel-devel-2.6.25.10-86.fc9.x86_64.rpm) = 160
-	results=77ef
-	  Size: 5413882         Blocks: 0          IO Block: 4096    regular file
-	Device: 00:15           Inode: 2288        Links: 1    
-	Access: (0644/-rw-r--r--)  Uid: 75338   
-	Gid: 0
-	Access: 2008-11-05 19:47:22.000000000+0000
-	Modify: 2008-11-05 19:47:22.000000000+0000
-	Change: 2008-11-05 19:47:22.000000000+0000
-	Inode version: 795h
-	Data version: 2h
-	Inode flags: 0000000800000000 (-------- -------- -------- ----r--- -------- -------- -------- --------)
-	[
-
-David
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
-David Howells (18):
-      xstat: Provide a mechanism to gather extra results for [f]xstat()
-      xstat: Add an AT_NO_AUTOMOUNT flag to suppress terminal automount
-      xstat: Remove the automount through follow_link() kludge code from pathwalk
-      xstat: CIFS: Use d_automount() rather than abusing follow_link()
-      xstat: NFS: Use d_automount() rather than abusing follow_link()
-      xstat: AFS: Use d_automount() rather than abusing follow_link()
-      xstat: Add a dentry op to handle automounting rather than abusing follow_link()
-      xstat: Make automounter filesystems return FS_AUTOMOUNT_FL
-      xstat: Make network filesystems return FS_REMOTE_FL
-      xstat: Make special system filesystems return FS_SPECIAL_FL
-      xstat: CIFS: Return extended attributes
-      xstat: NFS: Return extended attributes
-      xstat: Ext4: Return extended attributes
-      xstat: eCryptFS: Return extended attributes
-      xstat: AFS: Return extended attributes
-      AFS: Use i_generation not i_version for the vnode uniquifier
-      xstat: Add a pair of system calls to make extended file stats available
-      Mark arguments to certain syscalls as being const
+ fs/cifs/cifsfs.h   |    2 +
+ fs/cifs/cifsglob.h |    5 +++
+ fs/cifs/dir.c      |    2 +
+ fs/cifs/inode.c    |   76 ++++++++++++++++++++++++++++++++++++++++++++--------
+ 4 files changed, 71 insertions(+), 14 deletions(-)
 
-
- Documentation/filesystems/Locking         |    2 
- Documentation/filesystems/vfs.txt         |   13 +
- arch/alpha/kernel/osf_sys.c               |    6 
- arch/alpha/kernel/process.c               |    2 
- arch/arm/kernel/sys_arm.c                 |    4 
- arch/arm/kernel/sys_oabi-compat.c         |    6 
- arch/avr32/include/asm/syscalls.h         |    2 
- arch/avr32/kernel/process.c               |    3 
- arch/blackfin/kernel/process.c            |    2 
- arch/frv/kernel/process.c                 |    3 
- arch/h8300/kernel/process.c               |    2 
- arch/ia64/include/asm/unistd.h            |    2 
- arch/ia64/kernel/perfmon.c                |    7 
- arch/ia64/kernel/process.c                |    2 
- arch/m32r/kernel/process.c                |    3 
- arch/m68k/kernel/process.c                |    2 
- arch/m68knommu/kernel/process.c           |    2 
- arch/microblaze/kernel/sys_microblaze.c   |    2 
- arch/mips/kernel/syscall.c                |    2 
- arch/mn10300/kernel/process.c             |    2 
- arch/parisc/hpux/fs.c                     |    7 
- arch/powerpc/kernel/process.c             |    2 
- arch/powerpc/kernel/sys_ppc32.c           |    2 
- arch/powerpc/platforms/cell/spufs/inode.c |    1 
- arch/s390/hypfs/inode.c                   |    1 
- arch/s390/kernel/compat_linux.c           |   10 -
- arch/s390/kernel/compat_linux.h           |   10 -
- arch/s390/kernel/entry.h                  |    2 
- arch/s390/kernel/process.c                |    2 
- arch/sh/include/asm/syscalls_32.h         |    2 
- arch/sh/include/asm/syscalls_64.h         |    2 
- arch/sh/kernel/process_64.c               |    2 
- arch/sparc/kernel/sys_sparc32.c           |    7 
- arch/um/kernel/exec.c                     |    6 
- arch/um/kernel/internal.h                 |    2 
- arch/um/kernel/syscall.c                  |    2 
- arch/x86/ia32/sys_ia32.c                  |   14 -
- arch/x86/include/asm/sys_ia32.h           |   12 -
- arch/x86/include/asm/syscalls.h           |    2 
- arch/x86/include/asm/unistd_32.h          |    4 
- arch/x86/include/asm/unistd_64.h          |    4 
- arch/x86/kernel/entry_64.S                |    4 
- arch/x86/kernel/process.c                 |    2 
- arch/xtensa/kernel/process.c              |    2 
- drivers/infiniband/hw/ipath/ipath_fs.c    |    1 
- drivers/infiniband/hw/qib/qib_fs.c        |    1 
- drivers/isdn/capi/capifs.c                |    1 
- drivers/misc/ibmasm/ibmasmfs.c            |    1 
- drivers/mtd/mtdchar.c                     |    1 
- drivers/oprofile/oprofilefs.c             |    1 
- drivers/usb/core/inode.c                  |    1 
- drivers/usb/gadget/f_fs.c                 |    1 
- drivers/usb/gadget/inode.c                |    1 
- drivers/xen/xenfs/super.c                 |    1 
- fs/afs/dir.c                              |    9 -
- fs/afs/fsclient.c                         |    3 
- fs/afs/inode.c                            |   23 +-
- fs/afs/internal.h                         |    1 
- fs/afs/mntpt.c                            |   46 +--
- fs/afs/super.c                            |    1 
- fs/anon_inodes.c                          |    1 
- fs/autofs/init.c                          |    1 
- fs/autofs4/init.c                         |    1 
- fs/binfmt_misc.c                          |    1 
- fs/ceph/super.c                           |    1 
- fs/cifs/cifs_dfs_ref.c                    |  145 +++++-----
- fs/cifs/cifsfs.c                          |    1 
- fs/cifs/cifsfs.h                          |    8 -
- fs/cifs/cifsglob.h                        |    5 
- fs/cifs/dir.c                             |    4 
- fs/cifs/inode.c                           |   84 +++++-
- fs/coda/inode.c                           |    1 
- fs/compat.c                               |   23 +-
- fs/configfs/mount.c                       |    1 
- fs/debugfs/inode.c                        |    1 
- fs/ecryptfs/inode.c                       |    6 
- fs/ext4/ext4.h                            |    2 
- fs/ext4/file.c                            |    2 
- fs/ext4/inode.c                           |   32 ++
- fs/ext4/namei.c                           |    2 
- fs/ext4/symlink.c                         |    2 
- fs/fuse/control.c                         |    1 
- fs/hostfs/hostfs_kern.c                   |    1 
- fs/namei.c                                |  107 +++++--
- fs/ncpfs/inode.c                          |    1 
- fs/nfs/dir.c                              |    2 
- fs/nfs/inode.c                            |   47 ++-
- fs/nfs/internal.h                         |    1 
- fs/nfs/namespace.c                        |   87 +++---
- fs/nfs/super.c                            |    7 
- fs/nfsd/nfsctl.c                          |    1 
- fs/ocfs2/dlmfs/dlmfs.c                    |    1 
- fs/openpromfs/inode.c                     |    1 
- fs/pipe.c                                 |    1 
- fs/proc/root.c                            |    1 
- fs/smbfs/inode.c                          |    1 
- fs/stat.c                                 |  420 +++++++++++++++++++++++++++--
- fs/sysfs/mount.c                          |    1 
- fs/utimes.c                               |    7 
- include/linux/compat.h                    |    6 
- include/linux/dcache.h                    |    5 
- include/linux/fcntl.h                     |    2 
- include/linux/fs.h                        |   20 +
- include/linux/namei.h                     |    2 
- include/linux/stat.h                      |  146 ++++++++++
- include/linux/syscalls.h                  |   29 +-
- include/linux/time.h                      |    2 
- ipc/mqueue.c                              |    1 
- kernel/cgroup.c                           |    1 
- kernel/cpuset.c                           |    1 
- net/socket.c                              |    1 
- net/sunrpc/rpc_pipe.c                     |    1 
- security/inode.c                          |    1 
- security/selinux/selinuxfs.c              |    1 
- security/smack/smackfs.c                  |    1 
- 115 files changed, 1126 insertions(+), 372 deletions(-)
+diff --git a/fs/cifs/cifsfs.h b/fs/cifs/cifsfs.h
+index a7eb65c..50bf70b 100644
+--- a/fs/cifs/cifsfs.h
++++ b/fs/cifs/cifsfs.h
+@@ -62,7 +62,7 @@ extern int cifs_rmdir(struct inode *, struct dentry *);
+ extern int cifs_rename(struct inode *, struct dentry *, struct inode *,
+ 		       struct dentry *);
+ extern int cifs_revalidate_file(struct file *filp);
+-extern int cifs_revalidate_dentry(struct dentry *);
++extern int cifs_revalidate_dentry(struct dentry *, bool, bool);
+ extern int cifs_getattr(struct vfsmount *, struct dentry *, struct kstat *);
+ extern int cifs_setattr(struct dentry *, struct iattr *);
+ 
+diff --git a/fs/cifs/cifsglob.h b/fs/cifs/cifsglob.h
+index a88479c..f12e78d 100644
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -396,6 +396,9 @@ struct cifsInodeInfo {
+ 	bool clientCanCacheAll:1;	/* read and writebehind oplock */
+ 	bool delete_pending:1;		/* DELETE_ON_CLOSE is set */
+ 	bool invalid_mapping:1;		/* pagecache is invalid */
++	bool cifsAttrs_valid:1;		/* stored cifs attributes are valid */
++	bool btime_valid:1;		/* stored creation time is valid */
++	struct timespec btime;		/* creation time */
+ 	u64  server_eof;		/* current file size on server */
+ 	u64  uniqueid;			/* server inode number */
+ 	struct inode vfs_inode;
+@@ -508,6 +511,7 @@ struct dfs_info3_param {
+ #define CIFS_FATTR_DELETE_PENDING	0x2
+ #define CIFS_FATTR_NEED_REVAL		0x4
+ #define CIFS_FATTR_INO_COLLISION	0x8
++#define CIFS_FATTR_WINATTRS_VALID	0x10	/* T if cf_btime and cf_cifsattrs valid */
+ 
+ struct cifs_fattr {
+ 	u32		cf_flags;
+@@ -524,6 +528,7 @@ struct cifs_fattr {
+ 	struct timespec	cf_atime;
+ 	struct timespec	cf_mtime;
+ 	struct timespec	cf_ctime;
++	struct timespec	cf_btime;
+ };
+ 
+ static inline void free_dfs_info_param(struct dfs_info3_param *param)
+diff --git a/fs/cifs/dir.c b/fs/cifs/dir.c
+index e7ae78b..65da30e 100644
+--- a/fs/cifs/dir.c
++++ b/fs/cifs/dir.c
+@@ -778,7 +778,7 @@ cifs_d_revalidate(struct dentry *direntry, struct nameidata *nd)
+ 	int isValid = 1;
+ 
+ 	if (direntry->d_inode) {
+-		if (cifs_revalidate_dentry(direntry))
++		if (cifs_revalidate_dentry(direntry, false, false))
+ 			return 0;
+ 	} else {
+ 		cFYI(1, "neg dentry 0x%p name = %s",
+diff --git a/fs/cifs/inode.c b/fs/cifs/inode.c
+index 6f0683c..ff4a62f 100644
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -136,7 +136,11 @@ cifs_fattr_to_inode(struct inode *inode, struct cifs_fattr *fattr)
+ 	    !(cifs_sb->mnt_cifs_flags & CIFS_MOUNT_DYNPERM))
+ 		inode->i_mode = fattr->cf_mode;
+ 
+-	cifs_i->cifsAttrs = fattr->cf_cifsattrs;
++	if (fattr->cf_flags & CIFS_FATTR_WINATTRS_VALID) {
++		cifs_i->cifsAttrs = fattr->cf_cifsattrs;
++		cifs_i->btime = fattr->cf_btime;
++		cifs_i->btime_valid = true;
++	}
+ 
+ 	if (fattr->cf_flags & CIFS_FATTR_NEED_REVAL)
+ 		cifs_i->time = 0;
+@@ -468,6 +472,7 @@ cifs_all_info_to_fattr(struct cifs_fattr *fattr, FILE_ALL_INFO *info,
+ 		       struct cifs_sb_info *cifs_sb, bool adjust_tz)
+ {
+ 	memset(fattr, 0, sizeof(*fattr));
++	fattr->cf_flags = CIFS_FATTR_WINATTRS_VALID;
+ 	fattr->cf_cifsattrs = le32_to_cpu(info->Attributes);
+ 	if (info->DeletePending)
+ 		fattr->cf_flags |= CIFS_FATTR_DELETE_PENDING;
+@@ -479,6 +484,7 @@ cifs_all_info_to_fattr(struct cifs_fattr *fattr, FILE_ALL_INFO *info,
+ 
+ 	fattr->cf_ctime = cifs_NTtimeToUnix(info->ChangeTime);
+ 	fattr->cf_mtime = cifs_NTtimeToUnix(info->LastWriteTime);
++	fattr->cf_btime = cifs_NTtimeToUnix(info->CreationTime);
+ 
+ 	if (adjust_tz) {
+ 		fattr->cf_ctime.tv_sec += cifs_sb->tcon->ses->server->timeAdj;
+@@ -1591,7 +1597,8 @@ check_inval:
+ }
+ 
+ /* revalidate a dentry's inode attributes */
+-int cifs_revalidate_dentry(struct dentry *dentry)
++int cifs_revalidate_dentry(struct dentry *dentry, bool want_extra_bits,
++			   bool force)
+ {
+ 	int xid;
+ 	int rc = 0;
+@@ -1604,7 +1611,7 @@ int cifs_revalidate_dentry(struct dentry *dentry)
+ 
+ 	xid = GetXid();
+ 
+-	if (!cifs_inode_needs_reval(inode))
++	if (!force && !cifs_inode_needs_reval(inode))
+ 		goto check_inval;
+ 
+ 	/* can not safely grab the rename sem here if rename calls revalidate
+@@ -1619,9 +1626,12 @@ int cifs_revalidate_dentry(struct dentry *dentry)
+ 		 "jiffies %ld", full_path, inode, inode->i_count.counter,
+ 		 dentry, dentry->d_time, jiffies);
+ 
+-	if (CIFS_SB(sb)->tcon->unix_ext)
++	if (CIFS_SB(sb)->tcon->unix_ext) {
+ 		rc = cifs_get_inode_info_unix(&inode, full_path, sb, xid);
+-	else
++		if (rc != 0)
++			goto check_inval;
++	}
++	if (!CIFS_SB(sb)->tcon->unix_ext || want_extra_bits)
+ 		rc = cifs_get_inode_info(&inode, full_path, NULL, sb,
+ 					 xid, NULL);
+ 
+@@ -1637,13 +1647,55 @@ check_inval:
+ int cifs_getattr(struct vfsmount *mnt, struct dentry *dentry,
+ 	struct kstat *stat)
+ {
+-	int err = cifs_revalidate_dentry(dentry);
+-	if (!err) {
+-		generic_fillattr(dentry->d_inode, stat);
+-		stat->blksize = CIFS_MAX_MSGSIZE;
+-		stat->ino = CIFS_I(dentry->d_inode)->uniqueid;
+-	}
+-	return err;
++	struct cifsInodeInfo *cifs_i = CIFS_I(dentry->d_inode);
++	struct cifs_sb_info *cifs_sb = CIFS_SB(dentry->d_sb);
++	unsigned force = stat->query_flags & AT_FORCE_ATTR_SYNC;
++	bool want_extra_bits = false;
++	u64 iflag;
++	u32 attrs;
++	int err;
++
++	if (stat->request_mask & XSTAT_REQUEST_BTIME && !cifs_i->btime_valid) {
++		want_extra_bits = true;
++		force = true;
++	}
++
++	if (stat->request_mask & XSTAT_REQUEST_INODE_FLAGS) {
++		want_extra_bits = true;
++		if (!cifs_i->cifsAttrs_valid)
++			force = true;
++	}
++
++	if (force || stat->request_mask & XSTAT_REQUEST__BASIC_STATS) {
++		err = cifs_revalidate_dentry(dentry, want_extra_bits, force);
++		if (err)
++			return err;
++	}
++
++	generic_fillattr(&cifs_i->vfs_inode, stat);
++	stat->blksize = CIFS_MAX_MSGSIZE;
++
++	/* we don't promise an inode number if we made one up */
++	stat->ino = cifs_i->uniqueid;
++	if (!(cifs_sb->mnt_cifs_flags & CIFS_MOUNT_SERVER_INUM))
++		stat->result_mask &= ~XSTAT_REQUEST_INO;
++	if (cifs_i->btime_valid) {
++		stat->btime = cifs_i->btime;
++		stat->result_mask |= XSTAT_REQUEST_BTIME;
++	}
++	attrs = cifs_i->cifsAttrs;
++	iflag = 0;
++	if (attrs & ATTR_READONLY)	iflag |= FS_IMMUTABLE_FL;
++	if (attrs & ATTR_HIDDEN)	iflag |= FS_HIDDEN_FL;
++	if (attrs & ATTR_SYSTEM)	iflag |= FS_SYSTEM_FL;
++	if (attrs & ATTR_ARCHIVE)	iflag |= FS_ARCHIVE_FL;
++	if (attrs & ATTR_TEMPORARY)	iflag |= FS_TEMPORARY_FL;
++	if (attrs & ATTR_REPARSE)	iflag |= FS_REPARSE_POINT_FL;
++	if (attrs & ATTR_COMPRESSED)	iflag |= FS_COMPR_FL;
++	if (attrs & ATTR_OFFLINE)	iflag |= FS_OFFLINE_FL;
++	if (attrs & ATTR_ENCRYPTED)	iflag |= FS_ENCRYPTED_FL;
++	stat->inode_flags |= iflag;
++	return 0;
+ }
+ 
+ static int cifs_truncate_page(struct address_space *mapping, loff_t from)
 
