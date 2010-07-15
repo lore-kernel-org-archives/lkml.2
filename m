@@ -1,218 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932762Ab0GOIyp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 04:54:45 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:47142 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932652Ab0GOIyn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 04:54:43 -0400
-Subject: Re: [PATCH 7/12] wm8940: fix resource reclaim in wm8940_register 
- error path
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: axel.lin@gmail.com
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
-In-Reply-To: <AANLkTil_buBStfVy_L9iTgPrxosmSRFhNU1MbaXWJfMx@mail.gmail.com>
-References: <1279162147.29294.2.camel@mola> <1279162893.29294.20.camel@mola>
-	 <Pine.LNX.4.64.1007150855200.5310@axis700.grange>
-	 <AANLkTil_buBStfVy_L9iTgPrxosmSRFhNU1MbaXWJfMx@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Jul 2010 09:54:37 +0100
-Message-ID: <1279184077.3072.21.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S932768Ab0GOI4S (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 04:56:18 -0400
+Received: from mail.issp.bas.bg ([195.96.236.10]:33915 "EHLO mail.issp.bas.bg"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932652Ab0GOI4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 04:56:16 -0400
+From: Marin Mitov <mitov@issp.bas.bg>
+To: Unai Uribarri <unai.uribarri@optenet.com>
+Subject: Re: Workaround hardware bug addressing physical memory
+Date: Thu, 15 Jul 2010 11:56:07 +0300
+User-Agent: KMail/1.9.10
+Cc: linux-kernel@vger.kernel.org
+References: <3586320.70351279181306029.JavaMail.root@mail1-md.optenet.com>
+In-Reply-To: <3586320.70351279181306029.JavaMail.root@mail1-md.optenet.com>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201007151156.07506.mitov@issp.bas.bg>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-15 at 15:42 +0800, Axel Lin wrote:
+On 15.7.2010, Unai Uribarri wrote:
+> Thanks.
+> ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
+> 
+> | On Wednesday, July 14, 2010 08:06:49 pm you wrote:
+> | > ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
+> | > 
+> | > | Hi,
+> | > | 
+> | > | This is pci driver. You can set dma mask:
+> | > | 
+> | > | dma_set_coheren_mask(pdev, DMA_BIT_MASK(31)) 
+> | > | 
+> | > | All further alloc_coherent() should be from the region 0-2GB.
+> | > | 
+> | > 
+> | > But I'm using a 64 bit operating system with 32GB of RAM. It's a
+> | > pity to be unable to use 4GB-32GB range because the 2-4GB range is
+> | > unusable. So I've written this code to skip invalid areas. Do you
+> | > think this code could be useful for other drivers?
+> | 
+> | Let me summarize if I have correctly understood what you do.
+> | 
+> | First, your hardware has problems when the physical (bus) address
+> | is out of the 0-2GB region, so you cannot use buffers that are out 
+> | of this range in any case. And the defect is in the peripheral, not in
+> | the bridge between it and the memory.
+> 
+> The hardware works correctly for physical address in the ranges 0 to 2GB
+> AND 4GB to 32GB. 
+
+Sorry, I have missed that point.
+
+> Physical address in the 2-4GB range are read correctly 
+> by the device. But when the device tries to write to them it issues 
+> invalid PCIe transaction headers: it tries to access such addresses using
+> a 64-bit transactions when the PCI Express standard mandates to use 32-bit
+> transactions for memory addresses below 4GB. Some bridges accept such
+> invalid transactions, but Intel 5500 chipset rejects them.
+> 
+> I'm allocating 256MB of RAM for I/O buffers; I'm fear that restricting all
+> the allocations to the first 2GB of memory will put too much pressure in
+> that zone of memory. But restricting it to 4GB and above will be okay. 
+> 
+> Is there any way to restrict to memory address above 4GB?
+
+I am thinking if your BIOS could make a memory holl between 2-4GB
+remapping this memory above 4GB? On my (relatively old machine)
+the memory hall is restricted to 512MB in the region (4GB-512MB) - 4GB.
+AGP apertires could be up to 2GB (according to specs), or using kernel
+parameters (if exist) to map the memory (excluding this 2-4GB region).
 
 > 
-> I agree that it is good to release resources at the same level,
-> where they have been acquired.
-> But I prefer to follow the maintainer/author's coding style.
 > 
-> For the changes in other drivers, I'd like to see Liam and Mark's comments.
-> Or if the driver maintainers request it, I can fix it.
+> | Second, you do allocations and check if dma_addr_t is in this range.
+> | If it is, you keep it for use. If not, you put it in a list and
+> | allocate a new one.
+> | When you allocate sufficiently memory in 0-2GB region, you deallocate
+> | 
+> | the memory (kept in the list) that is out of the region. Right?
+> | 
+> 
+> Yes, except that the validator function is:
+> 
+> static int validate_dma(void *ptr, struct device *dev, size_t size, dma_addr_t handle)
+> {
+>         return handle < 0x80000000U || handle > 0xFFFFFFFFU;
+> }
+> 
+> Thanks.
+> 
 
-Fwiw, the soon to be merged ASoC multi-component branch simplifies the
-codec probe() and remove() as follows (e.g. from I2C and SPI WM8750
-codec) :-
-
-static int wm8750_probe(struct snd_soc_codec *codec)
-{
-	struct wm8750_priv *wm8750 = snd_soc_codec_get_drvdata(codec);
-	int reg, ret;
-
-	codec->control_data = wm8750->control_data;
-	ret = snd_soc_codec_set_cache_io(codec, 7, 9, wm8750->control_type);
-	if (ret < 0) {
-		printk(KERN_ERR "wm8750: failed to set cache I/O: %d\n", ret);
-		return ret;
-	}
-
-	ret = wm8750_reset(codec);
-	if (ret < 0) {
-		printk(KERN_ERR "wm8750: failed to reset: %d\n", ret);
-		return ret;
-	}
-
-	/* charge output caps */
-	wm8750_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-
-
-
-	snd_soc_add_controls(codec, wm8750_snd_controls,
-				ARRAY_SIZE(wm8750_snd_controls));
-	wm8750_add_widgets(codec);
-	return ret;
-}
-
-static int wm8750_remove(struct snd_soc_codec *codec)
-{
-	wm8750_set_bias_level(codec, SND_SOC_BIAS_OFF);
-	return 0;
-}
-
-
-#if defined(CONFIG_SPI_MASTER)
-static int __devinit wm8750_spi_probe(struct spi_device *spi)
-{
-	struct wm8750_priv *wm8750;
-	int ret;
-
-	wm8750 = kzalloc(sizeof(struct wm8750_priv), GFP_KERNEL);
-	if (wm8750 == NULL)
-		return -ENOMEM;
-
-	wm8750->control_data = spi;
-	wm8750->control_type = SND_SOC_SPI;
-	spi_set_drvdata(spi, wm8750);
-
-	ret = snd_soc_register_codec(&spi->dev, spi->chip_select,
-			&soc_codec_dev_wm8750, &wm8750_dai, 1);
-	if (ret < 0)
-		kfree(wm8750);
-	return ret;
-}
-
-static int __devexit wm8750_spi_remove(struct spi_device *spi)
-{
-	snd_soc_unregister_codec(&spi->dev, spi->chip_select);
-	kfree(spi_get_drvdata(spi));
-	return 0;
-}
-
-static struct spi_driver wm8750_spi_driver = {
-	.driver = {
-		.name	= "wm8750 SPI Codec",
-		.bus	= &spi_bus_type,
-		.owner	= THIS_MODULE,
-	},
-	.probe		= wm8750_spi_probe,
-	.remove		= __devexit_p(wm8750_spi_remove),
-};
-#endif /* CONFIG_SPI_MASTER */
-
-#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
-static __devinit int wm8750_i2c_probe(struct i2c_client *i2c,
-				      const struct i2c_device_id *id)
-{
-	struct wm8750_priv *wm8750;
-	int ret;
-
-	wm8750 = kzalloc(sizeof(struct wm8750_priv), GFP_KERNEL);
-	if (wm8750 == NULL)
-		return -ENOMEM;
-
-	i2c_set_clientdata(i2c, wm8750);
-	wm8750->control_data = i2c;
-	wm8750->control_type = SND_SOC_I2C;
-
-	ret =  snd_soc_register_codec(&i2c->dev, i2c->addr,
-			&soc_codec_dev_wm8750, &wm8750_dai, 1);
-	if (ret < 0)
-		kfree(wm8750);
-	return ret;
-}
-
-static __devexit int wm8750_i2c_remove(struct i2c_client *client)
-{
-	snd_soc_unregister_codec(&client->dev, client->addr);
-	kfree(i2c_get_clientdata(client));
-	return 0;
-}
-
-static const struct i2c_device_id wm8750_i2c_id[] = {
-	{ "wm8750", 0 },
-	{ "wm8987", 0 },
-	{ }
-};
-MODULE_DEVICE_TABLE(i2c, wm8750_i2c_id);
-
-static struct i2c_driver wm8750_i2c_driver = {
-	.driver = {
-		.name = "wm8750 I2C Codec",
-		.owner = THIS_MODULE,
-	},
-	.probe =    wm8750_i2c_probe,
-	.remove =   __devexit_p(wm8750_i2c_remove),
-	.id_table = wm8750_i2c_id,
-};
-#endif
-
-static int __init wm8750_modinit(void)
-{
-	int ret = 0;
-#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
-	ret = i2c_add_driver(&wm8750_i2c_driver);
-	if (ret != 0) {
-		printk(KERN_ERR "Failed to register wm8750 I2C driver: %d\n",
-		       ret);
-	}
-#endif
-#if defined(CONFIG_SPI_MASTER)
-	ret = spi_register_driver(&wm8750_spi_driver);
-	if (ret != 0) {
-		printk(KERN_ERR "Failed to register wm8750 SPI driver: %d\n",
-		       ret);
-	}
-#endif
-	return ret;
-}
-module_init(wm8750_modinit);
-
-static void __exit wm8750_exit(void)
-{
-#if defined(CONFIG_I2C) || defined(CONFIG_I2C_MODULE)
-	i2c_del_driver(&wm8750_i2c_driver);
-#endif
-#if defined(CONFIG_SPI_MASTER)
-	spi_unregister_driver(&wm8750_spi_driver);
-#endif
-}
-module_exit(wm8750_exit);
-
-
-So while this patch series is useful (from a minor bug fix pov), it will
-be overwritten shortly in the ASoC multi-component merge. Probably
-delaying the multi-component merge too (since the changes are in the
-same place).
-
-Can we hold off this series for a week or two. I have one more update
-for multi-component and if we don't have multi-component upstreamed in
-that time frame we can apply this series.
-
-Thanks
-
-Liam 
--- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
 
