@@ -1,98 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933902Ab0GORVw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 13:21:52 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61081 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933892Ab0GORVs (ORCPT
+	id S933887Ab0GORZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 13:25:45 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:56693 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933810Ab0GORZm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 13:21:48 -0400
-Message-ID: <4C3F4286.3070503@kernel.org>
-Date: Thu, 15 Jul 2010 10:16:54 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	Thu, 15 Jul 2010 13:25:42 -0400
+X-Authority-Analysis: v=1.1 cv=g9Y3NohClm0xo0Au7hiKM/lwvZwqTqjWC8eysRFNA3U= c=1 sm=0 a=o1FYtcTXQFcA:10 a=yQWWgrYGNuUA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=DfNHnWVPAAAA:8 a=Vk531U1CpUxeBF5tW5IA:9 a=KPruExL9g3-SffmKkeQA:7 a=s9lOLjFBCBVujjoSpKJYnNLPlbgA:4 a=CjuIK1q_8ugA:10 a=lBRciGGoxdUA:10 wl=env:18 a=Nqdp4+S2FArj7gZzHVn+tA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.120.198.24
+Date: Thu, 15 Jul 2010 12:27:57 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: John Johansen <john.johansen@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+Subject: Re: [PATCH 11/13] AppArmor: LSM interface, and security module
+ initialization
+Message-ID: <20100715172757.GA26839@hallyn.com>
+References: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
+ <1279154621-25868-12-git-send-email-john.johansen@canonical.com>
 MIME-Version: 1.0
-To: Catalin Marinas <catalin.marinas@arm.com>
-CC: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
-        "H. Peter Anvin" <hpa@zytor.com>, stable <stable@kernel.org>
-Subject: Re: [PATCH] kmemleak: Add support for NO_BOOTMEM configurations
-References: <20100715145834.20885.20341.stgit@e102109-lin.cambridge.arm.com>
-In-Reply-To: <20100715145834.20885.20341.stgit@e102109-lin.cambridge.arm.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C3F437C.00D0,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279154621-25868-12-git-send-email-john.johansen@canonical.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-should be for 2.6.34 and 2.6.35.
-
-Thanks
-
-Yinghai
-
-On 07/15/2010 07:58 AM, Catalin Marinas wrote:
-> With commits 08677214 and 59be5a8e, alloc_bootmem()/free_bootmem() and
-> friends use the early_res functions for memory management when
-> NO_BOOTMEM is enabled. This patch adds the kmemleak calls in the
-> corresponding code paths for bootmem allocations.
+Quoting John Johansen (john.johansen@canonical.com):
+> AppArmor hooks to interface with the LSM, module parameters and module
+> initialization.
 > 
-> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
-> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-> Cc: Yinghai Lu <yinghai@kernel.org>
-> Cc: H. Peter Anvin <hpa@zytor.com>
-> ---
->  kernel/early_res.c |    6 ++++++
->  mm/page_alloc.c    |    5 +++++
->  2 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/early_res.c b/kernel/early_res.c
-> index 31aa933..7bfae88 100644
-> --- a/kernel/early_res.c
-> +++ b/kernel/early_res.c
-> @@ -7,6 +7,8 @@
->  #include <linux/bootmem.h>
->  #include <linux/mm.h>
->  #include <linux/early_res.h>
-> +#include <linux/slab.h>
-> +#include <linux/kmemleak.h>
->  
->  /*
->   * Early reserved memory areas.
-> @@ -319,6 +321,8 @@ void __init free_early(u64 start, u64 end)
->  	struct early_res *r;
->  	int i;
->  
-> +	kmemleak_free_part(__va(start), end - start);
-> +
->  	i = find_overlapped_early(start, end);
->  	r = &early_res[i];
->  	if (i >= max_early_res || r->end != end || r->start != start)
-> @@ -333,6 +337,8 @@ void __init free_early_partial(u64 start, u64 end)
->  	struct early_res *r;
->  	int i;
->  
-> +	kmemleak_free_part(__va(start), end - start);
-> +
->  	if (start == end)
->  		return;
->  
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 431214b..68319dd 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -3659,6 +3659,11 @@ void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
->  		ptr = phys_to_virt(addr);
->  		memset(ptr, 0, size);
->  		reserve_early_without_check(addr, addr + size, "BOOTMEM");
-> +		/*
-> +		 * The min_count is set to 0 so that bootmem allocated blocks
-> +		 * are never reported as leaks.
-> +		 */
-> +		kmemleak_alloc(ptr, size, 0, 0);
->  		return ptr;
->  	}
->  
+> Signed-off-by: John Johansen <john.johansen@canonical.com>
 
+Thanks, John - looks good overall.  Comments:
+
+...
+
+> +static int apparmor_ptrace_access_check(struct task_struct *child,
+> +					unsigned int mode)
+> +{
+> +	int rc;
+> +
+> +	rc = cap_ptrace_access_check(child, mode);
+> +	if (rc)
+> +		return rc;
+> +
+> +	return aa_ptrace(current, child, mode);
+> +}
+> +
+> +static int apparmor_ptrace_traceme(struct task_struct *parent)
+> +{
+
+Just curious - why aren't you calling cap_ptrace_traceme() first here?
+
+> +	return aa_ptrace(parent, current, PTRACE_MODE_ATTACH);
+> +}
+> +
+> +/* Derived from security/commoncap.c:cap_capget */
+> +static int apparmor_capget(struct task_struct *target, kernel_cap_t *effective,
+> +			   kernel_cap_t *inheritable, kernel_cap_t *permitted)
+> +{
+> +	struct aa_profile *profile;
+> +	const struct cred *cred;
+> +
+> +	rcu_read_lock();
+> +	cred = __task_cred(target);
+> +	profile = aa_cred_profile(cred);
+> +
+> +	*effective = cred->cap_effective;
+> +	*inheritable = cred->cap_inheritable;
+> +	*permitted = cred->cap_permitted;
+> +
+> +	if (!unconfined(profile))
+> +		*effective = cap_intersect(*effective, profile->caps.allow);
+
+Should you mask permitted too?  Otherwise you might confuse a userspace
+lib which assumes it's caller previously culled pE, and that it can
+nwo refill it from pP.
+
+> +	rcu_read_unlock();
+> +
+> +	return 0;
+> +}
+> +
+> +static int apparmor_capable(struct task_struct *task, const struct cred *cred,
+> +			    int cap, int audit)
+> +{
+> +	struct aa_profile *profile;
+> +	/* cap_capable returns 0 on success, else -EPERM */
+> +	int error = cap_capable(task, cred, cap, audit);
+
+jinkeys, it might be just me, but i'd have spend 2 mins less looking
+at this if you'd done
+
+	if (error)
+		return error;
+
+here, simplifying the condition below.
+
+> +
+> +	profile = aa_cred_profile(cred);
+> +	if (!error  && !unconfined(profile))
+> +		error = aa_capable(task, profile, cap, audit);
+> +
+> +	return error;
+> +}
+
+-serge
