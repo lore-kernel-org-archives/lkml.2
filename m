@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932749Ab0GOIwE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 04:52:04 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:58488 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932718Ab0GOIv6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 04:51:58 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100715013619.ba473d39.akpm@linux-foundation.org>
-References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> 
-	<20100715035230.GA2186@suse.de> <AANLkTilFLBpQR1BS8WFDXiLSOl08rI9DMpDhdkMXn1st@mail.gmail.com> 
-	<20100715013619.ba473d39.akpm@linux-foundation.org>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Thu, 15 Jul 2010 10:51:34 +0200
-Message-ID: <AANLkTim0cri2RqpP7AadlGdw_U-JM81LE-g8BTnb05Ox@mail.gmail.com>
-Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Greg KH <gregkh@suse.de>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        alsa-devel@alsa-project.org, Jens Axboe <axboe@kernel.dk>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
+	id S932757Ab0GOIxM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 04:53:12 -0400
+Received: from mail.gmx.net ([213.165.64.20]:50864 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932652Ab0GOIxK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 04:53:10 -0400
+X-Authenticated: #20450766
+X-Provags-ID: V01U2FsdGVkX18zDghs4+UzggTvmjfUjd2gg1+xWP4MmDinj94Qpg
+	nXHXF/1yxwSGeO
+Date: Thu, 15 Jul 2010 10:53:13 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Axel Lin <axel.lin@gmail.com>
+cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Howells <dhowells@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH v2 11/12] wm8978: fix a memory leak if another WM8978 is
+ registered
+In-Reply-To: <1279183026.10733.2.camel@mola>
+Message-ID: <Pine.LNX.4.64.1007151052120.5310@axis700.grange>
+References: <1279162147.29294.2.camel@mola> <1279163338.29294.30.camel@mola>
+ <1279183026.10733.2.camel@mola>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 10:36, Andrew Morton <akpm@linux-foundation.org> wrote:
-> On Thu, 15 Jul 2010 10:31:15 +0200 Kay Sievers <kay.sievers@vrfy.org> wrote:
->
->> On Thu, Jul 15, 2010 at 05:52, Greg KH <gregkh@suse.de> wrote:
->> > On Wed, Jul 14, 2010 at 04:38:52PM -0700, Andrew Morton wrote:
->>
->> >> and the box still won't boot.
->> >
->> > Ick, that sucks.
->> >
->> > What kernel was FC6 based on originally?
->> >
->> > Kay, I thought that Fedora had fixed the "can't find root" issue for
->> > this type of sysfs configuation a long time ago. __Or was that something
->> > else for PPC that I am thinking of?
->>
->> It was fixed, and it's weird bug in nash.
->>
->> If Andrew is still doing the same thing as years ago, he does not
->> update the initramfs image, he boots with the old original initramfs
->> along with the new kernel. :)
->
-> I run
->
->        VERS=$(make kernelrelease 2>/dev/null)
->        <copy vmlinux>
->        /sbin/new-kernel-pkg --mkinitrd --install
+On Thu, 15 Jul 2010, Axel Lin wrote:
 
-Ah, I see.
+> >>From e53ff15ee6843d6591509f9aeeb2fa1a0c1eccee Mon Sep 17 00:00:00 2001
+> From: Axel Lin <axel.lin@gmail.com>
+> Date: Thu, 15 Jul 2010 16:33:20 +0800
+> Subject: [PATCH] wm8978: fix a memory leak if a wm8978_register fail
+> 
+> There is a memory leak found if wm8978_register() fail.
+> This patch moves the buffer allocate and release
+> at the same level to prevent the memory leak.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
 
-It might be, that the fix only hit FC7, or Andrew did not install the
-updates. The original mail about the nash problem is here:
-  http://lkml.org/lkml/2007/6/7/209
+Thanks for the patch, Axel! Only compile-tested, so, here's 
 
-Kay
+Reviewed-by: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+
+Guennadi
+
+> ---
+>  sound/soc/codecs/wm8978.c |   10 +++++++---
+>  1 files changed, 7 insertions(+), 3 deletions(-)
+> 
+> diff --git a/sound/soc/codecs/wm8978.c b/sound/soc/codecs/wm8978.c
+> index 51d5f43..8a1ad77 100644
+> --- a/sound/soc/codecs/wm8978.c
+> +++ b/sound/soc/codecs/wm8978.c
+> @@ -1076,7 +1076,6 @@ static __devinit int wm8978_register(struct wm8978_priv *wm8978)
+>  err_codec:
+>  	snd_soc_unregister_codec(codec);
+>  err:
+> -	kfree(wm8978);
+>  	return ret;
+>  }
+>  
+> @@ -1085,13 +1084,13 @@ static __devexit void wm8978_unregister(struct wm8978_priv *wm8978)
+>  	wm8978_set_bias_level(&wm8978->codec, SND_SOC_BIAS_OFF);
+>  	snd_soc_unregister_dai(&wm8978_dai);
+>  	snd_soc_unregister_codec(&wm8978->codec);
+> -	kfree(wm8978);
+>  	wm8978_codec = NULL;
+>  }
+>  
+>  static __devinit int wm8978_i2c_probe(struct i2c_client *i2c,
+>  				      const struct i2c_device_id *id)
+>  {
+> +	int ret;
+>  	struct wm8978_priv *wm8978;
+>  	struct snd_soc_codec *codec;
+>  
+> @@ -1107,13 +1106,18 @@ static __devinit int wm8978_i2c_probe(struct i2c_client *i2c,
+>  
+>  	codec->dev = &i2c->dev;
+>  
+> -	return wm8978_register(wm8978);
+> +	ret = wm8978_register(wm8978);
+> +	if (ret < 0)
+> +		kfree(wm8978);
+> +
+> +	return ret;
+>  }
+>  
+>  static __devexit int wm8978_i2c_remove(struct i2c_client *client)
+>  {
+>  	struct wm8978_priv *wm8978 = i2c_get_clientdata(client);
+>  	wm8978_unregister(wm8978);
+> +	kfree(wm8978);
+>  	return 0;
+>  }
+>  
+> -- 
+> 1.5.4.3
+> 
+> 
+> 
+
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
