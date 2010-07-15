@@ -1,94 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932315Ab0GODKd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 23:10:33 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:38133 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932168Ab0GODKc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 23:10:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=gejpmd8xjXuP3eh8n2PDEmLP9+O3NIL3OE9OqF65tGWaC2t+7dhY1qIJcg/rl0zKdG
-         aLkWXWh6gIZ2tUnHYjx0gFY1fJfE/MJP8tSXJIqCqXxSIdEBy/PxqMMda0kymYTw5FYS
-         fGb1qOB8QXvYcocFKv48orCDcz8QERVZbWt2s=
-Subject: [PATCH 12/12] wm9081: fix resource reclaim in wm9081_register
-	error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Daniel Ribeiro <drwyrm@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, alsa-devel@alsa-project.org
-In-Reply-To: <1279162147.29294.2.camel@mola>
-References: <1279162147.29294.2.camel@mola>
-Content-Type: text/plain
-Date: Thu, 15 Jul 2010 11:11:08 +0800
-Message-Id: <1279163468.29294.32.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S932255Ab0GODQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 23:16:57 -0400
+Received: from [94.25.51.26] ([94.25.51.26]:59894 "EHLO mail.ulona.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932168Ab0GODQ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 23:16:56 -0400
+X-Greylist: delayed 1305 seconds by postgrey-1.27 at vger.kernel.org; Wed, 14 Jul 2010 23:16:55 EDT
+Message-ID: <4C3E7850.2010802@dv-life.ru>
+Date: Thu, 15 Jul 2010 13:54:08 +1100
+From: x0r <x0r@dv-life.ru>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ru; rv:1.9.1.11) Gecko/20100701 Lightning/1.0b1 SeaMonkey/2.0.6
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] hid: ACRUX game controller force feedback support
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes the error path in wm9081_register to properly free resources.
+Adds force feedback support for ACRUX USB game controllers.
+These devices are mass produced in China and distributed under several vendors.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm9081.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+Signed-off-by: Sergei Kolzun<x0r@dv-life.ru>
 
-diff --git a/sound/soc/codecs/wm9081.c b/sound/soc/codecs/wm9081.c
-index 13186fb..76b37ff 100644
---- a/sound/soc/codecs/wm9081.c
-+++ b/sound/soc/codecs/wm9081.c
-@@ -1356,7 +1356,7 @@ static int wm9081_register(struct wm9081_priv *wm9081,
- 	ret = snd_soc_codec_set_cache_io(codec, 8, 16, control);
- 	if (ret != 0) {
- 		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
--		return ret;
+--- /dev/null
++++ b/drivers/hid/hid-axff.c
+@@ -0,0 +1,168 @@
++/*
++ * Force feedback support for ACRUX game controllers
++ *
++ * From what I have gathered, these devices are mass produced in China and are
++ * distributed under several vendors. They often share the same design as
++ * the original Xbox 360 controller.
++ *
++ * 1a34:0802 "ACRUX USB GAMEPAD 8116"
++ *  - tested with a EXEQ EQ-PCU-02090 game controller.
++ *
++ * Copyright (c) 2010 Sergei Kolzun<x0r@dv-life.ru>
++ */
++
++/*
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++ */
++
++#include<linux/input.h>
++#include<linux/slab.h>
++#include<linux/usb.h>
++#include<linux/hid.h>
++
++#include "hid-ids.h"
++
++#ifdef CONFIG_ACRUX_FF
++#include "usbhid/usbhid.h"
++
++struct axff_device {
++	struct hid_report *report;
++};
++
++static int axff_play(struct input_dev *dev, void *data, struct ff_effect *effect)
++{
++	struct hid_device *hid = input_get_drvdata(dev);
++	struct axff_device *axff = data;
++	int left, right;
++
++	left = effect->u.rumble.strong_magnitude;
++	right = effect->u.rumble.weak_magnitude;
++
++	dbg_hid("called with 0x%04x 0x%04x", left, right);
++
++	left = left * 0xff / 0xffff;
++	right = right * 0xff / 0xffff;
++
++	axff->report->field[0]->value[0] = left;
++	axff->report->field[1]->value[0] = right;
++	axff->report->field[2]->value[0] = left;
++	axff->report->field[3]->value[0] = right;
++	dbg_hid("running with 0x%02x 0x%02x", left, right);
++	usbhid_submit_report(hid, axff->report, USB_DIR_OUT);
++
++	return 0;
++}
++
++static int axff_init(struct hid_device *hid)
++{
++	struct axff_device *axff;
++	struct hid_report *report;
++	struct hid_input *hidinput = list_first_entry(&hid->inputs, struct hid_input, list);
++	struct list_head *report_list =&hid->report_enum[HID_OUTPUT_REPORT].report_list;
++	struct input_dev *dev = hidinput->input;
++	int error;
++
++	if (list_empty(report_list)) {
++		dev_err(&hid->dev, "no output reports found\n");
++		return -ENODEV;
++	}
++
++	report = list_first_entry(report_list, struct hid_report, list);
++
++	if (report->maxfield<  4) {
++		dev_err(&hid->dev, "no fields in the report: %d\n", report->maxfield);
++		return -ENODEV;
++	}
++
++	axff = kzalloc(sizeof(struct axff_device), GFP_KERNEL);
++	if (!axff)
++		return -ENOMEM;
++
++	set_bit(FF_RUMBLE, dev->ffbit);
++
++	error = input_ff_create_memless(dev, axff, axff_play);
++	if (error) {
++		kfree(axff);
++		return error;
++	}
++
++	axff->report = report;
++	axff->report->field[0]->value[0] = 0x00;
++	axff->report->field[1]->value[0] = 0x00;
++	axff->report->field[2]->value[0] = 0x00;
++	axff->report->field[3]->value[0] = 0x00;
++	usbhid_submit_report(hid, axff->report, USB_DIR_OUT);
++
++	dev_info(&hid->dev, "Force Feedback for ACRUX game controllers by Sergei Kolzun<x0r@dv-life.ru>\n");
++
++	return 0;
++}
++#else
++static inline int axff_init(struct hid_device *hid)
++{
++	return 0;
++}
++#endif
++
++static int ax_probe(struct hid_device *hdev, const struct hid_device_id *id)
++{
++	int ret;
++
++	dev_dbg(&hdev->dev, "ACRUX HID hardware probe...");
++
++	ret = hid_parse(hdev);
++	if (ret) {
++		dev_err(&hdev->dev, "parse failed\n");
 +		goto err;
- 	}
- 
- 	reg = snd_soc_read(codec, WM9081_SOFTWARE_RESET);
-@@ -1369,7 +1369,7 @@ static int wm9081_register(struct wm9081_priv *wm9081,
- 	ret = wm9081_reset(codec);
- 	if (ret < 0) {
- 		dev_err(codec->dev, "Failed to issue reset\n");
--		return ret;
++	}
++
++	ret = hid_hw_start(hdev, HID_CONNECT_DEFAULT&  ~HID_CONNECT_FF);
++	if (ret) {
++		dev_err(&hdev->dev, "hw start failed\n");
 +		goto err;
- 	}
- 
- 	wm9081_set_bias_level(codec, SND_SOC_BIAS_STANDBY);
-@@ -1388,18 +1388,19 @@ static int wm9081_register(struct wm9081_priv *wm9081,
- 	ret = snd_soc_register_codec(codec);
- 	if (ret != 0) {
- 		dev_err(codec->dev, "Failed to register codec: %d\n", ret);
--		return ret;
-+		goto err;
- 	}
- 
- 	ret = snd_soc_register_dai(&wm9081_dai);
- 	if (ret != 0) {
- 		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
--		snd_soc_unregister_codec(codec);
--		return ret;
-+		goto err_codec;
- 	}
- 
- 	return 0;
- 
-+err_codec:
-+	snd_soc_unregister_codec(codec);
- err:
- 	kfree(wm9081);
- 	return ret;
--- 
-1.5.4.3
++	}
++
++	axff_init(hdev);
++
++	return 0;
++err:
++	return ret;
++}
++
++static const struct hid_device_id ax_devices[] = {
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802),  },
++	{ }
++};
++MODULE_DEVICE_TABLE(hid, ax_devices);
++
++static struct hid_driver ax_driver = {
++	.name = "acrux",
++	.id_table = ax_devices,
++	.probe = ax_probe,
++};
++
++static int __init ax_init(void)
++{
++	return hid_register_driver(&ax_driver);
++}
++
++static void __exit ax_exit(void)
++{
++	hid_unregister_driver(&ax_driver);
++}
++
++module_init(ax_init);
++module_exit(ax_exit);
++MODULE_LICENSE("GPL");
+--- a/drivers/hid/hid-core.c
++++ b/drivers/hid/hid-core.c
+@@ -1248,6 +1248,7 @@
+  	{ HID_USB_DEVICE(USB_VENDOR_ID_3M, USB_DEVICE_ID_3M1968) },
+  	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_WCP32PU) },
+  	{ HID_USB_DEVICE(USB_VENDOR_ID_A4TECH, USB_DEVICE_ID_A4TECH_X5_005D) },
++	{ HID_USB_DEVICE(USB_VENDOR_ID_ACRUX, 0x0802) },
+  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_ATV_IRCONTROL) },
+  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_IRCONTROL4) },
+  	{ HID_USB_DEVICE(USB_VENDOR_ID_APPLE, USB_DEVICE_ID_APPLE_MIGHTYMOUSE) },
+--- a/drivers/hid/hid-ids.h
++++ b/drivers/hid/hid-ids.h
+@@ -33,6 +33,8 @@
+  #define USB_DEVICE_ID_ACECAD_FLAIR	0x0004
+  #define USB_DEVICE_ID_ACECAD_302	0x0008
+
++#define USB_VENDOR_ID_ACRUX		0x1a34
++
+  #define USB_VENDOR_ID_ADS_TECH 		0x06e1
+  #define USB_DEVICE_ID_ADS_TECH_RADIO_SI470X	0xa155
+
+--- a/drivers/hid/Kconfig
++++ b/drivers/hid/Kconfig
+@@ -68,6 +68,21 @@
+  	---help---
+  	Support for A4 tech X5 and WOP-35 / Trust 450L mice.
+
++config HID_ACRUX
++	tristate "ACRUX support" if EMBEDDED
++	depends on USB_HID
++	default !EMBEDDED
++	---help---
++	Say Y here if you have ACRUX game controllers.
++
++config ACRUX_FF
++	bool "ACRUX force feedback support"
++	depends on HID_ACRUX
++	select INPUT_FF_MEMLESS
++	---help---
++	Say Y here if you want to enable force feedback support for ACRUX
++	game controllers.
++
+  config HID_APPLE
+  	tristate "Apple" if EMBEDDED
+  	depends on (USB_HID || BT_HIDP)
+--- a/drivers/hid/Makefile
++++ b/drivers/hid/Makefile
+@@ -24,6 +24,7 @@
+
+  obj-$(CONFIG_HID_3M_PCT)	+= hid-3m-pct.o
+  obj-$(CONFIG_HID_A4TECH)	+= hid-a4tech.o
++obj-$(CONFIG_HID_ACRUX)		+= hid-axff.o
+  obj-$(CONFIG_HID_APPLE)		+= hid-apple.o
+  obj-$(CONFIG_HID_BELKIN)	+= hid-belkin.o
+  obj-$(CONFIG_HID_CHERRY)	+= hid-cherry.o
 
 
 
