@@ -1,51 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753536Ab0GOG1S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 02:27:18 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:15263 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752762Ab0GOG1Q (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 02:27:16 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6043"; a="47538577"
-Message-ID: <4C3EAA44.7040607@codeaurora.org>
-Date: Wed, 14 Jul 2010 23:27:16 -0700
-From: Saravana Kannan <skannan@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1754231Ab0GOG3K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 02:29:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53394 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752894Ab0GOG3H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 02:29:07 -0400
+Date: Wed, 14 Jul 2010 22:35:43 -0700
+From: Greg KH <gregkh@suse.de>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        Randy Dunlap <randy.dunlap@oracle.com>, alsa-devel@alsa-project.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-scsi@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>, Greg KH <greg@kroah.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [alsa-devel] [PATCH] driver core: remove
+	CONFIG_SYSFS_DEPRECATED
+Message-ID: <20100715053543.GA4416@suse.de>
+References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> <AANLkTinIy1z7226W0ylNfDdHXBp16Wt7aYBKQYY1o5t9@mail.gmail.com> <20100715041400.GA2583@suse.de> <AANLkTik1G3E6RP8cEK2JoPcqZp0Q16nK9F-4tAtXWnPk@mail.gmail.com>
 MIME-Version: 1.0
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: Stephen Boyd <sboyd@codeaurora.org>, linux-arm-kernel@lists.infradead.org,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        linux-arm-msm@vger.kernel.org, David Brownell <david-b@pacbell.net>
-Subject: Re: Meaning of clk_round_rate()?
-References: <4C3DFC7A.8020002@codeaurora.org> <20100714200324.GA18138@n2100.arm.linux.org.uk>
-In-Reply-To: <20100714200324.GA18138@n2100.arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTik1G3E6RP8cEK2JoPcqZp0Q16nK9F-4tAtXWnPk@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote:
-> On Wed, Jul 14, 2010 at 11:05:46AM -0700, Stephen Boyd wrote:
-> clk_round_rate() returns the clock rate which will be set if you ask
-> clk_set_rate() to set that rate.  It provides a way to query from
-> the implementation exactly what rate you'll get if you use clk_set_rate()
-> with that same argument.
+On Thu, Jul 15, 2010 at 03:00:31PM +1000, Dave Airlie wrote:
+> On Thu, Jul 15, 2010 at 2:14 PM, Greg KH <gregkh@suse.de> wrote:
+> > On Thu, Jul 15, 2010 at 10:24:18AM +1000, Dave Airlie wrote:
+> >> On Thu, Jul 15, 2010 at 9:38 AM, Andrew Morton
+> >> <akpm@linux-foundation.org> wrote:
+> >> > On Fri, 9 Jul 2010 11:54:50 -0700
+> >> > Greg Kroah-Hartman <gregkh@suse.de> wrote:
+> >> >
+> >> >> This is no longer needed by any userspace tools, so it's safe to
+> >> >> remove.
+> >>
+> >> Also still used for booting mainline kernels on RHEL5 userspaces.
+> >
+> > Really? ?I thought that was fixed a long time ago. ?What kernel was
+> > RHEL5 originally based on?
+> >
+> > And note that no RHEL5 user is going to be using a .36 kernel on their
+> > system, that's a completely unsupported and unadvised situation. ?Heck,
+> > I'd be amazed if a .34 kernel.org kernel boots on the thing, does it?
+> >
+> 
+> I think some people do it internally, last time I did it was to test
+> something I was backporting, so you want to make sure the upstream
+> version boots and the backported version also boots on the same
+> hw/userspace.
+> 
+> original kernel was 2.6.18.
 
-Fair enough explanation for clk_round_rate(). I guess I should take it 
-as "it's up to the specific clock implementation on what it wants to do".
+Yes, that was the number, but does it really look anything like a .18
+kernel.org release?  :)
 
-But what about the problem of a clock consumer trying to find a suitable 
-frequency amongst the ones provided by a particular clock?
+I'll test this out next week.
 
-What are your thoughts on adding the following two APIs to linux/clk.h?
-clk_round_rate_down/floor()
-clk_round_rate_up/ceil()
+thanks,
 
-Thanks,
-Saravana
-
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+greg k-h
