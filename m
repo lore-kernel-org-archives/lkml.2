@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933257Ab0GONor (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 09:44:47 -0400
-Received: from nwd2mail11.analog.com ([137.71.25.57]:57788 "EHLO
-	nwd2mail11.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933200Ab0GONoq convert rfc822-to-8bit (ORCPT
+	id S933270Ab0GONro (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 09:47:44 -0400
+Received: from andromeda.dapyr.net ([206.212.254.10]:54234 "EHLO
+	andromeda.dapyr.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933243Ab0GONrn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 09:44:46 -0400
-X-IronPort-AV: E=Sophos;i="4.55,208,1278302400"; 
-   d="scan'208";a="19335866"
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: "mingo@elte.hu" <mingo@elte.hu>, "tglx@linutronix.de" <tglx@linutronix.de>
-CC: "uclinux-dist-devel@blackfin.uclinux.org" 
-	<uclinux-dist-devel@blackfin.uclinux.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Frysinger, Michael" <Michael.Frysinger@analog.com>
-Date: Thu, 15 Jul 2010 14:44:41 +0100
-Subject: EXPORT_SYMBOL set_irq_noprobe, set_irq_chip_and_handler,
- irq_to_desc ?
-Thread-Topic: EXPORT_SYMBOL set_irq_noprobe, set_irq_chip_and_handler,
- irq_to_desc ?
-Thread-Index: AcskI+BsaY38LvbOTaCJIQz8wtUhUA==
-Message-ID: <544AC56F16B56944AEC3BD4E3D5917712E7EA5A21C@LIMKCMBX1.ad.analog.com>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
+	Thu, 15 Jul 2010 09:47:43 -0400
+X-Greylist: delayed 925 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jul 2010 09:47:43 EDT
+From: Konrad Rzeszutek Wilk <konrad@kernel.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
+Date: Thu, 15 Jul 2010 09:29:01 -0400
+User-Agent: KMail/1.9.10
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        "Greg Kroah-Hartman" <gregkh@suse.de>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        alsa-devel@alsa-project.org, Jens Axboe <axboe@kernel.dk>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Howells <dhowells@redhat.com>, Dave Airlie <airlied@gmail.com>
+References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> <m1zkxtinlw.fsf@fess.ebiederm.org>
+In-Reply-To: <m1zkxtinlw.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201007150929.03916.konrad@kernel.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We added some irq_chip functionality to the ADP5588 GPIO driver.
-I wonder whether these symbol should be better exported or not?
 
-ERROR: "set_irq_noprobe" [drivers/gpio/adp5588-gpio.ko] undefined!
-ERROR: "set_irq_chip_and_handler" [drivers/gpio/adp5588-gpio.ko] undefined!
-ERROR: "irq_to_desc" [drivers/gpio/adp5588-gpio.ko] undefined!
+> > and the box still won't boot.
+>
+> The reason FC6 doesn't boot is there is a userspace tool
+> I believe in the initrd that cares about symlinks when it should
+> not.
 
-Some other drivers avoid the same issue by preventing the driver being built as module.
-Is that the way to go?
+It is not just nash. Also multipathd would fail (as it expects 
+the /sys/scsi_host/..<something> in certain directories), and 'lsscsi'. There 
+might be other tools that depend on libsysfs to be affected by this as well.
 
-Best regards,
-Michael
-
-------------------------------------------------------------------
-********* Analog Devices GmbH              Open Platform Solutions
-**  *****
-**     ** Wilhelm-Wagenfeld-Strasse 6
-**  ***** D-80807 Munich
-********* Germany
-Registergericht München HRB 40368,  Geschäftsführer: Thomas Wessel, William A. Martin, Margaret K. Seif
-
+Oh, and I think 'udev' might have some trouble too - but not 100% certain 
+about that.
