@@ -1,32 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932257Ab0GOC6w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 22:58:52 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:37787 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932179Ab0GOC6v (ORCPT
+	id S932280Ab0GODA5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 23:00:57 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:46939 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932183Ab0GODA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 22:58:51 -0400
+	Wed, 14 Jul 2010 23:00:56 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Hp9jJaiwS/eSMcK9t87mikA56U9WHKR47F9s11+h9wm0JQ9PDW8lgPEChWL/nXeRhh
-         w4wP1FZDfD0nICW4LSEJdNYnZ1woBkEMfTWZt+0gvLv0pkQi/rdtuO9XjUAjqIQBOJPw
-         cztfHiq1eJbb7dwk9n+OmQ4zELs4yLqd4K5Ts=
-Subject: [PATCH 6/12] wm8904: fix resource reclaim in wm8904_register error
+        b=AJvBrffYLfDR6+hixY4ZsbVJsYMRjdejFg0DMsbLui221zXtcBIx0yBa0jxuBV3H8t
+         6qvtXxz4TZpQhEI1ceRjwVcosrvEGcDLrOrQtYgBucpaUXQgJutzC03AzQL8KSMNwWrN
+         qMADuS/BnJGaDZt/tLDncdhJr5/QaiTi8GpIg=
+Subject: [PATCH 7/12] wm8940: fix resource reclaim in wm8940_register error
 	path
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
+        Tejun Heo <tj@kernel.org>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        alsa-devel@alsa-project.org
 In-Reply-To: <1279162147.29294.2.camel@mola>
 References: <1279162147.29294.2.camel@mola>
 Content-Type: text/plain
-Date: Thu, 15 Jul 2010 10:59:28 +0800
-Message-Id: <1279162768.29294.17.camel@mola>
+Date: Thu, 15 Jul 2010 11:01:33 +0800
+Message-Id: <1279162893.29294.20.camel@mola>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -34,50 +36,78 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes below fixes:
-1. wm8904 need to be kfreed in wm8904_register() error path before return.
-2. fix the error path for snd_soc_register_codec() fail and
-   snd_soc_register_dai() fail to properly free resources.
+>From 44c93254e5158e3086c4707148d24746067f6b14 Mon Sep 17 00:00:00 2001
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 15 Jul 2010 10:13:34 +0800
+Subject: [PATCH] wm8940: fix resource reclaim in wm8940_register error path
+
+This patch fixes the error path in wm8940_register to properly free resources.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- sound/soc/codecs/wm8904.c |   13 ++++++++-----
- 1 files changed, 8 insertions(+), 5 deletions(-)
+ sound/soc/codecs/wm8940.c |   22 ++++++++++++++--------
+ 1 files changed, 14 insertions(+), 8 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8904.c b/sound/soc/codecs/wm8904.c
-index 87f14f8..f7dcabf 100644
---- a/sound/soc/codecs/wm8904.c
-+++ b/sound/soc/codecs/wm8904.c
-@@ -2433,7 +2433,8 @@ static int wm8904_register(struct wm8904_priv *wm8904,
- 
- 	if (wm8904_codec) {
- 		dev_err(codec->dev, "Another WM8904 is registered\n");
+diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
+index e3c4bbf..9673e6f 100644
+--- a/sound/soc/codecs/wm8940.c
++++ b/sound/soc/codecs/wm8940.c
+@@ -766,7 +766,8 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+ 	u16 reg;
+ 	if (wm8940_codec) {
+ 		dev_err(codec->dev, "Another WM8940 is registered\n");
 -		return -EINVAL;
 +		ret = -EINVAL;
 +		goto err;
  	}
  
- 	mutex_init(&codec->mutex);
-@@ -2462,7 +2463,8 @@ static int wm8904_register(struct wm8904_priv *wm8904,
- 	default:
- 		dev_err(codec->dev, "Unknown device type %d\n",
- 			wm8904->devtype);
--		return -EINVAL;
-+		ret = -EINVAL;
+ 	INIT_LIST_HEAD(&codec->dapm_widgets);
+@@ -785,7 +786,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+ 	ret = snd_soc_codec_set_cache_io(codec, 8, 16, control);
+ 	if (ret < 0) {
+ 		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
+-		return ret;
 +		goto err;
  	}
  
- 	memcpy(codec->reg_cache, wm8904_reg, sizeof(wm8904_reg));
-@@ -2566,18 +2568,19 @@ static int wm8904_register(struct wm8904_priv *wm8904,
+ 	memcpy(codec->reg_cache, wm8940_reg_defaults,
+@@ -794,7 +795,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+ 	ret = wm8940_reset(codec);
+ 	if (ret < 0) {
+ 		dev_err(codec->dev, "Failed to issue reset\n");
+-		return ret;
++		goto err;
+ 	}
+ 
+ 	wm8940_dai.dev = codec->dev;
+@@ -803,7 +804,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+ 
+ 	ret = snd_soc_write(codec, WM8940_POWER1, 0x180);
+ 	if (ret < 0)
+-		return ret;
++		goto err;
+ 
+ 	if (!pdata)
+ 		dev_warn(codec->dev, "No platform data supplied\n");
+@@ -811,7 +812,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+ 		reg = snd_soc_read(codec, WM8940_OUTPUTCTL);
+ 		ret = snd_soc_write(codec, WM8940_OUTPUTCTL, reg | pdata->vroi);
+ 		if (ret < 0)
+-			return ret;
++			goto err;
+ 	}
+ 
+ 
+@@ -820,17 +821,22 @@ static int wm8940_register(struct wm8940_priv *wm8940,
  	ret = snd_soc_register_codec(codec);
- 	if (ret != 0) {
+ 	if (ret) {
  		dev_err(codec->dev, "Failed to register codec: %d\n", ret);
 -		return ret;
-+		goto err_enable;
++		goto err;
  	}
  
- 	ret = snd_soc_register_dai(&wm8904_dai);
- 	if (ret != 0) {
+ 	ret = snd_soc_register_dai(&wm8940_dai);
+ 	if (ret) {
  		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
 -		snd_soc_unregister_codec(codec);
 -		return ret;
@@ -85,12 +115,15 @@ index 87f14f8..f7dcabf 100644
  	}
  
  	return 0;
- 
++
 +err_codec:
 +	snd_soc_unregister_codec(codec);
- err_enable:
- 	regulator_bulk_disable(ARRAY_SIZE(wm8904->supplies), wm8904->supplies);
- err_get:
++err:
++	kfree(wm8940);
++	return ret;
+ }
+ 
+ static void wm8940_unregister(struct wm8940_priv *wm8940)
 -- 
 1.5.4.3
 
