@@ -1,46 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab0GOAI1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 20:08:27 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51352 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757022Ab0GOAI0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 20:08:26 -0400
-Date: Thu, 15 Jul 2010 02:05:07 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Sridhar Samudrala <sri@us.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>, Tejun Heo <tj@kernel.org>,
-        Ingo Molnar <mingo@elte.hu>, netdev <netdev@vger.kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH repost] sched: export sched_set/getaffinity to modules
-Message-ID: <20100715000506.GB27258@redhat.com>
-References: <20100701144624.GA11171@redhat.com> <4C2CABF2.2020801@kernel.org> <1277996135.1917.198.camel@laptop> <4C2E2987.9040702@us.ibm.com> <1278094270.1917.288.camel@laptop> <20100702210637.GA12433@redhat.com> <20100704090005.GA8078@redhat.com> <4C3C0EBC.40305@us.ibm.com> <20100713110939.GA3446@redhat.com> <1279149996.32374.5.camel@w-sridhar.beaverton.ibm.com>
+	id S1757433Ab0GOALL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 20:11:11 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:53276 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756492Ab0GOALJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 20:11:09 -0400
+Date: Thu, 15 Jul 2010 10:11:04 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Cc: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, zheng.yan@oracle.com,
+        Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org
+Subject: Re: kernel BUG at fs/btrfs/extent-tree.c:1353
+Message-ID: <20100715001104.GF30737@dastard>
+References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de>
+ <20100708143109.GR15984@think>
+ <201007141725.24507.johannes.hirte@fem.tu-ilmenau.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279149996.32374.5.camel@w-sridhar.beaverton.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <201007141725.24507.johannes.hirte@fem.tu-ilmenau.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/14, Sridhar Samudrala wrote:
->
-> OK. So we want to create a thread that is a child of kthreadd, but inherits the cgroup/cpumask
-> from the caller. How about an exported kthread function kthread_create_in_current_cg()
-> that does this?
+On Wed, Jul 14, 2010 at 05:25:23PM +0200, Johannes Hirte wrote:
+> Am Donnerstag 08 Juli 2010, 16:31:09 schrieb Chris Mason:
+> I'm not sure if btrfs is to blame for this error. After the errors I switched 
+> to XFS on this system and got now this error:
+> 
+> ls -l .kde4/share/apps/akregator/data/
+> ls: cannot access .kde4/share/apps/akregator/data/feeds.opml: Structure needs 
+> cleaning
+> total 4
+> ?????????? ? ?    ?        ?            ? feeds.opml
 
-Well. I must admit, this looks a bit strange to me ;)
+What is the error reported in dmesg when the XFS filesytem shuts down?
 
-Instead of exporting sched_xxxaffinity() we export the new function
-which calls them. And I don't think this new helper is very useful
-in general. May be I am wrong...
+Cheers,
 
-Oleg.
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
