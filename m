@@ -1,70 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932375Ab0GOEmG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 00:42:06 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:42645 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932274Ab0GOEmF convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 00:42:05 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH 01/11] x86: Fix vtime/file timestamp inconsistencies
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <1279162298.3372.65.camel@localhost>
-References: <20100715101317.CB56.A69D9226@jp.fujitsu.com> <1279162298.3372.65.camel@localhost>
-Message-Id: <20100715133926.B8EE.A69D9226@jp.fujitsu.com>
+	id S932398Ab0GOEn0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 00:43:26 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:51438 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932260Ab0GOEnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 00:43:25 -0400
+Date: Wed, 14 Jul 2010 21:44:09 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        alsa-devel@alsa-project.org, Jens Axboe <axboe@kernel.dk>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Howells <dhowells@redhat.com>, Dave Airlie <airlied@gmail.com>
+Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
+Message-ID: <20100715044409.GA3456@suse.de>
+References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> <m1zkxtinlw.fsf@fess.ebiederm.org> <20100715041613.GB2583@suse.de> <m1aaptcqpq.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 15 Jul 2010 13:41:59 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1aaptcqpq.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, 2010-07-15 at 10:51 +0900, KOSAKI Motohiro wrote:
-> > > On Wed, 2010-07-14 at 11:40 +0900, KOSAKI Motohiro wrote:
-> > > > Hi
-> > > > 
-> > > > > Due to vtime calling vgettimeofday(), its possible that an application
-> > > > > could call  time();create("stuff",O_RDRW);  only to see the file's
-> > > > > creation timestamp to be before the value returned by time.
-> > > > 
-> > > > Just dumb question.
-> > > > 
-> > > > Almost application are using gettimeofday() instead time(). It mean
-> > > > your fix don't solve almost application.
-> > > 
-> > > Correct,  filesystem timestamps and gettimeofday can still seem
-> > > inconsistently ordered. But that is expected.
-> > > 
-> > > Because of granularity differences (one interface is only tick
-> > > resolution, the other is clocksource resolution), we can't interleave
-> > > the two interfaces (time and gettimeofday, respectively) and expect to
-> > > get ordered results.
-> > 
-> > hmmm...
-> > Yes, times() vs gettimeofday() mekes no sense. nobody want this. but
-> > I don't understand why we can ignore gettimeofday() vs file-tiemstamp.
+On Wed, Jul 14, 2010 at 09:29:53PM -0700, Eric W. Biederman wrote:
+> Greg KH <gregkh@suse.de> writes:
 > 
-> Oh.. and another bit worth mentioning again:
-> clock_gettime(CLOCK_REALTIME_COARSE, ...) provides tick-granular output
-> that should be able to be correctly interleaved with filesystem
-> timestmaps. 
+> > On Wed, Jul 14, 2010 at 05:40:27PM -0700, Eric W. Biederman wrote:
+> >> Andrew Morton <akpm@linux-foundation.org> writes:
+> >> 
+> >> > On Fri, 9 Jul 2010 11:54:50 -0700
+> >> > Greg Kroah-Hartman <gregkh@suse.de> wrote:
+> >> >
+> >> >> This is no longer needed by any userspace tools, so it's safe to
+> >> >> remove.
+> >> >
+> >> > Makes my FC6 test box not boot - can't find /dev/root.  Then when I go
+> >> > back to plain old mainline (2.6.35-rc5) and run `make oldconfig', the
+> >> > .config change sticks:
+> >> >
+> >> > @@ -106,8 +106,7 @@
+> >> >  CONFIG_LOG_BUF_SHIFT=17
+> >> >  CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+> >> >  # CONFIG_CGROUPS is not set
+> >> > -CONFIG_SYSFS_DEPRECATED=y
+> >> > -CONFIG_SYSFS_DEPRECATED_V2=y
+> >> > +# CONFIG_SYSFS_DEPRECATED_V2 is not set
+> >> >  CONFIG_RELAY=y
+> >> >  CONFIG_NAMESPACES=y
+> >> >  # CONFIG_UTS_NS is not set
+> >> >
+> >> > and the box still won't boot.
+> >> 
+> >> The reason FC6 doesn't boot is there is a userspace tool
+> >> I believe in the initrd that cares about symlinks when it should
+> >> not.
+> >
+> > Anyone happen to know which tool it is?  I remember we had had issues
+> > with FC3 around this area, but I thought we resolved them, so it's
+> > supprising to me that FC6 has issues.
 > 
-> So if there's an application that is using gettimeofday() for logging
-> and having problems trying to map the log timestmaps with filesystem
-> timestamps, they can use clock_gettime(CLOCK_REALTIME_COARSE,...) to do
-> so correctly.
+> It was something in the initrd, that didn't like the symlinks.  It
+> has been a year or more since I looked at it.  At that point I just
+> enabled SYSFS_DEPRECATED and moved on.
 
-Correct. but I disagree few bit . 1) application naturally assume time don't 
-makes interleaving. so almost all applications don't have such care. 2) tick-granular fs
-timestamp is only current implementaion. perhaps we will change it later. so, applications
-don't want to assume fs timestamp granularity is equal to CLOCK_REALTIME_COARSE. 
+If it was just the symlinks for the block devices, we might be able to
+reduce the amount of code hanging around.  When I return from Europe
+next week, I'll try to dig into this.
 
+> >> What is more interesting is that currently there is a bug in
+> >> 2.6.35-rc5 where rmmod <netdriver> modprobe <netdriver> will in fact
+> >> fail.  There was an inadvertent regression and no one has noticed or
+> >> complained.  I spotted it by code review just a little bit ago and I
+> >> haven't had a chance to write and test the fix yet.
+> >> 
+> >> If the code is going to start bitrotting and no one is going to
+> >> notice or care simply removing the code instead of subjecting users
+> >> to weird unexpected breakage seems like a responsible thing to do.
+> >
+> > Yeah, that's what prompted this removal.  After the s390 guys said that
+> > they were all good to go, I figured no one else would have problems with
+> > it :)
+> >
+> > If it turns out there still are issues with older userspaces like FC6
+> > that we can't resolve, I have no problem dropping this patch and then we
+> > will have to fix up the regression.
+> 
+> I still have to test it but it looks like a one liner.  Actually two lines
+> now that I have to fix the error in symlink creation as well.
 
+Ah, that's good to hear, as I'm sure .35 will need this fix :)
 
+thanks,
+
+greg k-h
