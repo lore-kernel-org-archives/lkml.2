@@ -1,68 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934024Ab0GOSMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:12:31 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42492 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933999Ab0GOSM3 (ORCPT
+	id S934032Ab0GOSOX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:14:23 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:60529 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933988Ab0GOSOW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:12:29 -0400
-Date: Thu, 15 Jul 2010 14:12:28 -0400
-From: Christoph Hellwig <hch@infradead.org>
+	Thu, 15 Jul 2010 14:14:22 -0400
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
 To: Dave Chinner <david@fromorbit.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-Subject: Re: [PATCH 3/3] xfs: track AGs with reclaimable inodes in per-ag
- radix tree
-Message-ID: <20100715181228.GC14554@infradead.org>
-References: <1279194418-16119-1-git-send-email-david@fromorbit.com>
- <1279194418-16119-4-git-send-email-david@fromorbit.com>
+Subject: Re: kernel BUG at fs/btrfs/extent-tree.c:1353
+Date: Thu, 15 Jul 2010 20:14:51 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-btrfs-debug; KDE/4.4.5; i686; ; )
+Cc: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, zheng.yan@oracle.com,
+        Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org
+References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <201007141725.24507.johannes.hirte@fem.tu-ilmenau.de> <20100715001104.GF30737@dastard>
+In-Reply-To: <20100715001104.GF30737@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279194418-16119-4-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007152014.52924.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> + */
-> +static struct xfs_perag *
-> +xfs_inode_ag_iter_next_pag(
-> +	struct xfs_mount	*mp,
-> +	xfs_agnumber_t		*first,
-> +	int			tag)
-> +{
-> +	struct xfs_perag	*pag = NULL;
-> +
-> +	if (tag == XFS_ICI_RECLAIM_TAG) {
-> +		int found;
-> +		int ref;
-> +
-> +		spin_lock(&mp->m_perag_lock);
-> +		found = radix_tree_gang_lookup_tag(&mp->m_perag_tree,
-> +				(void **)&pag, *first, 1, tag);
-> +		if (found <= 0) {
-> +			spin_unlock(&mp->m_perag_lock);
-> +			return NULL;
-> +		}
-> +		*first = pag->pag_agno + 1;
-> +		/* open coded pag reference increment */
-> +		ref = atomic_inc_return(&pag->pag_ref);
-> +		spin_unlock(&mp->m_perag_lock);
-> +		trace_xfs_perag_get_reclaim(mp, pag->pag_agno, ref, _RET_IP_);
-> +	} else {
-> +		pag = xfs_perag_get(mp, *first);
-> +		(*first)++;
-> +	}
+Am Donnerstag 15 Juli 2010, 02:11:04 schrieb Dave Chinner:
+> On Wed, Jul 14, 2010 at 05:25:23PM +0200, Johannes Hirte wrote:
+> > Am Donnerstag 08 Juli 2010, 16:31:09 schrieb Chris Mason:
+> > I'm not sure if btrfs is to blame for this error. After the errors I
+> > switched to XFS on this system and got now this error:
+> > 
+> > ls -l .kde4/share/apps/akregator/data/
+> > ls: cannot access .kde4/share/apps/akregator/data/feeds.opml: Structure
+> > needs cleaning
+> > total 4
+> > ?????????? ? ?    ?        ?            ? feeds.opml
+> 
+> What is the error reported in dmesg when the XFS filesytem shuts down?
 
-I wonder if we should just split the AG iterator for inode reclaim vs
-the rest.  We now have this difference in addition to taking the per-AG
-lock exclusive instead of shared.
+Nothing. I double checked the logs. There are only the messages when mounting 
+the filesystem. No other errors are reported than the inaccessible file and the 
+output from xfs_check.
 
-Anyway, the patch looks good for now,
-
-
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+regards,
+  Johannes
