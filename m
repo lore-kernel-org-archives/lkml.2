@@ -1,72 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758303Ab0GOLvL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 07:51:11 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:49835 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1758214Ab0GOLvJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 07:51:09 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jul 2010 07:51:08 EDT
-X-Authenticated: #4463548
-X-Provags-ID: V01U2FsdGVkX1/XpnMDdu3Xus13wqxzI2nOuMoLDpciriR+uXBo5/
-	lMuMcz0BVUY86d
-Date: Thu, 15 Jul 2010 14:46:48 +0300 (EEST)
-From: Dimitrios Apostolou <jimis@gmx.net>
-X-X-Sender: jimis@localhost.localdomain
-To: Theodore Tso <tytso@MIT.EDU>
-cc: Randy Dunlap <rdunlap@xenotime.net>, linux-kernel@vger.kernel.org,
-        Dan Nicolaescu <dann@gnu.org>, Teemu Likonen <tlikonen@iki.fi>
-Subject: Re: emacs and "linux" coding style
-In-Reply-To: <0A4C5074-D482-42EE-98D1-93C636BC80B8@mit.edu>
-Message-ID: <alpine.LNX.2.00.1007151432460.1500@localhost.localdomain>
-References: <alpine.LNX.2.00.1007131644180.1500@localhost.localdomain> <20100713151902.ca37fc2b.rdunlap@xenotime.net> <0A4C5074-D482-42EE-98D1-93C636BC80B8@mit.edu>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758378Ab0GOLwF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 07:52:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:19332 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758235Ab0GOLwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 07:52:03 -0400
+Message-ID: <4C3EF644.1070505@redhat.com>
+Date: Thu, 15 Jul 2010 19:51:32 +0800
+From: Xiaotian Feng <dfeng@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-Y-GMX-Trusted: 0
+To: Mitchell Erblich <erblichs@earthlink.net>
+CC: linux-mm@kvack.org, linux-nfs@vger.kernel.org, netdev@vger.kernel.org,
+        riel@redhat.com, cl@linux-foundation.org, a.p.zijlstra@chello.nl,
+        linux-kernel@vger.kernel.org, lwang@redhat.com, penberg@cs.helsinki.fi,
+        akpm@linux-foundation.org, davem@davemloft.net
+Subject: Re: [PATCH -mmotm 12/30] selinux: tag avc cache alloc as non-critical
+References: <20100713101650.2835.15245.sendpatchset@danny.redhat> <20100713101906.2835.83443.sendpatchset@danny.redhat> <6E38A74E-B033-4D2A-9620-2A8BDF9E0AD1@earthlink.net>
+In-Reply-To: <6E38A74E-B033-4D2A-9620-2A8BDF9E0AD1@earthlink.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, 14 Jul 2010, Theodore Tso wrote:
-> I've always read indentation as referring to indentation for the beginning of
-> code lines, but not to making function parameters or paraenthesis line
-> up.   This is something which emacs does automatically, but vi does not.
+On 07/13/2010 06:55 PM, Mitchell Erblich wrote:
 >
-> People who are anal enough to worry about this sort of thing, in general,
-> IMHO, really should find better things to do.   And if checkpatch.pl were to
-> be "improved" to start issue warnings about code not adhering to this
-> CodingStyle assertion, #1, you would find out how much code doesn't
-> adhere to this, and #2, I think a lot of people, including myself, would be
-> complaining vociferously and agitating to have that language removed
-> from CodingStyle as being an actively harmful and incorrect recommendation.
+> On Jul 13, 2010, at 3:19 AM, Xiaotian Feng wrote:
+>
+>>  From 6c3a91091b2910c23908a9f9953efcf3df14e522 Mon Sep 17 00:00:00 2001
+>> From: Xiaotian Feng<dfeng@redhat.com>
+>> Date: Tue, 13 Jul 2010 11:02:41 +0800
+>> Subject: [PATCH 12/30] selinux: tag avc cache alloc as non-critical
+>>
+>> Failing to allocate a cache entry will only harm performance not correctness.
+>> Do not consume valuable reserve pages for something like that.
+>>
+>> Signed-off-by: Peter Zijlstra<a.p.zijlstra@chello.nl>
+>> Signed-off-by: Suresh Jayaraman<sjayaraman@suse.de>
+>> Signed-off-by: Xiaotian Feng<dfeng@redhat.com>
+>> ---
+>> security/selinux/avc.c |    2 +-
+>> 1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/security/selinux/avc.c b/security/selinux/avc.c
+>> index 3662b0f..9029395 100644
+>> --- a/security/selinux/avc.c
+>> +++ b/security/selinux/avc.c
+>> @@ -284,7 +284,7 @@ static struct avc_node *avc_alloc_node(void)
+>> {
+>> 	struct avc_node *node;
+>>
+>> -	node = kmem_cache_zalloc(avc_node_cachep, GFP_ATOMIC);
+>> +	node = kmem_cache_zalloc(avc_node_cachep, GFP_ATOMIC|__GFP_NOMEMALLOC);
+>> 	if (!node)
+>> 		goto out;
+>>
+>> -- 
+>> 1.7.1.1
+>>
+>
+> Why not just replace GFP_ATOMIC with GFP_NOWAIT?
+>
+> This would NOT consume the valuable last pages.
 
-if two kernel developers agree that tabs-only alignment of arglists is not 
-necessary, then my guess is that the CodingStyle document is broken and 
-needs to be fixed. Quote from Documentation/CodingStyle:
+But replace GFP_ATOMIC with GFP_NOWAIT can not prevent avc_alloc_node 
+consume reserved pages.
 
+>
+> Mitchell Erblich
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe netdev" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
 
-That's OK, we all do.  You've probably been told by your long-time 
-Unix user helper that "GNU emacs" automatically formats the C sources for 
-you, and you've noticed that yes, it does do that, but the defaults it 
-uses are less than desirable (in fact, they are worse than random typing - 
-an infinite number of monkeys typing into GNU emacs would never make a 
-good program).
-
-So, you can either get rid of GNU emacs, or change it to use saner
-values.  To do the latter, you can stick the following in your .emacs 
-file:
-
-
-If emacs' style is OK then why all this inflamatory talk is needed, and 
-why is a patch proposed? The only thing needed is to use the "linux" 
-c-style.
-
-
-Thanks,
-Dimitris
-
-
-P.S. CC'd the author of latest emacs-related patch in CodingStyle
