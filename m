@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934782Ab0GOUvB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 16:51:01 -0400
-Received: from cantor.suse.de ([195.135.220.2]:42460 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934699Ab0GOUvA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 16:51:00 -0400
-Date: Thu, 15 Jul 2010 13:45:40 -0700
-From: Greg KH <gregkh@suse.de>
-To: Peter Huewe <PeterHuewe@gmx.de>
-Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-        "Digi International, Inc" <Eng.Linux@digi.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, Joe Perches <joe@perches.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/25] char: Convert pci_table entries to PCI_VDEVICE
-	(if PCI_ANY_ID is used)
-Message-ID: <20100715204540.GB24463@suse.de>
-References: <201007152052.38060.PeterHuewe@gmx.de>
+	id S1758662Ab0GOUwb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 16:52:31 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62481 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751229Ab0GOUw1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 16:52:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=EjAs09INMmvUHffF/5kRDC1PmLUymKGFYxYrmqfzEw2YpCclCQtZJ+1tS4+IV4Wj2E
+         OXLHz3pgkWtCdwtyieJYSYC9PzvoVCuLnsVQr/oALq0g1Qkn/60PMvKRBhT8XtEZ4AcV
+         pYbrbKINJrfIHibWphSr5S/1vG0VQwtrgKBtg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007152052.38060.PeterHuewe@gmx.de>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100715200012.GA4175@brouette>
+References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>
+	<AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com>
+	<1279100846.8592.53.camel@e102109-lin.cambridge.arm.com>
+	<4C3D89AC.4040303@cs.helsinki.fi>
+	<1279205891.6664.46.camel@e102109-lin.cambridge.arm.com>
+	<AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com>
+	<4C3F2F52.2050101@cs.helsinki.fi>
+	<20100715162805.GA10240@brouette>
+	<20100715191638.GA3694@brouette>
+	<AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com>
+	<20100715200012.GA4175@brouette>
+Date: Thu, 15 Jul 2010 23:52:25 +0300
+X-Google-Sender-Auth: rAbu1MZgK4G6gkoeq8LK-XblVkI
+Message-ID: <AANLkTilnLXVSkWfnaPtpzxH-C3-5h1mnBz3O0vAFHG32@mail.gmail.com>
+Subject: Re: kmemleak, cpu usage jump out of nowhere
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Damien Wyart <damien.wyart@free.fr>
+Cc: Zeno Davatz <zdavatz@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        mingo@elte.hu, yinghai@kernel.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 08:52:37PM +0200, Peter Huewe wrote:
-> From: Peter Huewe <peterhuewe@gmx.de>
-> 
-> This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
-> .subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
-> PCI_VDEVICE macro, and thus improves readability.
-> 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
->  drivers/char/epca.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/char/epca.c b/drivers/char/epca.c
-> index d9df46a..5dafcdb 100644
-> --- a/drivers/char/epca.c
-> +++ b/drivers/char/epca.c
-> @@ -2762,10 +2762,10 @@ err_out:
->  
->  
->  static struct pci_device_id epca_pci_tbl[] = {
-> -	{ PCI_VENDOR_DIGI, PCI_DEVICE_XR, PCI_ANY_ID, PCI_ANY_ID, 0, 0, brd_xr },
-> -	{ PCI_VENDOR_DIGI, PCI_DEVICE_XEM, PCI_ANY_ID, PCI_ANY_ID, 0, 0, brd_xem },
-> -	{ PCI_VENDOR_DIGI, PCI_DEVICE_CX, PCI_ANY_ID, PCI_ANY_ID, 0, 0, brd_cx },
-> -	{ PCI_VENDOR_DIGI, PCI_DEVICE_XRJ, PCI_ANY_ID, PCI_ANY_ID, 0, 0, brd_xrj },
-> +	{ PCI_VDEVICE(DIGI, PCI_DEVICE_XR), brd_xr },
-> +	{ PCI_VDEVICE(DIGI, PCI_DEVICE_XEM), brd_xem },
-> +	{ PCI_VDEVICE(DIGI, PCI_DEVICE_CX), brd_cx },
-> +	{ PCI_VDEVICE(DIGI, PCI_DEVICE_XRJ), brd_xrj },
+On Thu, Jul 15, 2010 at 11:00 PM, Damien Wyart <damien.wyart@free.fr> wrote:
+>> > For now, I can't reproduce the problem with CONFIG_NO_BOOTMEM disabled ;
+>> > with the option and rc5 the problem was happening quite quickly after
+>> > boot and normal use of the machine. So it seems I can confirme what Zeno
+>> > has seen and I hope this will give a hint to debug the problem. I guess
+>> > this has not been reported that much because many testers might not have
+>> > enabled CONFIG_NO_BOOTMEM... Maybe the scheduler folks could test their
+>> > benchmark with a kernel having this option enabled?
+>
+> * Pekka Enberg <penberg@cs.helsinki.fi> [2010-07-15 22:50]:
+>> To be honest, the bug is bit odd. It's related to boot-time memory
+>> allocator changes but yet it seems to manifest itself as a scheduling
+>> problem. So if you have some spare time and want to speed up the
+>> debugging process, please test v2.6.34 and v2.6.35-rc1 with
+>> CONFIG_NO_BOOTMEM and if former is good and latter is bad, try to see
+>> if you can identify the offending commit with "git bisect."
+>
+> Not sure I will have enough time in the coming days (doing that remotely
+> is fishy since ssh access is almost stuck when the problem occurs); if
+> Zeno can and would like to do it, maybe this could be done faster.
+>
+> As the scheduler is now very well instrumented (many debugging features
+> are available), reproducing the bug on a test platform (it happens quite
+> quickly for me) might also give some hints. So testers, if you have
+> time, please test 2.6.35-rc5 with CONFIG_NO_BOOTMEM on a Core i7 and see
+> if you can reproduce the problem!
 
-The main reason I hate this macro, is that it now makes it almost
-impossible to grep for any users of the PCI_VENDOR_DIGI pci vendor id.
-I much prefer the PCI_DEVICE() macro instead, and as such, I'm not
-willing to take any of these patches, sorry.
+Yeah, there's "perf sched" tool available for that:
 
-greg k-h
+  http://lwn.net/Articles/353295/
+
+The only problem is that we'd need a scheduler hacker to decipher the
+report and all of them seem to be missing at the moment (probably at
+OLS). Anyway, like I said, git bisect will probably speed up the
+debugging process, that's all.
+
+                          Pekka
