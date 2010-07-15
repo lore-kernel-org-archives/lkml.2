@@ -1,53 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752626Ab0GOGuA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 02:50:00 -0400
-Received: from mga01.intel.com ([192.55.52.88]:31545 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751663Ab0GOGt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 02:49:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,206,1278313200"; 
-   d="scan'208";a="818325321"
-Subject: [PATCH] Don't apply for write lock on tasklist_lock if parent
- doesn't ptrace other processes
-From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>, andi.kleen@intel.com
-Content-Type: text/plain; charset="ISO-8859-1"
-Date: Thu, 15 Jul 2010 14:51:03 +0800
-Message-Id: <1279176663.2096.1264.camel@ymzhang.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+	id S1753689Ab0GOG4t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 02:56:49 -0400
+Received: from rex.securecomputing.com ([203.24.151.4]:58948 "EHLO
+	cyberguard.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751525Ab0GOG4r (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 02:56:47 -0400
+Message-ID: <4C3EB04A.90000@snapgear.com>
+Date: Thu, 15 Jul 2010 16:52:58 +1000
+From: Greg Ungerer <gerg@snapgear.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Kulikov Vasiliy <segooon@gmail.com>
+CC: kernel-janitors@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>,
+        John Kacur <jkacur@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Maxim Kuvyrkov <maxim@codesourcery.com>,
+        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 02/11] arch/m68knommu/kernel/process.c: formatting of
+ pointers in printk()
+References: <1279130473-10737-1-git-send-email-segooon@gmail.com> <4C3E5672.4090606@snapgear.com> <20100715064354.GA5555@albatros>
+In-Reply-To: <20100715064354.GA5555@albatros>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We run some sub-cases (fork, exec, pipe, tcp, udp) of aim7 on 8-socket machine.
-Perf shows write_lock_irq(&tasklist_lock) consumes more than 50% cpu time.
+Kulikov Vasiliy wrote:
+> On Thu, Jul 15, 2010 at 10:29 +1000, Greg Ungerer wrote:
+>> Hi Kulikov,
+>>
+>> Kulikov Vasiliy wrote:
+>>> Use %p instead of %08x in printk().
+>>>
+>>> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+>> Acked-by: Greg Ungerer <gerg@uclinux.org>
+>>
+>> Do you want me to push this to Linus via the m68knommu git tree?
+> Yeah, it would be good.
 
-One hot caller is exit_ptrace. If the exiting process doesn't ptrace other
-processes, kernel needn't apply for the write lock on tasklist_lock.
+OK, done.
 
-With below patch against kernel 2.6.35-rc5, we get more than 10% result improvement.
-
-Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
-
----
-
-diff -Nraup linux-2.6.35-rc5/kernel/ptrace.c linux-2.6.35-rc5_ptrace/kernel/ptrace.c
---- linux-2.6.35-rc5/kernel/ptrace.c	2010-07-16 14:01:15.000000000 +0800
-+++ linux-2.6.35-rc5_ptrace/kernel/ptrace.c	2010-07-16 14:03:20.000000000 +0800
-@@ -331,6 +331,9 @@ void exit_ptrace(struct task_struct *tra
- 	struct task_struct *p, *n;
- 	LIST_HEAD(ptrace_dead);
- 
-+	if (list_empty(&tracer->ptraced))
-+		return;
-+
- 	write_lock_irq(&tasklist_lock);
- 	list_for_each_entry_safe(p, n, &tracer->ptraced, ptrace_entry) {
- 		if (__ptrace_detach(tracer, p))
+Thanks
+Greg
 
 
+
+>> Regards
+>> Greg
+>>
+>>
+>>
+>>> ---
+>>> arch/m68knommu/kernel/process.c |   10 +++++-----
+>>> 1 files changed, 5 insertions(+), 5 deletions(-)
+>>>
+>>> diff --git a/arch/m68knommu/kernel/process.c b/arch/m68knommu/kernel/process.c
+>>> index 6aa6613..1096c0e 100644
+>>> --- a/arch/m68knommu/kernel/process.c
+>>> +++ b/arch/m68knommu/kernel/process.c
+>>> @@ -316,14 +316,14 @@ void dump(struct pt_regs *fp)
+>>> 		fp->d0, fp->d1, fp->d2, fp->d3);
+>>> 	printk(KERN_EMERG "d4: %08lx    d5: %08lx    a0: %08lx    a1: %08lx\n",
+>>> 		fp->d4, fp->d5, fp->a0, fp->a1);
+>>> -	printk(KERN_EMERG "\nUSP: %08x   TRAPFRAME: %08x\n",
+>>> -		(unsigned int) rdusp(), (unsigned int) fp);
+>>> +	printk(KERN_EMERG "\nUSP: %08x   TRAPFRAME: %p\n",
+>>> +		(unsigned int) rdusp(), fp);
+>>> 	printk(KERN_EMERG "\nCODE:");
+>>> 	tp = ((unsigned char *) fp->pc) - 0x20;
+>>> 	for (sp = (unsigned long *) tp, i = 0; (i < 0x40);  i += 4) {
+>>> 		if ((i % 0x10) == 0)
+>>> -			printk(KERN_EMERG "%08x: ", (int) (tp + i));
+>>> +			printk(KERN_EMERG "%p: ", tp + i);
+>>> 		printk("%08x ", (int) *sp++);
+>>> 	}
+>>> 	printk(KERN_EMERG "\n");
+>>> @@ -332,7 +332,7 @@ void dump(struct pt_regs *fp)
+>>> 	tp = ((unsigned char *) fp) - 0x40;
+>>> 	for (sp = (unsigned long *) tp, i = 0; (i < 0xc0); i += 4) {
+>>> 		if ((i % 0x10) == 0)
+>>> -			printk(KERN_EMERG "%08x: ", (int) (tp + i));
+>>> +			printk(KERN_EMERG "%p: ", tp + i);
+>>> 		printk("%08x ", (int) *sp++);
+>>> 	}
+>>> 	printk(KERN_EMERG "\n");
+>>> @@ -341,7 +341,7 @@ void dump(struct pt_regs *fp)
+>>> 	tp = (unsigned char *) (rdusp() - 0x10);
+>>> 	for (sp = (unsigned long *) tp, i = 0; (i < 0x80); i += 4) {
+>>> 		if ((i % 0x10) == 0)
+>>> -			printk(KERN_EMERG "%08x: ", (int) (tp + i));
+>>> +			printk(KERN_EMERG "%p: ", tp + i);
+>>> 		printk("%08x ", (int) *sp++);
+>>> 	}
+>>> 	printk(KERN_EMERG "\n");
+>>
+>> -- 
+>> ------------------------------------------------------------------------
+>> Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+>> SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+>> 8 Gardner Close                             FAX:         +61 7 3217 5323
+>> Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+> 
+
+
+-- 
+------------------------------------------------------------------------
+Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
+SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
+8 Gardner Close                             FAX:         +61 7 3217 5323
+Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
