@@ -1,84 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624Ab0GOHzk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 03:55:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:50858 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932570Ab0GOHzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 03:55:39 -0400
-Date: Thu, 15 Jul 2010 00:56:11 -0700
-From: Greg KH <gregkh@suse.de>
-To: Dave Airlie <airlied@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
-        Randy Dunlap <randy.dunlap@oracle.com>, alsa-devel@alsa-project.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-scsi@vger.kernel.org,
-        Takashi Iwai <tiwai@suse.de>, Greg KH <greg@kroah.com>,
-        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "Eric W. Biederman" <ebiederm@xmission.com>,
-        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        "David S. Miller" <davem@davemloft.net>
-Subject: Re: [alsa-devel] [PATCH] driver core: remove
-	CONFIG_SYSFS_DEPRECATED
-Message-ID: <20100715075611.GB8202@suse.de>
-References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> <AANLkTinIy1z7226W0ylNfDdHXBp16Wt7aYBKQYY1o5t9@mail.gmail.com> <20100715041400.GA2583@suse.de> <AANLkTik1G3E6RP8cEK2JoPcqZp0Q16nK9F-4tAtXWnPk@mail.gmail.com> <20100715053543.GA4416@suse.de> <AANLkTilmDJx9Q9SKvfbzy0xmtIFDi8iqQTfvzwE-embG@mail.gmail.com>
+	id S932645Ab0GOH7O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 03:59:14 -0400
+Received: from mail.gmx.net ([213.165.64.20]:54760 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S932617Ab0GOH7M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 03:59:12 -0400
+X-Authenticated: #20450766
+X-Provags-ID: V01U2FsdGVkX1/TW8VHhQzTS2UkemXrXgdO9FdXDa8R0KPfJcs6nL
+	rVgx1jb9E3Ke2c
+Date: Thu, 15 Jul 2010 09:59:16 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Axel Lin <axel.lin@gmail.com>
+cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 7/12] wm8940: fix resource reclaim in wm8940_register 
+ error path
+In-Reply-To: <AANLkTil_buBStfVy_L9iTgPrxosmSRFhNU1MbaXWJfMx@mail.gmail.com>
+Message-ID: <Pine.LNX.4.64.1007150952340.5310@axis700.grange>
+References: <1279162147.29294.2.camel@mola> <1279162893.29294.20.camel@mola>
+  <Pine.LNX.4.64.1007150855200.5310@axis700.grange>
+ <AANLkTil_buBStfVy_L9iTgPrxosmSRFhNU1MbaXWJfMx@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilmDJx9Q9SKvfbzy0xmtIFDi8iqQTfvzwE-embG@mail.gmail.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 04:32:46PM +1000, Dave Airlie wrote:
-> On Thu, Jul 15, 2010 at 3:35 PM, Greg KH <gregkh@suse.de> wrote:
-> > On Thu, Jul 15, 2010 at 03:00:31PM +1000, Dave Airlie wrote:
-> >> On Thu, Jul 15, 2010 at 2:14 PM, Greg KH <gregkh@suse.de> wrote:
-> >> > On Thu, Jul 15, 2010 at 10:24:18AM +1000, Dave Airlie wrote:
-> >> >> On Thu, Jul 15, 2010 at 9:38 AM, Andrew Morton
-> >> >> <akpm@linux-foundation.org> wrote:
-> >> >> > On Fri, 9 Jul 2010 11:54:50 -0700
-> >> >> > Greg Kroah-Hartman <gregkh@suse.de> wrote:
-> >> >> >
-> >> >> >> This is no longer needed by any userspace tools, so it's safe to
-> >> >> >> remove.
-> >> >>
-> >> >> Also still used for booting mainline kernels on RHEL5 userspaces.
-> >> >
-> >> > Really? ?I thought that was fixed a long time ago. ?What kernel was
-> >> > RHEL5 originally based on?
-> >> >
-> >> > And note that no RHEL5 user is going to be using a .36 kernel on their
-> >> > system, that's a completely unsupported and unadvised situation. ?Heck,
-> >> > I'd be amazed if a .34 kernel.org kernel boots on the thing, does it?
-> >> >
-> >>
-> >> I think some people do it internally, last time I did it was to test
-> >> something I was backporting, so you want to make sure the upstream
-> >> version boots and the backported version also boots on the same
-> >> hw/userspace.
-> >>
-> >> original kernel was 2.6.18.
-> >
-> > Yes, that was the number, but does it really look anything like a .18
-> > kernel.org release? ?:)
-> >
+On Thu, 15 Jul 2010, Axel Lin wrote:
+
+> I agree that it is good to release resources at the same level,
+> where they have been acquired.
+> But I prefer to follow the maintainer/author's coding style.
+
+Yeah, unless that "style" is a bug. IMHO this design is just buggy, 
+unmaintainable, error-prone, and unjustified.
+
 > 
-> Well its more that the userspace is mostly what was released at the
-> same time, we aren't going to update udev/mkinitrd unless some major
-> problem was discovered.
+> For the changes in other drivers, I'd like to see Liam and Mark's comments.
+> Or if the driver maintainers request it, I can fix it.
 
-That's fine, I can provide an updated package for those looney users
-that want to run this type of system :)
+Well, as the author of sound/soc/codecs/wm8978.c, I'd be happy if you 
+change it in this way;) And also move the
 
-But ideally, I can figure out what is being needed and possibly reduce
-the footprint that is currently covered by this config option.
+	kfree(wm8978);
 
-thanks,
+line from wm8978_unregister() to wm8978_i2c_remove().
 
-greg k-h
+Thanks
+Guennadi
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
