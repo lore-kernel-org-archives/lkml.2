@@ -1,92 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934068Ab0GOS3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:29:43 -0400
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:39397 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934015Ab0GOS3m (ORCPT
+	id S934088Ab0GOSbQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:31:16 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:45119 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934062Ab0GOSbK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:29:42 -0400
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: Chris Mason <chris.mason@oracle.com>
-Subject: csum errors
-Date: Thu, 15 Jul 2010 20:30:17 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-btrfs-debug; KDE/4.4.5; i686; ; )
-Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <201007111428.10005.johannes.hirte@fem.tu-ilmenau.de> <201007131423.59415.johannes.hirte@fem.tu-ilmenau.de>
-In-Reply-To: <201007131423.59415.johannes.hirte@fem.tu-ilmenau.de>
+	Thu, 15 Jul 2010 14:31:10 -0400
+Message-ID: <4C3F53D1.3090001@austin.ibm.com>
+Date: Thu, 15 Jul 2010 13:30:41 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Subject: [PATCH 0/5] v2 De-couple sysfs memory directories from memory section
+ size
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007152030.18431.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Dienstag 13 Juli 2010, 14:23:58 schrieb Johannes Hirte:
-> On the Opteron system I got now csum errors. I've synced some data from the
-> netbook to the Opteron yesteray. After hitting ENOSPC with 4GB free, I've
-> run 'btrfs-vol -b' on this fs in hope to get some more free space. It
-> worked but the command failed and I found in dmesg:
-> 
-> btrfs csum failed ino 339 off 935280640 csum 337776576 private 337776575
-> btrfs csum failed ino 339 off 935280640 csum 337776576 private 337776575
-> btrfs csum failed ino 339 off 935280640 csum 337776576 private 337776575
-> btrfs csum failed ino 339 off 935280640 csum 337776576 private 337776575
-> 
-> So I've tested the new synced data by syncing them to another disk on the
-> Optoern system (XFS). As I've expected (or better feared), some data wasn't
-> readable and I found more csum errors in dmesg:
-> 
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
-> btrfs csum failed ino 1959333 off 252362752 csum 686735346 private
-> 686735345 btrfs csum failed ino 1959333 off 252362752 csum 686735346
-> private 686735345 btrfs csum failed ino 1959333 off 252362752 csum
-> 686735346 private 686735345 btrfs csum failed ino 1959333 off 252362752
-> csum 686735346 private 686735345 btrfs csum failed ino 1959333 off
-> 252362752 csum 686735346 private 686735345 btrfs csum failed ino 1959333
-> off 252362752 csum 686735346 private 686735345 btrfs csum failed ino
-> 1959333 off 651108352 csum 2851505977 private 2851505976 btrfs csum failed
-> ino 1959333 off 651108352 csum 2851505977 private 2851505976 btrfs csum
-> failed ino 1959333 off 651108352 csum 2851505977 private 2851505976 btrfs
-> csum failed ino 1959333 off 651108352 csum 2851505977 private 2851505976
-> btrfs csum failed ino 1959333 off 651108352 csum 2851505977 private
-> 2851505976 btrfs csum failed ino 1959333 off 651108352 csum 2851505977
-> private 2851505976 btrfs csum failed ino 1959333 off 898342912 csum
-> 4271223884 private 4271223883 btrfs csum failed ino 1959333 off 898342912
-> csum 4271223884 private 4271223883 btrfs csum failed ino 1959333 off
-> 898342912 csum 4271223884 private 4271223883 btrfs csum failed ino 1959333
-> off 898342912 csum 4271223884 private 4271223883 btrfs csum failed ino
-> 1959333 off 898342912 csum 4271223884 private 4271223883 btrfs csum failed
-> ino 1959333 off 898342912 csum 4271223884 private 4271223883
+This set of patches de-couples the idea that there is a single
+directory in sysfs for each memory section.  The intent of the
+patches is to reduce the number of sysfs directories created to
+resolve a boot-time performance issue.  On very large systems
+boot time are getting very long (as seen on powerpc hardware)
+due to the enormous number of sysfs directories being created.
+On a system with 1 TB of memory we create ~63,000 directories.
+For even larger systems boot times are being measured in hours.
 
-I think, this is a different error. I've only seen them on filesystems from my 
-Opteron system. It seems that the recorded csums are wrong and it looks to me 
-like rounding errors. The data itself should be correct, as I've tested one 
-affected file via md5sum against the original on another filesystem.
-Any ideas what is going wrong here?
+This set of patches allows for each directory created in sysfs
+to cover more than one memory section.  The default behavior for
+sysfs directory creation is the same, in that each directory
+represents a single memory section.  A new file 'end_phys_index'
+in each directory contains the physical_id of the last memory
+section covered by the directory so that users can easily
+determine the memory section range of a directory.
 
-regards,
-  Johannes
+For version 2 of this patchset the capability to split a
+directory has been removed.
+
+Thanks,
+
+Nathan Fontenot
