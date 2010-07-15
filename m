@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758242Ab0GOCRY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 22:17:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1199 "EHLO mx1.redhat.com"
+	id S1758295Ab0GOCRf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 22:17:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29765 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758219Ab0GOCRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 22:17:19 -0400
+	id S1758271Ab0GOCRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 22:17:31 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 03/18] AFS: Use i_generation not i_version for the vnode
-	uniquifier [ver #6]
+Subject: [PATCH 13/18] xstat: AFS: Use d_automount() rather than abusing
+	follow_link() [ver #6]
 To: viro@ZenIV.linux.org.uk
 Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
         linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
         linux-ext4@vger.kernel.org
-Date: Thu, 15 Jul 2010 03:17:13 +0100
-Message-ID: <20100715021713.5544.70044.stgit@warthog.procyon.org.uk>
+Date: Thu, 15 Jul 2010 03:17:25 +0100
+Message-ID: <20100715021725.5544.80134.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
 References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -30,110 +30,134 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Store the AFS vnode uniquifier in the i_generation field, not the i_version
-field of the inode struct.  i_version can then be given the AFS data version
-number.
+Make AFS use the new d_automount() dentry operation rather than abusing
+follow_link() on directories.
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- fs/afs/dir.c      |    8 ++++----
- fs/afs/fsclient.c |    3 ++-
- fs/afs/inode.c    |   10 +++++-----
- 3 files changed, 11 insertions(+), 10 deletions(-)
+ fs/afs/dir.c      |    1 +
+ fs/afs/internal.h |    1 +
+ fs/afs/mntpt.c    |   46 +++++++++++++++-------------------------------
+ 3 files changed, 17 insertions(+), 31 deletions(-)
 
 diff --git a/fs/afs/dir.c b/fs/afs/dir.c
-index b42d5cc..afb9ff8 100644
+index afb9ff8..d2dd137 100644
 --- a/fs/afs/dir.c
 +++ b/fs/afs/dir.c
-@@ -542,11 +542,11 @@ static struct dentry *afs_lookup(struct inode *dir, struct dentry *dentry,
- 	dentry->d_op = &afs_fs_dentry_operations;
+@@ -65,6 +65,7 @@ static const struct dentry_operations afs_fs_dentry_operations = {
+ 	.d_revalidate	= afs_d_revalidate,
+ 	.d_delete	= afs_d_delete,
+ 	.d_release	= afs_d_release,
++	.d_automount	= afs_d_automount,
+ };
  
- 	d_add(dentry, inode);
--	_leave(" = 0 { vn=%u u=%u } -> { ino=%lu v=%llu }",
-+	_leave(" = 0 { vn=%u u=%u } -> { ino=%lu v=%u }",
- 	       fid.vnode,
- 	       fid.unique,
- 	       dentry->d_inode->i_ino,
--	       (unsigned long long)dentry->d_inode->i_version);
-+	       dentry->d_inode->i_generation);
+ #define AFS_DIR_HASHTBL_SIZE	128
+diff --git a/fs/afs/internal.h b/fs/afs/internal.h
+index 5f679b7..2c700dc 100644
+--- a/fs/afs/internal.h
++++ b/fs/afs/internal.h
+@@ -583,6 +583,7 @@ extern int afs_abort_to_error(u32);
+ extern const struct inode_operations afs_mntpt_inode_operations;
+ extern const struct file_operations afs_mntpt_file_operations;
  
- 	return NULL;
- }
-@@ -626,10 +626,10 @@ static int afs_d_revalidate(struct dentry *dentry, struct nameidata *nd)
- 		 * been deleted and replaced, and the original vnode ID has
- 		 * been reused */
- 		if (fid.unique != vnode->fid.unique) {
--			_debug("%s: file deleted (uq %u -> %u I:%llu)",
-+			_debug("%s: file deleted (uq %u -> %u I:%u)",
- 			       dentry->d_name.name, fid.unique,
- 			       vnode->fid.unique,
--			       (unsigned long long)dentry->d_inode->i_version);
-+			       dentry->d_inode->i_generation);
- 			spin_lock(&vnode->lock);
- 			set_bit(AFS_VNODE_DELETED, &vnode->flags);
- 			spin_unlock(&vnode->lock);
-diff --git a/fs/afs/fsclient.c b/fs/afs/fsclient.c
-index 4bd0218..346e328 100644
---- a/fs/afs/fsclient.c
-+++ b/fs/afs/fsclient.c
-@@ -89,7 +89,7 @@ static void xdr_decode_AFSFetchStatus(const __be32 **_bp,
- 			i_size_write(&vnode->vfs_inode, size);
- 			vnode->vfs_inode.i_uid = status->owner;
- 			vnode->vfs_inode.i_gid = status->group;
--			vnode->vfs_inode.i_version = vnode->fid.unique;
-+			vnode->vfs_inode.i_generation = vnode->fid.unique;
- 			vnode->vfs_inode.i_nlink = status->nlink;
++extern struct vfsmount *afs_d_automount(struct path *);
+ extern int afs_mntpt_check_symlink(struct afs_vnode *, struct key *);
+ extern void afs_mntpt_kill_timer(void);
  
- 			mode = vnode->vfs_inode.i_mode;
-@@ -102,6 +102,7 @@ static void xdr_decode_AFSFetchStatus(const __be32 **_bp,
- 		vnode->vfs_inode.i_ctime.tv_sec	= status->mtime_server;
- 		vnode->vfs_inode.i_mtime	= vnode->vfs_inode.i_ctime;
- 		vnode->vfs_inode.i_atime	= vnode->vfs_inode.i_ctime;
-+		vnode->vfs_inode.i_version	= data_version;
+diff --git a/fs/afs/mntpt.c b/fs/afs/mntpt.c
+index a9e2303..ea9cfee 100644
+--- a/fs/afs/mntpt.c
++++ b/fs/afs/mntpt.c
+@@ -24,7 +24,6 @@ static struct dentry *afs_mntpt_lookup(struct inode *dir,
+ 				       struct dentry *dentry,
+ 				       struct nameidata *nd);
+ static int afs_mntpt_open(struct inode *inode, struct file *file);
+-static void *afs_mntpt_follow_link(struct dentry *dentry, struct nameidata *nd);
+ static void afs_mntpt_expiry_timed_out(struct work_struct *work);
+ 
+ const struct file_operations afs_mntpt_file_operations = {
+@@ -33,7 +32,6 @@ const struct file_operations afs_mntpt_file_operations = {
+ 
+ const struct inode_operations afs_mntpt_inode_operations = {
+ 	.lookup		= afs_mntpt_lookup,
+-	.follow_link	= afs_mntpt_follow_link,
+ 	.readlink	= page_readlink,
+ 	.getattr	= afs_getattr,
+ };
+@@ -82,6 +80,7 @@ int afs_mntpt_check_symlink(struct afs_vnode *vnode, struct key *key)
+ 		_debug("symlink is a mountpoint");
+ 		spin_lock(&vnode->lock);
+ 		set_bit(AFS_VNODE_MOUNTPOINT, &vnode->flags);
++		vnode->vfs_inode.i_flags |= S_AUTOMOUNT;
+ 		spin_unlock(&vnode->lock);
  	}
  
- 	expected_version = status->data_version;
-diff --git a/fs/afs/inode.c b/fs/afs/inode.c
-index d00b312..ee3190a 100644
---- a/fs/afs/inode.c
-+++ b/fs/afs/inode.c
-@@ -73,7 +73,8 @@ static int afs_inode_map_status(struct afs_vnode *vnode, struct key *key)
- 	inode->i_ctime.tv_nsec	= 0;
- 	inode->i_atime		= inode->i_mtime = inode->i_ctime;
- 	inode->i_blocks		= 0;
--	inode->i_version	= vnode->fid.unique;
-+	inode->i_generation	= vnode->fid.unique;
-+	inode->i_version	= vnode->status.data_version;
- 	inode->i_mapping->a_ops	= &afs_fs_aops;
- 
- 	/* check to see whether a symbolic link is really a mountpoint */
-@@ -98,7 +99,7 @@ static int afs_iget5_test(struct inode *inode, void *opaque)
- 	struct afs_iget_data *data = opaque;
- 
- 	return inode->i_ino == data->fid.vnode &&
--		inode->i_version == data->fid.unique;
-+		inode->i_generation == data->fid.unique;
+@@ -205,52 +204,37 @@ error_no_devname:
  }
  
  /*
-@@ -110,7 +111,7 @@ static int afs_iget5_set(struct inode *inode, void *opaque)
- 	struct afs_vnode *vnode = AFS_FS_I(inode);
+- * follow a link from a mountpoint directory, thus causing it to be mounted
++ * handle an automount point
+  */
+-static void *afs_mntpt_follow_link(struct dentry *dentry, struct nameidata *nd)
++struct vfsmount *afs_d_automount(struct path *path)
+ {
+ 	struct vfsmount *newmnt;
+ 	int err;
  
- 	inode->i_ino = data->fid.vnode;
--	inode->i_version = data->fid.unique;
-+	inode->i_generation = data->fid.unique;
- 	vnode->fid = data->fid;
- 	vnode->volume = data->volume;
+-	_enter("%p{%s},{%s:%p{%s},}",
+-	       dentry,
+-	       dentry->d_name.name,
+-	       nd->path.mnt->mnt_devname,
+-	       dentry,
+-	       nd->path.dentry->d_name.name);
+-
+-	dput(nd->path.dentry);
+-	nd->path.dentry = dget(dentry);
++	_enter("{%s,%s}", path->mnt->mnt_devname, path->dentry->d_name.name);
  
-@@ -306,8 +307,7 @@ int afs_getattr(struct vfsmount *mnt, struct dentry *dentry,
+-	newmnt = afs_mntpt_do_automount(nd->path.dentry);
+-	if (IS_ERR(newmnt)) {
+-		path_put(&nd->path);
+-		return (void *)newmnt;
+-	}
++	newmnt = afs_mntpt_do_automount(path->dentry);
++	if (IS_ERR(newmnt))
++		return newmnt;
  
- 	inode = dentry->d_inode;
+ 	mntget(newmnt);
+-	err = do_add_mount(newmnt, &nd->path, MNT_SHRINKABLE, &afs_vfsmounts);
++	err = do_add_mount(newmnt, path, MNT_SHRINKABLE, &afs_vfsmounts);
+ 	switch (err) {
+ 	case 0:
+-		path_put(&nd->path);
+-		nd->path.mnt = newmnt;
+-		nd->path.dentry = dget(newmnt->mnt_root);
+ 		schedule_delayed_work(&afs_mntpt_expiry_timer,
+ 				      afs_mntpt_expiry_timeout * HZ);
+-		break;
++		_leave(" = %p {%s}", newmnt, newmnt->mnt_devname);
++		return newmnt;
+ 	case -EBUSY:
+ 		/* someone else made a mount here whilst we were busy */
+-		while (d_mountpoint(nd->path.dentry) &&
+-		       follow_down(&nd->path))
+-			;
+-		err = 0;
++		mntput(newmnt);
++		_leave(" = NULL [EBUSY]");
++		return NULL;
+ 	default:
+ 		mntput(newmnt);
+-		break;
++		_leave(" = %d", err);
++		return ERR_PTR(err);
+ 	}
+-
+-	_leave(" = %d", err);
+-	return ERR_PTR(err);
+ }
  
--	_enter("{ ino=%lu v=%llu }", inode->i_ino,
--		(unsigned long long)inode->i_version);
-+	_enter("{ ino=%lu v=%u }", inode->i_ino, inode->i_generation);
- 
- 	generic_fillattr(inode, stat);
- 	return 0;
+ /*
 
