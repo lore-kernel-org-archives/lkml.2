@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932673Ab0GOII3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 04:08:29 -0400
-Received: from mta-mad.optenet.com ([130.117.93.253]:52015 "EHLO
-	mta-mad.optenet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932641Ab0GOII0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 04:08:26 -0400
-Date: Thu, 15 Jul 2010 10:08:26 +0200 (CEST)
-From: Unai Uribarri <unai.uribarri@optenet.com>
-To: Marin Mitov <mitov@issp.bas.bg>
-Cc: linux-kernel@vger.kernel.org
-Message-ID: <3586320.70351279181306029.JavaMail.root@mail1-md.optenet.com>
-In-Reply-To: <22092033.70271279181145173.JavaMail.root@mail1-md.optenet.com>
-Subject: Re: Workaround hardware bug addressing physical memory
+	id S932690Ab0GOIWm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 04:22:42 -0400
+Received: from www.tglx.de ([62.245.132.106]:40490 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932653Ab0GOIWk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 04:22:40 -0400
+Date: Thu, 15 Jul 2010 10:22:14 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Stephan Wolf <stephan@letzte-bankreihe.de>
+cc: Borislav Petkov <borislav.petkov@amd.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>
+Subject: Re: [PATCH] enable readback to get HPET working on ATI SB4x00, kernel
+ 2.6.35_rc5
+In-Reply-To: <4C3EB365.4030205@letzte-bankreihe.de>
+Message-ID: <alpine.LFD.2.00.1007151011550.3321@localhost.localdomain>
+References: <4C3DDDFF.5040302@letzte-bankreihe.de> <AANLkTim5fAwwhqP2J9pfOqeJACFf0OvK_MMZc1oZb3M4@mail.gmail.com> <20100714181152.GB15651@aftab> <AANLkTin71FbM5Eh7TDUHN0WvYHA5RubycflTxM5EWlvj@mail.gmail.com> <20100714183216.GC15651@aftab>
+ <alpine.LFD.2.00.1007142134140.3321@localhost.localdomain> <4C3EB365.4030205@letzte-bankreihe.de>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: [192.168.3.29]
-X-Mailer: Zimbra 5.0.11_GA_2695.UBUNTU8 (ZimbraWebClient - FF3.0 (Linux)/5.0.11_GA_2695.UBUNTU8)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks.
------ "Marin Mitov" <mitov@issp.bas.bg> wrote:
+On Thu, 15 Jul 2010, Stephan Wolf wrote:
+> Am 14.07.2010 23:04, schrieb Thomas Gleixner:
+> 
+> > +static void __init ati_hpet_bugs(int num, int slot, int func)
+> > +{
+> > +#ifdef CONFIG_HPET_TIMER
+> > +	hpet_readback_cmp = 1;
+> > +#endif
+> > +}
+> > +
+> >   #define QFLAG_APPLY_ONCE 	0x1
+> >   #define QFLAG_APPLIED		0x2
+> >   #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
+> > @@ -220,6 +236,8 @@ static struct chipset early_qrk[] __init
+> >   	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
+> >   	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+> >   	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
+> > +	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
+> > +	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_hpet_bugs },
+> >   	{}
+> 
+> Hi, the patch above solves the problem on my machine.
 
-| On Wednesday, July 14, 2010 08:06:49 pm you wrote:
-| > ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
-| > 
-| > | Hi,
-| > | 
-| > | This is pci driver. You can set dma mask:
-| > | 
-| > | dma_set_coheren_mask(pdev, DMA_BIT_MASK(31)) 
-| > | 
-| > | All further alloc_coherent() should be from the region 0-2GB.
-| > | 
-| > 
-| > But I'm using a 64 bit operating system with 32GB of RAM. It's a
-| > pity to be unable to use 4GB-32GB range because the 2-4GB range is
-| > unusable. So I've written this code to skip invalid areas. Do you
-| > think this code could be useful for other drivers?
-| 
-| Let me summarize if I have correctly understood what you do.
-| 
-| First, your hardware has problems when the physical (bus) address
-| is out of the 0-2GB region, so you cannot use buffers that are out 
-| of this range in any case. And the defect is in the peripheral, not in
-| the bridge between it and the memory.
+Thanks for testing. 
 
-The hardware works correctly for physical address in the ranges 0 to 2GB
-AND 4GB to 32GB. Physical address in the 2-4GB range are read correctly
-by the device. But when the device tries to write to them it issues 
-invalid PCIe transaction headers: it tries to access such addresses using
-a 64-bit transactions when the PCI Express standard mandates to use 32-bit
-transactions for memory addresses below 4GB. Some bridges accept such
-invalid transactions, but Intel 5500 chipset rejects them.
+Borislav, any opinion ?
 
-I'm allocating 256MB of RAM for I/O buffers; I'm fear that restricting all
-the allocations to the first 2GB of memory will put too much pressure in
-that zone of memory. But restricting it to 4GB and above will be okay. 
+Thanks,
 
-Is there any way to restrict to memory address above 4GB?
-
-
-| Second, you do allocations and check if dma_addr_t is in this range.
-| If it is, you keep it for use. If not, you put it in a list and
-| allocate a new one.
-| When you allocate sufficiently memory in 0-2GB region, you deallocate
-| 
-| the memory (kept in the list) that is out of the region. Right?
-| 
-
-Yes, except that the validator function is:
-
-static int validate_dma(void *ptr, struct device *dev, size_t size, dma_addr_t handle)
-{
-        return handle < 0x80000000U || handle > 0xFFFFFFFFU;
-}
-
-Thanks.
+	tglx
