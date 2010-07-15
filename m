@@ -1,57 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932782Ab0GOI4v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 04:56:51 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39264 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932652Ab0GOI4u (ORCPT
+	id S932779Ab0GOI7g (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 04:59:36 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44996 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S932652Ab0GOI7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 04:56:50 -0400
-Date: Thu, 15 Jul 2010 09:55:35 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Zach Pfeffer <zpfeffer@codeaurora.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
-	memory management
-Message-ID: <20100715085535.GC26212@n2100.arm.linux.org.uk>
-References: <4C3C0032.5020702@codeaurora.org> <20100713150311B.fujita.tomonori@lab.ntt.co.jp> <20100713121420.GB4263@codeaurora.org> <20100714104353B.fujita.tomonori@lab.ntt.co.jp> <20100714201149.GA14008@codeaurora.org> <20100714220536.GE18138@n2100.arm.linux.org.uk> <20100715012958.GB2239@codeaurora.org>
+	Thu, 15 Jul 2010 04:59:35 -0400
+Date: Thu, 15 Jul 2010 09:59:32 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 0/12] sound/alsa/soc/codec: fix memory leak and
+ resource relaim in error path
+Message-ID: <20100715085932.GA23529@rakim.wolfsonmicro.main>
+References: <1279162147.29294.2.camel@mola>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100715012958.GB2239@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1279162147.29294.2.camel@mola>
+X-Cookie: There's only one everything.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 06:29:58PM -0700, Zach Pfeffer wrote:
-> The VCM ensures that all mappings that map a given physical buffer:
-> IOMMU mappings, CPU mappings and one-to-one device mappings all map
-> that buffer using the same (or compatible) attributes. At this point
-> the only attribute that users can pass is CACHED. In the absence of
-> CACHED all accesses go straight through to the physical memory.
+On Thu, Jul 15, 2010 at 10:49:07AM +0800, Axel Lin wrote:
 
-So what you're saying is that if I have a buffer in kernel space
-which I already have its virtual address, I can pass this to VCM and
-tell it !CACHED, and it'll setup another mapping which is not cached
-for me?
+> [PATCH 1/12] ad1836: fix a memory leak if another ad1836 is registered
+> [PATCH 2/12] ak4642: fix a memory leak if failed to initialise AK4642
+> [PATCH 3/12] da7210: fix a memory leak if failed to initialise da7210 audio codec
+> [PATCH 4/12] wm8523: fix resource reclaim in wm8523_register error path
+> [PATCH 5/12] wm8711: fix a memory leak if another WM8711 is registered
+> [PATCH 6/12] wm8904: fix resource reclaim in wm8904_register error path
+> [PATCH 7/12] wm8940: fix resource reclaim in wm8940_register error path
+> [PATCH 8/12] wm8955: fix resource reclaim in wm8955_register error path
+> [PATCH 9/12] wm8961: fix resource reclaim in wm8961_register error path
+> [PATCH 10/12] wm8974: fix a memory leak if another WM8974 is registered
+> [PATCH 11/12] wm8978: fix a memory leak if another WM8978 is registered
+> [PATCH 12/12] wm9081: fix resource reclaim in wm9081_register error path
 
-You are aware that multiple V:P mappings for the same physical page
-with different attributes are being outlawed with ARMv6 and ARMv7
-due to speculative prefetching.  The cache can be searched even for
-a mapping specified as 'normal, uncached' and you can get cache hits
-because the data has been speculatively loaded through a separate
-cached mapping of the same physical page.
-
-FYI, during the next merge window, I will be pushing a patch which makes
-ioremap() of system RAM fail, which should be the last core code creator
-of mappings with different memory types.  This behaviour has been outlawed
-(as unpredictable) in the architecture specification and does cause
-problems on some CPUs.
-
-We've also the issue of multiple mappings with differing cache attributes
-which needs addressing too...
+If you're going to be submiting large batches of small patches like this
+it would be really helpful if you could make sure you format the subject
+lines for your patches so that they match the standards for the area of
+the kernel you're updating.  This makes them much easier to apply.
