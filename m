@@ -1,104 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933842Ab0GORFG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 13:05:06 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:34410 "EHLO mail.issp.bas.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932588Ab0GORFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 13:05:01 -0400
-From: Marin Mitov <mitov@issp.bas.bg>
-Organization: Institute of Solid State Physics
-To: Unai Uribarri <unai.uribarri@optenet.com>
-Subject: Re: Workaround hardware bug addressing physical memory
-Date: Thu, 15 Jul 2010 19:57:44 +0300
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc5; KDE/4.4.3; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <8797187.74161279212418339.JavaMail.root@mail1-md.optenet.com>
-In-Reply-To: <8797187.74161279212418339.JavaMail.root@mail1-md.optenet.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007151957.44843.mitov@issp.bas.bg>
+	id S933848Ab0GORKM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 13:10:12 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:56457 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933757Ab0GORKI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 13:10:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:in-reply-to:references:x-mailer
+         :mime-version:content-type;
+        b=JYuxqBLoF7z1lZYplX9H/2njhnhPUTDUrcTszKqm+j3X+DI6yX8UMfX3MPYVudN545
+         xajCiwHnA5cgS8SsvZN/qog1lMQYCXbD2H85iKdKgXf2U75JkgvuJZwrMess6CEyNU0/
+         QC6YdckKhW3gKEvr7o+Pyc/0JZywVFSCJJ2rg=
+Date: Thu, 15 Jul 2010 20:09:56 +0300
+From: Sergei Trofimovich <slyich@gmail.com>
+To: linux-kernel@vger.kernel.org
+Subject: Re: [SOLVED] v2.6.35-rc3: BUG: using smp_processor_id() in
+ preemptible [00000000] code: modprobe/1255
+Message-ID: <20100715200956.091069dc@mosly>
+In-Reply-To: <20100615220442.55b5271e@mosly>
+References: <20100613124246.07f98bd7@mosly>
+	<20100615220442.55b5271e@mosly>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; micalg=PGP-SHA1;
+ boundary="Sig_/Km08NVkB6Ed6M_2wTGQNk9Y"; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 15, 2010 07:46:58 pm Unai Uribarri wrote:
-> 
-> ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
-> 
-> | On 15.7.2010, Unai Uribarri wrote:
-> | > Thanks.
-> | > ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
-> | > 
-> | > | On Wednesday, July 14, 2010 08:06:49 pm you wrote:
-> | > | > ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
-> | > | > 
-> | > | > | Hi,
-> | > | > | 
-> | > | > | This is pci driver. You can set dma mask:
-> | > | > | 
-> | > | > | dma_set_coheren_mask(pdev, DMA_BIT_MASK(31)) 
-> | > | > | 
-> | > | > | All further alloc_coherent() should be from the region 0-2GB.
-> | > | > | 
-> | > | > 
-> | > | > But I'm using a 64 bit operating system with 32GB of RAM. It's
-> | a
-> | > | > pity to be unable to use 4GB-32GB range because the 2-4GB range
-> | is
-> | > | > unusable. So I've written this code to skip invalid areas. Do
-> | you
-> | > | > think this code could be useful for other drivers?
-> | > | 
-> | > | Let me summarize if I have correctly understood what you do.
-> | > | 
-> | > | First, your hardware has problems when the physical (bus) address
-> | > | is out of the 0-2GB region, so you cannot use buffers that are out
-> | 
-> | > | of this range in any case. And the defect is in the peripheral,
-> | not in
-> | > | the bridge between it and the memory.
-> | > 
-> | > The hardware works correctly for physical address in the ranges 0 to
-> | 2GB
-> | > AND 4GB to 32GB. Physical address in the 2-4GB range are read
-> | correctly
-> | > by the device. But when the device tries to write to them it issues
-> | 
-> | > invalid PCIe transaction headers: it tries to access such addresses
-> | using
-> | > a 64-bit transactions when the PCI Express standard mandates to use
-> | 32-bit
-> | > transactions for memory addresses below 4GB. Some bridges accept
-> | such
-> | > invalid transactions, but Intel 5500 chipset rejects them.
-> | > 
-> | > I'm allocating 256MB of RAM for I/O buffers; I'm fear that
-> | restricting all
-> | > the allocations to the first 2GB of memory will put too much
-> | pressure in
-> | > that zone of memory. But restricting it to 4GB and above will be
-> | okay. 
-> | > 
-> | > Is there any way to restrict to memory address above 4GB?
-> | 
-> | Would this work for you?
-> | From: Documentation/kernel-parameters.txt:
-> | 
-> | 	memmap=nn[KMG]$ss[KMG]
-> | 			[KNL,ACPI] Mark specific memory as reserved.
-> | 			Region of memory to be used, from ss to ss+nn.
-> | 			Example: Exclude memory from 0x18690000-0x1869ffff
-> | 			         memmap=64K$0x18690000
-> | 			         or
-> | 			         memmap=0x10000$0x18690000
-> 
-> I think that linking in a list the unusable memory and freeing it after completing all the allocations is a better solution.
+--Sig_/Km08NVkB6Ed6M_2wTGQNk9Y
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: quoted-printable
 
-Yes, I agree.
+> > [    7.582027] BUG: using smp_processor_id() in preemptible [00000000] =
+code: modprobe/1255
+> > [    7.582038] caller is nr_iowait_cpu+0x15/0x2b
+> > [    7.582044] Pid: 1255, comm: modprobe Not tainted 2.6.35-rc3 #87
+> > [    7.582048] Call Trace:
+> > [    7.582059]  [<ffffffff81185470>] debug_smp_processor_id+0xc4/0xe0
+> > [    7.582067]  [<ffffffff810265cd>] nr_iowait_cpu+0x15/0x2b
+> > [    7.582075]  [<ffffffff81053b78>] update_ts_time_stats+0x37/0x72
+> > [    7.582083]  [<ffffffff8104f5b5>] ? ktime_get+0x60/0xb9
+> > [    7.582089]  [<ffffffff81053d2d>] get_cpu_idle_time_us+0x44/0x63
+> > [    7.582100]  [<ffffffff8126f516>] cpufreq_governor_dbs+0xe1/0x3cf
+> > [    7.582109]  [<ffffffff8104bb5e>] ? notifier_call_chain+0x32/0x5e
+> > [    7.582116]  [<ffffffff8126c87e>] __cpufreq_governor+0xc7/0x105
+> > [    7.582124]  [<ffffffff8126d66c>] __cpufreq_set_policy+0x1a8/0x222
+> > [    7.582131]  [<ffffffff8126d977>] cpufreq_add_dev_interface+0x291/0x=
+2ac
+> > [    7.582139]  [<ffffffff8126e22e>] ? handle_update+0x0/0x33
+> > [    7.582147]  [<ffffffff8126e107>] cpufreq_add_dev+0x4b9/0x4c9
+> > [    7.582157]  [<ffffffff811ff373>] sysdev_driver_register+0xbf/0x119
+> > [    7.582164]  [<ffffffff8126c9a8>] cpufreq_register_driver+0xb9/0x1a5
+> > [    7.582174]  [<ffffffffa02e40d7>] acpi_cpufreq_init+0xd7/0x10d [acpi=
+_cpufreq]
+> > [    7.582183]  [<ffffffffa02e4000>] ? acpi_cpufreq_init+0x0/0x10d [acp=
+i_cpufreq]
+> > [    7.582191]  [<ffffffff810001ef>] do_one_initcall+0x59/0x149
+> > [    7.582199]  [<ffffffff8105cced>] sys_init_module+0x9c/0x1db
+> > [    7.582206]  [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
+> >=20
+> > Attached whole config and dmesg.
+>=20
+> It seems to be reproducible on each boot. Today's one:
+> [   20.242755] BUG: using smp_processor_id() in preemptible [00000000] co=
+de: modprobe/1462
+> [   20.242765] caller is nr_iowait_cpu+0x15/0x2b
+> [   20.242770] Pid: 1462, comm: modprobe Not tainted 2.6.35-rc3 #87
+> [   20.242774] Call Trace:
+> [   20.242784]  [<ffffffff81185470>] debug_smp_processor_id+0xc4/0xe0
+> [   20.242790]  [<ffffffff810265cd>] nr_iowait_cpu+0x15/0x2b
+> [   20.242798]  [<ffffffff81053b78>] update_ts_time_stats+0x37/0x72
+> [   20.242805]  [<ffffffff8104f5b5>] ? ktime_get+0x60/0xb9
+> [   20.242811]  [<ffffffff81053d2d>] get_cpu_idle_time_us+0x44/0x63
+> [   20.242820]  [<ffffffff8126f516>] cpufreq_governor_dbs+0xe1/0x3cf
+> [   20.242828]  [<ffffffff8104bb5e>] ? notifier_call_chain+0x32/0x5e
+> [   20.242835]  [<ffffffff8126c87e>] __cpufreq_governor+0xc7/0x105
+> [   20.242842]  [<ffffffff8126d66c>] __cpufreq_set_policy+0x1a8/0x222
+> [   20.242848]  [<ffffffff8126d977>] cpufreq_add_dev_interface+0x291/0x2ac
+> [   20.242855]  [<ffffffff8126e22e>] ? handle_update+0x0/0x33
+> [   20.242863]  [<ffffffff8126e107>] cpufreq_add_dev+0x4b9/0x4c9
+> [   20.242871]  [<ffffffff811ff373>] sysdev_driver_register+0xbf/0x119
+> [   20.242878]  [<ffffffff8126c9a8>] cpufreq_register_driver+0xb9/0x1a5
+> [   20.242887]  [<ffffffffa02e40d7>] acpi_cpufreq_init+0xd7/0x10d [acpi_c=
+pufreq]
+> [   20.242894]  [<ffffffffa02e4000>] ? acpi_cpufreq_init+0x0/0x10d [acpi_=
+cpufreq]
+> [   20.242902]  [<ffffffff810001ef>] do_one_initcall+0x59/0x149
+> [   20.242909]  [<ffffffff8105cced>] sys_init_module+0x9c/0x1db
+> [   20.242915]  [<ffffffff81001eeb>] system_call_fastpath+0x16/0x1b
 
-> 
-> Thanks.
-> 
+Who cares, but v2.6.35-rc5-25-g2f7989e does not contain this problem anymor=
+e.
+
+--=20
+
+  Sergei
+
+--Sig_/Km08NVkB6Ed6M_2wTGQNk9Y
+Content-Type: application/pgp-signature; name=signature.asc
+Content-Disposition: attachment; filename=signature.asc
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v2.0.15 (GNU/Linux)
+
+iEYEARECAAYFAkw/QOsACgkQcaHudmEf86qZpgCdGJgUtN9S3qNpYyD7/zKgDNIC
+qrwAnR+gBY0SC8Olvc1Ccj0aVDo/ykp1
+=OOc3
+-----END PGP SIGNATURE-----
+
+--Sig_/Km08NVkB6Ed6M_2wTGQNk9Y--
