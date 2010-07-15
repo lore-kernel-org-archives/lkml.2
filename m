@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934440Ab0GOTQk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 15:16:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36671 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934274Ab0GOTQi (ORCPT
+	id S934510Ab0GOTRJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 15:17:09 -0400
+Received: from mailhost-l2-p1.nerim.net ([195.5.209.46]:49910 "EHLO
+	smtp-delay1.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S934274Ab0GOTRF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 15:16:38 -0400
-Date: Thu, 15 Jul 2010 12:15:51 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Subject: Re: [PATCH v2 2/2] vmscan: shrink_slab() require number of
- lru_pages,  not page order
-Message-Id: <20100715121551.bd5ccc61.akpm@linux-foundation.org>
-In-Reply-To: <20100713144008.EA52.A69D9226@jp.fujitsu.com>
-References: <20100708163934.CD37.A69D9226@jp.fujitsu.com>
-	<AANLkTinwZfaQiTJhP8RcGhlSS-ynEXtbpzorrIZrNyIH@mail.gmail.com>
-	<20100713144008.EA52.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Jul 2010 15:17:05 -0400
+Date: Thu, 15 Jul 2010 21:16:38 +0200
+From: Damien Wyart <damien.wyart@free.fr>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Zeno Davatz <zdavatz@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        mingo@elte.hu, yinghai@kernel.org
+Subject: Re: kmemleak, cpu usage jump out of nowhere
+Message-ID: <20100715191638.GA3694@brouette>
+References: <AANLkTil6opQmTVVxuP1ngz72_ijpLzdlSFWDSyi4whOt@mail.gmail.com>
+ <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>
+ <AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com>
+ <1279100846.8592.53.camel@e102109-lin.cambridge.arm.com>
+ <4C3D89AC.4040303@cs.helsinki.fi>
+ <1279205891.6664.46.camel@e102109-lin.cambridge.arm.com>
+ <AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com>
+ <4C3F2F52.2050101@cs.helsinki.fi>
+ <20100715162805.GA10240@brouette>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100715162805.GA10240@brouette>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 13 Jul 2010 14:41:28 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+> > > I also did not have anymore hangs and random bad moods of my CPUs
+> > > that all of a sudden grab 100% of all 8 cores of my CPU power across
+> > > my machine since I disabled
+> > > CONFIG_NO_BOOTMEM:
 
-> Now, shrink_slab() has following scanning equation.
-> 
->                             lru_scanned        max_pass
->   basic_scan_objects = 4 x -------------  x -----------------------------
->                             lru_pages        shrinker->seeks (default:2)
-> 
->   scan_objects = min(basic_scan_objects, max_pass * 2)
-> 
-> Then, If we pass very small value as lru_pages instead real number of
-> lru pages, shrink_slab() drop much objects rather than necessary. and
-> now, __zone_reclaim() pass 'order' as lru_pages by mistake. that makes
-> bad result.
-> 
-> Example, If we receive very low memory pressure (scan = 32, order = 0),
-> shrink_slab() via zone_reclaim() always drop _all_ icache/dcache
-> objects. (see above equation, very small lru_pages make very big
-> scan_objects result)
-> 
-> This patch fixes it.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> Acked-by: Christoph Lameter <cl@linux-foundation.org>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> ---
->  mm/vmscan.c |    4 +++-
->  1 files changed, 3 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 6ff51c0..1bf9f72 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2612,6 +2612,8 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  
->  	nr_slab_pages0 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
->  	if (nr_slab_pages0 > zone->min_slab_pages) {
-> +		unsigned long lru_pages = zone_reclaimable_pages(zone);
-> +
->  		/*
->  		 * shrink_slab() does not currently allow us to determine how
->  		 * many pages were freed in this zone. So we take the current
-> @@ -2622,7 +2624,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->  		 * Note that shrink_slab will free memory on all zones and may
->  		 * take a long time.
->  		 */
-> -		while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
-> +		while (shrink_slab(sc.nr_scanned, gfp_mask, lru_pages) &&
->  		       (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages >
->  			nr_slab_pages0))
->  			;
+> * Pekka Enberg <penberg@cs.helsinki.fi> [2010-07-15 18:54]:
+> > Interesting. Damien, does disabling CONFIG_NO_BOOTMEM fix you problem too?
 
-Wouldn't it be better to recalculate zone_reclaimable_pages() each time
-around the loop?  For example, shrink_icache_memory()->prune_icache()
-will remove pagecache from an inode if it hits the tail of the list. 
-This can change the number of reclaimable pages by squigabytes, but
-this code thinks nothing changed?
+> I will test in the coming hours, and report back tomorrow... Just
+> recompiled 2.6.35-rc5-git1 with this option disabled.
 
+For now, I can't reproduce the problem with CONFIG_NO_BOOTMEM disabled ;
+with the option and rc5 the problem was happening quite quickly after
+boot and normal use of the machine. So it seems I can confirme what Zeno
+has seen and I hope this will give a hint to debug the problem. I guess
+this has not been reported that much because many testers might not have
+enabled CONFIG_NO_BOOTMEM... Maybe the scheduler folks could test their
+benchmark with a kernel having this option enabled?
 
+-- 
+Damien
