@@ -1,30 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934390Ab0GOTB3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 15:01:29 -0400
-Received: from mailout-de.gmx.net ([213.165.64.23]:58065 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S934369Ab0GOTB0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 15:01:26 -0400
+	id S934403Ab0GOTCH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 15:02:07 -0400
+Received: from mail.gmx.net ([213.165.64.20]:37499 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S934369Ab0GOTCB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 15:02:01 -0400
 X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX18c+2FA/rQcB3c/2N4DcVdoBDD4uyVKiTC7JUjWHy
-	AynL+8x1jBm0HU
+X-Provags-ID: V01U2FsdGVkX19I+QdbJ/tImR5Ib4Img6c9NKYGrdMGABMwAGhkYH
+	nx8fAZ9YSUzuN6
 From: Peter =?iso-8859-1?q?H=FCwe?= <PeterHuewe@gmx.de>
 To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Subject: [PATCH 17/25] infiniband/hw/nes: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
-Date: Thu, 15 Jul 2010 21:01:21 +0200
+Subject: [PATCH 18/25] input/gameport: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
+Date: Thu, 15 Jul 2010 21:01:58 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: Faisal Latif <faisal.latif@intel.com>,
-        Chien Tung <chien.tin.tung@intel.com>,
-        Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>,
-        Julia Lawall <julia@diku.dk>, Tejun Heo <tj@kernel.org>,
-        linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        " =?iso-8859-1?q?M=E1rton?= =?iso-8859-1?q?_N=E9meth?=" 
+	<nm127@freemail.hu>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007152101.21810.PeterHuewe@gmx.de>
+Message-Id: <201007152101.59421.PeterHuewe@gmx.de>
 X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -38,22 +36,20 @@ PCI_VDEVICE macro, and thus improves readability.
 
 Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- drivers/infiniband/hw/nes/nes.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/input/gameport/fm801-gp.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/infiniband/hw/nes/nes.c b/drivers/infiniband/hw/nes/nes.c
-index de7b9d7..1f26927 100644
---- a/drivers/infiniband/hw/nes/nes.c
-+++ b/drivers/infiniband/hw/nes/nes.c
-@@ -110,8 +110,8 @@ static unsigned int sysfs_nonidx_addr;
- static unsigned int sysfs_idx_addr;
+diff --git a/drivers/input/gameport/fm801-gp.c b/drivers/input/gameport/fm801-gp.c
+index 14d3f3e..fa8446e 100644
+--- a/drivers/input/gameport/fm801-gp.c
++++ b/drivers/input/gameport/fm801-gp.c
+@@ -141,7 +141,7 @@ static void __devexit fm801_gp_remove(struct pci_dev *pci)
+ }
  
- static struct pci_device_id nes_pci_table[] = {
--	{PCI_VENDOR_ID_NETEFFECT, PCI_DEVICE_ID_NETEFFECT_NE020, PCI_ANY_ID, PCI_ANY_ID},
--	{PCI_VENDOR_ID_NETEFFECT, PCI_DEVICE_ID_NETEFFECT_NE020_KR, PCI_ANY_ID, PCI_ANY_ID},
-+	{PCI_VDEVICE(NETEFFECT, PCI_DEVICE_ID_NETEFFECT_NE020), },
-+	{PCI_VDEVICE(NETEFFECT, PCI_DEVICE_ID_NETEFFECT_NE020_KR), },
- 	{0}
+ static const struct pci_device_id fm801_gp_id_table[] = {
+-	{ PCI_VENDOR_ID_FORTEMEDIA, PCI_DEVICE_ID_FM801_GP, PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0  },
++	{ PCI_VDEVICE(FORTEMEDIA, PCI_DEVICE_ID_FM801_GP), 0 },
+ 	{ 0 }
  };
  
 -- 
