@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933762Ab0GOQfx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 12:35:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:28853 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933695Ab0GOQfw (ORCPT
+	id S933774Ab0GOQgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 12:36:08 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:48637 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933719Ab0GOQfx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 12:35:52 -0400
-To: Jens Axboe <axboe@kernel.dk>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Christof Schmitt <christof.schmitt@de.ibm.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/1] Apply segment size and segment boundary to integrity data
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20100715153410.774329000@de.ibm.com>
-	<yq1mxtspwab.fsf@sermon.lab.mkp.net> <4C3F3400.7060005@kernel.dk>
-Date: Thu, 15 Jul 2010 12:35:27 -0400
-In-Reply-To: <4C3F3400.7060005@kernel.dk> (Jens Axboe's message of "Thu, 15
-	Jul 2010 10:14:56 -0600")
-Message-ID: <yq1iq4gpusw.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Thu, 15 Jul 2010 12:35:53 -0400
+Date: Thu, 15 Jul 2010 17:35:26 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Conke Hu <conke.hu@gmail.com>
+Cc: CoffBeta <coffbeta@gmail.com>,
+        David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
+        inux kernel <linux-kernel@vger.kernel.org>,
+        ext-jani.1.nikula@nokia.com,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: tq 2440
+Message-ID: <20100715163526.GJ29322@n2100.arm.linux.org.uk>
+References: <AANLkTimyBHliUa62qmfja_ke6YTTysiVAtJcZfi8l2gG@mail.gmail.com> <AANLkTil8GE1OguyAfp3XgfJvEmH98yNrlvGAx684a-qL@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C3F38DE.019D:SCFMA4539814,ss=1,fgs=0
+Content-Disposition: inline
+In-Reply-To: <AANLkTil8GE1OguyAfp3XgfJvEmH98yNrlvGAx684a-qL@mail.gmail.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Jens" == Jens Axboe <axboe@kernel.dk> writes:
+On Thu, Jul 15, 2010 at 11:16:30PM +0800, Conke Hu wrote:
+> ever notice to the following kernel log?
+> "Device 's3c2440-nand' does not have a release() function, it is
+> broken and must."
+> release() function should be implemented  in the platform_device.
 
-Jens> That sounds like a very batch design decision. Either the limits
-Jens> are explicitly given and different, or if not we have to assume
-Jens> that they are the same as the data limits at least.
+That's not telling you to provide a release function.  The warning is
+telling you that a device is being unregistered which doesn't have a
+release function.
 
-Imagine a controller that has a 4KB segment, 1 entry limit.  If we
-capped the DI sgl the same way as the data we'd only be able to issue
-512-byte requests unless the DI entries happened to be contiguous in
-memory.
+Consider this point - maybe it doesn't have a release function because
+it's not supposed to be unregistered?
 
-For several types of I/O the DI sgl is much longer than the data sgl.
-Especially if the submitter is using buffer_heads to map 512-byte
-blocks.
+> > ------------[ cut here ]------------
+> > WARNING: at fs/sysfs/dir.c:463 sysfs_add_one+0x30/0x44()
+> > sysfs: duplicate filename 'dm9000.0' can not be created
 
-And consequently we require vendors to be able to handle the
-pathological case in which any data scatterlist honoring the
-segmentation constraints given by the driver can be matched with an
-integrity scatterlist in which there is a separate entry for each
-logical block.  No vendor has had any problems with this.  Therefore
-there are no block layer data integrity queue limits.
+This is the cause of the problem.  You're registering two dm9000.0
+devices.  That's illegal, and it then causes all these:
 
-If a device appears that does in fact have constraints I have no
-problems intruducing a set of suitable knobs.
+> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
+> > Device 's3c24xx_led.3' does not have a release() function, it is broken and mus.
+> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
+> > Device 's3c24xx_led.2' does not have a release() function, it is broken and mus.
+> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
+> > Device 's3c24xx_led.1' does not have a release() function, it is broken and mus.
+> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
+> > Device 's3c24xx_led.0' does not have a release() function, it is broken and mus.
+> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
+> > Device 's3c2440-nand' does not have a release() function, it is broken and must.
+...
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+Fix the first problem (which is the real one) and you won't have these
+other problems (which aren't actually a problem.)
