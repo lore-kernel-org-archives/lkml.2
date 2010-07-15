@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933594Ab0GOPSJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 11:18:09 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64116 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933560Ab0GOPSE convert rfc822-to-8bit (ORCPT
+	id S933553Ab0GOPWQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 11:22:16 -0400
+Received: from stinky.trash.net ([213.144.137.162]:46881 "EHLO
+	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933463Ab0GOPWP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 11:18:04 -0400
+	Thu, 15 Jul 2010 11:22:15 -0400
+Message-ID: <4C3F27A2.3030207@trash.net>
+Date: Thu, 15 Jul 2010 17:22:10 +0200
+From: Patrick McHardy <kaber@trash.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <1279154621-25868-3-git-send-email-john.johansen@canonical.com>
-References: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
-	<1279154621-25868-3-git-send-email-john.johansen@canonical.com>
-Date: Thu, 15 Jul 2010 11:18:03 -0400
-Message-ID: <AANLkTimGhmUiCMMWaDs5aV4Hg86QvQJs3ZFUSqAdlKAt@mail.gmail.com>
-Subject: Re: [PATCH 02/13] AppArmor: basic auditing infrastructure.
-From: Eric Paris <eparis@parisplace.org>
-To: John Johansen <john.johansen@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: "Daniel P. Berrange" <berrange@redhat.com>,
+        Jes Sorensen <Jes.Sorensen@redhat.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jan Engelhardt <jengelh@medozas.de>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
+        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: [PATCHv4] netfilter: add CHECKSUM target
+References: <20100715115217.GA6737@redhat.com>
+In-Reply-To: <20100715115217.GA6737@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 8:43 PM, John Johansen
-<john.johansen@canonical.com> wrote:
-> Update lsm_audit for AppArmor specific data, and add the core routines for
-> AppArmor uses for auditing.
->
-> Signed-off-by: John Johansen <john.johansen@canonical.com>
+Am 15.07.2010 13:52, schrieb Michael S. Tsirkin:
+> This adds a `CHECKSUM' target, which can be used in the iptables mangle
+> table.
+> 
+> You can use this target to compute and fill in the checksum in
+> a packet that lacks a checksum.  This is particularly useful,
+> if you need to work around old applications such as dhcp clients,
+> that do not work well with checksum offloads, but don't want to
+> disable checksum offload in your device.
+> 
+> The problem happens in the field with virtualized applications.
+> For reference, see Red Hat bz 605555, as well as
+> http://www.spinics.net/lists/kvm/msg37660.html
+> 
+> Typical expected use (helps old dhclient binary running in a VM):
+> iptables -A POSTROUTING -t mangle -p udp --dport bootpc \
+> 	-j CHECKSUM --checksum-fill
+> 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> Includes fixes by Jan Engelhardt <jengelh@medozas.de>
 
-> + * Currently AppArmor auditing is fed straight into the audit framework.
-> + *
-> + * TODO:
-> + * convert to LSM audit
-
-
-TODO?
-
-> +       if (sa->aad.profile) {
-> +               struct aa_profile *profile = sa->aad.profile;
-> +               pid_t pid;
-> +               rcu_read_lock();
-> +               pid = tsk->real_parent->pid;
-> +               rcu_read_unlock();
-> +               audit_log_format(ab, " parent=%d", pid);
-> +               audit_log_format(ab, " profile=");
-> +               if (profile->ns != root_ns) {
-> +                       audit_log_format(ab, ":");
-> +                       audit_log_untrustedstring(ab, profile->ns->base.hname);
-> +                       audit_log_format(ab, "://");
-> +               }
-> +               audit_log_untrustedstring(ab, profile->base.hname);
-> +       }
-
-what does this message look like?  I don't think it fits the nice
-key=value rules of the audit system....   Are you sure this is what
-you want?
-
-> +#define COMMON_AUDIT_DATA_INIT_NONE(_d) \
-> +       do { \
-> +               memset((_d), 0, sizeof(struct common_audit_data)); \
-> +               (_d)->type = LSM_AUDIT_DATA_NONE; \
-> +       } while (0)
-> +
-> +#endif /* __AA_AUDIT_H */
-
-Why are you redefining this?  You should just use
-COMMON_AUDIT_DATA_INIT(sa, NONE);
+Applied, thanks Michael.
