@@ -1,70 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933183Ab0GOMnt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 08:43:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43517 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933142Ab0GOMns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 08:43:48 -0400
-Date: Thu, 15 Jul 2010 15:37:44 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Sridhar Samudrala <samudrala@us.ibm.com>,
-        "David S. Miller" <davem@davemloft.net>, Arnd Bergmann <arnd@arndb.de>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>, kvm@vger.kernel.org,
-        virtualization@lists.osdl.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] vhost-net: avoid flush under lock
-Message-ID: <20100715123744.GA7831@redhat.com>
-References: <20100715121912.GA7176@redhat.com>
+	id S933190Ab0GOMza (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 08:55:30 -0400
+Received: from mail-i4.nets.RWTH-Aachen.DE ([137.226.12.21]:44298 "EHLO
+	MAIL-i4.nets.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933120Ab0GOMz3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 08:55:29 -0400
+Message-ID: <4C3F053F.7090704@nets.rwth-aachen.de>
+Date: Thu, 15 Jul 2010 14:55:27 +0200
+From: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100715121912.GA7176@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: =?UTF-8?B?SWxwbyBKw6RydmluZW4=?= <ilpo.jarvinen@helsinki.fi>,
+        Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
+        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
+Subject: Re: oops in tcp_xmit_retransmit_queue() w/ v2.6.32.15
+References: <4C358AAA.9080400@kernel.org> <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi> <4C3EF7EA.2040900@nets.rwth-aachen.de> <1279195528.2496.2.camel@edumazet-laptop>
+In-Reply-To: <1279195528.2496.2.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 03:19:12PM +0300, Michael S. Tsirkin wrote:
-> We flush under vq mutex when changing backends.
-> This creates a deadlock as workqueue being flushed
-> needs this lock as well.
-> 
-> https://bugzilla.redhat.com/show_bug.cgi?id=612421
-> 
-> Drop the vq mutex before flush: we have the device mutex
-> which is sufficient to prevent another ioctl from touching
-> the vq.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Since tcp_xmit_retransmit_queue also gets skb == NULL I'm pretty sure it 
+is the same bug.
+Up to now I only experienced the problem with ACK loss (without ACK loss 
+the test ran about 30min without problems, with ACK loss it had paniced 
+within 10min).
+The data sender only has a HTB queue for traffic shaping (set to 20 
+Mbit/s). The ACK loss is done by another router.
+The setup looks like this. This way it seems to be the most realistic.
 
-Dave, just to clarify, I'll send pull request to merge it through my tree,
-there's no need for you to bother with this.
+o sender with HTB
+|
+|
+o netem queue for forward path delay
+|
+o netem queue for a queue limit
+|
+o netem queue for backward path delay
+|
+o netem queue for ACK loss
+|
+|
+o receiver with HTB
 
-> ---
->  drivers/vhost/net.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-> index 28d7786..50df58e6 100644
-> --- a/drivers/vhost/net.c
-> +++ b/drivers/vhost/net.c
-> @@ -534,11 +534,16 @@ static long vhost_net_set_backend(struct vhost_net *n, unsigned index, int fd)
->  	rcu_assign_pointer(vq->private_data, sock);
->  	vhost_net_enable_vq(n, vq);
->  done:
-> +	mutex_unlock(&vq->mutex);
-> +
->  	if (oldsock) {
->  		vhost_net_flush_vq(n, index);
->  		fput(oldsock->file);
->  	}
->  
-> +	mutex_unlock(&n->dev.mutex);
-> +	return 0;
-> +
->  err_vq:
->  	mutex_unlock(&vq->mutex);
->  err:
-> -- 
-> 1.7.2.rc0.14.g41c1c
+Perhaps now it is a little big clearer.
+
+
+On 15.07.2010 14:05, Eric Dumazet wrote:
+> Le jeudi 15 juillet 2010 à 13:58 +0200, Lennart Schulte a écrit :
+>    
+>> I'm testing new reordering algorithms in a virtual testbed, that is the
+>> nodes are emulated with xen and all the network parameters can be tuned
+>> with queues.
+>> With one of the algorithms I also got tracebacks which include
+>> tcp_xmit_retransmit_queue. It only happens with ACK loss. The kernel
+>> version however is 2.6.31.
+>> When I read this thread I tried the debug patch and got the following:
+>>
+>> [ 2754.413150] NULL head, pkts 0
+>> [ 2754.413156] Errors caught so far 1
+>>
+>> Hope that is of any help.
+>>      
+> Not sure I understand.
+>
+> Are you saying you reproduce same tcp_xmit_retransmit_queue()  bug, with
+> a special tc qdisc/class droppping some ACK frames ?
+>
+> Could it be some sched problem and incorrect return codes in case of
+> congestion ?
+>    
