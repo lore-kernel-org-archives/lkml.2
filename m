@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934204Ab0GOSmT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:42:19 -0400
-Received: from mail.gmx.net ([213.165.64.20]:50612 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S934188Ab0GOSmQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:42:16 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19GMigz6P9G0j8YDAahJpM4hPfWAwnr2nJ7WUvGfa
-	qLIzsdWnxeP+5n
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Subject: [PATCH 06/25] atm: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
-Date: Thu, 15 Jul 2010 20:42:12 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: Chas Williams <chas@cmf.nrl.navy.mil>,
-        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
+	id S934144Ab0GOSnz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:43:55 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:63172 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934060Ab0GOSnx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 14:43:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=LIfF6GIWE1Y9FFc7rtXQWyOQu8KdSg7gxpZ2RZHVBdNsVgx3s8pfOQypc7IeuwJUsJ
+         W5d57/f+NrTX3Rc7cr40/mat+HXvyTicuyqvdyqme2bPWrMqgxspiudW1Mx7ED2fviUd
+         SjVjRX064jXMSp/FHwkDJ66PJaxXBD+Sm0UAE=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Colin Cross <ccross@android.com>, Erik Gilling <konkers@android.com>,
+        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
+        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
         linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007152042.13091.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Subject: [PATCH 1/8] arm/mach-tegra: fix unsigned calcs
+Date: Thu, 15 Jul 2010 22:43:15 +0400
+Message-Id: <1279219395-12088-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+divider_u71 is unsigned, so this check is buggy:
+if (divider_u71 - 2 > 255 || divider_u71 - 2 < 0)
 
-This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
-.subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
-PCI_VDEVICE macro, and thus improves readability.
+If divider_u71 is 0 or 1 both checks are lying.
+So, it does not produce a buggy answer, but it is confusing.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/atm/firestream.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
+ arch/arm/mach-tegra/tegra2_clocks.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/atm/firestream.c b/drivers/atm/firestream.c
-index 6e600af..8717809 100644
---- a/drivers/atm/firestream.c
-+++ b/drivers/atm/firestream.c
-@@ -2027,10 +2027,8 @@ static void __devexit firestream_remove_one (struct pci_dev *pdev)
- }
+diff --git a/arch/arm/mach-tegra/tegra2_clocks.c b/arch/arm/mach-tegra/tegra2_clocks.c
+index 4261632..64df5b4 100644
+--- a/arch/arm/mach-tegra/tegra2_clocks.c
++++ b/arch/arm/mach-tegra/tegra2_clocks.c
+@@ -149,7 +149,7 @@ static int clk_div71_get_divider(struct clk *c, unsigned long rate)
  
- static struct pci_device_id firestream_pci_tbl[] = {
--	{ PCI_VENDOR_ID_FUJITSU_ME, PCI_DEVICE_ID_FUJITSU_FS50, 
--	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, FS_IS50},
--	{ PCI_VENDOR_ID_FUJITSU_ME, PCI_DEVICE_ID_FUJITSU_FS155, 
--	  PCI_ANY_ID, PCI_ANY_ID, 0, 0, FS_IS155},
-+	{ PCI_VDEVICE(FUJITSU_ME, PCI_DEVICE_ID_FUJITSU_FS50), FS_IS50},
-+	{ PCI_VDEVICE(FUJITSU_ME, PCI_DEVICE_ID_FUJITSU_FS155), FS_IS155},
- 	{ 0, }
- };
+ 	divider_u71 = DIV_ROUND_UP(c->rate * 2, rate);
  
+-	if (divider_u71 - 2 > 255 || divider_u71 - 2 < 0)
++	if (divider_u71 > 2 + 255 || divider_u71 < 2)
+ 		return -EINVAL;
+ 
+ 	return divider_u71 - 2;
 -- 
-1.7.1
+1.7.0.4
 
