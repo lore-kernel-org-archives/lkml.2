@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751433Ab0GOEMj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 00:12:39 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:54378 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab0GOEMh convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 00:12:37 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=shz58MDtOmBPmPZtJBdmNbUqO6+bbC3RkCo4ZU2fXKU4RyKztkIfGczHSo7XAThdd
-	mDhNW5nYreTcXLK3gCUpA==
+	id S932331Ab0GOEP5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 00:15:57 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:50960 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750900Ab0GOEPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 00:15:54 -0400
+Date: Wed, 14 Jul 2010 21:16:13 -0700
+From: Greg KH <gregkh@suse.de>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        alsa-devel@alsa-project.org, Jens Axboe <axboe@kernel.dk>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Howells <dhowells@redhat.com>, Dave Airlie <airlied@gmail.com>
+Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
+Message-ID: <20100715041613.GB2583@suse.de>
+References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> <m1zkxtinlw.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-In-Reply-To: <20100714203919.GD6682@nuttenaction>
-References: <4C3D94E3.9080103@wildgooses.com>
-	<4C3DD5EB.9070908@tmr.com>
-	<20100714.111553.104052157.davem@davemloft.net>
-	<4C3E0684.5060409@wildgooses.com>
-	<4C3E1B54.40604@hp.com>
-	<20100714203919.GD6682@nuttenaction>
-Date: Wed, 14 Jul 2010 21:12:33 -0700
-Message-ID: <AANLkTikTyZGQWWIBzYSQWpUK30xxbMXLbJXeHahWnlIi@mail.gmail.com>
-Subject: Re: Raise initial congestion window size / speedup slow start?
-From: Tom Herbert <therbert@google.com>
-To: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: Rick Jones <rick.jones2@hp.com>, Ed W <lists@wildgooses.com>,
-        David Miller <davem@davemloft.net>, davidsen@tmr.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-        Jerry Chu <hkchu@google.com>, Nandita Dukkipati <nanditad@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1zkxtinlw.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 1:39 PM, Hagen Paul Pfeifer <hagen@jauu.net> wrote:
-> * Rick Jones | 2010-07-14 13:17:24 [-0700]:
->
->>There is an effort under way, lead by some folks at Google and
->>including some others, to get the RFC's enhanced in support of the
->>concept of larger initial congestion windows.  Some of the discussion
->>may be in the "tcpm" mailing list (assuming I've not gotten my
->>mailing lists confused).  There may be some previous discussion of
->>that work in the netdev archives as well.
->
-> tcpm is the right mailing list but there is currently no effort to develop
-> this topic. Why? Because is not a standardization issue, rather it is a
-> technical issue. You cannot rise the initial CWND and expect a fair behavior.
-> This was discussed several times and is documented in several documents and
-> RFCs.
->
-> RFC 5681 Section 3.1. Google employees should start with Section 3. This topic
-> pop's of every two months in netdev and until now I _never_ read a
-> consolidated contribution.
->
+On Wed, Jul 14, 2010 at 05:40:27PM -0700, Eric W. Biederman wrote:
+> Andrew Morton <akpm@linux-foundation.org> writes:
+> 
+> > On Fri, 9 Jul 2010 11:54:50 -0700
+> > Greg Kroah-Hartman <gregkh@suse.de> wrote:
+> >
+> >> This is no longer needed by any userspace tools, so it's safe to
+> >> remove.
+> >
+> > Makes my FC6 test box not boot - can't find /dev/root.  Then when I go
+> > back to plain old mainline (2.6.35-rc5) and run `make oldconfig', the
+> > .config change sticks:
+> >
+> > @@ -106,8 +106,7 @@
+> >  CONFIG_LOG_BUF_SHIFT=17
+> >  CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+> >  # CONFIG_CGROUPS is not set
+> > -CONFIG_SYSFS_DEPRECATED=y
+> > -CONFIG_SYSFS_DEPRECATED_V2=y
+> > +# CONFIG_SYSFS_DEPRECATED_V2 is not set
+> >  CONFIG_RELAY=y
+> >  CONFIG_NAMESPACES=y
+> >  # CONFIG_UTS_NS is not set
+> >
+> > and the box still won't boot.
+> 
+> The reason FC6 doesn't boot is there is a userspace tool
+> I believe in the initrd that cares about symlinks when it should
+> not.
 
-There is an Internet draft
-(http://datatracker.ietf.org/doc/draft-hkchu-tcpm-initcwnd/) on
-raising the default Initial Congestion window to 10 segments, as well
-as a SIGCOMM paper (http://ccr.sigcomm.org/online/?q=node/621).  We
-presented this proposal and data supporting it at Anaheim IETF, and
-will be following up in Netherlands with more data including some of
-which should further address fairness questions.
+Anyone happen to know which tool it is?  I remember we had had issues
+with FC3 around this area, but I thought we resolved them, so it's
+supprising to me that FC6 has issues.
 
-In terms of Linux implementation, setting ICW via ip route is
-sufficient support on the server side.  There is also a proposed patch
-which could allow applications to set ICW themselves (in hopes that
-application can reduce number of simultaneous connections).  On the
-client side we can now adjust the receive window to advertise larger
-initial windows.  Among current implementations, Linux advertises the
-smallest default receive window of major OSes, so it turns out Linux
-clients won't get lower latency benefits currently (so we'll probably
-ask to raise the default some day :-)).
+> What is more interesting is that currently there is a bug in
+> 2.6.35-rc5 where rmmod <netdriver> modprobe <netdriver> will in fact
+> fail.  There was an inadvertent regression and no one has noticed or
+> complained.  I spotted it by code review just a little bit ago and I
+> haven't had a chance to write and test the fix yet.
+> 
+> If the code is going to start bitrotting and no one is going to
+> notice or care simply removing the code instead of subjecting users
+> to weird unexpected breakage seems like a responsible thing to do.
 
-Tom
+Yeah, that's what prompted this removal.  After the s390 guys said that
+they were all good to go, I figured no one else would have problems with
+it :)
 
-> Partial local issues can already be "fixed" via route specific ip options -
-> see initcwnd.
->
-> HGN
->
->
->
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe netdev" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+If it turns out there still are issues with older userspaces like FC6
+that we can't resolve, I have no problem dropping this patch and then we
+will have to fix up the regression.
+
+thanks,
+
+greg k-h
