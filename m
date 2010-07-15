@@ -1,38 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934659Ab0GOVsv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 17:48:51 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:59565 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934092Ab0GOVsu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 17:48:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=JBk9+dWKeM9Gl4UcRvI6XUL+dmUNw9cfymz9vel4rFJyg6KhY1Ah2YRkFnp7CauA7V
-         RLtKwZ/aSrGeD6syG/7kTpXjfKxDXFH+vcPBRodQFj5ZDON7w7iQOtKVupm1o1RQs7Uy
-         uc6DHUoyqOfQ3klVIBZrP0SUEdeMlVMDFFIbs=
+	id S934743Ab0GOVw6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 17:52:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58588 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934092Ab0GOVw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 17:52:57 -0400
+Date: Thu, 15 Jul 2010 17:52:50 -0400
+From: Dave Jones <davej@redhat.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+Subject: Re: Make CONFIG_DEBUG_RODATA boot-time configurable
+Message-ID: <20100715215249.GB19664@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Randy Dunlap <randy.dunlap@oracle.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+References: <20100715210944.GA24961@redhat.com>
+ <20100715143525.987dc8f4.randy.dunlap@oracle.com>
 MIME-Version: 1.0
-Date: Thu, 15 Jul 2010 16:48:48 -0500
-Message-ID: <AANLkTilDmFF4IN1Glo_Bv_-eBX1jcdi7JDToeIbvToC8@mail.gmail.com>
-Subject: anonymous mmap() and random heap allocation
-From: Xianghua Xiao <xiaoxianghua@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100715143525.987dc8f4.randy.dunlap@oracle.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems mmap() can not do random allocation for malloc()/heap on
-Linux, anyone used pax's 'mmap randonness' option for that? what's the
-price for that?
+On Thu, Jul 15, 2010 at 02:35:25PM -0700, Randy Dunlap wrote:
+ 
+ > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+ > > index 4ddb58d..1320d80 100644
+ > > --- a/Documentation/kernel-parameters.txt
+ > > +++ b/Documentation/kernel-parameters.txt
+ > > @@ -651,6 +651,10 @@ and is between 256 and 4096 characters. It is defined in the file
+ > >  			MTRR settings.  This parameter disables that behavior,
+ > >  			possibly causing your machine to run very slowly.
+ > >  
+ > > +	disable_rodata [X86]
+ > 
+ > What is X86-specific about this boot option?
 
-I want to port openbsd's malloc() to linux to avoid heap
-crashes(overrun/underrun), openbsd's malloc() can do random allocation
-for security reasons, meanwhile it helps to avoid some
-overrun/underrun crashes with no extra cost, the latter is what I'm
-looking for.
+Just hadn't realized that other archs had implemented it.
 
-thanks,
-xianghua
+	Dave
+
