@@ -1,33 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758600Ab0GOPpw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 11:45:52 -0400
-Received: from mtagate5.de.ibm.com ([195.212.17.165]:50973 "EHLO
-	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753692Ab0GOPpu (ORCPT
+	id S1758620Ab0GOPpz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 11:45:55 -0400
+Received: from mtagate3.de.ibm.com ([195.212.17.163]:35264 "EHLO
+	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab0GOPpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 15 Jul 2010 11:45:50 -0400
-Message-Id: <20100715153410.774329000@de.ibm.com>
+Message-Id: <20100715154547.485829000@de.ibm.com>
 User-Agent: quilt/0.47-1
-Date: Thu, 15 Jul 2010 17:34:10 +0200
+Date: Thu, 15 Jul 2010 17:34:11 +0200
 From: Christof Schmitt <christof.schmitt@de.ibm.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [patch 0/1] Apply segment size and segment boundary to integrity data
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Christof Schmitt <christof.schmitt@de.ibm.com>
+Subject: [patch 1/1] block: Apply segment size and boundary limits to integrity data
+References: <20100715153410.774329000@de.ibm.com>
+Content-Disposition: inline; filename=linux-2.6.34-blk-integrity-fix.diff
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-While experimenting with the data integrity support in the Linux
-kernel, i found that the block layer integrity code can send integrity
-data segments for a request that do not adhere to the queue limits. 
-The integrity data segment can be larger than queue_max_segment_size
-and the segment does not adhere to the queue_segment_boundary.
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
 
-It appears to me that the right way would be to apply the same
-restrictions that are in place for data segments also to integrity
-data segments. The patch works for my experiments and applies on top
-of the current Linux tree (2.6.35-rc5).
+Apply the conditions used in __blk_recalc_rq_segments also to
+integrity data: Adhere to the maximum segment size and the segment
+boundary set by the driver. Without this change, a driver would
+receive integrity data blocks that do not adhere to the limits set for
+the request queue.
 
-Christof
+Signed-off-by: Christof Schmitt <christof.schmitt@de.ibm.com>
+---
+ block/blk-integrity.c |   18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+--- a/block/blk-integrity.c
++++ b/block/blk-integrity.c
+@@ -41,15 +41,22 @@ int blk_rq_count_integrity_sg(struct req
+ {
+ 	struct bio_vec *iv, *ivprv;
+ 	struct req_iterator iter;
+-	unsigned int segments;
++	unsigned int segments, seg_size;
+ 
+ 	ivprv = NULL;
+ 	segments = 0;
++	seg_size = 0;
+ 
+ 	rq_for_each_integrity_segment(iv, rq, iter) {
+ 
+-		if (!ivprv || !BIOVEC_PHYS_MERGEABLE(ivprv, iv))
++		if (!ivprv ||
++		    !BIOVEC_PHYS_MERGEABLE(ivprv, iv) ||
++		    seg_size + iv->bv_len > queue_max_segment_size(rq->q) ||
++		    !BIOVEC_SEG_BOUNDARY(rq->q, ivprv, iv)) {
+ 			segments++;
++			seg_size = iv->bv_len;
++		} else
++			seg_size += iv->bv_len;
+ 
+ 		ivprv = iv;
+ 	}
+@@ -81,9 +88,16 @@ int blk_rq_map_integrity_sg(struct reque
+ 	rq_for_each_integrity_segment(iv, rq, iter) {
+ 
+ 		if (ivprv) {
++			if (sg->length + iv->bv_len
++				    > queue_max_segment_size(rq->q))
++				goto new_segment;
++
+ 			if (!BIOVEC_PHYS_MERGEABLE(ivprv, iv))
+ 				goto new_segment;
+ 
++			if (!BIOVEC_SEG_BOUNDARY(rq->q, ivprv, iv))
++				goto new_segment;
++
+ 			sg->length += iv->bv_len;
+ 		} else {
+ new_segment:
+
