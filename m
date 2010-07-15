@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934743Ab0GOVw6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 17:52:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58588 "EHLO mx1.redhat.com"
+	id S934819Ab0GOVxh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 17:53:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48226 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934092Ab0GOVw5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 17:52:57 -0400
-Date: Thu, 15 Jul 2010 17:52:50 -0400
-From: Dave Jones <davej@redhat.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
-Subject: Re: Make CONFIG_DEBUG_RODATA boot-time configurable
-Message-ID: <20100715215249.GB19664@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Randy Dunlap <randy.dunlap@oracle.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
-References: <20100715210944.GA24961@redhat.com>
- <20100715143525.987dc8f4.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100715143525.987dc8f4.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S933589Ab0GOVxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 17:53:36 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <201007152235.22373.arnd@arndb.de>
+References: <201007152235.22373.arnd@arndb.de> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
+Date: Thu, 15 Jul 2010 22:53:27 +0100
+Message-ID: <30646.1279230807@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 02:35:25PM -0700, Randy Dunlap wrote:
- 
- > > diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
- > > index 4ddb58d..1320d80 100644
- > > --- a/Documentation/kernel-parameters.txt
- > > +++ b/Documentation/kernel-parameters.txt
- > > @@ -651,6 +651,10 @@ and is between 256 and 4096 characters. It is defined in the file
- > >  			MTRR settings.  This parameter disables that behavior,
- > >  			possibly causing your machine to run very slowly.
- > >  
- > > +	disable_rodata [X86]
- > 
- > What is X86-specific about this boot option?
+Arnd Bergmann <arnd@arndb.de> wrote:
 
-Just hadn't realized that other archs had implemented it.
+> > This was initially proposed as a set of xattrs, but the general preferance
+> > is for an extended stat structure.
+> 
+> I don't think I'd call this general preference. Three of the four
+> are fixed length and could easily be done inside the structure if you
+> leave a bit of space instead of a variable-length field at the end.
 
-	Dave
+?
 
+Maybe I wasn't clear: I meant having an extended stat() syscall rather than
+using a bunch of getxattr()'s was the general preference.
+
+> For the volume id, I could not find any file system that requires more
+> than 32 bytes here, which is also reasonable to put into the structure.
+> Make it 36 if you want to cover ascii encoded UUIDs.
+
+You should also include a length.  Volume IDs may be binary rather than
+NUL-terminated strings.
+
+> That's at most 60 bytes for the extensions you're considering already,
+> plus the 152
+
+160, I think.
+
+> you have already is still less than a cache line on
+> some machines. Padding it to 256 bytes would make it nice and round,
+> if you want to be really sure, make it 384 bytes.
+
+Which we currently allocate on the kernel stack, plus up to a couple of kstat
+structs if something like eCryptFS is used.  Admittedly, the base xstat struct
+could be kmalloc()'d instead, but why use up all that space if you don't need
+it?
+
+David
