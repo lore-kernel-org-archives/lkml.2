@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758035Ab0GOAoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 20:44:20 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57044 "EHLO
+	id S932082Ab0GOApu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 20:45:50 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:57148 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757971Ab0GOAoL (ORCPT
+	with ESMTP id S1758019Ab0GOAoS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 20:44:11 -0400
+	Wed, 14 Jul 2010 20:44:18 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 06/13] AppArmor: policy routines for loading and unpacking policy
-Date: Wed, 14 Jul 2010 17:43:34 -0700
-Message-Id: <1279154621-25868-7-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 08/13] AppArmor: file enforcement routines
+Date: Wed, 14 Jul 2010 17:43:36 -0700
+Message-Id: <1279154621-25868-9-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
 References: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
@@ -20,28 +20,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AppArmor policy is loaded in a platform independent flattened binary
-stream.  Verify and unpack the data converting it to the internal
-format needed for enforcement.
+AppArmor does files enforcement via pathname matching.  Matching is done
+at file open using a dfa match engine.  Permission is against the final
+file object not parent directories, ie. the traversal of directories
+as part of the file match is implicitly allowed.  In the case of nonexistant
+files (creation) permissions are checked against the target file not the
+directory.  eg. In case of creating the file /dir/new, permissions are
+checked against the match /dir/new not against /dir/.
+
+The permissions for matches are currently stored in the dfa accept table,
+but this will change to allow for dfa reuse and also to allow for sharing
+of wider accept states.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- security/apparmor/include/policy_unpack.h |   20 +
- security/apparmor/policy_unpack.c         |  707 +++++++++++++++++++++++++++++
- 2 files changed, 727 insertions(+), 0 deletions(-)
- create mode 100644 security/apparmor/include/policy_unpack.h
- create mode 100644 security/apparmor/policy_unpack.c
+ security/apparmor/file.c         |  483 ++++++++++++++++++++++++++++++++++++++
+ security/apparmor/include/file.h |  224 ++++++++++++++++++
+ 2 files changed, 707 insertions(+), 0 deletions(-)
+ create mode 100644 security/apparmor/file.c
+ create mode 100644 security/apparmor/include/file.h
 
-diff --git a/security/apparmor/include/policy_unpack.h b/security/apparmor/include/policy_unpack.h
+diff --git a/security/apparmor/file.c b/security/apparmor/file.c
 new file mode 100644
-index 0000000..a2dccca
+index 0000000..555b879
 --- /dev/null
-+++ b/security/apparmor/include/policy_unpack.h
-@@ -0,0 +1,20 @@
++++ b/security/apparmor/file.c
+@@ -0,0 +1,483 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor policy loading interface function definitions.
++ * This file contains AppArmor mediation of files
 + *
 + * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
@@ -51,726 +59,706 @@ index 0000000..a2dccca
 + * published by the Free Software Foundation, version 2 of the
 + * License.
 + */
-+
-+#ifndef __POLICY_INTERFACE_H
-+#define __POLICY_INTERFACE_H
-+
-+struct aa_profile *aa_unpack(void *udata, size_t size, const char **ns);
-+
-+#endif /* __POLICY_INTERFACE_H */
-diff --git a/security/apparmor/policy_unpack.c b/security/apparmor/policy_unpack.c
-new file mode 100644
-index 0000000..c9fe375
---- /dev/null
-+++ b/security/apparmor/policy_unpack.c
-@@ -0,0 +1,707 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor functions for unpacking policy loaded from
-+ * userspace.
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ *
-+ * AppArmor uses a serialized binary format for loading policy.
-+ * The policy format is documented in Documentation/???
-+ * All policy is validated before it is used.
-+ */
-+
-+#include <asm/unaligned.h>
-+#include <linux/ctype.h>
-+#include <linux/errno.h>
 +
 +#include "include/apparmor.h"
 +#include "include/audit.h"
-+#include "include/context.h"
++#include "include/file.h"
 +#include "include/match.h"
++#include "include/path.h"
 +#include "include/policy.h"
-+#include "include/policy_unpack.h"
-+#include "include/sid.h"
 +
-+/*
-+ * The AppArmor interface treats data as a type byte followed by the
-+ * actual data.  The interface has the notion of a a named entry
-+ * which has a name (AA_NAME typecode followed by name string) followed by
-+ * the entries typecode and data.  Named types allow for optional
-+ * elements and extensions to be added and tested for without breaking
-+ * backwards compatability.
++struct file_perms nullperms;
++
++
++/**
++ * audit_file_mask - convert mask to owner::other string
++ * @buffer: buffer to write string to (NOT NULL)
++ * @mask: permission mask to convert
++ * @owner: if the mask is for owner or other
 + */
-+
-+enum aa_code {
-+	AA_U8,
-+	AA_U16,
-+	AA_U32,
-+	AA_U64,
-+	AA_NAME,		/* same as string except it is items name */
-+	AA_STRING,
-+	AA_BLOB,
-+	AA_STRUCT,
-+	AA_STRUCTEND,
-+	AA_LIST,
-+	AA_LISTEND,
-+	AA_ARRAY,
-+	AA_ARRAYEND,
-+};
-+
-+/*
-+ * aa_ext is the read of the buffer containing the serialized profile.  The
-+ * data is copied into a kernel buffer in apparmorfs and then handed off to
-+ * the unpack routines.
-+ */
-+struct aa_ext {
-+	void *start;
-+	void *end;
-+	void *pos;		/* pointer to current position in the buffer */
-+	u32 version;
-+};
-+
-+/* audit callback for unpack fields */
-+static void audit_cb(struct audit_buffer *ab, void *va)
++static void audit_file_mask(struct audit_buffer *ab, u32 mask)
 +{
-+	struct common_audit_data *sa = va;
-+	if (sa->aad.iface.target) {
-+		struct aa_profile *name = sa->aad.iface.target;
-+		audit_log_format(ab, " name=");
-+		audit_log_untrustedstring(ab, name->base.hname);
-+	}
-+	if (sa->aad.iface.pos)
-+		audit_log_format(ab, " offset=%ld", sa->aad.iface.pos);
++	char str[10];
++
++	char *m = str;
++
++	if (mask & AA_EXEC_MMAP)
++		*m++ = 'm';
++	if (mask & (MAY_READ | AA_MAY_META_READ))
++		*m++ = 'r';
++	if (mask & (MAY_WRITE | AA_MAY_META_WRITE | AA_MAY_CHMOD |
++		    AA_MAY_CHOWN))
++		*m++ = 'w';
++	else if (mask & MAY_APPEND)
++		*m++ = 'a';
++	if (mask & AA_MAY_CREATE)
++		*m++ = 'c';
++	if (mask & AA_MAY_DELETE)
++		*m++ = 'd';
++	if (mask & AA_MAY_LINK)
++		*m++ = 'l';
++	if (mask & AA_MAY_LOCK)
++		*m++ = 'k';
++	if (mask & MAY_EXEC)
++		*m++ = 'x';
++	*m++ = '\0';
++
++	audit_log_string(ab, str);
 +}
 +
 +/**
-+ * audit_iface - do audit message for policy unpacking/load/replace/remove
-+ * @new: profile if it has been allocated
-+ * @name: name of the profile being manipulated
-+ * @info: any extra info about the failure
-+ * @e: buffer position info
-+ * @error: error code
-+ *
-+ * Returns: %0 or error
++ * file_audit_cb - call back for file specific audit fields
++ * @ab: audit_buffer  (NOT NULL)
++ * @va: audit struct to audit values of  (NOT NULL)
 + */
-+static int audit_iface(struct aa_profile *new, const char *name,
-+		       const char *info, struct aa_ext *e, int error)
++static void file_audit_cb(struct audit_buffer *ab, void *va)
 +{
-+	struct aa_profile *profile = __aa_current_profile();
++	struct common_audit_data *sa = va;
++	uid_t fsuid = current_fsuid();
++
++	if (sa->aad.fs.request & AA_AUDIT_FILE_MASK) {
++		audit_log_format(ab, " requested_mask=");
++		audit_file_mask(ab, sa->aad.fs.request);
++	}
++	if (sa->aad.fs.denied & AA_AUDIT_FILE_MASK) {
++		audit_log_format(ab, " denied_mask=");
++		audit_file_mask(ab, sa->aad.fs.denied);
++	}
++	if (sa->aad.fs.request & AA_AUDIT_FILE_MASK) {
++		audit_log_format(ab, " fsuid=%d", fsuid);
++		audit_log_format(ab, " ouid=%d", sa->aad.fs.ouid);
++	}
++
++	if (sa->aad.fs.target) {
++		audit_log_format(ab, " target=");
++		audit_log_untrustedstring(ab, sa->aad.fs.target);
++	}
++}
++
++/**
++ * aa_audit_file - handle the auditing of file operations
++ * @profile: the profile being enforced  (NOT NULL)
++ * @perms: the permissions computed for the request (NOT NULL)
++ * @gfp: allocation flags
++ * @op: operation being mediated
++ * @request: permissions requested
++ * @name: name of object being mediated (MAYBE NULL)
++ * @target: name of target (MAYBE NULL)
++ * @ouid: object uid
++ * @info: extra information message (MAYBE NULL)
++ * @error: 0 if operation allowed else failure error code
++ * Returns: %0 or error on failure
++ */
++int aa_audit_file(struct aa_profile *profile, struct file_perms *perms,
++		  gfp_t gfp, int op, u32 request, const char *name,
++		  const char *target, uid_t ouid, const char *info, int error)
++{
++	int type = AUDIT_APPARMOR_AUTO;
 +	struct common_audit_data sa;
 +	COMMON_AUDIT_DATA_INIT_NONE(&sa);
-+	sa.aad.iface.pos = e->pos - e->start;
-+	sa.aad.iface.target = new;
++	sa.aad.op = op,
++	sa.aad.fs.request = request;
 +	sa.aad.name = name;
++	sa.aad.fs.target = target;
++	sa.aad.fs.ouid = ouid;
 +	sa.aad.info = info;
 +	sa.aad.error = error;
 +
-+	return aa_audit(AUDIT_APPARMOR_STATUS, profile, GFP_KERNEL, &sa,
-+			audit_cb);
-+}
++	if (likely(!sa.aad.error)) {
++		u32 mask = perms->audit;
 +
-+/* test if read will be in packed data bounds */
-+static bool inbounds(struct aa_ext *e, size_t size)
-+{
-+	return (size <= e->end - e->pos);
-+}
++		if (unlikely(AUDIT_MODE(profile) == AUDIT_ALL))
++			mask = 0xffff;
 +
-+/**
-+ * aa_u16_chunck - test and do bounds checking for a u16 size based chunk
-+ * @e: serialized data read head
-+ * @chunk: start address for chunk of data
-+ *
-+ * Returns: the size of chunk found with the read head at the end of the chunk.
-+ */
-+static size_t unpack_u16_chunk(struct aa_ext *e, char **chunk)
-+{
-+	size_t size = 0;
++		/* mask off perms that are not being force audited */
++		sa.aad.fs.request &= mask;
 +
-+	if (!inbounds(e, sizeof(u16)))
-+		return 0;
-+	size = le16_to_cpu(get_unaligned((u16 *) e->pos));
-+	e->pos += sizeof(u16);
-+	if (!inbounds(e, size))
-+		return 0;
-+	*chunk = e->pos;
-+	e->pos += size;
-+	return size;
-+}
++		if (likely(!sa.aad.fs.request))
++			return 0;
++		type = AUDIT_APPARMOR_AUDIT;
++	} else {
++		/* only report permissions that were denied */
++		sa.aad.fs.request = sa.aad.fs.request & ~perms->allow;
 +
-+/* unpack control byte */
-+static bool unpack_X(struct aa_ext *e, enum aa_code code)
-+{
-+	if (!inbounds(e, 1))
-+		return 0;
-+	if (*(u8 *) e->pos != code)
-+		return 0;
-+	e->pos++;
-+	return 1;
++		if (sa.aad.fs.request & perms->kill)
++			type = AUDIT_APPARMOR_KILL;
++
++		/* quiet known rejects, assumes quiet and kill do not overlap */
++		if ((sa.aad.fs.request & perms->quiet) &&
++		    AUDIT_MODE(profile) != AUDIT_NOQUIET &&
++		    AUDIT_MODE(profile) != AUDIT_ALL)
++			sa.aad.fs.request &= ~perms->quiet;
++
++		if (!sa.aad.fs.request)
++			return COMPLAIN_MODE(profile) ? 0 : sa.aad.error;
++	}
++
++	sa.aad.fs.denied = sa.aad.fs.request & ~perms->allow;
++	return aa_audit(type, profile, gfp, &sa, file_audit_cb);
 +}
 +
 +/**
-+ * unpack_nameX - check is the next element is of type X with a name of @name
-+ * @e: serialized data extent information  (NOT NULL)
-+ * @code: type code
-+ * @name: name to match to the serialized element.  (MAYBE NULL)
++ * map_old_perms - map old file perms layout to the new layout
++ * @old: permission set in old mapping
 + *
-+ * check that the next serialized data element is of type X and has a tag
-+ * name @name.  If @name is specified then there must be a matching
-+ * name element in the stream.  If @name is NULL any name element will be
-+ * skipped and only the typecode will be tested.
-+ * returns 1 on success (both type code and name tests match) and the read
-+ * head is advanced past the headers
-+ *
-+ * Returns: 0 if either match failes, the read head does not move
++ * Returns: new permission mapping
 + */
-+static bool unpack_nameX(struct aa_ext *e, enum aa_code code, const char *name)
++static u32 map_old_perms(u32 old)
 +{
-+	/*
-+	 * May need to reset pos if name or type doesn't match
++	u32 new = old & 0xf;
++	if (old & MAY_READ)
++		new |= AA_MAY_META_READ;
++	if (old & MAY_WRITE)
++		new |= AA_MAY_META_WRITE | AA_MAY_CREATE | AA_MAY_DELETE |
++			AA_MAY_CHMOD | AA_MAY_CHOWN;
++	if (old & 0x10)
++		new |= AA_MAY_LINK;
++	/* the old mapping lock and link_subset flags where overlaid
++	 * and use was determined by part of a pair that they were in
 +	 */
-+	void *pos = e->pos;
-+	/*
-+	 * Check for presence of a tagname, and if present name size
-+	 * AA_NAME tag value is a u16.
++	if (old & 0x20)
++		new |= AA_MAY_LOCK | AA_LINK_SUBSET;
++	if (old & 0x40)	/* AA_EXEC_MMAP */
++		new |= AA_EXEC_MMAP;
++
++	return new;
++}
++
++/**
++ * compute_perms - convert dfa compressed perms to internal perms
++ * @dfa: dfa to compute perms for   (NOT NULL)
++ * @state: state in dfa
++ * @cond:  conditions to consider  (NOT NULL)
++ *
++ * TODO: convert from dfa + state to permission entry, do computation conversion
++ *       at load time.
++ *
++ * Returns: computed permission set
++ */
++static struct file_perms compute_perms(struct aa_dfa *dfa, unsigned int state,
++				       struct path_cond *cond)
++{
++	struct file_perms perms;
++
++	/* FIXME: change over to new dfa format
++	 * currently file perms are encoded in the dfa, new format
++	 * splits the permissions from the dfa.  This mapping can be
++	 * done at profile load
 +	 */
-+	if (unpack_X(e, AA_NAME)) {
-+		char *tag = NULL;
-+		size_t size = unpack_u16_chunk(e, &tag);
-+		/* if a name is specified it must match. otherwise skip tag */
-+		if (name && (!size || strcmp(name, tag)))
-+			goto fail;
-+	} else if (name) {
-+		/* if a name is specified and there is no name tag fail */
-+		goto fail;
++	perms.kill = 0;
++	perms.dindex = 0;
++
++	if (current_fsuid() == cond->uid) {
++		perms.allow = map_old_perms(dfa_user_allow(dfa, state));
++		perms.audit = map_old_perms(dfa_user_audit(dfa, state));
++		perms.quiet = map_old_perms(dfa_user_quiet(dfa, state));
++		perms.xindex = dfa_user_xindex(dfa, state);
++	} else {
++		perms.allow = map_old_perms(dfa_other_allow(dfa, state));
++		perms.audit = map_old_perms(dfa_other_audit(dfa, state));
++		perms.quiet = map_old_perms(dfa_other_quiet(dfa, state));
++		perms.xindex = dfa_other_xindex(dfa, state);
 +	}
 +
-+	/* now check if type code matches */
-+	if (unpack_X(e, code))
++	/* change_profile wasn't determined by ownership in old mapping */
++	if (ACCEPT_TABLE(dfa)[state] & 0x80000000)
++		perms.allow |= AA_MAY_CHANGE_PROFILE;
++
++	return perms;
++}
++
++/**
++ * aa_str_perms - find permission that match @name
++ * @dfa: to match against  (NOT NULL)
++ * @state: state to start matching in
++ * @name: string to match against dfa  (NOT NULL)
++ * @cond: conditions to consider for permission set computation  (NOT NULL)
++ * @perms: Returns - the permissions found when matching @name
++ *
++ * Returns: the final state in @dfa when beginning @start and walking @name
++ */
++unsigned int aa_str_perms(struct aa_dfa *dfa, unsigned int start,
++			  const char *name, struct path_cond *cond,
++			  struct file_perms *perms)
++{
++	unsigned int state;
++	if (!dfa) {
++		*perms = nullperms;
++		return DFA_NOMATCH;
++	}
++
++	state = aa_dfa_match(dfa, start, name);
++	*perms = compute_perms(dfa, state, cond);
++
++	return state;
++}
++
++/**
++ * aa_pathstr_perm - do permission check & audit for @name
++ * @op: operation being checked
++ * @profile: profile being enforced  (NOT NULL)
++ * @name: path string to check permission for  (NOT NULL)
++ * @request: requested permissions
++ * @cond: conditional info for this request  (NOT NULL)
++ *
++ * Do permission check for paths that are predefined.  This fn will
++ * be removed once security_sysctl goes away.
++ *
++ * Returns: %0 else error if access denied or other error
++ */
++int aa_pathstr_perm(int op, struct aa_profile *profile, const char *name,
++		    u32 request, struct path_cond *cond)
++{
++	struct file_perms perms = { };
++	int error = 0;
++
++	aa_str_perms(profile->file.dfa, profile->file.start, name, cond,
++		     &perms);
++	if (request & ~perms.allow)
++		error = -EACCES;
++	return aa_audit_file(profile, &perms, GFP_KERNEL, op, request, name,
++			     NULL, cond->uid, NULL, error);
++}
++
++/**
++ * is_deleted - test if a file has been completely unlinked
++ * @dentry: dentry of file to test for deletion  (NOT NULL)
++ *
++ * Returns: %1 if deleted else %0
++ */
++static inline bool is_deleted(struct dentry *dentry)
++{
++	if (d_unlinked(dentry) && dentry->d_inode->i_nlink == 0)
 +		return 1;
-+
-+fail:
-+	e->pos = pos;
-+	return 0;
-+}
-+
-+static bool unpack_u16(struct aa_ext *e, u16 *data, const char *name)
-+{
-+	if (unpack_nameX(e, AA_U16, name)) {
-+		if (!inbounds(e, sizeof(u16)))
-+			return 0;
-+		if (data)
-+			*data = le16_to_cpu(get_unaligned((u16 *) e->pos));
-+		e->pos += sizeof(u16);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+static bool unpack_u32(struct aa_ext *e, u32 *data, const char *name)
-+{
-+	if (unpack_nameX(e, AA_U32, name)) {
-+		if (!inbounds(e, sizeof(u32)))
-+			return 0;
-+		if (data)
-+			*data = le32_to_cpu(get_unaligned((u32 *) e->pos));
-+		e->pos += sizeof(u32);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+static bool unpack_u64(struct aa_ext *e, u64 *data, const char *name)
-+{
-+	if (unpack_nameX(e, AA_U64, name)) {
-+		if (!inbounds(e, sizeof(u64)))
-+			return 0;
-+		if (data)
-+			*data = le64_to_cpu(get_unaligned((u64 *) e->pos));
-+		e->pos += sizeof(u64);
-+		return 1;
-+	}
-+	return 0;
-+}
-+
-+static size_t unpack_array(struct aa_ext *e, const char *name)
-+{
-+	if (unpack_nameX(e, AA_ARRAY, name)) {
-+		int size;
-+		if (!inbounds(e, sizeof(u16)))
-+			return 0;
-+		size = (int)le16_to_cpu(get_unaligned((u16 *) e->pos));
-+		e->pos += sizeof(u16);
-+		return size;
-+	}
-+	return 0;
-+}
-+
-+static size_t unpack_blob(struct aa_ext *e, char **blob, const char *name)
-+{
-+	if (unpack_nameX(e, AA_BLOB, name)) {
-+		u32 size;
-+		if (!inbounds(e, sizeof(u32)))
-+			return 0;
-+		size = le32_to_cpu(get_unaligned((u32 *) e->pos));
-+		e->pos += sizeof(u32);
-+		if (inbounds(e, (size_t) size)) {
-+			*blob = e->pos;
-+			e->pos += size;
-+			return size;
-+		}
-+	}
-+	return 0;
-+}
-+
-+static int unpack_str(struct aa_ext *e, const char **string, const char *name)
-+{
-+	char *src_str;
-+	size_t size = 0;
-+	void *pos = e->pos;
-+	*string = NULL;
-+	if (unpack_nameX(e, AA_STRING, name)) {
-+		size = unpack_u16_chunk(e, &src_str);
-+		if (size) {
-+			/* strings are null terminated, length is size - 1 */
-+			if (src_str[size - 1] != 0)
-+				goto fail;
-+			*string = src_str;
-+		}
-+	}
-+	return size;
-+
-+fail:
-+	e->pos = pos;
-+	return 0;
-+}
-+
-+static int unpack_strdup(struct aa_ext *e, char **string, const char *name)
-+{
-+	const char *tmp;
-+	void *pos = e->pos;
-+	int res = unpack_str(e, &tmp, name);
-+	*string = NULL;
-+
-+	if (!res)
-+		return 0;
-+
-+	*string = kmemdup(tmp, res, GFP_KERNEL);
-+	if (!*string) {
-+		e->pos = pos;
-+		return 0;
-+	}
-+
-+	return res;
-+}
-+
-+static bool verify_accept(struct aa_dfa *dfa, int flags)
-+{
-+	int i;
-+
-+	/* verify accept permissions */
-+	for (i = 0; i < dfa->tables[YYTD_ID_ACCEPT]->td_lolen; i++) {
-+		int mode = ACCEPT_TABLE(dfa)[i];
-+
-+		if (mode & ~DFA_VALID_PERM_MASK)
-+			return 0;
-+
-+		if (ACCEPT_TABLE2(dfa)[i] & ~DFA_VALID_PERM2_MASK)
-+			return 0;
-+	}
-+	return 1;
-+}
-+
-+/**
-+ * unpack_dfa - unpack a file rule dfa
-+ * @e: serialized data extent information
-+ *
-+ * returns dfa or ERR_PTR or NULL if no dfa
-+ */
-+static struct aa_dfa *unpack_dfa(struct aa_ext *e)
-+{
-+	char *blob = NULL;
-+	size_t size;
-+	struct aa_dfa *dfa = NULL;
-+
-+	size = unpack_blob(e, &blob, "aadfa");
-+	if (size) {
-+		/*
-+		 * The dfa is aligned with in the blob to 8 bytes
-+		 * from the beginning of the stream.
-+		 */
-+		size_t sz = blob - (char *)e->start;
-+		size_t pad = ALIGN(sz, 8) - sz;
-+		int flags = TO_ACCEPT1_FLAG(YYTD_DATA32) |
-+			TO_ACCEPT2_FLAG(YYTD_DATA32);
-+
-+
-+		if (aa_g_paranoid_load)
-+			flags |= DFA_FLAG_VERIFY_STATES;
-+
-+		dfa = aa_dfa_unpack(blob + pad, size - pad, flags);
-+
-+		if (IS_ERR(dfa))
-+			return dfa;
-+
-+		if (!verify_accept(dfa, flags))
-+			goto fail;
-+	}
-+
-+	return dfa;
-+
-+fail:
-+	aa_put_dfa(dfa);
-+	return ERR_PTR(-EPROTO);
-+}
-+
-+static bool unpack_trans_table(struct aa_ext *e, struct aa_profile *profile)
-+{
-+	void *pos = e->pos;
-+
-+	/* exec table is optional */
-+	if (unpack_nameX(e, AA_STRUCT, "xtable")) {
-+		int i, size;
-+
-+		size = unpack_array(e, NULL);
-+		/* currently 4 exec bits and entries 0-3 are reserved iupcx */
-+		if (size > 16 - 4)
-+			goto fail;
-+		profile->file.trans.table = kzalloc(sizeof(char *) * size,
-+						    GFP_KERNEL);
-+		if (!profile->file.trans.table)
-+			goto fail;
-+
-+		profile->file.trans.size = size;
-+		for (i = 0; i < size; i++) {
-+			char *str;
-+			int c, j, size = unpack_strdup(e, &str, NULL);
-+			if (!size)
-+				goto fail;
-+			profile->file.trans.table[i] = str;
-+			/* verify that name doesn't start with space */
-+			if (isspace(*str))
-+				goto fail;
-+
-+			/* count internal #  of internal \0 */
-+			for (c = j = 0; j < size - 2; j++) {
-+				if (!str[j])
-+					c++;
-+			}
-+			if (*str == ':') {
-+				/* beginning with : requires an embedded \0 */
-+				if (c != 1)
-+					goto fail;
-+				/* first character after : must be valid */
-+				if (!str[1])
-+					goto fail;
-+			} else if (c)
-+				/* fail - all other cases with embedded \0 */
-+				goto fail;
-+		}
-+		if (!unpack_nameX(e, AA_ARRAYEND, NULL))
-+			goto fail;
-+		if (!unpack_nameX(e, AA_STRUCTEND, NULL))
-+			goto fail;
-+	}
-+	return 1;
-+
-+fail:
-+	aa_free_domain_entries(&profile->file.trans);
-+	e->pos = pos;
-+	return 0;
-+}
-+
-+static bool unpack_rlimits(struct aa_ext *e, struct aa_profile *profile)
-+{
-+	void *pos = e->pos;
-+
-+	/* rlimits are optional */
-+	if (unpack_nameX(e, AA_STRUCT, "rlimits")) {
-+		int i, size;
-+		u32 tmp = 0;
-+		if (!unpack_u32(e, &tmp, NULL))
-+			goto fail;
-+		profile->rlimits.mask = tmp;
-+
-+		size = unpack_array(e, NULL);
-+		if (size > RLIM_NLIMITS)
-+			goto fail;
-+		for (i = 0; i < size; i++) {
-+			u64 tmp = 0;
-+			int a = aa_map_resource(i);
-+			if (!unpack_u64(e, &tmp, NULL))
-+				goto fail;
-+			profile->rlimits.limits[a].rlim_max = tmp;
-+		}
-+		if (!unpack_nameX(e, AA_ARRAYEND, NULL))
-+			goto fail;
-+		if (!unpack_nameX(e, AA_STRUCTEND, NULL))
-+			goto fail;
-+	}
-+	return 1;
-+
-+fail:
-+	e->pos = pos;
 +	return 0;
 +}
 +
 +/**
-+ * unpack_profile - unpack a serialized profile
-+ * @e: serialized data extent information
++ * aa_path_perm - do permissions check & audit for @path
++ * @op: operation being checked
++ * @profile: profile being enforced  (NOT NULL)
++ * @path: path to check permissions of  (NOT NULL)
++ * @flags: any additional path flags beyond what the profile specifies
++ * @request: requested permissions
++ * @cond: conditional info for this request  (NOT NULL)
 + *
-+ * NOTE: unpack profile sets audit struct if there is a failure
++ * Returns: %0 else error if access denied or other error
 + */
-+static struct aa_profile *unpack_profile(struct aa_ext *e)
++int aa_path_perm(int op, struct aa_profile *profile, struct path *path,
++		 int flags, u32 request, struct path_cond *cond)
 +{
-+	struct aa_profile *profile = NULL;
-+	const char *name = NULL, *info = NULL;
-+	int error = -EPROTO;
-+	kernel_cap_t tmpcap;
-+	u32 tmp;
-+	u64 tmp64;
-+
-+	/* check that we have the right struct being passed */
-+	if (!unpack_nameX(e, AA_STRUCT, "profile"))
-+		goto fail;
-+	if (!unpack_str(e, &name, NULL))
-+		goto fail;
-+
-+	profile = aa_alloc_profile(name);
-+	if (!profile)
-+		return ERR_PTR(-ENOMEM);
-+
-+	/* profile renaming is optional */
-+	(void) unpack_str(e, &profile->rename, "rename");
-+
-+	/* xmatch is optional and may be NULL */
-+	profile->xmatch = unpack_dfa(e);
-+	if (IS_ERR(profile->xmatch)) {
-+		error = PTR_ERR(profile->xmatch);
-+		profile->xmatch = NULL;
-+		goto fail;
-+	}
-+	/* xmatch_len is not optional if xmatch is set */
-+	if (profile->xmatch) {
-+		if (!unpack_u32(e, &tmp, NULL))
-+			goto fail;
-+		profile->xmatch_len = tmp;
-+	}
-+
-+	/* per profile debug flags (complain, audit) */
-+	if (!unpack_nameX(e, AA_STRUCT, "flags"))
-+		goto fail;
-+	if (!unpack_u32(e, &tmp, NULL))
-+		goto fail;
-+	if (tmp)
-+		profile->flags |= PFLAG_HAT;
-+	if (!unpack_u32(e, &tmp, NULL))
-+		goto fail;
-+	if (tmp)
-+		profile->mode = APPARMOR_COMPLAIN;
-+	if (!unpack_u32(e, &tmp, NULL))
-+		goto fail;
-+	if (tmp)
-+		profile->audit = AUDIT_ALL;
-+
-+	if (!unpack_nameX(e, AA_STRUCTEND, NULL))
-+		goto fail;
-+
-+	/* path_flags is optional */
-+	if (unpack_u32(e, &profile->path_flags, "path_flags"))
-+		profile->path_flags |= profile->flags & PFLAG_MEDIATE_DELETED;
-+	else
-+		/* set a default value if path_flags field is not present */
-+		profile->path_flags = PFLAG_MEDIATE_DELETED;
-+
-+	/* mmap_min_addr is optional */
-+	if (unpack_u64(e, &tmp64, "mmap_min_addr")) {
-+		profile->mmap_min_addr = (unsigned long)tmp64;
-+		if (((u64) profile->mmap_min_addr) == tmp64) {
-+			profile->flags |= PFLAG_MMAP_MIN_ADDR;
-+		} else {
-+			info = "invalid set mmap_min_addr";
-+			goto fail;
-+		}
-+	}
-+
-+	if (!unpack_u32(e, &(profile->caps.allow.cap[0]), NULL))
-+		goto fail;
-+	if (!unpack_u32(e, &(profile->caps.audit.cap[0]), NULL))
-+		goto fail;
-+	if (!unpack_u32(e, &(profile->caps.quiet.cap[0]), NULL))
-+		goto fail;
-+	if (!unpack_u32(e, &tmpcap.cap[0], NULL))
-+		goto fail;
-+
-+	if (unpack_nameX(e, AA_STRUCT, "caps64")) {
-+		/* optional upper half of 64 bit caps */
-+		if (!unpack_u32(e, &(profile->caps.allow.cap[1]), NULL))
-+			goto fail;
-+		if (!unpack_u32(e, &(profile->caps.audit.cap[1]), NULL))
-+			goto fail;
-+		if (!unpack_u32(e, &(profile->caps.quiet.cap[1]), NULL))
-+			goto fail;
-+		if (!unpack_u32(e, &(tmpcap.cap[1]), NULL))
-+			goto fail;
-+		if (!unpack_nameX(e, AA_STRUCTEND, NULL))
-+			goto fail;
-+	}
-+
-+	if (unpack_nameX(e, AA_STRUCT, "capsx")) {
-+		/* optional extended caps mediation mask */
-+		if (!unpack_u32(e, &(profile->caps.extended.cap[0]), NULL))
-+			goto fail;
-+		if (!unpack_u32(e, &(profile->caps.extended.cap[1]), NULL))
-+			goto fail;
-+	}
-+
-+	if (!unpack_rlimits(e, profile))
-+		goto fail;
-+
-+	/* get file rules */
-+	profile->file.dfa = unpack_dfa(e);
-+	if (IS_ERR(profile->file.dfa)) {
-+		error = PTR_ERR(profile->file.dfa);
-+		profile->file.dfa = NULL;
-+		goto fail;
-+	}
-+
-+	if (!unpack_u32(e, &profile->file.start, "dfa_start"))
-+		/* default start state */
-+		profile->file.start = DFA_START;
-+
-+	if (!unpack_trans_table(e, profile))
-+		goto fail;
-+
-+	if (!unpack_nameX(e, AA_STRUCTEND, NULL))
-+		goto fail;
-+
-+	return profile;
-+
-+fail:
-+	if (profile)
-+		name = NULL;
-+	else if (!name)
-+		name = "unknown";
-+	audit_iface(profile, name, "failed to unpack profile", e, error);
-+	aa_put_profile(profile);
-+
-+	return ERR_PTR(error);
-+}
-+
-+/**
-+ * verify_head - unpack serialized stream header
-+ * @e: serialized data read head
-+ * @ns: Returns namespace if one is specified else NULL
-+ *
-+ * Returns: error or 0 if header is good
-+ */
-+static int verify_header(struct aa_ext *e, const char **ns)
-+{
-+	int error = -EPROTONOSUPPORT;
-+	/* get the interface version */
-+	if (!unpack_u32(e, &e->version, "version")) {
-+		audit_iface(NULL, NULL, "invalid profile format", e, error);
-+		return error;
-+	}
-+
-+	/* check that the interface version is currently supported */
-+	if (e->version != 5) {
-+		audit_iface(NULL, NULL, "unsupported interface version", e,
-+			    error);
-+		return error;
-+	}
-+
-+	/* read the namespace if present */
-+	if (!unpack_str(e, ns, "namespace"))
-+		*ns = NULL;
-+
-+	return 0;
-+}
-+
-+/**
-+ * verify_profile - Do post unpack analysis to verify profile consistency
-+ * @profile: profile to verify
-+ *
-+ * Returns: 0 if passes verification else error
-+ */
-+static bool verify_xindex(int xindex, int table_size)
-+{
-+	int index, xtype;
-+	xtype = xindex & AA_X_TYPE_MASK;
-+	index = xindex & AA_X_INDEX_MASK;
-+	if (xtype == AA_X_TABLE && index > table_size)
-+		return 0;
-+	return 1;
-+}
-+
-+/* verify dfa xindexes are in range of transition tables */
-+static bool verify_dfa_xindex(struct aa_dfa *dfa, int table_size)
-+{
-+	int i;
-+	for (i = 0; i < dfa->tables[YYTD_ID_ACCEPT]->td_lolen; i++) {
-+		if (!verify_xindex(dfa_user_xindex(dfa, i), table_size))
-+			return 0;
-+		if (!verify_xindex(dfa_other_xindex(dfa, i), table_size))
-+			return 0;
-+	}
-+	return 1;
-+}
-+
-+static int verify_profile(struct aa_profile *profile)
-+{
-+	if (aa_g_paranoid_load) {
-+		if (profile->file.dfa &&
-+		    !verify_dfa_xindex(profile->file.dfa,
-+				       profile->file.trans.size)) {
-+			audit_iface(profile, NULL, "Invalid named transition",
-+				    NULL, -EPROTO);
-+			return -EPROTO;
-+		}
-+	}
-+
-+	return 0;
-+}
-+
-+/**
-+ * aa_unpack - unpack packed binary profile data loaded from user space
-+ * @udata: user data copied to kmem  (NOT NULL)
-+ * @size: the size of the user data
-+ * @ns: Returns namespace profile is in if specified else NULL
-+ *
-+ * Unpack user data and return refcounted allocated profile or ERR_PTR
-+ *
-+ * Returns: profile else error pointer if fails to unpack
-+ */
-+struct aa_profile *aa_unpack(void *udata, size_t size, const char **ns)
-+{
-+	struct aa_profile *profile = NULL;
++	char *buffer = NULL;
++	struct file_perms perms = {};
++	const char *name, *info = NULL;
 +	int error;
-+	struct aa_ext e = {
-+		.start = udata,
-+		.end = udata + size,
-+		.pos = udata,
++
++	flags |= profile->path_flags | (S_ISDIR(cond->mode) ? PATH_IS_DIR : 0);
++	error = aa_get_name(path, flags, &buffer, &name);
++	if (error) {
++		if (error == -ENOENT && is_deleted(path->dentry)) {
++			/* Access to open files that are deleted are
++			 * give a pass (implicit delegation)
++			 */
++			error = 0;
++			perms.allow = request;
++		} else if (error == -ENOENT)
++			info = "Failed name lookup - deleted entry";
++		else if (error == -ESTALE)
++			info = "Failed name lookup - disconnected path";
++		else if (error == -ENAMETOOLONG)
++			info = "Failed name lookup - name too long";
++		else
++			info = "Failed name lookup";
++	} else {
++		aa_str_perms(profile->file.dfa, profile->file.start, name, cond,
++			     &perms);
++		if (request & ~perms.allow)
++			error = -EACCES;
++	}
++	error = aa_audit_file(profile, &perms, GFP_KERNEL, op, request, name,
++			      NULL, cond->uid, info, error);
++	kfree(buffer);
++
++	return error;
++}
++
++/**
++ * xindex_is_subset - helper for aa_path_link
++ * @link: link permission set
++ * @target: target permission set
++ *
++ * test target x permissions are equal OR a subset of link x permissions
++ * this is done as part of the subset test, where a hardlink must have
++ * a subset of permissions that the target has.
++ *
++ * Returns: %1 if subset else %0
++ */
++static inline bool xindex_is_subset(u32 link, u32 target)
++{
++	if (((link & ~AA_X_UNSAFE) != (target & ~AA_X_UNSAFE)) ||
++	    ((link & AA_X_UNSAFE) && !(target & AA_X_UNSAFE)))
++		return 0;
++
++	return 1;
++}
++
++/**
++ * aa_path_link - Handle hard link permission check
++ * @profile: the profile being enforced  (NOT NULL)
++ * @old_dentry: the target dentry  (NOT NULL)
++ * @new_dir: directory the new link will be created in  (NOT NULL)
++ * @new_dentry: the link being created  (NOT NULL)
++ *
++ * Handle the permission test for a link & target pair.  Permission
++ * is encoded as a pair where the link permission is determined
++ * first, and if allowed, the target is tested.  The target test
++ * is done from the point of the link match (not start of DFA)
++ * making the target permission dependent on the link permission match.
++ *
++ * The subset test if required forces that permissions granted
++ * on link are a subset of the permission granted to target.
++ *
++ * Returns: %0 if allowed else error
++ */
++int aa_path_link(struct aa_profile *profile, struct dentry *old_dentry,
++		 struct path *new_dir, struct dentry *new_dentry)
++{
++	struct path link = { new_dir->mnt, new_dentry };
++	struct path target = { new_dir->mnt, old_dentry };
++	struct path_cond cond = {
++		old_dentry->d_inode->i_uid,
++		old_dentry->d_inode->i_mode
++	};
++	char *buffer = NULL, *buffer2 = NULL;
++	const char *lname, *tname = NULL, *info = NULL;
++	struct file_perms lperms, perms;
++	u32 request = AA_MAY_LINK;
++	unsigned int state;
++	int error;
++
++	lperms = nullperms;
++
++	/* buffer freed below, lname is pointer in buffer */
++	error = aa_get_name(&link, profile->path_flags, &buffer, &lname);
++	if (error)
++		goto audit;
++
++	/* buffer2 freed below, tname is pointer in buffer2 */
++	error = aa_get_name(&target, profile->path_flags, &buffer2, &tname);
++	if (error)
++		goto audit;
++
++	error = -EACCES;
++	/* aa_str_perms - handles the case of the dfa being NULL */
++	state = aa_str_perms(profile->file.dfa, profile->file.start, lname,
++			     &cond, &lperms);
++
++	if (!(lperms.allow & AA_MAY_LINK))
++		goto audit;
++
++	/* test to see if target can be paired with link */
++	state = aa_dfa_null_transition(profile->file.dfa, state);
++	aa_str_perms(profile->file.dfa, state, tname, &cond, &perms);
++
++	/* force audit/quiet masks for link are stored in the second entry
++	 * in the link pair.
++	 */
++	lperms.audit = perms.audit;
++	lperms.quiet = perms.quiet;
++	lperms.kill = perms.kill;
++
++	if (!(perms.allow & AA_MAY_LINK)) {
++		info = "target restricted";
++		goto audit;
++	}
++
++	/* done if link subset test is not required */
++	if (!(perms.allow & AA_LINK_SUBSET))
++		goto done_tests;
++
++	/* Do link perm subset test requiring allowed permission on link are a
++	 * subset of the allowed permissions on target.
++	 */
++	aa_str_perms(profile->file.dfa, profile->file.start, tname, &cond,
++		     &perms);
++
++	/* AA_MAY_LINK is not considered in the subset test */
++	request = lperms.allow & ~AA_MAY_LINK;
++	lperms.allow &= perms.allow | AA_MAY_LINK;
++
++	request |= AA_AUDIT_FILE_MASK & (lperms.allow & ~perms.allow);
++	if (request & ~lperms.allow) {
++		goto audit;
++	} else if ((lperms.allow & MAY_EXEC) &&
++		   !xindex_is_subset(lperms.xindex, perms.xindex)) {
++		lperms.allow &= ~MAY_EXEC;
++		request |= MAY_EXEC;
++		info = "link not subset of target";
++		goto audit;
++	}
++
++done_tests:
++	error = 0;
++
++audit:
++	error = aa_audit_file(profile, &lperms, GFP_KERNEL, OP_LINK, request,
++			      lname, tname, cond.uid, info, error);
++	kfree(buffer);
++	kfree(buffer2);
++
++	return error;
++}
++
++/**
++ * aa_file_perm - do permission revalidation check & audit for @file
++ * @op: operation being checked
++ * @profile: profile being enforced   (NOT NULL)
++ * @file: file to revalidate access permissions on  (NOT NULL)
++ * @request: requested permissions
++ *
++ * Returns: %0 if access allowed else error
++ */
++int aa_file_perm(int op, struct aa_profile *profile, struct file *file,
++		 u32 request)
++{
++	struct path_cond cond = {
++		.uid = file->f_path.dentry->d_inode->i_uid,
++		.mode = file->f_path.dentry->d_inode->i_mode
 +	};
 +
-+	error = verify_header(&e, ns);
-+	if (error)
-+		return ERR_PTR(error);
++	return aa_path_perm(op, profile, &file->f_path, PATH_DELEGATE_DELETED,
++			    request, &cond);
++}
+diff --git a/security/apparmor/include/file.h b/security/apparmor/include/file.h
+new file mode 100644
+index 0000000..d89ee18
+--- /dev/null
++++ b/security/apparmor/include/file.h
+@@ -0,0 +1,224 @@
++/*
++ * AppArmor security module
++ *
++ * This file contains AppArmor file mediation function definitions.
++ *
++ * Copyright (C) 1998-2008 Novell/SUSE
++ * Copyright 2009-2010 Canonical Ltd.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2 of the
++ * License.
++ */
 +
-+	profile = unpack_profile(&e);
-+	if (IS_ERR(profile))
-+		return profile;
++#ifndef __AA_FILE_H
++#define __AA_FILE_H
 +
-+	error = verify_profile(profile);
-+	if (error) {
-+		aa_put_profile(profile);
-+		profile = ERR_PTR(error);
++#include <linux/path.h>
++
++#include "domain.h"
++#include "match.h"
++
++struct aa_profile;
++
++/*
++ * We use MAY_EXEC, MAY_WRITE, MAY_READ, MAY_APPEND and the following flags
++ * for profile permissions
++ */
++#define AA_MAY_CREATE                  0x0010
++#define AA_MAY_DELETE                  0x0020
++#define AA_MAY_META_WRITE              0x0040
++#define AA_MAY_META_READ               0x0080
++
++#define AA_MAY_CHMOD                   0x0100
++#define AA_MAY_CHOWN                   0x0200
++#define AA_MAY_LOCK                    0x0400
++#define AA_EXEC_MMAP                   0x0800
++
++#define AA_MAY_LINK			0x1000
++#define AA_LINK_SUBSET			AA_MAY_LOCK	/* overlayed */
++#define AA_MAY_ONEXEC			0x40000000	/* exec allows onexec */
++#define AA_MAY_CHANGE_PROFILE		0x80000000
++#define AA_MAY_CHANGEHAT		0x80000000	/* ctrl auditing only */
++
++#define AA_AUDIT_FILE_MASK	(MAY_READ | MAY_WRITE | MAY_EXEC | MAY_APPEND |\
++				 AA_MAY_CREATE | AA_MAY_DELETE |	\
++				 AA_MAY_META_READ | AA_MAY_META_WRITE | \
++				 AA_MAY_CHMOD | AA_MAY_CHOWN | AA_MAY_LOCK | \
++				 AA_EXEC_MMAP | AA_MAY_LINK)
++
++/*
++ * The xindex is broken into 3 parts
++ * - index - an index into either the exec name table or the variable table
++ * - exec type - which determines how the executable name and index are used
++ * - flags - which modify how the destination name is applied
++ */
++#define AA_X_INDEX_MASK		0x03ff
++
++#define AA_X_TYPE_MASK		0x0c00
++#define AA_X_TYPE_SHIFT		10
++#define AA_X_NONE		0x0000
++#define AA_X_NAME		0x0400	/* use executable name px */
++#define AA_X_TABLE		0x0800	/* use a specified name ->n# */
++
++#define AA_X_UNSAFE		0x1000
++#define AA_X_CHILD		0x2000	/* make >AA_X_NONE apply to children */
++#define AA_X_INHERIT		0x4000
++#define AA_X_UNCONFINED		0x8000
++
++/* AA_SECURE_X_NEEDED - is passed in the bprm->unsafe field */
++#define AA_SECURE_X_NEEDED	0x8000
++
++/* need to conditionalize which ones are being set */
++struct path_cond {
++	uid_t uid;
++	umode_t mode;
++};
++
++/* struct file_perms - file permission fo
++ * @allow: mask of permissions that are allowed
++ * @audit: mask of permissions to force an audit message for
++ * @quiet: mask of permissions to quiet audit messages for
++ * @kill: mask of permissions that when matched will kill the task
++ * @xindex: exec transition index if @allow contains MAY_EXEC
++ * @xdelegate: used by exec to determine set of delegates allowed
++ * @dindex: delegate table index, 0 if no delegation allowed
++ *
++ * The @audit and @queit mask should be mutually exclusive.
++ */
++struct file_perms {
++	u32 allow;
++	u32 audit;
++	u32 quiet;
++	u32 kill;
++	u16 xindex;
++	u16 xdelegate;
++	u16 dindex;
++};
++
++extern struct file_perms nullperms;
++
++#define COMBINED_PERM_MASK(X) ((X).allow | (X).audit | (X).quiet | (X).kill)
++
++/* FIXME: split perms from dfa and match this to description
++ *        also add delegation info.
++ */
++static inline u16 dfa_map_xindex(u16 mask)
++{
++	u16 old_index = (mask >> 10) & 0xf;
++	u16 index = 0;
++
++	if (mask & 0x100)
++		index |= AA_X_UNSAFE;
++	if (mask & 0x200)
++		index |= AA_X_INHERIT;
++	if (mask & 0x80)
++		index |= AA_X_UNCONFINED;
++
++	if (old_index == 1) {
++		index |= AA_X_UNCONFINED;
++	} else if (old_index == 2) {
++		index |= AA_X_NAME;
++	} else if (old_index == 3) {
++		index |= AA_X_NAME | AA_X_CHILD;
++	} else {
++		index |= AA_X_TABLE;
++		index |= old_index - 4;
 +	}
 +
-+	/* return refcount */
-+	return profile;
++	return index;
 +}
++
++/*
++ * map old dfa inline permissions to new format
++ */
++#define dfa_user_allow(dfa, state) (((ACCEPT_TABLE(dfa)[state]) & 0x7f) | \
++				    ((ACCEPT_TABLE(dfa)[state]) & 0x80000000))
++#define dfa_user_audit(dfa, state) ((ACCEPT_TABLE2(dfa)[state]) & 0x7f)
++#define dfa_user_quiet(dfa, state) (((ACCEPT_TABLE2(dfa)[state]) >> 7) & 0x7f)
++#define dfa_user_xindex(dfa, state) \
++	(dfa_map_xindex(ACCEPT_TABLE(dfa)[state] & 0x3fff))
++
++#define dfa_other_allow(dfa, state) ((((ACCEPT_TABLE(dfa)[state]) >> 14) & \
++				      0x7f) |				\
++				     ((ACCEPT_TABLE(dfa)[state]) & 0x80000000))
++#define dfa_other_audit(dfa, state) (((ACCEPT_TABLE2(dfa)[state]) >> 14) & 0x7f)
++#define dfa_other_quiet(dfa, state) \
++	((((ACCEPT_TABLE2(dfa)[state]) >> 7) >> 14) & 0x7f)
++#define dfa_other_xindex(dfa, state) \
++	dfa_map_xindex((ACCEPT_TABLE(dfa)[state] >> 14) & 0x3fff)
++
++int aa_audit_file(struct aa_profile *profile, struct file_perms *perms,
++		  gfp_t gfp, int op, u32 request, const char *name,
++		  const char *target, uid_t ouid, const char *info, int error);
++
++/**
++ * struct aa_file_rules - components used for file rule permissions
++ * @dfa: dfa to match path names and conditionals against
++ * @perms: permission table indexed by the matched state accept entry of @dfa
++ * @trans: transition table for indexed by named x transitions
++ *
++ * File permission are determined by matching a path against @dfa and then
++ * then using the value of the accept entry for the matching state as
++ * an index into @perms.  If a named exec transition is required it is
++ * looked up in the transition table.
++ */
++struct aa_file_rules {
++	unsigned int start;
++	struct aa_dfa *dfa;
++	/* struct perms perms; */
++	struct aa_domain trans;
++	/* TODO: add delegate table */
++};
++
++unsigned int aa_str_perms(struct aa_dfa *dfa, unsigned int start,
++			  const char *name, struct path_cond *cond,
++			  struct file_perms *perms);
++
++int aa_pathstr_perm(int op, struct aa_profile *profile, const char *name,
++		    u32 request, struct path_cond *cond);
++
++int aa_path_perm(int op, struct aa_profile *profile, struct path *path,
++		 int flags, u32 request, struct path_cond *cond);
++
++int aa_path_link(struct aa_profile *profile, struct dentry *old_dentry,
++		 struct path *new_dir, struct dentry *new_dentry);
++
++int aa_file_perm(int op, struct aa_profile *profile, struct file *file,
++		 u32 request);
++
++static inline void aa_free_file_rules(struct aa_file_rules *rules)
++{
++	aa_put_dfa(rules->dfa);
++	aa_free_domain_entries(&rules->trans);
++}
++
++#define ACC_FMODE(x) (("\000\004\002\006"[(x)&O_ACCMODE]) | (((x) << 1) & 0x40))
++
++/* from namei.c */
++#define MAP_OPEN_FLAGS(x) ((((x) + 1) & O_ACCMODE) ? (x) + 1 : (x))
++
++/**
++ * aa_map_file_perms - map file flags to AppArmor permissions
++ * @file: open file to map flags to AppArmor permissions
++ *
++ * Returns: apparmor permission set for the file
++ */
++static inline u32 aa_map_file_to_perms(struct file *file)
++{
++	int flags = MAP_OPEN_FLAGS(file->f_flags);
++	u32 perms = ACC_FMODE(file->f_mode);
++
++	if ((flags & O_APPEND) && (perms & MAY_WRITE))
++		perms = (perms & ~MAY_WRITE) | MAY_APPEND;
++	/* trunc implies write permission */
++	if (flags & O_TRUNC)
++		perms |= MAY_WRITE;
++	if (flags & O_CREAT)
++		perms |= AA_MAY_CREATE;
++
++	return perms;
++}
++
++#endif /* __AA_FILE_H */
 -- 
 1.7.0.4
 
