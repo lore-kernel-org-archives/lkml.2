@@ -1,113 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab0GOG4t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 02:56:49 -0400
-Received: from rex.securecomputing.com ([203.24.151.4]:58948 "EHLO
-	cyberguard.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751525Ab0GOG4r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 02:56:47 -0400
-Message-ID: <4C3EB04A.90000@snapgear.com>
-Date: Thu, 15 Jul 2010 16:52:58 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1754220Ab0GOHEp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 03:04:45 -0400
+Received: from mail.gmx.net ([213.165.64.20]:36787 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1752154Ab0GOHEo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 03:04:44 -0400
+X-Authenticated: #20450766
+X-Provags-ID: V01U2FsdGVkX1+2brZP8RW2BnR2iOCoiqc7ivft0b5ZwzmmtyYSkS
+	1FyAmRTOLUT7YQ
+Date: Thu, 15 Jul 2010 09:04:51 +0200 (CEST)
+From: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+To: Axel Lin <axel.lin@gmail.com>
+cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
+Subject: Re: [PATCH 7/12] wm8940: fix resource reclaim in wm8940_register
+ error path
+In-Reply-To: <1279162893.29294.20.camel@mola>
+Message-ID: <Pine.LNX.4.64.1007150855200.5310@axis700.grange>
+References: <1279162147.29294.2.camel@mola> <1279162893.29294.20.camel@mola>
 MIME-Version: 1.0
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>,
-        John Kacur <jkacur@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Maxim Kuvyrkov <maxim@codesourcery.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] arch/m68knommu/kernel/process.c: formatting of
- pointers in printk()
-References: <1279130473-10737-1-git-send-email-segooon@gmail.com> <4C3E5672.4090606@snapgear.com> <20100715064354.GA5555@albatros>
-In-Reply-To: <20100715064354.GA5555@albatros>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kulikov Vasiliy wrote:
-> On Thu, Jul 15, 2010 at 10:29 +1000, Greg Ungerer wrote:
->> Hi Kulikov,
->>
->> Kulikov Vasiliy wrote:
->>> Use %p instead of %08x in printk().
->>>
->>> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
->> Acked-by: Greg Ungerer <gerg@uclinux.org>
->>
->> Do you want me to push this to Linus via the m68knommu git tree?
-> Yeah, it would be good.
+Hi Axel
 
-OK, done.
+On Thu, 15 Jul 2010, Axel Lin wrote:
+
+> >>From 44c93254e5158e3086c4707148d24746067f6b14 Mon Sep 17 00:00:00 2001
+> From: Axel Lin <axel.lin@gmail.com>
+> Date: Thu, 15 Jul 2010 10:13:34 +0800
+> Subject: [PATCH] wm8940: fix resource reclaim in wm8940_register error path
+> 
+> This patch fixes the error path in wm8940_register to properly free resources.
+> 
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+
+Ok, these bugs are real, but let's fix them properly, i.e., release 
+resources at the same level, where they have been acquired:
+
+static int register_codec(struct drv_priv *data)
+{
+	int ret = snd_soc_register_codec();
+	if (ret < 0)
+		return ret;
+
+	ret = try();
+	if (failed)
+		goto err;
+
+	...
+
+err:
+	snd_soc_unregister_codec();
+}
+
+static int probe()
+{
+	int ret;
+	struct drv_priv *data = kzalloc(sizeof(*data), GFP_KERNEL);
+	if (!data)
+		return -ENOMEM;
+
+	ret = register_codec(data);
+	if (ret < 0)
+		goto err;
+
+	...
+
+err:
+	kfree(data);
+	return ret;
+}
+
+That is, kfree() belongs to probe() and not to register_codec. This, of 
+course, concerns all aour patches, at least those of them, that I have 
+seen.
 
 Thanks
-Greg
+Guennadi
 
-
-
->> Regards
->> Greg
->>
->>
->>
->>> ---
->>> arch/m68knommu/kernel/process.c |   10 +++++-----
->>> 1 files changed, 5 insertions(+), 5 deletions(-)
->>>
->>> diff --git a/arch/m68knommu/kernel/process.c b/arch/m68knommu/kernel/process.c
->>> index 6aa6613..1096c0e 100644
->>> --- a/arch/m68knommu/kernel/process.c
->>> +++ b/arch/m68knommu/kernel/process.c
->>> @@ -316,14 +316,14 @@ void dump(struct pt_regs *fp)
->>> 		fp->d0, fp->d1, fp->d2, fp->d3);
->>> 	printk(KERN_EMERG "d4: %08lx    d5: %08lx    a0: %08lx    a1: %08lx\n",
->>> 		fp->d4, fp->d5, fp->a0, fp->a1);
->>> -	printk(KERN_EMERG "\nUSP: %08x   TRAPFRAME: %08x\n",
->>> -		(unsigned int) rdusp(), (unsigned int) fp);
->>> +	printk(KERN_EMERG "\nUSP: %08x   TRAPFRAME: %p\n",
->>> +		(unsigned int) rdusp(), fp);
->>> 	printk(KERN_EMERG "\nCODE:");
->>> 	tp = ((unsigned char *) fp->pc) - 0x20;
->>> 	for (sp = (unsigned long *) tp, i = 0; (i < 0x40);  i += 4) {
->>> 		if ((i % 0x10) == 0)
->>> -			printk(KERN_EMERG "%08x: ", (int) (tp + i));
->>> +			printk(KERN_EMERG "%p: ", tp + i);
->>> 		printk("%08x ", (int) *sp++);
->>> 	}
->>> 	printk(KERN_EMERG "\n");
->>> @@ -332,7 +332,7 @@ void dump(struct pt_regs *fp)
->>> 	tp = ((unsigned char *) fp) - 0x40;
->>> 	for (sp = (unsigned long *) tp, i = 0; (i < 0xc0); i += 4) {
->>> 		if ((i % 0x10) == 0)
->>> -			printk(KERN_EMERG "%08x: ", (int) (tp + i));
->>> +			printk(KERN_EMERG "%p: ", tp + i);
->>> 		printk("%08x ", (int) *sp++);
->>> 	}
->>> 	printk(KERN_EMERG "\n");
->>> @@ -341,7 +341,7 @@ void dump(struct pt_regs *fp)
->>> 	tp = (unsigned char *) (rdusp() - 0x10);
->>> 	for (sp = (unsigned long *) tp, i = 0; (i < 0x80); i += 4) {
->>> 		if ((i % 0x10) == 0)
->>> -			printk(KERN_EMERG "%08x: ", (int) (tp + i));
->>> +			printk(KERN_EMERG "%p: ", tp + i);
->>> 		printk("%08x ", (int) *sp++);
->>> 	}
->>> 	printk(KERN_EMERG "\n");
->>
->> -- 
->> ------------------------------------------------------------------------
->> Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
->> SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
->> 8 Gardner Close                             FAX:         +61 7 3217 5323
->> Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+> ---
+>  sound/soc/codecs/wm8940.c |   22 ++++++++++++++--------
+>  1 files changed, 14 insertions(+), 8 deletions(-)
+> 
+> diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
+> index e3c4bbf..9673e6f 100644
+> --- a/sound/soc/codecs/wm8940.c
+> +++ b/sound/soc/codecs/wm8940.c
+> @@ -766,7 +766,8 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+>  	u16 reg;
+>  	if (wm8940_codec) {
+>  		dev_err(codec->dev, "Another WM8940 is registered\n");
+> -		return -EINVAL;
+> +		ret = -EINVAL;
+> +		goto err;
+>  	}
+>  
+>  	INIT_LIST_HEAD(&codec->dapm_widgets);
+> @@ -785,7 +786,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+>  	ret = snd_soc_codec_set_cache_io(codec, 8, 16, control);
+>  	if (ret < 0) {
+>  		dev_err(codec->dev, "Failed to set cache I/O: %d\n", ret);
+> -		return ret;
+> +		goto err;
+>  	}
+>  
+>  	memcpy(codec->reg_cache, wm8940_reg_defaults,
+> @@ -794,7 +795,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+>  	ret = wm8940_reset(codec);
+>  	if (ret < 0) {
+>  		dev_err(codec->dev, "Failed to issue reset\n");
+> -		return ret;
+> +		goto err;
+>  	}
+>  
+>  	wm8940_dai.dev = codec->dev;
+> @@ -803,7 +804,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+>  
+>  	ret = snd_soc_write(codec, WM8940_POWER1, 0x180);
+>  	if (ret < 0)
+> -		return ret;
+> +		goto err;
+>  
+>  	if (!pdata)
+>  		dev_warn(codec->dev, "No platform data supplied\n");
+> @@ -811,7 +812,7 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+>  		reg = snd_soc_read(codec, WM8940_OUTPUTCTL);
+>  		ret = snd_soc_write(codec, WM8940_OUTPUTCTL, reg | pdata->vroi);
+>  		if (ret < 0)
+> -			return ret;
+> +			goto err;
+>  	}
+>  
+>  
+> @@ -820,17 +821,22 @@ static int wm8940_register(struct wm8940_priv *wm8940,
+>  	ret = snd_soc_register_codec(codec);
+>  	if (ret) {
+>  		dev_err(codec->dev, "Failed to register codec: %d\n", ret);
+> -		return ret;
+> +		goto err;
+>  	}
+>  
+>  	ret = snd_soc_register_dai(&wm8940_dai);
+>  	if (ret) {
+>  		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
+> -		snd_soc_unregister_codec(codec);
+> -		return ret;
+> +		goto err_codec;
+>  	}
+>  
+>  	return 0;
+> +
+> +err_codec:
+> +	snd_soc_unregister_codec(codec);
+> +err:
+> +	kfree(wm8940);
+> +	return ret;
+>  }
+>  
+>  static void wm8940_unregister(struct wm8940_priv *wm8940)
+> -- 
+> 1.5.4.3
+> 
+> 
 > 
 
-
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+---
+Guennadi Liakhovetski, Ph.D.
+Freelance Open-Source Software Developer
+http://www.open-technology.de/
