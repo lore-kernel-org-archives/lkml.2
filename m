@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932070Ab0GOAo2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 20:44:28 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57240 "EHLO
+	id S932088Ab0GOAof (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 20:44:35 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:57290 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757494Ab0GOAoZ (ORCPT
+	with ESMTP id S932068Ab0GOAo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 20:44:25 -0400
+	Wed, 14 Jul 2010 20:44:28 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 10/13] AppArmor: domain functions for domain transition
-Date: Wed, 14 Jul 2010 17:43:38 -0700
-Message-Id: <1279154621-25868-11-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 11/13] AppArmor: LSM interface, and security module initialization
+Date: Wed, 14 Jul 2010 17:43:39 -0700
+Message-Id: <1279154621-25868-12-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
 References: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
@@ -20,866 +20,25 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AppArmor routines for controling domain transitions, which can occur at
-exec or through self directed change_profile/change_hat calls.
-
-Unconfined tasks are checked at exec against the profiles in the confining
-profile namespace to determine if a profile should be attached to the task.
-
-Confined tasks execs are controlled by the profile which provides rules
-determining which execs are allowed and if so which profiles should be
-transitioned to.
-
-Self directed domain transitions allow a task to request transition
-to a given profile.  If the transition is allowed then the profile will
-be applied, either immeditately or at exec time depending on the request.
-Immeditate self directed transitions have several security limitations
-but have uses in setting up stub transition profiles and other limited
-cases.
+AppArmor hooks to interface with the LSM, module parameters and module
+initialization.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- security/apparmor/domain.c         |  819 ++++++++++++++++++++++++++++++++++++
- security/apparmor/include/domain.h |   36 ++
- 2 files changed, 855 insertions(+), 0 deletions(-)
- create mode 100644 security/apparmor/domain.c
- create mode 100644 security/apparmor/include/domain.h
+ security/apparmor/lsm.c |  968 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 968 insertions(+), 0 deletions(-)
+ create mode 100644 security/apparmor/lsm.c
 
-diff --git a/security/apparmor/domain.c b/security/apparmor/domain.c
+diff --git a/security/apparmor/lsm.c b/security/apparmor/lsm.c
 new file mode 100644
-index 0000000..1015e7c
+index 0000000..106700b
 --- /dev/null
-+++ b/security/apparmor/domain.c
-@@ -0,0 +1,819 @@
++++ b/security/apparmor/lsm.c
+@@ -0,0 +1,968 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor policy attachment and domain transitions
-+ *
-+ * Copyright (C) 2002-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#include <linux/errno.h>
-+#include <linux/fdtable.h>
-+#include <linux/file.h>
-+#include <linux/mount.h>
-+#include <linux/syscalls.h>
-+#include <linux/tracehook.h>
-+#include <linux/personality.h>
-+
-+#include "include/audit.h"
-+#include "include/apparmorfs.h"
-+#include "include/context.h"
-+#include "include/domain.h"
-+#include "include/file.h"
-+#include "include/ipc.h"
-+#include "include/match.h"
-+#include "include/path.h"
-+#include "include/policy.h"
-+
-+/**
-+ * aa_free_domain_entries - free entries in a domain table
-+ * @domain: the domain table to free  (MAYBE NULL)
-+ */
-+void aa_free_domain_entries(struct aa_domain *domain)
-+{
-+	int i;
-+	if (domain) {
-+		if (!domain->table)
-+			return;
-+
-+		for (i = 0; i < domain->size; i++)
-+			kzfree(domain->table[i]);
-+		kzfree(domain->table);
-+		domain->table = NULL;
-+	}
-+}
-+
-+/**
-+ * may_change_ptraced_domain - check if can change profile on ptraced task
-+ * @task: task we want to change profile of   (NOT NULL)
-+ * @to_profile: profile to change to  (NOT NULL)
-+ *
-+ * Check if the task is ptraced and if so if the tracing task is allowed
-+ * to trace the new domain
-+ *
-+ * Returns: %0 or error if change not allowed
-+ */
-+static int may_change_ptraced_domain(struct task_struct *task,
-+				     struct aa_profile *to_profile)
-+{
-+	struct task_struct *tracer;
-+	struct cred *cred = NULL;
-+	struct aa_profile *tracerp = NULL;
-+	int error = 0;
-+
-+	rcu_read_lock();
-+	tracer = tracehook_tracer_task(task);
-+	if (tracer) {
-+		/* released below */
-+		cred = get_task_cred(tracer);
-+		tracerp = aa_cred_profile(cred);
-+	}
-+	rcu_read_unlock();
-+
-+	/* not ptraced */
-+	if (!tracer || unconfined(tracerp))
-+		goto out;
-+
-+	error = aa_may_ptrace(tracer, tracerp, to_profile, PTRACE_MODE_ATTACH);
-+
-+out:
-+	if (cred)
-+		put_cred(cred);
-+
-+	return error;
-+}
-+
-+/**
-+ * change_profile_perms - find permissions for change_profile
-+ * @profile: the current profile  (NOT NULL)
-+ * @ns: the namespace being switched to  (NOT NULL)
-+ * @name: the name of the profile to change to  (NOT NULL)
-+ * @request: requested perms
-+ * @start: state to start matching in
-+ *
-+ * Returns: permission set
-+ */
-+static struct file_perms change_profile_perms(struct aa_profile *profile,
-+					      struct aa_namespace *ns,
-+					      const char *name, u32 request,
-+					      unsigned int start)
-+{
-+	struct file_perms perms;
-+	struct path_cond cond = { };
-+	unsigned int state;
-+
-+	if (unconfined(profile)) {
-+		perms.allow = AA_MAY_CHANGE_PROFILE | AA_MAY_ONEXEC;
-+		perms.xindex = perms.xdelegate = perms.dindex = 0;
-+		perms.audit = perms.quiet = perms.kill = 0;
-+		return perms;
-+	} else if (!profile->file.dfa) {
-+		return nullperms;
-+	} else if ((ns == profile->ns)) {
-+		/* try matching against rules with out namespace prependend */
-+		aa_str_perms(profile->file.dfa, start, name, &cond, &perms);
-+		if (COMBINED_PERM_MASK(perms) & request)
-+			return perms;
-+	}
-+
-+	/* try matching with namespace name and then profile */
-+	state = aa_dfa_match(profile->file.dfa, start, ns->base.name);
-+	state = aa_dfa_match_len(profile->file.dfa, state, ":", 1);
-+	aa_str_perms(profile->file.dfa, state, name, &cond, &perms);
-+
-+	return perms;
-+}
-+
-+/**
-+ * __attach_match_ - find an attachment match
-+ * @name - to match against  (NOT NULL)
-+ * @head - profile list to walk  (NOT NULL)
-+ *
-+ * Do a linear search on the profiles in the list.  There is a matching
-+ * preference where an exact match is prefered over a name which uses
-+ * expressions to match, and matching expressions with the greatest
-+ * xmatch_len are prefered.
-+ *
-+ * Requires: @head not be shared or have appropriate locks held
-+ *
-+ * Returns: profile or NULL if no match found
-+ */
-+static struct aa_profile *__attach_match(const char *name,
-+					 struct list_head *head)
-+{
-+	int len = 0;
-+	struct aa_profile *profile, *candidate = NULL;
-+
-+	list_for_each_entry(profile, head, base.list) {
-+		if (profile->flags & PFLAG_NULL)
-+			continue;
-+		if (profile->xmatch && profile->xmatch_len > len) {
-+			unsigned int state = aa_dfa_match(profile->xmatch,
-+							  DFA_START, name);
-+			u32 perm = dfa_user_allow(profile->xmatch, state);
-+			/* any accepting state means a valid match. */
-+			if (perm & MAY_EXEC) {
-+				candidate = profile;
-+				len = profile->xmatch_len;
-+			}
-+		} else if (!strcmp(profile->base.name, name))
-+			/* exact non-re match, no more searching required */
-+			return profile;
-+	}
-+
-+	return candidate;
-+}
-+
-+/**
-+ * find_attach - do attachment search for unconfined processes
-+ * @ns: the current namespace  (NOT NULL)
-+ * @list: list to search  (NOT NULL)
-+ * @name: the executable name to match against  (NOT NULL)
-+ *
-+ * Returns: profile or NULL if no match found
-+ */
-+static struct aa_profile *find_attach(struct aa_namespace *ns,
-+				      struct list_head *list, const char *name)
-+{
-+	struct aa_profile *profile;
-+
-+	read_lock(&ns->lock);
-+	profile = aa_get_profile(__attach_match(name, list));
-+	read_unlock(&ns->lock);
-+
-+	return profile;
-+}
-+
-+/**
-+ * separate_fqname - separate the namespace and profile names
-+ * @fqname: the fqname name to split  (NOT NULL)
-+ * @ns_name: the namespace name if it exists  (NOT NULL)
-+ *
-+ * This is the xtable equivalent routine of aa_split_fqname.  It finds the
-+ * split in an xtable fqname which contains an embedded \0 instead of a :
-+ * if a namespace is specified.  This is done so the xtable is constant and
-+ * isn't resplit on every lookup.
-+ *
-+ * Either the profile or namespace name may be optional but if the namespace
-+ * is specified the profile name termination must be present.  This results
-+ * in the following possible encodings:
-+ * profile_name\0
-+ * :ns_name\0profile_name\0
-+ * :ns_name\0\0
-+ *
-+ * NOTE: the xtable fqname is prevalidated at load time in unpack_trans_table
-+ *
-+ * Returns: profile name if it is specified else NULL
-+ */
-+static const char *separate_fqname(const char *fqname, const char **ns_name)
-+{
-+	const char *name;
-+
-+	if (fqname[0] == ':') {
-+		*ns_name = fqname + 1;		/* skip : */
-+		name = *ns_name + strlen(*ns_name) + 1;
-+		if (!*name)
-+			name = NULL;
-+	} else {
-+		*ns_name = NULL;
-+		name = fqname;
-+	}
-+
-+	return name;
-+}
-+
-+static const char *next_name(int xtype, const char *name)
-+{
-+	return NULL;
-+}
-+
-+/**
-+ * x_table_lookup - lookup an x transition name via transition table
-+ * @profile: current profile (NOT NULL)
-+ * @xindex: index into x transition table
-+ *
-+ * Returns: refcounted profile, or NULL on failure
-+ */
-+static struct aa_profile *x_table_lookup(struct aa_profile *profile, u32 xindex)
-+{
-+	struct aa_profile *new_profile = NULL;
-+	struct aa_namespace *ns = profile->ns;
-+	u32 xtype = xindex & AA_X_TYPE_MASK;
-+	int index = xindex & AA_X_INDEX_MASK;
-+	const char *name;
-+
-+	/* index is guarenteed to be in range, validated at load time */
-+	for (name = profile->file.trans.table[index]; !new_profile && name;
-+	     name = next_name(xtype, name)) {
-+		struct aa_namespace *new_ns;
-+		const char *xname = NULL;
-+
-+		new_ns = NULL;
-+		if (xindex & AA_X_CHILD) {
-+			/* release by caller */
-+			new_profile = aa_find_child(profile, name);
-+			continue;
-+		} else if (*name == ':') {
-+			/* switching namespace */
-+			const char *ns_name;
-+			xname = name = separate_fqname(name, &ns_name);
-+			if (!xname)
-+				/* no name so use profile name */
-+				xname = profile->base.hname;
-+			if (*ns_name == '@') {
-+				/* TODO: variable support */
-+				;
-+			}
-+			/* released below */
-+			new_ns = aa_find_namespace(ns, ns_name);
-+			if (!new_ns)
-+				continue;
-+		} else if (*name == '@') {
-+			/* TODO: variable support */
-+			continue;
-+		} else {
-+			/* basic namespace lookup */
-+			xname = name;
-+		}
-+
-+		/* released by caller */
-+		new_profile = aa_lookup_profile(new_ns ? new_ns : ns, xname);
-+		aa_put_namespace(new_ns);
-+	}
-+
-+	/* released by caller */
-+	return new_profile;
-+}
-+
-+/**
-+ * x_to_profile - get target profile for a given xindex
-+ * @profile: current profile  (NOT NULL)
-+ * @name: to to lookup if specified  (NOT NULL)
-+ * @xindex: index into x transition table
-+ *
-+ * find profile for a transition index
-+ *
-+ * Returns: refcounted profile or NULL if not found available
-+ */
-+static struct aa_profile *x_to_profile(struct aa_profile *profile,
-+				       const char *name, u32 xindex)
-+{
-+	struct aa_profile *new_profile = NULL;
-+	struct aa_namespace *ns = profile->ns;
-+	u32 xtype = xindex & AA_X_TYPE_MASK;
-+
-+	switch (xtype) {
-+	case AA_X_NONE:
-+		/* fail exec unless ix || ux fallback - handled by caller */
-+		return NULL;
-+	case AA_X_NAME:
-+		if (xindex & AA_X_CHILD)
-+			/* released by caller */
-+			new_profile = find_attach(ns, &profile->base.profiles,
-+						  name);
-+		else
-+			/* released by caller */
-+			new_profile = find_attach(ns, &ns->base.profiles,
-+						  name);
-+		break;
-+	case AA_X_TABLE:
-+		/* released by caller */
-+		new_profile = x_table_lookup(profile, xindex);
-+		break;
-+	}
-+
-+	/* released by caller */
-+	return new_profile;
-+}
-+
-+/**
-+ * apparmor_bprm_set_creds - set the new creds on the bprm struct
-+ * @bprm: binprm for the exec  (NOT NULL)
-+ *
-+ * Returns: %0 or error on failure
-+ */
-+int apparmor_bprm_set_creds(struct linux_binprm *bprm)
-+{
-+	struct aa_task_cxt *cxt;
-+	struct aa_profile *profile, *new_profile = NULL;
-+	struct aa_namespace *ns;
-+	char *buffer = NULL;
-+	unsigned int state;
-+	struct file_perms perms = {};
-+	struct path_cond cond = {
-+		bprm->file->f_path.dentry->d_inode->i_uid,
-+		bprm->file->f_path.dentry->d_inode->i_mode
-+	};
-+	const char *name = NULL, *target = NULL, *info = NULL;
-+	int error = cap_bprm_set_creds(bprm);
-+	if (error)
-+		return error;
-+
-+	if (bprm->cred_prepared)
-+		return 0;
-+
-+	cxt = bprm->cred->security;
-+	BUG_ON(!cxt);
-+
-+	profile = aa_get_profile(aa_newest_version(cxt->profile));
-+	/*
-+	 * get the namespace from the replacement profile as replacement
-+	 * can change the namespace
-+	 */
-+	ns = profile->ns;
-+	state = profile->file.start;
-+
-+	/* buffer freed below, name is pointer into buffer */
-+	error = aa_get_name(&bprm->file->f_path, profile->path_flags, &buffer,
-+			    &name);
-+	if (error) {
-+		if (profile->flags &
-+		    (PFLAG_IX_ON_NAME_ERROR | PFLAG_UNCONFINED))
-+			error = 0;
-+		info = "Exec failed name resolution";
-+		name = bprm->filename;
-+		goto audit;
-+	}
-+
-+	/* Test for onexec first as onexec directives override other
-+	 * x transitions.
-+	 */
-+	if (unconfined(profile)) {
-+		/* unconfined task */
-+		if (cxt->onexec)
-+			/* change_profile on exec already been granted */
-+			new_profile = aa_get_profile(cxt->onexec);
-+		else
-+			new_profile = find_attach(ns, &ns->base.profiles, name);
-+		if (!new_profile)
-+			goto cleanup;
-+		goto apply;
-+	}
-+
-+	/* find exec permissions for name */
-+	state = aa_str_perms(profile->file.dfa, state, name, &cond, &perms);
-+	if (cxt->onexec) {
-+		struct file_perms cp;
-+		info = "change_profile onexec";
-+		if (!(perms.allow & AA_MAY_ONEXEC))
-+			goto audit;
-+
-+		/* test if this exec can be paired with change_profile onexec.
-+		 * onexec permission is linked to exec with a standard pairing
-+		 * exec\0change_profile
-+		 */
-+		state = aa_dfa_null_transition(profile->file.dfa, state);
-+		cp = change_profile_perms(profile, cxt->onexec->ns, name,
-+					  AA_MAY_ONEXEC, state);
-+
-+		if (!(cp.allow & AA_MAY_ONEXEC))
-+			goto audit;
-+		new_profile = aa_get_profile(aa_newest_version(cxt->onexec));
-+		goto apply;
-+	}
-+
-+	if (perms.allow & MAY_EXEC) {
-+		/* exec permission determine how to transition */
-+		new_profile = x_to_profile(profile, name, perms.xindex);
-+		if (!new_profile) {
-+			if (perms.xindex & AA_X_INHERIT) {
-+				/* (p|c|n)ix - don't change profile but do
-+				 * use the newest version, which was picked
-+				 * up above when getting profile
-+				 */
-+				info = "ix fallback";
-+				new_profile = aa_get_profile(profile);
-+				goto x_clear;
-+			} else if (perms.xindex & AA_X_UNCONFINED) {
-+				new_profile = aa_get_profile(ns->unconfined);
-+				info = "ux fallback";
-+			} else {
-+				error = -ENOENT;
-+				info = "profile not found";
-+			}
-+		}
-+	} else if (COMPLAIN_MODE(profile)) {
-+		/* no exec permission - are we in learning mode */
-+		new_profile = aa_new_null_profile(profile, 0);
-+		if (!new_profile) {
-+			error = -ENOMEM;
-+			info = "could not create null profile";
-+		} else {
-+			error = -EACCES;
-+			target = new_profile->base.hname;
-+		}
-+		perms.xindex |= AA_X_UNSAFE;
-+	} else
-+		/* fail exec */
-+		error = -EACCES;
-+
-+	if (!new_profile)
-+		goto audit;
-+
-+	if (bprm->unsafe & LSM_UNSAFE_SHARE) {
-+		/* FIXME: currently don't mediate shared state */
-+		;
-+	}
-+
-+	if (bprm->unsafe & (LSM_UNSAFE_PTRACE | LSM_UNSAFE_PTRACE_CAP)) {
-+		error = may_change_ptraced_domain(current, new_profile);
-+		if (error) {
-+			aa_put_profile(new_profile);
-+			goto audit;
-+		}
-+	}
-+
-+	/* Determine if secure exec is needed.
-+	 * Can be at this point for the following reasons:
-+	 * 1. unconfined switching to confined
-+	 * 2. confined switching to different confinement
-+	 * 3. confined switching to unconfined
-+	 *
-+	 * Cases 2 and 3 are marked as requiring secure exec
-+	 * (unless policy specified "unsafe exec")
-+	 *
-+	 * bprm->unsafe is used to cache the AA_X_UNSAFE permission
-+	 * to avoid having to recompute in secureexec
-+	 */
-+	if (!(perms.xindex & AA_X_UNSAFE)) {
-+		AA_DEBUG("scrubbing environment variables for %s profile=%s\n",
-+			 name, new_profile->base.hname);
-+		bprm->unsafe |= AA_SECURE_X_NEEDED;
-+	}
-+apply:
-+	target = new_profile->base.hname;
-+	/* when transitioning profiles clear unsafe personality bits */
-+	bprm->per_clear |= PER_CLEAR_ON_SETID;
-+
-+x_clear:
-+	aa_put_profile(cxt->profile);
-+	/* transfer new profile reference will be released when cxt is freed */
-+	cxt->profile = new_profile;
-+
-+	/* clear out all temporary/transitional state from the context */
-+	aa_put_profile(cxt->previous);
-+	aa_put_profile(cxt->onexec);
-+	cxt->previous = NULL;
-+	cxt->onexec = NULL;
-+	cxt->token = 0;
-+
-+audit:
-+	error = aa_audit_file(profile, &perms, GFP_KERNEL, OP_EXEC, MAY_EXEC,
-+			      name, target, cond.uid, info, error);
-+
-+cleanup:
-+	aa_put_profile(profile);
-+	kfree(buffer);
-+
-+	return error;
-+}
-+
-+/**
-+ * apparmor_bprm_secureexec - determine if secureexec is needed
-+ * @bprm: binprm for exec  (NOT NULL)
-+ *
-+ * Returns: %1 if secureexec is needed else %0
-+ */
-+int apparmor_bprm_secureexec(struct linux_binprm *bprm)
-+{
-+	int ret = cap_bprm_secureexec(bprm);
-+
-+	/* the decision to use secure exec is computed in set_creds
-+	 * and stored in bprm->unsafe.
-+	 */
-+	if (!ret && (bprm->unsafe & AA_SECURE_X_NEEDED))
-+		ret = 1;
-+
-+	return ret;
-+}
-+
-+/**
-+ * apparmor_bprm_committing_creds - do task cleanup on committing new creds
-+ * @bprm: binprm for the exec  (NOT NULL)
-+ */
-+void apparmor_bprm_committing_creds(struct linux_binprm *bprm)
-+{
-+	struct aa_profile *profile = __aa_current_profile();
-+	struct aa_task_cxt *new_cxt = bprm->cred->security;
-+
-+	/* bail out if unconfined or not changing profile */
-+	if ((new_cxt->profile == profile) ||
-+	    (unconfined(new_cxt->profile)))
-+		return;
-+
-+	current->pdeath_signal = 0;
-+
-+	/* reset soft limits and set hard limits for the new profile */
-+	__aa_transition_rlimits(profile, new_cxt->profile);
-+}
-+
-+/**
-+ * apparmor_bprm_commited_cred - do cleanup after new creds committed
-+ * @bprm: binprm for the exec  (NOT NULL)
-+ */
-+void apparmor_bprm_committed_creds(struct linux_binprm *bprm)
-+{
-+	/* TODO: cleanup signals - ipc mediation */
-+	return;
-+}
-+
-+/*
-+ * Functions for self directed profile change
-+ */
-+
-+/**
-+ * new_compound_name - create an hname with @n2 appended to @n1
-+ * @n1: base of hname  (NOT NULL)
-+ * @n2: name to append (NOT NULL)
-+ *
-+ * Returns: new name or NULL on error
-+ */
-+static char *new_compound_name(const char *n1, const char *n2)
-+{
-+	char *name = kmalloc(strlen(n1) + strlen(n2) + 3, GFP_KERNEL);
-+	if (name)
-+		sprintf(name, "%s//%s", n1, n2);
-+	return name;
-+}
-+
-+/**
-+ * aa_change_hat - change hat to/from subprofile
-+ * @hats: vector of hat names to try changing into (unused if @count == 0)
-+ * @count: number of hat names in @hats
-+ * @token: magic value to validate the hat change
-+ * @permtest: true if this is just a permission test
-+ *
-+ * Change to the first profile specified in @hats that exists, and store
-+ * the @hat_magic in the current task context.  If the count == 0 and the
-+ * @token matches that stored in the current task context, return to the
-+ * top level profile.
-+ *
-+ * Returns %0 on success, error otherwise.
-+ */
-+int aa_change_hat(const char *hats[], int count, u64 token, bool permtest)
-+{
-+	const struct cred *cred;
-+	struct aa_task_cxt *cxt;
-+	struct aa_profile *profile, *previous_profile, *hat = NULL;
-+	char *name = NULL;
-+	int i;
-+	struct file_perms perms = {};
-+	const char *target = NULL, *info = NULL;
-+	int error = 0;
-+
-+	/* released below */
-+	cred = get_current_cred();
-+	cxt = cred->security;
-+	profile = aa_cred_profile(cred);
-+	previous_profile = cxt->previous;
-+
-+	if (unconfined(profile)) {
-+		info = "unconfined";
-+		error = -EPERM;
-+		goto audit;
-+	}
-+
-+	if (count) {
-+		/* attempting to change into a new hat or switch to a sibling */
-+		struct aa_profile *root;
-+		root = PROFILE_IS_HAT(profile) ? profile->parent : profile;
-+
-+		/* find first matching hat */
-+		for (i = 0; i < count && !hat; i++)
-+			/* released below */
-+			hat = aa_find_child(root, hats[i]);
-+		if (!hat) {
-+			if (!COMPLAIN_MODE(root) || permtest) {
-+				info = "hat not found";
-+				if (list_empty(&root->base.profiles))
-+					error = -ECHILD;
-+				else
-+					error = -ENOENT;
-+				goto out;
-+			}
-+
-+			/*
-+			 * In complain mode and failed to match any hats.
-+			 * Audit the failure is based off of the first hat
-+			 * supplied.  This is done due how userspace
-+			 * interacts with change_hat.
-+			 *
-+			 * TODO: Add logging of all failed hats
-+			 */
-+
-+			/* freed below */
-+			name = new_compound_name(root->base.hname, hats[0]);
-+			target = name;
-+			/* released below */
-+			hat = aa_new_null_profile(profile, 1);
-+			if (!hat) {
-+				info = "failed null profile create";
-+				error = -ENOMEM;
-+				goto audit;
-+			}
-+		} else {
-+			target = hat->base.hname;
-+			if (!PROFILE_IS_HAT(hat)) {
-+				info = "target not hat";
-+				error = -EPERM;
-+				goto audit;
-+			}
-+		}
-+
-+		error = may_change_ptraced_domain(current, hat);
-+		if (error) {
-+			info = "ptraced";
-+			error = -EPERM;
-+			goto audit;
-+		}
-+
-+		if (!permtest) {
-+			error = aa_set_current_hat(hat, token);
-+			if (error == -EACCES)
-+				/* kill task incase of brute force attacks */
-+				perms.kill = AA_MAY_CHANGEHAT;
-+			else if (name && !error)
-+				/* reset error for learning of new hats */
-+				error = -ENOENT;
-+		}
-+	} else if (previous_profile) {
-+		/* Return to saved profile.  Kill task if restore fails
-+		 * to avoid brute force attacks
-+		 */
-+		target = previous_profile->base.hname;
-+		error = aa_restore_previous_profile(token);
-+		perms.kill = AA_MAY_CHANGEHAT;
-+	} else
-+		/* ignore restores when there is no saved profile */
-+		goto out;
-+
-+audit:
-+	if (!permtest)
-+		error = aa_audit_file(profile, &perms, GFP_KERNEL,
-+				      OP_CHANGE_HAT, AA_MAY_CHANGEHAT, NULL,
-+				      target, 0, info, error);
-+
-+out:
-+	aa_put_profile(hat);
-+	kfree(name);
-+	put_cred(cred);
-+
-+	return error;
-+}
-+
-+/**
-+ * aa_change_profile - perform a one-way profile transition
-+ * @ns_name: name of the profile namespace to change to
-+ * @hname: name of profile to change to
-+ * @onexec: whether this transition is to take place immediately or at exec
-+ * @permtest: true if this is just a permission test
-+ *
-+ * Change to new profile @name.  Unlike with hats, there is no way
-+ * to change back.  If @onexec then the transition is delayed until
-+ * the next exec.
-+ *
-+ * Returns %0 on success, error otherwise.
-+ */
-+int aa_change_profile(const char *ns_name, const char *hname, int onexec,
-+		      bool permtest)
-+{
-+	const struct cred *cred;
-+	struct aa_task_cxt *cxt;
-+	struct aa_profile *profile, *target = NULL;
-+	struct aa_namespace *ns = NULL;
-+	struct file_perms perms = {};
-+	const char *name = NULL, *info = NULL;
-+	int op, error = 0;
-+	u32 request;
-+
-+	if (!hname && !ns_name)
-+		return -EINVAL;
-+
-+	if (onexec) {
-+		request = AA_MAY_ONEXEC;
-+		op = OP_CHANGE_ONEXEC;
-+	} else {
-+		request = AA_MAY_CHANGE_PROFILE;
-+		op = OP_CHANGE_PROFILE;
-+	}
-+
-+	cred = get_current_cred();
-+	cxt = cred->security;
-+	profile = aa_cred_profile(cred);
-+
-+	if (ns_name) {
-+		/* released below */
-+		ns = aa_find_namespace(profile->ns, ns_name);
-+		if (!ns) {
-+			/* we don't create new namespace in complain mode */
-+			name = ns_name;
-+			info = "namespace not found";
-+			error = -ENOENT;
-+			goto audit;
-+		}
-+	} else
-+		/* released below */
-+		ns = aa_get_namespace(profile->ns);
-+
-+	/* if the name was not specified, use the name of the current profile */
-+	if (!hname) {
-+		if (unconfined(profile))
-+			hname = ns->unconfined->base.hname;
-+		else
-+			hname = profile->base.hname;
-+	}
-+
-+	perms = change_profile_perms(profile, ns, hname, request,
-+				     profile->file.start);
-+	if (!(perms.allow & request)) {
-+		error = -EACCES;
-+		goto audit;
-+	}
-+
-+	/* released below */
-+	target = aa_lookup_profile(ns, hname);
-+	if (!target) {
-+		info = "profile not found";
-+		error = -ENOENT;
-+		if (permtest || !COMPLAIN_MODE(profile))
-+			goto audit;
-+		/* release below */
-+		target = aa_new_null_profile(profile, 0);
-+		if (!target) {
-+			info = "failed null profile create";
-+			error = -ENOMEM;
-+			goto audit;
-+		}
-+	}
-+
-+	/* check if tracing task is allowed to trace target domain */
-+	error = may_change_ptraced_domain(current, target);
-+	if (error) {
-+		info = "ptrace prevents transition";
-+		goto audit;
-+	}
-+
-+	if (permtest)
-+		goto audit;
-+
-+	if (onexec)
-+		error = aa_set_current_onexec(target);
-+	else
-+		error = aa_replace_current_profile(target);
-+
-+audit:
-+	if (!permtest)
-+		error = aa_audit_file(profile, &perms, GFP_KERNEL, op, request,
-+				      name, hname, 0, info, error);
-+
-+	aa_put_namespace(ns);
-+	aa_put_profile(target);
-+	put_cred(cred);
-+
-+	return error;
-+}
-diff --git a/security/apparmor/include/domain.h b/security/apparmor/include/domain.h
-new file mode 100644
-index 0000000..b1ba488
---- /dev/null
-+++ b/security/apparmor/include/domain.h
-@@ -0,0 +1,36 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor security domain transition function definitions.
++ * This file contains AppArmor LSM hooks.
 + *
 + * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
@@ -890,28 +49,960 @@ index 0000000..b1ba488
 + * License.
 + */
 +
-+#include <linux/binfmts.h>
-+#include <linux/types.h>
++#include <linux/security.h>
++#include <linux/moduleparam.h>
++#include <linux/mm.h>
++#include <linux/mman.h>
++#include <linux/mount.h>
++#include <linux/namei.h>
++#include <linux/ptrace.h>
++#include <linux/ctype.h>
++#include <linux/sysctl.h>
++#include <linux/audit.h>
++#include <net/sock.h>
 +
-+#ifndef __AA_DOMAIN_H
-+#define __AA_DOMAIN_H
++#include "include/apparmor.h"
++#include "include/apparmorfs.h"
++#include "include/audit.h"
++#include "include/capability.h"
++#include "include/context.h"
++#include "include/file.h"
++#include "include/ipc.h"
++#include "include/path.h"
++#include "include/policy.h"
++#include "include/procattr.h"
 +
-+struct aa_domain {
-+	int size;
-+	char **table;
++/* Flag indicating whether initialization completed */
++int apparmor_initialized;
++
++/*
++ * LSM hook functions
++ */
++
++/*
++ * free the associated aa_task_cxt and put its profiles
++ */
++static void apparmor_cred_free(struct cred *cred)
++{
++	aa_free_task_context(cred->security);
++	cred->security = NULL;
++}
++
++/*
++ * allocate the apparmor part of blank credentials
++ */
++static int apparmor_cred_alloc_blank(struct cred *cred, gfp_t gfp)
++{
++	/* freed by apparmor_cred_free */
++	struct aa_task_cxt *cxt = aa_alloc_task_context(gfp);
++	if (!cxt)
++		return -ENOMEM;
++
++	cred->security = cxt;
++	return 0;
++}
++
++/*
++ * prepare new aa_task_cxt for modification by prepare_cred block
++ */
++static int apparmor_cred_prepare(struct cred *new, const struct cred *old,
++				 gfp_t gfp)
++{
++	/* freed by apparmor_cred_free */
++	struct aa_task_cxt *cxt = aa_alloc_task_context(gfp);
++	if (!cxt)
++		return -ENOMEM;
++
++	aa_dup_task_context(cxt, old->security);
++	new->security = cxt;
++	return 0;
++}
++
++/*
++ * transfer the apparmor data to a blank set of creds
++ */
++static void apparmor_cred_transfer(struct cred *new, const struct cred *old)
++{
++	const struct aa_task_cxt *old_cxt = old->security;
++	struct aa_task_cxt *new_cxt = new->security;
++
++	aa_dup_task_context(new_cxt, old_cxt);
++}
++
++static int apparmor_ptrace_access_check(struct task_struct *child,
++					unsigned int mode)
++{
++	int rc;
++
++	rc = cap_ptrace_access_check(child, mode);
++	if (rc)
++		return rc;
++
++	return aa_ptrace(current, child, mode);
++}
++
++static int apparmor_ptrace_traceme(struct task_struct *parent)
++{
++	return aa_ptrace(parent, current, PTRACE_MODE_ATTACH);
++}
++
++/* Derived from security/commoncap.c:cap_capget */
++static int apparmor_capget(struct task_struct *target, kernel_cap_t *effective,
++			   kernel_cap_t *inheritable, kernel_cap_t *permitted)
++{
++	struct aa_profile *profile;
++	const struct cred *cred;
++
++	rcu_read_lock();
++	cred = __task_cred(target);
++	profile = aa_cred_profile(cred);
++
++	*effective = cred->cap_effective;
++	*inheritable = cred->cap_inheritable;
++	*permitted = cred->cap_permitted;
++
++	if (!unconfined(profile))
++		*effective = cap_intersect(*effective, profile->caps.allow);
++	rcu_read_unlock();
++
++	return 0;
++}
++
++static int apparmor_capable(struct task_struct *task, const struct cred *cred,
++			    int cap, int audit)
++{
++	struct aa_profile *profile;
++	/* cap_capable returns 0 on success, else -EPERM */
++	int error = cap_capable(task, cred, cap, audit);
++
++	profile = aa_cred_profile(cred);
++	if (!error  && !unconfined(profile))
++		error = aa_capable(task, profile, cap, audit);
++
++	return error;
++}
++
++static int apparmor_sysctl(struct ctl_table *table, int sysctl_op)
++{
++	int error = 0;
++	struct aa_profile *profile = aa_current_profile();
++
++	if (!unconfined(profile)) {
++		char *buffer, *name;
++		int mask;
++
++		mask = 0;
++		if (sysctl_op & 4)
++			mask |= MAY_READ;
++		if (sysctl_op & 2)
++			mask |= MAY_WRITE;
++
++		error = -ENOMEM;
++		/* freed below */
++		buffer = (char *)__get_free_page(GFP_KERNEL);
++		if (!buffer)
++			goto out;
++
++		/*
++		 * TODO: convert this over to using a global or per
++		 * namespace control instead of a hard coded /proc
++		 */
++		name = sysctl_pathname(table, buffer, PAGE_SIZE);
++		if (name && name - buffer >= 5) {
++			struct path_cond cond = { 0, S_IFREG };
++			name -= 5;
++			memcpy(name, "/proc", 5);
++			error = aa_pathstr_perm(OP_SYSCTL, profile, name, mask,
++						&cond);
++		}
++		free_page((unsigned long)buffer);
++	}
++
++out:
++	return error;
++}
++
++/**
++ * common_perm - basic common permission check wrapper fn for paths
++ * @op: operation being checked
++ * @path: path to check permission of  (NOT NULL)
++ * @mask: requested permissions mask
++ * @cond: conditional info for the permission request  (NOT NULL)
++ *
++ * Returns: %0 else error code if error or permission denied
++ */
++static int common_perm(int op, struct path *path, u32 mask,
++		       struct path_cond *cond)
++{
++	struct aa_profile *profile;
++	int error = 0;
++
++	profile = __aa_current_profile();
++	if (!unconfined(profile))
++		error = aa_path_perm(op, profile, path, 0, mask, cond);
++
++	return error;
++}
++
++/**
++ * common_perm_dir_dentry - common permission wrapper when path is dir, dentry
++ * @op: operation being checked
++ * @dir: directory of the dentry  (NOT NULL)
++ * @dentry: dentry to check  (NOT NULL)
++ * @mask: requested permissions mask
++ * @cond: conditional info for the permission request  (NOT NULL)
++ *
++ * Returns: %0 else error code if error or permission denied
++ */
++static int common_perm_dir_dentry(int op, struct path *dir,
++				  struct dentry *dentry, u32 mask,
++				  struct path_cond *cond)
++{
++	struct path path = { dir->mnt, dentry };
++
++	return common_perm(op, &path, mask, cond);
++}
++
++/**
++ * common_perm_mnt_dentry - common permission wrapper when mnt, dentry
++ * @op: operation being checked
++ * @mnt: mount point of dentry
++ * @dentry: dentry to check  (NOT NULL)
++ * @mask: requested permissions mask
++ *
++ * Returns: %0 else error code if error or permission denied
++ */
++static int common_perm_mnt_dentry(int op, struct vfsmount *mnt,
++				  struct dentry *dentry, u32 mask)
++{
++	struct path path = { mnt, dentry };
++	struct path_cond cond = { dentry->d_inode->i_uid,
++				  dentry->d_inode->i_mode
++	};
++
++	return common_perm(op, &path, mask, &cond);
++}
++
++/**
++ * common_perm_rm - common permission wrapper for operations doing rm
++ * @op: operation being checked
++ * @dir: directory that the dentry is in  (NOT NULL)
++ * @dentry: dentry being rm'd  (NOT NULL)
++ * @mask: requested permission mask
++ *
++ * Returns: %0 else error code if error or permission denied
++ */
++static int common_perm_rm(int op, struct path *dir,
++			  struct dentry *dentry, u32 mask)
++{
++	struct inode *inode = dentry->d_inode;
++	struct path_cond cond = { };
++
++	if (!inode || !dir->mnt || !mediated_filesystem(inode))
++		return 0;
++
++	cond.uid = inode->i_uid;
++	cond.mode = inode->i_mode;
++
++	return common_perm_dir_dentry(op, dir, dentry, mask, &cond);
++}
++
++/**
++ * common_perm_create - common permission wrapper for operations doing create
++ * @op: operation being checked
++ * @dir: directory that dentry will be created in  (NOT NULL)
++ * @dentry: dentry to create   (NOT NULL)
++ * @mask: request permission mask
++ * @mode: created file mode
++ *
++ * Returns: %0 else error code if error or permission denied
++ */
++static int common_perm_create(int op, struct path *dir, struct dentry *dentry,
++			      u32 mask, umode_t mode)
++{
++	struct path_cond cond = { current_fsuid(), mode };
++
++	if (!dir->mnt || !mediated_filesystem(dir->dentry->d_inode))
++		return 0;
++
++	return common_perm_dir_dentry(op, dir, dentry, mask, &cond);
++}
++
++static int apparmor_path_unlink(struct path *dir, struct dentry *dentry)
++{
++	return common_perm_rm(OP_UNLINK, dir, dentry, AA_MAY_DELETE);
++}
++
++static int apparmor_path_mkdir(struct path *dir, struct dentry *dentry,
++			       int mode)
++{
++	return common_perm_create(OP_MKDIR, dir, dentry, AA_MAY_CREATE,
++				  S_IFDIR);
++}
++
++static int apparmor_path_rmdir(struct path *dir, struct dentry *dentry)
++{
++	return common_perm_rm(OP_RMDIR, dir, dentry, AA_MAY_DELETE);
++}
++
++static int apparmor_path_mknod(struct path *dir, struct dentry *dentry,
++			       int mode, unsigned int dev)
++{
++	return common_perm_create(OP_MKNOD, dir, dentry, AA_MAY_CREATE, mode);
++}
++
++static int apparmor_path_truncate(struct path *path, loff_t length,
++				  unsigned int time_attrs)
++{
++	struct path_cond cond = { path->dentry->d_inode->i_uid,
++				  path->dentry->d_inode->i_mode
++	};
++
++	if (!path->mnt || !mediated_filesystem(path->dentry->d_inode))
++		return 0;
++
++	return common_perm(OP_TRUNC, path, MAY_WRITE | AA_MAY_META_WRITE,
++			   &cond);
++}
++
++static int apparmor_path_symlink(struct path *dir, struct dentry *dentry,
++				 const char *old_name)
++{
++	return common_perm_create(OP_SYMLINK, dir, dentry, AA_MAY_CREATE,
++				  S_IFLNK);
++}
++
++static int apparmor_path_link(struct dentry *old_dentry, struct path *new_dir,
++			      struct dentry *new_dentry)
++{
++	struct aa_profile *profile;
++	int error = 0;
++
++	if (!mediated_filesystem(old_dentry->d_inode))
++		return 0;
++
++	profile = aa_current_profile();
++	if (!unconfined(profile))
++		error = aa_path_link(profile, old_dentry, new_dir, new_dentry);
++	return error;
++}
++
++static int apparmor_path_rename(struct path *old_dir, struct dentry *old_dentry,
++				struct path *new_dir, struct dentry *new_dentry)
++{
++	struct aa_profile *profile;
++	int error = 0;
++
++	if (!mediated_filesystem(old_dentry->d_inode))
++		return 0;
++
++	profile = aa_current_profile();
++	if (!unconfined(profile)) {
++		struct path old_path = { old_dir->mnt, old_dentry };
++		struct path new_path = { new_dir->mnt, new_dentry };
++		struct path_cond cond = { old_dentry->d_inode->i_uid,
++					  old_dentry->d_inode->i_mode
++		};
++
++		error = aa_path_perm(OP_RENAME_SRC, profile, &old_path, 0,
++				     MAY_READ | AA_MAY_META_READ | MAY_WRITE |
++				     AA_MAY_META_WRITE | AA_MAY_DELETE,
++				     &cond);
++		if (!error)
++			error = aa_path_perm(OP_RENAME_DEST, profile, &new_path,
++					     0, MAY_WRITE | AA_MAY_META_WRITE |
++					     AA_MAY_CREATE, &cond);
++
++	}
++	return error;
++}
++
++static int apparmor_path_chmod(struct dentry *dentry, struct vfsmount *mnt,
++			       mode_t mode)
++{
++	if (!mediated_filesystem(dentry->d_inode))
++		return 0;
++
++	return common_perm_mnt_dentry(OP_CHMOD, mnt, dentry, AA_MAY_CHMOD);
++}
++
++static int apparmor_path_chown(struct path *path, uid_t uid, gid_t gid)
++{
++	struct path_cond cond =  { path->dentry->d_inode->i_uid,
++				   path->dentry->d_inode->i_mode
++	};
++
++	if (!mediated_filesystem(path->dentry->d_inode))
++		return 0;
++
++	return common_perm(OP_CHOWN, path, AA_MAY_CHOWN, &cond);
++}
++
++static int apparmor_inode_getattr(struct vfsmount *mnt, struct dentry *dentry)
++{
++	if (!mediated_filesystem(dentry->d_inode))
++		return 0;
++
++	return common_perm_mnt_dentry(OP_GETATTR, mnt, dentry,
++				      AA_MAY_META_READ);
++}
++
++static int apparmor_dentry_open(struct file *file, const struct cred *cred)
++{
++	struct aa_file_cxt *fcxt = file->f_security;
++	struct aa_profile *profile;
++	int error = 0;
++
++	if (!mediated_filesystem(file->f_path.dentry->d_inode))
++		return 0;
++
++	/* If in exec, permission is handled by bprm hooks.
++	 * Cache permissions granted by the previous exec check, with
++	 * implicit read and executable mmap which are required to
++	 * actually execute the image.
++	 */
++	if (current->in_execve) {
++		fcxt->allow = MAY_EXEC | MAY_READ | AA_EXEC_MMAP;
++		return 0;
++	}
++
++	profile = aa_cred_profile(cred);
++	if (!unconfined(profile)) {
++		struct inode *inode = file->f_path.dentry->d_inode;
++		struct path_cond cond = { inode->i_uid, inode->i_mode };
++
++		error = aa_path_perm(OP_OPEN, profile, &file->f_path, 0,
++				     aa_map_file_to_perms(file), &cond);
++		/* todo cache full allowed permissions set and state */
++		fcxt->allow = aa_map_file_to_perms(file);
++	}
++
++	return error;
++}
++
++static int apparmor_file_alloc_security(struct file *file)
++{
++	/* freed by apparmor_file_free_security */
++	file->f_security = aa_alloc_file_context(GFP_KERNEL);
++	if (!file->f_security)
++		return -ENOMEM;
++	return 0;
++
++}
++
++static void apparmor_file_free_security(struct file *file)
++{
++	struct aa_file_cxt *cxt = file->f_security;
++
++	aa_free_file_context(cxt);
++}
++
++static int common_file_perm(int op, struct file *file, u32 mask)
++{
++	struct aa_file_cxt *fcxt = file->f_security;
++	struct aa_profile *profile, *fprofile = aa_cred_profile(file->f_cred);
++	int error = 0;
++
++	BUG_ON(!fprofile);
++
++	if (!file->f_path.mnt ||
++	    !mediated_filesystem(file->f_path.dentry->d_inode))
++		return 0;
++
++	profile = __aa_current_profile();
++
++	/* revalidate access, if task is unconfined, or the cached cred
++	 * doesn't match or if the request is for more permissions than
++	 * was granted.
++	 *
++	 * Note: the test for !unconfined(fprofile) is to handle file
++	 *       delegation from unconfined tasks
++	 */
++	if (!unconfined(profile) && !unconfined(fprofile) &&
++	    ((fprofile != profile) || (mask & ~fcxt->allow)))
++		error = aa_file_perm(op, profile, file, mask);
++
++	return error;
++}
++
++static int apparmor_file_permission(struct file *file, int mask)
++{
++	return common_file_perm(OP_FPERM, file, mask);
++}
++
++static int apparmor_file_lock(struct file *file, unsigned int cmd)
++{
++	u32 mask = AA_MAY_LOCK;
++
++	if (cmd == F_WRLCK)
++		mask |= MAY_WRITE;
++
++	return common_file_perm(OP_FLOCK, file, mask);
++}
++
++static int common_mmap(int op, struct file *file, unsigned long prot,
++		       unsigned long flags)
++{
++	struct dentry *dentry;
++	int mask = 0;
++
++	if (!file || !file->f_security)
++		return 0;
++
++	if (prot & PROT_READ)
++		mask |= MAY_READ;
++	/*
++	 * Private mappings don't require write perms since they don't
++	 * write back to the files
++	 */
++	if ((prot & PROT_WRITE) && !(flags & MAP_PRIVATE))
++		mask |= MAY_WRITE;
++	if (prot & PROT_EXEC)
++		mask |= AA_EXEC_MMAP;
++
++	dentry = file->f_path.dentry;
++	return common_file_perm(op, file, mask);
++}
++
++static int apparmor_file_mmap(struct file *file, unsigned long reqprot,
++			      unsigned long prot, unsigned long flags,
++			      unsigned long addr, unsigned long addr_only)
++{
++	int rc = 0;
++
++	/* do DAC check */
++	rc = cap_file_mmap(file, reqprot, prot, flags, addr, addr_only);
++	if (rc || addr_only)
++		return rc;
++
++	return common_mmap(OP_FMMAP, file, prot, flags);
++}
++
++static int apparmor_file_mprotect(struct vm_area_struct *vma,
++				  unsigned long reqprot, unsigned long prot)
++{
++	return common_mmap(OP_FMPROT, vma->vm_file, prot,
++			   !(vma->vm_flags & VM_SHARED) ? MAP_PRIVATE : 0);
++}
++
++static int apparmor_getprocattr(struct task_struct *task, char *name,
++				char **value)
++{
++	int error = -ENOENT;
++	struct aa_profile *profile;
++	/* released below */
++	const struct cred *cred = get_task_cred(task);
++	struct aa_task_cxt *cxt = cred->security;
++	profile = aa_cred_profile(cred);
++
++	if (strcmp(name, "current") == 0)
++		error = aa_getprocattr(aa_newest_version(cxt->profile),
++				       value);
++	else if (strcmp(name, "prev") == 0  && cxt->previous)
++		error = aa_getprocattr(aa_newest_version(cxt->previous),
++				       value);
++	else if (strcmp(name, "exec") == 0 && cxt->onexec)
++		error = aa_getprocattr(aa_newest_version(cxt->onexec),
++				       value);
++	else
++		error = -EINVAL;
++
++	put_cred(cred);
++
++	return error;
++}
++
++static int apparmor_setprocattr(struct task_struct *task, char *name,
++				void *value, size_t size)
++{
++	char *command, *args;
++	size_t arg_size;
++	int error;
++
++	if (size == 0 || size >= PAGE_SIZE)
++		return -EINVAL;
++
++	/* task can only write its own attributes */
++	if (current != task)
++		return -EACCES;
++
++	args = value;
++	args[size] = '\0';
++	args = strim(args);
++	command = strsep(&args, " ");
++	if (!args)
++		return -EINVAL;
++	args = skip_spaces(args);
++	if (!*args)
++		return -EINVAL;
++
++	arg_size = size - (args - (char *) value);
++	if (strcmp(name, "current") == 0) {
++		if (strcmp(command, "changehat") == 0) {
++			error = aa_setprocattr_changehat(args, arg_size,
++							 !AA_DO_TEST);
++		} else if (strcmp(command, "permhat") == 0) {
++			error = aa_setprocattr_changehat(args, arg_size,
++							 AA_DO_TEST);
++		} else if (strcmp(command, "changeprofile") == 0) {
++			error = aa_setprocattr_changeprofile(args, !AA_ONEXEC,
++							     !AA_DO_TEST);
++		} else if (strcmp(command, "permprofile") == 0) {
++			error = aa_setprocattr_changeprofile(args, !AA_ONEXEC,
++							     AA_DO_TEST);
++		} else if (strcmp(command, "permipc") == 0) {
++			error = aa_setprocattr_permipc(args);
++		} else {
++			struct common_audit_data sa;
++			COMMON_AUDIT_DATA_INIT_NONE(&sa);
++			sa.aad.op = OP_SETPROCATTR;
++			sa.aad.info = name;
++			sa.aad.error = -EINVAL;
++			return aa_audit(AUDIT_APPARMOR_DENIED, NULL, GFP_KERNEL,
++					&sa, NULL);
++		}
++	} else if (strcmp(name, "exec") == 0) {
++		error = aa_setprocattr_changeprofile(args, AA_ONEXEC,
++						     !AA_DO_TEST);
++	} else {
++		/* only support the "current" and "exec" process attributes */
++		return -EINVAL;
++	}
++	if (!error)
++		error = size;
++	return error;
++}
++
++static int apparmor_task_setrlimit(unsigned int resource,
++				   struct rlimit *new_rlim)
++{
++	struct aa_profile *profile = aa_current_profile();
++	int error = 0;
++
++	if (!unconfined(profile))
++		error = aa_task_setrlimit(profile, resource, new_rlim);
++
++	return error;
++}
++
++static struct security_operations apparmor_ops = {
++	.name =				"apparmor",
++
++	.ptrace_access_check =		apparmor_ptrace_access_check,
++	.ptrace_traceme =		apparmor_ptrace_traceme,
++	.capget =			apparmor_capget,
++	.sysctl =			apparmor_sysctl,
++	.capable =			apparmor_capable,
++
++	.path_link =			apparmor_path_link,
++	.path_unlink =			apparmor_path_unlink,
++	.path_symlink =			apparmor_path_symlink,
++	.path_mkdir =			apparmor_path_mkdir,
++	.path_rmdir =			apparmor_path_rmdir,
++	.path_mknod =			apparmor_path_mknod,
++	.path_rename =			apparmor_path_rename,
++	.path_chmod =			apparmor_path_chmod,
++	.path_chown =			apparmor_path_chown,
++	.path_truncate =		apparmor_path_truncate,
++	.dentry_open =			apparmor_dentry_open,
++	.inode_getattr =                apparmor_inode_getattr,
++
++	.file_permission =		apparmor_file_permission,
++	.file_alloc_security =		apparmor_file_alloc_security,
++	.file_free_security =		apparmor_file_free_security,
++	.file_mmap =			apparmor_file_mmap,
++	.file_mprotect =		apparmor_file_mprotect,
++	.file_lock =			apparmor_file_lock,
++
++	.getprocattr =			apparmor_getprocattr,
++	.setprocattr =			apparmor_setprocattr,
++
++	.cred_alloc_blank =		apparmor_cred_alloc_blank,
++	.cred_free =			apparmor_cred_free,
++	.cred_prepare =			apparmor_cred_prepare,
++	.cred_transfer =		apparmor_cred_transfer,
++
++	.bprm_set_creds =		apparmor_bprm_set_creds,
++	.bprm_committing_creds =	apparmor_bprm_committing_creds,
++	.bprm_committed_creds =		apparmor_bprm_committed_creds,
++	.bprm_secureexec =		apparmor_bprm_secureexec,
++
++	.task_setrlimit =		apparmor_task_setrlimit,
 +};
 +
-+int apparmor_bprm_set_creds(struct linux_binprm *bprm);
-+int apparmor_bprm_secureexec(struct linux_binprm *bprm);
-+void apparmor_bprm_committing_creds(struct linux_binprm *bprm);
-+void apparmor_bprm_committed_creds(struct linux_binprm *bprm);
++/*
++ * AppArmor sysfs module parameters
++ */
 +
-+void aa_free_domain_entries(struct aa_domain *domain);
-+int aa_change_hat(const char *hats[], int count, u64 token, bool permtest);
-+int aa_change_profile(const char *ns_name, const char *name, int onexec,
-+		      bool permtest);
++static int param_set_aabool(const char *val, struct kernel_param *kp);
++static int param_get_aabool(char *buffer, struct kernel_param *kp);
++#define param_check_aabool(name, p) __param_check(name, p, int)
 +
-+#endif /* __AA_DOMAIN_H */
++static int param_set_aauint(const char *val, struct kernel_param *kp);
++static int param_get_aauint(char *buffer, struct kernel_param *kp);
++#define param_check_aauint(name, p) __param_check(name, p, int)
++
++static int param_set_aalockpolicy(const char *val, struct kernel_param *kp);
++static int param_get_aalockpolicy(char *buffer, struct kernel_param *kp);
++#define param_check_aalockpolicy(name, p) __param_check(name, p, int)
++
++static int param_set_audit(const char *val, struct kernel_param *kp);
++static int param_get_audit(char *buffer, struct kernel_param *kp);
++#define param_check_audit(name, p) __param_check(name, p, int)
++
++static int param_set_mode(const char *val, struct kernel_param *kp);
++static int param_get_mode(char *buffer, struct kernel_param *kp);
++#define param_check_mode(name, p) __param_check(name, p, int)
++
++/* Flag values, also controllable via /sys/module/apparmor/parameters
++ * We define special types as we want to do additional mediation.
++ */
++
++/* AppArmor global enforcement switch - complain, enforce, kill */
++enum profile_mode aa_g_profile_mode = APPARMOR_ENFORCE;
++module_param_call(mode, param_set_mode, param_get_mode,
++		  &aa_g_profile_mode, S_IRUSR | S_IWUSR);
++
++/* Debug mode */
++int aa_g_debug;
++module_param_named(debug, aa_g_debug, aabool, S_IRUSR | S_IWUSR);
++
++/* Audit mode */
++enum audit_mode aa_g_audit;
++module_param_call(audit, param_set_audit, param_get_audit,
++		  &aa_g_audit, S_IRUSR | S_IWUSR);
++
++/* Determines if audit header is included in audited messages.  This
++ * provides more context if the audit daemon is not running
++ */
++int aa_g_audit_header;
++module_param_named(audit_header, aa_g_audit_header, aabool,
++		   S_IRUSR | S_IWUSR);
++
++/* lock out loading/removal of policy
++ * TODO: add in at boot loading of policy, which is the only way to
++ *       load policy, if lock_policy is set
++ */
++int aa_g_lock_policy;
++module_param_named(lock_policy, aa_g_lock_policy, aalockpolicy,
++		   S_IRUSR | S_IWUSR);
++
++/* Syscall logging mode */
++int aa_g_logsyscall;
++module_param_named(logsyscall, aa_g_logsyscall, aabool, S_IRUSR | S_IWUSR);
++
++/* Maximum pathname length before accesses will start getting rejected */
++unsigned int aa_g_path_max = 2 * PATH_MAX;
++module_param_named(path_max, aa_g_path_max, aauint, S_IRUSR | S_IWUSR);
++
++/* Determines how paranoid loading of policy is and how much verification
++ * on the loaded policy is done.
++ */
++int aa_g_paranoid_load = 1;
++module_param_named(paranoid_load, aa_g_paranoid_load, aabool,
++		   S_IRUSR | S_IWUSR);
++
++/* Boot time disable flag */
++static unsigned int apparmor_enabled = CONFIG_SECURITY_APPARMOR_BOOTPARAM_VALUE;
++module_param_named(enabled, apparmor_enabled, aabool, S_IRUSR);
++
++static int __init apparmor_enabled_setup(char *str)
++{
++	unsigned long enabled;
++	int error = strict_strtoul(str, 0, &enabled);
++	if (!error)
++		apparmor_enabled = enabled ? 1 : 0;
++	return 1;
++}
++
++__setup("apparmor=", apparmor_enabled_setup);
++
++/* set global flag turning off the ability to load policy */
++static int param_set_aalockpolicy(const char *val, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	if (aa_g_lock_policy)
++		return -EACCES;
++	return param_set_bool(val, kp);
++}
++
++static int param_get_aalockpolicy(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_get_bool(buffer, kp);
++}
++
++static int param_set_aabool(const char *val, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_set_bool(val, kp);
++}
++
++static int param_get_aabool(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_get_bool(buffer, kp);
++}
++
++static int param_set_aauint(const char *val, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_set_uint(val, kp);
++}
++
++static int param_get_aauint(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++	return param_get_uint(buffer, kp);
++}
++
++static int param_get_audit(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	if (!apparmor_enabled)
++		return -EINVAL;
++
++	return sprintf(buffer, "%s", audit_mode_names[aa_g_audit]);
++}
++
++static int param_set_audit(const char *val, struct kernel_param *kp)
++{
++	int i;
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	if (!apparmor_enabled)
++		return -EINVAL;
++
++	if (!val)
++		return -EINVAL;
++
++	for (i = 0; i < AUDIT_MAX_INDEX; i++) {
++		if (strcmp(val, audit_mode_names[i]) == 0) {
++			aa_g_audit = i;
++			return 0;
++		}
++	}
++
++	return -EINVAL;
++}
++
++static int param_get_mode(char *buffer, struct kernel_param *kp)
++{
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	if (!apparmor_enabled)
++		return -EINVAL;
++
++	return sprintf(buffer, "%s", profile_mode_names[aa_g_profile_mode]);
++}
++
++static int param_set_mode(const char *val, struct kernel_param *kp)
++{
++	int i;
++	if (!capable(CAP_MAC_ADMIN))
++		return -EPERM;
++
++	if (!apparmor_enabled)
++		return -EINVAL;
++
++	if (!val)
++		return -EINVAL;
++
++	for (i = 0; i < APPARMOR_NAMES_MAX_INDEX; i++) {
++		if (strcmp(val, profile_mode_names[i]) == 0) {
++			aa_g_profile_mode = i;
++			return 0;
++		}
++	}
++
++	return -EINVAL;
++}
++
++/*
++ * AppArmor init functions
++ */
++
++/**
++ * set_init_cxt - set a task context and profile on the first task.
++ *
++ * TODO: allow setting an alternate profile than unconfined
++ */
++static int __init set_init_cxt(void)
++{
++	struct cred *cred = (struct cred *)current->real_cred;
++	struct aa_task_cxt *cxt;
++
++	cxt = aa_alloc_task_context(GFP_KERNEL);
++	if (!cxt)
++		return -ENOMEM;
++
++	cxt->profile = aa_get_profile(root_ns->unconfined);
++	cred->security = cxt;
++
++	return 0;
++}
++
++static int __init apparmor_init(void)
++{
++	int error;
++
++	if (!apparmor_enabled || !security_module_enable(&apparmor_ops)) {
++		aa_info_message("AppArmor disabled by boot time parameter");
++		apparmor_enabled = 0;
++		return 0;
++	}
++
++	error = aa_alloc_root_ns();
++	if (error) {
++		AA_ERROR("Unable to allocate default profile namespace\n");
++		goto alloc_out;
++	}
++
++	error = set_init_cxt();
++	if (error) {
++		AA_ERROR("Failed to set context on init task\n");
++		goto register_security_out;
++	}
++
++	error = register_security(&apparmor_ops);
++	if (error) {
++		AA_ERROR("Unable to register AppArmor\n");
++		goto register_security_out;
++	}
++
++	/* Report that AppArmor successfully initialized */
++	apparmor_initialized = 1;
++	if (aa_g_profile_mode == APPARMOR_COMPLAIN)
++		aa_info_message("AppArmor initialized: complain mode enabled");
++	else if (aa_g_profile_mode == APPARMOR_KILL)
++		aa_info_message("AppArmor initialized: kill mode enabled");
++	else
++		aa_info_message("AppArmor initialized");
++
++	return error;
++
++register_security_out:
++	aa_free_root_ns();
++
++alloc_out:
++	aa_destroy_aafs();
++
++	apparmor_enabled = 0;
++	return error;
++
++}
++
++security_initcall(apparmor_init);
 -- 
 1.7.0.4
 
