@@ -1,60 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934220Ab0GOSoX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:44:23 -0400
-Received: from mailout-de.gmx.net ([213.165.64.22]:34300 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S934208Ab0GOSoP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:44:15 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX1+5iB5mC7i5jK4GRDJzw5p1tWjy8YEsNFjZgtqSC7
-	lQdTc2lmqsfLpd
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Subject: [PATCH 07/25] atm: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
-Date: Thu, 15 Jul 2010 20:44:11 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: Chas Williams <chas@cmf.nrl.navy.mil>,
-        "David S. Miller" <davem@davemloft.net>,
-        Roel Kluin <roel.kluin@gmail.com>,
-        Eric Dumazet <eric.dumazet@gmail.com>, Tejun Heo <tj@kernel.org>,
-        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007152044.12653.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S934233Ab0GOSoh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:44:37 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:35888 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934208Ab0GOSob (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 14:44:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=obOQKbPcMcg4EB61ygPu5WXbpOdK8kC/t6utVGdkVhiMv7vONOROniHAplInS1tuHg
+         sPxGFgMEqft5FsUL8KThkyaI6rxxJJlUKofak/MNXUb0ES8pI0m/WKh+HFF/YB/FLu55
+         GZGlL5G+ewWB3bBOyrR58Q5mA18qHuF1Ppw9o=
+From: Kulikov Vasiliy <segooon@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Samuel Ortiz <sameo@linux.intel.com>, Luotao Fu <l.fu@pengutronix.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/8] touchscreen: fix sign bug
+Date: Thu, 15 Jul 2010 22:43:54 +0400
+Message-Id: <1279219435-12128-1-git-send-email-segooon@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+platform_get_irq_byname() can return negative results, it is not seen to
+unsigned ts_irq. Make it signed.
 
-This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
-.subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
-PCI_VDEVICE macro, and thus improves readability.
-
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/atm/he.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+ drivers/input/touchscreen/stmpe-ts.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/atm/he.c b/drivers/atm/he.c
-index fa4d600..801e8b6 100644
---- a/drivers/atm/he.c
-+++ b/drivers/atm/he.c
-@@ -2870,8 +2870,7 @@ module_param(sdh, bool, 0);
- MODULE_PARM_DESC(sdh, "use SDH framing (default 0)");
+diff --git a/drivers/input/touchscreen/stmpe-ts.c b/drivers/input/touchscreen/stmpe-ts.c
+index 77f4374..656148e 100644
+--- a/drivers/input/touchscreen/stmpe-ts.c
++++ b/drivers/input/touchscreen/stmpe-ts.c
+@@ -269,7 +269,7 @@ static int __devinit stmpe_input_probe(struct platform_device *pdev)
+ 	struct input_dev *idev;
+ 	struct stmpe_ts_platform_data *ts_pdata = NULL;
+ 	int ret = 0;
+-	unsigned int ts_irq;
++	int ts_irq;
  
- static struct pci_device_id he_pci_tbl[] = {
--	{ PCI_VENDOR_ID_FORE, PCI_DEVICE_ID_FORE_HE, PCI_ANY_ID, PCI_ANY_ID,
--	  0, 0, 0 },
-+	{ PCI_VDEVICE(FORE, PCI_DEVICE_ID_FORE_HE), 0 },
- 	{ 0, }
- };
- 
+ 	ts_irq = platform_get_irq_byname(pdev, "FIFO_TH");
+ 	if (ts_irq < 0)
 -- 
-1.7.1
+1.7.0.4
 
