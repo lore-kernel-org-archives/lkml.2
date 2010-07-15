@@ -1,62 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934654Ab0GOUNo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 16:13:44 -0400
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:60215 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934633Ab0GOUNl convert rfc822-to-8bit (ORCPT
+	id S934667Ab0GOUOb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 16:14:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52225 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934624Ab0GOUOa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 16:13:41 -0400
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: Dave Chinner <david@fromorbit.com>
-Subject: Re: 2.6.35-r5 ext3 corruptions
-Date: Thu, 15 Jul 2010 22:14:16 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-btrfs-debug; KDE/4.4.5; i686; ; )
-Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <20100715105745.GI30737@dastard>
-In-Reply-To: <20100715105745.GI30737@dastard>
+	Thu, 15 Jul 2010 16:14:30 -0400
+Message-ID: <4C3F6B3D.7030303@kernel.org>
+Date: Thu, 15 Jul 2010 13:10:37 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201007152214.17898.johannes.hirte@fem.tu-ilmenau.de>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@kernel.org>
+Subject: Re: [PATCH] x86: fix x2apic preenabled system with kexec
+References: <4C3BD6AA.3070908@kernel.org> <4C3CE210.2030902@zytor.com>	 <4C3CF650.30905@kernel.org> <4C3E1FA0.9000107@kernel.org>	 <4C3E2AE6.30406@kernel.org>  <4C3E40EC.5060607@kernel.org>	 <1279152189.2849.260.camel@sbs-t61.sc.intel.com>	 <4C3EB22B.3000701@kernel.org> <1279217784.2751.7.camel@sbs-t61.sc.intel.com>
+In-Reply-To: <1279217784.2751.7.camel@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C3F6BF7.016E,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag 15 Juli 2010, 12:57:45 schrieb Dave Chinner:
-> Upgrading my test vms from 2.6.35-rc3 to 2.6.35-rc5 is resulting in
-> repeated errors on the root drive of a test VM:
+On 07/15/2010 11:16 AM, Suresh Siddha wrote:
+> On Thu, 2010-07-15 at 00:00 -0700, Yinghai Lu wrote:
 > 
-> { 1532.368808] EXT3-fs error (device sda1): ext3_lookup: deleted inode
-> referenced: 211043 [ 1532.370859] Aborting journal on device sda1.
-> [ 1532.376957] EXT3-fs (sda1):
-> [ 1532.376976] EXT3-fs (sda1): error: ext3_journal_start_sb: Detected
-> aborted journal [ 1532.376980] EXT3-fs (sda1): error: remounting
-> filesystem read-only [ 1532.420361] error: remounting filesystem read-only
-> [ 1532.621209] EXT3-fs error (device sda1): ext3_lookup: deleted inode
-> referenced: 211043
+>> BTW: is there any x2apic preenabled system with apicid of boot cpu > 255?
 > 
-> The filesysetm is a mess when checked on reboot - lots of illegal
-> references to blocks, multiply linked blocks, etc, but repairs.
-> Files are lots, truncated, etc, so there is visible filesystem
-> damage.
-> 
-> I did lots of testing on 2.6.35-rc3 and came across no problems;
-> problems only seemed to start with 2.6.35-rc5, and I've repろoduced
-> the problem on a vanilla 2.6.35-rc4.
-> 
-> The problem seems to occur randomly - sometimes during boot or when
-> idle after boot, sometimes a while after boot. I haven't done any
-> digging at all for the cause - all I've done so far is confirm that
-> it is reproducable and it's not my code causing the problem.
+> I am not sure. There might be one. Is there any bug which can't handle
+> this condition?
 
-This sounds like the errors I've encountered with btrfs and XFS:
-http://lkml.org/lkml/2010/7/8/181
+We merged apic_ops into struct apic a while ago.
 
-I'm not sure, but it's quite possible that this started with the change from 
-2.6.35-rc3 to 2.6.35-rc4 .
+so even for system with x2apic preenabled by BIOS, x2apic_cluster/phys is set to apic until smp_pare_cpus()::default_setup_apic_routing() after enable_IR_x2apic.
 
+that means the boot cpu x2apic is accessed via memmap instead msr based way at that point.
 
-regards,
-  Johannes
+not sure if the Boot apic id is bigger than 255. read_apic() for apic id could be wrong. ( in early_acpi_boot_init, acpi_boot_init, init_apic_mappings)
+
+looks like we need to re-read boot_cpu_physical_apicid
+or we could assign x2apic_cluster/phys in check_x2apic(), and later if intr_remapping can not be enabed, we can revert back to phys_flat or flat?
+
+Thanks
+
+Yinghai Lu
