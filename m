@@ -1,148 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934419Ab0GOTCo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 15:02:44 -0400
-Received: from mail.gmx.net ([213.165.64.20]:36065 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S934406Ab0GOTCl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 15:02:41 -0400
-X-Authenticated: #12255092
-X-Provags-ID: V01U2FsdGVkX19wEGMuurpwLDO31dA8upUYtRlxyJ7bWHqX+l4pds
-	/PGkXB1dk84YGd
-From: Peter Huewe <PeterHuewe@gmx.de>
-To: Kernel Janitors <kernel-janitors@vger.kernel.org>
-Subject: [PATCH 19/25] isdn/hardware/mISDN: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
-Date: Thu, 15 Jul 2010 21:02:36 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
-Cc: Karsten Keil <isdn@linux-pingi.de>,
-        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        Tejun Heo <tj@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S934435Ab0GOTDP (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 15:03:15 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:50106 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934406Ab0GOTDL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 15:03:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Rg6nStpeM42ArY4ovlhhFyKmQqkKeMsYI37O4zd2IdWQjUzSh3eZSCyP7U9D+pqc3c
+         +jZXhRPmT0SWTcM2bWbU4hDiBBJdiTC6BsWUu37/0yvn+SfHjqs6+k4TDL27dm8ikNqf
+         4NQpjC/yT6AYMlWbsouvPU3lOCLkgml163Tjo=
+Date: Thu, 15 Jul 2010 22:03:05 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Peter Huewe <PeterHuewe@gmx.de>
+Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?iso-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/25] block: Convert pci_table entries to PCI_VDEVICE
+ (if PCI_ANY_ID is used)
+Message-ID: <20100715185904.GA4023@x200>
+References: <201007152051.18189.PeterHuewe@gmx.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007152102.38008.PeterHuewe@gmx.de>
-X-Y-GMX-Trusted: 0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007152051.18189.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Peter Huewe <peterhuewe@gmx.de>
+On Thu, Jul 15, 2010 at 08:51:17PM +0200, Peter Huewe wrote:
+> This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
+> .subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
+> PCI_VDEVICE macro, and thus improves readability.
 
-This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
-.subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
-PCI_VDEVICE macro, and thus improves readability.
+Well, it doesn't improve readability, and ## usage prevents grepping and
+long term plan to switch to numbers instead of PCI_VENDOR_ID_*,
+but whatever.
 
-Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
----
- drivers/isdn/hardware/mISDN/hfcpci.c |   92 +++++++++++++++++-----------------
- 1 files changed, 46 insertions(+), 46 deletions(-)
-
-diff --git a/drivers/isdn/hardware/mISDN/hfcpci.c b/drivers/isdn/hardware/mISDN/hfcpci.c
-index 65ded05..15d323b 100644
---- a/drivers/isdn/hardware/mISDN/hfcpci.c
-+++ b/drivers/isdn/hardware/mISDN/hfcpci.c
-@@ -2188,52 +2188,52 @@ static const struct _hfc_map hfc_map[] =
- 
- static struct pci_device_id hfc_ids[] =
- {
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_2BD0,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[0]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B000,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[1]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B006,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[2]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B007,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[3]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B008,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[4]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B009,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[5]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B00A,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[6]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B00B,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[7]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B00C,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[8]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B100,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[9]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B700,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[10]},
--	{PCI_VENDOR_ID_CCD, PCI_DEVICE_ID_CCD_B701,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[11]},
--	{PCI_VENDOR_ID_ABOCOM, PCI_DEVICE_ID_ABOCOM_2BD1,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[12]},
--	{PCI_VENDOR_ID_ASUSTEK, PCI_DEVICE_ID_ASUSTEK_0675,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[13]},
--	{PCI_VENDOR_ID_BERKOM, PCI_DEVICE_ID_BERKOM_T_CONCEPT,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[14]},
--	{PCI_VENDOR_ID_BERKOM, PCI_DEVICE_ID_BERKOM_A1T,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[15]},
--	{PCI_VENDOR_ID_ANIGMA, PCI_DEVICE_ID_ANIGMA_MC145575,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[16]},
--	{PCI_VENDOR_ID_ZOLTRIX, PCI_DEVICE_ID_ZOLTRIX_2BD0,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[17]},
--	{PCI_VENDOR_ID_DIGI, PCI_DEVICE_ID_DIGI_DF_M_IOM2_E,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[18]},
--	{PCI_VENDOR_ID_DIGI, PCI_DEVICE_ID_DIGI_DF_M_E,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[19]},
--	{PCI_VENDOR_ID_DIGI, PCI_DEVICE_ID_DIGI_DF_M_IOM2_A,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[20]},
--	{PCI_VENDOR_ID_DIGI, PCI_DEVICE_ID_DIGI_DF_M_A,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[21]},
--	{PCI_VENDOR_ID_SITECOM, PCI_DEVICE_ID_SITECOM_DC105V2,
--		PCI_ANY_ID, PCI_ANY_ID, 0, 0, (unsigned long) &hfc_map[22]},
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_2BD0),
-+		(unsigned long) &hfc_map[0] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B000),
-+		(unsigned long) &hfc_map[1] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B006),
-+		(unsigned long) &hfc_map[2] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B007),
-+		(unsigned long) &hfc_map[3] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B008),
-+		(unsigned long) &hfc_map[4] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B009),
-+		(unsigned long) &hfc_map[5] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B00A),
-+		(unsigned long) &hfc_map[6] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B00B),
-+		(unsigned long) &hfc_map[7] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B00C),
-+		(unsigned long) &hfc_map[8] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B100),
-+		(unsigned long) &hfc_map[9] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B700),
-+		(unsigned long) &hfc_map[10] },
-+	{ PCI_VDEVICE(CCD, PCI_DEVICE_ID_CCD_B701),
-+		(unsigned long) &hfc_map[11] },
-+	{ PCI_VDEVICE(ABOCOM, PCI_DEVICE_ID_ABOCOM_2BD1),
-+		(unsigned long) &hfc_map[12] },
-+	{ PCI_VDEVICE(ASUSTEK, PCI_DEVICE_ID_ASUSTEK_0675),
-+		(unsigned long) &hfc_map[13] },
-+	{ PCI_VDEVICE(BERKOM, PCI_DEVICE_ID_BERKOM_T_CONCEPT),
-+		(unsigned long) &hfc_map[14] },
-+	{ PCI_VDEVICE(BERKOM, PCI_DEVICE_ID_BERKOM_A1T),
-+		(unsigned long) &hfc_map[15] },
-+	{ PCI_VDEVICE(ANIGMA, PCI_DEVICE_ID_ANIGMA_MC145575),
-+		(unsigned long) &hfc_map[16] },
-+	{ PCI_VDEVICE(ZOLTRIX, PCI_DEVICE_ID_ZOLTRIX_2BD0),
-+		(unsigned long) &hfc_map[17] },
-+	{ PCI_VDEVICE(DIGI, PCI_DEVICE_ID_DIGI_DF_M_IOM2_E),
-+		(unsigned long) &hfc_map[18] },
-+	{ PCI_VDEVICE(DIGI, PCI_DEVICE_ID_DIGI_DF_M_E),
-+		(unsigned long) &hfc_map[19] },
-+	{ PCI_VDEVICE(DIGI, PCI_DEVICE_ID_DIGI_DF_M_IOM2_A),
-+		(unsigned long) &hfc_map[20] },
-+	{ PCI_VDEVICE(DIGI, PCI_DEVICE_ID_DIGI_DF_M_A),
-+		(unsigned long) &hfc_map[21] },
-+	{ PCI_VDEVICE(SITECOM, PCI_DEVICE_ID_SITECOM_DC105V2),
-+		(unsigned long) &hfc_map[22] },
- 	{},
- };
- 
--- 
-1.7.1
-
+> -	{ PCI_VENDOR_ID_PROMISE, 0x8000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, },
+> -	{ PCI_VENDOR_ID_PROMISE, 0x8002, PCI_ANY_ID, PCI_ANY_ID, 0, 0, },
+> +	{ PCI_VDEVICE(PROMISE, 0x8000), },
+> +	{ PCI_VDEVICE(PROMISE, 0x8002), },
