@@ -1,70 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758630Ab0GORdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 13:33:49 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38070 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758323Ab0GORds (ORCPT
+	id S1758654Ab0GORgI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 13:36:08 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:45790 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758643Ab0GORgH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 13:33:48 -0400
-Date: Thu, 15 Jul 2010 18:33:22 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: Conke Hu <conke.hu@gmail.com>, CoffBeta <coffbeta@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        inux kernel <linux-kernel@vger.kernel.org>,
-        ext-jani.1.nikula@nokia.com,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: tq 2440
-Message-ID: <20100715173322.GL29322@n2100.arm.linux.org.uk>
-References: <AANLkTimyBHliUa62qmfja_ke6YTTysiVAtJcZfi8l2gG@mail.gmail.com> <AANLkTil8GE1OguyAfp3XgfJvEmH98yNrlvGAx684a-qL@mail.gmail.com> <20100715163526.GJ29322@n2100.arm.linux.org.uk> <20100715165141.GA21272@suse.de> <20100715171029.GK29322@n2100.arm.linux.org.uk> <20100715172218.GA22197@suse.de>
+	Thu, 15 Jul 2010 13:36:07 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=wJUsFxU2ahhSypeYPhB7SOYjvLFFg3lrXm3LBX1MxXsDHvBqdIo2RBNw7VmbKGm76
+	E5iaZw0mHw6DunN8FtBVA==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100715172218.GA22197@suse.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4C3EBD51.80406@wildgooses.com>
+References: <4C3D94E3.9080103@wildgooses.com>
+	<4C3DD5EB.9070908@tmr.com>
+	<20100714.111553.104052157.davem@davemloft.net>
+	<4C3E0684.5060409@wildgooses.com>
+	<4C3E1B54.40604@hp.com>
+	<20100714203919.GD6682@nuttenaction>
+	<AANLkTikTyZGQWWIBzYSQWpUK30xxbMXLbJXeHahWnlIi@mail.gmail.com>
+	<4C3EBD51.80406@wildgooses.com>
+Date: Thu, 15 Jul 2010 10:36:01 -0700
+Message-ID: <AANLkTikF0RVNAhJTyA1PJThAbqY7U5Pei13umU6qWfsZ@mail.gmail.com>
+Subject: Re: Raise initial congestion window size / speedup slow start?
+From: Jerry Chu <hkchu@google.com>
+To: Ed W <lists@wildgooses.com>
+Cc: Tom Herbert <therbert@google.com>, Hagen Paul Pfeifer <hagen@jauu.net>,
+        Rick Jones <rick.jones2@hp.com>, David Miller <davem@davemloft.net>,
+        davidsen@tmr.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+        Nandita Dukkipati <nanditad@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 10:22:18AM -0700, Greg KH wrote:
-> On Thu, Jul 15, 2010 at 06:10:29PM +0100, Russell King - ARM Linux wrote:
-> > On Thu, Jul 15, 2010 at 09:51:41AM -0700, Greg KH wrote:
-> > > On Thu, Jul 15, 2010 at 05:35:26PM +0100, Russell King - ARM Linux wrote:
-> > > > On Thu, Jul 15, 2010 at 11:16:30PM +0800, Conke Hu wrote:
-> > > > > ever notice to the following kernel log?
-> > > > > "Device 's3c2440-nand' does not have a release() function, it is
-> > > > > broken and must."
-> > > > > release() function should be implemented  in the platform_device.
-> > > > 
-> > > > That's not telling you to provide a release function.  The warning is
-> > > > telling you that a device is being unregistered which doesn't have a
-> > > > release function.
-> > > > 
-> > > > Consider this point - maybe it doesn't have a release function because
-> > > > it's not supposed to be unregistered?
-> > > 
-> > > Heh, well, it is being unregistered, and at that point in time, the
-> > > kernel complains.
-> > 
-> > The unregistration occurs because platform_register_devices() (which is
-> > used by arch code to register a block of platform devices) undoes its
-> > work if one of the devices fails to register.
-> > 
-> > I've long since thought, since I created that function, that this probably
-> > isn't desirable behaviour, and it should continue to register as many
-> > devices as it possibly can.
-> > 
-> > > All kobjects need a release function that actually frees it.  If not,
-> > > that is a logic bug.  Please see the Documentation/kobject.txt file for
-> > > details.
-> > 
-> > How do you free a statically declared platform device?
-> 
-> You never unregister it :)
+On Thu, Jul 15, 2010 at 12:48 AM, Ed W <lists@wildgooses.com> wrote:
+>
+> On 15/07/2010 05:12, Tom Herbert wrote:
+>>
+>> There is an Internet draft
+>> (http://datatracker.ietf.org/doc/draft-hkchu-tcpm-initcwnd/) on
+>> raising the default Initial Congestion window to 10 segments, as well
+>> as a SIGCOMM paper (http://ccr.sigcomm.org/online/?q=node/621).
+>>
+>
+> You guys have obviously done a lot of work on this, however, it seems that there is a case for introducing some heuristics into the choice of init cwnd as well as offering the option to go larger?  An initial size of 10 packets is just another magic number that obviously works with the median bandwidth delay product on today's networks - can we not do better still?
+>
+> Seems like a bunch of clever folks have already suggested tweaks to the steady stage congestion avoidance, but so far everyone is afraid to touch the early stage heuristics?
 
-Indeed, and one way to do that is to fix the double-registration of
-dm9000.0.  Another way to avoid the other complaints is to remove
-the unregistration in platform_register_devices().
+This is because there is not enough info for deriving any heuristic.
+For initcwnd one is constrained to
+only info from 3WHS. This includes a rough estimate of RTT plus all
+the bits in the SYN/SYN-ACK
+headers. I'm assuming a stateless approach. We've tried a stateful
+solution (i.e., seeding initcwnd from
+past history) but found its complexity outweigh the gain.
+(See http://www.ietf.org/proceedings/77/slides/tcpm-4.pdf)
+
+>
+> Also would you guys not benefit from wider deployment of ECN?  Can you not help find some ways that deployment could be increased?  At present there are big warnings all over the option that it causes some problems, but there is no quantification of how much and really whether this warning is still appropriate?
+
+That will add yet another hoop for us to jump over. Also I'm not sure
+a couple of bits are sufficient for a
+guesstimate of what initcwnd ought to be.
+
+Our reasoning is simple - there has been tremendous b/w growth since
+rfc2414 was published. Even the
+lowest common denominator (i.e., dialup links) has moved from 9.6Kbps
+to 56Kbps. That's a six fold
+increase. If you believe initcwnd should grow proportionally to the
+buffer sizes in access links, and the
+buffer sizes grows proportionally to b/w, then the initcwnd outght to
+be 3*6 = 18 today.
+
+We chose a modest increase (10) with the hope to expedite the
+standardization process (and would
+certainly appreciate helps from folks on this list). 10 is very
+conservative considering many deployment
+has gone beyond 3, including Linux stack, which allows one additional
+pkt if it's the last data pkt.
+
+Longer term it will be nice to find a way to get rid of this fixed,
+somewhat arbitrary initcwnd. Mark
+Allman's JumpStart is one idea, but it'd be a much longer route.
+
+Jerry
+
+>
+> Ed W
+>
