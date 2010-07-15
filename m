@@ -1,42 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933503Ab0GOPHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 11:07:21 -0400
-Received: from web100113.mail.kks.yahoo.co.jp ([114.111.99.88]:21887 "HELO
-	web100113.mail.kks.yahoo.co.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S933441Ab0GOPHS (ORCPT
+	id S933488Ab0GOPI7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 11:08:59 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:59698 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933421Ab0GOPI6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 11:07:18 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jul 2010 11:07:17 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=yj20050223; d=yahoo.co.jp;
-  h=Message-ID:Received:Date:From:Subject:To:MIME-Version:Content-Type;
-  b=AMbDTlgWrAmKlw56xmgILYjIy/r2WFvwiJpwAXMdgePJkoCWaengy5lRgicWFHhbj9CxqX1hVCPCIpGPwEr0nTnzuTqB5XFU5mN8hs7QSpm1NkIY6FIb6hPpbpDekiO9  ;
-Message-ID: <20100715150036.22283.qmail@web100113.mail.kks.yahoo.co.jp>
-Date: Fri, 16 Jul 2010 00:00:36 +0900 (JST)
-From: tanaka <tanaka_hideo@yahoo.co.jp>
-Subject: Please teach me X86 I/O port 0x61 
+	Thu, 15 Jul 2010 11:08:58 -0400
+Subject: [PATCH 0/3] Kmemleak patches for 2.6.36-rc1
 To: linux-kernel@vger.kernel.org
+From: Catalin Marinas <catalin.marinas@arm.com>
+Date: Thu, 15 Jul 2010 16:08:56 +0100
+Message-ID: <20100715150703.21793.94815.stgit@e102109-lin.cambridge.arm.com>
+User-Agent: StGit/0.15-83-g972d5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-2022-jp
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Jul 2010 15:08:56.0487 (UTC) FILETIME=[A542C370:01CB242F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear all.
+Hi,
 
-I investigate about  NMI kernel messages.
-Linux kernel read 0x61 address using inb(61h).
+These are three kmemleak patches that I plan to push during the upcoming
+merging window. Thanks.
 
-I search a amd opteron cpu following manuals.
-but I do not find  explanation of 0x61 address.
 
-http://support.amd.com/us/psearch/Pages/psearch.aspx?type=2.1&product=2.1.4&contentType=Tech+Doc+Processor&ostype=&keywords=&items=20
+Catalin Marinas (2):
+      kmemleak: Show more information for objects found by alias
+      kmemleak: Add DocBook style comments to kmemleak.c
 
-Could you teach me a 0x61 address of X86 arch >
+Jason Baron (1):
+      kmemleak: Introduce a default off mode for kmemleak
 
-Best regards.
 
---------------------------------------
-Get the new Internet Explorer 8 optimized for Yahoo! JAPAN
-http://pr.mail.yahoo.co.jp/ie8/
+ lib/Kconfig.debug |    7 ++++
+ mm/kmemleak.c     |   98 +++++++++++++++++++++++++++++++++++++++++------------
+ 2 files changed, 82 insertions(+), 23 deletions(-)
+
+-- 
+Catalin
