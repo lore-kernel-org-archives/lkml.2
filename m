@@ -1,34 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932232Ab0GOCyF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 22:54:05 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62430 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932183Ab0GOCyB (ORCPT
+	id S932223Ab0GOCzx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 22:55:53 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:56197 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932181Ab0GOCzw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 22:54:01 -0400
+	Wed, 14 Jul 2010 22:55:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=subject:from:to:cc:in-reply-to:references:content-type:date
          :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=f7AmoZ++UQRzzn3PFzrQy/M0yk4YopCzGREa+WSOw+3Y3/o2UBe4iqCgUz4xBg+VC2
-         52k28qV2oHLVzmFKCybJhJtUUDtzg5ysm9HD0CPw/7VF8kMVL0AGKx2RwjfLLjpWPArK
-         xSHF6Dy3N0R/LnUCJQAGsRF9fprPUbH1d0jeE=
-Subject: [PATCH 3/12] da7210: fix a memory leak if failed to initialise
-	da7210 audio codec
+        b=w52LfttTmzb5pMQWGc1tPACvq1cGBK7PfepEFczyR9rwcrmyL0mw9oexVkZvRF5lQA
+         W+kpxt4aRSWtO1TK8wDSgqebgvf6VE0SoBYQu0wzLRiH21sEaJVxAB8HJ6uCFVbrgHB+
+         GBbgmU8vmCTKFH4tiVmYjP8f/tUenVsGk8Cmc=
+Subject: [PATCH 4/12] wm8523: fix resource reclaim in wm8523_register error
+	path
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
         Mark Brown <broonie@opensource.wolfsonmicro.com>,
         Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>,
-        Phil Edworthy <Phil.Edworthy@renesas.com>, Tejun Heo <tj@kernel.org>,
-        alsa-devel@alsa-project.org
+        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
 In-Reply-To: <1279162147.29294.2.camel@mola>
 References: <1279162147.29294.2.camel@mola>
 Content-Type: text/plain
-Date: Thu, 15 Jul 2010 10:53:49 +0800
-Message-Id: <1279162429.29294.9.camel@mola>
+Date: Thu, 15 Jul 2010 10:56:30 +0800
+Message-Id: <1279162590.29294.12.camel@mola>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
@@ -36,49 +34,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-da7210 should be kfreed if da7210_init() return error.
-This patch also fixes the error handing in the case of snd_soc_register_dai()
-fail by adding snd_soc_unregister_codec() in error path.
+This patch includes below fixes:
+1. If another WM8523 is registered, need to kfree wm8523 before return -EINVAL.
+2. If snd_soc_register_codec failed, goto error path to properly free resources.
+3. Instead of using mixed in-line and goto style cleanup, use goto style error
+   handling if snd_soc_register_dai failed.
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- sound/soc/codecs/da7210.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ sound/soc/codecs/wm8523.c |   10 ++++++----
+ 1 files changed, 6 insertions(+), 4 deletions(-)
 
-diff --git a/sound/soc/codecs/da7210.c b/sound/soc/codecs/da7210.c
-index 75af2d6..3b9a6cc 100644
---- a/sound/soc/codecs/da7210.c
-+++ b/sound/soc/codecs/da7210.c
-@@ -488,7 +488,7 @@ static int da7210_init(struct da7210_priv *da7210)
- 	ret = snd_soc_register_dai(&da7210_dai);
- 	if (ret) {
- 		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
--		goto init_err;
-+		goto codec_err;
+diff --git a/sound/soc/codecs/wm8523.c b/sound/soc/codecs/wm8523.c
+index 37242a7..0ad039b 100644
+--- a/sound/soc/codecs/wm8523.c
++++ b/sound/soc/codecs/wm8523.c
+@@ -482,7 +482,8 @@ static int wm8523_register(struct wm8523_priv *wm8523,
+ 
+ 	if (wm8523_codec) {
+ 		dev_err(codec->dev, "Another WM8523 is registered\n");
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto err;
  	}
  
- 	/* FIXME
-@@ -574,6 +574,8 @@ static int da7210_init(struct da7210_priv *da7210)
+ 	mutex_init(&codec->mutex);
+@@ -570,18 +571,19 @@ static int wm8523_register(struct wm8523_priv *wm8523,
+ 	ret = snd_soc_register_codec(codec);
+ 	if (ret != 0) {
+ 		dev_err(codec->dev, "Failed to register codec: %d\n", ret);
+-		return ret;
++		goto err_enable;
+ 	}
  
- 	return ret;
+ 	ret = snd_soc_register_dai(&wm8523_dai);
+ 	if (ret != 0) {
+ 		dev_err(codec->dev, "Failed to register DAI: %d\n", ret);
+-		snd_soc_unregister_codec(codec);
+-		return ret;
++		goto err_codec;
+ 	}
  
-+codec_err:
+ 	return 0;
+ 
++err_codec:
 +	snd_soc_unregister_codec(codec);
- init_err:
- 	kfree(codec->reg_cache);
- 	codec->reg_cache = NULL;
-@@ -601,8 +603,10 @@ static int __devinit da7210_i2c_probe(struct i2c_client *i2c,
- 	codec->control_data = i2c;
- 
- 	ret = da7210_init(da7210);
--	if (ret < 0)
-+	if (ret < 0) {
- 		pr_err("Failed to initialise da7210 audio codec\n");
-+		kfree(da7210);
-+	}
- 
- 	return ret;
- }
+ err_enable:
+ 	regulator_bulk_disable(ARRAY_SIZE(wm8523->supplies), wm8523->supplies);
+ err_get:
 -- 
 1.5.4.3
 
