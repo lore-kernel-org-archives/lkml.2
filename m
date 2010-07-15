@@ -1,111 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933887Ab0GORZp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 13:25:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:56693 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933810Ab0GORZm (ORCPT
+	id S1758630Ab0GORdt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 13:33:49 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:38070 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758323Ab0GORds (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 13:25:42 -0400
-X-Authority-Analysis: v=1.1 cv=g9Y3NohClm0xo0Au7hiKM/lwvZwqTqjWC8eysRFNA3U= c=1 sm=0 a=o1FYtcTXQFcA:10 a=yQWWgrYGNuUA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=DfNHnWVPAAAA:8 a=Vk531U1CpUxeBF5tW5IA:9 a=KPruExL9g3-SffmKkeQA:7 a=s9lOLjFBCBVujjoSpKJYnNLPlbgA:4 a=CjuIK1q_8ugA:10 a=lBRciGGoxdUA:10 wl=env:18 a=Nqdp4+S2FArj7gZzHVn+tA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 70.120.198.24
-Date: Thu, 15 Jul 2010 12:27:57 -0500
-From: "Serge E. Hallyn" <serge@hallyn.com>
-To: John Johansen <john.johansen@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org
-Subject: Re: [PATCH 11/13] AppArmor: LSM interface, and security module
- initialization
-Message-ID: <20100715172757.GA26839@hallyn.com>
-References: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
- <1279154621-25868-12-git-send-email-john.johansen@canonical.com>
+	Thu, 15 Jul 2010 13:33:48 -0400
+Date: Thu, 15 Jul 2010 18:33:22 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Greg KH <gregkh@suse.de>
+Cc: Conke Hu <conke.hu@gmail.com>, CoffBeta <coffbeta@gmail.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        inux kernel <linux-kernel@vger.kernel.org>,
+        ext-jani.1.nikula@nokia.com,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: tq 2440
+Message-ID: <20100715173322.GL29322@n2100.arm.linux.org.uk>
+References: <AANLkTimyBHliUa62qmfja_ke6YTTysiVAtJcZfi8l2gG@mail.gmail.com> <AANLkTil8GE1OguyAfp3XgfJvEmH98yNrlvGAx684a-qL@mail.gmail.com> <20100715163526.GJ29322@n2100.arm.linux.org.uk> <20100715165141.GA21272@suse.de> <20100715171029.GK29322@n2100.arm.linux.org.uk> <20100715172218.GA22197@suse.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279154621-25868-12-git-send-email-john.johansen@canonical.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100715172218.GA22197@suse.de>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Quoting John Johansen (john.johansen@canonical.com):
-> AppArmor hooks to interface with the LSM, module parameters and module
-> initialization.
+On Thu, Jul 15, 2010 at 10:22:18AM -0700, Greg KH wrote:
+> On Thu, Jul 15, 2010 at 06:10:29PM +0100, Russell King - ARM Linux wrote:
+> > On Thu, Jul 15, 2010 at 09:51:41AM -0700, Greg KH wrote:
+> > > On Thu, Jul 15, 2010 at 05:35:26PM +0100, Russell King - ARM Linux wrote:
+> > > > On Thu, Jul 15, 2010 at 11:16:30PM +0800, Conke Hu wrote:
+> > > > > ever notice to the following kernel log?
+> > > > > "Device 's3c2440-nand' does not have a release() function, it is
+> > > > > broken and must."
+> > > > > release() function should be implemented  in the platform_device.
+> > > > 
+> > > > That's not telling you to provide a release function.  The warning is
+> > > > telling you that a device is being unregistered which doesn't have a
+> > > > release function.
+> > > > 
+> > > > Consider this point - maybe it doesn't have a release function because
+> > > > it's not supposed to be unregistered?
+> > > 
+> > > Heh, well, it is being unregistered, and at that point in time, the
+> > > kernel complains.
+> > 
+> > The unregistration occurs because platform_register_devices() (which is
+> > used by arch code to register a block of platform devices) undoes its
+> > work if one of the devices fails to register.
+> > 
+> > I've long since thought, since I created that function, that this probably
+> > isn't desirable behaviour, and it should continue to register as many
+> > devices as it possibly can.
+> > 
+> > > All kobjects need a release function that actually frees it.  If not,
+> > > that is a logic bug.  Please see the Documentation/kobject.txt file for
+> > > details.
+> > 
+> > How do you free a statically declared platform device?
 > 
-> Signed-off-by: John Johansen <john.johansen@canonical.com>
+> You never unregister it :)
 
-Thanks, John - looks good overall.  Comments:
-
-...
-
-> +static int apparmor_ptrace_access_check(struct task_struct *child,
-> +					unsigned int mode)
-> +{
-> +	int rc;
-> +
-> +	rc = cap_ptrace_access_check(child, mode);
-> +	if (rc)
-> +		return rc;
-> +
-> +	return aa_ptrace(current, child, mode);
-> +}
-> +
-> +static int apparmor_ptrace_traceme(struct task_struct *parent)
-> +{
-
-Just curious - why aren't you calling cap_ptrace_traceme() first here?
-
-> +	return aa_ptrace(parent, current, PTRACE_MODE_ATTACH);
-> +}
-> +
-> +/* Derived from security/commoncap.c:cap_capget */
-> +static int apparmor_capget(struct task_struct *target, kernel_cap_t *effective,
-> +			   kernel_cap_t *inheritable, kernel_cap_t *permitted)
-> +{
-> +	struct aa_profile *profile;
-> +	const struct cred *cred;
-> +
-> +	rcu_read_lock();
-> +	cred = __task_cred(target);
-> +	profile = aa_cred_profile(cred);
-> +
-> +	*effective = cred->cap_effective;
-> +	*inheritable = cred->cap_inheritable;
-> +	*permitted = cred->cap_permitted;
-> +
-> +	if (!unconfined(profile))
-> +		*effective = cap_intersect(*effective, profile->caps.allow);
-
-Should you mask permitted too?  Otherwise you might confuse a userspace
-lib which assumes it's caller previously culled pE, and that it can
-nwo refill it from pP.
-
-> +	rcu_read_unlock();
-> +
-> +	return 0;
-> +}
-> +
-> +static int apparmor_capable(struct task_struct *task, const struct cred *cred,
-> +			    int cap, int audit)
-> +{
-> +	struct aa_profile *profile;
-> +	/* cap_capable returns 0 on success, else -EPERM */
-> +	int error = cap_capable(task, cred, cap, audit);
-
-jinkeys, it might be just me, but i'd have spend 2 mins less looking
-at this if you'd done
-
-	if (error)
-		return error;
-
-here, simplifying the condition below.
-
-> +
-> +	profile = aa_cred_profile(cred);
-> +	if (!error  && !unconfined(profile))
-> +		error = aa_capable(task, profile, cap, audit);
-> +
-> +	return error;
-> +}
-
--serge
+Indeed, and one way to do that is to fix the double-registration of
+dm9000.0.  Another way to avoid the other complaints is to remove
+the unregistration in platform_register_devices().
