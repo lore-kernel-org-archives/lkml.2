@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934088Ab0GOSbQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:31:16 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:45119 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934062Ab0GOSbK (ORCPT
+	id S934077Ab0GOSbN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:31:13 -0400
+Received: from pfepb.post.tele.dk ([195.41.46.236]:45078 "EHLO
+	pfepb.post.tele.dk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934014Ab0GOSbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:31:10 -0400
-Message-ID: <4C3F53D1.3090001@austin.ibm.com>
-Date: Thu, 15 Jul 2010 13:30:41 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Thu, 15 Jul 2010 14:31:08 -0400
+Date: Thu, 15 Jul 2010 20:31:05 +0200
+From: Sam Ravnborg <sam@ravnborg.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Zeev Tarantov <zeev.tarantov@gmail.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: [PATCH] tracing: properly align linker defined symbols
+Message-ID: <20100715183105.GA14167@merkur.ravnborg.org>
+References: <1278705402.1537.157.camel@gandalf.stny.rr.com> <20100709203301.GA13839@merkur.ravnborg.org> <AANLkTinWkfkXNVA2Sx-apVQMZa-5ehugtd7JQ36np7xM@mail.gmail.com> <1278721339.1537.166.camel@gandalf.stny.rr.com> <20100710063459.GA14596@merkur.ravnborg.org> <20100715150514.GB14073@merkur.ravnborg.org> <1279206959.4190.55.camel@localhost>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: [PATCH 0/5] v2 De-couple sysfs memory directories from memory section
- size
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279206959.4190.55.camel@localhost>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This set of patches de-couples the idea that there is a single
-directory in sysfs for each memory section.  The intent of the
-patches is to reduce the number of sysfs directories created to
-resolve a boot-time performance issue.  On very large systems
-boot time are getting very long (as seen on powerpc hardware)
-due to the enormous number of sysfs directories being created.
-On a system with 1 TB of memory we create ~63,000 directories.
-For even larger systems boot times are being measured in hours.
+On Thu, Jul 15, 2010 at 11:15:59AM -0400, Steven Rostedt wrote:
+> On Thu, 2010-07-15 at 17:05 +0200, Sam Ravnborg wrote:
+> > On Sat, Jul 10, 2010 at 08:34:59AM +0200, Sam Ravnborg wrote:
+> > > Zeev - please try this replacement patch.
+> > > The alignmnet is increased to 32 bytes compared to my previous version and
+> > > we introduce alignmnet for ftrace_events too.
+> > > 
+> > > 	Sam
+> > 
+> > Steven - Zeev reported that this fixed the boot problem.
+> > What is next step?
+> > Do you forward this patch or do you prefer another fix?
+> > 
+> 
+> Hi Sam,
+> 
+> I'm currently at OLS (yes it still exists!) I'll test it and send off
+> this fix to Ingo when I get back on Monday, as I believe Linus did
+> prefer this one.
 
-This set of patches allows for each directory created in sysfs
-to cover more than one memory section.  The default behavior for
-sysfs directory creation is the same, in that each directory
-represents a single memory section.  A new file 'end_phys_index'
-in each directory contains the physical_id of the last memory
-section covered by the directory so that users can easily
-determine the memory section range of a directory.
+Great. I'm most likely away from mail the next week so do not
+expect prompt responses from me.
 
-For version 2 of this patchset the capability to split a
-directory has been removed.
-
-Thanks,
-
-Nathan Fontenot
+	Sam
