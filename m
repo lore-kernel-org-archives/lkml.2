@@ -1,81 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933942Ab0GORil (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 13:38:41 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:44306 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933910Ab0GORij (ORCPT
+	id S933936Ab0GORnn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 13:43:43 -0400
+Received: from commune-des.alpes.fr.eu.org ([195.88.84.51]:57405 "EHLO
+	commune-des.alpes.fr.eu.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933810Ab0GORnj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 13:38:39 -0400
-Date: Thu, 15 Jul 2010 13:38:36 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100715173836.GA17376@Krystal>
-References: <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com> <20100714170617.GB4955@Krystal> <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com> <20100714203940.GC22096@Krystal> <AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com> <20100714222115.GA30122@Krystal> <AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com> <AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com> <20100715164450.GC30989@Krystal> <AANLkTik4mdj3h16CU2GUQAQuG4yeAWFuZsqbPC0ra6Id@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTik4mdj3h16CU2GUQAQuG4yeAWFuZsqbPC0ra6Id@mail.gmail.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 13:36:33 up 173 days, 20:13,  6 users,  load average: 0.12, 0.06,
-	0.07
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 15 Jul 2010 13:43:39 -0400
+X-Greylist: delayed 473 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jul 2010 13:43:39 EDT
+From: Julien Moutinho <julm+linux@savines.alpes.fr.eu.org>
+Cc: Julien Moutinho <julm+linux@savines.alpes.fr.eu.org>,
+        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+        Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+        linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] Input: mousedev - Fix mousedev_poll() to advertise when /dev/input/mice is writable.
+Date: Thu, 15 Jul 2010 19:31:27 +0200
+Message-Id: <1279215089-20361-1-git-send-email-julm+linux@savines.alpes.fr.eu.org>
+X-Mailer: git-send-email 1.7.1
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> On Thu, Jul 15, 2010 at 9:44 AM, Mathieu Desnoyers
-> <mathieu.desnoyers@efficios.com> wrote:
-> >
-> > The first thing that strikes me is that we could be interrupted by a standard
-> > interrupt on top of the iret instruction below.
-> 
-> No, that can never happen.
-> 
-> Why? Simple: regular interrupts aren't ever enabled in eflags. So the
-> only kinds of traps we can get are NMI's (that don't follow the normal
-> rules), and exceptions.
+The Microsoft ImPS/2 mouse protocol being bidirectionnal (sic)
+one may have to write in /dev/input/mice; and that works better
+if select() does not hang.
 
-Ah, you're right, since NMIs are an intr gate, IF is disabled in the EFLAGS all
-along.
+Signed-off-by: Julien Moutinho <julm+linux@savines.alpes.fr.eu.org>
+---
+ drivers/input/mousedev.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-> 
-> Of course, if there is some trap that re-enables interrupts even if
-> the trap happened in an interrupt-disabled region, then that would
-> change things, but that would be a bad bug regardless (and totally
-> independently of any NMI issues). So in that sense it's a "could
-> happen", but it's something that would be a totally separate bug.
-
-Yep, this kind of scenario would therefore be a bug that does not belong to the
-specific realm of nmis.
-
-Thanks,
-
-Mathieu
-
-
+diff --git a/drivers/input/mousedev.c b/drivers/input/mousedev.c
+index f34b22b..1f67b8f 100644
+--- a/drivers/input/mousedev.c
++++ b/drivers/input/mousedev.c
+@@ -768,7 +768,8 @@ static unsigned int mousedev_poll(struct file *file, poll_table *wait)
+ 
+ 	poll_wait(file, &mousedev->wait, wait);
+ 	return ((client->ready || client->buffer) ? (POLLIN | POLLRDNORM) : 0) |
+-		(mousedev->exist ? 0 : (POLLHUP | POLLERR));
++		(mousedev->exist ?
++			(POLLOUT | POLLWRNORM) : (POLLHUP | POLLERR));
+ }
+ 
+ static const struct file_operations mousedev_fops = {
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.1
+
