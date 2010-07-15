@@ -1,99 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932768Ab0GOI4S (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 04:56:18 -0400
-Received: from mail.issp.bas.bg ([195.96.236.10]:33915 "EHLO mail.issp.bas.bg"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932652Ab0GOI4Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 04:56:16 -0400
-From: Marin Mitov <mitov@issp.bas.bg>
-To: Unai Uribarri <unai.uribarri@optenet.com>
-Subject: Re: Workaround hardware bug addressing physical memory
-Date: Thu, 15 Jul 2010 11:56:07 +0300
-User-Agent: KMail/1.9.10
-Cc: linux-kernel@vger.kernel.org
-References: <3586320.70351279181306029.JavaMail.root@mail1-md.optenet.com>
-In-Reply-To: <3586320.70351279181306029.JavaMail.root@mail1-md.optenet.com>
+	id S932782Ab0GOI4v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 04:56:51 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39264 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932652Ab0GOI4u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 04:56:50 -0400
+Date: Thu, 15 Jul 2010 09:55:35 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+	memory management
+Message-ID: <20100715085535.GC26212@n2100.arm.linux.org.uk>
+References: <4C3C0032.5020702@codeaurora.org> <20100713150311B.fujita.tomonori@lab.ntt.co.jp> <20100713121420.GB4263@codeaurora.org> <20100714104353B.fujita.tomonori@lab.ntt.co.jp> <20100714201149.GA14008@codeaurora.org> <20100714220536.GE18138@n2100.arm.linux.org.uk> <20100715012958.GB2239@codeaurora.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201007151156.07506.mitov@issp.bas.bg>
+In-Reply-To: <20100715012958.GB2239@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 15.7.2010, Unai Uribarri wrote:
-> Thanks.
-> ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
-> 
-> | On Wednesday, July 14, 2010 08:06:49 pm you wrote:
-> | > ----- "Marin Mitov" <mitov@issp.bas.bg> wrote:
-> | > 
-> | > | Hi,
-> | > | 
-> | > | This is pci driver. You can set dma mask:
-> | > | 
-> | > | dma_set_coheren_mask(pdev, DMA_BIT_MASK(31)) 
-> | > | 
-> | > | All further alloc_coherent() should be from the region 0-2GB.
-> | > | 
-> | > 
-> | > But I'm using a 64 bit operating system with 32GB of RAM. It's a
-> | > pity to be unable to use 4GB-32GB range because the 2-4GB range is
-> | > unusable. So I've written this code to skip invalid areas. Do you
-> | > think this code could be useful for other drivers?
-> | 
-> | Let me summarize if I have correctly understood what you do.
-> | 
-> | First, your hardware has problems when the physical (bus) address
-> | is out of the 0-2GB region, so you cannot use buffers that are out 
-> | of this range in any case. And the defect is in the peripheral, not in
-> | the bridge between it and the memory.
-> 
-> The hardware works correctly for physical address in the ranges 0 to 2GB
-> AND 4GB to 32GB. 
+On Wed, Jul 14, 2010 at 06:29:58PM -0700, Zach Pfeffer wrote:
+> The VCM ensures that all mappings that map a given physical buffer:
+> IOMMU mappings, CPU mappings and one-to-one device mappings all map
+> that buffer using the same (or compatible) attributes. At this point
+> the only attribute that users can pass is CACHED. In the absence of
+> CACHED all accesses go straight through to the physical memory.
 
-Sorry, I have missed that point.
+So what you're saying is that if I have a buffer in kernel space
+which I already have its virtual address, I can pass this to VCM and
+tell it !CACHED, and it'll setup another mapping which is not cached
+for me?
 
-> Physical address in the 2-4GB range are read correctly 
-> by the device. But when the device tries to write to them it issues 
-> invalid PCIe transaction headers: it tries to access such addresses using
-> a 64-bit transactions when the PCI Express standard mandates to use 32-bit
-> transactions for memory addresses below 4GB. Some bridges accept such
-> invalid transactions, but Intel 5500 chipset rejects them.
-> 
-> I'm allocating 256MB of RAM for I/O buffers; I'm fear that restricting all
-> the allocations to the first 2GB of memory will put too much pressure in
-> that zone of memory. But restricting it to 4GB and above will be okay. 
-> 
-> Is there any way to restrict to memory address above 4GB?
+You are aware that multiple V:P mappings for the same physical page
+with different attributes are being outlawed with ARMv6 and ARMv7
+due to speculative prefetching.  The cache can be searched even for
+a mapping specified as 'normal, uncached' and you can get cache hits
+because the data has been speculatively loaded through a separate
+cached mapping of the same physical page.
 
-I am thinking if your BIOS could make a memory holl between 2-4GB
-remapping this memory above 4GB? On my (relatively old machine)
-the memory hall is restricted to 512MB in the region (4GB-512MB) - 4GB.
-AGP apertires could be up to 2GB (according to specs), or using kernel
-parameters (if exist) to map the memory (excluding this 2-4GB region).
+FYI, during the next merge window, I will be pushing a patch which makes
+ioremap() of system RAM fail, which should be the last core code creator
+of mappings with different memory types.  This behaviour has been outlawed
+(as unpredictable) in the architecture specification and does cause
+problems on some CPUs.
 
-> 
-> 
-> | Second, you do allocations and check if dma_addr_t is in this range.
-> | If it is, you keep it for use. If not, you put it in a list and
-> | allocate a new one.
-> | When you allocate sufficiently memory in 0-2GB region, you deallocate
-> | 
-> | the memory (kept in the list) that is out of the region. Right?
-> | 
-> 
-> Yes, except that the validator function is:
-> 
-> static int validate_dma(void *ptr, struct device *dev, size_t size, dma_addr_t handle)
-> {
->         return handle < 0x80000000U || handle > 0xFFFFFFFFU;
-> }
-> 
-> Thanks.
-> 
-
-
+We've also the issue of multiple mappings with differing cache attributes
+which needs addressing too...
