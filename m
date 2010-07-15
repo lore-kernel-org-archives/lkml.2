@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933665Ab0GOQPJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 12:15:09 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43028 "EHLO kernel.dk"
+	id S933722Ab0GOQZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 12:25:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45983 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933646Ab0GOQPE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 12:15:04 -0400
-Message-ID: <4C3F3400.7060005@kernel.dk>
-Date: Thu, 15 Jul 2010 10:14:56 -0600
-From: Jens Axboe <axboe@kernel.dk>
+	id S933694Ab0GOQZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 12:25:03 -0400
+Date: Thu, 15 Jul 2010 16:24:40 GMT
+From: tip-bot for Joe Perches <joe@perches.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        joe@perches.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        joe@perches.com, tglx@linutronix.de, mingo@elte.hu
+In-Reply-To: <1277768808.29157.280.camel@Joe-Laptop.home>
+References: <1277768808.29157.280.camel@Joe-Laptop.home>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cleanups] x86: Clean up arch/x86/kernel/cpu/mtrr/cleanup.c: use ";" not "," to terminate statements
+Message-ID: <tip-b2691085d1f3ccce641dcfdd02722ba5d34db6ba@git.kernel.org>
+Git-Commit-ID: b2691085d1f3ccce641dcfdd02722ba5d34db6ba
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: "Martin K. Petersen" <martin.petersen@oracle.com>
-CC: Christof Schmitt <christof.schmitt@de.ibm.com>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/1] Apply segment size and segment boundary to integrity
- data
-References: <20100715153410.774329000@de.ibm.com> <yq1mxtspwab.fsf@sermon.lab.mkp.net>
-In-Reply-To: <yq1mxtspwab.fsf@sermon.lab.mkp.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 15 Jul 2010 16:24:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2010 10:03 AM, Martin K. Petersen wrote:
->>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
-> 
-> Christof> While experimenting with the data integrity support in the
-> Christof> Linux kernel, i found that the block layer integrity code can
-> Christof> send integrity data segments for a request that do not adhere
-> Christof> to the queue limits.  The integrity data segment can be larger
-> Christof> than queue_max_segment_size and the segment does not adhere to
-> Christof> the queue_segment_boundary.
-> 
-> Correct.  That was a deliberate design decision.
-> 
-> Modern HBAs allow essentially indefinite chaining and our block layer
-> segmentation controls are to some extent legacy baggage.  I did not want
-> to put in a set of constraints on the DI scatterlist because I was
-> afraid it would encourage vendors to actually them.
+Commit-ID:  b2691085d1f3ccce641dcfdd02722ba5d34db6ba
+Gitweb:     http://git.kernel.org/tip/b2691085d1f3ccce641dcfdd02722ba5d34db6ba
+Author:     Joe Perches <joe@perches.com>
+AuthorDate: Mon, 28 Jun 2010 16:46:48 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 15 Jul 2010 18:21:22 +0200
 
-That sounds like a very batch design decision. Either the limits are
-explicitly given and different, or if not we have to assume that they
-are the same as the data limits at least.
+x86: Clean up arch/x86/kernel/cpu/mtrr/cleanup.c: use ";" not "," to terminate statements
 
-So do they have limits or not? Essentially indefinite, what does that
-mean? If they are limited, then we must have settings to cope and map
-around those. If these limits are not the same as the regular data
-limits, then those limits could be separate.
+Also needed if pr_<level> becomes a bit more space efficient.
 
-> Christof> It appears to me that the right way would be to apply the same
-> Christof> restrictions that are in place for data segments also to
-> Christof> integrity data segments. The patch works for my experiments
-> Christof> and applies on top of the current Linux tree (2.6.35-rc5).
-> 
-> Who says constraints on the integrity scatterlist are the same as on the
-> data ditto?  In my experience they are not.  If you must do this, then
-> the DI constraints should be separate from the data segmentation ones.
-> But I'm interested in what motivated this change to begin with.
+Signed-off-by: Joe Perches <joe@perches.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+LKML-Reference: <1277768808.29157.280.camel@Joe-Laptop.home>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/mtrr/cleanup.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-Yes me too, what bug triggered this patch?
-
--- 
-Jens Axboe
-
+diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
+index 06130b5..c5f59d0 100644
+--- a/arch/x86/kernel/cpu/mtrr/cleanup.c
++++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
+@@ -632,9 +632,9 @@ static void __init mtrr_print_out_one_result(int i)
+ 	unsigned long gran_base, chunk_base, lose_base;
+ 	char gran_factor, chunk_factor, lose_factor;
+ 
+-	gran_base = to_size_factor(result[i].gran_sizek, &gran_factor),
+-	chunk_base = to_size_factor(result[i].chunk_sizek, &chunk_factor),
+-	lose_base = to_size_factor(result[i].lose_cover_sizek, &lose_factor),
++	gran_base = to_size_factor(result[i].gran_sizek, &gran_factor);
++	chunk_base = to_size_factor(result[i].chunk_sizek, &chunk_factor);
++	lose_base = to_size_factor(result[i].lose_cover_sizek, &lose_factor);
+ 
+ 	pr_info("%sgran_size: %ld%c \tchunk_size: %ld%c \t",
+ 		result[i].bad ? "*BAD*" : " ",
