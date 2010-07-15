@@ -1,54 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932989Ab0GOKRu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 06:17:50 -0400
-Received: from borg.medozas.de ([188.40.89.202]:47482 "EHLO borg.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932922Ab0GOKRs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 06:17:48 -0400
-Date: Thu, 15 Jul 2010 12:17:46 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Patrick McHardy <kaber@trash.net>
-cc: "Michael S. Tsirkin" <mst@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org, kvm@vger.kernel.org,
-        herbert@gondor.hengli.com.au
-Subject: Re: several messages
-In-Reply-To: <4C3ED764.3060301@trash.net>
-Message-ID: <alpine.LSU.2.01.1007151216170.19772@obet.zrqbmnf.qr>
-References: <20100711150623.GA7420@redhat.com> <20100711151453.GA7563@redhat.com> <4C3ED764.3060301@trash.net>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S933004Ab0GOKYX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 06:24:23 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:52292 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932978Ab0GOKYW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 06:24:22 -0400
+Date: Thu, 15 Jul 2010 11:33:34 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: David Miller <davem@davemloft.net>, rick.jones2@hp.com,
+        lists@wildgooses.com, davidsen@tmr.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Raise initial congestion window size / speedup slow start?
+Message-ID: <20100715113334.46c440b8@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100714221301.GI6682@nuttenaction>
+References: <4C3E0684.5060409@wildgooses.com>
+	<4C3E1B54.40604@hp.com>
+	<20100714203919.GD6682@nuttenaction>
+	<20100714.145547.102555471.davem@davemloft.net>
+	<20100714221301.GI6682@nuttenaction>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAFVBMVEWysKsSBQMIAwIZCwj///8wIhxoRDXH9QHCAAABeUlEQVQ4jaXTvW7DIBAAYCQTzz2hdq+rdg494ZmBeE5KYHZjm/d/hJ6NfzBJpp5kRb5PHJwvMPMk2L9As5Y9AmYRBL+HAyJKeOU5aHRhsAAvORQ+UEgAvgddj/lwAXndw2laEDqA4x6KEBhjYRCg9tBFCOuJFxg2OKegbWjbsRTk8PPhKPD7HcRxB7cqhgBRp9Dcqs+B8v4CQvFdqeot3Kov6hBUn0AJitrzY+sgUuiA8i0r7+B3AfqKcN6t8M6HtqQ+AOoELCikgQSbgabKaJW3kn5lBs47JSGDhhLKDUh1UMipwwinMYPTBuIBjEclSaGZUk9hDlTb5sUTYN2SFFQuPe4Gox1X0FZOufjgBiV1Vls7b+GvK3SU4wfmcGo9rPPQzgIabfj4TYQo15k3bTHX9RIw/kniir5YbtJF4jkFG+dsDK1IgE413zAthU/vR2HVMmFUPIHTvF6jWCpFaGw/A3qWgnbxpSm9MSmY5b3pM1gvNc/gQfwBsGwF0VCtxZgAAAAASUVORK5CYII=
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 2010-07-15 11:36, Patrick McHardy wrote:
->> +struct xt_CHECKSUM_info {
->> +	u_int8_t operation;	/* bitset of operations */
->
->Please use __u8 in public header files.
->
->> +#include <linux/in.h>
->
->Do you really need in.h?
->
->> + * $Id$
->
->Please no CVS IDs.
->
->> +	switch (c) {
->> +	case 'F':
->> +		if (*flags)
->> +			xtables_error(PARAMETER_PROBLEM,
->> +			        "CHECKSUM target: Only use --checksum-fill ONCE!");
->
->There is a helper function called xtables_param_act for checking double
->arguments and printing a standarized error message.
+On Thu, 15 Jul 2010 00:13:01 +0200
+Hagen Paul Pfeifer <hagen@jauu.net> wrote:
 
-I took care of these for Xt-a.
+> * David Miller | 2010-07-14 14:55:47 [-0700]:
+> 
+> >Although section 3 of RFC 5681 is a great text, it does not say at all
+> >that increasing the initial CWND would lead to fairness issues.
+> 
+> Because it is only one side of the medal, probing conservative the available
+> link capacity in conjunction with n simultaneous probing TCP/SCTP/DCCP
+> instances is another.
+> 
+> >To be honest, I think google's proposal holds a lot of weight.  If
+> >over time link sizes and speeds are increasing (they are) then nudging
+> >the initial CWND every so often is a legitimate proposal.  Were
+> >someone to claim that utilization is lower than it could be because of
+> >the currenttly specified initial CWND, I would have no problem
+> >believing them.
+> >
+> >And I'm happy to make Linux use an increased value once it has
+> >traction in the standardization community.
+> 
+> Currently I know no working link capacity probing approach, without active
+> network feedback, to conservatively probing the available link capacity with a
+> high CWND. I am curious about any future trends.
+
+Given perfect information from the network nodes you still need to
+traverse the network each direction and then return an answer which means
+with a 0.5sec end to end time as in the original posting causality itself
+demands 1.5 seconds to get an answer which is itself incomplete and
+obsolete.
+
+Causality isn't showing any signs of going away soon.
 
