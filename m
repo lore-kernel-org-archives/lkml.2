@@ -1,124 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933556Ab0GOPNZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 11:13:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40860 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933479Ab0GOPNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 11:13:21 -0400
-Date: Thu, 15 Jul 2010 15:12:50 GMT
-From: tip-bot for Thomas Gleixner <tglx@linutronix.de>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        stephan@letzte-bankreihe.de, tglx@linutronix.de,
-        borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        stephan@letzte-bankreihe.de, tglx@linutronix.de,
-        borislav.petkov@amd.com
-In-Reply-To: <alpine.LFD.2.00.1007142134140.3321@localhost.localdomain>
-References: <alpine.LFD.2.00.1007142134140.3321@localhost.localdomain>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Force HPET readback_cmp for all ATI chipsets
-Message-ID: <tip-08be97962bf338161325d4901642f956ce8c1adb@git.kernel.org>
-Git-Commit-ID: 08be97962bf338161325d4901642f956ce8c1adb
-X-Mailer: tip-git-log-daemon
+	id S933479Ab0GOPNo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 11:13:44 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60075 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S933418Ab0GOPNk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 11:13:40 -0400
+Subject: [PATCH] kmemleak: Add support for NO_BOOTMEM configurations
+To: linux-kernel@vger.kernel.org
+From: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Yinghai Lu <yinghai@kernel.org>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Date: Thu, 15 Jul 2010 15:58:34 +0100
+Message-ID: <20100715145834.20885.20341.stgit@e102109-lin.cambridge.arm.com>
+User-Agent: StGit/0.15-83-g972d5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 15 Jul 2010 15:12:51 +0000 (UTC)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Jul 2010 14:58:34.0835 (UTC) FILETIME=[32BA3230:01CB242E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  08be97962bf338161325d4901642f956ce8c1adb
-Gitweb:     http://git.kernel.org/tip/08be97962bf338161325d4901642f956ce8c1adb
-Author:     Thomas Gleixner <tglx@linutronix.de>
-AuthorDate: Wed, 14 Jul 2010 21:36:27 +0200
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Thu, 15 Jul 2010 17:10:02 +0200
+With commits 08677214 and 59be5a8e, alloc_bootmem()/free_bootmem() and
+friends use the early_res functions for memory management when
+NO_BOOTMEM is enabled. This patch adds the kmemleak calls in the
+corresponding code paths for bootmem allocations.
 
-x86: Force HPET readback_cmp for all ATI chipsets
-
-commit 30a564be (x86, hpet: Restrict read back to affected ATI
-chipset) restricted the workaround for the HPET bug to SMX00
-chipsets. This was reasonable as those were the only ones against
-which we ever got a bug report.
-
-Stephan Wolf reported now that this patch breaks his IXP400 based
-machine. Though it's confirmed to work on other IXP400 based systems.
-
-To error out on the safe side, we force the HPET readback workaround
-for all ATI SMbus class chipsets.
-
-Reported-by: Stephan Wolf <stephan@letzte-bankreihe.de>
-LKML-Reference: <alpine.LFD.2.00.1007142134140.3321@localhost.localdomain>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-Tested-by: Stephan Wolf <stephan@letzte-bankreihe.de>
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Yinghai Lu <yinghai@kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
 ---
- arch/x86/kernel/early-quirks.c |   18 ++++++++++++++++++
- arch/x86/kernel/quirks.c       |    5 -----
- 2 files changed, 18 insertions(+), 5 deletions(-)
+ kernel/early_res.c |    6 ++++++
+ mm/page_alloc.c    |    5 +++++
+ 2 files changed, 11 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/early-quirks.c b/arch/x86/kernel/early-quirks.c
-index ebdb85c..e5cc7e8 100644
---- a/arch/x86/kernel/early-quirks.c
-+++ b/arch/x86/kernel/early-quirks.c
-@@ -18,6 +18,7 @@
- #include <asm/apic.h>
- #include <asm/iommu.h>
- #include <asm/gart.h>
-+#include <asm/hpet.h>
+diff --git a/kernel/early_res.c b/kernel/early_res.c
+index 31aa933..7bfae88 100644
+--- a/kernel/early_res.c
++++ b/kernel/early_res.c
+@@ -7,6 +7,8 @@
+ #include <linux/bootmem.h>
+ #include <linux/mm.h>
+ #include <linux/early_res.h>
++#include <linux/slab.h>
++#include <linux/kmemleak.h>
  
- static void __init fix_hypertransport_config(int num, int slot, int func)
- {
-@@ -191,6 +192,21 @@ static void __init ati_bugs_contd(int num, int slot, int func)
- }
- #endif
+ /*
+  * Early reserved memory areas.
+@@ -319,6 +321,8 @@ void __init free_early(u64 start, u64 end)
+ 	struct early_res *r;
+ 	int i;
  
-+/*
-+ * Force the read back of the CMP register in hpet_next_event()
-+ * to work around the problem that the CMP register write seems to be
-+ * delayed. See hpet_next_event() for details.
-+ *
-+ * We do this on all SMBUS incarnations for now until we have more
-+ * information about the affected chipsets.
-+ */
-+static void __init ati_hpet_bugs(int num, int slot, int func)
-+{
-+#ifdef CONFIG_HPET_TIMER
-+	hpet_readback_cmp = 1;
-+#endif
-+}
++	kmemleak_free_part(__va(start), end - start);
 +
- #define QFLAG_APPLY_ONCE 	0x1
- #define QFLAG_APPLIED		0x2
- #define QFLAG_DONE		(QFLAG_APPLY_ONCE|QFLAG_APPLIED)
-@@ -220,6 +236,8 @@ static struct chipset early_qrk[] __initdata = {
- 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs },
- 	{ PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
- 	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_bugs_contd },
-+	{ PCI_VENDOR_ID_ATI, PCI_ANY_ID,
-+	  PCI_CLASS_SERIAL_SMBUS, PCI_ANY_ID, 0, ati_hpet_bugs },
- 	{}
- };
+ 	i = find_overlapped_early(start, end);
+ 	r = &early_res[i];
+ 	if (i >= max_early_res || r->end != end || r->start != start)
+@@ -333,6 +337,8 @@ void __init free_early_partial(u64 start, u64 end)
+ 	struct early_res *r;
+ 	int i;
  
-diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
-index e72d3fc..939b9e9 100644
---- a/arch/x86/kernel/quirks.c
-+++ b/arch/x86/kernel/quirks.c
-@@ -498,15 +498,10 @@ void force_hpet_resume(void)
-  * See erratum #27 (Misinterpreted MSI Requests May Result in
-  * Corrupted LPC DMA Data) in AMD Publication #46837,
-  * "SB700 Family Product Errata", Rev. 1.0, March 2010.
-- *
-- * Also force the read back of the CMP register in hpet_next_event()
-- * to work around the problem that the CMP register write seems to be
-- * delayed. See hpet_next_event() for details.
-  */
- static void force_disable_hpet_msi(struct pci_dev *unused)
- {
- 	hpet_msi_disable = 1;
--	hpet_readback_cmp = 1;
- }
++	kmemleak_free_part(__va(start), end - start);
++
+ 	if (start == end)
+ 		return;
  
- DECLARE_PCI_FIXUP_HEADER(PCI_VENDOR_ID_ATI, PCI_DEVICE_ID_ATI_SBX00_SMBUS,
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 431214b..68319dd 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3659,6 +3659,11 @@ void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+ 		ptr = phys_to_virt(addr);
+ 		memset(ptr, 0, size);
+ 		reserve_early_without_check(addr, addr + size, "BOOTMEM");
++		/*
++		 * The min_count is set to 0 so that bootmem allocated blocks
++		 * are never reported as leaks.
++		 */
++		kmemleak_alloc(ptr, size, 0, 0);
+ 		return ptr;
+ 	}
+ 
+
