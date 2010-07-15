@@ -1,71 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934720Ab0GOUip (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 16:38:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:43478 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934691Ab0GOUio convert rfc822-to-8bit (ORCPT
+	id S934728Ab0GOUoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 16:44:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29499 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934699Ab0GOUom (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 16:38:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:in-reply-to:mime-version:content-transfer-encoding
-         :content-type:message-id:cc:x-mailer:from:subject:date:to;
-        b=IPBANNCzVSsyYLbEhI6aPqa4pPRm6v7/e08C13E2GSvaE/I6H4Av1PisowvCGh0elF
-         IJ3byVzCLGXxjzCW6garQj6WAAOGsK9AB+ACVOn2Jru8ENklQfak5w5v03uk6yxlM7qC
-         sx8ZPwSm4OTBafc99lK2GPs7KuGHOSz3Cfqkw=
-References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com> <AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com> <1279100846.8592.53.camel@e102109-lin.cambridge.arm.com> <4C3D89AC.4040303@cs.helsinki.fi> <1279205891.6664.46.camel@e102109-lin.cambridge.arm.com> <AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com> <4C3F2F52.2050101@cs.helsinki.fi> <20100715162805.GA10240@brouette> <20100715191638.GA3694@brouette> <AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com> <20100715200012.GA4175@brouette>
-In-Reply-To: <20100715200012.GA4175@brouette>
-Mime-Version: 1.0 (iPhone Mail 8A293)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <F37ABC5E-E9F9-43BD-989E-4185135217D2@gmail.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+	Thu, 15 Jul 2010 16:44:42 -0400
+Message-ID: <4C3F7222.5040404@kernel.org>
+Date: Thu, 15 Jul 2010 13:40:02 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>,
         Andrew Morton <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-X-Mailer: iPhone Mail (8A293)
-From: Zeno Davatz <zdavatz@gmail.com>
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-Date: Thu, 15 Jul 2010 22:38:45 +0200
-To: Damien Wyart <damien.wyart@free.fr>
+        Don Zickus <dzickus@redhat.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        stable <stable@kernel.org>
+Subject: Re: [PATCH] x86: fix x2apic preenabled system with kexec
+References: <4C3BD6AA.3070908@kernel.org> <4C3CE210.2030902@zytor.com>	 <4C3CF650.30905@kernel.org> <4C3E1FA0.9000107@kernel.org>	 <4C3E2AE6.30406@kernel.org>  <4C3E40EC.5060607@kernel.org>	 <1279152189.2849.260.camel@sbs-t61.sc.intel.com>	 <4C3EB22B.3000701@kernel.org> <1279217784.2751.7.camel@sbs-t61.sc.intel.com> <4C3F6B3D.7030303@kernel.org>
+In-Reply-To: <4C3F6B3D.7030303@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4C3F72FD.00E4,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.07.2010 um 22:00 schrieb Damien Wyart <damien.wyart@free.fr>:
-
->>> For now, I can't reproduce the problem with CONFIG_NO_BOOTMEM disabled ;
->>> with the option and rc5 the problem was happening quite quickly after
->>> boot and normal use of the machine. So it seems I can confirme what Zeno
->>> has seen and I hope this will give a hint to debug the problem. I guess
->>> this has not been reported that much because many testers might not have
->>> enabled CONFIG_NO_BOOTMEM... Maybe the scheduler folks could test their
->>> benchmark with a kernel having this option enabled?
+On 07/15/2010 01:10 PM, Yinghai Lu wrote:
+> On 07/15/2010 11:16 AM, Suresh Siddha wrote:
+>> On Thu, 2010-07-15 at 00:00 -0700, Yinghai Lu wrote:
+>>
+>>> BTW: is there any x2apic preenabled system with apicid of boot cpu > 255?
+>>
+>> I am not sure. There might be one. Is there any bug which can't handle
+>> this condition?
 > 
-> * Pekka Enberg <penberg@cs.helsinki.fi> [2010-07-15 22:50]:
->> To be honest, the bug is bit odd. It's related to boot-time memory
->> allocator changes but yet it seems to manifest itself as a scheduling
->> problem. So if you have some spare time and want to speed up the
->> debugging process, please test v2.6.34 and v2.6.35-rc1 with
->> CONFIG_NO_BOOTMEM and if former is good and latter is bad, try to see
->> if you can identify the offending commit with "git bisect."
+> We merged apic_ops into struct apic a while ago.
 > 
-> Not sure I will have enough time in the coming days (doing that remotely
-> is fishy since ssh access is almost stuck when the problem occurs); if
-> Zeno can and would like to do it, maybe this could be done faster.
+> so even for system with x2apic preenabled by BIOS, x2apic_cluster/phys is set to apic until smp_pare_cpus()::default_setup_apic_routing() after enable_IR_x2apic.
 > 
-> As the scheduler is now very well instrumented (many debugging features
-> are available), reproducing the bug on a test platform (it happens quite
-> quickly for me) might also give some hints. So testers, if you have
-> time, please test 2.6.35-rc5 with CONFIG_NO_BOOTMEM on a Core i7 and see
-> if you can reproduce the problem!
+> that means the boot cpu x2apic is accessed via memmap instead msr based way at that point.
+> 
+> not sure if the Boot apic id is bigger than 255. read_apic() for apic id could be wrong. ( in early_acpi_boot_init, acpi_boot_init, init_apic_mappings)
+> 
+> looks like we need to re-read boot_cpu_physical_apicid
+> or we could assign x2apic_cluster/phys in check_x2apic(), and later if intr_remapping can not be enabed, we can revert back to phys_flat or flat?
+> 
 
-Will try to do so. Can you point me to the git bisect howto with the versions you want.
+never mind,
 
-Best
-Zeno
+early_acpi_boot_init::acpi_parse_madt::default_acpi_madt_oem_check() will handle the case.
+it will set the apic to apic_x2apic_... accordingly if x2apic is preenabled.
+
+Thanks
+
+Yinghai
