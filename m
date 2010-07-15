@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934627Ab0GOUAR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 16:00:17 -0400
-Received: from smtp-118-thursday.nerim.net ([62.4.16.118]:52259 "EHLO
-	maiev.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S934530Ab0GOUAO (ORCPT
+	id S934625Ab0GOUCb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 16:02:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:37124 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934598Ab0GOUC3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 16:00:14 -0400
-X-Greylist: delayed 2612 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jul 2010 16:00:14 EDT
-Date: Thu, 15 Jul 2010 22:00:12 +0200
-From: Damien Wyart <damien.wyart@free.fr>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Zeno Davatz <zdavatz@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        mingo@elte.hu, yinghai@kernel.org,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-Message-ID: <20100715200012.GA4175@brouette>
-References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>
- <AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com>
- <1279100846.8592.53.camel@e102109-lin.cambridge.arm.com>
- <4C3D89AC.4040303@cs.helsinki.fi>
- <1279205891.6664.46.camel@e102109-lin.cambridge.arm.com>
- <AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com>
- <4C3F2F52.2050101@cs.helsinki.fi>
- <20100715162805.GA10240@brouette>
- <20100715191638.GA3694@brouette>
- <AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 15 Jul 2010 16:02:29 -0400
+Date: Thu, 15 Jul 2010 13:02:14 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Lee Jones <lee.jones@canonical.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: Re: [PATCH] Stop ARM boards crashing when CUPS is loaded -
+ 2.6.35-rc5
+Message-Id: <20100715130214.4c9303b2.akpm@linux-foundation.org>
+In-Reply-To: <4C3C72C6.4000005@canonical.com>
+References: <4C3C72C6.4000005@canonical.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > For now, I can't reproduce the problem with CONFIG_NO_BOOTMEM disabled ;
-> > with the option and rc5 the problem was happening quite quickly after
-> > boot and normal use of the machine. So it seems I can confirme what Zeno
-> > has seen and I hope this will give a hint to debug the problem. I guess
-> > this has not been reported that much because many testers might not have
-> > enabled CONFIG_NO_BOOTMEM... Maybe the scheduler folks could test their
-> > benchmark with a kernel having this option enabled?
+(cc linux-arm-kernel)
 
-* Pekka Enberg <penberg@cs.helsinki.fi> [2010-07-15 22:50]:
-> To be honest, the bug is bit odd. It's related to boot-time memory
-> allocator changes but yet it seems to manifest itself as a scheduling
-> problem. So if you have some spare time and want to speed up the
-> debugging process, please test v2.6.34 and v2.6.35-rc1 with
-> CONFIG_NO_BOOTMEM and if former is good and latter is bad, try to see
-> if you can identify the offending commit with "git bisect."
+On Tue, 13 Jul 2010 15:05:58 +0100
+Lee Jones <lee.jones@canonical.com> wrote:
 
-Not sure I will have enough time in the coming days (doing that remotely
-is fishy since ssh access is almost stuck when the problem occurs); if
-Zeno can and would like to do it, maybe this could be done faster.
+> >From 219005d9522043bc42ddb51d59688959eed0d443 Mon Sep 17 00:00:00 2001
+> From: Lee Jones <lee.jones@canonical.com>
+> Date: Tue, 13 Jul 2010 15:02:17 +0100
+> Subject: [PATCH] UBUNTU: [Upstream] Stop ARM boards crashing when CUPS is loaded
+> 
+> BugLink: http://bugs.launchpad.net/bugs/601226
+> 
+> When CUPS loads, it tries to load several drivers that it may need.
+> When one of these drivers, specifically parport_pc is loaded on ARM
+> based systems, it causes a segmentation fault as the ISA addresses
+> which are attempted are not writable on non-PC based architectures.
+> This code prevents ISA addresses from being attempted except on x86.
+> 
 
-As the scheduler is now very well instrumented (many debugging features
-are available), reproducing the bug on a test platform (it happens quite
-quickly for me) might also give some hints. So testers, if you have
-time, please test 2.6.35-rc5 with CONFIG_NO_BOOTMEM on a Core i7 and see
-if you can reproduce the problem!
+That sounds like a pretty serious problem.  But presumably it isn't -
+otherwise it would have been fixed earlier!
 
--- 
-Damien
+So what actions are required to trigger this bug and why aren't others
+seeing it?
+
+>  arch/arm/include/asm/parport.h |    7 +++++--
+
+This should probably go via the arm tree.
+
+> 
+> diff --git a/arch/arm/include/asm/parport.h b/arch/arm/include/asm/parport.h
+> index 26e94b0..a1874f8 100644
+> --- a/arch/arm/include/asm/parport.h
+> +++ b/arch/arm/include/asm/parport.h
+> @@ -9,10 +9,13 @@
+>  #ifndef __ASMARM_PARPORT_H
+>  #define __ASMARM_PARPORT_H
+>  
+> -static int __devinit parport_pc_find_isa_ports (int autoirq, int autodma);
+>  static int __devinit parport_pc_find_nonpci_ports (int autoirq, int autodma)
+
+It's strange that this function isn't marked inline.  It's in a .h
+file.  But many arch/*/include/asm/parport.h's do it this way.  They're
+probably broken.  It adds a risk that unneeded code will be generated
+into each compilation unit which includes these headers, although gcc
+can probably fix that, depending on the version.  Plus it's plain odd.
+
+>  {
+> -	return parport_pc_find_isa_ports (autoirq, autodma);
+> +/* parport_pc_find_isa_ports uses direct register addresses which are
+> + * only correct on x86 architectures. This may have undesirable
+> + * consequences (including segfaults) when used on other architectures.
+> + */
+> +	return 0;
+>  }
+
+That comment layout is whacky.  I did this:
+
+--- a/arch/arm/include/asm/parport.h~parport-prevent-arm-boards-frmo-crashing-when-cups-is-loaded-fix
++++ a/arch/arm/include/asm/parport.h
+@@ -9,12 +9,13 @@
+ #ifndef __ASMARM_PARPORT_H
+ #define __ASMARM_PARPORT_H
+ 
+-static int __devinit parport_pc_find_nonpci_ports (int autoirq, int autodma)
++static int __devinit parport_pc_find_nonpci_ports(int autoirq, int autodma)
+ {
+-/* parport_pc_find_isa_ports uses direct register addresses which are
+- * only correct on x86 architectures. This may have undesirable
+- * consequences (including segfaults) when used on other architectures.
+- */
++	/*
++	 * parport_pc_find_isa_ports() uses direct register addresses which are
++	 * only correct on x86 architectures. This may have undesirable
++	 * consequences (including segfaults) when used on other architectures.
++	 */
+ 	return 0;
+ }
+ 
+_
+
