@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934986Ab0GOXOa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 19:14:30 -0400
-Received: from mail.tmr.com ([64.65.253.246]:41481 "EHLO partygirl.tmr.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933661Ab0GOXO3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 19:14:29 -0400
-Message-ID: <4C3F9650.1040800@tmr.com>
-Date: Thu, 15 Jul 2010 19:14:24 -0400
-From: Bill Davidsen <davidsen@tmr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 SeaMonkey/1.1.16
-MIME-Version: 1.0
-Newsgroups: gmane.linux.network,gmane.linux.kernel
-To: David Miller <davem@davemloft.net>
-CC: lists@wildgooses.com, linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3D94E3.9080103@wildgooses.com>	<4C3DD5EB.9070908@tmr.com> <20100714.111553.104052157.davem@davemloft.net>
-In-Reply-To: <20100714.111553.104052157.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S934991Ab0GOXSQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 19:18:16 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40381 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934966Ab0GOXSP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 19:18:15 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 16 Jul 2010 08:13:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linux-kernel@vger.kernel.org,
+        Adrien Dessemond <adrien.dessemond@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Pekka Enberg <penberg@cs.helsinki.fi>
+Subject: Re: [PATCH] kmemleak: Annotate false positive in
+ init_section_page_cgroup()
+Message-Id: <20100716081333.01efcc83.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100715150117.21293.45752.stgit@e102109-lin.cambridge.arm.com>
+References: <20100715150117.21293.45752.stgit@e102109-lin.cambridge.arm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Miller wrote:
-> From: Bill Davidsen <davidsen@tmr.com>
-> Date: Wed, 14 Jul 2010 11:21:15 -0400
-> 
->> You may have to go into /proc/sys/net/core and crank up the
->> rmem_* settings, depending on your distribution.
-> 
-> You should never, ever, have to touch the various networking sysctl
-> values to get good performance in any normal setup.  If you do, it's a
-> bug, report it so we can fix it.
-> 
-> I cringe every time someone says to do this, so please do me a favor
-> and don't spread this further. :-)
-> 
-I think transit time measured in 1/10th sec would disqualify this as a "normal 
-setup."
+On Thu, 15 Jul 2010 16:01:17 +0100
+Catalin Marinas <catalin.marinas@arm.com> wrote:
 
-High bandwidth and high latency don't work well because you get "send until the 
-window is full then wait for ack" and poor performance. I saw this with sat feed 
-to Wyoming from GE's Research Center in upstate NY in the late 80's or early 
-90's. (I think this was NYserNet at that time). I did feeds from NYC area to 
-California and Hawaii with SBC in the early to mid 2k years. In every case 
-SunOS, Solaris, AIX and Linux all failed to hit anything like reasonable 
-transfer speeds without manually tweaking, and I got the advice on increasing 
-window size from network engineers at ISPs and backbone providers.
+> The pointer to the page_cgroup table allocated in
+> init_section_page_cgroup() is stored in section->page_cgroup as (base -
+> pfn). Since this value does not point to the beginning or inside the
+> allocated memory block, kmemleak reports a false positive.
+> 
+> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+> Reported-by: Adrien Dessemond <adrien.dessemond@gmail.com>
+> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+> Cc: Andrew Morton <akpm@linux-foundation.org>
+> Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-The O.P. may have other issues, and may benefit from doing other things as well, 
-but raising window size is a reasonable thing to do on links with RTT in 
-hundreds of ms, and it's easy to try without changing config files.
+Thank you!.
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
--- 
-Bill Davidsen <davidsen@tmr.com>
-   "We have more to fear from the bungling of the incompetent than from
-the machinations of the wicked."  - from Slashdot
