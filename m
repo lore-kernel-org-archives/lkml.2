@@ -1,169 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530Ab0GOPNB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 11:13:01 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60007 "EHLO
+	id S933533Ab0GOPNO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 11:13:14 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:60029 "EHLO
 	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933521Ab0GOPNA (ORCPT
+	by vger.kernel.org with ESMTP id S933421Ab0GOPNK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 11:13:00 -0400
-Subject: [PATCH 3/3] kmemleak: Add DocBook style comments to kmemleak.c
+	Thu, 15 Jul 2010 11:13:10 -0400
+Subject: [PATCH 2/3] kmemleak: Introduce a default off mode for kmemleak
 To: linux-kernel@vger.kernel.org
 From: Catalin Marinas <catalin.marinas@arm.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>
-Date: Thu, 15 Jul 2010 16:09:13 +0100
-Message-ID: <20100715150913.21793.78106.stgit@e102109-lin.cambridge.arm.com>
+Cc: Jason Baron <jbaron@redhat.com>, Pekka Enberg <penberg@cs.helsinki.fi>
+Date: Thu, 15 Jul 2010 16:09:07 +0100
+Message-ID: <20100715150907.21793.63966.stgit@e102109-lin.cambridge.arm.com>
 In-Reply-To: <20100715150703.21793.94815.stgit@e102109-lin.cambridge.arm.com>
 References: <20100715150703.21793.94815.stgit@e102109-lin.cambridge.arm.com>
 User-Agent: StGit/0.15-83-g972d5
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 15 Jul 2010 15:09:13.0377 (UTC) FILETIME=[AF53F910:01CB242F]
+X-OriginalArrivalTime: 15 Jul 2010 15:09:07.0846 (UTC) FILETIME=[AC080260:01CB242F]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The description and parameters of the kmemleak API weren't obvious. This
-patch adds comments clarifying the API usage.
+From: Jason Baron <jbaron@redhat.com>
 
+Introduce a new DEBUG_KMEMLEAK_DEFAULT_OFF config parameter that allows
+kmemleak to be disabled by default, but enabled on the command line
+via: kmemleak=on. Although a reboot is required to turn it on, its still
+useful to not require a re-compile.
+
+Signed-off-by: Jason Baron <jbaron@redhat.com>
 Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
 Cc: Pekka Enberg <penberg@cs.helsinki.fi>
 ---
- mm/kmemleak.c |   80 ++++++++++++++++++++++++++++++++++++++++++---------------
- 1 files changed, 59 insertions(+), 21 deletions(-)
+ lib/Kconfig.debug |    7 +++++++
+ mm/kmemleak.c     |   14 +++++++++++++-
+ 2 files changed, 20 insertions(+), 1 deletions(-)
 
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index e722e9d..95ab402 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -400,6 +400,13 @@ config DEBUG_KMEMLEAK_TEST
+ 
+ 	  If unsure, say N.
+ 
++config DEBUG_KMEMLEAK_DEFAULT_OFF
++	bool "Default kmemleak to off"
++	depends on DEBUG_KMEMLEAK
++	help
++	  Say Y here to disable kmemleak by default. It can then be enabled
++	  on the command line via kmemleak=on.
++
+ config DEBUG_PREEMPT
+ 	bool "Debug preemptible kernel"
+ 	depends on DEBUG_KERNEL && PREEMPT && TRACE_IRQFLAGS_SUPPORT
 diff --git a/mm/kmemleak.c b/mm/kmemleak.c
-index d33e990..5f2eb5b 100644
+index c2c9feb..d33e990 100644
 --- a/mm/kmemleak.c
 +++ b/mm/kmemleak.c
-@@ -843,10 +843,19 @@ out:
- 	rcu_read_unlock();
- }
+@@ -211,6 +211,9 @@ static signed long jiffies_scan_wait;
+ static int kmemleak_stack_scan = 1;
+ /* protects the memory scanning, parameters and debug/kmemleak file access */
+ static DEFINE_MUTEX(scan_mutex);
++/* setting kmemleak=on, will set this var, skipping the disable */
++static int kmemleak_skip_disable;
++
  
--/*
-- * Memory allocation function callback. This function is called from the
-- * kernel allocators when a new block is allocated (kmem_cache_alloc, kmalloc,
-- * vmalloc etc.).
-+/**
-+ * kmemleak_alloc - register a newly allocated object
-+ * @ptr:	pointer to beginning of the object
-+ * @size:	size of the object
-+ * @min_count:	minimum number of references to this object. If during memory
-+ *		scanning a number of references less than @min_count is found,
-+ *		the object is reported as a memory leak. If @min_count is 0,
-+ *		the object is never reported as a leak. If @min_count is -1,
-+ *		the object is ignored (not scanned and not reported as a leak)
-+ * @gfp:	kmalloc() flags used for kmemleak internal memory allocations
-+ *
-+ * This function is called from the kernel allocators when a new object
-+ * (memory block) is allocated (kmem_cache_alloc, kmalloc, vmalloc etc.).
-  */
- void __ref kmemleak_alloc(const void *ptr, size_t size, int min_count,
- 			  gfp_t gfp)
-@@ -860,9 +869,12 @@ void __ref kmemleak_alloc(const void *ptr, size_t size, int min_count,
+ /*
+  * Early object allocation/freeing logging. Kmemleak is initialized after the
+@@ -1604,7 +1607,9 @@ static int kmemleak_boot_config(char *str)
+ 		return -EINVAL;
+ 	if (strcmp(str, "off") == 0)
+ 		kmemleak_disable();
+-	else if (strcmp(str, "on") != 0)
++	else if (strcmp(str, "on") == 0)
++		kmemleak_skip_disable = 1;
++	else
+ 		return -EINVAL;
+ 	return 0;
  }
- EXPORT_SYMBOL_GPL(kmemleak_alloc);
+@@ -1618,6 +1623,13 @@ void __init kmemleak_init(void)
+ 	int i;
+ 	unsigned long flags;
  
--/*
-- * Memory freeing function callback. This function is called from the kernel
-- * allocators when a block is freed (kmem_cache_free, kfree, vfree etc.).
-+/**
-+ * kmemleak_free - unregister a previously registered object
-+ * @ptr:	pointer to beginning of the object
-+ *
-+ * This function is called from the kernel allocators when an object (memory
-+ * block) is freed (kmem_cache_free, kfree, vfree etc.).
-  */
- void __ref kmemleak_free(const void *ptr)
- {
-@@ -875,9 +887,14 @@ void __ref kmemleak_free(const void *ptr)
- }
- EXPORT_SYMBOL_GPL(kmemleak_free);
++#ifdef CONFIG_DEBUG_KMEMLEAK_DEFAULT_OFF
++	if (!kmemleak_skip_disable) {
++		kmemleak_disable();
++		return;
++	}
++#endif
++
+ 	jiffies_min_age = msecs_to_jiffies(MSECS_MIN_AGE);
+ 	jiffies_scan_wait = msecs_to_jiffies(SECS_SCAN_WAIT * 1000);
  
--/*
-- * Partial memory freeing function callback. This function is usually called
-- * from bootmem allocator when (part of) a memory block is freed.
-+/**
-+ * kmemleak_free_part - partially unregister a previously registered object
-+ * @ptr:	pointer to the beginning or inside the object. This also
-+ *		represents the start of the range to be freed
-+ * @size:	size to be unregistered
-+ *
-+ * This function is called when only a part of a memory block is freed
-+ * (usually from the bootmem allocator).
-  */
- void __ref kmemleak_free_part(const void *ptr, size_t size)
- {
-@@ -890,9 +907,12 @@ void __ref kmemleak_free_part(const void *ptr, size_t size)
- }
- EXPORT_SYMBOL_GPL(kmemleak_free_part);
- 
--/*
-- * Mark an already allocated memory block as a false positive. This will cause
-- * the block to no longer be reported as leak and always be scanned.
-+/**
-+ * kmemleak_not_leak - mark an allocated object as false positive
-+ * @ptr:	pointer to beginning of the object
-+ *
-+ * Calling this function on an object will cause the memory block to no longer
-+ * be reported as leak and always be scanned.
-  */
- void __ref kmemleak_not_leak(const void *ptr)
- {
-@@ -905,10 +925,14 @@ void __ref kmemleak_not_leak(const void *ptr)
- }
- EXPORT_SYMBOL(kmemleak_not_leak);
- 
--/*
-- * Ignore a memory block. This is usually done when it is known that the
-- * corresponding block is not a leak and does not contain any references to
-- * other allocated memory blocks.
-+/**
-+ * kmemleak_ignore - ignore an allocated object
-+ * @ptr:	pointer to beginning of the object
-+ *
-+ * Calling this function on an object will cause the memory block to be
-+ * ignored (not scanned and not reported as a leak). This is usually done when
-+ * it is known that the corresponding block is not a leak and does not contain
-+ * any references to other allocated memory blocks.
-  */
- void __ref kmemleak_ignore(const void *ptr)
- {
-@@ -921,8 +945,16 @@ void __ref kmemleak_ignore(const void *ptr)
- }
- EXPORT_SYMBOL(kmemleak_ignore);
- 
--/*
-- * Limit the range to be scanned in an allocated memory block.
-+/**
-+ * kmemleak_scan_area - limit the range to be scanned in an allocated object
-+ * @ptr:	pointer to beginning or inside the object. This also
-+ *		represents the start of the scan area
-+ * @size:	size of the scan area
-+ * @gfp:	kmalloc() flags used for kmemleak internal memory allocations
-+ *
-+ * This function is used when it is known that only certain parts of an object
-+ * contain references to other objects. Kmemleak will only scan these areas
-+ * reducing the number false negatives.
-  */
- void __ref kmemleak_scan_area(const void *ptr, size_t size, gfp_t gfp)
- {
-@@ -935,8 +967,14 @@ void __ref kmemleak_scan_area(const void *ptr, size_t size, gfp_t gfp)
- }
- EXPORT_SYMBOL(kmemleak_scan_area);
- 
--/*
-- * Inform kmemleak not to scan the given memory block.
-+/**
-+ * kmemleak_no_scan - do not scan an allocated object
-+ * @ptr:	pointer to beginning of the object
-+ *
-+ * This function notifies kmemleak not to scan the given memory block. Useful
-+ * in situations where it is known that the given object does not contain any
-+ * references to other objects. Kmemleak will not scan such objects reducing
-+ * the number of false negatives.
-  */
- void __ref kmemleak_no_scan(const void *ptr)
- {
 
