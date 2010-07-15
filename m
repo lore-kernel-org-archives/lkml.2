@@ -1,51 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933749Ab0GOQ2L (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 12:28:11 -0400
-Received: from smtp-104-thursday.noc.nerim.net ([62.4.17.104]:60141 "EHLO
-	mallaury.nerim.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S933677Ab0GOQ2J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 12:28:09 -0400
-X-Greylist: delayed 115013 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jul 2010 12:28:08 EDT
-Date: Thu, 15 Jul 2010 18:28:05 +0200
-From: Damien Wyart <damien.wyart@free.fr>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Zeno Davatz <zdavatz@gmail.com>, Catalin Marinas <catalin.marinas@arm.com>,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        mingo@elte.hu, yinghai@kernel.org
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-Message-ID: <20100715162805.GA10240@brouette>
-References: <AANLkTil6opQmTVVxuP1ngz72_ijpLzdlSFWDSyi4whOt@mail.gmail.com>
- <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>
- <AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com>
- <1279100846.8592.53.camel@e102109-lin.cambridge.arm.com>
- <4C3D89AC.4040303@cs.helsinki.fi>
- <1279205891.6664.46.camel@e102109-lin.cambridge.arm.com>
- <AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com>
- <4C3F2F52.2050101@cs.helsinki.fi>
+	id S933741Ab0GOQdx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 12:33:53 -0400
+Received: from smtp.infotech.no ([82.134.31.41]:56826 "EHLO smtp.infotech.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933695Ab0GOQdw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 12:33:52 -0400
+X-Greylist: delayed 487 seconds by postgrey-1.27 at vger.kernel.org; Thu, 15 Jul 2010 12:33:51 EDT
+Message-ID: <4C3F3641.8020802@interlog.com>
+Date: Thu, 15 Jul 2010 12:24:33 -0400
+From: Douglas Gilbert <dgilbert@interlog.com>
+Reply-To: dgilbert@interlog.com
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C3F2F52.2050101@cs.helsinki.fi>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+CC: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        alsa-devel@alsa-project.org, Jens Axboe <axboe@kernel.dk>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Howells <dhowells@redhat.com>, Dave Airlie <airlied@gmail.com>
+Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
+References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> <m1zkxtinlw.fsf@fess.ebiederm.org> <201007150929.03916.konrad@kernel.org>
+In-Reply-To: <201007150929.03916.konrad@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On 10-07-15 09:29 AM, Konrad Rzeszutek Wilk wrote:
+>
+>>> and the box still won't boot.
+>>
+>> The reason FC6 doesn't boot is there is a userspace tool
+>> I believe in the initrd that cares about symlinks when it should
+>> not.
+>
+> It is not just nash. Also multipathd would fail (as it expects
+> the /sys/scsi_host/..<something>  in certain directories), and 'lsscsi'. There
+> might be other tools that depend on libsysfs to be affected by this as well.
 
-> > I also did not have anymore hangs and random bad moods of my CPUs
-> > that all of a sudden grab 100% of all 8 cores of my CPU power across
-> > my machine since I disabled
-> > CONFIG_NO_BOOTMEM:
+lsscsi has been "CONFIG_SYSFS_DEPRECATED_V2" tolerant
+since version 0.21 released 20080710. The current
+version is 0.23 released 20091201 which will soon
+be displaced by 0.24 to cope with the most recent
+breakages.
 
-* Pekka Enberg <penberg@cs.helsinki.fi> [2010-07-15 18:54]:
-> Interesting. Damien, does disabling CONFIG_NO_BOOTMEM fix you problem too?
+Writing a user space tool that relies on sysfs structure
+and contents, stable over the whole lk 2.6 series, is
+impossible. For a history of my pain with lsscsi see
+its ChangeLog.
 
-I will test in the coming hours, and report back tomorrow... Just
-recompiled 2.6.35-rc5-git1 with this option disabled.
 
--- 
-Damien
+Happily most of my tools are based on an ioctl! SG_IO
+was a suggestion from Joerg Schilling and has now found
+its way into most block devices. Now it has a new lease
+of life in the bsg driver.
+
+Doug Gilbert
+
+
