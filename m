@@ -1,50 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934960Ab0GOW6u (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 18:58:50 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:34748 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934946Ab0GOW6t (ORCPT
+	id S934968Ab0GOXA2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 19:00:28 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:35861 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934946Ab0GOXA1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 18:58:49 -0400
-Date: Fri, 16 Jul 2010 00:58:44 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100715225844.GA25420@one.firstfloor.org>
-References: <20100714222115.GA30122@Krystal> <AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com> <AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com> <AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com> <20100715183153.GA9276@Krystal> <AANLkTilfXUtQznSzOmO9ecoaviIt62Hv6jdUOMSRLdrF@mail.gmail.com> <AANLkTimAn0uMpeYKctO0qxM6nwbfev3RHARLZIbf991k@mail.gmail.com> <20100715220117.GA1499@Krystal> <AANLkTinL3S3iMSoP0fb6bxn9IY62OmytBtbqCKy9CZk2@mail.gmail.com> <AANLkTinOTwnSNgwX7PnalhzwWMjwie0Xk_Lnrn_0bLzz@mail.gmail.com>
-Mime-Version: 1.0
+	Thu, 15 Jul 2010 19:00:27 -0400
+X-Sasl-enc: eYRorOgjuVpl6Gt3K7Flxl3IGalUBSqjqSySsloBjBhz 1279234825
+Date: Thu, 15 Jul 2010 20:00:23 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Pedro Ribeiro <pedrib@gmail.com>, eusou15@yahoo.com,
+        linux-kernel@vger.kernel.org, toralf.foerster@gmx.de,
+        ibm-acpi-devel@lists.sourceforge.net
+Subject: Re: [ibm-acpi-devel] [PATCH] Remove 9 second reboot delay on
+ Lenovo T400/T500
+Message-ID: <20100715230023.GE27512@khazad-dum.debian.net>
+References: <4C3DCAA4.9050602@gmail.com>
+ <20100714143625.GA30721@srcf.ucam.org>
+ <20100715223149.GC27512@khazad-dum.debian.net>
+ <20100715225022.GA31377@srcf.ucam.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinOTwnSNgwX7PnalhzwWMjwie0Xk_Lnrn_0bLzz@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <20100715225022.GA31377@srcf.ucam.org>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Why do we force IST use for NMI, btw? Maybe we shouldn't, and just use
-> the normal kernel stack mechanisms?
+On Thu, 15 Jul 2010, Matthew Garrett wrote:
+> On Thu, Jul 15, 2010 at 07:31:49PM -0300, Henrique de Moraes Holschuh wrote:
+> > Or maybe we should key into whatever OSI() the ACPI firmware asked, and try
+> > first whatever shutdown path the highest version of Windows asked for by the
+> > firmware would.
+> 
+> I've been tracing how Windows implements reboots (XP, Vista and 7). It 
+> appears to use the ACPI reboot vector, the keyboard controller, the ACPI 
+> reboot vector again, the keyboard controller again and then hangs. I'll 
+> try implementing equivalent behaviour in Linux and see whether it makes 
+> any difference.
 
-If you don't use IST the SYSCALL entry is racy during the window
-when RSP is not set up yet (same for MCE etc.)
+Icky.  It doesn't happen always, but this time it does looks like we will
+NOT be better off doing whatever Windows is doing.
 
--Andi
+Do you want to escalate this to Lenovo?  I need a clear and consise
+description of the problem and the boxes we know to be affected.
+
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
