@@ -1,101 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933370Ab0GOOTq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 10:19:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62993 "EHLO mx1.redhat.com"
+	id S933358Ab0GOO1A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 10:27:00 -0400
+Received: from kroah.org ([198.145.64.141]:53454 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933336Ab0GOOTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 10:19:06 -0400
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Bob Peterson <rpeterso@redhat.com>,
-        Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 3/5] GFS2: Fix kernel NULL pointer dereference by dlm_astd
-Date: Thu, 15 Jul 2010 14:57:52 +0100
-Message-Id: <1279202274-4418-4-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1279202274-4418-1-git-send-email-swhiteho@redhat.com>
-References: <1279202274-4418-1-git-send-email-swhiteho@redhat.com>
+	id S933300Ab0GOO07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 10:26:59 -0400
+Date: Thu, 15 Jul 2010 07:27:40 -0700
+From: Greg KH <greg@kroah.com>
+To: Konrad Rzeszutek Wilk <konrad@kernel.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, alsa-devel@alsa-project.org,
+        Jens Axboe <axboe@kernel.dk>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Howells <dhowells@redhat.com>, Dave Airlie <airlied@gmail.com>
+Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
+Message-ID: <20100715142740.GA17005@kroah.com>
+References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> <m1zkxtinlw.fsf@fess.ebiederm.org> <201007150929.03916.konrad@kernel.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007150929.03916.konrad@kernel.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Peterson <rpeterso@redhat.com>
+On Thu, Jul 15, 2010 at 09:29:01AM -0400, Konrad Rzeszutek Wilk wrote:
+> 
+> > > and the box still won't boot.
+> >
+> > The reason FC6 doesn't boot is there is a userspace tool
+> > I believe in the initrd that cares about symlinks when it should
+> > not.
+> 
+> It is not just nash. Also multipathd would fail (as it expects 
+> the /sys/scsi_host/..<something> in certain directories), and 'lsscsi'. There 
+> might be other tools that depend on libsysfs to be affected by this as well.
 
-This patch fixes a problem in an error path when looking
-up dinodes.  There are two sister-functions, gfs2_inode_lookup
-and gfs2_process_unlinked_inode.  Both functions acquire and
-hold the i_iopen glock for the dinode being looked up. The last
-thing they try to do is hold the i_gl glock for the dinode.
-If that glock fails for some reason, the error path was
-incorrectly calling gfs2_glock_put for the i_iopen glock twice.
-This resulted in the glock being prematurely freed.  The
-"minimum hold time" usually kept the glock in memory, but the
-lock interface to dlm (aka lock_dlm) freed its memory for the
-glock.  In some circumstances, it would cause dlm's dlm_astd daemon
-to try to call the bast function for the freed lock_dlm memory,
-which resulted in a NULL pointer dereference.
+No tool should use libsysfs, that code broke a _long_ time ago.  Do you
+know of anything using it?
 
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+> Oh, and I think 'udev' might have some trouble too - but not 100% certain 
+> about that.
 
-diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-index b5612cb..f03afd9 100644
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -169,7 +169,7 @@ struct inode *gfs2_inode_lookup(struct super_block *sb,
- {
- 	struct inode *inode;
- 	struct gfs2_inode *ip;
--	struct gfs2_glock *io_gl;
-+	struct gfs2_glock *io_gl = NULL;
- 	int error;
- 
- 	inode = gfs2_iget(sb, no_addr);
-@@ -198,6 +198,7 @@ struct inode *gfs2_inode_lookup(struct super_block *sb,
- 		ip->i_iopen_gh.gh_gl->gl_object = ip;
- 
- 		gfs2_glock_put(io_gl);
-+		io_gl = NULL;
- 
- 		if ((type == DT_UNKNOWN) && (no_formal_ino == 0))
- 			goto gfs2_nfsbypass;
-@@ -228,7 +229,8 @@ gfs2_nfsbypass:
- fail_glock:
- 	gfs2_glock_dq(&ip->i_iopen_gh);
- fail_iopen:
--	gfs2_glock_put(io_gl);
-+	if (io_gl)
-+		gfs2_glock_put(io_gl);
- fail_put:
- 	if (inode->i_state & I_NEW)
- 		ip->i_gl->gl_object = NULL;
-@@ -256,7 +258,7 @@ void gfs2_process_unlinked_inode(struct super_block *sb, u64 no_addr)
- {
- 	struct gfs2_sbd *sdp;
- 	struct gfs2_inode *ip;
--	struct gfs2_glock *io_gl;
-+	struct gfs2_glock *io_gl = NULL;
- 	int error;
- 	struct gfs2_holder gh;
- 	struct inode *inode;
-@@ -293,6 +295,7 @@ void gfs2_process_unlinked_inode(struct super_block *sb, u64 no_addr)
- 
- 	ip->i_iopen_gh.gh_gl->gl_object = ip;
- 	gfs2_glock_put(io_gl);
-+	io_gl = NULL;
- 
- 	inode->i_mode = DT2IF(DT_UNKNOWN);
- 
-@@ -319,7 +322,8 @@ void gfs2_process_unlinked_inode(struct super_block *sb, u64 no_addr)
- fail_glock:
- 	gfs2_glock_dq(&ip->i_iopen_gh);
- fail_iopen:
--	gfs2_glock_put(io_gl);
-+	if (io_gl)
-+		gfs2_glock_put(io_gl);
- fail_put:
- 	ip->i_gl->gl_object = NULL;
- 	gfs2_glock_put(ip->i_gl);
--- 
-1.7.1.1
+Heh, no udev works just fine :)
 
+So basically, it's just the block links that are being affected, so that
+might let me narrow down the code covered by the depreciated option.
+
+thanks,
+
+greg k-h
