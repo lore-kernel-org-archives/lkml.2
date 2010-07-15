@@ -1,97 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757723Ab0GOAd1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 20:33:27 -0400
-Received: from rex.securecomputing.com ([203.24.151.4]:51389 "EHLO
-	cyberguard.com.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1757300Ab0GOAd0 (ORCPT
+	id S1757408Ab0GOAlJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 20:41:09 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:38440 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253Ab0GOAlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 20:33:26 -0400
-Message-ID: <4C3E5672.4090606@snapgear.com>
-Date: Thu, 15 Jul 2010 10:29:38 +1000
-From: Greg Ungerer <gerg@snapgear.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Wed, 14 Jul 2010 20:41:07 -0400
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, Greg KH <greg@kroah.com>,
+        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        alsa-devel@alsa-project.org, Jens Axboe <axboe@kernel.dk>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Howells <dhowells@redhat.com>, Dave Airlie <airlied@gmail.com>
+Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
+References: <20100709185450.GA29473@kroah.com>
+	<20100714163852.b3c09930.akpm@linux-foundation.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Wed, 14 Jul 2010 17:40:27 -0700
+In-Reply-To: <20100714163852.b3c09930.akpm@linux-foundation.org> (Andrew Morton's message of "Wed\, 14 Jul 2010 16\:38\:52 -0700")
+Message-ID: <m1zkxtinlw.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Greg Ungerer <gerg@uclinux.org>,
-        John Kacur <jkacur@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Maxim Kuvyrkov <maxim@codesourcery.com>,
-        Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/11] arch/m68knommu/kernel/process.c: formatting of
- pointers in printk()
-References: <1279130473-10737-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1279130473-10737-1-git-send-email-segooon@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kulikov,
+Andrew Morton <akpm@linux-foundation.org> writes:
 
-Kulikov Vasiliy wrote:
-> Use %p instead of %08x in printk().
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> On Fri, 9 Jul 2010 11:54:50 -0700
+> Greg Kroah-Hartman <gregkh@suse.de> wrote:
+>
+>> This is no longer needed by any userspace tools, so it's safe to
+>> remove.
+>
+> Makes my FC6 test box not boot - can't find /dev/root.  Then when I go
+> back to plain old mainline (2.6.35-rc5) and run `make oldconfig', the
+> .config change sticks:
+>
+> @@ -106,8 +106,7 @@
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+>  # CONFIG_CGROUPS is not set
+> -CONFIG_SYSFS_DEPRECATED=y
+> -CONFIG_SYSFS_DEPRECATED_V2=y
+> +# CONFIG_SYSFS_DEPRECATED_V2 is not set
+>  CONFIG_RELAY=y
+>  CONFIG_NAMESPACES=y
+>  # CONFIG_UTS_NS is not set
+>
+> and the box still won't boot.
 
-Acked-by: Greg Ungerer <gerg@uclinux.org>
+The reason FC6 doesn't boot is there is a userspace tool
+I believe in the initrd that cares about symlinks when it should
+not.
 
-Do you want me to push this to Linus via the m68knommu git tree?
+What is more interesting is that currently there is a bug in
+2.6.35-rc5 where rmmod <netdriver> modprobe <netdriver> will in fact
+fail.  There was an inadvertent regression and no one has noticed or
+complained.  I spotted it by code review just a little bit ago and I
+haven't had a chance to write and test the fix yet.
 
-Regards
-Greg
+If the code is going to start bitrotting and no one is going to
+notice or care simply removing the code instead of subjecting users
+to weird unexpected breakage seems like a responsible thing to do.
 
-
-
-> ---
->  arch/m68knommu/kernel/process.c |   10 +++++-----
->  1 files changed, 5 insertions(+), 5 deletions(-)
-> 
-> diff --git a/arch/m68knommu/kernel/process.c b/arch/m68knommu/kernel/process.c
-> index 6aa6613..1096c0e 100644
-> --- a/arch/m68knommu/kernel/process.c
-> +++ b/arch/m68knommu/kernel/process.c
-> @@ -316,14 +316,14 @@ void dump(struct pt_regs *fp)
->  		fp->d0, fp->d1, fp->d2, fp->d3);
->  	printk(KERN_EMERG "d4: %08lx    d5: %08lx    a0: %08lx    a1: %08lx\n",
->  		fp->d4, fp->d5, fp->a0, fp->a1);
-> -	printk(KERN_EMERG "\nUSP: %08x   TRAPFRAME: %08x\n",
-> -		(unsigned int) rdusp(), (unsigned int) fp);
-> +	printk(KERN_EMERG "\nUSP: %08x   TRAPFRAME: %p\n",
-> +		(unsigned int) rdusp(), fp);
->  
->  	printk(KERN_EMERG "\nCODE:");
->  	tp = ((unsigned char *) fp->pc) - 0x20;
->  	for (sp = (unsigned long *) tp, i = 0; (i < 0x40);  i += 4) {
->  		if ((i % 0x10) == 0)
-> -			printk(KERN_EMERG "%08x: ", (int) (tp + i));
-> +			printk(KERN_EMERG "%p: ", tp + i);
->  		printk("%08x ", (int) *sp++);
->  	}
->  	printk(KERN_EMERG "\n");
-> @@ -332,7 +332,7 @@ void dump(struct pt_regs *fp)
->  	tp = ((unsigned char *) fp) - 0x40;
->  	for (sp = (unsigned long *) tp, i = 0; (i < 0xc0); i += 4) {
->  		if ((i % 0x10) == 0)
-> -			printk(KERN_EMERG "%08x: ", (int) (tp + i));
-> +			printk(KERN_EMERG "%p: ", tp + i);
->  		printk("%08x ", (int) *sp++);
->  	}
->  	printk(KERN_EMERG "\n");
-> @@ -341,7 +341,7 @@ void dump(struct pt_regs *fp)
->  	tp = (unsigned char *) (rdusp() - 0x10);
->  	for (sp = (unsigned long *) tp, i = 0; (i < 0x80); i += 4) {
->  		if ((i % 0x10) == 0)
-> -			printk(KERN_EMERG "%08x: ", (int) (tp + i));
-> +			printk(KERN_EMERG "%p: ", tp + i);
->  		printk("%08x ", (int) *sp++);
->  	}
->  	printk(KERN_EMERG "\n");
-
-
--- 
-------------------------------------------------------------------------
-Greg Ungerer  --  Principal Engineer        EMAIL:     gerg@snapgear.com
-SnapGear Group, McAfee                      PHONE:       +61 7 3435 2888
-8 Gardner Close                             FAX:         +61 7 3217 5323
-Milton, QLD, 4064, Australia                WEB: http://www.SnapGear.com
+Eric
