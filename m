@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932605Ab0GOHsh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 03:48:37 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:46132 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932579Ab0GOHsf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 03:48:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Iu8DZmywoGrA7wVs35X+RjJFbdNap8cBKFYmCI7DgJR5SlQStS4Zdb9yCNZ/2q1EoA
-         +7GoFDgjG1T1kEL6kqzGTfp4yl55jWcr+AlHqi/aSD6VaPXAZqxExrNUHthIWnfES691
-         VmU23dYhsKfWE0QlSqHIy3t5Sxwkmc+o11Skc=
-Subject: [PATCH v2 7/12] wm8940: fix a memory leak if wm8940_register
-	return error
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Tejun Heo <tj@kernel.org>,
-        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-        alsa-devel@alsa-project.org
-In-Reply-To: <1279162893.29294.20.camel@mola>
-References: <1279162147.29294.2.camel@mola> <1279162893.29294.20.camel@mola>
-Content-Type: text/plain
-Date: Thu, 15 Jul 2010 15:48:48 +0800
-Message-Id: <1279180128.8410.5.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
+	id S932637Ab0GOHs6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 03:48:58 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:62451 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S932624Ab0GOHsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 03:48:54 -0400
+Message-ID: <4C3EBC70.2030604@cn.fujitsu.com>
+Date: Thu, 15 Jul 2010 15:44:48 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] KVM: MMU: track dirty page in speculative path properly
+References: <4C3C3518.7080505@cn.fujitsu.com> <4C3C35B7.50101@cn.fujitsu.com> <20100713220551.GB6370@amt.cnet> <4C3D11C6.4000101@cn.fujitsu.com> <20100714110926.GA26033@amt.cnet> <4C3DB942.3010709@cn.fujitsu.com> <20100714140626.GA28485@amt.cnet>
+In-Reply-To: <20100714140626.GA28485@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds checking for wm8940_register return value,
-and does kfree(wm8940) if wm8940_register() fail.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- sound/soc/codecs/wm8940.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
-index e3c4bbf..f0c1113 100644
---- a/sound/soc/codecs/wm8940.c
-+++ b/sound/soc/codecs/wm8940.c
-@@ -845,6 +845,7 @@ static void wm8940_unregister(struct wm8940_priv *wm8940)
- static int wm8940_i2c_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
- {
-+	int ret;
- 	struct wm8940_priv *wm8940;
- 	struct snd_soc_codec *codec;
- 
-@@ -858,7 +859,11 @@ static int wm8940_i2c_probe(struct i2c_client *i2c,
- 	codec->control_data = i2c;
- 	codec->dev = &i2c->dev;
- 
--	return wm8940_register(wm8940, SND_SOC_I2C);
-+	ret = wm8940_register(wm8940, SND_SOC_I2C);
-+	if (ret < 0)
-+		kfree(wm8940);
-+
-+	return ret;
+Marcelo Tosatti wrote:
+
+>> How about just track access bit for speculative path, we set page both accessed and
+>> dirty(if it's writable) only if the access bit is set?
+> 
+> A useful thing to do would be to allow read-only mappings, in the fault
+> path (Lai sent a few patches in that direction sometime ago but there
+> was no follow up).
+> 
+> So in the case of a read-only fault from the guest, you'd inform
+> get_user_pages() that read-only access is acceptable (so swapcache pages
+> can be mapped, or qemu can mprotect(PROT_READ) guest memory).
+> 
+
+Yeah, it's a great work, i guess Lai will post the new version soon.
+
+And, even we do this, i think the page dirty track is still needed, right?
+Then, how about my new idea to track page dirty for speculative path, just
+as below draft patch does:
+
+@@ -687,10 +687,11 @@ static void drop_spte(struct kvm *kvm, u64 *sptep, u64 new_spte)
+        if (!is_rmap_spte(old_spte))
+                return;
+        pfn = spte_to_pfn(old_spte);
+-       if (old_spte & shadow_accessed_mask)
++       if (old_spte & shadow_accessed_mask) {
+                kvm_set_pfn_accessed(pfn);
+-       if (is_writable_pte(old_spte))
+-               kvm_set_pfn_dirty(pfn);
++               if (is_writable_pte(old_spte))
++                       kvm_set_pfn_dirty(pfn);
++       }
+        rmap_remove(kvm, sptep);
  }
  
- static int __devexit wm8940_i2c_remove(struct i2c_client *client)
--- 
-1.5.4.3
+@@ -1920,8 +1921,11 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
+         * demand paging).
+         */
+        spte = shadow_base_present_pte | shadow_dirty_mask;
+-       if (!speculative)
++       if (!speculative) {
+                spte |= shadow_accessed_mask;
++               if (is_writable_pte(*sptep))
++                       kvm_set_pfn_dirty(pfn);
++       }
+        if (!dirty)
+                pte_access &= ~ACC_WRITE_MASK;
+        if (pte_access & ACC_EXEC_MASK)
+
+It uses access bit to track both page accessed and page dirty, and it's rather cheap...
 
 
 
