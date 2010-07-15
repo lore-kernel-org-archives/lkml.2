@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934041Ab0GOSZL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:25:11 -0400
-Received: from imap.ru.mvista.com ([213.79.90.228]:30119 "EHLO
-	buildserver.ru.mvista.com" rhost-flags-OK-FAIL-OK-FAIL)
-	by vger.kernel.org with ESMTP id S933977Ab0GOSZJ (ORCPT
+	id S934068Ab0GOS3n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:29:43 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:39397 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934015Ab0GOS3m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:25:09 -0400
-Date: Thu, 15 Jul 2010 22:25:07 +0400
-From: Anton Vorontsov <avorontsov@mvista.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Doug Thompson <dougthompson@xmission.com>,
-        Peter Tyser <ptyser@xes-inc.com>, Dave Jiang <djiang@mvista.com>,
-        Kumar Gala <galak@kernel.crashing.org>, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: [PATCH v2] edac: mpc85xx: Add support for new MPCxxx/Pxxxx EDAC
- controllers
-Message-ID: <20100715182507.GA3482@oksana.dev.rtsoft.ru>
+	Thu, 15 Jul 2010 14:29:42 -0400
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: Chris Mason <chris.mason@oracle.com>
+Subject: csum errors
+Date: Thu, 15 Jul 2010 20:30:17 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-btrfs-debug; KDE/4.4.5; i686; ; )
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <201007111428.10005.johannes.hirte@fem.tu-ilmenau.de> <201007131423.59415.johannes.hirte@fem.tu-ilmenau.de>
+In-Reply-To: <201007131423.59415.johannes.hirte@fem.tu-ilmenau.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007152030.18431.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Simply add proper IDs into the device table.
+Am Dienstag 13 Juli 2010, 14:23:58 schrieb Johannes Hirte:
+> On the Opteron system I got now csum errors. I've synced some data from the
+> netbook to the Opteron yesteray. After hitting ENOSPC with 4GB free, I've
+> run 'btrfs-vol -b' on this fs in hope to get some more free space. It
+> worked but the command failed and I found in dmesg:
+> 
+> btrfs csum failed ino 339 off 935280640 csum 337776576 private 337776575
+> btrfs csum failed ino 339 off 935280640 csum 337776576 private 337776575
+> btrfs csum failed ino 339 off 935280640 csum 337776576 private 337776575
+> btrfs csum failed ino 339 off 935280640 csum 337776576 private 337776575
+> 
+> So I've tested the new synced data by syncing them to another disk on the
+> Optoern system (XFS). As I've expected (or better feared), some data wasn't
+> readable and I found more csum errors in dmesg:
+> 
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1849137 off 368640 csum 3354885689 private 3354885688
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1912210 off 5095424 csum 847944548 private 847944547
+> btrfs csum failed ino 1959333 off 252362752 csum 686735346 private
+> 686735345 btrfs csum failed ino 1959333 off 252362752 csum 686735346
+> private 686735345 btrfs csum failed ino 1959333 off 252362752 csum
+> 686735346 private 686735345 btrfs csum failed ino 1959333 off 252362752
+> csum 686735346 private 686735345 btrfs csum failed ino 1959333 off
+> 252362752 csum 686735346 private 686735345 btrfs csum failed ino 1959333
+> off 252362752 csum 686735346 private 686735345 btrfs csum failed ino
+> 1959333 off 651108352 csum 2851505977 private 2851505976 btrfs csum failed
+> ino 1959333 off 651108352 csum 2851505977 private 2851505976 btrfs csum
+> failed ino 1959333 off 651108352 csum 2851505977 private 2851505976 btrfs
+> csum failed ino 1959333 off 651108352 csum 2851505977 private 2851505976
+> btrfs csum failed ino 1959333 off 651108352 csum 2851505977 private
+> 2851505976 btrfs csum failed ino 1959333 off 651108352 csum 2851505977
+> private 2851505976 btrfs csum failed ino 1959333 off 898342912 csum
+> 4271223884 private 4271223883 btrfs csum failed ino 1959333 off 898342912
+> csum 4271223884 private 4271223883 btrfs csum failed ino 1959333 off
+> 898342912 csum 4271223884 private 4271223883 btrfs csum failed ino 1959333
+> off 898342912 csum 4271223884 private 4271223883 btrfs csum failed ino
+> 1959333 off 898342912 csum 4271223884 private 4271223883 btrfs csum failed
+> ino 1959333 off 898342912 csum 4271223884 private 4271223883
 
-Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
----
+I think, this is a different error. I've only seen them on filesystems from my 
+Opteron system. It seems that the recorded csums are wrong and it looks to me 
+like rounding errors. The data itself should be correct, as I've tested one 
+affected file via md5sum against the original on another filesystem.
+Any ideas what is going wrong here?
 
-It appears that the driver has two device ID tables. :-)
-So, my previous attempt enabled only half of the functionality.
-
-Andrew,
-
-Can you please replace
-
-  edac-mpc85xx-add-support-for-mpc8569-edac-controllers.patch
-
-with this patch? It also adds some more IDs for the newer chips.
-
-Thanks!
-
- drivers/edac/mpc85xx_edac.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index 52ca09b..3820879 100644
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -646,8 +646,12 @@ static struct of_device_id mpc85xx_l2_err_of_match[] = {
- 	{ .compatible = "fsl,mpc8555-l2-cache-controller", },
- 	{ .compatible = "fsl,mpc8560-l2-cache-controller", },
- 	{ .compatible = "fsl,mpc8568-l2-cache-controller", },
-+	{ .compatible = "fsl,mpc8569-l2-cache-controller", },
- 	{ .compatible = "fsl,mpc8572-l2-cache-controller", },
-+	{ .compatible = "fsl,p1020-l2-cache-controller", },
-+	{ .compatible = "fsl,p1021-l2-cache-controller", },
- 	{ .compatible = "fsl,p2020-l2-cache-controller", },
-+	{ .compatible = "fsl,p4080-l2-cache-controller", },
- 	{},
- };
- 
-@@ -1120,9 +1124,13 @@ static struct of_device_id mpc85xx_mc_err_of_match[] = {
- 	{ .compatible = "fsl,mpc8555-memory-controller", },
- 	{ .compatible = "fsl,mpc8560-memory-controller", },
- 	{ .compatible = "fsl,mpc8568-memory-controller", },
-+	{ .compatible = "fsl,mpc8569-memory-controller", },
- 	{ .compatible = "fsl,mpc8572-memory-controller", },
- 	{ .compatible = "fsl,mpc8349-memory-controller", },
-+	{ .compatible = "fsl,p1020-memory-controller", },
-+	{ .compatible = "fsl,p1021-memory-controller", },
- 	{ .compatible = "fsl,p2020-memory-controller", },
-+	{ .compatible = "fsl,p4080-memory-controller", },
- 	{},
- };
- 
--- 
-1.7.0.5
+regards,
+  Johannes
