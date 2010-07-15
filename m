@@ -1,63 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934819Ab0GOVxh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 17:53:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48226 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933589Ab0GOVxg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 17:53:36 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <201007152235.22373.arnd@arndb.de>
-References: <201007152235.22373.arnd@arndb.de> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
-Date: Thu, 15 Jul 2010 22:53:27 +0100
-Message-ID: <30646.1279230807@redhat.com>
+	id S934811Ab0GOWA4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 18:00:56 -0400
+Received: from mailout-de.gmx.net ([213.165.64.23]:33172 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
+	id S934215Ab0GOWAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 18:00:55 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19nkc9pbWhnMfes7vpiJJgeiHeoZlNAG+oLBBMCX+
+	tFNSdSgjQ/HYvw
+From: Peter =?utf-8?q?H=C3=BCwe?= <PeterHuewe@gmx.de>
+To: Andy Walls <awalls@md.metrocast.net>
+Subject: Re: [PATCH 24/25] video/ivtv: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
+Date: Fri, 16 Jul 2010 00:00:51 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
+Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Ian Armstrong <ian@iarmst.demon.co.uk>,
+        Douglas Schilling Landgraf <dougsland@redhat.com>,
+        Steven Toth <stoth@kernellabs.com>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <201007152108.27175.PeterHuewe@gmx.de> <1279230200.7920.23.camel@morgan.silverblock.net>
+In-Reply-To: <1279230200.7920.23.camel@morgan.silverblock.net>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007160000.52153.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> wrote:
+Am Donnerstag 15 Juli 2010 23:43:20 schrieb Andy Walls:
+> > ... use the PCI_VDEVICE macro, and thus improves readability.
+> I have to disagree.  The patch may improve typesetting, but it degrades
+> clarity and maintainability from my perspective.
+> ...
+> So I'm going to NAK this for ivtv, unless someone can help me understand
+> any big picture benefit that I may not see from my possibly myopic
+> perspective.
 
-> > This was initially proposed as a set of xattrs, but the general preferance
-> > is for an extended stat structure.
-> 
-> I don't think I'd call this general preference. Three of the four
-> are fixed length and could easily be done inside the structure if you
-> leave a bit of space instead of a variable-length field at the end.
+Hi Andy,
 
-?
+absolutely no problem ;) - I thing that is one of the great things about open 
+source that people can have different opinions and discuss them.
 
-Maybe I wasn't clear: I meant having an extended stat() syscall rather than
-using a bunch of getxattr()'s was the general preference.
+Patches are proposals only, and if I spark a discussion which brings the 
+development process further or from which I can learn something, I'm a lucky 
+guy ;)
 
-> For the volume id, I could not find any file system that requires more
-> than 32 bytes here, which is also reasonable to put into the structure.
-> Make it 36 if you want to cover ascii encoded UUIDs.
+> PCI_ANY_ID indicates to the reader a wildcard match is being
+> performed. 
+Yeah, but I get absolutely no information out of the 0, 0, parameters either - 
+unless I look up the function - but then I could also look up the Macro.
 
-You should also include a length.  Volume IDs may be binary rather than
-NUL-terminated strings.
+> BTW, I have not seen a similar patch come in my mailbox for
+> cx18-driver.c.  Why propose the change for ivtv and not cx18?
 
-> That's at most 60 bytes for the extensions you're considering already,
-> plus the 152
+That might be the case since I picked out several different locations using 
+cscope (by gut instinct) - so the patchset is not comprehensive. 
+There are still a lot of places that are not converted, I just picked some at 
+random and stopped at 25 patches.
+The reason behind this was that I almost expected some kind of controversy and 
+discussion about the changes - and since I'm getting some NACKs I guess this 
+was a smart move - imagine I had converted the whole kernel source just to get 
+a simple NACK ;)
 
-160, I think.
+Thanks,
+Peter
 
-> you have already is still less than a cache line on
-> some machines. Padding it to 256 bytes would make it nice and round,
-> if you want to be really sure, make it 384 bytes.
 
-Which we currently allocate on the kernel stack, plus up to a couple of kstat
-structs if something like eCryptFS is used.  Admittedly, the base xstat struct
-could be kmalloc()'d instead, but why use up all that space if you don't need
-it?
 
-David
+
+
+
+
+
+
+
+
