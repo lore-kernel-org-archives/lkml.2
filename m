@@ -1,160 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932504Ab0GOFlI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 01:41:08 -0400
-Received: from mga03.intel.com ([143.182.124.21]:53809 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932443Ab0GOFlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 01:41:04 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,206,1278313200"; 
-   d="scan'208";a="300389752"
-Message-ID: <4C3E9F6E.1030508@intel.com>
-Date: Wed, 14 Jul 2010 22:41:02 -0700
-From: Dan Williams <dan.j.williams@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S932507Ab0GOFtz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 01:49:55 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38995 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932443Ab0GOFty (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 01:49:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ULFCrWi+ji5/91P1Zw4SBh/y+QQaoCqcEkcbv+ePfEOWcq+CWXKjxO8tDVVVQxNJj1
+         tMcP2yyZQllenMyvh6rUxnn+/TueZDYaMQxQhaWiYkQiXddj3q5IvuIs767O+doHXQP/
+         uckth20FIxNAuc0FsqjpmK1yawvqpev/EHBPk=
 MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-CC: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	 <4C2AC55E.3040303@intel.com>	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	 <1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>	 <1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>	 <1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>	 <1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>	 <1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>	 <1278324973.16975.68.camel@localhost>	 <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>	 <1278463901.20082.34.camel@dwillia2-linux>	 <1278474039.31393.8.camel@localhost>	<4C34BDCD.9080607@intel.com>	 <AANLkTild7PCKygpPAJRo2G237CY8wJyveM9_Glx8qmoK@mail.gmail.com>	 <4C379462.1020704@intel.com> <1278720554.9522.18.camel@localhost>
-In-Reply-To: <1278720554.9522.18.camel@localhost>
-Content-Type: multipart/mixed;
- boundary="------------090005020002000602080408"
+In-Reply-To: <AANLkTilWzpu6Re9HG2jTqpHUU7NohULOEgHqGT4yTIaz@mail.gmail.com>
+References: <AANLkTimkNg81yzxSHTcAa1QlTE9SYmvzL4eOTVHApWq3@mail.gmail.com>
+	<AANLkTilvbOb0n9l6F3EHwQg3VfNNmYB1BdFbzL2Cwg_P@mail.gmail.com>
+	<AANLkTinnlhzSGP8sRQ8Pr4CIuwn4d859rvSe1yO_3TEz@mail.gmail.com>
+	<AANLkTil58zbo28QL2ncTAXx9iHeQS20W8u0MuDgLaojj@mail.gmail.com>
+	<AANLkTim-yNCtMnxzzA8yJnD6CLkF2Mz-aA4E5qbYMBlz@mail.gmail.com>
+	<AANLkTim9EQ9nPISuH5wNsrAd8bHM-xBnpgqAi-W_ZCTi@mail.gmail.com>
+	<AANLkTikjXiBoR3c5g6QaNfQKfX4vWUW8mt0AdomMa8at@mail.gmail.com>
+	<4C3E103A.3030706@freedesktop.org>
+	<AANLkTinePpZEsWShq8EB-No-CAQQsaDwLUbLVaSmrG5R@mail.gmail.com>
+	<AANLkTilWzpu6Re9HG2jTqpHUU7NohULOEgHqGT4yTIaz@mail.gmail.com>
+Date: Thu, 15 Jul 2010 07:49:52 +0200
+Message-ID: <AANLkTilaL1W4CBp4xPcqMyV0aeJ_w1ltgM0RimZLrcIk@mail.gmail.com>
+Subject: Re: Regression 2.6.34->2.6.35-rc4: radeaon KMS an RS690 broken
+From: Torsten Kaiser <just.for.lkml@googlemail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Jerome Glisse <glisse@freedesktop.org>, linux-kernel@vger.kernel.org,
+        DRI mailing list <dri-devel@lists.freedesktop.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090005020002000602080408
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+On Thu, Jul 15, 2010 at 12:16 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> I discussed this with Jerome and I think we found the root cause.
+> Does this patch help?
+(patch 0001-drm-radeon-kms-fix-gtt-MC-base-alignment-on-rs4xx-rs.patch)
 
-On 7/9/2010 5:09 PM, David Woodhouse wrote:
-> Actually, given that we know the chipset, can't we just read the VT BARs
-> directly from config space and check that the base address of the IOMMU
-> we get is the right one for the I/OAT device?
->
-> Something like...
->
->     pci_read_config_dword( ("0:0.0") , 0x48,&vtbar );
->     if (drhd->base_address != vtbar)
-> 	WARN();
+Yes:
+[    0.426978] Linux agpgart interface v0.103
+[    0.427141] [drm] Initialized drm 1.1.0 20060810
+[    0.427242] [drm] radeon defaulting to kernel modesetting.
+[    0.427300] [drm] radeon kernel modesetting enabled.
+[    0.427417] radeon 0000:01:05.0: PCI INT A -> GSI 18 (level, low) -> IRQ 18
+[    0.429732] [drm] initializing kernel modesetting (RS690 0x1002:0x791E).
+[    0.429890] [drm] register mmio base: 0xFE9F0000
+[    0.429948] [drm] register mmio size: 65536
+[    0.430537] ATOM BIOS: ATI
+[    0.430612] radeon 0000:01:05.0: VRAM: 32M 0xDE000000 - 0xDFFFFFFF (32M used)
+[    0.430672] radeon 0000:01:05.0: GTT: 512M 0xA0000000 - 0xBFFFFFFF
+[    0.430754] [drm] radeon: irq initialized.
+[    0.430817] mtrr: type mismatch for fc000000,2000000 old:
+write-back new: write-combining
+[    0.430890] [drm] Detected VRAM RAM=32M, BAR=32M
+[    0.430947] [drm] RAM width 128bits DDR
+[    0.431090] [TTM] Zone  kernel: Available graphics memory: 2010234 kiB.
+[    0.431149] [TTM] Initializing pool allocator.
+[    0.431224] [drm] radeon: 32M of VRAM memory ready
+[    0.431283] [drm] radeon: 512M of GTT memory ready.
+[    0.431343] [drm] GART: num cpu pages 131072, num gpu pages 131072
+[    0.434732] [drm] radeon: 1 quad pipes, 1 z pipes initialized.
+[    0.441796] [drm] Loading RS690/RS740 Microcode
+[    0.442006] [drm] radeon: ring at 0x00000000A0000000
+[    0.442080] [drm] ring test succeeded in 1 usecs
+[    0.442223] [drm] radeon: ib pool ready.
+[    0.442289] [drm] ib test succeeded in 0 usecs
+[    0.442370] [drm] Default TV standard: NTSC
+[    0.442587] [drm] Default TV standard: NTSC
+[    0.442866] [drm] Radeon Display Connectors
+[    0.442924] [drm] Connector 0:
+[    0.442981] [drm]   VGA
+[    0.443039] [drm]   DDC: 0x7e50 0x7e40 0x7e54 0x7e44 0x7e58 0x7e48
+0x7e5c 0x7e4c
+[    0.443111] [drm]   Encoders:
+[    0.443169] [drm]     CRT1: INTERNAL_KLDSCP_DAC1
+[    0.443227] [drm] Connector 1:
+[    0.443284] [drm]   S-video
+[    0.443340] [drm]   Encoders:
+[    0.443398] [drm]     TV1: INTERNAL_KLDSCP_DAC1
+[    0.443455] [drm] Connector 2:
+[    0.443512] [drm]   HDMI-A
+[    0.443570] [drm]   DDC: 0x7e40 0x7e50 0x7e44 0x7e54 0x7e48 0x7e58
+0x7e4c 0x7e5c
+[    0.443642] [drm]   Encoders:
+[    0.443700] [drm]     DFP3: INTERNAL_LVTM1
+[    0.643372] [drm] fb mappable at 0xFC040000
+[    0.643432] [drm] vram apper at 0xFC000000
+[    0.643489] [drm] size 786432
+[    0.643546] [drm] fb depth is 8
+[    0.643603] [drm]    pitch is 1024
+[    0.643742] fbcon: radeondrmfb (fb0) is primary device
+[    0.663232] Console: switching to colour frame buffer device 128x48
+[    0.664818] fb0: radeondrmfb frame buffer device
+[    0.664837] drm: registered panic notifier
+[    0.664856] Slow work thread pool: Starting up
+[    0.664919] Slow work thread pool: Ready
+[    0.664940] [drm] Initialized radeon 2.5.0 20080528 for
+0000:01:05.0 on minor 0
 
-Ok, here is a patch that takes this approach.
+Please note, that I'm only looking for "ring test succeeded" / "ring
+test failed", as I'm only using the KMS fb console on that system.
 
-David, will you sign off on this?
-
-Chris, I'll add a tested-by line if you can give this a shot.
-
-Thanks,
-Dan
-
---------------090005020002000602080408
-Content-Type: text/plain;
- name="ioat-catch-broken-vtd-v4.patch"
-Content-Transfer-Encoding: base64
-Content-Disposition: attachment;
- filename="ioat-catch-broken-vtd-v4.patch"
-
-aW9hdDogY2F0Y2ggYW5kIHJlY292ZXIgZnJvbSBicm9rZW4gdnRkIGNvbmZpZ3VyYXRpb25z
-CgpGcm9tOiBEYW4gV2lsbGlhbXMgPGRhbi5qLndpbGxpYW1zQGludGVsLmNvbT4KCk9uIHNv
-bWUgcGxhdGZvcm1zIChNYWNQcm8zLDEpIHRoZSBCSU9TIGFzc2lnbnMgdGhlIGlvYXRkbWEg
-ZGV2aWNlIHRvIHRoZQppbmNvcnJlY3QgaW9tbXUgY2F1c2luZyBpb21tdS1mYXVsdHMgd2hl
-biB0aGUgZHJpdmVyIGluaXRpYWxpemVzLiAgQWRkIGEgcXVpcmsKdG8gY2F0Y2ggdGhpcyBt
-aXNjb25maWd1cmF0aW9uLCBhbmQgdGVhY2ggdGhlIGlvYXRkbWEgZHJpdmVyIHRvIHRyZWF0
-CmluaXRpYWxpemF0aW9uIGZhaWx1cmVzIGFzIG5vbi1mYXRhbCAoanVzdCBmYWlsIHRoZSBk
-cml2ZXIgbG9hZCkuCgpSZXBvcnRlZC1ieTogQ2hyaXMgTGkgPGxrbWxAY2hyaXNsaS5vcmc+
-ClNpZ25lZC1vZmYtYnk6IERhbiBXaWxsaWFtcyA8ZGFuLmoud2lsbGlhbXNAaW50ZWwuY29t
-PgotLS0KCiBkcml2ZXJzL2RtYS9pb2F0L2RtYS5oICAgIHwgICAgMSArCiBkcml2ZXJzL2Rt
-YS9pb2F0L2RtYV92Mi5jIHwgICAyNCArKysrKysrKysrKysrKysrKysrKysrLS0KIGRyaXZl
-cnMvZG1hL2lvYXQvZG1hX3YzLmMgfCAgICA1ICsrKystCiBkcml2ZXJzL3BjaS9pbnRlbC1p
-b21tdS5jIHwgICAzNSArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKwogNCBm
-aWxlcyBjaGFuZ2VkLCA2MiBpbnNlcnRpb25zKCspLCAzIGRlbGV0aW9ucygtKQoKCmRpZmYg
-LS1naXQgYS9kcml2ZXJzL2RtYS9pb2F0L2RtYS5oIGIvZHJpdmVycy9kbWEvaW9hdC9kbWEu
-aAppbmRleCA2ZDNhNzNiLi41MjE2YzhhIDEwMDY0NAotLS0gYS9kcml2ZXJzL2RtYS9pb2F0
-L2RtYS5oCisrKyBiL2RyaXZlcnMvZG1hL2lvYXQvZG1hLmgKQEAgLTk3LDYgKzk3LDcgQEAg
-c3RydWN0IGlvYXRfY2hhbl9jb21tb24gewogCSNkZWZpbmUgSU9BVF9SRVNFVF9QRU5ESU5H
-IDIKIAkjZGVmaW5lIElPQVRfS09CSl9JTklUX0ZBSUwgMwogCSNkZWZpbmUgSU9BVF9SRVNI
-QVBFX1BFTkRJTkcgNAorCSNkZWZpbmUgSU9BVF9SVU4gNQogCXN0cnVjdCB0aW1lcl9saXN0
-IHRpbWVyOwogCSNkZWZpbmUgQ09NUExFVElPTl9USU1FT1VUIG1zZWNzX3RvX2ppZmZpZXMo
-MTAwKQogCSNkZWZpbmUgSURMRV9USU1FT1VUIG1zZWNzX3RvX2ppZmZpZXMoMjAwMCkKZGlm
-ZiAtLWdpdCBhL2RyaXZlcnMvZG1hL2lvYXQvZG1hX3YyLmMgYi9kcml2ZXJzL2RtYS9pb2F0
-L2RtYV92Mi5jCmluZGV4IDNjOGIzMmEuLjc3OWY0ZGEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMv
-ZG1hL2lvYXQvZG1hX3YyLmMKKysrIGIvZHJpdmVycy9kbWEvaW9hdC9kbWFfdjIuYwpAQCAt
-Mjg3LDcgKzI4NywxMCBAQCB2b2lkIGlvYXQyX3RpbWVyX2V2ZW50KHVuc2lnbmVkIGxvbmcg
-ZGF0YSkKIAkJCWNoYW5lcnIgPSByZWFkbChjaGFuLT5yZWdfYmFzZSArIElPQVRfQ0hBTkVS
-Ul9PRkZTRVQpOwogCQkJZGV2X2Vycih0b19kZXYoY2hhbiksICIlczogQ2hhbm5lbCBoYWx0
-ZWQgKCV4KVxuIiwKIAkJCQlfX2Z1bmNfXywgY2hhbmVycik7Ci0JCQlCVUdfT04oaXNfaW9h
-dF9idWcoY2hhbmVycikpOworCQkJaWYgKHRlc3RfYml0KElPQVRfUlVOLCAmY2hhbi0+c3Rh
-dGUpKQorCQkJCUJVR19PTihpc19pb2F0X2J1ZyhjaGFuZXJyKSk7CisJCQllbHNlIC8qIHdl
-IG5ldmVyIGdvdCBvZmYgdGhlIGdyb3VuZCAqLworCQkJCXJldHVybjsKIAkJfQogCiAJCS8q
-IGlmIHdlIGhhdmVuJ3QgbWFkZSBwcm9ncmVzcyBhbmQgd2UgaGF2ZSBhbHJlYWR5CkBAIC00
-OTIsNiArNDk1LDggQEAgc3RhdGljIHN0cnVjdCBpb2F0X3JpbmdfZW50ICoqaW9hdDJfYWxs
-b2NfcmluZyhzdHJ1Y3QgZG1hX2NoYW4gKmMsIGludCBvcmRlciwgZ2YKIAlyZXR1cm4gcmlu
-ZzsKIH0KIAordm9pZCBpb2F0Ml9mcmVlX2NoYW5fcmVzb3VyY2VzKHN0cnVjdCBkbWFfY2hh
-biAqYyk7CisKIC8qIGlvYXQyX2FsbG9jX2NoYW5fcmVzb3VyY2VzIC0gYWxsb2NhdGUvaW5p
-dGlhbGl6ZSBpb2F0MiBkZXNjcmlwdG9yIHJpbmcKICAqIEBjaGFuOiBjaGFubmVsIHRvIGJl
-IGluaXRpYWxpemVkCiAgKi8KQEAgLTUwMCw2ICs1MDUsNyBAQCBpbnQgaW9hdDJfYWxsb2Nf
-Y2hhbl9yZXNvdXJjZXMoc3RydWN0IGRtYV9jaGFuICpjKQogCXN0cnVjdCBpb2F0Ml9kbWFf
-Y2hhbiAqaW9hdCA9IHRvX2lvYXQyX2NoYW4oYyk7CiAJc3RydWN0IGlvYXRfY2hhbl9jb21t
-b24gKmNoYW4gPSAmaW9hdC0+YmFzZTsKIAlzdHJ1Y3QgaW9hdF9yaW5nX2VudCAqKnJpbmc7
-CisJdTY0IHN0YXR1czsKIAlpbnQgb3JkZXI7CiAKIAkvKiBoYXZlIHdlIGFscmVhZHkgYmVl
-biBzZXQgdXA/ICovCkBAIC01NDAsNyArNTQ2LDIwIEBAIGludCBpb2F0Ml9hbGxvY19jaGFu
-X3Jlc291cmNlcyhzdHJ1Y3QgZG1hX2NoYW4gKmMpCiAJdGFza2xldF9lbmFibGUoJmNoYW4t
-PmNsZWFudXBfdGFzayk7CiAJaW9hdDJfc3RhcnRfbnVsbF9kZXNjKGlvYXQpOwogCi0JcmV0
-dXJuIDEgPDwgaW9hdC0+YWxsb2Nfb3JkZXI7CisJLyogY2hlY2sgdGhhdCB3ZSBnb3Qgb2Zm
-IHRoZSBncm91bmQgKi8KKwl1ZGVsYXkoNSk7CisJc3RhdHVzID0gaW9hdF9jaGFuc3RzKGNo
-YW4pOworCWlmIChpc19pb2F0X2FjdGl2ZShzdGF0dXMpIHx8IGlzX2lvYXRfaWRsZShzdGF0
-dXMpKSB7CisJCXNldF9iaXQoSU9BVF9SVU4sICZjaGFuLT5zdGF0ZSk7CisJCXJldHVybiAx
-IDw8IGlvYXQtPmFsbG9jX29yZGVyOworCX0gZWxzZSB7CisJCXUzMiBjaGFuZXJyID0gcmVh
-ZGwoY2hhbi0+cmVnX2Jhc2UgKyBJT0FUX0NIQU5FUlJfT0ZGU0VUKTsKKworCQlkZXZfZXJy
-KHRvX2RldihjaGFuKSwgImZhaWxlZCB0byBzdGFydCBjaGFubmVsIGNoYW5lcnI6ICUjeFxu
-IiwKKwkJCWNoYW5lcnIpOworCQlpb2F0Ml9mcmVlX2NoYW5fcmVzb3VyY2VzKGMpOworCQly
-ZXR1cm4gLUVGQVVMVDsKKwl9CiB9CiAKIGJvb2wgcmVzaGFwZV9yaW5nKHN0cnVjdCBpb2F0
-Ml9kbWFfY2hhbiAqaW9hdCwgaW50IG9yZGVyKQpAQCAtNzc4LDYgKzc5Nyw3IEBAIHZvaWQg
-aW9hdDJfZnJlZV9jaGFuX3Jlc291cmNlcyhzdHJ1Y3QgZG1hX2NoYW4gKmMpCiAJZGVsX3Rp
-bWVyX3N5bmMoJmNoYW4tPnRpbWVyKTsKIAlkZXZpY2UtPmNsZWFudXBfZm4oKHVuc2lnbmVk
-IGxvbmcpIGMpOwogCWRldmljZS0+cmVzZXRfaHcoY2hhbik7CisJY2xlYXJfYml0KElPQVRf
-UlVOLCAmY2hhbi0+c3RhdGUpOwogCiAJc3Bpbl9sb2NrX2JoKCZjaGFuLT5jbGVhbnVwX2xv
-Y2spOwogCXNwaW5fbG9ja19iaCgmaW9hdC0+cHJlcF9sb2NrKTsKZGlmZiAtLWdpdCBhL2Ry
-aXZlcnMvZG1hL2lvYXQvZG1hX3YzLmMgYi9kcml2ZXJzL2RtYS9pb2F0L2RtYV92My5jCmlu
-ZGV4IDFjZGQyMmUuLmQwZjQ5OTAgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZG1hL2lvYXQvZG1h
-X3YzLmMKKysrIGIvZHJpdmVycy9kbWEvaW9hdC9kbWFfdjMuYwpAQCAtMzYxLDcgKzM2MSwx
-MCBAQCBzdGF0aWMgdm9pZCBpb2F0M190aW1lcl9ldmVudCh1bnNpZ25lZCBsb25nIGRhdGEp
-CiAJCQljaGFuZXJyID0gcmVhZGwoY2hhbi0+cmVnX2Jhc2UgKyBJT0FUX0NIQU5FUlJfT0ZG
-U0VUKTsKIAkJCWRldl9lcnIodG9fZGV2KGNoYW4pLCAiJXM6IENoYW5uZWwgaGFsdGVkICgl
-eClcbiIsCiAJCQkJX19mdW5jX18sIGNoYW5lcnIpOwotCQkJQlVHX09OKGlzX2lvYXRfYnVn
-KGNoYW5lcnIpKTsKKwkJCWlmICh0ZXN0X2JpdChJT0FUX1JVTiwgJmNoYW4tPnN0YXRlKSkK
-KwkJCQlCVUdfT04oaXNfaW9hdF9idWcoY2hhbmVycikpOworCQkJZWxzZSAvKiB3ZSBuZXZl
-ciBnb3Qgb2ZmIHRoZSBncm91bmQgKi8KKwkJCQlyZXR1cm47CiAJCX0KIAogCQkvKiBpZiB3
-ZSBoYXZlbid0IG1hZGUgcHJvZ3Jlc3MgYW5kIHdlIGhhdmUgYWxyZWFkeQpkaWZmIC0tZ2l0
-IGEvZHJpdmVycy9wY2kvaW50ZWwtaW9tbXUuYyBiL2RyaXZlcnMvcGNpL2ludGVsLWlvbW11
-LmMKaW5kZXggNzk2ODI4Zi4uNGU1YmIwNiAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvaW50
-ZWwtaW9tbXUuYworKysgYi9kcml2ZXJzL3BjaS9pbnRlbC1pb21tdS5jCkBAIC0zMDI5LDYg
-KzMwMjksNDEgQEAgc3RhdGljIHZvaWQgX19pbml0IGlvbW11X2V4aXRfbWVtcG9vbCh2b2lk
-KQogCiB9CiAKK3N0YXRpYyB2b2lkIHF1aXJrX2lvYXRfc25iX2xvY2FsX2lvbW11KHN0cnVj
-dCBwY2lfZGV2ICpwZGV2KQoreworCXN0cnVjdCBkbWFyX2RyaGRfdW5pdCAqZHJoZDsKKwl1
-MzIgdnRiYXI7CisJaW50IHJjLCBpOworCisJLyogV2Uga25vdyB0aGF0IHRoaXMgZGV2aWNl
-IG9uIHRoaXMgY2hpcHNldCBoYXMgaXRzIG93biBJT01NVS4KKwkgKiBJZiB3ZSBmaW5kIGl0
-IHVuZGVyIGEgZGlmZmVyZW50IElPTU1VLCB0aGVuIHRoZSBCSU9TIGlzIGx5aW5nCisJICog
-dG8gdXMuIEhvcGUgdGhhdCB0aGUgSU9NTVUgZm9yIHRoaXMgZGV2aWNlIGlzIGFjdHVhbGx5
-CisJICogZGlzYWJsZWQsIGFuZCBpdCBuZWVkcyBubyB0cmFuc2xhdGlvbi4uLgorCSAqLwor
-CXJjID0gcGNpX2J1c19yZWFkX2NvbmZpZ19kd29yZChwZGV2LT5idXMsIFBDSV9ERVZGTigw
-LCAwKSwgMHhiMCwgJnZ0YmFyKTsKKwlpZiAocmMpIHsKKwkJLyogImNhbid0IiBoYXBwZW4g
-Ki8KKwkJZGV2X2luZm8oJnBkZXYtPmRldiwgImZhaWxlZCB0byBydW4gdnQtZCBxdWlya1xu
-Iik7CisJCXJldHVybjsKKwl9CisJdnRiYXIgJj0gMHhmZmZmMDAwMDsKKworCWZvcl9lYWNo
-X2RyaGRfdW5pdChkcmhkKQorCQlmb3IgKGkgPSAwOyBpIDwgZHJoZC0+ZGV2aWNlc19jbnQ7
-IGkrKykgeworCQkJLyogd2Uga25vdyB0aGF0IHRoZSB0aGlzIGRldmljZSdzIGlvbW11IGlz
-IGF0CisJCQkgKiBvZmZzZXQgMHhhMDAwIGZyb20gdnRiYXIKKwkJCSAqLworCQkJaWYgKGRy
-aGQtPmRldmljZXNbaV0gPT0gcGRldiAmJgorCQkJICAgIGRyaGQtPnJlZ19iYXNlX2FkZHIg
-LSB2dGJhciAhPSAweGEwMDApIHsKKwkJCQlXQVJOX1RBSU5UX09OQ0UoMSwgVEFJTlRfRklS
-TVdBUkVfV09SS0FST1VORCwKKwkJCQkJCSJCSU9TIGFzc2lnbmVkIGluY29ycmVjdCBWVC1k
-IHVuaXQgZm9yIEludGVsKFIpIFF1aWNrRGF0YSBUZWNobm9sb2d5IGRldmljZVxuIik7CisJ
-CQkJcGRldi0+ZGV2LmFyY2hkYXRhLmlvbW11ID0gRFVNTVlfREVWSUNFX0RPTUFJTl9JTkZP
-OworCQkJCXJldHVybjsKKwkJCX0KKwkJfQorfQorREVDTEFSRV9QQ0lfRklYVVBfRU5BQkxF
-KFBDSV9WRU5ET1JfSURfSU5URUwsIFBDSV9ERVZJQ0VfSURfSU5URUxfSU9BVF9TTkIsIHF1
-aXJrX2lvYXRfc25iX2xvY2FsX2lvbW11KTsKKwogc3RhdGljIHZvaWQgX19pbml0IGluaXRf
-bm9fcmVtYXBwaW5nX2RldmljZXModm9pZCkKIHsKIAlzdHJ1Y3QgZG1hcl9kcmhkX3VuaXQg
-KmRyaGQ7Cg==
---------------090005020002000602080408--
+Thanks for the fix,
+                            Torsten
