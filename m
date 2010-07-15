@@ -1,108 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934625Ab0GOUCb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 16:02:31 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37124 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934598Ab0GOUC3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 16:02:29 -0400
-Date: Thu, 15 Jul 2010 13:02:14 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Lee Jones <lee.jones@canonical.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: Re: [PATCH] Stop ARM boards crashing when CUPS is loaded -
- 2.6.35-rc5
-Message-Id: <20100715130214.4c9303b2.akpm@linux-foundation.org>
-In-Reply-To: <4C3C72C6.4000005@canonical.com>
-References: <4C3C72C6.4000005@canonical.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S934640Ab0GOUDB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 16:03:01 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:46869 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934593Ab0GOUC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 16:02:58 -0400
+Message-ID: <4C3F6969.6030909@kernel.dk>
+Date: Thu, 15 Jul 2010 14:02:49 -0600
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Adrian Hunter <adrian.hunter@nokia.com>, Christoph Hellwig <hch@lst.de>,
+        linux-mmc Mailing List <linux-mmc@vger.kernel.org>,
+        linux-kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] block: Add secure discard
+References: <20100707111716.24979.68940.sendpatchset@ahunter-work.research.nokia.com>	<20100707111749.24979.69982.sendpatchset@ahunter-work.research.nokia.com>	<4C3C0A71.2080407@nokia.com>	<20100714031632.GA346@lst.de>	<4C3D967F.9070305@nokia.com> <20100715122601.a087f71c.akpm@linux-foundation.org>
+In-Reply-To: <20100715122601.a087f71c.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(cc linux-arm-kernel)
-
-On Tue, 13 Jul 2010 15:05:58 +0100
-Lee Jones <lee.jones@canonical.com> wrote:
-
-> >From 219005d9522043bc42ddb51d59688959eed0d443 Mon Sep 17 00:00:00 2001
-> From: Lee Jones <lee.jones@canonical.com>
-> Date: Tue, 13 Jul 2010 15:02:17 +0100
-> Subject: [PATCH] UBUNTU: [Upstream] Stop ARM boards crashing when CUPS is loaded
+On 07/15/2010 01:26 PM, Andrew Morton wrote:
+> On Wed, 14 Jul 2010 13:50:39 +0300
+> Adrian Hunter <adrian.hunter@nokia.com> wrote:
 > 
-> BugLink: http://bugs.launchpad.net/bugs/601226
+>> >From 9ba7750fb96d9994e8715b14d8091c37b832b3e6 Mon Sep 17 00:00:00 2001
+>> From: Adrian Hunter <adrian.hunter@nokia.com>
+>> Date: Wed, 23 Jun 2010 15:41:38 +0300
+>> Subject: [PATCH] block: Add secure discard
+>>
+>> Secure discard is the same as discard except that all copies
+>> of the discarded sectors (perhaps created by garbage collection)
+>> must also be erased.
+>>
+>> Signed-off-by: Adrian Hunter <adrian.hunter@nokia.com>
+>> ---
+>>
+>>
+>>
+>> Here is "[PATCH V4 4/5] block: Add secure discard" applied to
+>> git://git.kernel.dk/linux-2.6-block.git for-next.
+>>
+>> If Jens takes this patch (originally 4th of 5),  Andrew takes patches 1 to 3,
+>> and patch 5 waits for this one to propagate, then there will be no dependency
+>> problem.
 > 
-> When CUPS loads, it tries to load several drivers that it may need.
-> When one of these drivers, specifically parport_pc is loaded on ARM
-> based systems, it causes a segmentation fault as the ISA addresses
-> which are attempted are not writable on non-PC based architectures.
-> This code prevents ISA addresses from being attempted except on x86.
+> hm, complicated.
+> 
+> I merged all five into -mm.  If Jens sends along some acks then I send
+> all five along to Linus, nice and simple.
 > 
 
-That sounds like a pretty serious problem.  But presumably it isn't -
-otherwise it would have been fixed earlier!
+I was about to pick them up, but yeah just adds my acks to the series
+and shove them off for the next series.
 
-So what actions are required to trigger this bug and why aren't others
-seeing it?
-
->  arch/arm/include/asm/parport.h |    7 +++++--
-
-This should probably go via the arm tree.
-
-> 
-> diff --git a/arch/arm/include/asm/parport.h b/arch/arm/include/asm/parport.h
-> index 26e94b0..a1874f8 100644
-> --- a/arch/arm/include/asm/parport.h
-> +++ b/arch/arm/include/asm/parport.h
-> @@ -9,10 +9,13 @@
->  #ifndef __ASMARM_PARPORT_H
->  #define __ASMARM_PARPORT_H
->  
-> -static int __devinit parport_pc_find_isa_ports (int autoirq, int autodma);
->  static int __devinit parport_pc_find_nonpci_ports (int autoirq, int autodma)
-
-It's strange that this function isn't marked inline.  It's in a .h
-file.  But many arch/*/include/asm/parport.h's do it this way.  They're
-probably broken.  It adds a risk that unneeded code will be generated
-into each compilation unit which includes these headers, although gcc
-can probably fix that, depending on the version.  Plus it's plain odd.
-
->  {
-> -	return parport_pc_find_isa_ports (autoirq, autodma);
-> +/* parport_pc_find_isa_ports uses direct register addresses which are
-> + * only correct on x86 architectures. This may have undesirable
-> + * consequences (including segfaults) when used on other architectures.
-> + */
-> +	return 0;
->  }
-
-That comment layout is whacky.  I did this:
-
---- a/arch/arm/include/asm/parport.h~parport-prevent-arm-boards-frmo-crashing-when-cups-is-loaded-fix
-+++ a/arch/arm/include/asm/parport.h
-@@ -9,12 +9,13 @@
- #ifndef __ASMARM_PARPORT_H
- #define __ASMARM_PARPORT_H
- 
--static int __devinit parport_pc_find_nonpci_ports (int autoirq, int autodma)
-+static int __devinit parport_pc_find_nonpci_ports(int autoirq, int autodma)
- {
--/* parport_pc_find_isa_ports uses direct register addresses which are
-- * only correct on x86 architectures. This may have undesirable
-- * consequences (including segfaults) when used on other architectures.
-- */
-+	/*
-+	 * parport_pc_find_isa_ports() uses direct register addresses which are
-+	 * only correct on x86 architectures. This may have undesirable
-+	 * consequences (including segfaults) when used on other architectures.
-+	 */
- 	return 0;
- }
- 
-_
+-- 
+Jens Axboe
 
