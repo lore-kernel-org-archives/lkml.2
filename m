@@ -1,69 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934288Ab0GOStJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:49:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59390 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934217Ab0GOStD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:49:03 -0400
+	id S934301Ab0GOStj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:49:39 -0400
+Received: from mail.gmx.net ([213.165.64.20]:37686 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S934225Ab0GOStf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 14:49:35 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX19jFpYAAFdjqs3rIhwBvb7qcKLoBcRcDJKF4ijKTj
+	3x08N1Kgr580jZ
+From: Peter Huewe <PeterHuewe@gmx.de>
+To: Kernel Janitors <kernel-janitors@vger.kernel.org>
+Subject: [PATCH 10/25] atm: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
+Date: Thu, 15 Jul 2010 20:49:32 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>,
+        "David S. Miller" <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilfXUtQznSzOmO9ecoaviIt62Hv6jdUOMSRLdrF@mail.gmail.com>
-References: <20100714155804.049012415@efficios.com>
-	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-	<20100714170617.GB4955@Krystal>
-	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-	<20100714203940.GC22096@Krystal>
-	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
-	<20100714222115.GA30122@Krystal>
-	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
-	<AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
-	<AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com>
-	<20100715183153.GA9276@Krystal>
-	<AANLkTilfXUtQznSzOmO9ecoaviIt62Hv6jdUOMSRLdrF@mail.gmail.com>
-Date: Thu, 15 Jul 2010 11:48:10 -0700
-Message-ID: <AANLkTimAn0uMpeYKctO0qxM6nwbfev3RHARLZIbf991k@mail.gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007152049.33395.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 11:43 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
->
-> But maybe I'm missing something.
+From: Peter Huewe <peterhuewe@gmx.de>
 
-Hmm. Of course - one way of solving this might be to just make the
-32-bit case switch stacks in software. That might be a good idea
-regardless, and would not be complicated. We already do that for
-sysenter, but the NMI case would be simpler because we don't need to
-worry about being re-entered by NMI/DEBUG during the stack switch.
+This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
+.subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
+PCI_VDEVICE macro, and thus improves readability.
 
-And since we have to play some games with moving the data on the stack
-around _anyway_, doing the whole "switch stacks entirely rather than
-just subtract a bit from the old stack" would be fairly logical.
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+---
+ drivers/atm/zatm.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
 
-So I think you may end up being right: we don't need to save the
-original NMI stack pointer, because we can make sure that the
-replacement stack (that we need anyway) is always deterministic.
+diff --git a/drivers/atm/zatm.c b/drivers/atm/zatm.c
+index 702acce..4e885d2 100644
+--- a/drivers/atm/zatm.c
++++ b/drivers/atm/zatm.c
+@@ -1637,10 +1637,8 @@ out_free:
+ MODULE_LICENSE("GPL");
+ 
+ static struct pci_device_id zatm_pci_tbl[] __devinitdata = {
+-	{ PCI_VENDOR_ID_ZEITNET, PCI_DEVICE_ID_ZEITNET_1221,
+-		PCI_ANY_ID, PCI_ANY_ID, 0, 0, ZATM_COPPER },
+-	{ PCI_VENDOR_ID_ZEITNET, PCI_DEVICE_ID_ZEITNET_1225,
+-		PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0 },
++	{ PCI_VDEVICE(ZEITNET, PCI_DEVICE_ID_ZEITNET_1221), ZATM_COPPER },
++	{ PCI_VDEVICE(ZEITNET, PCI_DEVICE_ID_ZEITNET_1225), 0 },
+ 	{ 0, }
+ };
+ MODULE_DEVICE_TABLE(pci, zatm_pci_tbl);
+-- 
+1.7.1
 
-                             Linus
