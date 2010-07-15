@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933822Ab0GOQtW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 12:49:22 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:54675 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933755Ab0GOQtU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 12:49:20 -0400
+	id S933829Ab0GOQvK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 12:51:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43992 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933754Ab0GOQvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 12:51:07 -0400
+Date: Thu, 15 Jul 2010 09:51:41 -0700
+From: Greg KH <gregkh@suse.de>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Conke Hu <conke.hu@gmail.com>, CoffBeta <coffbeta@gmail.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        inux kernel <linux-kernel@vger.kernel.org>,
+        ext-jani.1.nikula@nokia.com,
+        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: tq 2440
+Message-ID: <20100715165141.GA21272@suse.de>
+References: <AANLkTimyBHliUa62qmfja_ke6YTTysiVAtJcZfi8l2gG@mail.gmail.com> <AANLkTil8GE1OguyAfp3XgfJvEmH98yNrlvGAx684a-qL@mail.gmail.com> <20100715163526.GJ29322@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-In-Reply-To: <20100715164450.GC30989@Krystal>
-References: <20100714154923.947138065@efficios.com>
-	<20100714155804.049012415@efficios.com>
-	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-	<20100714170617.GB4955@Krystal>
-	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-	<20100714203940.GC22096@Krystal>
-	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
-	<20100714222115.GA30122@Krystal>
-	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
-	<AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
-	<20100715164450.GC30989@Krystal>
-Date: Thu, 15 Jul 2010 09:49:10 -0700
-Message-ID: <AANLkTik4mdj3h16CU2GUQAQuG4yeAWFuZsqbPC0ra6Id@mail.gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100715163526.GJ29322@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 9:44 AM, Mathieu Desnoyers
-<mathieu.desnoyers@efficios.com> wrote:
->
-> The first thing that strikes me is that we could be interrupted by a standard
-> interrupt on top of the iret instruction below.
+On Thu, Jul 15, 2010 at 05:35:26PM +0100, Russell King - ARM Linux wrote:
+> On Thu, Jul 15, 2010 at 11:16:30PM +0800, Conke Hu wrote:
+> > ever notice to the following kernel log?
+> > "Device 's3c2440-nand' does not have a release() function, it is
+> > broken and must."
+> > release() function should be implemented  in the platform_device.
+> 
+> That's not telling you to provide a release function.  The warning is
+> telling you that a device is being unregistered which doesn't have a
+> release function.
+> 
+> Consider this point - maybe it doesn't have a release function because
+> it's not supposed to be unregistered?
 
-No, that can never happen.
+Heh, well, it is being unregistered, and at that point in time, the
+kernel complains.
 
-Why? Simple: regular interrupts aren't ever enabled in eflags. So the
-only kinds of traps we can get are NMI's (that don't follow the normal
-rules), and exceptions.
+All kobjects need a release function that actually frees it.  If not,
+that is a logic bug.  Please see the Documentation/kobject.txt file for
+details.
 
-Of course, if there is some trap that re-enables interrupts even if
-the trap happened in an interrupt-disabled region, then that would
-change things, but that would be a bad bug regardless (and totally
-independently of any NMI issues). So in that sense it's a "could
-happen", but it's something that would be a totally separate bug.
+thanks,
 
-                    Linus
+greg k-h
