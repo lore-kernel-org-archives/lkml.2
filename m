@@ -1,50 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932521Ab0GOGC7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 02:02:59 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:60299 "EHLO
-	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932499Ab0GOGC5 (ORCPT
+	id S932533Ab0GOGHF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 02:07:05 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:59796 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932511Ab0GOGHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 02:02:57 -0400
-From: Matt Fleming <matt@console-pimps.org>
-To: Anton Vorontsov <avorontsov@mvista.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Wolfram Sang <w.sang@pengutronix.de>,
-        Albert Herranz <albert_herranz@yahoo.es>,
-        Ben Dooks <ben-linux@fluff.org>, Pierre Ossman <pierre@ossman.eu>,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 0/8] sdhci: Move real work out of an atomic context
-In-Reply-To: <20100714130728.GA27339@oksana.dev.rtsoft.ru>
-References: <20100714130728.GA27339@oksana.dev.rtsoft.ru>
-User-Agent: Notmuch/0.3.1-61-g3f63bb6 (http://notmuchmail.org) Emacs/23.1.90.2 (x86_64-unknown-linux-gnu)
-Date: Thu, 15 Jul 2010 07:02:55 +0100
-Message-ID: <87oce9z3hs.fsf@linux-g6p1.site>
+	Thu, 15 Jul 2010 02:07:01 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+In-Reply-To: <20100715121508.61f66363.sfr@canb.auug.org.au>
+References: <20100715121508.61f66363.sfr@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 15 Jul 2010 00:06:40 -0600
+X-Google-Sender-Auth: SlxLZ-bFjCWJmFoubM3onZ7muKM
+Message-ID: <AANLkTikubzqMV50eC5HErr4BBzvRsuVT9xTHkCJjD_BV@mail.gmail.com>
+Subject: Re: linux-next: build failure after merge of the devicetree tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010 17:07:28 +0400, Anton Vorontsov <avorontsov@mvista.com> wrote:
-> Hi all,
-> 
-> Currently the sdhci driver does everything in the atomic context.
-> And what is worse, PIO transfers are made from the IRQ handler.
-> 
-> This causes huge latencies (up to 120 ms). On some P2020 SOCs,
-> DMA and card detection is broken, which means that kernel polls
-> for the card via PIO transfers every second. Needless to say
-> that this is quite bad.
-> 
-> So, this patch set reworks sdhci code to avoid atomic context,
-> almost completely. We only do two device memory operations
-> in the atomic context, and all the rest is threaded.
-> 
-> I noticed no throughput drop neither with PIO transfers nor
-> with DMA (tested on MPC8569E CPU), while latencies should be
-> greatly improved.
+On Wed, Jul 14, 2010 at 8:15 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> After merging the devicetree tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+>
+> drivers/of/platform.c: In function 'of_device_make_bus_id':
+> drivers/of/platform.c:437: error: implicit declaration of function 'of_translate_dcr_address'
 
-I haven't had time to read these patches in detail yet but they all seem
-to be sensible changes. A very nice series!
+Oops.  I reworked one of my patches which moved the dcr call into the
+common code (protected by a #ifdef) because it was just to messy to
+try and factor it out.  Here's the fix:
+
+diff --git a/drivers/of/platform.c b/drivers/of/platform.c
+index 125f2bc..5be0080 100644
+--- a/drivers/of/platform.c
++++ b/drivers/of/platform.c
+@@ -19,6 +19,10 @@
+ #include <linux/of_device.h>
+ #include <linux/of_platform.h>
+
++#if defined(CONFIG_PPC_DCR)
++#include <asm/dcr.h>
++#endif
++
+ extern struct device_attribute of_platform_device_attrs[];
+
+ static int of_platform_bus_match(struct device *dev, struct device_driver *drv)
+
+I've pushed it out to my devicetree-next branch so it is ready for you tomorrow.
+
+> As you requested, I have dropped that tree form linux-next for today.
+
+Thanks.  I had to rebase, so by you dropping it I can do a trial merge
+without conflicting against my old tree.
+
+> Andrew, I hope this does not cause you too much pain.
+
+If it does, you can pull in git://git.secretlab.ca/git/linux-2.6
+next-devicetree.  It is fixed now.
+
+g.
+
+-- 
+Grant Likely, B.Sc., P.Eng.
+Secret Lab Technologies Ltd.
