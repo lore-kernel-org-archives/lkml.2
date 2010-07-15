@@ -1,82 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932492Ab0GOFk7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 01:40:59 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:65167 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932387Ab0GOFk5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 01:40:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6043"; a="47382101"
-Date: Wed, 14 Jul 2010 22:40:51 -0700
-From: Zach Pfeffer <zpfeffer@codeaurora.org>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
- memory management
-Message-ID: <20100715054050.GB3623@codeaurora.org>
-References: <4C3C0032.5020702@codeaurora.org>
- <20100713150311B.fujita.tomonori@lab.ntt.co.jp>
- <20100713121420.GB4263@codeaurora.org>
- <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
- <20100714201149.GA14008@codeaurora.org>
- <20100714220536.GE18138@n2100.arm.linux.org.uk>
- <20100715012958.GB2239@codeaurora.org>
- <m1mxttiki1.fsf@fess.ebiederm.org>
+	id S932504Ab0GOFlI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 01:41:08 -0400
+Received: from mga03.intel.com ([143.182.124.21]:53809 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932443Ab0GOFlE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 01:41:04 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,206,1278313200"; 
+   d="scan'208";a="300389752"
+Message-ID: <4C3E9F6E.1030508@intel.com>
+Date: Wed, 14 Jul 2010 22:41:02 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1mxttiki1.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: David Woodhouse <dwmw2@infradead.org>
+CC: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	 <4C2AC55E.3040303@intel.com>	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>	 <1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>	 <1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>	 <1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>	 <1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>	 <1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>	 <1278324973.16975.68.camel@localhost>	 <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>	 <1278463901.20082.34.camel@dwillia2-linux>	 <1278474039.31393.8.camel@localhost>	<4C34BDCD.9080607@intel.com>	 <AANLkTild7PCKygpPAJRo2G237CY8wJyveM9_Glx8qmoK@mail.gmail.com>	 <4C379462.1020704@intel.com> <1278720554.9522.18.camel@localhost>
+In-Reply-To: <1278720554.9522.18.camel@localhost>
+Content-Type: multipart/mixed;
+ boundary="------------090005020002000602080408"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 06:47:34PM -0700, Eric W. Biederman wrote:
-> Zach Pfeffer <zpfeffer@codeaurora.org> writes:
-> 
-> > On Wed, Jul 14, 2010 at 11:05:36PM +0100, Russell King - ARM Linux wrote:
-> >> On Wed, Jul 14, 2010 at 01:11:49PM -0700, Zach Pfeffer wrote:
-> >> > If the DMA-API contained functions to allocate virtual space separate
-> >> > from physical space and reworked how chained buffers functioned it
-> >> > would probably work - but then things start to look like the VCM API
-> >> > which does graph based map management.
-> >> 
-> >> Every additional virtual mapping of a physical buffer results in
-> >> additional cache aliases on aliasing caches, and more workload for
-> >> developers to sort out the cache aliasing issues.
-> >> 
-> >> What does VCM to do mitigate that?
-> >
-> > The VCM ensures that all mappings that map a given physical buffer:
-> > IOMMU mappings, CPU mappings and one-to-one device mappings all map
-> > that buffer using the same (or compatible) attributes. At this point
-> > the only attribute that users can pass is CACHED. In the absence of
-> > CACHED all accesses go straight through to the physical memory.
-> >
-> > The architecture of the VCM allows these sorts of consistency checks
-> > to be made since all mappers of a given physical resource are
-> > tracked. This is feasible because the physical resources we're
-> > tracking are typically large.
-> 
-> On x86 this is implemented in the pat code, and could reasonably be
-> generalized to be cross platform.
-> 
-> This is controlled by HAVE_PFNMAP_TRACKING and with entry points
-> like track_pfn_vma_new.
-> 
-> Given that we already have an implementation that tracks the cached
-> vs non-cached attribute using the dma api.  I don't see that the
-> API has to change.  An implementation of the cached vs non-cached
-> status for arm and other architectures is probably appropriate.
-> 
-> It is definitely true that getting your mapping caching attributes
-> out of sync can be a problem.
+This is a multi-part message in MIME format.
+--------------090005020002000602080408
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Sure, but we're still stuck with needing lots of scatterlist list
-elements and needing to copy them to share physical buffers.
+On 7/9/2010 5:09 PM, David Woodhouse wrote:
+> Actually, given that we know the chipset, can't we just read the VT BARs
+> directly from config space and check that the base address of the IOMMU
+> we get is the right one for the I/OAT device?
+>
+> Something like...
+>
+>     pci_read_config_dword( ("0:0.0") , 0x48,&vtbar );
+>     if (drhd->base_address != vtbar)
+> 	WARN();
+
+Ok, here is a patch that takes this approach.
+
+David, will you sign off on this?
+
+Chris, I'll add a tested-by line if you can give this a shot.
+
+Thanks,
+Dan
+
+--------------090005020002000602080408
+Content-Type: text/plain;
+ name="ioat-catch-broken-vtd-v4.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="ioat-catch-broken-vtd-v4.patch"
+
+aW9hdDogY2F0Y2ggYW5kIHJlY292ZXIgZnJvbSBicm9rZW4gdnRkIGNvbmZpZ3VyYXRpb25z
+CgpGcm9tOiBEYW4gV2lsbGlhbXMgPGRhbi5qLndpbGxpYW1zQGludGVsLmNvbT4KCk9uIHNv
+bWUgcGxhdGZvcm1zIChNYWNQcm8zLDEpIHRoZSBCSU9TIGFzc2lnbnMgdGhlIGlvYXRkbWEg
+ZGV2aWNlIHRvIHRoZQppbmNvcnJlY3QgaW9tbXUgY2F1c2luZyBpb21tdS1mYXVsdHMgd2hl
+biB0aGUgZHJpdmVyIGluaXRpYWxpemVzLiAgQWRkIGEgcXVpcmsKdG8gY2F0Y2ggdGhpcyBt
+aXNjb25maWd1cmF0aW9uLCBhbmQgdGVhY2ggdGhlIGlvYXRkbWEgZHJpdmVyIHRvIHRyZWF0
+CmluaXRpYWxpemF0aW9uIGZhaWx1cmVzIGFzIG5vbi1mYXRhbCAoanVzdCBmYWlsIHRoZSBk
+cml2ZXIgbG9hZCkuCgpSZXBvcnRlZC1ieTogQ2hyaXMgTGkgPGxrbWxAY2hyaXNsaS5vcmc+
+ClNpZ25lZC1vZmYtYnk6IERhbiBXaWxsaWFtcyA8ZGFuLmoud2lsbGlhbXNAaW50ZWwuY29t
+PgotLS0KCiBkcml2ZXJzL2RtYS9pb2F0L2RtYS5oICAgIHwgICAgMSArCiBkcml2ZXJzL2Rt
+YS9pb2F0L2RtYV92Mi5jIHwgICAyNCArKysrKysrKysrKysrKysrKysrKysrLS0KIGRyaXZl
+cnMvZG1hL2lvYXQvZG1hX3YzLmMgfCAgICA1ICsrKystCiBkcml2ZXJzL3BjaS9pbnRlbC1p
+b21tdS5jIHwgICAzNSArKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKwogNCBm
+aWxlcyBjaGFuZ2VkLCA2MiBpbnNlcnRpb25zKCspLCAzIGRlbGV0aW9ucygtKQoKCmRpZmYg
+LS1naXQgYS9kcml2ZXJzL2RtYS9pb2F0L2RtYS5oIGIvZHJpdmVycy9kbWEvaW9hdC9kbWEu
+aAppbmRleCA2ZDNhNzNiLi41MjE2YzhhIDEwMDY0NAotLS0gYS9kcml2ZXJzL2RtYS9pb2F0
+L2RtYS5oCisrKyBiL2RyaXZlcnMvZG1hL2lvYXQvZG1hLmgKQEAgLTk3LDYgKzk3LDcgQEAg
+c3RydWN0IGlvYXRfY2hhbl9jb21tb24gewogCSNkZWZpbmUgSU9BVF9SRVNFVF9QRU5ESU5H
+IDIKIAkjZGVmaW5lIElPQVRfS09CSl9JTklUX0ZBSUwgMwogCSNkZWZpbmUgSU9BVF9SRVNI
+QVBFX1BFTkRJTkcgNAorCSNkZWZpbmUgSU9BVF9SVU4gNQogCXN0cnVjdCB0aW1lcl9saXN0
+IHRpbWVyOwogCSNkZWZpbmUgQ09NUExFVElPTl9USU1FT1VUIG1zZWNzX3RvX2ppZmZpZXMo
+MTAwKQogCSNkZWZpbmUgSURMRV9USU1FT1VUIG1zZWNzX3RvX2ppZmZpZXMoMjAwMCkKZGlm
+ZiAtLWdpdCBhL2RyaXZlcnMvZG1hL2lvYXQvZG1hX3YyLmMgYi9kcml2ZXJzL2RtYS9pb2F0
+L2RtYV92Mi5jCmluZGV4IDNjOGIzMmEuLjc3OWY0ZGEgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMv
+ZG1hL2lvYXQvZG1hX3YyLmMKKysrIGIvZHJpdmVycy9kbWEvaW9hdC9kbWFfdjIuYwpAQCAt
+Mjg3LDcgKzI4NywxMCBAQCB2b2lkIGlvYXQyX3RpbWVyX2V2ZW50KHVuc2lnbmVkIGxvbmcg
+ZGF0YSkKIAkJCWNoYW5lcnIgPSByZWFkbChjaGFuLT5yZWdfYmFzZSArIElPQVRfQ0hBTkVS
+Ul9PRkZTRVQpOwogCQkJZGV2X2Vycih0b19kZXYoY2hhbiksICIlczogQ2hhbm5lbCBoYWx0
+ZWQgKCV4KVxuIiwKIAkJCQlfX2Z1bmNfXywgY2hhbmVycik7Ci0JCQlCVUdfT04oaXNfaW9h
+dF9idWcoY2hhbmVycikpOworCQkJaWYgKHRlc3RfYml0KElPQVRfUlVOLCAmY2hhbi0+c3Rh
+dGUpKQorCQkJCUJVR19PTihpc19pb2F0X2J1ZyhjaGFuZXJyKSk7CisJCQllbHNlIC8qIHdl
+IG5ldmVyIGdvdCBvZmYgdGhlIGdyb3VuZCAqLworCQkJCXJldHVybjsKIAkJfQogCiAJCS8q
+IGlmIHdlIGhhdmVuJ3QgbWFkZSBwcm9ncmVzcyBhbmQgd2UgaGF2ZSBhbHJlYWR5CkBAIC00
+OTIsNiArNDk1LDggQEAgc3RhdGljIHN0cnVjdCBpb2F0X3JpbmdfZW50ICoqaW9hdDJfYWxs
+b2NfcmluZyhzdHJ1Y3QgZG1hX2NoYW4gKmMsIGludCBvcmRlciwgZ2YKIAlyZXR1cm4gcmlu
+ZzsKIH0KIAordm9pZCBpb2F0Ml9mcmVlX2NoYW5fcmVzb3VyY2VzKHN0cnVjdCBkbWFfY2hh
+biAqYyk7CisKIC8qIGlvYXQyX2FsbG9jX2NoYW5fcmVzb3VyY2VzIC0gYWxsb2NhdGUvaW5p
+dGlhbGl6ZSBpb2F0MiBkZXNjcmlwdG9yIHJpbmcKICAqIEBjaGFuOiBjaGFubmVsIHRvIGJl
+IGluaXRpYWxpemVkCiAgKi8KQEAgLTUwMCw2ICs1MDUsNyBAQCBpbnQgaW9hdDJfYWxsb2Nf
+Y2hhbl9yZXNvdXJjZXMoc3RydWN0IGRtYV9jaGFuICpjKQogCXN0cnVjdCBpb2F0Ml9kbWFf
+Y2hhbiAqaW9hdCA9IHRvX2lvYXQyX2NoYW4oYyk7CiAJc3RydWN0IGlvYXRfY2hhbl9jb21t
+b24gKmNoYW4gPSAmaW9hdC0+YmFzZTsKIAlzdHJ1Y3QgaW9hdF9yaW5nX2VudCAqKnJpbmc7
+CisJdTY0IHN0YXR1czsKIAlpbnQgb3JkZXI7CiAKIAkvKiBoYXZlIHdlIGFscmVhZHkgYmVl
+biBzZXQgdXA/ICovCkBAIC01NDAsNyArNTQ2LDIwIEBAIGludCBpb2F0Ml9hbGxvY19jaGFu
+X3Jlc291cmNlcyhzdHJ1Y3QgZG1hX2NoYW4gKmMpCiAJdGFza2xldF9lbmFibGUoJmNoYW4t
+PmNsZWFudXBfdGFzayk7CiAJaW9hdDJfc3RhcnRfbnVsbF9kZXNjKGlvYXQpOwogCi0JcmV0
+dXJuIDEgPDwgaW9hdC0+YWxsb2Nfb3JkZXI7CisJLyogY2hlY2sgdGhhdCB3ZSBnb3Qgb2Zm
+IHRoZSBncm91bmQgKi8KKwl1ZGVsYXkoNSk7CisJc3RhdHVzID0gaW9hdF9jaGFuc3RzKGNo
+YW4pOworCWlmIChpc19pb2F0X2FjdGl2ZShzdGF0dXMpIHx8IGlzX2lvYXRfaWRsZShzdGF0
+dXMpKSB7CisJCXNldF9iaXQoSU9BVF9SVU4sICZjaGFuLT5zdGF0ZSk7CisJCXJldHVybiAx
+IDw8IGlvYXQtPmFsbG9jX29yZGVyOworCX0gZWxzZSB7CisJCXUzMiBjaGFuZXJyID0gcmVh
+ZGwoY2hhbi0+cmVnX2Jhc2UgKyBJT0FUX0NIQU5FUlJfT0ZGU0VUKTsKKworCQlkZXZfZXJy
+KHRvX2RldihjaGFuKSwgImZhaWxlZCB0byBzdGFydCBjaGFubmVsIGNoYW5lcnI6ICUjeFxu
+IiwKKwkJCWNoYW5lcnIpOworCQlpb2F0Ml9mcmVlX2NoYW5fcmVzb3VyY2VzKGMpOworCQly
+ZXR1cm4gLUVGQVVMVDsKKwl9CiB9CiAKIGJvb2wgcmVzaGFwZV9yaW5nKHN0cnVjdCBpb2F0
+Ml9kbWFfY2hhbiAqaW9hdCwgaW50IG9yZGVyKQpAQCAtNzc4LDYgKzc5Nyw3IEBAIHZvaWQg
+aW9hdDJfZnJlZV9jaGFuX3Jlc291cmNlcyhzdHJ1Y3QgZG1hX2NoYW4gKmMpCiAJZGVsX3Rp
+bWVyX3N5bmMoJmNoYW4tPnRpbWVyKTsKIAlkZXZpY2UtPmNsZWFudXBfZm4oKHVuc2lnbmVk
+IGxvbmcpIGMpOwogCWRldmljZS0+cmVzZXRfaHcoY2hhbik7CisJY2xlYXJfYml0KElPQVRf
+UlVOLCAmY2hhbi0+c3RhdGUpOwogCiAJc3Bpbl9sb2NrX2JoKCZjaGFuLT5jbGVhbnVwX2xv
+Y2spOwogCXNwaW5fbG9ja19iaCgmaW9hdC0+cHJlcF9sb2NrKTsKZGlmZiAtLWdpdCBhL2Ry
+aXZlcnMvZG1hL2lvYXQvZG1hX3YzLmMgYi9kcml2ZXJzL2RtYS9pb2F0L2RtYV92My5jCmlu
+ZGV4IDFjZGQyMmUuLmQwZjQ5OTAgMTAwNjQ0Ci0tLSBhL2RyaXZlcnMvZG1hL2lvYXQvZG1h
+X3YzLmMKKysrIGIvZHJpdmVycy9kbWEvaW9hdC9kbWFfdjMuYwpAQCAtMzYxLDcgKzM2MSwx
+MCBAQCBzdGF0aWMgdm9pZCBpb2F0M190aW1lcl9ldmVudCh1bnNpZ25lZCBsb25nIGRhdGEp
+CiAJCQljaGFuZXJyID0gcmVhZGwoY2hhbi0+cmVnX2Jhc2UgKyBJT0FUX0NIQU5FUlJfT0ZG
+U0VUKTsKIAkJCWRldl9lcnIodG9fZGV2KGNoYW4pLCAiJXM6IENoYW5uZWwgaGFsdGVkICgl
+eClcbiIsCiAJCQkJX19mdW5jX18sIGNoYW5lcnIpOwotCQkJQlVHX09OKGlzX2lvYXRfYnVn
+KGNoYW5lcnIpKTsKKwkJCWlmICh0ZXN0X2JpdChJT0FUX1JVTiwgJmNoYW4tPnN0YXRlKSkK
+KwkJCQlCVUdfT04oaXNfaW9hdF9idWcoY2hhbmVycikpOworCQkJZWxzZSAvKiB3ZSBuZXZl
+ciBnb3Qgb2ZmIHRoZSBncm91bmQgKi8KKwkJCQlyZXR1cm47CiAJCX0KIAogCQkvKiBpZiB3
+ZSBoYXZlbid0IG1hZGUgcHJvZ3Jlc3MgYW5kIHdlIGhhdmUgYWxyZWFkeQpkaWZmIC0tZ2l0
+IGEvZHJpdmVycy9wY2kvaW50ZWwtaW9tbXUuYyBiL2RyaXZlcnMvcGNpL2ludGVsLWlvbW11
+LmMKaW5kZXggNzk2ODI4Zi4uNGU1YmIwNiAxMDA2NDQKLS0tIGEvZHJpdmVycy9wY2kvaW50
+ZWwtaW9tbXUuYworKysgYi9kcml2ZXJzL3BjaS9pbnRlbC1pb21tdS5jCkBAIC0zMDI5LDYg
+KzMwMjksNDEgQEAgc3RhdGljIHZvaWQgX19pbml0IGlvbW11X2V4aXRfbWVtcG9vbCh2b2lk
+KQogCiB9CiAKK3N0YXRpYyB2b2lkIHF1aXJrX2lvYXRfc25iX2xvY2FsX2lvbW11KHN0cnVj
+dCBwY2lfZGV2ICpwZGV2KQoreworCXN0cnVjdCBkbWFyX2RyaGRfdW5pdCAqZHJoZDsKKwl1
+MzIgdnRiYXI7CisJaW50IHJjLCBpOworCisJLyogV2Uga25vdyB0aGF0IHRoaXMgZGV2aWNl
+IG9uIHRoaXMgY2hpcHNldCBoYXMgaXRzIG93biBJT01NVS4KKwkgKiBJZiB3ZSBmaW5kIGl0
+IHVuZGVyIGEgZGlmZmVyZW50IElPTU1VLCB0aGVuIHRoZSBCSU9TIGlzIGx5aW5nCisJICog
+dG8gdXMuIEhvcGUgdGhhdCB0aGUgSU9NTVUgZm9yIHRoaXMgZGV2aWNlIGlzIGFjdHVhbGx5
+CisJICogZGlzYWJsZWQsIGFuZCBpdCBuZWVkcyBubyB0cmFuc2xhdGlvbi4uLgorCSAqLwor
+CXJjID0gcGNpX2J1c19yZWFkX2NvbmZpZ19kd29yZChwZGV2LT5idXMsIFBDSV9ERVZGTigw
+LCAwKSwgMHhiMCwgJnZ0YmFyKTsKKwlpZiAocmMpIHsKKwkJLyogImNhbid0IiBoYXBwZW4g
+Ki8KKwkJZGV2X2luZm8oJnBkZXYtPmRldiwgImZhaWxlZCB0byBydW4gdnQtZCBxdWlya1xu
+Iik7CisJCXJldHVybjsKKwl9CisJdnRiYXIgJj0gMHhmZmZmMDAwMDsKKworCWZvcl9lYWNo
+X2RyaGRfdW5pdChkcmhkKQorCQlmb3IgKGkgPSAwOyBpIDwgZHJoZC0+ZGV2aWNlc19jbnQ7
+IGkrKykgeworCQkJLyogd2Uga25vdyB0aGF0IHRoZSB0aGlzIGRldmljZSdzIGlvbW11IGlz
+IGF0CisJCQkgKiBvZmZzZXQgMHhhMDAwIGZyb20gdnRiYXIKKwkJCSAqLworCQkJaWYgKGRy
+aGQtPmRldmljZXNbaV0gPT0gcGRldiAmJgorCQkJICAgIGRyaGQtPnJlZ19iYXNlX2FkZHIg
+LSB2dGJhciAhPSAweGEwMDApIHsKKwkJCQlXQVJOX1RBSU5UX09OQ0UoMSwgVEFJTlRfRklS
+TVdBUkVfV09SS0FST1VORCwKKwkJCQkJCSJCSU9TIGFzc2lnbmVkIGluY29ycmVjdCBWVC1k
+IHVuaXQgZm9yIEludGVsKFIpIFF1aWNrRGF0YSBUZWNobm9sb2d5IGRldmljZVxuIik7CisJ
+CQkJcGRldi0+ZGV2LmFyY2hkYXRhLmlvbW11ID0gRFVNTVlfREVWSUNFX0RPTUFJTl9JTkZP
+OworCQkJCXJldHVybjsKKwkJCX0KKwkJfQorfQorREVDTEFSRV9QQ0lfRklYVVBfRU5BQkxF
+KFBDSV9WRU5ET1JfSURfSU5URUwsIFBDSV9ERVZJQ0VfSURfSU5URUxfSU9BVF9TTkIsIHF1
+aXJrX2lvYXRfc25iX2xvY2FsX2lvbW11KTsKKwogc3RhdGljIHZvaWQgX19pbml0IGluaXRf
+bm9fcmVtYXBwaW5nX2RldmljZXModm9pZCkKIHsKIAlzdHJ1Y3QgZG1hcl9kcmhkX3VuaXQg
+KmRyaGQ7Cg==
+--------------090005020002000602080408--
