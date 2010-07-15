@@ -1,71 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab0GOGHF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 02:07:05 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:59796 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932511Ab0GOGHB (ORCPT
+	id S1753670Ab0GOGTY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 02:19:24 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41384 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752762Ab0GOGTX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 02:07:01 -0400
+	Thu, 15 Jul 2010 02:19:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=TNOhEbiby5PHowYsfM19DsWSyfwcv234LXB1Yhjutfb5cmj2P5SL4CGZT/cI0D56+e
+         P74UYf28KBjxcvZ3SMOD9ISKVHubcbUuPviXfcPgaeooempU232eBo9rqHngh5A9m0hQ
+         m6qAQ4veK0y0K4iAzcV3pYeZoUIfgW7EnL2Ww=
 MIME-Version: 1.0
-In-Reply-To: <20100715121508.61f66363.sfr@canb.auug.org.au>
-References: <20100715121508.61f66363.sfr@canb.auug.org.au>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 15 Jul 2010 00:06:40 -0600
-X-Google-Sender-Auth: SlxLZ-bFjCWJmFoubM3onZ7muKM
-Message-ID: <AANLkTikubzqMV50eC5HErr4BBzvRsuVT9xTHkCJjD_BV@mail.gmail.com>
-Subject: Re: linux-next: build failure after merge of the devicetree tree
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <w3p4og1mgt3.wl%kuninori.morimoto.gx@renesas.com>
+References: <1279162147.29294.2.camel@mola> <1279162329.29294.6.camel@mola> 
+	<w3p4og1mgt3.wl%kuninori.morimoto.gx@renesas.com>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Thu, 15 Jul 2010 14:19:02 +0800
+Message-ID: <AANLkTilmp28xbK1Kja6YiA7DwlMpIBAyeOjTq2L1mR6o@mail.gmail.com>
+Subject: Re: [PATCH 2/12] ak4642: fix a memory leak if failed to initialise 
+	AK4642
+To: Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 8:15 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
-> Hi Grant,
+Hi Kuninori,
+
+2010/7/15 Kuninori Morimoto <kuninori.morimoto.gx@renesas.com>:
 >
-> After merging the devicetree tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
+> Dear Axel
 >
-> drivers/of/platform.c: In function 'of_device_make_bus_id':
-> drivers/of/platform.c:437: error: implicit declaration of function 'of_translate_dcr_address'
+> Thanks about this patch
+>
+>> --- a/sound/soc/codecs/ak4642.c
+>> +++ b/sound/soc/codecs/ak4642.c
+>> @@ -491,8 +491,10 @@ static int ak4642_i2c_probe(struct i2c_client *i2c,
+>>       codec->control_data = i2c;
+>>
+>>       ret = ak4642_init(ak4642);
+>> -     if (ret < 0)
+>> +     if (ret < 0) {
+>>               printk(KERN_ERR "failed to initialise AK4642\n");
+>> +             kfree(ak4642);
+>> +     }
+>>
+>>       return ret;
+>>  }
+>
+> Indeed. this operation is needed when error case.
+>
+> I think
+> i2c_set_clientdata(i2c, NULL); is needed here too.
+> (da7210 also)
 
-Oops.  I reworked one of my patches which moved the dcr call into the
-common code (protected by a #ifdef) because it was just to messy to
-try and factor it out.  Here's the fix:
+I think the i2c core will take care of it now.
+see below commit log:
+commit e4a7b9b04de15f6b63da5ccdd373ffa3057a3681
+Author: Wolfram Sang <w.sang@pengutronix.de>
+Date:   Tue May 4 11:09:27 2010 +0200
 
-diff --git a/drivers/of/platform.c b/drivers/of/platform.c
-index 125f2bc..5be0080 100644
---- a/drivers/of/platform.c
-+++ b/drivers/of/platform.c
-@@ -19,6 +19,10 @@
- #include <linux/of_device.h>
- #include <linux/of_platform.h>
+    i2c-core: Erase pointer to clientdata on removal
 
-+#if defined(CONFIG_PPC_DCR)
-+#include <asm/dcr.h>
-+#endif
-+
- extern struct device_attribute of_platform_device_attrs[];
+    After discovering that a lot of i2c-drivers leave the pointer to their
+    clientdata dangling, it was decided to let the core handle this issue.
+    It is assumed that the core may access the private data after remove()
+    as there are no guarantees for the lifetime of such pointers anyhow (see
+    thread starting at http://lkml.org/lkml/2010/3/21/68)
 
- static int of_platform_bus_match(struct device *dev, struct device_driver *drv)
+    Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+    Signed-off-by: Jean Delvare <khali@linux-fr.org>
 
-I've pushed it out to my devicetree-next branch so it is ready for you tomorrow.
 
-> As you requested, I have dropped that tree form linux-next for today.
+>
+> And why ak4642's patch doesn't have
+> snd_soc_unregister_codec fix like da7210 ?
+> I think ak4642 have same issue
 
-Thanks.  I had to rebase, so by you dropping it I can do a trial merge
-without conflicting against my old tree.
+In ak4642_init, current implementation will call
+snd_soc_unregister_codec(codec);  before goto reg_cache_err;
+Therefore, it should be no problem.
 
-> Andrew, I hope this does not cause you too much pain.
+Or do you mean just using goto style cleanup instead of mixed
+in-line and goto style cleanup?
+I can fix it if you like this change.
 
-If it does, you can pull in git://git.secretlab.ca/git/linux-2.6
-next-devicetree.  It is fixed now.
 
-g.
+Regards,
+Axel
 
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+>
+> Best regards
+> --
+> Kuninori Morimoto
+>
+>
