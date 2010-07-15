@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933028Ab0GOK3n (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 06:29:43 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:33064 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933019Ab0GOK3l (ORCPT
+	id S933046Ab0GOK5v (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 06:57:51 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:56380 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S933032Ab0GOK5t (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 06:29:41 -0400
-Subject: Re: [PATCH 1/3] ab8500-mfd: add regulator support to ab8500 mfd
- device
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Sundar Iyer <sundar.iyer@stericsson.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        broonie@opensource.wolfsonmicro.com, linux-kernel@vger.kernel.org,
-        "Acked-By: Mattias Wallin" <mattias.wallin@stericsson.com>,
-        STEricsson_nomadik_linux@list.st.com,
-        linux-arm-kernel@lists.infradead.org,
-        "Acked-By: Bengt JONSSON" <bengt.g.jonsson@stericsson.com>
-In-Reply-To: <20100714101330.GD2771@sortiz-mobl>
-References: <1279002090-11234-1-git-send-email-sundar.iyer@stericsson.com>
-	 <1279002090-11234-2-git-send-email-sundar.iyer@stericsson.com>
-	 <20100714101330.GD2771@sortiz-mobl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Jul 2010 11:29:37 +0100
-Message-ID: <1279189777.3072.24.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 15 Jul 2010 06:57:49 -0400
+Date: Thu, 15 Jul 2010 20:57:45 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: linux-ext4@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: 2.6.35-r5 ext3 corruptions
+Message-ID: <20100715105745.GI30737@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-14 at 12:13 +0200, Samuel Ortiz wrote:
-> On Tue, Jul 13, 2010 at 11:51:28AM +0530, Sundar Iyer wrote:
-> > From: Sundar R Iyer <sundar.iyer@stericsson.com>
-> > 
-> > Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-> > Acked-By: Mattias Wallin <mattias.wallin@stericsson.com>
-> > Acked-By: Bengt JONSSON <bengt.g.jonsson@stericsson.com>
-> > Signed-off-by: Sundar R Iyer <sundar.iyer@stericsson.com>
-> Liam, I guess this should make it upstream through your regulator tree.
-> 
-> For the mfd part though:
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
-> 
-> Cheers,
-> Samuel.
+Upgrading my test vms from 2.6.35-rc3 to 2.6.35-rc5 is resulting in
+repeated errors on the root drive of a test VM:
 
-Applied.
+{ 1532.368808] EXT3-fs error (device sda1): ext3_lookup: deleted inode referenced: 211043
+[ 1532.370859] Aborting journal on device sda1.
+[ 1532.376957] EXT3-fs (sda1): 
+[ 1532.376976] EXT3-fs (sda1): error: ext3_journal_start_sb: Detected aborted journal
+[ 1532.376980] EXT3-fs (sda1): error: remounting filesystem read-only
+[ 1532.420361] error: remounting filesystem read-only
+[ 1532.621209] EXT3-fs error (device sda1): ext3_lookup: deleted inode referenced: 211043
 
-Thanks
+The filesysetm is a mess when checked on reboot - lots of illegal
+references to blocks, multiply linked blocks, etc, but repairs.
+Files are lots, truncated, etc, so there is visible filesystem
+damage.
 
-Liam
+I did lots of testing on 2.6.35-rc3 and came across no problems;
+problems only seemed to start with 2.6.35-rc5, and I've repろoduced
+the problem on a vanilla 2.6.35-rc4.
+
+The problem seems to occur randomly - sometimes during boot or when
+idle after boot, sometimes a while after boot. I haven't done any
+digging at all for the cause - all I've done so far is confirm that
+it is reproducable and it's not my code causing the problem.
+
+Cheers,
+
+Dave.
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+Dave Chinner
+david@fromorbit.com
