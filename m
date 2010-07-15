@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932341Ab0GOD1a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 23:27:30 -0400
-Received: from mail.deathmatch.net ([72.66.92.28]:4367 "EHLO
-	mail.deathmatch.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932308Ab0GOD1V (ORCPT
+	id S932348Ab0GODhK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 23:37:10 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:29726 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752652Ab0GODhH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 23:27:21 -0400
-From: Bob Copeland <me@bobcopeland.com>
-To: linux-fsdevel@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, Davidlohr Bueso <dave.bueso@gmail.com>,
-        Davidlohr Bueso <dave@gnu.org>, Bob Copeland <me@bobcopeland.com>
-Subject: [PATCH 1/4] omfs: fix memory leak
-Date: Wed, 14 Jul 2010 23:26:18 -0400
-Message-Id: <1279164381-9247-2-git-send-email-me@bobcopeland.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1279164381-9247-1-git-send-email-me@bobcopeland.com>
-References: <1279164381-9247-1-git-send-email-me@bobcopeland.com>
+	Wed, 14 Jul 2010 23:37:07 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6043"; a="47374168"
+Message-ID: <4C3E8261.60307@codeaurora.org>
+Date: Wed, 14 Jul 2010 20:37:05 -0700
+From: Stephen Boyd <sboyd@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: linux-arm-kernel@lists.infradead.org,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        linux-arm-msm@vger.kernel.org,
+        Saravana Kannan <skannan@codeaurora.org>,
+        David Brownell <david-b@pacbell.net>
+Subject: Re: Meaning of clk_round_rate()?
+References: <4C3DFC7A.8020002@codeaurora.org> <20100714200324.GA18138@n2100.arm.linux.org.uk>
+In-Reply-To: <20100714200324.GA18138@n2100.arm.linux.org.uk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Davidlohr Bueso <dave.bueso@gmail.com>
+  On 07/14/2010 01:03 PM, Russell King - ARM Linux wrote:
+> clk_round_rate() returns the clock rate which will be set if you ask
+> clk_set_rate() to set that rate.  It provides a way to query from
+> the implementation exactly what rate you'll get if you use clk_set_rate()
+> with that same argument.
+>
+> So essentially, clk_set_rate() should be:
+>
+> static int clk_set_rate(struct clk *clk, unsigned long rate)
+> {
+> 	rate = clk_round_rate(clk, rate);
+> 	return set_actual_rate(clk, rate);
+> }
 
-In the error path of omfs_fill_super(), the FS super block info
-(sbi) is not being freed.  Correct this.
+ From what I understand, you're saying clk_round_rate() is defined as 
+what clk_set_rate() would do, which is call clk_round_rate() and then 
+set the rate with whatever is returned by clk_round_rate()? Isn't that a 
+recursive definition?
 
-Signed-off-by: Davidlohr Bueso <dave@gnu.org>
-Signed-off-by: Bob Copeland <me@bobcopeland.com>
----
- fs/omfs/inode.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+I'll play along though. The use of the function is to determine what the 
+rate will be if I call clk_set_rate(), but what is the implementation of 
+it suppose to be. I guess now I'm asking what should clk_set_rate() do? 
+Round up, down, to the closest value, or just fail if it's not exact.
 
-diff --git a/fs/omfs/inode.c b/fs/omfs/inode.c
-index 089839a..b5d6380 100644
---- a/fs/omfs/inode.c
-+++ b/fs/omfs/inode.c
-@@ -529,6 +529,8 @@ out_brelse_bh2:
- out_brelse_bh:
- 	brelse(bh);
- end:
-+	if (ret)
-+		kfree(sbi);
- 	return ret;
- }
- 
 -- 
-1.5.6.5
-
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
