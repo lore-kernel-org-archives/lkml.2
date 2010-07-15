@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758312Ab0GOCRi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 22:17:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4756 "EHLO mx1.redhat.com"
+	id S1758353Ab0GOCRt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 22:17:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6244 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758270Ab0GOCRa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 22:17:30 -0400
+	id S1758271Ab0GOCRg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 14 Jul 2010 22:17:36 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-Subject: [PATCH 12/18] xstat: Add a dentry op to handle automounting rather
-	than abusing follow_link() [ver #6]
+Subject: [PATCH 18/18] xstat: Provide a mechanism to gather extra results for
+	[f]xstat() [ver #6]
 To: viro@ZenIV.linux.org.uk
 Cc: dhowells@redhat.com, linux-fsdevel@vger.kernel.org,
         linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
         linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
         linux-ext4@vger.kernel.org
-Date: Thu, 15 Jul 2010 03:17:24 +0100
-Message-ID: <20100715021723.5544.85730.stgit@warthog.procyon.org.uk>
+Date: Thu, 15 Jul 2010 03:17:30 +0100
+Message-ID: <20100715021730.5544.68442.stgit@warthog.procyon.org.uk>
 In-Reply-To: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
 References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
 User-Agent: StGIT/0.14.3
@@ -30,269 +30,401 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a dentry op (d_automount) to handle automounting directories rather than
-abusing the follow_link() inode operation.  The operation is keyed off a new
-inode flag (S_AUTOMOUNT).
+Provide a mechanism in the kernel by which extra results beyond those allocated
+space in the xstat struct can be returned to userspace.
 
-This makes it easier to add an AT_ flag to suppress terminal segment automount
-during pathwalk.  It should also remove the need for the kludge code in the
-pathwalk algorithm to handle directories with follow_link() semantics.
+[I'm not sure this is the best way to do this; it's a bit unwieldy.  However,
+ I'd rather not overburden struct kstat with fields for every extra result we
+ might want to return as it's allocated on the stack in various places.
+ Possibly the pass_result of struct xstat_extra_result could be placed in
+ struct kstat to be used if pass_result is non-NULL, and struct kstat could be
+ passed to container_of().]
 
-I've only changed __follow_mount() to handle automount points, but it might be
-necessary to change follow_mount() too.  The latter is only used from
-follow_dotdot(), but any automounts on ".." should be pinned whilst we're using
-a child of it.
+This is modelled on the filldir approach used to read directory entries.  This
+allows kernel routines (such as NFSD) to access this information too.
 
-Note that autofs4's use of follow_mount() will need examining if this patch is
-committed.
+A new inode operation (getattr_extra) is provided that interested filesystems
+need to implement.  If this is not provided, then it is assumed that no extra
+results will be returned.
+
+The getattr_extra() routine is passed a token to represent the request:
+
+	struct xstat_extra_result {
+		u64			request_mask;
+		struct kstat		*stat;
+		xstat_extra_result_t	pass_result;
+	};
+
+The three fields in this struct are: the request_mask (with bits not
+representing extra results edited out); the pointer to the kstat structure as
+passed to getattr() (stat->query_flags may be useful); and a pointer to a
+function to which each individual result should be passed.
+
+The requests can be handled in order with something like the following:
+
+	u64 request_mask = token->request_mask;
+	do {
+		int request = __ffs64(request_mask);
+		request_mask &= ~(1ULL << request);
+		switch (request) {
+		case ilog2(XSTAT_REQUEST_FOO): {
+			struct xstat_foo foo;
+			ret = myfs_get_foo(inode, token, &foo);
+			if (!ret)
+				token->pass_result(token, request,
+						   &foo, sizeof(foo));
+			break;
+		}
+		default:
+			ret = 0;
+			break;
+		}
+	} while (ret == 0 && request_mask);
+
+The caller should probably embed token in something so that they can retrieve
+it in the pass_result() function with container_of().
 
 Signed-off-by: David Howells <dhowells@redhat.com>
 ---
 
- Documentation/filesystems/Locking |    2 +
- Documentation/filesystems/vfs.txt |   13 ++++++
- fs/namei.c                        |   85 +++++++++++++++++++++++++++++--------
- fs/stat.c                         |    2 +
- include/linux/dcache.h            |    5 ++
- include/linux/fs.h                |    2 +
- 6 files changed, 91 insertions(+), 18 deletions(-)
+ fs/stat.c            |  115 ++++++++++++++++++++++++++++++++++++++++----------
+ include/linux/fs.h   |   12 ++++-
+ include/linux/stat.h |   27 ++++++++++++
+ 3 files changed, 129 insertions(+), 25 deletions(-)
 
-diff --git a/Documentation/filesystems/Locking b/Documentation/filesystems/Locking
-index 96d4293..ccbfa98 100644
---- a/Documentation/filesystems/Locking
-+++ b/Documentation/filesystems/Locking
-@@ -16,6 +16,7 @@ prototypes:
- 	void (*d_release)(struct dentry *);
- 	void (*d_iput)(struct dentry *, struct inode *);
- 	char *(*d_dname)((struct dentry *dentry, char *buffer, int buflen);
-+	struct vfsmount *(*d_automount)(struct path *path);
- 
- locking rules:
- 	none have BKL
-@@ -27,6 +28,7 @@ d_delete:	yes		no		yes		no
- d_release:	no		no		no		yes
- d_iput:		no		no		no		yes
- d_dname:	no		no		no		no
-+d_automount:	no		no		no		yes
- 
- --------------------------- inode_operations --------------------------- 
- prototypes:
-diff --git a/Documentation/filesystems/vfs.txt b/Documentation/filesystems/vfs.txt
-index 94677e7..31a9e8f 100644
---- a/Documentation/filesystems/vfs.txt
-+++ b/Documentation/filesystems/vfs.txt
-@@ -851,6 +851,7 @@ struct dentry_operations {
- 	void (*d_release)(struct dentry *);
- 	void (*d_iput)(struct dentry *, struct inode *);
- 	char *(*d_dname)(struct dentry *, char *, int);
-+	struct vfsmount *(*d_automount)(struct path *);
- };
- 
-   d_revalidate: called when the VFS needs to revalidate a dentry. This
-@@ -885,6 +886,18 @@ struct dentry_operations {
- 	at the end of the buffer, and returns a pointer to the first char.
- 	dynamic_dname() helper function is provided to take care of this.
- 
-+  d_automount: called when an automount dentry is to be traversed (optional).
-+	This should create a new VFS mount record, mount it on the directory
-+	and return the record to the caller.  The caller is supplied with a
-+	path parameter giving the automount directory to describe the automount
-+	target and the parent VFS mount record to provide inheritable mount
-+	parameters.  NULL should be returned if someone else managed to make
-+	the automount first.  If the automount failed, then an error code
-+	should be returned.
-+
-+	This function is only used if S_AUTOMOUNT is set on the inode to which
-+	the dentry refers.
-+
- Example :
- 
- static char *pipefs_dname(struct dentry *dent, char *buffer, int buflen)
-diff --git a/fs/namei.c b/fs/namei.c
-index 868d0cb..fcec3c6 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -617,24 +617,71 @@ int follow_up(struct path *path)
- 	return 1;
+diff --git a/fs/stat.c b/fs/stat.c
+index 3f2ab5f..65efbaa 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -113,6 +113,25 @@ int vfs_getattr(struct vfsmount *mnt, struct dentry *dentry, struct kstat *stat)
  }
+ EXPORT_SYMBOL(vfs_getattr);
  
 +/*
-+ * Perform an automount
++ * Get the extra stat results
 + */
-+static int follow_automount(struct path *path, int res)
++static int vfs_get_xstat_extra_results(struct path *path,
++				       struct xstat_extra_result *extra)
 +{
-+	struct vfsmount *mnt;
++	struct vfsmount *mnt = path->mnt;
++	struct dentry *dentry = path->dentry;
++	struct inode *inode = dentry->d_inode;
 +
-+	if (!path->dentry->d_op || !path->dentry->d_op->d_automount)
-+		return -EREMOTE;
-+
-+	current->total_link_count++;
-+	if (current->total_link_count >= 40)
-+		return -ELOOP;
-+
-+	mnt = path->dentry->d_op->d_automount(path);
-+	if (IS_ERR(mnt))
-+		return PTR_ERR(mnt);
-+	if (!mnt) /* mount collision */
-+		return 0;
-+
-+	if (mnt->mnt_sb == path->mnt->mnt_sb &&
-+	    mnt->mnt_root == path->dentry) {
-+		mntput(mnt);
-+		return -ELOOP;
++	if (extra && inode->i_op->getattr_extra) {
++		extra->request_mask =
++			extra->stat->request_mask & XSTAT_REQUEST__EXTRA_STATS;
++		if (extra->request_mask)
++			return inode->i_op->getattr_extra(mnt, dentry, extra);
 +	}
-+
-+	dput(path->dentry);
-+	if (res)
-+		mntput(path->mnt);
-+	path->mnt = mnt;
-+	path->dentry = dget(mnt->mnt_root);
 +	return 0;
 +}
 +
- /* no need for dcache_lock, as serialization is taken care in
-  * namespace.c
+ /**
+  * vfs_fxstat - Get extended attributes by file descriptor
+  * @fd: The file descriptor refering to the file of interest
+@@ -126,7 +145,8 @@ EXPORT_SYMBOL(vfs_getattr);
+  *
+  * 0 will be returned on success, and a -ve error code if unsuccessful.
   */
--static int __follow_mount(struct path *path)
-+static int __follow_mount(struct path *path, unsigned nofollow)
+-int vfs_fxstat(unsigned int fd, struct kstat *stat)
++int vfs_fxstat(unsigned int fd, struct kstat *stat,
++	       struct xstat_extra_result *extra)
  {
--	int res = 0;
--	while (d_mountpoint(path->dentry)) {
--		struct vfsmount *mounted = lookup_mnt(path);
--		if (!mounted)
-+	struct vfsmount *mounted;
-+	int ret, res = 0;
-+	for (;;) {
-+		while (d_mountpoint(path->dentry)) {
-+			if (nofollow)
-+				return -ELOOP;
-+			mounted = lookup_mnt(path);
-+			if (!mounted)
-+				break;
-+			dput(path->dentry);
-+			if (res)
-+				mntput(path->mnt);
-+			path->mnt = mounted;
-+			path->dentry = dget(mounted->mnt_root);
-+			res = 1;
-+		}
-+		if (!d_automount_point(path->dentry))
- 			break;
--		dput(path->dentry);
--		if (res)
--			mntput(path->mnt);
--		path->mnt = mounted;
--		path->dentry = dget(mounted->mnt_root);
-+		if (nofollow)
-+			return -ELOOP;
-+		ret = follow_automount(path, res);
-+		if (ret < 0)
-+			return ret;
- 		res = 1;
+ 	struct file *f = fget(fd);
+ 	int error = -EBADF;
+@@ -135,6 +155,8 @@ int vfs_fxstat(unsigned int fd, struct kstat *stat)
+ 		return -EINVAL;
+ 	if (f) {
+ 		error = vfs_xgetattr(f->f_path.mnt, f->f_path.dentry, stat);
++		if (!error)
++			error = vfs_get_xstat_extra_results(&f->f_path, extra);
+ 		fput(f);
  	}
--	return res;
-+	return 0;
+ 	return error;
+@@ -155,7 +177,7 @@ int vfs_fstat(unsigned int fd, struct kstat *stat)
+ {
+ 	stat->query_flags = 0;
+ 	stat->request_mask = XSTAT_REQUEST__BASIC_STATS;
+-	return vfs_fxstat(fd, stat);
++	return vfs_fxstat(fd, stat, NULL);
  }
+ EXPORT_SYMBOL(vfs_fstat);
  
- static void follow_mount(struct path *path)
-@@ -702,6 +749,8 @@ static int do_lookup(struct nameidata *nd, struct qstr *name,
- 	struct vfsmount *mnt = nd->path.mnt;
- 	struct dentry *dentry, *parent;
- 	struct inode *dir;
-+	int ret;
-+
- 	/*
- 	 * See if the low-level filesystem might want
- 	 * to use its own hash..
-@@ -720,8 +769,10 @@ static int do_lookup(struct nameidata *nd, struct qstr *name,
- done:
- 	path->mnt = mnt;
- 	path->dentry = dentry;
--	__follow_mount(path);
--	return 0;
-+	ret = __follow_mount(path, 0);
-+	if (unlikely(ret < 0))
-+		path_put(path);
-+	return ret;
- 
- need_lookup:
- 	parent = nd->path.dentry;
-@@ -1721,11 +1772,9 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	if (open_flag & O_EXCL)
- 		goto exit_dput;
- 
--	if (__follow_mount(path)) {
--		error = -ELOOP;
--		if (open_flag & O_NOFOLLOW)
--			goto exit_dput;
--	}
-+	error = __follow_mount(path, open_flag & O_NOFOLLOW);
-+	if (error < 0)
-+		goto exit_dput;
- 
- 	error = -ENOENT;
- 	if (!path->dentry->d_inode)
-diff --git a/fs/stat.c b/fs/stat.c
-index 89d72fc..bb0f538 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -43,6 +43,8 @@ void generic_fillattr(struct inode *inode, struct kstat *stat)
- 	stat->blocks = inode->i_blocks;
- 	stat->blksize = (1 << inode->i_blkbits);
- 	stat->inode_flags = inode->i_sb->s_type->inode_flags;
-+	if (IS_AUTOMOUNT(inode))
-+		stat->inode_flags |= FS_AUTOMOUNT_FL;
- 	stat->result_mask |= XSTAT_REQUEST__BASIC_STATS & ~XSTAT_REQUEST_RDEV;
- 	if (unlikely(S_ISBLK(stat->mode) || S_ISCHR(stat->mode)))
- 		stat->result_mask |= XSTAT_REQUEST_RDEV;
-diff --git a/include/linux/dcache.h b/include/linux/dcache.h
-index eebb617..5380bff 100644
---- a/include/linux/dcache.h
-+++ b/include/linux/dcache.h
-@@ -139,6 +139,7 @@ struct dentry_operations {
- 	void (*d_release)(struct dentry *);
- 	void (*d_iput)(struct dentry *, struct inode *);
- 	char *(*d_dname)(struct dentry *, char *, int);
-+	struct vfsmount *(*d_automount)(struct path *);
- };
- 
- /* the dentry parameter passed to d_hash and d_compare is the parent
-@@ -157,6 +158,7 @@ d_compare:	no		yes		yes      no
- d_delete:	no		yes		no       no
- d_release:	no		no		no       yes
- d_iput:		no		no		no       yes
-+d_automount:	no		no		no	 yes
+@@ -177,7 +199,7 @@ EXPORT_SYMBOL(vfs_fstat);
+  * 0 will be returned on success, and a -ve error code if unsuccessful.
   */
+ int vfs_xstat(int dfd, const char __user *filename, int flags,
+-	      struct kstat *stat)
++	      struct kstat *stat, struct xstat_extra_result *extra)
+ {
+ 	struct path path;
+ 	int error, lookup_flags;
+@@ -193,6 +215,8 @@ int vfs_xstat(int dfd, const char __user *filename, int flags,
+ 	error = user_path_at(dfd, filename, lookup_flags, &path);
+ 	if (!error) {
+ 		error = vfs_xgetattr(path.mnt, path.dentry, stat);
++		if (!error)
++			error = vfs_get_xstat_extra_results(&path, extra);
+ 		path_put(&path);
+ 	}
+ 	return error;
+@@ -217,7 +241,7 @@ int vfs_fstatat(int dfd, const char __user *filename, struct kstat *stat,
+ 		int flags)
+ {
+ 	stat->request_mask = XSTAT_REQUEST__BASIC_STATS;
+-	return vfs_xstat(dfd, filename, flags, stat);
++	return vfs_xstat(dfd, filename, flags, stat, NULL);
+ }
+ EXPORT_SYMBOL(vfs_fstatat);
  
- /* d_flags entries */
-@@ -389,6 +391,9 @@ static inline int d_mountpoint(struct dentry *dentry)
- 	return dentry->d_mounted;
+@@ -236,7 +260,7 @@ EXPORT_SYMBOL(vfs_fstatat);
+ int vfs_stat(const char __user *filename, struct kstat *stat)
+ {
+ 	stat->request_mask = XSTAT_REQUEST__BASIC_STATS;
+-	return vfs_xstat(AT_FDCWD, filename, 0, stat);
++	return vfs_xstat(AT_FDCWD, filename, 0, stat, NULL);
+ }
+ EXPORT_SYMBOL(vfs_stat);
+ 
+@@ -254,7 +278,7 @@ EXPORT_SYMBOL(vfs_stat);
+  */
+ int vfs_lstat(const char __user *name, struct kstat *stat)
+ {
+-	return vfs_xstat(AT_FDCWD, name, AT_SYMLINK_NOFOLLOW, stat);
++	return vfs_xstat(AT_FDCWD, name, AT_SYMLINK_NOFOLLOW, stat, NULL);
+ }
+ EXPORT_SYMBOL(vfs_lstat);
+ 
+@@ -562,25 +586,70 @@ SYSCALL_DEFINE4(fstatat64, int, dfd, const char __user *, filename,
+ }
+ #endif /* __ARCH_WANT_STAT64 */
+ 
++struct xstat_extra_result_token {
++	struct xstat_extra_result	extra;
++	void __user			*buffer;
++	size_t				buf_remain;
++	size_t				result_size;
++};
++
++/*
++ * copy extra results to userspace
++ */
++static int xstat_pass_result(struct xstat_extra_result *extra,
++			     unsigned request, const void *result,
++			     size_t len)
++{
++	struct xstat_extra_result_token *token =
++		container_of(extra, struct xstat_extra_result_token, extra);
++
++	/* we shouldn't see anything that wasn't asked for */
++	BUG_ON(!((token->extra.request_mask >> request) & 1));
++
++	token->extra.stat->result_mask |= 1ULL << request;
++	token->result_size += len;
++	if (token->buffer) {
++		if (len > token->buf_remain)
++			return -E2BIG;
++		if (copy_to_user(token->buffer, result, len) != 0)
++			return -EFAULT;
++		token->buffer += len;
++		token->buf_remain -= len;
++	}
++	return 0;
++}
++
+ /*
+  * Get the xstat parameters if supplied
+  */
+ static int xstat_get_params(struct xstat_parameters __user *_params,
+-			    struct kstat *stat)
++			    struct xstat __user *buffer, size_t bufsize,
++			    struct kstat *stat,
++			    struct xstat_extra_result_token *token)
+ {
+ 	struct xstat_parameters params;
+ 
+ 	memset(stat, 0xde, sizeof(*stat));	// DEBUGGING
+ 
++	if (!buffer && bufsize > 0)
++		return -EINVAL;
++	if (bufsize > 0 && bufsize < sizeof(struct xstat))
++		return -E2BIG;
++
++	stat->request_mask = XSTAT_REQUEST__BASIC_STATS;
++	stat->result_mask = 0;
+ 	if (_params) {
+ 		if (copy_from_user(&params, _params, sizeof(params)) != 0)
+ 			return -EFAULT;
+ 		stat->request_mask =
+ 			params.request_mask & XSTAT_REQUEST__ALL_STATS;
+-	} else {
+-		stat->request_mask = XSTAT_REQUEST__BASIC_STATS;
+ 	}
+-	stat->result_mask = 0;
++
++	token->extra.stat = stat;
++	token->extra.pass_result = xstat_pass_result;
++	token->buffer = buffer ? buffer->st_extra_results : NULL;
++	token->result_size = sizeof(struct xstat);
++	token->buf_remain = bufsize > 0 ? bufsize - sizeof(struct xstat) : 0;
+ 	return 0;
  }
  
-+#define d_automount_point(dentry) \
-+	(dentry->d_inode && IS_AUTOMOUNT(dentry->d_inode))
-+
- extern struct vfsmount *lookup_mnt(struct path *);
- extern struct dentry *lookup_create(struct nameidata *nd, int is_dir);
+@@ -597,14 +666,14 @@ static int xstat_get_params(struct xstat_parameters __user *_params,
+  * data written into the buffer (or -EFAULT).
+  */
+ static long xstat_set_result(struct kstat *stat,
+-			     struct xstat __user *buffer, size_t bufsize)
++			     struct xstat __user *buffer, size_t bufsize,
++			     struct xstat_extra_result_token *token)
+ {
+ 	struct xstat tmp;
+-	size_t result_size = sizeof(tmp);
  
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 951c36b..579ad9d 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -235,6 +235,7 @@ struct inodes_stat_t {
- #define S_NOCMTIME	128	/* Do not update file c/mtime */
- #define S_SWAPFILE	256	/* Do not truncate: swapon got its bmaps */
- #define S_PRIVATE	512	/* Inode is fs-internal */
-+#define S_AUTOMOUNT	1024	/* Automount/referral quasi-directory */
+ 	if (bufsize == 0)
+-		return result_size;
+-	if (bufsize < result_size)
++		return token->result_size;
++	if (bufsize < token->result_size)
+ 		return -E2BIG;
+ 
+ 	/* transfer the fixed results */
+@@ -640,9 +709,9 @@ static long xstat_set_result(struct kstat *stat,
+ 	if (tmp.st_result_mask & XSTAT_REQUEST_INODE_FLAGS)
+ 		tmp.st_inode_flags	= stat->inode_flags;
+ 
+-	if (copy_to_user(buffer, &tmp, result_size) != 0)
++	if (copy_to_user(buffer, &tmp, sizeof(tmp)) != 0)
+ 		return -EFAULT;
+-	return result_size;
++	return token->result_size;
+ }
  
  /*
-  * Note that nosuid etc flags are inode-specific: setting some file-system
-@@ -269,6 +270,7 @@ struct inodes_stat_t {
- #define IS_NOCMTIME(inode)	((inode)->i_flags & S_NOCMTIME)
- #define IS_SWAPFILE(inode)	((inode)->i_flags & S_SWAPFILE)
- #define IS_PRIVATE(inode)	((inode)->i_flags & S_PRIVATE)
-+#define IS_AUTOMOUNT(inode)	((inode)->i_flags & S_AUTOMOUNT)
+@@ -653,16 +722,17 @@ SYSCALL_DEFINE6(xstat,
+ 		struct xstat_parameters __user *, params,
+ 		struct xstat __user *, buffer, size_t, bufsize)
+ {
++	struct xstat_extra_result_token token;
+ 	struct kstat stat;
+ 	int error;
  
- /* the read-only stuff doesn't really belong here, but any other place is
-    probably as bad and I don't want to create yet another include file. */
+-	error = xstat_get_params(params, &stat);
++	error = xstat_get_params(params, buffer, bufsize, &stat, &token);
+ 	if (error != 0)
+ 		return error;
+-	error = vfs_xstat(dfd, filename, atflag, &stat);
++	error = vfs_xstat(dfd, filename, atflag, &stat, &token.extra);
+ 	if (error)
+ 		return error;
+-	return xstat_set_result(&stat, buffer, bufsize);
++	return xstat_set_result(&stat, buffer, bufsize, &token);
+ }
+ 
+ /*
+@@ -672,18 +742,19 @@ SYSCALL_DEFINE5(fxstat, unsigned int, fd, unsigned int, flags,
+ 		struct xstat_parameters __user *, params,
+ 		struct xstat __user *, buffer, size_t, bufsize)
+ {
++	struct xstat_extra_result_token token;
+ 	struct kstat stat;
+ 	int error;
+ 
+-	error = xstat_get_params(params, &stat);
++	error = xstat_get_params(params, buffer, bufsize, &stat, &token);
+ 	if (error < 0)
+ 		return error;
+ 	stat.query_flags = flags;
+-	error = vfs_fxstat(fd, &stat);
++	error = vfs_fxstat(fd, &stat, &token.extra);
+ 	if (error)
+ 		return error;
+ 
+-	return xstat_set_result(&stat, buffer, bufsize);
++	return xstat_set_result(&stat, buffer, bufsize, &token);
+ }
+ 
+ /* Caller is here responsible for sufficient locking (ie. inode->i_lock) */
+diff --git a/include/linux/fs.h b/include/linux/fs.h
+index 579ad9d..ae87289 100644
+--- a/include/linux/fs.h
++++ b/include/linux/fs.h
+@@ -1531,7 +1531,9 @@ struct inode_operations {
+ 	int (*permission) (struct inode *, int);
+ 	int (*check_acl)(struct inode *, int);
+ 	int (*setattr) (struct dentry *, struct iattr *);
+-	int (*getattr) (struct vfsmount *mnt, struct dentry *, struct kstat *);
++	int (*getattr) (struct vfsmount *, struct dentry *, struct kstat *);
++	int (*getattr_extra) (struct vfsmount *, struct dentry *,
++			      struct xstat_extra_result *);
+ 	int (*setxattr) (struct dentry *, const char *,const void *,size_t,int);
+ 	ssize_t (*getxattr) (struct dentry *, const char *, void *, size_t);
+ 	ssize_t (*listxattr) (struct dentry *, char *, size_t);
+@@ -2345,6 +2347,8 @@ extern int generic_readlink(struct dentry *, char __user *, int);
+ extern void generic_fillattr(struct inode *, struct kstat *);
+ extern int vfs_getattr(struct vfsmount *, struct dentry *, struct kstat *);
+ extern int vfs_xgetattr(struct vfsmount *, struct dentry *, struct kstat *);
++extern int vfs_xgetattr_extra(struct vfsmount *, struct dentry *, struct kstat *,
++			      xstat_extra_result_t, void *);
+ void __inode_add_bytes(struct inode *inode, loff_t bytes);
+ void inode_add_bytes(struct inode *inode, loff_t bytes);
+ void inode_sub_bytes(struct inode *inode, loff_t bytes);
+@@ -2357,8 +2361,10 @@ extern int vfs_stat(const char __user *, struct kstat *);
+ extern int vfs_lstat(const char __user *, struct kstat *);
+ extern int vfs_fstat(unsigned int, struct kstat *);
+ extern int vfs_fstatat(int , const char __user *, struct kstat *, int);
+-extern int vfs_xstat(int, const char __user *, int, struct kstat *);
+-extern int vfs_xfstat(unsigned int, struct kstat *);
++extern int vfs_xstat(int, const char __user *, int, struct kstat *,
++		     struct xstat_extra_result *);
++extern int vfs_xfstat(unsigned int, struct kstat *,
++		      struct xstat_extra_result *);
+ 
+ extern int do_vfs_ioctl(struct file *filp, unsigned int fd, unsigned int cmd,
+ 		    unsigned long arg);
+diff --git a/include/linux/stat.h b/include/linux/stat.h
+index 41a3c22..ec000ff 100644
+--- a/include/linux/stat.h
++++ b/include/linux/stat.h
+@@ -109,6 +109,7 @@ struct xstat_parameters {
+ #define XSTAT_REQUEST_INODE_FLAGS	0x00004000ULL	/* want/got st_inode_flags */
+ #define XSTAT_REQUEST__EXTENDED_STATS	0x00007fffULL	/* the stuff in the xstat struct */
+ #define XSTAT_REQUEST__ALL_STATS	0x00007fffULL	/* the defined set of requestables */
++#define XSTAT_REQUEST__EXTRA_STATS	(XSTAT_REQUEST__ALL_STATS & ~XSTAT_REQUEST__EXTENDED_STATS)
+ };
+ 
+ struct xstat_dev {
+@@ -167,6 +168,32 @@ struct xstat {
+ #include <linux/types.h>
+ #include <linux/time.h>
+ 
++/**
++ * xstat_extra_result_t - Function to call to return extra stat results
++ * @token: The token given to the caller
++ * @request: The bit number of the request
++ * @result: The result data to include
++ * @len: The length of the result data
++ *
++ * Request is the bit number from one of the bits that may be set in
++ * (kstat->request_mask & XSTAT_REQUEST__EXTRA_STATS).
++ *
++ * The results must be passed in ascending order of bit number.
++ */
++struct xstat_extra_result;
++typedef int (*xstat_extra_result_t)(struct xstat_extra_result *token,
++				    unsigned request, const void *result,
++				    size_t len);
++
++struct xstat_extra_result {
++	u64			request_mask;
++	struct kstat		*stat;
++	xstat_extra_result_t	pass_result;
++};
++
++/*
++ * Linux's internal stat record, obtained by vfs_[x]getattr()
++ */
+ struct kstat {
+ 	u64		request_mask;		/* what fields the user asked for */
+ 	u64		result_mask;		/* what fields the user got */
 
