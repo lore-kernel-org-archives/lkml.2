@@ -1,64 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932860Ab0GOJQO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 05:16:14 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:47859 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932802Ab0GOJQM (ORCPT
+	id S932868Ab0GOJRQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 05:17:16 -0400
+Received: from mail-ww0-f66.google.com ([74.125.82.66]:42691 "EHLO
+	mail-ww0-f66.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932802Ab0GOJRO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 05:16:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=Mi1xPeDsk3iy1dFIdcL43AL13reUnacsCXyYps2Oqf7WGVS1yyBitmwsQQFNK1OKTU
-         TZodiJvn7QRTKahkP75dNOB2Lp0ReQ2t4ZdAXtimRnRHFDVEWsakWksZtSsEaU/PIeMg
-         LCOHMWmeBV6Nj2skROCwffgT3Y1/ZwRj4g1q4=
+	Thu, 15 Jul 2010 05:17:14 -0400
 MIME-Version: 1.0
-In-Reply-To: <4C3ED059.9050508@free.fr>
-References: <4C3ED059.9050508@free.fr>
-Date: Thu, 15 Jul 2010 19:16:10 +1000
-Message-ID: <AANLkTikEWysGAk6-hxqgecjlte-ilbait_9cvbDlz9Ue@mail.gmail.com>
-Subject: Re: vga switcheroo not working on amilo Xi 3650
-From: Dave Airlie <airlied@gmail.com>
-To: eric.valette@free.fr
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTimEdVsmIgXBbmhsq75ElQvGAI8avsM8-wlDpm4z@mail.gmail.com>
+References: <201007110918.42120.Martin@lichtvoll.de>
+	<AANLkTimEdVsmIgXBbmhsq75ElQvGAI8avsM8-wlDpm4z@mail.gmail.com>
+Date: Thu, 15 Jul 2010 10:09:03 +0100
+Message-ID: <AANLkTimgwxdEyZGGnW1pvNFkRNaDyBtJegD_eIC9oit4@mail.gmail.com>
+Subject: Re: stable? quality assurance?
+From: Valeo de Vries <valeo@valeo.co.cc>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Martin <Martin@lichtvoll.de>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 7:09 PM, Eric Valette <eric.valette@free.fr> wrote:
-> Hi david,
+On 11 July 2010 08:18, Martin Steigerwald <Martin@lichtvoll.de> wrote:
 >
-> As I saw some changes in the .35, I tried again on amilo xi 3650. As you
-> will see its a Intel/Nvidia hybrid graphic laptop.
+> Hi!
 >
-> When I use the delayed switch option, and restart X via the kdm restart X
-> server option, I see the message of the switch and then it hangs rock solid.
-> I'm forced to push on the power button for 5 s.
+> 2.6.34 was a desaster for me: bug #15969 - patch was availble before
+> 2.6.34 already, bug #15788, also reported with 2.6.34-rc2 already, as well
+> as most important two complete lockups - well maybe just X.org and radeon
+> KMS, I didn't start my second laptop to SSH into the locked up one - on my
+> ThinkPad T42. I fixed the first one with the patch, but after the lockups I
+> just downgraded to 2.6.33 again.
 >
-> vga_switcheroo: client 0 refused switch <== exiting the kdm session
-> vga_switcheroo: setting delayed switch to client 1
-> vga_switcheroo: processing delayed switch to 1 <== restarting X server
+> I still actually *use* my machines for something else than hunting patches
+> for kernel bugs and on kernel.org it is written "Latest *Stable* Kernel"
+> (accentuation from me). I know of the argument that one should use a
+> distro kernel for machines that are for production use. But frankly, does
+> that justify to deliver in advance known crap to the distributors? What
+> impact do partly grave bugs reported on bugzilla have on the release
+> decision?
 >
+> And how about people who have their reasons - mine is TuxOnIce - to
+> compile their own kernels?
 >
-> If I use the bios, to force the cards, both settings works correctly, hybrid
-> mode also works correctly as long as I use the Intel card but I cannot
-> activate dynamically the nvidia one via vga switcheroo.
+> Well 2.6.34.1 fixed the two reported bugs and it seemed to have fixed the
+> freezes as well. So far so good.
 >
-> Problem is that to have the hdmi output on this laptop I'm forced to use the
-> nvidia driver and my kid like to see their film on TV...
+> Maybe it should read "prerelease of stable" for at least 2.6.34.0 on the
+> website. And I just again always wait for .2 or .3, as with 2.6.34.1 I
+> still have some problems like the hang on hibernation reported in
+>
+> hang on hibernation with kernel 2.6.34.1 and TuxOnIce 3.1.1.1
+>
+> on this mailing list just a moment ago. But then 2.6.33 did hang with
+> TuxOnIce which apparently (!) wasn't a TuxOnIce problem either, since
+> 2.6.34 did not hang with it anymore which was a reason for me to try
+> 2.6.34 earlier.
+>
+> I am quite a bit worried about the quality of the recent kernels. Some
+> iterations earlier I just compiled them, partly even rc-ones which I do
+> not expact to be table, and they just worked. But in the recent times .0,
+> partly even .1 or .2 versions haven't been stable for me quite some times
+> already and thus they better not be advertised as such on kernel.org I
+> think. I am willing to risk some testing and do bug reports, but these are
+> still production machines, I do not have any spare test machines, and
+> there needs to be some balance, i.e. the kernels should basically work.
+> Thus I for sure will be more reluctant to upgrade in the future.
 
-[drm:i915_init] *ERROR* drm/i915 can't work without intel_agp module!
+Ooh, it's been a while since I've partaken in a LKML flamewar. ;-)
 
-doesn't look good,
+On a slightly less childish note, I agree with a few of your points. I have
+noticed *stable* releases (I'm talking distro kernels here) being less than
+stable on occasion recently (the sporadic hard lock-up, bdi-writeback
+taking damn long, the recent 'umount with dirty buffers taking an ice-age
+to complete' bug). Additionally there seems to have been some very
+chunky point-releases in the last 3-6 months, many containing patches
+that really should have been kept for the next Linus kernel.org kernel, IMO.
+These annoyances drove me away from Linux for a good few months... it's
+amazing what working full-time with Windows can do to one's soul, though!
 
-though I still haven't had a successful intel/nvidia switch as I lack
-the hardware, and nobody has worked out exactly which ACPI method is
-used to switch the MUX.
+That said, from what I've seen of late, there's only one guy (Greg) handling
+most of the stable stuff (there are probably others working behind the
+scenes), and he has a hell of a lot on his plate. So if you, like me, want to
+see more reliable stable releases, I'd recommend either offering to help out
+in some way reviewing/testing stable patches, as telling volunteers their shit
+doesn't tend to gain you much at all, generally. :-)
 
-if you can get a dmesg with i915 and nouveau loaded then open a bug on
-bugs.kernel.org I can try and work with you to figure that out,
-
-Dave.
+Valeo
