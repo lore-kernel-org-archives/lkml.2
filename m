@@ -1,37 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932462Ab0GOFer (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 01:34:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:50576 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932440Ab0GOFeq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 01:34:46 -0400
-Message-ID: <4C3E1F0B.7080407@zytor.com>
-Date: Wed, 14 Jul 2010 22:33:15 +0200
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Thunderbird/3.0.4
+	id S932483Ab0GOFf6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 01:35:58 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:57580 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932440Ab0GOFfz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 01:35:55 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6043"; a="47381810"
+Date: Wed, 14 Jul 2010 22:35:46 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+Message-ID: <20100715053546.GA3623@codeaurora.org>
+References: <4C3C0032.5020702@codeaurora.org>
+ <20100713150311B.fujita.tomonori@lab.ntt.co.jp>
+ <20100713121420.GB4263@codeaurora.org>
+ <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
+ <20100714201149.GA14008@codeaurora.org>
+ <20100714220536.GE18138@n2100.arm.linux.org.uk>
+ <20100715012958.GB2239@codeaurora.org>
 MIME-Version: 1.0
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: "H.J. Lu" <hjl.tools@gmail.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Peter Palfrader <peter@palfrader.org>, Avi Kivity <avi@redhat.com>,
-        Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-        stable@kernel.org, stable-review@kernel.org, akpm@linux-foundation.org,
-        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
-        Zachary Amsden <zamsden@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>
-Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
- 	for pvclock
-References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org>	<AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com>	<4C3DF1BE.2070404@goop.org>	<4C3DF447.1000801@zytor.com>	<4C3DF519.6030406@goop.org>	<4C3DF7AF.7010402@zytor.com>	<4C3DFA88.5020007@goop.org>	<4C3DFD12.3050700@zytor.com>	<AANLkTikA8SO42kOgHZb-6YuhM7GPnmg81IAX5vEk_Cqk@mail.gmail.com>	<4C3E096B.8050505@zytor.com>	<AANLkTil5uvr9sWc_o3HmOsJ0iaJJjaMkkrMwF0BsEdHg@mail.gmail.com>	<4C3E11BD.2090503@zytor.com> <AANLkTilKr6wr_wAE0nzXDsffWYWNdGf2_EqMXzRSKJMu@mail.gmail.com> <4C3E27E7.3010706@goop.org>
-In-Reply-To: <4C3E27E7.3010706@goop.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100715012958.GB2239@codeaurora.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For those that are interested:
+On Wed, Jul 14, 2010 at 06:29:58PM -0700, Zach Pfeffer wrote:
+> On Wed, Jul 14, 2010 at 11:05:36PM +0100, Russell King - ARM Linux wrote:
+> > On Wed, Jul 14, 2010 at 01:11:49PM -0700, Zach Pfeffer wrote:
+> > > If the DMA-API contained functions to allocate virtual space separate
+> > > from physical space and reworked how chained buffers functioned it
+> > > would probably work - but then things start to look like the VCM API
+> > > which does graph based map management.
+> > 
+> > Every additional virtual mapping of a physical buffer results in
+> > additional cache aliases on aliasing caches, and more workload for
+> > developers to sort out the cache aliasing issues.
+> > 
+> > What does VCM to do mitigate that?
+> 
+> The VCM ensures that all mappings that map a given physical buffer:
+> IOMMU mappings, CPU mappings and one-to-one device mappings all map
+> that buffer using the same (or compatible) attributes. At this point
+> the only attribute that users can pass is CACHED. In the absence of
+> CACHED all accesses go straight through to the physical memory.
+> 
+> The architecture of the VCM allows these sorts of consistency checks
+> to be made since all mappers of a given physical resource are
+> tracked. This is feasible because the physical resources we're
+> tracking are typically large.
 
-http://gcc.gnu.org/bugzilla/show_bug.cgi?id=44943
+A few more things...
 
-	-hpa
+In addition to CACHED, the VCMM can support different cache policies
+as long as the architecture can support it - they get passed down
+through the device map call.
+
+In addition, handling physical mappings in the VCMM enables it to
+perform refcounting on the physical chunks (ie, to see how many
+virtual spaces it's been mapped to, including the kernel's). This
+allows it to turn on any coherency protocols that are available in
+hardware (ie, setting the shareable bit on something that is mapped to
+more than one virtual space). That same attribute can be left off on a
+buffer that has only one virtual mapping (ie, scratch buffers used by
+one device only). It is then up to the underlying system to deal with
+that shared attribute - to enable redirection if it's supported, or to
+force something to be non-cacheable, etc. Doing it all through the
+VCMM allows all these mechanisms be worked out once per architecture
+and then reused.
+
