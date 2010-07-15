@@ -1,64 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934277Ab0GOSss (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:48:48 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:55964 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934268Ab0GOSso (ORCPT
+	id S934288Ab0GOStJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:49:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59390 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934217Ab0GOStD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:48:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Pfl3FxdlZmJ1QDlmb9p/r+kFyOyE4XK9gTW6YHS4pYhc6Cyp3suXJpAcxcHpjbk8ax
-         u6MSGHFP0c53gEm2j+ARcmey56v56xIgssPis/8VliVXa4v7QBzXTXJX6W92FKp/K3NL
-         vtAgNjOvmy47qnR9JQc47yqRIBt3voJa8Wlmo=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Eliot Blennerhassett <eblennerhassett@audioscience.com>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: [PATCH 8/8] sound: asihpi: fix sign bug
-Date: Thu, 15 Jul 2010 22:48:19 +0400
-Message-Id: <1279219700-12892-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Thu, 15 Jul 2010 14:49:03 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTilfXUtQznSzOmO9ecoaviIt62Hv6jdUOMSRLdrF@mail.gmail.com>
+References: <20100714155804.049012415@efficios.com>
+	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	<20100714170617.GB4955@Krystal>
+	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	<20100714203940.GC22096@Krystal>
+	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
+	<20100714222115.GA30122@Krystal>
+	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
+	<AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
+	<AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com>
+	<20100715183153.GA9276@Krystal>
+	<AANLkTilfXUtQznSzOmO9ecoaviIt62Hv6jdUOMSRLdrF@mail.gmail.com>
+Date: Thu, 15 Jul 2010 11:48:10 -0700
+Message-ID: <AANLkTimAn0uMpeYKctO0qxM6nwbfev3RHARLZIbf991k@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-bytes_per_sec is unsigned, so if snd_pcm_format_width() return error we
-would not see it.
+On Thu, Jul 15, 2010 at 11:43 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> But maybe I'm missing something.
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- sound/pci/asihpi/asihpi.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+Hmm. Of course - one way of solving this might be to just make the
+32-bit case switch stacks in software. That might be a good idea
+regardless, and would not be complicated. We already do that for
+sysenter, but the NMI case would be simpler because we don't need to
+worry about being re-entered by NMI/DEBUG during the stack switch.
 
-diff --git a/sound/pci/asihpi/asihpi.c b/sound/pci/asihpi/asihpi.c
-index 91218f7..c80b0b8 100644
---- a/sound/pci/asihpi/asihpi.c
-+++ b/sound/pci/asihpi/asihpi.c
-@@ -460,6 +460,7 @@ static int snd_card_asihpi_pcm_hw_params(struct snd_pcm_substream *substream,
- 	struct snd_card_asihpi *card = snd_pcm_substream_chip(substream);
- 	int err;
- 	u16 format;
-+	int width;
- 	unsigned int bytes_per_sec;
- 
- 	print_hwparams(params);
-@@ -512,9 +513,10 @@ static int snd_card_asihpi_pcm_hw_params(struct snd_pcm_substream *substream,
- 				dpcm->hpi_buffer_attached);
- 	}
- 	bytes_per_sec = params_rate(params) * params_channels(params);
--	bytes_per_sec *= snd_pcm_format_width(params_format(params));
-+	width = snd_pcm_format_width(params_format(params));
-+	bytes_per_sec *= width;
- 	bytes_per_sec /= 8;
--	if (bytes_per_sec <= 0)
-+	if (width < 0 || bytes_per_sec == 0)
- 		return -EINVAL;
- 
- 	dpcm->bytes_per_sec = bytes_per_sec;
--- 
-1.7.0.4
+And since we have to play some games with moving the data on the stack
+around _anyway_, doing the whole "switch stacks entirely rather than
+just subtract a bit from the old stack" would be fairly logical.
 
+So I think you may end up being right: we don't need to save the
+original NMI stack pointer, because we can make sure that the
+replacement stack (that we need anyway) is always deterministic.
+
+                             Linus
