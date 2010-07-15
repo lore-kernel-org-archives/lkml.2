@@ -1,56 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934249Ab0GOSrS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 14:47:18 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:35072 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934126Ab0GOSrP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 14:47:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=XcGeEhY5fWpvPtsynpL08r/Q1nF15TIbRkCntUVqNFiZHlDc8k/ElLqS25WxiNuLzR
-         +mJESkyRpkabTwRWjBWFVoAeB51/GF0p++w27YpiHbLMsX8h6ZP+KlpwSnFrmXDC0zd2
-         0LBny8oEZvS9DRHuAEyo7AwbJqgWKjVThT3SA=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Alex Elder <aelder@sgi.com>, xfs-masters@oss.sgi.com,
-        Christoph Hellwig <hch@lst.de>, Dave Chinner <dchinner@redhat.com>,
-        Felix Blyakher <felixb@sgi.com>, xfs@oss.sgi.com,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 6/8] xfs: fix unsigned underflow
-Date: Thu, 15 Jul 2010 22:46:45 +0400
-Message-Id: <1279219605-12631-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S934236Ab0GOSsd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 14:48:33 -0400
+Received: from mail.gmx.net ([213.165.64.20]:41771 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S934174Ab0GOSsa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 14:48:30 -0400
+X-Authenticated: #12255092
+X-Provags-ID: V01U2FsdGVkX1928vhKC212CoPdDRu9cYQC524av1zwTmPHdEfZfS
+	1a3lIe8VkRgXtH
+From: Peter Huewe <PeterHuewe@gmx.de>
+To: Kernel Janitors <kernel-janitors@vger.kernel.org>
+Subject: [PATCH 09/25] atm: Convert pci_table entries to PCI_VDEVICE (if PCI_ANY_ID is used)
+Date: Thu, 15 Jul 2010 20:48:26 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.5; x86_64; ; )
+Cc: Chas Williams <chas@cmf.nrl.navy.mil>,
+        "David S. Miller" <davem@davemloft.net>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Tejun Heo <tj@kernel.org>, linux-atm-general@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007152048.27535.PeterHuewe@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-map_len is unsigned. Checking map_len <= 0 is buggy when it should be
-below zero. So, check exact expression instead of map_len.
+From: Peter Huewe <peterhuewe@gmx.de>
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
+.subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
+PCI_VDEVICE macro, and thus improves readability.
+
+Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
 ---
- fs/xfs/xfs_vnodeops.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/atm/nicstar.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/fs/xfs/xfs_vnodeops.c b/fs/xfs/xfs_vnodeops.c
-index 65e0879..66d585c 100644
---- a/fs/xfs/xfs_vnodeops.c
-+++ b/fs/xfs/xfs_vnodeops.c
-@@ -591,9 +591,9 @@ xfs_free_eofblocks(
- 	 */
- 	end_fsb = XFS_B_TO_FSB(mp, ((xfs_ufsize_t)ip->i_size));
- 	last_fsb = XFS_B_TO_FSB(mp, (xfs_ufsize_t)XFS_MAXIOFFSET(mp));
--	map_len = last_fsb - end_fsb;
--	if (map_len <= 0)
-+	if (last_fsb <= end_fsb)
- 		return 0;
-+	map_len = last_fsb - end_fsb;
+diff --git a/drivers/atm/nicstar.c b/drivers/atm/nicstar.c
+index cff337e..729a149 100644
+--- a/drivers/atm/nicstar.c
++++ b/drivers/atm/nicstar.c
+@@ -264,8 +264,7 @@ static void __devexit nicstar_remove_one(struct pci_dev *pcidev)
+ }
  
- 	nimaps = 1;
- 	xfs_ilock(ip, XFS_ILOCK_SHARED);
+ static struct pci_device_id nicstar_pci_tbl[] __devinitdata = {
+-	{PCI_VENDOR_ID_IDT, PCI_DEVICE_ID_IDT_IDT77201,
+-	 PCI_ANY_ID, PCI_ANY_ID, 0, 0, 0},
++	{ PCI_VDEVICE(IDT, PCI_DEVICE_ID_IDT_IDT77201), 0 },
+ 	{0,}			/* terminate list */
+ };
+ 
 -- 
-1.7.0.4
+1.7.1
 
