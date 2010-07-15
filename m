@@ -1,94 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758159Ab0GOBvR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 21:51:17 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:38014 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758125Ab0GOBvQ (ORCPT
+	id S932108Ab0GOBvs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 21:51:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42782 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758125Ab0GOBvr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 21:51:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: john stultz <johnstul@us.ibm.com>
-Subject: Re: [PATCH 01/11] x86: Fix vtime/file timestamp inconsistencies
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        Jiri Olsa <jolsa@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Oleg Nesterov <oleg@redhat.com>
-In-Reply-To: <1279124344.1831.13.camel@work-vm>
-References: <20100714113527.EA8A.A69D9226@jp.fujitsu.com> <1279124344.1831.13.camel@work-vm>
-Message-Id: <20100715101317.CB56.A69D9226@jp.fujitsu.com>
+	Wed, 14 Jul 2010 21:51:47 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 15 Jul 2010 10:51:13 +0900 (JST)
+In-Reply-To: <AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
+References: <20100714154923.947138065@efficios.com>
+	<20100714155804.049012415@efficios.com>
+	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	<20100714170617.GB4955@Krystal>
+	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	<20100714203940.GC22096@Krystal>
+	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
+	<20100714222115.GA30122@Krystal>
+	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
+	<AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
+Date: Wed, 14 Jul 2010 18:45:28 -0700
+Message-ID: <AANLkTil4LYSjS88P2CopOVi3Ty9pxwFPsaw0328KlPSu@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Wed, 2010-07-14 at 11:40 +0900, KOSAKI Motohiro wrote:
-> > Hi
-> > 
-> > > Due to vtime calling vgettimeofday(), its possible that an application
-> > > could call  time();create("stuff",O_RDRW);  only to see the file's
-> > > creation timestamp to be before the value returned by time.
-> > 
-> > Just dumb question.
-> > 
-> > Almost application are using gettimeofday() instead time(). It mean
-> > your fix don't solve almost application.
-> 
-> Correct,  filesystem timestamps and gettimeofday can still seem
-> inconsistently ordered. But that is expected.
-> 
-> Because of granularity differences (one interface is only tick
-> resolution, the other is clocksource resolution), we can't interleave
-> the two interfaces (time and gettimeofday, respectively) and expect to
-> get ordered results.
+On Wed, Jul 14, 2010 at 6:23 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> So this is what I think it might look like, with the %rip in place.
+>  [ ...]
+> Hmm?
 
-hmmm...
-Yes, times() vs gettimeofday() mekes no sense. nobody want this. but
-I don't understand why we can ignore gettimeofday() vs file-tiemstamp.
+I didn't fill in the iret fault details, because I thought that would
+be trivial. We get an exception, it's a slow case, how hard can it be
+to just call the NMI code?
 
+But thinking some more about it, it doesn't feel as trivial any more.
+We want to set up that same nesting code for the faked NMI call, but
+now I made it be two separate variables, and they need to be set in an
+NMI-safe way without us actually having access to the whole NMI
+blocking that the CPU does for a real NMI.
 
-> This is why the fix I'm proposing is important: Filesystem timestamps
-> have always been tick granular, so when vtime() was made clocksource
-> granular (by using vgettime internally) we broke the historic
-> expectation that the time() interface could be interleaved with
-> filesystem operations.
-> 
-> Side note: For full nanosecond resolution of the tick-granular
-> timestamps, check out the clock_gettime(CLOCK_REALTIME_COARSE, ...)
-> interface.
-> 
-> 
-> > So, Why can't we fix vgettimeofday() vs create() inconsistency?
-> > This is just question, I don't intend to disagree you.
-> 
-> The only way to make gettimeofday and create consistent is to use
-> gettimeofday clocksource resolution timestamps for files. This however
-> would potentially cause a large performance hit, since each every file
-> timestamp would require a possibly expensive read of the clocksource.
+So there's a few subtleties there too. Probably need to make the two
+percpu values adjacent, and use cmpxchg16b in the "emulate NMI on
+exception" code to set them both atomically. Or something. So I think
+it's doable, but it's admittedly more complicated than I thought it
+would be.
 
-Why clocksource() reading is so slow? the implementation of current
-tsc clocksource ->read method is here.
+.. and obviously there's nothing that guarantees that the code I
+already posted is correct either. The whole concept might be total
+crap.
 
-
-	static cycle_t read_tsc(struct clocksource *cs)
-	{
-	        cycle_t ret = (cycle_t)get_cycles();
-	
-	        return ret >= clocksource_tsc.cycle_last ?
-	                ret : clocksource_tsc.cycle_last;
-	}
-
-It mean, the difference is almost only one rdtsc.
-And, now we have RELATIME. then crazy atime frequently updating issue
-has been solved.
-
-Can you please elaborate your worry? I think I haven't get which case
-you worry.
-
-Thanks.
-
-
+                  Linus
