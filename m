@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757925Ab0GOAoA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 20:44:00 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:56838 "EHLO
+	id S1757954Ab0GOAoH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 20:44:07 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:56887 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757873Ab0GOAn6 (ORCPT
+	with ESMTP id S1757917Ab0GOAoB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 20:43:58 -0400
+	Wed, 14 Jul 2010 20:44:01 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 02/13] AppArmor: basic auditing infrastructure.
-Date: Wed, 14 Jul 2010 17:43:30 -0700
-Message-Id: <1279154621-25868-3-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 03/13] AppArmor: contexts used in attaching policy to system objects
+Date: Wed, 14 Jul 2010 17:43:31 -0700
+Message-Id: <1279154621-25868-4-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
 References: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
@@ -20,66 +20,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update lsm_audit for AppArmor specific data, and add the core routines for
-AppArmor uses for auditing.
+AppArmor contexts attach profiles and state to tasks, files, etc. when
+a direct profile reference is not sufficient.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- include/linux/lsm_audit.h         |   27 +++++
- security/apparmor/audit.c         |  206 +++++++++++++++++++++++++++++++++++++
- security/apparmor/include/audit.h |  127 +++++++++++++++++++++++
- 3 files changed, 360 insertions(+), 0 deletions(-)
- create mode 100644 security/apparmor/audit.c
- create mode 100644 security/apparmor/include/audit.h
+ security/apparmor/context.c         |  216 +++++++++++++++++++++++++++++++++++
+ security/apparmor/include/context.h |  154 +++++++++++++++++++++++++
+ 2 files changed, 370 insertions(+), 0 deletions(-)
+ create mode 100644 security/apparmor/context.c
+ create mode 100644 security/apparmor/include/context.h
 
-diff --git a/include/linux/lsm_audit.h b/include/linux/lsm_audit.h
-index 6907251..13b5c9a 100644
---- a/include/linux/lsm_audit.h
-+++ b/include/linux/lsm_audit.h
-@@ -94,6 +94,33 @@ struct common_audit_data {
- 			int result;
- 		} selinux_audit_data;
- #endif
-+#ifdef CONFIG_SECURITY_APPARMOR
-+		struct {
-+			int error;
-+			int op;
-+			int type;
-+			void *profile;
-+			const char *name;
-+			const char *info;
-+			union {
-+				void *target;
-+				struct {
-+					long pos;
-+					void *target;
-+				} iface;
-+				struct {
-+					int rlim;
-+					unsigned long max;
-+				} rlim;
-+				struct {
-+					const char *target;
-+					u32 request;
-+					u32 denied;
-+					uid_t ouid;
-+				} fs;
-+			};
-+		} apparmor_audit_data;
-+#endif
- 	};
- 	/* these callback will be implemented by a specific LSM */
- 	void (*lsm_pre_audit)(struct audit_buffer *, void *);
-diff --git a/security/apparmor/audit.c b/security/apparmor/audit.c
+diff --git a/security/apparmor/context.c b/security/apparmor/context.c
 new file mode 100644
-index 0000000..12a86c0
+index 0000000..6e12185
 --- /dev/null
-+++ b/security/apparmor/audit.c
-@@ -0,0 +1,206 @@
++++ b/security/apparmor/context.c
+@@ -0,0 +1,216 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor auditing functions
++ * This file contains AppArmor functions used to manipulate object security
++ * contexts.
 + *
 + * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
@@ -88,210 +50,219 @@ index 0000000..12a86c0
 + * modify it under the terms of the GNU General Public License as
 + * published by the Free Software Foundation, version 2 of the
 + * License.
++ *
++ *
++ * AppArmor sets confinement on every task, via the the aa_task_cxt and
++ * the aa_task_cxt profile, both of which are required and are not allowed
++ * to be NULL.  The aa_task_cxt is not reference counted and is unique
++ * to each cred (which is reference count).  The profile pointed to by
++ * the task_cxt is reference counted.
++ *
++ * TODO
++ * If a task uses change_hat it currently does not return to the old
++ * cred or task context but instead creates a new one.  Ideally the task
++ * should return to the previous cred if it has not been modified.
++ *
 + */
 +
-+#include <linux/audit.h>
-+#include <linux/socket.h>
-+
-+#include "include/apparmor.h"
-+#include "include/audit.h"
++#include "include/context.h"
 +#include "include/policy.h"
 +
-+const char *op_table[] = {
-+	"null",
-+
-+	"sysctl",
-+	"capable",
-+
-+	"unlink",
-+	"mkdir",
-+	"rmdir",
-+	"mknod",
-+	"truncate",
-+	"link",
-+	"symlink",
-+	"rename_src",
-+	"rename_dest",
-+	"chmod",
-+	"chown",
-+	"getattr",
-+	"open",
-+
-+	"file_perm",
-+	"file_lock",
-+	"file_mmap",
-+	"file_mprotect",
-+
-+	"create",
-+	"post_create",
-+	"bind",
-+	"connect",
-+	"listen",
-+	"accept",
-+	"sendmsg",
-+	"recvmsg",
-+	"getsockname",
-+	"getpeername",
-+	"getsockopt",
-+	"setsockopt",
-+	"socket_shutdown",
-+
-+	"ptrace",
-+
-+	"exec",
-+	"change_hat",
-+	"change_profile",
-+	"change_onexec",
-+
-+	"setprocattr",
-+	"setrlimit",
-+
-+	"profile_replace",
-+	"profile_load",
-+	"profile_remove"
-+};
-+
-+const char *audit_mode_names[] = {
-+	"normal",
-+	"quiet_denied",
-+	"quiet",
-+	"noquiet",
-+	"all"
-+};
-+
-+static char *aa_audit_type[] = {
-+	"APPARMOR_AUDIT",
-+	"APPARMOR_ALLOWED",
-+	"APPARMOR_DENIED",
-+	"APPARMOR_HINT",
-+	"APPARMOR_STATUS",
-+	"APPARMOR_ERROR",
-+	"APPARMOR_KILLED"
-+};
-+
-+/*
-+ * Currently AppArmor auditing is fed straight into the audit framework.
++/**
++ * aa_alloc_task_context - allocat a new task_cxt
++ * @flags: gfp flags for allocation
 + *
-+ * TODO:
-+ * convert to LSM audit
-+ * netlink interface for complain mode
-+ * user auditing, - send user auditing to netlink interface
-+ * system control of whether user audit messages go to system log
++ * Returns: allocated buffer or NULL on failure
 + */
++struct aa_task_cxt *aa_alloc_task_context(gfp_t flags)
++{
++	return kzalloc(sizeof(struct aa_task_cxt), flags);
++}
 +
 +/**
-+ * audit_base - core AppArmor function.
-+ * @ab: audit buffer to fill
-+ * @sa: audit structure containing data to audit
-+ *
-+ * Record common AppArmor audit data from @sa
++ * aa_free_task_context - free a task_cxt
++ * @cxt: task_cxt to free (MAYBE NULL)
 + */
-+static void audit_pre(struct audit_buffer *ab, void *ca)
++void aa_free_task_context(struct aa_task_cxt *cxt)
 +{
-+	struct common_audit_data *sa = ca;
-+	struct task_struct *tsk = sa->tsk ? sa->tsk : current;
++	if (cxt) {
++		aa_put_profile(cxt->profile);
++		aa_put_profile(cxt->previous);
++		aa_put_profile(cxt->onexec);
 +
-+	if (aa_g_audit_header) {
-+		audit_log_format(ab, " type=");
-+		audit_log_string(ab, aa_audit_type[sa->aad.type]);
-+	}
-+
-+	if (sa->aad.op) {
-+		audit_log_format(ab, " operation=");
-+		audit_log_string(ab, op_table[sa->aad.op]);
-+	}
-+
-+	if (sa->aad.info) {
-+		audit_log_format(ab, " info=");
-+		audit_log_string(ab, sa->aad.info);
-+		if (sa->aad.error)
-+			audit_log_format(ab, " error=%d", sa->aad.error);
-+	}
-+
-+	audit_log_format(ab, " pid=%d", tsk->pid);
-+
-+	if (sa->aad.profile) {
-+		struct aa_profile *profile = sa->aad.profile;
-+		pid_t pid;
-+		rcu_read_lock();
-+		pid = tsk->real_parent->pid;
-+		rcu_read_unlock();
-+		audit_log_format(ab, " parent=%d", pid);
-+		audit_log_format(ab, " profile=");
-+		if (profile->ns != root_ns) {
-+			audit_log_format(ab, ":");
-+			audit_log_untrustedstring(ab, profile->ns->base.hname);
-+			audit_log_format(ab, "://");
-+		}
-+		audit_log_untrustedstring(ab, profile->base.hname);
-+	}
-+
-+	if (sa->aad.name) {
-+		audit_log_format(ab, " name=");
-+		audit_log_untrustedstring(ab, sa->aad.name);
++		kzfree(cxt);
 +	}
 +}
 +
 +/**
-+ * aa_audit - Log an audit event to the audit subsystem
-+ * @type: audit type for the message
-+ * @profile: profile to check against
-+ * @gfp: allocation flags to use
-+ * @sa: audit event
-+ * @cb: optional callback fn for type specific fields
-+ *
-+ * Handle default message switching based off of audit mode flags
-+ *
-+ * Returns: error on failure
++ * aa_dup_task_context - duplicate a task context, incrementing reference counts
++ * @new: a blank task context      (NOT NULL)
++ * @old: the task context to copy  (NOT NULL)
 + */
-+int aa_audit(int type, struct aa_profile *profile, gfp_t gfp,
-+	     struct common_audit_data *sa,
-+	     void (*cb) (struct audit_buffer *, void *))
++void aa_dup_task_context(struct aa_task_cxt *new, const struct aa_task_cxt *old)
 +{
-+	if (type == AUDIT_APPARMOR_AUTO) {
-+		if (likely(!sa->aad.error)) {
-+			if (AUDIT_MODE(profile) != AUDIT_ALL)
-+				return 0;
-+			type = AUDIT_APPARMOR_AUDIT;
-+		} else if (COMPLAIN_MODE(profile))
-+			type = AUDIT_APPARMOR_ALLOWED;
-+		else
-+			type = AUDIT_APPARMOR_DENIED;
-+	}
-+	if (AUDIT_MODE(profile) == AUDIT_QUIET ||
-+	    (type == AUDIT_APPARMOR_DENIED &&
-+	     AUDIT_MODE(profile) == AUDIT_QUIET))
-+		return sa->aad.error;
-+
-+	if (profile && DO_KILL(profile) && type == AUDIT_APPARMOR_DENIED)
-+		type = AUDIT_APPARMOR_KILL;
-+	sa->aad.type = type;
-+
-+	if (profile && !unconfined(profile))
-+		sa->aad.profile = profile;
-+
-+	sa->lsm_pre_audit = audit_pre;
-+	sa->lsm_post_audit = cb;
-+	common_lsm_audit(sa);
-+
-+	if (sa->aad.type == AUDIT_APPARMOR_KILL)
-+		(void)send_sig_info(SIGKILL, NULL, sa->tsk ? sa->tsk : current);
-+
-+	if (sa->aad.type == AUDIT_APPARMOR_ALLOWED)
-+		return complain_error(sa->aad.error);
-+
-+	return sa->aad.error;
++	*new = *old;
++	aa_get_profile(new->profile);
++	aa_get_profile(new->previous);
++	aa_get_profile(new->onexec);
 +}
-diff --git a/security/apparmor/include/audit.h b/security/apparmor/include/audit.h
++
++/**
++ * aa_replace_current_profile - replace the current tasks profiles
++ * @profile: new profile  (NOT NULL)
++ *
++ * Returns: 0 or error on failure
++ */
++int aa_replace_current_profile(struct aa_profile *profile)
++{
++	struct aa_task_cxt *cxt = current_cred()->security;
++	struct cred *new;
++	BUG_ON(!profile);
++
++	if (cxt->profile == profile)
++		return 0;
++
++	new  = prepare_creds();
++	if (!new)
++		return -ENOMEM;
++
++	cxt = new->security;
++	if (unconfined(profile) || (cxt->profile->ns != profile->ns)) {
++		/* if switching to unconfined or a different profile namespace
++		 * clear out context state
++		 */
++		aa_put_profile(cxt->previous);
++		aa_put_profile(cxt->onexec);
++		cxt->previous = NULL;
++		cxt->onexec = NULL;
++		cxt->token = 0;
++	}
++	/* be careful switching cxt->profile, when racing replacement it
++	 * is possible that cxt->profile->replacedby is the reference keeping
++	 * @profile valid, so make sure to get its reference before dropping
++	 * the reference on cxt->profile */
++	aa_get_profile(profile);
++	aa_put_profile(cxt->profile);
++	cxt->profile = profile;
++
++	commit_creds(new);
++	return 0;
++}
++
++/**
++ * aa_set_current_onexec - set the tasks change_profile to happen onexec
++ * @profile: system profile to set at exec  (MAYBE NULL)
++ *
++ * Returns: 0 or error on failure
++ */
++int aa_set_current_onexec(struct aa_profile *profile)
++{
++	struct aa_task_cxt *cxt;
++	struct cred *new = prepare_creds();
++	if (!new)
++		return -ENOMEM;
++
++	cxt = new->security;
++	aa_get_profile(profile);
++	aa_put_profile(cxt->onexec);
++	cxt->onexec = profile;
++
++	commit_creds(new);
++	return 0;
++}
++
++/**
++ * aa_set_current_hat - set the current tasks hat
++ * @profile: profile to set as the current hat  (NOT NULL)
++ * @token: token value that must be specified to change from the hat
++ *
++ * Do switch of tasks hat.  If the task is currently in a hat
++ * validate the token to match.
++ *
++ * Returns: 0 or error on failure
++ */
++int aa_set_current_hat(struct aa_profile *profile, u64 token)
++{
++	struct aa_task_cxt *cxt;
++	struct cred *new = prepare_creds();
++	if (!new)
++		return -ENOMEM;
++	BUG_ON(!profile);
++
++	cxt = new->security;
++	if (!cxt->previous) {
++		/* transfer refcount */
++		cxt->previous = cxt->profile;
++		cxt->token = token;
++	} else if (cxt->token == token) {
++		aa_put_profile(cxt->profile);
++	} else {
++		/* previous_profile && cxt->token != token */
++		abort_creds(new);
++		return -EACCES;
++	}
++	cxt->profile = aa_get_profile(aa_newest_version(profile));
++	/* clear exec on switching context */
++	aa_put_profile(cxt->onexec);
++	cxt->onexec = NULL;
++
++	commit_creds(new);
++	return 0;
++}
++
++/**
++ * aa_restore_previous_profile - exit from hat context restoring the profile
++ * @token: the token that must be matched to exit hat context
++ *
++ * Attempt to return out of a hat to the previous profile.  The token
++ * must match the stored token value.
++ *
++ * Returns: 0 or error of failure
++ */
++int aa_restore_previous_profile(u64 token)
++{
++	struct aa_task_cxt *cxt;
++	struct cred *new = prepare_creds();
++	if (!new)
++		return -ENOMEM;
++
++	cxt = new->security;
++	if (cxt->token != token) {
++		abort_creds(new);
++		return -EACCES;
++	}
++	/* ignore restores when there is no saved profile */
++	if (!cxt->previous) {
++		abort_creds(new);
++		return 0;
++	}
++
++	aa_put_profile(cxt->profile);
++	cxt->profile = aa_newest_version(cxt->previous);
++	BUG_ON(!cxt->profile);
++	if (unlikely(cxt->profile != cxt->previous)) {
++		aa_get_profile(cxt->profile);
++		aa_put_profile(cxt->previous);
++	}
++	/* clear exec && prev information when restoring to previous context */
++	cxt->previous = NULL;
++	cxt->token = 0;
++	aa_put_profile(cxt->onexec);
++	cxt->onexec = NULL;
++
++	commit_creds(new);
++	return 0;
++}
+diff --git a/security/apparmor/include/context.h b/security/apparmor/include/context.h
 new file mode 100644
-index 0000000..24cdfe8
+index 0000000..a9cbee4
 --- /dev/null
-+++ b/security/apparmor/include/audit.h
-@@ -0,0 +1,127 @@
++++ b/security/apparmor/include/context.h
+@@ -0,0 +1,154 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor auditing function definitions.
++ * This file contains AppArmor contexts used to associate "labels" to objects.
 + *
 + * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
@@ -302,119 +273,146 @@ index 0000000..24cdfe8
 + * License.
 + */
 +
-+#ifndef __AA_AUDIT_H
-+#define __AA_AUDIT_H
++#ifndef __AA_CONTEXT_H
++#define __AA_CONTEXT_H
 +
-+#include <linux/audit.h>
-+#include <linux/fs.h>
-+#include <linux/lsm_audit.h>
-+#include <linux/sched.h>
++#include <linux/cred.h>
 +#include <linux/slab.h>
++#include <linux/sched.h>
 +
-+#include "file.h"
++#include "policy.h"
 +
-+struct aa_profile;
-+
-+extern const char *audit_mode_names[];
-+#define AUDIT_MAX_INDEX 5
-+
-+#define AUDIT_APPARMOR_AUTO 0	/* auto choose audit message type */
-+
-+enum audit_mode {
-+	AUDIT_NORMAL,		/* follow normal auditing of accesses */
-+	AUDIT_QUIET_DENIED,	/* quiet all denied access messages */
-+	AUDIT_QUIET,		/* quiet all messages */
-+	AUDIT_NOQUIET,		/* do not quiet audit messages */
-+	AUDIT_ALL		/* audit all accesses */
++/* struct aa_file_cxt - the AppArmor context the file was opened in
++ * @perms: the permission the file was opened with
++ *
++ * The file_cxt could currently be directly stored in file->f_security
++ * as the profile reference is now stored in the f_cred.  However the
++ * cxt struct will expand in the future so we keep the struct.
++ */
++struct aa_file_cxt {
++	u16 allow;
 +};
 +
-+enum audit_type {
-+	AUDIT_APPARMOR_AUDIT,
-+	AUDIT_APPARMOR_ALLOWED,
-+	AUDIT_APPARMOR_DENIED,
-+	AUDIT_APPARMOR_HINT,
-+	AUDIT_APPARMOR_STATUS,
-+	AUDIT_APPARMOR_ERROR,
-+	AUDIT_APPARMOR_KILL
-+};
-+
-+extern const char *op_table[];
-+enum aa_ops {
-+	OP_NULL,
-+
-+	OP_SYSCTL,
-+	OP_CAPABLE,
-+
-+	OP_UNLINK,
-+	OP_MKDIR,
-+	OP_RMDIR,
-+	OP_MKNOD,
-+	OP_TRUNC,
-+	OP_LINK,
-+	OP_SYMLINK,
-+	OP_RENAME_SRC,
-+	OP_RENAME_DEST,
-+	OP_CHMOD,
-+	OP_CHOWN,
-+	OP_GETATTR,
-+	OP_OPEN,
-+
-+	OP_FPERM,
-+	OP_FLOCK,
-+	OP_FMMAP,
-+	OP_FMPROT,
-+
-+	OP_CREATE,
-+	OP_POST_CREATE,
-+	OP_BIND,
-+	OP_CONNECT,
-+	OP_LISTEN,
-+	OP_ACCEPT,
-+	OP_SENDMSG,
-+	OP_RECVMSG,
-+	OP_GETSOCKNAME,
-+	OP_GETPEERNAME,
-+	OP_GETSOCKOPT,
-+	OP_SETSOCKOPT,
-+	OP_SOCK_SHUTDOWN,
-+
-+	OP_PTRACE,
-+
-+	OP_EXEC,
-+	OP_CHANGE_HAT,
-+	OP_CHANGE_PROFILE,
-+	OP_CHANGE_ONEXEC,
-+
-+	OP_SETPROCATTR,
-+	OP_SETRLIMIT,
-+
-+	OP_PROF_REPL,
-+	OP_PROF_LOAD,
-+	OP_PROF_RM,
-+};
-+
-+
-+/* define a short hand for apparmor_audit_data portion of common_audit_data */
-+#define aad apparmor_audit_data
-+
-+int aa_audit(int type, struct aa_profile *profile, gfp_t gfp,
-+	     struct common_audit_data *sa,
-+	     void (*cb) (struct audit_buffer *, void *));
-+
-+static inline int complain_error(int error)
++/**
++ * aa_alloc_file_context - allocate file_cxt
++ * @gfp: gfp flags for allocation
++ *
++ * Returns: file_cxt or NULL on failure
++ */
++static inline struct aa_file_cxt *aa_alloc_file_context(gfp_t gfp)
 +{
-+	if (error == -EPERM || error == -EACCES)
-+		return 0;
-+	return error;
++	return kzalloc(sizeof(struct aa_file_cxt), gfp);
 +}
 +
-+#define COMMON_AUDIT_DATA_INIT_NONE(_d) \
-+	do { \
-+		memset((_d), 0, sizeof(struct common_audit_data)); \
-+		(_d)->type = LSM_AUDIT_DATA_NONE; \
-+	} while (0)
++/**
++ * aa_free_file_context - free a file_cxt
++ * @cxt: file_cxt to free  (MAYBE_NULL)
++ */
++static inline void aa_free_file_context(struct aa_file_cxt *cxt)
++{
++	if (cxt)
++		kzfree(cxt);
++}
 +
-+#endif /* __AA_AUDIT_H */
++/**
++ * struct aa_task_cxt - primary label for confined tasks
++ * @profile: the current profile   (NOT NULL)
++ * @exec: profile to transition to on next exec  (MAYBE NULL)
++ * @previous: profile the task may return to     (MAYBE NULL)
++ * @token: magic value the task must know for returning to @previous_profile
++ *
++ * Contains the task's current profile (which could change due to
++ * change_hat).  Plus the hat_magic needed during change_hat.
++ *
++ * TODO: make so a task can be confined by a stack of contexts
++ */
++struct aa_task_cxt {
++	struct aa_profile *profile;
++	struct aa_profile *onexec;
++	struct aa_profile *previous;
++	u64 token;
++};
++
++struct aa_task_cxt *aa_alloc_task_context(gfp_t flags);
++void aa_free_task_context(struct aa_task_cxt *cxt);
++void aa_dup_task_context(struct aa_task_cxt *new,
++			 const struct aa_task_cxt *old);
++int aa_replace_current_profile(struct aa_profile *profile);
++int aa_set_current_onexec(struct aa_profile *profile);
++int aa_set_current_hat(struct aa_profile *profile, u64 token);
++int aa_restore_previous_profile(u64 cookie);
++
++/**
++ * __aa_task_is_confined - determine if @task has any confinement
++ * @task: task to check confinement of  (NOT NULL)
++ *
++ * If @task != current needs to be called in RCU safe critical section
++ */
++static inline bool __aa_task_is_confined(struct task_struct *task)
++{
++	struct aa_task_cxt *cxt = __task_cred(task)->security;
++
++	BUG_ON(!cxt || !cxt->profile);
++	if (unconfined(aa_newest_version(cxt->profile)))
++		return 0;
++
++	return 1;
++}
++
++/**
++ * aa_cred_profile - obtain cred's profiles
++ * @cred: cred to obtain profiles from  (NOT NULL)
++ *
++ * Returns: confining profile
++ *
++ * does NOT increment reference count
++ */
++static inline struct aa_profile *aa_cred_profile(const struct cred *cred)
++{
++	struct aa_task_cxt *cxt = cred->security;
++	BUG_ON(!cxt || !cxt->profile);
++	return aa_newest_version(cxt->profile);
++}
++
++/**
++ * __aa_current_profile - find the current tasks confining profile
++ *
++ * Returns: up to date confining profile or the ns unconfined profile (NOT NULL)
++ *
++ * This fn will not update the tasks cred to the most up to date version
++ * of the profile so it is safe to call when inside of locks.
++ */
++static inline struct aa_profile *__aa_current_profile(void)
++{
++	return aa_cred_profile(current_cred());
++}
++
++/**
++ * aa_current_profile - find the current tasks confining profile and do updates
++ *
++ * Returns: up to date confining profile or the ns unconfined profile (NOT NULL)
++ *
++ * This fn will update the tasks cred structure if the profile has been
++ * replaced.  Not safe to call inside locks
++ */
++static inline struct aa_profile *aa_current_profile(void)
++{
++	const struct aa_task_cxt *cxt = current_cred()->security;
++	struct aa_profile *profile;
++	BUG_ON(!cxt || !cxt->profile);
++
++	profile = aa_newest_version(cxt->profile);
++	/*
++	 * Whether or not replacement succeeds, use newest profile so
++	 * there is no need to update it after replacement.
++	 */
++	if (unlikely((cxt->profile != profile)))
++		aa_replace_current_profile(profile);
++
++	return profile;
++}
++
++#endif /* __AA_CONTEXT_H */
 -- 
 1.7.0.4
 
