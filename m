@@ -1,107 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398Ab0GOEn0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 00:43:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:51438 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932260Ab0GOEnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 00:43:25 -0400
-Date: Wed, 14 Jul 2010 21:44:09 -0700
-From: Greg KH <gregkh@suse.de>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        alsa-devel@alsa-project.org, Jens Axboe <axboe@kernel.dk>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
-        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        David Howells <dhowells@redhat.com>, Dave Airlie <airlied@gmail.com>
-Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
-Message-ID: <20100715044409.GA3456@suse.de>
-References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> <m1zkxtinlw.fsf@fess.ebiederm.org> <20100715041613.GB2583@suse.de> <m1aaptcqpq.fsf@fess.ebiederm.org>
+	id S932396Ab0GOEvy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 00:51:54 -0400
+Received: from mail-qw0-f46.google.com ([209.85.216.46]:54396 "EHLO
+	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932267Ab0GOEvw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 00:51:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hf15lmndmau/fOwY70PFMMS/myWq/4H1QOafR4io78dYUcJXdVpq4mdz1vgBiDt3dz
+         CJARPfD85jqp89zOSxrFmKNIssvXbDHqOvOgpOzUFMYVIPHTXBcOGHNrGL6Xp2uki1dw
+         X/imY3CVpntnzbOLIDh5OdrfoUaO+FVJu8V+I=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1aaptcqpq.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100714.111553.104052157.davem@davemloft.net>
+References: <4C3D94E3.9080103@wildgooses.com>
+	<4C3DD5EB.9070908@tmr.com>
+	<20100714.111553.104052157.davem@davemloft.net>
+Date: Wed, 14 Jul 2010 21:51:51 -0700
+Message-ID: <AANLkTil3MVGwJUG12dikut9X1s9Ozc_3GwMjx_gErvxI@mail.gmail.com>
+Subject: Re: Raise initial congestion window size / speedup slow start?
+From: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
+To: David Miller <davem@davemloft.net>
+Cc: davidsen@tmr.com, lists@wildgooses.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 09:29:53PM -0700, Eric W. Biederman wrote:
-> Greg KH <gregkh@suse.de> writes:
-> 
-> > On Wed, Jul 14, 2010 at 05:40:27PM -0700, Eric W. Biederman wrote:
-> >> Andrew Morton <akpm@linux-foundation.org> writes:
-> >> 
-> >> > On Fri, 9 Jul 2010 11:54:50 -0700
-> >> > Greg Kroah-Hartman <gregkh@suse.de> wrote:
-> >> >
-> >> >> This is no longer needed by any userspace tools, so it's safe to
-> >> >> remove.
-> >> >
-> >> > Makes my FC6 test box not boot - can't find /dev/root.  Then when I go
-> >> > back to plain old mainline (2.6.35-rc5) and run `make oldconfig', the
-> >> > .config change sticks:
-> >> >
-> >> > @@ -106,8 +106,7 @@
-> >> >  CONFIG_LOG_BUF_SHIFT=17
-> >> >  CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
-> >> >  # CONFIG_CGROUPS is not set
-> >> > -CONFIG_SYSFS_DEPRECATED=y
-> >> > -CONFIG_SYSFS_DEPRECATED_V2=y
-> >> > +# CONFIG_SYSFS_DEPRECATED_V2 is not set
-> >> >  CONFIG_RELAY=y
-> >> >  CONFIG_NAMESPACES=y
-> >> >  # CONFIG_UTS_NS is not set
-> >> >
-> >> > and the box still won't boot.
-> >> 
-> >> The reason FC6 doesn't boot is there is a userspace tool
-> >> I believe in the initrd that cares about symlinks when it should
-> >> not.
-> >
-> > Anyone happen to know which tool it is?  I remember we had had issues
-> > with FC3 around this area, but I thought we resolved them, so it's
-> > supprising to me that FC6 has issues.
-> 
-> It was something in the initrd, that didn't like the symlinks.  It
-> has been a year or more since I looked at it.  At that point I just
-> enabled SYSFS_DEPRECATED and moved on.
+On Wed, Jul 14, 2010 at 11:15 AM, David Miller <davem@davemloft.net> wrote:
+> From: Bill Davidsen <davidsen@tmr.com>
+> Date: Wed, 14 Jul 2010 11:21:15 -0400
+>
+>> You may have to go into /proc/sys/net/core and crank up the
+>> rmem_* settings, depending on your distribution.
+>
+> You should never, ever, have to touch the various networking sysctl
+> values to get good performance in any normal setup.  If you do, it's a
+> bug, report it so we can fix it.
 
-If it was just the symlinks for the block devices, we might be able to
-reduce the amount of code hanging around.  When I return from Europe
-next week, I'll try to dig into this.
+Agreed, except there are indeed bugs in the code today in that the
+code in various places assumes initcwnd as per RFC3390. So when
+initcwnd is raised, that actual value may be limited unnecessarily by
+the initial wmem/sk_sndbuf.
 
-> >> What is more interesting is that currently there is a bug in
-> >> 2.6.35-rc5 where rmmod <netdriver> modprobe <netdriver> will in fact
-> >> fail.  There was an inadvertent regression and no one has noticed or
-> >> complained.  I spotted it by code review just a little bit ago and I
-> >> haven't had a chance to write and test the fix yet.
-> >> 
-> >> If the code is going to start bitrotting and no one is going to
-> >> notice or care simply removing the code instead of subjecting users
-> >> to weird unexpected breakage seems like a responsible thing to do.
-> >
-> > Yeah, that's what prompted this removal.  After the s390 guys said that
-> > they were all good to go, I figured no one else would have problems with
-> > it :)
-> >
-> > If it turns out there still are issues with older userspaces like FC6
-> > that we can't resolve, I have no problem dropping this patch and then we
-> > will have to fix up the regression.
-> 
-> I still have to test it but it looks like a one liner.  Actually two lines
-> now that I have to fix the error in symlink creation as well.
+Will try to find time to submit a patch.
 
-Ah, that's good to hear, as I'm sure .35 will need this fix :)
+Jerry
 
-thanks,
-
-greg k-h
+>
+> I cringe every time someone says to do this, so please do me a favor
+> and don't spread this further. :-)
+>
+> For one thing, TCP dynamically adjusts the socket buffer sizes based
+> upon the behavior of traffic on the connection.
+>
+> And the TCP memory limit sysctls (not the core socket ones) are sized
+> based upon available memory.  They are there to protect you from
+> situations such as having so much memory dedicated to socket buffers
+> that there is none left to do other things effectively.  It's a
+> protective limit, rather than a setting meant to increase or improve
+> performance.  So like the others, leave these alone too.
+> --
+> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
