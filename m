@@ -1,105 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933435Ab0GOOzT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 10:55:19 -0400
-Received: from mga03.intel.com ([143.182.124.21]:54512 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933380Ab0GOOzR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 10:55:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,208,1278313200"; 
-   d="scan'208";a="300539211"
-Date: Thu, 15 Jul 2010 22:55:09 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] writeback: avoid unnecessary calculation of bdi
- dirty thresholds
-Message-ID: <20100715145509.GB6511@localhost>
-References: <20100711020656.340075560@intel.com>
- <20100711021748.879183413@intel.com>
- <20100712145643.a944c495.akpm@linux-foundation.org>
+	id S933445Ab0GOO5e (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 10:57:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:38386 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933408Ab0GOO5d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 10:57:33 -0400
+X-Authority-Analysis: v=1.1 cv=kjawQlkT3vujM0lFy4b69hWxQTW3SR1XdVtFii1ut0g= c=1 sm=0 a=eV16w_T9sSgA:10 a=yQWWgrYGNuUA:10 a=kj9zAlcOel0A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:17 a=JgcoIjaUAAAA:8 a=hBqU3vQJAAAA:8 a=VwQbUJbxAAAA:8 a=f2Qq5J2lTt0Lvr-eisgA:9 a=LNrrsgh-hWVC6peRqtEA:7 a=q50wvE5ZsZFkyy_YD4Msvi7FRD0A:4 a=CjuIK1q_8ugA:10 a=x8gzFH9gYPwA:10 a=gGuMuyKI_i0A:10 a=4gZ4WExUoD4A:10 a=Nqdp4+S2FArj7gZzHVn+tA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 70.120.198.24
+Date: Thu, 15 Jul 2010 09:59:46 -0500
+From: "Serge E. Hallyn" <serge@hallyn.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: James Morris <jmorris@namei.org>, "greg@kroah.com" <greg@kroah.com>,
+        Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH][securityfs][2.6.34] Drop dentry reference count when
+ mknod fails
+Message-ID: <20100715145946.GA26067@hallyn.com>
+References: <201007151325.06942.tvrtko.ursulin@sophos.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100712145643.a944c495.akpm@linux-foundation.org>
+In-Reply-To: <201007151325.06942.tvrtko.ursulin@sophos.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 05:56:43AM +0800, Andrew Morton wrote:
-> On Sun, 11 Jul 2010 10:06:59 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
+Quoting Tvrtko Ursulin (tvrtko.ursulin@sophos.com):
 > 
-> > +void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
-> >
-> > ...
-> >
-> > +unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
-> > +			       unsigned long dirty)
+> lookup_one_len increments dentry reference count which is not decremented
+> when the create operation fails. This can cause a kernel BUG at
+> fs/dcache.c:676 at unmount time. Also error code returned when new_inode()
+> fails was replaced with more appropriate -ENOMEM.
 > 
-> It'd be nice to have some documentation for these things.  They're
-> non-static, non-obvious and are stuffed to the gills with secret magic
-> numbers.
+> 
+> Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
 
-Good suggestion, here is an attempt to document the functions.
+Looks right.
 
-Thanks,
-Fengguang
----
-Subject: add comment to the dirty limit functions
-From: Wu Fengguang <fengguang.wu@intel.com>
-Date: Thu Jul 15 09:54:25 CST 2010
+Acked-by: Serge E. Hallyn <serge@hallyn.com>
 
-Document global_dirty_limits() and bdi_dirty_limit().
+thanks,
+-serge
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/page-writeback.c |   23 +++++++++++++++++++++--
- 1 file changed, 21 insertions(+), 2 deletions(-)
-
---- linux-next.orig/mm/page-writeback.c	2010-07-15 08:20:32.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-07-15 10:39:41.000000000 +0800
-@@ -390,6 +390,15 @@ unsigned long determine_dirtyable_memory
- 	return x + 1;	/* Ensure that we never return 0 */
- }
- 
-+/**
-+ * global_dirty_limits - background writeback and dirty throttling thresholds
-+ *
-+ * Calculate the dirty thresholds based on sysctl parameters
-+ * - vm.dirty_background_ratio  or  vm.dirty_background_bytes
-+ * - vm.dirty_ratio             or  vm.dirty_bytes
-+ * The dirty limits will be lifted by 1/4 for PF_LESS_THROTTLE (ie. nfsd) and
-+ * runtime tasks.
-+ */
- void global_dirty_limits(unsigned long *pbackground, unsigned long *pdirty)
- {
- 	unsigned long background;
-@@ -424,8 +433,18 @@ void global_dirty_limits(unsigned long *
- 	*pdirty = dirty;
- }
- 
--unsigned long bdi_dirty_limit(struct backing_dev_info *bdi,
--			       unsigned long dirty)
-+/**
-+ * bdi_dirty_limit - current task's share of dirty throttling threshold on @bdi
-+ *
-+ * Once the global dirty limit is _exceeded_, all dirtiers will be throttled.
-+ * To avoid starving fast devices (which can sync dirty pages in short time) or
-+ * throttling light dirtiers, we start throttling individual tasks on a per-bdi
-+ * basis when _approaching_ the global dirty limit. Relative high limits will
-+ * be allocated to fast devices and/or light dirtiers. The bdi's dirty share is
-+ * evaluated adapting to its throughput and bounded if the bdi->min_ratio
-+ * and/or bdi->max_ratio parameters are set.
-+ */
-+unsigned long bdi_dirty_limit(struct backing_dev_info *bdi, unsigned long dirty)
- {
- 	u64 bdi_dirty;
- 	long numerator, denominator;
+> ---
+>  inode.c |    4 +++-
+>  1 file changed, 3 insertions(+), 1 deletion(-)
+> 
+> diff -upr linux-2.6.34/security/inode.c linux-2.6.34-new/security/inode.c
+> --- linux-2.6.34/security/inode.c       2010-05-16 22:17:36.000000000 +0100
+> +++ linux-2.6.34-new/security/inode.c   2010-07-15 13:20:38.133783253 +0100
+> @@ -86,7 +86,7 @@ static int mknod(struct inode *dir, stru
+>                          int mode, dev_t dev)
+>  {
+>         struct inode *inode;
+> -       int error = -EPERM;
+> +       int error = -ENOMEM;
+> 
+>         if (dentry->d_inode)
+>                 return -EEXIST;
+> @@ -166,6 +166,8 @@ static int create_by_name(const char *na
+>                         error = mkdir(parent->d_inode, *dentry, mode);
+>                 else
+>                         error = create(parent->d_inode, *dentry, mode);
+> +               if (error)
+> +                       dput(dentry);
+>         } else
+>                 error = PTR_ERR(*dentry);
+>         mutex_unlock(&parent->d_inode->i_mutex);
+> 
+> 
+> 
+> Sophos Plc, The Pentagon, Abingdon Science Park, Abingdon, OX14 3YP, United Kingdom.
+> Company Reg No 2096520. VAT Reg No GB 348 3873 20.
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-security-module" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
