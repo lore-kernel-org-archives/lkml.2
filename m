@@ -1,222 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934557Ab0GOTfa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 15:35:30 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:55271 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934474Ab0GOTf2 (ORCPT
+	id S934571Ab0GOTgM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 15:36:12 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57030 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934474Ab0GOTgK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 15:35:28 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Masayuki Ohtak <masa-korg@dsn.okisemi.com>
-Subject: Re: [PATCH] I2C driver of Topcliff PCH
-Date: Thu, 15 Jul 2010 21:35:00 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.90; x86_64; ; )
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-        "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>,
-        linux-i2c@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        qi.wang@intel.com, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        joel.clark@intel.com, andrew.chih.howe.khor@intel.com
-References: <4C204B0D.2030201@dsn.okisemi.com> <4C3EBBEC.9020304@dsn.okisemi.com>
-In-Reply-To: <4C3EBBEC.9020304@dsn.okisemi.com>
+	Thu, 15 Jul 2010 15:36:10 -0400
+Date: Thu, 15 Jul 2010 15:35:51 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+Cc: linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+Subject: Re: csum errors
+Message-ID: <20100715193551.GM8623@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
+	linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
+References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de>
+ <201007152030.18431.johannes.hirte@fem.tu-ilmenau.de>
+ <20100715190309.GI8623@think>
+ <201007152132.13701.johannes.hirte@fem.tu-ilmenau.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-2022-jp"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007152135.00280.arnd@arndb.de>
-X-Provags-ID: V02:K0:D4k/l+Ebobp3SujstBuI7thribcIC7BgKEBWFQkuWTO
- wRU5m/8o/jGNwDQ4oQgaZ39uqqVsyZW6bbWBCt2SC44wtCemPj
- sxgYUr+Buutx+mjFn+Z2LhVpypxNgIjIsl/+n0QsQe7TbCqM7w
- g3tIEl2QeLernfsgjlAHQ1xZMZJr87o2GrZe6RlbA9UEZbdkDW
- dP/ZgfzlLJuvwVbM1bZvA==
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007152132.13701.johannes.hirte@fem.tu-ilmenau.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090204.4C3F6325.006A:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 15 July 2010 09:42:36 Masayuki Ohtak wrote:
-> I2C driver of Topcliff PCH
+On Thu, Jul 15, 2010 at 09:32:12PM +0200, Johannes Hirte wrote:
+> Am Donnerstag 15 Juli 2010, 21:03:09 schrieb Chris Mason:
+> > On Thu, Jul 15, 2010 at 08:30:17PM +0200, Johannes Hirte wrote:
+> > > Am Dienstag 13 Juli 2010, 14:23:58 schrieb Johannes Hirte:
+> > > > ino 1959333 off 898342912 csum 4271223884 private 4271223883
+> > > 
+> > > I think, this is a different error. I've only seen them on filesystems
+> > > from my Opteron system. It seems that the recorded csums are wrong and
+> > > it looks to me like rounding errors. The data itself should be correct,
+> > > as I've tested one affected file via md5sum against the original on
+> > > another filesystem. Any ideas what is going wrong here?
+> > 
+> > Are you doing data mirroring?
 > 
-> Topcliff PCH is the platform controller hub that is going to be used in
-> Intel's upcoming general embedded platform. All IO peripherals in
-> Topcliff PCH are actually devices sitting on AMBA bus.
-> Topcliff PCH has I2C I/F. Using this I/F, it is able to access system
-> devices connected to I2C.
+> No, I don't.
+> 
+> > We can map that block and do a raw read off the device to see what the
+> > data blocks actually contain.
+> 
+> I've modified the btrfs-source a little to get the data. In inode.c I've 
+> changed the code to:
 
-Looks ok in general. Some minor comments follow:
+Great.   The bad csums are all just one bit off, that can't be an
+accident.  When were they written (which kernel?).  Did you boot a 32
+bit kernel on there at any time?
 
-> +/**
-> + * pch_wait_for_bus_idle() - check the status of bus.
-> + * @adap:	Pointer to struct i2c_algo_pch_data.
-> + * @timeout:	waiting time counter (us).
-> + */
-> +static s32 pch_wait_for_bus_idle(struct i2c_algo_pch_data *adap,
-> +				 s32 timeout)
-> +{
-> +	u32 reg_value;
-> +	void __iomem *p = adap->pch_base_address;
-> +
-> +	/* get the status of bus busy */
-> +	reg_value = (ioread32(p + PCH_I2CSR) & I2CMBB_BIT);
-> +
-> +	while ((timeout != 0) && (reg_value != 0)) {
-> +		msleep(1);	/* wait for 100 ms */
-> +		reg_value = ioread32(p + PCH_I2CSR) & I2CMBB_BIT;
-> +
-> +		timeout--;
-> +	}
-
-
-If you want to wait for a maximum amount of time, a loop with
-msleep(1) may end up waiting more than twice as long as you want,
-because each msleep typically returns one milisecond too late.
-
-Better use something like:
-
-	time_t timeout = ktime_add_ns(ktime_get(), MAX_NANOSECONDS);
-
-	do {
-		if (ioread32(p + PCH_I2CSR) & I2CMBB_BIT) == 0)
-			break;
-		msleep(1);
-	} while (ktime_lt(ktime_get(), timeout));
-
-> +/**
-> + * pch_wait_for_xfer_complete() - initiates a wait for the tx complete event
-> + * @adap:	Pointer to struct i2c_algo_pch_data.
-> + */
-> +static s32 pch_wait_for_xfer_complete(struct i2c_algo_pch_data *adap)
-> +{
-> +	u32 temp_flag;
-> +	s32 ret;
-> +	ret = wait_event_interruptible_timeout(pch_event,
-> +			(adap->pch_event_flag != 0), msecs_to_jiffies(50));
-> +
-> +	dev_dbg(adap->pch_adapter.dev.parent,
-> +		"%s adap->pch_event_flag = %x", __func__, adap->pch_event_flag);
-> +	temp_flag = adap->pch_event_flag;
-> +	adap->pch_event_flag = 0;
-> +
-> +	if (ret == 0) {
-> +		dev_err(adap->pch_adapter.dev.parent,
-> +				"%s : Timeout\n", __func__);
-> +	} else if (ret < 0) {
-> +		dev_err(adap->pch_adapter.dev.parent,
-> +			"%s failed : Interrupted by other signal\n", __func__);
-> +		ret = -ERESTARTSYS;
-> +	} else if ((temp_flag & I2C_ERROR_MASK) == 0) {
-> +		ret = 0;
-> +	} else {
-> +		dev_err(adap->pch_adapter.dev.parent,
-> +				"%s failed : Error in transfer\n", __func__);
-> +	}
-> +
-> +	dev_err(adap->pch_adapter.dev.parent, "%s returns %d\n", __func__, ret);
-> +
-> +	return ret;
-> +}
-
-The control flow is much more complex than it needs to be here.
-If you want to handle different kinds of error conditions, best
-use goto. Also, it's very unusual to return positive values
-on errors and to print dev_err messages on success.
-
-	int ret;
-	ret = wait_event_interruptible_timeout(...);
-	if (ret < 0)
-		goto out;
-
-	if (ret == 0) {
-		ret = -ETIMEOUT;
-		goto out;
-	}
-
-	ret = 0;
-	if (adap->pch_event_flag & I2C_ERROR_MASK) {
-		ret = -EIO;
-		dev_err(adap->pch_adapter.dev.parent, "error bits set: %lx\n", adap->pch_event_flag);
-	}
-
-out:
-	return ret;
-
-> +/**
-> + * pch_handler() - interrupt handler for the PCH I2C controller
-> + * @irq:	irq number.
-> + * @pData:	cookie passed back to the handler function.
-> + */
-> +static irqreturn_t pch_handler(int irq, void *pData)
-> +{
-> +	s32 ret;
-> +	u32 i;
-> +
-> +	struct adapter_info *adap_info = (struct adapter_info *)pData;
-> +	/* invoke the call back  */
-> +
-> +	if (pch_cbr != NULL) {
-> +		for (i = 0, ret = 0; i < PCH_MAX_CHN; i++)
-> +			ret |= (pch_cbr) (&adap_info->pch_data[i]);
-> +	} else {
-> +		dev_err(adap_info->pch_data[0].pch_adapter.dev.parent,
-> +				"%s Call back pointer null ...", __func__);
-> +		return IRQ_NONE;
-> +	}
-
-Here you are multiplexing the interrupt yourself. If you don't
-always use all the available channels, it may be better to
-register the pch_cbr handler separately for each of the channels
-that are actually used, so you don't have to invoke the callback
-for all of them all the time.
-
-> +	for (i = 0; i < PCH_MAX_CHN; i++) {
-> +		adap_info->pch_data[i].p_adapter_info = adap_info;
-> +
-> +		adap_info->pch_data[i].pch_adapter.owner = THIS_MODULE;
-> +		adap_info->pch_data[i].pch_adapter.class = I2C_CLASS_HWMON;
-> +		strcpy(adap_info->pch_data[i].pch_adapter.name, "pch_i2c");
-> +		adap_info->pch_data[i].pch_adapter.algo = &pch_algorithm;
-> +		adap_info->pch_data[i].pch_adapter.algo_data =
-> +							&adap_info->pch_data[i];
-> +
-> +		/* (i * 0x80) + base_addr; */
-> +		adap_info->pch_data[i].pch_base_address = base_addr;
-> +
-> +		adap_info->pch_data[i].pch_adapter.dev.parent = &pdev->dev;
-> +
-> +		ret = i2c_add_adapter(&(adap_info->pch_data[i].pch_adapter));
-> +
-> +		if (ret) {
-> +			dev_err(&pdev->dev, "i2c_add_adapter FAILED");
-> +			goto err_i2c_add_adapter;
-> +		}
-> +
-> +		dev_dbg(&pdev->dev,
-> +			"i2c_add_adapter returns %d for channel-%d\n", ret, i);
-> +		pch_init(&adap_info->pch_data[i]);
-> +		dev_dbg(&pdev->dev, "pch_init invoked successfully\n");
-> +	}
-> +
-> +	ret = request_irq(pdev->irq, &pch_handler, IRQF_SHARED,
-> +					  MODULE_NAME, adap_info);
-
-Similarly, you would create a new channel data structure for each channel here
-and register it separately, and then request the interrupt with that
-data structure as the info.
-
-> @@ -147,6 +148,11 @@ static ssize_t i2cdev_read(struct file *file, char __user *buf, size_t count,
->  	if (tmp == NULL)
->  		return -ENOMEM;
->  
-> +	if (copy_from_user(tmp, buf, count)) {
-> +		kfree(tmp);
-> +		return -EFAULT;
-> +	}
-> +
->  	pr_debug("i2c-dev: i2c-%d reading %zu bytes.\n",
->  		iminor(file->f_path.dentry->d_inode), count);
-
-
-A read function should not do copy_from_user, only copy_to_user.
-If you are worried about returning invalid data from kernel space,
-better use kzalloc instead of kmalloc to get the buffer.
-
-	Arnd
+-chris
