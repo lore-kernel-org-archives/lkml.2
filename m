@@ -1,80 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637Ab0GOHs6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 03:48:58 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62451 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S932624Ab0GOHsy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 03:48:54 -0400
-Message-ID: <4C3EBC70.2030604@cn.fujitsu.com>
-Date: Thu, 15 Jul 2010 15:44:48 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S932624Ab0GOHzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 03:55:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:50858 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932570Ab0GOHzj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 03:55:39 -0400
+Date: Thu, 15 Jul 2010 00:56:11 -0700
+From: Greg KH <gregkh@suse.de>
+To: Dave Airlie <airlied@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Jens Axboe <axboe@kernel.dk>,
+        Randy Dunlap <randy.dunlap@oracle.com>, alsa-devel@alsa-project.org,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>, linux-scsi@vger.kernel.org,
+        Takashi Iwai <tiwai@suse.de>, Greg KH <greg@kroah.com>,
+        Kay Sievers <kay.sievers@vrfy.org>, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Ingo Molnar <mingo@elte.hu>, Tejun Heo <tj@kernel.org>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "David S. Miller" <davem@davemloft.net>
+Subject: Re: [alsa-devel] [PATCH] driver core: remove
+	CONFIG_SYSFS_DEPRECATED
+Message-ID: <20100715075611.GB8202@suse.de>
+References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org> <AANLkTinIy1z7226W0ylNfDdHXBp16Wt7aYBKQYY1o5t9@mail.gmail.com> <20100715041400.GA2583@suse.de> <AANLkTik1G3E6RP8cEK2JoPcqZp0Q16nK9F-4tAtXWnPk@mail.gmail.com> <20100715053543.GA4416@suse.de> <AANLkTilmDJx9Q9SKvfbzy0xmtIFDi8iqQTfvzwE-embG@mail.gmail.com>
 MIME-Version: 1.0
-To: Marcelo Tosatti <mtosatti@redhat.com>
-CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 3/4] KVM: MMU: track dirty page in speculative path properly
-References: <4C3C3518.7080505@cn.fujitsu.com> <4C3C35B7.50101@cn.fujitsu.com> <20100713220551.GB6370@amt.cnet> <4C3D11C6.4000101@cn.fujitsu.com> <20100714110926.GA26033@amt.cnet> <4C3DB942.3010709@cn.fujitsu.com> <20100714140626.GA28485@amt.cnet>
-In-Reply-To: <20100714140626.GA28485@amt.cnet>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilmDJx9Q9SKvfbzy0xmtIFDi8iqQTfvzwE-embG@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Marcelo Tosatti wrote:
-
->> How about just track access bit for speculative path, we set page both accessed and
->> dirty(if it's writable) only if the access bit is set?
+On Thu, Jul 15, 2010 at 04:32:46PM +1000, Dave Airlie wrote:
+> On Thu, Jul 15, 2010 at 3:35 PM, Greg KH <gregkh@suse.de> wrote:
+> > On Thu, Jul 15, 2010 at 03:00:31PM +1000, Dave Airlie wrote:
+> >> On Thu, Jul 15, 2010 at 2:14 PM, Greg KH <gregkh@suse.de> wrote:
+> >> > On Thu, Jul 15, 2010 at 10:24:18AM +1000, Dave Airlie wrote:
+> >> >> On Thu, Jul 15, 2010 at 9:38 AM, Andrew Morton
+> >> >> <akpm@linux-foundation.org> wrote:
+> >> >> > On Fri, 9 Jul 2010 11:54:50 -0700
+> >> >> > Greg Kroah-Hartman <gregkh@suse.de> wrote:
+> >> >> >
+> >> >> >> This is no longer needed by any userspace tools, so it's safe to
+> >> >> >> remove.
+> >> >>
+> >> >> Also still used for booting mainline kernels on RHEL5 userspaces.
+> >> >
+> >> > Really? ?I thought that was fixed a long time ago. ?What kernel was
+> >> > RHEL5 originally based on?
+> >> >
+> >> > And note that no RHEL5 user is going to be using a .36 kernel on their
+> >> > system, that's a completely unsupported and unadvised situation. ?Heck,
+> >> > I'd be amazed if a .34 kernel.org kernel boots on the thing, does it?
+> >> >
+> >>
+> >> I think some people do it internally, last time I did it was to test
+> >> something I was backporting, so you want to make sure the upstream
+> >> version boots and the backported version also boots on the same
+> >> hw/userspace.
+> >>
+> >> original kernel was 2.6.18.
+> >
+> > Yes, that was the number, but does it really look anything like a .18
+> > kernel.org release? ?:)
+> >
 > 
-> A useful thing to do would be to allow read-only mappings, in the fault
-> path (Lai sent a few patches in that direction sometime ago but there
-> was no follow up).
-> 
-> So in the case of a read-only fault from the guest, you'd inform
-> get_user_pages() that read-only access is acceptable (so swapcache pages
-> can be mapped, or qemu can mprotect(PROT_READ) guest memory).
-> 
+> Well its more that the userspace is mostly what was released at the
+> same time, we aren't going to update udev/mkinitrd unless some major
+> problem was discovered.
 
-Yeah, it's a great work, i guess Lai will post the new version soon.
+That's fine, I can provide an updated package for those looney users
+that want to run this type of system :)
 
-And, even we do this, i think the page dirty track is still needed, right?
-Then, how about my new idea to track page dirty for speculative path, just
-as below draft patch does:
+But ideally, I can figure out what is being needed and possibly reduce
+the footprint that is currently covered by this config option.
 
-@@ -687,10 +687,11 @@ static void drop_spte(struct kvm *kvm, u64 *sptep, u64 new_spte)
-        if (!is_rmap_spte(old_spte))
-                return;
-        pfn = spte_to_pfn(old_spte);
--       if (old_spte & shadow_accessed_mask)
-+       if (old_spte & shadow_accessed_mask) {
-                kvm_set_pfn_accessed(pfn);
--       if (is_writable_pte(old_spte))
--               kvm_set_pfn_dirty(pfn);
-+               if (is_writable_pte(old_spte))
-+                       kvm_set_pfn_dirty(pfn);
-+       }
-        rmap_remove(kvm, sptep);
- }
- 
-@@ -1920,8 +1921,11 @@ static int set_spte(struct kvm_vcpu *vcpu, u64 *sptep,
-         * demand paging).
-         */
-        spte = shadow_base_present_pte | shadow_dirty_mask;
--       if (!speculative)
-+       if (!speculative) {
-                spte |= shadow_accessed_mask;
-+               if (is_writable_pte(*sptep))
-+                       kvm_set_pfn_dirty(pfn);
-+       }
-        if (!dirty)
-                pte_access &= ~ACC_WRITE_MASK;
-        if (pte_access & ACC_EXEC_MASK)
+thanks,
 
-It uses access bit to track both page accessed and page dirty, and it's rather cheap...
-
-
-
+greg k-h
