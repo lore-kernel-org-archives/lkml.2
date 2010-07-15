@@ -1,76 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934805Ab0GOVKN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 17:10:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2992 "EHLO mx1.redhat.com"
+	id S934816Ab0GOVRL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 17:17:11 -0400
+Received: from claw.goop.org ([74.207.240.146]:51461 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934725Ab0GOVKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 17:10:09 -0400
-Date: Thu, 15 Jul 2010 17:09:44 -0400
-From: Dave Jones <davej@redhat.com>
-To: Linux Kernel <linux-kernel@vger.kernel.org>
-Cc: x86@kernel.org
-Subject: Make CONFIG_DEBUG_RODATA boot-time configurable
-Message-ID: <20100715210944.GA24961@redhat.com>
-Mail-Followup-To: Dave Jones <davej@redhat.com>,
-	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
+	id S934800Ab0GOVRH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 17:17:07 -0400
+Message-ID: <4C3F7AD2.8050908@goop.org>
+Date: Thu, 15 Jul 2010 14:17:06 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: Jeffrey Merkey <jeffmerkey@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: Linux 2.6.28.10 and Linux 2.6.29.6 XEN Guest Support Broken x86_64
+ in 	BUILD
+References: <AANLkTim2dCrCisUmunVsUoP3uSvYDvRvNPUD0eNFxPwj@mail.gmail.com>
+In-Reply-To: <AANLkTim2dCrCisUmunVsUoP3uSvYDvRvNPUD0eNFxPwj@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We had a request to disable DEBUG_RODATA in our kernel for debugging purposes.  
-Turning it off completely seems a bit unfortunate for the minority case
-of people wanting to do debugging, so I came up with this patch to make
-it a boot-time 'disable_rodata' argument.
+On 07/14/2010 04:33 PM, Jeffrey Merkey wrote:
+> [root@cloudstream linux-2.6.29.6]#
+> [root@cloudstream linux-2.6.29.6]#
+> [root@cloudstream linux-2.6.29.6]#
+> [root@cloudstream linux-2.6.29.6]# make bzImage modules modules_install install
+>   CHK     include/linux/version.h
+>   CHK     include/linux/utsrelease.h
+>   SYMLINK include/asm -> include/asm-x86
+>   CALL    scripts/checksyscalls.sh
+>   CHK     include/linux/compile.h
+>   AS      arch/x86/xen/xen-asm_64.o
+> arch/x86/xen/xen-asm_64.S: Assembler messages:
+> arch/x86/xen/xen-asm_64.S:48: Error: suffix or operands invalid for `mov'
+> arch/x86/xen/xen-asm_64.S:55: Error: suffix or operands invalid for `test'
+> arch/x86/xen/xen-asm_64.S:72: Error: suffix or operands invalid for `mov'
+> arch/x86/xen/xen-asm_64.S:90: Error: suffix or operands invalid for `test'
+> arch/x86/xen/xen-asm_64.S:110: Error: suffix or operands invalid for `setz'
+> arch/x86/xen/xen-asm_64.S:116: Error: suffix or operands invalid for `cmp'
+> make[1]: *** [arch/x86/xen/xen-asm_64.o] Error 1
+> make: *** [arch/x86/xen] Error 2
+> [root@cloudstream linux-2.6.29.6]#
+>   
 
-Signed-off-by: Dave Jones <davej@redhat.com>
+Do you have a particular reason to be using those kernels?  They're very
+old.
 
-
-diff --git a/init/main.c b/init/main.c
-index a42fdf4..eb60fae 100644
---- a/init/main.c
-+++ b/init/main.c
-@@ -820,6 +820,15 @@ static void run_init_process(char *init_filename)
- 	kernel_execve(init_filename, argv_init, envp_init);
- }
- 
-+static unsigned int disable_rodata;
-+static int __init set_disable_rodata(char *str)
-+{
-+	disable_rodata = 1;
-+	return 1;
-+}
-+__setup("disable_rodata", set_disable_rodata);
-+
-+
- /* This is a non __init function. Force it to be noinline otherwise gcc
-  * makes it inline to init() and it becomes part of init.text section
-  */
-@@ -830,7 +839,8 @@ static noinline int init_post(void)
- 	async_synchronize_full();
- 	free_initmem();
- 	unlock_kernel();
--	mark_rodata_ro();
-+	if (disable_rodata == 0)
-+		mark_rodata_ro();
- 	system_state = SYSTEM_RUNNING;
- 	numa_default_policy();
-diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
-index 4ddb58d..1320d80 100644
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -651,6 +651,10 @@ and is between 256 and 4096 characters. It is defined in the file
- 			MTRR settings.  This parameter disables that behavior,
- 			possibly causing your machine to run very slowly.
- 
-+	disable_rodata [X86]
-+			Don't mark .rodata section as read-only.
-+			May be useful for debugging.
-+
- 	disable_timer_pin_1 [X86]
- 			Disable PIN 1 of APIC timer
- 			Can be useful to work around chipset bugs.
+    J
