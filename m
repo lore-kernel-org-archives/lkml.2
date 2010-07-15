@@ -1,68 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752035Ab0GOGq6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 02:46:58 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:33163 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752160Ab0GOGq4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 02:46:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=x4HIowGl1Df+WJMKM5eQ4Pe2WWXUJl3BFcgHnYOJK8goEWr+B1r4YmtpHTw8DWriLR
-         Xb5Db0HAfvDk8zAQTJcoYVPzxGQnXD6xnhFm8veEYVMfx+yjaOpuAJiJ+48JHshzFbBP
-         sPpebx9PuAsqbq+mnEzsZgCGPMGUAPNi53KLs=
-Message-ID: <4C3EAEC5.8080908@gmail.com>
-Date: Thu, 15 Jul 2010 08:46:29 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
-MIME-Version: 1.0
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Alexander Kurz <linux@kbdbabel.org>
-Subject: Re: [PATCH 09/11] staging: comedi: formatting of pointers in printk()
-References: <1279176172-5609-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1279176172-5609-1-git-send-email-segooon@gmail.com>
-X-Enigmail-Version: 1.1
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1752626Ab0GOGuA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 02:50:00 -0400
+Received: from mga01.intel.com ([192.55.52.88]:31545 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751663Ab0GOGt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 02:49:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,206,1278313200"; 
+   d="scan'208";a="818325321"
+Subject: [PATCH] Don't apply for write lock on tasklist_lock if parent
+ doesn't ptrace other processes
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, andi.kleen@intel.com
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Thu, 15 Jul 2010 14:51:03 +0800
+Message-Id: <1279176663.2096.1264.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2010 08:42 AM, Kulikov Vasiliy wrote:
-> Use %p instead of %08x in printk().
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  drivers/staging/comedi/drivers/quatech_daqp_cs.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/staging/comedi/drivers/quatech_daqp_cs.c b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-> index 8d16380..8b49cb1 100644
-> --- a/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-> +++ b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-> @@ -208,7 +208,7 @@ static void hex_dump(char *str, void *ptr, int len)
+We run some sub-cases (fork, exec, pipe, tcp, udp) of aim7 on 8-socket machine.
+Perf shows write_lock_irq(&tasklist_lock) consumes more than 50% cpu time.
 
-The name and parameters suggest to remove the function completely. (And
-use print_hex_dump_bytes instead.)
+One hot caller is exit_ptrace. If the exiting process doesn't ptrace other
+processes, kernel needn't apply for the write lock on tasklist_lock.
 
->  
->  	for (i = 0; i < len; i++) {
->  		if (i % 16 == 0)
-> -			printk("\n0x%08x:", (unsigned int)cptr);
-> +			printk("\n%p:", cptr);
->  
->  		printk(" %02x", *(cptr++));
->  	}
+With below patch against kernel 2.6.35-rc5, we get more than 10% result improvement.
+
+Signed-off-by: Zhang Yanmin <yanmin_zhang@linux.intel.com>
+
+---
+
+diff -Nraup linux-2.6.35-rc5/kernel/ptrace.c linux-2.6.35-rc5_ptrace/kernel/ptrace.c
+--- linux-2.6.35-rc5/kernel/ptrace.c	2010-07-16 14:01:15.000000000 +0800
++++ linux-2.6.35-rc5_ptrace/kernel/ptrace.c	2010-07-16 14:03:20.000000000 +0800
+@@ -331,6 +331,9 @@ void exit_ptrace(struct task_struct *tra
+ 	struct task_struct *p, *n;
+ 	LIST_HEAD(ptrace_dead);
+ 
++	if (list_empty(&tracer->ptraced))
++		return;
++
+ 	write_lock_irq(&tasklist_lock);
+ 	list_for_each_entry_safe(p, n, &tracer->ptraced, ptrace_entry) {
+ 		if (__ptrace_detach(tracer, p))
 
 
--- 
-js
