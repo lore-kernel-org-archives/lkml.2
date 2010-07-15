@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758081Ab0GOApa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 14 Jul 2010 20:45:30 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:57198 "EHLO
+	id S1758035Ab0GOAoU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 14 Jul 2010 20:44:20 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:57044 "EHLO
 	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758038Ab0GOAoV (ORCPT
+	with ESMTP id S1757971Ab0GOAoL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 14 Jul 2010 20:44:21 -0400
+	Wed, 14 Jul 2010 20:44:11 -0400
 From: John Johansen <john.johansen@canonical.com>
 To: linux-kernel@vger.kernel.org
 Cc: linux-security-module@vger.kernel.org
-Subject: [PATCH 09/13] AppArmor: mediation of non file objects
-Date: Wed, 14 Jul 2010 17:43:37 -0700
-Message-Id: <1279154621-25868-10-git-send-email-john.johansen@canonical.com>
+Subject: [PATCH 06/13] AppArmor: policy routines for loading and unpacking policy
+Date: Wed, 14 Jul 2010 17:43:34 -0700
+Message-Id: <1279154621-25868-7-git-send-email-john.johansen@canonical.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
 References: <1279154621-25868-1-git-send-email-john.johansen@canonical.com>
@@ -20,50 +20,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ipc:
-AppArmor ipc is currently limited to mediation done by file mediation
-and basic ptrace tests.  Improved mediation is a wip.
-
-rlimits:
-AppArmor provides basic abilities to set and control rlimits at
-a per profile level.  Only resources specified in a profile are controled
-or set.  AppArmor rules set the hard limit to a value <= to the current
-hard limit (ie. they can not currently raise hard limits), and if
-necessary will lower the soft limit to the new hard limit value.
-
-AppArmor does not track resource limits to reset them when a profile
-is left so that children processes inherit the limits set by the
-parent even if they are not confined by the same profile.
-
-Capabilities:  AppArmor provides a per profile mask of capabilities,
-that will further restrict.
+AppArmor policy is loaded in a platform independent flattened binary
+stream.  Verify and unpack the data converting it to the internal
+format needed for enforcement.
 
 Signed-off-by: John Johansen <john.johansen@canonical.com>
 ---
- security/apparmor/capability.c         |  141 ++++++++++++++++++++++++++++++++
- security/apparmor/include/capability.h |   45 ++++++++++
- security/apparmor/include/ipc.h        |   28 ++++++
- security/apparmor/include/resource.h   |   46 ++++++++++
- security/apparmor/ipc.c                |  114 ++++++++++++++++++++++++++
- security/apparmor/resource.c           |  132 ++++++++++++++++++++++++++++++
- 6 files changed, 506 insertions(+), 0 deletions(-)
- create mode 100644 security/apparmor/capability.c
- create mode 100644 security/apparmor/include/capability.h
- create mode 100644 security/apparmor/include/ipc.h
- create mode 100644 security/apparmor/include/resource.h
- create mode 100644 security/apparmor/ipc.c
- create mode 100644 security/apparmor/resource.c
+ security/apparmor/include/policy_unpack.h |   20 +
+ security/apparmor/policy_unpack.c         |  707 +++++++++++++++++++++++++++++
+ 2 files changed, 727 insertions(+), 0 deletions(-)
+ create mode 100644 security/apparmor/include/policy_unpack.h
+ create mode 100644 security/apparmor/policy_unpack.c
 
-diff --git a/security/apparmor/capability.c b/security/apparmor/capability.c
+diff --git a/security/apparmor/include/policy_unpack.h b/security/apparmor/include/policy_unpack.h
 new file mode 100644
-index 0000000..9c28d92
+index 0000000..a2dccca
 --- /dev/null
-+++ b/security/apparmor/capability.c
-@@ -0,0 +1,141 @@
++++ b/security/apparmor/include/policy_unpack.h
+@@ -0,0 +1,20 @@
 +/*
 + * AppArmor security module
 + *
-+ * This file contains AppArmor capability mediation functions
++ * This file contains AppArmor policy loading interface function definitions.
 + *
 + * Copyright (C) 1998-2008 Novell/SUSE
 + * Copyright 2009-2010 Canonical Ltd.
@@ -74,527 +52,724 @@ index 0000000..9c28d92
 + * License.
 + */
 +
-+#include <linux/capability.h>
++#ifndef __POLICY_INTERFACE_H
++#define __POLICY_INTERFACE_H
++
++struct aa_profile *aa_unpack(void *udata, size_t size, const char **ns);
++
++#endif /* __POLICY_INTERFACE_H */
+diff --git a/security/apparmor/policy_unpack.c b/security/apparmor/policy_unpack.c
+new file mode 100644
+index 0000000..c9fe375
+--- /dev/null
++++ b/security/apparmor/policy_unpack.c
+@@ -0,0 +1,707 @@
++/*
++ * AppArmor security module
++ *
++ * This file contains AppArmor functions for unpacking policy loaded from
++ * userspace.
++ *
++ * Copyright (C) 1998-2008 Novell/SUSE
++ * Copyright 2009-2010 Canonical Ltd.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation, version 2 of the
++ * License.
++ *
++ * AppArmor uses a serialized binary format for loading policy.
++ * The policy format is documented in Documentation/???
++ * All policy is validated before it is used.
++ */
++
++#include <asm/unaligned.h>
++#include <linux/ctype.h>
 +#include <linux/errno.h>
-+#include <linux/gfp.h>
 +
 +#include "include/apparmor.h"
-+#include "include/capability.h"
-+#include "include/context.h"
-+#include "include/policy.h"
 +#include "include/audit.h"
++#include "include/context.h"
++#include "include/match.h"
++#include "include/policy.h"
++#include "include/policy_unpack.h"
++#include "include/sid.h"
 +
 +/*
-+ * Table of capability names: we generate it from capabilities.h.
++ * The AppArmor interface treats data as a type byte followed by the
++ * actual data.  The interface has the notion of a a named entry
++ * which has a name (AA_NAME typecode followed by name string) followed by
++ * the entries typecode and data.  Named types allow for optional
++ * elements and extensions to be added and tested for without breaking
++ * backwards compatability.
 + */
-+#include "capability_names.h"
 +
-+struct audit_cache {
-+	struct aa_profile *profile;
-+	kernel_cap_t caps;
++enum aa_code {
++	AA_U8,
++	AA_U16,
++	AA_U32,
++	AA_U64,
++	AA_NAME,		/* same as string except it is items name */
++	AA_STRING,
++	AA_BLOB,
++	AA_STRUCT,
++	AA_STRUCTEND,
++	AA_LIST,
++	AA_LISTEND,
++	AA_ARRAY,
++	AA_ARRAYEND,
 +};
 +
-+static DEFINE_PER_CPU(struct audit_cache, audit_cache);
-+
-+/**
-+ * audit_cb - call back for capability components of audit struct
-+ * @ab - audit buffer   (NOT NULL)
-+ * @va - audit struct to audit data from  (NOT NULL)
++/*
++ * aa_ext is the read of the buffer containing the serialized profile.  The
++ * data is copied into a kernel buffer in apparmorfs and then handed off to
++ * the unpack routines.
 + */
++struct aa_ext {
++	void *start;
++	void *end;
++	void *pos;		/* pointer to current position in the buffer */
++	u32 version;
++};
++
++/* audit callback for unpack fields */
 +static void audit_cb(struct audit_buffer *ab, void *va)
 +{
 +	struct common_audit_data *sa = va;
-+	audit_log_format(ab, " capname=");
-+	audit_log_untrustedstring(ab, capability_names[sa->u.cap]);
-+}
-+
-+/**
-+ * audit_caps - audit a capability
-+ * @profile: profile confining task
-+ * @task: task capability test was performed against
-+ * @cap: capability tested
-+ * @error: error code returned by test
-+ *
-+ * Do auditing of capability and handle, audit/complain/kill modes switching
-+ * and duplicate message elimination.
-+ *
-+ * returns: 0 or sa->error on succes,  error code on failure
-+ */
-+static int audit_caps(struct aa_profile *profile, struct task_struct *task,
-+		      int cap, int error)
-+{
-+	struct audit_cache *ent;
-+	int type = AUDIT_APPARMOR_AUTO;
-+	struct common_audit_data sa;
-+	COMMON_AUDIT_DATA_INIT(&sa, CAP);
-+	sa.tsk = task;
-+	sa.u.cap = cap;
-+	sa.aad.op = OP_CAPABLE;
-+	sa.aad.error = error;
-+
-+	if (likely(!error)) {
-+		/* test if auditing is being forced */
-+		if (likely((AUDIT_MODE(profile) != AUDIT_ALL) &&
-+			   !cap_raised(profile->caps.audit, cap)))
-+			return 0;
-+		type = AUDIT_APPARMOR_AUDIT;
-+	} else if (DO_KILL(profile) ||
-+		   cap_raised(profile->caps.kill, cap)) {
-+		type = AUDIT_APPARMOR_KILL;
-+	} else if (cap_raised(profile->caps.quiet, cap) &&
-+		   AUDIT_MODE(profile) != AUDIT_NOQUIET &&
-+		   AUDIT_MODE(profile) != AUDIT_ALL) {
-+		/* quiet auditing */
-+		return error;
++	if (sa->aad.iface.target) {
++		struct aa_profile *name = sa->aad.iface.target;
++		audit_log_format(ab, " name=");
++		audit_log_untrustedstring(ab, name->base.hname);
 +	}
-+
-+	/* Do simple duplicate message elimination */
-+	ent = &get_cpu_var(audit_cache);
-+	if (profile == ent->profile && cap_raised(ent->caps, cap)) {
-+		put_cpu_var(audit_cache);
-+		if (COMPLAIN_MODE(profile))
-+			return complain_error(error);
-+		return error;
-+	} else {
-+		aa_put_profile(ent->profile);
-+		ent->profile = aa_get_profile(profile);
-+		cap_raise(ent->caps, cap);
-+	}
-+	put_cpu_var(audit_cache);
-+
-+	return aa_audit(type, profile, GFP_ATOMIC, &sa, audit_cb);
++	if (sa->aad.iface.pos)
++		audit_log_format(ab, " offset=%ld", sa->aad.iface.pos);
 +}
 +
 +/**
-+ * profile_capable - test if profile allows use of capability @cap
-+ * @profile: profile being enforced    (NOT NULL, NOT unconfined)
-+ * @cap: capability to test if allowed
++ * audit_iface - do audit message for policy unpacking/load/replace/remove
++ * @new: profile if it has been allocated
++ * @name: name of the profile being manipulated
++ * @info: any extra info about the failure
++ * @e: buffer position info
++ * @error: error code
 + *
-+ * Returns: 0 if allowed else -EPERM
++ * Returns: %0 or error
 + */
-+static int profile_capable(struct aa_profile *profile, int cap)
++static int audit_iface(struct aa_profile *new, const char *name,
++		       const char *info, struct aa_ext *e, int error)
 +{
-+	return cap_raised(profile->caps.allow, cap) ? 0 : -EPERM;
-+}
-+
-+/**
-+ * aa_capable - test permission to use capability
-+ * @task: task doing capability test against
-+ * @profile: profile confining @task
-+ * @cap: capability to be tested
-+ * @audit: whether an audit record should be generated
-+ *
-+ * Look up capability in profile capability set.
-+ *
-+ * Returns: 0 on success, or else an error code.
-+ */
-+int aa_capable(struct task_struct *task, struct aa_profile *profile, int cap,
-+	       int audit)
-+{
-+	int error = profile_capable(profile, cap);
-+
-+	if (!audit) {
-+		if (COMPLAIN_MODE(profile))
-+			return complain_error(error);
-+		return error;
-+	}
-+
-+	return audit_caps(profile, task, cap, error);
-+}
-diff --git a/security/apparmor/include/capability.h b/security/apparmor/include/capability.h
-new file mode 100644
-index 0000000..c24d295
---- /dev/null
-+++ b/security/apparmor/include/capability.h
-@@ -0,0 +1,45 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor capability mediation definitions.
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#ifndef __AA_CAPABILITY_H
-+#define __AA_CAPABILITY_H
-+
-+#include <linux/sched.h>
-+
-+struct aa_profile;
-+
-+/* aa_caps - confinement data for capabilities
-+ * @allowed: capabilities mask
-+ * @audit: caps that are to be audited
-+ * @quiet: caps that should not be audited
-+ * @kill: caps that when requested will result in the task being killed
-+ * @extended: caps that are subject finer grained mediation
-+ */
-+struct aa_caps {
-+	kernel_cap_t allow;
-+	kernel_cap_t audit;
-+	kernel_cap_t quiet;
-+	kernel_cap_t kill;
-+	kernel_cap_t extended;
-+};
-+
-+int aa_capable(struct task_struct *task, struct aa_profile *profile, int cap,
-+	       int audit);
-+
-+static inline void aa_free_cap_rules(struct aa_caps *caps)
-+{
-+	/* NOP */
-+}
-+
-+#endif /* __AA_CAPBILITY_H */
-diff --git a/security/apparmor/include/ipc.h b/security/apparmor/include/ipc.h
-new file mode 100644
-index 0000000..aeda0fb
---- /dev/null
-+++ b/security/apparmor/include/ipc.h
-@@ -0,0 +1,28 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor ipc mediation function definitions.
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#ifndef __AA_IPC_H
-+#define __AA_IPC_H
-+
-+#include <linux/sched.h>
-+
-+struct aa_profile;
-+
-+int aa_may_ptrace(struct task_struct *tracer_task, struct aa_profile *tracer,
-+		  struct aa_profile *tracee, unsigned int mode);
-+
-+int aa_ptrace(struct task_struct *tracer, struct task_struct *tracee,
-+	      unsigned int mode);
-+
-+#endif /* __AA_IPC_H */
-diff --git a/security/apparmor/include/resource.h b/security/apparmor/include/resource.h
-new file mode 100644
-index 0000000..1e009ce
---- /dev/null
-+++ b/security/apparmor/include/resource.h
-@@ -0,0 +1,46 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor resource limits function defintions.
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#ifndef __AA_RESOURCE_H
-+#define __AA_RESOURCE_H
-+
-+#include <linux/resource.h>
-+#include <linux/sched.h>
-+
-+struct aa_profile;
-+
-+/* struct aa_rlimit - rlimits settings for the profile
-+ * @mask: which hard limits to set
-+ * @limits: rlimit values that override task limits
-+ *
-+ * AppArmor rlimits are used to set confined task rlimits.  Only the
-+ * limits specified in @mask will be controlled by apparmor.
-+ */
-+struct aa_rlimit {
-+	unsigned int mask;
-+	struct rlimit limits[RLIM_NLIMITS];
-+};
-+
-+int aa_map_resource(int resource);
-+int aa_task_setrlimit(struct aa_profile *profile, unsigned int resource,
-+		      struct rlimit *new_rlim);
-+
-+void __aa_transition_rlimits(struct aa_profile *old, struct aa_profile *new);
-+
-+static inline void aa_free_rlimit_rules(struct aa_rlimit *rlims)
-+{
-+	/* NOP */
-+}
-+
-+#endif /* __AA_RESOURCE_H */
-diff --git a/security/apparmor/ipc.c b/security/apparmor/ipc.c
-new file mode 100644
-index 0000000..d667f89
---- /dev/null
-+++ b/security/apparmor/ipc.c
-@@ -0,0 +1,114 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor ipc mediation
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
-+
-+#include <linux/gfp.h>
-+#include <linux/ptrace.h>
-+
-+#include "include/audit.h"
-+#include "include/capability.h"
-+#include "include/context.h"
-+#include "include/policy.h"
-+
-+/* call back to audit ptrace fields */
-+static void audit_cb(struct audit_buffer *ab, void *va)
-+{
-+	struct common_audit_data *sa = va;
-+	audit_log_format(ab, " target=");
-+	audit_log_untrustedstring(ab, sa->aad.target);
-+}
-+
-+/**
-+ * aa_audit_ptrace - do auditing for ptrace
-+ * @profile: profile being enforced  (NOT NULL)
-+ * @target: profile being traced (NOT NULL)
-+ * @error: error condition
-+ *
-+ * Returns: %0 or error code
-+ */
-+static int aa_audit_ptrace(struct aa_profile *profile,
-+			   struct aa_profile *target, int error)
-+{
++	struct aa_profile *profile = __aa_current_profile();
 +	struct common_audit_data sa;
 +	COMMON_AUDIT_DATA_INIT_NONE(&sa);
-+	sa.aad.op = OP_PTRACE;
-+	sa.aad.target = target;
++	sa.aad.iface.pos = e->pos - e->start;
++	sa.aad.iface.target = new;
++	sa.aad.name = name;
++	sa.aad.info = info;
 +	sa.aad.error = error;
 +
-+	return aa_audit(AUDIT_APPARMOR_AUTO, profile, GFP_ATOMIC, &sa,
++	return aa_audit(AUDIT_APPARMOR_STATUS, profile, GFP_KERNEL, &sa,
 +			audit_cb);
 +}
 +
-+/**
-+ * aa_may_ptrace - test if tracer task can trace the tracee
-+ * @tracer_task: task who will do the tracing  (NOT NULL)
-+ * @tracer: profile of the task doing the tracing  (NOT NULL)
-+ * @tracee: task to be traced
-+ * @mode: whether PTRACE_MODE_READ || PTRACE_MODE_ATTACH
-+ *
-+ * Returns: %0 else error code if permission denied or error
-+ */
-+int aa_may_ptrace(struct task_struct *tracer_task, struct aa_profile *tracer,
-+		  struct aa_profile *tracee, unsigned int mode)
++/* test if read will be in packed data bounds */
++static bool inbounds(struct aa_ext *e, size_t size)
 +{
-+	/* TODO: currently only based on capability, not extended ptrace
-+	 *       rules,
-+	 *       Test mode for PTRACE_MODE_READ || PTRACE_MODE_ATTACH
-+	 */
-+
-+	if (!tracer || tracer == tracee)
-+		return 0;
-+	/* log this capability request */
-+	return aa_capable(tracer_task, tracer, CAP_SYS_PTRACE, 1);
++	return (size <= e->end - e->pos);
 +}
 +
 +/**
-+ * aa_ptrace - do ptrace permission check and auditing
-+ * @tracer: task doing the tracing
-+ * @tracee: task being traced
-+ * @mode: ptrace mode either PTRACE_MODE_READ || PTRACE_MODE_ATTACH
++ * aa_u16_chunck - test and do bounds checking for a u16 size based chunk
++ * @e: serialized data read head
++ * @chunk: start address for chunk of data
 + *
-+ * Returns: %0 else error code if permission denied or error
++ * Returns: the size of chunk found with the read head at the end of the chunk.
 + */
-+int aa_ptrace(struct task_struct *tracer, struct task_struct *tracee,
-+	      unsigned int mode)
++static size_t unpack_u16_chunk(struct aa_ext *e, char **chunk)
++{
++	size_t size = 0;
++
++	if (!inbounds(e, sizeof(u16)))
++		return 0;
++	size = le16_to_cpu(get_unaligned((u16 *) e->pos));
++	e->pos += sizeof(u16);
++	if (!inbounds(e, size))
++		return 0;
++	*chunk = e->pos;
++	e->pos += size;
++	return size;
++}
++
++/* unpack control byte */
++static bool unpack_X(struct aa_ext *e, enum aa_code code)
++{
++	if (!inbounds(e, 1))
++		return 0;
++	if (*(u8 *) e->pos != code)
++		return 0;
++	e->pos++;
++	return 1;
++}
++
++/**
++ * unpack_nameX - check is the next element is of type X with a name of @name
++ * @e: serialized data extent information  (NOT NULL)
++ * @code: type code
++ * @name: name to match to the serialized element.  (MAYBE NULL)
++ *
++ * check that the next serialized data element is of type X and has a tag
++ * name @name.  If @name is specified then there must be a matching
++ * name element in the stream.  If @name is NULL any name element will be
++ * skipped and only the typecode will be tested.
++ * returns 1 on success (both type code and name tests match) and the read
++ * head is advanced past the headers
++ *
++ * Returns: 0 if either match failes, the read head does not move
++ */
++static bool unpack_nameX(struct aa_ext *e, enum aa_code code, const char *name)
 +{
 +	/*
-+	 * tracer can ptrace tracee when
-+	 * - tracer is unconfined ||
-+	 *   - tracer is in complain mode
-+	 *   - tracer has rules allowing it to trace tracee currently this is:
-+	 *       - confined by the same profile ||
-+	 *       - tracer profile has CAP_SYS_PTRACE
++	 * May need to reset pos if name or type doesn't match
 +	 */
-+
-+	struct aa_profile *tracer_p;
-+	/* cred released below */
-+	const struct cred *cred = get_task_cred(tracer);
-+	int error = 0;
-+	tracer_p = aa_cred_profile(cred);
-+
-+	if (!unconfined(tracer_p)) {
-+		/* lcred released below */
-+		struct cred *lcred = get_task_cred(tracee);
-+		struct aa_profile *tracee_p = aa_cred_profile(lcred);
-+
-+		error = aa_may_ptrace(tracer, tracer_p, tracee_p, mode);
-+		error = aa_audit_ptrace(tracer_p, tracee_p, error);
-+
-+		put_cred(lcred);
++	void *pos = e->pos;
++	/*
++	 * Check for presence of a tagname, and if present name size
++	 * AA_NAME tag value is a u16.
++	 */
++	if (unpack_X(e, AA_NAME)) {
++		char *tag = NULL;
++		size_t size = unpack_u16_chunk(e, &tag);
++		/* if a name is specified it must match. otherwise skip tag */
++		if (name && (!size || strcmp(name, tag)))
++			goto fail;
++	} else if (name) {
++		/* if a name is specified and there is no name tag fail */
++		goto fail;
 +	}
-+	put_cred(cred);
 +
-+	return error;
-+}
-diff --git a/security/apparmor/resource.c b/security/apparmor/resource.c
-new file mode 100644
-index 0000000..ca8773a
---- /dev/null
-+++ b/security/apparmor/resource.c
-@@ -0,0 +1,132 @@
-+/*
-+ * AppArmor security module
-+ *
-+ * This file contains AppArmor resource mediation and attachment
-+ *
-+ * Copyright (C) 1998-2008 Novell/SUSE
-+ * Copyright 2009-2010 Canonical Ltd.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation, version 2 of the
-+ * License.
-+ */
++	/* now check if type code matches */
++	if (unpack_X(e, code))
++		return 1;
 +
-+#include <linux/audit.h>
-+
-+#include "include/audit.h"
-+#include "include/resource.h"
-+#include "include/policy.h"
-+
-+/*
-+ * Table of rlimit names: we generate it from resource.h.
-+ */
-+#include "rlim_names.h"
-+
-+/* audit callback for resource specific fields */
-+static void audit_cb(struct audit_buffer *ab, void *va)
-+{
-+	struct common_audit_data *sa = va;
-+
-+	audit_log_format(ab, " rlimit=%s value=%lu",
-+			 rlim_names[sa->aad.rlim.rlim], sa->aad.rlim.max);
++fail:
++	e->pos = pos;
++	return 0;
 +}
 +
-+/**
-+ * audit_resource - audit setting resource limit
-+ * @profile: profile being enforced  (NOT NULL)
-+ * @sa: audit data  (NOT NULL)
-+ *
-+ * Returns: 0 or sa->error else other error code on failure
-+ */
-+static int audit_resource(struct aa_profile *profile, unsigned int resource,
-+			  unsigned long value, int error)
++static bool unpack_u16(struct aa_ext *e, u16 *data, const char *name)
 +{
-+	struct common_audit_data sa;
-+
-+	COMMON_AUDIT_DATA_INIT_NONE(&sa);
-+	sa.aad.op = OP_SETRLIMIT,
-+	sa.aad.rlim.rlim = resource;
-+	sa.aad.rlim.max = value;
-+	sa.aad.error = error;
-+	return aa_audit(AUDIT_APPARMOR_AUTO, profile, GFP_KERNEL, &sa,
-+			audit_cb);
++	if (unpack_nameX(e, AA_U16, name)) {
++		if (!inbounds(e, sizeof(u16)))
++			return 0;
++		if (data)
++			*data = le16_to_cpu(get_unaligned((u16 *) e->pos));
++		e->pos += sizeof(u16);
++		return 1;
++	}
++	return 0;
 +}
 +
-+/**
-+ * aa_map_resouce - map compiled policy resource to internal #
-+ * @resource: flattened policy resource number
-+ *
-+ * Returns: resource # for the current architecture.
-+ *
-+ * rlimit resource can vary based on architecture map the compiled policy
-+ * resource # to the internal representation for the architecture.
-+ */
-+int aa_map_resource(int resource)
++static bool unpack_u32(struct aa_ext *e, u32 *data, const char *name)
 +{
-+	return rlim_map[resource];
++	if (unpack_nameX(e, AA_U32, name)) {
++		if (!inbounds(e, sizeof(u32)))
++			return 0;
++		if (data)
++			*data = le32_to_cpu(get_unaligned((u32 *) e->pos));
++		e->pos += sizeof(u32);
++		return 1;
++	}
++	return 0;
 +}
 +
-+/**
-+ * aa_task_setrlimit - test permission to set an rlimit
-+ * @profile - profile confining the task  (NOT NULL)
-+ * @resource - the resource being set
-+ * @new_rlim - the new resource limit  (NOT NULL)
-+ *
-+ * Control raising the processes hard limit.
-+ *
-+ * Returns: 0 or error code if setting resource failed
-+ */
-+int aa_task_setrlimit(struct aa_profile *profile, unsigned int resource,
-+		      struct rlimit *new_rlim)
++static bool unpack_u64(struct aa_ext *e, u64 *data, const char *name)
 +{
-+	int error = 0;
-+
-+	if (profile->rlimits.mask & (1 << resource) &&
-+	    new_rlim->rlim_max > profile->rlimits.limits[resource].rlim_max)
-+
-+		error = audit_resource(profile, resource, new_rlim->rlim_max,
-+			-EACCES);
-+
-+	return error;
++	if (unpack_nameX(e, AA_U64, name)) {
++		if (!inbounds(e, sizeof(u64)))
++			return 0;
++		if (data)
++			*data = le64_to_cpu(get_unaligned((u64 *) e->pos));
++		e->pos += sizeof(u64);
++		return 1;
++	}
++	return 0;
 +}
 +
-+/**
-+ * __aa_transition_rlimits - apply new profile rlimits
-+ * @old: old profile on task  (MAYBE NULL)
-+ * @new: new profile with rlimits to apply  (NOT NULL)
-+ */
-+void __aa_transition_rlimits(struct aa_profile *old, struct aa_profile *new)
++static size_t unpack_array(struct aa_ext *e, const char *name)
 +{
-+	unsigned int mask = 0;
-+	struct rlimit *rlim, *initrlim;
++	if (unpack_nameX(e, AA_ARRAY, name)) {
++		int size;
++		if (!inbounds(e, sizeof(u16)))
++			return 0;
++		size = (int)le16_to_cpu(get_unaligned((u16 *) e->pos));
++		e->pos += sizeof(u16);
++		return size;
++	}
++	return 0;
++}
++
++static size_t unpack_blob(struct aa_ext *e, char **blob, const char *name)
++{
++	if (unpack_nameX(e, AA_BLOB, name)) {
++		u32 size;
++		if (!inbounds(e, sizeof(u32)))
++			return 0;
++		size = le32_to_cpu(get_unaligned((u32 *) e->pos));
++		e->pos += sizeof(u32);
++		if (inbounds(e, (size_t) size)) {
++			*blob = e->pos;
++			e->pos += size;
++			return size;
++		}
++	}
++	return 0;
++}
++
++static int unpack_str(struct aa_ext *e, const char **string, const char *name)
++{
++	char *src_str;
++	size_t size = 0;
++	void *pos = e->pos;
++	*string = NULL;
++	if (unpack_nameX(e, AA_STRING, name)) {
++		size = unpack_u16_chunk(e, &src_str);
++		if (size) {
++			/* strings are null terminated, length is size - 1 */
++			if (src_str[size - 1] != 0)
++				goto fail;
++			*string = src_str;
++		}
++	}
++	return size;
++
++fail:
++	e->pos = pos;
++	return 0;
++}
++
++static int unpack_strdup(struct aa_ext *e, char **string, const char *name)
++{
++	const char *tmp;
++	void *pos = e->pos;
++	int res = unpack_str(e, &tmp, name);
++	*string = NULL;
++
++	if (!res)
++		return 0;
++
++	*string = kmemdup(tmp, res, GFP_KERNEL);
++	if (!*string) {
++		e->pos = pos;
++		return 0;
++	}
++
++	return res;
++}
++
++static bool verify_accept(struct aa_dfa *dfa, int flags)
++{
 +	int i;
 +
-+	/* for any rlimits the profile controlled reset the soft limit
-+	 * to the less of the tasks hard limit and the init tasks soft limit
-+	 */
-+	if (old && old->rlimits.mask) {
-+		for (i = 0, mask = 1; i < RLIM_NLIMITS; i++, mask <<= 1) {
-+			if (old->rlimits.mask & mask) {
-+				rlim = current->signal->rlim + i;
-+				initrlim = init_task.signal->rlim + i;
-+				rlim->rlim_cur = min(rlim->rlim_max,
-+						     initrlim->rlim_cur);
++	/* verify accept permissions */
++	for (i = 0; i < dfa->tables[YYTD_ID_ACCEPT]->td_lolen; i++) {
++		int mode = ACCEPT_TABLE(dfa)[i];
++
++		if (mode & ~DFA_VALID_PERM_MASK)
++			return 0;
++
++		if (ACCEPT_TABLE2(dfa)[i] & ~DFA_VALID_PERM2_MASK)
++			return 0;
++	}
++	return 1;
++}
++
++/**
++ * unpack_dfa - unpack a file rule dfa
++ * @e: serialized data extent information
++ *
++ * returns dfa or ERR_PTR or NULL if no dfa
++ */
++static struct aa_dfa *unpack_dfa(struct aa_ext *e)
++{
++	char *blob = NULL;
++	size_t size;
++	struct aa_dfa *dfa = NULL;
++
++	size = unpack_blob(e, &blob, "aadfa");
++	if (size) {
++		/*
++		 * The dfa is aligned with in the blob to 8 bytes
++		 * from the beginning of the stream.
++		 */
++		size_t sz = blob - (char *)e->start;
++		size_t pad = ALIGN(sz, 8) - sz;
++		int flags = TO_ACCEPT1_FLAG(YYTD_DATA32) |
++			TO_ACCEPT2_FLAG(YYTD_DATA32);
++
++
++		if (aa_g_paranoid_load)
++			flags |= DFA_FLAG_VERIFY_STATES;
++
++		dfa = aa_dfa_unpack(blob + pad, size - pad, flags);
++
++		if (IS_ERR(dfa))
++			return dfa;
++
++		if (!verify_accept(dfa, flags))
++			goto fail;
++	}
++
++	return dfa;
++
++fail:
++	aa_put_dfa(dfa);
++	return ERR_PTR(-EPROTO);
++}
++
++static bool unpack_trans_table(struct aa_ext *e, struct aa_profile *profile)
++{
++	void *pos = e->pos;
++
++	/* exec table is optional */
++	if (unpack_nameX(e, AA_STRUCT, "xtable")) {
++		int i, size;
++
++		size = unpack_array(e, NULL);
++		/* currently 4 exec bits and entries 0-3 are reserved iupcx */
++		if (size > 16 - 4)
++			goto fail;
++		profile->file.trans.table = kzalloc(sizeof(char *) * size,
++						    GFP_KERNEL);
++		if (!profile->file.trans.table)
++			goto fail;
++
++		profile->file.trans.size = size;
++		for (i = 0; i < size; i++) {
++			char *str;
++			int c, j, size = unpack_strdup(e, &str, NULL);
++			if (!size)
++				goto fail;
++			profile->file.trans.table[i] = str;
++			/* verify that name doesn't start with space */
++			if (isspace(*str))
++				goto fail;
++
++			/* count internal #  of internal \0 */
++			for (c = j = 0; j < size - 2; j++) {
++				if (!str[j])
++					c++;
 +			}
++			if (*str == ':') {
++				/* beginning with : requires an embedded \0 */
++				if (c != 1)
++					goto fail;
++				/* first character after : must be valid */
++				if (!str[1])
++					goto fail;
++			} else if (c)
++				/* fail - all other cases with embedded \0 */
++				goto fail;
++		}
++		if (!unpack_nameX(e, AA_ARRAYEND, NULL))
++			goto fail;
++		if (!unpack_nameX(e, AA_STRUCTEND, NULL))
++			goto fail;
++	}
++	return 1;
++
++fail:
++	aa_free_domain_entries(&profile->file.trans);
++	e->pos = pos;
++	return 0;
++}
++
++static bool unpack_rlimits(struct aa_ext *e, struct aa_profile *profile)
++{
++	void *pos = e->pos;
++
++	/* rlimits are optional */
++	if (unpack_nameX(e, AA_STRUCT, "rlimits")) {
++		int i, size;
++		u32 tmp = 0;
++		if (!unpack_u32(e, &tmp, NULL))
++			goto fail;
++		profile->rlimits.mask = tmp;
++
++		size = unpack_array(e, NULL);
++		if (size > RLIM_NLIMITS)
++			goto fail;
++		for (i = 0; i < size; i++) {
++			u64 tmp = 0;
++			int a = aa_map_resource(i);
++			if (!unpack_u64(e, &tmp, NULL))
++				goto fail;
++			profile->rlimits.limits[a].rlim_max = tmp;
++		}
++		if (!unpack_nameX(e, AA_ARRAYEND, NULL))
++			goto fail;
++		if (!unpack_nameX(e, AA_STRUCTEND, NULL))
++			goto fail;
++	}
++	return 1;
++
++fail:
++	e->pos = pos;
++	return 0;
++}
++
++/**
++ * unpack_profile - unpack a serialized profile
++ * @e: serialized data extent information
++ *
++ * NOTE: unpack profile sets audit struct if there is a failure
++ */
++static struct aa_profile *unpack_profile(struct aa_ext *e)
++{
++	struct aa_profile *profile = NULL;
++	const char *name = NULL, *info = NULL;
++	int error = -EPROTO;
++	kernel_cap_t tmpcap;
++	u32 tmp;
++	u64 tmp64;
++
++	/* check that we have the right struct being passed */
++	if (!unpack_nameX(e, AA_STRUCT, "profile"))
++		goto fail;
++	if (!unpack_str(e, &name, NULL))
++		goto fail;
++
++	profile = aa_alloc_profile(name);
++	if (!profile)
++		return ERR_PTR(-ENOMEM);
++
++	/* profile renaming is optional */
++	(void) unpack_str(e, &profile->rename, "rename");
++
++	/* xmatch is optional and may be NULL */
++	profile->xmatch = unpack_dfa(e);
++	if (IS_ERR(profile->xmatch)) {
++		error = PTR_ERR(profile->xmatch);
++		profile->xmatch = NULL;
++		goto fail;
++	}
++	/* xmatch_len is not optional if xmatch is set */
++	if (profile->xmatch) {
++		if (!unpack_u32(e, &tmp, NULL))
++			goto fail;
++		profile->xmatch_len = tmp;
++	}
++
++	/* per profile debug flags (complain, audit) */
++	if (!unpack_nameX(e, AA_STRUCT, "flags"))
++		goto fail;
++	if (!unpack_u32(e, &tmp, NULL))
++		goto fail;
++	if (tmp)
++		profile->flags |= PFLAG_HAT;
++	if (!unpack_u32(e, &tmp, NULL))
++		goto fail;
++	if (tmp)
++		profile->mode = APPARMOR_COMPLAIN;
++	if (!unpack_u32(e, &tmp, NULL))
++		goto fail;
++	if (tmp)
++		profile->audit = AUDIT_ALL;
++
++	if (!unpack_nameX(e, AA_STRUCTEND, NULL))
++		goto fail;
++
++	/* path_flags is optional */
++	if (unpack_u32(e, &profile->path_flags, "path_flags"))
++		profile->path_flags |= profile->flags & PFLAG_MEDIATE_DELETED;
++	else
++		/* set a default value if path_flags field is not present */
++		profile->path_flags = PFLAG_MEDIATE_DELETED;
++
++	/* mmap_min_addr is optional */
++	if (unpack_u64(e, &tmp64, "mmap_min_addr")) {
++		profile->mmap_min_addr = (unsigned long)tmp64;
++		if (((u64) profile->mmap_min_addr) == tmp64) {
++			profile->flags |= PFLAG_MMAP_MIN_ADDR;
++		} else {
++			info = "invalid set mmap_min_addr";
++			goto fail;
 +		}
 +	}
 +
-+	/* set any new hard limits as dictated by the new profile */
-+	if (!(new && new->rlimits.mask))
-+		return;
-+	for (i = 0, mask = 1; i < RLIM_NLIMITS; i++, mask <<= 1) {
-+		if (!(new->rlimits.mask & mask))
-+			continue;
++	if (!unpack_u32(e, &(profile->caps.allow.cap[0]), NULL))
++		goto fail;
++	if (!unpack_u32(e, &(profile->caps.audit.cap[0]), NULL))
++		goto fail;
++	if (!unpack_u32(e, &(profile->caps.quiet.cap[0]), NULL))
++		goto fail;
++	if (!unpack_u32(e, &tmpcap.cap[0], NULL))
++		goto fail;
 +
-+		rlim = current->signal->rlim + i;
-+		rlim->rlim_max = min(rlim->rlim_max,
-+				     new->rlimits.limits[i].rlim_max);
-+		/* soft limit should not exceed hard limit */
-+		rlim->rlim_cur = min(rlim->rlim_cur, rlim->rlim_max);
++	if (unpack_nameX(e, AA_STRUCT, "caps64")) {
++		/* optional upper half of 64 bit caps */
++		if (!unpack_u32(e, &(profile->caps.allow.cap[1]), NULL))
++			goto fail;
++		if (!unpack_u32(e, &(profile->caps.audit.cap[1]), NULL))
++			goto fail;
++		if (!unpack_u32(e, &(profile->caps.quiet.cap[1]), NULL))
++			goto fail;
++		if (!unpack_u32(e, &(tmpcap.cap[1]), NULL))
++			goto fail;
++		if (!unpack_nameX(e, AA_STRUCTEND, NULL))
++			goto fail;
 +	}
++
++	if (unpack_nameX(e, AA_STRUCT, "capsx")) {
++		/* optional extended caps mediation mask */
++		if (!unpack_u32(e, &(profile->caps.extended.cap[0]), NULL))
++			goto fail;
++		if (!unpack_u32(e, &(profile->caps.extended.cap[1]), NULL))
++			goto fail;
++	}
++
++	if (!unpack_rlimits(e, profile))
++		goto fail;
++
++	/* get file rules */
++	profile->file.dfa = unpack_dfa(e);
++	if (IS_ERR(profile->file.dfa)) {
++		error = PTR_ERR(profile->file.dfa);
++		profile->file.dfa = NULL;
++		goto fail;
++	}
++
++	if (!unpack_u32(e, &profile->file.start, "dfa_start"))
++		/* default start state */
++		profile->file.start = DFA_START;
++
++	if (!unpack_trans_table(e, profile))
++		goto fail;
++
++	if (!unpack_nameX(e, AA_STRUCTEND, NULL))
++		goto fail;
++
++	return profile;
++
++fail:
++	if (profile)
++		name = NULL;
++	else if (!name)
++		name = "unknown";
++	audit_iface(profile, name, "failed to unpack profile", e, error);
++	aa_put_profile(profile);
++
++	return ERR_PTR(error);
++}
++
++/**
++ * verify_head - unpack serialized stream header
++ * @e: serialized data read head
++ * @ns: Returns namespace if one is specified else NULL
++ *
++ * Returns: error or 0 if header is good
++ */
++static int verify_header(struct aa_ext *e, const char **ns)
++{
++	int error = -EPROTONOSUPPORT;
++	/* get the interface version */
++	if (!unpack_u32(e, &e->version, "version")) {
++		audit_iface(NULL, NULL, "invalid profile format", e, error);
++		return error;
++	}
++
++	/* check that the interface version is currently supported */
++	if (e->version != 5) {
++		audit_iface(NULL, NULL, "unsupported interface version", e,
++			    error);
++		return error;
++	}
++
++	/* read the namespace if present */
++	if (!unpack_str(e, ns, "namespace"))
++		*ns = NULL;
++
++	return 0;
++}
++
++/**
++ * verify_profile - Do post unpack analysis to verify profile consistency
++ * @profile: profile to verify
++ *
++ * Returns: 0 if passes verification else error
++ */
++static bool verify_xindex(int xindex, int table_size)
++{
++	int index, xtype;
++	xtype = xindex & AA_X_TYPE_MASK;
++	index = xindex & AA_X_INDEX_MASK;
++	if (xtype == AA_X_TABLE && index > table_size)
++		return 0;
++	return 1;
++}
++
++/* verify dfa xindexes are in range of transition tables */
++static bool verify_dfa_xindex(struct aa_dfa *dfa, int table_size)
++{
++	int i;
++	for (i = 0; i < dfa->tables[YYTD_ID_ACCEPT]->td_lolen; i++) {
++		if (!verify_xindex(dfa_user_xindex(dfa, i), table_size))
++			return 0;
++		if (!verify_xindex(dfa_other_xindex(dfa, i), table_size))
++			return 0;
++	}
++	return 1;
++}
++
++static int verify_profile(struct aa_profile *profile)
++{
++	if (aa_g_paranoid_load) {
++		if (profile->file.dfa &&
++		    !verify_dfa_xindex(profile->file.dfa,
++				       profile->file.trans.size)) {
++			audit_iface(profile, NULL, "Invalid named transition",
++				    NULL, -EPROTO);
++			return -EPROTO;
++		}
++	}
++
++	return 0;
++}
++
++/**
++ * aa_unpack - unpack packed binary profile data loaded from user space
++ * @udata: user data copied to kmem  (NOT NULL)
++ * @size: the size of the user data
++ * @ns: Returns namespace profile is in if specified else NULL
++ *
++ * Unpack user data and return refcounted allocated profile or ERR_PTR
++ *
++ * Returns: profile else error pointer if fails to unpack
++ */
++struct aa_profile *aa_unpack(void *udata, size_t size, const char **ns)
++{
++	struct aa_profile *profile = NULL;
++	int error;
++	struct aa_ext e = {
++		.start = udata,
++		.end = udata + size,
++		.pos = udata,
++	};
++
++	error = verify_header(&e, ns);
++	if (error)
++		return ERR_PTR(error);
++
++	profile = unpack_profile(&e);
++	if (IS_ERR(profile))
++		return profile;
++
++	error = verify_profile(profile);
++	if (error) {
++		aa_put_profile(profile);
++		profile = ERR_PTR(error);
++	}
++
++	/* return refcount */
++	return profile;
 +}
 -- 
 1.7.0.4
