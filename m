@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933722Ab0GOQZH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 12:25:07 -0400
-Received: from hera.kernel.org ([140.211.167.34]:45983 "EHLO hera.kernel.org"
+	id S933735Ab0GOQZt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 12:25:49 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:39376 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933694Ab0GOQZD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 12:25:03 -0400
-Date: Thu, 15 Jul 2010 16:24:40 GMT
-From: tip-bot for Joe Perches <joe@perches.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        joe@perches.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        joe@perches.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <1277768808.29157.280.camel@Joe-Laptop.home>
-References: <1277768808.29157.280.camel@Joe-Laptop.home>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/cleanups] x86: Clean up arch/x86/kernel/cpu/mtrr/cleanup.c: use ";" not "," to terminate statements
-Message-ID: <tip-b2691085d1f3ccce641dcfdd02722ba5d34db6ba@git.kernel.org>
-Git-Commit-ID: b2691085d1f3ccce641dcfdd02722ba5d34db6ba
-X-Mailer: tip-git-log-daemon
+	id S933694Ab0GOQZs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 12:25:48 -0400
+Date: Thu, 15 Jul 2010 18:25:35 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Ian Munsie <imunsie@au.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Matt Fleming <matt@console-pimps.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL 0/1] perf/core improvements
+Message-ID: <20100715162535.GB5533@elte.hu>
+References: <1279153761-18169-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 15 Jul 2010 16:24:41 +0000 (UTC)
+In-Reply-To: <1279153761-18169-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  b2691085d1f3ccce641dcfdd02722ba5d34db6ba
-Gitweb:     http://git.kernel.org/tip/b2691085d1f3ccce641dcfdd02722ba5d34db6ba
-Author:     Joe Perches <joe@perches.com>
-AuthorDate: Mon, 28 Jun 2010 16:46:48 -0700
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Thu, 15 Jul 2010 18:21:22 +0200
 
-x86: Clean up arch/x86/kernel/cpu/mtrr/cleanup.c: use ";" not "," to terminate statements
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-Also needed if pr_<level> becomes a bit more space efficient.
+> Hi Ingo,
+> 
+>         Please pull from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Matt Fleming (1):
+>   perf tools: Add DWARF register lookup for SH
+> 
+>  tools/perf/arch/sh/Makefile          |    4 ++
+>  tools/perf/arch/sh/util/dwarf-regs.c |   55 ++++++++++++++++++++++++++++++++++
+>  2 files changed, 59 insertions(+), 0 deletions(-)
+>  create mode 100644 tools/perf/arch/sh/Makefile
+>  create mode 100644 tools/perf/arch/sh/util/dwarf-regs.c
 
-Signed-off-by: Joe Perches <joe@perches.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-LKML-Reference: <1277768808.29157.280.camel@Joe-Laptop.home>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/kernel/cpu/mtrr/cleanup.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+Pulled, thanks!
 
-diff --git a/arch/x86/kernel/cpu/mtrr/cleanup.c b/arch/x86/kernel/cpu/mtrr/cleanup.c
-index 06130b5..c5f59d0 100644
---- a/arch/x86/kernel/cpu/mtrr/cleanup.c
-+++ b/arch/x86/kernel/cpu/mtrr/cleanup.c
-@@ -632,9 +632,9 @@ static void __init mtrr_print_out_one_result(int i)
- 	unsigned long gran_base, chunk_base, lose_base;
- 	char gran_factor, chunk_factor, lose_factor;
- 
--	gran_base = to_size_factor(result[i].gran_sizek, &gran_factor),
--	chunk_base = to_size_factor(result[i].chunk_sizek, &chunk_factor),
--	lose_base = to_size_factor(result[i].lose_cover_sizek, &lose_factor),
-+	gran_base = to_size_factor(result[i].gran_sizek, &gran_factor);
-+	chunk_base = to_size_factor(result[i].chunk_sizek, &chunk_factor);
-+	lose_base = to_size_factor(result[i].lose_cover_sizek, &lose_factor);
- 
- 	pr_info("%sgran_size: %ld%c \tchunk_size: %ld%c \t",
- 		result[i].bad ? "*BAD*" : " ",
+	Ingo
