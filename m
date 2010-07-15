@@ -1,45 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934793Ab0GOVKC (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 17:10:02 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34704 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934660Ab0GOVKB (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 17:10:01 -0400
-Date: Thu, 15 Jul 2010 22:09:36 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: Conke Hu <conke.hu@gmail.com>, CoffBeta <coffbeta@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        inux kernel <linux-kernel@vger.kernel.org>,
-        ext-jani.1.nikula@nokia.com,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: tq 2440
-Message-ID: <20100715210936.GB6773@n2100.arm.linux.org.uk>
-References: <AANLkTimyBHliUa62qmfja_ke6YTTysiVAtJcZfi8l2gG@mail.gmail.com> <AANLkTil8GE1OguyAfp3XgfJvEmH98yNrlvGAx684a-qL@mail.gmail.com> <20100715163526.GJ29322@n2100.arm.linux.org.uk> <20100715165141.GA21272@suse.de> <20100715171029.GK29322@n2100.arm.linux.org.uk> <20100715172218.GA22197@suse.de> <20100715173322.GL29322@n2100.arm.linux.org.uk> <20100715205153.GC24463@suse.de>
+	id S934805Ab0GOVKN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 17:10:13 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2992 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934725Ab0GOVKJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 17:10:09 -0400
+Date: Thu, 15 Jul 2010 17:09:44 -0400
+From: Dave Jones <davej@redhat.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Cc: x86@kernel.org
+Subject: Make CONFIG_DEBUG_RODATA boot-time configurable
+Message-ID: <20100715210944.GA24961@redhat.com>
+Mail-Followup-To: Dave Jones <davej@redhat.com>,
+	Linux Kernel <linux-kernel@vger.kernel.org>, x86@kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100715205153.GC24463@suse.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 01:51:53PM -0700, Greg KH wrote:
-> On Thu, Jul 15, 2010 at 06:33:22PM +0100, Russell King - ARM Linux wrote:
-> > Another way to avoid the other complaints is to remove
-> > the unregistration in platform_register_devices().
-> 
-> No, because you could have created a platform device with a call to
-> platform_device_alloc() and then called platform_device_register() and
-> then later, platform_device_unregister(), right?
+We had a request to disable DEBUG_RODATA in our kernel for debugging purposes.  
+Turning it off completely seems a bit unfortunate for the minority case
+of people wanting to do debugging, so I came up with this patch to make
+it a boot-time 'disable_rodata' argument.
 
-No.  Sorry, platform_register_devices should've been platform_add_devices().
-Please look at that function.
+Signed-off-by: Dave Jones <davej@redhat.com>
 
-It's used to register an array of static platform devices from architecture
-code, as I've said in this thread once already.
+
+diff --git a/init/main.c b/init/main.c
+index a42fdf4..eb60fae 100644
+--- a/init/main.c
++++ b/init/main.c
+@@ -820,6 +820,15 @@ static void run_init_process(char *init_filename)
+ 	kernel_execve(init_filename, argv_init, envp_init);
+ }
+ 
++static unsigned int disable_rodata;
++static int __init set_disable_rodata(char *str)
++{
++	disable_rodata = 1;
++	return 1;
++}
++__setup("disable_rodata", set_disable_rodata);
++
++
+ /* This is a non __init function. Force it to be noinline otherwise gcc
+  * makes it inline to init() and it becomes part of init.text section
+  */
+@@ -830,7 +839,8 @@ static noinline int init_post(void)
+ 	async_synchronize_full();
+ 	free_initmem();
+ 	unlock_kernel();
+-	mark_rodata_ro();
++	if (disable_rodata == 0)
++		mark_rodata_ro();
+ 	system_state = SYSTEM_RUNNING;
+ 	numa_default_policy();
+diff --git a/Documentation/kernel-parameters.txt b/Documentation/kernel-parameters.txt
+index 4ddb58d..1320d80 100644
+--- a/Documentation/kernel-parameters.txt
++++ b/Documentation/kernel-parameters.txt
+@@ -651,6 +651,10 @@ and is between 256 and 4096 characters. It is defined in the file
+ 			MTRR settings.  This parameter disables that behavior,
+ 			possibly causing your machine to run very slowly.
+ 
++	disable_rodata [X86]
++			Don't mark .rodata section as read-only.
++			May be useful for debugging.
++
+ 	disable_timer_pin_1 [X86]
+ 			Disable PIN 1 of APIC timer
+ 			Can be useful to work around chipset bugs.
