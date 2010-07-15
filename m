@@ -1,62 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934640Ab0GOUDB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 16:03:01 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:46869 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934593Ab0GOUC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 16:02:58 -0400
-Message-ID: <4C3F6969.6030909@kernel.dk>
-Date: Thu, 15 Jul 2010 14:02:49 -0600
-From: Jens Axboe <axboe@kernel.dk>
-MIME-Version: 1.0
+	id S934647Ab0GOUG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 16:06:58 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:55569 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934613Ab0GOUG4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 16:06:56 -0400
+Date: Thu, 15 Jul 2010 21:06:18 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
 To: Andrew Morton <akpm@linux-foundation.org>
-CC: Adrian Hunter <adrian.hunter@nokia.com>, Christoph Hellwig <hch@lst.de>,
-        linux-mmc Mailing List <linux-mmc@vger.kernel.org>,
-        linux-kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] block: Add secure discard
-References: <20100707111716.24979.68940.sendpatchset@ahunter-work.research.nokia.com>	<20100707111749.24979.69982.sendpatchset@ahunter-work.research.nokia.com>	<4C3C0A71.2080407@nokia.com>	<20100714031632.GA346@lst.de>	<4C3D967F.9070305@nokia.com> <20100715122601.a087f71c.akpm@linux-foundation.org>
-In-Reply-To: <20100715122601.a087f71c.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Lee Jones <lee.jones@canonical.com>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Stop ARM boards crashing when CUPS is loaded -
+	2.6.35-rc5
+Message-ID: <20100715200618.GA6773@n2100.arm.linux.org.uk>
+References: <4C3C72C6.4000005@canonical.com> <20100715130214.4c9303b2.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100715130214.4c9303b2.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2010 01:26 PM, Andrew Morton wrote:
-> On Wed, 14 Jul 2010 13:50:39 +0300
-> Adrian Hunter <adrian.hunter@nokia.com> wrote:
+On Thu, Jul 15, 2010 at 01:02:14PM -0700, Andrew Morton wrote:
+> > BugLink: http://bugs.launchpad.net/bugs/601226
+> > 
+> > When CUPS loads, it tries to load several drivers that it may need.
+> > When one of these drivers, specifically parport_pc is loaded on ARM
+> > based systems, it causes a segmentation fault as the ISA addresses
+> > which are attempted are not writable on non-PC based architectures.
+> > This code prevents ISA addresses from being attempted except on x86.
+> > 
 > 
->> >From 9ba7750fb96d9994e8715b14d8091c37b832b3e6 Mon Sep 17 00:00:00 2001
->> From: Adrian Hunter <adrian.hunter@nokia.com>
->> Date: Wed, 23 Jun 2010 15:41:38 +0300
->> Subject: [PATCH] block: Add secure discard
->>
->> Secure discard is the same as discard except that all copies
->> of the discarded sectors (perhaps created by garbage collection)
->> must also be erased.
->>
->> Signed-off-by: Adrian Hunter <adrian.hunter@nokia.com>
->> ---
->>
->>
->>
->> Here is "[PATCH V4 4/5] block: Add secure discard" applied to
->> git://git.kernel.dk/linux-2.6-block.git for-next.
->>
->> If Jens takes this patch (originally 4th of 5),  Andrew takes patches 1 to 3,
->> and patch 5 waits for this one to propagate, then there will be no dependency
->> problem.
+> That sounds like a pretty serious problem.  But presumably it isn't -
+> otherwise it would have been fixed earlier!
 > 
-> hm, complicated.
-> 
-> I merged all five into -mm.  If Jens sends along some acks then I send
-> all five along to Linus, nice and simple.
-> 
+> So what actions are required to trigger this bug and why aren't others
+> seeing it?
 
-I was about to pick them up, but yeah just adds my acks to the series
-and shove them off for the next series.
+Note that we have machines which have ISA parallel ports, so it's not
+this simple.
 
--- 
-Jens Axboe
+Why not just avoid selecting and building parport_pc on these machines?
 
+I mean, the Beagleboard doesn't have PCI nor ISA, so why is parport_pc
+being built for production use?
