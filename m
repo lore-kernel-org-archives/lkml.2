@@ -1,122 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933616Ab0GOPfi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 11:35:38 -0400
-Received: from mga01.intel.com ([192.55.52.88]:37670 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933418Ab0GOPfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 11:35:37 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,209,1278313200"; 
-   d="scan'208";a="586424257"
-Date: Thu, 15 Jul 2010 23:35:30 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Dave Chinner <david@fromorbit.com>, Christoph Hellwig <hch@infradead.org>,
-        Jan Kara <jack@suse.cz>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        David Howells <dhowells@redhat.com>
-Subject: Re: [PATCH 4/6] writeback: dont redirty tail an inode with dirty
- pages
-Message-ID: <20100715153530.GC6511@localhost>
-References: <20100711020656.340075560@intel.com>
- <20100711021749.021449821@intel.com>
- <20100712020109.GB25335@dastard>
- <20100712153127.GB30222@localhost>
- <20100712151317.bd9d656c.akpm@linux-foundation.org>
+	id S933614Ab0GOPoc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 11:44:32 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:18591 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933418Ab0GOPo3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 11:44:29 -0400
+Message-ID: <4C3F2CDD.80807@caviumnetworks.com>
+Date: Thu, 15 Jul 2010 08:44:29 -0700
+From: David Daney <ddaney@caviumnetworks.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100712151317.bd9d656c.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: rostedt@goodmis.org
+CC: linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] trace-cmd: Don't try to read unmapped memory.
+References: <1279145530-782-1-git-send-email-ddaney@caviumnetworks.com>
+In-Reply-To: <1279145530-782-1-git-send-email-ddaney@caviumnetworks.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 15 Jul 2010 15:44:29.0561 (UTC) FILETIME=[9CAC0690:01CB2434]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 06:13:17AM +0800, Andrew Morton wrote:
-> On Mon, 12 Jul 2010 23:31:27 +0800
-> Wu Fengguang <fengguang.wu@intel.com> wrote:
-> 
-> > > > +		} else if (inode->i_state & I_DIRTY) {
-> > > > +			/*
-> > > > +			 * At least XFS will redirty the inode during the
-> > > > +			 * writeback (delalloc) and on io completion (isize).
-> > > > +			 */
-> > > > +			redirty_tail(inode);
-> > > 
-> > > I'd drop the mention of XFS here - any filesystem that does delayed
-> > > allocation or unwritten extent conversion after Io completion will
-> > > cause this. Perhaps make the comment:
-> > > 
-> > > 	/*
-> > > 	 * Filesystems can dirty the inode during writeback
-> > > 	 * operations, such as delayed allocation during submission
-> > > 	 * or metadata updates after data IO completion.
-> > > 	 */
-> > 
-> > Thanks, comments updated accordingly.
-> > 
-> > ---
-> > writeback: don't redirty tail an inode with dirty pages
-> > 
-> > This avoids delaying writeback for an expired (XFS) inode with lots of
-> > dirty pages, but no active dirtier at the moment. Previously we only do
-> > that for the kupdate case.
-> > 
-> 
-> You didn't actually explain the _reason_ for making this change. 
-> Please always do that.
+This one isn't correct.  It prevents the crash, but also can cause many 
+trace records to be omitted.  I will try to come up with a new patch for 
+the problem I see.
 
-OK. It's actually extending commit b3af9468ae from the kupdate-only case to
-both kupdate and !kupdate cases.
+David Daney
 
-The commit documented the reason:
 
-    Debug traces show that in per-bdi writeback, the inode under writeback
-    almost always get redirtied by a busy dirtier.  We used to call
-    redirty_tail() in this case, which could delay inode for up to 30s.
-    
-    This is unacceptable because it now happens so frequently for plain cp/dd,
-    that the accumulated delays could make writeback of big files very slow.
+On 07/14/2010 03:12 PM, David Daney wrote:
+> When tracecmd_peek_data() reads the last event by calling
+> translate_data(), it will get type_len = 0, length = -4.  It had to
+> read 8 bytes of data, but it adjusts the index by -4, for a net
+> increment of 4.  The invariant that the index points to an entire
+> event ceases to hold.
+>
+> If the index were already at the last event in the mapped area, a
+> subsequent tracecmd_peek_data() checks that the index is not beyond
+> the end of the mapping (which it isn't), but it assumes that the
+> entire event will fit (which it doesn't).  It then attempts to read an
+> entire event (8 bytes), but the last 4 bytes are now beyond the end of
+> the mapping causing a fault.
+>
+> My fix is to keep the index pointing at the last record when the
+> negative length is encountered.
+>
+> On my x86_64 workstation, the mappings of the trace data were always
+> contiguous with other mapped memory, so the reading of 4 bytes past the
+> end of the mapping always fell on another piece of mapped memory, so
+> no fault was produced.  Running under valgrind or on a MIPS64 host was
+> necessary to produce the fault.
+>
+> Signed-off-by: David Daney<ddaney@caviumnetworks.com>
+> ---
+>   trace-input.c |   12 ++++++++++++
+>   1 files changed, 12 insertions(+), 0 deletions(-)
+>
+> diff --git a/trace-input.c b/trace-input.c
+> index 398d0f9..2ba346d 100644
+> --- a/trace-input.c
+> +++ b/trace-input.c
+> @@ -1530,6 +1530,18 @@ read_again:
+>
+>   	type_len = translate_data(handle,&ptr,&extend,&length);
+>
+> +	if (length<  0) {
+> +		/*
+> +		 * Negative length indicates the end.  Back up ptr so
+> +		 * subsequent reads don't fall off the end of the
+> +		 * mapping.
+> +		 */
+> +		ptr -= 8;
+> +		handle->cpu_data[cpu].index = calc_index(handle, ptr, cpu);
+> +		handle->cpu_data[cpu].next = NULL;
+> +		return NULL;
+> +	}
+> +
+>   	switch (type_len) {
+>   	case RINGBUF_TYPE_PADDING:
+>   		if (!extend) {
 
-    So let's distinguish between data redirty and metadata only redirty.
-    The first one is caused by a busy dirtier, while the latter one could
-    happen in XFS, NFS, etc. when they are doing delalloc or updating isize.
-
-Commit b3af9468ae only does that for kupdate case because requeue_io() was
-only called in the kupdate case. Now we are merging the kupdate and !kupdate
-cases in patch 6/6 (why not?), so is this patch.
-
-> The patch is...  surprisingly complicated, although the end result
-> looks OK.  This is not aided by the partial duplication between
-> mapping_tagged(PAGECACHE_TAG_DIRTY) and I_DIRTY_PAGES.  I don't think
-> we can easily remove I_DIRTY_PAGES because it's used for the
-> did-someone-just-dirty-a-page test here.
-
-I double checked I_DIRTY_PAGES. The main difference to PAGECACHE_TAG_DIRTY is:
-I_DIRTY_PAGES (at the line removed by this patch) means there are _new_ pages
-get dirtied during writeback, while PAGECACHE_TAG_DIRTY means there are dirty
-pages. In this sense, if the I_DIRTY_PAGES handling is the same as
-PAGECACHE_TAG_DIRTY, the code can be merged into PAGECACHE_TAG_DIRTY, as this
-patch does.
-
-The other minor differences are
-
-- in *_set_page_dirty*(), PAGECACHE_TAG_DIRTY is set racelessly, while
-  I_DIRTY_PAGES might be set on the inode for a page just truncated.
-  The difference has no real impact on this patch (it's actually
-  slightly better now).
-
-- afs_fsync() always set I_DIRTY_PAGES after calling afs_writepages().
-  The call was there in the first day (introduce by David Howells).
-  What was the intention, hmm..?
-
-> This code is way too complex and fragile and I fear that anything we do
-> to it will break something :(
-
-Agreed. Let's try to simplify it :)
-
-Thanks,
-Fengguang
