@@ -1,81 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758789Ab0GPSVt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 14:21:49 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:51020 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756991Ab0GPSVs convert rfc822-to-8bit (ORCPT
+	id S1758818Ab0GPSWo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 14:22:44 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:47753 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756991Ab0GPSWn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 14:21:48 -0400
-MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1007161406120.10598@xanadu.home>
-References: <20100713230352.6781.18644.stgit@angua> <1279296221.17878.66.camel@e102109-lin.cambridge.arm.com> 
-	<AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com> 
-	<alpine.LFD.2.00.1007161406120.10598@xanadu.home>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 16 Jul 2010 12:21:27 -0600
-X-Google-Sender-Auth: HvBzKxDLyEMjdJLrGtV6l93J100
-Message-ID: <AANLkTilY0rvbp7brGsnyuGhPjFvpVYInNWlAlf5tT4zG@mail.gmail.com>
-Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for 
-	defconfig
-To: Nicolas Pitre <nico@fluxnic.net>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
+	Fri, 16 Jul 2010 14:22:43 -0400
+Date: Fri, 16 Jul 2010 14:22:40 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+Message-ID: <20100716182240.GA23215@Krystal>
+References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <4C408D0C.5050709@redhat.com> <20100716165855.GA3836@Krystal> <4C409CBA.1050709@redhat.com> <4C409F62.6030303@zytor.com> <4C40A1BD.4040507@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C40A1BD.4040507@redhat.com>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 14:20:31 up 174 days, 20:57,  6 users,  load average: 0.11, 0.09,
+	0.03
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 12:19 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
-> On Fri, 16 Jul 2010, Grant Likely wrote:
->
->> On Fri, Jul 16, 2010 at 10:03 AM, Catalin Marinas
->> <catalin.marinas@arm.com> wrote:
->> > On Wed, 2010-07-14 at 00:04 +0100, Grant Likely wrote:
->> >> - It still doesn't resolve dependencies.  A solver would help with this.
->> >>   For the time being I work around the problem by running the generated
->> >>   config through 'oldconfig' and looking for differences.  If the files
->> >>   differ (ignoring comments and generateconfig_* options) after oldconfig,
->> >>   then the <board>_defconfig target returns a failure.  (but leaves the
->> >>   new .config intact so the user can resolve it with menuconfig).  This
->> >>   way at least the user is told when a Kconfig fragment is invalid.
->> >
->> > It's not a solver but I'm pushing a patch to warn on selecting symbols
->> > with unmet dependencies so that you can select further symbols (manual
->> > solving). The patch is in linux-next but you also can grab it from:
->> >
->> > http://git.kernel.org/?p=linux/kernel/git/cmarinas/linux-2.6-cm.git;a=commitdiff_plain;h=5d87db2d2a332784bbf2b1ec3e141486f4d41d6f
+* Avi Kivity (avi@redhat.com) wrote:
+> On 07/16/2010 09:05 PM, H. Peter Anvin wrote:
 >>
->> sfr and I were talking about your patch the other day.  Just warning
->> on incomplete dependencies is enough to make it actually workable for
->> me (without my ugly post-processing step).  I was very happy to hear
->> that it is in linux-next.
->>
->> Last missing piece is being able to do "select FOO = n", which Stephen
->> is currently working on.
+>>> Module loading can certainly take a vmalloc_sync_all() (though I agree
+>>> it's unpleasant).  Anything else?
+>>>
+>>> Note perf is not modular at this time, but could be made so with
+>>> preempt/sched notifiers to hook the context switch.
+>>>
+>>>      
+>> Actually, module loading is already a performance problem; a lot of
+>> distros load sometimes hundreds of modules on startup, and it's heavily
+>> serialized, so I can see this being desirable to skip.
+>>    
 >
-> Instead of (or in addition to) warning for incomplete
-> dependencies, I'd much prefer if the prerequisites were recursively
-> selected automatically.  This way if some options are moved inside a
-> submenu at some point with a config symbol for that subcategory
-> (e.g. CONFIG_NETDEV_1000), or if the subsystem is reorganized into
-> submodules that are required for some driver to work, then my
-> config will still be fine.
+> There aren't that many processes at this time (or there shouldn't be,  
+> don't know how fork-happy udev is at this stage), so the sync should be  
+> pretty fast.  In any case, we can sync only modules that contain NMI  
+> handlers.
+
+USB hotplug is a use-case happening randomly after the system is well there and
+running; I'm afraid this does not fit in your module loading expectations. It
+triggers tons of events, many of these actually load modules.
+
+Thanks,
+
+Mathieu
+
 >
-> For example, if I want CONFIG_MTD_CMDLINE_PARTS=y, the system may be
-> smart enough to notice and automatically enable CONFIG_MTD and
-> CONFIG_MTD_PARTITIONS without having to carry those in the defconfig.
+>> I really hope noone ever gets the idea of touching user space from an
+>> NMI handler, though, and expecting it to work...
+>>    
+>
+> I think the concern here is about an NMI handler's code running in  
+> vmalloc space, or is it something else?
+>
+> -- 
+> I have a truly marvellous patch that fixes the bug which this
+> signature is too narrow to contain.
+>
 
-I fully agree.  However, the warnings make the system work now while
-we wait for a full solver to be implemented.
-
-g.
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
