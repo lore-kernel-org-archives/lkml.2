@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966119Ab0GPT2y (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 15:28:54 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:34877 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751248Ab0GPT2x (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 15:28:53 -0400
-Date: Fri, 16 Jul 2010 21:28:47 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Avi Kivity <avi@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+	id S966127Ab0GPTaw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 15:30:52 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:37568 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966044Ab0GPTav (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 15:30:51 -0400
+Message-ID: <4C40B324.4040907@zytor.com>
+Date: Fri, 16 Jul 2010 12:29:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
         Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
@@ -30,43 +31,24 @@ Cc: Avi Kivity <avi@redhat.com>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
         "Frank Ch. Eigler" <fche@redhat.com>
 Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-Message-ID: <20100716192847.GC7338@basil.fritz.box>
-References: <20100714154923.947138065@efficios.com>
- <20100714155804.252253097@efficios.com>
- <4C405078.20707@redhat.com>
- <20100716144927.GA22516@Krystal>
- <4C408D0C.5050709@redhat.com>
- <20100716165855.GA3836@Krystal>
- <4C409CBA.1050709@redhat.com>
- <4C409F62.6030303@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C409F62.6030303@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <4C408D0C.5050709@redhat.com> <20100716165855.GA3836@Krystal> <4C409CBA.1050709@redhat.com> <4C409F62.6030303@zytor.com> <4C40A1BD.4040507@redhat.com> <20100716182240.GA23215@Krystal> <4C40A5A0.3010107@redhat.com>
+In-Reply-To: <4C40A5A0.3010107@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Actually, module loading is already a performance problem; a lot of
-> distros load sometimes hundreds of modules on startup, and it's heavily
+On 07/16/2010 11:32 AM, Avi Kivity wrote:
+> 
+> How long would vmalloc_sync_all take with a few thousand mm_struct take?
+> 
+> We share the pmds, yes?  So it's a few thousand memory accesses.  The 
+> direct impact is probably negligible, compared to actually loading the 
+> module from disk.  All we need is to make sure the locking doesn't slow 
+> down unrelated stuff.
+> 
 
-On startup you don't have many processes.  If there's a problem
-it's surely not the fault of vmalloc_sync_all()
+It's not the memory accesses, it's the need to synchronize all the CPUs.
 
-BTW in my experience one reason module loading was traditionally slow was
-that it did a stop_machine(). I think(?) that has been fixed
-at some point. But even with that's it's more an issue on larger
-systems.
-
-> I really hope noone ever gets the idea of touching user space from an
-> NMI handler, though, and expecting it to work...
-
-It can make sense for a backtrace in a profiler.
-
-In fact perf is nearly doing it I believe, but moves
-it to the self IPI handler in most cases.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+	-hpa
