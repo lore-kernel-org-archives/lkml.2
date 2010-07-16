@@ -1,153 +1,217 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965319Ab0GPMZq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 08:25:46 -0400
-Received: from mail-i4.nets.RWTH-Aachen.DE ([137.226.12.21]:42378 "EHLO
-	MAIL-i4.nets.rwth-aachen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965280Ab0GPMZo (ORCPT
+	id S965354Ab0GPM3O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 08:29:14 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43466 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965342Ab0GPM3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 08:25:44 -0400
-Message-ID: <4C404FC5.6040107@nets.rwth-aachen.de>
-Date: Fri, 16 Jul 2010 14:25:41 +0200
-From: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	Fri, 16 Jul 2010 08:29:10 -0400
+Date: Fri, 16 Jul 2010 14:29:08 +0200
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: Milton Miller <miltonm@bga.com>, David Woodhouse <dwmw2@infradead.org>,
+        Mike Frysinger <vapier@gentoo.org>, Jiri Kosina <jkosina@suse.cz>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Alexander Kurz <linux@kbdbabel.org>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Ralf Baechle <ralf@linux-mips.org>,
+        Manuel Lauss <manuel.lauss@gmail.com>, linux-kernel@vger.kernel.org,
+        linux-mtd@lists.infradead.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: [PATCH 2/2] Removed redwood/mtd mapping
+Message-ID: <ae6929d3206f6a282f2b0bf2621a05af45d892ff.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
+References: <4f07b3092cafbbba37d61d367cc7484e24d18d2a.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de>
+ <redwood56-reply-1-miltonm@bga.com>
+ <cover.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Ilpo_J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
-        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
-Subject: Re: oops in tcp_xmit_retransmit_queue() w/ v2.6.32.15
-References: <4C358AAA.9080400@kernel.org> <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi> <4C3EF7EA.2040900@nets.rwth-aachen.de> <1279195528.2496.2.camel@edumazet-laptop> <4C3F053F.7090704@nets.rwth-aachen.de> <alpine.DEB.2.00.1007161448330.13946@melkinpaasi.cs.helsinki.fi>
-In-Reply-To: <alpine.DEB.2.00.1007161448330.13946@melkinpaasi.cs.helsinki.fi>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <cover.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.07.2010 14:02, Ilpo Järvinen wrote:
->
->>>> [ 2754.413150] NULL head, pkts 0
->>>> [ 2754.413156] Errors caught so far 1
->>>>          
-> Thanks for reporting the results.
->
-> Could you post the oops too or double check do the timestamps really match
-> (and there wasn't more "Errors caught" prints in between)? Since this
-> condition doesn't seem to crash the kernel as also send_head should be
-> NULL, which saves the day here exiting the loop (unless send head would
-> too be corrupt).
->    
-I can try to do some more testing, perhaps then I will get other 
-results. But until now I've always gotten something like above.
+Removing the redwood mtd mapping driver, because all REDWOOD_[456]
+configuration options were removed from the kernel, because they weren't
+referenced anywhere.
 
-With the debug patch the kernel doesn't crash, but I have an oops from a 
-run before the patch:
+Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+---
+ drivers/mtd/maps/Kconfig   |    8 ---
+ drivers/mtd/maps/Makefile  |    1 -
+ drivers/mtd/maps/redwood.c |  131 --------------------------------------------
+ 3 files changed, 0 insertions(+), 140 deletions(-)
+ delete mode 100644 drivers/mtd/maps/redwood.c
 
-[ 3214.498061] BUG: unable to handle kernel NULL pointer dereference at 
-(null)
-[ 3214.498085] IP: [<c12657dc>] tcp_xmit_retransmit_queue+0x4c/0x2b0
-[ 3214.498121] *pdpt = 00000002cf6fa001
-[ 3214.498130] Thread overran stack, or stack corrupted
-[ 3214.498138] Oops: 0000 [#1] SMP
-[ 3214.498154] last sysfs file: /sys/kernel/uevent_seqnum
-[ 3214.498161] Modules linked in: tcp_ancr tcp_ncr
-[ 3214.498174]
-[ 3214.498180] Pid: 0, comm: swapper Not tainted (2.6.31.9-pae-um-wolff 
-#79)
-[ 3214.498188] EIP: 0061:[<c12657dc>] EFLAGS: 00010246 CPU: 0
-[ 3214.498196] EIP is at tcp_xmit_retransmit_queue+0x4c/0x2b0
-[ 3214.498203] EAX: c6da2900 EBX: c6da2880 ECX: 00000000 EDX: e50c512e
-[ 3214.498211] ESI: 00000000 EDI: 0000051b EBP: c6da2900 ESP: c13d5cf0
-[ 3214.498219]  DS: 007b ES: 007b FS: 00d8 GS: 0000 SS: 0069
-[ 3214.498227] Process swapper (pid: 0, ti=c13d4000 task=c13e7a20 
-task.ti=c13d4000)
-[ 3214.498236] Stack:
-[ 3214.498240]  c1005a0b 00000001 00000000 e50c512e c7804300 00000013 
-c6da2880 0000051b
-[ 3214.498264] <0> e50c512e c1260709 c6cbf840 c6d42000 c1031826 c1288bbd 
-c6da2900 c6e09320
-[ 3214.498290] <0> c6e09300 00000000 00000000 00000001 e50c512d e521a346 
-e50c512e 00000000
-[ 3214.498318] Call Trace:
-[ 3214.498329]  [<c1005a0b>] ? xen_restore_fl_direct_end+0x0/0x1
-[ 3214.498339]  [<c1260709>] ? tcp_ack+0x7f9/0x10d0
-[ 3214.498350]  [<c1031826>] ? local_bh_enable+0x56/0x80
-[ 3214.498359]  [<c1288bbd>] ? ipt_do_table+0x2dd/0x590
-[ 3214.498369]  [<c1261eef>] ? tcp_rcv_state_process+0x41f/0x970
-[ 3214.498378]  [<c1267e7f>] ? tcp_v4_do_rcv+0x8f/0x1e0
-[ 3214.498387]  [<c1269ccd>] ? tcp_v4_rcv+0x68d/0x7d0
-[ 3214.498397]  [<c124d5f0>] ? ip_local_deliver_finish+0x0/0x1e0
-[ 3214.498406]  [<c124d687>] ? ip_local_deliver_finish+0x97/0x1e0
-[ 3214.498416]  [<c124d5f0>] ? ip_local_deliver_finish+0x0/0x1e0
-[ 3214.498425]  [<c124d3eb>] ? ip_rcv_finish+0x13b/0x340
-[ 3214.498434]  [<c124d2b0>] ? ip_rcv_finish+0x0/0x340
-[ 3214.498442]  [<c124d8c0>] ? ip_rcv+0x0/0x2e0
-[ 3214.498452]  [<c1211037>] ? netif_receive_skb+0x2f7/0x4c0
-[ 3214.498468]  [<c1213fe0>] ? process_backlog+0x70/0xb0
-[ 3214.498476]  [<c1213d98>] ? net_rx_action+0xe8/0x1a0
-[ 3214.498486]  [<c103116d>] ? __do_softirq+0x8d/0x120
-[ 3214.498494]  [<c100360d>] ? xen_mc_flush+0xed/0x1a0
-[ 3214.498504]  [<c1057891>] ? move_native_irq+0x11/0x50
-[ 3214.498513]  [<c1031238>] ? do_softirq+0x38/0x40
-[ 3214.498523]  [<c11930e2>] ? xen_evtchn_do_upcall+0x142/0x160
-[ 3214.498534]  [<c10087d7>] ? xen_do_upcall+0x7/0xc
-[ 3214.498543]  [<c10013a7>] ? hypercall_page+0x3a7/0x1010
-[ 3214.498552]  [<c100520f>] ? xen_safe_halt+0xf/0x20
-[ 3214.498560]  [<c100349c>] ? xen_idle+0x1c/0x30
-[ 3214.498569]  [<c1006bba>] ? cpu_idle+0x3a/0x60
-[ 3214.498578]  [<c141692a>] ? start_kernel+0x26a/0x300
-[ 3214.498616]  [<c1416280>] ? unknown_bootoption+0x0/0x1c0
-[ 3214.498630]  [<c141938e>] ? xen_start_kernel+0x3be/0x3e0
-[ 3214.498637] Code: 00 00 8b b3 a0 03 00 00 85 f6 0f 84 53 02 00 00 8b 
-46 3c 8d ab 80 00 00 00 8b 93 04 04 00 00 39 c2 89 54 24 0c 0f 89 1c 02 
-00 00 <8b> 06 0f 18 00 90 39 ee 0f 84 30 01 00 00 39 b3 28 01 00 00 8d
-[ 3214.498820] EIP: [<c12657dc>] tcp_xmit_retransmit_queue+0x4c/0x2b0 
-SS:ESP 0069:c13d5cf0
-[ 3214.498836] CR2: 0000000000000000
-[ 3214.498846] ---[ end trace 709a97adf87834a7 ]---
-[ 3214.498852] Kernel panic - not syncing: Fatal exception in interrupt
-[ 3214.498862] Pid: 0, comm: swapper Tainted: G      D    
-2.6.31.9-pae-um-wolff #79
-[ 3214.498870] Call Trace:
-[ 3214.498878]  [<c102c896>] ? panic+0x46/0x100
-[ 3214.498904]  [<c100b428>] ? oops_end+0x98/0xa0
-[ 3214.498922]  [<c1019eff>] ? no_context+0x11f/0x1b0
-[ 3214.498930]  [<c101a516>] ? do_page_fault+0x66/0x240
-[ 3214.498939]  [<c101a4b0>] ? do_page_fault+0x0/0x240
-[ 3214.498947]  [<c101a23f>] ? bad_area_nosemaphore+0xf/0x20
-[ 3214.498955]  [<c1308b7e>] ? error_code+0x66/0x6c
-[ 3214.498963]  [<c101a4b0>] ? do_page_fault+0x0/0x240
-[ 3214.498972]  [<c12657dc>] ? tcp_xmit_retransmit_queue+0x4c/0x2b0
-[ 3214.498982]  [<c1005a0b>] ? xen_restore_fl_direct_end+0x0/0x1
-[ 3214.498991]  [<c1260709>] ? tcp_ack+0x7f9/0x10d0
-[ 3214.498999]  [<c1031826>] ? local_bh_enable+0x56/0x80
-[ 3214.499009]  [<c1288bbd>] ? ipt_do_table+0x2dd/0x590
-[ 3214.499017]  [<c1261eef>] ? tcp_rcv_state_process+0x41f/0x970
-[ 3214.499025]  [<c1267e7f>] ? tcp_v4_do_rcv+0x8f/0x1e0
-[ 3214.499034]  [<c1269ccd>] ? tcp_v4_rcv+0x68d/0x7d0
-[ 3214.499044]  [<c124d5f0>] ? ip_local_deliver_finish+0x0/0x1e0
-[ 3214.499053]  [<c124d687>] ? ip_local_deliver_finish+0x97/0x1e0
-[ 3214.499063]  [<c124d5f0>] ? ip_local_deliver_finish+0x0/0x1e0
-[ 3214.499072]  [<c124d3eb>] ? ip_rcv_finish+0x13b/0x340
-[ 3214.499079]  [<c124d2b0>] ? ip_rcv_finish+0x0/0x340
-[ 3214.499087]  [<c124d8c0>] ? ip_rcv+0x0/0x2e0
-[ 3214.499101]  [<c1211037>] ? netif_receive_skb+0x2f7/0x4c0
-[ 3214.499115]  [<c1213fe0>] ? process_backlog+0x70/0xb0
-[ 3214.499123]  [<c1213d98>] ? net_rx_action+0xe8/0x1a0
-[ 3214.499131]  [<c103116d>] ? __do_softirq+0x8d/0x120
-[ 3214.499143]  [<c100360d>] ? xen_mc_flush+0xed/0x1a0
-[ 3214.499152]  [<c1057891>] ? move_native_irq+0x11/0x50
-[ 3214.499160]  [<c1031238>] ? do_softirq+0x38/0x40
-[ 3214.499174]  [<c11930e2>] ? xen_evtchn_do_upcall+0x142/0x160
-[ 3214.499188]  [<c10087d7>] ? xen_do_upcall+0x7/0xc
-[ 3214.499195]  [<c10013a7>] ? hypercall_page+0x3a7/0x1010
-[ 3214.499203]  [<c100520f>] ? xen_safe_halt+0xf/0x20
-[ 3214.499214]  [<c100349c>] ? xen_idle+0x1c/0x30
-[ 3214.499223]  [<c1006bba>] ? cpu_idle+0x3a/0x60
-[ 3214.499231]  [<c141692a>] ? start_kernel+0x26a/0x300
-[ 3214.499239]  [<c1416280>] ? unknown_bootoption+0x0/0x1c0
-[ 3214.499247]  [<c141938e>] ? xen_start_kernel+0x3be/0x3e0
+diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
+index 6629d09..701d942 100644
+--- a/drivers/mtd/maps/Kconfig
++++ b/drivers/mtd/maps/Kconfig
+@@ -319,14 +319,6 @@ config MTD_CFI_FLAGADM
+ 	  Mapping for the Flaga digital module. If you don't have one, ignore
+ 	  this setting.
+ 
+-config MTD_REDWOOD
+-	tristate "CFI Flash devices mapped on IBM Redwood"
+-	depends on MTD_CFI
+-	help
+-	  This enables access routines for the flash chips on the IBM
+-	  Redwood board. If you have one of these boards and would like to
+-	  use the flash chips on it, say 'Y'.
+-
+ config MTD_SOLUTIONENGINE
+ 	tristate "CFI Flash device mapped on Hitachi SolutionEngine"
+ 	depends on SUPERH && SOLUTION_ENGINE && MTD_CFI && MTD_REDBOOT_PARTS
+diff --git a/drivers/mtd/maps/Makefile b/drivers/mtd/maps/Makefile
+index bb035cd..f216bb5 100644
+--- a/drivers/mtd/maps/Makefile
++++ b/drivers/mtd/maps/Makefile
+@@ -44,7 +44,6 @@ obj-$(CONFIG_MTD_AUTCPU12)	+= autcpu12-nvram.o
+ obj-$(CONFIG_MTD_EDB7312)	+= edb7312.o
+ obj-$(CONFIG_MTD_IMPA7)		+= impa7.o
+ obj-$(CONFIG_MTD_FORTUNET)	+= fortunet.o
+-obj-$(CONFIG_MTD_REDWOOD)	+= redwood.o
+ obj-$(CONFIG_MTD_UCLINUX)	+= uclinux.o
+ obj-$(CONFIG_MTD_NETtel)	+= nettel.o
+ obj-$(CONFIG_MTD_SCB2_FLASH)	+= scb2_flash.o
+diff --git a/drivers/mtd/maps/redwood.c b/drivers/mtd/maps/redwood.c
+deleted file mode 100644
+index d2c9db0..0000000
+--- a/drivers/mtd/maps/redwood.c
++++ /dev/null
+@@ -1,131 +0,0 @@
+-/*
+- * drivers/mtd/maps/redwood.c
+- *
+- * FLASH map for the IBM Redwood 4/5/6 boards.
+- *
+- * Author: MontaVista Software, Inc. <source@mvista.com>
+- *
+- * 2001-2003 (c) MontaVista, Software, Inc. This file is licensed under
+- * the terms of the GNU General Public License version 2. This program
+- * is licensed "as is" without any warranty of any kind, whether express
+- * or implied.
+- */
+-
+-#include <linux/module.h>
+-#include <linux/types.h>
+-#include <linux/kernel.h>
+-#include <linux/init.h>
+-
+-#include <linux/mtd/mtd.h>
+-#include <linux/mtd/map.h>
+-#include <linux/mtd/partitions.h>
+-
+-#include <asm/io.h>
+-
+-#define WINDOW_ADDR 0xffc00000
+-#define WINDOW_SIZE 0x00400000
+-
+-#define RW_PART0_OF	0
+-#define RW_PART0_SZ	0x10000
+-#define RW_PART1_OF	RW_PART0_SZ
+-#define RW_PART1_SZ	0x200000 - 0x10000
+-#define RW_PART2_OF	0x200000
+-#define RW_PART2_SZ	0x10000
+-#define RW_PART3_OF	0x210000
+-#define RW_PART3_SZ	0x200000 - (0x10000 + 0x20000)
+-#define RW_PART4_OF	0x3e0000
+-#define RW_PART4_SZ	0x20000
+-
+-static struct mtd_partition redwood_flash_partitions[] = {
+-	{
+-		.name = "Redwood OpenBIOS Vital Product Data",
+-		.offset = RW_PART0_OF,
+-		.size = RW_PART0_SZ,
+-		.mask_flags = MTD_WRITEABLE	/* force read-only */
+-	},
+-	{
+-		.name = "Redwood kernel",
+-		.offset = RW_PART1_OF,
+-		.size = RW_PART1_SZ
+-	},
+-	{
+-		.name = "Redwood OpenBIOS non-volatile storage",
+-		.offset = RW_PART2_OF,
+-		.size = RW_PART2_SZ,
+-		.mask_flags = MTD_WRITEABLE	/* force read-only */
+-	},
+-	{
+-		.name = "Redwood filesystem",
+-		.offset = RW_PART3_OF,
+-		.size = RW_PART3_SZ
+-	},
+-	{
+-		.name = "Redwood OpenBIOS",
+-		.offset = RW_PART4_OF,
+-		.size = RW_PART4_SZ,
+-		.mask_flags = MTD_WRITEABLE	/* force read-only */
+-	}
+-};
+-
+-struct map_info redwood_flash_map = {
+-	.name = "IBM Redwood",
+-	.size = WINDOW_SIZE,
+-	.bankwidth = 2,
+-	.phys = WINDOW_ADDR,
+-};
+-
+-
+-#define NUM_REDWOOD_FLASH_PARTITIONS ARRAY_SIZE(redwood_flash_partitions)
+-
+-static struct mtd_info *redwood_mtd;
+-
+-static int __init init_redwood_flash(void)
+-{
+-	int err;
+-
+-	printk(KERN_NOTICE "redwood: flash mapping: %x at %x\n",
+-			WINDOW_SIZE, WINDOW_ADDR);
+-
+-	redwood_flash_map.virt = ioremap(WINDOW_ADDR, WINDOW_SIZE);
+-
+-	if (!redwood_flash_map.virt) {
+-		printk("init_redwood_flash: failed to ioremap\n");
+-		return -EIO;
+-	}
+-	simple_map_init(&redwood_flash_map);
+-
+-	redwood_mtd = do_map_probe("cfi_probe",&redwood_flash_map);
+-
+-	if (redwood_mtd) {
+-		redwood_mtd->owner = THIS_MODULE;
+-		err = add_mtd_partitions(redwood_mtd,
+-				redwood_flash_partitions,
+-				NUM_REDWOOD_FLASH_PARTITIONS);
+-		if (err) {
+-			printk("init_redwood_flash: add_mtd_partitions failed\n");
+-			iounmap(redwood_flash_map.virt);
+-		}
+-		return err;
+-
+-	}
+-
+-	iounmap(redwood_flash_map.virt);
+-	return -ENXIO;
+-}
+-
+-static void __exit cleanup_redwood_flash(void)
+-{
+-	if (redwood_mtd) {
+-		del_mtd_partitions(redwood_mtd);
+-		/* moved iounmap after map_destroy - armin */
+-		map_destroy(redwood_mtd);
+-		iounmap((void *)redwood_flash_map.virt);
+-	}
+-}
+-
+-module_init(init_redwood_flash);
+-module_exit(cleanup_redwood_flash);
+-
+-MODULE_LICENSE("GPL");
+-MODULE_AUTHOR("MontaVista Software <source@mvista.com>");
+-MODULE_DESCRIPTION("MTD map driver for the IBM Redwood reference boards");
+-- 
+1.7.0.4
+
