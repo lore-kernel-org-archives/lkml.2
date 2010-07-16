@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965030Ab0GPK0Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 06:26:16 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:60469 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964996Ab0GPK0O (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 06:26:14 -0400
-Date: Fri, 16 Jul 2010 11:25:58 +0100
-From: Mel Gorman <mel@csn.ul.ie>
+	id S965046Ab0GPK0i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 06:26:38 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:33891 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964996Ab0GPK0g (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 06:26:36 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 16 Jul 2010 19:21:50 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
         Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
-Subject: Re: [PATCH 1/7] memcg: sc.nr_to_reclaim should be initialized
-Message-ID: <20100716102557.GE13117@csn.ul.ie>
-References: <20100716191006.7369.A69D9226@jp.fujitsu.com> <20100716191256.736C.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100716191256.736C.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+Subject: Re: [PATCH 5/7] memcg, vmscan: add memcg reclaim tracepoint
+Message-Id: <20100716192150.c6fde6ae.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100716191608.7378.A69D9226@jp.fujitsu.com>
+References: <20100716191006.7369.A69D9226@jp.fujitsu.com>
+	<20100716191608.7378.A69D9226@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 07:13:31PM +0900, KOSAKI Motohiro wrote:
-> Currently, mem_cgroup_shrink_node_zone() initialize sc.nr_to_reclaim as 0.
-> It mean shrink_zone() only scan 32 pages and immediately return even if
-> it doesn't reclaim any pages.
+On Fri, 16 Jul 2010 19:16:46 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+
 > 
-
-Do you mean it immediately returns once one page is reclaimed? i.e. this
-check
-
-               if (nr_reclaimed >= nr_to_reclaim && priority < DEF_PRIORITY)
-                        break;
-
-
-> This patch fixes it.
+> Memcg also need to trace reclaim progress as direct reclaim. This patch
+> add it.
 > 
-
-Otherwise it seems ok. It's unrelated to trace points though so should
-be submitted on its own.
-
 > Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Acked-by: Mel Gorman <mel@csn.ul.ie>
+Thank you!!
 
-> ---
->  mm/vmscan.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 1691ad0..bd1d035 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1932,6 +1932,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->  						struct zone *zone, int nid)
->  {
->  	struct scan_control sc = {
-> +		.nr_to_reclaim = SWAP_CLUSTER_MAX,
->  		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
->  		.may_swap = !noswap,
-> -- 
-> 1.6.5.2
-> 
-> 
-> 
+Reviewed-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
