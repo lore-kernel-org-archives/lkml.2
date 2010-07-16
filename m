@@ -1,147 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966184Ab0GPUda (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 16:33:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62921 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754909Ab0GPUd2 (ORCPT
+	id S966193Ab0GPUha (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 16:37:30 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41917 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759239Ab0GPUh2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 16:33:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=MWly6oXmcCJ1c6j+LvZn3on+hoXmi0n1ynGkSuWnEzz8efatL78Qr6JmXgwpDmJAG/
-         NmWFtL3zv4Pj7ONcCg5QNilwbKRWAAHku2jTjboGTROpkkPpwT8UncVr0L72vbXW+bzJ
-         Tcc/ca36s5ONalqYyTyHIcBfzEixSkNkispQ8=
-Date: Fri, 16 Jul 2010 22:30:55 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
-        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
-        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 01/15] alpha: srmcons: localize spin_lock section
-Message-ID: <20100716203055.GA2731@joi.lan>
-References: <1279296747-24783-1-git-send-email-segooon@gmail.com>
+	Fri, 16 Jul 2010 16:37:28 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279296747-24783-1-git-send-email-segooon@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1007161629270.10598@xanadu.home>
+References: <20100713230352.6781.18644.stgit@angua> <1279296221.17878.66.camel@e102109-lin.cambridge.arm.com> 
+	<AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com> 
+	<alpine.LFD.2.00.1007161406120.10598@xanadu.home> <20100716183028.GB26854@n2100.arm.linux.org.uk> 
+	<alpine.LFD.2.00.1007161439240.10598@xanadu.home> <AANLkTikqHnyFVJF0Pzwy2xtKeNSXYAPFdPkAkLiXK8Ls@mail.gmail.com> 
+	<1279310976.18579.8.camel@e102109-lin.cambridge.arm.com> <AANLkTimKpmZaGRYfYs8HGDz-_VG8ePXN6bZvl2-YcNdR@mail.gmail.com> 
+	<alpine.LFD.2.00.1007161629270.10598@xanadu.home>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 16 Jul 2010 14:37:07 -0600
+X-Google-Sender-Auth: i-FhfDdUMCAjeNkcL1oAYvRNB7U
+Message-ID: <AANLkTinTBh2axb6UKETVoVJvOyAf_HTsTAU84yeAjUTR@mail.gmail.com>
+Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for 
+	defconfig
+To: Nicolas Pitre <nico@fluxnic.net>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kbuild@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 08:12:27PM +0400, Kulikov Vasiliy wrote:
-> Scale down spin_lock_irqsave/spin_unlock_irqrestore exactly to area
-> where it is needed. Also it makes static checkers happy as code checks
-> kmalloc() result value exactly after call.
-> 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  arch/alpha/kernel/srmcons.c |    6 ++----
->  1 files changed, 2 insertions(+), 4 deletions(-)
-> 
-> diff --git a/arch/alpha/kernel/srmcons.c b/arch/alpha/kernel/srmcons.c
-> index 783f4e5..6b04005 100644
-> --- a/arch/alpha/kernel/srmcons.c
-> +++ b/arch/alpha/kernel/srmcons.c
-> @@ -165,17 +165,15 @@ srmcons_get_private_struct(struct srmcons_private **ps)
->  
->  	if (srmconsp == NULL) {
->  		srmconsp = kmalloc(sizeof(*srmconsp), GFP_KERNEL);
-> -		spin_lock_irqsave(&srmconsp_lock, flags);
-> -
->  		if (srmconsp == NULL)
->  			retval = -ENOMEM;
->  		else {
-> +			spin_lock_irqsave(&srmconsp_lock, flags);
->  			srmconsp->tty = NULL;
->  			spin_lock_init(&srmconsp->lock);
->  			init_timer(&srmconsp->timer);
-> +			spin_unlock_irqrestore(&srmconsp_lock, flags);
->  		}
-> -
-> -		spin_unlock_irqrestore(&srmconsp_lock, flags);
->  	}
->  
->  	*ps = srmconsp;
-> -- 
+On Fri, Jul 16, 2010 at 2:29 PM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> On Fri, 16 Jul 2010, Grant Likely wrote:
+>
+>> On Fri, Jul 16, 2010 at 2:09 PM, Catalin Marinas
+>> <catalin.marinas@arm.com> wrote:
+>> > On Fri, 2010-07-16 at 19:46 +0100, Linus Torvalds wrote:
+>> >> On Fri, Jul 16, 2010 at 11:40 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+>> >> >
+>> >> > DOH.
+>> >>
+>> >> Well, it's possible that the correct approach is a mixture.
+>> >>
+>> >> Automatically do the trivial cases (recursive selects, dependencies
+>> >> that are simple or of the form "x && y" etc), and warn about the cases
+>> >> that aren't trivial (where "not trivial" may not necessarily be about
+>> >> fundamentally ambiguous ones, but just "complex enough that I won't
+>> >> even try").
+>> >
+>> > There is still a risk with this approach when the Kconfig isn't entirely
+>> > correct. For example, on ARM we have (I pushed a patch already):
+>> >
+>> > config CPU_32v6K
+>> >        depends on CPU_V6
+>> >
+>> > config CPU_V7
+>> >        select CPU_32v6K
+>> >
+>> > In this simple approach, we end up selecting CPU_V6 when we only need
+>> > CPU_V7. There other places like this in the kernel.
+>> >
+>> > Of course, kbuild could still warn but if people rely on this feature to
+>> > select options automatically I suspect they would ignore the warnings.
+>>
+>> In my first patch, I made Kconfig problems errors instead of warnings.
+>>  That would prevent people from ignoring them.
+>
+> ACK.
 
-Locking in this function seems to be broken. If we are unlucky:
-- two cpus will allocate, initialize and return two different pointers
-- two cpus will allocate, but both initialize only one (two times!) and return
-  the same pointer (so one of them will be leaked) - 2 initializations may lead
-  to double unlock later, etc
-- ...
+It would also flush out any current Kconfig dependency issues.
 
-Something like patch below is needed. I don't have alpha cross compiler so
-I can't even compile it...
-
----
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-Subject: [PATCH] alpha: fix races in srmcons_get_private_struct
-
----
- arch/alpha/kernel/srmcons.c |   38 ++++++++++++++++++++++++--------------
- 1 files changed, 24 insertions(+), 14 deletions(-)
-
-diff --git a/arch/alpha/kernel/srmcons.c b/arch/alpha/kernel/srmcons.c
-index 783f4e5..531ac99 100644
---- a/arch/alpha/kernel/srmcons.c
-+++ b/arch/alpha/kernel/srmcons.c
-@@ -161,25 +161,35 @@ srmcons_get_private_struct(struct srmcons_private **ps)
- 	static struct srmcons_private *srmconsp = NULL;
- 	static DEFINE_SPINLOCK(srmconsp_lock);
- 	unsigned long flags;
--	int retval = 0;
-+	struct srmcons_private *tmp;
- 
--	if (srmconsp == NULL) {
--		srmconsp = kmalloc(sizeof(*srmconsp), GFP_KERNEL);
--		spin_lock_irqsave(&srmconsp_lock, flags);
--
--		if (srmconsp == NULL)
--			retval = -ENOMEM;
--		else {
--			srmconsp->tty = NULL;
--			spin_lock_init(&srmconsp->lock);
--			init_timer(&srmconsp->timer);
--		}
-+	if (srmconsp) {
-+		*ps = srmconsp;
-+		return 0;
-+	}
- 
--		spin_unlock_irqrestore(&srmconsp_lock, flags);
-+	tmp = kmalloc(sizeof(*srmconsp), GFP_KERNEL);
-+	if (!tmp) {
-+		*ps = NULL;
-+		return -ENOMEM;
- 	}
- 
-+	spin_lock_irqsave(&srmconsp_lock, flags);
-+
-+	/* recheck under lock to not race with another cpu */
-+	if (srmconsp == NULL) {
-+		tmp->tty = NULL;
-+		spin_lock_init(&tmp->lock);
-+		init_timer(&tmp->timer);
-+
-+		srmconsp = tmp;
-+	} else
-+		kfree(tmp);
-+
-+	spin_unlock_irqrestore(&srmconsp_lock, flags);
-+
- 	*ps = srmconsp;
--	return retval;
-+	return 0;
- }
- 
- static int
--- 
-1.7.1
-
+g.
