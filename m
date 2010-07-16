@@ -1,56 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752077Ab0GPEoa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 00:44:30 -0400
-Received: from mail.perches.com ([173.55.12.10]:1925 "EHLO mail.perches.com"
+	id S1751985Ab0GPEtx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 00:49:53 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:56120 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751092Ab0GPEo1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 00:44:27 -0400
-Subject: Re: [PATCH 12/25] char: Convert pci_table entries to PCI_VDEVICE
- (if PCI_ANY_ID is used)
-From: Joe Perches <joe@perches.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Peter Huewe <PeterHuewe@gmx.de>,
-        Kernel Janitors <kernel-janitors@vger.kernel.org>,
-        "Digi International, Inc" <Eng.Linux@digi.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100716042943.GB28607@suse.de>
-References: <201007152052.38060.PeterHuewe@gmx.de>
-	 <20100715204540.GB24463@suse.de> <1279227615.5816.96.camel@Joe-Laptop.home>
-	 <20100716042943.GB28607@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Jul 2010 21:44:23 -0700
-Message-ID: <1279255463.4526.19.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1751278Ab0GPEtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 00:49:52 -0400
+Message-ID: <4C3FE4A4.3000902@zytor.com>
+Date: Thu, 15 Jul 2010 21:48:36 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Zachary Amsden <zamsden@redhat.com>
+CC: Jeremy Fitzhardinge <jeremy@goop.org>, Avi Kivity <avi@redhat.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Peter Palfrader <peter@palfrader.org>, Greg KH <gregkh@suse.de>,
+        linux-kernel@vger.kernel.org, stable@kernel.org,
+        stable-review@kernel.org, akpm@linux-foundation.org,
+        alan@lxorguk.ukuu.org.uk, Glauber Costa <glommer@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [patch 134/149] x86, paravirt: Add a global synchronization point
+ 	for pvclock
+References: <20100707124731.GJ15122@anguilla.noreply.org>	<4C359D5A.1050906@redhat.com>	<20100713102350.GW15122@anguilla.noreply.org>	<4C3C68C8.4060409@redhat.com>	<20100713141902.GB15122@anguilla.noreply.org>	<4C3C8CE5.1080705@redhat.com>	<20100713162207.GC15122@anguilla.noreply.org>	<4C3C9589.4090602@redhat.com>	<4C3C96EC.8060901@redhat.com>	<4C3C9839.4090404@redhat.com>	<20100713172526.GE15122@anguilla.noreply.org>	<AANLkTini61PZO1_icO2jRcBmMvWm24splgjZA1lUgab2@mail.gmail.com>	<AANLkTikDo0UsJxGekCdFgDMEHOONLiRe7ZOSf_j0ZKjf@mail.gmail.com>	<4C3CAE8F.10900@goop.org>	<4C3CE560.5050701@zytor.com>	<4C3CFB8B.1090804@goop.org> <AANLkTilmqWhHFO5zpfe5g53adUd18nIDli2tJt54k3rg@mail.gmail.com> <4C3DF1BE.2070404@goop.org> <4C3DF447.1000801@zytor.com> <4C3DF519.6030406@goop.org> <4C3DF7AF.7010402@zytor.com> <4C3DFA88.5020007@goop.org> <4C3E1B13.5030304@redhat.com> <4C3E20B3.6020007@goop.org> <4C3E21D1.3010207@redhat.com>
+In-Reply-To: <4C3E21D1.3010207@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-15 at 21:29 -0700, Greg KH wrote:
-> On Thu, Jul 15, 2010 at 02:00:15PM -0700, Joe Perches wrote:
-> > On Thu, 2010-07-15 at 13:45 -0700, Greg KH wrote:
-> > > I much prefer the PCI_DEVICE() macro instead, and as such, I'm not
-> > > willing to take any of these patches, sorry.
-> > grepping for pci device ids using constants and
-> > expecting the result to be comprehensive isn't
-> > sensible.
-> But it's a nice goal :)
+On 07/14/2010 01:45 PM, Zachary Amsden wrote:
+> That's the kind of bug I think Linus is talking about.  We've been
+> expecting volatile to work that way for over a decade, by my
+> recollection, and if it doesn't, there is going to be a lot of broken code.
+> 
+> Shouldn't we at least get a compiler switch to force the volatile
+> behavior?  I'd suggest it default to conservative.
 
-I think your goal is not a good one.
+At this point, it looks like there is no reason to be alarmed.  The
+documentation actually contains a statement about volatiles not being
+mutually reordered across sequence points, and since asm is a statement
+(rather than an expression) it is always surrounded by sequence points.
+ I have filed a gcc ticket to ask for clarification.
 
-For instance:
+	-hpa
 
-$ grep -rP --include=*.[ch] "\bPCI_VDEVICE\s*\(\s*INTEL" drivers | wc -l
-201
-$ grep -rP --include=*.[ch] "\bPCI_DEVICE\s*\(PCI_VENDOR_ID_INTEL" drivers | wc -l
-45
-$ grep -rP --include=*.[ch] "\bPCI_DEVICE\s*\(\s*0x8086" drivers | wc -l
-38
-
-I'd much rather do a search for "PCI_VDEVICE.*INTEL"
-
-
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
