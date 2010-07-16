@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966230Ab0GPWMv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 18:12:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41196 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab0GPWMt (ORCPT
+	id S1759372Ab0GPWWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 18:22:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55758 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751400Ab0GPWWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 18:12:49 -0400
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-From: David Woodhouse <dwmw2@infradead.org>
-To: Dan Williams <dan.j.williams@intel.com>
-Cc: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
-In-Reply-To: <4C3E9F6E.1030508@intel.com>
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
-	 <4C2AC55E.3040303@intel.com>
-	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
-	 <1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>
-	 <1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>
-	 <1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>
-	 <1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>
-	 <1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>
-	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>
-	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>
-	 <1278324973.16975.68.camel@localhost>
-	 <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>
-	 <1278463901.20082.34.camel@dwillia2-linux>
-	 <1278474039.31393.8.camel@localhost>	<4C34BDCD.9080607@intel.com>
-	 <AANLkTild7PCKygpPAJRo2G237CY8wJyveM9_Glx8qmoK@mail.gmail.com>
-	 <4C379462.1020704@intel.com> <1278720554.9522.18.camel@localhost>
-	 <4C3E9F6E.1030508@intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 16 Jul 2010 23:12:05 +0100
-Message-ID: <1279318325.27733.21.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-3.fc13.dwmw2.1) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 16 Jul 2010 18:22:47 -0400
+MIME-Version: 1.0
+In-Reply-To: <AANLkTineI34tKDMPYN4SPY0W432cv8ZPc55IEW5hwmed@mail.gmail.com>
+References: <AANLkTineI34tKDMPYN4SPY0W432cv8ZPc55IEW5hwmed@mail.gmail.com>
+Date: Fri, 16 Jul 2010 15:22:13 -0700
+Message-ID: <AANLkTikwWezvqiW-ts__stLfofKbaqG8CSzOYvDQuxhu@mail.gmail.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jeffrey Merkey <jeffmerkey@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-14 at 22:41 -0700, Dan Williams wrote:
-> +       for_each_drhd_unit(drhd)
-> +               for (i = 0; i < drhd->devices_cnt; i++) {
-> +                       /* we know that the this device's iommu is at
-> +                        * offset 0xa000 from vtbar
-> +                        */
-> +                       if (drhd->devices[i] == pdev &&
-> +                           drhd->reg_base_addr - vtbar != 0xa000) {
-> +                               WARN_TAINT_ONCE(1, TAINT_FIRMWARE_WORKAROUND,
-> +                                               "BIOS assigned incorrect VT-d unit for Intel(R) QuickData Technology device\n");
-> +                               pdev->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
-> +                               return;
-> +                       }
-> +               }
-> +} 
+On Fri, Jul 16, 2010 at 3:02 PM, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
+>
+> So Linus, my understanding of Intel's processor design is that the
+> processor will NEVER singal a nested NMI until it sees an iret from
+> the first NMI exception.
 
-Ah, that's the problem. Sorry, should have noticed this before. Since
-this is the catch-all IOMMU, the device isn't explicitly listed.
+Wrong.
 
-You want 'drhd = dmar_find_matched_drhd_unit(pdev);' and then compare
-vtbar with the reg_base_addr of that one.
+I like x86, but it has warts. The NMI blocking is one of them.
 
--- 
-dwmw2
+The NMI's will be nested until the _next_ "iret", but it has no
+nesting. So if you take a fault during the NMI (debug, page table
+fixup, whatever), the iret in the faulthandler will re-enable NMI's
+even though we're still busy with the original NMI. There is no
+nesting, or any way to say that "this is a NMI-releasing iret". They
+could even do it still - make a new "iret that doesn't clear NMI" by
+adding a segment override prefix to iret or whatever. But it's not
+going to happen, and it's just one of those ugly special cases that
+has various historical reasons (recursive faults during NMI sure as
+hell didn't make sense back in the real-mode 8086 days).
 
+So we have to handle it in software. Or not ever trap at all inside
+the NMI handler.
+
+The original patch - and the patch I detest - is to make the normal
+fault paths use a "popf + ret" to emulate iret, but without the NMI
+release.
+
+Now, I could live with that if it's the only solution, but it _is_
+pretty damn ugly.
+
+If somebody shows that it's actually faster to do "popf + ret" when
+retuning to kernel space (a poor mans special-case iret), maybe it
+would be worth it, but the really critical code sequence is actually
+not "return to kernel space", but the "return to user space" case that
+really wants the iret. And I just think it's disgusting to add extra
+tests to that path.
+
+The other alternative would be to just make the rule be "NMI can never
+take traps". It's possible to do that, but quite frankly, it's a pain.
+It's a pain for page faults due to the whole vmalloc thing, and it's a
+pain if you ever want to debug an NMI in any way (or put a breakpoint
+on anything that is accessed from an NMI, which could potentially be
+quite a lot of things).
+
+If it was just the debug issue, I'd say "neener neener, debuggers are
+for wimps", but it's clearly not just about debug. It's a whole lot of
+other thigs. Random percpu datastructures used for tracing, kernel
+pointer verification code, yadda yadda.
+
+                  Linus
