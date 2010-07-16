@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936111Ab0GPJHp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 05:07:45 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:42715 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936052Ab0GPJHo (ORCPT
+	id S936123Ab0GPJId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 05:08:33 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:53500 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936052Ab0GPJIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 05:07:44 -0400
-Date: Fri, 16 Jul 2010 10:07:19 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Greg KH <gregkh@suse.de>
-Cc: Conke Hu <conke.hu@gmail.com>, CoffBeta <coffbeta@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        inux kernel <linux-kernel@vger.kernel.org>,
-        ext-jani.1.nikula@nokia.com,
-        Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: tq 2440
-Message-ID: <20100716090719.GA16995@n2100.arm.linux.org.uk>
-References: <AANLkTimyBHliUa62qmfja_ke6YTTysiVAtJcZfi8l2gG@mail.gmail.com> <AANLkTil8GE1OguyAfp3XgfJvEmH98yNrlvGAx684a-qL@mail.gmail.com> <20100715163526.GJ29322@n2100.arm.linux.org.uk> <20100715165141.GA21272@suse.de> <20100715171029.GK29322@n2100.arm.linux.org.uk> <20100715172218.GA22197@suse.de> <20100715173322.GL29322@n2100.arm.linux.org.uk> <20100715205153.GC24463@suse.de> <20100715210936.GB6773@n2100.arm.linux.org.uk> <20100716085533.GB2419@suse.de>
+	Fri, 16 Jul 2010 05:08:32 -0400
+Message-ID: <4C40218A.4090806@canonical.com>
+Date: Fri, 16 Jul 2010 10:08:26 +0100
+From: Lee Jones <lee.jones@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100716085533.GB2419@suse.de>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] Stop ARM boards crashing when CUPS is loaded -	2.6.35-rc5
+References: <4C3C72C6.4000005@canonical.com> <20100715130214.4c9303b2.akpm@linux-foundation.org> <20100715200618.GA6773@n2100.arm.linux.org.uk>
+In-Reply-To: <20100715200618.GA6773@n2100.arm.linux.org.uk>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 01:55:33AM -0700, Greg KH wrote:
-> On Thu, Jul 15, 2010 at 10:09:36PM +0100, Russell King - ARM Linux wrote:
-> > On Thu, Jul 15, 2010 at 01:51:53PM -0700, Greg KH wrote:
-> > > On Thu, Jul 15, 2010 at 06:33:22PM +0100, Russell King - ARM Linux wrote:
-> > > > Another way to avoid the other complaints is to remove
-> > > > the unregistration in platform_register_devices().
-> > > 
-> > > No, because you could have created a platform device with a call to
-> > > platform_device_alloc() and then called platform_device_register() and
-> > > then later, platform_device_unregister(), right?
-> > 
-> > No.  Sorry, platform_register_devices should've been platform_add_devices().
-> > Please look at that function.
-> 
-> Hm, it just calls platform_device_register(), so it's pretty hard to
-> determine that it's a static device from that function.
-> 
-> > It's used to register an array of static platform devices from architecture
-> > code, as I've said in this thread once already.
-> 
-> I can't think of an easy way to prevent these types of devices from
-> being removed, other than the existing warnings we have.  I'll mull it
-> over some more and see if I can come up with something in the future.
+On 15/07/10 21:06, Russell King - ARM Linux wrote:
+> On Thu, Jul 15, 2010 at 01:02:14PM -0700, Andrew Morton wrote:
+>>> BugLink: http://bugs.launchpad.net/bugs/601226
+>>>
+>>> When CUPS loads, it tries to load several drivers that it may need.
+>>> When one of these drivers, specifically parport_pc is loaded on ARM
+>>> based systems, it causes a segmentation fault as the ISA addresses
+>>> which are attempted are not writable on non-PC based architectures.
+>>> This code prevents ISA addresses from being attempted except on x86.
+>>>
+>>
+>> That sounds like a pretty serious problem.  But presumably it isn't -
+>> otherwise it would have been fixed earlier!
 
-platform_add_devices() purpose is to allow platforms to bulk-register
-their statically declared platform devices.  That's what I created it
-for.
+Well it is a problem on OMAP based boards.
 
-The easiest solution is to arrange for platform_add_devices() to avoid
-unregistering them all if any one fails - eg, we don't particularly want
-the platform device for the serial console being unregistered if a
-subsequent device fails.
+I've personally tested it on OMAP3 and OMAP4 based machines. 
 
-I'd also argue that it should be trying to register as many of the
-platform devices as it possibly can, and only warning about devices
-it can't register.
+Perhaps the memory is not reserved correctly.
 
-Of course, it is possible that it's been used for other purposes by now -
-and yes it has:
+>> So what actions are required to trigger this bug and why aren't others
+>> seeing it?
 
-drivers/mfd/ab3100-core.c:      platform_add_devices(ab3100_platform_devs,
-drivers/video/backlight/kb3886_bl.c:    platform_add_devices(devices, ARRAY_SIZE(devices));
+Probably because most other chips either manage to reserve the memory 
+successfully, or do not attempt to load the parport_pc driver, either as
+a module or built-in.
 
-The first one is an oops waiting to happen - it's a modular driver which
-has statically allocated platform devices which it registers, and on
-removal it just unregisters its I2C driver.  Two problems with that:
+All I have to do to recreate this bug is load the module or build in the
+parport_pc driver.
 
-1. references hanging around after registration and the memory backing
-   the driver has been unmapped.
-2. if two ab3100 devices are present, the same platform device structures
-   are attempted to be registered more than once.
+> Note that we have machines which have ISA parallel ports, so it's not
+> this simple.
 
-kb3886_bl.c has the same problem (1) above.
+Do they have ISA parallel ports, or do they just pretend to?
 
-These two drivers need to be converted to use the platform_device_alloc()
-et.al. API, which'll then mean that platform_add_devices() goes back to
-its original purpose - bulk registering statically allocated platform
-devices from arch code.
+I found this scattered about:
+
+/*
+ * We don't actually have real ISA nor PCI buses, but there is so many
+ * drivers out there that might just work if we fake them...
+ */
+
+Clearly parport_pc isn't one of them. :)
+
+> Why not just avoid selecting and building parport_pc on these machines?
+
+> I mean, the Beagleboard doesn't have PCI nor ISA, so why is parport_pc
+> being built for production use?
+
+I am happy to make a Kconfig change to disallow OMAP builds from building
+the parport_pc driver. Do you think this would be more sensible?
+
+
+
+
+
