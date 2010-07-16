@@ -1,88 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965177Ab0GPLVO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 07:21:14 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39517 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965028Ab0GPLVN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 07:21:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=syilbIzDDg3XnuVSmZua10DyTlXiqFXiet6GGuARj2KIeDhrkK814UgsJYWK0k8/5g
-         iiSe0aKwWKjnB/K+HDtM3/hBlHEtqf5/g738kgMm70ZZSbxS/O7W8tHZ1bAN+7IQv+6N
-         0s3+iRP+pQYV+8f9FQZdXTTsrxriquUieYEAM=
-Date: Fri, 16 Jul 2010 13:21:11 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+	id S965196Ab0GPLV2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 07:21:28 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:54491 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965006Ab0GPLV0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 07:21:26 -0400
+Date: Fri, 16 Jul 2010 12:21:09 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-Message-ID: <20100716112109.GB5377@nowhere>
-References: <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com> <20100714184642.GA9728@elte.hu> <AANLkTil2r3sUcoCC_ktp3TV2JNTSMxbpke8yJMx_8lmm@mail.gmail.com> <AANLkTinfmoKvi1SauDA5_RiTmu6bztTDk8b_ycS-lr8S@mail.gmail.com> <20100714195617.GC22373@basil.fritz.box> <20100714200552.GA22096@Krystal> <20100714223116.GB14533@nowhere> <AANLkTik-sJL_pAJg38Hzpl_jpn2v90t7tppYqOGmu6p-@mail.gmail.com> <20100715141118.GA6417@nowhere> <20100715143518.GA18038@basil.fritz.box>
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+Subject: Re: [PATCH 7/7] memcg: add mm_vmscan_memcg_isolate tracepoint
+Message-ID: <20100716112109.GJ13117@csn.ul.ie>
+References: <20100716191006.7369.A69D9226@jp.fujitsu.com> <20100716191739.737E.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100715143518.GA18038@basil.fritz.box>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100716191739.737E.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 04:35:18PM +0200, Andi Kleen wrote:
-> > But then how did the previous tasks get this new mapping? You said
-> > we don't walk through every process page tables for vmalloc.
+On Fri, Jul 16, 2010 at 07:18:18PM +0900, KOSAKI Motohiro wrote:
 > 
-> No because those are always shared for the kernel and have been
-> filled in for init_mm.
+> Memcg also need to trace page isolation information as global reclaim.
+> This patch does it.
 > 
-> Also most updates only update the lower tables anyways, top level
-> updates are extremly rare. In fact on PAE36 they should only happen
-> at most once, if at all, and most likely at early boot anyways
-> where you only  have a single task. 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  include/trace/events/vmscan.h |   15 +++++++++++++++
+>  mm/memcontrol.c               |    7 +++++++
+>  2 files changed, 22 insertions(+), 0 deletions(-)
 > 
-> On x86-64 they will only happen once every 512GB of vmalloc. 
-> So for most systems also at most once at early boot.
-> > 
-> > I would understand this race if we were to walk on every processes page
-> > tables and add the new mapping on them, but we missed one new task that
-> > forked or so, because we didn't lock (or just rcu).
+> diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+> index e37fe72..eefd399 100644
+> --- a/include/trace/events/vmscan.h
+> +++ b/include/trace/events/vmscan.h
+> @@ -213,6 +213,21 @@ DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_lru_isolate,
+>  
+>  );
+>  
+> +DEFINE_EVENT(mm_vmscan_lru_isolate_template, mm_vmscan_memcg_isolate,
+> +
+> +	TP_PROTO(int order,
+> +		unsigned long nr_requested,
+
+I just spotted that this is badly named by myself. It should have been
+order.
+
+> +		unsigned long nr_scanned,
+> +		unsigned long nr_taken,
+> +		unsigned long nr_lumpy_taken,
+> +		unsigned long nr_lumpy_dirty,
+> +		unsigned long nr_lumpy_failed,
+> +		int isolate_mode),
+> +
+> +	TP_ARGS(order, nr_requested, nr_scanned, nr_taken, nr_lumpy_taken, nr_lumpy_dirty, nr_lumpy_failed, isolate_mode)
+> +
+> +);
+> +
+>  TRACE_EVENT(mm_vmscan_writepage,
+>  
+>  	TP_PROTO(struct page *page,
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 81bc9bf..82e191f 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -52,6 +52,9 @@
+>  
+>  #include <asm/uaccess.h>
+>  
+> +#include <trace/events/vmscan.h>
+> +
+> +
+
+Excessive whitespace there.
+
+Otherwise, I didn't spot any problems.
+
+>  struct cgroup_subsys mem_cgroup_subsys __read_mostly;
+>  #define MEM_CGROUP_RECLAIM_RETRIES	5
+>  struct mem_cgroup *root_mem_cgroup __read_mostly;
+> @@ -1042,6 +1045,10 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+>  	}
+>  
+>  	*scanned = scan;
+> +
+> +	trace_mm_vmscan_memcg_isolate(0, nr_to_scan, scan, nr_taken,
+> +				      0, 0, 0, mode);
+> +
+>  	return nr_taken;
+>  }
+>  
+> -- 
+> 1.6.5.2
 > 
-> The new task will always get a copy of the reference init_mm, which
-> was already updated.
 > 
-> -Andi
+> 
 
-
-Ok, got it.
-
-But then, in the example here with perf, I'm allocating 8192 bytes per cpu
-and my total memory amount is of 2 GB.
-
-And it always fault at least once on access, after the allocation.
-I really doubt it's because we are adding a new top level page table,
-considering the amount of memory I have.
-
-It seems to me that the mapping of a newly allocated vmalloc area is
-always inserted through the lazy way (update on fault). Or there is
-something I'm missing.
-
-Thanks.
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
