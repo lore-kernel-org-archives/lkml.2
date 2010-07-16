@@ -1,66 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752675Ab0GPFJX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 01:09:23 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44215 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751563Ab0GPFJV convert rfc822-to-8bit (ORCPT
+	id S1752844Ab0GPFRZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 01:17:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:43781
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751806Ab0GPFRY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 01:09:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=dEDm9omZ4oXabyThofaft59UnZdm68ijQTTN1qoGshE6rJN553JTOHVamkeuVRqLnm
-         DmAfGtksxNtYyHYta47cp09tiBuM2/Kgh+EK/8ioi2R8mokImPoCa6AcW9+laFb3Re7s
-         HfchmYhXTi6VxbVOi7uwciS+ZXqB0umST/5T4=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH] ARM/nuc900: fix nuc900 touchscreen clk definition bug
-Date: Fri, 16 Jul 2010 07:09:14 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
-Cc: Wan ZongShun <mcuos.com@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
-        Russell King <linux@arm.linux.org.uk>
-References: <4C3FCBFF.50506@gmail.com>
-In-Reply-To: <4C3FCBFF.50506@gmail.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201007160709.15385.marek.vasut@gmail.com>
+	Fri, 16 Jul 2010 01:17:24 -0400
+Date: Thu, 15 Jul 2010 22:17:40 -0700 (PDT)
+Message-Id: <20100715.221740.52200554.davem@davemloft.net>
+To: sbhatewara@vmware.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pv-drivers@vmware.com
+Subject: Re: [PATCH 2.6.35-rc1] net-next: fix LRO feature update in vmxnet3
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LRH.2.00.1007151821440.10176@localhost.localdomain>
+References: <20100714.141118.260092331.davem@davemloft.net>
+	<alpine.LRH.2.00.1007151458580.10176@localhost.localdomain>
+	<alpine.LRH.2.00.1007151821440.10176@localhost.localdomain>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne Pá 16. července 2010 05:03:27 Wan ZongShun napsal(a):
-> This patch is to fix nuc900 touchscreen clk definition bug,the .dev_id's
-> name should be 'nuc900-ts', it should be the same to pdev.name. or else,
-> the touchscreen driver will be not working well due to clock engine
-> disabled.
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+Date: Thu, 15 Jul 2010 18:28:31 -0700 (PDT)
+
 > 
-> Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
-> ---
->  arch/arm/mach-w90x900/cpu.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+> From: Shreyas Bhatewara <sbhatewara@vmware.com>
 > 
-> diff --git a/arch/arm/mach-w90x900/cpu.c b/arch/arm/mach-w90x900/cpu.c
-> index 642207e..83c5632 100644
-> --- a/arch/arm/mach-w90x900/cpu.c
-> +++ b/arch/arm/mach-w90x900/cpu.c
-> @@ -93,7 +93,7 @@ static struct clk_lookup nuc900_clkregs[] = {
->  	DEF_CLKLOOK(&clk_kpi, "nuc900-kpi", NULL),
->  	DEF_CLKLOOK(&clk_wdt, "nuc900-wdt", NULL),
->  	DEF_CLKLOOK(&clk_gdma, "nuc900-gdma", NULL),
-> -	DEF_CLKLOOK(&clk_adc, "nuc900-adc", NULL),
-> +	DEF_CLKLOOK(&clk_adc, "nuc900-ts", NULL),
->  	DEF_CLKLOOK(&clk_usi, "nuc900-spi", NULL),
->  	DEF_CLKLOOK(&clk_ext, NULL, "ext"),
->  	DEF_CLKLOOK(&clk_timer0, NULL, "timer0"),
+> Fix LRO feature update.
+> 
+> Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
 
-Hey,
-
-Is that thing really touchscreen or general-purpose analog/digital converter ?
-
-Cheers
+Applied, thanks.
