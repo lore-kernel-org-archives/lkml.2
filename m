@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964905Ab0GPJuW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 05:50:22 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:34855 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964818Ab0GPJuU (ORCPT
+	id S964912Ab0GPJya (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 05:54:30 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:51935 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964893Ab0GPJy3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 05:50:20 -0400
+	Fri, 16 Jul 2010 05:54:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=EEknwFNy6XNlXU1lfBr+hzUortWA3eOcudgk4uBWqU+TpjpAz81W+Ta7rZCz9Bu2lD
-         eFwp4qRLeeYl3aPwUfecIs74VZ+TeSNpZzWx7uCj5eavUifNmkaDuAQvlaLlyNgi1baM
-         HgJuLz5O3hn0TEMQhH4Z+dAfDSj80pu5jYlGM=
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=wdJHMwOpVcozrCM1lPCWNPGj6BtI52eL8ulCoQt6G310csMvPvNJhuYL7wZ11tYVlk
+         RsiS3dXOOwa6NXtdbAJpmEKKKainiJcot5ncnjG19ViI/THrzaB2QIsRLaUm6sU9pWSz
+         IY0JHMrBHXAtgwi8HCLlNGjVjogXt9nwGLKTg=
 MIME-Version: 1.0
-In-Reply-To: <4C3F238A.5080701@free.fr>
-References: <4C3ED059.9050508@free.fr>
-	<AANLkTikEWysGAk6-hxqgecjlte-ilbait_9cvbDlz9Ue@mail.gmail.com>
-	<4C3F238A.5080701@free.fr>
-Date: Fri, 16 Jul 2010 19:50:19 +1000
-Message-ID: <AANLkTinADYhkLgECNGtXkShBiEm501ByZMHr-q0HAKWc@mail.gmail.com>
-Subject: Re: vga switcheroo not working on amilo Xi 3650
-From: Dave Airlie <airlied@gmail.com>
-To: eric.valette@free.fr
-Cc: linux-kernel@vger.kernel.org
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20100716093625.GD18376@sirena.org.uk>
+References: <1279272408.2594.1.camel@mola> <20100716093625.GD18376@sirena.org.uk>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Fri, 16 Jul 2010 17:54:08 +0800
+Message-ID: <AANLkTikMGIj-0WKXFT1Y6c7l1ObtVDx_j5pYOA_esvwG@mail.gmail.com>
+Subject: Re: [PATCH] twl6040: fix wrong kfree in twl6040_remove and 
+	twl6040_codec_remove
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>,
+        Margarita Olaya Cabrera <magi.olaya@ti.com>,
+        Jorge Eduardo Candelaria <jorge.candelaria@ti.com>,
+        alsa-devel@alsa-project.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 1:04 AM, Eric Valette <eric.valette@free.fr> wrote:
-> On 15/07/2010 11:16, Dave Airlie wrote:
->
->> [drm:i915_init] *ERROR* drm/i915 can't work without intel_agp module!
->>
->> doesn't look good,
->
-> Its because I sent the dmesg while nvidia card was forced in the BIOS. Here
-> is the dmesg in hybrid mode
->
->> though I still haven't had a successful intel/nvidia switch as I lack
->> the hardware, and nobody has worked out exactly which ACPI method is
->> used to switch the MUX.
->
-> You have a bunch of DSTD.dsl for the amilo including mine here
-> https://bugs.launchpad.net/ubuntu/+source/xorg-server/+bug/312756
->
-> I attached it for convenience
->>
->> if you can get a dmesg with i915 and nouveau loaded then open a bug on
->> bugs.kernel.org I can try and work with you to figure that out,
->
-> I guess I can now fill one?
+hi Mark,
 
-Yup please do, attach those two files.
+2010/7/16 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Fri, Jul 16, 2010 at 05:26:48PM +0800, Axel Lin wrote:
+>> Memory allocation part:
+>> We allocate a memory in twl6040_codec_probe():
+>>         priv = kzalloc(sizeof(struct twl6040_data), GFP_KERNEL);
+>>         twl6040_codec = codec = &priv->codec;
+>
+> Could you please try to take on board the feedback you were given
+> yesterday about this sort of stuff?  Both the feedback about formatting
+> your patch so it's easy to apply and the collisions with other, more
+> substantial, work that's going on?
+>
+Ok. I will resend the patch.
+( I just thought it may takes some time for review )
+( Due a vacation this weekend, I'll do it next Monday )
 
-We might have to play guess the switch method.
-
-Dave.
+Regards,
+Axel
