@@ -1,149 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759599Ab0GQAtX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 20:49:23 -0400
-Received: from claw.goop.org ([74.207.240.146]:40907 "EHLO claw.goop.org"
+	id S1759609Ab0GQAtZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 20:49:25 -0400
+Received: from claw.goop.org ([74.207.240.146]:40901 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759541Ab0GQAs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759542Ab0GQAs5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Jul 2010 20:48:57 -0400
 From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Date: Fri, 2 Jul 2010 23:26:36 +0100
-Subject: [PATCH RFC 01/12] x86/ticketlock: clean up types and accessors
+Date: Fri, 16 Jul 2010 12:09:30 -0700
+Subject: [PATCH RFC 00/12] X86 ticket lock cleanups and improvements
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
 Cc: Nick Piggin <nickpiggin@yahoo.com.au>,
         Peter Zijlstra <peterz@infradead.org>,
         Jan Beulich <JBeulich@novell.com>, Avi Kivity <avi@redhat.com>,
         Xen-devel <xen-devel@lists.xensource.com>
-Message-Id: <20100717004855.B3823A3C47@abulafia.goop.org>
+Message-Id: <20100717004855.A72A9A3C46@abulafia.goop.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A few cleanups to the way spinlocks are defined and accessed:
- - define __ticket_t which is the size of a spinlock ticket (ie, enough
-   bits to hold all the cpus)
- - Define struct arch_spinlock as a union containing plain slock and
-   the head and tail tickets
- - Use head and tail to implement some of the spinlock predicates.
- - Make all ticket variables unsigned.
- - Use TICKET_SHIFT to form constants
 
-Most of this will be used in later patches.
+Hi all,
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- arch/x86/include/asm/spinlock.h       |   24 ++++++++++--------------
- arch/x86/include/asm/spinlock_types.h |   20 ++++++++++++++++++--
- 2 files changed, 28 insertions(+), 16 deletions(-)
+This series does three things:
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 3089f70..d6d5784 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -56,11 +56,9 @@
-  * much between them in performance though, especially as locks are out of line.
-  */
- #if (NR_CPUS < 256)
--#define TICKET_SHIFT 8
--
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	short inc = 0x0100;
-+	unsigned short inc = 1 << TICKET_SHIFT;
- 
- 	asm volatile (
- 		LOCK_PREFIX "xaddw %w0, %1\n"
-@@ -79,7 +77,7 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- 
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- {
--	int tmp, new;
-+	unsigned int tmp, new;
- 
- 	asm volatile("movzwl %2, %0\n\t"
- 		     "cmpb %h0,%b0\n\t"
-@@ -104,12 +102,10 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- 		     : "memory", "cc");
- }
- #else
--#define TICKET_SHIFT 16
--
- static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- {
--	int inc = 0x00010000;
--	int tmp;
-+	unsigned inc = 1 << TICKET_SHIFT;
-+	unsigned tmp;
- 
- 	asm volatile(LOCK_PREFIX "xaddl %0, %1\n"
- 		     "movzwl %w0, %2\n\t"
-@@ -129,8 +125,8 @@ static __always_inline void __ticket_spin_lock(arch_spinlock_t *lock)
- 
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- {
--	int tmp;
--	int new;
-+	unsigned tmp;
-+	unsigned new;
- 
- 	asm volatile("movl %2,%0\n\t"
- 		     "movl %0,%1\n\t"
-@@ -160,16 +156,16 @@ static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- 
- static inline int __ticket_spin_is_locked(arch_spinlock_t *lock)
- {
--	int tmp = ACCESS_ONCE(lock->slock);
-+	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return !!(((tmp >> TICKET_SHIFT) ^ tmp) & ((1 << TICKET_SHIFT) - 1));
-+	return !!(tmp.tail ^ tmp.head);
- }
- 
- static inline int __ticket_spin_is_contended(arch_spinlock_t *lock)
- {
--	int tmp = ACCESS_ONCE(lock->slock);
-+	struct __raw_tickets tmp = ACCESS_ONCE(lock->tickets);
- 
--	return (((tmp >> TICKET_SHIFT) - tmp) & ((1 << TICKET_SHIFT) - 1)) > 1;
-+	return ((tmp.tail - tmp.head) & TICKET_MASK) > 1;
- }
- 
- #ifndef CONFIG_PARAVIRT_SPINLOCKS
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index dcb48b2..4582640 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -5,11 +5,27 @@
- # error "please don't include this file directly"
- #endif
- 
-+#include <linux/types.h>
-+
-+#if (CONFIG_NR_CPUS < 256)
-+typedef u8  __ticket_t;
-+#else
-+typedef u16 __ticket_t;
-+#endif
-+
-+#define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
-+#define TICKET_MASK	((1 << TICKET_SHIFT) - 1)
-+
- typedef struct arch_spinlock {
--	unsigned int slock;
-+	union {
-+		unsigned int slock;
-+		struct __raw_tickets {
-+			__ticket_t head, tail;
-+		} tickets;
-+	};
- } arch_spinlock_t;
- 
--#define __ARCH_SPIN_LOCK_UNLOCKED	{ 0 }
-+#define __ARCH_SPIN_LOCK_UNLOCKED	{ { .slock = 0 } }
- 
- typedef struct {
- 	unsigned int lock;
--- 
-1.7.1.1
+ - A general cleanup of the ticketlock implementation, including
+   moving most of it into C, removing a pile of inline asm and ifdefs.
 
+ - Convert the PV spinlock mechanism (enabled with
+   CONFIG_PARAVIRT_SPINLOCKS) to a PV ticketlock mechanism.  The old
+   way completely replaced the spinlock implementation, changing all
+   the spinlock calls into indirect ones via paravirt-ops.  This was
+   overkill, and caused noticable performance regressions on some
+   microarchitectures.
+
+   The new scheme keeps the ticketlock algorithm, and uses the
+   standard ticketlock code for both native and PV uses.  But it adds
+   a couple of pvops hooks for the slow paths: one when we've been
+   waiting a long time on a lock, and one when we're unlocking a lock
+   which has people waiting on it.
+
+ - A Xen implementation of these new pvop hooks, which shows how much
+   simpler they make the backend code.
+
+I've benchmarked these changes with lmbench lat_mmap, which shows that
+- at worst - these changes have no detremental effect to performance
+when run native.  In some cases there are surprising improvements
+(running native with the pvop hooks enabled was noticably faster than
+without, for example).  (I tried also using mmap-perf, but it seems to
+hang indefinitely when I run it on 4 threads.)
+
+The patches are against v2.6.33, but merge cleanly with current
+linux-2.6.git.
+
+Thanks,
+	J
+
+Jeremy Fitzhardinge (12):
+  x86/ticketlock: clean up types and accessors
+  x86/ticketlock: convert spin loop to C
+  x86/ticketlock: Use C for __ticket_spin_unlock
+  x86/ticketlock: make large and small ticket versions of spin_lock the
+    same
+  x86/ticketlock: make __ticket_spin_lock common
+  x86/ticketlock: make __ticket_spin_trylock common
+  x86/spinlocks: replace pv spinlocks with pv ticketlocks
+  x86/ticketlock: collapse a layer of functions
+  xen/pvticketlock: Xen implementation for PV ticket locks
+  x86/pvticketlock: keep count of blocked cpus
+  x86/pvticketlock: use callee-save for lock_spinning
+  x86/pvticketlock: use callee-save for unlock_kick as well
+
+ arch/x86/include/asm/paravirt.h       |   30 +---
+ arch/x86/include/asm/paravirt_types.h |    8 +-
+ arch/x86/include/asm/spinlock.h       |  241 ++++++++++++++--------------
+ arch/x86/include/asm/spinlock_types.h |   26 +++-
+ arch/x86/kernel/paravirt-spinlocks.c  |   15 +--
+ arch/x86/xen/spinlock.c               |  282 +++++----------------------------
+ 6 files changed, 192 insertions(+), 410 deletions(-)
 
