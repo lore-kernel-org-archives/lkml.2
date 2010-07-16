@@ -1,87 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965769Ab0GPO4L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 10:56:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41159 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965743Ab0GPO4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 10:56:09 -0400
-Date: Fri, 16 Jul 2010 10:56:00 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC] CFQ: Make prio_trees per cfq group basis to
- improve IO performance
-Message-ID: <20100716145600.GF15382@redhat.com>
-References: <4C40247C.2010405@cn.fujitsu.com>
- <20100716140034.GC15382@redhat.com>
- <x49y6dbv75x.fsf@segfault.boston.devel.redhat.com>
+	id S965785Ab0GPO7V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 10:59:21 -0400
+Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:40825 "EHLO
+	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965765Ab0GPO7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 10:59:19 -0400
+From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+To: Dave Chinner <david@fromorbit.com>
+Subject: Re: kernel BUG at fs/btrfs/extent-tree.c:1353
+Date: Fri, 16 Jul 2010 16:59:46 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-btrfs-debug; KDE/4.4.5; i686; ; )
+Cc: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        linux-btrfs@vger.kernel.org, zheng.yan@oracle.com,
+        Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org
+References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <20100715001104.GF30737@dastard> <201007152014.52924.johannes.hirte@fem.tu-ilmenau.de>
+In-Reply-To: <201007152014.52924.johannes.hirte@fem.tu-ilmenau.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49y6dbv75x.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007161659.48663.johannes.hirte@fem.tu-ilmenau.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 10:21:46AM -0400, Jeff Moyer wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
+Am Donnerstag 15 Juli 2010, 20:14:51 schrieb Johannes Hirte:
+> Am Donnerstag 15 Juli 2010, 02:11:04 schrieb Dave Chinner:
+> > On Wed, Jul 14, 2010 at 05:25:23PM +0200, Johannes Hirte wrote:
+> > > Am Donnerstag 08 Juli 2010, 16:31:09 schrieb Chris Mason:
+> > > I'm not sure if btrfs is to blame for this error. After the errors I
+> > > switched to XFS on this system and got now this error:
+> > > 
+> > > ls -l .kde4/share/apps/akregator/data/
+> > > ls: cannot access .kde4/share/apps/akregator/data/feeds.opml: Structure
+> > > needs cleaning
+> > > total 4
+> > > ?????????? ? ?    ?        ?            ? feeds.opml
+> > 
+> > What is the error reported in dmesg when the XFS filesytem shuts down?
 > 
-> > On Fri, Jul 16, 2010 at 05:21:00PM +0800, Gui Jianfeng wrote:
-> >> Currently, prio_trees is global, and we rely on cfqq_close() to search
-> >> a coorperator. If the returned cfqq and the active cfqq don't belong to
-> >> the same group, coorperator searching fails. Actually, that's not the case.
-> >> Even if cfqq_close() returns a cfqq which belong to another cfq group, 
-> >> it's still likely that a coorperator(same cfqg) resides in prio_trees.
-> >> This patch introduces per cfq group prio_trees that should solve the above
-> >> issue.
-> >> 
-> >
-> > Hi Gui,
-> >
-> > I am not sure I understand the issue here.  So are you saying that once
-> > we find a cfqq which is close but belongs to a different group we reject
-> > it. But there could be another cfqq in the same group which is not as
-> > close but still close enough.
-> >
-> > For example, assume there are two queues q1 and q2 and in group and third
-> > queue q3 in group B. Assume q1 is active queue and we are searching for
-> > cooperator. If cooperator code finds q3 as closest then we will not pick
-> > this queue as it belongs to a different group. But it could happen that
-> > q2 is also close enough and we never considered that possibility.
-> >
-> > If yes, then its a good theoritical concern but I am worried practically
-> > how often does it happen. Do you have any workload which suffers because
-> > of this?
-> 
-> That was my reading.  It also means that, in the case that we have
-> cgroups in use, each rb tree will be smaller.
-> 
-> > I am not too inclined to push more complexity in CFQ until and unless we
-> > have a good use case.
-> 
-> I don't think this adds complexity, does it?  It simply moves the
-> priority trees up a level, which is arguably where they belong.
+> Nothing. I double checked the logs. There are only the messages when
+> mounting the filesystem. No other errors are reported than the
+> inaccessible file and the output from xfs_check.
 
-What happens when cfqq moves to a different group. group_isolation=0. Then
-we also need to add code to change prio tree of the cfqq. Curretnly prio
-tree are global so we don't have to worry about it. I don't think this
-patch takes are of that issue.
+I'm running now a kernel with more debug options enabled and got this:
 
-That's a different thing that I am beginning to not like group_isoation=0
-because this additional variable that cfqq's can move dynamically across
-groups is making life hard while adding more code in CFQ. So if nobody
-is using it I was thinking of getting rid of group_isolation tunable.
+[ 6794.810935] 
+[ 6794.810941] =================================
+[ 6794.810955] [ INFO: inconsistent lock state ]
+[ 6794.810966] 2.6.35-rc4-btrfs-debug #7
+[ 6794.810975] ---------------------------------
+[ 6794.810984] inconsistent {RECLAIM_FS-ON-W} -> {IN-RECLAIM_FS-W} usage.
+[ 6794.810996] kswapd0/361 [HC0[0]:SC0[0]:HE1:SE1] takes:
+[ 6794.811006]  (&(&ip->i_iolock)->mr_lock#2){++++?+}, at: [<c10fa82d>] 
+xfs_ilock+0x22/0x67
+[ 6794.811039] {RECLAIM_FS-ON-W} state was registered at:
+[ 6794.811046]   [<c104ebc1>] mark_held_locks+0x42/0x5e
+[ 6794.811046]   [<c104f1f7>] lockdep_trace_alloc+0x99/0xb0
+[ 6794.811046]   [<c10740b8>] __alloc_pages_nodemask+0x6a/0x4a1
+[ 6794.811046]   [<c106edc2>] __page_cache_alloc+0x11/0x13
+[ 6794.811046]   [<c106fb43>] grab_cache_page_write_begin+0x47/0x81
+[ 6794.811046]   [<c10b2050>] block_write_begin_newtrunc+0x2e/0x9c
+[ 6794.811046]   [<c10b233a>] block_write_begin+0x23/0x5d
+[ 6794.811046]   [<c1114a9d>] xfs_vm_write_begin+0x26/0x28
+[ 6794.811046]   [<c106f15d>] generic_file_buffered_write+0xb5/0x1bd
+[ 6794.811046]   [<c1117e31>] xfs_file_aio_write+0x40e/0x66d
+[ 6794.811046]   [<c10950b4>] do_sync_write+0x8b/0xc6
+[ 6794.811046]   [<c109568b>] vfs_write+0x77/0xa4
+[ 6794.811046]   [<c10957f3>] sys_write+0x3c/0x5e
+[ 6794.811046]   [<c1002690>] sysenter_do_call+0x12/0x36
+[ 6794.811046] irq event stamp: 141369
+[ 6794.811046] hardirqs last  enabled at (141369): [<c13639d2>] 
+_raw_spin_unlock_irqrestore+0x36/0x5b
+[ 6794.811046] hardirqs last disabled at (141368): [<c13634c5>] 
+_raw_spin_lock_irqsave+0x14/0x68
+[ 6794.811046] softirqs last  enabled at (141300): [<c1032d69>] 
+__do_softirq+0xfe/0x10d
+[ 6794.811046] softirqs last disabled at (141295): [<c1032da7>] 
+do_softirq+0x2f/0x47
+[ 6794.811046] 
+[ 6794.811046] other info that might help us debug this:
+[ 6794.811046] 2 locks held by kswapd0/361:
+[ 6794.811046]  #0:  (shrinker_rwsem){++++..}, at: [<c10774db>] 
+shrink_slab+0x25/0x13f
+[ 6794.811046]  #1:  (&xfs_mount_list_lock){++++.-}, at: [<c111cc78>] 
+xfs_reclaim_inode_shrink+0x2a/0xe8
+[ 6794.811046] 
+[ 6794.811046] stack backtrace:
+[ 6794.811046] Pid: 361, comm: kswapd0 Not tainted 2.6.35-rc4-btrfs-debug #7
+[ 6794.811046] Call Trace:
+[ 6794.811046]  [<c13616c0>] ? printk+0xf/0x17
+[ 6794.811046]  [<c104e988>] valid_state+0x134/0x142
+[ 6794.811046]  [<c104ea66>] mark_lock+0xd0/0x1e9
+[ 6794.811046]  [<c104e2a7>] ? check_usage_forwards+0x0/0x5f
+[ 6794.811046]  [<c105003d>] __lock_acquire+0x374/0xc80
+[ 6794.811046]  [<c1044942>] ? sched_clock_local+0x12/0x121
+[ 6794.811046]  [<c1044c0b>] ? sched_clock_cpu+0x122/0x133
+[ 6794.811046]  [<c1050d4d>] lock_acquire+0x5f/0x76
+[ 6794.811046]  [<c10fa82d>] ? xfs_ilock+0x22/0x67
+[ 6794.811046]  [<c1043974>] down_write_nested+0x32/0x63
+[ 6794.811046]  [<c10fa82d>] ? xfs_ilock+0x22/0x67
+[ 6794.811046]  [<c10fa82d>] xfs_ilock+0x22/0x67
+[ 6794.811046]  [<c10faa48>] xfs_ireclaim+0x98/0xbb
+[ 6794.811046]  [<c1043a1e>] ? up_write+0x16/0x2b
+[ 6794.811046]  [<c111c78c>] xfs_reclaim_inode+0x1a7/0x1b1
+[ 6794.811046]  [<c111cafe>] xfs_inode_ag_walk+0x77/0xbc
+[ 6794.811046]  [<c111c5e5>] ? xfs_reclaim_inode+0x0/0x1b1
+[ 6794.811046]  [<c111cc07>] xfs_inode_ag_iterator+0x52/0x99
+[ 6794.811046]  [<c111cc78>] ? xfs_reclaim_inode_shrink+0x2a/0xe8
+[ 6794.811046]  [<c111c5e5>] ? xfs_reclaim_inode+0x0/0x1b1
+[ 6794.811046]  [<c111cc99>] xfs_reclaim_inode_shrink+0x4b/0xe8
+[ 6794.811046]  [<c1077588>] shrink_slab+0xd2/0x13f
+[ 6794.811046]  [<c1078cef>] kswapd+0x37d/0x4e9
+[ 6794.811046]  [<c104028f>] ? autoremove_wake_function+0x0/0x2f
+[ 6794.811046]  [<c1078972>] ? kswapd+0x0/0x4e9
+[ 6794.811046]  [<c103ffbc>] kthread+0x60/0x65
+[ 6794.811046]  [<c103ff5c>] ? kthread+0x0/0x65
+[ 6794.811046]  [<c1002bba>] kernel_thread_helper+0x6/0x10
 
-It does bring the issue of severe performance penalty for sync-noidle
-workloads across groups. I think that should be solved by a different
-tunable like don't worry about fairness if group is not driving a minimum
-queue depth and this should be adjustable by tunable so that system admin
-can decide the right balance between fairness/isolation and throughput.
+Don't know if this is related to the problem.
 
-Thanks
-Vivek
+
+regards,
+  Johannes
