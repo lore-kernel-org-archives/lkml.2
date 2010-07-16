@@ -1,58 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965924Ab0GPPmn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 11:42:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50532 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965872Ab0GPPml (ORCPT
+	id S965913Ab0GPPpd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 11:45:33 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:7427 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965833Ab0GPPpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 11:42:41 -0400
-Date: Fri, 16 Jul 2010 12:42:21 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>, mingo@elte.hu,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>,
-        a.p.zijlstra@chello.nl, paulus@samba.org
-Subject: Re: [PATCH v2] perf: close the opened directories.
-Message-ID: <20100716154221.GB4051@ghostprotocols.net>
-References: <4C1C3F7C.4030607@cn.fujitsu.com>
- <1277360965.2096.881.camel@ymzhang.sh.intel.com>
- <4C230362.5080704@cn.fujitsu.com>
- <20100624135227.GA4784@ghostprotocols.net>
- <4C400C23.5070102@cn.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C400C23.5070102@cn.fujitsu.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Fri, 16 Jul 2010 11:45:32 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=129.33.193.72;
+From: Milton Miller <miltonm@bga.com>
+To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: Re: [PATCH 1/2] Remove REDWOOD_[456] config options and conditional code
+Cc: Milton Miller <miltonm@bga.com>, Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Solomon Peachy <solomon@linux-wlan.com>,
+        David Woodhouse <dwmw2@infradead.org>,
+        Mike Frysinger <vapier@gentoo.org>, Jiri Kosina <jkosina@suse.cz>,
+        Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
+        Alexander Kurz <linux@kbdbabel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        John Linn <john.linn@xilinx.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Nicolas Pitre <nico@fluxnic.net>, Joe Perches <joe@perches.com>,
+        Ladislav Michl <ladis@linux-mips.org>,
+        David Brown <davidb@quicinc.com>, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        netdev@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
+Message-ID: <redwood56-reply-2-miltonm@bga.com>
+In-Reply-To: <20100716142055.GA11736@zod.rchland.ibm.com>
+References: <4f07b3092cafbbba37d61d367cc7484e24d18d2a.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<ae6929d3206f6a282f2b0bf2621a05af45d892ff.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<ca1bb25d203618c3548748f5efb6f125a96c89e0.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<redwood56-reply-1-miltonm@bga.com>
+	<cover.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<20100716142055.GA11736@zod.rchland.ibm.com>
+Date: Fri, 16 Jul 2010 10:45:27 -0500
+X-Originating-IP: 129.33.193.72
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Fri, Jul 16, 2010 at 03:37:07PM +0800, Gui Jianfeng escreveu:
-> Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Jun 24, 2010 at 03:04:02PM +0800, Gui Jianfeng escreveu:
-> >> When I ran "perf kvm ... top", I encountered the following error output.
-> >>
-> >>   Error: perfcounter syscall returned with -1 (Too many open files)
-> >>
-> >>   Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-> >>
-> >> Looking into perf, I found perf opens too many direcotries at initialization
-> >> time, but forgets to close them. Here is the fix.
-> >>
-> >> Signef-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+
+On Fri, 16 Jul 2010 at about 08:20:55 -0600 Josh Boyer wrote:
+> On Fri, Jul 16, 2010 at 02:29:02PM +0200, Christian Dietrich wrote: 
+> > The config options for REDWOOD_[456] were commented out in the powerpc
+> > Kconfig. The ifdefs referencing this options therefore are dead and all
+> > references to this can be removed (Also dependencies in other KConfig
+> > files).
+
+> This seems fine with me.
+> 
+> The only question is which tree it coms through. I'm happy to take it
+> in via mine if the netdev and MTD people are fine with that. Otherwise,
+> my ack is below.
+
+
+> On Fri, 16 Jul 2010 around 14:29:08 +0200 Christian Dietrich wrote:
+> > diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
+> > index f22bc9f..6629d09 100644
+> > --- a/drivers/mtd/maps/Kconfig
+> > +++ b/drivers/mtd/maps/Kconfig
+> > @@ -321,7 +321,7 @@ config MTD_CFI_FLAGADM
 > > 
-> > Thanks, will apply.
-> 
-> Hi Arnaldo,
-> 
-> Would you pick up this fix?
+> >  config MTD_REDWOOD
+> >  	tristate "CFI Flash devices mapped on IBM Redwood"
+> > -	depends on MTD_CFI && ( REDWOOD_4 || REDWOOD_5 || REDWOOD_6 )
+> > +	depends on MTD_CFI
+> >  	help
+> >  	  This enables access routines for the flash chips on the IBM
+> >  	  Redwood board. If you have one of these boards and would like to
+> > diff --git a/drivers/mtd/maps/redwood.c b/drivers/mtd/maps/redwood.c
+> > index 933c0b6..d2c9db0 100644
+> > --- a/drivers/mtd/maps/redwood.c
+> > +++ b/drivers/mtd/maps/redwood.c
+> > @@ -22,8 +22,6 @@
 
-It was already, no? Nope, I thought about that other one about . and ..,
-will apply.
+The patches are unnecssarly coupled by removing the REDWOOD_* symbols
+in the MTD area before removing the files and Kconfig completely in
+the second patch.  This could easily be eliminated by pushing the
+two fragments into the second patch.
 
-- Arnaldo
+milton
