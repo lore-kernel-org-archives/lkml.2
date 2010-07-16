@@ -1,42 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964930Ab0GPJ7p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 05:59:45 -0400
-Received: from fanny.its.uu.se ([130.238.4.241]:56973 "EHLO fanny.its.uu.se"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964895Ab0GPJ7o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 05:59:44 -0400
+	id S964941Ab0GPKI2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 06:08:28 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61893 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S964898Ab0GPKI0 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 06:08:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VwbvhCEb/em82n7r9LCsGUYlSSnVaOmUiLiYnJG23sc4aRCsymDp4epyv30Ml2IDRe
+         QgOR8fp26ClTawCpiKiA5hE7emlFKMOLhHP2uwtyNPA3yG/7tYpWndOa0zWrAdYtYnX9
+         xf+T6lkgg3B1KJsXChLXimM3hyorgxvYSDD28=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19520.11654.346814.433232@pilspetsen.it.uu.se>
-Date: Fri, 16 Jul 2010 11:59:34 +0200
-From: Mikael Pettersson <mikpe@it.uu.se>
-To: Xianghua Xiao <xiaoxianghua@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: anonymous mmap() and random heap allocation
-In-Reply-To: <AANLkTilDmFF4IN1Glo_Bv_-eBX1jcdi7JDToeIbvToC8@mail.gmail.com>
-References: <AANLkTilDmFF4IN1Glo_Bv_-eBX1jcdi7JDToeIbvToC8@mail.gmail.com>
-X-Mailer: VM 7.17 under Emacs 20.7.1
+In-Reply-To: <4C4007CD.2070504@gmail.com>
+References: <cover.1279110894.git.siccegge@cs.fau.de>
+	<20100714131527.GB2352@tuxdriver.com>
+	<4C3DCD5C.1080705@openwrt.org>
+	<201007151041.55112.bzolnier@gmail.com>
+	<AANLkTilqoYMMKYJT-YYbEzdnytUSYa0EylEiJ4x5xXXH@mail.gmail.com>
+	<4C4007CD.2070504@gmail.com>
+Date: Fri, 16 Jul 2010 12:08:23 +0200
+Message-ID: <AANLkTik8M0gNipi_rwVJYbmo_3FfdHs-H4H_XDgTcbhI@mail.gmail.com>
+Subject: Re: [PATCH 01/11] Removing dead RT2800PCI_SOC
+From: Helmut Schaa <helmut.schaa@googlemail.com>
+To: Gertjan van Wingerde <gwingerde@gmail.com>
+Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ivo Van Doorn <ivdoorn@gmail.com>,
+        Christoph Egger <siccegge@cs.fau.de>, linux-wireless@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de,
+        Luis Correia <luis.f.correia@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Xianghua Xiao writes:
- > It seems mmap() can not do random allocation for malloc()/heap on
- > Linux, anyone used pax's 'mmap randonness' option for that? what's the
- > price for that?
- > 
- > I want to port openbsd's malloc() to linux to avoid heap
- > crashes(overrun/underrun), openbsd's malloc() can do random allocation
- > for security reasons, meanwhile it helps to avoid some
- > overrun/underrun crashes with no extra cost, the latter is what I'm
- > looking for.
+On Fri, Jul 16, 2010 at 9:18 AM, Gertjan van Wingerde
+<gwingerde@gmail.com> wrote:
+>
+> On 07/16/10 08:57, Helmut Schaa wrote:
+> > On Thu, Jul 15, 2010 at 10:41 AM, Bartlomiej Zolnierkiewicz <bzolnier@gmail.com <mailto:bzolnier@gmail.com>> wrote:
+> >
+> >     On Wednesday 14 July 2010 04:44:44 pm Felix Fietkau wrote:
+> >     > On 2010-07-14 3:15 PM, John W. Linville wrote:
+> >     > > On Wed, Jul 14, 2010 at 02:52:14PM +0200, Ivo Van Doorn wrote:
+> >     > >> On Wed, Jul 14, 2010 at 2:46 PM, Luis Correia <luis.f.correia@gmail.com <mailto:luis.f.correia@gmail.com>> wrote:
+> >     > >> > On Wed, Jul 14, 2010 at 13:39, Christoph Egger <siccegge@cs.fau.de <mailto:siccegge@cs.fau.de>> wrote:
+> >     > >> >> While RT2800PCI_SOC exists in Kconfig, it depends on either
+> >     > >> >> RALINK_RT288X or RALINK_RT305X which are both not available in Kconfig
+> >     > >> >> so all Code depending on that can't ever be selected and, if there's
+> >     > >> >> no plan to add these options, should be cleaned up
+> >     > >> >>
+> >     > >> >> Signed-off-by: Christoph Egger <siccegge@cs.fau.de <mailto:siccegge@cs.fau.de>>
+> >     > >> >
+> >     > >> > NAK,
+> >     > >> >
+> >     > >> > this is not dead code, it is needed for the Ralink System-on-Chip
+> >     > >> > Platform devices.
+> >     > >> >
+> >     > >> > While I can't fix Kconfig errors and the current KConfig file may be
+> >     > >> > wrong, this code cannot and will not be deleted.
+> >     > >>
+> >     > >> When the config option was introduced, the config options RALINK_RT288X and
+> >     > >> RALINK_RT305X were supposed to be merged as well soon after by somebody (Felix?)
+> >     > >>
+> >     > >> But since testing is done on SoC boards by Helmut and Felix, I assume the code
+> >     > >> isn't dead but actually in use.
+> >     > >
+> >     > > Perhaps Helmut and Felix can send us the missing code?
+> >     > The missing code is a MIPS platform port, which is currently being
+> >     > maintained in OpenWrt, but is not ready for upstream submission yet.
+> >     > I'm not working on this code at the moment, but I think it will be
+> >     > submitted once it's ready.
+> >
+> >     People are using automatic scripts to catch unused config options nowadays
+> >     so the issue is quite likely to come back again sooner or later..
+> >
+> >     Would it be possible to improve situation somehow till the missing parts
+> >     get merged?  Maybe by adding a tiny comment documenting RT2800PCI_SOC
+> >     situation to Kconfig (if the config option itself really cannot be removed)
+> >     until all code is ready etc.?
+> >
+> >
+> > Or we could just remove RT2800PCI_SOC completely and build the soc specific
+> > parts always as part of rt2800pci. I mean it's not much code, just the platform
+> > driver stuff and the eeprom access.
+> >
+>
+> I'm not sure if that is feasible. Sure, we can reduce the usage of the variable by
+> unconditionally compiling in the generic SOC code, but we should not unconditionally
+> register the SOC platform device, which is currently also under the scope of this
+> Kconfig variable.
 
-You can implement this in user-space with existing kernel features.
-1: place guard pages around mmap():ed data
-2: parse /proc/self/maps and mmap(MAP_FIXED)
-3: use a "safe" compiler or a dynamic binary instrumenter
-4: use x86 segments (ugh!)
-5: use a safe programming language
-...
+Ehm, no, the platform device is not registered in rt2800pci at all,
+it's just the platform
+driver that gets registered there. The platform device will be
+registered in the according
+board init code (that only resides in openwrt at the moment).
+
+Helmut
