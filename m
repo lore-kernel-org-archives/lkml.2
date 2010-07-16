@@ -1,135 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751146Ab0GPEWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 00:22:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41052 "EHLO hera.kernel.org"
+	id S1751200Ab0GPE0J (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 00:26:09 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38511 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab0GPEWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 00:22:37 -0400
-Date: Fri, 16 Jul 2010 04:21:49 GMT
-From: tip-bot for Matt Fleming <matt@console-pimps.org>
-Cc: acme@redhat.com, linux-kernel@vger.kernel.org, paulus@samba.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        masami.hiramatsu.pt@hitachi.com, matt@console-pimps.org,
-        imunsie@au.ibm.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org,
-        linux-kernel@vger.kernel.org, acme@redhat.com,
-        masami.hiramatsu.pt@hitachi.com, a.p.zijlstra@chello.nl,
-        matt@console-pimps.org, imunsie@au.ibm.com, tglx@linutronix.de,
-        mingo@elte.hu
-In-Reply-To: <e55812819ad18c2ceca5651ac7698a2af46180d7.1278774279.git.matt@console-pimps.org>
-References: <e55812819ad18c2ceca5651ac7698a2af46180d7.1278774279.git.matt@console-pimps.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf tools: Add DWARF register lookup for SH
-Message-ID: <tip-0dd9ac63ce26ec87b080ca9c3e6efed33c23ace6@git.kernel.org>
-Git-Commit-ID: 0dd9ac63ce26ec87b080ca9c3e6efed33c23ace6
-X-Mailer: tip-git-log-daemon
+	id S1750948Ab0GPE0D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 00:26:03 -0400
+Message-ID: <4C3FDF43.6030203@zytor.com>
+Date: Thu, 15 Jul 2010 21:25:39 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
+To: Michal Schmidt <mschmidt@redhat.com>
+CC: Borislav Petkov <borislav.petkov@amd.com>, linux-kernel@vger.kernel.org,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Andreas Herrmann <andreas.herrmann3@amd.com>,
+        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 1/2] x86: fix keeping track of AMD C1E
+References: <20100713185816.2866.17837.stgit@localhost.localdomain>	<20100713185957.2866.50995.stgit@localhost.localdomain>	<20100714160704.GA10473@kryptos.osrc.amd.com>	<20100714232201.00433aa9@hammerfall> <20100714233102.0f64614b@hammerfall>
+In-Reply-To: <20100714233102.0f64614b@hammerfall>
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 16 Jul 2010 04:21:54 +0000 (UTC)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  0dd9ac63ce26ec87b080ca9c3e6efed33c23ace6
-Gitweb:     http://git.kernel.org/tip/0dd9ac63ce26ec87b080ca9c3e6efed33c23ace6
-Author:     Matt Fleming <matt@console-pimps.org>
-AuthorDate: Sat, 10 Jul 2010 16:10:39 +0100
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Mon, 12 Jul 2010 11:25:10 -0300
+On 07/14/2010 02:31 PM, Michal Schmidt wrote:
+> 
+> This suggests that another way to fix my problem would be this (tested):
+> 
 
-perf tools: Add DWARF register lookup for SH
+This is a change of semantics from an AND to an OR across CPUs...
 
-Implement get_arch_regstr() for SH so that, given a DWARF register number, the
-corresponding symbolic name of that register can be looked up.
+	-hpa
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Ian Munsie <imunsie@au.ibm.com>
-LKML-Reference: <e55812819ad18c2ceca5651ac7698a2af46180d7.1278774279.git.matt@console-pimps.org>
-Signed-off-by: Matt Fleming <matt@console-pimps.org>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/arch/{powerpc => sh}/Makefile           |    0
- .../perf/arch/sh/util/dwarf-regs.c                 |   48 +++++++++++++-------
- 2 files changed, 32 insertions(+), 16 deletions(-)
-
-diff --git a/tools/perf/arch/powerpc/Makefile b/tools/perf/arch/sh/Makefile
-similarity index 100%
-copy from tools/perf/arch/powerpc/Makefile
-copy to tools/perf/arch/sh/Makefile
-diff --git a/kernel/rcutiny_plugin.h b/tools/perf/arch/sh/util/dwarf-regs.c
-similarity index 55%
-copy from kernel/rcutiny_plugin.h
-copy to tools/perf/arch/sh/util/dwarf-regs.c
-index d223a92..a11edb0 100644
---- a/kernel/rcutiny_plugin.h
-+++ b/tools/perf/arch/sh/util/dwarf-regs.c
-@@ -1,7 +1,7 @@
- /*
-- * Read-Copy Update mechanism for mutual exclusion (tree-based version)
-- * Internal non-public definitions that provide either classic
-- * or preemptable semantics.
-+ * Mapping of DWARF debug register numbers into register names.
-+ *
-+ * Copyright (C) 2010 Matt Fleming <matt@console-pimps.org>
-  *
-  * This program is free software; you can redistribute it and/or modify
-  * it under the terms of the GNU General Public License as published by
-@@ -17,23 +17,39 @@
-  * along with this program; if not, write to the Free Software
-  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-  *
-- * Copyright IBM Corporation, 2009
-- *
-- * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-  */
- 
--#ifdef CONFIG_DEBUG_LOCK_ALLOC
--
--#include <linux/kernel_stat.h>
-+#include <libio.h>
-+#include <dwarf-regs.h>
- 
- /*
-- * During boot, we forgive RCU lockdep issues.  After this function is
-- * invoked, we start taking RCU lockdep issues seriously.
-+ * Generic dwarf analysis helpers
-  */
--void rcu_scheduler_starting(void)
-+
-+#define SH_MAX_REGS 18
-+const char *sh_regs_table[SH_MAX_REGS] = {
-+	"r0",
-+	"r1",
-+	"r2",
-+	"r3",
-+	"r4",
-+	"r5",
-+	"r6",
-+	"r7",
-+	"r8",
-+	"r9",
-+	"r10",
-+	"r11",
-+	"r12",
-+	"r13",
-+	"r14",
-+	"r15",
-+	"pc",
-+	"pr",
-+};
-+
-+/* Return architecture dependent register string (for kprobe-tracer) */
-+const char *get_arch_regstr(unsigned int n)
- {
--	WARN_ON(nr_context_switches() > 0);
--	rcu_scheduler_active = 1;
-+	return (n <= SH_MAX_REGS) ? sh_regs_table[n] : NULL;
- }
--
--#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
