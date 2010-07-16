@@ -1,51 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965126Ab0GPLGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 07:06:09 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:49173 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965106Ab0GPLGH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 07:06:07 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Ian Kent <raven@themaw.net>
-Subject: Re: [PATCH 3/6] autofs/autofs4: move compat_ioctl handling into fs
-Date: Fri, 16 Jul 2010 13:05:31 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-        "autofs@linux.kernel.org" <autofs@linux.kernel.org>
-References: <1278195310-25590-1-git-send-email-arnd@arndb.de> <AANLkTimVzSzCl2XfWBg5HauYtIT5znxkm6M0yo_1en2b@mail.gmail.com> <1279255230.2968.24.camel@localhost>
-In-Reply-To: <1279255230.2968.24.camel@localhost>
+	id S965134Ab0GPLJR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 07:09:17 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:46604 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964971Ab0GPLJQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 07:09:16 -0400
+Date: Fri, 16 Jul 2010 12:08:59 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+Subject: Re: [PATCH 4/7] vmscan: convert direct reclaim tracepoint to
+	DEFINE_EVENT
+Message-ID: <20100716110859.GH13117@csn.ul.ie>
+References: <20100716191006.7369.A69D9226@jp.fujitsu.com> <20100716191508.7375.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007161305.31291.arnd@arndb.de>
-X-Provags-ID: V02:K0:vpbGBtKF2eHd1kjcEEqO++TZKHwLtJEO4Tg5n+1RHBc
- pY003j1RYy5+i+OFIibrGxfidG7muURYIWgWlIAB/3HXdKZj4Q
- uTaD5wm4mP4PjFFFP9Ss3fi4jVZAJbQtxac7IWO8423HRRM0Gd
- 5lILCRjyqOgiCUT7VDLpqbQhdbgW+07EuSwqLZBz2Xs6OT4SgS
- ohnM4xvCTCGUpbGaUp4BA==
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100716191508.7375.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 July 2010, Ian Kent wrote:
-> On Fri, 2010-07-16 at 02:14 +0200, Frederic Weisbecker wrote:
-> > 2010/7/6 Ian Kent <raven@themaw.net>:
-> > In any case, can we let you handle this patch for 2.6.36 inclusion?
+On Fri, Jul 16, 2010 at 07:16:05PM +0900, KOSAKI Motohiro wrote:
 > 
-> I think it makes more sense to keep these common patches together so
-> Arnd probably should keep it with his series.
+> TRACE_EVENT() is a bit old fashion. convert it.
+> 
 
-I think that's fine. Takashi Iwai took the alsa patch, but the
-rest can probably be merged together.
+heh, it's not a question of fashion :). It was defined this way because
+there wasn't a second user that would use the template. I didn't see the
+advantage of creating a template for one user. Your series adds a second
+one so it makes sense to convert.
 
-Frederic, would you like to add the remaining ioctl removal series
-into your git tree and have Stephen pull that into linux-next?
-I believe he's still pulling your tree anyway, although it doesn't
-have much content at the moment.
+> no functionally change.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  include/trace/events/vmscan.h |   19 +++++++++++++++++--
+>  1 files changed, 17 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/trace/events/vmscan.h b/include/trace/events/vmscan.h
+> index b26daa9..bd749c1 100644
+> --- a/include/trace/events/vmscan.h
+> +++ b/include/trace/events/vmscan.h
+> @@ -68,7 +68,7 @@ TRACE_EVENT(mm_vmscan_wakeup_kswapd,
+>  		__entry->order)
+>  );
+>  
+> -TRACE_EVENT(mm_vmscan_direct_reclaim_begin,
+> +DECLARE_EVENT_CLASS(mm_vmscan_direct_reclaim_begin_template,
+>  
+>  	TP_PROTO(int order, int may_writepage, gfp_t gfp_flags),
+>  
+> @@ -92,7 +92,15 @@ TRACE_EVENT(mm_vmscan_direct_reclaim_begin,
+>  		show_gfp_flags(__entry->gfp_flags))
+>  );
+>  
+> -TRACE_EVENT(mm_vmscan_direct_reclaim_end,
+> +DEFINE_EVENT(mm_vmscan_direct_reclaim_begin_template, mm_vmscan_direct_reclaim_begin,
+> +
+> +	TP_PROTO(int order, int may_writepage, gfp_t gfp_flags),
+> +
+> +	TP_ARGS(order, may_writepage, gfp_flags)
+> +);
 
-	Arnd
+Over 80 columns there.
+
+> +
+> +
+> +DECLARE_EVENT_CLASS(mm_vmscan_direct_reclaim_end_template,
+>  
+>  	TP_PROTO(unsigned long nr_reclaimed),
+>  
+> @@ -109,6 +117,13 @@ TRACE_EVENT(mm_vmscan_direct_reclaim_end,
+>  	TP_printk("nr_reclaimed=%lu", __entry->nr_reclaimed)
+>  );
+>  
+> +DEFINE_EVENT(mm_vmscan_direct_reclaim_end_template, mm_vmscan_direct_reclaim_end,
+> +
+> +	TP_PROTO(unsigned long nr_reclaimed),
+> +
+> +	TP_ARGS(nr_reclaimed)
+> +);
+> +
+
+Over 80 columns here too.
+
+I know I broke it multiple times in my last series because I thought it
+wasn't enforced any more but I got called on it.
+
+
+>  TRACE_EVENT(mm_vmscan_lru_isolate,
+>  
+>  	TP_PROTO(int order,
+
+Otherwise, I can't spot a problem.
+
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
