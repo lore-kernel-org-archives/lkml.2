@@ -1,69 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965641Ab0GPNfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 09:35:39 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:44861 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965234Ab0GPNfi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 09:35:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Onl9lchUct3WRqXezecmW3hTevq7WJTaivG8OcQ8T0VYw2RK5FpOjzR8ArmxiP6e7i
-         7IRl3kAvc2KOwR56gzgMIrna/S5ZACrTaWV2y5lxSP3KvBIqhxGU1Bt2HI9Ou/9yLdqc
-         Xu2VqsBIQYyB/JJ2jWZ398rvoRGFQuQmlU110=
+	id S965669Ab0GPNoT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 09:44:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47519 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965397Ab0GPNoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 09:44:17 -0400
+Date: Fri, 16 Jul 2010 09:43:53 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Nauman Rafique <nauman@google.com>, Munehiro Ikeda <m-ikeda@ds.jp.nec.com>,
+        linux-kernel@vger.kernel.org, Ryo Tsuruta <ryov@valinux.co.jp>,
+        taka@valinux.co.jp, Andrea Righi <righi.andrea@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+        balbir@linux.vnet.ibm.com, "Daniel P. Berrange" <berrange@redhat.com>
+Subject: Re: [RFC][PATCH 00/11] blkiocg async support
+Message-ID: <20100716134353.GA15382@redhat.com>
+References: <4C369009.80503@ds.jp.nec.com>
+ <20100709134546.GC3672@redhat.com>
+ <4C37BC1A.20102@ds.jp.nec.com>
+ <AANLkTikECHfrksrk3QnD3X07pmgXdpo5-fv7hDLm2Zxw@mail.gmail.com>
+ <20100710132417.GA2752@redhat.com>
+ <20100712092004.3b27e13e.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100712131805.GA12918@redhat.com>
+ <20100713133636.73367cae.kamezawa.hiroyu@jp.fujitsu.com>
+ <20100714142919.GA31449@redhat.com>
+ <20100715090048.0b0120a0.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <19520.11654.346814.433232@pilspetsen.it.uu.se>
-References: <AANLkTilDmFF4IN1Glo_Bv_-eBX1jcdi7JDToeIbvToC8@mail.gmail.com>
-	<19520.11654.346814.433232@pilspetsen.it.uu.se>
-Date: Fri, 16 Jul 2010 08:35:36 -0500
-Message-ID: <AANLkTimsudVzj12-HuEKZyRVfR1yAcXvZhpf0cqokKRr@mail.gmail.com>
-Subject: Re: anonymous mmap() and random heap allocation
-From: Xianghua Xiao <xiaoxianghua@gmail.com>
-To: Mikael Pettersson <mikpe@it.uu.se>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100715090048.0b0120a0.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 4:59 AM, Mikael Pettersson <mikpe@it.uu.se> wrote:
-> Xianghua Xiao writes:
->  > It seems mmap() can not do random allocation for malloc()/heap on
->  > Linux, anyone used pax's 'mmap randonness' option for that? what's the
->  > price for that?
->  >
->  > I want to port openbsd's malloc() to linux to avoid heap
->  > crashes(overrun/underrun), openbsd's malloc() can do random allocation
->  > for security reasons, meanwhile it helps to avoid some
->  > overrun/underrun crashes with no extra cost, the latter is what I'm
->  > looking for.
->
-> You can implement this in user-space with existing kernel features.
-> 1: place guard pages around mmap():ed data
-> 2: parse /proc/self/maps and mmap(MAP_FIXED)
-> 3: use a "safe" compiler or a dynamic binary instrumenter
-> 4: use x86 segments (ugh!)
-> 5: use a safe programming language
-> ...
->
+On Thu, Jul 15, 2010 at 09:00:48AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, 14 Jul 2010 10:29:19 -0400
+> Vivek Goyal <vgoyal@redhat.com> wrote:
+> > > 
+> > > Cgroup's feature as mounting several subsystems at a mount point at once
+> > > is very useful in many case.
+> > 
+> > I agree that it is useful but if some controllers are not supporting
+> > hierarchy, it just adds to more confusion. And later when hierarchy
+> > support comes in, there will be additional issue of keeping this file
+> > "use_hierarchy" like memory controller.
+> > 
+> > So at this point of time , I am not too inclined towards allowing hierarchical
+> > cgroup creation but treating them as flat in CFQ. I think it adds to the
+> > confusion and user space should handle this situation.
+> > 
+> 
+> Hmm. 
+> 
+> Could you fix error code in create blkio cgroup ? It returns -EINVAL now.
+> IIUC, mkdir(2) doesn't return -EINVAL as error code (from man.)
+> Then, it's very confusing. I think -EPERM or -ENOMEM will be much better.
 
-Mikael,
-Thanks.
-Forgot to mention this is a powerpc platform. This will be enhancement
-to an existing system, i.e. language(mostly C) is already set.
-Also, this is for runtime, placing guard pages around mmap() will slow
-down the system dramatically.
-I'm porting OpenBSD's malloc now. Even though linux's mmap(), unlike
-OpenBSD, can not randomize its allocations(which offers free
-overrun/underrun protections to some extent), however OpenBSD's malloc
-does not put its control block on the heap, that's a plus at least.
+Hm..., Probably -EPERM is somewhat close to what we are doing. File system
+does supoort creation of directories but not after certain level.
 
-What do you mean by 'safe' compiler, something like checkergcc? I
-think checkergcc is obsolete now.
+I will trace more instances of mkdir error values.
 
-cheers,
-xianghua
+> 
+> Anyway, I need to see source code of blk-cgroup.c to know why libvirt fails
+> to create cgroup.
+
+[CCing daniel berrange]
+
+AFAIK, libvirt does not have support for blkio controller yet. Are you 
+trying to introduce that? 
+
+libvirt creates a direcotry tree. I think /cgroup/libvirt/qemu/kvm-dirs.
+So actual virtual machine directors are 2-3 level below and that would
+explain that if you try to use blkio controller with libvirt, it will fail
+because it will not be able to create directories at that level.
+
+I think libvirt need to special case blkio here to create directories in 
+top level. It is odd but really there are no easy answeres. Will we not
+support a controller in libvirt till controller support hierarchy.
+
+> Where is the user-visible information (in RHEL or Fedora)
+> about "you can't use blkio-cgroup via libvirt or libcgroup" ?
+
+[CCing balbir]
+
+I think with libcgroup you can use blkio controller. I know somebody
+who was using cgexec command to launch some jobs in blkio cgroups. AFAIK,
+libcgroup does not have too much controller specific state and should
+not require any modifications for blkio controller. 
+
+Balbir can tell us more.
+
+libvirt will require modification to support blkio controller. I also 
+noticed that libvirt by default puts every virtual machine into its
+own cgroup. I think it might not be a very good strategy for blkio
+controller because putting every virtual machine in its own cgroup
+will kill overall throughput if each virtual machine is not driving
+enough IO.
+
+I am also trying to come up with some additional logic of letting go 
+fairness if a group is not doing sufficient IO.
+
+Daniel, do you know where is the documentation which says what controllers
+are currently supported by libvirt.
+
+Thanks
+Vivek
