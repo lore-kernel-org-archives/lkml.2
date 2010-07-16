@@ -1,47 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759375Ab0GPWCx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 18:02:53 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61198 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754907Ab0GPWCw convert rfc822-to-8bit (ORCPT
+	id S1759384Ab0GPWHg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 18:07:36 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:49237 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759351Ab0GPWHf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 18:02:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=TVc/3JE1NrgB9R5ZTkBYLa/OX3RGv9V9jRE3CvFJwHPl3o+bn56xXrKF4oB30yg3Nr
-         2vnxavZtfXYapPDIeIVp/vUckkD51blin8vzbHEVsp7kWzV6vI7Dx0aX/ifx9tzyQF/n
-         ZqvU6s4GqenoDr2VIcmBvBmw9SmgCLrgbG+yo=
-MIME-Version: 1.0
-Date: Fri, 16 Jul 2010 16:02:50 -0600
-Message-ID: <AANLkTineI34tKDMPYN4SPY0W432cv8ZPc55IEW5hwmed@mail.gmail.com>
+	Fri, 16 Jul 2010 18:07:35 -0400
+Date: Sat, 17 Jul 2010 00:07:30 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
 Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
+Message-ID: <20100716220730.GH7338@basil.fritz.box>
+References: <4C408D0C.5050709@redhat.com>
+ <20100716165855.GA3836@Krystal>
+ <4C409CBA.1050709@redhat.com>
+ <4C409F62.6030303@zytor.com>
+ <4C40A1BD.4040507@redhat.com>
+ <4C40A227.6000207@zytor.com>
+ <4C40A4E8.5090605@redhat.com>
+ <AANLkTinc_of_KYCFt9-8GZYGFLyqQLlgNttPe-YvZn-1@mail.gmail.com>
+ <4C40B277.9030408@redhat.com>
+ <AANLkTimfZb22E7c_ftyc5WfKsGvJKKq-J3Vq8Y6FNvhT@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTimfZb22E7c_ftyc5WfKsGvJKKq-J3Vq8Y6FNvhT@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Date Fri, 16 Jul 2010 14:39:50 -0700
->From Linus Torvalds
+> And the thing is, if we just do NMI's correctly, and allow nesting,
+> ALL THOSE PROBLEMS GO AWAY. And there is no reason what-so-ever to do
+> stupid things elsewhere.
 
-> Linus Torvalds wrote:
-> But we're not talking about non-NMI code.Yes, we are. We're talking about breakpoints (look at the subjectline), and you are very much talking about things like that _idiotic_vmalloc_sync_all() by module
-> loading code etc etc.Every _single_ "solution" I have seen - apart from my suggestion - hasbeen about making code "special" because some other code might run inan NMI. Module init sequences having to > do idiotic things just becausethey have data structures that might get accessed by NMI.And the thing is, if we just do NMI's correctly, and allow nesting,ALL THOSE PROBLEMS GO AWAY. And there is no > reason what-so-ever to dostupid things elsewhere.In other words, why the hell are you arguing? Help Mathieu write thelow-level NMI handler right, and remove that idiotic"vmalloc_sync_all()" that is
-> fundamentally broken and should notexist. Rather than talk about adding more of that kind of crap.
->
-> Linus
+One issue I have with nesting NMIs is that you need 
+a nesting limit, otherwise you'll overflow the NMI stack.
 
-So Linus, my understanding of Intel's processor design is that the
-processor will NEVER singal a nested NMI until it sees an iret from
-the first NMI exception.  At least that's how the processors were
-working
-when I started this unless this behavior has changed.    Just put a
-gate on the exception that uses its own stack (which I think we do
-anyway).
+We just got rid of nesting for normal interrupts because
+of this stack overflow problem which hit in real situations.
 
-Jeff
+In some cases you can get quite high NMI frequencies, e.g. with
+performance counters. Now the current performance counter handlers
+do not nest by themselves of course, but they might nest 
+with other longer running NMI users.
+
+I think none of the current handlers are likely to nest
+for very long, but there's more and more NMI coded all the time,
+so it's definitely a concern.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
