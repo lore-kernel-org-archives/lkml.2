@@ -1,46 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966197Ab0GPVDn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 17:03:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21885 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754771Ab0GPVDm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 17:03:42 -0400
-Message-ID: <4C40C83E.2090900@kernel.org>
-Date: Fri, 16 Jul 2010 13:59:42 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Zeno Davatz <zdavatz@gmail.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>, Damien Wyart <damien.wyart@free.fr>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com> <1279100846.8592.53.camel@e102109-lin.cambridge.arm.com> <4C3D89AC.4040303@cs.helsinki.fi> <1279205891.6664.46.camel@e102109-lin.cambridge.arm.com> <AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com> <4C3F2F52.2050101@cs.helsinki.fi> <20100715162805.GA10240@brouette> <20100715191638.GA3694@brouette> <AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com> <20100715200012.GA4175@brouette> <F37ABC5E-E9F9-43BD-989E-4185135217D2@gmail.com> <AANLkTimWFTUZTh2-3Bavmwcum2joQluMEDmXx3xjyHqQ@mail.gmail.com> <AANLkTinqZs11kXx5afD4RDsVsy551S5lMnyAUwhdX2Sg@mail.gmail.com> <AANLkTilv7cG9JMkZeO_GftTPWHxiIY5c8Q19pTBZT7Vy@mail.gmail.com> <AANLkTimGMUtzgO5HWHXX5RY-EDET61j6PxzwgILigIef@mail.gmail.com> <4C40271E.9070809@cs.helsinki.fi> <AANLkTimxDBusBSkL0I2g9tsj4gLHaqVFArqcfixfzePh@mail.gmail.com> <4C40A498.5060208@kernel.org> <C36A97B2-E6A4-409D-91B8-DED8B086A479@gmail.com>
-In-Reply-To: <C36A97B2-E6A4-409D-91B8-DED8B086A479@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C40C8F4.0038,ss=1,fgs=0
+	id S966211Ab0GPVGB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 17:06:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36376 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966094Ab0GPVGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 17:06:00 -0400
+Date: Fri, 16 Jul 2010 17:05:40 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Ian Kent <raven@themaw.net>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 21/38] union-mount: Support for mounting union mount file systems
+Message-ID: <20100716210539.GE21201@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-22-git-send-email-vaurora@redhat.com> <20100713044701.GF3949@zeus.themaw.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100713044701.GF3949@zeus.themaw.net>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 01:29 PM, Zeno Davatz wrote:
+On Tue, Jul 13, 2010 at 12:47:02PM +0800, Ian Kent wrote:
+> On Tue, Jun 15, 2010 at 11:39:51AM -0700, Valerie Aurora wrote:
+> > +/**
+> > + * prepare_mnt_union - do setup necessary for a union mount
+> > + *
+> > + * @topmost_mnt: vfsmount of topmost layer
+> > + * @mntpnt: path of requested mountpoint
+> > + *
+> > + * A union mount clones the underlying read-only mounts and keeps them
+> > + * in its own internal list of of vfsmounts, hanging off the
+> > + * superblock.  The first underlying mount (at @mntpnt) has passed
+> > + * check_mnt_union(), so we know we have at least one layer of union
+> > + * mount underneath this one.  We union every underlying file system
+> > + * that is mounted on the same mountpoint (well, pathname) and
+> > + * read-only.
 > 
-> Am 16.07.2010 um 20:27 schrieb Yinghai Lu <yinghai@kernel.org>:
+> Last sentence looks a bit odd, would this be better?
 > 
->> it seems that you are using 32bit kernel. please check if this one help.
-> 
-> Thanks! What RC should I patch? 2.6.35-rc5?
+> We union every underlying file system that is mounted read-only on the
+> same mountpoint (well, pathname).
 
-current linus tree or 2.6.35-rc5.
+Hm, I appear to have re-written that in the latest set of patches.
 
-Thanks
-
-Yinghai
+-VAL
