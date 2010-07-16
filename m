@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759300Ab0GPUpp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 16:45:45 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48713
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758829Ab0GPUpn (ORCPT
+	id S1759319Ab0GPUpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 16:45:53 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:43639 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758829Ab0GPUpr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 16:45:43 -0400
-Date: Fri, 16 Jul 2010 13:45:58 -0700 (PDT)
-Message-Id: <20100716.134558.235673512.davem@davemloft.net>
-To: jwboyer@linux.vnet.ibm.com
-Cc: qy03fugy@stud.informatik.uni-erlangen.de, miltonm@bga.com,
-        mporter@kernel.crashing.org, benh@kernel.crashing.org,
-        paulus@samba.org, solomon@linux-wlan.com, dwmw2@infradead.org,
-        vapier@gentoo.org, jkosina@suse.cz, Artem.Bityutskiy@nokia.com,
-        linux@kbdbabel.org, randy.dunlap@oracle.com, john.linn@xilinx.com,
-        florian@openwrt.org, nico@fluxnic.net, joe@perches.com,
-        ladis@linux-mips.org, davidb@quicinc.com, linuxppc-dev@ozlabs.org,
-        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
-        netdev@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 1/2] Remove REDWOOD_[456] config options and
- conditional code
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100716142055.GA11736@zod.rchland.ibm.com>
-References: <cover.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
-	<ca1bb25d203618c3548748f5efb6f125a96c89e0.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
-	<20100716142055.GA11736@zod.rchland.ibm.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	Fri, 16 Jul 2010 16:45:47 -0400
+Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for
+ defconfig
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Nicolas Pitre <nico@fluxnic.net>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kbuild@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+In-Reply-To: <AANLkTimKpmZaGRYfYs8HGDz-_VG8ePXN6bZvl2-YcNdR@mail.gmail.com>
+References: <20100713230352.6781.18644.stgit@angua>
+	 <1279296221.17878.66.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com>
+	 <alpine.LFD.2.00.1007161406120.10598@xanadu.home>
+	 <20100716183028.GB26854@n2100.arm.linux.org.uk>
+	 <alpine.LFD.2.00.1007161439240.10598@xanadu.home>
+	 <AANLkTikqHnyFVJF0Pzwy2xtKeNSXYAPFdPkAkLiXK8Ls@mail.gmail.com>
+	 <1279310976.18579.8.camel@e102109-lin.cambridge.arm.com>
+	 <AANLkTimKpmZaGRYfYs8HGDz-_VG8ePXN6bZvl2-YcNdR@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Organization: ARM Limited
+Date: Fri, 16 Jul 2010 21:44:36 +0100
+Message-ID: <1279313076.20418.3.camel@e102109-lin.cambridge.arm.com>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 16 Jul 2010 20:44:38.0384 (UTC) FILETIME=[B52E1700:01CB2527]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Josh Boyer <jwboyer@linux.vnet.ibm.com>
-Date: Fri, 16 Jul 2010 10:20:55 -0400
-
-> On Fri, Jul 16, 2010 at 02:29:02PM +0200, Christian Dietrich wrote:
->>The config options for REDWOOD_[456] were commented out in the powerpc
->>Kconfig. The ifdefs referencing this options therefore are dead and all
->>references to this can be removed (Also dependencies in other KConfig
->>files).
->>
->>Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
->>Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+On Fri, 2010-07-16 at 21:17 +0100, Grant Likely wrote:
+> On Fri, Jul 16, 2010 at 2:09 PM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > On Fri, 2010-07-16 at 19:46 +0100, Linus Torvalds wrote:
+> >> On Fri, Jul 16, 2010 at 11:40 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> >> >
+> >> > DOH.
+> >>
+> >> Well, it's possible that the correct approach is a mixture.
+> >>
+> >> Automatically do the trivial cases (recursive selects, dependencies
+> >> that are simple or of the form "x && y" etc), and warn about the cases
+> >> that aren't trivial (where "not trivial" may not necessarily be about
+> >> fundamentally ambiguous ones, but just "complex enough that I won't
+> >> even try").
+> >
+> > There is still a risk with this approach when the Kconfig isn't entirely
+> > correct. For example, on ARM we have (I pushed a patch already):
+> >
+> > config CPU_32v6K
+> >        depends on CPU_V6
+> >
+> > config CPU_V7
+> >        select CPU_32v6K
+> >
+> > In this simple approach, we end up selecting CPU_V6 when we only need
+> > CPU_V7. There other places like this in the kernel.
+> >
+> > Of course, kbuild could still warn but if people rely on this feature to
+> > select options automatically I suspect they would ignore the warnings.
 > 
-> This seems fine with me.
-> 
-> The only question is which tree it coms through.  I'm happy to take it
-> in via mine if the netdev and MTD people are fine with that.  Otherwise,
-> my ack is below.
-> 
-> Acked-by: Josh Boyer <jwboyer@linux.vnet.ibm.com>
+> In my first patch, I made Kconfig problems errors instead of warnings.
+>  That would prevent people from ignoring them.
 
-Please take it:
+My point was that if we allow kbuild to select dependencies
+automatically (as per Nico's initial suggestion, followed up by Linus),
+in the above situation CPU_V7 would trigger the selection of CPU_V6 and
+I don't want this. If we rely on such automatic selection of the
+"depends on" options, we can't make the warnings be errors.
 
-Acked-by: David S. Miller <davem@davemloft.net>
+-- 
+Catalin
+
