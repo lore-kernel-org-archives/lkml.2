@@ -1,38 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965288Ab0GPMKB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 08:10:01 -0400
-Received: from stinky.trash.net ([213.144.137.162]:35645 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965244Ab0GPMJ7 (ORCPT
+	id S965307Ab0GPMUt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 08:20:49 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63232 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965291Ab0GPMUr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 08:09:59 -0400
-Message-ID: <4C404C13.5060601@trash.net>
-Date: Fri, 16 Jul 2010 14:09:55 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: "Daniel P. Berrange" <berrange@redhat.com>,
-        Jes Sorensen <Jes.Sorensen@redhat.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Jan Engelhardt <jengelh@medozas.de>,
-        Randy Dunlap <randy.dunlap@oracle.com>,
-        netfilter-devel@vger.kernel.org, netfilter@vger.kernel.org,
-        coreteam@netfilter.org, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: [PATCHv4] netfilter: add CHECKSUM target
-References: <20100715115217.GA6737@redhat.com> <4C3F27A2.3030207@trash.net> <20100715174216.GA16216@redhat.com>
-In-Reply-To: <20100715174216.GA16216@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Jul 2010 08:20:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WoMDjflwpGcusW5IHrUSN4BV9TpXy6rghb9F90vDx6TXVvDG5d1pGqfvftSm3Bgx8Y
+         Tiz7x5jMVQz67bA2AmFe58RXaWrEkKjY6qlJw044o300nprBNMpFC/4UhmXv1GmdH/i8
+         prvmbXYj/1vH77o9U3t8SvJkVVfDQycWNNkpo=
+Subject: Re: Badness with the kernel version 2.6.35-rc1-git1 running on P6
+ box
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: divya <dipraksh@linux.vnet.ibm.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
+        sachinp@linux.vnet.ibm.com, benh@kernel.crashing.org,
+        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>,
+        Jan-Bernd Themann <ossthema@de.ibm.com>
+In-Reply-To: <1279274185.2549.14.camel@edumazet-laptop>
+References: <4C401D56.3070108@linux.vnet.ibm.com>
+	 <1279274185.2549.14.camel@edumazet-laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Jul 2010 14:20:42 +0200
+Message-ID: <1279282842.2549.16.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 15.07.2010 19:42, schrieb Michael S. Tsirkin:
-> netfilter: correct CHECKSUM header and export it
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Le vendredi 16 juillet 2010 à 11:56 +0200, Eric Dumazet a écrit :
 
-Applied, thanks.
+> [PATCH] ehea: ehea_get_stats() should use GFP_KERNEL
+> 
+> ehea_get_stats() is called in process context and should use GFP_KERNEL
+> allocation instead of GFP_ATOMIC.
+> 
+> Clearing stats at beginning of ehea_get_stats() is racy in case of
+> concurrent stat readers.
+> 
+> get_stats() can also use netdev net_device_stats, instead of a private
+> copy.
+> 
+> Reported-by: divya <dipraksh@linux.vnet.ibm.com>
+> Signed-off-by: Eric Dumazet <eric.dumazet@gmail.com>
+> ---
+>  drivers/net/ehea/ehea.h      |    1 -
+>  drivers/net/ehea/ehea_main.c |    6 ++----
+>  2 files changed, 2 insertions(+), 5 deletions(-)
+> 
+> 
+
+Hmm, net-next-2.6 contains following patch :
+
+commit 3d8009c780ee90fccb5c171caf30aff839f13547
+Author: Brian King <brking@linux.vnet.ibm.com>
+Date:   Wed Jun 30 11:59:12 2010 +0000
+
+    ehea: Allocate stats buffer with GFP_KERNEL
+    
+    Since ehea_get_stats calls ehea_h_query_ehea_port, which
+    can sleep, we can also sleep when allocating a page in
+    this function. This fixes some memory allocation failure
+    warnings seen under low memory conditions.
+    
+    Signed-off-by: Brian King <brking@linux.vnet.ibm.com>
+    Signed-off-by: David S. Miller <davem@davemloft.net>
+
+diff --git a/drivers/net/ehea/ehea_main.c b/drivers/net/ehea/ehea_main.c
+index 8b92acb..3beba70 100644
+--- a/drivers/net/ehea/ehea_main.c
++++ b/drivers/net/ehea/ehea_main.c
+@@ -335,7 +335,7 @@ static struct net_device_stats
+*ehea_get_stats(struct net_device *dev)
+ 
+        memset(stats, 0, sizeof(*stats));
+ 
+-       cb2 = (void *)get_zeroed_page(GFP_ATOMIC);
++       cb2 = (void *)get_zeroed_page(GFP_KERNEL);
+        if (!cb2) {
+                ehea_error("no mem for cb2");
+                goto out;
+
+
