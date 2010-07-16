@@ -1,82 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab0GPQsI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 12:48:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48544 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752461Ab0GPQsG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 12:48:06 -0400
-Message-ID: <4C408D0C.5050709@redhat.com>
-Date: Fri, 16 Jul 2010 19:47:08 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal>
-In-Reply-To: <20100716144927.GA22516@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1753579Ab0GPQua (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 12:50:30 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:55697 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751526Ab0GPQu2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 12:50:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=QZy7HPd5g4F8Eg1xkuAfXfdwIrm/0c7j8I33JrxsuI3BBdTMXryxapQgUANz0toPWl
+         URQIi+tgs+uvZ/2TuyWypq3oUna4N+bRZ7Qs+3mx1lZziQeY+ylCcnJn+kGCAvNNE5p0
+         CgNnoZenT+UdBgMtkNijvFdKD8IoI7wBGR67I=
+From: Stephen Boyd <bebarino@gmail.com>
+To: users@rt2x00.serialmonkey.com
+Cc: Ivo van Doorn <IvDoorn@gmail.com>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] rt2x00: Fix lockdep warning in rt2x00lib_probe_dev()
+Date: Fri, 16 Jul 2010 09:50:10 -0700
+Message-Id: <1279299010-4723-1-git-send-email-bebarino@gmail.com>
+X-Mailer: git-send-email 1.7.2.rc2.10.g637ab
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 05:49 PM, Mathieu Desnoyers wrote:
->
->> You need to save/restore cr2 in addition, otherwise the following hits you
->>
->> - page fault
->> - processor writes cr2, enters fault handler
->> - nmi
->> - page fault
->> - cr2 overwritten
->>
->> I guess you would usually not notice the corruption since you'd just see
->> a spurious fault on the page the NMI handler touched, but if the first
->> fault happened in a kvm guest, then we'd corrupt the guest's cr2.
->>      
-> OK, just to make sure: you mean we'd have to save/restore the cr2 register
-> at the beginning/end of the NMI handler execution, right ?
+The rt2x00dev->intf_work workqueue is never initialized when a driver is
+probed for a non-existent device (in this case rt2500usb). On such a
+path we call rt2x00lib_remove_dev() to free any resources initialized
+during the probe before we use INIT_WORK to initialize the workqueue.
+This causes lockdep to get confused since the lock used in the workqueue
+hasn't been initialized yet but is now being acquired during
+cancel_work_sync() called by rt2x00lib_remove_dev().
 
-Yes.
+Fix this by initializing the workqueue first before we attempt to probe
+the device. This should make lockdep happy and avoid breaking any
+assumptions about how the library cleans up after a probe fails.
 
-> The shouldn't we
-> save/restore cr3 too ?
->
->    
+phy0 -> rt2x00lib_probe_dev: Error - Failed to allocate device.
+INFO: trying to register non-static key.
+the code is fine but needs lockdep annotation.
+turning off the locking correctness validator.
+Pid: 2027, comm: modprobe Not tainted 2.6.35-rc5+ #60
+Call Trace:
+ [<ffffffff8105fe59>] register_lock_class+0x152/0x31f
+ [<ffffffff81344a00>] ? usb_control_msg+0xd5/0x111
+ [<ffffffff81061bde>] __lock_acquire+0xce/0xcf4
+ [<ffffffff8105f6fd>] ? trace_hardirqs_off+0xd/0xf
+ [<ffffffff81492aef>] ?  _raw_spin_unlock_irqrestore+0x33/0x41
+ [<ffffffff810628d5>] lock_acquire+0xd1/0xf7
+ [<ffffffff8104f037>] ? __cancel_work_timer+0x99/0x17e
+ [<ffffffff8104f06e>] __cancel_work_timer+0xd0/0x17e
+ [<ffffffff8104f037>] ? __cancel_work_timer+0x99/0x17e
+ [<ffffffff8104f136>] cancel_work_sync+0xb/0xd
+ [<ffffffffa0096675>] rt2x00lib_remove_dev+0x25/0xb0 [rt2x00lib]
+ [<ffffffffa0096bf7>] rt2x00lib_probe_dev+0x380/0x3ed [rt2x00lib]
+ [<ffffffff811d78a7>] ? __raw_spin_lock_init+0x31/0x52
+ [<ffffffffa00bbd2c>] ? T.676+0xe/0x10 [rt2x00usb]
+ [<ffffffffa00bbe4f>] rt2x00usb_probe+0x121/0x15e [rt2x00usb]
+ [<ffffffff813468bd>] usb_probe_interface+0x151/0x19e
+ [<ffffffff812ea08e>] driver_probe_device+0xa7/0x136
+ [<ffffffff812ea167>] __driver_attach+0x4a/0x66
+ [<ffffffff812ea11d>] ? __driver_attach+0x0/0x66
+ [<ffffffff812e96ca>] bus_for_each_dev+0x54/0x89
+ [<ffffffff812e9efd>] driver_attach+0x19/0x1b
+ [<ffffffff812e9b64>] bus_add_driver+0xb4/0x204
+ [<ffffffff812ea41b>] driver_register+0x98/0x109
+ [<ffffffff813465dd>] usb_register_driver+0xb2/0x173
+ [<ffffffffa00ca000>] ? rt2500usb_init+0x0/0x20 [rt2500usb]
+ [<ffffffffa00ca01e>] rt2500usb_init+0x1e/0x20 [rt2500usb]
+ [<ffffffff81000203>] do_one_initcall+0x6d/0x17a
+ [<ffffffff8106cae8>] sys_init_module+0x9c/0x1e0
+ [<ffffffff8100296b>] system_call_fastpath+0x16/0x1b
 
-No, faults should not change cr3.
+Signed-off-by: Stephen Boyd <bebarino@gmail.com>
+---
+ drivers/net/wireless/rt2x00/rt2x00dev.c |   10 +++++-----
+ 1 files changed, 5 insertions(+), 5 deletions(-)
 
->> But the whole thing strikes me as overkill.  If it's 8k per-cpu, what's
->> wrong with using a per-cpu pointer to a kmalloc() area?
->>      
-> Well, it seems like all the kernel code calling "vmalloc_sync_all()" (which is
-> much more than perf) can potentially cause large latencies, which could be
-> squashed by allowing page faults in NMI handlers. This looks like a stronger
-> argument to me.
-
-Why is that kernel code calling vmalloc_sync_all()?  If it is only NMI 
-which cannot take vmalloc faults, why bother?  If not, why not?
-
+diff --git a/drivers/net/wireless/rt2x00/rt2x00dev.c b/drivers/net/wireless/rt2x00/rt2x00dev.c
+index 3ae468c..f20d3ee 100644
+--- a/drivers/net/wireless/rt2x00/rt2x00dev.c
++++ b/drivers/net/wireless/rt2x00/rt2x00dev.c
+@@ -854,6 +854,11 @@ int rt2x00lib_probe_dev(struct rt2x00_dev *rt2x00dev)
+ 		    BIT(NL80211_IFTYPE_WDS);
+ 
+ 	/*
++	 * Initialize configuration work.
++	 */
++	INIT_WORK(&rt2x00dev->intf_work, rt2x00lib_intf_scheduled);
++
++	/*
+ 	 * Let the driver probe the device to detect the capabilities.
+ 	 */
+ 	retval = rt2x00dev->ops->lib->probe_hw(rt2x00dev);
+@@ -863,11 +868,6 @@ int rt2x00lib_probe_dev(struct rt2x00_dev *rt2x00dev)
+ 	}
+ 
+ 	/*
+-	 * Initialize configuration work.
+-	 */
+-	INIT_WORK(&rt2x00dev->intf_work, rt2x00lib_intf_scheduled);
+-
+-	/*
+ 	 * Allocate queue array.
+ 	 */
+ 	retval = rt2x00queue_allocate(rt2x00dev);
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+1.7.2.rc2.10.g637ab
 
