@@ -1,34 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752382Ab0GPEy2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 00:54:28 -0400
-Received: from wmail04.netvigator.com ([218.102.48.82]:55370 "EHLO
-	wmail04dat.netvigator.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751313Ab0GPEy1 (ORCPT
+	id S1752675Ab0GPFJX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 01:09:23 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44215 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751563Ab0GPFJV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 00:54:27 -0400
-X-Greylist: delayed 1571 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Jul 2010 00:54:27 EDT
-X-Mailer: Openwave WebEngine, version 2.8.19 (webedge20-101-1110-20050615)
-X-Originating-IP: [193.137.8.136]
-From: Webmail Helpdest Support Centre <annalpc@netvigator.com>
-To: info@netvigator.com
-Subject: you have just exceeded your Email Quota limit
-Date: Fri, 16 Jul 2010 12:28:09 +0800
+	Fri, 16 Jul 2010 01:09:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=dEDm9omZ4oXabyThofaft59UnZdm68ijQTTN1qoGshE6rJN553JTOHVamkeuVRqLnm
+         DmAfGtksxNtYyHYta47cp09tiBuM2/Kgh+EK/8ioi2R8mokImPoCa6AcW9+laFb3Re7s
+         HfchmYhXTi6VxbVOi7uwciS+ZXqB0umST/5T4=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH] ARM/nuc900: fix nuc900 touchscreen clk definition bug
+Date: Fri, 16 Jul 2010 07:09:14 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
+Cc: Wan ZongShun <mcuos.com@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+References: <4C3FCBFF.50506@gmail.com>
+In-Reply-To: <4C3FCBFF.50506@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=Big5
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100716042811.FVZZ1038.wmail04dat.netvigator.com@ocmas06.netvigator.com>
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201007160709.15385.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is to inform you that you have just exceeded your Email Quota limit of 350MB. Before you can continue using your email account, you are required to expand your Email Quota because in less than 48 hours your email will be disable. Increase your Email Quota and continue to use your email account.
+Dne Pá 16. července 2010 05:03:27 Wan ZongShun napsal(a):
+> This patch is to fix nuc900 touchscreen clk definition bug,the .dev_id's
+> name should be 'nuc900-ts', it should be the same to pdev.name. or else,
+> the touchscreen driver will be not working well due to clock engine
+> disabled.
+> 
+> Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+> ---
+>  arch/arm/mach-w90x900/cpu.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/arm/mach-w90x900/cpu.c b/arch/arm/mach-w90x900/cpu.c
+> index 642207e..83c5632 100644
+> --- a/arch/arm/mach-w90x900/cpu.c
+> +++ b/arch/arm/mach-w90x900/cpu.c
+> @@ -93,7 +93,7 @@ static struct clk_lookup nuc900_clkregs[] = {
+>  	DEF_CLKLOOK(&clk_kpi, "nuc900-kpi", NULL),
+>  	DEF_CLKLOOK(&clk_wdt, "nuc900-wdt", NULL),
+>  	DEF_CLKLOOK(&clk_gdma, "nuc900-gdma", NULL),
+> -	DEF_CLKLOOK(&clk_adc, "nuc900-adc", NULL),
+> +	DEF_CLKLOOK(&clk_adc, "nuc900-ts", NULL),
+>  	DEF_CLKLOOK(&clk_usi, "nuc900-spi", NULL),
+>  	DEF_CLKLOOK(&clk_ext, NULL, "ext"),
+>  	DEF_CLKLOOK(&clk_timer0, NULL, "timer0"),
 
+Hey,
 
-To expand your Email Quota to 2.2GB, use the below web link:
+Is that thing really touchscreen or general-purpose analog/digital converter ?
 
-http://tnscoat.com/phpform/use/onlineform4./form1.html
-
-Thank you for your understanding.
-Copyright &#169;2010 Webmail Helpdest Support Centre.
-
+Cheers
