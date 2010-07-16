@@ -1,81 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965726Ab0GPOWL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 10:22:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21997 "EHLO mx1.redhat.com"
+	id S965719Ab0GPO0p (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 10:26:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62832 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965664Ab0GPOVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 10:21:54 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
-        Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC] CFQ: Make prio_trees per cfq group basis to improve IO performance
-References: <4C40247C.2010405@cn.fujitsu.com>
-	<20100716140034.GC15382@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Fri, 16 Jul 2010 10:21:46 -0400
-In-Reply-To: <20100716140034.GC15382@redhat.com> (Vivek Goyal's message of
-	"Fri, 16 Jul 2010 10:00:34 -0400")
-Message-ID: <x49y6dbv75x.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S965676Ab0GPO0o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 10:26:44 -0400
+Date: Fri, 16 Jul 2010 17:20:50 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, vgoyal@redhat.com,
+        "David S. Miller" <davem@davemloft.net>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, seto.hidetoshi@jp.fujitsu.com,
+        Matt Carlson <mcarlson@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH repost] pci: fix compilation when CONFIG_PCI_MSI=n
+Message-ID: <20100716142050.GA4970@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+vers/pci/pci.c:2277: error: redefinition of ‘pci_msi_off’
+include/linux/pci.h:786: note: previous definition of ‘pci_msi_off’ was here
 
-> On Fri, Jul 16, 2010 at 05:21:00PM +0800, Gui Jianfeng wrote:
->> Currently, prio_trees is global, and we rely on cfqq_close() to search
->> a coorperator. If the returned cfqq and the active cfqq don't belong to
->> the same group, coorperator searching fails. Actually, that's not the case.
->> Even if cfqq_close() returns a cfqq which belong to another cfq group, 
->> it's still likely that a coorperator(same cfqg) resides in prio_trees.
->> This patch introduces per cfq group prio_trees that should solve the above
->> issue.
->> 
->
-> Hi Gui,
->
-> I am not sure I understand the issue here.  So are you saying that once
-> we find a cfqq which is close but belongs to a different group we reject
-> it. But there could be another cfqq in the same group which is not as
-> close but still close enough.
->
-> For example, assume there are two queues q1 and q2 and in group and third
-> queue q3 in group B. Assume q1 is active queue and we are searching for
-> cooperator. If cooperator code finds q3 as closest then we will not pick
-> this queue as it belongs to a different group. But it could happen that
-> q2 is also close enough and we never considered that possibility.
->
-> If yes, then its a good theoritical concern but I am worried practically
-> how often does it happen. Do you have any workload which suffers because
-> of this?
+No need for ifdef: we must disable the capability at startup even if the
+current kernel does not support MSI, otherwise the device won't work.
 
-That was my reading.  It also means that, in the case that we have
-cgroups in use, each rb tree will be smaller.
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
-> I am not too inclined to push more complexity in CFQ until and unless we
-> have a good use case.
+Looks like I didn't tag this old patch of mine clearly enough
+so it's still not fixed in -rc5.
+It's late in the cycle, but the patch is trivial
+and it's a build fix, so ... please consider for 2.6.35.
 
-I don't think this adds complexity, does it?  It simply moves the
-priority trees up a level, which is arguably where they belong.
+ include/linux/pci.h |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
 
->> +static struct cfq_queue *
->> +cfq_prio_tree_lookup(struct cfq_group *cfqg, struct rb_root *root,
->> +		     sector_t sector, struct rb_node **ret_parent,
->> +		     struct rb_node ***rb_link)
->> +{
-
-You can get rid of the cfqg argument.  I know you're just keeping with
-the prior model (where cfqd was passed in and not used), but let's kill
-it.
-
-Cheers,
-Jeff
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 31d8a12..7cb0084 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -780,11 +780,7 @@ int __must_check pci_set_mwi(struct pci_dev *dev);
+ int pci_try_set_mwi(struct pci_dev *dev);
+ void pci_clear_mwi(struct pci_dev *dev);
+ void pci_intx(struct pci_dev *dev, int enable);
+-#ifdef CONFIG_PCI_MSI
+ void pci_msi_off(struct pci_dev *dev);
+-#else
+-static inline void pci_msi_off(struct pci_dev *dev) {}
+-#endif
+ int pci_set_dma_max_seg_size(struct pci_dev *dev, unsigned int size);
+ int pci_set_dma_seg_boundary(struct pci_dev *dev, unsigned long mask);
+ int pcix_get_max_mmrbc(struct pci_dev *dev);
+-- 
+1.7.2.rc0.14.g41c1c
