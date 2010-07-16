@@ -1,95 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965855Ab0GPPkU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 11:40:20 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:57202 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965822Ab0GPPkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 11:40:17 -0400
-Message-ID: <4C407D5E.7060702@austin.ibm.com>
-Date: Fri, 16 Jul 2010 10:40:14 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S965880Ab0GPPk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 11:40:28 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:60591 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S965841Ab0GPPkT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 11:40:19 -0400
+Date: Fri, 16 Jul 2010 11:40:17 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, akpm@osdl.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+Message-ID: <20100716154017.GA17970@Krystal>
+References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <20100716153433.GA7338@basil.fritz.box>
 MIME-Version: 1.0
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH 4/5] v2 Update sysfs node routines for new sysfs memory
- directories
-References: <4C3F53D1.3090001@austin.ibm.com>	<4C3F5628.6030809@austin.ibm.com> <20100716091239.69f40e47.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100716091239.69f40e47.kamezawa.hiroyu@jp.fujitsu.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100716153433.GA7338@basil.fritz.box>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:36:03 up 174 days, 18:12,  6 users,  load average: 0.02, 0.05,
+	0.01
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2010 07:12 PM, KAMEZAWA Hiroyuki wrote:
-> On Thu, 15 Jul 2010 13:40:40 -0500
-> Nathan Fontenot <nfont@austin.ibm.com> wrote:
+* Andi Kleen (andi@firstfloor.org) wrote:
+> > Well, it seems like all the kernel code calling "vmalloc_sync_all()" (which is
+> > much more than perf) can potentially cause large latencies, which could be
 > 
->> Update the node sysfs directory routines that create
->> links to the memory sysfs directories under each node.
->> This update makes the node code aware that a memory sysfs
->> directory can cover multiple memory sections.
->>
->> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+> You need to fix all other code too that walks tasks lists to avoid all those.
 > 
-> Shouldn't "static int link_mem_sections(int nid)" be update ?
-> It does
->  for (pfn = start_pfn; pfn < end_pfn; pfn += PAGES_PER_SECTION) {
->         register..
-> 
+> % gid for_each_process | wc -l
 
-No, although the name 'link_mem_sections' does imply that it should.  The
-range of start_pfn..end_pfn examined in this routine is the range of pfn's
-covered by the entire node, not a memory_block.
+This can very well be done incrementally. And I agree, these should eventually
+targeted too, especially those which hold locks. We've already started hearing
+about tasklist lock live-locks in the past year, so I think we're pretty much at
+the point where it should be looked at.
 
--Nathan
+Thanks,
 
-> Thanks,
-> -Kame
-> 
-> 
->> ---
->>  drivers/base/node.c |   12 ++++++++----
->>  1 file changed, 8 insertions(+), 4 deletions(-)
->>
->> Index: linux-2.6/drivers/base/node.c
->> ===================================================================
->> --- linux-2.6.orig/drivers/base/node.c	2010-07-15 09:54:06.000000000 -0500
->> +++ linux-2.6/drivers/base/node.c	2010-07-15 09:56:16.000000000 -0500
->> @@ -346,8 +346,10 @@
->>  		return -EFAULT;
->>  	if (!node_online(nid))
->>  		return 0;
->> -	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
->> -	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
->> +
->> +	sect_start_pfn = section_nr_to_pfn(mem_blk->start_phys_index);
->> +	sect_end_pfn = section_nr_to_pfn(mem_blk->end_phys_index);
->> +	sect_end_pfn += PAGES_PER_SECTION - 1;
->>  	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
->>  		int page_nid;
->>  
->> @@ -383,8 +385,10 @@
->>  	if (!unlinked_nodes)
->>  		return -ENOMEM;
->>  	nodes_clear(*unlinked_nodes);
->> -	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
->> -	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
->> +
->> +	sect_start_pfn = section_nr_to_pfn(mem_blk->start_phys_index);
->> +	sect_end_pfn = section_nr_to_pfn(mem_blk->end_phys_index);
->> +	sect_end_pfn += PAGES_PER_SECTION - 1;
->>  	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
->>  		int nid;
->>  
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>
-> 
+Mathieu
 
+> 
+> In fact the mm-struct walk is cheaper than a task-list walk because there
+> are always less than tasks.
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
