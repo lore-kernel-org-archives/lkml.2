@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755071Ab0GPFoV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 01:44:21 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:32892
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753504Ab0GPFoT (ORCPT
+	id S935631Ab0GPFqa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 01:46:30 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:37641 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753504Ab0GPFq3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 01:44:19 -0400
-Date: Thu, 15 Jul 2010 22:44:35 -0700 (PDT)
-Message-Id: <20100715.224435.45920963.davem@davemloft.net>
-To: sbhatewara@vmware.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pv-drivers@vmware.com
-Subject: Re: [PATCH 2.6.35-rc1] net-next: vmxnet3 fixes [3/5] Initialize
- link state at probe time
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LRH.2.00.1007150125240.25472@localhost.localdomain>
-References: <alpine.LRH.2.00.1007131748180.32055@localhost.localdomain>
-	<20100714.141054.48510602.davem@davemloft.net>
-	<alpine.LRH.2.00.1007150125240.25472@localhost.localdomain>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 16 Jul 2010 01:46:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pKHeFxkfV/u8couREZMWujHsSVB2HpIea9XvFG+gZXJUgBrcsF16Ry1i5oTSV0EGQ2
+         kuQG39u+5muAxHlBu9Bch2KzLL96dOhbQ80c/Nq3fQRmsDCdVH1Viyj/VQUVXHZ5GtHb
+         hc78K3H8FhSEcu/qxUB4UxNlCMpVNcCCsk5BA=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTil-sv82zjR7yJr_3nZ0QBO_8Jwj_FO0iFubwe2s@mail.gmail.com>
+References: <1278756333-6850-1-git-send-email-lliubbo@gmail.com>
+	<AANLkTikMcPcldBh_uVKxrH7rEIUju3Y_3X2jLi9jw2Vs@mail.gmail.com>
+	<1279058027.936.236.camel@calx>
+	<AANLkTil-sv82zjR7yJr_3nZ0QBO_8Jwj_FO0iFubwe2s@mail.gmail.com>
+Date: Fri, 16 Jul 2010 13:46:28 +0800
+Message-ID: <AANLkTikbGTlAPAj6lbuR5nIWyBAqnfBpy3IE_LywrPID@mail.gmail.com>
+Subject: Re: [PATCH] slob_free:free objects to their own list
+From: Bob Liu <lliubbo@gmail.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Matt Mackall <mpm@selenic.com>, akpm@linux-foundation.org,
+        linux-mm@kvack.org, hannes@cmpxchg.org,
+        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mel@csn.ul.ie>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-Date: Thu, 15 Jul 2010 18:20:14 -0700 (PDT)
+On Wed, Jul 14, 2010 at 5:07 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+> On Wed, Jul 14, 2010 at 12:53 AM, Matt Mackall <mpm@selenic.com> wrote:
+>> On Tue, 2010-07-13 at 20:52 +0300, Pekka Enberg wrote:
+>>> Hi Bob,
+>>>
+>>> [ Please CC me on SLOB patches. You can use the 'scripts/get_maintainer.pl'
+>>>   script to figure out automatically who to CC on your patches. ]
+>>>
+>>> On Sat, Jul 10, 2010 at 1:05 PM, Bob Liu <lliubbo@gmail.com> wrote:
+>>> > slob has alloced smaller objects from their own list in reduce
+>>> > overall external fragmentation and increase repeatability,
+>>> > free to their own list also.
+>>> >
+>>> > Signed-off-by: Bob Liu <lliubbo@gmail.com>
+>>>
+>>> The patch looks sane to me. Matt, does it look OK to you as well?
+>>
+>> Yep, this should be a marginal improvement.
+>>
+>> Acked-by: Matt Mackall <mpm@selenic.com>
+>
+> Great! Bob, if you could provide the /proc/meminfo numbers for the
+> patch description, I'd be more than happy to merge this.
+>
+Hi, Pekka
 
-> 
-> On Wed, 14 Jul 2010, David Miller wrote:
-> 
->> From: Shreyas Bhatewara <sbhatewara@vmware.com>
->> Date: Tue, 13 Jul 2010 17:48:55 -0700 (PDT)
->> 
->> > 
->> > Initialize vmxnet3 link state at probe time
->> > 
->> > This change initializes the state of link at the time when driver is
->> > loaded. The ethtool output for 'link detected' and 'link speed'
->> > is thus valid even before the interface is brought up.
->> > 
->> > Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
->> 
->> You should never, ever, call netif_start_queue() on a device which has
->> not been brought up.
->> 
->> But that is what this patch is doing.
->> 
-> 
-> I do not understand why you say so. vmxnet3_check_link() is called in 
-> probe() with affectTxQueue as false. Hence netif_start_queue() will not be 
-> called before device is brought up.
-> vmxnet3_check_link() is again called with affectTxQueue as true in 
-> vmxnet3_activate_dev() after device was activated.
+Sorry for the wrong cc and later reply.
+This is  /proc/meminfo result in my test machine:
+without this patch:
+===
+MemTotal:        1030720 kB
+MemFree:          750012 kB
+Buffers:           15496 kB
+Cached:           160396 kB
+SwapCached:            0 kB
+Active:           105024 kB
+Inactive:         145604 kB
+Active(anon):      74816 kB
+Inactive(anon):     2180 kB
+Active(file):      30208 kB
+Inactive(file):   143424 kB
+Unevictable:          16 kB
+....
 
-Aha, I see how the logic works now.
+with this patch:
+===
+MemTotal:        1030720 kB
+MemFree:          751908 kB
+Buffers:           15492 kB
+Cached:           160280 kB
+SwapCached:            0 kB
+Active:           102720 kB
+Inactive:         146140 kB
+Active(anon):      73168 kB
+Inactive(anon):     2180 kB
+Active(file):      29552 kB
+Inactive(file):   143960 kB
+Unevictable:          16 kB
+...
 
-But still there is a problem with this patch, please remove the
-driver version bump and resubmit.
+The result show only very small improverment!
+And when i tested it on a embeded system with 64MB, I found this path
+is never called while kernel booting.
 
-You should only version bump at the last patch in a series.
+Thanks for the kindly review.
 
-Thanks.
+-- 
+Regards,
+--Bob
