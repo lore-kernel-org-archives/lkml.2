@@ -1,58 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758879Ab0GPSnB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 14:43:01 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27448 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757696Ab0GPSm7 (ORCPT
+	id S1758900Ab0GPSok (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 14:44:40 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40373 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758790Ab0GPSoj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 14:42:59 -0400
-Message-ID: <4C40A766.6060309@kernel.org>
-Date: Fri, 16 Jul 2010 11:39:34 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	Fri, 16 Jul 2010 14:44:39 -0400
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Russell King <rmk@arm.linux.org.uk>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: linux-next: build failure after merge of the final tree
-References: <20100716171124.064cf319.sfr@canb.auug.org.au>
-In-Reply-To: <20100716171124.064cf319.sfr@canb.auug.org.au>
+In-Reply-To: <4C40A4E8.5090605@redhat.com>
+References: <20100714154923.947138065@efficios.com>
+	<20100714155804.252253097@efficios.com>
+	<4C405078.20707@redhat.com>
+	<20100716144927.GA22516@Krystal>
+	<4C408D0C.5050709@redhat.com>
+	<20100716165855.GA3836@Krystal>
+	<4C409CBA.1050709@redhat.com>
+	<4C409F62.6030303@zytor.com>
+	<4C40A1BD.4040507@redhat.com>
+	<4C40A227.6000207@zytor.com>
+	<4C40A4E8.5090605@redhat.com>
+Date: Fri, 16 Jul 2010 11:37:05 -0700
+Message-ID: <AANLkTinc_of_KYCFt9-8GZYGFLyqQLlgNttPe-YvZn-1@mail.gmail.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C40A80B.00BD,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 12:11 AM, Stephen Rothwell wrote:
-> Hi Russell,
-> 
-> After merging the final tree, today's linux-next build (most, if not all
-> arm configs) failed (not unexpectedly) due to the lmb -> memblock rename
-> (commit 95f72d1ed41a66f1c1c29c24d479de81a0bea36f "lmb: rename to
-> memblock").
-> 
-> See http://kisskb.ellerman.id.au/kisskb/branch/9/
+On Fri, Jul 16, 2010 at 11:28 AM, Avi Kivity <avi@redhat.com> wrote:
+>
+> Use kmalloc and percpu pointers, it's not that onerous.
 
-You or Russell may need to run the scripts in that patch
+What people don't seem to understand is that WE SHOULD NOT MAKE NMI
+FORCE US TO DO "STRANGE" CODE IN CODE-PATHS THAT HAVE NOTHING
+WHAT-SO-EVER TO DO WITH NMI.
 
-      FILES=$(find * -type f | grep -vE 'oprofile|[^K]config')
+I'm shouting, because this point seems to have been continually
+missed. It was missed in the original patches, and it's been missed in
+the discussions.
 
-      sed -i \
-        -e 's/lmb/memblock/g' \
-        -e 's/LMB/MEMBLOCK/g' \
-        $FILES
+Non-NMI code should simply never have to even _think_ about NMI's. Why
+should it? It should just do whatever comes "natural" within its own
+context.
 
-      for N in $(find . -name lmb.[ch]); do
-        M=$(echo $N | sed 's/lmb/memblock/g')
-        mv $N $M
-      done
+This is why I've been pushing for the "let's just fix NMI" approach.
+Not adding random hacks to other code sequences that have nothing
+what-so-ever to do with NMI.
 
+So don't add NMI code to the page fault code. Not to the debug code,
+or to the module loading code. Don't say "use special allocations
+because the NMI code may care about these particular data structures".
+Because that way lies crap and unmaintainability.
 
-Thanks
-
-Yinghai
+                      Linus
