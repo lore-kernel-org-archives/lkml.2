@@ -1,23 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935893Ab0GPHsN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 03:48:13 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:60834 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935885Ab0GPHsH (ORCPT
+	id S935901Ab0GPHse (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 03:48:34 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:38592 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935821Ab0GPHsD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 03:48:07 -0400
+	Fri, 16 Jul 2010 03:48:03 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:date:message-id:subject:from:to:content-type;
-        b=KJwh2HuL4NfCqCYDcxs0AJ0iiSGD/6lP7qHSodPO2/FqBZ2DWwXarzNTqiKSNFP0hZ
-         cd93s//QWiVy39Yx5GuxY4zNd8ZzVWZK33uP5VXNd2HDNSxLsqNeNlckZjjuiZYX3IFd
-         rlo3VXl0C35CFtMkpbDOFZjTIZVbxoe5hcy7o=
+        b=lKQfPPOW4UKBaO/CMrIUgKb2aGk+bFw3Dun0bmwDqrA3yHiKaMgPCOnBmEebu4fTds
+         lKT68jOhT0P8AApVDRQ6ztZLlo3v+/scSMjI+P2IHjqIptcQWwYgONM6B4drSdchDq3i
+         YavUTM5X0AtaoYlt8fpALWeP3JaSft4B9EvWQ=
 MIME-Version: 1.0
-Date: Fri, 16 Jul 2010 01:48:06 -0600
-Message-ID: <AANLkTikcgUqcySgX5vdPH9bCv5KS-Wap2T_oWVGXAM9n@mail.gmail.com>
-Subject: [ANNOUNCE] MDB Merkey's Kernel Debugger 2.6.34.1 x86_64 07-15-2010 
-	Release 2
+Date: Fri, 16 Jul 2010 01:48:02 -0600
+Message-ID: <AANLkTil14aFJqYpp4hvYZnZyyf2UWPdvDocOcF4R6Kga@mail.gmail.com>
+Subject: [ANNOUNCE] MDB Merkey's Kernel Debugger 2.6.33.6 x86_64 07-15-2010
 From: Jeffrey Merkey <jeffmerkey@gmail.com>
 To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
@@ -27,7 +26,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 CURRENT
 
-http://merkeydebugger.googlecode.com/files/mdb-2.6.34.1-x86_64-07-15-2010.patch
+http://merkeydebugger.googlecode.com/files/mdb-2.6.33.6-x86_64-07-15-2010.patch
 
 REPOSITORY
 
