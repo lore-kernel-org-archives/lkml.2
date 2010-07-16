@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935836Ab0GPHrn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 03:47:43 -0400
+	id S935857Ab0GPHru (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 03:47:50 -0400
 Received: from mail-qw0-f46.google.com ([209.85.216.46]:51974 "EHLO
 	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935713Ab0GPHrm (ORCPT
+	with ESMTP id S935713Ab0GPHrp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 03:47:42 -0400
+	Fri, 16 Jul 2010 03:47:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:date:message-id:subject:from:to:content-type;
-        b=n/jMNzg8pLXJbsGwzIb/YubnzgaWdDgDKIp2o+L5W7uRfddejkKW4uEzo2mNGNpFQI
-         fzDxxyI5m4TTJ7WZhaL8F7nD4QbfHF715rxg8khs/z0Ibm7lEta8W6WNxeLpveP6HUhw
-         1Rul+uwGBEggL+KGugPsl0p5mc0Tooy4chSYk=
+        b=CMP7bSD/7qV03K7kbxueDkS05kwv8TGXq/+6Xe/WOv10LI+dD3Dzg8B5jARzv2mDIq
+         dePSNazYRyF4TgwXDqKqa92qtkz0OcvXW0m3GH34mHtOxxH/PltsywvkOL9yuNCvjNji
+         4KCvbaBWcITtoeS5ic5+UiDkhWMBVZKaaHT5s=
 MIME-Version: 1.0
-Date: Fri, 16 Jul 2010 01:47:39 -0600
-Message-ID: <AANLkTinygji0NiW0cmwBqq_HWtNZ0n-mJEhpspyo6TGF@mail.gmail.com>
-Subject: [ANNOUNCE] MDB Merkey's Kernel Debugger 2.6.28.10 x86_64 07-15-2010
+Date: Fri, 16 Jul 2010 01:47:44 -0600
+Message-ID: <AANLkTiniLY5K6gueyVBQFCCMCCcB4AGqigxigtUN6apt@mail.gmail.com>
+Subject: [ANNOUNCE] MDB Merkey's Kernel Debugger 2.6.29.6 x86_64 07-15-2010
 From: Jeffrey Merkey <jeffmerkey@gmail.com>
 To: linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
@@ -26,7 +26,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 CURRENT
 
-http://merkeydebugger.googlecode.com/files/mdb-2.6.28.10-x86_64-07-15-2010.patch
+http://merkeydebugger.googlecode.com/files/mdb-2.6.29.6-x86_64-07-15-2010.patch
+
 
 REPOSITORY
 
