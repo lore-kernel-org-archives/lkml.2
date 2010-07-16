@@ -1,53 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935370Ab0GPC06 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 22:26:58 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:55553 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935263Ab0GPC04 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 22:26:56 -0400
-Date: Fri, 16 Jul 2010 10:26:48 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Fixes for 2.6.35
-Message-ID: <20100716022648.GA28219@gondor.apana.org.au>
-References: <20081225002020.GA2912@gondor.apana.org.au> <20090324044932.GA18245@gondor.apana.org.au> <20090613020512.GA21024@gondor.apana.org.au> <20090910141905.GA17948@gondor.apana.org.au> <20091020065442.GA5947@gondor.apana.org.au> <20091230021253.GA17067@gondor.apana.org.au> <20100201195204.GA6953@gondor.apana.org.au> <20100305071043.GA3548@gondor.apana.org.au> <20100427135547.GA4008@gondor.apana.org.au> <20100603100550.GA30681@gondor.apana.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100603100550.GA30681@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S935415Ab0GPCl1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 22:41:27 -0400
+Received: from waste.org ([173.11.57.241]:41092 "EHLO waste.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935364Ab0GPCl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 22:41:26 -0400
+Subject: Re: [Pkg-sysvinit-devel] Bug#587665: Safety of early boot init of
+ /dev/random seed
+From: Matt Mackall <mpm@selenic.com>
+To: Henrique de Moraes Holschuh <hmh@debian.org>
+Cc: Herbert Xu <herbert@gondor.hengli.com.au>, "Theodore Ts'o" <tytso@mit.edu>,
+        Michael Biebl <biebl@debian.org>, 587665@bugs.debian.org,
+        linux-kernel@vger.kernel.org, Petter Reinholdtsen <pere@hungry.com>
+In-Reply-To: <20100715233305.GF27512@khazad-dum.debian.net>
+References: <20100630234016.GD18711@login1.uio.no>
+	 <4C2BDCF0.5080203@debian.org> <20100701141022.GA3811@login1.uio.no>
+	 <20100701171357.GE4789@khazad-dum.debian.net>
+	 <20100702064415.GE3811@login1.uio.no>
+	 <20100702232919.GA14437@login2.uio.no>
+	 <20100703012833.GA20929@khazad-dum.debian.net>
+	 <20100703151636.GB23648@khazad-dum.debian.net>
+	 <20100703160819.GA12343@khazad-dum.debian.net>
+	 <1278355233.9937.21.camel@calx>
+	 <20100715233305.GF27512@khazad-dum.debian.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 15 Jul 2010 21:41:22 -0500
+Message-ID: <1279248082.936.250.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Thu, 2010-07-15 at 20:33 -0300, Henrique de Moraes Holschuh wrote:
+> On Mon, 05 Jul 2010, Matt Mackall wrote:
+> > > > Here are our questions:
+> > > > 
+> > > > 1. How much data of unknown quality can we feed the random pool at boot,
+> > > >    before it causes damage (i.e. what is the threshold where we violate the
+> > > >    "you are not goint to be any worse than you were before" rule) ?
+> > 
+> > There is no limit. The mixing operations are computationally reversible,
+> > which guarantees that no unknown degrees of freedom are clobbered when
+> > mixing known data.
+> 
+> Good.  So, whatever we do, we are never worse off than we were before we did
+> it, at least by design.
+> 
+> > > > 2. How dangerous it is to feed the pool with stale seed data in the next
+> > > >    boot (i.e. in a failure mode where we do not regenerate the seed file) ?
+> > 
+> > Not at all.
+> >  
+> > > > 3. What is the optimal size of the seed data based on the pool size ?
+> > 
+> > 1:1.
+> 
+> We shall try to keep it at 1:1, then.
+> 
+> > > > 4. How dangerous it is to have functions that need randomness (like
+> > > >    encripted network and partitions, possibly encripted swap with an
+> > > >    ephemeral key), BEFORE initializing the random seed ?
+> > 
+> > Depends on the platform. For instance, if you've got an unattended boot
+> > off a Live CD on a machine with a predictable clock, you may get
+> > duplicate outputs.
+> 
+> I.e. it is somewhat dangerous, and we should try to avoid it by design, so
+> we should try to init it as early as possible.  Very well.
+> 
+> > > > 5. Is there an optimal size for the pool?  Does the quality of the randomness
+> > > >    one extracts from the pool increase or decrease with pool size?
+> > 
+> > Don't bother fiddling with the pool size.
+> 
+> We don't, but local admins often do, probably in an attempt to better handle
+> bursts of entropy drainage.  So, we do want to properly support non-standard
+> pool sizes in Debian if we can.
 
-This push fixes a crash in the new ablkcipher walking code used by
-async block ciphers.
+Unless they're manually patching their kernel, they probably aren't
+succeeding. The pool resize ioctl was disabled ages ago. But there's
+really nothing to support here: even the largest polynomial in the
+source is only 2048 bits, or 256 bytes.
+
+> > > > Basically, we need these answers to find our way regarding the following
+> > > > decisions:
+> > > > 
+> > > > a) Is it better to seed the pool as early as possible and risk a larger time
+> > > >    window for problem (2) above, instead of the current behaviour where we
+> > > >    have a large time window where (4) above happens?
+> > 
+> > Earlier is better.
+> > 
+> > > > b) Is it worth the effort to base the seed file on the size of the pool,
+> > > >    instead of just using a constant size?  If a constant size is better,
+> > > >    which size would that be? 512 bytes? 4096 bytes? 16384 bytes?
+> > 
+> > 512 bytes is plenty.
+> >
+> > > > c) What is the maximum seed file size we can allow (maybe based on size of
+> > > >    the pool) to try to avoid problem (1) above ?
+> > 
+> > Anything larger than a sector is simply wasting CPU time, but is
+> > otherwise harmless.
+> 
+> Well, a filesystem block is usually 1024 bytes, and a sector is 4096 bytes
+> nowadays... :-)
+> 
 
 
-Please pull from
-
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Jiri Slaby (1):
-      crypto: skcipher - avoid NULL dereference
-
- crypto/ablkcipher.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-Thanks,
 -- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+Mathematics is the supreme nostalgia of our time.
+
+
