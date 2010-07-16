@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966106Ab0GPQQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 12:16:57 -0400
+	id S966110Ab0GPQRV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 12:17:21 -0400
 Received: from mail-ew0-f46.google.com ([209.85.215.46]:60203 "EHLO
 	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965945Ab0GPQQy (ORCPT
+	with ESMTP id S965945Ab0GPQRR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 12:16:54 -0400
+	Fri, 16 Jul 2010 12:17:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=nH+e/WKqJNsxfIOL8z2UxBO7kQzSFRavKNU04IiYJ5VTHH/LilSKZ8QVOWtHE6Mknr
-         wgGho2HuTCmoDLuFTXLgR2azZNXLmaYKsHXDrNn6x1KEa2dOii48Vxiw6FGhoKqmlima
-         KWKNk8siSV2Y9lE+4xFihhH0+2sv591tVgyac=
+        b=L+A0lD/WMOQtqt/DudjU8tP4H+YwtId25BYzmU0RSxlxYcs9uDA1oisWOysMujB1df
+         PbzqUKrwSmMOkx4ecM9gdrpUgNM8kHShR8vgwfUNnBLC/xyHnjsiwf60AFBi1CV7640i
+         7q9YFuEcDEk7D6sw2wymvtWheZKBYanpHin8o=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
 Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
@@ -22,9 +22,9 @@ Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
         Javier Martin <javier.martin@vista-silicon.com>,
         Tejun Heo <tj@kernel.org>, alsa-devel@alsa-project.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 14/15] sound/soc: imx: check kzalloc() result and fix memory leak
-Date: Fri, 16 Jul 2010 20:16:34 +0400
-Message-Id: <1279296995-25307-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 15/15] sound/soc: imx: check kzalloc() result and fix memory leak
+Date: Fri, 16 Jul 2010 20:16:54 +0400
+Message-Id: <1279297014-25347-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -36,20 +36,23 @@ call to snd_imx_open().
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- sound/soc/imx/imx-pcm-dma-mx2.c |    6 +++++-
+ sound/soc/imx/imx-pcm-fiq.c |    6 +++++-
  1 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/sound/soc/imx/imx-pcm-dma-mx2.c b/sound/soc/imx/imx-pcm-dma-mx2.c
-index 05f19c9..0a595da 100644
---- a/sound/soc/imx/imx-pcm-dma-mx2.c
-+++ b/sound/soc/imx/imx-pcm-dma-mx2.c
-@@ -292,12 +292,16 @@ static int snd_imx_open(struct snd_pcm_substream *substream)
+diff --git a/sound/soc/imx/imx-pcm-fiq.c b/sound/soc/imx/imx-pcm-fiq.c
+index 6b518e0..b2bf272 100644
+--- a/sound/soc/imx/imx-pcm-fiq.c
++++ b/sound/soc/imx/imx-pcm-fiq.c
+@@ -192,6 +192,8 @@ static int snd_imx_open(struct snd_pcm_substream *substream)
  	int ret;
  
  	iprtd = kzalloc(sizeof(*iprtd), GFP_KERNEL);
 +	if (iprtd == NULL)
 +		return -ENOMEM;
  	runtime->private_data = iprtd;
+ 
+ 	iprtd->substream = substream;
+@@ -202,8 +204,10 @@ static int snd_imx_open(struct snd_pcm_substream *substream)
  
  	ret = snd_pcm_hw_constraint_integer(substream->runtime,
  			SNDRV_PCM_HW_PARAM_PERIODS);
