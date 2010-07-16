@@ -1,82 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759450Ab0GPXIL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 19:08:11 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:37477 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759431Ab0GPXIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 19:08:09 -0400
-Date: Sat, 17 Jul 2010 09:07:56 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Yinghai Lu <yinghai@kernel.org>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-Id: <20100717090756.ccc2cae3.sfr@canb.auug.org.au>
-In-Reply-To: <20100716205812.GA14297@flint.arm.linux.org.uk>
-References: <20100716171124.064cf319.sfr@canb.auug.org.au>
-	<4C40A766.6060309@kernel.org>
-	<20100716205812.GA14297@flint.arm.linux.org.uk>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Sat__17_Jul_2010_09_07_56_+1000_AGkTAmxPl2ZfR=Hs"
+	id S1759466Ab0GPXLc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 19:11:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:36917 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab0GPXLb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 19:11:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=o7OS8y98/PlVPM6QZQUe6g5XDNQMDu6pDhdWaM4ivzugQOSxUG0mAKLev3b+uurJ+p
+         sEXxy/XSb59R7UM62uJ2kvddPAdzPTcJrr7QsgRLFninlObxBtXvFxMAMjti1x+dOAP7
+         JokHZyGcgkf89PWvuCsk/CfPNYE9ljyVyOgcw=
+From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Doug Thompson <dougthompson@xmission.com>,
+        bluesmoke-devel@lists.sourceforge.net, stable@kernel.org
+Subject: [PATCH] edac/Kconfig: reenable edac_mpc85xx on MPC85xx
+Date: Sat, 17 Jul 2010 03:11:28 +0400
+Message-Id: <1279321888-27335-1-git-send-email-dbaryshkov@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Sat__17_Jul_2010_09_07_56_+1000_AGkTAmxPl2ZfR=Hs
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Somewhere after 2.6.32 MPC85xx got renamed to FSL_BOOKE (to include
+QorIQ family of chips). However drivers/edac/Kconfig wasn't updated to
+reflect this change. Fix it now.
 
-Hi Russell,
+Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
+Cc: stable@kernel.org
+---
+ drivers/edac/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-On Fri, 16 Jul 2010 21:58:13 +0100 Russell King <rmk@arm.linux.org.uk> wrot=
-e:
->
-> On Fri, Jul 16, 2010 at 11:39:34AM -0700, Yinghai Lu wrote:
-> > On 07/16/2010 12:11 AM, Stephen Rothwell wrote:
-> > > Hi Russell,
-> > >=20
-> > > After merging the final tree, today's linux-next build (most, if not =
-all
-> > > arm configs) failed (not unexpectedly) due to the lmb -> memblock ren=
-ame
-> > > (commit 95f72d1ed41a66f1c1c29c24d479de81a0bea36f "lmb: rename to
-> > > memblock").
-> > >=20
-> > > See http://kisskb.ellerman.id.au/kisskb/branch/9/
-> >=20
-> > You or Russell may need to run the scripts in that patch
->=20
-> I've already fixed it up.  I'm guessing that we'll see the results
-> sometime on Monday.
+diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
+index aedef79..2328c95 100644
+--- a/drivers/edac/Kconfig
++++ b/drivers/edac/Kconfig
+@@ -209,7 +209,7 @@ config EDAC_I5100
+ 
+ config EDAC_MPC85XX
+ 	tristate "Freescale MPC83xx / MPC85xx"
+-	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || MPC85xx)
++	depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || FSL_SOC_BOOKE)
+ 	help
+ 	  Support for error detection and correction on the Freescale
+ 	  MPC8349, MPC8560, MPC8540, MPC8548
+-- 
+1.7.1
 
-I figured that you would have.  And, yes, I will pick it up in Monday.
-
-Thanks.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Sat__17_Jul_2010_09_07_56_+1000_AGkTAmxPl2ZfR=Hs
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMQOZMAAoJEDMEi1NhKgbsKTgH/0Tb3jCkP4pDj0MWUnITQXTq
-tmxJU0Eyxpgw5+kdHJOAKuQZeiBNKPuWJaJwnLCfLyI3vBkGUodU2UcXBhVc2zkp
-YlTt3Ld+rQSsg2+H/kX8PzUGJMPJO1JbiwgLcBVp6gQCGZEACVIUJjplY1AetR/W
-bjgnvnR6cyazDkueMONCT5EiEarZpxcasXMlFbjl7GvWaLnhz3vjRwTaq+wUc84I
-gemWTaeuWycTIzd8jhICJ4Vd0epWLDTKU/JwDF9Kzf2TE/xwmKP96NpAOkJzQAYR
-Y7az5hVO5UVRM5Z9IeGN8fU9Qpi7ZhDNRPw0v3R7NjXvhBEe8gg8RDxlrFBPS/k=
-=4vnQ
------END PGP SIGNATURE-----
-
---Signature=_Sat__17_Jul_2010_09_07_56_+1000_AGkTAmxPl2ZfR=Hs--
