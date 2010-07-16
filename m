@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759372Ab0GPWWs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 18:22:48 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:55758 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751400Ab0GPWWr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 18:22:47 -0400
+	id S1759392Ab0GPW26 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 18:28:58 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33933 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759360Ab0GPW25 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 18:28:57 -0400
+Message-ID: <4C40DD11.4020803@zytor.com>
+Date: Fri, 16 Jul 2010 15:28:33 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <AANLkTineI34tKDMPYN4SPY0W432cv8ZPc55IEW5hwmed@mail.gmail.com>
-References: <AANLkTineI34tKDMPYN4SPY0W432cv8ZPc55IEW5hwmed@mail.gmail.com>
-Date: Fri, 16 Jul 2010 15:22:13 -0700
-Message-ID: <AANLkTikwWezvqiW-ts__stLfofKbaqG8CSzOYvDQuxhu@mail.gmail.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jeffrey Merkey <jeffmerkey@gmail.com>
-Cc: linux-kernel@vger.kernel.org
+To: Borislav Petkov <borislav.petkov@amd.com>
+CC: Michal Schmidt <mschmidt@redhat.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
+        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>
+Subject: Re: [PATCH 1/2] x86: fix keeping track of AMD C1E
+References: <20100713185816.2866.17837.stgit@localhost.localdomain> <20100713185957.2866.50995.stgit@localhost.localdomain> <20100714160704.GA10473@kryptos.osrc.amd.com> <20100714232201.00433aa9@hammerfall> <20100714233102.0f64614b@hammerfall> <4C3FDF43.6030203@zytor.com> <20100716063952.GB27546@aftab> <4C3F8418.5020803@zytor.com> <20100716072244.GA27954@aftab> <4C408298.8060004@zytor.com> <20100716162517.GF28902@aftab>
+In-Reply-To: <20100716162517.GF28902@aftab>
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 3:02 PM, Jeffrey Merkey <jeffmerkey@gmail.com> wrote:
->
-> So Linus, my understanding of Intel's processor design is that the
-> processor will NEVER singal a nested NMI until it sees an iret from
-> the first NMI exception.
+On 07/16/2010 09:25 AM, Borislav Petkov wrote:
+> 
+> I don't see the need for two things denoting C1E for the very simple
+> reason: when C1E gets enabled on a machine, one of the bits gets set in
+> the MSR on each core simultaneously. So if one core sees one of the bits
+> set, all the remaining cores are seeing them too. The first core that
+> sees one of the bits in the MSR, sets c1e_detected.
+> 
+> So next time any core does cpu_idle() => c1e_idle(), it switches to
+> timer broadcast on it since it might go into C1E if all the others
+> follow.
+> 
+> Frankly, I can't think of a case where we'd need to two things - I
+> could be missing something. But this workaround is a couple of years
+> old, maybe Thomas might give us more insight into whether there's a
+> particular reason for the cpuid flag and the c1e_detected variable.
+> Thomas?
+> 
 
-Wrong.
+I'm not saying there should be two things (and that's clearly wrong no
+matter what), but rather it's not clear to me that the one thing should
+be a variable.
 
-I like x86, but it has warts. The NMI blocking is one of them.
-
-The NMI's will be nested until the _next_ "iret", but it has no
-nesting. So if you take a fault during the NMI (debug, page table
-fixup, whatever), the iret in the faulthandler will re-enable NMI's
-even though we're still busy with the original NMI. There is no
-nesting, or any way to say that "this is a NMI-releasing iret". They
-could even do it still - make a new "iret that doesn't clear NMI" by
-adding a segment override prefix to iret or whatever. But it's not
-going to happen, and it's just one of those ugly special cases that
-has various historical reasons (recursive faults during NMI sure as
-hell didn't make sense back in the real-mode 8086 days).
-
-So we have to handle it in software. Or not ever trap at all inside
-the NMI handler.
-
-The original patch - and the patch I detest - is to make the normal
-fault paths use a "popf + ret" to emulate iret, but without the NMI
-release.
-
-Now, I could live with that if it's the only solution, but it _is_
-pretty damn ugly.
-
-If somebody shows that it's actually faster to do "popf + ret" when
-retuning to kernel space (a poor mans special-case iret), maybe it
-would be worth it, but the really critical code sequence is actually
-not "return to kernel space", but the "return to user space" case that
-really wants the iret. And I just think it's disgusting to add extra
-tests to that path.
-
-The other alternative would be to just make the rule be "NMI can never
-take traps". It's possible to do that, but quite frankly, it's a pain.
-It's a pain for page faults due to the whole vmalloc thing, and it's a
-pain if you ever want to debug an NMI in any way (or put a breakpoint
-on anything that is accessed from an NMI, which could potentially be
-quite a lot of things).
-
-If it was just the debug issue, I'd say "neener neener, debuggers are
-for wimps", but it's clearly not just about debug. It's a whole lot of
-other thigs. Random percpu datastructures used for tracing, kernel
-pointer verification code, yadda yadda.
-
-                  Linus
+	-hpa
