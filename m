@@ -1,56 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965845Ab0GPPel (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 11:34:41 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:50682 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965820Ab0GPPej (ORCPT
+	id S965858Ab0GPPes (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 11:34:48 -0400
+Received: from mail-wy0-f194.google.com ([74.125.82.194]:35347 "EHLO
+	mail-wy0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965820Ab0GPPeo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 11:34:39 -0400
-Date: Fri, 16 Jul 2010 17:34:33 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-Message-ID: <20100716153433.GA7338@basil.fritz.box>
-References: <20100714154923.947138065@efficios.com>
- <20100714155804.252253097@efficios.com>
- <4C405078.20707@redhat.com>
- <20100716144927.GA22516@Krystal>
+	Fri, 16 Jul 2010 11:34:44 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100716144927.GA22516@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100716070010.GB31612@kroah.com>
+References: <201007110918.42120.Martin@lichtvoll.de>
+	<AANLkTimEdVsmIgXBbmhsq75ElQvGAI8avsM8-wlDpm4z@mail.gmail.com>
+	<AANLkTimgwxdEyZGGnW1pvNFkRNaDyBtJegD_eIC9oit4@mail.gmail.com>
+	<20100716070010.GB31612@kroah.com>
+Date: Fri, 16 Jul 2010 16:34:40 +0100
+Message-ID: <AANLkTinCfUsTw7QIrkyK7e5iHy6CZpUqm4kh45OABo4D@mail.gmail.com>
+Subject: Re: stable? quality assurance?
+From: Valeo de Vries <valeo@valeo.co.cc>
+To: Greg KH <greg@kroah.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Well, it seems like all the kernel code calling "vmalloc_sync_all()" (which is
-> much more than perf) can potentially cause large latencies, which could be
+On 16 July 2010 08:00, Greg KH <greg@kroah.com> wrote:
+> On Thu, Jul 15, 2010 at 10:09:03AM +0100, Valeo de Vries wrote:
+>> That said, from what I've seen of late, there's only one guy (Greg) handling
+>> most of the stable stuff (there are probably others working behind the
+>> scenes),?and he has a hell of a lot on his plate.
+>
+> Nope, it's just me :)
+>
+> thanks,
+>
+> greg "i need some minions" k-h
 
-You need to fix all other code too that walks tasks lists to avoid all those.
+I thought that was the case, alas.
 
-% gid for_each_process | wc -l
+I'm not sure how much time I could commit, but I'd be interested in
+helping out, even if it's just reviewing and testing patches heading
+for stable. Are there any specific areas you could use a hand with
+though?
 
-In fact the mm-struct walk is cheaper than a task-list walk because there
-are always less than tasks.
-
--Andi
+Valeo
