@@ -1,62 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966148Ab0GPTcz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 15:32:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35381 "EHLO mx1.redhat.com"
+	id S966160Ab0GPTdO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 15:33:14 -0400
+Received: from mga09.intel.com ([134.134.136.24]:18524 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754865Ab0GPTcw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 15:32:52 -0400
-Message-ID: <4C40B3BD.7030101@redhat.com>
-Date: Fri, 16 Jul 2010 22:32:13 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S966095Ab0GPTdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 15:33:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,215,1278313200"; 
+   d="scan'208";a="639172477"
+Message-ID: <4C40B3F6.5010106@linux.intel.com>
+Date: Fri, 16 Jul 2010 12:33:10 -0700
+From: Arjan van de Ven <arjan@linux.intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, akpm@osdl.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <4C408D0C.5050709@redhat.com> <20100716165855.GA3836@Krystal> <4C409CBA.1050709@redhat.com> <4C409F62.6030303@zytor.com> <20100716192847.GC7338@basil.fritz.box>
-In-Reply-To: <20100716192847.GC7338@basil.fritz.box>
+To: Ai Li <aili@codeaurora.org>
+CC: akpm@linux-foundation.org, dwalker@codeaurora.org, mingo@elte.hu,
+        shemminger@vyatta.com, czoccolo@gmail.com, len.brown@intel.com,
+        linux-kernel@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-pm@lists.linux-foundation.org
+Subject: Re: [PATCH] cpuidle: extend cpuidle and menu governor to handle dynamic
+ states
+References: <1279225825-31069-1-git-send-email-aili@codeaurora.org> <4C3FDAF1.7030107@linux.intel.com> <000001cb250b$e2813e60$a783bb20$@org> <4C4096A8.8060306@linux.intel.com> <000301cb251b$d8cb7bf0$8a6273d0$@org>
+In-Reply-To: <000301cb251b$d8cb7bf0$8a6273d0$@org>
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 10:28 PM, Andi Kleen wrote:
->
->> I really hope noone ever gets the idea of touching user space from an
->> NMI handler, though, and expecting it to work...
+On 7/16/2010 12:19 PM, Ai Li wrote:
+>> the power value in the structure should represent ONLY the power
+>> level during the low power stage.
+>> And this should be independent of total duration.
+>> all other power is taken into account in terms of break even
+>> point/etc...
 >>      
-> It can make sense for a backtrace in a profiler.
->
-> In fact perf is nearly doing it I believe, but moves
-> it to the self IPI handler in most cases.
+> With static cstates, determining the break even point is
+> straitforward, compare the power numbers of state Cn and Cn-1, since
+> the states are ordered in increasing order of latency and power.
+> With dynamic cstates, Cn-1 may not be a valid state to compare any
+> more, for example, because Cn-1's latency may have become too high.
+> It seems the driver would need to know which cstate the govenor would
+> compare Cn to, and that would break the design philosophy of driver +
+> govenor.  The break even point does not seem to have a transistive
+> property, where the govenor can calculat Cn vs Cn-2 from some
+> arithmatic combination of Cn vs Cn-1 and Cn-1 vs Cn-2 values.  On the
+> other hand, if the power_usage field also includes the entry and exit
+> stages, then the driver does not need to know whether it should
+> calculate break even point for Cn vs Cn-1, or Cn vs Cn-2, etc.
 >    
 
-Interesting, is the self IPI guaranteed to execute synchronously after 
-the NMI's IRET?  Or can the core IRET faster than the APIC and so we get 
-the backtrace at the wrong place?
+that's nice in theory.
+in practice though, this is all noise compared to some of the accuracy 
+in the predictions.
 
-(and does it matter? the NMI itself is not always accurate)
+break even generally is done against C1 only (since C1 is assumed to 
+always be there)....
+yes it'd be nice to also have it against Cx in a matrix form, but that 
+is a level of complexity that
+hasn't been worth it.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+Note that the prediction is.... a prediction. I can show you data on how 
+well it does (now that it's
+much better in 2.6.35-rc), but it's still "50% of the time we're within 
+a factor of two of actual".
+not "we're 90% of the time within 10%".
 
