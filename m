@@ -1,102 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966215Ab0GPUzI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 16:55:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23133 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966205Ab0GPUzE (ORCPT
+	id S1759329Ab0GPU6d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 16:58:33 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:41039 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759136Ab0GPU6c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 16:55:04 -0400
-Date: Fri, 16 Jul 2010 13:53:25 -0700
-From: Joel Becker <boel.becker@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-Subject: [GIT PULL] Important ocfs2 fixes for 2.6.35
-Message-ID: <20100716205325.GB30859@mail.oracle.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
+	Fri, 16 Jul 2010 16:58:32 -0400
+Date: Fri, 16 Jul 2010 21:58:13 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20100716205812.GA14297@flint.arm.linux.org.uk>
+References: <20100716171124.064cf319.sfr@canb.auug.org.au> <4C40A766.6060309@kernel.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C40C6FD.0035:SCFMA4539814,ss=1,fgs=0
+In-Reply-To: <4C40A766.6060309@kernel.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus, et al,
-	Here are the major ocfs2 fixes for 2.6.35-rc5.  A few more
-fixes have trickled in, but as these major fixes have been tested, I
-didn't want to delay them any longer.
-	The first major fix you know about: the tail zeroing fix when
-extending files.  It's been run under heavy testing for a week now, and
-we're quite happy.  We should also no longer be touching any pages past
-i_size in write or CoW.
-	The second major fix was discovered and fixed by Mark and Jan.
-The jbd2 triggers we added for block checksumming had a small window
-where the checksum from transaction N-2 could be written in transaction
-N-1 because transaction N accessed the buffer but never actually
-modified it.  We fix this by checksumming at the moment we freeze the
-data rather than the moment we write the commit.  This was a hard bug
-to trap, and very good work by Mark and Jan.
-	Please pull.
+On Fri, Jul 16, 2010 at 11:39:34AM -0700, Yinghai Lu wrote:
+> On 07/16/2010 12:11 AM, Stephen Rothwell wrote:
+> > Hi Russell,
+> > 
+> > After merging the final tree, today's linux-next build (most, if not all
+> > arm configs) failed (not unexpectedly) due to the lmb -> memblock rename
+> > (commit 95f72d1ed41a66f1c1c29c24d479de81a0bea36f "lmb: rename to
+> > memblock").
+> > 
+> > See http://kisskb.ellerman.id.au/kisskb/branch/9/
+> 
+> You or Russell may need to run the scripts in that patch
 
-Joel
+I've already fixed it up.  I'm guessing that we'll see the results
+sometime on Monday.
 
-
-The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
-
-  Linux 2.6.35-rc3 (2010-06-11 19:14:04 -0700)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git upstream-linus
-
-Dan Carpenter (1):
-      ocfs2: tighten up strlen() checking
-
-Jan Kara (1):
-      jbd2/ocfs2: Fix block checksumming when a buffer is used in several transactions
-
-Joel Becker (4):
-      ocfs2: When zero extending, do it by page.
-      ocfs2: Zero the tail cluster when extending past i_size.
-      ocfs2: No need to zero pages past i_size.
-      ocfs2: Silence gcc warning in ocfs2_write_zero_page().
-
-Julia Lawall (1):
-      fs/ocfs2/dlm: Add missing spin_unlock
-
-Tao Ma (6):
-      ocfs2: Move orphan scan work to ocfs2_wq.
-      ocfs2: Limit default local alloc size within bitmap range.
-      ocfs2: Remove the redundant cpu_to_le64.
-      ocfs2: make xattr extension work with new local alloc reservation.
-      ocfs2: Make xattr reflink work with new local alloc reservation.
-      ocfs2: Don't duplicate pages past i_size during CoW.
-
-Wengang Wang (2):
-      ocfs2/dlm: don't access beyond bitmap size
-      ocfs2/dlm: Remove BUG_ON from migration in the rare case of a down node
-
- fs/jbd2/journal.c          |   15 +-
- fs/jbd2/transaction.c      |    9 +-
- fs/ocfs2/aops.c            |   94 +++++++-------
- fs/ocfs2/dlm/dlmdomain.c   |    3 +-
- fs/ocfs2/dlm/dlmmaster.c   |   22 ++-
- fs/ocfs2/dlm/dlmrecovery.c |    2 +-
- fs/ocfs2/file.c            |  309 +++++++++++++++++++++++++++++++++++---------
- fs/ocfs2/file.h            |    6 +-
- fs/ocfs2/journal.c         |   30 ++--
- fs/ocfs2/localalloc.c      |    7 +
- fs/ocfs2/quota_global.c    |    2 +-
- fs/ocfs2/quota_local.c     |    4 +-
- fs/ocfs2/refcounttree.c    |   12 ++
- fs/ocfs2/suballoc.c        |    2 +-
- fs/ocfs2/xattr.c           |  200 +++++++++++++++++++---------
- include/linux/jbd2.h       |   11 +-
- 16 files changed, 504 insertions(+), 224 deletions(-)
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
