@@ -1,62 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935886Ab0GPHum (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 03:50:42 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:62969 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935756Ab0GPHuk (ORCPT
+	id S935907Ab0GPHvT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 03:51:19 -0400
+Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:60857 "EHLO
+	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935843Ab0GPHvP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 03:50:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=AQQQ6d1n3SYm68HZuvRIkHgrhH68p8syqE+deSlJxVUcizhfbpLuQ6j4SPmczTyugt
-         d/hluMLsc46KzM3VUmATJ1WggtXYaW9hZf3Gg6dlAMstRtqrritne/SYOU+ayVbCxu+5
-         51FEpBb+9i7Hf/U6Ll6h0M4HLlYGCwTe1XmxA=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinqZs11kXx5afD4RDsVsy551S5lMnyAUwhdX2Sg@mail.gmail.com>
-References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>
-	<AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com>
-	<1279100846.8592.53.camel@e102109-lin.cambridge.arm.com>
-	<4C3D89AC.4040303@cs.helsinki.fi>
-	<1279205891.6664.46.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com>
-	<4C3F2F52.2050101@cs.helsinki.fi>
-	<20100715162805.GA10240@brouette>
-	<20100715191638.GA3694@brouette>
-	<AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com>
-	<20100715200012.GA4175@brouette>
-	<F37ABC5E-E9F9-43BD-989E-4185135217D2@gmail.com>
-	<AANLkTimWFTUZTh2-3Bavmwcum2joQluMEDmXx3xjyHqQ@mail.gmail.com>
-	<AANLkTinqZs11kXx5afD4RDsVsy551S5lMnyAUwhdX2Sg@mail.gmail.com>
-Date: Fri, 16 Jul 2010 10:50:38 +0300
-X-Google-Sender-Auth: Z08XyAfyMFQrTBBm6W0DXPJLq0I
-Message-ID: <AANLkTilv7cG9JMkZeO_GftTPWHxiIY5c8Q19pTBZT7Vy@mail.gmail.com>
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Zeno Davatz <zdavatz@gmail.com>
-Cc: Damien Wyart <damien.wyart@free.fr>,
-        Catalin Marinas <catalin.marinas@arm.com>,
+	Fri, 16 Jul 2010 03:51:15 -0400
+Date: Fri, 16 Jul 2010 00:51:14 -0700 (PDT)
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+X-X-Sender: sbhatewara@localhost.localdomain
+To: David Miller <davem@davemloft.net>
+cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
         "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        "yinghai@kernel.org" <yinghai@kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Content-Type: text/plain; charset=ISO-8859-1
+        "pv-drivers@vmware.com" <pv-drivers@vmware.com>
+Subject: Re: [PATCH 2.6.35-rc1] net-next: vmxnet3 fixes [3/5] Initialize link
+ state at probe time
+In-Reply-To: <20100715.224435.45920963.davem@davemloft.net>
+Message-ID: <alpine.LRH.2.00.1007160050030.12503@localhost.localdomain>
+References: <alpine.LRH.2.00.1007131748180.32055@localhost.localdomain> <20100714.141054.48510602.davem@davemloft.net> <alpine.LRH.2.00.1007150125240.25472@localhost.localdomain> <20100715.224435.45920963.davem@davemloft.net>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 10:37 AM, Zeno Davatz <zdavatz@gmail.com> wrote:
->> Let me know if you need more help with this.
->
-> The next RC again hangs on me:
->
-> http://www.flickr.com/photos/zrr/4798744700/sizes/l/
 
-Doesn't look like a kernel bug to me. Maybe some Gentoo person knows
-better but the 'root' parameter you pass to the kernel in your lilo
-configuration looks a little strange. You should try passing
-"/dev/sdXX" to it where XX is whatever partition your root filesystems
-is on.
+
+On Thu, 15 Jul 2010, David Miller wrote:
+
+> From: Shreyas Bhatewara <sbhatewara@vmware.com>
+> Date: Thu, 15 Jul 2010 18:20:14 -0700 (PDT)
+> 
+> > 
+> > On Wed, 14 Jul 2010, David Miller wrote:
+> > 
+> >> From: Shreyas Bhatewara <sbhatewara@vmware.com>
+> >> Date: Tue, 13 Jul 2010 17:48:55 -0700 (PDT)
+> >> 
+> >> > 
+> >> > Initialize vmxnet3 link state at probe time
+> >> > 
+> >> > This change initializes the state of link at the time when driver is
+> >> > loaded. The ethtool output for 'link detected' and 'link speed'
+> >> > is thus valid even before the interface is brought up.
+> >> > 
+> >> > Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+> >> 
+> >> You should never, ever, call netif_start_queue() on a device which has
+> >> not been brought up.
+> >> 
+> >> But that is what this patch is doing.
+> >> 
+> > 
+> > I do not understand why you say so. vmxnet3_check_link() is called in 
+> > probe() with affectTxQueue as false. Hence netif_start_queue() will not be 
+> > called before device is brought up.
+> > vmxnet3_check_link() is again called with affectTxQueue as true in 
+> > vmxnet3_activate_dev() after device was activated.
+> 
+> Aha, I see how the logic works now.
+> 
+> But still there is a problem with this patch, please remove the
+> driver version bump and resubmit.
+> 
+> You should only version bump at the last patch in a series.
+> 
+> Thanks.
+> 
+
+---
+
+Initialize vmxnet3 link state at probe time
+
+This change initializes the state of link at the time when driver is
+loaded. The ethtool output for 'link detected' and 'link speed'
+is thus valid even before the interface is brought up.
+
+Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+
+---
+ drivers/net/vmxnet3/vmxnet3_drv.c |   13 ++++++++-----
+ 1 files changed, 8 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
+index 7792a44..1e31d40 100644
+--- a/drivers/net/vmxnet3/vmxnet3_drv.c
++++ b/drivers/net/vmxnet3/vmxnet3_drv.c
+@@ -130,7 +130,7 @@ vmxnet3_tq_stop(struct vmxnet3_tx_queue *tq, struct vmxnet3_adapter *adapter)
+  * Check the link state. This may start or stop the tx queue.
+  */
+ static void
+-vmxnet3_check_link(struct vmxnet3_adapter *adapter)
++vmxnet3_check_link(struct vmxnet3_adapter *adapter, bool affectTxQueue)
+ {
+ 	u32 ret;
+ 
+@@ -143,14 +143,16 @@ vmxnet3_check_link(struct vmxnet3_adapter *adapter)
+ 		if (!netif_carrier_ok(adapter->netdev))
+ 			netif_carrier_on(adapter->netdev);
+ 
+-		vmxnet3_tq_start(&adapter->tx_queue, adapter);
++		if (affectTxQueue)
++			vmxnet3_tq_start(&adapter->tx_queue, adapter);
+ 	} else {
+ 		printk(KERN_INFO "%s: NIC Link is Down\n",
+ 		       adapter->netdev->name);
+ 		if (netif_carrier_ok(adapter->netdev))
+ 			netif_carrier_off(adapter->netdev);
+ 
+-		vmxnet3_tq_stop(&adapter->tx_queue, adapter);
++		if (affectTxQueue)
++			vmxnet3_tq_stop(&adapter->tx_queue, adapter);
+ 	}
+ }
+ 
+@@ -165,7 +167,7 @@ vmxnet3_process_events(struct vmxnet3_adapter *adapter)
+ 
+ 	/* Check if link state has changed */
+ 	if (events & VMXNET3_ECR_LINK)
+-		vmxnet3_check_link(adapter);
++		vmxnet3_check_link(adapter, true);
+ 
+ 	/* Check if there is an error on xmit/recv queues */
+ 	if (events & (VMXNET3_ECR_TQERR | VMXNET3_ECR_RQERR)) {
+@@ -1947,7 +1949,7 @@ vmxnet3_activate_dev(struct vmxnet3_adapter *adapter)
+ 	 * Check link state when first activating device. It will start the
+ 	 * tx queue if the link is up.
+ 	 */
+-	vmxnet3_check_link(adapter);
++	vmxnet3_check_link(adapter, true);
+ 
+ 	napi_enable(&adapter->napi);
+ 	vmxnet3_enable_all_intrs(adapter);
+@@ -2549,6 +2551,7 @@ vmxnet3_probe_device(struct pci_dev *pdev,
+ 	}
+ 
+ 	set_bit(VMXNET3_STATE_BIT_QUIESCED, &adapter->state);
++	vmxnet3_check_link(adapter, false);
+ 	atomic_inc(&devices_found);
+ 	return 0;
+
