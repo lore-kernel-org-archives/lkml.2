@@ -1,39 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965918Ab0GPPmT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 11:42:19 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:44939 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965907Ab0GPPmP (ORCPT
+	id S965924Ab0GPPmn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 11:42:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50532 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965872Ab0GPPml (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 11:42:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=aBTxLAiY6QAW/00qLnrUdfAhZ0umTePnBw0FhKNlSlWJ9fPvykzQWPu2LBULnS84co
-         a9TZRdGbWhahEIvnnna+Hg0fcjgm+K/oE5/lW2ffczUmhAbMKOBAJc+Wc3fpxgR103Ad
-         YZqrvX/9q9vVYO6MZjgjYyNiWZjWaBh9vM7ys=
+	Fri, 16 Jul 2010 11:42:41 -0400
+Date: Fri, 16 Jul 2010 12:42:21 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>, mingo@elte.hu,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
+        a.p.zijlstra@chello.nl, paulus@samba.org
+Subject: Re: [PATCH v2] perf: close the opened directories.
+Message-ID: <20100716154221.GB4051@ghostprotocols.net>
+References: <4C1C3F7C.4030607@cn.fujitsu.com>
+ <1277360965.2096.881.camel@ymzhang.sh.intel.com>
+ <4C230362.5080704@cn.fujitsu.com>
+ <20100624135227.GA4784@ghostprotocols.net>
+ <4C400C23.5070102@cn.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimwi7IuKZySIkDjlgBi7NDkIaW79CHNbhliJ2UY@mail.gmail.com>
-References: <1278921056.22437.1.camel@eight.analog.com> <AANLkTimwi7IuKZySIkDjlgBi7NDkIaW79CHNbhliJ2UY@mail.gmail.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Fri, 16 Jul 2010 11:41:54 -0400
-Message-ID: <AANLkTimFXbOs7QzKd2sK-m1xh1p3Mg2pl_T2_xwAE7nS@mail.gmail.com>
-Subject: Re: [PATCH v2] MMC:mmc_spi: Recover from CRC error for SD read/write 
-	operation over SPI.
-To: Sonic Zhang <sonic.adi@gmail.com>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        linux-mmc@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C400C23.5070102@cn.fujitsu.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 06:51, Sonic Zhang wrote:
-> Any comments?
+Em Fri, Jul 16, 2010 at 03:37:07PM +0800, Gui Jianfeng escreveu:
+> Arnaldo Carvalho de Melo wrote:
+> > Em Thu, Jun 24, 2010 at 03:04:02PM +0800, Gui Jianfeng escreveu:
+> >> When I ran "perf kvm ... top", I encountered the following error output.
+> >>
+> >>   Error: perfcounter syscall returned with -1 (Too many open files)
+> >>
+> >>   Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
+> >>
+> >> Looking into perf, I found perf opens too many direcotries at initialization
+> >> time, but forgets to close them. Here is the fix.
+> >>
+> >> Signef-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+> > 
+> > Thanks, will apply.
+> 
+> Hi Arnaldo,
+> 
+> Would you pick up this fix?
 
-might want to CC akpm so he'll pick this up in case the mmc guys miss it
--mike
+It was already, no? Nope, I thought about that other one about . and ..,
+will apply.
+
+- Arnaldo
