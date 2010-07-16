@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936114Ab0GPJDW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 05:03:22 -0400
-Received: from alternativer.internetendpunkt.de ([88.198.24.89]:44014 "EHLO
-	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S936026Ab0GPJDU (ORCPT
+	id S936090Ab0GPJF2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 05:05:28 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47560 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936052Ab0GPJF1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 05:03:20 -0400
-To: Bill Fink <billfink@mindspring.com>
-Subject: Re: Raise initial congestion window size / speedup slow  =?UTF-8?Q?start=3F?=
+	Fri, 16 Jul 2010 05:05:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=ddTp5FSPf0/m2zCajwhPMNCFWWGshhHbNPMLGiKZ/u9B3zAgLR2Vv6tZTyicF+U9a4
+         TfV3vRLGio0Vky9Ij9wDMdq5btT+EaxWoH4KK1jMQyU+qJGvTgN8IYnA6e4zaLA3NDL4
+         cKA3V+KqM3p33aS9loOwxuPIWDIIkWlIN2yBY=
+Message-ID: <4C4020C7.2060001@gmail.com>
+Date: Fri, 16 Jul 2010 17:05:11 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=UTF-8
+To: linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Subject: [PATCH] ARM/nuc900: add nuc900 keypad arch platform data
+Content-Type: text/plain; charset=GB2312
 Content-Transfer-Encoding: 7bit
-Date: Fri, 16 Jul 2010 11:03:18 +0200
-From: Hagen Paul Pfeifer <hagen@jauu.net>
-Cc: David Miller <davem@davemloft.net>, <rick.jones2@hp.com>,
-        <lists@wildgooses.com>, <davidsen@tmr.com>,
-        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
-In-Reply-To: <20100714234917.924f420d.billfink@mindspring.com>
-References: <4C3E0684.5060409@wildgooses.com> <4C3E1B54.40604@hp.com>
- <20100714203919.GD6682@nuttenaction>
- <20100714.145547.102555471.davem@davemloft.net>
- <20100714221301.GI6682@nuttenaction>
- <20100714234917.924f420d.billfink@mindspring.com>
-Message-ID: <7065ab9e99967e429c20028f4426e2ff@localhost>
-User-Agent: RoundCube Webmail/0.1-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+This patch is to add nuc900 keypad arch platform data.
 
-On Wed, 14 Jul 2010 23:49:17 -0400, Bill Fink wrote:
+Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
 
-> A long, long time ago, I suggested a Path BW Discovery mechanism
-> to the IETF, analogous to the Path MTU Discovery mechanism, but
-> it didn't get any traction.  Such information could be extremely
-> useful to TCP endpoints, to determine a maximum window size to
-> use, to effectively rate limit a much stronger sender from
-> overpowering a much weaker receiver (for example 10-GigE -> GigE),
-> resulting in abominable performance across large RTT paths
-> (as low as 12 Mbps), even in the absence of any real network
-> contention.
+---
+ arch/arm/mach-w90x900/dev.c |   37 +++++++++++++++++++++++++++++++++++++
+ 1 files changed, 37 insertions(+), 0 deletions(-)
 
-Much weaker middlebox? The windowing mechanism should be sufficient to
-avoid endpoints from over-commiting.
+diff --git a/arch/arm/mach-w90x900/dev.c b/arch/arm/mach-w90x900/dev.c
+index 73b3eca..7ae5438 100644
+--- a/arch/arm/mach-w90x900/dev.c
++++ b/arch/arm/mach-w90x900/dev.c
+@@ -37,6 +37,7 @@
+ #include <mach/map.h>
+ #include <mach/fb.h>
+ #include <mach/regs-ldm.h>
++#include <mach/w90p910_keypad.h>
 
-Anyway, your proposed draft (I didn't searched for it) sound like a
-mechanism similar to RFC 4782: Quick-Start for TCP and IP.
+ #include "cpu.h"
 
+@@ -362,6 +363,39 @@ struct platform_device nuc900_device_fmi = {
 
-   This document specifies an optional Quick-Start mechanism for
-   transport protocols, in cooperation with routers, to determine an
-   allowed sending rate at the start and, at times, in the middle of a
-   data transfer (e.g., after an idle period).  While Quick-Start is
-   designed to be used by a range of transport protocols, in this
-   document we only specify its use with TCP.  Quick-Start is designed
-   to allow connections to use higher sending rates when there is
-   significant unused bandwidth along the path, and the sender and all
-   of the routers along the path approve the Quick-Start Request.
+ /* KPI controller*/
 
++static int nuc900_keymap[] = {
++	KEY(0, 0, KEY_A),
++	KEY(0, 1, KEY_B),
++	KEY(0, 2, KEY_C),
++	KEY(0, 3, KEY_D),
++
++	KEY(1, 0, KEY_E),
++	KEY(1, 1, KEY_F),
++	KEY(1, 2, KEY_G),
++	KEY(1, 3, KEY_H),
++
++	KEY(2, 0, KEY_I),
++	KEY(2, 1, KEY_J),
++	KEY(2, 2, KEY_K),
++	KEY(2, 3, KEY_L),
++
++	KEY(3, 0, KEY_M),
++	KEY(3, 1, KEY_N),
++	KEY(3, 2, KEY_O),
++	KEY(3, 3, KEY_P),
++};
++
++static struct matrix_keymap_data nuc900_map_data = {
++	.keymap			= nuc900_keymap,
++	.keymap_size		= ARRAY_SIZE(nuc900_keymap),
++};
++
++struct w90p910_keypad_platform_data nuc900_keypad_info = {
++	.keymap_data	= &nuc900_map_data,
++	.prescale	= 0xfa,
++	.debounce	= 0x50,
++};
++
+ static struct resource nuc900_kpi_resource[] = {
+ 	[0] = {
+ 		.start = W90X900_PA_KPI,
+@@ -381,6 +415,9 @@ struct platform_device nuc900_device_kpi = {
+ 	.id		= -1,
+ 	.num_resources	= ARRAY_SIZE(nuc900_kpi_resource),
+ 	.resource	= nuc900_kpi_resource,
++	.dev		= {
++				.platform_data = &nuc900_keypad_info,
++			}
+ };
 
-Cheers, Hagen
+ /* LCD controller*/
+-- 
+1.6.3.3
