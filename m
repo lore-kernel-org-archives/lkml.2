@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759384Ab0GPWHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 18:07:36 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:49237 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759351Ab0GPWHf (ORCPT
+	id S966230Ab0GPWMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 18:12:51 -0400
+Received: from casper.infradead.org ([85.118.1.10]:41196 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab0GPWMt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 18:07:35 -0400
-Date: Sat, 17 Jul 2010 00:07:30 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-Message-ID: <20100716220730.GH7338@basil.fritz.box>
-References: <4C408D0C.5050709@redhat.com>
- <20100716165855.GA3836@Krystal>
- <4C409CBA.1050709@redhat.com>
- <4C409F62.6030303@zytor.com>
- <4C40A1BD.4040507@redhat.com>
- <4C40A227.6000207@zytor.com>
- <4C40A4E8.5090605@redhat.com>
- <AANLkTinc_of_KYCFt9-8GZYGFLyqQLlgNttPe-YvZn-1@mail.gmail.com>
- <4C40B277.9030408@redhat.com>
- <AANLkTimfZb22E7c_ftyc5WfKsGvJKKq-J3Vq8Y6FNvhT@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimfZb22E7c_ftyc5WfKsGvJKKq-J3Vq8Y6FNvhT@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 16 Jul 2010 18:12:49 -0400
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+From: David Woodhouse <dwmw2@infradead.org>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Chris Li <lkml@chrisli.org>, linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <4C3E9F6E.1030508@intel.com>
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>
+	 <4C2AC55E.3040303@intel.com>
+	 <AANLkTimzQHwVYZU73hoV4S3w9Ez43xNUrvdMkEDWCrvF@mail.gmail.com>
+	 <1277923422.16256.8.camel@localhost>	<4C2B9DAC.1030806@intel.com>
+	 <1277928125.18854.0.camel@localhost>	<4C2BBACF.3080405@intel.com>
+	 <1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>
+	 <1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>
+	 <1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>
+	 <AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>
+	 <AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>
+	 <1278324973.16975.68.camel@localhost>
+	 <AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>
+	 <1278463901.20082.34.camel@dwillia2-linux>
+	 <1278474039.31393.8.camel@localhost>	<4C34BDCD.9080607@intel.com>
+	 <AANLkTild7PCKygpPAJRo2G237CY8wJyveM9_Glx8qmoK@mail.gmail.com>
+	 <4C379462.1020704@intel.com> <1278720554.9522.18.camel@localhost>
+	 <4C3E9F6E.1030508@intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 16 Jul 2010 23:12:05 +0100
+Message-ID: <1279318325.27733.21.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-3.fc13.dwmw2.1) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> And the thing is, if we just do NMI's correctly, and allow nesting,
-> ALL THOSE PROBLEMS GO AWAY. And there is no reason what-so-ever to do
-> stupid things elsewhere.
+On Wed, 2010-07-14 at 22:41 -0700, Dan Williams wrote:
+> +       for_each_drhd_unit(drhd)
+> +               for (i = 0; i < drhd->devices_cnt; i++) {
+> +                       /* we know that the this device's iommu is at
+> +                        * offset 0xa000 from vtbar
+> +                        */
+> +                       if (drhd->devices[i] == pdev &&
+> +                           drhd->reg_base_addr - vtbar != 0xa000) {
+> +                               WARN_TAINT_ONCE(1, TAINT_FIRMWARE_WORKAROUND,
+> +                                               "BIOS assigned incorrect VT-d unit for Intel(R) QuickData Technology device\n");
+> +                               pdev->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
+> +                               return;
+> +                       }
+> +               }
+> +} 
 
-One issue I have with nesting NMIs is that you need 
-a nesting limit, otherwise you'll overflow the NMI stack.
+Ah, that's the problem. Sorry, should have noticed this before. Since
+this is the catch-all IOMMU, the device isn't explicitly listed.
 
-We just got rid of nesting for normal interrupts because
-of this stack overflow problem which hit in real situations.
-
-In some cases you can get quite high NMI frequencies, e.g. with
-performance counters. Now the current performance counter handlers
-do not nest by themselves of course, but they might nest 
-with other longer running NMI users.
-
-I think none of the current handlers are likely to nest
-for very long, but there's more and more NMI coded all the time,
-so it's definitely a concern.
-
--Andi
+You want 'drhd = dmar_find_matched_drhd_unit(pdev);' and then compare
+vtbar with the reg_base_addr of that one.
 
 -- 
-ak@linux.intel.com -- Speaking for myself only.
+dwmw2
+
