@@ -1,159 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759270Ab0GPVkK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 17:40:10 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62482 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755129Ab0GPVkH (ORCPT
+	id S1759343Ab0GPVqP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 17:46:15 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58797 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755129Ab0GPVqN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 17:40:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=gnOivz90HiWpAOsAsB/T815hDGXOzhU9OX49k4IrJR9/GG+vmqlHY4Q+3jjjmaGBus
-         M8yUT8vc9rETt+1pitEaFYligNGZnLlw0uY3hqQlFOrboV28qn8sFcb+qdhw1kAuyGpu
-         GwqTlwHiz28szTbA4RfjCLLVbn9sUgeeEHQfE=
-Message-ID: <4C40D1B2.7000503@garzik.org>
-Date: Fri, 16 Jul 2010 17:40:02 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	Fri, 16 Jul 2010 17:46:13 -0400
 MIME-Version: 1.0
-To: Joseph Kogut <joseph.kogut@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers: net: 8139cp: Improved conformance to the Linux
- coding style guidelines.
-References: <1279286391-31464-1-git-send-email-joseph.kogut@gmail.com>
-In-Reply-To: <1279286391-31464-1-git-send-email-joseph.kogut@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C40B277.9030408@redhat.com>
+References: <20100714154923.947138065@efficios.com>
+	<20100714155804.252253097@efficios.com>
+	<4C405078.20707@redhat.com>
+	<20100716144927.GA22516@Krystal>
+	<4C408D0C.5050709@redhat.com>
+	<20100716165855.GA3836@Krystal>
+	<4C409CBA.1050709@redhat.com>
+	<4C409F62.6030303@zytor.com>
+	<4C40A1BD.4040507@redhat.com>
+	<4C40A227.6000207@zytor.com>
+	<4C40A4E8.5090605@redhat.com>
+	<AANLkTinc_of_KYCFt9-8GZYGFLyqQLlgNttPe-YvZn-1@mail.gmail.com>
+	<4C40B277.9030408@redhat.com>
+Date: Fri, 16 Jul 2010 14:39:50 -0700
+Message-ID: <AANLkTimfZb22E7c_ftyc5WfKsGvJKKq-J3Vq8Y6FNvhT@mail.gmail.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 09:19 AM, Joseph Kogut wrote:
-> Fixed several issues that made the 8139C+ driver nonconformant to the Linux coding style guidelines.
+On Fri, Jul 16, 2010 at 12:26 PM, Avi Kivity <avi@redhat.com> wrote:
+> On 07/16/2010 09:37 PM, Linus Torvalds wrote:
+>>
+>> Non-NMI code should simply never have to even _think_ about NMI's. Why
+>> should it? It should just do whatever comes "natural" within its own
+>> context.
 >
-> Signed-off-by: Joseph Kogut<joseph.kogut@gmail.com>
-> ---
->   drivers/net/8139cp.c |  304 +++++++++++++++++++++++++-------------------------
->   1 files changed, 153 insertions(+), 151 deletions(-)
+> But we're not talking about non-NMI code.
 
-This patch is still failing in places to recognize obvious intent of the 
-code writer.
+Yes, we are. We're talking about breakpoints (look at the subject
+line), and you are very much talking about things like that _idiotic_
+vmalloc_sync_all() by module loading code etc etc.
 
+Every _single_ "solution" I have seen - apart from my suggestion - has
+been about making code "special" because some other code might run in
+an NMI. Module init sequences having to do idiotic things just because
+they have data structures that might get accessed by NMI.
 
+And the thing is, if we just do NMI's correctly, and allow nesting,
+ALL THOSE PROBLEMS GO AWAY. And there is no reason what-so-ever to do
+stupid things elsewhere.
 
->   /*
->   	Copyright 2001-2004 Jeff Garzik<jgarzik@pobox.com>
->
-> -	Copyright (C) 2001, 2002 David S. Miller (davem@redhat.com) [tg3.c]
-> -	Copyright (C) 2000, 2001 David S. Miller (davem@redhat.com) [sungem.c]
-> -	Copyright 2001 Manfred Spraul				    [natsemi.c]
-> -	Copyright 1999-2001 by Donald Becker.			    [natsemi.c]
-> -       	Written 1997-2001 by Donald Becker.			    [8139too.c]
-> -	Copyright 1998-2001 by Jes Sorensen,<jes@trained-monkey.org>. [acenic.c]
-> +	Copyright (C) 2001, 2002 David S. Miller (davem@redhat.com)	[tg3.c]
-> +	Copyright (C) 2000, 2001 David S. Miller (davem@redhat.com)	[sungem.c]
-> +	Copyright 2001 Manfred Spraul					[natsemi.c]
-> +	Copyright 1999-2001 by Donald Becker.				[natsemi.c]
-> +	Written 1997-2001 by Donald Becker.				[8139too.c]
-> +	Copyright 1998-2001 by Jes Sorensen,<jes@trained-monkey.org>.	[acenic.c]
+In other words, why the hell are you arguing? Help Mathieu write the
+low-level NMI handler right, and remove that idiotic
+"vmalloc_sync_all()" that is fundamentally broken and should not
+exist. Rather than talk about adding more of that kind of crap.
 
-what is the point of this?  I would leave copyright messages as-is.
-
-
-> @@ -1295,32 +1295,32 @@ static void mdio_write(struct net_device *dev, int phy_id, int location,
->   }
->
->   /* Set the ethtool Wake-on-LAN settings */
-> -static int netdev_set_wol (struct cp_private *cp,
-> +static int netdev_set_wol(struct cp_private *cp,
->   			   const struct ethtool_wolinfo *wol)
->   {
->   	u8 options;
->
-> -	options = cpr8 (Config3)&  ~(LinkUp | MagicPacket);
-> +	options = cpr8(Config3)&  ~(LinkUp | MagicPacket);
->   	/* If WOL is being disabled, no need for complexity */
->   	if (wol->wolopts) {
-> -		if (wol->wolopts&  WAKE_PHY)	options |= LinkUp;
-> -		if (wol->wolopts&  WAKE_MAGIC)	options |= MagicPacket;
-> +		if (wol->wolopts&  WAKE_PHY) options |= LinkUp;
-> +		if (wol->wolopts&  WAKE_MAGIC) options |= MagicPacket;
->   	}
->
-> -	cpw8 (Cfg9346, Cfg9346_Unlock);
-> -	cpw8 (Config3, options);
-> -	cpw8 (Cfg9346, Cfg9346_Lock);
-> +	cpw8(Cfg9346, Cfg9346_Unlock);
-> +	cpw8(Config3, options);
-> +	cpw8(Cfg9346, Cfg9346_Lock);
->
->   	options = 0; /* Paranoia setting */
-> -	options = cpr8 (Config5)&  ~(UWF | MWF | BWF);
-> +	options = cpr8(Config5)&  ~(UWF | MWF | BWF);
->   	/* If WOL is being disabled, no need for complexity */
->   	if (wol->wolopts) {
-> -		if (wol->wolopts&  WAKE_UCAST)  options |= UWF;
-> -		if (wol->wolopts&  WAKE_BCAST)	options |= BWF;
-> -		if (wol->wolopts&  WAKE_MCAST)	options |= MWF;
-> +		if (wol->wolopts&  WAKE_UCAST) options |= UWF;
-> +		if (wol->wolopts&  WAKE_BCAST) options |= BWF;
-> +		if (wol->wolopts&  WAKE_MCAST) options |= MWF;
->   	}
-
-you just un-aligned things that were nicely tab-aligned
-
-
-> @@ -1328,35 +1328,36 @@ static int netdev_set_wol (struct cp_private *cp,
->  }
->
->  /* Get the ethtool Wake-on-LAN settings */
-> -static void netdev_get_wol (struct cp_private *cp,
-> -	             struct ethtool_wolinfo *wol)
-> +static void netdev_get_wol(struct cp_private *cp,
-> +			   struct ethtool_wolinfo *wol)
->  {
->  	u8 options;
->
->  	wol->wolopts   = 0; /* Start from scratch */
-> -	wol->supported = WAKE_PHY   | WAKE_BCAST | WAKE_MAGIC |
-> -		         WAKE_MCAST | WAKE_UCAST;
-> +	wol->supported = WAKE_PHY   | WAKE_BCAST | WAKE_MAGIC | WAKE_MCAST | WAKE_UCAST;
-> +
->  	/* We don't need to go on if WOL is disabled */
-> -	if (!cp->wol_enabled) return;
-> +	if (!cp->wol_enabled)
-> +		return;
->
-> -	options        = cpr8 (Config3);
-> -	if (options & LinkUp)        wol->wolopts |= WAKE_PHY;
-> -	if (options & MagicPacket)   wol->wolopts |= WAKE_MAGIC;
-> +	options        = cpr8(Config3);
-> +	if (options & LinkUp) wol->wolopts |= WAKE_PHY;
-> +	if (options & MagicPacket) wol->wolopts |= WAKE_MAGIC;
->
->  	options        = 0; /* Paranoia setting */
-> -	options        = cpr8 (Config5);
-> -	if (options & UWF)           wol->wolopts |= WAKE_UCAST;
-> -	if (options & BWF)           wol->wolopts |= WAKE_BCAST;
-> -	if (options & MWF)           wol->wolopts |= WAKE_MCAST;
-> +	options        = cpr8(Config5);
-> +	if (options & UWF) wol->wolopts |= WAKE_UCAST;
-> +	if (options & BWF) wol->wolopts |= WAKE_BCAST;
-> +	if (options & MWF) wol->wolopts |= WAKE_MCAST;
->  }
->
-> -static void cp_get_drvinfo (struct net_device *dev, struct ethtool_drvinfo *info)
-
-ditto
-
-
-Also, it's disappointing to see so much diff noise created by
-	s/func ()/func()/
-but I don't suppose I'll win that battle.
-
-	Jeff
-
-
+                   Linus
