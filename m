@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758948Ab0GPTGJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 15:06:09 -0400
-Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:35918 "HELO
-	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758937Ab0GPTGG convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 15:06:06 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=LNbVf4gLMZgS+Bh5A8TdVGCDUHaAGLatO4TQrU3KzLuxbGP/bJgCmNYbg110RJPMHmd5wibHWzpuazcpo7zy76a0DhJ2dyxz5jbbZw5S7pwQ6CwcRI9aHahTAupS83mB;
-Date: Fri, 16 Jul 2010 12:06:03 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: vgoyal@redhat.com, "David S. Miller" <davem@davemloft.net>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>, seto.hidetoshi@jp.fujitsu.com,
-        Matt Carlson <mcarlson@broadcom.com>,
-        Michael Chan <mchan@broadcom.com>, linux-pci@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH repost] pci: fix compilation when CONFIG_PCI_MSI=n
-Message-ID: <20100716120603.5c3de0bd@virtuousgeek.org>
-In-Reply-To: <20100716142050.GA4970@redhat.com>
-References: <20100716142050.GA4970@redhat.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	id S1758957Ab0GPTHP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 15:07:15 -0400
+Received: from mga02.intel.com ([134.134.136.20]:57479 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756633Ab0GPTHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 15:07:13 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,215,1278313200"; 
+   d="scan'208";a="536202867"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ben Greear <greearb@candelatech.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH] x86/pci/mrst: add extra check in fixed bar detection
+Date: Fri, 16 Jul 2010 11:58:26 -0700
+Message-Id: <1279306706-27087-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jul 2010 17:20:50 +0300
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
+Fixed bar capability structure is searched in PCI extended configuration
+space. We need to make sure there is a valid capability id to begin with
+otherwise, the search code may stuck in a infinite loop which results in
+boot hang.
+This patch adds additional check for cap ID 0, which is also invalid.
 
-> vers/pci/pci.c:2277: error: redefinition of ‘pci_msi_off’
-> include/linux/pci.h:786: note: previous definition of ‘pci_msi_off’ was here
-> 
-> No need for ifdef: we must disable the capability at startup even if the
-> current kernel does not support MSI, otherwise the device won't work.
-> 
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
-> 
-> Looks like I didn't tag this old patch of mine clearly enough
-> so it's still not fixed in -rc5.
-> It's late in the cycle, but the patch is trivial
-> and it's a build fix, so ... please consider for 2.6.35.
+Suggested-by: "H. Peter Anvin" <hpa@zytor.com>
 
-I don't see the same context in the current tree.  So this patch must
-be against the virtualization tree I guess?
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ arch/x86/pci/mrst.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+index c9649d0..8636567 100644
+--- a/arch/x86/pci/mrst.c
++++ b/arch/x86/pci/mrst.c
+@@ -66,8 +66,9 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
+ 					  devfn, pos, 4, &pcie_cap))
+ 			return 0;
+ 
+-		if (pcie_cap == 0xffffffff)
+-			return 0;
++		if (PCI_EXT_CAP_ID(pcie_cap) == 0x0000 ||
++			PCI_EXT_CAP_ID(pcie_cap) == 0xffff)
++			break;
+ 
+ 		if (PCI_EXT_CAP_ID(pcie_cap) == PCI_EXT_CAP_ID_VNDR) {
+ 			raw_pci_ext_ops->read(pci_domain_nr(bus), bus->number,
+@@ -76,7 +77,7 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
+ 				return pos;
+ 		}
+ 
+-		pos = pcie_cap >> 20;
++		pos = PCI_EXT_CAP_NEXT(pcie_cap);
+ 	}
+ 
+ 	return 0;
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+1.7.0.4
+
