@@ -1,77 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758821Ab0GPSSz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 14:18:55 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:38594 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758789Ab0GPSSw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 14:18:52 -0400
+	id S965978Ab0GPSTV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 14:19:21 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:59809 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758789Ab0GPSTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 14:19:19 -0400
+Message-ID: <4C40A227.6000207@zytor.com>
+Date: Fri, 16 Jul 2010 11:17:11 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-In-Reply-To: <20100716180701.GA26854@n2100.arm.linux.org.uk>
-References: <20100713230352.6781.18644.stgit@angua> <1279296221.17878.66.camel@e102109-lin.cambridge.arm.com> 
-	<AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com> 
-	<20100716180701.GA26854@n2100.arm.linux.org.uk>
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 16 Jul 2010 12:18:29 -0600
-X-Google-Sender-Auth: zMDTWVRNcpg0BO9qI2sC6FtWUvk
-Message-ID: <AANLkTilfgiQyvcBhEmdc5P8HXSUHgAG7SUa0Mz4ev6ze@mail.gmail.com>
-Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for 
-	defconfig
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linuxppc-dev@lists.ozlabs.org,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
+To: Avi Kivity <avi@redhat.com>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <4C408D0C.5050709@redhat.com> <20100716165855.GA3836@Krystal> <4C409CBA.1050709@redhat.com> <4C409F62.6030303@zytor.com> <4C40A1BD.4040507@redhat.com>
+In-Reply-To: <4C40A1BD.4040507@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 12:07 PM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Fri, Jul 16, 2010 at 11:57:55AM -0600, Grant Likely wrote:
->> Last missing piece is being able to do "select FOO = n", which Stephen
->> is currently working on.
->
-> I thought Linus' idea was to use:
->
-> KBUILD_KCONFIG=file make allnoconfig
+On 07/16/2010 11:15 AM, Avi Kivity wrote:
+> 
+> There aren't that many processes at this time (or there shouldn't be, 
+> don't know how fork-happy udev is at this stage), so the sync should be 
+> pretty fast.  In any case, we can sync only modules that contain NMI 
+> handlers.
+> 
+>> I really hope noone ever gets the idea of touching user space from an
+>> NMI handler, though, and expecting it to work...
+>>    
+> 
+> I think the concern here is about an NMI handler's code running in 
+> vmalloc space, or is it something else?
+> 
 
-That was more a prototype of the idea; but it's a pretty cumbersome
-user interface.  :-)  By changing the makefile to look for kconfig
-fragments in the configs directory, the user interface for choosing a
-config remains exactly the same.
+Code or data, yes; including percpu data.
 
-As for the allnoconfig bit....
-
-> in which case any option which would be presented to the user which hasn't
-> been selected by 'file' ends up being set to n.  That means there's no
-> need for a special "select FOO=n" construct.
-
-...Linus chimed in on this that he doesn't actually care much.  I
-think defconfig with an empty initial config file makes a lot more
-sense than allnoconfig so that we're using the default values from the
-normal Kconfig files.
-
-> See one of Linus' replies on June 3:
-> Message-ID: <alpine.LFD.2.00.1006031317410.8175@i5.linux-foundation.org>
-
-See this response:
-Message-ID: <AANLkTik-QCXFnjma3J28B9h27uajOcDhthTGz99zKgVi@mail.gmail.com>
-
-http://news.gmane.org/find-root.php?message_id=%3cAANLkTik%2dQCXFnjma3J28B9h27uajOcDhthTGz99zKgVi%40mail.gmail.com%3e
-
-g.
-
--- 
-Grant Likely, B.Sc., P.Eng.
-Secret Lab Technologies Ltd.
+	-hpa
