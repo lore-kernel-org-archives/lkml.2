@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759419Ab0GPWkr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 18:40:47 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:43577 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1759364Ab0GPWkd (ORCPT
+	id S1759416Ab0GPWln (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 18:41:43 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58751 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754185Ab0GPWlm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 18:40:33 -0400
-Date: Fri, 16 Jul 2010 18:40:30 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	Fri, 16 Jul 2010 18:41:42 -0400
+Date: Sat, 17 Jul 2010 00:41:40 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Avi Kivity <avi@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
         LKML <linux-kernel@vger.kernel.org>,
         Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
         Peter Zijlstra <peterz@infradead.org>,
@@ -28,67 +29,37 @@ Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Jeremy Fitzhardinge <jeremy@goop.org>,
         "Frank Ch. Eigler" <fche@redhat.com>
 Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-Message-ID: <20100716224030.GB10427@Krystal>
-References: <20100716165855.GA3836@Krystal> <4C409CBA.1050709@redhat.com> <4C409F62.6030303@zytor.com> <4C40A1BD.4040507@redhat.com> <4C40A227.6000207@zytor.com> <4C40A4E8.5090605@redhat.com> <AANLkTinc_of_KYCFt9-8GZYGFLyqQLlgNttPe-YvZn-1@mail.gmail.com> <4C40B277.9030408@redhat.com> <AANLkTimfZb22E7c_ftyc5WfKsGvJKKq-J3Vq8Y6FNvhT@mail.gmail.com> <20100716220730.GH7338@basil.fritz.box>
+Message-ID: <20100716224140.GI7338@basil.fritz.box>
+References: <4C409CBA.1050709@redhat.com>
+ <4C409F62.6030303@zytor.com>
+ <4C40A1BD.4040507@redhat.com>
+ <4C40A227.6000207@zytor.com>
+ <4C40A4E8.5090605@redhat.com>
+ <AANLkTinc_of_KYCFt9-8GZYGFLyqQLlgNttPe-YvZn-1@mail.gmail.com>
+ <4C40B277.9030408@redhat.com>
+ <AANLkTimfZb22E7c_ftyc5WfKsGvJKKq-J3Vq8Y6FNvhT@mail.gmail.com>
+ <20100716220730.GH7338@basil.fritz.box>
+ <AANLkTikzZ436qG4vuNYNItDV69u9HqWna1ND51GzUtwH@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100716220730.GH7338@basil.fritz.box>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 18:21:18 up 175 days, 58 min,  6 users,  load average: 0.04,
-	0.05, 0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <AANLkTikzZ436qG4vuNYNItDV69u9HqWna1ND51GzUtwH@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andi Kleen (andi@firstfloor.org) wrote:
-> > And the thing is, if we just do NMI's correctly, and allow nesting,
-> > ALL THOSE PROBLEMS GO AWAY. And there is no reason what-so-ever to do
-> > stupid things elsewhere.
+On Fri, Jul 16, 2010 at 03:26:32PM -0700, Linus Torvalds wrote:
+> On Fri, Jul 16, 2010 at 3:07 PM, Andi Kleen <andi@firstfloor.org> wrote:
+> >
+> > One issue I have with nesting NMIs is that you need
+> > a nesting limit, otherwise you'll overflow the NMI stack.
 > 
-> One issue I have with nesting NMIs is that you need 
-> a nesting limit, otherwise you'll overflow the NMI stack.
-> 
-> We just got rid of nesting for normal interrupts because
-> of this stack overflow problem which hit in real situations.
-> 
-> In some cases you can get quite high NMI frequencies, e.g. with
-> performance counters. Now the current performance counter handlers
-> do not nest by themselves of course, but they might nest 
-> with other longer running NMI users.
-> 
-> I think none of the current handlers are likely to nest
-> for very long, but there's more and more NMI coded all the time,
-> so it's definitely a concern.
+> Have you actually looked at the suggestion I (and now Mathieu)
+> suggested code for?
 
-We're not proposing to actually "nest" NMIs per se. We copy the stack at the
-beginning of the NMI handler (and then use the copy) to permit nesting of faults
-over NMI handlers. Following NMIs that would "try" to nest over the NMI handler
-would see their regular execution postponed until the end of the currently
-running NMI handler. It's OK for these "nested" NMI handlers to use the bottom
-of NMI stack because the NMI handler on which they are trying to nest is only
-using the stack copy. These "nested" handlers return to the original NMI handler
-very early just after setting a "pending nmi" flag. There is more to it (e.g.
-handling NMI handler exit atomically with respect to incoming NMIs); please
-refer to the last assembly code snipped I sent to Linus a little earlier today
-for details.
+Maybe I'm misunderstanding everything (and it has been a lot of emails
+in the thread), but the case I was thinking of would be if the second NMI 
+faults too, and then another one comes in after the IRET etc.
 
-Thanks,
-
-Mathieu
-
-
-> 
-> -Andi
-> 
-> -- 
-> ak@linux.intel.com -- Speaking for myself only.
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+-Andi
