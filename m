@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936107Ab0GPJCr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 05:02:47 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:59532 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936026Ab0GPJCp (ORCPT
+	id S936114Ab0GPJDW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 05:03:22 -0400
+Received: from alternativer.internetendpunkt.de ([88.198.24.89]:44014 "EHLO
+	geheimer.internetendpunkt.de" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S936026Ab0GPJDU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 05:02:45 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=FZQJtdktJkuHHEZEUHDxLFuPVWHVGyTax8f0KXesdA7O7HKVsfmibpzBLhpvWlolg
-	KRQhe31qAbOgqC/GjdxdA==
-Date: Fri, 16 Jul 2010 02:02:37 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: Christoph Lameter <cl@linux-foundation.org>, linux-mm@kvack.org,
-        linux-kernel@vger.kernel.org, Nick Piggin <npiggin@suse.de>
-Subject: Re: [S+Q2 00/19] SLUB with queueing (V2) beats SLAB netperf TCP_RR
-In-Reply-To: <4C4016FD.9080207@cs.helsinki.fi>
-Message-ID: <alpine.DEB.2.00.1007160158540.18388@chino.kir.corp.google.com>
-References: <20100709190706.938177313@quilx.com> <alpine.DEB.2.00.1007141650110.29110@chino.kir.corp.google.com> <4C4016FD.9080207@cs.helsinki.fi>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 16 Jul 2010 05:03:20 -0400
+To: Bill Fink <billfink@mindspring.com>
+Subject: Re: Raise initial congestion window size / speedup slow  =?UTF-8?Q?start=3F?=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain;
+ charset=UTF-8
+Content-Transfer-Encoding: 7bit
+Date: Fri, 16 Jul 2010 11:03:18 +0200
+From: Hagen Paul Pfeifer <hagen@jauu.net>
+Cc: David Miller <davem@davemloft.net>, <rick.jones2@hp.com>,
+        <lists@wildgooses.com>, <davidsen@tmr.com>,
+        <linux-kernel@vger.kernel.org>, <netdev@vger.kernel.org>
+In-Reply-To: <20100714234917.924f420d.billfink@mindspring.com>
+References: <4C3E0684.5060409@wildgooses.com> <4C3E1B54.40604@hp.com>
+ <20100714203919.GD6682@nuttenaction>
+ <20100714.145547.102555471.davem@davemloft.net>
+ <20100714221301.GI6682@nuttenaction>
+ <20100714234917.924f420d.billfink@mindspring.com>
+Message-ID: <7065ab9e99967e429c20028f4426e2ff@localhost>
+User-Agent: RoundCube Webmail/0.1-rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jul 2010, Pekka Enberg wrote:
 
-> > I'd also consider patch 7 for 2.6.35-rc6 (and -stable).
-> 
-> It's an obvious bug fix but is it triggered in practice? Is there a bugzilla
-> report for that?
-> 
+On Wed, 14 Jul 2010 23:49:17 -0400, Bill Fink wrote:
 
-Let's ask Benjamin who initially reported the problem with arch_initcall 
-whether or not this is rc (and stable) material.
+> A long, long time ago, I suggested a Path BW Discovery mechanism
+> to the IETF, analogous to the Path MTU Discovery mechanism, but
+> it didn't get any traction.  Such information could be extremely
+> useful to TCP endpoints, to determine a maximum window size to
+> use, to effectively rate limit a much stronger sender from
+> overpowering a much weaker receiver (for example 10-GigE -> GigE),
+> resulting in abominable performance across large RTT paths
+> (as low as 12 Mbps), even in the absence of any real network
+> contention.
 
-For reference, we're talking about the sysfs_slab_remove() check on 
-slab_state to prevent the WARN in the kobject code you hit with its fix 
-below:
+Much weaker middlebox? The windowing mechanism should be sufficient to
+avoid endpoints from over-commiting.
+
+Anyway, your proposed draft (I didn't searched for it) sound like a
+mechanism similar to RFC 4782: Quick-Start for TCP and IP.
 
 
-From: Christoph Lameter <cl@linux-foundation.org>
+   This document specifies an optional Quick-Start mechanism for
+   transport protocols, in cooperation with routers, to determine an
+   allowed sending rate at the start and, at times, in the middle of a
+   data transfer (e.g., after an idle period).  While Quick-Start is
+   designed to be used by a range of transport protocols, in this
+   document we only specify its use with TCP.  Quick-Start is designed
+   to allow connections to use higher sending rates when there is
+   significant unused bandwidth along the path, and the sender and all
+   of the routers along the path approve the Quick-Start Request.
 
-slub: Allow removal of slab caches during boot
 
-If a slab cache is removed before we have setup sysfs then simply skip over
-the sysfs handling.
-
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Roland Dreier <rdreier@cisco.com>
-Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
-
----
- mm/slub.c |    7 +++++++
- 1 file changed, 7 insertions(+)
-
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2010-07-06 15:13:48.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-07-06 15:15:27.000000000 -0500
-@@ -4507,6 +4507,13 @@ static int sysfs_slab_add(struct kmem_ca
- 
- static void sysfs_slab_remove(struct kmem_cache *s)
- {
-+	if (slab_state < SYSFS)
-+		/*
-+		 * Sysfs has not been setup yet so no need to remove the
-+		 * cache from sysfs.
-+		 */
-+		return;
-+
- 	kobject_uevent(&s->kobj, KOBJ_REMOVE);
- 	kobject_del(&s->kobj);
- 	kobject_put(&s->kobj);
+Cheers, Hagen
