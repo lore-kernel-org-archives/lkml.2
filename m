@@ -1,266 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965448Ab0GPMj0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 08:39:26 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52393 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965380Ab0GPMhs (ORCPT
+	id S965387Ab0GPMtJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 08:49:09 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:54022 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965302Ab0GPMtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 08:37:48 -0400
-From: Nitin Gupta <ngupta@vflare.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/8] Create sysfs nodes and export basic statistics
-Date: Fri, 16 Jul 2010 18:07:45 +0530
-Message-Id: <1279283870-18549-4-git-send-email-ngupta@vflare.org>
+	Fri, 16 Jul 2010 08:49:07 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [RFC][PATCH 02/16] writeback: remove redundant list initialization
+Date: Fri, 16 Jul 2010 15:44:58 +0300
+Message-Id: <1279284312-2411-3-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
-References: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
+In-Reply-To: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
+References: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 16 Jul 2010 12:48:59.0633 (UTC) FILETIME=[42C24610:01CB24E5]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Creates per-pool sysfs nodes: /sys/kernel/vm/zcache/pool<id>/
-(<id> = 0, 1, 2, ...) to export following statistics:
- - orig_data_size: Uncompressed worth of data stored in the pool.
- - memlimit: Memory limit of the pool. This also allows changing
-   it at runtime (default: 10% of RAM).
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-If memlimit is set to a value smaller than the current number
-of page stored, then excess pages are not freed immediately but
-further puts are blocked till sufficient number of pages are
-flushed/freed.
+We do not have to call 'INIT_LIST_HEAD()' for list elements
+('bdi->bdi_list') before inserting them to the 'bdi_pending_list',
+because 'list_add_tail' will initialize the element anyway. Thus,
+kill the redundant initialization.
 
-Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 ---
- drivers/staging/zram/zcache_drv.c |  132 ++++++++++++++++++++++++++++++++++++-
- drivers/staging/zram/zcache_drv.h |    8 ++
- 2 files changed, 137 insertions(+), 3 deletions(-)
+ mm/backing-dev.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/staging/zram/zcache_drv.c b/drivers/staging/zram/zcache_drv.c
-index 160c172..f680f19 100644
---- a/drivers/staging/zram/zcache_drv.c
-+++ b/drivers/staging/zram/zcache_drv.c
-@@ -440,6 +440,85 @@ static void zcache_free_inode_pages(struct zcache_inode_rb *znode)
- 	} while (count == FREE_BATCH);
- }
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index ff5669a..0fad60d 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -416,7 +416,6 @@ static void bdi_add_to_pending(struct rcu_head *head)
+ 	struct backing_dev_info *bdi;
  
-+#ifdef CONFIG_SYSFS
-+
-+#define ZCACHE_POOL_ATTR_RO(_name) \
-+	static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
-+
-+#define ZCACHE_POOL_ATTR(_name) \
-+	static struct kobj_attribute _name##_attr = \
-+		__ATTR(_name, 0644, _name##_show, _name##_store)
-+
-+static struct zcache_pool *zcache_kobj_to_pool(struct kobject *kobj)
-+{
-+	int i;
-+
-+	spin_lock(&zcache->pool_lock);
-+	for (i = 0; i < MAX_ZCACHE_POOLS; i++)
-+		if (zcache->pools[i]->kobj == kobj)
-+			break;
-+	spin_unlock(&zcache->pool_lock);
-+
-+	return zcache->pools[i];
-+}
-+
-+static ssize_t orig_data_size_show(struct kobject *kobj,
-+			       struct kobj_attribute *attr, char *buf)
-+{
-+	struct zcache_pool *zpool = zcache_kobj_to_pool(kobj);
-+
-+	return sprintf(buf, "%llu\n", zcache_get_stat(
-+			zpool, ZPOOL_STAT_PAGES_STORED) << PAGE_SHIFT);
-+}
-+ZCACHE_POOL_ATTR_RO(orig_data_size);
-+
-+static void memlimit_sysfs_common(struct kobject *kobj, u64 *value, int store)
-+{
-+	struct zcache_pool *zpool = zcache_kobj_to_pool(kobj);
-+
-+	if (store)
-+		zcache_set_memlimit(zpool, *value);
-+	else
-+		*value = zcache_get_memlimit(zpool);
-+}
-+
-+static ssize_t memlimit_store(struct kobject *kobj,
-+		struct kobj_attribute *attr, const char *buf, size_t len)
-+{
-+	int ret;
-+	u64 memlimit;
-+
-+	ret = strict_strtoull(buf, 10, &memlimit);
-+	if (ret)
-+		return ret;
-+
-+	memlimit &= PAGE_MASK;
-+	memlimit_sysfs_common(kobj, &memlimit, 1);
-+
-+	return len;
-+}
-+
-+static ssize_t memlimit_show(struct kobject *kobj,
-+			struct kobj_attribute *attr, char *buf)
-+{
-+	u64 memlimit;
-+
-+	memlimit_sysfs_common(kobj, &memlimit, 0);
-+	return sprintf(buf, "%llu\n", memlimit);
-+}
-+ZCACHE_POOL_ATTR(memlimit);
-+
-+static struct attribute *zcache_pool_attrs[] = {
-+	&orig_data_size_attr.attr,
-+	&memlimit_attr.attr,
-+	NULL,
-+};
-+
-+static struct attribute_group zcache_pool_attr_group = {
-+	.attrs = zcache_pool_attrs,
-+};
-+#endif	/* CONFIG_SYSFS */
-+
- /*
-  * cleancache_ops.init_fs
-  *
-@@ -451,7 +530,8 @@ static void zcache_free_inode_pages(struct zcache_inode_rb *znode)
-  */
- static int zcache_init_fs(size_t pagesize)
- {
--	int ret;
-+	int ret, pool_id;
-+	struct zcache_pool *zpool = NULL;
+ 	bdi = container_of(head, struct backing_dev_info, rcu_head);
+-	INIT_LIST_HEAD(&bdi->bdi_list);
  
- 	/*
- 	 * pagesize parameter probably makes sense only for Xen's
-@@ -469,14 +549,38 @@ static int zcache_init_fs(size_t pagesize)
- 		goto out;
- 	}
- 
--	ret = zcache_create_pool();
--	if (ret < 0) {
-+	pool_id = zcache_create_pool();
-+	if (pool_id < 0) {
- 		pr_info("Failed to create new pool\n");
- 		ret = -ENOMEM;
- 		goto out;
- 	}
-+	zpool = zcache->pools[pool_id];
-+
-+#ifdef CONFIG_SYSFS
-+	snprintf(zpool->name, MAX_ZPOOL_NAME_LEN, "pool%d", pool_id);
-+
-+	/* Create /sys/kernel/mm/zcache/pool<id> (<id> = 0, 1, ...) */
-+	zpool->kobj = kobject_create_and_add(zpool->name, zcache->kobj);
-+	if (!zpool->kobj) {
-+		ret = -ENOMEM;
-+		goto out;
-+	}
-+
-+	/* Create various nodes under /sys/.../pool<id>/ */
-+	ret = sysfs_create_group(zpool->kobj, &zcache_pool_attr_group);
-+	if (ret) {
-+		kobject_put(zpool->kobj);
-+		goto out;
-+	}
-+#endif
-+
-+	ret = pool_id;	/* success */
- 
- out:
-+	if (ret < 0)	/* failure */
-+		zcache_destroy_pool(zpool);
-+
- 	return ret;
- }
- 
-@@ -580,6 +684,13 @@ static void zcache_put_page(int pool_id, ino_t inode_no,
- 	 */
- 	zcache_inc_stat(zpool, ZPOOL_STAT_PAGES_STORED);
- 
-+	/*
-+	 * memlimit can be changed any time by user using sysfs. If
-+	 * it is set to a value smaller than current number of pages
-+	 * stored, then excess pages are not freed immediately but
-+	 * further puts are blocked till sufficient number of pages
-+	 * are flushed/freed.
-+	 */
- 	if (zcache_get_stat(zpool, ZPOOL_STAT_PAGES_STORED) >
- 			zcache_get_memlimit(zpool) >> PAGE_SHIFT) {
- 		zcache_dec_stat(zpool, ZPOOL_STAT_PAGES_STORED);
-@@ -690,6 +801,12 @@ static void zcache_flush_fs(int pool_id)
- 	struct zcache_inode_rb *znode;
- 	struct zcache_pool *zpool = zcache->pools[pool_id];
- 
-+#ifdef CONFIG_SYSFS
-+	/* Remove per-pool sysfs entries */
-+	sysfs_remove_group(zpool->kobj, &zcache_pool_attr_group);
-+	kobject_put(zpool->kobj);
-+#endif
-+
- 	/*
- 	 * At this point, there is no active I/O on this filesystem.
- 	 * So we can free all its pages without holding any locks.
-@@ -722,6 +839,15 @@ static int __init zcache_init(void)
- 	if (!zcache)
- 		return -ENOMEM;
- 
-+#ifdef CONFIG_SYSFS
-+	/* Create /sys/kernel/mm/zcache/ */
-+	zcache->kobj = kobject_create_and_add("zcache", mm_kobj);
-+	if (!zcache->kobj) {
-+		kfree(zcache);
-+		return -ENOMEM;
-+	}
-+#endif
-+
- 	spin_lock_init(&zcache->pool_lock);
- 	cleancache_ops = ops;
- 
-diff --git a/drivers/staging/zram/zcache_drv.h b/drivers/staging/zram/zcache_drv.h
-index bfba5d7..808cfb2 100644
---- a/drivers/staging/zram/zcache_drv.h
-+++ b/drivers/staging/zram/zcache_drv.h
-@@ -19,6 +19,7 @@
- #include <linux/types.h>
- 
- #define MAX_ZCACHE_POOLS	32	/* arbitrary */
-+#define MAX_ZPOOL_NAME_LEN	8	/* "pool"+id (shown in sysfs) */
- 
- enum zcache_pool_stats_index {
- 	ZPOOL_STAT_PAGES_STORED,
-@@ -51,6 +52,10 @@ struct zcache_pool {
- 	seqlock_t memlimit_lock;	/* protects memlimit */
- 	u64 memlimit;			/* bytes */
- 	struct zcache_pool_stats_cpu *stats;	/* percpu stats */
-+#ifdef CONFIG_SYSFS
-+	unsigned char name[MAX_ZPOOL_NAME_LEN];
-+	struct kobject *kobj;		/* sysfs */
-+#endif
- };
- 
- /* Manage all zcache pools */
-@@ -58,6 +63,9 @@ struct zcache {
- 	struct zcache_pool *pools[MAX_ZCACHE_POOLS];
- 	u32 num_pools;		/* current no. of zcache pools */
- 	spinlock_t pool_lock;	/* protects pools[] and num_pools */
-+#ifdef CONFIG_SYSFS
-+	struct kobject *kobj;	/* sysfs */
-+#endif
- };
- 
- #endif
+ 	spin_lock(&bdi_lock);
+ 	list_add_tail(&bdi->bdi_list, &bdi_pending_list);
 -- 
 1.7.1.1
 
