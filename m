@@ -1,66 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759175Ab0GPUCR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 16:02:17 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:61509 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759141Ab0GPUCP (ORCPT
+	id S1759203Ab0GPUCj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 16:02:39 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:52448 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759181Ab0GPUCh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 16:02:15 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for defconfig
-Date: Fri, 16 Jul 2010 22:01:09 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4-next-20100709+; KDE/4.4.90; x86_64; ; )
-Cc: Catalin Marinas <catalin.marinas@arm.com>, linuxppc-dev@lists.ozlabs.org,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Russell King <rmk@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        "Uwe =?iso-8859-1?q?Kleine-K=F6nig?=" 
-	<u.kleine-koenig@pengutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-References: <20100713230352.6781.18644.stgit@angua> <1279296221.17878.66.camel@e102109-lin.cambridge.arm.com> <AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com>
-In-Reply-To: <AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com>
+	Fri, 16 Jul 2010 16:02:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=shZqHDCtC2dO8n4nI0pejmxtsx2Iq/M2cyoPVlikJgL6gx3vlWJKMuujpJif7DmSFS
+         QFsd8O3GlohBiv2vCij5ikn7uUCdlITbANOmyUDKDOI3CrCL0q6Iwf8bzpln5R6K91x2
+         FBvr3zXTFzMAzxzm87XIE6oDbgi7BriZ9dPQc=
+Message-ID: <4C40BAD1.8090908@garzik.org>
+Date: Fri, 16 Jul 2010 16:02:25 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Pete Zaitcev <zaitcev@redhat.com>
+CC: linux-kbuild@vger.kernel.org, nico-linuxsetlocalversion@schottelius.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: I did a git pull and a plus appeared
+References: <20100716121802.65fdfa24@lembas.zaitcev.lan>
+In-Reply-To: <20100716121802.65fdfa24@lembas.zaitcev.lan>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007162201.09629.arnd@arndb.de>
-X-Provags-ID: V02:K0:nNjZ9vOV9Tl6fQmcy2WaYEFfPGe8BV+m9HB8Qow1ItB
- 39UckgBQhdZxU70SLVWbBPHrKOABHOTapFUetGJ4MhYvUOknDg
- fF81StBAWdKO51XDnD9WtERJntrEqWQsxExBuyjHQeuseik6Wj
- CLggvxPVXaofDSMhZsJr2mA/cEclkcj3f/gPLBed9EZGmMbyIV
- irONz2eMSjSK8aTVd68wQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 16 July 2010 19:57:55 Grant Likely wrote:
-> On Fri, Jul 16, 2010 at 10:03 AM, Catalin Marinas
-> <catalin.marinas@arm.com> wrote:
-> > On Wed, 2010-07-14 at 00:04 +0100, Grant Likely wrote:
-> 
-> sfr and I were talking about your patch the other day.  Just warning
-> on incomplete dependencies is enough to make it actually workable for
-> me (without my ugly post-processing step).  I was very happy to hear
-> that it is in linux-next.
-> 
-> Last missing piece is being able to do "select FOO = n", which Stephen
-> is currently working on.
+On 07/16/2010 02:18 PM, Pete Zaitcev wrote:
+> Dear All:
+>
+> I have a tree that existed for a few years (a clone of Linus' tree).
+> Today I did a git pull in it, and a plus appeared in the built version.
+> E.g. after "make modules_install":
+>
+> [root@niphredil linux-2.6-tip]# ls /lib/modules/
+> 2.6.33.1-19.fc13.x86_64  2.6.34-rc6-tip                    2.6.35-rc1-tip
+> 2.6.34-43.fc14.x86_64    2.6.35-0.36.rc4.git5.fc14.x86_64  2.6.35-rc5-tip+
+> [root@niphredil linux-2.6-tip]#
+>
+> How do I get rid of the plus? I have (had for a long time):
+>
+> [zaitcev@niphredil linux-2.6-tip]$ grep LOCAL .config
+> CONFIG_LOCALVERSION="-tip"
+> # CONFIG_LOCALVERSION_AUTO is not set
+> CONFIG_X86_LOCAL_APIC=y
+> [zaitcev@niphredil linux-2.6-tip]$
 
-Are there a lot of symbols for which this is needed? If there is only
-a handful, you could work around this by selectively adding
+Is the '+' listed at the top of the toplevel Makefile?
 
-config FOO
-	bool "foo"
-	default !FOO_DISABLE
-
-config FOO_DISABLE
-	def_bool "n"
+	Jeff
 
 
-		Arnd
+
