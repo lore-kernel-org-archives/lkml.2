@@ -1,61 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757130Ab0GPRy7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 13:54:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40725 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754008Ab0GPRy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 13:54:58 -0400
-Message-ID: <4C409CBA.1050709@redhat.com>
-Date: Fri, 16 Jul 2010 20:54:02 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1757292Ab0GPR6Y (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 13:58:24 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:55953 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756716Ab0GPR6W convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 13:58:22 -0400
 MIME-Version: 1.0
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-CC: LKML <linux-kernel@vger.kernel.org>,
+In-Reply-To: <1279296221.17878.66.camel@e102109-lin.cambridge.arm.com>
+References: <20100713230352.6781.18644.stgit@angua> <1279296221.17878.66.camel@e102109-lin.cambridge.arm.com>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 16 Jul 2010 11:57:55 -0600
+X-Google-Sender-Auth: dB0rVNNRRtDgNbDBMpbUtMIwD_o
+Message-ID: <AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com>
+Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for 
+	defconfig
+To: Catalin Marinas <catalin.marinas@arm.com>
+Cc: linuxppc-dev@lists.ozlabs.org, Nicolas Pitre <nico@fluxnic.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
         Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <4C408D0C.5050709@redhat.com> <20100716165855.GA3836@Krystal>
-In-Reply-To: <20100716165855.GA3836@Krystal>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+        Russell King <rmk@arm.linux.org.uk>, Tony Lindgren <tony@atomide.com>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 07:58 PM, Mathieu Desnoyers wrote:
+On Fri, Jul 16, 2010 at 10:03 AM, Catalin Marinas
+<catalin.marinas@arm.com> wrote:
+> On Wed, 2010-07-14 at 00:04 +0100, Grant Likely wrote:
+>> - It still doesn't resolve dependencies.  A solver would help with this.
+>>   For the time being I work around the problem by running the generated
+>>   config through 'oldconfig' and looking for differences.  If the files
+>>   differ (ignoring comments and generateconfig_* options) after oldconfig,
+>>   then the <board>_defconfig target returns a failure.  (but leaves the
+>>   new .config intact so the user can resolve it with menuconfig).  This
+>>   way at least the user is told when a Kconfig fragment is invalid.
 >
->> Why is that kernel code calling vmalloc_sync_all()?  If it is only NMI
->> which cannot take vmalloc faults, why bother?  If not, why not?
->>      
-> Modules come as yet another example of stuff that is loaded in vmalloc'd space
-> and can be accesses from NMI context. That would include oprofile, tracers, and
-> probably others I'm forgetting about.
->    
+> It's not a solver but I'm pushing a patch to warn on selecting symbols
+> with unmet dependencies so that you can select further symbols (manual
+> solving). The patch is in linux-next but you also can grab it from:
+>
+> http://git.kernel.org/?p=linux/kernel/git/cmarinas/linux-2.6-cm.git;a=commitdiff_plain;h=5d87db2d2a332784bbf2b1ec3e141486f4d41d6f
 
-Module loading can certainly take a vmalloc_sync_all() (though I agree 
-it's unpleasant).  Anything else?
+sfr and I were talking about your patch the other day.  Just warning
+on incomplete dependencies is enough to make it actually workable for
+me (without my ugly post-processing step).  I was very happy to hear
+that it is in linux-next.
 
-Note perf is not modular at this time, but could be made so with 
-preempt/sched notifiers to hook the context switch.
+Last missing piece is being able to do "select FOO = n", which Stephen
+is currently working on.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+g.
