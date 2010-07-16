@@ -1,98 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965816Ab0GPPMx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 11:12:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53223 "EHLO mx1.redhat.com"
+	id S965825Ab0GPPSI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 11:18:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8632 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965783Ab0GPPMw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 11:12:52 -0400
-Date: Fri, 16 Jul 2010 11:12:34 -0400
+	id S965799Ab0GPPSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 11:18:04 -0400
+Date: Fri, 16 Jul 2010 11:17:56 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
-To: "Daniel P. Berrange" <berrange@redhat.com>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nauman Rafique <nauman@google.com>,
-        Munehiro Ikeda <m-ikeda@ds.jp.nec.com>, linux-kernel@vger.kernel.org,
-        Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
-        Andrea Righi <righi.andrea@gmail.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
-        balbir@linux.vnet.ibm.com
-Subject: Re: [RFC][PATCH 00/11] blkiocg async support
-Message-ID: <20100716151234.GG15382@redhat.com>
-References: <20100710132417.GA2752@redhat.com>
- <20100712092004.3b27e13e.kamezawa.hiroyu@jp.fujitsu.com>
- <20100712131805.GA12918@redhat.com>
- <20100713133636.73367cae.kamezawa.hiroyu@jp.fujitsu.com>
- <20100714142919.GA31449@redhat.com>
- <20100715090048.0b0120a0.kamezawa.hiroyu@jp.fujitsu.com>
- <20100716134353.GA15382@redhat.com>
- <20100716141549.GI19587@redhat.com>
- <20100716143536.GE15382@redhat.com>
- <20100716145309.GJ19587@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>, Jens Axboe <axboe@kernel.dk>,
+        Corrado Zoccolo <czoccolo@gmail.com>,
+        Shaohua Li <shaohua.li@intel.com>,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] [RFC] CFQ: Make prio_trees per cfq group basis to
+ improve IO performance
+Message-ID: <20100716151756.GH15382@redhat.com>
+References: <4C40247C.2010405@cn.fujitsu.com>
+ <20100716140034.GC15382@redhat.com>
+ <x49y6dbv75x.fsf@segfault.boston.devel.redhat.com>
+ <20100716145600.GF15382@redhat.com>
+ <x49tynzv52b.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100716145309.GJ19587@redhat.com>
+In-Reply-To: <x49tynzv52b.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 03:53:09PM +0100, Daniel P. Berrange wrote:
-> On Fri, Jul 16, 2010 at 10:35:36AM -0400, Vivek Goyal wrote:
-> > On Fri, Jul 16, 2010 at 03:15:49PM +0100, Daniel P. Berrange wrote:
-> > Secondly, just because some controller allows creation of hierarchy does
-> > not mean that hierarchy is being enforced. For example, memory controller.
-> > IIUC, one needs to explicitly set "use_hierarchy" to enforce hierarchy
-> > otherwise effectively it is flat. So if libvirt is creating groups and
-> > putting machines in child groups thinking that we are not interfering
-> > with admin's policy, is not entirely correct.
+On Fri, Jul 16, 2010 at 11:07:08AM -0400, Jeff Moyer wrote:
+> Vivek Goyal <vgoyal@redhat.com> writes:
 > 
-> That is true, but that 'use_hierarchy' at least provides admins
-> the mechanism required to implement the neccessary policy
+> > On Fri, Jul 16, 2010 at 10:21:46AM -0400, Jeff Moyer wrote:
+> >> Vivek Goyal <vgoyal@redhat.com> writes:
+> >> 
+> >> > On Fri, Jul 16, 2010 at 05:21:00PM +0800, Gui Jianfeng wrote:
+> >> >> Currently, prio_trees is global, and we rely on cfqq_close() to search
+> >> >> a coorperator. If the returned cfqq and the active cfqq don't belong to
+> >> >> the same group, coorperator searching fails. Actually, that's not the case.
+> >> >> Even if cfqq_close() returns a cfqq which belong to another cfq group, 
+> >> >> it's still likely that a coorperator(same cfqg) resides in prio_trees.
+> >> >> This patch introduces per cfq group prio_trees that should solve the above
+> >> >> issue.
+> >> >> 
+> >> >
+> >> > Hi Gui,
+> >> >
+> >> > I am not sure I understand the issue here.  So are you saying that once
+> >> > we find a cfqq which is close but belongs to a different group we reject
+> >> > it. But there could be another cfqq in the same group which is not as
+> >> > close but still close enough.
+> >> >
+> >> > For example, assume there are two queues q1 and q2 and in group and third
+> >> > queue q3 in group B. Assume q1 is active queue and we are searching for
+> >> > cooperator. If cooperator code finds q3 as closest then we will not pick
+> >> > this queue as it belongs to a different group. But it could happen that
+> >> > q2 is also close enough and we never considered that possibility.
+> >> >
+> >> > If yes, then its a good theoritical concern but I am worried practically
+> >> > how often does it happen. Do you have any workload which suffers because
+> >> > of this?
+> >> 
+> >> That was my reading.  It also means that, in the case that we have
+> >> cgroups in use, each rb tree will be smaller.
+> >> 
+> >> > I am not too inclined to push more complexity in CFQ until and unless we
+> >> > have a good use case.
+> >> 
+> >> I don't think this adds complexity, does it?  It simply moves the
+> >> priority trees up a level, which is arguably where they belong.
+> >
+> > What happens when cfqq moves to a different group. group_isolation=0. Then
+> > we also need to add code to change prio tree of the cfqq. Curretnly prio
+> > tree are global so we don't have to worry about it. I don't think this
+> > patch takes are of that issue.
 > 
-> > So how do we make progress here. I really want to see blkio controller
-> > integrated with libvirt.
-> > 
-> > About the issue of hierarchy, I can probably travel down the path of allowing
-> > creation of hierarchy but CFQ will treat it as flat. Though I don't like it
-> > because it will force me to introduce variables like "use_hierarchy" once
-> > real hierarchical support comes in but I guess I can live with that.
-> > (Anyway memory controller is already doing it.).
-> > 
-> > There is another issue though and that is by default every virtual
-> > machine going into a group of its own. As of today, it can have
-> > severe performance penalties (depending on workload) if group is not
-> > driving doing enough IO. (Especially with group_isolation=1).
-> > 
-> > I was thinking of a model where an admin moves out the bad virtual
-> > machines in separate group and limit their IO.
+> Yeah, that had occurred to me.
 > 
-> In the simple / normal case I imagine all guests VMs will be running
-> unrestricted I/O initially. Thus instead of creating the cgroup at time
-> of VM startup, we could create the cgroup only when the admin actually
-> sets an I/O limit.
+> > That's a different thing that I am beginning to not like group_isoation=0
+> > because this additional variable that cfqq's can move dynamically across
+> > groups is making life hard while adding more code in CFQ. So if nobody
+> > is using it I was thinking of getting rid of group_isolation tunable.
+> >
+> > It does bring the issue of severe performance penalty for sync-noidle
+> > workloads across groups. I think that should be solved by a different
+> > tunable like don't worry about fairness if group is not driving a minimum
+> > queue depth and this should be adjustable by tunable so that system admin
+> > can decide the right balance between fairness/isolation and throughput.
+> 
+> I'm not sure what you concluded here.  ;-)
+> 
+> The way I see it, Gui's patch makes sense.  It sounds like you agree,
+> but you didn't like it because you have to write extra code to deal with
+> the case of group_isolation=0.  I simply don't agree with that line of
+> reasoning.
+> 
+> Now, there is the question of whether Gui's patch introduces any *real*
+> benefit.  I'd honestly be surprised if it did.  Gui, can you give us
+> some benchmark results that show the benefit?  If there is no benefit,
+> then I'm happy to leave the code the way it is.
 
-That makes sense. Run all the virtual machines by default in root group
-and move out a virtual machine to a separate group of either low weight
-(if virtual machine is a bad one and driving lot of IO) or of higher weight
-(if we want to give more IO bw to this machine).
-
-> IIUC, this should maintain the one cgroup per guest
-> model, while avoiding the performance penalty in normal use. The caveat
-> of course is that this would require blkio controller to have a dedicated
-> mount point, not shared with other controller.
-
-Yes. Because for other controllers we seem to be putting virtual machines
-in separate cgroups by default at startup time. So it seems we will
-require a separate mount point here for blkio controller.
-
->  I think we might also
-> want this kind of model for net I/O, since we probably don't want to 
-> creating TC classes + net_cls groups for every VM the moment it starts
-> unless the admin has actually set a net I/O limit.
-
-Looks like. So good, then network controller and blkio controller can
-share the this new mount point. 
+If there are no significant benefits of this patch, let us not do it at
+least for the time being. I don't prefer to coplicate moving queues around
+logic across groups without significant benefits.
 
 Thanks
 Vivek
