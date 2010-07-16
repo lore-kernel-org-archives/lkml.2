@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758858Ab0GPSkm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 14:40:42 -0400
-Received: from relais.videotron.ca ([24.201.245.36]:27223 "EHLO
-	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757696Ab0GPSkk (ORCPT
+	id S1758879Ab0GPSnB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 14:43:01 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27448 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757696Ab0GPSm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 14:40:40 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN; charset=US-ASCII
-Date: Fri, 16 Jul 2010 14:40:38 -0400 (EDT)
-From: Nicolas Pitre <nico@fluxnic.net>
-X-X-Sender: nico@xanadu.home
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linuxppc-dev@lists.ozlabs.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kbuild@vger.kernel.org, lkml <linux-kernel@vger.kernel.org>,
-        linux-arm-kernel@lists.infradead.org,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Tony Lindgren <tony@atomide.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for
- defconfig
-In-reply-to: <20100716183028.GB26854@n2100.arm.linux.org.uk>
-Message-id: <alpine.LFD.2.00.1007161439240.10598@xanadu.home>
-References: <20100713230352.6781.18644.stgit@angua>
- <1279296221.17878.66.camel@e102109-lin.cambridge.arm.com>
- <AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com>
- <alpine.LFD.2.00.1007161406120.10598@xanadu.home>
- <20100716183028.GB26854@n2100.arm.linux.org.uk>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Fri, 16 Jul 2010 14:42:59 -0400
+Message-ID: <4C40A766.6060309@kernel.org>
+Date: Fri, 16 Jul 2010 11:39:34 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Russell King <rmk@arm.linux.org.uk>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+References: <20100716171124.064cf319.sfr@canb.auug.org.au>
+In-Reply-To: <20100716171124.064cf319.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C40A80B.00BD,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jul 2010, Russell King - ARM Linux wrote:
-
-> On Fri, Jul 16, 2010 at 02:19:31PM -0400, Nicolas Pitre wrote:
-> > For example, if I want CONFIG_MTD_CMDLINE_PARTS=y, the system may be 
-> > smart enough to notice and automatically enable CONFIG_MTD and 
-> > CONFIG_MTD_PARTITIONS without having to carry those in the defconfig.
+On 07/16/2010 12:11 AM, Stephen Rothwell wrote:
+> Hi Russell,
 > 
-> How do you sort out something like this:
+> After merging the final tree, today's linux-next build (most, if not all
+> arm configs) failed (not unexpectedly) due to the lmb -> memblock rename
+> (commit 95f72d1ed41a66f1c1c29c24d479de81a0bea36f "lmb: rename to
+> memblock").
 > 
-> config FOO
-> 	bool "Foo"
-> 	depends on (A && B) || C
+> See http://kisskb.ellerman.id.au/kisskb/branch/9/
 
-DOH.
+You or Russell may need to run the scripts in that patch
+
+      FILES=$(find * -type f | grep -vE 'oprofile|[^K]config')
+
+      sed -i \
+        -e 's/lmb/memblock/g' \
+        -e 's/LMB/MEMBLOCK/g' \
+        $FILES
+
+      for N in $(find . -name lmb.[ch]); do
+        M=$(echo $N | sed 's/lmb/memblock/g')
+        mv $N $M
+      done
 
 
-Nicolas
+Thanks
+
+Yinghai
