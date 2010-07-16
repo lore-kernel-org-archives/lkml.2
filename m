@@ -1,105 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935631Ab0GPFqa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 01:46:30 -0400
-Received: from mail-qy0-f181.google.com ([209.85.216.181]:37641 "EHLO
-	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753504Ab0GPFq3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 01:46:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=pKHeFxkfV/u8couREZMWujHsSVB2HpIea9XvFG+gZXJUgBrcsF16Ry1i5oTSV0EGQ2
-         kuQG39u+5muAxHlBu9Bch2KzLL96dOhbQ80c/Nq3fQRmsDCdVH1Viyj/VQUVXHZ5GtHb
-         hc78K3H8FhSEcu/qxUB4UxNlCMpVNcCCsk5BA=
+	id S1758723Ab0GPFrA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 01:47:00 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60859 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752184Ab0GPFq6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 01:46:58 -0400
+Date: Thu, 15 Jul 2010 22:47:38 -0700
+From: Greg KH <gregkh@suse.de>
+To: Joe Perches <joe@perches.com>
+Cc: Peter Huewe <PeterHuewe@gmx.de>,
+        Kernel Janitors <kernel-janitors@vger.kernel.org>,
+        "Digi International, Inc" <Eng.Linux@digi.com>,
+        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
+        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 12/25] char: Convert pci_table entries to PCI_VDEVICE
+	(if PCI_ANY_ID is used)
+Message-ID: <20100716054738.GA30421@suse.de>
+References: <201007152052.38060.PeterHuewe@gmx.de> <20100715204540.GB24463@suse.de> <1279227615.5816.96.camel@Joe-Laptop.home> <20100716042943.GB28607@suse.de> <1279255463.4526.19.camel@Joe-Laptop.home> <20100716052924.GA29966@suse.de> <1279258640.4526.23.camel@Joe-Laptop.home>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTil-sv82zjR7yJr_3nZ0QBO_8Jwj_FO0iFubwe2s@mail.gmail.com>
-References: <1278756333-6850-1-git-send-email-lliubbo@gmail.com>
-	<AANLkTikMcPcldBh_uVKxrH7rEIUju3Y_3X2jLi9jw2Vs@mail.gmail.com>
-	<1279058027.936.236.camel@calx>
-	<AANLkTil-sv82zjR7yJr_3nZ0QBO_8Jwj_FO0iFubwe2s@mail.gmail.com>
-Date: Fri, 16 Jul 2010 13:46:28 +0800
-Message-ID: <AANLkTikbGTlAPAj6lbuR5nIWyBAqnfBpy3IE_LywrPID@mail.gmail.com>
-Subject: Re: [PATCH] slob_free:free objects to their own list
-From: Bob Liu <lliubbo@gmail.com>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Matt Mackall <mpm@selenic.com>, akpm@linux-foundation.org,
-        linux-mm@kvack.org, hannes@cmpxchg.org,
-        LKML <linux-kernel@vger.kernel.org>, Mel Gorman <mel@csn.ul.ie>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279258640.4526.23.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 5:07 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
-> On Wed, Jul 14, 2010 at 12:53 AM, Matt Mackall <mpm@selenic.com> wrote:
->> On Tue, 2010-07-13 at 20:52 +0300, Pekka Enberg wrote:
->>> Hi Bob,
->>>
->>> [ Please CC me on SLOB patches. You can use the 'scripts/get_maintainer.pl'
->>>   script to figure out automatically who to CC on your patches. ]
->>>
->>> On Sat, Jul 10, 2010 at 1:05 PM, Bob Liu <lliubbo@gmail.com> wrote:
->>> > slob has alloced smaller objects from their own list in reduce
->>> > overall external fragmentation and increase repeatability,
->>> > free to their own list also.
->>> >
->>> > Signed-off-by: Bob Liu <lliubbo@gmail.com>
->>>
->>> The patch looks sane to me. Matt, does it look OK to you as well?
->>
->> Yep, this should be a marginal improvement.
->>
->> Acked-by: Matt Mackall <mpm@selenic.com>
->
-> Great! Bob, if you could provide the /proc/meminfo numbers for the
-> patch description, I'd be more than happy to merge this.
->
-Hi, Pekka
+On Thu, Jul 15, 2010 at 10:37:20PM -0700, Joe Perches wrote:
+> On Thu, 2010-07-15 at 22:29 -0700, Greg KH wrote:
+> > On Thu, Jul 15, 2010 at 09:44:23PM -0700, Joe Perches wrote:
+> > > On Thu, 2010-07-15 at 21:29 -0700, Greg KH wrote:
+> > > > On Thu, Jul 15, 2010 at 02:00:15PM -0700, Joe Perches wrote:
+> > > > > On Thu, 2010-07-15 at 13:45 -0700, Greg KH wrote:
+> > > > > > I much prefer the PCI_DEVICE() macro instead, and as such, I'm not
+> > > > > > willing to take any of these patches, sorry.
+> > > > > grepping for pci device ids using constants and
+> > > > > expecting the result to be comprehensive isn't
+> > > > > sensible.
+> > > > But it's a nice goal :)
+> > > I think your goal is not a good one.
+> > > 
+> > > For instance:
+> > > 
+> > > $ grep -rP --include=*.[ch] "\bPCI_VDEVICE\s*\(\s*INTEL" drivers | wc -l
+> > > 201
+> > > $ grep -rP --include=*.[ch] "\bPCI_DEVICE\s*\(PCI_VENDOR_ID_INTEL" drivers | wc -l
+> > > 45
+> > > $ grep -rP --include=*.[ch] "\bPCI_DEVICE\s*\(\s*0x8086" drivers | wc -l
+> > > 38
+> > > I'd much rather do a search for "PCI_VDEVICE.*INTEL"
+> > I'd much rather use 'cscope' or 'ctags' than trying to remember regular
+> > expressions like the above.
+> 
+> Then it appears your original argument doesn't have much merit.
 
-Sorry for the wrong cc and later reply.
-This is  /proc/meminfo result in my test machine:
-without this patch:
-===
-MemTotal:        1030720 kB
-MemFree:          750012 kB
-Buffers:           15496 kB
-Cached:           160396 kB
-SwapCached:            0 kB
-Active:           105024 kB
-Inactive:         145604 kB
-Active(anon):      74816 kB
-Inactive(anon):     2180 kB
-Active(file):      30208 kB
-Inactive(file):   143424 kB
-Unevictable:          16 kB
-....
+I'd rather people not use PCI_VDEVICE() as then you can't easily scan
+for the PCI_VENDOR_ID_FOO value usage with a tool like cscope, so I
+think my original point stands.
 
-with this patch:
-===
-MemTotal:        1030720 kB
-MemFree:          751908 kB
-Buffers:           15492 kB
-Cached:           160280 kB
-SwapCached:            0 kB
-Active:           102720 kB
-Inactive:         146140 kB
-Active(anon):      73168 kB
-Inactive(anon):     2180 kB
-Active(file):      29552 kB
-Inactive(file):   143960 kB
-Unevictable:          16 kB
-...
-
-The result show only very small improverment!
-And when i tested it on a embeded system with 64MB, I found this path
-is never called while kernel booting.
-
-Thanks for the kindly review.
-
--- 
-Regards,
---Bob
+nevermind.
