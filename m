@@ -1,79 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935628Ab0GPFk1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 01:40:27 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:40097 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935580Ab0GPFkZ convert rfc822-to-8bit (ORCPT
+	id S1755071Ab0GPFoV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 01:44:21 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:32892
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753504Ab0GPFoT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 01:40:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=iECvD4Qaiua7mtlPDNWrYeSyIoXvc/es+Z6LZgneMxH2oTpQJzucleTiaWtCHQU/bH
-         jvRo9NMJUwKLbviBfdj3uOlZzpO1Rjtm2fZ6wVNYQ5ZzcL2jIi3ELz1EZkzqu/OMhBAt
-         kwNl2uDwJymd3rc+1fbCAGb1f3je5lUD1LfSA=
-MIME-Version: 1.0
-In-Reply-To: <20100715163526.GJ29322@n2100.arm.linux.org.uk>
-References: <AANLkTimyBHliUa62qmfja_ke6YTTysiVAtJcZfi8l2gG@mail.gmail.com>
-	<AANLkTil8GE1OguyAfp3XgfJvEmH98yNrlvGAx684a-qL@mail.gmail.com>
-	<20100715163526.GJ29322@n2100.arm.linux.org.uk>
-Date: Fri, 16 Jul 2010 13:40:24 +0800
-Message-ID: <AANLkTilasw5P7-mwHol0-GpYixwqZ8tcdI3tX6elVhE4@mail.gmail.com>
-Subject: Re: tq 2440
-From: Conke Hu <conke.hu@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: CoffBeta <coffbeta@gmail.com>,
-        David Brownell <dbrownell@users.sourceforge.net>, gregkh@suse.de,
-        inux kernel <linux-kernel@vger.kernel.org>,
-        ext-jani.1.nikula@nokia.com,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Fri, 16 Jul 2010 01:44:19 -0400
+Date: Thu, 15 Jul 2010 22:44:35 -0700 (PDT)
+Message-Id: <20100715.224435.45920963.davem@davemloft.net>
+To: sbhatewara@vmware.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        pv-drivers@vmware.com
+Subject: Re: [PATCH 2.6.35-rc1] net-next: vmxnet3 fixes [3/5] Initialize
+ link state at probe time
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <alpine.LRH.2.00.1007150125240.25472@localhost.localdomain>
+References: <alpine.LRH.2.00.1007131748180.32055@localhost.localdomain>
+	<20100714.141054.48510602.davem@davemloft.net>
+	<alpine.LRH.2.00.1007150125240.25472@localhost.localdomain>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 12:35 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Thu, Jul 15, 2010 at 11:16:30PM +0800, Conke Hu wrote:
->> ever notice to the following kernel log?
->> "Device 's3c2440-nand' does not have a release() function, it is
->> broken and must."
->> release() function should be implemented  in the platform_device.
->
-> That's not telling you to provide a release function.  The warning is
-> telling you that a device is being unregistered which doesn't have a
-> release function.
->
-> Consider this point - maybe it doesn't have a release function because
-> it's not supposed to be unregistered?
->
->> > ------------[ cut here ]------------
->> > WARNING: at fs/sysfs/dir.c:463 sysfs_add_one+0x30/0x44()
->> > sysfs: duplicate filename 'dm9000.0' can not be created
->
-> This is the cause of the problem.  You're registering two dm9000.0
-> devices.  That's illegal, and it then causes all these:
->
->> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
->> > Device 's3c24xx_led.3' does not have a release() function, it is broken and mus.
->> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
->> > Device 's3c24xx_led.2' does not have a release() function, it is broken and mus.
->> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
->> > Device 's3c24xx_led.1' does not have a release() function, it is broken and mus.
->> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
->> > Device 's3c24xx_led.0' does not have a release() function, it is broken and mus.
->> > WARNING: at drivers/base/core.c:122 device_release+0x6c/0x78()
->> > Device 's3c2440-nand' does not have a release() function, it is broken and must.
-> ...
->
-> Fix the first problem (which is the real one) and you won't have these
-> other problems (which aren't actually a problem.)
->
+From: Shreyas Bhatewara <sbhatewara@vmware.com>
+Date: Thu, 15 Jul 2010 18:20:14 -0700 (PDT)
 
-Right:)
+> 
+> On Wed, 14 Jul 2010, David Miller wrote:
+> 
+>> From: Shreyas Bhatewara <sbhatewara@vmware.com>
+>> Date: Tue, 13 Jul 2010 17:48:55 -0700 (PDT)
+>> 
+>> > 
+>> > Initialize vmxnet3 link state at probe time
+>> > 
+>> > This change initializes the state of link at the time when driver is
+>> > loaded. The ethtool output for 'link detected' and 'link speed'
+>> > is thus valid even before the interface is brought up.
+>> > 
+>> > Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
+>> 
+>> You should never, ever, call netif_start_queue() on a device which has
+>> not been brought up.
+>> 
+>> But that is what this patch is doing.
+>> 
+> 
+> I do not understand why you say so. vmxnet3_check_link() is called in 
+> probe() with affectTxQueue as false. Hence netif_start_queue() will not be 
+> called before device is brought up.
+> vmxnet3_check_link() is again called with affectTxQueue as true in 
+> vmxnet3_activate_dev() after device was activated.
+
+Aha, I see how the logic works now.
+
+But still there is a problem with this patch, please remove the
+driver version bump and resubmit.
+
+You should only version bump at the last patch in a series.
+
+Thanks.
