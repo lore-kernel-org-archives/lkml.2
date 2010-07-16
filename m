@@ -1,68 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751324Ab0GPE1L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 00:27:11 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:45706 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab0GPE1F convert rfc822-to-8bit (ORCPT
+	id S1751439Ab0GPE2O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 00:28:14 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:44236 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab0GPE2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 00:27:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=rkw7MBk/GqUUv9713Kc7Ot7aEAgl0WvCtaHwBAhSy2A008HKQtMMmTPo9BDhYpkceq
-         EVOvwl4RNgRAdX7dUof/YnwrC2VlVaSjZWt0ifTJC45bj5Tabkjpon6vXRcI113NGfDT
-         r6N2/rTBcp31/NPqr1gZli6SnO2B1vs9sPY+k=
+	Fri, 16 Jul 2010 00:28:10 -0400
 MIME-Version: 1.0
-In-Reply-To: <4C3F7AD2.8050908@goop.org>
-References: <AANLkTim2dCrCisUmunVsUoP3uSvYDvRvNPUD0eNFxPwj@mail.gmail.com>
-	<4C3F7AD2.8050908@goop.org>
-Date: Thu, 15 Jul 2010 22:27:01 -0600
-Message-ID: <AANLkTikykqDZD6feCSi_sr8jlWOz71NsUQ12uo65DtIz@mail.gmail.com>
-Subject: Re: Linux 2.6.28.10 and Linux 2.6.29.6 XEN Guest Support Broken 
-	x86_64 in BUILD
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20100716111520.732bd29a.sfr@canb.auug.org.au>
+References: <20100716111520.732bd29a.sfr@canb.auug.org.au>
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 15 Jul 2010 22:27:49 -0600
+X-Google-Sender-Auth: 3rWPNR0bb_ERc8vnMUFIXIbBSKM
+Message-ID: <AANLkTilI_iZCD1S-LTmYgnCnUnbwhX3t-kEV9CUHEjFW@mail.gmail.com>
+Subject: Re: linux-next: manual merge of the devicetree tree with Linus' tree
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andres Salomon <dilinger@queued.net>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-building all versions of MDB (Merkey Debugger) on the kernels I missed
-during my divorce.   Was busy with other things.  They are almost all
-done.
+On Thu, Jul 15, 2010 at 7:15 PM, Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> Hi Grant,
+>
+> Today's linux-next merge of the devicetree tree got a conflict in
+> arch/sparc/kernel/prom_64.c between commit
+> 95f72d1ed41a66f1c1c29c24d479de81a0bea36f ("lmb: rename to memblock") from
+> Linus' tree and commit 035ebefc737cce56d3938e9b7eaa5ac0e9c28715
+> ("of/sparc: move is_root_node() to of.h") from the devicetree tree.
+>
+> Just context changes. I fixed it up (see below) and can carry the fix for
+> a while.
 
-Jeff
+Okay, thanks Stephen.
 
-On Thu, Jul 15, 2010 at 3:17 PM, Jeremy Fitzhardinge <jeremy@goop.org> wrote:
-> On 07/14/2010 04:33 PM, Jeffrey Merkey wrote:
->> [root@cloudstream linux-2.6.29.6]#
->> [root@cloudstream linux-2.6.29.6]#
->> [root@cloudstream linux-2.6.29.6]#
->> [root@cloudstream linux-2.6.29.6]# make bzImage modules modules_install install
->>   CHK     include/linux/version.h
->>   CHK     include/linux/utsrelease.h
->>   SYMLINK include/asm -> include/asm-x86
->>   CALL    scripts/checksyscalls.sh
->>   CHK     include/linux/compile.h
->>   AS      arch/x86/xen/xen-asm_64.o
->> arch/x86/xen/xen-asm_64.S: Assembler messages:
->> arch/x86/xen/xen-asm_64.S:48: Error: suffix or operands invalid for `mov'
->> arch/x86/xen/xen-asm_64.S:55: Error: suffix or operands invalid for `test'
->> arch/x86/xen/xen-asm_64.S:72: Error: suffix or operands invalid for `mov'
->> arch/x86/xen/xen-asm_64.S:90: Error: suffix or operands invalid for `test'
->> arch/x86/xen/xen-asm_64.S:110: Error: suffix or operands invalid for `setz'
->> arch/x86/xen/xen-asm_64.S:116: Error: suffix or operands invalid for `cmp'
->> make[1]: *** [arch/x86/xen/xen-asm_64.o] Error 1
->> make: *** [arch/x86/xen] Error 2
->> [root@cloudstream linux-2.6.29.6]#
->>
->
-> Do you have a particular reason to be using those kernels?  They're very
-> old.
->
->    J
->
+g.
