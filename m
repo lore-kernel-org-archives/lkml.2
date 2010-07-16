@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965446Ab0GPMtZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 08:49:25 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:54038 "EHLO
+	id S965519Ab0GPMwr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 08:52:47 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:54076 "EHLO
 	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965302Ab0GPMtK (ORCPT
+	with ESMTP id S965436Ab0GPMtZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 08:49:10 -0400
+	Fri, 16 Jul 2010 08:49:25 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC][PATCH 04/16] writeback: fix possible race when shutting down bdi
-Date: Fri, 16 Jul 2010 15:45:00 +0300
-Message-Id: <1279284312-2411-5-git-send-email-dedekind1@gmail.com>
+Subject: [RFC][PATCH 16/16] writeback: prevent unnecessary bdi threads wakeups
+Date: Fri, 16 Jul 2010 15:45:12 +0300
+Message-Id: <1279284312-2411-17-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
 References: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 16 Jul 2010 12:49:02.0703 (UTC) FILETIME=[4496B7F0:01CB24E5]
+X-OriginalArrivalTime: 16 Jul 2010 12:49:20.0671 (UTC) FILETIME=[4F4C6AF0:01CB24E5]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,105 +24,163 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Current bdi code has the following race between 'bdi_wb_shutdown()'
-and 'bdi_forker_thread()'.
+Finally, we can get rid of unnecessary wake-ups in bdi threads,
+which are very bad for battery-driven devices.
 
-Initial condition: BDI_pending is cleaned, bdi has no writeback thread,
-because it was inactive and exited, 'bdi_wb_shutdown()' and
-'bdi_forker_thread()' are executed concurrently.
+There are two type of work bdi threads do:
+1. process bdi works from the 'bdi->work_list'
+2. periodic write-back
 
-1. bdi_wb_shutdown() executes  wait_on_bit(), tests the BDI_pending bit,
-   it is clean, so it does not wait for anything.
+So there are 2 sources of wake-up events for bdi threads:
 
-2. 'bdi_forker_thread()' takes the 'bdi_lock', finds out that bdi has
-   work to do, takes it out of the 'bdi_list', sets the BDI_pending flag,
-   unlocks the 'bdi_lock' lock
+1. 'bdi_queue_work()' - submits bdi works
+2. '__mark_inode_dirty()' - adds dirty I/O to bdi's
 
-3. 'bdi_wb_shutdown()' takes the lock, and nasty things start happening:
-   a) it removes the bdi from bdi->bdi_list, but the bdi is not in any
-      list
-   b) it starts deleting the bdi, but 'bdi_forker_thread()' is still working
-      with it.
+The former already has bdi wake-up code. The latter does not,
+and this patch adds it.
 
-Note, it is very difficult to hit this race, and I never observed it, so it
-is quite theoretical, but it is still a race. Also note, this race exist
-without my previous clean-ups as well.
+'__mark_inode_dirty()' is hot-path function, but this patch adds
+another 'spin_lock(&bdi->wb_lock)' there. However, it is taken only
+in rare cases when the bdi has no dirty inodes. So adding this
+spinlock should be fine and should not affect performance.
 
-This patch fixes this race by making 'bdi_wb_shutdown()' first search for
-the bdi in the 'bdi_list', and only if it is there, remove it from 'bdi_list'
-and destroy. But if it is not there, assume it is in transit and re-try
-waiting on the BDI_pending bit.
+This patch makes sure bdi threads and the forker thread do not
+wake-up if there is nothing to do. The forker thread will nevertheless
+wake up at least every 5m. to check whether it has to kill a
+bdi thread. This can also be optimized, but is not worth it.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 ---
- mm/backing-dev.c |   41 ++++++++++++++++++++++++++++-------------
- 1 files changed, 28 insertions(+), 13 deletions(-)
+ fs/fs-writeback.c |   45 ++++++++++++++++++++++++++++++++++++++-------
+ mm/backing-dev.c  |   18 +++++++++++++-----
+ 2 files changed, 51 insertions(+), 12 deletions(-)
 
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index b34c12a..a445ff0 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -456,15 +456,26 @@ void static bdi_add_default_flusher_thread(struct backing_dev_info *bdi)
- }
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 83662fb..f94f08c 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -828,12 +828,17 @@ int bdi_writeback_thread(void *data)
+ 			continue;
+ 		}
  
- /*
-- * Remove bdi from bdi_list, and ensure that it is no longer visible
-+ * Look up for bdi in the bdi_list. If found, remove it, ensure that it is
-+ * no longer visible, and return 0. If not found, return 1.
+-		if (dirty_writeback_interval) {
+-			unsigned long wait_jiffies;
++		if (wb_has_dirty_io(wb) && dirty_writeback_interval) {
++			unsigned long wait;
+ 
+-			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
+-			schedule_timeout(wait_jiffies);
++			wait = msecs_to_jiffies(dirty_writeback_interval * 10);
++			schedule_timeout(wait);
+ 		} else
++			/*
++			 * We have nothing to do, so can go sleep without any
++			 * timeout and save power. When a work is queued or
++			 * something is made dirty - we will be woken up.
++			 */
+ 			schedule();
+ 
+ 		try_to_freeze();
+@@ -924,7 +929,9 @@ static noinline void block_dump___mark_inode_dirty(struct inode *inode)
   */
--static void bdi_remove_from_list(struct backing_dev_info *bdi)
-+static int bdi_remove_from_list(struct backing_dev_info *me)
+ void __mark_inode_dirty(struct inode *inode, int flags)
  {
-+	struct backing_dev_info *bdi;
-+
- 	spin_lock_bh(&bdi_lock);
--	list_del_rcu(&bdi->bdi_list);
-+	list_for_each_entry(bdi, &bdi_list, bdi_list) {
-+		if (bdi == me) {
-+			list_del_rcu(&me->bdi_list);
-+			spin_unlock_bh(&bdi_lock);
-+			synchronize_rcu();
-+			return 0;
-+		}
-+
-+	}
- 	spin_unlock_bh(&bdi_lock);
-+	return 1;
- 
--	synchronize_rcu();
- }
- 
- int bdi_register(struct backing_dev_info *bdi, struct device *parent,
-@@ -532,16 +543,20 @@ static void bdi_wb_shutdown(struct backing_dev_info *bdi)
- 	if (!bdi_cap_writeback_dirty(bdi))
- 		return;
- 
--	/*
--	 * If setup is pending, wait for that to complete first
--	 */
--	wait_on_bit(&bdi->state, BDI_pending, bdi_sched_wait,
--			TASK_UNINTERRUPTIBLE);
-+	do {
-+		/*
-+		 * If setup is pending, wait for that to complete first
-+		 */
-+		wait_on_bit(&bdi->state, BDI_pending, bdi_sched_wait,
-+				TASK_UNINTERRUPTIBLE);
- 
--	/*
--	 * Make sure nobody finds us on the bdi_list anymore
--	 */
--	bdi_remove_from_list(bdi);
-+		/*
-+		 * Make sure nobody finds us on the bdi_list anymore. However,
-+		 * bdi may be temporary be not in the bdi_list but be in transit
-+		 * in bdi_forker_thread. Namely, this may happen if we race
-+		 * with the forker thread.
-+		 */
-+	} while (bdi_remove_from_list(bdi));
++	bool wakeup_bdi;
+ 	struct super_block *sb = inode->i_sb;
++	struct backing_dev_info *uninitialized_var(bdi);
  
  	/*
- 	 * Finally, kill the kernel thread. We don't need to be RCU
+ 	 * Don't do this for I_DIRTY_PAGES - that doesn't actually
+@@ -948,6 +955,8 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+ 	if (unlikely(block_dump))
+ 		block_dump___mark_inode_dirty(inode);
+ 
++	wakeup_bdi = false;
++
+ 	spin_lock(&inode_lock);
+ 	if ((inode->i_state & flags) != flags) {
+ 		const int was_dirty = inode->i_state & I_DIRTY;
+@@ -978,19 +987,41 @@ void __mark_inode_dirty(struct inode *inode, int flags)
+ 		 * reposition it (that would break b_dirty time-ordering).
+ 		 */
+ 		if (!was_dirty) {
+-			struct bdi_writeback *wb = &inode_to_bdi(inode)->wb;
+-			struct backing_dev_info *bdi = wb->bdi;
++			bdi = inode_to_bdi(inode);
+ 
+ 			WARN(bdi_cap_writeback_dirty(bdi) &&
+ 			     !test_bit(BDI_registered, &bdi->state),
+ 			     "bdi-%s not registered\n", bdi->name);
+ 
++			/*
++			 * If this is the first dirty inode for this bdi, we
++			 * have to wake-up the corresponding bdi thread to make
++			 * sure background write-back happens later.
++			 */
++			if (!wb_has_dirty_io(&bdi->wb) &&
++			    bdi_cap_writeback_dirty(bdi))
++				wakeup_bdi = true;
++
+ 			inode->dirtied_when = jiffies;
+-			list_move(&inode->i_list, &wb->b_dirty);
++			list_move(&inode->i_list, &bdi->wb.b_dirty);
+ 		}
+ 	}
+ out:
+ 	spin_unlock(&inode_lock);
++
++	if (wakeup_bdi) {
++		bool wakeup_default = false;
++
++		spin_lock(&bdi->wb_lock);
++		if (unlikely(!bdi->wb.task))
++			wakeup_default = true;
++		else
++			wake_up_process(bdi->wb.task);
++		spin_unlock(&bdi->wb_lock);
++
++		if (wakeup_default)
++			wake_up_process(default_backing_dev_info.wb.task);
++	}
+ }
+ EXPORT_SYMBOL(__mark_inode_dirty);
+ 
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 65cb88a..818f934 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -326,7 +326,7 @@ static unsigned long bdi_longest_inactive(void)
+ 	unsigned long interval;
+ 
+ 	interval = msecs_to_jiffies(dirty_writeback_interval * 10);
+-	return max(5UL * 60 * HZ, wait_jiffies);
++	return max(5UL * 60 * HZ, interval);
+ }
+ 
+ static int bdi_forker_thread(void *ptr)
+@@ -399,10 +399,18 @@ static int bdi_forker_thread(void *ptr)
+ 			unsigned long wait;
+ 
+ 			wait = msecs_to_jiffies(dirty_writeback_interval * 10);
+-			if (wait)
+-				schedule_timeout(wait);
+-			else
+-				schedule();
++			if (!wb_has_dirty_io(me) || !wait) {
++				/*
++				 * There are no dirty data. The only thing we
++				 * should now care is checking for inactive bdi
++				 * threads and killing them. Thus, let's sleep
++				 * for longer time to avoid unnecessary
++				 * wake-ups, save energy and be friendly for
++				 * battery-driven devices.
++				 */
++				wait = bdi_longest_inactive();
++			}
++			schedule_timeout(wait);
+ 			try_to_freeze();
+ 			continue;
+ 		}
 -- 
 1.7.1.1
 
