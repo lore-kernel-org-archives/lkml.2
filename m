@@ -1,152 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758882Ab0GPScj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 14:32:39 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25913 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758835Ab0GPSch (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 14:32:37 -0400
-Message-ID: <4C40A498.5060208@kernel.org>
-Date: Fri, 16 Jul 2010 11:27:36 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1758888Ab0GPSdX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 14:33:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2500 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758764Ab0GPSdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 14:33:21 -0400
+Message-ID: <4C40A5A0.3010107@redhat.com>
+Date: Fri, 16 Jul 2010 21:32:00 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Zeno Davatz <zdavatz@gmail.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>, Damien Wyart <damien.wyart@free.fr>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>	<AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com>	<1279100846.8592.53.camel@e102109-lin.cambridge.arm.com>	<4C3D89AC.4040303@cs.helsinki.fi>	<1279205891.6664.46.camel@e102109-lin.cambridge.arm.com>	<AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com>	<4C3F2F52.2050101@cs.helsinki.fi>	<20100715162805.GA10240@brouette>	<20100715191638.GA3694@brouette>	<AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com>	<20100715200012.GA4175@brouette>	<F37ABC5E-E9F9-43BD-989E-4185135217D2@gmail.com>	<AANLkTimWFTUZTh2-3Bavmwcum2joQluMEDmXx3xjyHqQ@mail.gmail.com>	<AANLkTinqZs11kXx5afD4RDsVsy551S5lMnyAUwhdX2Sg@mail.gmail.com>	<AANLkTilv7cG9JMkZeO_GftTPWHxiIY5c8Q19pTBZT7Vy@mail.gmail.com>	<AANLkTimGMUtzgO5HWHXX5RY-EDET61j6PxzwgILigIef@mail.gmail.com>	<4C40271E.9070809@cs.helsinki.fi> <AANLkTimxDBusBSkL0I2g9tsj4gLHaqVFArqcfixfzePh@mail.gmail.com>
-In-Reply-To: <AANLkTimxDBusBSkL0I2g9tsj4gLHaqVFArqcfixfzePh@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <4C408D0C.5050709@redhat.com> <20100716165855.GA3836@Krystal> <4C409CBA.1050709@redhat.com> <4C409F62.6030303@zytor.com> <4C40A1BD.4040507@redhat.com> <20100716182240.GA23215@Krystal>
+In-Reply-To: <20100716182240.GA23215@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C40A532.0192,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-it seems that you are using 32bit kernel. please check if this one help.
+On 07/16/2010 09:22 PM, Mathieu Desnoyers wrote:
+>
+>> There aren't that many processes at this time (or there shouldn't be,
+>> don't know how fork-happy udev is at this stage), so the sync should be
+>> pretty fast.  In any case, we can sync only modules that contain NMI
+>> handlers.
+>>      
+> USB hotplug is a use-case happening randomly after the system is well there and
+> running; I'm afraid this does not fit in your module loading expectations. It
+> triggers tons of events, many of these actually load modules.
+>    
 
-Thanks
+How long would vmalloc_sync_all take with a few thousand mm_struct take?
 
-Yinghai
+We share the pmds, yes?  So it's a few thousand memory accesses.  The 
+direct impact is probably negligible, compared to actually loading the 
+module from disk.  All we need is to make sure the locking doesn't slow 
+down unrelated stuff.
 
-Subject: [PATCH -v3] x86,mm: fix 32bit numa sparsemem
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-Borislav Petkov <borislav.petkov@amd.com> reported his 32bit numa has problem:
-
-[    0.000000] Reserving total of 4c00 pages for numa KVA remap
-[    0.000000] kva_start_pfn ~ 32800 max_low_pfn ~ 375fe
-[    0.000000] max_pfn = 238000
-[    0.000000] 8202MB HIGHMEM available.
-[    0.000000] 885MB LOWMEM available.
-[    0.000000]   mapped low ram: 0 - 375fe000
-[    0.000000]   low ram: 0 - 375fe000
-[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 1000 1000 => 34e7000
-[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 200 40 => 34c9d80
-[    0.000000] alloc (nid=0 100000 - 7ee00000) (1000000 - ffffffffffffffff) 180 40 => 34e6140
-[    0.000000] alloc (nid=1 80000000 - c7e60000) (1000000 - ffffffffffffffff) 240 40 => 80000000
-[    0.000000] BUG: unable to handle kernel paging request at 40000000
-[    0.000000] IP: [<c2c8cff1>] __alloc_memory_core_early+0x147/0x1d6
-[    0.000000] *pdpt = 0000000000000000 *pde = f000ff53f000ff00 
-...
-[    0.000000] Call Trace:
-[    0.000000]  [<c2c8b4f8>] ? __alloc_bootmem_node+0x216/0x22f
-[    0.000000]  [<c2c90c9b>] ? sparse_early_usemaps_alloc_node+0x5a/0x10b
-[    0.000000]  [<c2c9149e>] ? sparse_init+0x1dc/0x499
-[    0.000000]  [<c2c79118>] ? paging_init+0x168/0x1df
-[    0.000000]  [<c2c780ff>] ? native_pagetable_setup_start+0xef/0x1bb
-
-looks like it allocate much high address for bootmem.
-
-try to cut limit with get_max_mapped()
-
--v3: make alloc_bootmem_node could fallback to other node.
-     just like old alloc_bootmem_node did
-
-need this patch for 2.6.34 and 2.6.35
-
-Reported-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-Cc: stable@kernel.org
-
----
- mm/bootmem.c    |   24 ++++++++++++++++++++----
- mm/page_alloc.c |    3 +++
- 2 files changed, 23 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/mm/page_alloc.c
-===================================================================
---- linux-2.6.orig/mm/page_alloc.c
-+++ linux-2.6/mm/page_alloc.c
-@@ -3634,6 +3634,9 @@ void * __init __alloc_memory_core_early(
- 	int i;
- 	void *ptr;
- 
-+	if (limit > get_max_mapped())
-+		limit = get_max_mapped();
-+
- 	/* need to go over early_node_map to find out good range for node */
- 	for_each_active_range_index_in_nid(i, nid) {
- 		u64 addr;
-Index: linux-2.6/mm/bootmem.c
-===================================================================
---- linux-2.6.orig/mm/bootmem.c
-+++ linux-2.6/mm/bootmem.c
-@@ -833,15 +833,24 @@ static void * __init ___alloc_bootmem_no
- void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
- 				   unsigned long align, unsigned long goal)
- {
-+	void *ptr;
-+
- 	if (WARN_ON_ONCE(slab_is_available()))
- 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
- 
- #ifdef CONFIG_NO_BOOTMEM
--	return __alloc_memory_core_early(pgdat->node_id, size, align,
-+	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-+					 goal, -1ULL);
-+	if (ptr)
-+		return ptr;
-+
-+	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
- 					 goal, -1ULL);
- #else
--	return ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
-+	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
- #endif
-+
-+	return ptr;
- }
- 
- void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
-@@ -977,14 +986,21 @@ void * __init __alloc_bootmem_low(unsign
- void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
- 				       unsigned long align, unsigned long goal)
- {
-+	void *ptr;
-+
- 	if (WARN_ON_ONCE(slab_is_available()))
- 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
- 
- #ifdef CONFIG_NO_BOOTMEM
--	return __alloc_memory_core_early(pgdat->node_id, size, align,
-+	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-+				goal, ARCH_LOW_ADDRESS_LIMIT);
-+	if (ptr)
-+		return ptr;
-+	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
- 				goal, ARCH_LOW_ADDRESS_LIMIT);
- #else
--	return ___alloc_bootmem_node(pgdat->bdata, size, align,
-+	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align,
- 				goal, ARCH_LOW_ADDRESS_LIMIT);
- #endif
-+	return ptr;
- }
