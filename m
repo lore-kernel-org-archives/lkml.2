@@ -1,52 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935214Ab0GPBex (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 21:34:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61457 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935160Ab0GPBex (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 21:34:53 -0400
-Message-ID: <4C3FB632.6060105@kernel.org>
-Date: Thu, 15 Jul 2010 18:30:26 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S935229Ab0GPBiu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 21:38:50 -0400
+Received: from tundra.namei.org ([65.99.196.166]:55504 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935038Ab0GPBis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 21:38:48 -0400
+Date: Fri, 16 Jul 2010 11:38:43 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+cc: "greg@kroah.com" <greg@kroah.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        linux-security-module@vger.kernel.org
+Subject: Re: [PATCH][securityfs][2.6.34] Drop dentry reference count when
+ mknod fails
+In-Reply-To: <201007151325.06942.tvrtko.ursulin@sophos.com>
+Message-ID: <alpine.LRH.2.00.1007161138280.17085@tundra.namei.org>
+References: <201007151325.06942.tvrtko.ursulin@sophos.com>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        Pekka Enberg <penberg@cs.helsinki.fi>,
-        Cyrill Gorcunov <gorcunov@openvz.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86,setup: add serial_console_port_base in boot_params
-References: <4C3F8B46.7080809@kernel.org> <4C3FA3DB.4010507@zytor.com>
-In-Reply-To: <4C3FA3DB.4010507@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C3FB70C.013A,ss=1,fgs=0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/15/2010 05:12 PM, H. Peter Anvin wrote:
-> On 07/15/2010 03:27 PM, Yinghai Lu wrote:
->>
->> to save the early_serial_base.
->>
->> Also bootloader could fill that field, so setup code could reuse it.
->>
->> decompress code could reuse early serial console from setup code.
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>
+On Thu, 15 Jul 2010, Tvrtko Ursulin wrote:
+
 > 
-> What's the point with this over what we currently have?
+> lookup_one_len increments dentry reference count which is not decremented
+> when the create operation fails. This can cause a kernel BUG at
+> fs/dcache.c:676 at unmount time. Also error code returned when new_inode()
+> fails was replaced with more appropriate -ENOMEM.
+> 
+> 
+> Signed-off-by: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
 
-extend serial console coverage to boot/compressed/misc.c
+Applied to
+git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
 
-before this one, we have cover in boot/*.c only.
-
-Thanks
-
-Yinghai
+-- 
+James Morris
+<jmorris@namei.org>
