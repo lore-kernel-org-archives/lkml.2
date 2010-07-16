@@ -1,68 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757431Ab0GPSHI (ORCPT <rfc822;w@1wt.eu>);
+	id S1758731Ab0GPSHM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 14:07:12 -0400
+Received: from mail-qy0-f181.google.com ([209.85.216.181]:48976 "EHLO
+	mail-qy0-f181.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756846Ab0GPSHI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 16 Jul 2010 14:07:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49446 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756846Ab0GPSHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 14:07:06 -0400
-Message-ID: <4C409F62.6030303@zytor.com>
-Date: Fri, 16 Jul 2010 11:05:22 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <4C408D0C.5050709@redhat.com> <20100716165855.GA3836@Krystal> <4C409CBA.1050709@redhat.com>
-In-Reply-To: <4C409CBA.1050709@redhat.com>
+X-Originating-IP: [66.187.234.200]
+In-Reply-To: <1279280574.2905.18.camel@morgan.silverblock.net>
+References: <201007152108.27175.PeterHuewe@gmx.de>
+	<1279230200.7920.23.camel@morgan.silverblock.net>
+	<AANLkTikFTK4KwxKgQqwIId3dPy5hf5X0WjsAYkE5pEd4@mail.gmail.com>
+	<1279280574.2905.18.camel@morgan.silverblock.net>
+Date: Fri, 16 Jul 2010 14:07:07 -0400
+Message-ID: <AANLkTinqytzuGXJRakN45u1K91uN66Empk1_7FmdpOxT@mail.gmail.com>
+Subject: Re: [PATCH 24/25] video/ivtv: Convert pci_table entries to 
+	PCI_VDEVICE (if PCI_ANY_ID is used)
+From: Jarod Wilson <jarod@wilsonet.com>
+To: Andy Walls <awalls@md.metrocast.net>
+Cc: Peter Huewe <PeterHuewe@gmx.de>,
+        Kernel Janitors <kernel-janitors@vger.kernel.org>,
+        Mauro Carvalho Chehab <mchehab@infradead.org>,
+        Ian Armstrong <ian@iarmst.demon.co.uk>,
+        Douglas Schilling Landgraf <dougsland@redhat.com>,
+        Steven Toth <stoth@kernellabs.com>, ivtv-devel@ivtvdriver.org,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 10:54 AM, Avi Kivity wrote:
-> On 07/16/2010 07:58 PM, Mathieu Desnoyers wrote:
+On Fri, Jul 16, 2010 at 7:42 AM, Andy Walls <awalls@md.metrocast.net> wrote:
+> On Thu, 2010-07-15 at 18:07 -0400, Jarod Wilson wrote:
+>> On Thu, Jul 15, 2010 at 5:43 PM, Andy Walls <awalls@md.metrocast.net> wrote:
+>> > On Thu, 2010-07-15 at 21:08 +0200, Peter Huewe wrote:
+>> >> From: Peter Huewe <peterhuewe@gmx.de>
+>
+>> > a. PCI_ANY_ID indicates to the reader a wildcard match is being
+>> > performed.  The PCI_VDEVICE() macro hides that to some degree.
+>> >
+>> > b. PCI_VENDOR_ID_ICOMP clearly indicates that ICOMP is a vendor.
+>> > "ICOMP" alone does not hint to the reader that is stands for a company
+>> > (the now defunct "Internext Compression, Inc.").
 >>
->>> Why is that kernel code calling vmalloc_sync_all()?  If it is only NMI
->>> which cannot take vmalloc faults, why bother?  If not, why not?
->>>      
->> Modules come as yet another example of stuff that is loaded in vmalloc'd space
->> and can be accesses from NMI context. That would include oprofile, tracers, and
->> probably others I'm forgetting about.
->>    
-> 
-> Module loading can certainly take a vmalloc_sync_all() (though I agree 
-> it's unpleasant).  Anything else?
-> 
-> Note perf is not modular at this time, but could be made so with 
-> preempt/sched notifiers to hook the context switch.
-> 
+>> Personally, I'm a fan of comments around things like this to describe
+>> *exactly* what device(s) they're referring to.
+>
+> Something like this then for ivtv:
+>
+> /* Claim every iTVC15/CX23415 or CX23416 based PCI Subsystem ever made */
+>
+> ?
 
-Actually, module loading is already a performance problem; a lot of
-distros load sometimes hundreds of modules on startup, and it's heavily
-serialized, so I can see this being desirable to skip.
+More or less. Though perhaps more succinctly, just:
 
-I really hope noone ever gets the idea of touching user space from an
-NMI handler, though, and expecting it to work...
+/* All iTVC15/CX23415 and CX23416 based devices */
 
-	-hpa
+>>  Then ICOMP being all
+>> alone without the prefix isn't really much of an issue (though it
+>> could still be easily mistaken for something other than a pci vendor
+>> id, I suppose).
+>
+> Probably not.  Another minor side effect is that it breaks a tag search
+> for easily jumping to the definition to see the ID value.  "ICOMP" won't
+> be in the tags file, but "PCI_VENDOR_ID_ICOMP" will be.
 
+Hm. That's a fair point. I recall a time or three hunting for symbols
+using cscope, and having a bitch of a time, because some of them were
+obscured by macro magic.
+
+
+-- 
+Jarod Wilson
+jarod@wilsonet.com
