@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935141Ab0GPAsk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 20:48:40 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42546 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935075Ab0GPAsh convert rfc822-to-8bit (ORCPT
+	id S935133Ab0GPAvY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 20:51:24 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:57202 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934682Ab0GPAvX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 20:48:37 -0400
+	Thu, 15 Jul 2010 20:51:23 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JRyv1LQVbWDhLCNUHVYLHC6ZmcwgFHT/PaKoXofzW4CHDeyCKEfDjDq72xC8l53/HA
-         TLuvX8p/jrlB84o5kzE1E8H/syKm4EBBJUziMNmw6AA6JUUm2E2z+o+4EMzV5e59BMWh
-         FnL+it9erYYva/bad/19eOrcPSghHeEOD+11s=
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=cuzUjFhnOrtjx/RW8K1FhbExZW1VeK31AC+WdPyrcxNoXut0Es8VPEVlKMTo2Ma4z3
+         vGhUcn6oMydN5IJMy8L23gLhr2BMv2dmNh7id+TJSd5LonxvspaYqQ7eGm7JVVFNkJG7
+         x2538VLH8/9x2Fq3YVaS+Cb8DrzBngvounc2M=
+Message-ID: <4C3FAD07.6040104@garzik.org>
+Date: Thu, 15 Jul 2010 20:51:19 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100715085535.GC26212@n2100.arm.linux.org.uk>
-References: <4C3C0032.5020702@codeaurora.org>
-	<20100713150311B.fujita.tomonori@lab.ntt.co.jp>
-	<20100713121420.GB4263@codeaurora.org>
-	<20100714104353B.fujita.tomonori@lab.ntt.co.jp>
-	<20100714201149.GA14008@codeaurora.org>
-	<20100714220536.GE18138@n2100.arm.linux.org.uk>
-	<20100715012958.GB2239@codeaurora.org>
-	<20100715085535.GC26212@n2100.arm.linux.org.uk>
-Date: Thu, 15 Jul 2010 20:48:36 -0400
-Message-ID: <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com>
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device 
-	memory management
-From: Tim HRM <zt.tmzt@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Zach Pfeffer <zpfeffer@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Alexey Dobriyan <adobriyan@gmail.com>
+CC: Peter Huewe <PeterHuewe@gmx.de>,
+        Kernel Janitors <kernel-janitors@vger.kernel.org>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        =?ISO-8859-1?Q?M=E1rton_N=E9meth?= <nm127@freemail.hu>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/25] block: Convert pci_table entries to PCI_VDEVICE
+ (if PCI_ANY_ID is used)
+References: <201007152051.18189.PeterHuewe@gmx.de> <20100715185904.GA4023@x200>
+In-Reply-To: <20100715185904.GA4023@x200>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 4:55 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
-> On Wed, Jul 14, 2010 at 06:29:58PM -0700, Zach Pfeffer wrote:
->> The VCM ensures that all mappings that map a given physical buffer:
->> IOMMU mappings, CPU mappings and one-to-one device mappings all map
->> that buffer using the same (or compatible) attributes. At this point
->> the only attribute that users can pass is CACHED. In the absence of
->> CACHED all accesses go straight through to the physical memory.
+On 07/15/2010 03:03 PM, Alexey Dobriyan wrote:
+> On Thu, Jul 15, 2010 at 08:51:17PM +0200, Peter Huewe wrote:
+>> This patch converts pci_table entries, where .subvendor=PCI_ANY_ID and
+>> .subdevice=PCI_ANY_ID, .class=0 and .class_mask=0, to use the
+>> PCI_VDEVICE macro, and thus improves readability.
 >
-> So what you're saying is that if I have a buffer in kernel space
-> which I already have its virtual address, I can pass this to VCM and
-> tell it !CACHED, and it'll setup another mapping which is not cached
-> for me?
+> Well, it doesn't improve readability, and ## usage prevents grepping and
+> long term plan to switch to numbers instead of PCI_VENDOR_ID_*,
+> but whatever.
 >
-> You are aware that multiple V:P mappings for the same physical page
-> with different attributes are being outlawed with ARMv6 and ARMv7
-> due to speculative prefetching.  The cache can be searched even for
-> a mapping specified as 'normal, uncached' and you can get cache hits
-> because the data has been speculatively loaded through a separate
-> cached mapping of the same physical page.
->
-> FYI, during the next merge window, I will be pushing a patch which makes
-> ioremap() of system RAM fail, which should be the last core code creator
-> of mappings with different memory types.  This behaviour has been outlawed
-> (as unpredictable) in the architecture specification and does cause
-> problems on some CPUs.
->
-> We've also the issue of multiple mappings with differing cache attributes
-> which needs addressing too...
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+>> -	{ PCI_VENDOR_ID_PROMISE, 0x8000, PCI_ANY_ID, PCI_ANY_ID, 0, 0, },
+>> -	{ PCI_VENDOR_ID_PROMISE, 0x8002, PCI_ANY_ID, PCI_ANY_ID, 0, 0, },
+>> +	{ PCI_VDEVICE(PROMISE, 0x8000), },
+>> +	{ PCI_VDEVICE(PROMISE, 0x8002), },
 
-Interesting, since I seem to remember the MSM devices mostly conduct
-IO through regions of normal RAM, largely accomplished through
-ioremap() calls.
+Switching to use hex numbers for _device ids_ is encouraged, because 
+history has proven its pointless to create named constants for 
+single-use ids.  However, using named constants for PCI vendor ids makes 
+a lot of sense.
 
-Without more public domain documentation of the MSM chips and AMSS
-interfaces I wouldn't know how to avoid this, but I can imagine it
-creates a bit of urgency for Qualcomm developers as they attempt to
-upstream support for this most interesting SoC.
+	Jeff
 
---
-Timothy Meade
-tmzt #htc-linux
+
+
+
