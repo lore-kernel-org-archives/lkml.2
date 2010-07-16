@@ -1,39 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965191Ab0GPLLt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 07:11:49 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59078 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965143Ab0GPLLm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 07:11:42 -0400
-From: Thomas Renninger <trenn@suse.de>
-To: lenb@kernel.org
-Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        platform-driver-x86@vger.kernel.org
-Subject: Version 2: Provide /sys/../ec with read/write access and some cleanups
-Date: Fri, 16 Jul 2010 13:11:30 +0200
-Message-Id: <1279278697-3694-1-git-send-email-trenn@suse.de>
-X-Mailer: git-send-email 1.6.3
+	id S965203Ab0GPLMW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 07:12:22 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:47009 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965153Ab0GPLMP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 07:12:15 -0400
+Message-ID: <4C403E87.4040503@canonical.com>
+Date: Fri, 16 Jul 2010 12:12:07 +0100
+From: Lee Jones <lee.jones@canonical.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>, gregkh@suse.de
+CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org,
+        Amit Kucheria <amit.kucheria@canonical.com>
+Subject: Re: [PATCH] Stop ARM boards crashing when CUPS is loaded -	2.6.35-rc5
+References: <4C3C72C6.4000005@canonical.com>	<20100715130214.4c9303b2.akpm@linux-foundation.org>	<20100715200618.GA6773@n2100.arm.linux.org.uk>	<4C40218A.4090806@canonical.com>	<20100716092018.GB16995@n2100.arm.linux.org.uk> <4C402746.6080309@canonical.com>
+In-Reply-To: <4C402746.6080309@canonical.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset is againt the acpi test branch.
-It would be great if these can be applied there.
-Patches are test compiled, booted and I played a bit with reading
-writing...
+On 16/07/10 10:32, Lee Jones wrote:
+>> The best solution is probably for the parport code to go through a
+>> modernisation cycle like the serial code did, essentially using
+>> platform devices to pass the base addresses.  This would make the
+>> driver more portable, and eliminates this problem entirely (because
+>> platforms which don't have parports won't register the platform device(s)
+>> necessary for parport to even probe illegal addresses.)
 
-Changes to the previous patchset:
-    - Use debugfs /sys/kernel/debug/ec/* instead of /sys/devices/...
-    - Keep some EC Documentation in the thinkpad driver
-    - Add Documentation/ABI describing the new interface
+I have lobbied for one of our partners to conduct this work, but I don't
+think this would be something that is in their interest to fix. 
+Nevertheless, I am currently waiting on a reply from them.
 
-Possible further enhancements:
-    - Expose EC Fields and make them read/writable
-    - Allow userspace to switch on burst mode to be able to test
-      EC burst transitions in userspace
+FAO GregKH,
 
-Thanks,
-
-       Thomas
-
+Do you think this would be something that may interest you and your Linux 
+drivers project? Or perhaps a student who wants to get their feet wet and
+play with some platform driver code.
