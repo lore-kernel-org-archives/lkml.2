@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758900Ab0GPSok (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 14:44:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40373 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758790Ab0GPSoj (ORCPT
+	id S1758909Ab0GPSpx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 14:45:53 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:37504 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758790Ab0GPSpw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 14:44:39 -0400
-MIME-Version: 1.0
-In-Reply-To: <4C40A4E8.5090605@redhat.com>
-References: <20100714154923.947138065@efficios.com>
-	<20100714155804.252253097@efficios.com>
-	<4C405078.20707@redhat.com>
-	<20100716144927.GA22516@Krystal>
-	<4C408D0C.5050709@redhat.com>
-	<20100716165855.GA3836@Krystal>
-	<4C409CBA.1050709@redhat.com>
-	<4C409F62.6030303@zytor.com>
-	<4C40A1BD.4040507@redhat.com>
-	<4C40A227.6000207@zytor.com>
-	<4C40A4E8.5090605@redhat.com>
-Date: Fri, 16 Jul 2010 11:37:05 -0700
-Message-ID: <AANLkTinc_of_KYCFt9-8GZYGFLyqQLlgNttPe-YvZn-1@mail.gmail.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 16 Jul 2010 14:45:52 -0400
+Subject: Re: [PATCH 1/5] v2 Split the memory_block structure
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C40A3BC.3060504@austin.ibm.com>
+References: <4C3F53D1.3090001@austin.ibm.com>
+	 <4C3F557F.3000304@austin.ibm.com> <1279300521.9207.222.camel@nimitz>
+	 <4C40A3BC.3060504@austin.ibm.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Fri, 16 Jul 2010 11:45:31 -0700
+Message-ID: <1279305931.9207.265.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 11:28 AM, Avi Kivity <avi@redhat.com> wrote:
->
-> Use kmalloc and percpu pointers, it's not that onerous.
+On Fri, 2010-07-16 at 13:23 -0500, Nathan Fontenot wrote:
+> >> -    if (mem->state != from_state_req) {
+> >> -            ret = -EINVAL;
+> >> -            goto out;
+> >> +    list_for_each_entry(mbs, &mem->sections, next) {
+> >> +            if (mbs->state != from_state_req)
+> >> +                    continue;
+> >> +
+> >> +            ret = memory_block_action(mbs, to_state);
+> >> +            if (ret)
+> >> +                    break;
+> >> +    }
+> >> +
+> >> +    if (ret) {
+> >> +            list_for_each_entry(mbs, &mem->sections, next) {
+> >> +                    if (mbs->state == from_state_req)
+> >> +                            continue;
+> >> +
+> >> +                    if (memory_block_action(mbs, to_state))
+> >> +                            printk(KERN_ERR "Could not re-enable memory "
+> >> +                                   "section %lx\n", mbs->phys_index);
+> >> +            }
+> >>      }
+> > 
+> > Please just use a goto here.  It's nicer looking, and much more in line
+> > with what's there already.
+> 
+> Not sure if I follow on where you want the goto.  If you mean after the
+> if (memory_block_action())...  I purposely did not have a goto here.
+> Since this is in the recovery path I wanted to make sure we tried to return
+> every memory section to the original state. 
 
-What people don't seem to understand is that WE SHOULD NOT MAKE NMI
-FORCE US TO DO "STRANGE" CODE IN CODE-PATHS THAT HAVE NOTHING
-WHAT-SO-EVER TO DO WITH NMI.
+Looking at it a little closer, I see what you're doing now.
 
-I'm shouting, because this point seems to have been continually
-missed. It was missed in the original patches, and it's been missed in
-the discussions.
+First of all, should memory_block_action() get a new name since it isn
+not taking 'memory_block_section's?
 
-Non-NMI code should simply never have to even _think_ about NMI's. Why
-should it? It should just do whatever comes "natural" within its own
-context.
+The thing I would have liked to see is to have that error handling block
+out of the way a bit.  But, the function is small, and there's not _too_
+much code in there, so what you have is probably the best way to do it.
 
-This is why I've been pushing for the "let's just fix NMI" approach.
-Not adding random hacks to other code sequences that have nothing
-what-so-ever to do with NMI.
+Minor nit: Please pull the memory_block_action() out of the if() and do
+the:
 
-So don't add NMI code to the page fault code. Not to the debug code,
-or to the module loading code. Don't say "use special allocations
-because the NMI code may care about these particular data structures".
-Because that way lies crap and unmaintainability.
+> >> +            ret = memory_block_action(mbs, to_state);
+> >> +            if (ret)
+> >> +                    break;
 
-                      Linus
+thing like above.  It makes it much more obvious that the loop is
+related to the top one.  I was thinking if it made sense to have a
+helper function to go through and do that list walk, so you could do:
+
+	ret = set_all_states(mem->sections, to_state);
+	if (ret)
+		set_all_states(mem->sections, old_state);
+
+But I think you'd need to pass in a bit more information, so it probably
+isn't worth doing that, either.
+
+-- Dave
+
