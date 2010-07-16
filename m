@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759053Ab0GPTS1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 15:18:27 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:54819 "EHLO mx2.mail.elte.hu"
+	id S1759082Ab0GPTTD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 15:19:03 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:35780 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759035Ab0GPTSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 15:18:25 -0400
-Date: Fri, 16 Jul 2010 21:18:10 +0200
+	id S1759031Ab0GPTTA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 15:19:00 -0400
+Date: Fri, 16 Jul 2010 21:18:50 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [GIT PULL 0/1] perf/urgent fixes
-Message-ID: <20100716191809.GB4979@elte.hu>
-References: <1279303667-27764-1-git-send-email-acme@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [GIT PULL] perf fixlet
+Message-ID: <20100716191850.GC4979@elte.hu>
+References: <1279249121-11847-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279303667-27764-1-git-send-email-acme@infradead.org>
+In-Reply-To: <1279249121-11847-1-git-send-regression-fweisbec@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
+X-ELTE-SpamScore: -1.0
 X-ELTE-SpamLevel: 
 X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0102]
+X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
+	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
+	[score: 0.0566]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-> Hi Ingo,
+> Ingo,
 > 
->         Please pull from:
+> Please pull the perf/urgent branch that can be found at:
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/urgent
 > 
-> Regards,
+> Thanks,
+> 	Frederic
+> ---
 > 
-> - Arnaldo
+> Frederic Weisbecker (1):
+>       perf: Fix various display bugs with parent filtering
 > 
-> Gui Jianfeng (1):
->   perf symbols: Fix directory descriptor leaking
 > 
->  tools/perf/util/symbol.c |   17 ++++++++++-------
->  1 files changed, 10 insertions(+), 7 deletions(-)
+>  tools/perf/util/hist.c |   21 ++++++++++++++++-----
+>  1 files changed, 16 insertions(+), 5 deletions(-)
 
-Pulled, thanks Arnaldo!
+Pulled, thanks Frederic!
 
 	Ingo
