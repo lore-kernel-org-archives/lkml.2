@@ -1,57 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753788Ab0GPFcN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 01:32:13 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60604 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752662Ab0GPFcI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 01:32:08 -0400
-Date: Thu, 15 Jul 2010 22:29:24 -0700
-From: Greg KH <gregkh@suse.de>
-To: Joe Perches <joe@perches.com>
-Cc: Peter Huewe <PeterHuewe@gmx.de>,
-        Kernel Janitors <kernel-janitors@vger.kernel.org>,
-        "Digi International, Inc" <Eng.Linux@digi.com>,
-        Alexey Dobriyan <adobriyan@gmail.com>, Tejun Heo <tj@kernel.org>,
-        Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 12/25] char: Convert pci_table entries to PCI_VDEVICE
-	(if PCI_ANY_ID is used)
-Message-ID: <20100716052924.GA29966@suse.de>
-References: <201007152052.38060.PeterHuewe@gmx.de> <20100715204540.GB24463@suse.de> <1279227615.5816.96.camel@Joe-Laptop.home> <20100716042943.GB28607@suse.de> <1279255463.4526.19.camel@Joe-Laptop.home>
+	id S1754112Ab0GPFeX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 01:34:23 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:41053 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752662Ab0GPFeW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 01:34:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=d72YIBxx7jyTJAJhB3aHjKwF06sHLQXkRRVXEdSUZrjShoyffplesnD7/4b5QS10of
+         3l8JXH8yx4nk4Rgc60KsAJMbDcLKgkqiTyFzlau/1H4zFTThejDUfSr+UVCEQeIFmTEL
+         zfzlL5EhZkQezUhYa/Fg909K4KYUmZK/ADkqI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279255463.4526.19.camel@Joe-Laptop.home>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <201007160709.15385.marek.vasut@gmail.com>
+References: <4C3FCBFF.50506@gmail.com>
+	<201007160709.15385.marek.vasut@gmail.com>
+Date: Fri, 16 Jul 2010 13:34:21 +0800
+Message-ID: <AANLkTinEqScq2E0MSRJrUN5fR-1rs8fB9rLgMdhYW9R6@mail.gmail.com>
+Subject: Re: [PATCH] ARM/nuc900: fix nuc900 touchscreen clk definition bug
+From: Wan ZongShun <mcuos.com@gmail.com>
+To: Marek Vasut <marek.vasut@gmail.com>
+Cc: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 09:44:23PM -0700, Joe Perches wrote:
-> On Thu, 2010-07-15 at 21:29 -0700, Greg KH wrote:
-> > On Thu, Jul 15, 2010 at 02:00:15PM -0700, Joe Perches wrote:
-> > > On Thu, 2010-07-15 at 13:45 -0700, Greg KH wrote:
-> > > > I much prefer the PCI_DEVICE() macro instead, and as such, I'm not
-> > > > willing to take any of these patches, sorry.
-> > > grepping for pci device ids using constants and
-> > > expecting the result to be comprehensive isn't
-> > > sensible.
-> > But it's a nice goal :)
-> 
-> I think your goal is not a good one.
-> 
-> For instance:
-> 
-> $ grep -rP --include=*.[ch] "\bPCI_VDEVICE\s*\(\s*INTEL" drivers | wc -l
-> 201
-> $ grep -rP --include=*.[ch] "\bPCI_DEVICE\s*\(PCI_VENDOR_ID_INTEL" drivers | wc -l
-> 45
-> $ grep -rP --include=*.[ch] "\bPCI_DEVICE\s*\(\s*0x8086" drivers | wc -l
-> 38
-> 
-> I'd much rather do a search for "PCI_VDEVICE.*INTEL"
+2010/7/16 Marek Vasut <marek.vasut@gmail.com>:
+> Dne Pá 16. července 2010 05:03:27 Wan ZongShun napsal(a):
+>> This patch is to fix nuc900 touchscreen clk definition bug,the .dev_id's
+>> name should be 'nuc900-ts', it should be the same to pdev.name. or else,
+>> the touchscreen driver will be not working well due to clock engine
+>> disabled.
+>>
+>> Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+>> ---
+>>  arch/arm/mach-w90x900/cpu.c |    2 +-
+>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/arch/arm/mach-w90x900/cpu.c b/arch/arm/mach-w90x900/cpu.c
+>> index 642207e..83c5632 100644
+>> --- a/arch/arm/mach-w90x900/cpu.c
+>> +++ b/arch/arm/mach-w90x900/cpu.c
+>> @@ -93,7 +93,7 @@ static struct clk_lookup nuc900_clkregs[] = {
+>>       DEF_CLKLOOK(&clk_kpi, "nuc900-kpi", NULL),
+>>       DEF_CLKLOOK(&clk_wdt, "nuc900-wdt", NULL),
+>>       DEF_CLKLOOK(&clk_gdma, "nuc900-gdma", NULL),
+>> -     DEF_CLKLOOK(&clk_adc, "nuc900-adc", NULL),
+>> +     DEF_CLKLOOK(&clk_adc, "nuc900-ts", NULL),
+>>       DEF_CLKLOOK(&clk_usi, "nuc900-spi", NULL),
+>>       DEF_CLKLOOK(&clk_ext, NULL, "ext"),
+>>       DEF_CLKLOOK(&clk_timer0, NULL, "timer0"),
+>
+> Hey,
+>
+> Is that thing really touchscreen or general-purpose analog/digital converter ?
+>
 
-I'd much rather use 'cscope' or 'ctags' than trying to remember regular
-expressions like the above.
+Oh, it is general-purpose analog/digital converter controller.
+I only use it to implemnt my touchscreen function, Also it can be use
+other function.
 
-greg k-h
+so, I have to change my touchscreen driver name to nuc900-adc?
+
+Thanks for your Reminder, I appreciate it. :)
+
+> Cheers
+>
+
+
+
+-- 
+*linux-arm-kernel mailing list
+mail addr:linux-arm-kernel@lists.infradead.org
+you can subscribe by:
+http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+* linux-arm-NUC900 mailing list
+mail addr:NUC900@googlegroups.com
+main web: https://groups.google.com/group/NUC900
+you can subscribe it by sending me mail:
+mcuos.com@gmail.com
