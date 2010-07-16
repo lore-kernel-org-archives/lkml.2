@@ -1,89 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935238Ab0GPBo1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 21:44:27 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:45295 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935160Ab0GPBo0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 21:44:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=WvamzbiqG4dvFaJkfAbMWkdMli10g/s3F0JzWVAY9ZoqSTSXcotDoCpjlytn2lkqYd
-         hrFSDWQLNZvP1TS307V/W0i+oaLsXdRL6neg7ApP3BmqUJVgltd6HHeMTnYZvLRUNokV
-         Hz8q5TU6UxVKWVWhZXbyLZ1OyMkRsCLFSCm5c=
+	id S1758687Ab0GPCDA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 22:03:00 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:65290 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758649Ab0GPCC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 22:02:58 -0400
+Message-ID: <4C3FBCE0.3030402@cn.fujitsu.com>
+Date: Fri, 16 Jul 2010 09:58:56 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <20100716090302.7351.A69D9226@jp.fujitsu.com>
-References: <20100713144008.EA52.A69D9226@jp.fujitsu.com>
-	<20100715121551.bd5ccc61.akpm@linux-foundation.org>
-	<20100716090302.7351.A69D9226@jp.fujitsu.com>
-Date: Fri, 16 Jul 2010 10:44:24 +0900
-Message-ID: <AANLkTikwsuuZHJxK0+1mdJVLZ7vw3r4oZBQrzuowLQXE@mail.gmail.com>
-Subject: Re: [PATCH v2 2/2] vmscan: shrink_slab() require number of lru_pages, 
-	not page order
-From: Minchan Kim <minchan.kim@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Mel Gorman <mel@csn.ul.ie>, Rik van Riel <riel@redhat.com>,
-        Johannes Weiner <hannes@cmpxchg.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Marcelo Tosatti <mtosatti@redhat.com>
+CC: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 3/4] KVM: MMU: track dirty page in speculative path properly
+References: <4C3C3518.7080505@cn.fujitsu.com> <4C3C35B7.50101@cn.fujitsu.com> <20100713220551.GB6370@amt.cnet> <4C3D11C6.4000101@cn.fujitsu.com> <20100714110926.GA26033@amt.cnet> <4C3DB942.3010709@cn.fujitsu.com> <20100714140626.GA28485@amt.cnet> <4C3EBC70.2030604@cn.fujitsu.com> <20100715164048.GA6980@amt.cnet>
+In-Reply-To: <20100715164048.GA6980@amt.cnet>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 10:39 AM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> >     nr_slab_pages0 = zone_page_state(zone, NR_SLAB_RECLAIMABLE);
->> >     if (nr_slab_pages0 > zone->min_slab_pages) {
->> > +           unsigned long lru_pages = zone_reclaimable_pages(zone);
->> > +
->> >             /*
->> >              * shrink_slab() does not currently allow us to determine how
->> >              * many pages were freed in this zone. So we take the current
->> > @@ -2622,7 +2624,7 @@ static int __zone_reclaim(struct zone *zone, gfp_t gfp_mask, unsigned int order)
->> >              * Note that shrink_slab will free memory on all zones and may
->> >              * take a long time.
->> >              */
->> > -           while (shrink_slab(sc.nr_scanned, gfp_mask, order) &&
->> > +           while (shrink_slab(sc.nr_scanned, gfp_mask, lru_pages) &&
->> >                    (zone_page_state(zone, NR_SLAB_RECLAIMABLE) + nr_pages >
->> >                     nr_slab_pages0))
->> >                     ;
->>
->> Wouldn't it be better to recalculate zone_reclaimable_pages() each time
->> around the loop?  For example, shrink_icache_memory()->prune_icache()
->> will remove pagecache from an inode if it hits the tail of the list.
->> This can change the number of reclaimable pages by squigabytes, but
->> this code thinks nothing changed?
->
-> Ah, I missed this. incrementa patch is here.
->
-> thank you!
->
->
->
-> From 8f7c70cfb4a25f8292a59564db6c3ff425a69b53 Mon Sep 17 00:00:00 2001
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Date: Fri, 16 Jul 2010 08:40:01 +0900
-> Subject: [PATCH] vmscan: recalculate lru_pages on each shrink_slab()
->
-> Andrew Morton pointed out shrink_slab() may change number of reclaimable
-> pages (e.g. shrink_icache_memory()->prune_icache() will remove unmapped
-> pagecache).
->
-> So, we need to recalculate lru_pages on each shrink_slab() calling.
-> This patch fixes it.
->
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-It does make sense.
 
--- 
-Kind regards,
-Minchan Kim
+Marcelo Tosatti wrote:
+
+>> It uses access bit to track both page accessed and page dirty, and it's rather cheap...
+> 
+> Xiao,
+> 
+> I don't understand it. What are you trying to achieve?
+> 
+
+Marcelo,
+
+The issue which we try to fix in this patch is we mark the page dirty in speculative
+path, i'm not sure that after Lai's patch this bug is gone, if it's true, this patch
+is not needed anymore, otherwise the later patch is the cheaper way help us to fix this
+issue.
+
+In the later patch, we use pte.a to track whether the speculative mapping is accessed,
+if it's accessed, we mark the page dirty, just like tracking page-accessed.
+
+
+
+ 
