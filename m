@@ -1,85 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab0GPRr2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 13:47:28 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:49009 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755061Ab0GPRr1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 13:47:27 -0400
-Message-ID: <4C409B2B.4060407@candelatech.com>
-Date: Fri, 16 Jul 2010 10:47:23 -0700
-From: Ben Greear <greearb@candelatech.com>
-Organization: Candela Technologies
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
+	id S1757130Ab0GPRy7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 13:54:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40725 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754008Ab0GPRy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 13:54:58 -0400
+Message-ID: <4C409CBA.1050709@redhat.com>
+Date: Fri, 16 Jul 2010 20:54:02 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [pci] pci/mrst:  Detect loops when reading fixed BAR cap.
-References: <1279126923-27926-1-git-send-email-greearb@candelatech.com> <201007161143.05187.bjorn.helgaas@hp.com>
-In-Reply-To: <201007161143.05187.bjorn.helgaas@hp.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+CC: LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <4C408D0C.5050709@redhat.com> <20100716165855.GA3836@Krystal>
+In-Reply-To: <20100716165855.GA3836@Krystal>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 10:43 AM, Bjorn Helgaas wrote:
-> On Wednesday, July 14, 2010 11:02:03 am Ben Greear wrote:
->> The mrst logic introduced in 2.6.33-rc8 in commit
->> a712ffbc199849364c46e9112b93b66de08e2c26 causes boot
->> to hang on at least this platform:
->>
->> Intel E5405 CPU
->> System Information
->> 	Manufacturer: Supermicro
->> 	Product Name: X7DBU
->>
->> The cause of the hang is that pci_cap points to itself
->> as the next capability, putting the fixed_bar_cap into
->> an endless loop.
->>
->> This patch detects the loop, prints a warning, and
->> continues on with useful work.  This strategy was
->> suggested by Robert Hancock<hancockrwd@gmail.com>
->>
->> This should be a candidate for 2.6.34.y as well.
->>
->> Signed-off-by: Ben Greear<greearb@candelatech.com>
->> ---
->> :100644 100644 1cdc02c... 9535ba9... M	arch/x86/pci/mrst.c
->>   arch/x86/pci/mrst.c |   11 +++++++++++
->>   1 files changed, 11 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
->> index 1cdc02c..9535ba9 100644
->> --- a/arch/x86/pci/mrst.c
->> +++ b/arch/x86/pci/mrst.c
->> @@ -76,6 +76,17 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
->>   				return pos;
->>   		}
->>
->> +		if ((pcie_cap>>  20) == 0)
->> +			break;
->> +		
->> +		if ((pcie_cap>>  20)<= pos) {
->> +			printk(KERN_WARNING "WARNING: mrst:  detected loop"
->> +			       " when searching for fixed BAR cap, previous"
->> +			       " position: 0x%x new position: 0x%x"
->> +			       " bus-number: %i  devfn: %i\n",
->> +			       pos, pcie_cap>>  20, bus->number, devfn);
+On 07/16/2010 07:58 PM, Mathieu Desnoyers wrote:
 >
-> Can you use dev_warn() here to print the device info in the
-> standard way?
+>> Why is that kernel code calling vmalloc_sync_all()?  If it is only NMI
+>> which cannot take vmalloc faults, why bother?  If not, why not?
+>>      
+> Modules come as yet another example of stuff that is loaded in vmalloc'd space
+> and can be accesses from NMI context. That would include oprofile, tracers, and
+> probably others I'm forgetting about.
+>    
 
-There seems to be a different way to do this.  Some of the folks who
-understand this better are working on a patch (I tested something based
-on HPA's suggestions and it fixed my problem at least.)
+Module loading can certainly take a vmalloc_sync_all() (though I agree 
+it's unpleasant).  Anything else?
 
-Thanks,
-Ben
+Note perf is not modular at this time, but could be made so with 
+preempt/sched notifiers to hook the context switch.
 
 -- 
-Ben Greear <greearb@candelatech.com>
-Candela Technologies Inc  http://www.candelatech.com
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
