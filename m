@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935300Ab0GPCGT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 22:06:19 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49801
+	id S935317Ab0GPCGa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 22:06:30 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49820
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935289Ab0GPCGL (ORCPT
+	by vger.kernel.org with ESMTP id S935289Ab0GPCGX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 22:06:11 -0400
-Date: Thu, 15 Jul 2010 19:06:27 -0700 (PDT)
-Message-Id: <20100715.190627.39190842.davem@davemloft.net>
+	Thu, 15 Jul 2010 22:06:23 -0400
+Date: Thu, 15 Jul 2010 19:06:38 -0700 (PDT)
+Message-Id: <20100715.190638.115940666.davem@davemloft.net>
 To: PeterHuewe@gmx.de
 Cc: kernel-janitors@vger.kernel.org, chas@cmf.nrl.navy.mil,
-        roel.kluin@gmail.com, eric.dumazet@gmail.com, tj@kernel.org,
+        hsweeten@visionengravers.com, tj@kernel.org,
         linux-atm-general@lists.sourceforge.net, netdev@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 07/25] atm: Convert pci_table entries to PCI_VDEVICE
+Subject: Re: [PATCH 09/25] atm: Convert pci_table entries to PCI_VDEVICE
  (if PCI_ANY_ID is used)
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <201007152044.12653.PeterHuewe@gmx.de>
-References: <201007152044.12653.PeterHuewe@gmx.de>
+In-Reply-To: <201007152048.27535.PeterHuewe@gmx.de>
+References: <201007152048.27535.PeterHuewe@gmx.de>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -28,7 +28,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Huewe <PeterHuewe@gmx.de>
-Date: Thu, 15 Jul 2010 20:44:11 +0200
+Date: Thu, 15 Jul 2010 20:48:26 +0200
 
 > From: Peter Huewe <peterhuewe@gmx.de>
 > 
