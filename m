@@ -1,152 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965098Ab0GPK5I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 06:57:08 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:55299 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S964971Ab0GPK5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 06:57:05 -0400
-Date: Fri, 16 Jul 2010 11:56:48 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
-Subject: Re: [PATCH 3/7] memcg: nid and zid can be calculated from zone
-Message-ID: <20100716105648.GG13117@csn.ul.ie>
-References: <20100716191006.7369.A69D9226@jp.fujitsu.com> <20100716191418.7372.A69D9226@jp.fujitsu.com>
+	id S965113Ab0GPLCZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 07:02:25 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:50027 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965078Ab0GPLCY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 07:02:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qQM5iwYDqVWy/JotEyLqbp5MA5aYCfM+Mxpo80rOZWWqu4WnF8zOrY7cv25HE7fvOu
+         rMs2STzRgtvdVHY8X9uCy4cBSSYIWHm4DcWpoJ9Q4r2/5jWBzAlS/Q9Wztr+w9kPZ9E3
+         guaHtR8bD5y/B9bKKEjsYYw3AbrVYhwdaW1pg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100716191418.7372.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100715230825.GA31651@srcf.ucam.org>
+References: <4C3DCAA4.9050602@gmail.com>
+	<20100714143625.GA30721@srcf.ucam.org>
+	<20100715223149.GC27512@khazad-dum.debian.net>
+	<20100715225022.GA31377@srcf.ucam.org>
+	<20100715230023.GE27512@khazad-dum.debian.net>
+	<20100715230825.GA31651@srcf.ucam.org>
+Date: Fri, 16 Jul 2010 12:02:23 +0100
+Message-ID: <AANLkTimn4vX72nE8oOKaQ-tfTFIquzrbvhWD3ANkg2p6@mail.gmail.com>
+Subject: Re: [ibm-acpi-devel] [PATCH] Remove 9 second reboot delay on Lenovo 
+	T400/T500
+From: Pedro Ribeiro <pedrib@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Henrique de Moraes Holschuh <hmh@hmh.eng.br>, eusou15@yahoo.com,
+        linux-kernel@vger.kernel.org, toralf.foerster@gmx.de,
+        ibm-acpi-devel@lists.sourceforge.net
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 07:15:05PM +0900, KOSAKI Motohiro wrote:
-> 
-> mem_cgroup_soft_limit_reclaim() has zone, nid and zid argument. but nid
-> and zid can be calculated from zone. So remove it.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  include/linux/memcontrol.h |    6 +++---
->  include/linux/mmzone.h     |    5 +++++
->  mm/memcontrol.c            |    5 ++---
->  mm/vmscan.c                |    7 ++-----
->  4 files changed, 12 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
-> index 9411d32..9dec218 100644
-> --- a/include/linux/memcontrol.h
-> +++ b/include/linux/memcontrol.h
-> @@ -128,8 +128,8 @@ static inline bool mem_cgroup_disabled(void)
->  
->  void mem_cgroup_update_file_mapped(struct page *page, int val);
->  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
-> -						gfp_t gfp_mask, int nid,
-> -						int zid);
-> +					    gfp_t gfp_mask);
-> +
->  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
->  struct mem_cgroup;
->  
-> @@ -304,7 +304,7 @@ static inline void mem_cgroup_update_file_mapped(struct page *page,
->  
->  static inline
->  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
-> -					    gfp_t gfp_mask, int nid, int zid)
-> +					    gfp_t gfp_mask)
->  {
->  	return 0;
->  }
-> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> index 9ed9c45..34ac27a 100644
-> --- a/include/linux/mmzone.h
-> +++ b/include/linux/mmzone.h
-> @@ -684,6 +684,11 @@ unsigned long __init node_memmap_size_bytes(int, unsigned long, unsigned long);
->   */
->  #define zone_idx(zone)		((zone) - (zone)->zone_pgdat->node_zones)
->  
-> +static inline int zone_nid(struct zone *zone)
-> +{
-> +	return zone->zone_pgdat->node_id;
-> +}
-> +
+On 16 July 2010 00:08, Matthew Garrett <mjg59@srcf.ucam.org> wrote:
+> On Thu, Jul 15, 2010 at 08:00:23PM -0300, Henrique de Moraes Holschuh wrote:
+>
+>> Do you want to escalate this to Lenovo?  I need a clear and consise
+>> description of the problem and the boxes we know to be affected.
+>
+> Well, right now we're not doing precisely what Windows does. The other
+> possibility is that when the keyboard controller write triggers some SMM
+> code, it makes an assumption about some piece of hardware state that
+> isn't true and loops for a while to see if it changes. If we knew what
+> that was then we could ensure that we're performing the same state
+> change on our way down to reboot.
+>
+> One thing that would be worth checking is whether performing the
+> keyboard controller writes from userspace with a minimal kernel and
+> init=/bin/bash shows the 9-second pause or not - and then, ideally, see
+> whether the same is also true under DOS.
+>
+> --
+> Matthew Garrett | mjg59@srcf.ucam.org
+>
 
-hmm, adding a helper and not converting the existing users of
-zone->zone_pgdat may be a little confusing particularly as both types of
-usage would exist in the same file e.g. in mem_cgroup_zone_nr_pages.
+I'm available to try and test whatever you want on my machine .
 
->  static inline int populated_zone(struct zone *zone)
->  {
->  	return (!!zone->present_pages);
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 01f38ff..81bc9bf 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -2833,8 +2833,7 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
->  }
->  
->  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
-> -						gfp_t gfp_mask, int nid,
-> -						int zid)
-> +					    gfp_t gfp_mask)
->  {
->  	unsigned long nr_reclaimed = 0;
->  	struct mem_cgroup_per_zone *mz, *next_mz = NULL;
-> @@ -2846,7 +2845,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
->  	if (order > 0)
->  		return 0;
->  
-> -	mctz = soft_limit_tree_node_zone(nid, zid);
-> +	mctz = soft_limit_tree_node_zone(zone_nid(zone), zone_idx(zone));
->  	/*
->  	 * This loop can run a while, specially if mem_cgroup's continuously
->  	 * keep exceeding their soft limit and putting the system under
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index be860a0..89b4287 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -2121,7 +2121,6 @@ loop_again:
->  		for (i = 0; i <= end_zone; i++) {
->  			struct zone *zone = pgdat->node_zones + i;
->  			int nr_slab;
-> -			int nid, zid;
->  
->  			if (!populated_zone(zone))
->  				continue;
-> @@ -2133,14 +2132,12 @@ loop_again:
->  			sc.nr_scanned = 0;
->  			note_zone_scanning_priority(zone, priority);
->  
-> -			nid = pgdat->node_id;
-> -			zid = zone_idx(zone);
->  			/*
->  			 * Call soft limit reclaim before calling shrink_zone.
->  			 * For now we ignore the return value
->  			 */
-> -			mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask,
-> -							nid, zid);
-> +			mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask);
-> +
-
-Other than the usual comment of it belonging in its own series
-
-Acked-by: Mel Gorman <mel@csn.ul.ie>
-
->  			/*
->  			 * We put equal pressure on every zone, unless one
->  			 * zone has way too many pages free already.
-> -- 
-> 1.6.5.2
-> 
-> 
-> 
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Regards,
+Pedro
