@@ -1,80 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759121Ab0GPTTr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 15:19:47 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:7442 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759104Ab0GPTTp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 15:19:45 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6045"; a="47567162"
-From: "Ai Li" <aili@codeaurora.org>
-To: "'Arjan van de Ven'" <arjan@linux.intel.com>
-Cc: <akpm@linux-foundation.org>, <dwalker@codeaurora.org>, <mingo@elte.hu>,
-        <shemminger@vyatta.com>, <czoccolo@gmail.com>, <len.brown@intel.com>,
-        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
-        <linux-pm@lists.linux-foundation.org>
-References: <1279225825-31069-1-git-send-email-aili@codeaurora.org> <4C3FDAF1.7030107@linux.intel.com> <000001cb250b$e2813e60$a783bb20$@org> <4C4096A8.8060306@linux.intel.com>
-In-Reply-To: <4C4096A8.8060306@linux.intel.com>
-Subject: RE: [PATCH] cpuidle: extend cpuidle and menu governor to handle dynamic states
-Date: Fri, 16 Jul 2010 13:19:43 -0600
-Message-ID: <000301cb251b$d8cb7bf0$8a6273d0$@org>
+	id S966075Ab0GPT0j (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 15:26:39 -0400
+Received: from 8bytes.org ([88.198.83.132]:53839 "EHLO 8bytes.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759064Ab0GPT0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 15:26:38 -0400
+Date: Fri, 16 Jul 2010 21:26:37 +0200
+From: Joerg Roedel <joro@8bytes.org>
+To: Zachary Amsden <zamsden@redhat.com>
+Cc: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+        Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: KVM timekeeping fixes, V2
+Message-ID: <20100716192637.GK23755@8bytes.org>
+References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <20100716131907.GJ23755@8bytes.org> <4C4094E0.7000403@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-Index: AcslDEIoS2qUdLofRXerJZtVlutl3wACz87Q
-Content-Language: en-us
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4094E0.7000403@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> the power value in the structure should represent ONLY the power
-> level during the low power stage.
-> And this should be independent of total duration.
-> all other power is taken into account in terms of break even
-> point/etc...
+On Fri, Jul 16, 2010 at 07:20:32AM -1000, Zachary Amsden wrote:
 
-With static cstates, determining the break even point is
-straitforward, compare the power numbers of state Cn and Cn-1, since
-the states are ordered in increasing order of latency and power.
-With dynamic cstates, Cn-1 may not be a valid state to compare any
-more, for example, because Cn-1's latency may have become too high.
-It seems the driver would need to know which cstate the govenor would
-compare Cn to, and that would break the design philosophy of driver +
-govenor.  The break even point does not seem to have a transistive
-property, where the govenor can calculat Cn vs Cn-2 from some
-arithmatic combination of Cn vs Cn-1 and Cn-1 vs Cn-2 values.  On the
-other hand, if the power_usage field also includes the entry and exit
-stages, then the driver does not need to know whether it should
-calculate break even point for Cn vs Cn-1, or Cn vs Cn-2, etc.
+> I've been very careful to keep nested SVM safe, but I've not got a good
+> test for that.  Is there any test suite for the nested case?
 
+To test this you can boot a nested Linux guest and let both, L1 and L2
+guest use kvm_clock. Then put some load into the L2 guest and see if the
+L2 or the L1 freezes hard (which happens with kvm_clock when the TSC
+went backwards for one of them).
 
-> > One of the concerns I have is backwards compatibility.  As far as
-> I
-> > know, none of the current cpuidle drivers use the power_usage
-> field.
-> > If we always do compare_power, those drivers would break until
-> > someone with technical device knowledge update the drivers to
-> specify
-> > power...  I could derive fake power_usage numbers by default,
-> using
-> > the cstate index position.  That seems kind of hacky but it would
-> > remove the need for the compare_power flag and retain the current
-> > behavior when cpuidle drivers do not provide their own power
-> numbers.
-> >
-> 
-> I'm fine with this approach actually; if someone does not fill it
-> in, we fake data that makes it
-> valid... better than getting complex code.
-
-OK.
-
-~Ai
-
-Employee of Qualcomm Innovation Center, Inc.
-Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
-
+	Joerg
 
