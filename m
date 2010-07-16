@@ -1,161 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759304Ab0GPUaB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 16:30:01 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:41455 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759256Ab0GPU36 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 16:29:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:in-reply-to:mime-version:content-transfer-encoding
-         :content-type:message-id:cc:x-mailer:from:subject:date:to;
-        b=dp/r1Pc+diNaeuU2tGV6MSXsDPm2FPvtxvlmYmX7mKzKIOZicU9H5bkFekmtwTKI2x
-         4aIxqsJZctNxYSeBaksT/WUrGZsdrH0p3HAaCocsdleq4h1MuBESsrpslR77QQ59IIKn
-         Ie0bcf/OwYsXGwFYHQUPebUffu7iyytndeAWA=
-References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com> <AANLkTimgn1Xa0YIwjC6xOfNDjlqJSQYy65ZvqCtlMWHD@mail.gmail.com> <1279100846.8592.53.camel@e102109-lin.cambridge.arm.com> <4C3D89AC.4040303@cs.helsinki.fi> <1279205891.6664.46.camel@e102109-lin.cambridge.arm.com> <AANLkTikJeA-bZEk652QwwT4iY21v5tr6RCzcZAZGgS8D@mail.gmail.com> <4C3F2F52.2050101@cs.helsinki.fi> <20100715162805.GA10240@brouette> <20100715191638.GA3694@brouette> <AANLkTim7SURv8DPTLC2JwOJvv1WMAR4mmyBp9XqXw_Py@mail.gmail.com> <20100715200012.GA4175@brouette> <F37ABC5E-E9F9-43BD-989E-4185135217D2@gmail.com> <AANLkTimWFTUZTh2-3Bavmwcum2joQluMEDmXx3xjyHqQ@mail.gmail.com> <AANLkTinqZs11kXx5afD4RDsVsy551S5lMnyAUwhdX2Sg@mail.gmail.com> <AANLkTilv7cG9JMkZeO_GftTPWHxiIY5c8Q19pTBZT7Vy@mail.gmail.com> <AANLkTimGMUtzgO5HWHXX5RY-EDET61j6PxzwgILigIef@mail.gmail.com> <4C40271E.9070809@cs.helsinki.fi> <AANLkTimxDBusBSkL0I2g9tsj4gLHaqVFArqcfixfzePh@mail.gmail.com> <4C40A498.5060208@kernel.org>
-In-Reply-To: <4C40A498.5060208@kernel.org>
-Mime-Version: 1.0 (iPhone Mail 8A293)
-Content-Transfer-Encoding: 8BIT
-Content-Type: text/plain;
-	charset=us-ascii
-Message-Id: <C36A97B2-E6A4-409D-91B8-DED8B086A479@gmail.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>, Damien Wyart <damien.wyart@free.fr>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "x86@kernel.org" <x86@kernel.org>, "mingo@elte.hu" <mingo@elte.hu>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>
-X-Mailer: iPhone Mail (8A293)
-From: Zeno Davatz <zdavatz@gmail.com>
-Subject: Re: kmemleak, cpu usage jump out of nowhere
-Date: Fri, 16 Jul 2010 22:29:59 +0200
-To: Yinghai Lu <yinghai@kernel.org>
+	id S1759285Ab0GPUb4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 16:31:56 -0400
+Received: from lo.gmane.org ([80.91.229.12]:53207 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759192Ab0GPUby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 16:31:54 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Florian Mickler <florian@mickler.org>
+Subject: Re: [PATCH] Remove 9 second reboot delay on Lenovo T400/T500
+Date: Fri, 16 Jul 2010 22:31:40 +0200
+Message-ID: <20100716223140.69696431@schatten.dmk.lab>
+References: <4C3DCAA4.9050602@gmail.com>
+	<4C400C8E.8060500@gmx.info>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: ibm-acpi-devel@lists.sourceforge.net
+X-Gmane-NNTP-Posting-Host: f053213020.adsl.alicedsl.de
+In-Reply-To: <4C400C8E.8060500@gmx.info>
+X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Cc: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 16 Jul 2010 09:38:54 +0200
+Jens Rutschmann <Jens.Rutschmann@gmx.info> wrote:
 
-Am 16.07.2010 um 20:27 schrieb Yinghai Lu <yinghai@kernel.org>:
+> Am 14.07.2010 16:33 schrieb Pedro Ribeiro:
+> > Please consider this patch. Let me know if you would like me to change
+> > anything or if you don't agree with it. It applies cleanly to 2.6.35-rc5.
+> >
+> > The Lenovo T400 and T500 have an annoying 9 second delay when
+> > rebooting, unless reboot=pci is passed to the kernel command line.
+> > This delay happens from at least kernel 2.6.20.
+> >
+> > Make this change permanent by hardcoding the Tx00 on the
+> > arch/kernel/reboot.c pci quirks table.
+> 
+> Hi,
+> 
+> I just want to add to this discussion that this problem also occurs on my T61 with only Linux installed on it.
+> "reboot=pci" also removed the reboot delay here.
+> 
+> If you need some further information or want me to try some patches / old kernels I'd be glad to help.
+> 
+> Regards,
+> Jens
+> 
+Hi!
 
-> it seems that you are using 32bit kernel. please check if this one help.
+Just a quick me too: I'm on Lenovo R61. reboot=pci gives instantaneous
+reboot, reboot=acpi and default-reboot delays for 9 seconds...
 
-Thanks! What RC should I patch? 2.6.35-rc5?
+Cheers,
+Flo
 
-Best
-Zeno
-
-> Subject: [PATCH -v3] x86,mm: fix 32bit numa sparsemem
-> 
-> Borislav Petkov <borislav.petkov@amd.com> reported his 32bit numa has problem:
-> 
-> [    0.000000] Reserving total of 4c00 pages for numa KVA remap
-> [    0.000000] kva_start_pfn ~ 32800 max_low_pfn ~ 375fe
-> [    0.000000] max_pfn = 238000
-> [    0.000000] 8202MB HIGHMEM available.
-> [    0.000000] 885MB LOWMEM available.
-> [    0.000000]   mapped low ram: 0 - 375fe000
-> [    0.000000]   low ram: 0 - 375fe000
-> [    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 1000 1000 => 34e7000
-> [    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 200 40 => 34c9d80
-> [    0.000000] alloc (nid=0 100000 - 7ee00000) (1000000 - ffffffffffffffff) 180 40 => 34e6140
-> [    0.000000] alloc (nid=1 80000000 - c7e60000) (1000000 - ffffffffffffffff) 240 40 => 80000000
-> [    0.000000] BUG: unable to handle kernel paging request at 40000000
-> [    0.000000] IP: [<c2c8cff1>] __alloc_memory_core_early+0x147/0x1d6
-> [    0.000000] *pdpt = 0000000000000000 *pde = f000ff53f000ff00 
-> ...
-> [    0.000000] Call Trace:
-> [    0.000000]  [<c2c8b4f8>] ? __alloc_bootmem_node+0x216/0x22f
-> [    0.000000]  [<c2c90c9b>] ? sparse_early_usemaps_alloc_node+0x5a/0x10b
-> [    0.000000]  [<c2c9149e>] ? sparse_init+0x1dc/0x499
-> [    0.000000]  [<c2c79118>] ? paging_init+0x168/0x1df
-> [    0.000000]  [<c2c780ff>] ? native_pagetable_setup_start+0xef/0x1bb
-> 
-> looks like it allocate much high address for bootmem.
-> 
-> try to cut limit with get_max_mapped()
-> 
-> -v3: make alloc_bootmem_node could fallback to other node.
->     just like old alloc_bootmem_node did
-> 
-> need this patch for 2.6.34 and 2.6.35
-> 
-> Reported-by: Borislav Petkov <borislav.petkov@amd.com>
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> Cc: stable@kernel.org
-> 
-> ---
-> mm/bootmem.c    |   24 ++++++++++++++++++++----
-> mm/page_alloc.c |    3 +++
-> 2 files changed, 23 insertions(+), 4 deletions(-)
-> 
-> Index: linux-2.6/mm/page_alloc.c
-> ===================================================================
-> --- linux-2.6.orig/mm/page_alloc.c
-> +++ linux-2.6/mm/page_alloc.c
-> @@ -3634,6 +3634,9 @@ void * __init __alloc_memory_core_early(
->    int i;
->    void *ptr;
-> 
-> +    if (limit > get_max_mapped())
-> +        limit = get_max_mapped();
-> +
->    /* need to go over early_node_map to find out good range for node */
->    for_each_active_range_index_in_nid(i, nid) {
->        u64 addr;
-> Index: linux-2.6/mm/bootmem.c
-> ===================================================================
-> --- linux-2.6.orig/mm/bootmem.c
-> +++ linux-2.6/mm/bootmem.c
-> @@ -833,15 +833,24 @@ static void * __init ___alloc_bootmem_no
-> void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
->                   unsigned long align, unsigned long goal)
-> {
-> +    void *ptr;
-> +
->    if (WARN_ON_ONCE(slab_is_available()))
->        return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
-> 
-> #ifdef CONFIG_NO_BOOTMEM
-> -    return __alloc_memory_core_early(pgdat->node_id, size, align,
-> +    ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-> +                     goal, -1ULL);
-> +    if (ptr)
-> +        return ptr;
-> +
-> +    ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
->                     goal, -1ULL);
-> #else
-> -    return ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
-> +    ptr = ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
-> #endif
-> +
-> +    return ptr;
-> }
-> 
-> void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
-> @@ -977,14 +986,21 @@ void * __init __alloc_bootmem_low(unsign
-> void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
->                       unsigned long align, unsigned long goal)
-> {
-> +    void *ptr;
-> +
->    if (WARN_ON_ONCE(slab_is_available()))
->        return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
-> 
-> #ifdef CONFIG_NO_BOOTMEM
-> -    return __alloc_memory_core_early(pgdat->node_id, size, align,
-> +    ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
-> +                goal, ARCH_LOW_ADDRESS_LIMIT);
-> +    if (ptr)
-> +        return ptr;
-> +    ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
->                goal, ARCH_LOW_ADDRESS_LIMIT);
-> #else
-> -    return ___alloc_bootmem_node(pgdat->bdata, size, align,
-> +    ptr = ___alloc_bootmem_node(pgdat->bdata, size, align,
->                goal, ARCH_LOW_ADDRESS_LIMIT);
-> #endif
-> +    return ptr;
-> }
