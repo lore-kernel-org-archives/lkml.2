@@ -1,80 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935147Ab0GPA50 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 20:57:26 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:41405 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935102Ab0GPA5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 20:57:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=FKyaEC8welfPy3PfjSbdRE2pIzTR9750MqcH+eY2J2hodY3ZOhQIdnwdHEqwFYV1Qx
-         SDUhj7jxQqjA0yREpXHdadQFC6PjBG12U3UG3w7opdnrT6EghPAsj8Gvww9RqARq4jnz
-         sY2w8TTHn6KyzBC1HvC8O2MXHACpT4iFfPriQ=
-Message-ID: <4C3FAE6F.3020406@garzik.org>
-Date: Thu, 15 Jul 2010 20:57:19 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Joseph Kogut <joseph.kogut@gmail.com>
-CC: davem@davemloft.net, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers: net: 8139cp: Fixed 28 style errors, and 119
-  warnings.
-References: <AANLkTikspw9LxFFsXJgWn30k2qCVu5zkOAq2FhWTpQvW@mail.gmail.com>
-In-Reply-To: <AANLkTikspw9LxFFsXJgWn30k2qCVu5zkOAq2FhWTpQvW@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S935157Ab0GPBPY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 21:15:24 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:57521 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935038Ab0GPBPX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 21:15:23 -0400
+Date: Fri, 16 Jul 2010 11:15:20 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Yinghai Lu <yinghai@kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Andres Salomon <dilinger@queued.net>
+Subject: linux-next: manual merge of the devicetree tree with Linus' tree
+Message-Id: <20100716111520.732bd29a.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Grant,
 
-> -/* The following settings are log_2(bytes)-4:  0 == 16 bytes .. 6==1024, 7==end of packet. */
-> -#define RX_FIFO_THRESH         5       /* Rx buffer level before first PCI xfer.  */
-> +/* The following settings are log_2(bytes)-4:  0 == 16 bytes .. 6 == 1024, 7 == end of packet. */
-> +#define RX_FIFO_THRESH         5       /* Rx buffer level before first PCI xfer. */
+Today's linux-next merge of the devicetree tree got a conflict in
+arch/sparc/kernel/prom_64.c between commit
+95f72d1ed41a66f1c1c29c24d479de81a0bea36f ("lmb: rename to memblock") from
+Linus' tree and commit 035ebefc737cce56d3938e9b7eaa5ac0e9c28715
+("of/sparc: move is_root_node() to of.h") from the devicetree tree.
 
-useless noise
+Just context changes. I fixed it up (see below) and can carry the fix for
+a while.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-> -       unsigned                wol_enabled : 1; /* Is Wake-on-LAN enabled? */
-> +       unsigned                wol_enabled:1; /* Is Wake-on-LAN enabled? */
-
-not an improvement
-
-> -               if (wol->wolopts & WAKE_PHY)    options |= LinkUp;
-> -               if (wol->wolopts & WAKE_MAGIC)  options |= MagicPacket;
-> +               if (wol->wolopts & WAKE_PHY)
-> +                       options |= LinkUp;
-> +               if (wol->wolopts & WAKE_MAGIC)
-> +                       options |= MagicPacket;
-
-ditto
-
-> -               if (wol->wolopts & WAKE_UCAST)  options |= UWF;
-> -               if (wol->wolopts & WAKE_BCAST)  options |= BWF;
-> -               if (wol->wolopts & WAKE_MCAST)  options |= MWF;
-> +               if (wol->wolopts & WAKE_UCAST)
-> +                       options |= UWF;
-> +               if (wol->wolopts & WAKE_BCAST)
-> +                       options |= BWF;
-> +               if (wol->wolopts & WAKE_MCAST)
-> +                       options |= MWF;
-
-ditto
->
-> -       if (options & UWF)           wol->wolopts |= WAKE_UCAST;
-> -       if (options & BWF)           wol->wolopts |= WAKE_BCAST;
-> -       if (options & MWF)           wol->wolopts |= WAKE_MCAST;
-> +       options        = cpr8(Config5);
-> +       if (options & UWF)
-> +               wol->wolopts |= WAKE_UCAST;
-> +       if (options & BWF)
-> +               wol->wolopts |= WAKE_BCAST;
-> +       if (options & MWF)
-> +               wol->wolopts |= WAKE_MCAST;
-
-ditto
-
+diff --cc arch/sparc/kernel/prom_64.c
+index 466a327,0bffafd..0000000
+--- a/arch/sparc/kernel/prom_64.c
++++ b/arch/sparc/kernel/prom_64.c
+@@@ -20,8 -20,8 +20,8 @@@
+  #include <linux/string.h>
+  #include <linux/mm.h>
+  #include <linux/module.h>
+ -#include <linux/lmb.h>
+ +#include <linux/memblock.h>
+- #include <linux/of_device.h>
++ #include <linux/of.h>
+  
+  #include <asm/prom.h>
+  #include <asm/oplib.h>
