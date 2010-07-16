@@ -1,117 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935415Ab0GPCl1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 22:41:27 -0400
-Received: from waste.org ([173.11.57.241]:41092 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935364Ab0GPCl0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 22:41:26 -0400
-Subject: Re: [Pkg-sysvinit-devel] Bug#587665: Safety of early boot init of
- /dev/random seed
-From: Matt Mackall <mpm@selenic.com>
-To: Henrique de Moraes Holschuh <hmh@debian.org>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, "Theodore Ts'o" <tytso@mit.edu>,
-        Michael Biebl <biebl@debian.org>, 587665@bugs.debian.org,
-        linux-kernel@vger.kernel.org, Petter Reinholdtsen <pere@hungry.com>
-In-Reply-To: <20100715233305.GF27512@khazad-dum.debian.net>
-References: <20100630234016.GD18711@login1.uio.no>
-	 <4C2BDCF0.5080203@debian.org> <20100701141022.GA3811@login1.uio.no>
-	 <20100701171357.GE4789@khazad-dum.debian.net>
-	 <20100702064415.GE3811@login1.uio.no>
-	 <20100702232919.GA14437@login2.uio.no>
-	 <20100703012833.GA20929@khazad-dum.debian.net>
-	 <20100703151636.GB23648@khazad-dum.debian.net>
-	 <20100703160819.GA12343@khazad-dum.debian.net>
-	 <1278355233.9937.21.camel@calx>
-	 <20100715233305.GF27512@khazad-dum.debian.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 15 Jul 2010 21:41:22 -0500
-Message-ID: <1279248082.936.250.camel@calx>
+	id S935452Ab0GPCmK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 22:42:10 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:51411 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935363Ab0GPCmG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 22:42:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=LTmOeA6zJKXF0U7bj6Kq2fkXqiYCvnT7LKrC7Ma30jAsOl7CSUta/1B+g/bPcmra+u
+         m5vi06AxD58s2510HUvYw/lYvztMubyDzpTJ+t1Y3M4NadndW6Sw+w3t3Ch7OMdimkvD
+         1YOdEm/tMfDWRS9yI7doPXVGooxBpfeGcBi/Q=
+Subject: [PATCH] uda134x: properly free allocated memory if
+	uda134x_soc_probe fail with unknown codec type
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        =?ISO-8859-1?Q?Andr=E9?= Goddard Rosa <andre.goddard@gmail.com>,
+        Jiri Kosina <jkosina@suse.cz>,
+        Vladimir Zapolskiy <vzapolskiy@gmail.com>, alsa-devel@alsa-project.org
+Content-Type: text/plain
+Date: Fri, 16 Jul 2010 10:42:46 +0800
+Message-Id: <1279248166.10112.9.camel@mola>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-15 at 20:33 -0300, Henrique de Moraes Holschuh wrote:
-> On Mon, 05 Jul 2010, Matt Mackall wrote:
-> > > > Here are our questions:
-> > > > 
-> > > > 1. How much data of unknown quality can we feed the random pool at boot,
-> > > >    before it causes damage (i.e. what is the threshold where we violate the
-> > > >    "you are not goint to be any worse than you were before" rule) ?
-> > 
-> > There is no limit. The mixing operations are computationally reversible,
-> > which guarantees that no unknown degrees of freedom are clobbered when
-> > mixing known data.
-> 
-> Good.  So, whatever we do, we are never worse off than we were before we did
-> it, at least by design.
-> 
-> > > > 2. How dangerous it is to feed the pool with stale seed data in the next
-> > > >    boot (i.e. in a failure mode where we do not regenerate the seed file) ?
-> > 
-> > Not at all.
-> >  
-> > > > 3. What is the optimal size of the seed data based on the pool size ?
-> > 
-> > 1:1.
-> 
-> We shall try to keep it at 1:1, then.
-> 
-> > > > 4. How dangerous it is to have functions that need randomness (like
-> > > >    encripted network and partitions, possibly encripted swap with an
-> > > >    ephemeral key), BEFORE initializing the random seed ?
-> > 
-> > Depends on the platform. For instance, if you've got an unattended boot
-> > off a Live CD on a machine with a predictable clock, you may get
-> > duplicate outputs.
-> 
-> I.e. it is somewhat dangerous, and we should try to avoid it by design, so
-> we should try to init it as early as possible.  Very well.
-> 
-> > > > 5. Is there an optimal size for the pool?  Does the quality of the randomness
-> > > >    one extracts from the pool increase or decrease with pool size?
-> > 
-> > Don't bother fiddling with the pool size.
-> 
-> We don't, but local admins often do, probably in an attempt to better handle
-> bursts of entropy drainage.  So, we do want to properly support non-standard
-> pool sizes in Debian if we can.
+If uda134x_soc_probe fail with unknown codec type, it should properly free
+allocated memory before return -EINVAL.
 
-Unless they're manually patching their kernel, they probably aren't
-succeeding. The pool resize ioctl was disabled ages ago. But there's
-really nothing to support here: even the largest polynomial in the
-source is only 2048 bits, or 256 bytes.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+This case won't be executed in current implementation because there is a
+model checking in the begin of uda134x_soc_probe.
+But since the code is there, I think it's good to make it correct.
+Otherwise, we can simply remove the default case.
 
-> > > > Basically, we need these answers to find our way regarding the following
-> > > > decisions:
-> > > > 
-> > > > a) Is it better to seed the pool as early as possible and risk a larger time
-> > > >    window for problem (2) above, instead of the current behaviour where we
-> > > >    have a large time window where (4) above happens?
-> > 
-> > Earlier is better.
-> > 
-> > > > b) Is it worth the effort to base the seed file on the size of the pool,
-> > > >    instead of just using a constant size?  If a constant size is better,
-> > > >    which size would that be? 512 bytes? 4096 bytes? 16384 bytes?
-> > 
-> > 512 bytes is plenty.
-> >
-> > > > c) What is the maximum seed file size we can allow (maybe based on size of
-> > > >    the pool) to try to avoid problem (1) above ?
-> > 
-> > Anything larger than a sector is simply wasting CPU time, but is
-> > otherwise harmless.
-> 
-> Well, a filesystem block is usually 1024 bytes, and a sector is 4096 bytes
-> nowadays... :-)
-> 
+ sound/soc/codecs/uda134x.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-
+diff --git a/sound/soc/codecs/uda134x.c b/sound/soc/codecs/uda134x.c
+index 28aac53..9bff3c6 100644
+--- a/sound/soc/codecs/uda134x.c
++++ b/sound/soc/codecs/uda134x.c
+@@ -566,9 +566,10 @@ static int uda134x_soc_probe(struct platform_device *pdev)
+ 					ARRAY_SIZE(uda1345_snd_controls));
+ 	break;
+ 	default:
++		ret = -EINVAL;
+ 		printk(KERN_ERR "%s unknown codec type: %d",
+ 			__func__, pd->model);
+-	return -EINVAL;
++	break;
+ 	}
+ 
+ 	if (ret < 0) {
 -- 
-Mathematics is the supreme nostalgia of our time.
+1.5.4.3
+
 
 
