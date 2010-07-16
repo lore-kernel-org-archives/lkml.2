@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758779Ab0GPSSG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 14:18:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59430 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758754Ab0GPSSE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 14:18:04 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100716180701.GA26854@n2100.arm.linux.org.uk>
-References: <20100713230352.6781.18644.stgit@angua>
-	<1279296221.17878.66.camel@e102109-lin.cambridge.arm.com>
-	<AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com>
-	<20100716180701.GA26854@n2100.arm.linux.org.uk>
-Date: Fri, 16 Jul 2010 11:17:24 -0700
-Message-ID: <AANLkTik_pGP2oI0UQmjiz7BndmvFXDs1G2b9Au15y6n1@mail.gmail.com>
-Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for 
-	defconfig
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Grant Likely <grant.likely@secretlab.ca>,
-        Catalin Marinas <catalin.marinas@arm.com>,
-        linuxppc-dev@lists.ozlabs.org, Nicolas Pitre <nico@fluxnic.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org, Tony Lindgren <tony@atomide.com>,
-        Daniel Walker <dwalker@codeaurora.org>,
-        =?ISO-8859-1?Q?Uwe_Kleine=2DK=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758808Ab0GPSSQ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 14:18:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17430 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758789Ab0GPSSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 14:18:13 -0400
+Date: Fri, 16 Jul 2010 12:18:02 -0600
+From: Pete Zaitcev <zaitcev@redhat.com>
+To: linux-kbuild@vger.kernel.org
+Cc: <nico-linuxsetlocalversion@schottelius.org>, linux-kernel@vger.kernel.org,
+        zaitcev@redhat.com
+Subject: I did a git pull and a plus appeared
+Message-ID: <20100716121802.65fdfa24@lembas.zaitcev.lan>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 11:07 AM, Russell King - ARM Linux
-<linux@arm.linux.org.uk> wrote:
->
-> I thought Linus' idea was to use:
->
-> KBUILD_KCONFIG=file make allnoconfig
+Dear All:
 
-See an earlier reply - that is indeed what I suggested, and yes, it
-avoids the need to be able to "unselect" things.
+I have a tree that existed for a few years (a clone of Linus' tree).
+Today I did a git pull in it, and a plus appeared in the built version.
+E.g. after "make modules_install":
 
-However, it turns out that even then you do want to extend the Kconfig
-language with the ability to select particular values. Not for boolean
-(or even tristate things), but for things that select an integer or
-string value etc.
+[root@niphredil linux-2.6-tip]# ls /lib/modules/
+2.6.33.1-19.fc13.x86_64  2.6.34-rc6-tip                    2.6.35-rc1-tip
+2.6.34-43.fc14.x86_64    2.6.35-0.36.rc4.git5.fc14.x86_64  2.6.35-rc5-tip+
+[root@niphredil linux-2.6-tip]# 
 
-So the "select OPTION=xyz" syntax ends up being a good thing even for
-the "-n" (allnoconfig) case too.
+How do I get rid of the plus? I have (had for a long time):
 
-And while I think the allnoconfig model has some advantages (the
-Kconfig input file ends up being independent of the default values),
-that very fact ends up being a disadvantage too (the Kconfig input
-file likely ends up being larger, since _hopefully_ the defaults are
-sane).
+[zaitcev@niphredil linux-2.6-tip]$ grep LOCAL .config
+CONFIG_LOCALVERSION="-tip"
+# CONFIG_LOCALVERSION_AUTO is not set
+CONFIG_X86_LOCAL_APIC=y
+[zaitcev@niphredil linux-2.6-tip]$ 
 
-So I'm not at all married to the "allnoconfig" model. It's one way of
-doing things, but I think the argument that we should start with the
-defaults and modify those instead is not an invalid one.
-
-                     Linus
+Thanks,
+-- Pete
