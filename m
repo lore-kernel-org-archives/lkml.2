@@ -1,57 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966062Ab0GPQPa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 12:15:30 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:56693 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966050Ab0GPQP1 (ORCPT
+	id S966070Ab0GPQPr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 12:15:47 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:45293 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965991Ab0GPQPn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 12:15:27 -0400
+	Fri, 16 Jul 2010 12:15:43 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=Rq7i4ypNhauOnQ2+5VS0agpBwiknE8M+xZeXcbA33E2XMnvCoblj4cLotIsEY57Awz
-         aUIOgrYKblxJNnOypj5cULZR/YMrwNY/uzTrxX5vn/KqM70mYsEbaEYsTBUv6BsPz3Xl
-         8UsWh1739//xZubMINgO/Bnuzty7RZMwLCowI=
+        b=ocUHkOj6CAifCP8uWxHkVGus1PCaZpfjriINH9KZ8bKatIKyV08UsrdcMncuaxm0XL
+         2uZkqfhPvCm5tXLAB4Wl85wXmf7KcZ2es1chZY4Q/MCpGI3nuOObp4pfpU1HdTFN0Iux
+         gFe0aZw4pVefPFu14NR0tiEFVTE9fsjTsHZl8=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Mike Frysinger <vapier@gentoo.org>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Michael Hennerich <michael.hennerich@analog.com>,
-        Bryan Wu <cooloney@kernel.org>, linux-usb@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 09/15] usb: host: check kzalloc() result
-Date: Fri, 16 Jul 2010 20:15:06 +0400
-Message-Id: <1279296906-25107-1-git-send-email-segooon@gmail.com>
+Cc: Steve French <sfrench@samba.org>, Jeff Layton <jlayton@redhat.com>,
+        Dave Kleikamp <shaggy@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
+        Joe Perches <joe@perches.com>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 10/15] fs: cifs: check kmalloc() result
+Date: Fri, 16 Jul 2010 20:15:25 +0400
+Message-Id: <1279296925-25147-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If kzalloc() fails exit with -ENOMEM.
+If kmalloc() fails exit with -ENOMEM.
 
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- drivers/usb/host/sl811-hcd.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
+ fs/cifs/readdir.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/usb/host/sl811-hcd.c b/drivers/usb/host/sl811-hcd.c
-index bcf9f0e..990f06b 100644
---- a/drivers/usb/host/sl811-hcd.c
-+++ b/drivers/usb/host/sl811-hcd.c
-@@ -813,8 +813,11 @@ static int sl811h_urb_enqueue(
- #endif
+diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
+index daf1753..d5e591f 100644
+--- a/fs/cifs/readdir.c
++++ b/fs/cifs/readdir.c
+@@ -847,6 +847,11 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
+ 		end_of_smb = cifsFile->srch_inf.ntwrk_buf_start + max_len;
  
- 	/* avoid all allocations within spinlocks */
--	if (!hep->hcpriv)
-+	if (!hep->hcpriv) {
- 		ep = kzalloc(sizeof *ep, mem_flags);
-+		if (ep == NULL)
-+			return -ENOMEM;
-+	}
- 
- 	spin_lock_irqsave(&sl811->lock, flags);
- 
+ 		tmp_buf = kmalloc(UNICODE_NAME_MAX, GFP_KERNEL);
++		if (tmp_buf == NULL) {
++			rc = -ENOMEM;
++			break;
++		}
++
+ 		for (i = 0; (i < num_to_fill) && (rc == 0); i++) {
+ 			if (current_entry == NULL) {
+ 				/* evaluate whether this case is an error */
 -- 
 1.7.0.4
 
