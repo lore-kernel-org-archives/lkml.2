@@ -1,83 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965458Ab0GPMi6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 08:38:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59497 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965365Ab0GPMix (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 08:38:53 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <201007161302.35775.arnd@arndb.de>
-References: <201007161302.35775.arnd@arndb.de> <20100716062251.GA9318@zoia.osj.us> <30646.1279230807@redhat.com> <8527.1279275842@redhat.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: dhowells@redhat.com, Mark Harris <mhlk@osj.us>,
-        Steve French <smfrench@gmail.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
-Date: Fri, 16 Jul 2010 13:38:06 +0100
-Message-ID: <10677.1279283886@redhat.com>
+	id S965453Ab0GPMiW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 08:38:22 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:62826 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965439Ab0GPMiQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 08:38:16 -0400
+From: Nitin Gupta <ngupta@vflare.org>
+To: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH 8/8] Document sysfs entries
+Date: Fri, 16 Jul 2010 18:07:50 +0530
+Message-Id: <1279283870-18549-9-git-send-email-ngupta@vflare.org>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
+References: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnd Bergmann <arnd@arndb.de> wrote:
+Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+---
+ Documentation/ABI/testing/sysfs-kernel-mm-zcache |   53 ++++++++++++++++++++++
+ 1 files changed, 53 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/ABI/testing/sysfs-kernel-mm-zcache
 
-> You could also define the tv_gran_units to be power-of-ten nanoseconds,
-> making it a decimal floating point number like 
-> 
-> enum {
-> 	XSTAT_NANOSECONDS_GRANULARITY = 0,
-> 	XSTAT_MICROSECONDS_GRANULARITY = 3,
-> 	XSTAT_MILLISECONDS_GRANULARITY = 6,
-> 	XSTAT_SECONDS_GRANULARITY = 9,
-> };
+diff --git a/Documentation/ABI/testing/sysfs-kernel-mm-zcache b/Documentation/ABI/testing/sysfs-kernel-mm-zcache
+new file mode 100644
+index 0000000..7ee3f31
+--- /dev/null
++++ b/Documentation/ABI/testing/sysfs-kernel-mm-zcache
+@@ -0,0 +1,53 @@
++What:		/sys/kernel/mm/zcache
++Date:		July 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		/sys/kernel/mm/zcache directory contains compressed cache
++		statistics for each pool. A separate pool is created for
++		every mount instance of cleancache-aware filesystems.
++
++What:		/sys/kernel/mm/zcache/pool<id>/zero_pages
++Date:		July 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The zero_pages file is read-only and specifies number of zero
++		filled pages found in this pool.
++
++What:		/sys/kernel/mm/zcache/pool<id>/orig_data_size
++Date:		July 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The orig_data_size file is read-only and specifies uncompressed
++		size of data stored in this pool. This excludes zero-filled
++		pages (zero_pages) since no memory is allocated for them.
++		Unit: bytes
++
++What:		/sys/kernel/mm/zcache/pool<id>/compr_data_size
++Date:		July 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The compr_data_size file is read-only and specifies compressed
++		size of data stored in this pool. So, compression ratio can be
++		calculated using orig_data_size and this statistic.
++		Unit: bytes
++
++What:		/sys/kernel/mm/zcache/pool<id>/mem_used_total
++Date:		July 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The mem_used_total file is read-only and specifies the amount
++		of memory, including allocator fragmentation and metadata
++		overhead, allocated for this pool. So, allocator space
++		efficiency can be calculated using compr_data_size and this
++		statistic.
++		Unit: bytes
++
++What:		/sys/kernel/mm/zcache/pool<id>/memlimit
++Date:		July 2010
++Contact:	Nitin Gupta <ngupta@vflare.org>
++Description:
++		The memlimit file is read-write and specifies upper bound on
++		the compressed data size (compr_data_dize) stored in this pool.
++		The value specified is rounded down to nearest multiple of
++		PAGE_SIZE.
++		Unit: bytes
+\ No newline at end of file
+-- 
+1.7.1.1
 
-Are you thinking, then, of having tv_nsec be in terms of those units?
-
-> That would make it easier to define an xstat_time_before() function, though
-> it means that you could no longer do XSTAT_MINUTES_GRANULARITY and
-> higher directly other than { .tv_gran_units = 10, .tv_granularity = 6, }.
-
-So you're thinking of indicating time (in)equality based on overlapping time
-granules?
-
-Your suggestion would suffice, I think.  With a 2:2 split between exponent
-(tv_gran_units) and mantissa (tv_granularity), you can do:
-
-	UNIT		SECONDS/UNIT	EXPONENT	MANTISSA
-	nanoseconds	0.000000001	-9		1
-	microseconds	0.000001	-6		1
-	millseconds	0.001		-3		1
-	seconds		1		0		1
-	minutes		60		1		6
-	hours		3600		2		36
-	days		86400		2		864
-	weeks		604800		2		6048
-
-Any units beyond that are variable length and not worth considering, IMO.
-
-And if you don't want negative numbers in your exponent, you can make the base
-unit nS instead of S.
-
-Is it worth allowing a filesystem to indicate that it has granularity smaller
-than nS, even if the resolution can't be handled here?  We could even have:
-
-	struct xstat_time {
-		signed long long	tv_sec;		/* seconds */
-		unsigned int		tv_nsec;	/* nanoseconds */
-		unsigned char		tv_psec4;	/* picoseconds/4 */
-		signed char		tv_gran_exp;	/* exponent */
-		unsigned short		tv_gran_mant;	/* mantissa */
-	};
-
-Though it's probably still an unnecessary extravagance to have the pS field.
-It's probably best left as padding for now; we can always change our minds
-later...
-
-David
