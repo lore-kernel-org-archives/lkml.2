@@ -1,86 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966057Ab0GPQ2s (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 12:28:48 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:29023 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965982Ab0GPQ2r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 12:28:47 -0400
-X-SpamScore: -34
-X-BigFish: VPS-34(zz1432N98dN936eM9371Pzz1202hzz15d4Rz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L5NSAE-01-LW2-02
-X-M-MSG: 
-Date: Fri, 16 Jul 2010 18:25:17 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Michal Schmidt <mschmidt@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>
-Subject: Re: [PATCH 1/2] x86: fix keeping track of AMD C1E
-Message-ID: <20100716162517.GF28902@aftab>
-References: <20100713185816.2866.17837.stgit@localhost.localdomain>
- <20100713185957.2866.50995.stgit@localhost.localdomain>
- <20100714160704.GA10473@kryptos.osrc.amd.com>
- <20100714232201.00433aa9@hammerfall>
- <20100714233102.0f64614b@hammerfall>
- <4C3FDF43.6030203@zytor.com>
- <20100716063952.GB27546@aftab>
- <4C3F8418.5020803@zytor.com>
- <20100716072244.GA27954@aftab>
- <4C408298.8060004@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4C408298.8060004@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	id S1751655Ab0GPQfg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 12:35:36 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:39447 "EHLO e9.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751113Ab0GPQfe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 12:35:34 -0400
+Subject: Re: [PATCH 10/15] fs: cifs: check kmalloc() result
+From: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Steve French <sfrench@samba.org>,
+        Jeff Layton <jlayton@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Joe Perches <joe@perches.com>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1279296925-25147-1-git-send-email-segooon@gmail.com>
+References: <1279296925-25147-1-git-send-email-segooon@gmail.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Organization: IBM Linux Technology Center
+Date: Fri, 16 Jul 2010 11:35:30 -0500
+Message-ID: <1279298130.26876.12.camel@shaggy-w500>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Fri, Jul 16, 2010 at 12:02:32PM -0400
+On Fri, 2010-07-16 at 20:15 +0400, Kulikov Vasiliy wrote:
+> If kmalloc() fails exit with -ENOMEM.
 
-> On 07/16/2010 12:22 AM, Borislav Petkov wrote:
-> >>
-> >> No, the difference between using a separate variable and the CPU feature 
-> >> bit is that CPU feature bit is ANDed across all CPUs, whereas this 
-> >> variable is set if it is set on *any* CPU.
-> > 
-> > ... and that's ok because the MSR bits get set on all cores after BIOS
-> > turns on C1E. Let me verify this though.
-> > 
+Looks good to me.  Add my ack if you want it.
+
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+
+Acked-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+
+> ---
+>  fs/cifs/readdir.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 > 
-> Is there any reason for the OR behavior?  Otherwise, it's just plain
-> wrong...
-
-I don't see the need for two things denoting C1E for the very simple
-reason: when C1E gets enabled on a machine, one of the bits gets set in
-the MSR on each core simultaneously. So if one core sees one of the bits
-set, all the remaining cores are seeing them too. The first core that
-sees one of the bits in the MSR, sets c1e_detected.
-
-So next time any core does cpu_idle() => c1e_idle(), it switches to
-timer broadcast on it since it might go into C1E if all the others
-follow.
-
-Frankly, I can't think of a case where we'd need to two things - I
-could be missing something. But this workaround is a couple of years
-old, maybe Thomas might give us more insight into whether there's a
-particular reason for the cpuid flag and the c1e_detected variable.
-Thomas?
+> diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
+> index daf1753..d5e591f 100644
+> --- a/fs/cifs/readdir.c
+> +++ b/fs/cifs/readdir.c
+> @@ -847,6 +847,11 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
+>  		end_of_smb = cifsFile->srch_inf.ntwrk_buf_start + max_len;
+> 
+>  		tmp_buf = kmalloc(UNICODE_NAME_MAX, GFP_KERNEL);
+> +		if (tmp_buf == NULL) {
+> +			rc = -ENOMEM;
+> +			break;
+> +		}
+> +
+>  		for (i = 0; (i < num_to_fill) && (rc == 0); i++) {
+>  			if (current_entry == NULL) {
+>  				/* evaluate whether this case is an error */
 
 -- 
-Regards/Gruss,
-Boris.
-
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+Dave Kleikamp
+IBM Linux Technology Center
 
