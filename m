@@ -1,55 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935685Ab0GPGxI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 02:53:08 -0400
-Received: from troy.hostgo.com ([64.62.143.130]:48942 "EHLO troy.hostgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935636Ab0GPGxG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 02:53:06 -0400
-From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-To: linux-kernel@vger.kernel.org
-Subject: Re: mvsas still has problems with 2.6.34
-Date: Fri, 16 Jul 2010 00:53:01 -0600
-User-Agent: KMail/1.13.3 (Linux/2.6.34-0.dmz.10-liquorix-amd64; KDE/4.4.4; x86_64; ; )
-Cc: linux-scsi@vger.kernel.org, ayan@marvell.com, andy yan <andyysj@gmail.com>,
-        "linux-raid" <linux-raid@vger.kernel.org>
-References: <201007160010.58000.tfjellstrom@strangesoft.net>
-In-Reply-To: <201007160010.58000.tfjellstrom@strangesoft.net>
+	id S935695Ab0GPGy3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 02:54:29 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:48474 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935636Ab0GPGy2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 02:54:28 -0400
+Date: Fri, 16 Jul 2010 15:54:24 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+        Sam Ravnborg <sam@ravnborg.org>, akpm@linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        Kexec Mailing List <kexec@lists.infradead.org>
+Subject: Re: [PATCH] kexec: export kexec.h to userspace
+Message-ID: <20100716065424.GA20761@verge.net.au>
+References: <20100619132235.GA24200@basil.fritz.box>
+ <20100619182419.GA22079@merkur.ravnborg.org>
+ <20100619195345.GT18946@basil.fritz.box>
+ <20100620082315.GA23188@merkur.ravnborg.org>
+ <m1bpb6ozef.fsf@fess.ebiederm.org>
+ <20100620092333.GA10987@basil.fritz.box>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007160053.01673.tfjellstrom@strangesoft.net>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - troy.hostgo.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - strangesoft.net
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100620092333.GA10987@basil.fritz.box>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On July 16, 2010, Thomas Fjellstrom wrote:
-> I've recently updated my server, and the mvsas driver included in
-> 2.6.34.1 still causes my AOC-SASLP-MV8 card to completely lock up after
-> mdraid starts up on the devices. The machine is essentially in
-> "production" so I can't do a heck of a lot of testing on it anymore. The
-> mvsas driver I got from Andy Yan seems to be a little outdated, it fails
-> to compile due to a missing argument to sas_change_queue_depth, which I
-> managed to fix, and I will try testing. I hope it works.
-
-It seems to work with the change I made. 
-
-> At some point though I really hope this gets fixed. I'm still willing to
-> help test any new versions, just that I can't keep my box down for an
-> extended period.
+On Sun, Jun 20, 2010 at 11:23:34AM +0200, Andi Kleen wrote:
+> > Can we please do this the other way around and create a kexec_user.h?
+> > Having a an xxx_user.h is a pattern we already have in the kernel.
+> > I can't find a signle xxxx_kernel.h
 > 
-> Thanks.
+> If you do that you have to change the man page.
+> 
+> Or just keep my simple patch.
 
+It seems more logical to me to update the documentation -
+its new documentation, isn't it?
 
--- 
-Thomas Fjellstrom
-tfjellstrom@strangesoft.net
