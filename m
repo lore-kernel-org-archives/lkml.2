@@ -1,104 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965756Ab0GPOtc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 10:49:32 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:58881 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752123Ab0GPOta (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 10:49:30 -0400
-Date: Fri, 16 Jul 2010 10:49:28 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-Message-ID: <20100716144927.GA22516@Krystal>
-References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com>
-MIME-Version: 1.0
+	id S965760Ab0GPOyP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 10:54:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54368 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123Ab0GPOyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 10:54:14 -0400
+Date: Fri, 16 Jul 2010 15:53:09 +0100
+From: "Daniel P. Berrange" <berrange@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nauman Rafique <nauman@google.com>,
+        Munehiro Ikeda <m-ikeda@ds.jp.nec.com>, linux-kernel@vger.kernel.org,
+        Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
+        Andrea Righi <righi.andrea@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+        balbir@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH 00/11] blkiocg async support
+Message-ID: <20100716145309.GJ19587@redhat.com>
+Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
+References: <AANLkTikECHfrksrk3QnD3X07pmgXdpo5-fv7hDLm2Zxw@mail.gmail.com> <20100710132417.GA2752@redhat.com> <20100712092004.3b27e13e.kamezawa.hiroyu@jp.fujitsu.com> <20100712131805.GA12918@redhat.com> <20100713133636.73367cae.kamezawa.hiroyu@jp.fujitsu.com> <20100714142919.GA31449@redhat.com> <20100715090048.0b0120a0.kamezawa.hiroyu@jp.fujitsu.com> <20100716134353.GA15382@redhat.com> <20100716141549.GI19587@redhat.com> <20100716143536.GE15382@redhat.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4C405078.20707@redhat.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 10:40:27 up 174 days, 17:17,  6 users,  load average: 0.01, 0.03,
-	0.03
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100716143536.GE15382@redhat.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Avi Kivity (avi@redhat.com) wrote:
-> On 07/14/2010 06:49 PM, Mathieu Desnoyers wrote:
->> Implements an alternative iret with popf and return so trap and exception
->> handlers can return to the NMI handler without issuing iret. iret would cause
->> NMIs to be reenabled prematurely. x86_32 uses popf and far return. x86_64 has to
->> copy the return instruction pointer to the top of the previous stack, issue a
->> popf, loads the previous esp and issue a near return (ret).
->>
->> It allows placing dynamically patched static jumps in asm gotos, which will be
->> used for optimized tracepoints, in NMI code since returning from a breakpoint
->> would be valid. Accessing vmalloc'd memory, which allows executing module code
->> or accessing vmapped or vmalloc'd areas from NMI context, would also be valid.
->> This is very useful to tracers like LTTng.
->>
->> This patch makes all faults, traps and exception safe to be called from NMI
->> context*except*  single-stepping, which requires iret to restore the TF (trap
->> flag) and jump to the return address in a single instruction. Sorry, no kprobes
->> support in NMI handlers because of this limitation. This cannot be emulated
->> with popf/lret, because lret would be single-stepped. It does not apply to
->> "immediate values" because they do not use single-stepping. This code detects if
->> the TF flag is set and uses the iret path for single-stepping, even if it
->> reactivates NMIs prematurely.
->>    
->
-> You need to save/restore cr2 in addition, otherwise the following hits you
->
-> - page fault
-> - processor writes cr2, enters fault handler
-> - nmi
-> - page fault
-> - cr2 overwritten
->
-> I guess you would usually not notice the corruption since you'd just see  
-> a spurious fault on the page the NMI handler touched, but if the first  
-> fault happened in a kvm guest, then we'd corrupt the guest's cr2.
+On Fri, Jul 16, 2010 at 10:35:36AM -0400, Vivek Goyal wrote:
+> On Fri, Jul 16, 2010 at 03:15:49PM +0100, Daniel P. Berrange wrote:
+> Secondly, just because some controller allows creation of hierarchy does
+> not mean that hierarchy is being enforced. For example, memory controller.
+> IIUC, one needs to explicitly set "use_hierarchy" to enforce hierarchy
+> otherwise effectively it is flat. So if libvirt is creating groups and
+> putting machines in child groups thinking that we are not interfering
+> with admin's policy, is not entirely correct.
 
-OK, just to make sure: you mean we'd have to save/restore the cr2 register
-at the beginning/end of the NMI handler execution, right ? The shouldn't we
-save/restore cr3 too ?
+That is true, but that 'use_hierarchy' at least provides admins
+the mechanism required to implement the neccessary policy
 
-> But the whole thing strikes me as overkill.  If it's 8k per-cpu, what's  
-> wrong with using a per-cpu pointer to a kmalloc() area?
+> So how do we make progress here. I really want to see blkio controller
+> integrated with libvirt.
+> 
+> About the issue of hierarchy, I can probably travel down the path of allowing
+> creation of hierarchy but CFQ will treat it as flat. Though I don't like it
+> because it will force me to introduce variables like "use_hierarchy" once
+> real hierarchical support comes in but I guess I can live with that.
+> (Anyway memory controller is already doing it.).
+> 
+> There is another issue though and that is by default every virtual
+> machine going into a group of its own. As of today, it can have
+> severe performance penalties (depending on workload) if group is not
+> driving doing enough IO. (Especially with group_isolation=1).
+> 
+> I was thinking of a model where an admin moves out the bad virtual
+> machines in separate group and limit their IO.
 
-Well, it seems like all the kernel code calling "vmalloc_sync_all()" (which is
-much more than perf) can potentially cause large latencies, which could be
-squashed by allowing page faults in NMI handlers. This looks like a stronger
-argument to me.
+In the simple / normal case I imagine all guests VMs will be running
+unrestricted I/O initially. Thus instead of creating the cgroup at time
+of VM startup, we could create the cgroup only when the admin actually
+sets an I/O limit. IIUC, this should maintain the one cgroup per guest
+model, while avoiding the performance penalty in normal use. The caveat
+of course is that this would require blkio controller to have a dedicated
+mount point, not shared with other controller.  I think we might also
+want this kind of model for net I/O, since we probably don't want to 
+creating TC classes + net_cls groups for every VM the moment it starts
+unless the admin has actually set a net I/O limit.
 
-Thanks,
-
-Mathieu
-
+Daniel
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+|: Red Hat, Engineering, London    -o-   http://people.redhat.com/berrange/ :|
+|: http://libvirt.org -o- http://virt-manager.org -o- http://deltacloud.org :|
+|: http://autobuild.org        -o-         http://search.cpan.org/~danberr/ :|
+|: GnuPG: 7D3B9505  -o-   F3C9 553F A1DA 4AC2 5648 23C1 B3DF F742 7D3B 9505 :|
