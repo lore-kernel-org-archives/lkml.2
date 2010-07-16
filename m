@@ -1,58 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759028Ab0GPTSG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 15:18:06 -0400
-Received: from smtp204.alice.it ([82.57.200.100]:56621 "EHLO smtp204.alice.it"
+	id S1759053Ab0GPTS1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 15:18:27 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:54819 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754756Ab0GPTSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 15:18:04 -0400
-Date: Fri, 16 Jul 2010 21:16:50 +0200
-From: Giuliano Pochini <pochini@shiny.it>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Julia Lawall <julia@diku.dk>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 11/15] pci: echoaudio: check kmalloc() result
-Message-ID: <20100716211650.4abb6387@Jay>
-In-Reply-To: <1279296943-25187-1-git-send-email-segooon@gmail.com>
-References: <1279296943-25187-1-git-send-email-segooon@gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.14.7; powerpc-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1759035Ab0GPTSZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 15:18:25 -0400
+Date: Fri, 16 Jul 2010 21:18:10 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [GIT PULL 0/1] perf/urgent fixes
+Message-ID: <20100716191809.GB4979@elte.hu>
+References: <1279303667-27764-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279303667-27764-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0102]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jul 2010 20:15:43 +0400
-Kulikov Vasiliy <segooon@gmail.com> wrote:
 
-> If kmalloc() fails exit with -ENOMEM.
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> Hi Ingo,
 > 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  sound/pci/echoaudio/echoaudio.c |    2 ++
->  1 files changed, 2 insertions(+), 0 deletions(-)
+>         Please pull from:
 > 
-> diff --git a/sound/pci/echoaudio/echoaudio.c b/sound/pci/echoaudio/echoaudio.c
-> index 668a5ec..20763dd 100644
-> --- a/sound/pci/echoaudio/echoaudio.c
-> +++ b/sound/pci/echoaudio/echoaudio.c
-> @@ -2250,6 +2250,8 @@ static int snd_echo_resume(struct pci_dev *pci)
->  	DE_INIT(("resume start\n"));
->  	pci_restore_state(pci);
->  	commpage_bak = kmalloc(sizeof(struct echoaudio), GFP_KERNEL);
-> +	if (commpage_bak == NULL)
-> +		return -ENOMEM;
->  	commpage = chip->comm_page;
->  	memcpy(commpage_bak, commpage, sizeof(struct comm_page));
->  
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/urgent
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Gui Jianfeng (1):
+>   perf symbols: Fix directory descriptor leaking
+> 
+>  tools/perf/util/symbol.c |   17 ++++++++++-------
+>  1 files changed, 10 insertions(+), 7 deletions(-)
 
-Yes, of course. Thank you.
+Pulled, thanks Arnaldo!
 
-
-Ack-by: Giuliano Pochini <pochini@shiny.it>
-
-
--- 
-Giuliano.
+	Ingo
