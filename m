@@ -1,61 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759285Ab0GPUb4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 16:31:56 -0400
-Received: from lo.gmane.org ([80.91.229.12]:53207 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759192Ab0GPUby (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 16:31:54 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: Florian Mickler <florian@mickler.org>
-Subject: Re: [PATCH] Remove 9 second reboot delay on Lenovo T400/T500
-Date: Fri, 16 Jul 2010 22:31:40 +0200
-Message-ID: <20100716223140.69696431@schatten.dmk.lab>
-References: <4C3DCAA4.9050602@gmail.com>
-	<4C400C8E.8060500@gmx.info>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-Cc: ibm-acpi-devel@lists.sourceforge.net
-X-Gmane-NNTP-Posting-Host: f053213020.adsl.alicedsl.de
-In-Reply-To: <4C400C8E.8060500@gmx.info>
-X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Cc: linux-kernel@vger.kernel.org
+	id S966184Ab0GPUda (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 16:33:30 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:62921 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754909Ab0GPUd2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 16:33:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=MWly6oXmcCJ1c6j+LvZn3on+hoXmi0n1ynGkSuWnEzz8efatL78Qr6JmXgwpDmJAG/
+         NmWFtL3zv4Pj7ONcCg5QNilwbKRWAAHku2jTjboGTROpkkPpwT8UncVr0L72vbXW+bzJ
+         Tcc/ca36s5ONalqYyTyHIcBfzEixSkNkispQ8=
+Date: Fri, 16 Jul 2010 22:30:55 +0200
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Richard Henderson <rth@twiddle.net>,
+        Ivan Kokshaysky <ink@jurassic.park.msu.ru>,
+        Matt Turner <mattst88@gmail.com>, linux-alpha@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 01/15] alpha: srmcons: localize spin_lock section
+Message-ID: <20100716203055.GA2731@joi.lan>
+References: <1279296747-24783-1-git-send-email-segooon@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279296747-24783-1-git-send-email-segooon@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jul 2010 09:38:54 +0200
-Jens Rutschmann <Jens.Rutschmann@gmx.info> wrote:
+On Fri, Jul 16, 2010 at 08:12:27PM +0400, Kulikov Vasiliy wrote:
+> Scale down spin_lock_irqsave/spin_unlock_irqrestore exactly to area
+> where it is needed. Also it makes static checkers happy as code checks
+> kmalloc() result value exactly after call.
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  arch/alpha/kernel/srmcons.c |    6 ++----
+>  1 files changed, 2 insertions(+), 4 deletions(-)
+> 
+> diff --git a/arch/alpha/kernel/srmcons.c b/arch/alpha/kernel/srmcons.c
+> index 783f4e5..6b04005 100644
+> --- a/arch/alpha/kernel/srmcons.c
+> +++ b/arch/alpha/kernel/srmcons.c
+> @@ -165,17 +165,15 @@ srmcons_get_private_struct(struct srmcons_private **ps)
+>  
+>  	if (srmconsp == NULL) {
+>  		srmconsp = kmalloc(sizeof(*srmconsp), GFP_KERNEL);
+> -		spin_lock_irqsave(&srmconsp_lock, flags);
+> -
+>  		if (srmconsp == NULL)
+>  			retval = -ENOMEM;
+>  		else {
+> +			spin_lock_irqsave(&srmconsp_lock, flags);
+>  			srmconsp->tty = NULL;
+>  			spin_lock_init(&srmconsp->lock);
+>  			init_timer(&srmconsp->timer);
+> +			spin_unlock_irqrestore(&srmconsp_lock, flags);
+>  		}
+> -
+> -		spin_unlock_irqrestore(&srmconsp_lock, flags);
+>  	}
+>  
+>  	*ps = srmconsp;
+> -- 
 
-> Am 14.07.2010 16:33 schrieb Pedro Ribeiro:
-> > Please consider this patch. Let me know if you would like me to change
-> > anything or if you don't agree with it. It applies cleanly to 2.6.35-rc5.
-> >
-> > The Lenovo T400 and T500 have an annoying 9 second delay when
-> > rebooting, unless reboot=pci is passed to the kernel command line.
-> > This delay happens from at least kernel 2.6.20.
-> >
-> > Make this change permanent by hardcoding the Tx00 on the
-> > arch/kernel/reboot.c pci quirks table.
-> 
-> Hi,
-> 
-> I just want to add to this discussion that this problem also occurs on my T61 with only Linux installed on it.
-> "reboot=pci" also removed the reboot delay here.
-> 
-> If you need some further information or want me to try some patches / old kernels I'd be glad to help.
-> 
-> Regards,
-> Jens
-> 
-Hi!
+Locking in this function seems to be broken. If we are unlucky:
+- two cpus will allocate, initialize and return two different pointers
+- two cpus will allocate, but both initialize only one (two times!) and return
+  the same pointer (so one of them will be leaked) - 2 initializations may lead
+  to double unlock later, etc
+- ...
 
-Just a quick me too: I'm on Lenovo R61. reboot=pci gives instantaneous
-reboot, reboot=acpi and default-reboot delays for 9 seconds...
+Something like patch below is needed. I don't have alpha cross compiler so
+I can't even compile it...
 
-Cheers,
-Flo
+---
+From: Marcin Slusarz <marcin.slusarz@gmail.com>
+Subject: [PATCH] alpha: fix races in srmcons_get_private_struct
+
+---
+ arch/alpha/kernel/srmcons.c |   38 ++++++++++++++++++++++++--------------
+ 1 files changed, 24 insertions(+), 14 deletions(-)
+
+diff --git a/arch/alpha/kernel/srmcons.c b/arch/alpha/kernel/srmcons.c
+index 783f4e5..531ac99 100644
+--- a/arch/alpha/kernel/srmcons.c
++++ b/arch/alpha/kernel/srmcons.c
+@@ -161,25 +161,35 @@ srmcons_get_private_struct(struct srmcons_private **ps)
+ 	static struct srmcons_private *srmconsp = NULL;
+ 	static DEFINE_SPINLOCK(srmconsp_lock);
+ 	unsigned long flags;
+-	int retval = 0;
++	struct srmcons_private *tmp;
+ 
+-	if (srmconsp == NULL) {
+-		srmconsp = kmalloc(sizeof(*srmconsp), GFP_KERNEL);
+-		spin_lock_irqsave(&srmconsp_lock, flags);
+-
+-		if (srmconsp == NULL)
+-			retval = -ENOMEM;
+-		else {
+-			srmconsp->tty = NULL;
+-			spin_lock_init(&srmconsp->lock);
+-			init_timer(&srmconsp->timer);
+-		}
++	if (srmconsp) {
++		*ps = srmconsp;
++		return 0;
++	}
+ 
+-		spin_unlock_irqrestore(&srmconsp_lock, flags);
++	tmp = kmalloc(sizeof(*srmconsp), GFP_KERNEL);
++	if (!tmp) {
++		*ps = NULL;
++		return -ENOMEM;
+ 	}
+ 
++	spin_lock_irqsave(&srmconsp_lock, flags);
++
++	/* recheck under lock to not race with another cpu */
++	if (srmconsp == NULL) {
++		tmp->tty = NULL;
++		spin_lock_init(&tmp->lock);
++		init_timer(&tmp->timer);
++
++		srmconsp = tmp;
++	} else
++		kfree(tmp);
++
++	spin_unlock_irqrestore(&srmconsp_lock, flags);
++
+ 	*ps = srmconsp;
+-	return retval;
++	return 0;
+ }
+ 
+ static int
+-- 
+1.7.1
 
