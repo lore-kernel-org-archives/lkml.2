@@ -1,25 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965354Ab0GPM3O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 08:29:14 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43466 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965342Ab0GPM3K (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S965343Ab0GPM3K (ORCPT <rfc822;w@1wt.eu>);
 	Fri, 16 Jul 2010 08:29:10 -0400
-Date: Fri, 16 Jul 2010 14:29:08 +0200
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:43451 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S965325Ab0GPM3G (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 08:29:06 -0400
+Date: Fri, 16 Jul 2010 14:29:02 +0200
 From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: Milton Miller <miltonm@bga.com>, David Woodhouse <dwmw2@infradead.org>,
+To: Milton Miller <miltonm@bga.com>, Josh Boyer <jwboyer@linux.vnet.ibm.com>,
+        Matt Porter <mporter@kernel.crashing.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Paul Mackerras <paulus@samba.org>,
+        Solomon Peachy <solomon@linux-wlan.com>,
+        David Woodhouse <dwmw2@infradead.org>,
         Mike Frysinger <vapier@gentoo.org>, Jiri Kosina <jkosina@suse.cz>,
         Artem Bityutskiy <Artem.Bityutskiy@nokia.com>,
         Alexander Kurz <linux@kbdbabel.org>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        Manuel Lauss <manuel.lauss@gmail.com>, linux-kernel@vger.kernel.org,
-        linux-mtd@lists.infradead.org
+        "David S. Miller" <davem@davemloft.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>,
+        John Linn <john.linn@xilinx.com>,
+        Florian Fainelli <florian@openwrt.org>,
+        Nicolas Pitre <nico@fluxnic.net>, Joe Perches <joe@perches.com>,
+        Ladislav Michl <ladis@linux-mips.org>,
+        David Brown <davidb@quicinc.com>, linuxppc-dev@ozlabs.org,
+        linux-kernel@vger.kernel.org, linux-mtd@lists.infradead.org,
+        netdev@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 2/2] Removed redwood/mtd mapping
-Message-ID: <ae6929d3206f6a282f2b0bf2621a05af45d892ff.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: [PATCH 1/2] Remove REDWOOD_[456] config options and conditional
+ code
+Message-ID: <ca1bb25d203618c3548748f5efb6f125a96c89e0.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
 References: <4f07b3092cafbbba37d61d367cc7484e24d18d2a.1279116162.git.qy03fugy@stud.informatik.uni-erlangen.de>
  <redwood56-reply-1-miltonm@bga.com>
  <cover.1279282865.git.qy03fugy@stud.informatik.uni-erlangen.de>
@@ -32,186 +43,183 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Removing the redwood mtd mapping driver, because all REDWOOD_[456]
-configuration options were removed from the kernel, because they weren't
-referenced anywhere.
+The config options for REDWOOD_[456] were commented out in the powerpc
+Kconfig. The ifdefs referencing this options therefore are dead and all
+references to this can be removed (Also dependencies in other KConfig
+files).
 
 Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- drivers/mtd/maps/Kconfig   |    8 ---
- drivers/mtd/maps/Makefile  |    1 -
- drivers/mtd/maps/redwood.c |  131 --------------------------------------------
- 3 files changed, 0 insertions(+), 140 deletions(-)
- delete mode 100644 drivers/mtd/maps/redwood.c
+ arch/powerpc/platforms/40x/Kconfig |   16 -------------
+ drivers/mtd/maps/Kconfig           |    2 +-
+ drivers/mtd/maps/redwood.c         |   43 ------------------------------------
+ drivers/net/Kconfig                |    2 +-
+ drivers/net/smc91x.h               |   37 -------------------------------
+ 5 files changed, 2 insertions(+), 98 deletions(-)
 
+diff --git a/arch/powerpc/platforms/40x/Kconfig b/arch/powerpc/platforms/40x/Kconfig
+index ec64264..b721764 100644
+--- a/arch/powerpc/platforms/40x/Kconfig
++++ b/arch/powerpc/platforms/40x/Kconfig
+@@ -71,22 +71,6 @@ config MAKALU
+ 	help
+ 	  This option enables support for the AMCC PPC405EX board.
+ 
+-#config REDWOOD_5
+-#	bool "Redwood-5"
+-#	depends on 40x
+-#	default n
+-#	select STB03xxx
+-#	help
+-#	  This option enables support for the IBM STB04 evaluation board.
+-
+-#config REDWOOD_6
+-#	bool "Redwood-6"
+-#	depends on 40x
+-#	default n
+-#	select STB03xxx
+-#	help
+-#	  This option enables support for the IBM STBx25xx evaluation board.
+-
+ #config SYCAMORE
+ #	bool "Sycamore"
+ #	depends on 40x
 diff --git a/drivers/mtd/maps/Kconfig b/drivers/mtd/maps/Kconfig
-index 6629d09..701d942 100644
+index f22bc9f..6629d09 100644
 --- a/drivers/mtd/maps/Kconfig
 +++ b/drivers/mtd/maps/Kconfig
-@@ -319,14 +319,6 @@ config MTD_CFI_FLAGADM
- 	  Mapping for the Flaga digital module. If you don't have one, ignore
- 	  this setting.
+@@ -321,7 +321,7 @@ config MTD_CFI_FLAGADM
  
--config MTD_REDWOOD
--	tristate "CFI Flash devices mapped on IBM Redwood"
--	depends on MTD_CFI
--	help
--	  This enables access routines for the flash chips on the IBM
--	  Redwood board. If you have one of these boards and would like to
--	  use the flash chips on it, say 'Y'.
--
- config MTD_SOLUTIONENGINE
- 	tristate "CFI Flash device mapped on Hitachi SolutionEngine"
- 	depends on SUPERH && SOLUTION_ENGINE && MTD_CFI && MTD_REDBOOT_PARTS
-diff --git a/drivers/mtd/maps/Makefile b/drivers/mtd/maps/Makefile
-index bb035cd..f216bb5 100644
---- a/drivers/mtd/maps/Makefile
-+++ b/drivers/mtd/maps/Makefile
-@@ -44,7 +44,6 @@ obj-$(CONFIG_MTD_AUTCPU12)	+= autcpu12-nvram.o
- obj-$(CONFIG_MTD_EDB7312)	+= edb7312.o
- obj-$(CONFIG_MTD_IMPA7)		+= impa7.o
- obj-$(CONFIG_MTD_FORTUNET)	+= fortunet.o
--obj-$(CONFIG_MTD_REDWOOD)	+= redwood.o
- obj-$(CONFIG_MTD_UCLINUX)	+= uclinux.o
- obj-$(CONFIG_MTD_NETtel)	+= nettel.o
- obj-$(CONFIG_MTD_SCB2_FLASH)	+= scb2_flash.o
+ config MTD_REDWOOD
+ 	tristate "CFI Flash devices mapped on IBM Redwood"
+-	depends on MTD_CFI && ( REDWOOD_4 || REDWOOD_5 || REDWOOD_6 )
++	depends on MTD_CFI
+ 	help
+ 	  This enables access routines for the flash chips on the IBM
+ 	  Redwood board. If you have one of these boards and would like to
 diff --git a/drivers/mtd/maps/redwood.c b/drivers/mtd/maps/redwood.c
-deleted file mode 100644
-index d2c9db0..0000000
+index 933c0b6..d2c9db0 100644
 --- a/drivers/mtd/maps/redwood.c
-+++ /dev/null
-@@ -1,131 +0,0 @@
--/*
-- * drivers/mtd/maps/redwood.c
-- *
-- * FLASH map for the IBM Redwood 4/5/6 boards.
-- *
-- * Author: MontaVista Software, Inc. <source@mvista.com>
-- *
-- * 2001-2003 (c) MontaVista, Software, Inc. This file is licensed under
-- * the terms of the GNU General Public License version 2. This program
-- * is licensed "as is" without any warranty of any kind, whether express
-- * or implied.
-- */
++++ b/drivers/mtd/maps/redwood.c
+@@ -22,8 +22,6 @@
+ 
+ #include <asm/io.h>
+ 
+-#if !defined (CONFIG_REDWOOD_6)
 -
--#include <linux/module.h>
--#include <linux/types.h>
--#include <linux/kernel.h>
--#include <linux/init.h>
--
--#include <linux/mtd/mtd.h>
--#include <linux/mtd/map.h>
--#include <linux/mtd/partitions.h>
--
--#include <asm/io.h>
--
--#define WINDOW_ADDR 0xffc00000
--#define WINDOW_SIZE 0x00400000
+ #define WINDOW_ADDR 0xffc00000
+ #define WINDOW_SIZE 0x00400000
+ 
+@@ -69,47 +67,6 @@ static struct mtd_partition redwood_flash_partitions[] = {
+ 	}
+ };
+ 
+-#else /* CONFIG_REDWOOD_6 */
+-/* FIXME: the window is bigger - armin */
+-#define WINDOW_ADDR 0xff800000
+-#define WINDOW_SIZE 0x00800000
 -
 -#define RW_PART0_OF	0
--#define RW_PART0_SZ	0x10000
--#define RW_PART1_OF	RW_PART0_SZ
--#define RW_PART1_SZ	0x200000 - 0x10000
--#define RW_PART2_OF	0x200000
--#define RW_PART2_SZ	0x10000
--#define RW_PART3_OF	0x210000
--#define RW_PART3_SZ	0x200000 - (0x10000 + 0x20000)
--#define RW_PART4_OF	0x3e0000
--#define RW_PART4_SZ	0x20000
+-#define RW_PART0_SZ	0x400000	/* 4 MiB data */
+-#define RW_PART1_OF	RW_PART0_OF + RW_PART0_SZ
+-#define RW_PART1_SZ	0x10000		/* 64K VPD */
+-#define RW_PART2_OF	RW_PART1_OF + RW_PART1_SZ
+-#define RW_PART2_SZ	0x400000 - (0x10000 + 0x20000)
+-#define RW_PART3_OF	RW_PART2_OF + RW_PART2_SZ
+-#define RW_PART3_SZ	0x20000
 -
 -static struct mtd_partition redwood_flash_partitions[] = {
 -	{
--		.name = "Redwood OpenBIOS Vital Product Data",
+-		.name = "Redwood filesystem",
 -		.offset = RW_PART0_OF,
--		.size = RW_PART0_SZ,
+-		.size = RW_PART0_SZ
+-	},
+-	{
+-		.name = "Redwood OpenBIOS Vital Product Data",
+-		.offset = RW_PART1_OF,
+-		.size = RW_PART1_SZ,
 -		.mask_flags = MTD_WRITEABLE	/* force read-only */
 -	},
 -	{
 -		.name = "Redwood kernel",
--		.offset = RW_PART1_OF,
--		.size = RW_PART1_SZ
--	},
--	{
--		.name = "Redwood OpenBIOS non-volatile storage",
 -		.offset = RW_PART2_OF,
--		.size = RW_PART2_SZ,
--		.mask_flags = MTD_WRITEABLE	/* force read-only */
--	},
--	{
--		.name = "Redwood filesystem",
--		.offset = RW_PART3_OF,
--		.size = RW_PART3_SZ
+-		.size = RW_PART2_SZ
 -	},
 -	{
 -		.name = "Redwood OpenBIOS",
--		.offset = RW_PART4_OF,
--		.size = RW_PART4_SZ,
+-		.offset = RW_PART3_OF,
+-		.size = RW_PART3_SZ,
 -		.mask_flags = MTD_WRITEABLE	/* force read-only */
 -	}
 -};
 -
--struct map_info redwood_flash_map = {
--	.name = "IBM Redwood",
--	.size = WINDOW_SIZE,
--	.bankwidth = 2,
--	.phys = WINDOW_ADDR,
--};
+-#endif /* CONFIG_REDWOOD_6 */
 -
+ struct map_info redwood_flash_map = {
+ 	.name = "IBM Redwood",
+ 	.size = WINDOW_SIZE,
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index ce2fcdd..313d306 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -913,7 +913,7 @@ config SMC91X
+ 	tristate "SMC 91C9x/91C1xxx support"
+ 	select CRC32
+ 	select MII
+-	depends on ARM || REDWOOD_5 || REDWOOD_6 || M32R || SUPERH || \
++	depends on ARM || M32R || SUPERH || \
+ 		MIPS || BLACKFIN || MN10300 || COLDFIRE
+ 	help
+ 	  This is a driver for SMC's 91x series of Ethernet chipsets,
+diff --git a/drivers/net/smc91x.h b/drivers/net/smc91x.h
+index 8d2772c..ee74791 100644
+--- a/drivers/net/smc91x.h
++++ b/drivers/net/smc91x.h
+@@ -83,43 +83,6 @@ static inline void SMC_outw(u16 val, void __iomem *ioaddr, int reg)
+ 	}
+ }
+ 
+-#elif defined(CONFIG_REDWOOD_5) || defined(CONFIG_REDWOOD_6)
 -
--#define NUM_REDWOOD_FLASH_PARTITIONS ARRAY_SIZE(redwood_flash_partitions)
+-/* We can only do 16-bit reads and writes in the static memory space. */
+-#define SMC_CAN_USE_8BIT	0
+-#define SMC_CAN_USE_16BIT	1
+-#define SMC_CAN_USE_32BIT	0
+-#define SMC_NOWAIT		1
 -
--static struct mtd_info *redwood_mtd;
+-#define SMC_IO_SHIFT		0
 -
--static int __init init_redwood_flash(void)
--{
--	int err;
+-#define SMC_inw(a, r)		in_be16((volatile u16 *)((a) + (r)))
+-#define SMC_outw(v, a, r)	out_be16((volatile u16 *)((a) + (r)), v)
+-#define SMC_insw(a, r, p, l) 						\
+-	do {								\
+-		unsigned long __port = (a) + (r);			\
+-		u16 *__p = (u16 *)(p);					\
+-		int __l = (l);						\
+-		insw(__port, __p, __l);					\
+-		while (__l > 0) {					\
+-			*__p = swab16(*__p);				\
+-			__p++;						\
+-			__l--;						\
+-		}							\
+-	} while (0)
+-#define SMC_outsw(a, r, p, l) 						\
+-	do {								\
+-		unsigned long __port = (a) + (r);			\
+-		u16 *__p = (u16 *)(p);					\
+-		int __l = (l);						\
+-		while (__l > 0) {					\
+-			/* Believe it or not, the swab isn't needed. */	\
+-			outw( /* swab16 */ (*__p++), __port);		\
+-			__l--;						\
+-		}							\
+-	} while (0)
+-#define SMC_IRQ_FLAGS		(0)
 -
--	printk(KERN_NOTICE "redwood: flash mapping: %x at %x\n",
--			WINDOW_SIZE, WINDOW_ADDR);
--
--	redwood_flash_map.virt = ioremap(WINDOW_ADDR, WINDOW_SIZE);
--
--	if (!redwood_flash_map.virt) {
--		printk("init_redwood_flash: failed to ioremap\n");
--		return -EIO;
--	}
--	simple_map_init(&redwood_flash_map);
--
--	redwood_mtd = do_map_probe("cfi_probe",&redwood_flash_map);
--
--	if (redwood_mtd) {
--		redwood_mtd->owner = THIS_MODULE;
--		err = add_mtd_partitions(redwood_mtd,
--				redwood_flash_partitions,
--				NUM_REDWOOD_FLASH_PARTITIONS);
--		if (err) {
--			printk("init_redwood_flash: add_mtd_partitions failed\n");
--			iounmap(redwood_flash_map.virt);
--		}
--		return err;
--
--	}
--
--	iounmap(redwood_flash_map.virt);
--	return -ENXIO;
--}
--
--static void __exit cleanup_redwood_flash(void)
--{
--	if (redwood_mtd) {
--		del_mtd_partitions(redwood_mtd);
--		/* moved iounmap after map_destroy - armin */
--		map_destroy(redwood_mtd);
--		iounmap((void *)redwood_flash_map.virt);
--	}
--}
--
--module_init(init_redwood_flash);
--module_exit(cleanup_redwood_flash);
--
--MODULE_LICENSE("GPL");
--MODULE_AUTHOR("MontaVista Software <source@mvista.com>");
--MODULE_DESCRIPTION("MTD map driver for the IBM Redwood reference boards");
+ #elif defined(CONFIG_SA1100_PLEB)
+ /* We can only do 16-bit reads and writes in the static memory space. */
+ #define SMC_CAN_USE_8BIT	1
 -- 
 1.7.0.4
 
