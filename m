@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758718Ab0GPGLH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 02:11:07 -0400
-Received: from troy.hostgo.com ([64.62.143.130]:45642 "EHLO troy.hostgo.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758708Ab0GPGLE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 02:11:04 -0400
-From: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
-To: linux-kernel@vger.kernel.org
-Subject: mvsas still has problems with 2.6.34
-Date: Fri, 16 Jul 2010 00:10:57 -0600
-User-Agent: KMail/1.13.3 (Linux/2.6.34-0.dmz.10-liquorix-amd64; KDE/4.4.4; x86_64; ; )
-Cc: linux-scsi@vger.kernel.org, ayan@marvell.com, andy yan <andyysj@gmail.com>,
-        "linux-raid" <linux-raid@vger.kernel.org>
+	id S935653Ab0GPG2e (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 02:28:34 -0400
+Received: from fmailhost04.isp.att.net ([207.115.11.54]:56801 "EHLO
+	fmailhost04.isp.att.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935638Ab0GPG2b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 02:28:31 -0400
+X-Greylist: delayed 301 seconds by postgrey-1.27 at vger.kernel.org; Fri, 16 Jul 2010 02:28:31 EDT
+X-Originating-IP: [71.131.15.99]
+Date: Thu, 15 Jul 2010 23:22:51 -0700
+From: Mark Harris <mhlk@osj.us>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+	extended file stats available [ver #6]
+Message-ID: <20100716062251.GA9318@zoia.osj.us>
+References: <201007152235.22373.arnd@arndb.de> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> <30646.1279230807@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007160010.58000.tfjellstrom@strangesoft.net>
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - troy.hostgo.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - strangesoft.net
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've recently updated my server, and the mvsas driver included in 2.6.34.1 
-still causes my AOC-SASLP-MV8 card to completely lock up after mdraid starts 
-up on the devices. The machine is essentially in "production" so I can't do 
-a heck of a lot of testing on it anymore. The mvsas driver I got from Andy 
-Yan seems to be a little outdated, it fails to compile due to a missing 
-argument to sas_change_queue_depth, which I managed to fix, and I will try 
-testing. I hope it works.
+> struct xstat_time {
+> 	unsigned long long	tv_sec, tv_nsec;
+> };
 
-At some point though I really hope this gets fixed. I'm still willing to help 
-test any new versions, just that I can't keep my box down for an extended 
-period.
-
-Thanks.
-
--- 
-Thomas Fjellstrom
-tfjellstrom@strangesoft.net
+unsigned?  Existing filesystems support on-disk timestamps
+representing times prior to the epoch.
