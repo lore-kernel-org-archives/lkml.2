@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758909Ab0GPSpx (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 14:45:53 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:37504 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758790Ab0GPSpw (ORCPT
+	id S1758915Ab0GPSsR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 14:48:17 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51950 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758790Ab0GPSsQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 14:45:52 -0400
-Subject: Re: [PATCH 1/5] v2 Split the memory_block structure
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Nathan Fontenot <nfont@austin.ibm.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4C40A3BC.3060504@austin.ibm.com>
-References: <4C3F53D1.3090001@austin.ibm.com>
-	 <4C3F557F.3000304@austin.ibm.com> <1279300521.9207.222.camel@nimitz>
-	 <4C40A3BC.3060504@austin.ibm.com>
-Content-Type: text/plain; charset="ANSI_X3.4-1968"
-Date: Fri, 16 Jul 2010 11:45:31 -0700
-Message-ID: <1279305931.9207.265.camel@nimitz>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Fri, 16 Jul 2010 14:48:16 -0400
+Message-ID: <4C40A83B.2090108@kernel.org>
+Date: Fri, 16 Jul 2010 11:43:07 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Catalin Marinas <catalin.marinas@arm.com>
+CC: linux-kernel@vger.kernel.org, Pekka Enberg <penberg@cs.helsinki.fi>,
+        "H. Peter Anvin" <hpa@zytor.com>, stable <stable@kernel.org>
+Subject: Re: [PATCH] kmemleak: Add support for NO_BOOTMEM configurations
+References: <20100715145834.20885.20341.stgit@e102109-lin.cambridge.arm.com>	 <4C3F4286.3070503@kernel.org> <1279269963.24890.8.camel@e102109-lin.cambridge.arm.com>
+In-Reply-To: <1279269963.24890.8.camel@e102109-lin.cambridge.arm.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C40A941.00BE,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-16 at 13:23 -0500, Nathan Fontenot wrote:
-> >> -    if (mem->state != from_state_req) {
-> >> -            ret = -EINVAL;
-> >> -            goto out;
-> >> +    list_for_each_entry(mbs, &mem->sections, next) {
-> >> +            if (mbs->state != from_state_req)
-> >> +                    continue;
-> >> +
-> >> +            ret = memory_block_action(mbs, to_state);
-> >> +            if (ret)
-> >> +                    break;
-> >> +    }
-> >> +
-> >> +    if (ret) {
-> >> +            list_for_each_entry(mbs, &mem->sections, next) {
-> >> +                    if (mbs->state == from_state_req)
-> >> +                            continue;
-> >> +
-> >> +                    if (memory_block_action(mbs, to_state))
-> >> +                            printk(KERN_ERR "Could not re-enable memory "
-> >> +                                   "section %lx\n", mbs->phys_index);
-> >> +            }
-> >>      }
-> > 
-> > Please just use a goto here.  It's nicer looking, and much more in line
-> > with what's there already.
+On 07/16/2010 01:46 AM, Catalin Marinas wrote:
+> On Thu, 2010-07-15 at 18:16 +0100, Yinghai Lu wrote:
+> On 07/15/2010 07:58 AM, Catalin Marinas wrote: 
+>>> With commits 08677214 and 59be5a8e, alloc_bootmem()/free_bootmem() and
+>>> friends use the early_res functions for memory management when
+>>> NO_BOOTMEM is enabled. This patch adds the kmemleak calls in the
+>>> corresponding code paths for bootmem allocations.
+>>>
+>>> Signed-off-by: Catalin Marinas <catalin.marinas@arm.com>
+>>> Cc: Pekka Enberg <penberg@cs.helsinki.fi>
+>>> Cc: Yinghai Lu <yinghai@kernel.org>
+>>> Cc: H. Peter Anvin <hpa@zytor.com>
+>>
+>> should be for 2.6.34 and 2.6.35.
 > 
-> Not sure if I follow on where you want the goto.  If you mean after the
-> if (memory_block_action())...  I purposely did not have a goto here.
-> Since this is in the recovery path I wanted to make sure we tried to return
-> every memory section to the original state. 
+> I only noticed it recently since we don't have NO_BOOTMEM on ARM.
+> Anyway, I'll cc stable@kernel.org when pushing the patch to Linus.
+> 
+> Should I consider your reply as an acked-by?
+> 
 
-Looking at it a little closer, I see what you're doing now.
+Yes.
 
-First of all, should memory_block_action() get a new name since it isn
-not taking 'memory_block_section's?
+Thanks
 
-The thing I would have liked to see is to have that error handling block
-out of the way a bit.  But, the function is small, and there's not _too_
-much code in there, so what you have is probably the best way to do it.
-
-Minor nit: Please pull the memory_block_action() out of the if() and do
-the:
-
-> >> +            ret = memory_block_action(mbs, to_state);
-> >> +            if (ret)
-> >> +                    break;
-
-thing like above.  It makes it much more obvious that the loop is
-related to the top one.  I was thinking if it made sense to have a
-helper function to go through and do that list walk, so you could do:
-
-	ret = set_all_states(mem->sections, to_state);
-	if (ret)
-		set_all_states(mem->sections, old_state);
-
-But I think you'd need to pass in a bit more information, so it probably
-isn't worth doing that, either.
-
--- Dave
-
+Yinghai
