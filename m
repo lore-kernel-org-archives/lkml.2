@@ -1,61 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935812Ab0GPHT1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 03:19:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57290 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935747Ab0GPHTZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 03:19:25 -0400
-Date: Fri, 16 Jul 2010 17:19:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Paul Mackerras <paulus@samba.org>, <linuxppc-dev@lists.ozlabs.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Martyn Welch <martyn.welch@ge.com>
-Subject: linux-next: build failure after merge of the final tree (powerpc
- related)
-Message-Id: <20100716171920.51ce1b88.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__16_Jul_2010_17_19_20_+1000_lYfodvP+Q6=ZuAhj"
+	id S935825Ab0GPHTg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 03:19:36 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:50147 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935815Ab0GPHTb convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 03:19:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:organization:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=K5I+hGXzYbF4JA4f2aZ/Ew/EQhnfJ38653xrBDMfgdyikeJ4W6ZVZzlljF+FMwuJ2g
+         kJI1qlw3IKHHqqN4AqonS7BLbcQYS+yawaqjzVV1r+2c0u+o/FFh1dAKZ50exQhOg/Tg
+         wbLoQJ4toYExmHRdmZ8+KNtT20GA91E5Gl8U0=
+From: Marek Vasut <marek.vasut@gmail.com>
+Organization: Hack&Dev
+To: Wan ZongShun <mcuos.com@gmail.com>
+Subject: Re: [PATCH] ARM/nuc900: fix nuc900 touchscreen clk definition bug
+Date: Fri, 16 Jul 2010 09:19:24 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34-1-amd64; KDE/4.4.4; x86_64; ; )
+Cc: linux-arm-kernel@lists.infradead.org, LKML <linux-kernel@vger.kernel.org>,
+        Russell King <linux@arm.linux.org.uk>
+References: <4C3FCBFF.50506@gmail.com> <201007160709.15385.marek.vasut@gmail.com> <AANLkTinEqScq2E0MSRJrUN5fR-1rs8fB9rLgMdhYW9R6@mail.gmail.com>
+In-Reply-To: <AANLkTinEqScq2E0MSRJrUN5fR-1rs8fB9rLgMdhYW9R6@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201007160919.24927.marek.vasut@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__16_Jul_2010_17_19_20_+1000_lYfodvP+Q6=ZuAhj
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Dne Pá 16. července 2010 07:34:21 Wan ZongShun napsal(a):
+> 2010/7/16 Marek Vasut <marek.vasut@gmail.com>:
+> > Dne Pá 16. července 2010 05:03:27 Wan ZongShun napsal(a):
+> >> This patch is to fix nuc900 touchscreen clk definition bug,the .dev_id's
+> >> name should be 'nuc900-ts', it should be the same to pdev.name. or else,
+> >> the touchscreen driver will be not working well due to clock engine
+> >> disabled.
+> >> 
+> >> Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+> >> ---
+> >>  arch/arm/mach-w90x900/cpu.c |    2 +-
+> >>  1 files changed, 1 insertions(+), 1 deletions(-)
+> >> 
+> >> diff --git a/arch/arm/mach-w90x900/cpu.c b/arch/arm/mach-w90x900/cpu.c
+> >> index 642207e..83c5632 100644
+> >> --- a/arch/arm/mach-w90x900/cpu.c
+> >> +++ b/arch/arm/mach-w90x900/cpu.c
+> >> @@ -93,7 +93,7 @@ static struct clk_lookup nuc900_clkregs[] = {
+> >>       DEF_CLKLOOK(&clk_kpi, "nuc900-kpi", NULL),
+> >>       DEF_CLKLOOK(&clk_wdt, "nuc900-wdt", NULL),
+> >>       DEF_CLKLOOK(&clk_gdma, "nuc900-gdma", NULL),
+> >> -     DEF_CLKLOOK(&clk_adc, "nuc900-adc", NULL),
+> >> +     DEF_CLKLOOK(&clk_adc, "nuc900-ts", NULL),
+> >>       DEF_CLKLOOK(&clk_usi, "nuc900-spi", NULL),
+> >>       DEF_CLKLOOK(&clk_ext, NULL, "ext"),
+> >>       DEF_CLKLOOK(&clk_timer0, NULL, "timer0"),
+> > 
+> > Hey,
+> > 
+> > Is that thing really touchscreen or general-purpose analog/digital
+> > converter ?
+> 
+> Oh, it is general-purpose analog/digital converter controller.
+> I only use it to implemnt my touchscreen function, Also it can be use
+> other function.
+> 
+> so, I have to change my touchscreen driver name to nuc900-adc?
 
-Hi all,
+No, just change the name of clock in the touchscreen driver. So that the 
+touchscreen driver will use nuc900-adc clocksource.
 
-After merging the final tree, today's linux-next build (powerpc
-allmodconfig) failed like this:
+You're welcome. :)
 
-ERROR: "of_i8042_kbd_irq" [drivers/input/serio/i8042.ko] undefined!
-ERROR: "of_i8042_aux_irq" [drivers/input/serio/i8042.ko] undefined!
-
-Presumably missing EXPORT_SYMBOLs ..
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__16_Jul_2010_17_19_20_+1000_lYfodvP+Q6=ZuAhj
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMQAf4AAoJEDMEi1NhKgbsFSoIAJXfCe3PuQaXJLvnVkr8eUHT
-oYRCtR3kEWPCpdedg5MSaWMNL6LUepCwdINPcL+FisvYZHhyBm92mrNdLIzvL4YF
-MK+aUCTSF5Fi2zL0N2T4zH6sJHXXJdg/tlGL5bG0CEuuuBCn2gdDzZUtNmJrNy42
-NyrwQNS7G+judqbNjws5L1LPxjeybSRHz60dLTUSiALQK6V7v1aNGkJhepG4XNO1
-9+ZFKfKlCJmelmOGwytl1a5FKcb75CWBDDwcPRirQnDG2hJLuMjnCT8eOUZrFKcZ
-UH6laP8bVaB1uWsn5C27NSp/T+u8OxMjKxsy0HUzyIkekCC8C5D/lgzXQ1pIMio=
-=0pZN
------END PGP SIGNATURE-----
-
---Signature=_Fri__16_Jul_2010_17_19_20_+1000_lYfodvP+Q6=ZuAhj--
+> 
+> Thanks for your Reminder, I appreciate it. :)
+> 
+> > Cheers
