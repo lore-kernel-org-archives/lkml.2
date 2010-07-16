@@ -1,74 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756775Ab0GPRnL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 13:43:11 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:34806 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756269Ab0GPRnJ (ORCPT
+	id S1756918Ab0GPRpc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 13:45:32 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:57891 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756223Ab0GPRpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 13:43:09 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Ben Greear <greearb@candelatech.com>
-Subject: Re: [pci] pci/mrst:  Detect loops when reading fixed BAR cap.
-Date: Fri, 16 Jul 2010 11:43:04 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <1279126923-27926-1-git-send-email-greearb@candelatech.com>
-In-Reply-To: <1279126923-27926-1-git-send-email-greearb@candelatech.com>
+	Fri, 16 Jul 2010 13:45:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=QgonTeto64PED5RopY+u7Qp5MrYIuedwrD+hgBrM/NRcvyERBGJG3DqucqmZUUC0MN
+         1T/xSLVOj0pyHrDCTGusq04/XSvVBL/iV6HgpVGnspSnLFD7svHLtgQLqgSuD6GUy+eE
+         E8JkRzWJuj6ziQ/wwIBGAextEpywb1IPfLLPo=
+From: Helmut Schaa <helmut.schaa@googlemail.com>
+To: Gertjan van Wingerde <gwingerde@gmail.com>
+Subject: Re: [PATCH 01/11] Removing dead RT2800PCI_SOC
+Date: Fri, 16 Jul 2010 19:44:45 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.35-rc4-wl-default+; KDE/4.3.5; x86_64; ; )
+Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
+        Felix Fietkau <nbd@openwrt.org>,
+        "John W. Linville" <linville@tuxdriver.com>,
+        Ivo Van Doorn <ivdoorn@gmail.com>,
+        Christoph Egger <siccegge@cs.fau.de>, linux-wireless@vger.kernel.org,
+        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de,
+        Luis Correia <luis.f.correia@gmail.com>
+References: <cover.1279110894.git.siccegge@cs.fau.de> <AANLkTik8M0gNipi_rwVJYbmo_3FfdHs-H4H_XDgTcbhI@mail.gmail.com> <4C407ED4.6000002@gmail.com>
+In-Reply-To: <4C407ED4.6000002@gmail.com>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="iso-8859-15"
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007161143.05187.bjorn.helgaas@hp.com>
+Message-Id: <201007161944.45825.helmut.schaa@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday, July 14, 2010 11:02:03 am Ben Greear wrote:
-> The mrst logic introduced in 2.6.33-rc8 in commit
-> a712ffbc199849364c46e9112b93b66de08e2c26 causes boot
-> to hang on at least this platform:
+Am Freitag 16 Juli 2010 schrieb Gertjan van Wingerde:
+> On 07/16/10 12:08, Helmut Schaa wrote:
+> > On Fri, Jul 16, 2010 at 9:18 AM, Gertjan van Wingerde
+> > <gwingerde@gmail.com> wrote:
+> >>
+> >> On 07/16/10 08:57, Helmut Schaa wrote:
+> >>> On Thu, Jul 15, 2010 at 10:41 AM, Bartlomiej Zolnierkiewicz <bzolnier@gmail.com <mailto:bzolnier@gmail.com>> wrote:
+> >>>
+> >>>     On Wednesday 14 July 2010 04:44:44 pm Felix Fietkau wrote:
+> >>>     > On 2010-07-14 3:15 PM, John W. Linville wrote:
+> >>>     > > On Wed, Jul 14, 2010 at 02:52:14PM +0200, Ivo Van Doorn wrote:
+> >>>     > >> On Wed, Jul 14, 2010 at 2:46 PM, Luis Correia <luis.f.correia@gmail.com <mailto:luis.f.correia@gmail.com>> wrote:
+> >>>     > >> > On Wed, Jul 14, 2010 at 13:39, Christoph Egger <siccegge@cs.fau.de <mailto:siccegge@cs.fau.de>> wrote:
+> >>>     > >> >> While RT2800PCI_SOC exists in Kconfig, it depends on either
+> >>>     > >> >> RALINK_RT288X or RALINK_RT305X which are both not available in Kconfig
+> >>>     > >> >> so all Code depending on that can't ever be selected and, if there's
+> >>>     > >> >> no plan to add these options, should be cleaned up
+> >>>     > >> >>
+> >>>     > >> >> Signed-off-by: Christoph Egger <siccegge@cs.fau.de <mailto:siccegge@cs.fau.de>>
+> >>>     > >> >
+> >>>     > >> > NAK,
+> >>>     > >> >
+> >>>     > >> > this is not dead code, it is needed for the Ralink System-on-Chip
+> >>>     > >> > Platform devices.
+> >>>     > >> >
+> >>>     > >> > While I can't fix Kconfig errors and the current KConfig file may be
+> >>>     > >> > wrong, this code cannot and will not be deleted.
+> >>>     > >>
+> >>>     > >> When the config option was introduced, the config options RALINK_RT288X and
+> >>>     > >> RALINK_RT305X were supposed to be merged as well soon after by somebody (Felix?)
+> >>>     > >>
+> >>>     > >> But since testing is done on SoC boards by Helmut and Felix, I assume the code
+> >>>     > >> isn't dead but actually in use.
+> >>>     > >
+> >>>     > > Perhaps Helmut and Felix can send us the missing code?
+> >>>     > The missing code is a MIPS platform port, which is currently being
+> >>>     > maintained in OpenWrt, but is not ready for upstream submission yet.
+> >>>     > I'm not working on this code at the moment, but I think it will be
+> >>>     > submitted once it's ready.
+> >>>
+> >>>     People are using automatic scripts to catch unused config options nowadays
+> >>>     so the issue is quite likely to come back again sooner or later..
+> >>>
+> >>>     Would it be possible to improve situation somehow till the missing parts
+> >>>     get merged?  Maybe by adding a tiny comment documenting RT2800PCI_SOC
+> >>>     situation to Kconfig (if the config option itself really cannot be removed)
+> >>>     until all code is ready etc.?
+> >>>
+> >>>
+> >>> Or we could just remove RT2800PCI_SOC completely and build the soc specific
+> >>> parts always as part of rt2800pci. I mean it's not much code, just the platform
+> >>> driver stuff and the eeprom access.
+> >>>
+> >>
+> >> I'm not sure if that is feasible. Sure, we can reduce the usage of the variable by
+> >> unconditionally compiling in the generic SOC code, but we should not unconditionally
+> >> register the SOC platform device, which is currently also under the scope of this
+> >> Kconfig variable.
+> > 
+> > Ehm, no, the platform device is not registered in rt2800pci at all,
+> > it's just the platform
+> > driver that gets registered there. The platform device will be
+> > registered in the according
+> > board init code (that only resides in openwrt at the moment).
+> > 
 > 
-> Intel E5405 CPU
-> System Information
-> 	Manufacturer: Supermicro
-> 	Product Name: X7DBU
+> OK. Didn't know that. Sounds good then.
 > 
-> The cause of the hang is that pci_cap points to itself
-> as the next capability, putting the fixed_bar_cap into
-> an endless loop.
-> 
-> This patch detects the loop, prints a warning, and
-> continues on with useful work.  This strategy was
-> suggested by Robert Hancock <hancockrwd@gmail.com>
-> 
-> This should be a candidate for 2.6.34.y as well.
-> 
-> Signed-off-by: Ben Greear <greearb@candelatech.com>
-> ---
-> :100644 100644 1cdc02c... 9535ba9... M	arch/x86/pci/mrst.c
->  arch/x86/pci/mrst.c |   11 +++++++++++
->  1 files changed, 11 insertions(+), 0 deletions(-)
-> 
-> diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-> index 1cdc02c..9535ba9 100644
-> --- a/arch/x86/pci/mrst.c
-> +++ b/arch/x86/pci/mrst.c
-> @@ -76,6 +76,17 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
->  				return pos;
->  		}
->  
-> +		if ((pcie_cap >> 20) == 0)
-> +			break;
-> +		
-> +		if ((pcie_cap >> 20) <= pos) {
-> +			printk(KERN_WARNING "WARNING: mrst:  detected loop"
-> +			       " when searching for fixed BAR cap, previous"
-> +			       " position: 0x%x new position: 0x%x"
-> +			       " bus-number: %i  devfn: %i\n",
-> +			       pos, pcie_cap >> 20, bus->number, devfn);
+> However, I've tried this in my local tree, and now compilation fails on the x86 platform
+> due to a missing KSEG1ADDR macro. How do you suggest to handle the potentially missing
+> macro?
 
-Can you use dev_warn() here to print the device info in the
-standard way?
+We can convert it to an ioremap call, that should be available on all platforms.
 
-Bjorn
+Helmut
+
