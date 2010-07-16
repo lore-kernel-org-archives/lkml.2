@@ -1,43 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab0GPRUl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 13:20:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26220 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab0GPRUk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 13:20:40 -0400
-Message-ID: <4C4094E0.7000403@redhat.com>
-Date: Fri, 16 Jul 2010 07:20:32 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1755557Ab0GPRZa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 13:25:30 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:22739 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755005Ab0GPRZ3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 13:25:29 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6045"; a="47555692"
+From: "Ai Li" <aili@codeaurora.org>
+To: "'Arjan van de Ven'" <arjan@linux.intel.com>
+Cc: <akpm@linux-foundation.org>, <dwalker@codeaurora.org>, <mingo@elte.hu>,
+        <shemminger@vyatta.com>, <czoccolo@gmail.com>, <len.brown@intel.com>,
+        <linux-kernel@vger.kernel.org>, <linux-arm-msm@vger.kernel.org>,
+        <linux-pm@lists.linux-foundation.org>
+References: <1279225825-31069-1-git-send-email-aili@codeaurora.org> <4C3FDAF1.7030107@linux.intel.com>
+In-Reply-To: <4C3FDAF1.7030107@linux.intel.com>
+Subject: RE: [PATCH] cpuidle: extend cpuidle and menu governor to handle dynamic states
+Date: Fri, 16 Jul 2010 11:25:27 -0600
+Message-ID: <000001cb250b$e2813e60$a783bb20$@org>
 MIME-Version: 1.0
-To: Joerg Roedel <joro@8bytes.org>
-CC: KVM <kvm@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
-        Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: KVM timekeeping fixes, V2
-References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <20100716131907.GJ23755@8bytes.org>
-In-Reply-To: <20100716131907.GJ23755@8bytes.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+	charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Microsoft Office Outlook 12.0
+Thread-Index: AcsknGsRrU6SRWRhR1a91A4rxQIfRQAaQ0sg
+Content-Language: en-us
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 03:19 AM, Joerg Roedel wrote:
-> On Mon, Jul 12, 2010 at 04:25:20PM -1000, Zachary Amsden wrote:
->    
->> Discovered brammage in patches due to unresolved merge.
->> Also, had to move 09/18 past 08/18 to resolve compile issue.
->>      
-> Have you tested this patchset with Nested SVM? We had TSC handling
-> related bugs there in the past and should make sure to keep it working.
->    
+> > +	if (dev->prepare)
+> > +		dev->prepare(dev, data->predicted_us);
+> >
+> 
+> I don't like the idea of passing predicted_us here.
+> the states and their updates should be independent of how long we
+> think we'll be idle;
 
-I've been very careful to keep nested SVM safe, but I've not got a good 
-test for that.  Is there any test suite for the nested case?
+The power_usage value, total or average, would depend on how long the
+predicted idle period is.  On our SoCs, a cpuidle state has three
+stages: entry stage, low power stage, and exit stage.  Entry and exit
+stages consume more power than the low power stage but have fixed
+durations, irrespective how long the idle period is.  As the
+predicted idle period changes, the entry and exit duration stay the
+same but the low power duration changes, resulting in different total
+or average power for the idle period.
 
-It took a lot of guessing to figure out why it works and why the code 
-looks imbalanced, but I now understand the way it is now is logical and 
-correct.
+
+> Also I would like the cpuidle code, not the governor, to call this
+> prepare function.
+> The need to call ->prepare is governor independent....
+
+I agree that it would be cleaner to call ->prepare from the cpuidle
+code.  But if we need values calculated in the governor's select
+function, I'm not sure what is the best way to do that from cpuidle
+code.
+
+ 
+> + if (dev->compare_power) {
+> 
+> I'm not a big fan of this as a flag; either we always do this,
+> which I
+> can understand, or we sort things, which is also fine with me.
+> Doing this condition like this.... not a fan.
+
+One of the concerns I have is backwards compatibility.  As far as I
+know, none of the current cpuidle drivers use the power_usage field.
+If we always do compare_power, those drivers would break until
+someone with technical device knowledge update the drivers to specify
+power...  I could derive fake power_usage numbers by default, using
+the cstate index position.  That seems kind of hacky but it would
+remove the need for the compare_power flag and retain the current
+behavior when cpuidle drivers do not provide their own power numbers.
+
+~Ai
+
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of Code Aurora Forum
+
