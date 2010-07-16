@@ -1,107 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965931Ab0GPPqd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 11:46:33 -0400
-Received: from cpsmtpb-ews05.kpnxchange.com ([213.75.39.8]:4219 "EHLO
-	cpsmtpb-ews05.kpnxchange.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S965833Ab0GPPqb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 11:46:31 -0400
-Message-ID: <4C407ED4.6000002@gmail.com>
-Date: Fri, 16 Jul 2010 17:46:28 +0200
-From: Gertjan van Wingerde <gwingerde@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100712 Lanikai/3.1
-MIME-Version: 1.0
-To: Helmut Schaa <helmut.schaa@googlemail.com>
-CC: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ivo Van Doorn <ivdoorn@gmail.com>,
-        Christoph Egger <siccegge@cs.fau.de>, linux-wireless@vger.kernel.org,
-        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de,
-        Luis Correia <luis.f.correia@gmail.com>
-Subject: Re: [PATCH 01/11] Removing dead RT2800PCI_SOC
-References: <cover.1279110894.git.siccegge@cs.fau.de>	<20100714131527.GB2352@tuxdriver.com>	<4C3DCD5C.1080705@openwrt.org>	<201007151041.55112.bzolnier@gmail.com>	<AANLkTilqoYMMKYJT-YYbEzdnytUSYa0EylEiJ4x5xXXH@mail.gmail.com>	<4C4007CD.2070504@gmail.com> <AANLkTik8M0gNipi_rwVJYbmo_3FfdHs-H4H_XDgTcbhI@mail.gmail.com>
-In-Reply-To: <AANLkTik8M0gNipi_rwVJYbmo_3FfdHs-H4H_XDgTcbhI@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 16 Jul 2010 15:46:28.0994 (UTC) FILETIME=[0E45CE20:01CB24FE]
-X-RecipientDomain: vger.kernel.org
+	id S965900Ab0GPPuZ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 11:50:25 -0400
+Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:39941 "HELO
+	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S965842Ab0GPPuX convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 11:50:23 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=l96EwinJ9h1cHgv2/ErI/X67MAtT3K71hC55kI7EtJlhLq2L02TJdshlCDaGafxx2gmgpG+WRwobsUrPo08zNmESlV46mcr5GGO4evMgrvlXxm2QKXoPoKfY07P7V65d;
+Date: Fri, 16 Jul 2010 08:50:21 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: vgoyal@redhat.com, "David S. Miller" <davem@davemloft.net>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, seto.hidetoshi@jp.fujitsu.com,
+        Matt Carlson <mcarlson@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH repost] pci: fix compilation when CONFIG_PCI_MSI=n
+Message-ID: <20100716085021.4d521096@virtuousgeek.org>
+In-Reply-To: <20100716142050.GA4970@redhat.com>
+References: <20100716142050.GA4970@redhat.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/10 12:08, Helmut Schaa wrote:
-> On Fri, Jul 16, 2010 at 9:18 AM, Gertjan van Wingerde
-> <gwingerde@gmail.com> wrote:
->>
->> On 07/16/10 08:57, Helmut Schaa wrote:
->>> On Thu, Jul 15, 2010 at 10:41 AM, Bartlomiej Zolnierkiewicz <bzolnier@gmail.com <mailto:bzolnier@gmail.com>> wrote:
->>>
->>>     On Wednesday 14 July 2010 04:44:44 pm Felix Fietkau wrote:
->>>     > On 2010-07-14 3:15 PM, John W. Linville wrote:
->>>     > > On Wed, Jul 14, 2010 at 02:52:14PM +0200, Ivo Van Doorn wrote:
->>>     > >> On Wed, Jul 14, 2010 at 2:46 PM, Luis Correia <luis.f.correia@gmail.com <mailto:luis.f.correia@gmail.com>> wrote:
->>>     > >> > On Wed, Jul 14, 2010 at 13:39, Christoph Egger <siccegge@cs.fau.de <mailto:siccegge@cs.fau.de>> wrote:
->>>     > >> >> While RT2800PCI_SOC exists in Kconfig, it depends on either
->>>     > >> >> RALINK_RT288X or RALINK_RT305X which are both not available in Kconfig
->>>     > >> >> so all Code depending on that can't ever be selected and, if there's
->>>     > >> >> no plan to add these options, should be cleaned up
->>>     > >> >>
->>>     > >> >> Signed-off-by: Christoph Egger <siccegge@cs.fau.de <mailto:siccegge@cs.fau.de>>
->>>     > >> >
->>>     > >> > NAK,
->>>     > >> >
->>>     > >> > this is not dead code, it is needed for the Ralink System-on-Chip
->>>     > >> > Platform devices.
->>>     > >> >
->>>     > >> > While I can't fix Kconfig errors and the current KConfig file may be
->>>     > >> > wrong, this code cannot and will not be deleted.
->>>     > >>
->>>     > >> When the config option was introduced, the config options RALINK_RT288X and
->>>     > >> RALINK_RT305X were supposed to be merged as well soon after by somebody (Felix?)
->>>     > >>
->>>     > >> But since testing is done on SoC boards by Helmut and Felix, I assume the code
->>>     > >> isn't dead but actually in use.
->>>     > >
->>>     > > Perhaps Helmut and Felix can send us the missing code?
->>>     > The missing code is a MIPS platform port, which is currently being
->>>     > maintained in OpenWrt, but is not ready for upstream submission yet.
->>>     > I'm not working on this code at the moment, but I think it will be
->>>     > submitted once it's ready.
->>>
->>>     People are using automatic scripts to catch unused config options nowadays
->>>     so the issue is quite likely to come back again sooner or later..
->>>
->>>     Would it be possible to improve situation somehow till the missing parts
->>>     get merged?  Maybe by adding a tiny comment documenting RT2800PCI_SOC
->>>     situation to Kconfig (if the config option itself really cannot be removed)
->>>     until all code is ready etc.?
->>>
->>>
->>> Or we could just remove RT2800PCI_SOC completely and build the soc specific
->>> parts always as part of rt2800pci. I mean it's not much code, just the platform
->>> driver stuff and the eeprom access.
->>>
->>
->> I'm not sure if that is feasible. Sure, we can reduce the usage of the variable by
->> unconditionally compiling in the generic SOC code, but we should not unconditionally
->> register the SOC platform device, which is currently also under the scope of this
->> Kconfig variable.
+On Fri, 16 Jul 2010 17:20:50 +0300
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
+
+> vers/pci/pci.c:2277: error: redefinition of ‘pci_msi_off’
+> include/linux/pci.h:786: note: previous definition of ‘pci_msi_off’ was here
 > 
-> Ehm, no, the platform device is not registered in rt2800pci at all,
-> it's just the platform
-> driver that gets registered there. The platform device will be
-> registered in the according
-> board init code (that only resides in openwrt at the moment).
+> No need for ifdef: we must disable the capability at startup even if the
+> current kernel does not support MSI, otherwise the device won't work.
 > 
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> ---
+> 
+> Looks like I didn't tag this old patch of mine clearly enough
+> so it's still not fixed in -rc5.
+> It's late in the cycle, but the patch is trivial
+> and it's a build fix, so ... please consider for 2.6.35.
 
-OK. Didn't know that. Sounds good then.
+I thought this was supposed to go via the virtualization tree...  But I
+can pick it up and try to send to Linus.
 
-However, I've tried this in my local tree, and now compilation fails on the x86 platform
-due to a missing KSEG1ADDR macro. How do you suggest to handle the potentially missing
-macro?
-
----
-Gertjan.
+-- 
+Jesse Barnes, Intel Open Source Technology Center
