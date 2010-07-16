@@ -1,55 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935125Ab0GPAsN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 20:48:13 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:62176 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S935075Ab0GPAsM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 20:48:12 -0400
-Message-ID: <4C3FAD44.1050900@cn.fujitsu.com>
-Date: Fri, 16 Jul 2010 08:52:20 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S935141Ab0GPAsk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 20:48:40 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:42546 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935075Ab0GPAsh convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 15 Jul 2010 20:48:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JRyv1LQVbWDhLCNUHVYLHC6ZmcwgFHT/PaKoXofzW4CHDeyCKEfDjDq72xC8l53/HA
+         TLuvX8p/jrlB84o5kzE1E8H/syKm4EBBJUziMNmw6AA6JUUm2E2z+o+4EMzV5e59BMWh
+         FnL+it9erYYva/bad/19eOrcPSghHeEOD+11s=
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Soeren Sandmann <sandmann@daimi.au.dk>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [RFC PATCH 2/2] tracing: Remove special traces
-References: <1279237003-31354-1-git-send-regression-fweisbec@gmail.com> <1279237003-31354-3-git-send-regression-fweisbec@gmail.com>
-In-Reply-To: <1279237003-31354-3-git-send-regression-fweisbec@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100715085535.GC26212@n2100.arm.linux.org.uk>
+References: <4C3C0032.5020702@codeaurora.org>
+	<20100713150311B.fujita.tomonori@lab.ntt.co.jp>
+	<20100713121420.GB4263@codeaurora.org>
+	<20100714104353B.fujita.tomonori@lab.ntt.co.jp>
+	<20100714201149.GA14008@codeaurora.org>
+	<20100714220536.GE18138@n2100.arm.linux.org.uk>
+	<20100715012958.GB2239@codeaurora.org>
+	<20100715085535.GC26212@n2100.arm.linux.org.uk>
+Date: Thu, 15 Jul 2010 20:48:36 -0400
+Message-ID: <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com>
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device 
+	memory management
+From: Tim HRM <zt.tmzt@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: Zach Pfeffer <zpfeffer@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-> index 2114b4c..2f8619b 100644
-> --- a/kernel/trace/trace.h
-> +++ b/kernel/trace/trace.h
-> @@ -22,7 +22,6 @@ enum trace_type {
->  	TRACE_STACK,
->  	TRACE_PRINT,
->  	TRACE_BPRINT,
-> -	TRACE_SPECIAL,
->  	TRACE_MMIO_RW,
->  	TRACE_MMIO_MAP,
->  	TRACE_BRANCH,
-> @@ -332,11 +331,6 @@ void tracing_sched_wakeup_trace(struct trace_array *tr,
->  				struct task_struct *wakee,
->  				struct task_struct *cur,
->  				unsigned long flags, int pc);
-> -void trace_special(struct trace_array *tr,
-> -		   struct trace_array_cpu *data,
-> -		   unsigned long arg1,
-> -		   unsigned long arg2,
-> -		   unsigned long arg3, int pc);
->  void trace_function(struct trace_array *tr,
->  		    unsigned long ip,
->  		    unsigned long parent_ip,
+On Thu, Jul 15, 2010 at 4:55 AM, Russell King - ARM Linux
+<linux@arm.linux.org.uk> wrote:
+> On Wed, Jul 14, 2010 at 06:29:58PM -0700, Zach Pfeffer wrote:
+>> The VCM ensures that all mappings that map a given physical buffer:
+>> IOMMU mappings, CPU mappings and one-to-one device mappings all map
+>> that buffer using the same (or compatible) attributes. At this point
+>> the only attribute that users can pass is CACHED. In the absence of
+>> CACHED all accesses go straight through to the physical memory.
+>
+> So what you're saying is that if I have a buffer in kernel space
+> which I already have its virtual address, I can pass this to VCM and
+> tell it !CACHED, and it'll setup another mapping which is not cached
+> for me?
+>
+> You are aware that multiple V:P mappings for the same physical page
+> with different attributes are being outlawed with ARMv6 and ARMv7
+> due to speculative prefetching.  The cache can be searched even for
+> a mapping specified as 'normal, uncached' and you can get cache hits
+> because the data has been speculatively loaded through a separate
+> cached mapping of the same physical page.
+>
+> FYI, during the next merge window, I will be pushing a patch which makes
+> ioremap() of system RAM fail, which should be the last core code creator
+> of mappings with different memory types.  This behaviour has been outlawed
+> (as unpredictable) in the architecture specification and does cause
+> problems on some CPUs.
+>
+> We've also the issue of multiple mappings with differing cache attributes
+> which needs addressing too...
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-You forgot to delete this:
+Interesting, since I seem to remember the MSM devices mostly conduct
+IO through regions of normal RAM, largely accomplished through
+ioremap() calls.
 
-                IF_ASSIGN(var, ent, struct special_entry, 0);           \
+Without more public domain documentation of the MSM chips and AMSS
+interfaces I wouldn't know how to avoid this, but I can imagine it
+creates a bit of urgency for Qualcomm developers as they attempt to
+upstream support for this most interesting SoC.
+
+--
+Timothy Meade
+tmzt #htc-linux
