@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935755Ab0GPH3p (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 03:29:45 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40041 "EHLO
+	id S935797Ab0GPHhx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 03:37:53 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52552 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935639Ab0GPH3o convert rfc822-to-8bit (ORCPT
+	with ESMTP id S935713Ab0GPHhu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 03:29:44 -0400
+	Fri, 16 Jul 2010 03:37:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=d21NXW5aLsZ7agC8cXQb4vAF/1zdVcb1zu3tqgDkPSA1SISh6RzMgevZLnqfAtUYKE
-         bq3AZ4zvsbRm9BNcYu9SPe3KBdP63jvC+TV1dvckP/x3ZD7TBzmSzmAb4L2FVOMkrEa8
-         BvYQwABMQeiBkmrIwq4kchpt9cQGfRPsx+X68=
+        b=UzwoYIhcphRLCeuUhBScvrHqmE8j0bt/eNHtLEXoXMwVVoAj8mPbd3lKgGN4uJCIaq
+         +Efp0oZPjp9QaYVnNMI3P9CTuhsY+UBweDsN7fBFXXvONkvUtSx8c5hW1vnsFV9q+AEi
+         ZyeEpsMHPMm4imiqhTHXDBYEX/cRRDDn1+S4U=
 MIME-Version: 1.0
 In-Reply-To: <AANLkTimWFTUZTh2-3Bavmwcum2joQluMEDmXx3xjyHqQ@mail.gmail.com>
 References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>
@@ -29,8 +29,8 @@ References: <AANLkTinGoUml9PQ8w7flukqwF9V1ae-YafiDVQy6Q8gC@mail.gmail.com>
 	<20100715200012.GA4175@brouette>
 	<F37ABC5E-E9F9-43BD-989E-4185135217D2@gmail.com>
 	<AANLkTimWFTUZTh2-3Bavmwcum2joQluMEDmXx3xjyHqQ@mail.gmail.com>
-Date: Fri, 16 Jul 2010 09:29:42 +0200
-Message-ID: <AANLkTikKT9dE2FVDxroo1y5iEcsvx54e4JFbjFlWxcPM@mail.gmail.com>
+Date: Fri, 16 Jul 2010 09:37:47 +0200
+Message-ID: <AANLkTinqZs11kXx5afD4RDsVsy551S5lMnyAUwhdX2Sg@mail.gmail.com>
 Subject: Re: kmemleak, cpu usage jump out of nowhere
 From: Zeno Davatz <zdavatz@gmail.com>
 To: Pekka Enberg <penberg@cs.helsinki.fi>
@@ -114,15 +114,9 @@ On Thu, Jul 15, 2010 at 10:50 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
 >
 > Let me know if you need more help with this.
 
-This one also causes a panic:
+The next RC again hangs on me:
 
-http://www.flickr.com/photos/zrr/4798092747/in/photostream/
+http://www.flickr.com/photos/zrr/4798744700/sizes/l/
 
-but this version boots just fine again:
-
-Linux zenogentoo 2.6.34-05459-gac3ee84 #102 SMP Fri Jul 16 09:22:25
-CEST 2010 i686 Intel(R) Core(TM) i7 CPU 960 @ 3.20GHz GenuineIntel
-GNU/Linux
-
-Best
+Gruss
 Zeno
