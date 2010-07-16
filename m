@@ -1,51 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965614Ab0GPNZg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 09:25:36 -0400
-Received: from ottmail.xandros.com ([142.46.212.35]:46379 "EHLO
-	ottmail.xandros.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965564Ab0GPNZf (ORCPT
+	id S965635Ab0GPNcR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 09:32:17 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:54941 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965352Ab0GPNcP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 09:25:35 -0400
-Date: Fri, 16 Jul 2010 09:27:28 -0400
-From: Woody Suwalski <terraluna977@gmail.com>
-To: Martin Michlmayr <tbm@cyrius.com>
-cc: Lee Jones <lee.jones@canonical.com>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Message-ID: <4C405E40.7040606@gmail.com>
-In-Reply-To: <20100716093744.GN11238@jirafa.cyrius.com>
-References: <4C3C72C6.4000005@canonical.com>
-References: <20100715130214.4c9303b2.akpm@linux-foundation.org>
-References: <20100715200618.GA6773@n2100.arm.linux.org.uk>
-References: <4C40218A.4090806@canonical.com>
-References: <20100716093744.GN11238@jirafa.cyrius.com>
-Subject: Re: [PATCH] Stop ARM boards crashing when CUPS is loaded - 2.6.35-rc5
-x-scalix-Hops: 1
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100317 SeaMonkey/2.0.4
+	Fri, 16 Jul 2010 09:32:15 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
+Date: Fri, 16 Jul 2010 15:32:02 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Mark Harris <mhlk@osj.us>, Steve French <smfrench@gmail.com>,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-ext4@vger.kernel.org
+References: <201007161302.35775.arnd@arndb.de> <8527.1279275842@redhat.com> <10677.1279283886@redhat.com>
+In-Reply-To: <10677.1279283886@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="US-ASCII";
-	format="flowed"
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007161532.02210.arnd@arndb.de>
+X-Provags-ID: V02:K0:q38DaTImiVm6kMeRcrnxKPZ3R+lxVp+peqGhf2gv9dP
+ Snnp4Vw/w4JyDPRjLekRLd9fkVVAda/mt0+j4YhMLX5M3MklWN
+ fbYl4ZJTxz5q05YSa8CN2JGdA0bQA91N9lLe0Y7idBS+hB7BKi
+ HOsHY1PA3ehSWibT84ehPmS4Nicm30Hkn3iuLLhWaCLjXX6wBu
+ 3LSW16uRvkEVa3aCXVq1g==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Michlmayr wrote:
-> * Lee Jones<lee.jones@canonical.com>  [2010-07-16 10:08]:
->    
->>>> That sounds like a pretty serious problem.  But presumably it isn't -
->>>> otherwise it would have been fixed earlier!
->>>>          
->> Well it is a problem on OMAP based boards.
->>      
-> It's not just OMAP.  Debian received a similar bug report a few days
-> too and it was on Marvell Orion hardware.  I simply disabled the
-> parport_pc module on ARM.
->
->    
-That works for you because Debian no longer supports Netwinders 8-(
+On Friday 16 July 2010, David Howells wrote:
+> Arnd Bergmann <arnd@arndb.de> wrote:
+> 
+> > You could also define the tv_gran_units to be power-of-ten nanoseconds,
+> > making it a decimal floating point number like 
+> > 
+> > enum {
+> >       XSTAT_NANOSECONDS_GRANULARITY = 0,
+> >       XSTAT_MICROSECONDS_GRANULARITY = 3,
+> >       XSTAT_MILLISECONDS_GRANULARITY = 6,
+> >       XSTAT_SECONDS_GRANULARITY = 9,
+> > };
+> 
+> Are you thinking, then, of having tv_nsec be in terms of those units?
 
-Woody
+No, just tv_granularity. Most users won't need to care that this
+is not a regular timespec then.
 
+> > That would make it easier to define an xstat_time_before() function, though
+> > it means that you could no longer do XSTAT_MINUTES_GRANULARITY and
+> > higher directly other than { .tv_gran_units = 10, .tv_granularity = 6, }.
+> 
+> So you're thinking of indicating time (in)equality based on overlapping time
+> granules?
+
+Yes, for example rsync could use this to determine wether a local (e.g. FAT)
+and a remote (e.g. NFS) file are identical or not. Right now, you can pass
+the granularity in seconds as a command line argument, but it would be nice
+to have rsync do this automatically if possible.
+
+> Your suggestion would suffice, I think.  With a 2:2 split between exponent
+> (tv_gran_units) and mantissa (tv_granularity), you can do:
+> 
+>         UNIT            SECONDS/UNIT    EXPONENT        MANTISSA
+>         nanoseconds     0.000000001     -9              1
+>         microseconds    0.000001        -6              1
+>         millseconds     0.001           -3              1
+>         seconds         1               0               1
+>         minutes         60              1               6
+>         hours           3600            2               36
+>         days            86400           2               864
+>         weeks           604800          2               6048
+> 
+> Any units beyond that are variable length and not worth considering, IMO.
+
+right.
+ 
+> And if you don't want negative numbers in your exponent, you can make the base
+> unit nS instead of S.
+
+either way works fine for me.
+
+> Is it worth allowing a filesystem to indicate that it has granularity smaller
+> than nS, even if the resolution can't be handled here?  We could even have:
+> 
+>         struct xstat_time {
+>                 signed long long        tv_sec;         /* seconds */
+>                 unsigned int            tv_nsec;        /* nanoseconds */
+>                 unsigned char           tv_psec4;       /* picoseconds/4 */
+>                 signed char             tv_gran_exp;    /* exponent */
+>                 unsigned short          tv_gran_mant;   /* mantissa */
+>         };
+> 
+> Though it's probably still an unnecessary extravagance to have the pS field.
+> It's probably best left as padding for now; we can always change our minds
+> later...
+
+There are also two extra bits in tv_nsec ;-). No, I don't think we
+need picoseconds any time soon.
+
+One byte padding might not be the worst thing to have in here, like
+
+        struct xstat_time {
+                signed long long        tv_sec;         /* seconds */
+                unsigned int            tv_nsec;        /* nanoseconds */
+                unsigned short          tv_gran_mant;   /* mantissa */
+                signed char             tv_gran_exp;    /* exponent */
+                unsigned char           unused;
+        };
+
+	Arnd
