@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935470Ab0GPCnU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 22:43:20 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46044 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935363Ab0GPCnS (ORCPT
+	id S935430Ab0GPC6h (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 22:58:37 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:57402 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935288Ab0GPC6g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 22:43:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=lNksRsJ6GTtNd6pqV6HdojdEXFcn02R3qymRL0XOc6JS1NKDj7NnlU2F1/qqKX/lEk
-         EVuIuZoywXHciSpTqYAUBllktjMe9ft646qLvQlROFkEqJKo6dd6NpQIko4SmkaE3POq
-         j7M08Lw+S/IfDUUVjenO5w84pSUA2/P/RbcY8=
-Message-ID: <4C3FC736.4010805@gmail.com>
-Date: Fri, 16 Jul 2010 10:43:02 +0800
-From: Wan ZongShun <mcuos.com@gmail.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Thu, 15 Jul 2010 22:58:36 -0400
+X-Sasl-enc: qlNNr7uPaDOHAOyREUBb4TGAURENce43mK9flS+0jqDO 1279249115
+Date: Thu, 15 Jul 2010 23:58:32 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Ed W <lists@wildgooses.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Raise initial congestion window size / speedup slow start?
+Message-ID: <20100716025832.GG27512@khazad-dum.debian.net>
+References: <4C3D94E3.9080103@wildgooses.com>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH] touchscreen/nuc900: fix wrong setup_timer parameter
-Content-Type: text/plain; charset=GB2312
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C3D94E3.9080103@wildgooses.com>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Dmitry,
+On Wed, 14 Jul 2010, Ed W wrote:
+> Hi, my network connection looks like 500Kbits with a round trip
+> latency of perhaps 1s+ (it's a satellite link).
 
-This patch fixes wrong setup_timer parameter,when pen up event coming
-all codes quoting the w90p910_ts work failed.
+Last time I dealt with such stuff (hundreds of VSATs across the whole
+country, arriving at a Satellite Base Station), you absolutely had to use
+protocol enhancement proxies in the SBS AND in the VSAT clients to get good
+performance for typical end-user Internet usage.  This was a few years ago,
+but it probably hasn't changed much.  I don't recall what proprietary stuff
+was used for the proxy, but...
 
-Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
----
- drivers/input/touchscreen/w90p910_ts.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+http://en.wikipedia.org/wiki/Performance_Enhancing_Proxy
+http://sourceforge.net/projects/pepsal/
 
-diff --git a/drivers/input/touchscreen/w90p910_ts.c b/drivers/input/touchscreen/w90p910_ts.c
-index cc18265..7a45d68 100644
---- a/drivers/input/touchscreen/w90p910_ts.c
-+++ b/drivers/input/touchscreen/w90p910_ts.c
-@@ -233,7 +233,7 @@ static int __devinit w90x900ts_probe(struct platform_device *pdev)
- 	w90p910_ts->state = TS_IDLE;
- 	spin_lock_init(&w90p910_ts->lock);
- 	setup_timer(&w90p910_ts->timer, w90p910_check_pen_up,
--		    (unsigned long)&w90p910_ts);
-+		    (unsigned long)w90p910_ts);
+A Google search for pepsal will return a link to a PDF explaining the
+design.  Maybe that could be of some help for you?
 
- 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (!res) {
 -- 
-1.6.3.3
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
