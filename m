@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935357Ab0GPCHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 15 Jul 2010 22:07:01 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49852
+	id S935387Ab0GPCHU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 15 Jul 2010 22:07:20 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49861
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935335Ab0GPCGz (ORCPT
+	by vger.kernel.org with ESMTP id S935205Ab0GPCHB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 15 Jul 2010 22:06:55 -0400
-Date: Thu, 15 Jul 2010 19:07:11 -0700 (PDT)
-Message-Id: <20100715.190711.28819238.davem@davemloft.net>
+	Thu, 15 Jul 2010 22:07:01 -0400
+Date: Thu, 15 Jul 2010 19:07:16 -0700 (PDT)
+Message-Id: <20100715.190716.102544882.davem@davemloft.net>
 To: PeterHuewe@gmx.de
-Cc: kernel-janitors@vger.kernel.org, mac@melware.de, isdn@linux-pingi.de,
-        arnd@arndb.de, netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 21/25] isdn/hardware/eicon: Convert pci_table entries
- to PCI_VDEVICE (if PCI_ANY_ID is used)
+Cc: kernel-janitors@vger.kernel.org, isdn@linux-pingi.de,
+        akpm@linux-foundation.org, jkosina@suse.cz, roel.kluin@gmail.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 22/25] mISDN: Convert pci_table entries to PCI_VDEVICE
+ (if PCI_ANY_ID is used)
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <201007152104.45958.PeterHuewe@gmx.de>
-References: <201007152104.45958.PeterHuewe@gmx.de>
+In-Reply-To: <201007152105.39404.PeterHuewe@gmx.de>
+References: <201007152105.39404.PeterHuewe@gmx.de>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -26,7 +27,7 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Peter Huewe <PeterHuewe@gmx.de>
-Date: Thu, 15 Jul 2010 21:04:45 +0200
+Date: Thu, 15 Jul 2010 21:05:38 +0200
 
 > From: Peter Huewe <peterhuewe@gmx.de>
 > 
