@@ -1,221 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433Ab0GPWxm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 18:53:42 -0400
-Received: from mail-qy0-f174.google.com ([209.85.216.174]:56043 "EHLO
-	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755485Ab0GPWxk convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 18:53:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=L5qN2pcf25A54jeeEZV0QVEqI3RX74kYw3skx88ij5XJDa0fqPwqO4WysECjN2yeGR
-         wYKCsffeLvpba2Tg8+3BnmKatBVii4XDDPgq1rmknJ1kvDm/kQiumWkSYeebm6aRZh1B
-         +D9dktgreHh4ERjZTFxgsrELKJUOiiibD3Z8A=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimWRnHDnpS1x53aaCN_wJDYrRR3EpEXEc6ZReXF@mail.gmail.com>
-References: <AANLkTineI34tKDMPYN4SPY0W432cv8ZPc55IEW5hwmed@mail.gmail.com>
-	<AANLkTikwWezvqiW-ts__stLfofKbaqG8CSzOYvDQuxhu@mail.gmail.com>
-	<AANLkTimWRnHDnpS1x53aaCN_wJDYrRR3EpEXEc6ZReXF@mail.gmail.com>
-Date: Fri, 16 Jul 2010 16:53:38 -0600
-Message-ID: <AANLkTintOTo_y6naaaQwPg6dBDpetApWhAbkrdu_u7Sy@mail.gmail.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1759450Ab0GPXIL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 19:08:11 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37477 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759431Ab0GPXIJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 19:08:09 -0400
+Date: Sat, 17 Jul 2010 09:07:56 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Yinghai Lu <yinghai@kernel.org>, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-Id: <20100717090756.ccc2cae3.sfr@canb.auug.org.au>
+In-Reply-To: <20100716205812.GA14297@flint.arm.linux.org.uk>
+References: <20100716171124.064cf319.sfr@canb.auug.org.au>
+	<4C40A766.6060309@kernel.org>
+	<20100716205812.GA14297@flint.arm.linux.org.uk>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__17_Jul_2010_09_07_56_+1000_AGkTAmxPl2ZfR=Hs"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Sat__17_Jul_2010_09_07_56_+1000_AGkTAmxPl2ZfR=Hs
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Russell,
+
+On Fri, 16 Jul 2010 21:58:13 +0100 Russell King <rmk@arm.linux.org.uk> wrot=
+e:
 >
-> Well, the way I handled this problem on NetWare SMP and that other
-> kernel was to create a pool of TSS descriptors and reload each during
-> the exception to swap stacks before any handlers were called.  Allowed
-> it to nest until I ran out of TSS descriptors (64 levels).  Not sure
-> that's the way to go here though but it worked on that case.
->
-> Jeff
->
+> On Fri, Jul 16, 2010 at 11:39:34AM -0700, Yinghai Lu wrote:
+> > On 07/16/2010 12:11 AM, Stephen Rothwell wrote:
+> > > Hi Russell,
+> > >=20
+> > > After merging the final tree, today's linux-next build (most, if not =
+all
+> > > arm configs) failed (not unexpectedly) due to the lmb -> memblock ren=
+ame
+> > > (commit 95f72d1ed41a66f1c1c29c24d479de81a0bea36f "lmb: rename to
+> > > memblock").
+> > >=20
+> > > See http://kisskb.ellerman.id.au/kisskb/branch/9/
+> >=20
+> > You or Russell may need to run the scripts in that patch
+>=20
+> I've already fixed it up.  I'm guessing that we'll see the results
+> sometime on Monday.
 
-Here is where that old dusty code lives these days - it deals with this problem.
+I figured that you would have.  And, yes, I will pick it up in Monday.
 
-http://open-source-netware.googlecode.com/files/manos-06-26-2010.tar.gz
+Thanks.
 
-file to look at is startup.386
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-;
-;   nmi entry code
-;
+--Signature=_Sat__17_Jul_2010_09_07_56_+1000_AGkTAmxPl2ZfR=Hs
+Content-Type: application/pgp-signature
 
-nmi_entry     macro
-	cli
-	push    ebx
-	push    ebp
-	mov     ebp, esp
-	sub     ebp, SIZE TaskStateSegment
-	mov     ebx, ebp
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-	mov     [ebp].tSS, ss
-	mov     [ebp].tGS, gs         ; save segment registers
-	mov     [ebp].tFS, fs
-	mov     [ebp].tES, es
-	mov     [ebp].tDS, ds
-	pop     [ebp].tEBP
-	mov     [ebp].tEDI, edi
-	mov     [ebp].tESI, esi
-	mov     [ebp].tEDX, edx
-	mov     [ebp].tECX, ecx
-	pop     [ebp].tEBX
-	mov     [ebp].tEAX, eax
+iQEcBAEBAgAGBQJMQOZMAAoJEDMEi1NhKgbsKTgH/0Tb3jCkP4pDj0MWUnITQXTq
+tmxJU0Eyxpgw5+kdHJOAKuQZeiBNKPuWJaJwnLCfLyI3vBkGUodU2UcXBhVc2zkp
+YlTt3Ld+rQSsg2+H/kX8PzUGJMPJO1JbiwgLcBVp6gQCGZEACVIUJjplY1AetR/W
+bjgnvnR6cyazDkueMONCT5EiEarZpxcasXMlFbjl7GvWaLnhz3vjRwTaq+wUc84I
+gemWTaeuWycTIzd8jhICJ4Vd0epWLDTKU/JwDF9Kzf2TE/xwmKP96NpAOkJzQAYR
+Y7az5hVO5UVRM5Z9IeGN8fU9Qpi7ZhDNRPw0v3R7NjXvhBEe8gg8RDxlrFBPS/k=
+=4vnQ
+-----END PGP SIGNATURE-----
 
-	pop     [ebp].tEIP            ; remove return address
-	pop     eax
-	mov     [ebp].tCS, ax
-	pop     [ebp].tSystemFlags    ; get flags into TSS
-
-	mov     [ebp].tESP, esp       ; save true stack address
-	mov     esp, ebx            ; cover stack frame
-
-	mov     eax, CR0
-	and     eax, 0FFFFFFF7h     ; clear task switch bit in CR0 to
-	mov     CR0, eax            ; avoid NPX exceptions
-
-	xor	eax, eax
-	mov	dr7, eax            ; disable breakpoints
-
-	mov     eax, CR3            ;
-	mov     [ebp].tCR3, eax     ;
-	mov     eax, DebuggerPDE
-	mov     CR3, eax
-
-	;
-	;   if we do not clear the NESTED_TASK_FLAG, then the IRET
-	;   at the end of this function will cause
-	;   an invalid TSS exception to be generated because the
-	;   task busy bit was cleared earlier
-	;
-
-	pushfd
-	and	dword ptr [esp], NOT (NESTED_TASK_FLAG OR SINGLE_STEP_FLAG)
-	or	dword ptr [esp], RESUME_FLAG
-	popfd
-
-	mov     eax, 0FFFFFFFFh    ; mark as a non-pooled TSS exception
-	push    eax
-
-	push    0
-	push    0
-	push    ebp
-
-	endm
-
-;
-;   TSS entry code
-;
-
-
-task_entry     macro
-	LOCAL   @TSSNotNested, @NoLTR
-	LOCAL   @UsedDefaultSegment
-	LOCAL   @UsedPooledSegment
-	LOCAL   @EnterTheDebugger
-
-	cli
-	xor    eax, eax
-	str    ax
-	mov    esi, offset SystemGDTTable
-	mov    esi, dword ptr [esi + 2]
-	lea    ebx, [esi + eax]
-	mov    al, [ebx].TSSBase2
-	mov    ah, [ebx].TSSBase3
-	shl    eax, 16
-	mov    ax, [ebx].TSSBase1
-
-	;
-	;  eax -> TSS Segment (Current)
-	;  ebx -> TSS Descriptor (Current)
-	;
-
-	movzx  ecx, word ptr [eax].tBackLink
-	or     ecx, ecx
-	jz     @TSSNotNested
-
-	mov    esi, offset SystemGDTTable
-	mov    esi, dword ptr [esi + 2]
-	lea    edx, [esi + ecx]
-	mov    cl, [edx].TSSBase2
-	mov    ch, [edx].TSSBase3
-	shl    ecx, 16
-	mov    cx, [edx].TSSBase1
-
-	mov    ebp, ecx
-
-	;
-	;  edx -> TSS Descriptor (Previous)
-	;  ebp -> TSS Segment (Previous)
-	;
-	;  clear busy state and reset TSS
-	;
-
-	mov     [edx].TSSType, 10001001b
-
-@TSSNotNested:
-	mov     [ebx].TSSType, 10001001b
-
-	lgdt    ds: SystemGDTTable     ; reset GDT TSS Busy bit
-
-	movzx   eax, word ptr [eax].tBackLink
-	or      eax, eax
-	jz      @NoLTR
-
-	ltr     ax
-
-@NoLTR:
-
-	mov     eax, CR0
-	and     eax, 0FFFFFFF7h     ; clear task switch bit in CR0 to
-	mov     CR0, eax            ; avoid NPX exceptions
-
-	xor	eax, eax
-	mov	dr7, eax            ; disable breakpoints
-
-	pushfd
-	and	dword ptr [esp], NOT (NESTED_TASK_FLAG OR SINGLE_STEP_FLAG)
-	or	dword ptr [esp], RESUME_FLAG
-	popfd
-
-	push    ebp
-	call    AllocPooledResource
-	pop     ebp
-
-	or      eax, eax
-	jz      @UsedDefaultSegment
-
-	lea     ebp, [eax].TSSSegment
-	mov     esp, [eax].StackTop
-
-	push    eax                   ; push address of pooled resource
-	jmp     @UsedPooledSegment
-
-@UsedDefaultSegment:
-	mov     eax, 0FFFFFFFFh       ; push non-pooled marker onto the stack
-	push    eax
-
-@UsedPooledSegment:
-
-	push    0
-	mov     eax, CR2    ; get fault address
-	push    eax
-	push    ebp         ;  pass the TSS
-
-	endm
-
-;
-;  TSS exit code
-;
-
-Jeff
+--Signature=_Sat__17_Jul_2010_09_07_56_+1000_AGkTAmxPl2ZfR=Hs--
