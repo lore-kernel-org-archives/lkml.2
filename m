@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966176Ab0GPUN2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 16:13:28 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49698
+	id S966180Ab0GPUPI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 16:15:08 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49703
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S966155Ab0GPUNY (ORCPT
+	by vger.kernel.org with ESMTP id S966100Ab0GPUPF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 16:13:24 -0400
-Date: Fri, 16 Jul 2010 13:13:40 -0700 (PDT)
-Message-Id: <20100716.131340.108766766.davem@davemloft.net>
-To: joseph.kogut@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Drivers: net: 8139cp: Improved conformance to the
- Linux coding style guidelines.
+	Fri, 16 Jul 2010 16:15:05 -0400
+Date: Fri, 16 Jul 2010 13:15:21 -0700 (PDT)
+Message-Id: <20100716.131521.55876531.davem@davemloft.net>
+To: jeff@garzik.org
+Cc: zaitcev@redhat.com, linux-kbuild@vger.kernel.org,
+        nico-linuxsetlocalversion@schottelius.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: I did a git pull and a plus appeared
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <1279286391-31464-1-git-send-email-joseph.kogut@gmail.com>
-References: <1279286391-31464-1-git-send-email-joseph.kogut@gmail.com>
+In-Reply-To: <4C40BAD1.8090908@garzik.org>
+References: <20100716121802.65fdfa24@lembas.zaitcev.lan>
+	<4C40BAD1.8090908@garzik.org>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -24,9 +26,22 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Joseph Kogut <joseph.kogut@gmail.com>
-Date: Fri, 16 Jul 2010 06:19:51 -0700
+From: Jeff Garzik <jeff@garzik.org>
+Date: Fri, 16 Jul 2010 16:02:25 -0400
 
-Please fix the clock on your computer, I don't think it's
-6am in the -0700 timezone right now :-)
+> On 07/16/2010 02:18 PM, Pete Zaitcev wrote:
+>> How do I get rid of the plus? I have (had for a long time):
+>>
+>> [zaitcev@niphredil linux-2.6-tip]$ grep LOCAL .config
+>> CONFIG_LOCALVERSION="-tip"
+>> # CONFIG_LOCALVERSION_AUTO is not set
+>> CONFIG_X86_LOCAL_APIC=y
+>> [zaitcev@niphredil linux-2.6-tip]$
+> 
+> Is the '+' listed at the top of the toplevel Makefile?
+
+It's being put there by Kbuild, this has been discussed quite a bit
+over the past few weeks I think.
+
+The "+" comes from scripts/setlocalversion
 
