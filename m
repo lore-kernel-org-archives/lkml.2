@@ -1,109 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965094Ab0GPKvo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 06:51:44 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39380 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964971Ab0GPKvm convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 06:51:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=JyfGNmMFc/SSWvqKO+V3NCmi9qDRsjoPJuazz1Xv3Nq1DX+/dSGopIKnDm//UmCMQr
-         kbAssA1xerwXRNA0INrj5CwZ3RdtM3jPo9w310Fogb5CU0/CdufqxVdAUlcnRvBjanQx
-         eQqfFdtlMDUP9zu7ugXVIa3qzlZgvKnONKQfk=
+	id S965098Ab0GPK5I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 06:57:08 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:55299 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S964971Ab0GPK5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 06:57:05 -0400
+Date: Fri, 16 Jul 2010 11:56:48 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+Subject: Re: [PATCH 3/7] memcg: nid and zid can be calculated from zone
+Message-ID: <20100716105648.GG13117@csn.ul.ie>
+References: <20100716191006.7369.A69D9226@jp.fujitsu.com> <20100716191418.7372.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <1278921056.22437.1.camel@eight.analog.com>
-References: <1278921056.22437.1.camel@eight.analog.com>
-Date: Fri, 16 Jul 2010 18:51:40 +0800
-Message-ID: <AANLkTimwi7IuKZySIkDjlgBi7NDkIaW79CHNbhliJ2UY@mail.gmail.com>
-Subject: Re: [PATCH v2] MMC:mmc_spi: Recover from CRC error for SD read/write 
-	operation over SPI.
-From: Sonic Zhang <sonic.adi@gmail.com>
-To: David Brownell <dbrownell@users.sourceforge.net>
-Cc: linux-mmc@vger.kernel.org, Linux Kernel <linux-kernel@vger.kernel.org>,
-        uclinux-dist-devel <uclinux-dist-devel@blackfin.uclinux.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100716191418.7372.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Any comments?
-
-
-Sonic
-
-On Mon, Jul 12, 2010 at 3:50 PM, sonic zhang <sonic.adi@gmail.com> wrote:
-> >From 94d1ea57ac2fbe37133e25e99ccb265250f0027d Mon Sep 17 00:00:00 2001
-> From: Sonic Zhang <sonic.zhang@analog.com>
-> Date: Fri, 9 Jul 2010 15:36:20 +0800
-> Subject: [PATCH v2] MMC:mmc_spi: Recover from crc error for SD read/write operation over SPI.
->
-> SPI bus is not reliable on all platforms when doing large data transfer.
-> Current mmc spi driver fails SD read/write command immediately, if
-> occasional CRC error is reported by SD device. This patch makes the
-> operation recover from the CRC error by doing last SD command again.
-> The retry count is set to 5 to ensure the driver pass any stress test.
->
-> Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+On Fri, Jul 16, 2010 at 07:15:05PM +0900, KOSAKI Motohiro wrote:
+> 
+> mem_cgroup_soft_limit_reclaim() has zone, nid and zid argument. but nid
+> and zid can be calculated from zone. So remove it.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 > ---
->  drivers/mmc/host/mmc_spi.c |   22 ++++++++++++++++++++++
->  1 files changed, 22 insertions(+), 0 deletions(-)
->
-> diff --git a/drivers/mmc/host/mmc_spi.c b/drivers/mmc/host/mmc_spi.c
-> index ad847a2..8192434 100644
-> --- a/drivers/mmc/host/mmc_spi.c
-> +++ b/drivers/mmc/host/mmc_spi.c
-> @@ -1055,6 +1055,8 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
->  {
->        struct mmc_spi_host     *host = mmc_priv(mmc);
->        int                     status = -EINVAL;
-> +       int                     crc_retry = 5;
-> +       struct mmc_command      stop;
->
->  #ifdef DEBUG
->        /* MMC core and layered drivers *MUST* issue SPI-aware commands */
-> @@ -1084,10 +1086,30 @@ static void mmc_spi_request(struct mmc_host *mmc, struct mmc_request *mrq)
->        }
->  #endif
->
-> +crc_recover:
->        /* issue command; then optionally data and stop */
->        status = mmc_spi_command_send(host, mrq, mrq->cmd, mrq->data != NULL);
->        if (status == 0 && mrq->data) {
->                mmc_spi_data_do(host, mrq->cmd, mrq->data, mrq->data->blksz);
+>  include/linux/memcontrol.h |    6 +++---
+>  include/linux/mmzone.h     |    5 +++++
+>  mm/memcontrol.c            |    5 ++---
+>  mm/vmscan.c                |    7 ++-----
+>  4 files changed, 12 insertions(+), 11 deletions(-)
+> 
+> diff --git a/include/linux/memcontrol.h b/include/linux/memcontrol.h
+> index 9411d32..9dec218 100644
+> --- a/include/linux/memcontrol.h
+> +++ b/include/linux/memcontrol.h
+> @@ -128,8 +128,8 @@ static inline bool mem_cgroup_disabled(void)
+>  
+>  void mem_cgroup_update_file_mapped(struct page *page, int val);
+>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+> -						gfp_t gfp_mask, int nid,
+> -						int zid);
+> +					    gfp_t gfp_mask);
 > +
-> +               /*
-> +                * SPI bus is not reliable when doing large data transfer.
-> +                * If occasional crc error is reported by SD device when do
-> +                * data read/write over SPI, it can be recovered by doing
-> +                * last SD command again. The retry count is set to 5 to
-> +                * ensure the driver pass any stress test.
-> +                */
-> +               if (mrq->data->error == -EILSEQ && crc_retry) {
-> +                       stop.opcode = MMC_STOP_TRANSMISSION;
-> +                       stop.arg = 0;
-> +                       stop.flags = MMC_RSP_SPI_R1B | MMC_RSP_R1B | MMC_CMD_AC;
+>  #else /* CONFIG_CGROUP_MEM_RES_CTLR */
+>  struct mem_cgroup;
+>  
+> @@ -304,7 +304,7 @@ static inline void mem_cgroup_update_file_mapped(struct page *page,
+>  
+>  static inline
+>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+> -					    gfp_t gfp_mask, int nid, int zid)
+> +					    gfp_t gfp_mask)
+>  {
+>  	return 0;
+>  }
+> diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
+> index 9ed9c45..34ac27a 100644
+> --- a/include/linux/mmzone.h
+> +++ b/include/linux/mmzone.h
+> @@ -684,6 +684,11 @@ unsigned long __init node_memmap_size_bytes(int, unsigned long, unsigned long);
+>   */
+>  #define zone_idx(zone)		((zone) - (zone)->zone_pgdat->node_zones)
+>  
+> +static inline int zone_nid(struct zone *zone)
+> +{
+> +	return zone->zone_pgdat->node_id;
+> +}
 > +
-> +                       status = mmc_spi_command_send(host, mrq, &stop, 0);
-> +                       crc_retry--;
-> +                       mrq->data->error = 0;
-> +                       goto crc_recover;
-> +               }
+
+hmm, adding a helper and not converting the existing users of
+zone->zone_pgdat may be a little confusing particularly as both types of
+usage would exist in the same file e.g. in mem_cgroup_zone_nr_pages.
+
+>  static inline int populated_zone(struct zone *zone)
+>  {
+>  	return (!!zone->present_pages);
+> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+> index 01f38ff..81bc9bf 100644
+> --- a/mm/memcontrol.c
+> +++ b/mm/memcontrol.c
+> @@ -2833,8 +2833,7 @@ static int mem_cgroup_resize_memsw_limit(struct mem_cgroup *memcg,
+>  }
+>  
+>  unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+> -						gfp_t gfp_mask, int nid,
+> -						int zid)
+> +					    gfp_t gfp_mask)
+>  {
+>  	unsigned long nr_reclaimed = 0;
+>  	struct mem_cgroup_per_zone *mz, *next_mz = NULL;
+> @@ -2846,7 +2845,7 @@ unsigned long mem_cgroup_soft_limit_reclaim(struct zone *zone, int order,
+>  	if (order > 0)
+>  		return 0;
+>  
+> -	mctz = soft_limit_tree_node_zone(nid, zid);
+> +	mctz = soft_limit_tree_node_zone(zone_nid(zone), zone_idx(zone));
+>  	/*
+>  	 * This loop can run a while, specially if mem_cgroup's continuously
+>  	 * keep exceeding their soft limit and putting the system under
+> diff --git a/mm/vmscan.c b/mm/vmscan.c
+> index be860a0..89b4287 100644
+> --- a/mm/vmscan.c
+> +++ b/mm/vmscan.c
+> @@ -2121,7 +2121,6 @@ loop_again:
+>  		for (i = 0; i <= end_zone; i++) {
+>  			struct zone *zone = pgdat->node_zones + i;
+>  			int nr_slab;
+> -			int nid, zid;
+>  
+>  			if (!populated_zone(zone))
+>  				continue;
+> @@ -2133,14 +2132,12 @@ loop_again:
+>  			sc.nr_scanned = 0;
+>  			note_zone_scanning_priority(zone, priority);
+>  
+> -			nid = pgdat->node_id;
+> -			zid = zone_idx(zone);
+>  			/*
+>  			 * Call soft limit reclaim before calling shrink_zone.
+>  			 * For now we ignore the return value
+>  			 */
+> -			mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask,
+> -							nid, zid);
+> +			mem_cgroup_soft_limit_reclaim(zone, order, sc.gfp_mask);
 > +
->                if (mrq->stop)
->                        status = mmc_spi_command_send(host, mrq, mrq->stop, 0);
->                else
-> --
-> 1.6.0
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-mmc" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+
+Other than the usual comment of it belonging in its own series
+
+Acked-by: Mel Gorman <mel@csn.ul.ie>
+
+>  			/*
+>  			 * We put equal pressure on every zone, unless one
+>  			 * zone has way too many pages free already.
+> -- 
+> 1.6.5.2
+> 
+> 
+> 
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
