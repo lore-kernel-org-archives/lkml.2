@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965269Ab0GPMCv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 08:02:51 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:34709 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965049Ab0GPMCu (ORCPT
+	id S965266Ab0GPMJS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 08:09:18 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47314 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965049Ab0GPMJQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 08:02:50 -0400
-Date: Fri, 16 Jul 2010 15:02:48 +0300 (EEST)
-From: "=?ISO-8859-15?Q?Ilpo_J=E4rvinen?=" <ilpo.jarvinen@helsinki.fi>
-X-X-Sender: ijjarvin@melkinpaasi.cs.helsinki.fi
-To: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
-cc: Eric Dumazet <eric.dumazet@gmail.com>, Tejun Heo <tj@kernel.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
-        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
-Subject: Re: oops in tcp_xmit_retransmit_queue() w/ v2.6.32.15
-In-Reply-To: <4C3F053F.7090704@nets.rwth-aachen.de>
-Message-ID: <alpine.DEB.2.00.1007161448330.13946@melkinpaasi.cs.helsinki.fi>
-References: <4C358AAA.9080400@kernel.org> <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi> <4C3EF7EA.2040900@nets.rwth-aachen.de> <1279195528.2496.2.camel@edumazet-laptop> <4C3F053F.7090704@nets.rwth-aachen.de>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-Mime-Version: 1.0
+	Fri, 16 Jul 2010 08:09:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=XqvbGWS8AnIJtOpokUtSFXYp+oWUDDB6stl+xIIM7Yh9KTemDKFqzh5VgIuGoFp2OR
+         B5akdDUad2PP8Q0mtqxMAJid4eUcqGiEXMAx5sVEmZ/UftBVQpv+nkHiBXmuKos/bZE0
+         CiEyzRqzPg8Z6caDd8QMmvjPuH12FfXNYSMtw=
+Date: Fri, 16 Jul 2010 14:09:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: Ian Kent <raven@themaw.net>, "H. Peter Anvin" <hpa@zytor.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        "autofs@linux.kernel.org" <autofs@linux.kernel.org>
+Subject: Re: [PATCH 3/6] autofs/autofs4: move compat_ioctl handling into fs
+Message-ID: <20100716120915.GD5377@nowhere>
+References: <1278195310-25590-1-git-send-email-arnd@arndb.de> <AANLkTimVzSzCl2XfWBg5HauYtIT5znxkm6M0yo_1en2b@mail.gmail.com> <1279255230.2968.24.camel@localhost> <201007161305.31291.arnd@arndb.de>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <201007161305.31291.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Jul 2010, Lennart Schulte wrote:
-
-> Since tcp_xmit_retransmit_queue also gets skb == NULL I'm pretty sure it is
-> the same bug.
-> Up to now I only experienced the problem with ACK loss (without ACK loss the
-> test ran about 30min without problems, with ACK loss it had paniced within
-> 10min).
-> The data sender only has a HTB queue for traffic shaping (set to 20 Mbit/s).
-> The ACK loss is done by another router.
-> The setup looks like this. This way it seems to be the most realistic.
+On Fri, Jul 16, 2010 at 01:05:31PM +0200, Arnd Bergmann wrote:
+> On Friday 16 July 2010, Ian Kent wrote:
+> > On Fri, 2010-07-16 at 02:14 +0200, Frederic Weisbecker wrote:
+> > > 2010/7/6 Ian Kent <raven@themaw.net>:
+> > > In any case, can we let you handle this patch for 2.6.36 inclusion?
+> > 
+> > I think it makes more sense to keep these common patches together so
+> > Arnd probably should keep it with his series.
 > 
-> o sender with HTB
-> |
-> |
-> o netem queue for forward path delay
-> |
-> o netem queue for a queue limit
-> |
-> o netem queue for backward path delay
-> |
-> o netem queue for ACK loss
-> |
-> |
-> o receiver with HTB
+> I think that's fine. Takashi Iwai took the alsa patch, but the
+> rest can probably be merged together.
 > 
-> Perhaps now it is a little big clearer.
+> Frederic, would you like to add the remaining ioctl removal series
+> into your git tree and have Stephen pull that into linux-next?
+> I believe he's still pulling your tree anyway, although it doesn't
+> have much content at the moment.
+> 
+> 	Arnd
 
-> > > [ 2754.413150] NULL head, pkts 0
-> > > [ 2754.413156] Errors caught so far 1
 
-Thanks for reporting the results.
+Sure, I'll do that next week.
 
-Could you post the oops too or double check do the timestamps really match 
-(and there wasn't more "Errors caught" prints in between)? Since this 
-condition doesn't seem to crash the kernel as also send_head should be 
-NULL, which saves the day here exiting the loop (unless send head would 
-too be corrupt). ...However, I don't like too much anyway that we can end 
-up into tcp_xmit_retransmit_queue loop with packets_out being zero and 
-only send_head check side-effect causes proper action.
+Thanks.
 
-Besides, Tejun has also found that it's hint->next ptr which is NULL in 
-his case so this won't solve his case anyway. Tejun, can you confirm 
-whether it was retransmit_skb_hint->next being NULL on _entry time_ to 
-tcp_xmit_retransmit_queue() or later on in the loop after the updates done 
-by the loop itself to the hint (or that your testing didn't conclude 
-either)?
-
--- 
- i.
