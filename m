@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756666Ab0GPRlr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 13:41:47 -0400
-Received: from mail1.nippynetworks.com ([212.227.250.41]:52404 "EHLO
-	mail1.nippynetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754249Ab0GPRlp (ORCPT
+	id S1756775Ab0GPRnL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 13:43:11 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:34806 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756269Ab0GPRnJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 13:41:45 -0400
-Message-ID: <4C4099D6.6020305@wildgooses.com>
-Date: Fri, 16 Jul 2010 18:41:42 +0100
-From: Ed W <lists@wildgooses.com>
-User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.10) Gecko/20100512 Lightning/1.0b1 Thunderbird/3.0.5
+	Fri, 16 Jul 2010 13:43:09 -0400
+From: Bjorn Helgaas <bjorn.helgaas@hp.com>
+To: Ben Greear <greearb@candelatech.com>
+Subject: Re: [pci] pci/mrst:  Detect loops when reading fixed BAR cap.
+Date: Fri, 16 Jul 2010 11:43:04 -0600
+User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; x86_64; ; )
+Cc: linux-kernel@vger.kernel.org
+References: <1279126923-27926-1-git-send-email-greearb@candelatech.com>
+In-Reply-To: <1279126923-27926-1-git-send-email-greearb@candelatech.com>
 MIME-Version: 1.0
-To: Patrick McManus <mcmanus@ducksong.com>
-CC: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>,
-        David Miller <davem@davemloft.net>, davidsen@tmr.com,
-        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3D94E3.9080103@wildgooses.com> <4C3DD5EB.9070908@tmr.com>	 <20100714.111553.104052157.davem@davemloft.net>	 <AANLkTil3MVGwJUG12dikut9X1s9Ozc_3GwMjx_gErvxI@mail.gmail.com> <1279299709.2156.5814.camel@tng>
-In-Reply-To: <1279299709.2156.5814.camel@tng>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007161143.05187.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wednesday, July 14, 2010 11:02:03 am Ben Greear wrote:
+> The mrst logic introduced in 2.6.33-rc8 in commit
+> a712ffbc199849364c46e9112b93b66de08e2c26 causes boot
+> to hang on at least this platform:
+> 
+> Intel E5405 CPU
+> System Information
+> 	Manufacturer: Supermicro
+> 	Product Name: X7DBU
+> 
+> The cause of the hang is that pci_cap points to itself
+> as the next capability, putting the fixed_bar_cap into
+> an endless loop.
+> 
+> This patch detects the loop, prints a warning, and
+> continues on with useful work.  This strategy was
+> suggested by Robert Hancock <hancockrwd@gmail.com>
+> 
+> This should be a candidate for 2.6.34.y as well.
+> 
+> Signed-off-by: Ben Greear <greearb@candelatech.com>
+> ---
+> :100644 100644 1cdc02c... 9535ba9... M	arch/x86/pci/mrst.c
+>  arch/x86/pci/mrst.c |   11 +++++++++++
+>  1 files changed, 11 insertions(+), 0 deletions(-)
+> 
+> diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+> index 1cdc02c..9535ba9 100644
+> --- a/arch/x86/pci/mrst.c
+> +++ b/arch/x86/pci/mrst.c
+> @@ -76,6 +76,17 @@ static int fixed_bar_cap(struct pci_bus *bus, unsigned int devfn)
+>  				return pos;
+>  		}
+>  
+> +		if ((pcie_cap >> 20) == 0)
+> +			break;
+> +		
+> +		if ((pcie_cap >> 20) <= pos) {
+> +			printk(KERN_WARNING "WARNING: mrst:  detected loop"
+> +			       " when searching for fixed BAR cap, previous"
+> +			       " position: 0x%x new position: 0x%x"
+> +			       " bus-number: %i  devfn: %i\n",
+> +			       pos, pcie_cap >> 20, bus->number, devfn);
 
-> and while I'm asking for info, can you expand on the conclusion
-> regarding poor cache hit rates for reusing learned cwnds? (ok, I admit I
-> only read the slides.. maybe the paper has more info?)
->    
+Can you use dev_warn() here to print the device info in the
+standard way?
 
-My guess is that this result is specific to google and their servers?
-
-I guess we can probably stereotype the world into two pools of devices:
-
-1) Devices in a pool of fast networking, but connected to the rest of 
-the world through a relatively slow router
-2) Devices connected via a high speed network and largely the bottleneck 
-device is many hops down the line and well away from us
-
-I'm thinking here 1) client users behind broadband routers, wireless, 
-3G, dialup, etc and 2) public servers that have obviously been 
-deliberately placed in locations with high levels of interconnectivity.
-
-I think history information could be more useful for clients in category 
-1) because there is a much higher probability that their most 
-restrictive device is one hop away and hence affects all connections and 
-relatively occasionally the bottleneck is multiple hops away.  For 
-devices in category 2) it's much harder because the restriction will 
-usually be lots of hops away and effectively you are trying to figure 
-out and cache the speed of every ADSL router out there...  For sure you 
-can probably figure out how to cluster this stuff and say that pool 
-there is 56K dialup, that pool there is "broadband", that pool is cell 
-phone, etc, but probably it's hard to do better than that?
-
-So my guess is this is why google have had poor results investigating 
-cwnd caching?
-
-However, I would suggest that whilst it's of little value for the server 
-side, it still remains a very interesting idea for the client side and 
-the cache hit ratio would seem to be dramatically higher here?
-
-
-I haven't studied the code, but given there is a userspace ability to 
-change init cwnd through the IP utility, it would seem likely that 
-relatively little coding would now be required to implement some kind of 
-limited cwnd caching and experiment with whether this is a valuable 
-addition?  I would have thought if you are only fiddling with devices 
-behind a broadband router then there is little chance of you "crashing 
-the internet" with these kind of experiments?
-
-Good luck
-
-Ed W
+Bjorn
