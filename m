@@ -1,61 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935973Ab0GPI1N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 04:27:13 -0400
-Received: from astoria.ccjclearline.com ([64.235.106.9]:40935 "EHLO
-	astoria.ccjclearline.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935847Ab0GPI1K (ORCPT
+	id S935981Ab0GPIak (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 04:30:40 -0400
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:50333 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935847Ab0GPIai (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 04:27:10 -0400
-Date: Fri, 16 Jul 2010 04:27:00 -0400 (EDT)
-From: "Robert P. J. Day" <rpjday@crashcourse.ca>
-X-X-Sender: rpjday@lynx
-To: Greg KH <greg@kroah.com>
-cc: Michal Marek <mmarek@suse.cz>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: any value in running my kernel scanning scripts before
- release?
-In-Reply-To: <20100716030012.GA26610@kroah.com>
-Message-ID: <alpine.DEB.2.00.1007160425560.13582@lynx>
-References: <alpine.DEB.2.00.1007150728520.13042@lynx> <4C3F0D1B.9060403@suse.cz> <alpine.DEB.2.00.1007151845490.11593@lynx> <20100716030012.GA26610@kroah.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Fri, 16 Jul 2010 04:30:38 -0400
+Date: Fri, 16 Jul 2010 10:30:34 +0200
+From: Christof Schmitt <christof.schmitt@de.ibm.com>
+To: "Martin K. Petersen" <martin.petersen@oracle.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/1] Apply segment size and segment boundary to integrity
+ data
+Message-ID: <20100716083034.GA7474@schmichrtp.ibm.com>
+References: <20100715153410.774329000@de.ibm.com>
+ <yq1mxtspwab.fsf@sermon.lab.mkp.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - astoria.ccjclearline.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - crashcourse.ca
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <yq1mxtspwab.fsf@sermon.lab.mkp.net>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 15 Jul 2010, Greg KH wrote:
+On Thu, Jul 15, 2010 at 12:03:24PM -0400, Martin K. Petersen wrote:
+> >>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+> 
+> Christof> While experimenting with the data integrity support in the
+> Christof> Linux kernel, i found that the block layer integrity code can
+> Christof> send integrity data segments for a request that do not adhere
+> Christof> to the queue limits.  The integrity data segment can be larger
+> Christof> than queue_max_segment_size and the segment does not adhere to
+> Christof> the queue_segment_boundary.
+> 
+> Correct.  That was a deliberate design decision.
+> 
+> Modern HBAs allow essentially indefinite chaining and our block layer
+> segmentation controls are to some extent legacy baggage.  I did not want
+> to put in a set of constraints on the DI scatterlist because I was
+> afraid it would encourage vendors to actually them.
+> 
+> 
+> Christof> It appears to me that the right way would be to apply the same
+> Christof> restrictions that are in place for data segments also to
+> Christof> integrity data segments. The patch works for my experiments
+> Christof> and applies on top of the current Linux tree (2.6.35-rc5).
+> 
+> Who says constraints on the integrity scatterlist are the same as on the
+> data ditto?  In my experience they are not.  If you must do this, then
+> the DI constraints should be separate from the data segmentation ones.
+> But I'm interested in what motivated this change to begin with.
 
-> On Thu, Jul 15, 2010 at 06:50:20PM -0400, Robert P. J. Day wrote:
+The motivation stems from research how the integrity data can be
+mapped to the hardware interface used by the zfcp driver. When passing
+data segments to the zfcp hardware controller, there is the constraint
+that each data segment has a maximum size of 4k and a segment must not
+cross a 4k boundary. Right now, this is done by reporting the
+maximum segment size and segment boundary accordingly from zfcp. When
+issuing a request, zfcp simply walks the sg list and passes the
+segments to the hardware controller, no mapping or readjustment is
+necessary in the driver.
 
-> > ===== USB_ETH_FUNCTIONFS =====
-> > ./drivers/usb/gadget/Makefile:obj-$(CONFIG_USB_ETH_FUNCTIONFS)	+= g_eth_ffs.o
->
-> Ah, ick, that usb functionfs one is a real bug, nice catch.  I too
-> have been getting no sleep, and will just wait for you to send me a
-> patch :)
+Adding integrity data to this interface implies that the integrity
+data segments are passed the same way and with the same restrictions.
+integrity data segments.  In fact, i am planning to post an
+experimental patch for zfcp for upstream inclusion. While this is
+still research, it does not affect non-integrity I/O and it will ease
+future work on the integrity data mapping for zfcp.
 
-  just submitted patch on linux USB list ...
+Maybe my thinking is too much with the zfcp hardware interface where
+it is obvious to have the same constraints for everything passed along
+to the hardware. Another motivation is that i do not want to have the
+need in the driver to re-map or copy data segments, when the block
+layer already has a generic method of doing this.
 
-rday
+What would be the right approach for hardware that has specific
+constraints for integrity data? Add an interface for reporting
+integrity data constraints independently of constraints for regular
+data?
 
--- 
+> Your change also has repercussions when merging requests and bios.  We'd
+> need to honor the DI segmentation constraints when merging.  Otherwise
+> we may end up going beyond the controller limits when mapping the sgl.
 
-========================================================================
-Robert P. J. Day                               Waterloo, Ontario, CANADA
+Meaning the integrity data sg list would have more entries than
+max_segments? I have not seen this during my experiments, but then i
+likely have not hit every case of a possible request layout.
 
-        Top-notch, inexpensive online Linux/OSS/kernel courses
-                        http://crashcourse.ca
-
-Twitter:                                       http://twitter.com/rpjday
-LinkedIn:                               http://ca.linkedin.com/in/rpjday
-========================================================================
+Christof
