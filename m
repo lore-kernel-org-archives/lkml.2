@@ -1,48 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935922Ab0GPIAX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 04:00:23 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:51651 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935756Ab0GPIAV (ORCPT
+	id S935940Ab0GPIHv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 04:07:51 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:46128 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935847Ab0GPIHr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 04:00:21 -0400
-Date: Fri, 16 Jul 2010 08:58:56 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Tim HRM <zt.tmzt@gmail.com>
-Cc: Zach Pfeffer <zpfeffer@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
-	memory management
-Message-ID: <20100716075856.GC16124@n2100.arm.linux.org.uk>
-References: <4C3C0032.5020702@codeaurora.org> <20100713150311B.fujita.tomonori@lab.ntt.co.jp> <20100713121420.GB4263@codeaurora.org> <20100714104353B.fujita.tomonori@lab.ntt.co.jp> <20100714201149.GA14008@codeaurora.org> <20100714220536.GE18138@n2100.arm.linux.org.uk> <20100715012958.GB2239@codeaurora.org> <20100715085535.GC26212@n2100.arm.linux.org.uk> <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com>
+	Fri, 16 Jul 2010 04:07:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=UjJ0OecJWd/k3zQrR4egcf2hh6QydRqZcsPspPzfB5Tqj0GWAjeDr4eJZaZ7bE2AlP
+         mznZgZe/fs+32+GwaCQcclWBR0yUnL+fFgl4NvRSl9/de3jBESABKGQ4SZzNdaVaqQAi
+         ZNWL98p9v5qG79sk+Mjk3HKaVbvTdkBkSTSNs=
+Date: Fri, 16 Jul 2010 01:07:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linux Input <linux-input@vger.kernel.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: [RFT] i8042 - always reset upon resuming from S2R
+Message-ID: <20100716080735.GB14120@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 08:48:36PM -0400, Tim HRM wrote:
-> Interesting, since I seem to remember the MSM devices mostly conduct
-> IO through regions of normal RAM, largely accomplished through
-> ioremap() calls.
-> 
-> Without more public domain documentation of the MSM chips and AMSS
-> interfaces I wouldn't know how to avoid this, but I can imagine it
-> creates a bit of urgency for Qualcomm developers as they attempt to
-> upstream support for this most interesting SoC.
+Hi,
 
-As the patch has been out for RFC since early April on the linux-arm-kernel
-mailing list (Subject: [RFC] Prohibit ioremap() on kernel managed RAM),
-and no comments have come back from Qualcomm folk.
+There are a quite a few boxes that require use of i8042.reset option
+to get their keyboard/mice/touchpads operable after suspend to ram.
+The patch below changes behavior of i8042 to always reset the controller
+after resuming from S2R and while it does fix the issue on some of the
+affected boxes and does not appear to have any adverse effects on my
+boxes that do not exibit the problem I would love for people to try
+it out on their hardware. I am interested in tests on hardware that
+needs the reset flag and on hardware that wroks fine without it.
 
-The restriction on creation of multiple V:P mappings with differing
-attributes is also fairly hard to miss in the ARM architecture
-specification when reading the sections about caches.
+Thanks!
+
+-- 
+Dmitry
+
+Input: i8042 - reset keyboard controller wehen resuming from S2R
+
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+
+Some laptops, such as Lenovo 3000 N100, require keyboard controller reset
+in order to have touchpad operable after suspend to RAM. Even if box does
+not need the reset it should be safe to do so, so instead of chasing
+after misbehaving boxes and grow DMI tables. let's reset the controller
+unconditionally.
+
+Reported-and-tested-by: Jerome Lacoste <jerome.lacoste@gmail.com>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+---
+
+ drivers/input/serio/i8042.c |   65 +++++++++++++++++++++++++++----------------
+ 1 files changed, 41 insertions(+), 24 deletions(-)
+
+
+diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
+index 6440a8f..258b98b 100644
+--- a/drivers/input/serio/i8042.c
++++ b/drivers/input/serio/i8042.c
+@@ -861,9 +861,6 @@ static int i8042_controller_selftest(void)
+ 	unsigned char param;
+ 	int i = 0;
+ 
+-	if (!i8042_reset)
+-		return 0;
+-
+ 	/*
+ 	 * We try this 5 times; on some really fragile systems this does not
+ 	 * take the first time...
+@@ -1020,7 +1017,8 @@ static void i8042_controller_reset(void)
+  * Reset the controller if requested.
+  */
+ 
+-	i8042_controller_selftest();
++	if (i8042_reset)
++		i8042_controller_selftest();
+ 
+ /*
+  * Restore the original control register setting.
+@@ -1094,23 +1092,11 @@ static void i8042_dritek_enable(void)
+ #ifdef CONFIG_PM
+ 
+ /*
+- * Here we try to restore the original BIOS settings to avoid
+- * upsetting it.
+- */
+-
+-static int i8042_pm_reset(struct device *dev)
+-{
+-	i8042_controller_reset();
+-
+-	return 0;
+-}
+-
+-/*
+  * Here we try to reset everything back to a state we had
+  * before suspending.
+  */
+ 
+-static int i8042_pm_restore(struct device *dev)
++static int i8042_controller_resume(bool force_reset)
+ {
+ 	int error;
+ 
+@@ -1118,9 +1104,11 @@ static int i8042_pm_restore(struct device *dev)
+ 	if (error)
+ 		return error;
+ 
+-	error = i8042_controller_selftest();
+-	if (error)
+-		return error;
++	if (i8042_reset || force_reset) {
++		error = i8042_controller_selftest();
++		if (error)
++			return error;
++	}
+ 
+ /*
+  * Restore original CTR value and disable all ports
+@@ -1162,6 +1150,28 @@ static int i8042_pm_restore(struct device *dev)
+ 	return 0;
+ }
+ 
++/*
++ * Here we try to restore the original BIOS settings to avoid
++ * upsetting it.
++ */
++
++static int i8042_pm_reset(struct device *dev)
++{
++	i8042_controller_reset();
++
++	return 0;
++}
++
++static int i8042_pm_resume(struct device *dev)
++{
++	/*
++	 * On resume from S2R we always try to reset the controller
++	 * to bring it in a sane state. (In case of S2D we expect
++	 * BIOS to reset the controller for us.)
++	 */
++	return i8042_controller_resume(true);
++}
++
+ static int i8042_pm_thaw(struct device *dev)
+ {
+ 	i8042_interrupt(0, NULL);
+@@ -1169,9 +1179,14 @@ static int i8042_pm_thaw(struct device *dev)
+ 	return 0;
+ }
+ 
++static int i8042_pm_restore(struct device *dev)
++{
++	return i8042_controller_resume(false);
++}
++
+ static const struct dev_pm_ops i8042_pm_ops = {
+ 	.suspend	= i8042_pm_reset,
+-	.resume		= i8042_pm_restore,
++	.resume		= i8042_pm_resume,
+ 	.thaw		= i8042_pm_thaw,
+ 	.poweroff	= i8042_pm_reset,
+ 	.restore	= i8042_pm_restore,
+@@ -1389,9 +1404,11 @@ static int __init i8042_probe(struct platform_device *dev)
+ 
+ 	i8042_platform_device = dev;
+ 
+-	error = i8042_controller_selftest();
+-	if (error)
+-		return error;
++	if (i8042_reset) {
++		error = i8042_controller_selftest();
++		if (error)
++			return error;
++	}
+ 
+ 	error = i8042_controller_init();
+ 	if (error)
