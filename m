@@ -1,72 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965880Ab0GPPk2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 11:40:28 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:60591 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S965841Ab0GPPkT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 11:40:19 -0400
-Date: Fri, 16 Jul 2010 11:40:17 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Avi Kivity <avi@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, akpm@osdl.org,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-Message-ID: <20100716154017.GA17970@Krystal>
-References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <20100716153433.GA7338@basil.fritz.box>
+	id S965887Ab0GPPlx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 11:41:53 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:41062 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965821Ab0GPPlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 11:41:52 -0400
+Message-ID: <4C407DBC.3060007@austin.ibm.com>
+Date: Fri, 16 Jul 2010 10:41:48 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100716153433.GA7338@basil.fritz.box>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:36:03 up 174 days, 18:12,  6 users,  load average: 0.02, 0.05,
-	0.01
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Greg KH <greg@kroah.com>
+CC: linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH 0/7] De-couple sysfs memory directories from memory	sections
+References: <4C3B3446.5090302@austin.ibm.com> <20100716071320.GC31612@kroah.com>
+In-Reply-To: <20100716071320.GC31612@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andi Kleen (andi@firstfloor.org) wrote:
-> > Well, it seems like all the kernel code calling "vmalloc_sync_all()" (which is
-> > much more than perf) can potentially cause large latencies, which could be
+On 07/16/2010 02:13 AM, Greg KH wrote:
+> On Mon, Jul 12, 2010 at 10:27:02AM -0500, Nathan Fontenot wrote:
+>> This set of patches de-couples the idea that there is a single
+>> directory in sysfs for each memory section.
 > 
-> You need to fix all other code too that walks tasks lists to avoid all those.
-> 
-> % gid for_each_process | wc -l
+> Any reason you didn't cc: the sysfs maintainer on these patches?  If
+> not, I'll gladly ignore them...
 
-This can very well be done incrementally. And I agree, these should eventually
-targeted too, especially those which hold locks. We've already started hearing
-about tasklist lock live-locks in the past year, so I think we're pretty much at
-the point where it should be looked at.
+Ummm.... I have no good excuse. :)
 
-Thanks,
-
-Mathieu
+Will add you to cc for v3 of the patch.
 
 > 
-> In fact the mm-struct walk is cheaper than a task-list walk because there
-> are always less than tasks.
+> (hint, scripts/get_maintainer.pl is your friend...)
+Thanks.
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+-Nathan
+> 
+> greg k-h
+
