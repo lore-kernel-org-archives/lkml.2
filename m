@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965453Ab0GPMiW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 08:38:22 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62826 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965439Ab0GPMiQ (ORCPT
+	id S965377Ab0GPMhr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 08:37:47 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:52272 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965350Ab0GPMhi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 08:38:16 -0400
+	Fri, 16 Jul 2010 08:37:38 -0400
 From: Nitin Gupta <ngupta@vflare.org>
 To: Pekka Enberg <penberg@cs.helsinki.fi>,
         Hugh Dickins <hugh.dickins@tiscali.co.uk>,
@@ -17,9 +17,9 @@ To: Pekka Enberg <penberg@cs.helsinki.fi>,
         Minchan Kim <minchan.kim@gmail.com>,
         Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
 Cc: linux-mm <linux-mm@kvack.org>, linux-kernel <linux-kernel@vger.kernel.org>
-Subject: [PATCH 8/8] Document sysfs entries
-Date: Fri, 16 Jul 2010 18:07:50 +0530
-Message-Id: <1279283870-18549-9-git-send-email-ngupta@vflare.org>
+Subject: [PATCH 1/8] Allow sharing xvmalloc for zram and zcache
+Date: Fri, 16 Jul 2010 18:07:43 +0530
+Message-Id: <1279283870-18549-2-git-send-email-ngupta@vflare.org>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
 References: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
@@ -27,72 +27,115 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Both zram and zcache use xvmalloc allocator. If xvmalloc
+is compiled separately for both of them, we will get linker
+error if they are both selected as "built-in".
+
+So, we now compile xvmalloc separately and export its symbols
+which are then used by both of zram and zcache.
+
 Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 ---
- Documentation/ABI/testing/sysfs-kernel-mm-zcache |   53 ++++++++++++++++++++++
- 1 files changed, 53 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-kernel-mm-zcache
+ drivers/staging/Makefile        |    1 +
+ drivers/staging/zram/Kconfig    |    5 +++++
+ drivers/staging/zram/Makefile   |    3 ++-
+ drivers/staging/zram/xvmalloc.c |    8 ++++++++
+ 4 files changed, 16 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/ABI/testing/sysfs-kernel-mm-zcache b/Documentation/ABI/testing/sysfs-kernel-mm-zcache
-new file mode 100644
-index 0000000..7ee3f31
---- /dev/null
-+++ b/Documentation/ABI/testing/sysfs-kernel-mm-zcache
-@@ -0,0 +1,53 @@
-+What:		/sys/kernel/mm/zcache
-+Date:		July 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		/sys/kernel/mm/zcache directory contains compressed cache
-+		statistics for each pool. A separate pool is created for
-+		every mount instance of cleancache-aware filesystems.
+diff --git a/drivers/staging/Makefile b/drivers/staging/Makefile
+index 63baeee..6de8564 100644
+--- a/drivers/staging/Makefile
++++ b/drivers/staging/Makefile
+@@ -40,6 +40,7 @@ obj-$(CONFIG_MRST_RAR_HANDLER)	+= memrar/
+ obj-$(CONFIG_DX_SEP)		+= sep/
+ obj-$(CONFIG_IIO)		+= iio/
+ obj-$(CONFIG_ZRAM)		+= zram/
++obj-$(CONFIG_XVMALLOC)		+= zram/
+ obj-$(CONFIG_WLAGS49_H2)	+= wlags49_h2/
+ obj-$(CONFIG_WLAGS49_H25)	+= wlags49_h25/
+ obj-$(CONFIG_BATMAN_ADV)	+= batman-adv/
+diff --git a/drivers/staging/zram/Kconfig b/drivers/staging/zram/Kconfig
+index 4654ae2..9bf26ce 100644
+--- a/drivers/staging/zram/Kconfig
++++ b/drivers/staging/zram/Kconfig
+@@ -1,6 +1,11 @@
++config XVMALLOC
++	bool
++	default n
 +
-+What:		/sys/kernel/mm/zcache/pool<id>/zero_pages
-+Date:		July 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The zero_pages file is read-only and specifies number of zero
-+		filled pages found in this pool.
-+
-+What:		/sys/kernel/mm/zcache/pool<id>/orig_data_size
-+Date:		July 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The orig_data_size file is read-only and specifies uncompressed
-+		size of data stored in this pool. This excludes zero-filled
-+		pages (zero_pages) since no memory is allocated for them.
-+		Unit: bytes
-+
-+What:		/sys/kernel/mm/zcache/pool<id>/compr_data_size
-+Date:		July 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The compr_data_size file is read-only and specifies compressed
-+		size of data stored in this pool. So, compression ratio can be
-+		calculated using orig_data_size and this statistic.
-+		Unit: bytes
-+
-+What:		/sys/kernel/mm/zcache/pool<id>/mem_used_total
-+Date:		July 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The mem_used_total file is read-only and specifies the amount
-+		of memory, including allocator fragmentation and metadata
-+		overhead, allocated for this pool. So, allocator space
-+		efficiency can be calculated using compr_data_size and this
-+		statistic.
-+		Unit: bytes
-+
-+What:		/sys/kernel/mm/zcache/pool<id>/memlimit
-+Date:		July 2010
-+Contact:	Nitin Gupta <ngupta@vflare.org>
-+Description:
-+		The memlimit file is read-write and specifies upper bound on
-+		the compressed data size (compr_data_dize) stored in this pool.
-+		The value specified is rounded down to nearest multiple of
-+		PAGE_SIZE.
-+		Unit: bytes
-\ No newline at end of file
+ config ZRAM
+ 	tristate "Compressed RAM block device support"
+ 	depends on BLOCK
++	select XVMALLOC
+ 	select LZO_COMPRESS
+ 	select LZO_DECOMPRESS
+ 	default n
+diff --git a/drivers/staging/zram/Makefile b/drivers/staging/zram/Makefile
+index b2c087a..9900f8b 100644
+--- a/drivers/staging/zram/Makefile
++++ b/drivers/staging/zram/Makefile
+@@ -1,3 +1,4 @@
+-zram-objs	:=	zram_drv.o xvmalloc.o
++zram-objs	:=	zram_drv.o
+ 
+ obj-$(CONFIG_ZRAM)	+=	zram.o
++obj-$(CONFIG_XVMALLOC)	+=	xvmalloc.o
+diff --git a/drivers/staging/zram/xvmalloc.c b/drivers/staging/zram/xvmalloc.c
+index 3fdbb8a..3f94ef5 100644
+--- a/drivers/staging/zram/xvmalloc.c
++++ b/drivers/staging/zram/xvmalloc.c
+@@ -10,6 +10,8 @@
+  * Released under the terms of GNU General Public License Version 2.0
+  */
+ 
++#include <linux/module.h>
++#include <linux/kernel.h>
+ #include <linux/bitops.h>
+ #include <linux/errno.h>
+ #include <linux/highmem.h>
+@@ -320,11 +322,13 @@ struct xv_pool *xv_create_pool(void)
+ 
+ 	return pool;
+ }
++EXPORT_SYMBOL_GPL(xv_create_pool);
+ 
+ void xv_destroy_pool(struct xv_pool *pool)
+ {
+ 	kfree(pool);
+ }
++EXPORT_SYMBOL_GPL(xv_destroy_pool);
+ 
+ /**
+  * xv_malloc - Allocate block of given size from pool.
+@@ -413,6 +417,7 @@ int xv_malloc(struct xv_pool *pool, u32 size, struct page **page,
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(xv_malloc);
+ 
+ /*
+  * Free block identified with <page, offset>
+@@ -489,6 +494,7 @@ void xv_free(struct xv_pool *pool, struct page *page, u32 offset)
+ 	put_ptr_atomic(page_start, KM_USER0);
+ 	spin_unlock(&pool->lock);
+ }
++EXPORT_SYMBOL_GPL(xv_free);
+ 
+ u32 xv_get_object_size(void *obj)
+ {
+@@ -497,6 +503,7 @@ u32 xv_get_object_size(void *obj)
+ 	blk = (struct block_header *)((char *)(obj) - XV_ALIGN);
+ 	return blk->size;
+ }
++EXPORT_SYMBOL_GPL(xv_get_object_size);
+ 
+ /*
+  * Returns total memory used by allocator (userdata + metadata)
+@@ -505,3 +512,4 @@ u64 xv_get_total_size_bytes(struct xv_pool *pool)
+ {
+ 	return pool->total_pages << PAGE_SHIFT;
+ }
++EXPORT_SYMBOL_GPL(xv_get_total_size_bytes);
 -- 
 1.7.1.1
 
