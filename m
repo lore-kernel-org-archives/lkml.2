@@ -1,100 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759077Ab0GPTj0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 15:39:26 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:15742 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758837Ab0GPTjY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 15:39:24 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=129.33.193.72;
-From: Milton Miller <miltonm@bga.com>
-To: Lee Jones <lee.jones@canonical.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        Russell King <rmk@arm.linux.org.uk>, Martin Michlmayr <tbm@cyrius.com>,
-        Woody Suwalski <terraluna977@gmail.com>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Stop ARM boards crashing when CUPS is loaded -	2.6.35-rc5
-References: <4C408BEF.1060302@canonical.com>
-	<4C3C72C6.4000005@canonical.com>
-	<20100715130214.4c9303b2.akpm@linux-foundation.org>
-	<20100715200618.GA6773@n2100.arm.linux.org.uk>
-	<4C40218A.4090806@canonical.com>
-	<20100716092018.GB16995@n2100.arm.linux.org.uk>
-	<miltonm-arm-parport-1@bga.com>
-In-Reply-To: <4C408BEF.1060302@canonical.com>
-Message-ID: <miltonm-arm-parport-2@bga.com>
-Date: Fri, 16 Jul 2010 14:38:38 -0500
-X-Originating-IP: 129.33.193.72
+	id S1759115Ab0GPTk4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 15:40:56 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39721 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759101Ab0GPTkz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 15:40:55 -0400
+Message-ID: <4C40B57A.1090107@redhat.com>
+Date: Fri, 16 Jul 2010 22:39:38 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, akpm@osdl.org,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+References: <20100714154923.947138065@efficios.com> <20100714155804.252253097@efficios.com> <4C405078.20707@redhat.com> <20100716144927.GA22516@Krystal> <4C408D0C.5050709@redhat.com> <20100716165855.GA3836@Krystal> <4C409CBA.1050709@redhat.com> <4C409F62.6030303@zytor.com> <4C40A1BD.4040507@redhat.com> <20100716182240.GA23215@Krystal> <4C40A5A0.3010107@redhat.com> <4C40B324.4040907@zytor.com>
+In-Reply-To: <4C40B324.4040907@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jul 2010 about 10:42:23 -0600 Lee Jones wrote:
->On 16/07/10 17:23, Milton Miller wrote:
-> > On Fri Jul 16 2010 about 05:33:06 EST,  Lee Jones wrote:
-> > > > The best solution is probably for the parport code to go through a
-> > > > modernisation cycle like the serial code did, essentially using
-> > > > platform devices to pass the base addresses. This would make the
-> > > > driver more portable, and eliminates this problem entirely (because
-> > > > platforms which don't have parports won't register the platform device(s)
-> > > > necessary for parport to even probe illegal addresses.)
-> > >
-> > > This sounds brilliant - when are you going to start? </kidding>
-> > 
-> > It has a long time ago ...
-> > 
-> > drivers/parport/parport_pc.c calls parport_pc_find_nonpci_ports,
-> > which is in asm/parport.h
->
->I'm not entirely sure what you're trying to say here?
->
->How does that help with the platformisation of the driver?
+On 07/16/2010 10:29 PM, H. Peter Anvin wrote:
+> On 07/16/2010 11:32 AM, Avi Kivity wrote:
+>    
+>> How long would vmalloc_sync_all take with a few thousand mm_struct take?
+>>
+>> We share the pmds, yes?  So it's a few thousand memory accesses.  The
+>> direct impact is probably negligible, compared to actually loading the
+>> module from disk.  All we need is to make sure the locking doesn't slow
+>> down unrelated stuff.
+>>
+>>      
+> It's not the memory accesses, it's the need to synchronize all the CPUs.
+>    
 
-I was reading quickly, but my point was the code already defers to the
-architecture the method of finding the ports to scan, which is the
-important part.
+I'm missing something.  Why do we need to sync all cpus?  the 
+vmalloc_sync_all() I'm reading doesn't.
 
-I just looked at the 8250 code and it abuses the platform device model.
-Instead of a platform device for each port, it has multiple port
-descriptions set via platform_data in one or a a few device instances.
-It then only uses this information to fill in its internal array of all
-ports, which drives the actual registration with the serial core.  It also
-registers a platform device to to get suspend and resume hooks, but now has
-to scan its list of ports for all the instances driven from this "device".
-Yech.  Please don't use this as an example of a modern driver.
+Even if we do an on_each_cpu() somewhere, it isn't the end of the world.
 
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
->
-> > > In all seriousness, do you think anyone is likely to undertake this
-> > > work anytime soon? I am seeing this problem in a distribution which
-> > > is due for release in October. I have no problem implementing a config
-> > > change in the meantime, but as you say, a more _correct_ and portable
-> > > solution should be sought.
-> > 
-> > Why not replace the arm asm/parport.h with asm-generic/parport.h which
-> > already has a check for CONFIG_ISA, which appears to only be selected
-> > on a few ARM platforms?
->
->static int __devinit parport_pc_find_isa_ports(int autoirq, int autodma);
->static int __devinit parport_pc_find_nonpci_ports(int autoirq, int autodma)
->{
->#ifdef CONFIG_ISA
->	return parport_pc_find_isa_ports(autoirq, autodma);
->#else
->	return 0;
->#endif
->}
->
->That's perfect! 
->
->This would work a treat.
->
->Surely this #ifdef should be in all the parport.h files which call
->parport_pc_find_isa_ports?
-
-No, as CONFIG_ISA is supposed to be ISA slots, and other architectures
-may frequently have 8250 ports at the pc legacy port numbers without
-ISA slots.
-
-milton
