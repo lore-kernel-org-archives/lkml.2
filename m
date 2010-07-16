@@ -1,83 +1,181 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965489Ab0GPMtd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 08:49:33 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:40004 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965398Ab0GPMtN (ORCPT
+	id S965476Ab0GPMta (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 08:49:30 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:54042 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965397Ab0GPMtL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 08:49:13 -0400
+	Fri, 16 Jul 2010 08:49:11 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [RFC][PATCH 00/16] kill unnecessary bdi wakeups + cleanups
-Date: Fri, 16 Jul 2010 15:44:56 +0300
-Message-Id: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
+Subject: [RFC][PATCH 03/16] writeback: harmonize writeback threads naming
+Date: Fri, 16 Jul 2010 15:44:59 +0300
+Message-Id: <1279284312-2411-4-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
-X-OriginalArrivalTime: 16 Jul 2010 12:48:56.0586 (UTC) FILETIME=[40F156A0:01CB24E5]
+In-Reply-To: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
+References: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 16 Jul 2010 12:49:01.0149 (UTC) FILETIME=[43A998D0:01CB24E5]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-here is a series of patches which lessens amount of unnecessary wake-ups in
-the linux kernel.
+The write-back code mixes words "thread" and "task" for the
+same things - this is not a problem, but this is still an
+inconsistency which makes it a bit difficult to read the code.
 
-THE PROBLEM
-~~~~~~~~~~~
+hch: a convention I tend to use and I've seen in various places
+is to always use _task for the storage of the task_struct pointer,
+and thread everywhere else.  This especially helps with having
+foo_thread for the actual thread and foo_task for a global
+variable keeping the task_struct pointer
 
-Each block device has corresponding "flusher" thread, which are usually seen
-as "flusher-x:y" in your 'ps' output. Flusher threads are responsible to do
-background write-back for different kernel code paths like memory reclamation
-as well as the periodic background writeout.
+This patch renames:
 
-The flusher threads wake up every 5 seconds and check whether they have to
-write anything back or not. In idle systems with good dynamic power-management
-this means that they force it to wake up from deep sleep, find out that there
-is nothing to do, and waste power. This hurts small battery-powered devices,
-e.g., linux-based phones.
+'bdi_add_default_flusher_task()' -> 'bdi_add_default_flusher_thread()'
+'bdi_forker_task()' -> 'bdi_forker_thread()'
 
-But idle wake-ups do not last forever, the bdi threads kill themselves if
-nothing useful has been done for 5 minutes.
+This is just more consistent, because the per-bdi flushers are
+'bdi_writeback_thread()'.
 
-Also, there is the bdi forker thread, seen as 'bdi-default' in your 'ps'
-output. This thread also wakes up every 5 seconds and checks whether it has to
-fork a bid flusher thread, in case there is dirt to write-back, but the thread
-was killed. This is also bad for battery-powered embedded devices.
+This patch also amends commentaries and makes them refer the forker
+thread and the write-back threads as "thread", not "task".
 
-SOLUTION
-~~~~~~~~
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+---
+ fs/fs-writeback.c           |    2 +-
+ include/linux/backing-dev.h |    2 +-
+ mm/backing-dev.c            |   26 +++++++++++++-------------
+ 3 files changed, 15 insertions(+), 15 deletions(-)
 
-This patch set makes bdi threads and the forker thread wake-up only if there is
-job to do, otherwise they will sleep. The main idea is to wake-up the needed
-thread when adding dirty data to the bdi.
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index bf10cbf..5e6b7fc 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -840,7 +840,7 @@ int bdi_writeback_thread(void *data)
+ 
+ 			/*
+ 			 * Longest period of inactivity that we tolerate. If we
+-			 * see dirty data again later, the task will get
++			 * see dirty data again later, the thread will get
+ 			 * recreated automatically.
+ 			 */
+ 			max_idle = max(5UL * 60 * HZ, wait_jiffies);
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index e536f3a..f0936f5 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -50,7 +50,7 @@ struct bdi_writeback {
+ 
+ 	unsigned long last_old_flush;		/* last old data flush */
+ 
+-	struct task_struct	*task;		/* writeback task */
++	struct task_struct	*task;		/* writeback thread */
+ 	struct list_head	b_dirty;	/* dirty inodes */
+ 	struct list_head	b_io;		/* parked for writeback */
+ 	struct list_head	b_more_io;	/* parked for more writeback */
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 0fad60d..b34c12a 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -50,7 +50,7 @@ static struct timer_list sync_supers_timer;
+ static int bdi_sync_supers(void *);
+ static void sync_supers_timer_fn(unsigned long);
+ 
+-static void bdi_add_default_flusher_task(struct backing_dev_info *bdi);
++static void bdi_add_default_flusher_thread(struct backing_dev_info *bdi);
+ 
+ #ifdef CONFIG_DEBUG_FS
+ #include <linux/debugfs.h>
+@@ -279,10 +279,10 @@ static void bdi_flush_io(struct backing_dev_info *bdi)
+ }
+ 
+ /*
+- * kupdated() used to do this. We cannot do it from the bdi_forker_task()
++ * kupdated() used to do this. We cannot do it from the bdi_forker_thread()
+  * or we risk deadlocking on ->s_umount. The longer term solution would be
+  * to implement sync_supers_bdi() or similar and simply do it from the
+- * bdi writeback tasks individually.
++ * bdi writeback thread individually.
+  */
+ static int bdi_sync_supers(void *unused)
+ {
+@@ -318,7 +318,7 @@ static void sync_supers_timer_fn(unsigned long unused)
+ 	bdi_arm_supers_timer();
+ }
+ 
+-static int bdi_forker_task(void *ptr)
++static int bdi_forker_thread(void *ptr)
+ {
+ 	struct bdi_writeback *me = ptr;
+ 
+@@ -354,7 +354,7 @@ static int bdi_forker_task(void *ptr)
+ 			    !bdi_has_dirty_io(bdi))
+ 				continue;
+ 
+-			bdi_add_default_flusher_task(bdi);
++			bdi_add_default_flusher_thread(bdi);
+ 		}
+ 
+ 		set_current_state(TASK_INTERRUPTIBLE);
+@@ -376,7 +376,7 @@ static int bdi_forker_task(void *ptr)
+ 
+ 		/*
+ 		 * This is our real job - check for pending entries in
+-		 * bdi_pending_list, and create the tasks that got added
++		 * bdi_pending_list, and create the threads that got added
+ 		 */
+ 		bdi = list_entry(bdi_pending_list.next, struct backing_dev_info,
+ 				 bdi_list);
+@@ -387,7 +387,7 @@ static int bdi_forker_task(void *ptr)
+ 		wb->task = kthread_run(bdi_writeback_thread, wb, "flush-%s",
+ 					dev_name(bdi->dev));
+ 		/*
+-		 * If task creation fails, then readd the bdi to
++		 * If thread creation fails, then readd the bdi to
+ 		 * the pending list and force writeout of the bdi
+ 		 * from this forker thread. That will free some memory
+ 		 * and we can try again.
+@@ -423,10 +423,10 @@ static void bdi_add_to_pending(struct rcu_head *head)
+ }
+ 
+ /*
+- * Add the default flusher task that gets created for any bdi
++ * Add the default flusher thread that gets created for any bdi
+  * that has dirty data pending writeout
+  */
+-void static bdi_add_default_flusher_task(struct backing_dev_info *bdi)
++void static bdi_add_default_flusher_thread(struct backing_dev_info *bdi)
+ {
+ 	if (!bdi_cap_writeback_dirty(bdi))
+ 		return;
+@@ -438,10 +438,10 @@ void static bdi_add_default_flusher_task(struct backing_dev_info *bdi)
+ 	}
+ 
+ 	/*
+-	 * Check with the helper whether to proceed adding a task. Will only
++	 * Check with the helper whether to proceed adding a thread. Will only
+ 	 * abort if we two or more simultanous calls to
+-	 * bdi_add_default_flusher_task() occured, further additions will block
+-	 * waiting for previous additions to finish.
++	 * bdi_add_default_flusher_thread() occured, further additions will
++	 * block waiting for previous additions to finish.
+ 	 */
+ 	if (!test_and_set_bit(BDI_pending, &bdi->state)) {
+ 		list_del_rcu(&bdi->bdi_list);
+@@ -499,7 +499,7 @@ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
+ 	if (bdi_cap_flush_forker(bdi)) {
+ 		struct bdi_writeback *wb = &bdi->wb;
+ 
+-		wb->task = kthread_run(bdi_forker_task, wb, "bdi-%s",
++		wb->task = kthread_run(bdi_forker_thread, wb, "bdi-%s",
+ 						dev_name(dev));
+ 		if (IS_ERR(wb->task)) {
+ 			wb->task = NULL;
+-- 
+1.7.1.1
 
-To implement this:
-
-1. I address various rare race conditions in the current code.
-2. Then I move the killing logic from bdi threads to the forker thread, so that
-we would have one central place where we make decisions about killing inactive
-bdi threads. The reason I do this is because otherwise it is difficult to make
-sure that a bdi thread does not decide to exit while you are waking it up.
-3. I add a small piece of code to '__mark_inode_dirt()' which wakes up the bdi
-   thread when dirty inodes arrive
-4. There are also clean-up patches and nicification patches which I found to be
-   good for better code readability.
-5. Some patches are just preparations which make the following real patches
-   simpler and easier to review.
-6. Some patches are just simplifications of current code.
-
-With this patchset bdi threads wake up considerably less.
-
-This is RFC so far, because:
-1. I'm new to this area
-2. patches really need review
-3. patches need more testing and polishing
-
-Side note, there is another set of patches which are solving a similar problem
-waiting for comments/acceptance:
-http://thread.gmane.org/gmane.linux.file-systems/42834
-
-Artem.
