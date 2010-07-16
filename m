@@ -1,107 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S964941Ab0GPKI2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 06:08:28 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:61893 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S964898Ab0GPKI0 convert rfc822-to-8bit (ORCPT
+	id S964939Ab0GPKMv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 06:12:51 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38599 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S936053Ab0GPKMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 06:08:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=VwbvhCEb/em82n7r9LCsGUYlSSnVaOmUiLiYnJG23sc4aRCsymDp4epyv30Ml2IDRe
-         QgOR8fp26ClTawCpiKiA5hE7emlFKMOLhHP2uwtyNPA3yG/7tYpWndOa0zWrAdYtYnX9
-         xf+T6lkgg3B1KJsXChLXimM3hyorgxvYSDD28=
+	Fri, 16 Jul 2010 06:12:50 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+Subject: [PATCH 0/7] memcg reclaim tracepoint
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100716191006.7369.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-In-Reply-To: <4C4007CD.2070504@gmail.com>
-References: <cover.1279110894.git.siccegge@cs.fau.de>
-	<20100714131527.GB2352@tuxdriver.com>
-	<4C3DCD5C.1080705@openwrt.org>
-	<201007151041.55112.bzolnier@gmail.com>
-	<AANLkTilqoYMMKYJT-YYbEzdnytUSYa0EylEiJ4x5xXXH@mail.gmail.com>
-	<4C4007CD.2070504@gmail.com>
-Date: Fri, 16 Jul 2010 12:08:23 +0200
-Message-ID: <AANLkTik8M0gNipi_rwVJYbmo_3FfdHs-H4H_XDgTcbhI@mail.gmail.com>
-Subject: Re: [PATCH 01/11] Removing dead RT2800PCI_SOC
-From: Helmut Schaa <helmut.schaa@googlemail.com>
-To: Gertjan van Wingerde <gwingerde@gmail.com>
-Cc: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>,
-        Felix Fietkau <nbd@openwrt.org>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        Ivo Van Doorn <ivdoorn@gmail.com>,
-        Christoph Egger <siccegge@cs.fau.de>, linux-wireless@vger.kernel.org,
-        users@rt2x00.serialmonkey.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, vamos-dev@i4.informatik.uni-erlangen.de,
-        Luis Correia <luis.f.correia@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 16 Jul 2010 19:12:46 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 9:18 AM, Gertjan van Wingerde
-<gwingerde@gmail.com> wrote:
->
-> On 07/16/10 08:57, Helmut Schaa wrote:
-> > On Thu, Jul 15, 2010 at 10:41 AM, Bartlomiej Zolnierkiewicz <bzolnier@gmail.com <mailto:bzolnier@gmail.com>> wrote:
-> >
-> >     On Wednesday 14 July 2010 04:44:44 pm Felix Fietkau wrote:
-> >     > On 2010-07-14 3:15 PM, John W. Linville wrote:
-> >     > > On Wed, Jul 14, 2010 at 02:52:14PM +0200, Ivo Van Doorn wrote:
-> >     > >> On Wed, Jul 14, 2010 at 2:46 PM, Luis Correia <luis.f.correia@gmail.com <mailto:luis.f.correia@gmail.com>> wrote:
-> >     > >> > On Wed, Jul 14, 2010 at 13:39, Christoph Egger <siccegge@cs.fau.de <mailto:siccegge@cs.fau.de>> wrote:
-> >     > >> >> While RT2800PCI_SOC exists in Kconfig, it depends on either
-> >     > >> >> RALINK_RT288X or RALINK_RT305X which are both not available in Kconfig
-> >     > >> >> so all Code depending on that can't ever be selected and, if there's
-> >     > >> >> no plan to add these options, should be cleaned up
-> >     > >> >>
-> >     > >> >> Signed-off-by: Christoph Egger <siccegge@cs.fau.de <mailto:siccegge@cs.fau.de>>
-> >     > >> >
-> >     > >> > NAK,
-> >     > >> >
-> >     > >> > this is not dead code, it is needed for the Ralink System-on-Chip
-> >     > >> > Platform devices.
-> >     > >> >
-> >     > >> > While I can't fix Kconfig errors and the current KConfig file may be
-> >     > >> > wrong, this code cannot and will not be deleted.
-> >     > >>
-> >     > >> When the config option was introduced, the config options RALINK_RT288X and
-> >     > >> RALINK_RT305X were supposed to be merged as well soon after by somebody (Felix?)
-> >     > >>
-> >     > >> But since testing is done on SoC boards by Helmut and Felix, I assume the code
-> >     > >> isn't dead but actually in use.
-> >     > >
-> >     > > Perhaps Helmut and Felix can send us the missing code?
-> >     > The missing code is a MIPS platform port, which is currently being
-> >     > maintained in OpenWrt, but is not ready for upstream submission yet.
-> >     > I'm not working on this code at the moment, but I think it will be
-> >     > submitted once it's ready.
-> >
-> >     People are using automatic scripts to catch unused config options nowadays
-> >     so the issue is quite likely to come back again sooner or later..
-> >
-> >     Would it be possible to improve situation somehow till the missing parts
-> >     get merged?  Maybe by adding a tiny comment documenting RT2800PCI_SOC
-> >     situation to Kconfig (if the config option itself really cannot be removed)
-> >     until all code is ready etc.?
-> >
-> >
-> > Or we could just remove RT2800PCI_SOC completely and build the soc specific
-> > parts always as part of rt2800pci. I mean it's not much code, just the platform
-> > driver stuff and the eeprom access.
-> >
->
-> I'm not sure if that is feasible. Sure, we can reduce the usage of the variable by
-> unconditionally compiling in the generic SOC code, but we should not unconditionally
-> register the SOC platform device, which is currently also under the scope of this
-> Kconfig variable.
+Recently, Mel Gorman added some vmscan tracepoint. but they can't
+trace memcg. So, This patch series does.
 
-Ehm, no, the platform device is not registered in rt2800pci at all,
-it's just the platform
-driver that gets registered there. The platform device will be
-registered in the according
-board init code (that only resides in openwrt at the moment).
 
-Helmut
+following three patches are nit fix and cleanups.
+
+  memcg: sc.nr_to_reclaim should be initialized
+  memcg: mem_cgroup_shrink_node_zone() doesn't need sc.nodemask
+  memcg: nid and zid can be calculated from zone
+
+following four patches are tracepoint conversion and adding memcg tracepoints.
+
+  vmscan:        convert direct reclaim tracepoint to DEFINE_EVENT
+  memcg, vmscan: add memcg reclaim tracepoint
+  vmscan:        convert mm_vmscan_lru_isolate to DEFINE_EVENT
+  memcg, vmscan: add mm_vmscan_memcg_isolate tracepoint
+
+
+diffstat
+================
+ include/linux/memcontrol.h    |    6 ++--
+ include/linux/mmzone.h        |    5 +++
+ include/linux/swap.h          |    3 +-
+ include/trace/events/vmscan.h |   79 +++++++++++++++++++++++++++++++++++++++--
+ mm/memcontrol.c               |   15 +++++---
+ mm/vmscan.c                   |   35 ++++++++++++------
+ 6 files changed, 118 insertions(+), 25 deletions(-)
+
+
+Sameple output is here.
+=========================
+
+              dd-1851  [001]   158.837763: mm_vmscan_memcg_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
+              dd-1851  [001]   158.837783: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+              dd-1851  [001]   158.837860: mm_vmscan_memcg_reclaim_end: nr_reclaimed=32
+  (...)
+              dd-1970  [000]   266.608235: mm_vmscan_wakeup_kswapd: nid=0 zid=1 order=0
+              dd-1970  [000]   266.608239: mm_vmscan_wakeup_kswapd: nid=1 zid=1 order=0
+              dd-1970  [000]   266.608248: mm_vmscan_wakeup_kswapd: nid=2 zid=1 order=0
+         kswapd1-348   [001]   266.608254: mm_vmscan_kswapd_wake: nid=1 order=0
+              dd-1970  [000]   266.608254: mm_vmscan_wakeup_kswapd: nid=3 zid=1 order=0
+         kswapd3-350   [000]   266.608266: mm_vmscan_kswapd_wake: nid=3 order=0
+  (...)
+         kswapd0-347   [001]   267.328891: mm_vmscan_memcg_softlimit_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
+         kswapd0-347   [001]   267.328897: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+         kswapd0-347   [001]   267.328915: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+         kswapd0-347   [001]   267.328989: mm_vmscan_memcg_softlimit_reclaim_end: nr_reclaimed=32
+         kswapd0-347   [001]   267.329019: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+         kswapd0-347   [001]   267.330562: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+  (...)
+         kswapd2-349   [001]   267.407081: mm_vmscan_kswapd_sleep: nid=2
+         kswapd3-350   [001]   267.408077: mm_vmscan_kswapd_sleep: nid=3
+         kswapd1-348   [000]   267.427858: mm_vmscan_kswapd_sleep: nid=1
+         kswapd0-347   [001]   267.430064: mm_vmscan_kswapd_sleep: nid=0
+
+
+
+
+
