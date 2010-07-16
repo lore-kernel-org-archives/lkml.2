@@ -1,212 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759275Ab0GPU3H (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 16:29:07 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:58013 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759192Ab0GPU3E (ORCPT
+	id S1759293Ab0GPU3w (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 16:29:52 -0400
+Received: from relais.videotron.ca ([24.201.245.36]:25236 "EHLO
+	relais.videotron.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759192Ab0GPU3u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 16:29:04 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Fri, 16 Jul 2010 22:28:54 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH libraw1394] Implement raw1394_(start_)phy_packet_write() on
- new firewire backend
-To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org
-In-Reply-To: <tkrat.59dee0979cf9dbb0@s5r6.in-berlin.de>
-Message-ID: <tkrat.918a88e710ebb6ce@s5r6.in-berlin.de>
-References: <tkrat.59dee0979cf9dbb0@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+	Fri, 16 Jul 2010 16:29:50 -0400
+MIME-version: 1.0
+Content-type: multipart/mixed; boundary="Boundary_(ID_WeofpZu1ypl87hER17cL9Q)"
+Date: Fri, 16 Jul 2010 16:29:49 -0400 (EDT)
+From: Nicolas Pitre <nico@fluxnic.net>
+X-X-Sender: nico@xanadu.home
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Catalin Marinas <catalin.marinas@arm.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Stephen Rothwell <sfr@canb.auug.org.au>,
+        Daniel Walker <dwalker@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        linux-kbuild@vger.kernel.org, Tony Lindgren <tony@atomide.com>,
+        =?ISO-8859-15?Q?Uwe_Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linuxppc-dev@lists.ozlabs.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC PATCH] Kconfig: Enable Kconfig fragments to be used for
+ defconfig
+In-reply-to: <AANLkTimKpmZaGRYfYs8HGDz-_VG8ePXN6bZvl2-YcNdR@mail.gmail.com>
+Message-id: <alpine.LFD.2.00.1007161629270.10598@xanadu.home>
+References: <20100713230352.6781.18644.stgit@angua>
+ <1279296221.17878.66.camel@e102109-lin.cambridge.arm.com>
+ <AANLkTinyFBTKYaryFANYheTuP-biJUws2x01NRNZPb4M@mail.gmail.com>
+ <alpine.LFD.2.00.1007161406120.10598@xanadu.home>
+ <20100716183028.GB26854@n2100.arm.linux.org.uk>
+ <alpine.LFD.2.00.1007161439240.10598@xanadu.home>
+ <AANLkTikqHnyFVJF0Pzwy2xtKeNSXYAPFdPkAkLiXK8Ls@mail.gmail.com>
+ <1279310976.18579.8.camel@e102109-lin.cambridge.arm.com>
+ <AANLkTimKpmZaGRYfYs8HGDz-_VG8ePXN6bZvl2-YcNdR@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Requires kernel 2.6.36 or newer at runtime and linux-headers 2.6.36 or newer
-at build time.
+  This message is in MIME format.  The first part should be readable text,
+  while the remaining parts are likely unreadable without MIME-aware tools.
 
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- src/dispatch.c |    2 +-
- src/fw.c       |   91 +++++++++++++++++++++++++++++++++++++++++++++++--------
- src/fw.h       |    6 ++--
- 3 files changed, 81 insertions(+), 18 deletions(-)
+--Boundary_(ID_WeofpZu1ypl87hER17cL9Q)
+Content-type: TEXT/PLAIN; charset=ISO-8859-1
+Content-transfer-encoding: 8BIT
 
-diff --git a/src/dispatch.c b/src/dispatch.c
-index c6ff332..04fbad6 100644
---- a/src/dispatch.c
-+++ b/src/dispatch.c
-@@ -287,7 +287,7 @@ int raw1394_phy_packet_write (raw1394handle_t handle, quadlet_t data)
- 		return -1;
- 	}
- 	if (handle->is_fw)
--		return fw_phy_packet_write(handle->mode.fw, data);
-+		return fw_phy_packet_write(handle, data);
- 	else
- 		return ieee1394_phy_packet_write(handle, data);
- }
-diff --git a/src/fw.c b/src/fw.c
-index b1f12c9..bfe1e5e 100644
---- a/src/fw.c
-+++ b/src/fw.c
-@@ -340,6 +340,16 @@ handle_device_event(raw1394handle_t handle,
- 		       sizeof u->iso_resource);
- 		return 0;
- #endif
-+
-+#ifdef FW_CDEV_EVENT_PHY_PACKET_SENT /* added in kernel 2.6.36 */
-+	case FW_CDEV_EVENT_PHY_PACKET_SENT:
-+		rc = u64_to_ptr(u->phy_packet.closure);
-+		errcode = fw_to_raw1394_errcode(u->phy_packet.rcode);
-+		tag = rc->tag;
-+		free(rc);
-+
-+		return fwhandle->tag_handler(handle, tag, errcode);
-+#endif
- 	default:
- 	case FW_CDEV_EVENT_ISO_INTERRUPT:
- 		/* Never happens. */
-@@ -985,20 +995,6 @@ int fw_wake_up(fw_handle_t handle)
- 	return fw_echo_request(handle, 0);
- }
- 
--int fw_phy_packet_write (fw_handle_t handle, quadlet_t data)
--{
--	errno = ENOSYS;
--	return -1;
--}
--
--int
--fw_start_phy_packet_write(fw_handle_t handle,
--			       quadlet_t data, unsigned long tag)
--{
--	errno = ENOSYS;
--	return -1;
--}
--
- static int
- send_request(fw_handle_t handle, int tcode,
- 	     nodeid_t node, nodeaddr_t addr,
-@@ -1220,6 +1216,47 @@ fw_start_async_stream(fw_handle_t handle, unsigned int channel,
- 			    0, addr, length, data, 0, NULL, rawtag);
- }
- 
-+int
-+fw_start_phy_packet_write(fw_handle_t handle, quadlet_t data, unsigned long tag)
-+{
-+#ifdef FW_CDEV_IOC_SEND_PHY_PACKET /* added in kernel 2.6.36 */
-+	struct fw_cdev_send_phy_packet send_phy_packet;
-+	struct request_closure *closure;
-+	int retval;
-+
-+	if (handle->local_device == NULL) {
-+		handle->err = -EPERM;
-+		errno = EPERM;
-+		return -1;
-+	}
-+
-+	closure = malloc(sizeof *closure);
-+	if (closure == NULL) {
-+		handle->err = -RCODE_SEND_ERROR;
-+		errno = fw_errcode_to_errno(handle->err);
-+		return -1;
-+	}
-+
-+	closure->data   = NULL;
-+	closure->length = 0;
-+	closure->tag    = tag;
-+
-+	send_phy_packet.closure    = ptr_to_u64(closure);
-+	send_phy_packet.data[0]    =  be32_to_cpu(data);
-+	send_phy_packet.data[1]    = ~be32_to_cpu(data);
-+	send_phy_packet.generation = handle->local_device->generation;
-+	retval = ioctl(handle->local_device->fd, FW_CDEV_IOC_SEND_PHY_PACKET,
-+		       &send_phy_packet);
-+	if (retval < 0)
-+		free(closure);
-+
-+	return retval;
-+#else
-+	errno = ENOSYS;
-+	handle->err = -errno;
-+	return -1;
-+#endif
-+}
- 
- int
- fw_start_async_send(fw_handle_t handle,
-@@ -1356,6 +1393,32 @@ fw_async_stream(raw1394handle_t handle, unsigned int channel,
- }
- 
- int
-+fw_phy_packet_write(raw1394handle_t handle, quadlet_t data)
-+{
-+	fw_handle_t fwhandle = handle->mode.fw;
-+	struct raw1394_reqhandle reqhandle;
-+	struct sync_data sd = { 0, 0 };
-+	int err;
-+
-+	reqhandle.callback = sync_callback;
-+	reqhandle.data = &sd;
-+
-+	err = fw_start_phy_packet_write(fwhandle, data,
-+					(unsigned long) &reqhandle);
-+
-+	while (!sd.done) {
-+		if (err < 0)
-+			return err;
-+		err = fw_loop_iterate(handle);
-+	}
-+
-+	fwhandle->err = sd.err;
-+	errno = fw_errcode_to_errno(sd.err);
-+
-+	return (errno ? -1 : 0);
-+}
-+
-+int
- fw_async_send(fw_handle_t handle,
- 		   size_t length, size_t header_length,
- 		   unsigned int expect_response,
-diff --git a/src/fw.h b/src/fw.h
-index b0ff169..bc374d5 100644
---- a/src/fw.h
-+++ b/src/fw.h
-@@ -159,9 +159,6 @@ int fw_arm_get_buf(fw_handle_t handle, nodeaddr_t start,
- 		   size_t length, void *buf);
- int fw_echo_request(fw_handle_t handle, quadlet_t data);
- int fw_wake_up(fw_handle_t handle);
--int fw_phy_packet_write (fw_handle_t handle, quadlet_t data);
--int fw_start_phy_packet_write(fw_handle_t handle,
--		   quadlet_t data, unsigned long tag);
- int fw_start_read(fw_handle_t handle, nodeid_t node, nodeaddr_t addr,
- 		   size_t length, quadlet_t *buffer, unsigned long tag);
- int fw_start_write(fw_handle_t handle, nodeid_t node, nodeaddr_t addr,
-@@ -176,6 +173,8 @@ int fw_start_async_stream(fw_handle_t handle, unsigned int channel,
- 		   unsigned int tag, unsigned int sy,
- 		   unsigned int speed, size_t length, quadlet_t *data,
- 		   unsigned long rawtag);
-+int fw_start_phy_packet_write(fw_handle_t handle,
-+		   quadlet_t data, unsigned long tag);
- int fw_start_async_send(fw_handle_t handle,
- 		   size_t length, size_t header_length,
- 		   unsigned int expect_response,
-@@ -193,6 +192,7 @@ int fw_lock64(raw1394handle_t handle, nodeid_t node, nodeaddr_t addr,
- int fw_async_stream(raw1394handle_t handle, unsigned int channel,
- 		   unsigned int tag, unsigned int sy, unsigned int speed,
- 		   size_t length, quadlet_t *data);
-+int fw_phy_packet_write(raw1394handle_t handle, quadlet_t data);
- int fw_async_send(fw_handle_t handle,
- 		   size_t length, size_t header_length,
- 		   unsigned int expect_response,
--- 
-1.7.1
+On Fri, 16 Jul 2010, Grant Likely wrote:
+
+> On Fri, Jul 16, 2010 at 2:09 PM, Catalin Marinas
+> <catalin.marinas@arm.com> wrote:
+> > On Fri, 2010-07-16 at 19:46 +0100, Linus Torvalds wrote:
+> >> On Fri, Jul 16, 2010 at 11:40 AM, Nicolas Pitre <nico@fluxnic.net> wrote:
+> >> >
+> >> > DOH.
+> >>
+> >> Well, it's possible that the correct approach is a mixture.
+> >>
+> >> Automatically do the trivial cases (recursive selects, dependencies
+> >> that are simple or of the form "x && y" etc), and warn about the cases
+> >> that aren't trivial (where "not trivial" may not necessarily be about
+> >> fundamentally ambiguous ones, but just "complex enough that I won't
+> >> even try").
+> >
+> > There is still a risk with this approach when the Kconfig isn't entirely
+> > correct. For example, on ARM we have (I pushed a patch already):
+> >
+> > config CPU_32v6K
+> >        depends on CPU_V6
+> >
+> > config CPU_V7
+> >        select CPU_32v6K
+> >
+> > In this simple approach, we end up selecting CPU_V6 when we only need
+> > CPU_V7. There other places like this in the kernel.
+> >
+> > Of course, kbuild could still warn but if people rely on this feature to
+> > select options automatically I suspect they would ignore the warnings.
+> 
+> In my first patch, I made Kconfig problems errors instead of warnings.
+>  That would prevent people from ignoring them.
+
+ACK.
 
 
--- 
-Stefan Richter
--=====-==-=- -=== =----
-http://arcgraph.de/sr/
+Nicolas
 
+--Boundary_(ID_WeofpZu1ypl87hER17cL9Q)--
