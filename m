@@ -1,80 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759343Ab0GPVqP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 17:46:15 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58797 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755129Ab0GPVqN (ORCPT
+	id S1759355Ab0GPV4o (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 17:56:44 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:50678 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753742Ab0GPV4n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 17:46:13 -0400
-MIME-Version: 1.0
-In-Reply-To: <4C40B277.9030408@redhat.com>
-References: <20100714154923.947138065@efficios.com>
-	<20100714155804.252253097@efficios.com>
-	<4C405078.20707@redhat.com>
-	<20100716144927.GA22516@Krystal>
-	<4C408D0C.5050709@redhat.com>
-	<20100716165855.GA3836@Krystal>
-	<4C409CBA.1050709@redhat.com>
-	<4C409F62.6030303@zytor.com>
-	<4C40A1BD.4040507@redhat.com>
-	<4C40A227.6000207@zytor.com>
-	<4C40A4E8.5090605@redhat.com>
-	<AANLkTinc_of_KYCFt9-8GZYGFLyqQLlgNttPe-YvZn-1@mail.gmail.com>
-	<4C40B277.9030408@redhat.com>
-Date: Fri, 16 Jul 2010 14:39:50 -0700
-Message-ID: <AANLkTimfZb22E7c_ftyc5WfKsGvJKKq-J3Vq8Y6FNvhT@mail.gmail.com>
-Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Avi Kivity <avi@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Fri, 16 Jul 2010 17:56:43 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=C3DJjXFSGAAblAWWWV1zL4t77QwdAZlmVkNStZ2o5thdyAS2x41bOnKctkh4IWDW2CVQNofSdPHTVtcz85u0nnx/r0fHXYAD1LZkY4GzdPeBDKgFo9KvvjgdPjKxbYqV;
+Date: Fri, 16 Jul 2010 14:56:42 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [git pull] PCI fix
+Message-ID: <20100716145642.73398601@virtuousgeek.org>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 16, 2010 at 12:26 PM, Avi Kivity <avi@redhat.com> wrote:
-> On 07/16/2010 09:37 PM, Linus Torvalds wrote:
->>
->> Non-NMI code should simply never have to even _think_ about NMI's. Why
->> should it? It should just do whatever comes "natural" within its own
->> context.
->
-> But we're not talking about non-NMI code.
+The following changes since commit
+f469461df6ff822f71b8737bda86eea20f16ff93:
 
-Yes, we are. We're talking about breakpoints (look at the subject
-line), and you are very much talking about things like that _idiotic_
-vmalloc_sync_all() by module loading code etc etc.
+  Merge branch 'perf-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-07-16 11:26:33 -0700)
 
-Every _single_ "solution" I have seen - apart from my suggestion - has
-been about making code "special" because some other code might run in
-an NMI. Module init sequences having to do idiotic things just because
-they have data structures that might get accessed by NMI.
+are available in the git repository at:
 
-And the thing is, if we just do NMI's correctly, and allow nesting,
-ALL THOSE PROBLEMS GO AWAY. And there is no reason what-so-ever to do
-stupid things elsewhere.
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 for-linus
 
-In other words, why the hell are you arguing? Help Mathieu write the
-low-level NMI handler right, and remove that idiotic
-"vmalloc_sync_all()" that is fundamentally broken and should not
-exist. Rather than talk about adding more of that kind of crap.
+This one hasn't gone through linux-next yet, but it has been tested by the
+reporter and seems reasonably safe.  As always, the pull decision is yours; I
+don't think this will make anything worse though...
 
-                   Linus
+Thanks,
+Jesse
+
+Bjorn Helgaas (1):
+      PCI: fall back to original BIOS BAR addresses
+
+ arch/x86/pci/i386.c     |    1 +
+ drivers/pci/setup-res.c |   32 ++++++++++++++++++++++++++++++++
+ include/linux/pci.h     |    1 +
+ 3 files changed, 34 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/pci/i386.c b/arch/x86/pci/i386.c
+index 6fdb3ec..5525309 100644
+--- a/arch/x86/pci/i386.c
++++ b/arch/x86/pci/i386.c
+@@ -184,6 +184,7 @@ static void __init pcibios_allocate_resources(int pass)
+ 					idx, r, disabled, pass);
+ 				if (pci_claim_resource(dev, idx) < 0) {
+ 					/* We'll assign a new address later */
++					dev->fw_addr[idx] = r->start;
+ 					r->end -= r->start;
+ 					r->start = 0;
+ 				}
+diff --git a/drivers/pci/setup-res.c b/drivers/pci/setup-res.c
+index 92379e2..2aaa131 100644
+--- a/drivers/pci/setup-res.c
++++ b/drivers/pci/setup-res.c
+@@ -156,6 +156,38 @@ static int __pci_assign_resource(struct pci_bus *bus, struct pci_dev *dev,
+ 					     pcibios_align_resource, dev);
+ 	}
+ 
++	if (ret < 0 && dev->fw_addr[resno]) {
++		struct resource *root, *conflict;
++		resource_size_t start, end;
++
++		/*
++		 * If we failed to assign anything, let's try the address
++		 * where firmware left it.  That at least has a chance of
++		 * working, which is better than just leaving it disabled.
++		 */
++
++		if (res->flags & IORESOURCE_IO)
++			root = &ioport_resource;
++		else
++			root = &iomem_resource;
++
++		start = res->start;
++		end = res->end;
++		res->start = dev->fw_addr[resno];
++		res->end = res->start + size - 1;
++		dev_info(&dev->dev, "BAR %d: trying firmware assignment %pR\n",
++			 resno, res);
++		conflict = request_resource_conflict(root, res);
++		if (conflict) {
++			dev_info(&dev->dev,
++				 "BAR %d: %pR conflicts with %s %pR\n", resno,
++				 res, conflict->name, conflict);
++			res->start = start;
++			res->end = end;
++		} else
++			ret = 0;
++	}
++
+ 	if (!ret) {
+ 		res->flags &= ~IORESOURCE_STARTALIGN;
+ 		dev_info(&dev->dev, "BAR %d: assigned %pR\n", resno, res);
+diff --git a/include/linux/pci.h b/include/linux/pci.h
+index 7cb0084..f26fda7 100644
+--- a/include/linux/pci.h
++++ b/include/linux/pci.h
+@@ -288,6 +288,7 @@ struct pci_dev {
+ 	 */
+ 	unsigned int	irq;
+ 	struct resource resource[DEVICE_COUNT_RESOURCE]; /* I/O and memory regions + expansion ROMs */
++	resource_size_t	fw_addr[DEVICE_COUNT_RESOURCE]; /* FW-assigned addr */
+ 
+ 	/* These fields are used by common fixups */
+ 	unsigned int	transparent:1;	/* Transparent PCI bridge */
