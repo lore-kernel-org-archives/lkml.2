@@ -1,284 +1,311 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759931Ab0GQMIQ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 08:08:16 -0400
-Received: from smtp-out-005.synserver.de ([212.40.180.5]:1038 "HELO
+	id S1759938Ab0GQMJF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 08:09:05 -0400
+Received: from smtp-out-005.synserver.de ([212.40.180.5]:1033 "HELO
 	smtp-out-003.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1759879Ab0GQMIP (ORCPT
+	by vger.kernel.org with SMTP id S1759879Ab0GQMJB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 08:08:15 -0400
+	Sat, 17 Jul 2010 08:09:01 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 28959
+X-SynServer-PPID: 5366
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v3] MIPS: Add base support for Ingenic JZ4740 System-on-a-Chip
-Date: Sat, 17 Jul 2010 14:07:51 +0200
-Message-Id: <1279368471-20307-1-git-send-email-lars@metafoo.de>
+Subject: [PATCH v3] MIPS: jz4740: Add IRQ handler code
+Date: Sat, 17 Jul 2010 14:08:43 +0200
+Message-Id: <1279368523-20427-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1276924111-11158-3-git-send-email-lars@metafoo.de>
+References: <1276924111-11158-3-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a new cpu type for the JZ4740 to the Linux MIPS architecture code.
-It also adds the iomem addresses for the different components found on a JZ4740
-SoC.
+This patch adds support for IRQ handling on a JZ4740 SoC.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
 --
 Changes since v1
-- Use physical addresses for base addresses
+- Reserve IRQ numbers for ADC IRQ demultiplexing
 
 Changes since v2
-- Add cpu-feature-overrides.h
+- Use __fls instead of ffs in the interrupt demuxer
 ---
- arch/mips/include/asm/bootinfo.h                   |    6 ++
- arch/mips/include/asm/cpu.h                        |    9 +++-
- arch/mips/include/asm/mach-jz4740/base.h           |   26 ++++++++++
- .../asm/mach-jz4740/cpu-feature-overrides.h        |   51 ++++++++++++++++++++
- arch/mips/include/asm/mach-jz4740/war.h            |   25 ++++++++++
- arch/mips/kernel/cpu-probe.c                       |   20 ++++++++
- arch/mips/mm/tlbex.c                               |    5 ++
- 7 files changed, 141 insertions(+), 1 deletions(-)
- create mode 100644 arch/mips/include/asm/mach-jz4740/base.h
- create mode 100644 arch/mips/include/asm/mach-jz4740/cpu-feature-overrides.h
- create mode 100644 arch/mips/include/asm/mach-jz4740/war.h
+ arch/mips/include/asm/mach-jz4740/irq.h |   57 +++++++++++
+ arch/mips/jz4740/irq.c                  |  167 +++++++++++++++++++++++++++++++
+ arch/mips/jz4740/irq.h                  |   21 ++++
+ 3 files changed, 245 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/include/asm/mach-jz4740/irq.h
+ create mode 100644 arch/mips/jz4740/irq.c
+ create mode 100644 arch/mips/jz4740/irq.h
 
-diff --git a/arch/mips/include/asm/bootinfo.h b/arch/mips/include/asm/bootinfo.h
-index 09eee09..15a8ef0 100644
---- a/arch/mips/include/asm/bootinfo.h
-+++ b/arch/mips/include/asm/bootinfo.h
-@@ -71,6 +71,12 @@
- #define MACH_LEMOTE_LL2F       7
- #define MACH_LOONGSON_END      8
- 
-+/*
-+ * Valid machtype for group INGENIC
-+ */
-+#define  MACH_INGENIC_JZ4730	0	/* JZ4730 SOC		*/
-+#define  MACH_INGENIC_JZ4740	1	/* JZ4740 SOC		*/
-+
- extern char *system_type;
- const char *get_system_type(void);
- 
-diff --git a/arch/mips/include/asm/cpu.h b/arch/mips/include/asm/cpu.h
-index a5acda4..b201a8f 100644
---- a/arch/mips/include/asm/cpu.h
-+++ b/arch/mips/include/asm/cpu.h
-@@ -34,7 +34,7 @@
- #define PRID_COMP_LSI		0x080000
- #define PRID_COMP_LEXRA		0x0b0000
- #define PRID_COMP_CAVIUM	0x0d0000
--
-+#define PRID_COMP_INGENIC	0xd00000
- 
- /*
-  * Assigned values for the product ID register.  In order to detect a
-@@ -133,6 +133,12 @@
- #define PRID_IMP_CAVIUM_CN52XX 0x0700
- 
- /*
-+ * These are the PRID's for when 23:16 == PRID_COMP_INGENIC
-+ */
-+
-+#define PRID_IMP_JZRISC        0x0200
-+
-+/*
-  * Definitions for 7:0 on legacy processors
-  */
- 
-@@ -219,6 +225,7 @@ enum cpu_type_enum {
- 	CPU_4KC, CPU_4KEC, CPU_4KSC, CPU_24K, CPU_34K, CPU_1004K, CPU_74K,
- 	CPU_ALCHEMY, CPU_PR4450, CPU_BCM3302, CPU_BCM4710,
- 	CPU_BCM6338, CPU_BCM6345, CPU_BCM6348, CPU_BCM6358,
-+	CPU_JZRISC,
- 
- 	/*
- 	 * MIPS64 class processors
-diff --git a/arch/mips/include/asm/mach-jz4740/base.h b/arch/mips/include/asm/mach-jz4740/base.h
+diff --git a/arch/mips/include/asm/mach-jz4740/irq.h b/arch/mips/include/asm/mach-jz4740/irq.h
 new file mode 100644
-index 0000000..f373186
+index 0000000..a865c98
 --- /dev/null
-+++ b/arch/mips/include/asm/mach-jz4740/base.h
-@@ -0,0 +1,26 @@
-+#ifndef __ASM_MACH_JZ4740_BASE_H__
-+#define __ASM_MACH_JZ4740_BASE_H__
-+
-+#define JZ4740_CPM_BASE_ADDR	0x10000000
-+#define JZ4740_INTC_BASE_ADDR	0x10001000
-+#define JZ4740_WDT_BASE_ADDR	0x10002000
-+#define JZ4740_TCU_BASE_ADDR	0x10002010
-+#define JZ4740_RTC_BASE_ADDR	0x10003000
-+#define JZ4740_GPIO_BASE_ADDR	0x10010000
-+#define JZ4740_AIC_BASE_ADDR	0x10020000
-+#define JZ4740_MSC_BASE_ADDR	0x10021000
-+#define JZ4740_UART0_BASE_ADDR	0x10030000
-+#define JZ4740_UART1_BASE_ADDR	0x10031000
-+#define JZ4740_I2C_BASE_ADDR	0x10042000
-+#define JZ4740_SSI_BASE_ADDR	0x10043000
-+#define JZ4740_SADC_BASE_ADDR	0x10070000
-+#define JZ4740_EMC_BASE_ADDR	0x13010000
-+#define JZ4740_DMAC_BASE_ADDR	0x13020000
-+#define JZ4740_UHC_BASE_ADDR	0x13030000
-+#define JZ4740_UDC_BASE_ADDR	0x13040000
-+#define JZ4740_LCD_BASE_ADDR	0x13050000
-+#define JZ4740_SLCD_BASE_ADDR	0x13050000
-+#define JZ4740_CIM_BASE_ADDR	0x13060000
-+#define JZ4740_IPU_BASE_ADDR	0x13080000
-+
-+#endif
-diff --git a/arch/mips/include/asm/mach-jz4740/cpu-feature-overrides.h b/arch/mips/include/asm/mach-jz4740/cpu-feature-overrides.h
-new file mode 100644
-index 0000000..d12e5c6
---- /dev/null
-+++ b/arch/mips/include/asm/mach-jz4740/cpu-feature-overrides.h
-@@ -0,0 +1,51 @@
++++ b/arch/mips/include/asm/mach-jz4740/irq.h
+@@ -0,0 +1,57 @@
 +/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 IRQ definitions
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
 + *
 + */
-+#ifndef __ASM_MACH_JZ4740_CPU_FEATURE_OVERRIDES_H
-+#define __ASM_MACH_JZ4740_CPU_FEATURE_OVERRIDES_H
 +
-+#define cpu_has_tlb 1
-+#define cpu_has_4kex		1
-+#define cpu_has_3k_cache	0
-+#define cpu_has_4k_cache	1
-+#define cpu_has_tx39_cache	0
-+#define cpu_has_fpu		0
-+#define cpu_has_32fpr	0
-+#define cpu_has_counter		0
-+#define cpu_has_watch		1
-+#define cpu_has_divec		1
-+#define cpu_has_vce		0
-+#define cpu_has_cache_cdex_p	0
-+#define cpu_has_cache_cdex_s	0
-+#define cpu_has_prefetch	1
-+#define cpu_has_mcheck 1
-+#define cpu_has_ejtag 1
-+#define cpu_has_llsc		1
-+#define cpu_has_mips16 0
-+#define cpu_has_mdmx 0
-+#define cpu_has_mips3d 0
-+#define cpu_has_smartmips 0
-+#define kernel_uses_llsc	1
-+#define cpu_has_vtag_icache	1
-+#define cpu_has_dc_aliases	0
-+#define cpu_has_ic_fills_f_dc	0
-+#define cpu_has_pindexed_dcache 0
-+#define cpu_has_mips32r1	1
-+#define cpu_has_mips32r2	0
-+#define cpu_has_mips64r1	0
-+#define cpu_has_mips64r2	0
-+#define cpu_has_dsp		0
-+#define cpu_has_mipsmt		0
-+#define cpu_has_userlocal	0
-+#define cpu_has_nofpuex 0
-+#define cpu_has_64bits		0
-+#define cpu_has_64bit_zero_reg 0
-+#define cpu_has_inclusive_pcaches 0
++#ifndef __ASM_MACH_JZ4740_IRQ_H__
++#define __ASM_MACH_JZ4740_IRQ_H__
 +
-+#define cpu_dcache_line_size()	32
-+#define cpu_icache_line_size()	32
++#define MIPS_CPU_IRQ_BASE 0
++#define JZ4740_IRQ_BASE 8
++
++/* 1st-level interrupts */
++#define JZ4740_IRQ(x)		(JZ4740_IRQ_BASE + (x))
++#define JZ4740_IRQ_I2C		JZ4740_IRQ(1)
++#define JZ4740_IRQ_UHC		JZ4740_IRQ(3)
++#define JZ4740_IRQ_UART1	JZ4740_IRQ(8)
++#define JZ4740_IRQ_UART0	JZ4740_IRQ(9)
++#define JZ4740_IRQ_SADC		JZ4740_IRQ(12)
++#define JZ4740_IRQ_MSC		JZ4740_IRQ(14)
++#define JZ4740_IRQ_RTC		JZ4740_IRQ(15)
++#define JZ4740_IRQ_SSI		JZ4740_IRQ(16)
++#define JZ4740_IRQ_CIM		JZ4740_IRQ(17)
++#define JZ4740_IRQ_AIC		JZ4740_IRQ(18)
++#define JZ4740_IRQ_ETH		JZ4740_IRQ(19)
++#define JZ4740_IRQ_DMAC		JZ4740_IRQ(20)
++#define JZ4740_IRQ_TCU2		JZ4740_IRQ(21)
++#define JZ4740_IRQ_TCU1		JZ4740_IRQ(22)
++#define JZ4740_IRQ_TCU0		JZ4740_IRQ(23)
++#define JZ4740_IRQ_UDC		JZ4740_IRQ(24)
++#define JZ4740_IRQ_GPIO3	JZ4740_IRQ(25)
++#define JZ4740_IRQ_GPIO2	JZ4740_IRQ(26)
++#define JZ4740_IRQ_GPIO1	JZ4740_IRQ(27)
++#define JZ4740_IRQ_GPIO0	JZ4740_IRQ(28)
++#define JZ4740_IRQ_IPU		JZ4740_IRQ(29)
++#define JZ4740_IRQ_LCD		JZ4740_IRQ(30)
++
++/* 2nd-level interrupts */
++#define JZ4740_IRQ_DMA(x)	(JZ4740_IRQ(32) + (X))
++
++#define JZ4740_IRQ_INTC_GPIO(x) (JZ4740_IRQ_GPIO0 - (x))
++#define JZ4740_IRQ_GPIO(x)	(JZ4740_IRQ(48) + (x))
++
++#define JZ4740_IRQ_ADC_BASE	JZ4740_IRQ(176)
++
++#define NR_IRQS (JZ4740_IRQ_ADC_BASE + 6)
 +
 +#endif
-diff --git a/arch/mips/include/asm/mach-jz4740/war.h b/arch/mips/include/asm/mach-jz4740/war.h
+diff --git a/arch/mips/jz4740/irq.c b/arch/mips/jz4740/irq.c
 new file mode 100644
-index 0000000..3a5bc17
+index 0000000..7d33ff8
 --- /dev/null
-+++ b/arch/mips/include/asm/mach-jz4740/war.h
-@@ -0,0 +1,25 @@
++++ b/arch/mips/jz4740/irq.c
+@@ -0,0 +1,167 @@
 +/*
-+ * This file is subject to the terms and conditions of the GNU General Public
-+ * License.  See the file "COPYING" in the main directory of this archive
-+ * for more details.
++ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 platform IRQ support
 + *
-+ * Copyright (C) 2002, 2004, 2007 by Ralf Baechle <ralf@linux-mips.org>
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
 + */
-+#ifndef __ASM_MIPS_MACH_JZ4740_WAR_H
-+#define __ASM_MIPS_MACH_JZ4740_WAR_H
 +
-+#define R4600_V1_INDEX_ICACHEOP_WAR	0
-+#define R4600_V1_HIT_CACHEOP_WAR	0
-+#define R4600_V2_HIT_CACHEOP_WAR	0
-+#define R5432_CP0_INTERRUPT_WAR		0
-+#define BCM1250_M3_WAR			0
-+#define SIBYTE_1956_WAR			0
-+#define MIPS4K_ICACHE_REFILL_WAR	0
-+#define MIPS_CACHE_SYNC_WAR		0
-+#define TX49XX_ICACHE_INDEX_INV_WAR	0
-+#define RM9000_CDEX_SMP_WAR		0
-+#define ICACHE_REFILLS_WORKAROUND_WAR	0
-+#define R10000_LLSC_WAR			0
-+#define MIPS34K_MISSED_ITLB_WAR		0
++#include <linux/errno.h>
++#include <linux/init.h>
++#include <linux/types.h>
++#include <linux/interrupt.h>
++#include <linux/ioport.h>
++#include <linux/timex.h>
++#include <linux/slab.h>
++#include <linux/delay.h>
 +
-+#endif /* __ASM_MIPS_MACH_JZ4740_WAR_H */
-diff --git a/arch/mips/kernel/cpu-probe.c b/arch/mips/kernel/cpu-probe.c
-index 3562b85..9b66331 100644
---- a/arch/mips/kernel/cpu-probe.c
-+++ b/arch/mips/kernel/cpu-probe.c
-@@ -187,6 +187,7 @@ void __init check_wait(void)
- 	case CPU_BCM6358:
- 	case CPU_CAVIUM_OCTEON:
- 	case CPU_CAVIUM_OCTEON_PLUS:
-+	case CPU_JZRISC:
- 		cpu_wait = r4k_wait;
- 		break;
- 
-@@ -956,6 +957,22 @@ platform:
- 	}
- }
- 
-+static inline void cpu_probe_ingenic(struct cpuinfo_mips *c, unsigned int cpu)
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
++
++#include <asm/io.h>
++#include <asm/mipsregs.h>
++#include <asm/irq_cpu.h>
++
++#include <asm/mach-jz4740/base.h>
++
++static void __iomem *jz_intc_base;
++static uint32_t jz_intc_wakeup;
++static uint32_t jz_intc_saved;
++
++#define JZ_REG_INTC_STATUS	0x00
++#define JZ_REG_INTC_MASK	0x04
++#define JZ_REG_INTC_SET_MASK	0x08
++#define JZ_REG_INTC_CLEAR_MASK	0x0c
++#define JZ_REG_INTC_PENDING	0x10
++
++#define IRQ_BIT(x) BIT((x) - JZ4740_IRQ_BASE)
++
++static void intc_irq_unmask(unsigned int irq)
 +{
-+	decode_configs(c);
-+	/* JZRISC does not implement the CP0 counter. */
-+	c->options &= ~MIPS_CPU_COUNTER;
-+	switch (c->processor_id & 0xff00) {
-+	case PRID_IMP_JZRISC:
-+		c->cputype = CPU_JZRISC;
-+		__cpu_name[cpu] = "Ingenic JZRISC";
-+		break;
-+	default:
-+		panic("Unknown Ingenic Processor ID!");
-+		break;
-+	}
++	writel(IRQ_BIT(irq), jz_intc_base + JZ_REG_INTC_CLEAR_MASK);
 +}
 +
- const char *__cpu_name[NR_CPUS];
- const char *__elf_platform;
- 
-@@ -994,6 +1011,9 @@ __cpuinit void cpu_probe(void)
- 	case PRID_COMP_CAVIUM:
- 		cpu_probe_cavium(c, cpu);
- 		break;
-+	case PRID_COMP_INGENIC:
-+		cpu_probe_ingenic(c, cpu);
-+		break;
- 	}
- 
- 	BUG_ON(!__cpu_name[cpu]);
-diff --git a/arch/mips/mm/tlbex.c b/arch/mips/mm/tlbex.c
-index 86f004d..4510e61 100644
---- a/arch/mips/mm/tlbex.c
-+++ b/arch/mips/mm/tlbex.c
-@@ -409,6 +409,11 @@ static void __cpuinit build_tlb_write_entry(u32 **p, struct uasm_label **l,
- 		tlbw(p);
- 		break;
- 
-+	case CPU_JZRISC:
-+		tlbw(p);
-+		uasm_i_nop(p);
-+		break;
++static void intc_irq_mask(unsigned int irq)
++{
++	writel(IRQ_BIT(irq), jz_intc_base + JZ_REG_INTC_SET_MASK);
++}
 +
- 	default:
- 		panic("No TLB refill handler yet (CPU type: %d)",
- 		      current_cpu_data.cputype);
++static int intc_irq_set_wake(unsigned int irq, unsigned int on)
++{
++	if (on)
++		jz_intc_wakeup |= IRQ_BIT(irq);
++	else
++		jz_intc_wakeup &= ~IRQ_BIT(irq);
++
++	return 0;
++}
++
++static struct irq_chip intc_irq_type = {
++	.name =		"INTC",
++	.mask =		intc_irq_mask,
++	.mask_ack =	intc_irq_mask,
++	.unmask =	intc_irq_unmask,
++	.set_wake =	intc_irq_set_wake,
++};
++
++static irqreturn_t jz4740_cascade(int irq, void *data)
++{
++	uint32_t irq_reg;
++
++	irq_reg = readl(jz_intc_base + JZ_REG_INTC_PENDING);
++
++	if (irq_reg)
++		generic_handle_irq(__fls(irq_reg) + JZ4740_IRQ_BASE);
++
++	return IRQ_HANDLED;
++}
++
++static struct irqaction jz4740_cascade_action = {
++	.handler = jz4740_cascade,
++	.name = "JZ4740 cascade interrupt",
++};
++
++void __init arch_init_irq(void)
++{
++	int i;
++	mips_cpu_irq_init();
++
++	jz_intc_base = ioremap(JZ4740_INTC_BASE_ADDR, 0x14);
++
++	for (i = JZ4740_IRQ_BASE; i < JZ4740_IRQ_BASE + 32; i++) {
++		intc_irq_mask(i);
++		set_irq_chip_and_handler(i, &intc_irq_type, handle_level_irq);
++	}
++
++	setup_irq(2, &jz4740_cascade_action);
++}
++
++asmlinkage void plat_irq_dispatch(void)
++{
++	unsigned int pending = read_c0_status() & read_c0_cause() & ST0_IM;
++	if (pending & STATUSF_IP2)
++		do_IRQ(2);
++	else if (pending & STATUSF_IP3)
++		do_IRQ(3);
++	else
++		spurious_interrupt();
++}
++
++void jz4740_intc_suspend(void)
++{
++	jz_intc_saved = readl(jz_intc_base + JZ_REG_INTC_MASK);
++	writel(~jz_intc_wakeup, jz_intc_base + JZ_REG_INTC_SET_MASK);
++	writel(jz_intc_wakeup, jz_intc_base + JZ_REG_INTC_CLEAR_MASK);
++}
++
++void jz4740_intc_resume(void)
++{
++	writel(~jz_intc_saved, jz_intc_base + JZ_REG_INTC_CLEAR_MASK);
++	writel(jz_intc_saved, jz_intc_base + JZ_REG_INTC_SET_MASK);
++}
++
++#ifdef CONFIG_DEBUG_FS
++
++static inline void intc_seq_reg(struct seq_file *s, const char *name,
++	unsigned int reg)
++{
++	seq_printf(s, "%s:\t\t%08x\n", name, readl(jz_intc_base + reg));
++}
++
++static int intc_regs_show(struct seq_file *s, void *unused)
++{
++	intc_seq_reg(s, "Status", JZ_REG_INTC_STATUS);
++	intc_seq_reg(s, "Mask", JZ_REG_INTC_MASK);
++	intc_seq_reg(s, "Pending", JZ_REG_INTC_PENDING);
++
++	return 0;
++}
++
++static int intc_regs_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, intc_regs_show, NULL);
++}
++
++static const struct file_operations intc_regs_operations = {
++	.open		= intc_regs_open,
++	.read		= seq_read,
++	.llseek		= seq_lseek,
++	.release	= single_release,
++};
++
++static int __init intc_debugfs_init(void)
++{
++	(void) debugfs_create_file("jz_regs_intc", S_IFREG | S_IRUGO,
++				NULL, NULL, &intc_regs_operations);
++	return 0;
++}
++subsys_initcall(intc_debugfs_init);
++
++#endif
+diff --git a/arch/mips/jz4740/irq.h b/arch/mips/jz4740/irq.h
+new file mode 100644
+index 0000000..56b5ead
+--- /dev/null
++++ b/arch/mips/jz4740/irq.h
+@@ -0,0 +1,21 @@
++/*
++ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#ifndef __MIPS_JZ4740_IRQ_H__
++#define __MIPS_JZ4740_IRQ_H__
++
++extern void jz4740_intc_suspend(void);
++extern void jz4740_intc_resume(void);
++
++#endif
 -- 
 1.5.6.5
 
