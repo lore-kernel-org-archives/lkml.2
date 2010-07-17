@@ -1,126 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966273Ab0GQBEy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 21:04:54 -0400
-Received: from claw.goop.org ([74.207.240.146]:46946 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759571Ab0GQBDH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 21:03:07 -0400
-Message-Id: <deb536bb94233f94ab69032b4cf1c5371f97cb0a.1279328276.git.jeremy.fitzhardinge@citrix.com>
-In-Reply-To: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com>
-References: <cover.1279328276.git.jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH RFC 06/12] x86/ticketlock: make __ticket_spin_trylock common
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Cc: Nick Piggin <npiggin@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-        Jan Beulich <JBeulich@novell.com>, Avi Kivity <avi@redhat.com>,
-        Xen-devel <xen-devel@lists.xensource.com>
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-Date: Fri, 16 Jul 2010 18:03:04 -0700 (PDT)
+	id S1759624Ab0GQBQd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 21:16:33 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44790 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759576Ab0GQBQc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 21:16:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100716224140.GI7338@basil.fritz.box>
+References: <4C409CBA.1050709@redhat.com>
+	<4C409F62.6030303@zytor.com>
+	<4C40A1BD.4040507@redhat.com>
+	<4C40A227.6000207@zytor.com>
+	<4C40A4E8.5090605@redhat.com>
+	<AANLkTinc_of_KYCFt9-8GZYGFLyqQLlgNttPe-YvZn-1@mail.gmail.com>
+	<4C40B277.9030408@redhat.com>
+	<AANLkTimfZb22E7c_ftyc5WfKsGvJKKq-J3Vq8Y6FNvhT@mail.gmail.com>
+	<20100716220730.GH7338@basil.fritz.box>
+	<AANLkTikzZ436qG4vuNYNItDV69u9HqWna1ND51GzUtwH@mail.gmail.com>
+	<20100716224140.GI7338@basil.fritz.box>
+Date: Fri, 16 Jul 2010 18:15:35 -0700
+Message-ID: <AANLkTim_jPFLkmGqNpOHGo2RIRVyi2W72S42yaQCVqRk@mail.gmail.com>
+Subject: Re: [patch 2/2] x86 NMI-safe INT3 and Page Fault
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Andi Kleen <andi@firstfloor.org>
+Cc: Avi Kivity <avi@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make trylock code common regardless of ticket size.
+On Fri, Jul 16, 2010 at 3:41 PM, Andi Kleen <andi@firstfloor.org> wrote:
+>
+> Maybe I'm misunderstanding everything (and it has been a lot of emails
+> in the thread), but the case I was thinking of would be if the second NMI
+> faults too, and then another one comes in after the IRET etc.
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
----
- arch/x86/include/asm/spinlock.h       |   55 +++++++++-----------------------
- arch/x86/include/asm/spinlock_types.h |    3 ++
- 2 files changed, 19 insertions(+), 39 deletions(-)
+No, the nested NMI cannot fault, because it never even enters C code.
+It literally just returns immediately after having noticed it is
+nested (and corrupted the stack of the original one, so that the
+original NMI will re-do itself at return)..
 
-diff --git a/arch/x86/include/asm/spinlock.h b/arch/x86/include/asm/spinlock.h
-index 4f9fa24..507f83c 100644
---- a/arch/x86/include/asm/spinlock.h
-+++ b/arch/x86/include/asm/spinlock.h
-@@ -100,48 +100,25 @@ static __always_inline void __ticket_spin_lock(struct arch_spinlock *lock)
- 	barrier();		/* make sure nothing creeps before the lock is taken */
- }
- 
--#if (NR_CPUS < 256)
- static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
- {
--	unsigned int tmp, new;
--
--	asm volatile("movzwl %2, %0\n\t"
--		     "cmpb %h0,%b0\n\t"
--		     "leal 0x100(%" REG_PTR_MODE "0), %1\n\t"
--		     "jne 1f\n\t"
--		     LOCK_PREFIX "cmpxchgw %w1,%2\n\t"
--		     "1:"
--		     "sete %b1\n\t"
--		     "movzbl %b1,%0\n\t"
--		     : "=&a" (tmp), "=&q" (new), "+m" (lock->slock)
--		     :
--		     : "memory", "cc");
--
--	return tmp;
--}
--#else
--static __always_inline int __ticket_spin_trylock(arch_spinlock_t *lock)
--{
--	unsigned tmp;
--	unsigned new;
--
--	asm volatile("movl %2,%0\n\t"
--		     "movl %0,%1\n\t"
--		     "roll $16, %0\n\t"
--		     "cmpl %0,%1\n\t"
--		     "leal 0x00010000(%" REG_PTR_MODE "0), %1\n\t"
--		     "jne 1f\n\t"
--		     LOCK_PREFIX "cmpxchgl %1,%2\n\t"
--		     "1:"
--		     "sete %b1\n\t"
--		     "movzbl %b1,%0\n\t"
--		     : "=&a" (tmp), "=&q" (new), "+m" (lock->slock)
--		     :
--		     : "memory", "cc");
--
--	return tmp;
-+	union {
-+		struct __raw_tickets tickets;
-+		__ticketpair_t slock;
-+	} tmp, new;
-+	int ret;
-+
-+	tmp.tickets = ACCESS_ONCE(lock->tickets);
-+	if (tmp.tickets.head != tmp.tickets.tail)
-+		return 0;
-+
-+	new.slock = tmp.slock + (1 << TICKET_SHIFT);
-+
-+	ret = cmpxchg(&lock->ticketpair, tmp.slock, new.slock) == tmp.slock;
-+	barrier();		/* just make nothing creeps before lock is claimed */
-+
-+	return ret;
- }
--#endif
- 
- static __always_inline void __ticket_spin_unlock(arch_spinlock_t *lock)
- {
-diff --git a/arch/x86/include/asm/spinlock_types.h b/arch/x86/include/asm/spinlock_types.h
-index 4582640..48dafc3 100644
---- a/arch/x86/include/asm/spinlock_types.h
-+++ b/arch/x86/include/asm/spinlock_types.h
-@@ -9,8 +9,10 @@
- 
- #if (CONFIG_NR_CPUS < 256)
- typedef u8  __ticket_t;
-+typedef u16 __ticketpair_t;
- #else
- typedef u16 __ticket_t;
-+typedef u32 __ticketpair_t;
- #endif
- 
- #define TICKET_SHIFT	(sizeof(__ticket_t) * 8)
-@@ -19,6 +21,7 @@ typedef u16 __ticket_t;
- typedef struct arch_spinlock {
- 	union {
- 		unsigned int slock;
-+		__ticketpair_t ticketpair;
- 		struct __raw_tickets {
- 			__ticket_t head, tail;
- 		} tickets;
--- 
-1.7.1.1
+So the nested NMI will use some few tens of bytes of stack. In fact,
+it will use the stack "above" the stack that the original NMI handler
+is using, because it will reset the stack pointer back to the top of
+the NMI stack. So in a very real sense, it is not even extending the
+stack, it is just re-using a small part of the same stack that the
+original NMI used (and that we copied away so that it doesn't matter
+that it gets re-used)
 
+As to another small but important detail: the _nested_ NMI actually
+returns using "popf+ret", leaving NMI's blocked again. Thus
+guaranteeing forward progress and lack of NMI storms.
 
+To summarize:
+
+ - the "original" (first-level) NMI can take faults (like the page
+fault to fill in vmalloc pages lazily, or debug faults). That will
+actually cause two stack frames (or three, if you debug a page fault
+that happened while NMI was active). So there is certainly exception
+nesting going on, but we're talking _much_ less stack than normal
+stack usage where the nesting can be deep and in complex routines.
+
+ - any "nested" NMI's will not actually use any more stack at all than
+a non-nested one, because we've pre-reserved space for them (and we
+_had_ to reserve space for them due to IST)
+
+ - even if we get NMI's during the execution of the original NMI,
+there can be only one such "spurious" NMI per nested exception. So if
+we take a single page fault, that exception will re-enable NMI
+(because it returns with "iret"), and as a result we may take a
+_single_ new nested NMI until we disable NMI's again.
+
+In other words, the approach is not all that different from doing
+"lazy irq disable" like powerpc does for regular interrupts. For
+NMI's, we do it because it's impossible (on x86) to disable NMI's
+without actually taking one.
+
+                         Linus
