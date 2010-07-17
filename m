@@ -1,70 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759524Ab0GQABX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 20:01:23 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:46725 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755023Ab0GQABJ (ORCPT
+	id S1759523Ab0GQAJs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 20:09:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:57326 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759483Ab0GQAJq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 20:01:09 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6045"; a="47590434"
-Date: Fri, 16 Jul 2010 17:01:08 -0700
-From: Larry Bassel <lbassel@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Tim HRM <zt.tmzt@gmail.com>, Zach Pfeffer <zpfeffer@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
- memory management
-Message-ID: <20100717000108.GB21293@labbmf-linux.quicinc.com>
-References: <4C3C0032.5020702@codeaurora.org>
- <20100713150311B.fujita.tomonori@lab.ntt.co.jp>
- <20100713121420.GB4263@codeaurora.org>
- <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
- <20100714201149.GA14008@codeaurora.org>
- <20100714220536.GE18138@n2100.arm.linux.org.uk>
- <20100715012958.GB2239@codeaurora.org>
- <20100715085535.GC26212@n2100.arm.linux.org.uk>
- <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com>
- <20100716075856.GC16124@n2100.arm.linux.org.uk>
+	Fri, 16 Jul 2010 20:09:46 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100716075856.GC16124@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1278945396.5221.14.camel@moss-pluto.epoch.ncsc.mil>
+References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov> 
+	<1278513086-23964-7-git-send-email-dpquigl@tycho.nsa.gov> 
+	<20100707170058.GD28815@fieldses.org> <alpine.LRH.2.00.1007080928180.14102@tundra.namei.org> 
+	<1278596363.2494.194.camel@moss-terrapins.epoch.ncsc.mil> 
+	<alpine.LRH.2.00.1007090834190.23354@tundra.namei.org> <1278684348.2494.223.camel@moss-terrapins.epoch.ncsc.mil> 
+	<AANLkTinUO-xqvQQINTzKLcXnljq-RaN5X6ulEAqvuf0d@mail.gmail.com> 
+	<4C3952D6.7040608@schaufler-ca.com> <1278945396.5221.14.camel@moss-pluto.epoch.ncsc.mil>
+From: Kyle Moffett <kyle@moffetthome.net>
+Date: Fri, 16 Jul 2010 20:09:23 -0400
+Message-ID: <AANLkTimBkFfkNmh8Rn3IH1ktGixUxQY8LPP56_joA93S@mail.gmail.com>
+Subject: Re: [PATCH 06/10] NFSv4: Add label recommended attribute and NFSv4 
+	flags
+To: Stephen Smalley <sds@tycho.nsa.gov>
+Cc: Casey Schaufler <casey@schaufler-ca.com>,
+        "David P. Quigley" <dpquigl@tycho.nsa.gov>,
+        James Morris <jmorris@namei.org>,
+        "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
+        viro@zeniv.linux.org.uk, matthew.dodd@sparta.com,
+        trond.myklebust@fys.uio.no, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
+        selinux@tycho.nsa.gov, linux-nfs@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16 Jul 10 08:58, Russell King - ARM Linux wrote:
-> On Thu, Jul 15, 2010 at 08:48:36PM -0400, Tim HRM wrote:
-> > Interesting, since I seem to remember the MSM devices mostly conduct
-> > IO through regions of normal RAM, largely accomplished through
-> > ioremap() calls.
-> > 
-> > Without more public domain documentation of the MSM chips and AMSS
-> > interfaces I wouldn't know how to avoid this, but I can imagine it
-> > creates a bit of urgency for Qualcomm developers as they attempt to
-> > upstream support for this most interesting SoC.
-> 
-> As the patch has been out for RFC since early April on the linux-arm-kernel
-> mailing list (Subject: [RFC] Prohibit ioremap() on kernel managed RAM),
-> and no comments have come back from Qualcomm folk.
+On Mon, Jul 12, 2010 at 10:36, Stephen Smalley <sds@tycho.nsa.gov> wrote:
+> On Sat, 2010-07-10 at 22:12 -0700, Casey Schaufler wrote:
+>> Kyle Moffett wrote:
+>> > ...
+>> > Even in local filesystems like ext3 we prefer to turn labels into
+>> > numbers, store the number with each inode, and then keep the labels
+>> > indexed in a separate datastructure.
+>> >
+>>
+>> I don't know what system you're talking about, but that notion
+>> was pretty well dispelled in the late 1980's, after the SystemV/MLS
+>> and SecureWare examples.
+>
+> SELinux did that too before switching to using xattrs for label storage.
+> Persistent security identifier (PSID) associated with each inode (either
+> stored directly in the inode in the original kernel patches or
+> associated through a separate mapping in the LSM-based implementation),
+> with a mapping from PSID to context stored in a mapping within each
+> filesystem.  Allowed you to keep the labels with the volume but avoided
+> storing the same label multiple times.
+>
+> The xattr based implementation can sometimes share storage but only when
+> the xattr is stored in the additional block (not when they are stored
+> inline) and only if all of the xattrs on the file are identical.
 
-We are investigating the impact of this change on us, and I
-will send out more detailed comments next week.
+Hmm, for some reason I was still thinking that we stored an encoded
+form of the label even in xattrs.  Whoops!
 
-> 
-> The restriction on creation of multiple V:P mappings with differing
-> attributes is also fairly hard to miss in the ARM architecture
-> specification when reading the sections about caches.
-> 
+On the other hand, I guess it should be noted that the "common" case
+of an SELinux label is the inline storage case, labels are on average
+no more than ~40 bytes:
+  system_u:object_r:sysadm_homedir_t:s0
 
-Larry Bassel
+In filesystems that are space optimized (like squashfs), we still
+prefer to pack xattrs, symlinks, and even file permissions as tightly
+as possible through table lookups of various forms.  Heck, the
+read-only squashfs only stores a single empty-directory inode and
+references it wherever needed.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+On the other hand, if you're doing something completely silly with 64k
+labels then any hope of inline storage went out the window along with
+any space savings from nifty FS optimizations like de-duplication or
+tail-packing.
+
+Cheers,
+Kyle Moffett
