@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966317Ab0GQMal (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 08:30:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42782 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753805Ab0GQMaj (ORCPT
+	id S1759969Ab0GQNDg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 09:03:36 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:58788 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754279Ab0GQNDd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 08:30:39 -0400
+	Sat, 17 Jul 2010 09:03:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=wqqRfoDttpxTR96P+qhcOf0Oft82yAdXELKWJsHKjx9rlHX4amRTLYIhQhidlUgJTo
-         p3kMto2+x+zt7TwBC8i72F08yJG9+tBPCwxBk5Dh50CeowW+aK/OWsKLjyFmjvJeoynP
-         oD+zyUR0b82typNdBCRXwhHeWh625RSSbA68Y=
-Subject: Re: [PATCH] timers.c: document meaning of deferrable timer
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Neil Brown <neilb@suse.de>,
-        linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Venki Pallipadi <venkatesh.pallipadi@intel.com>
-In-Reply-To: <20100706171908.GL7387@fieldses.org>
-References: <1277996756-8415-1-git-send-email-dedekind1@gmail.com>
-	 <20100706171908.GL7387@fieldses.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 17 Jul 2010 15:30:32 +0300
-Message-Id: <1279369832.7515.4.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=sCJgOw2y5lJGOHMdT3XK+fETfRC02OlaC530Ztl3CufxZqAA1EM+cmkoqd7IBw/LgU
+         bGuO2wzo8hbxuw9dCvmoMAQgZ2Snazi9TuN/mnb6ZwrjHbV3cSSdFVWWaFCDbM5tge6X
+         sntV7k2sChAWidrIJk2idVvuSvMKm32uG6MLQ=
+From: Brian Gerst <brgerst@gmail.com>
+To: hpa@zytor.com
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 2/3] x86: Use symbolic MSR names
+Date: Sat, 17 Jul 2010 09:03:27 -0400
+Message-Id: <1279371808-24804-2-git-send-email-brgerst@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1279371808-24804-1-git-send-email-brgerst@gmail.com>
+References: <1279371808-24804-1-git-send-email-brgerst@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-06 at 13:19 -0400, J. Bruce Fields wrote:
-> From: J. Bruce Fields <bfields@citi.umich.edu>
-> 
-> Steal some text from 6e453a67510 "Add support for deferrable timers".
-> A reader shouldn't have to dig through the git logs for the basic
-> description of a deferrable timer.
-> 
-> Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+Signed-off-by: Brian Gerst <brgerst@gmail.com>
+---
+ arch/x86/kernel/acpi/realmode/wakeup.S |    2 +-
+ arch/x86/kernel/verify_cpu_64.S        |    3 ++-
+ 2 files changed, 3 insertions(+), 2 deletions(-)
 
-Yes, this is a good idea. Someone cares to pick this?
-
+diff --git a/arch/x86/kernel/acpi/realmode/wakeup.S b/arch/x86/kernel/acpi/realmode/wakeup.S
+index 580b4e2..28595d6 100644
+--- a/arch/x86/kernel/acpi/realmode/wakeup.S
++++ b/arch/x86/kernel/acpi/realmode/wakeup.S
+@@ -104,7 +104,7 @@ _start:
+ 	movl	%eax, %ecx
+ 	orl	%edx, %ecx
+ 	jz	1f
+-	movl	$0xc0000080, %ecx
++	movl	$MSR_EFER, %ecx
+ 	wrmsr
+ 1:
+ 
+diff --git a/arch/x86/kernel/verify_cpu_64.S b/arch/x86/kernel/verify_cpu_64.S
+index 45b6f8a..56a8c2a 100644
+--- a/arch/x86/kernel/verify_cpu_64.S
++++ b/arch/x86/kernel/verify_cpu_64.S
+@@ -31,6 +31,7 @@
+  */
+ 
+ #include <asm/cpufeature.h>
++#include <asm/msr-index.h>
+ 
+ verify_cpu:
+ 	pushfl				# Save caller passed flags
+@@ -88,7 +89,7 @@ verify_cpu_sse_test:
+ 	je	verify_cpu_sse_ok
+ 	test	%di,%di
+ 	jz	verify_cpu_no_longmode	# only try to force SSE on AMD
+-	movl	$0xc0010015,%ecx	# HWCR
++	movl	$MSR_K7_HWCR,%ecx
+ 	rdmsr
+ 	btr	$15,%eax		# enable SSE
+ 	wrmsr
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+1.7.1.1
 
