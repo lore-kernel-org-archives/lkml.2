@@ -1,78 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759974Ab0GQOAM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 10:00:12 -0400
-Received: from promwad.com ([109.123.95.251]:39710 "EHLO promwad.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754971Ab0GQOAJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 10:00:09 -0400
-X-Greylist: delayed 5122 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Jul 2010 10:00:09 EDT
-Message-ID: <4C41A413.50205@promwad.com>
-Date: Sat, 17 Jul 2010 15:37:39 +0300
-From: Ivan Kuten <ivan.kuten@promwad.com>
-Reply-To: ivan.kuten@promwad.com
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Lightning/1.0b2 Thunderbird/3.1
-MIME-Version: 1.0
-To: Linus Walleij <triad@df.lth.se>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-        Russell King <linux@arm.linux.org.uk>,
-        linux-arm-kernel@lists.infradead.org, mattia.jona@gmail.com,
-        "'Viktar Palstsiuk'" <viktar.palstsiuk@promwad.com>
-Subject: Re: [PATCH 1/2] MISC: driver for the character LCD found in ARM refdesigns
-References: <1279365780-18462-1-git-send-email-triad@df.lth.se>
-In-Reply-To: <1279365780-18462-1-git-send-email-triad@df.lth.se>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1759983Ab0GQON3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 10:13:29 -0400
+Received: from www17.your-server.de ([213.133.104.17]:37155 "EHLO
+	www17.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755811Ab0GQON2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 10:13:28 -0400
+Subject: Re: TPM bug fix causes hang on suspend (2.6.35-rc4)
+From: Thomas Meyer <thomas@m3y3r.de>
+To: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+Cc: tpmdd-devel@lists.sourceforge.net,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100717000033.GA2509@xanatos>
+References: <20100717000033.GA2509@xanatos>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 17 Jul 2010 16:12:23 +0200
+Message-ID: <1279375943.4731.0.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
 Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: thomas@m3y3r.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hello Linus,
+Am Freitag, den 16.07.2010, 17:00 -0700 schrieb Sarah Sharp:
+> I recently upgraded to 2.6.35-rc4, and I discovered that suspend no
+> longer works on my Thinkpad x200s.  When I suspend with some programs
+> open (specifically while buffy is reading my maildirs), the suspend
+> light blinks forever and the system never suspends.
+> 
+> I bisected the issue down to commit b5edfef, which is a merge of James
+> Morris' security-testing-2.6 tree, that only included this commit:
+> 
+> commit 02a077c52ef7631275a79862ffd9f3dbe9d38bc2
+> Author: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+> Date:   Mon Jun 14 13:58:22 2010 -0300
+> 
+>     TPM: ReadPubEK output struct fix
+>     
+>     This patch adds a missing element of the ReadPubEK command output,
+>     that prevents future overflow of this buffer when copying the
+>     TPM output result into it.
+>     
+>     Prevents a kernel panic in case the user tries to read the
+>     pubek from sysfs.
+>     
+>     Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+>     Signed-off-by: James Morris <jmorris@namei.org>
+> 
+> diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+> index 8e00b4d..792868d 100644
+> --- a/drivers/char/tpm/tpm.h
+> +++ b/drivers/char/tpm/tpm.h
+> @@ -224,6 +224,7 @@ struct      tpm_readpubek_params_out {
+>         u8      algorithm[4];
+>         u8      encscheme[2];
+>         u8      sigscheme[2];
+> +       __be32  paramsize;
+>         u8      parameters[12]; /*assuming RSA*/
+>         __be32  keysize;
+>         u8      modulus[256];
+> 
+> The dmesg captured over netconsole when suspend fails is attached, but
+> it doesn't look very interesting.  lspci output is also attached.  I
+> don't have any userspace programs installed that can use TPM, like
+> trousers or libtspi1.
+> 
+> If I try just removing the tpm_tis, tpm_bios, and tpm modules before
+> suspending, the suspend still fails.  If I recompile without TPM
+> hardware support (CONFIG_TCG_TPM=n), suspend still fails.  However, if I
+> also turn off the securityFS config option (CONFIG_SECURITYFS),
+> suspend succeeds.
+> 
+> It looks like an odd commit to cause a suspend failure, but when I reset
+> the git HEAD to the commit before the merge of this patch, and suspend
+> works fine.  Can you fix this?
+> 
+> Sarah Sharp
 
-> diff --git a/drivers/misc/arm-charlcd.c b/drivers/misc/arm-charlcd.c
-> new file mode 100644
-> index 0000000..9e3879e
-> --- /dev/null
-> +++ b/drivers/misc/arm-charlcd.c
-> @@ -0,0 +1,396 @@
-> +/*
-> + * Driver for the on-board character LCD found on some ARM reference boards
-> + * This is basically an Hitachi HD44780 LCD with a custom IP block to drive it
-> + * http://en.wikipedia.org/wiki/HD44780_Character_LCD
-> + * Currently it will just display the text "ARM Linux" and the linux version
-> + *
-> + * License terms: GNU General Public License (GPL) version 2
-> + * Author: Linus Walleij<triad@df.lth.se>
-> + */
-
-Any chance to sync your efforts with lcd-linux project (http://lcd-linux.sourceforge.net/) ?
-They seems to have a support for HD44780 LCD controller. Mattia, project maintainer is on CC 
-copy.
-
-Best regards,
-Ivan Kuten
------------------------------------------------------------
-Head of Embedded Software Department
-
-Promwad Innovation Company
-
-22, Olshevskogo St.,
-
-220073, Minsk,
-
-BELARUS
-
-Phone/Fax: +375 (17) 312-1246
-
-Skype: vanokuten
-
-Web: www.promwad.com
-
-
-
-
-
-
+Maybe same as https://bugzilla.kernel.org/show_bug.cgi?id=16256 ?
 
 
 
