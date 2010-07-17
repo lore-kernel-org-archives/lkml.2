@@ -1,167 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760081Ab0GQRVF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 13:21:05 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:38494 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756259Ab0GQRVD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 13:21:03 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 17 Jul 2010 19:20:51 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: PHY pinging test tool
-To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org
-In-Reply-To: <tkrat.506ae60f1ea3a97a@s5r6.in-berlin.de>
-Message-ID: <tkrat.540ce89bb6307428@s5r6.in-berlin.de>
-References: <tkrat.59dee0979cf9dbb0@s5r6.in-berlin.de>
- <tkrat.506ae60f1ea3a97a@s5r6.in-berlin.de>
+	id S1760094Ab0GQRpO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 13:45:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17225 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760084Ab0GQRpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 13:45:12 -0400
+Date: Sat, 17 Jul 2010 19:43:43 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+        linux-kernel@vger.kernel.org
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
+        Avi Kivity <avi@redhat.com>, Izik Eidus <ieidus@redhat.com>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
+        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Christoph Lameter <cl@linux-foundation.org>,
+        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
+Subject: Transparent Hugepage Support #28
+Message-ID: <20100717174343.GA5852@random.random>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-/*
- * Ping packet transmission test
- *
- * Usage:
- *   - Compile with "gcc test-phy-pinging.c".
- *   - Run with "sudo ./a.out /dev/fw*".
- *   - It will print the ping time to all PHYs and exit.
- */
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
 
-#include <fcntl.h>
-#include <linux/firewire-cdev.h>
-#include <poll.h>
-#include <stdio.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
+first: git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+or first: git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
+later: git fetch; git checkout -f origin/master
 
-static const char *rcode_to_str(int rcode)
-{
-	switch (rcode) {
-	case RCODE_COMPLETE:		return "complete";
-	case RCODE_CONFLICT_ERROR:	return "conflict error";
-	case RCODE_DATA_ERROR:		return "data error";
-	case RCODE_TYPE_ERROR:		return "type error";
-	case RCODE_ADDRESS_ERROR:	return "address error";
-	case RCODE_SEND_ERROR:		return "send error";
-	case RCODE_CANCELLED:		return "cancelled";
-	case RCODE_BUSY:		return "busy";
-	case RCODE_GENERATION:		return "generation";
-	case RCODE_NO_ACK:		return "no ack";
-	}
-	return "unknown";
-}
+The tree is rebased and git pull won't work.
 
-static void read_events(int fd)
-{
-	char buffer[sizeof(struct fw_cdev_event_phy_packet) + 4];
-	struct fw_cdev_event_common *ec		= (void *)buffer;
-	struct fw_cdev_event_phy_packet *epp	= (void *)buffer;
-	ssize_t s = sizeof buffer;
-	struct pollfd pfd = {
-		.fd	= fd,
-		.events	= POLLIN | POLLHUP,
-	};
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35-rc5/transparent_hugepage-28/
+http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35-rc5/transparent_hugepage-28.gz
 
-	while (poll(&pfd, 1, 10) > 0) {
-		memset(buffer, 0, s);
-		s = read(fd, buffer, sizeof buffer);
-		if (s < 0) {
-			fprintf(stderr, "Failed read: %m\n");
-			return;
-		}
+Diff #27 -> #28:
 
-		switch (ec->type) {
-		case FW_CDEV_EVENT_PHY_PACKET_SENT:
-			if (epp->rcode == RCODE_COMPLETE)
-				printf("PING - phy_id = %d, data = %08x (%.2f us)\n",
-				       (int)epp->closure,
-				       epp->data[0], epp->data[0] / 49.152);
-			else
-				printf("PING - phy_id = %d, rcode = %s\n",
-				       (int)epp->closure,
-				       rcode_to_str(epp->rcode));
-			break;
-		}
-	}
-}
+ kvm-huge-spte-wrprotect    |   48 ++++++++
 
-static void cooked_ioctl(int fd, int req, void *arg)
-{
-	if (ioctl(fd, req, arg) < 0)
-		fprintf(stderr, "Failed ioctl '%c' 0x%02x: %m\n",
-			_IOC_TYPE(req), _IOC_NR(req));
-}
+Fix guest corruption with no EPT and no NPT, when THP runs in guest,
+and the same hugepage is mapped by two different huge spte
+wrprotected.
 
-void test_phy_pinging(const char *filename)
-{
-	__u32 rom[5];
-	struct fw_cdev_event_bus_reset reset;
-	struct fw_cdev_get_info info = {
-		.version	= 4,
-		.rom		= (unsigned long)rom,
-		.rom_length	= sizeof(rom),
-		.bus_reset	= (unsigned long)&reset,
-	};
-	struct fw_cdev_send_phy_packet p;
-	int fd, ln, nn, i;
+ kvm-mmu-notifier-huge-spte |   29 ++++
 
-	fd = open(filename, O_RDWR);
-	if (fd < 0) {
-		fprintf(stderr, "Failed to open %s: %m\n", filename);
-		goto out;
-	}
+Fix host corruption when THP runs on host, an off by one error was
+making mmu notifier handler useless for mmu notifier for certain gfn.
 
-	cooked_ioctl(fd, FW_CDEV_IOC_GET_INFO, &info);
-	if (reset.node_id != reset.local_node_id) {
-		fprintf(stderr, "%s: Not a local node\n", filename);
-		goto out_fd;
-	}
+ mmu_notifier_test_young    |  265 +++++++++++++++++++++++++++++++++++++++++++++
 
-	p.generation = reset.generation;
-	ln = reset.local_node_id & 63;
-	nn = (reset.root_node_id & 63) + 1;
+Fix khugepaged young bit check to be reliable (testing pte not enough,
+gup-fast must set SetPageReferenced like gup does, and we need to test
+PageReferenced in addition to the spte young bit on the
+implementations with a young bit set in spte by hardware). Without
+this khugepaged may get not effective as it should in collapsing huge
+pages after a low-memory condition of the VM with KVM (only KVM or
+other mmu notifier users were affected as normally after direct-io
+with gup-fast the main cpu is going to touch the data anyway through
+the pte, but with secondary mmus the primary mmu may never touch the
+data again).
 
-	printf("%s: card %d, generation %d, %d nodes, "
-	       "local phy_id %d, EUI-64 %08x%08x\n",
-	       filename, info.card, reset.generation,
-	       nn, ln, rom[3], rom[4]);
+Full diff:
 
-	for (i = 0; i < nn; i++) {
-		p.closure = i;
-		p.data[0] = i << 24;
-		p.data[1] = ~p.data[0];
-		cooked_ioctl(fd, FW_CDEV_IOC_SEND_PHY_PACKET, &p);
-	}
-
-	read_events(fd);
-out_fd:
-	close(fd);
-out:
-	printf("\n");
-}
-
-int main(int argc, char **argv)
-{
-	int i;
-
-	if (argc < 2) {
-		fprintf(stderr, "Usage: %s /dev/fwX [/dev/fwY ...]\n", argv[0]);
-		return 1;
-	}
-
-	for (i = 1; i < argc; i++)
-		test_phy_pinging(argv[i]);
-
-	return 0;
-}
-
-
+ Documentation/vm/transhuge.txt        |  283 ++++
+ arch/alpha/include/asm/mman.h         |    2 
+ arch/mips/include/asm/mman.h          |    2 
+ arch/parisc/include/asm/mman.h        |    2 
+ arch/powerpc/mm/gup.c                 |   12 
+ arch/x86/include/asm/kvm_host.h       |    1 
+ arch/x86/include/asm/paravirt.h       |   23 
+ arch/x86/include/asm/paravirt_types.h |    6 
+ arch/x86/include/asm/pgtable-2level.h |    9 
+ arch/x86/include/asm/pgtable-3level.h |   23 
+ arch/x86/include/asm/pgtable.h        |  149 ++
+ arch/x86/include/asm/pgtable_64.h     |   28 
+ arch/x86/include/asm/pgtable_types.h  |    3 
+ arch/x86/kernel/paravirt.c            |    3 
+ arch/x86/kernel/vm86_32.c             |    1 
+ arch/x86/kvm/mmu.c                    |   68 -
+ arch/x86/kvm/paging_tmpl.h            |    6 
+ arch/x86/mm/gup.c                     |   28 
+ arch/x86/mm/pgtable.c                 |   66 +
+ arch/xtensa/include/asm/mman.h        |    2 
+ fs/Kconfig                            |    2 
+ fs/exec.c                             |   44 
+ fs/proc/meminfo.c                     |   14 
+ fs/proc/page.c                        |   14 
+ include/asm-generic/mman-common.h     |    2 
+ include/asm-generic/pgtable.h         |  130 ++
+ include/linux/gfp.h                   |   14 
+ include/linux/huge_mm.h               |  143 ++
+ include/linux/khugepaged.h            |   66 +
+ include/linux/ksm.h                   |   20 
+ include/linux/kvm_host.h              |    4 
+ include/linux/memory_hotplug.h        |   14 
+ include/linux/mm.h                    |  114 +
+ include/linux/mm_inline.h             |   13 
+ include/linux/mm_types.h              |    3 
+ include/linux/mmu_notifier.h          |   66 +
+ include/linux/mmzone.h                |    1 
+ include/linux/page-flags.h            |   36 
+ include/linux/res_counter.h           |   12 
+ include/linux/rmap.h                  |   33 
+ include/linux/sched.h                 |    1 
+ include/linux/swap.h                  |    2 
+ kernel/fork.c                         |   12 
+ kernel/futex.c                        |   55 
+ mm/Kconfig                            |   38 
+ mm/Makefile                           |    1 
+ mm/compaction.c                       |   15 
+ mm/huge_memory.c                      | 2184 ++++++++++++++++++++++++++++++++++
+ mm/hugetlb.c                          |   69 -
+ mm/ksm.c                              |   80 -
+ mm/madvise.c                          |    8 
+ mm/memcontrol.c                       |  167 +-
+ mm/memory-failure.c                   |    2 
+ mm/memory.c                           |  241 +++
+ mm/memory_hotplug.c                   |   14 
+ mm/mempolicy.c                        |   14 
+ mm/migrate.c                          |   22 
+ mm/mincore.c                          |    7 
+ mm/mmap.c                             |   57 
+ mm/mmu_notifier.c                     |   20 
+ mm/mprotect.c                         |   20 
+ mm/mremap.c                           |    8 
+ mm/page_alloc.c                       |   31 
+ mm/pagewalk.c                         |    1 
+ mm/rmap.c                             |  228 ++-
+ mm/sparse.c                           |    4 
+ mm/swap.c                             |  117 +
+ mm/swap_state.c                       |    6 
+ mm/swapfile.c                         |    2 
+ mm/vmscan.c                           |   56 
+ mm/vmstat.c                           |    3 
+ virt/kvm/iommu.c                      |    2 
+ virt/kvm/kvm_main.c                   |   56 
+ 73 files changed, 4507 insertions(+), 498 deletions(-)
