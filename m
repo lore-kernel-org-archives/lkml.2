@@ -1,35 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760010Ab0GQPTh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 11:19:37 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:59997 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759999Ab0GQPTe (ORCPT
+	id S1760024Ab0GQPTv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 11:19:51 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:57072 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760013Ab0GQPTt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 11:19:34 -0400
+	Sat, 17 Jul 2010 11:19:49 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ry052Wx/pp3MzxsxcX0ZJ8zBHUv83prX4FaaCV3hSkuoegZYc3Q64qWppp6dmQdx2F
-         4o3xcC+YFahCxG0CC1j9/IDvYVcp1ixp1phccpDqyIVGB9/cDRUFHvTjgENL5e60YbxS
-         GLDEC7oENR352BuZ5wSB/9Glwc24DC16s/Az4=
+        b=noqXddp33QwYqmuyMjlNjWbTUHYDBNn1IpftvUsCwmZ5svoxNMl/f8DuTxQvyUqYaD
+         S4ZHSfbuuusCMTeCgFWM5oheyNBufYcKCRpe0x+Il3ekkLuGRFIDdpM2hFrcgsFQpPF0
+         hhaYsYPcY8HHtP7mcG/jt9g6J7/61sNyReHFQ=
 From: Kulikov Vasiliy <segooon@gmail.com>
 To: kernel-janitors@vger.kernel.org
-Cc: Kevin Hilman <davinci-linux-open-source@linux.davincidsp.com>,
-        Russell King <linux@arm.linux.org.uk>,
-        Sandeep Paulraj <s-paulraj@ti.com>, Sekhar Nori <nsekhar@ti.com>,
-        Sudhakar Rajashekhara <sudhakar.raj@ti.com>,
+Cc: Russell King <linux@arm.linux.org.uk>,
         linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 1/5] arm: mach-davinci: check irq2ctlr() result
-Date: Sat, 17 Jul 2010 19:19:07 +0400
-Message-Id: <1279379947-15152-1-git-send-email-segooon@gmail.com>
+Subject: [PATCH 2/5] arm: mach-pnx4008: fix sign bug
+Date: Sat, 17 Jul 2010 19:19:33 +0400
+Message-Id: <1279379974-15192-1-git-send-email-segooon@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If irq2ctlr() fails return IRQ_NONE.
-Also as it can fail make 'ctlr' signed.
+'ret' is unsigned, so this code is wrong:
+
+    ret = gpio_read_bit(...);
+    ...
+    if (ret > 0)
+
+If gpio_read_bit() returns -EFAULT then (ret > 0) would be true.
+Make 'ret' signed.
 
 
 The semantic patch that finds this problem (many false-positive results):
@@ -51,44 +54,24 @@ unsigned T x;
  ...
 *x > 0
 
-
 Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 ---
- arch/arm/mach-davinci/dma.c |    8 ++++++--
- 1 files changed, 6 insertions(+), 2 deletions(-)
+ arch/arm/mach-pnx4008/gpio.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-davinci/dma.c b/arch/arm/mach-davinci/dma.c
-index d33827a..d1127e1 100644
---- a/arch/arm/mach-davinci/dma.c
-+++ b/arch/arm/mach-davinci/dma.c
-@@ -344,10 +344,12 @@ static int irq2ctlr(int irq)
- static irqreturn_t dma_irq_handler(int irq, void *data)
+diff --git a/arch/arm/mach-pnx4008/gpio.c b/arch/arm/mach-pnx4008/gpio.c
+index f219914..4a0c0eb 100644
+--- a/arch/arm/mach-pnx4008/gpio.c
++++ b/arch/arm/mach-pnx4008/gpio.c
+@@ -199,7 +199,7 @@ EXPORT_SYMBOL(pnx4008_gpio_unregister_pin);
+ 
+ unsigned long pnx4008_gpio_read_pin(unsigned short pin)
  {
- 	int i;
--	unsigned ctlr;
-+	int ctlr;
- 	unsigned int cnt = 0;
- 
- 	ctlr = irq2ctlr(irq);
-+	if (ctlr < 0)
-+		return IRQ_NONE;
- 
- 	dev_dbg(data, "dma_irq_handler\n");
- 
-@@ -398,10 +400,12 @@ static irqreturn_t dma_irq_handler(int irq, void *data)
- static irqreturn_t dma_ccerr_handler(int irq, void *data)
- {
- 	int i;
--	unsigned ctlr;
-+	int ctlr;
- 	unsigned int cnt = 0;
- 
- 	ctlr = irq2ctlr(irq);
-+	if (ctlr < 0)
-+		return IRQ_NONE;
- 
- 	dev_dbg(data, "dma_ccerr_handler\n");
- 
+-	unsigned long ret = -EFAULT;
++	int ret = -EFAULT;
+ 	int gpio = GPIO_BIT_MASK(pin);
+ 	gpio_lock();
+ 	if (GPIO_ISOUT(pin)) {
 -- 
 1.7.0.4
 
