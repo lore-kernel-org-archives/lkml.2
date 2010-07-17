@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753337Ab0GQFxD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 01:53:03 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45452 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752327Ab0GQFxB convert rfc822-to-8bit (ORCPT
+	id S1754351Ab0GQHZq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 03:25:46 -0400
+Received: from smtp1.hushmail.com ([65.39.178.133]:41578 "EHLO
+	smtp11.hushmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753966Ab0GQHZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 01:53:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=JxUrfv7gL/tmqqmpxITTlzlmaLB5Lo+zb0I7Sx9yebCBf26vfAMaaUyfF8yVr2pOfm
-         XcZW7KkhiDN7OH9VjpHO5dezZ25vM5ESh2Pvztm45VOTXCWOhPgJFhqeafEpIb+GOAEN
-         IUJZRD/bc4AgOEh5LB9CAXPt/CA6DbG1jJj9o=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: divya <dipraksh@linux.vnet.ibm.com>
-Subject: Re: Badness with the kernel version 2.6.35-rc1-git1 running on P6 box
-Date: Sat, 17 Jul 2010 07:52:53 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.35-rc5; KDE/4.4.4; i686; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
-        sachinp@linux.vnet.ibm.com, benh@kernel.crashing.org
-References: <4C401D56.3070108@linux.vnet.ibm.com>
-In-Reply-To: <4C401D56.3070108@linux.vnet.ibm.com>
+	Sat, 17 Jul 2010 03:25:45 -0400
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201007170752.53933.maciej.rutecki@gmail.com>
+Date: Sat, 17 Jul 2010 10:20:36 +0300
+To: netdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: netfilter/iptables stopped logging 2.6.35-rc
+From: auto401300@hushmail.com
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Message-Id: <20100717072036.1BBE52804B@smtp.hushmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On piątek, 16 lipca 2010 o 10:50:30 divya wrote:
-> Hi ,
-> 
-> With the latest kernel version 2.6.35-rc5-git1(2f7989efd4398) running on
-> power(p6) box came across the following call trace
-> 
-I created a Bugzilla entry at 
-https://bugzilla.kernel.org/show_bug.cgi?id=16406
-for your bug report, please add your address to the CC list in there, thanks!
+Hi!
 
--- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Has something broken with netfilter/iptables logging in 2.6.35-rc,
+or is there something new I should set in .config since .34?
+
+
+I just verified that if I boot .34 and ping the pc it does logging:
+
+Jul 17 09:42:49 xxxxx kernel: Linux version 2.6.34-ab (root@xxxxx) 
+(gcc version 4.4.4 (Debian 4.4.4-1) ) #1 SMP PREEMPT Mon May 17 
+09:15
+:15 EEST 2010
+....
+Jul 17 09:44:52 xxxxx kernel: DENY  in: IN=eth0 OUT= MAC=xxxxx 
+SRC=xxxxx DST=xxxxx LEN=60 TOS=0x00 PREC=0x00 TTL=127 ID=38945 
+PROTO=ICMP TYPE=8 CODE=0 ID=512 SEQ=256
+
+
+but if I boot .35-rc4 and ping:
+
+Jul 17 09:48:08 xxxxx kernel: Linux version 2.6.35-rc4-aa 
+(root@xxxxx) (gcc version 4.4.4 (Debian 4.4.4-6) ) #1 SMP PREEMPT 
+Mon Jul 5 15:22:02 EEST 2010
+....
+nothing from iptables in log
+
+
+userspace is same, only booted different kernel versions
+
+
+thanks.
+
