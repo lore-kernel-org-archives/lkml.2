@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759786Ab0GQJts (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 05:49:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9825 "EHLO mx1.redhat.com"
+	id S966238Ab0GQKAG (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 06:00:06 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:52557 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755134Ab0GQJtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 05:49:45 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100717055130.GA2053@zoia.osj.us>
-References: <20100717055130.GA2053@zoia.osj.us> <201007161302.35775.arnd@arndb.de> <20100716062251.GA9318@zoia.osj.us> <30646.1279230807@redhat.com> <8527.1279275842@redhat.com> <10677.1279283886@redhat.com>
-To: Mark Harris <mhlk@osj.us>
-Cc: dhowells@redhat.com, Arnd Bergmann <arnd@arndb.de>,
-        Steve French <smfrench@gmail.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
-Date: Sat, 17 Jul 2010 10:49:00 +0100
-Message-ID: <19785.1279360140@redhat.com>
+	id S1759762Ab0GQKAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 06:00:01 -0400
+Date: Sat, 17 Jul 2010 11:59:52 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [GIT PULL] tracing cleanups
+Message-ID: <20100717095952.GD12435@elte.hu>
+References: <1279231603-30624-1-git-send-regression-fweisbec@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279231603-30624-1-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0251]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mark Harris <mhlk@osj.us> wrote:
 
-> At least for the in-tree filesystems, I do not see any that keep
-> timestamps with a granularity larger than 2s.  For that, a simple
-> 32-bit tv_granularity in nanoseconds (not limited to 1e9) would
-> suffice, and there is no need for the complexity of dealing with
-> a separate exponent.
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
 
-That's a good point.
+> Ingo,
+> 
+> Please pull the perf/core branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/core
+> 
+> Thanks,
+> 	Frederic
+> ---
+> 
+> Frederic Weisbecker (3):
+>       tracing: Update tracing branch url
+>       tracing: Remove ksym tracer
+>       tracing: Remove letfover markers section
+> 
+> 
+>  MAINTAINERS                       |    2 +-
+>  include/asm-generic/vmlinux.lds.h |    4 -
+>  kernel/trace/Kconfig              |   22 --
+>  kernel/trace/Makefile             |    1 -
+>  kernel/trace/trace.h              |    6 -
+>  kernel/trace/trace_entries.h      |   15 -
+>  kernel/trace/trace_ksym.c         |  508 -------------------------------------
+>  kernel/trace/trace_selftest.c     |   54 ----
+>  8 files changed, 1 insertions(+), 611 deletions(-)
 
-David
+Pulled, thanks Frederic!
+
+	Ingo
