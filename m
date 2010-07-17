@@ -1,58 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756363Ab0GQXfY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 19:35:24 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:53248
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755825Ab0GQXfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 19:35:22 -0400
-Date: Sat, 17 Jul 2010 16:35:38 -0700 (PDT)
-Message-Id: <20100717.163538.137865264.davem@davemloft.net>
-To: sbhatewara@vmware.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        pv-drivers@vmware.com, ronghua@vmware.com, matthieu@vmware.com
-Subject: Re: [PATCH 2.6.35-rc1] net-next: vmxnet3 fixes [4/5] Do not reset
- when the device is not opened
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <alpine.LRH.2.00.1007160108240.12503@localhost.localdomain>
-References: <alpine.LRH.2.00.1007151448260.25472@localhost.localdomain>
-	<20100715.183210.226762655.davem@davemloft.net>
-	<alpine.LRH.2.00.1007160108240.12503@localhost.localdomain>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1760151Ab0GQX5c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 19:57:32 -0400
+Received: from n4.bullet.mail.gq1.yahoo.com ([67.195.9.84]:40299 "HELO
+	n4.bullet.mail.gq1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756096Ab0GQX5b convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 19:57:31 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 708825.85747.bm@omp204.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=01LLD6c8zwcEUsZrTZ89NR/S4c0mLJ7As9nFGuKeWl608LGwO8J0Z9txSX03mtbZG/+E5GRsIVKlVSx4YClL9gaoVXkQ1FY66BR+SSkOL+MtY7f7CZOfw9tRqEVjm8D6DdKtiK/xU9dxg1BPFPSlZT5HOKtt8bE1erezJq3rBZQ=;
+Message-ID: <536935.13464.qm@web180310.mail.gq1.yahoo.com>
+X-YMail-OSG: dujITN8VM1nT5fPngo1F5ABtNIvwplxCa4yGvhElufSsqog
+ P5XXZ2tK.5IqBFBVw04phQYzfOGFPPemdA5S2WTCVAXg_5n1Bq4q7L0k_P0C
+ p0.S2bybyQNJxiMjleVNGsetkZoC0w2Empsv5eUGvVCUYgyy6_HlRXdj3dl4
+ k5jvFys6CUHYbUQzadnu2ZkRHVyFmRtfH4.IKS2QNGrIVI.jA97Ow5TZBNeN
+ S6oUE6xZDaDAqbCrtNHjhuMRS9hsv1hvEUqNWdnpVWDAAikqhRx8FT_9pJLn
+ qEPyzQxYZwPJRjJbe6g--
+X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.104.276605
+Date: Sat, 17 Jul 2010 16:57:30 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
+To: Greg KH <greg@kroah.com>,
+        =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        stable <stable@kernel.org>
+In-Reply-To: <AANLkTinOgKYlzB98LdurvLAV_-AYO_1SJPDneJt_iL5E@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-Date: Fri, 16 Jul 2010 01:17:29 -0700 (PDT)
+> > David, any thoughts on these versions
 
-> 
-> 
-> On Thu, 15 Jul 2010, David Miller wrote:
-> 
->> From: Shreyas Bhatewara <sbhatewara@vmware.com>
->> Date: Thu, 15 Jul 2010 18:20:52 -0700 (PDT)
->> 
->> > Is this what you suggest :
->> > 
->> > ---
->> > 
->> > Hold rtnl_lock to get the right link state.
->> 
->> It ought to work, but make sure that it is legal to take the
->> RTNL semaphore in all contexts in which this code block
->> might be called.
->> 
-> 
-> This code block is called only from the workqueue handler, which runs in
-> process context, so it is legal to take rtnl semaphore.
-> Tested this code by simulating event interrupts (which schedule this 
-> code) at considerable frequency while the interface was brought up and
-> down in a loop. Similar stress testing had revealed the bug originally. 
+Still no fan, since it just duplicates
+existing functionality from the composite
+framework.  Using  the existing mechanism
+seems preferable to me:  you want a serial
+number? provide one using the existing scheme
+and just make sure it follows the rules.
 
-Awesome, please submit this formally.  The copy you sent lacked a commit
-message and signoff.
+
+
