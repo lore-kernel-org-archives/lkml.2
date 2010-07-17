@@ -1,66 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966238Ab0GQKAG (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 06:00:06 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:52557 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759762Ab0GQKAB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 06:00:01 -0400
-Date: Sat, 17 Jul 2010 11:59:52 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [GIT PULL] tracing cleanups
-Message-ID: <20100717095952.GD12435@elte.hu>
-References: <1279231603-30624-1-git-send-regression-fweisbec@gmail.com>
+	id S1759803Ab0GQKAn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 06:00:43 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:56016 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966258Ab0GQKAk convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 06:00:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=t053gBXqypIuJzCGDBoSYzVxbs8VK4BTFdUowDlb8G8cseeJnx0ySiu1KjKExiCs9J
+         0rQpOkA2m4IHDWyi5Ezc6ycYEmjfTo8rcmPe/+va9kYRoJvebrM1YI7Yolh61IgUnAjx
+         jeYdAaElN2sye9zoC+6XOCqj0JY8TEXHubkZY=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279231603-30624-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0251]
+In-Reply-To: <1279296767-24823-1-git-send-email-segooon@gmail.com>
+References: <1279296767-24823-1-git-send-email-segooon@gmail.com>
+Date: Sat, 17 Jul 2010 12:00:38 +0200
+Message-ID: <AANLkTinb-TcOBX69tjR1Z3OdYmNvDwHMl_-C-39eWyCu@mail.gmail.com>
+Subject: Re: [PATCH 02/15] arm/mach-u300: check kmalloc result
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Russell King <linux@arm.linux.org.uk>,
+        Tejun Heo <tj@kernel.org>, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org,
+        spi mailing list <spi-devel-general@lists.sourceforge.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2010/7/16 Kulikov Vasiliy <segooon@gmail.com>:
 
-* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+>  arch/arm/mach-u300/dummyspichip.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
 
-> Ingo,
-> 
-> Please pull the perf/core branch that can be found at:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-> 	perf/core
-> 
-> Thanks,
-> 	Frederic
-> ---
-> 
-> Frederic Weisbecker (3):
->       tracing: Update tracing branch url
->       tracing: Remove ksym tracer
->       tracing: Remove letfover markers section
-> 
-> 
->  MAINTAINERS                       |    2 +-
->  include/asm-generic/vmlinux.lds.h |    4 -
->  kernel/trace/Kconfig              |   22 --
->  kernel/trace/Makefile             |    1 -
->  kernel/trace/trace.h              |    6 -
->  kernel/trace/trace_entries.h      |   15 -
->  kernel/trace/trace_ksym.c         |  508 -------------------------------------
->  kernel/trace/trace_selftest.c     |   54 ----
->  8 files changed, 1 insertions(+), 611 deletions(-)
+NACK I have recently submitted two patches to move this test chip to
+drivers/spi, please base your fixes work on top of those patches
+instead, and make sure to mail them to Grant Likely and the
+spi-devel-general list.
 
-Pulled, thanks Frederic!
-
-	Ingo
+Yours,
+Linus Walleij
