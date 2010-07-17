@@ -1,61 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753185Ab0GQFvh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 01:51:37 -0400
-Received: from fmailhost03.isp.att.net ([204.127.217.103]:37420 "EHLO
-	fmailhost03.isp.att.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752380Ab0GQFvf (ORCPT
+	id S1753337Ab0GQFxD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 01:53:03 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:45452 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752327Ab0GQFxB convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 01:51:35 -0400
-X-Greylist: delayed 84517 seconds by postgrey-1.27 at vger.kernel.org; Sat, 17 Jul 2010 01:51:35 EDT
-X-Originating-IP: [71.131.15.99]
-Date: Fri, 16 Jul 2010 22:51:30 -0700
-From: Mark Harris <mhlk@osj.us>
-To: David Howells <dhowells@redhat.com>
-Cc: Arnd Bergmann <arnd@arndb.de>, Steve French <smfrench@gmail.com>,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
-	extended file stats available [ver #6]
-Message-ID: <20100717055130.GA2053@zoia.osj.us>
-References: <201007161302.35775.arnd@arndb.de> <20100716062251.GA9318@zoia.osj.us> <30646.1279230807@redhat.com> <8527.1279275842@redhat.com> <10677.1279283886@redhat.com>
+	Sat, 17 Jul 2010 01:53:01 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=JxUrfv7gL/tmqqmpxITTlzlmaLB5Lo+zb0I7Sx9yebCBf26vfAMaaUyfF8yVr2pOfm
+         XcZW7KkhiDN7OH9VjpHO5dezZ25vM5ESh2Pvztm45VOTXCWOhPgJFhqeafEpIb+GOAEN
+         IUJZRD/bc4AgOEh5LB9CAXPt/CA6DbG1jJj9o=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: divya <dipraksh@linux.vnet.ibm.com>
+Subject: Re: Badness with the kernel version 2.6.35-rc1-git1 running on P6 box
+Date: Sat, 17 Jul 2010 07:52:53 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc5; KDE/4.4.4; i686; ; )
+Cc: LKML <linux-kernel@vger.kernel.org>, linuxppc-dev@ozlabs.org,
+        sachinp@linux.vnet.ibm.com, benh@kernel.crashing.org
+References: <4C401D56.3070108@linux.vnet.ibm.com>
+In-Reply-To: <4C401D56.3070108@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <10677.1279283886@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201007170752.53933.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Howells wrote:
-> With a 2:2 split between exponent
-> (tv_gran_units) and mantissa (tv_granularity), you can do:
+On piątek, 16 lipca 2010 o 10:50:30 divya wrote:
+> Hi ,
 > 
-> 	UNIT		SECONDS/UNIT	EXPONENT	MANTISSA
-> 	nanoseconds	0.000000001	-9		1
-> 	microseconds	0.000001	-6		1
-> 	millseconds	0.001		-3		1
-> 	seconds		1		0		1
-> 	minutes		60		1		6
-> 	hours		3600		2		36
-> 	days		86400		2		864
-> 	weeks		604800		2		6048
+> With the latest kernel version 2.6.35-rc5-git1(2f7989efd4398) running on
+> power(p6) box came across the following call trace
+> 
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16406
+for your bug report, please add your address to the CC list in there, thanks!
 
-At least for the in-tree filesystems, I do not see any that keep
-timestamps with a granularity larger than 2s.  For that, a simple
-32-bit tv_granularity in nanoseconds (not limited to 1e9) would
-suffice, and there is no need for the complexity of dealing with
-a separate exponent.
-
-If there is a need to handle larger granularity, its msb could
-potentially be used to indicate that the number is in seconds
-instead of nanoseconds.  This is convenient because the timestamp
-is already broken down into sec and nsec fields.  So this bit would
-then indicate that the granularity applies to the tv_sec field, and
-that tv_nsec is not in use.  But even this is overkill if no one
-uses a granularity larger than 2s.
-
- - Mark
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
