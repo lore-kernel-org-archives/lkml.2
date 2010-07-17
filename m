@@ -1,81 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936152Ab0GQLNu (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 07:13:50 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41467 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755701Ab0GQLNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 07:13:40 -0400
-Date: Sat, 17 Jul 2010 11:13:16 GMT
-From: tip-bot for Cliff Wickman <cpw@sgi.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, cpw@sgi.com,
-        tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        cpw@sgi.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <E1OZmZN-0006cW-RC@eag09.americas.sgi.com>
-References: <E1OZmZN-0006cW-RC@eag09.americas.sgi.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/uv] x86, UV: Initialize BAU MMRs only on hubs with cpus
-Message-ID: <tip-93a7ca0c3ebe5d931126f1fb732cb9c4518383d4@git.kernel.org>
-Git-Commit-ID: 93a7ca0c3ebe5d931126f1fb732cb9c4518383d4
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 17 Jul 2010 11:13:16 +0000 (UTC)
+	id S1759921Ab0GQLZK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 07:25:10 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:45091 "EHLO df.lth.se"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755726Ab0GQLZF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 07:25:05 -0400
+From: Linus Walleij <triad@df.lth.se>
+To: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org
+Cc: linux-arm-kernel@lists.infradead.org,
+        Russell King <linux@arm.linux.org.uk>, Linus Walleij <triad@df.lth.se>
+Subject: [PATCH 2/2] ARM: add character LCD platform data for RealView and Versatile
+Date: Sat, 17 Jul 2010 13:23:16 +0200
+Message-Id: <1279365796-18727-1-git-send-email-triad@df.lth.se>
+X-Mailer: git-send-email 1.6.2.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  93a7ca0c3ebe5d931126f1fb732cb9c4518383d4
-Gitweb:     http://git.kernel.org/tip/93a7ca0c3ebe5d931126f1fb732cb9c4518383d4
-Author:     Cliff Wickman <cpw@sgi.com>
-AuthorDate: Fri, 16 Jul 2010 10:11:21 -0500
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sat, 17 Jul 2010 12:11:48 +0200
+This adds some platform data for the character LCD found in the
+RealView and Versatile reference designs from ARM.
 
-x86, UV: Initialize BAU MMRs only on hubs with cpus
-
-Remove the initialization of MMRs
-UVH_LB_BAU_SB_ACTIVATION_CONTROL and UVH_BAU_DATA_BROADCAST on
-UV hubs that have no active cpus. Such initialization on hubs
-with no active cpus would result in a kernel page fault.
-
-This is not of real high priority, because we don't have any
-such systems (with UV hubs that have no active cpus).  But they
-will be coming.
-
-Signed-off-by: Cliff Wickman <cpw@sgi.com>
-LKML-Reference: <E1OZmZN-0006cW-RC@eag09.americas.sgi.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Linus Walleij <triad@df.lth.se>
 ---
- arch/x86/kernel/tlb_uv.c |   16 ++++++++++------
- 1 files changed, 10 insertions(+), 6 deletions(-)
+ arch/arm/mach-realview/realview_eb.c     |   21 +++++++++++++++++++++
+ arch/arm/mach-realview/realview_pb1176.c |   21 +++++++++++++++++++++
+ arch/arm/mach-versatile/core.c           |   16 ++++++++++++++++
+ 3 files changed, 58 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/tlb_uv.c b/arch/x86/kernel/tlb_uv.c
-index abf3c31..59efb53 100644
---- a/arch/x86/kernel/tlb_uv.c
-+++ b/arch/x86/kernel/tlb_uv.c
-@@ -1635,12 +1635,16 @@ static int __init uv_bau_init(void)
- 	alloc_intr_gate(vector, uv_bau_message_intr1);
+diff --git a/arch/arm/mach-realview/realview_eb.c b/arch/arm/mach-realview/realview_eb.c
+index b5f4d09..2df6ae8 100644
+--- a/arch/arm/mach-realview/realview_eb.c
++++ b/arch/arm/mach-realview/realview_eb.c
+@@ -330,6 +330,26 @@ static struct platform_device pmu_device = {
+ 	.resource		= pmu_resources,
+ };
  
- 	for_each_possible_blade(uvhub) {
--		pnode = uv_blade_to_pnode(uvhub);
--		/* INIT the bau */
--		uv_write_global_mmr64(pnode, UVH_LB_BAU_SB_ACTIVATION_CONTROL,
--				      ((unsigned long)1 << 63));
--		mmr = 1; /* should be 1 to broadcast to both sockets */
--		uv_write_global_mmr64(pnode, UVH_BAU_DATA_BROADCAST, mmr);
-+		if (uv_blade_nr_possible_cpus(uvhub)) {
-+			pnode = uv_blade_to_pnode(uvhub);
-+			/* INIT the bau */
-+			uv_write_global_mmr64(pnode,
-+					UVH_LB_BAU_SB_ACTIVATION_CONTROL,
-+					((unsigned long)1 << 63));
-+			mmr = 1; /* should be 1 to broadcast to both sockets */
-+			uv_write_global_mmr64(pnode, UVH_BAU_DATA_BROADCAST,
-+						mmr);
-+		}
- 	}
++static struct resource char_lcd_resources[] = {
++	{
++		.start = REALVIEW_CHAR_LCD_BASE,
++		.end   = (REALVIEW_CHAR_LCD_BASE + SZ_4K - 1),
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start	= IRQ_EB_CHARLCD,
++		.end	= IRQ_EB_CHARLCD,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device char_lcd_device = {
++	.name		=	"arm-charlcd",
++	.id		=	-1,
++	.num_resources	=	ARRAY_SIZE(char_lcd_resources),
++	.resource	=	char_lcd_resources,
++};
++
+ static void __init gic_init_irq(void)
+ {
+ 	if (core_tile_eb11mp() || core_tile_a9mp()) {
+@@ -448,6 +468,7 @@ static void __init realview_eb_init(void)
  
- 	return 0;
+ 	realview_flash_register(&realview_eb_flash_resource, 1);
+ 	platform_device_register(&realview_i2c_device);
++	platform_device_register(&char_lcd_device);
+ 	eth_device_register();
+ 	realview_usb_register(realview_eb_isp1761_resources);
+ 
+diff --git a/arch/arm/mach-realview/realview_pb1176.c b/arch/arm/mach-realview/realview_pb1176.c
+index 93aa1b1..ba490bb 100644
+--- a/arch/arm/mach-realview/realview_pb1176.c
++++ b/arch/arm/mach-realview/realview_pb1176.c
+@@ -280,6 +280,26 @@ static struct platform_device pmu_device = {
+ 	.resource		= &pmu_resource,
+ };
+ 
++static struct resource char_lcd_resources[] = {
++	{
++		.start = REALVIEW_CHAR_LCD_BASE,
++		.end   = (REALVIEW_CHAR_LCD_BASE + SZ_4K - 1),
++		.flags = IORESOURCE_MEM,
++	},
++	{
++		.start	= IRQ_PB1176_CHARLCD,
++		.end	= IRQ_PB1176_CHARLCD,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct platform_device char_lcd_device = {
++	.name		=	"arm-charlcd",
++	.id		=	-1,
++	.num_resources	=	ARRAY_SIZE(char_lcd_resources),
++	.resource	=	char_lcd_resources,
++};
++
+ static void __init gic_init_irq(void)
+ {
+ 	/* ARM1176 DevChip GIC, primary */
+@@ -342,6 +362,7 @@ static void __init realview_pb1176_init(void)
+ 	platform_device_register(&realview_i2c_device);
+ 	realview_usb_register(realview_pb1176_isp1761_resources);
+ 	platform_device_register(&pmu_device);
++	platform_device_register(&char_lcd_device);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(amba_devs); i++) {
+ 		struct amba_device *d = amba_devs[i];
+diff --git a/arch/arm/mach-versatile/core.c b/arch/arm/mach-versatile/core.c
+index f3a0e07..6ccd261 100644
+--- a/arch/arm/mach-versatile/core.c
++++ b/arch/arm/mach-versatile/core.c
+@@ -355,6 +355,21 @@ static struct mmci_platform_data mmc0_plat_data = {
+ 	.gpio_cd	= -1,
+ };
+ 
++static struct resource char_lcd_resources[] = {
++	{
++		.start = VERSATILE_CHAR_LCD_BASE,
++		.end   = (VERSATILE_CHAR_LCD_BASE + SZ_4K - 1),
++		.flags = IORESOURCE_MEM,
++	},
++};
++
++static struct platform_device char_lcd_device = {
++	.name           =       "arm-charlcd",
++	.id             =       -1,
++	.num_resources  =       ARRAY_SIZE(char_lcd_resources),
++	.resource       =       char_lcd_resources,
++};
++
+ /*
+  * Clock handling
+  */
+@@ -853,6 +868,7 @@ void __init versatile_init(void)
+ 	platform_device_register(&versatile_flash_device);
+ 	platform_device_register(&versatile_i2c_device);
+ 	platform_device_register(&smc91x_device);
++	platform_device_register(&char_lcd_device);
+ 
+ 	for (i = 0; i < ARRAY_SIZE(amba_devs); i++) {
+ 		struct amba_device *d = amba_devs[i];
+-- 
+1.7.1
+
