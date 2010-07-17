@@ -1,35 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756502Ab0GQJIq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 05:08:46 -0400
-Received: from khc.piap.pl ([195.187.100.11]:43112 "EHLO khc.piap.pl"
+	id S1759727Ab0GQJVI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 05:21:08 -0400
+Received: from khc.piap.pl ([195.187.100.11]:49058 "EHLO khc.piap.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755554Ab0GQJIo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 05:08:44 -0400
+	id S1755319Ab0GQJVG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 05:21:06 -0400
 From: Krzysztof Halasa <khc@pm.waw.pl>
-To: Ben Collins <bcollins@bluecherry.net>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Solo6010 staging driver - kernel panic
-References: <m3ocehdk4h.fsf@intrepid.localdomain>
-Date: Sat, 17 Jul 2010 11:08:42 +0200
-In-Reply-To: <m3ocehdk4h.fsf@intrepid.localdomain> (Krzysztof Halasa's message
-	of "Fri, 09 Jul 2010 12:28:46 +0200")
-Message-ID: <m3y6da3279.fsf@intrepid.localdomain>
+To: Dimitrios Apostolou <jimis@gmx.net>
+Cc: linux-kernel@vger.kernel.org, Dan Nicolaescu <dann@gnu.org>
+Subject: Re: emacs and "linux" coding style
+References: <alpine.LNX.2.00.1007131644180.1500@localhost.localdomain>
+Date: Sat, 17 Jul 2010 11:21:03 +0200
+In-Reply-To: <alpine.LNX.2.00.1007131644180.1500@localhost.localdomain>
+	(Dimitrios Apostolou's message of "Tue, 13 Jul 2010 17:00:21 +0300
+	(EEST)")
+Message-ID: <m3tyny31mo.fsf@intrepid.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Krzysztof Halasa <khc@pm.waw.pl> writes:
+Dimitrios Apostolou <jimis@gmx.net> writes:
 
-> I'm trying to use your solo6x10 driver with a card based on 6010 chip.
-> The driver seems to detect the card correctly, but when I open
-> /dev/video0 and then close it, I got a kernel panic. I traced the
-> problem to invalid pointers in q->bufs[i]->queue in a call to
-> videobuf_queue_cancel().
+> static void update_group_shares_cpu(struct task_group *tg, int cpu,
+>                                     unsigned long sd_shares,
+>                                     unsigned long sd_rq_weight,
+>                                     unsigned long *usd_rq_weight)
+> {
 
-BTW I have fixed it and will work on this driver a bit.
-Will post the results soon.
+>From a technical POV the above should not have any tabs, the parameters
+should be aligned with spaces only.
+
+The tabs should be used for (syntactic) indentation only.
+
+This way we can display the code correctly with any tab length.
 -- 
 Krzysztof Halasa
