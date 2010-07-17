@@ -1,58 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759767Ab0GQJfo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 05:35:44 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:33863 "EHLO mx2.mail.elte.hu"
+	id S1759786Ab0GQJts (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 05:49:48 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9825 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759725Ab0GQJfm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 05:35:42 -0400
-Date: Sat, 17 Jul 2010 11:35:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Chase Douglas <chase.douglas@canonical.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Subject: Re: [GIT PULL 0/3] perf/core fixes and improvements
-Message-ID: <20100717093532.GA12435@elte.hu>
-References: <1279303773-27861-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279303773-27861-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.2943]
+	id S1755134Ab0GQJtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 05:49:45 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100717055130.GA2053@zoia.osj.us>
+References: <20100717055130.GA2053@zoia.osj.us> <201007161302.35775.arnd@arndb.de> <20100716062251.GA9318@zoia.osj.us> <30646.1279230807@redhat.com> <8527.1279275842@redhat.com> <10677.1279283886@redhat.com>
+To: Mark Harris <mhlk@osj.us>
+Cc: dhowells@redhat.com, Arnd Bergmann <arnd@arndb.de>,
+        Steve French <smfrench@gmail.com>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
+Date: Sat, 17 Jul 2010 10:49:00 +0100
+Message-ID: <19785.1279360140@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Mark Harris <mhlk@osj.us> wrote:
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> At least for the in-tree filesystems, I do not see any that keep
+> timestamps with a granularity larger than 2s.  For that, a simple
+> 32-bit tv_granularity in nanoseconds (not limited to 1e9) would
+> suffice, and there is no need for the complexity of dealing with
+> a separate exponent.
 
-> Hi Ingo,
-> 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Masami Hiramatsu (3):
->   perf probe: Fix error message if get_real_path() failed
->   perf probe: Support comp_dir to find an absolute source path
->   perf probe: Fix the logic of die_compare_name
-> 
->  tools/perf/util/probe-event.c  |   69 ++++++++++++++++++++++++++++
->  tools/perf/util/probe-event.h  |    1 +
->  tools/perf/util/probe-finder.c |   96 ++++++++++++++--------------------------
->  3 files changed, 103 insertions(+), 63 deletions(-)
+That's a good point.
 
-Pulled, thanks Arnaldo!
-
-	Ingo
+David
