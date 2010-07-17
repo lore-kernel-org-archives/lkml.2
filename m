@@ -1,149 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760136Ab0GQTgP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 15:36:15 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:39418 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760125Ab0GQTgN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 15:36:13 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Sat, 17 Jul 2010 21:36:02 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH 1/4 update] firewire: cdev: some clarifications to the API
- documentation
-To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org
-In-Reply-To: <tkrat.38c8fc1ec31d405c@s5r6.in-berlin.de>
-Message-ID: <tkrat.d75b7d36052568dd@s5r6.in-berlin.de>
-References: <tkrat.59dee0979cf9dbb0@s5r6.in-berlin.de>
- <tkrat.38c8fc1ec31d405c@s5r6.in-berlin.de>
+	id S1760126Ab0GQTut (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 15:50:49 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44308 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751487Ab0GQTus (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 15:50:48 -0400
+Message-ID: <4C42099C.3070708@kernel.dk>
+Date: Sat, 17 Jul 2010 13:50:52 -0600
+From: Jens Axboe <axboe@kernel.dk>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+To: Dan Carpenter <error27.lkml@gmail.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+        Martin Pirker <lkml.collector@gmail.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Miklos Szeredi <miklos@szeredi.hu>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        Richard Kennedy <richard@rsk.demon.co.uk>, mjg@redhat.com
+Subject: Re: 2.6.35-rc5 inconsistent lock state
+References: <AANLkTikDF0TL6OyPVCzPlUTwxFehcrETn3ysgSSeTq92@mail.gmail.com>	<201007142304.48660.rjw@sisk.pl> <AANLkTin5Bj6HEEriLVFDQKptrZHmh698TsnMWHzVYt5H@mail.gmail.com>
+In-Reply-To: <AANLkTin5Bj6HEEriLVFDQKptrZHmh698TsnMWHzVYt5H@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Response events:
-  - are generated on more occasions than their documentation claimed.
+On 07/17/2010 01:04 PM, Dan Carpenter wrote:
+> This is from:
+> 
+> commit 31373d09da5b7fe21fe6f781e92bd534a3495f00
+> Author: Matthew Garrett <mjg@redhat.com>
+> Date:   Tue Apr 6 14:25:14 2010 +0200
+> 
+>     laptop-mode: Make flushes per-device
+> 
+>     One of the features of laptop-mode is that it forces a writeout of dirty
+>     pages if something else triggers a physical read or write from a device.
+>     The current implementation flushes pages on all devices, rather than only
+>     the one that triggered the flush. This patch alters the behaviour so that
+>     only the recently accessed block device is flushed, preventing other
+>     disks being spun up for no terribly good reason.
+> 
+> One way to fix it might be to change all the places that call
+> spin_lock(&bdi->wb_lock); to spin_lock_bh(&bdi->wb_lock); but I'm not
+> sure that's the right way.
+> 
+> I don't think Matthew Garrett has a bugzilla account?
 
-CSR allocation:
-  - An already occupied CSR can be determined from errno==EBUSY.
+I posted a patch for this the other day, but I just now notice
+that it was a private list of CC addresses.
 
-Bus resets:
-  - Note that FW_CDEV_IOC_INITIATE_BUS_RESET is nonblocking and that the
-    client is not required to observe a grace period since kernels
-    2.6.36+ will enforce it now (commit 02d37bed).
+Can anyone try this completed untested patch?
 
-  - The possible values of fw_cdev_initiate_bus_reset.type are listed in
-    the kerneldoc comment already.
-
-  - Clarify that an application that uses FW_CDEV_IOC_ADD_DESCRIPTOR and
-    FW_CDEV_IOC_REMOVE_DESCRIPTOR does not have to issue a bus reset.
-
-Isochronous I/O contexts:
-  - At most one can be created per open file descriptor.
-
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
-
-Update:  Added the occupied CSR == EBUSY sentence.
-
- include/linux/firewire-cdev.h |   33 +++++++++++++++++++++++++--------
- 1 file changed, 25 insertions(+), 8 deletions(-)
-
-Index: b/include/linux/firewire-cdev.h
-===================================================================
---- a/include/linux/firewire-cdev.h
-+++ b/include/linux/firewire-cdev.h
-@@ -89,8 +89,9 @@ struct fw_cdev_event_bus_reset {
+diff --git a/block/blk-core.c b/block/blk-core.c
+index 5ab3ac2..a108b8e 100644
+--- a/block/blk-core.c
++++ b/block/blk-core.c
+@@ -451,7 +451,7 @@ void blk_cleanup_queue(struct request_queue *q)
+ 	 */
+ 	blk_sync_queue(q);
  
- /**
-  * struct fw_cdev_event_response - Sent when a response packet was received
-- * @closure:	See &fw_cdev_event_common;
-- *		set by %FW_CDEV_IOC_SEND_REQUEST ioctl
-+ * @closure:	See &fw_cdev_event_common; set by %FW_CDEV_IOC_SEND_REQUEST
-+ *		or %FW_CDEV_IOC_SEND_BROADCAST_REQUEST
-+ *		or %FW_CDEV_IOC_SEND_STREAM_PACKET ioctl
-  * @type:	See &fw_cdev_event_common; always %FW_CDEV_EVENT_RESPONSE
-  * @rcode:	Response code returned by the remote node
-  * @length:	Data length, i.e. the response's payload size in bytes
-@@ -100,6 +101,11 @@ struct fw_cdev_event_bus_reset {
-  * sent by %FW_CDEV_IOC_SEND_REQUEST ioctl.  The payload data for responses
-  * carrying data (read and lock responses) follows immediately and can be
-  * accessed through the @data field.
-+ *
-+ * The event is also generated after conclusions of transactions that do not
-+ * involve response packets.  This includes unified write transactions,
-+ * broadcast write transactions, and transmission of asynchronous stream
-+ * packets.  @rcode indicates success or failure of such transmissions.
-  */
- struct fw_cdev_event_response {
- 	__u64 closure;
-@@ -452,7 +458,9 @@ struct fw_cdev_send_response {
-  * range to be used for later deallocation of the range.
-  *
-  * The address range is allocated on all local nodes.  The address allocation
-- * is exclusive except for the FCP command and response registers.
-+ * is exclusive except for the FCP command and response registers.  If an
-+ * exclusive address region is already in use, the ioctl fails with errno set
-+ * to %EBUSY.
-  */
- struct fw_cdev_allocate {
- 	__u64 offset;
-@@ -480,9 +488,14 @@ struct fw_cdev_deallocate {
-  * Initiate a bus reset for the bus this device is on.  The bus reset can be
-  * either the original (long) bus reset or the arbitrated (short) bus reset
-  * introduced in 1394a-2000.
-+ *
-+ * The ioctl returns immediately.  A subsequent &fw_cdev_event_bus_reset
-+ * indicates when the reset actually happened.  Since ABI v4, this may be
-+ * considerably later than the ioctl because the kernel ensures a grace period
-+ * between subsequent bus resets as per IEEE 1394 bus management specification.
-  */
- struct fw_cdev_initiate_bus_reset {
--	__u32 type;	/* FW_CDEV_SHORT_RESET or FW_CDEV_LONG_RESET */
-+	__u32 type;
- };
+-	del_timer_sync(&q->backing_dev_info.laptop_mode_wb_timer);
++	cancel_delayed_work_sync(&q->backing_dev_info.laptop_mode_work);
+ 	mutex_lock(&q->sysfs_lock);
+ 	queue_flag_set_unlocked(QUEUE_FLAG_DEAD, q);
+ 	mutex_unlock(&q->sysfs_lock);
+@@ -515,8 +515,9 @@ struct request_queue *blk_alloc_queue_node(gfp_t gfp_mask, int node_id)
+ 		return NULL;
+ 	}
  
- /**
-@@ -506,9 +519,10 @@ struct fw_cdev_initiate_bus_reset {
-  *
-  * @immediate, @key, and @data array elements are CPU-endian quadlets.
-  *
-- * If successful, the kernel adds the descriptor and writes back a handle to the
-- * kernel-side object to be used for later removal of the descriptor block and
-- * immediate key.
-+ * If successful, the kernel adds the descriptor and writes back a @handle to
-+ * the kernel-side object to be used for later removal of the descriptor block
-+ * and immediate key.  The kernel will also generate a bus reset to signal the
-+ * change of the configuration ROM to other nodes.
-  *
-  * This ioctl affects the configuration ROMs of all local nodes.
-  * The ioctl only succeeds on device files which represent a local node.
-@@ -527,7 +541,8 @@ struct fw_cdev_add_descriptor {
-  *		descriptor was added
-  *
-  * Remove a descriptor block and accompanying immediate key from the local
-- * nodes' configuration ROMs.
-+ * nodes' configuration ROMs.  The kernel will also generate a bus reset to
-+ * signal the change of the configuration ROM to other nodes.
+-	setup_timer(&q->backing_dev_info.laptop_mode_wb_timer,
+-		    laptop_mode_timer_fn, (unsigned long) q);
++	
++	INIT_DELAYED_WORK(&q->backing_dev_info.laptop_mode_work,
++				laptop_mode_work_fn);
+ 	init_timer(&q->unplug_timer);
+ 	setup_timer(&q->timeout, blk_rq_timed_out_timer, (unsigned long) q);
+ 	INIT_LIST_HEAD(&q->timeout_list);
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index e536f3a..d51acff 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -84,7 +84,7 @@ struct backing_dev_info {
+ 
+ 	struct device *dev;
+ 
+-	struct timer_list laptop_mode_wb_timer;
++	struct delayed_work laptop_mode_work;
+ 
+ #ifdef CONFIG_DEBUG_FS
+ 	struct dentry *debug_dir;
+diff --git a/include/linux/writeback.h b/include/linux/writeback.h
+index c24eca7..936ef5a 100644
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -87,8 +87,7 @@ static inline void inode_sync_wait(struct inode *inode)
+ #ifdef CONFIG_BLOCK
+ void laptop_io_completion(struct backing_dev_info *info);
+ void laptop_sync_completion(void);
+-void laptop_mode_sync(struct work_struct *work);
+-void laptop_mode_timer_fn(unsigned long data);
++void laptop_mode_work_fn(struct work_struct *);
+ #else
+ static inline void laptop_sync_completion(void) { }
+ #endif
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index 3d2111a..9978e8e 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -698,18 +698,20 @@ int dirty_writeback_centisecs_handler(ctl_table *table, int write,
+ }
+ 
+ #ifdef CONFIG_BLOCK
+-void laptop_mode_timer_fn(unsigned long data)
++void laptop_mode_work_fn(struct work_struct *work)
+ {
+-	struct request_queue *q = (struct request_queue *)data;
++	struct backing_dev_info *bdi;
+ 	int nr_pages = global_page_state(NR_FILE_DIRTY) +
+ 		global_page_state(NR_UNSTABLE_NFS);
+ 
++	bdi = container_of(work, struct backing_dev_info, laptop_mode_work.work);
++
+ 	/*
+ 	 * We want to write everything out, not just down to the dirty
+ 	 * threshold
+ 	 */
+-	if (bdi_has_dirty_io(&q->backing_dev_info))
+-		bdi_start_writeback(&q->backing_dev_info, nr_pages);
++	if (bdi_has_dirty_io(bdi))
++		bdi_start_writeback(bdi, nr_pages);
+ }
+ 
+ /*
+@@ -717,9 +719,12 @@ void laptop_mode_timer_fn(unsigned long data)
+  * of all dirty data a few seconds from now.  If the flush is already scheduled
+  * then push it back - the user is still using the disk.
   */
- struct fw_cdev_remove_descriptor {
- 	__u32 handle;
-@@ -559,6 +574,8 @@ struct fw_cdev_remove_descriptor {
-  *
-  * Note that the effect of a @header_size > 4 depends on
-  * &fw_cdev_get_info.version, as documented at &fw_cdev_event_iso_interrupt.
-+ *
-+ * No more than one iso context can be created per fd.
-  */
- struct fw_cdev_create_iso_context {
- 	__u32 type;
+-void laptop_io_completion(struct backing_dev_info *info)
++void laptop_io_completion(struct backing_dev_info *bdi)
+ {
+-	mod_timer(&info->laptop_mode_wb_timer, jiffies + laptop_mode);
++	if (work_pending(&bdi->laptop_mode_work.work))
++		mod_timer(&bdi->laptop_mode_work.timer, jiffies + laptop_mode);
++	else
++		schedule_delayed_work(&bdi->laptop_mode_work, laptop_mode);
+ }
+ 
+ /*
+@@ -734,7 +739,7 @@ void laptop_sync_completion(void)
+ 	rcu_read_lock();
+ 
+ 	list_for_each_entry_rcu(bdi, &bdi_list, bdi_list)
+-		del_timer(&bdi->laptop_mode_wb_timer);
++		__cancel_delayed_work(&bdi->laptop_mode_work);
+ 
+ 	rcu_read_unlock();
+ }
 
 -- 
-Stefan Richter
--=====-==-=- -=== =---=
-http://arcgraph.de/sr/
+Jens Axboe
 
