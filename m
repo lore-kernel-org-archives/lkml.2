@@ -1,58 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759862Ab0GQK1e (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 06:27:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45621 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759843Ab0GQK1c (ORCPT
+	id S966295Ab0GQKpE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 06:45:04 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46586 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759870Ab0GQKpA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 06:27:32 -0400
+	Sat, 17 Jul 2010 06:45:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=PyOdGjOxRBofMFP3aAhm7bHdoWU1pLlOFDKgh8Rjg4+8mssA+ZXHd1pShzrea18fTk
-         Q7iWZPpWOMCIh1FMF7z5QzDIZjGXUb21Wb1kwyEqmd7qggvj7xoIHkkiT60OruA84uN8
-         0O4mAbIRY4H3zRqRFAhtvoT1ef0SVqY8MSN6I=
-Date: Sat, 17 Jul 2010 12:26:08 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Al Viro <viro@zeniv.linux.org.uk>
-Cc: Eric Paris <eparis@redhat.com>, linux-kernel@vger.kernel.org,
-        kernel-janitors@vger.kernel.org
-Subject: [patch] auditsc: audit_log_single_execve_arg() returns signed
-Message-ID: <20100717102608.GE17585@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Al Viro <viro@zeniv.linux.org.uk>, Eric Paris <eparis@redhat.com>,
-	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=B3qChgsUo30Q6AwVgcOEjUOU5NqNYHA5WqbIls7kSX/EXehTZyum5YshSFSM188hRS
+         kg8MGFqJOYW2J8WZ1Yx4CWtk60/pF9icbQA2OeZ8ZZhsW4V1Ds6SnrWWAIf15sHIjJX5
+         n+uNfxfDZgTc1ok2T45tnTBeyVCb5cJDGphe0=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Date: Sat, 17 Jul 2010 18:45:00 +0800
+Message-ID: <AANLkTinW2C8RaI4dpkmGNoZKl5DM_V-m_M9w5BCZQjhN@mail.gmail.com>
+Subject: could not catch the absolute path on intercept the mkdir() syscall in 
+	linux
+From: supercodeing35271 supercodeing35271 <supercodeing35271@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"len" needs to be signed because audit_log_single_execve_arg() returns
--1 and we want to check for that:
-
-                len = audit_log_single_execve_arg(context, ab, i,
-                                                  &len_sent, p, buf);
-                if (len <= 0)
-                        break;
-
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-
-diff --git a/kernel/auditsc.c b/kernel/auditsc.c
-index 3828ad5..2c060c3 100644
---- a/kernel/auditsc.c
-+++ b/kernel/auditsc.c
-@@ -1158,7 +1158,8 @@ static void audit_log_execve_info(struct audit_context *context,
- 				  struct audit_aux_data_execve *axi)
- {
- 	int i;
--	size_t len, len_sent = 0;
-+	ssize_t len;
-+	size_t len_sent = 0;
- 	const char __user *p;
- 	char *buf;
- 
+Hi,i am now write a simple file comparison and protect program in
+linux kernel module using the way of intercepting the syscall.What i
+have done is that when the module insmod into kernel,i can appoint a
+path that make any action which intend to mkdir in the path return a
+fail,so the path can be protect against  malicious tamper.
+How the module work is very simply as a way of  intercept the mkdir()
+syscall,i think lots of guy know about the theory.
+But,it is not perfect.Because the module can only identify the
+absolute path.Then situation,when we open a shell like this:
+root@myname-desktop:/home/myname/test# mkdir dirkkk
+As this command running, a directory named dirkkk in the path
+/home/myname/test has been created.Also use the command mkdir
+/home/myname/test/dirkkk is the same.
+But the module i wrote only realize the mkdir
+/home/myname/test/dirkkk.This is the mkdir syscall function in 2.6.34:
+asmlinkage long sys_mkdir(const char __user *pathname, int mode);
+In my module,i intercept it and make a function named my_mkdir which
+has the same parameters:
+asmlinkage long my_mkdir(const char __user *pathname, int mode)
+{
+   if(strcmp(pathname,"/home/myname/test/dirkkk") == 0)
+   {
+       return -1;
+   }
+   return sys_mkdir(pathname,mode);
+}
+The module strcmp the pathname,if the pathname is which has been
+setting as forbid,then return -1.Command mkdir
+/home/myname/test/dirkkk may return a fail,but if mkdir dirkkk,it
+doesn't forbid.Because the pathname is "dirkkk",not the
+"/home/myname/test/dirkkk",it may return a original sys_mkdir.
+So my question is that is any idea of identify the shell command like
+mkdir if it is a absolute path or not,and how to change relative path
+into absolute for my module can intercept the relative path
