@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759523Ab0GQAJs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 16 Jul 2010 20:09:48 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57326 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759483Ab0GQAJq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 16 Jul 2010 20:09:46 -0400
+	id S1759533Ab0GQARY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 16 Jul 2010 20:17:24 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:40053 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759483Ab0GQARX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 16 Jul 2010 20:17:23 -0400
+Message-ID: <4C40F688.80507@ti.com>
+Date: Fri, 16 Jul 2010 19:17:12 -0500
+From: Omar Ramirez Luna <omar.ramirez@ti.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.7) Gecko/20100111 Thunderbird/3.0.1
 MIME-Version: 1.0
-In-Reply-To: <1278945396.5221.14.camel@moss-pluto.epoch.ncsc.mil>
-References: <1278513086-23964-1-git-send-email-dpquigl@tycho.nsa.gov> 
-	<1278513086-23964-7-git-send-email-dpquigl@tycho.nsa.gov> 
-	<20100707170058.GD28815@fieldses.org> <alpine.LRH.2.00.1007080928180.14102@tundra.namei.org> 
-	<1278596363.2494.194.camel@moss-terrapins.epoch.ncsc.mil> 
-	<alpine.LRH.2.00.1007090834190.23354@tundra.namei.org> <1278684348.2494.223.camel@moss-terrapins.epoch.ncsc.mil> 
-	<AANLkTinUO-xqvQQINTzKLcXnljq-RaN5X6ulEAqvuf0d@mail.gmail.com> 
-	<4C3952D6.7040608@schaufler-ca.com> <1278945396.5221.14.camel@moss-pluto.epoch.ncsc.mil>
-From: Kyle Moffett <kyle@moffetthome.net>
-Date: Fri, 16 Jul 2010 20:09:23 -0400
-Message-ID: <AANLkTimBkFfkNmh8Rn3IH1ktGixUxQY8LPP56_joA93S@mail.gmail.com>
-Subject: Re: [PATCH 06/10] NFSv4: Add label recommended attribute and NFSv4 
-	flags
-To: Stephen Smalley <sds@tycho.nsa.gov>
-Cc: Casey Schaufler <casey@schaufler-ca.com>,
-        "David P. Quigley" <dpquigl@tycho.nsa.gov>,
-        James Morris <jmorris@namei.org>,
-        "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
-        viro@zeniv.linux.org.uk, matthew.dodd@sparta.com,
-        trond.myklebust@fys.uio.no, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-security-module@vger.kernel.org,
-        selinux@tycho.nsa.gov, linux-nfs@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Sapiens, Rene" <rene.sapiens@ti.com>
+CC: "greg@kroah.com" <greg@kroah.com>, "gregkh@suse.de" <gregkh@suse.de>,
+        "ohad@wizery.com" <ohad@wizery.com>,
+        "ameya.palande@nokia.com" <ameya.palande@nokia.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+Subject: Re: [PATCH 00/15] ti dspbridge: Remove CamelCase, reagroup variables
+References: <1278728649-21012-1-git-send-email-rene.sapiens@ti.com>
+In-Reply-To: <1278728649-21012-1-git-send-email-rene.sapiens@ti.com>
+Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 10:36, Stephen Smalley <sds@tycho.nsa.gov> wrote:
-> On Sat, 2010-07-10 at 22:12 -0700, Casey Schaufler wrote:
->> Kyle Moffett wrote:
->> > ...
->> > Even in local filesystems like ext3 we prefer to turn labels into
->> > numbers, store the number with each inode, and then keep the labels
->> > indexed in a separate datastructure.
->> >
->>
->> I don't know what system you're talking about, but that notion
->> was pretty well dispelled in the late 1980's, after the SystemV/MLS
->> and SecureWare examples.
+On 7/9/2010 9:23 PM, Sapiens, Rene wrote:
+> The intention of this serie of patches is to rename the remaining variables
+> with camel case. Words will be renamed avoiding CamelCase and Hungarian
+> notation. Also the variables in the prototypes  will be renamed to make them
+> match with the ones in the function definitions.
 >
-> SELinux did that too before switching to using xattrs for label storage.
-> Persistent security identifier (PSID) associated with each inode (either
-> stored directly in the inode in the original kernel patches or
-> associated through a separate mapping in the LSM-based implementation),
-> with a mapping from PSID to context stored in a mapping within each
-> filesystem.  Allowed you to keep the labels with the volume but avoided
-> storing the same label multiple times.
+[...]
+>   74 files changed, 2471 insertions(+), 2439 deletions(-)
 >
-> The xattr based implementation can sometimes share storage but only when
-> the xattr is stored in the additional block (not when they are stored
-> inline) and only if all of the xattrs on the file are identical.
+>
 
-Hmm, for some reason I was still thinking that we stored an encoded
-form of the label even in xattrs.  Whoops!
+Some of your patches produce:
 
-On the other hand, I guess it should be noted that the "common" case
-of an SELinux label is the inline storage case, labels are on average
-no more than ~40 bytes:
-  system_u:object_r:sysadm_homedir_t:s0
+warning: drivers/staging/tidspbridge/include/dspbridge/dspdefs.h has 
+type 100644, expected 100755
 
-In filesystems that are space optimized (like squashfs), we still
-prefer to pack xattrs, symlinks, and even file permissions as tightly
-as possible through table lookups of various forms.  Heck, the
-read-only squashfs only stores a single empty-directory inode and
-references it wherever needed.
+None of the files had their permissions changed so I guess they should 
+be fine to merge, unless anybody else complains... so ACK.
 
-On the other hand, if you're doing something completely silly with 64k
-labels then any hope of inline storage went out the window along with
-any space savings from nifty FS optimizations like de-duplication or
-tail-packing.
+For future patches please check you are not changing file mode or use:
 
-Cheers,
-Kyle Moffett
+git config core.filemode false
+
+Regards,
+
+Omar
