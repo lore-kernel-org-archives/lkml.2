@@ -1,60 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760044Ab0GQQOl (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 12:14:41 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59468 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756199Ab0GQQOk convert rfc822-to-8bit (ORCPT
+	id S1760071Ab0GQRUJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 13:20:09 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:38480 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756122Ab0GQRUI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 12:14:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=mNN8vUHtvh8YKRCsJmEMmr5MWE2DKJdl4Nt7P1tjKxOOFTCtc7n19dsCFpOsU8+LZk
-         R7sKFse565Nse98YLkM+grx16VcTM9Nx1tiz5F6iYsqwLdgTnj4bjLG9GSAXG4QpvUpW
-         lp4oabjpwpHqNOtxe3KSNurDHbBGrhdn/j5+s=
+	Sat, 17 Jul 2010 13:20:08 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 17 Jul 2010 19:19:56 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 5/4 RFC] firewire: cdev: add PHY pinging
+To: linux1394-devel@lists.sourceforge.net
+cc: linux-kernel@vger.kernel.org
+In-Reply-To: <tkrat.59dee0979cf9dbb0@s5r6.in-berlin.de>
+Message-ID: <tkrat.506ae60f1ea3a97a@s5r6.in-berlin.de>
+References: <tkrat.59dee0979cf9dbb0@s5r6.in-berlin.de>
 MIME-Version: 1.0
-In-Reply-To: <1279371808-24804-3-git-send-email-brgerst@gmail.com>
-References: <1279371808-24804-1-git-send-email-brgerst@gmail.com>
-	<1279371808-24804-3-git-send-email-brgerst@gmail.com>
-Date: Sat, 17 Jul 2010 19:14:38 +0300
-X-Google-Sender-Auth: 5T_CVDQ34RLpSmdsV9fiBzuovXI
-Message-ID: <AANLkTim7R3rNj0YdsTynQJUnk0crXRuAg2CHHqe1vttA@mail.gmail.com>
-Subject: Re: [PATCH 3/3] x86-64: Simplify loading initial_gs
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Brian Gerst <brgerst@gmail.com>
-Cc: hpa@zytor.com, x86@kernel.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 17, 2010 at 4:03 PM, Brian Gerst <brgerst@gmail.com> wrote:
-> Load initial_gs as two 32-bit values instead of splitting a 64-bit value.
->
-> Signed-off-by: Brian Gerst <brgerst@gmail.com>
-> ---
->  arch/x86/kernel/head_64.S |    5 ++---
->  1 files changed, 2 insertions(+), 3 deletions(-)
->
-> diff --git a/arch/x86/kernel/head_64.S b/arch/x86/kernel/head_64.S
-> index 3d1e6f1..239046b 100644
-> --- a/arch/x86/kernel/head_64.S
-> +++ b/arch/x86/kernel/head_64.S
-> @@ -234,9 +234,8 @@ ENTRY(secondary_startup_64)
->         * init data section till per cpu areas are set up.
->         */
->        movl    $MSR_GS_BASE,%ecx
-> -       movq    initial_gs(%rip),%rax
-> -       movq    %rax,%rdx
-> -       shrq    $32,%rdx
-> +       movl    initial_gs(%rip),%eax
-> +       movl    initial_gs+4(%rip),%edx
->        wrmsr
->
->        /* esi is pointer to real mode structure with interesting info.
+This extends the FW_CDEV_IOC_SEND_PHY_PACKET ioctl() for /dev/fw* to be
+useful for ping time measurements.  One application for it would be gap
+count optimization in userspace that is based on ping times rather than
+hop count.  (The latter is implemented in firewire-core itself but is
+not applicable to beta PHYs that act as repeater.)
 
-Reviewed-by: Pekka Enberg <penberg@cs.helsinki.fi>
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
+A simple test tool will be posted at linux1394-devel.
+
+ drivers/firewire/core-cdev.c  |    9 ++++++---
+ drivers/firewire/core.h       |    5 +++++
+ drivers/firewire/ohci.c       |    4 ++++
+ include/linux/firewire-cdev.h |    5 ++++-
+ 4 files changed, 19 insertions(+), 4 deletions(-)
+
+Index: b/drivers/firewire/core-cdev.c
+===================================================================
+--- a/drivers/firewire/core-cdev.c
++++ b/drivers/firewire/core-cdev.c
+@@ -1424,9 +1424,10 @@ static void outbound_phy_packet_callback
+ 	/* stale generation; cancelled; on certain controllers: no ack */
+ 	default:		e->phy_packet.rcode = status;		break;
+ 	}
++	e->phy_packet.data[0] = packet->timestamp;
+ 
+-	queue_event(e->client, &e->event,
+-		    &e->phy_packet, sizeof(e->phy_packet), NULL, 0);
++	queue_event(e->client, &e->event, &e->phy_packet,
++		    sizeof(e->phy_packet) + e->phy_packet.length, NULL, 0);
+ 	client_put(e->client);
+ }
+ 
+@@ -1440,7 +1441,7 @@ static int ioctl_send_phy_packet(struct 
+ 	if (!client->device->is_local)
+ 		return -ENOSYS;
+ 
+-	e = kzalloc(sizeof(*e), GFP_KERNEL);
++	e = kzalloc(sizeof(*e) + 4, GFP_KERNEL);
+ 	if (e == NULL)
+ 		return -ENOMEM;
+ 
+@@ -1454,6 +1455,8 @@ static int ioctl_send_phy_packet(struct 
+ 	e->p.callback		= outbound_phy_packet_callback;
+ 	e->phy_packet.closure	= a->closure;
+ 	e->phy_packet.type	= FW_CDEV_EVENT_PHY_PACKET_SENT;
++	if (is_ping_packet(a->data))
++			e->phy_packet.length = 4;
+ 
+ 	card->driver->send_request(card, &e->p);
+ 
+Index: b/drivers/firewire/core.h
+===================================================================
+--- a/drivers/firewire/core.h
++++ b/drivers/firewire/core.h
+@@ -234,4 +234,9 @@ void fw_fill_response(struct fw_packet *
+ void fw_send_phy_config(struct fw_card *card,
+ 			int node_id, int generation, int gap_count);
+ 
++static inline bool is_ping_packet(u32 *data)
++{
++	return (data[0] & 0xc0ffffff) == 0 && ~data[0] == data[1];
++}
++
+ #endif /* _FIREWIRE_CORE_H */
+Index: b/drivers/firewire/ohci.c
+===================================================================
+--- a/drivers/firewire/ohci.c
++++ b/drivers/firewire/ohci.c
+@@ -1105,6 +1105,10 @@ static int at_context_queue_packet(struc
+ 	} else {
+ 		last = &d[0];
+ 		z = 2;
++
++		if (packet->header_length == 8 &&
++		    is_ping_packet(packet->header))
++			last->control |= cpu_to_le16(DESCRIPTOR_PING);
+ 	}
+ 
+ 	last->control |= cpu_to_le16(DESCRIPTOR_OUTPUT_LAST |
+Index: b/include/linux/firewire-cdev.h
+===================================================================
+--- a/include/linux/firewire-cdev.h
++++ b/include/linux/firewire-cdev.h
+@@ -299,7 +299,10 @@ struct fw_cdev_event_iso_resource {
+  * @length:	Data length in bytes
+  * @data:	Incoming data
+  *
+- * If @type is %FW_CDEV_EVENT_PHY_PACKET_SENT, @length is 0 and @data empty.
++ * If @type is %FW_CDEV_EVENT_PHY_PACKET_SENT, @length is 0 and @data empty,
++ * except in case of a ping packet:  Then, @length is 4, and @data[0] is the
++ * ping time in 49.152MHz clocks if @rcode is %RCODE_COMPLETE.
++ *
+  * If @type is %FW_CDEV_EVENT_PHY_PACKET_RECEIVED, @length is 8 and @data
+  * consists of the two PHY packet quadlets, in host byte order.
+  */
+
+-- 
+Stefan Richter
+-=====-==-=- -=== =---=
+http://arcgraph.de/sr/
+
