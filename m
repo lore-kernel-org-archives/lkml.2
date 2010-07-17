@@ -1,107 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759889Ab0GQLMK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 07:12:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41393 "EHLO hera.kernel.org"
+	id S1759897Ab0GQLMY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 07:12:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41410 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754462Ab0GQLMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 07:12:06 -0400
-Date: Sat, 17 Jul 2010 11:11:41 GMT
-From: tip-bot for Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: acme@redhat.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-        hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl,
-        guijianfeng@cn.fujitsu.com, tglx@linutronix.de, mingo@elte.hu
+	id S1755679Ab0GQLMW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 07:12:22 -0400
+Date: Sat, 17 Jul 2010 11:12:01 GMT
+From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        paulus@samba.org, acme@redhat.com, a.p.zijlstra@chello.nl,
-        guijianfeng@cn.fujitsu.com, tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <4C230362.5080704@cn.fujitsu.com>
-References: <4C230362.5080704@cn.fujitsu.com>
+        a.p.zijlstra@chello.nl, suresh.b.siddha@intel.com, tglx@linutronix.de,
+        mingo@elte.hu
+In-Reply-To: <1278626014.2834.74.camel@sbs-t61.sc.intel.com>
+References: <1278626014.2834.74.camel@sbs-t61.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] perf symbols: Fix directory descriptor leaking
-Message-ID: <tip-74534341c1214ac5993904680616afe698dde3b6@git.kernel.org>
-Git-Commit-ID: 74534341c1214ac5993904680616afe698dde3b6
+Subject: [tip:sched/core] sched: Update rq->clock for nohz balanced cpus
+Message-ID: <tip-5343bdb8fd076f16edc9d113a9e35e2a1d1f4966@git.kernel.org>
+Git-Commit-ID: 5343bdb8fd076f16edc9d113a9e35e2a1d1f4966
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 17 Jul 2010 11:11:43 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 17 Jul 2010 11:12:01 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  74534341c1214ac5993904680616afe698dde3b6
-Gitweb:     http://git.kernel.org/tip/74534341c1214ac5993904680616afe698dde3b6
-Author:     Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-AuthorDate: Thu, 24 Jun 2010 15:04:02 +0800
-Committer:  Arnaldo Carvalho de Melo <acme@redhat.com>
-CommitDate: Fri, 16 Jul 2010 14:16:47 -0300
+Commit-ID:  5343bdb8fd076f16edc9d113a9e35e2a1d1f4966
+Gitweb:     http://git.kernel.org/tip/5343bdb8fd076f16edc9d113a9e35e2a1d1f4966
+Author:     Suresh Siddha <suresh.b.siddha@intel.com>
+AuthorDate: Fri, 9 Jul 2010 15:19:54 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Sat, 17 Jul 2010 12:02:08 +0200
 
-perf symbols: Fix directory descriptor leaking
+sched: Update rq->clock for nohz balanced cpus
 
-When I ran "perf kvm ... top", I encountered the following error output.
+Suresh spotted that we don't update the rq->clock in the nohz
+load-balancer path.
 
-  Error: perfcounter syscall returned with -1 (Too many open files)
-
-  Fatal: No CONFIG_PERF_EVENTS=y kernel support configured?
-
-Looking into perf, I found perf opens too many directories at
-initialization time, but forgets to close them. Here is the fix.
-
-LKML-Reference: <4C230362.5080704@cn.fujitsu.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Signed-off-by: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <1278626014.2834.74.camel@sbs-t61.sc.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- tools/perf/util/symbol.c |   17 ++++++++++-------
- 1 files changed, 10 insertions(+), 7 deletions(-)
+ kernel/sched_fair.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index b63e571..5b27683 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1443,6 +1443,7 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
- {
- 	struct dirent *dent;
- 	DIR *dir = opendir(dir_name);
-+	int ret = 0;
- 
- 	if (!dir) {
- 		pr_debug("%s: cannot open %s dir\n", __func__, dir_name);
-@@ -1465,8 +1466,9 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
- 
- 			snprintf(path, sizeof(path), "%s/%s",
- 				 dir_name, dent->d_name);
--			if (map_groups__set_modules_path_dir(self, path) < 0)
--				goto failure;
-+			ret = map_groups__set_modules_path_dir(self, path);
-+			if (ret < 0)
-+				goto out;
- 		} else {
- 			char *dot = strrchr(dent->d_name, '.'),
- 			     dso_name[PATH_MAX];
-@@ -1487,17 +1489,18 @@ static int map_groups__set_modules_path_dir(struct map_groups *self,
- 				 dir_name, dent->d_name);
- 
- 			long_name = strdup(path);
--			if (long_name == NULL)
--				goto failure;
-+			if (long_name == NULL) {
-+				ret = -1;
-+				goto out;
-+			}
- 			dso__set_long_name(map->dso, long_name);
- 			dso__kernel_module_get_build_id(map->dso, "");
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index b4da534..e44a591 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3596,6 +3596,7 @@ static void nohz_idle_balance(int this_cpu, enum cpu_idle_type idle)
  		}
- 	}
  
--	return 0;
--failure:
-+out:
- 	closedir(dir);
--	return -1;
-+	return ret;
- }
+ 		raw_spin_lock_irq(&this_rq->lock);
++		update_rq_clock(this_rq);
+ 		update_cpu_load(this_rq);
+ 		raw_spin_unlock_irq(&this_rq->lock);
  
- static char *get_kernel_version(const char *root_dir)
