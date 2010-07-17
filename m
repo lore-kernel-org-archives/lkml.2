@@ -1,151 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760094Ab0GQRpO (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 13:45:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17225 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760084Ab0GQRpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 13:45:12 -0400
-Date: Sat, 17 Jul 2010 19:43:43 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, Adam Litke <agl@us.ibm.com>,
-        Avi Kivity <avi@redhat.com>, Izik Eidus <ieidus@redhat.com>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
-        Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Christoph Lameter <cl@linux-foundation.org>,
-        Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        "Michael S. Tsirkin" <mst@redhat.com>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-        Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-Subject: Transparent Hugepage Support #28
-Message-ID: <20100717174343.GA5852@random.random>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+	id S1760108Ab0GQRpk (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 13:45:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65154 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760097Ab0GQRpi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 17 Jul 2010 13:45:38 -0400
+Subject: Re: [PATCH 13/15] sound/soc: davinci: check kzalloc() result (typo)
+From: Liam Girdwood <lrg@slimlogic.co.uk>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Peter Ujfalusi <peter.ujfalusi@nokia.com>,
+        Miguel Aguilar <miguel.aguilar@ridgerun.com>,
+        alsa-devel@alsa-project.org, linux-kernel@vger.kernel.org
+In-Reply-To: <1279296977-25267-1-git-send-email-segooon@gmail.com>
+References: <1279296977-25267-1-git-send-email-segooon@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 17 Jul 2010 18:45:33 +0100
+Message-ID: <1279388733.3070.5.camel@odin>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=shortlog
+On Fri, 2010-07-16 at 20:16 +0400, Kulikov Vasiliy wrote:
+> The code checks 'davinci_vc' after kzalloc() and do not checks
+> 'davinci_vcif_dev' that kzalloc() result is assigned to. It seems that
+> it is a typo (autocompletion?).
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> ---
+>  sound/soc/davinci/davinci-vcif.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/sound/soc/davinci/davinci-vcif.c b/sound/soc/davinci/davinci-vcif.c
+> index 9aa980d..4867853 100644
+> --- a/sound/soc/davinci/davinci-vcif.c
+> +++ b/sound/soc/davinci/davinci-vcif.c
+> @@ -203,7 +203,7 @@ static int davinci_vcif_probe(struct platform_device *pdev)
+>  	int ret;
+>  
+>  	davinci_vcif_dev = kzalloc(sizeof(struct davinci_vcif_dev), GFP_KERNEL);
+> -	if (!davinci_vc) {
+> +	if (!davinci_vcif_dev) {
+>  		dev_dbg(&pdev->dev,
+>  			"could not allocate memory for private data\n");
+>  		return -ENOMEM;
 
-first: git clone git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-or first: git clone --reference linux-2.6 git://git.kernel.org/pub/scm/linux/kernel/git/andrea/aa.git
-later: git fetch; git checkout -f origin/master
+13,14 & 15
 
-The tree is rebased and git pull won't work.
+Acked-by: Liam Girdwood <lrg@slimlogic.co.uk>
+-- 
+Freelance Developer, SlimLogic Ltd
+ASoC and Voltage Regulator Maintainer.
+http://www.slimlogic.co.uk
 
-http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35-rc5/transparent_hugepage-28/
-http://www.kernel.org/pub/linux/kernel/people/andrea/patches/v2.6/2.6.35-rc5/transparent_hugepage-28.gz
-
-Diff #27 -> #28:
-
- kvm-huge-spte-wrprotect    |   48 ++++++++
-
-Fix guest corruption with no EPT and no NPT, when THP runs in guest,
-and the same hugepage is mapped by two different huge spte
-wrprotected.
-
- kvm-mmu-notifier-huge-spte |   29 ++++
-
-Fix host corruption when THP runs on host, an off by one error was
-making mmu notifier handler useless for mmu notifier for certain gfn.
-
- mmu_notifier_test_young    |  265 +++++++++++++++++++++++++++++++++++++++++++++
-
-Fix khugepaged young bit check to be reliable (testing pte not enough,
-gup-fast must set SetPageReferenced like gup does, and we need to test
-PageReferenced in addition to the spte young bit on the
-implementations with a young bit set in spte by hardware). Without
-this khugepaged may get not effective as it should in collapsing huge
-pages after a low-memory condition of the VM with KVM (only KVM or
-other mmu notifier users were affected as normally after direct-io
-with gup-fast the main cpu is going to touch the data anyway through
-the pte, but with secondary mmus the primary mmu may never touch the
-data again).
-
-Full diff:
-
- Documentation/vm/transhuge.txt        |  283 ++++
- arch/alpha/include/asm/mman.h         |    2 
- arch/mips/include/asm/mman.h          |    2 
- arch/parisc/include/asm/mman.h        |    2 
- arch/powerpc/mm/gup.c                 |   12 
- arch/x86/include/asm/kvm_host.h       |    1 
- arch/x86/include/asm/paravirt.h       |   23 
- arch/x86/include/asm/paravirt_types.h |    6 
- arch/x86/include/asm/pgtable-2level.h |    9 
- arch/x86/include/asm/pgtable-3level.h |   23 
- arch/x86/include/asm/pgtable.h        |  149 ++
- arch/x86/include/asm/pgtable_64.h     |   28 
- arch/x86/include/asm/pgtable_types.h  |    3 
- arch/x86/kernel/paravirt.c            |    3 
- arch/x86/kernel/vm86_32.c             |    1 
- arch/x86/kvm/mmu.c                    |   68 -
- arch/x86/kvm/paging_tmpl.h            |    6 
- arch/x86/mm/gup.c                     |   28 
- arch/x86/mm/pgtable.c                 |   66 +
- arch/xtensa/include/asm/mman.h        |    2 
- fs/Kconfig                            |    2 
- fs/exec.c                             |   44 
- fs/proc/meminfo.c                     |   14 
- fs/proc/page.c                        |   14 
- include/asm-generic/mman-common.h     |    2 
- include/asm-generic/pgtable.h         |  130 ++
- include/linux/gfp.h                   |   14 
- include/linux/huge_mm.h               |  143 ++
- include/linux/khugepaged.h            |   66 +
- include/linux/ksm.h                   |   20 
- include/linux/kvm_host.h              |    4 
- include/linux/memory_hotplug.h        |   14 
- include/linux/mm.h                    |  114 +
- include/linux/mm_inline.h             |   13 
- include/linux/mm_types.h              |    3 
- include/linux/mmu_notifier.h          |   66 +
- include/linux/mmzone.h                |    1 
- include/linux/page-flags.h            |   36 
- include/linux/res_counter.h           |   12 
- include/linux/rmap.h                  |   33 
- include/linux/sched.h                 |    1 
- include/linux/swap.h                  |    2 
- kernel/fork.c                         |   12 
- kernel/futex.c                        |   55 
- mm/Kconfig                            |   38 
- mm/Makefile                           |    1 
- mm/compaction.c                       |   15 
- mm/huge_memory.c                      | 2184 ++++++++++++++++++++++++++++++++++
- mm/hugetlb.c                          |   69 -
- mm/ksm.c                              |   80 -
- mm/madvise.c                          |    8 
- mm/memcontrol.c                       |  167 +-
- mm/memory-failure.c                   |    2 
- mm/memory.c                           |  241 +++
- mm/memory_hotplug.c                   |   14 
- mm/mempolicy.c                        |   14 
- mm/migrate.c                          |   22 
- mm/mincore.c                          |    7 
- mm/mmap.c                             |   57 
- mm/mmu_notifier.c                     |   20 
- mm/mprotect.c                         |   20 
- mm/mremap.c                           |    8 
- mm/page_alloc.c                       |   31 
- mm/pagewalk.c                         |    1 
- mm/rmap.c                             |  228 ++-
- mm/sparse.c                           |    4 
- mm/swap.c                             |  117 +
- mm/swap_state.c                       |    6 
- mm/swapfile.c                         |    2 
- mm/vmscan.c                           |   56 
- mm/vmstat.c                           |    3 
- virt/kvm/iommu.c                      |    2 
- virt/kvm/kvm_main.c                   |   56 
- 73 files changed, 4507 insertions(+), 498 deletions(-)
