@@ -1,109 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760128Ab0GQTQ6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 15:16:58 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38790 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760106Ab0GQTQ5 (ORCPT
+	id S1760136Ab0GQTgP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 15:36:15 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:39418 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760125Ab0GQTgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 15:16:57 -0400
+	Sat, 17 Jul 2010 15:36:13 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Sat, 17 Jul 2010 21:36:02 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [PATCH 1/4 update] firewire: cdev: some clarifications to the API
+ documentation
+To: linux1394-devel@lists.sourceforge.net
+cc: linux-kernel@vger.kernel.org
+In-Reply-To: <tkrat.38c8fc1ec31d405c@s5r6.in-berlin.de>
+Message-ID: <tkrat.d75b7d36052568dd@s5r6.in-berlin.de>
+References: <tkrat.59dee0979cf9dbb0@s5r6.in-berlin.de>
+ <tkrat.38c8fc1ec31d405c@s5r6.in-berlin.de>
 MIME-Version: 1.0
-In-Reply-To: <4C41FD6E.9090603@superonline.com>
-References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain>
-	<1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk>
-	<alpine.LFD.2.00.1001270738220.24253@localhost.localdomain>
-	<89k77n$ms73l9@fmsmga001.fm.intel.com>
-	<alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
-	<AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
-	<89khjo$fr177d@orsmga002.jf.intel.com>
-	<AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com>
-	<AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
-	<4C2D180C.5050805@superonline.com>
-	<AANLkTiklUBmNYs3710WftVX0Z3QihxFtDlK7tPlHZh8H@mail.gmail.com>
-	<AANLkTilOWu6ZwWjwPfHvNXDhyjb6n4N5KV1rUx6byJmq@mail.gmail.com>
-	<AANLkTilfkCBfZtRQlybQ721PSF4lSlqeOKL3rYnEz2G1@mail.gmail.com>
-	<AANLkTikpw42jE5Eh0EkXuRh70mb9x3njX6R4JNshawe5@mail.gmail.com>
-	<4C41FD6E.9090603@superonline.com>
-Date: Sat, 17 Jul 2010 12:15:54 -0700
-Message-ID: <AANLkTikqSwnLqJXPYGjMP0NS8TJ4D2uOBLDipoV89Qwc@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "M. Vefa Bicakci" <bicave@superonline.com>
-Cc: Dave Airlie <airlied@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
-        earny@net4u.de, Roman Jarosz <kedgedev@gmail.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        jcnengel@googlemail.com, "A. Boulan" <arnaud.boulan@libertysurf.fr>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
-        michael@reinelt.co.at, stable@kernel.org
-Content-Type: multipart/mixed; boundary=000e0cd5198616a7b9048b9a2a7d
+Content-Type: TEXT/PLAIN; CHARSET=us-ascii
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---000e0cd5198616a7b9048b9a2a7d
-Content-Type: text/plain; charset=ISO-8859-1
+Response events:
+  - are generated on more occasions than their documentation claimed.
 
-On Sat, Jul 17, 2010 at 11:58 AM, M. Vefa Bicakci
-<bicave@superonline.com> wrote:
->
-> The kernel with d8e0902806c0bd2ccc4f6a267ff52565a3ec933b reverted
-> was able to hibernate/thaw at least 40 times in one go, while
-> the one with your fix applied was able to hibernate/thaw at most
-> 17 times (in two separate trials) after which it crashed during
-> the next thaw.
+CSR allocation:
+  - An already occupied CSR can be determined from errno==EBUSY.
 
-Ok. I do wonder if the bug is possibly something entirely different,
-and the allocation patterns just happen to expose/hide it. Reverting
-the original commit should be pretty darn close to applying my fix.
-Any remaining issues would seem to be more about the actual bug in the
-original code (racing on changing that mapping->gfp_mask witthout any
-locking) than about anything else.
+Bus resets:
+  - Note that FW_CDEV_IOC_INITIATE_BUS_RESET is nonblocking and that the
+    client is not required to observe a grace period since kernels
+    2.6.36+ will enforce it now (commit 02d37bed).
 
-> Is there anything I can do find out the correct flags to use
-> in addition to GFP_HIGHUSER ? Can I do something like a bisection
-> for the flags one by one starting from the pre 2.6.32.8 state?
-> If you could outline a procedure to do this, I would be glad to
-> follow it.
+  - The possible values of fw_cdev_initiate_bus_reset.type are listed in
+    the kerneldoc comment already.
 
-You can try adding __GFP_RECLAIMABLE | __GFP_NOMEMALLOC to the set of
-flags in i915_gem_object_get_pages(). That's what the old code had
-(and then it played games with NORETRY|NOWARN). I've attached a patch
-(UNTESTED! Maybe it won't compile).
+  - Clarify that an application that uses FW_CDEV_IOC_ADD_DESCRIPTOR and
+    FW_CDEV_IOC_REMOVE_DESCRIPTOR does not have to issue a bus reset.
 
-Now, I don't see why those flags would matter, but NOMEMALLOC in
-particular does make a difference for memory allocation patterns under
-low memory conditions, so maybe it could make a difference.
+Isochronous I/O contexts:
+  - At most one can be created per open file descriptor.
 
-And if it _does_ make a difference, it would be interesting to know
-which of the two flags matter. So try both flags first, and see if
-that gets you something reliable. And if it does, remove one of them
-and try again - just to see _which_ flag it is that the i915 driver
-would care about. That would hopefully give us a hint.
+Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+---
 
-> Sorry to bug you again about this problem because of incomplete
-> testing on my part.
+Update:  Added the occupied CSR == EBUSY sentence.
 
-Oh, never be sorry for testing even more, and testing something nobody
-else bothered to test.
+ include/linux/firewire-cdev.h |   33 +++++++++++++++++++++++++--------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
 
-             Linus
+Index: b/include/linux/firewire-cdev.h
+===================================================================
+--- a/include/linux/firewire-cdev.h
++++ b/include/linux/firewire-cdev.h
+@@ -89,8 +89,9 @@ struct fw_cdev_event_bus_reset {
+ 
+ /**
+  * struct fw_cdev_event_response - Sent when a response packet was received
+- * @closure:	See &fw_cdev_event_common;
+- *		set by %FW_CDEV_IOC_SEND_REQUEST ioctl
++ * @closure:	See &fw_cdev_event_common; set by %FW_CDEV_IOC_SEND_REQUEST
++ *		or %FW_CDEV_IOC_SEND_BROADCAST_REQUEST
++ *		or %FW_CDEV_IOC_SEND_STREAM_PACKET ioctl
+  * @type:	See &fw_cdev_event_common; always %FW_CDEV_EVENT_RESPONSE
+  * @rcode:	Response code returned by the remote node
+  * @length:	Data length, i.e. the response's payload size in bytes
+@@ -100,6 +101,11 @@ struct fw_cdev_event_bus_reset {
+  * sent by %FW_CDEV_IOC_SEND_REQUEST ioctl.  The payload data for responses
+  * carrying data (read and lock responses) follows immediately and can be
+  * accessed through the @data field.
++ *
++ * The event is also generated after conclusions of transactions that do not
++ * involve response packets.  This includes unified write transactions,
++ * broadcast write transactions, and transmission of asynchronous stream
++ * packets.  @rcode indicates success or failure of such transmissions.
+  */
+ struct fw_cdev_event_response {
+ 	__u64 closure;
+@@ -452,7 +458,9 @@ struct fw_cdev_send_response {
+  * range to be used for later deallocation of the range.
+  *
+  * The address range is allocated on all local nodes.  The address allocation
+- * is exclusive except for the FCP command and response registers.
++ * is exclusive except for the FCP command and response registers.  If an
++ * exclusive address region is already in use, the ioctl fails with errno set
++ * to %EBUSY.
+  */
+ struct fw_cdev_allocate {
+ 	__u64 offset;
+@@ -480,9 +488,14 @@ struct fw_cdev_deallocate {
+  * Initiate a bus reset for the bus this device is on.  The bus reset can be
+  * either the original (long) bus reset or the arbitrated (short) bus reset
+  * introduced in 1394a-2000.
++ *
++ * The ioctl returns immediately.  A subsequent &fw_cdev_event_bus_reset
++ * indicates when the reset actually happened.  Since ABI v4, this may be
++ * considerably later than the ioctl because the kernel ensures a grace period
++ * between subsequent bus resets as per IEEE 1394 bus management specification.
+  */
+ struct fw_cdev_initiate_bus_reset {
+-	__u32 type;	/* FW_CDEV_SHORT_RESET or FW_CDEV_LONG_RESET */
++	__u32 type;
+ };
+ 
+ /**
+@@ -506,9 +519,10 @@ struct fw_cdev_initiate_bus_reset {
+  *
+  * @immediate, @key, and @data array elements are CPU-endian quadlets.
+  *
+- * If successful, the kernel adds the descriptor and writes back a handle to the
+- * kernel-side object to be used for later removal of the descriptor block and
+- * immediate key.
++ * If successful, the kernel adds the descriptor and writes back a @handle to
++ * the kernel-side object to be used for later removal of the descriptor block
++ * and immediate key.  The kernel will also generate a bus reset to signal the
++ * change of the configuration ROM to other nodes.
+  *
+  * This ioctl affects the configuration ROMs of all local nodes.
+  * The ioctl only succeeds on device files which represent a local node.
+@@ -527,7 +541,8 @@ struct fw_cdev_add_descriptor {
+  *		descriptor was added
+  *
+  * Remove a descriptor block and accompanying immediate key from the local
+- * nodes' configuration ROMs.
++ * nodes' configuration ROMs.  The kernel will also generate a bus reset to
++ * signal the change of the configuration ROM to other nodes.
+  */
+ struct fw_cdev_remove_descriptor {
+ 	__u32 handle;
+@@ -559,6 +574,8 @@ struct fw_cdev_remove_descriptor {
+  *
+  * Note that the effect of a @header_size > 4 depends on
+  * &fw_cdev_get_info.version, as documented at &fw_cdev_event_iso_interrupt.
++ *
++ * No more than one iso context can be created per fd.
+  */
+ struct fw_cdev_create_iso_context {
+ 	__u32 type;
 
---000e0cd5198616a7b9048b9a2a7d
-Content-Type: application/octet-stream; name=diff
-Content-Disposition: attachment; filename=diff
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_gbqu8fn00
+-- 
+Stefan Richter
+-=====-==-=- -=== =---=
+http://arcgraph.de/sr/
 
-IGRyaXZlcnMvZ3B1L2RybS9pOTE1L2k5MTVfZ2VtLmMgfCAgICAyICsrCiAxIGZpbGVzIGNoYW5n
-ZWQsIDIgaW5zZXJ0aW9ucygrKSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJz
-L2dwdS9kcm0vaTkxNS9pOTE1X2dlbS5jIGIvZHJpdmVycy9ncHUvZHJtL2k5MTUvaTkxNV9nZW0u
-YwppbmRleCAwNzQzODU4Li45ODQ5NmQ0IDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vaTkx
-NS9pOTE1X2dlbS5jCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2k5MTVfZ2VtLmMKQEAgLTIy
-NDEsNiArMjI0MSw4IEBAIGk5MTVfZ2VtX29iamVjdF9nZXRfcGFnZXMoc3RydWN0IGRybV9nZW1f
-b2JqZWN0ICpvYmosCiAJCXBhZ2UgPSByZWFkX2NhY2hlX3BhZ2VfZ2ZwKG1hcHBpbmcsIGksCiAJ
-CQkJCSAgIEdGUF9ISUdIVVNFUiB8CiAJCQkJCSAgIF9fR0ZQX0NPTEQgfAorCQkJCQkgICBfX0dG
-UF9SRUNMQUlNQUJMRSB8CisJCQkJCSAgIF9fR0ZQX05PTUVNQUxMT0MgfAogCQkJCQkgICBnZnBt
-YXNrKTsKIAkJaWYgKElTX0VSUihwYWdlKSkKIAkJCWdvdG8gZXJyX3BhZ2VzOwo=
---000e0cd5198616a7b9048b9a2a7d--
