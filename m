@@ -1,60 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752136Ab0GQEz5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 00:55:57 -0400
-Received: from qmta09.emeryville.ca.mail.comcast.net ([76.96.30.96]:49193 "EHLO
-	qmta09.emeryville.ca.mail.comcast.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751645Ab0GQEzz (ORCPT
+	id S1752399Ab0GQF3G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 01:29:06 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:64440 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751740Ab0GQF3D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 00:55:55 -0400
-Message-ID: <4C4137D9.80003@xyzw.org>
-Date: Fri, 16 Jul 2010 21:55:53 -0700
-From: Brian Rogers <brian@xyzw.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.11) Gecko/20100713 Thunderbird/3.0.6
+	Sat, 17 Jul 2010 01:29:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=n96lFIodlW+C2iMQvhXTckA6z+a4iufov8/ltmLFzboG9exSw0R0VDCM7BCi3lcoXp
+         EDQvGIYnuKIAoLbnY/y8IqsAPK/x6vSLCHmuwGw6EZh75K2fMwUS3A3Gnkeqj48lbq1W
+         bVuYRtuRtvO4xfHC80tCsskxmKEA6nt5b4XDk=
 MIME-Version: 1.0
-To: Chris Mason <chris.mason@oracle.com>,
-        Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org
-Subject: Re: csum errors
-References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <201007152030.18431.johannes.hirte@fem.tu-ilmenau.de> <20100715190309.GI8623@think> <201007152132.13701.johannes.hirte@fem.tu-ilmenau.de> <20100715193551.GM8623@think>
-In-Reply-To: <20100715193551.GM8623@think>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <20100714194905.GA20286@infradead.org>
+References: <AANLkTin1uF6WbVvxJ84oO1NKnCU-6VHrmWU1XFYTlqtp@mail.gmail.com>
+	<20100714194905.GA20286@infradead.org>
+Date: Sat, 17 Jul 2010 07:29:00 +0200
+Message-ID: <AANLkTik2T53BeDl7KWZEixVqXbZ1IajkQlTHBO41Qj2V@mail.gmail.com>
+Subject: Re: BTRFS: Unbelievably slow with kvm/qemu
+From: Giangiacomo Mariotti <gg.mariotti@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by mail.home.local id o6H5TaGG029933
 
-On 07/15/2010 12:35 PM, Chris Mason wrote:
-> On Thu, Jul 15, 2010 at 09:32:12PM +0200, Johannes Hirte wrote:
->    
->> Am Donnerstag 15 Juli 2010, 21:03:09 schrieb Chris Mason:
->>      
->>> On Thu, Jul 15, 2010 at 08:30:17PM +0200, Johannes Hirte wrote:
->>>        
->>>> Am Dienstag 13 Juli 2010, 14:23:58 schrieb Johannes Hirte:
->>>>          
->>>>> ino 1959333 off 898342912 csum 4271223884 private 4271223883
-> Great.   The bad csums are all just one bit off, that can't be an
-> accident.  When were they written (which kernel?).  Did you boot a 32
-> bit kernel on there at any time?
->    
+On Wed, Jul 14, 2010 at 9:49 PM, Christoph Hellwig <hch@infradead.org> wrote:
+> There are a lot of variables when using qemu.
+>
+> The most important one are:
+>
+>  - the cache mode on the device.  The default is cache=writethrough,
+>   which is not quite optimal.  You generally do want to use cache=none
+>   which uses O_DIRECT in qemu.
+>  - if the backing image is sparse or not.
+>  - if you use barrier - both in the host and the guest.
+>
+> Below I have a table comparing raw blockdevices, xfs, btrfs, ext4 and
+> ext3.  For ext3 we also compare the default, unsafe barrier=0 version
+> and the barrier=1 version you should use if you actually care about
+> your data.
+>
+> The comparism is a simple untar of a Linux 2.6.34 tarball, including a
+> sync after it.  We run this with ext3 in the guest, either using the
+> default barrier=0, or for the later tests also using barrier=1.  It
+> is done on an OCZ Vertext SSD, which gets reformatted and fully TRIMed
+> before each test.
+>
+> As you can see you generally do want to use cache=none and every
+> filesystem is about the same speed for that - except that on XFS you
+> also really need preallocation.  What's interesting is how bad btrfs
+> is for the default compared to the others, and that for many filesystems
+> things actually get minimally faster when enabling barriers in the
+> guest.  Things will look very different for barrier heavy guest, I'll
+> do another benchmark for those.
+>
+>                                                        bdev            xfs             btrfs           ext4            ext3            ext3 (barrier)
+>
+> cache=writethrough      nobarrier       sparse          0m27.183s       0m42.552s       2m28.929s       0m33.749s       0m24.975s       0m37.105s
+> cache=writethrough      nobarrier       prealloc        -               0m32.840s       2m28.378s       0m34.233s       -               -
+>
+> cache=none              nobarrier       sparse          0m21.988s       0m49.758s       0m24.819s       0m23.977s       0m22.569s       0m24.938s
+> cache=none              nobarrier       prealloc        -               0m24.464s       0m24.646s       0m24.346s       -               -
+>
+> cache=none              barrier         sparse          0m21.526s       0m41.158s       0m24.403s       0m23.924s       0m23.040s       0m23.272s
+> cache=none              barrier         prealloc        -               0m23.944s       0m24.284s       0m23.981s       -               -
+>
+Very interesting. I haven't had the time to try it again, but now I'm
+gonna try some options about the cache and see what gives me the best
+results.
 
-I've seen this as well, with three files. In all instances, csum == 
-*private + 1. Here are the unique lines from dmesg:
-
-[32700.980806] btrfs csum failed ino 320113 off 55889920 csum 2415136266 
-private 2415136265
-[32735.751112] btrfs csum failed ino 1731630 off 24776704 csum 
-1385284137 private 1385284136
-[32738.777624] btrfs csum failed ino 2495707 off 171790336 csum 
-1385781806 private 1385781805
-
-All three files are from when I first transitioned to btrfs (or more 
-accurately, they are clones of those files I made to hold onto a copy of 
-the corrupted version). Since the vast majority of my disk usage comes 
-from the transition anyway, I can't be sure this is due to a problem 
-only present at that time. I believe I was running 2.6.34 when I copied 
-my files over to my new btrfs partition, but I'm going from memory here.
-
-My btrfs partition has never been touched by a 32-bit kernel.
-
+-- 
+Giangiacomo
+���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
