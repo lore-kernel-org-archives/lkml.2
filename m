@@ -1,56 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760122Ab0GQTEJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 15:04:09 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:52971 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760103Ab0GQTEH (ORCPT
+	id S1760128Ab0GQTQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 15:16:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:38790 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760106Ab0GQTQ5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 15:04:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=TozD/uJPByLwK5+1/pxBZgf8kYKtI6kGAK9eAZsJBJmuRfngw0SvB8c4zTpOg3ZaUY
-         bP+SxYV1vI547p6LGHu3bQw1G7wmj320sRnA6FiAu1eWuF5O9H4RrhbBbtZPx2ljtsK9
-         joYv4mzMypWKuoGyQgiQDBzApNdxNEZqNz728=
+	Sat, 17 Jul 2010 15:16:57 -0400
 MIME-Version: 1.0
-In-Reply-To: <201007142304.48660.rjw@sisk.pl>
-References: <AANLkTikDF0TL6OyPVCzPlUTwxFehcrETn3ysgSSeTq92@mail.gmail.com>
-	<201007142304.48660.rjw@sisk.pl>
-Date: Sat, 17 Jul 2010 21:04:05 +0200
-Message-ID: <AANLkTin5Bj6HEEriLVFDQKptrZHmh698TsnMWHzVYt5H@mail.gmail.com>
-Subject: Re: 2.6.35-rc5 inconsistent lock state
-From: Dan Carpenter <error27.lkml@gmail.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Martin Pirker <lkml.collector@gmail.com>,
-        LKML <linux-kernel@vger.kernel.org>, Jens Axboe <axboe@kernel.dk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Miklos Szeredi <miklos@szeredi.hu>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        Richard Kennedy <richard@rsk.demon.co.uk>, mjg@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <4C41FD6E.9090603@superonline.com>
+References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain>
+	<1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk>
+	<alpine.LFD.2.00.1001270738220.24253@localhost.localdomain>
+	<89k77n$ms73l9@fmsmga001.fm.intel.com>
+	<alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
+	<AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
+	<89khjo$fr177d@orsmga002.jf.intel.com>
+	<AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com>
+	<AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
+	<4C2D180C.5050805@superonline.com>
+	<AANLkTiklUBmNYs3710WftVX0Z3QihxFtDlK7tPlHZh8H@mail.gmail.com>
+	<AANLkTilOWu6ZwWjwPfHvNXDhyjb6n4N5KV1rUx6byJmq@mail.gmail.com>
+	<AANLkTilfkCBfZtRQlybQ721PSF4lSlqeOKL3rYnEz2G1@mail.gmail.com>
+	<AANLkTikpw42jE5Eh0EkXuRh70mb9x3njX6R4JNshawe5@mail.gmail.com>
+	<4C41FD6E.9090603@superonline.com>
+Date: Sat, 17 Jul 2010 12:15:54 -0700
+Message-ID: <AANLkTikqSwnLqJXPYGjMP0NS8TJ4D2uOBLDipoV89Qwc@mail.gmail.com>
+Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "M. Vefa Bicakci" <bicave@superonline.com>
+Cc: Dave Airlie <airlied@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
+        earny@net4u.de, Roman Jarosz <kedgedev@gmail.com>,
+        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+        jcnengel@googlemail.com, "A. Boulan" <arnaud.boulan@libertysurf.fr>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
+        michael@reinelt.co.at, stable@kernel.org
+Content-Type: multipart/mixed; boundary=000e0cd5198616a7b9048b9a2a7d
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is from:
+--000e0cd5198616a7b9048b9a2a7d
+Content-Type: text/plain; charset=ISO-8859-1
 
-commit 31373d09da5b7fe21fe6f781e92bd534a3495f00
-Author: Matthew Garrett <mjg@redhat.com>
-Date:   Tue Apr 6 14:25:14 2010 +0200
+On Sat, Jul 17, 2010 at 11:58 AM, M. Vefa Bicakci
+<bicave@superonline.com> wrote:
+>
+> The kernel with d8e0902806c0bd2ccc4f6a267ff52565a3ec933b reverted
+> was able to hibernate/thaw at least 40 times in one go, while
+> the one with your fix applied was able to hibernate/thaw at most
+> 17 times (in two separate trials) after which it crashed during
+> the next thaw.
 
-    laptop-mode: Make flushes per-device
+Ok. I do wonder if the bug is possibly something entirely different,
+and the allocation patterns just happen to expose/hide it. Reverting
+the original commit should be pretty darn close to applying my fix.
+Any remaining issues would seem to be more about the actual bug in the
+original code (racing on changing that mapping->gfp_mask witthout any
+locking) than about anything else.
 
-    One of the features of laptop-mode is that it forces a writeout of dirty
-    pages if something else triggers a physical read or write from a device.
-    The current implementation flushes pages on all devices, rather than only
-    the one that triggered the flush. This patch alters the behaviour so that
-    only the recently accessed block device is flushed, preventing other
-    disks being spun up for no terribly good reason.
+> Is there anything I can do find out the correct flags to use
+> in addition to GFP_HIGHUSER ? Can I do something like a bisection
+> for the flags one by one starting from the pre 2.6.32.8 state?
+> If you could outline a procedure to do this, I would be glad to
+> follow it.
 
-One way to fix it might be to change all the places that call
-spin_lock(&bdi->wb_lock); to spin_lock_bh(&bdi->wb_lock); but I'm not
-sure that's the right way.
+You can try adding __GFP_RECLAIMABLE | __GFP_NOMEMALLOC to the set of
+flags in i915_gem_object_get_pages(). That's what the old code had
+(and then it played games with NORETRY|NOWARN). I've attached a patch
+(UNTESTED! Maybe it won't compile).
 
-I don't think Matthew Garrett has a bugzilla account?
+Now, I don't see why those flags would matter, but NOMEMALLOC in
+particular does make a difference for memory allocation patterns under
+low memory conditions, so maybe it could make a difference.
+
+And if it _does_ make a difference, it would be interesting to know
+which of the two flags matter. So try both flags first, and see if
+that gets you something reliable. And if it does, remove one of them
+and try again - just to see _which_ flag it is that the i915 driver
+would care about. That would hopefully give us a hint.
+
+> Sorry to bug you again about this problem because of incomplete
+> testing on my part.
+
+Oh, never be sorry for testing even more, and testing something nobody
+else bothered to test.
+
+             Linus
+
+--000e0cd5198616a7b9048b9a2a7d
+Content-Type: application/octet-stream; name=diff
+Content-Disposition: attachment; filename=diff
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_gbqu8fn00
+
+IGRyaXZlcnMvZ3B1L2RybS9pOTE1L2k5MTVfZ2VtLmMgfCAgICAyICsrCiAxIGZpbGVzIGNoYW5n
+ZWQsIDIgaW5zZXJ0aW9ucygrKSwgMCBkZWxldGlvbnMoLSkKCmRpZmYgLS1naXQgYS9kcml2ZXJz
+L2dwdS9kcm0vaTkxNS9pOTE1X2dlbS5jIGIvZHJpdmVycy9ncHUvZHJtL2k5MTUvaTkxNV9nZW0u
+YwppbmRleCAwNzQzODU4Li45ODQ5NmQ0IDEwMDY0NAotLS0gYS9kcml2ZXJzL2dwdS9kcm0vaTkx
+NS9pOTE1X2dlbS5jCisrKyBiL2RyaXZlcnMvZ3B1L2RybS9pOTE1L2k5MTVfZ2VtLmMKQEAgLTIy
+NDEsNiArMjI0MSw4IEBAIGk5MTVfZ2VtX29iamVjdF9nZXRfcGFnZXMoc3RydWN0IGRybV9nZW1f
+b2JqZWN0ICpvYmosCiAJCXBhZ2UgPSByZWFkX2NhY2hlX3BhZ2VfZ2ZwKG1hcHBpbmcsIGksCiAJ
+CQkJCSAgIEdGUF9ISUdIVVNFUiB8CiAJCQkJCSAgIF9fR0ZQX0NPTEQgfAorCQkJCQkgICBfX0dG
+UF9SRUNMQUlNQUJMRSB8CisJCQkJCSAgIF9fR0ZQX05PTUVNQUxMT0MgfAogCQkJCQkgICBnZnBt
+YXNrKTsKIAkJaWYgKElTX0VSUihwYWdlKSkKIAkJCWdvdG8gZXJyX3BhZ2VzOwo=
+--000e0cd5198616a7b9048b9a2a7d--
