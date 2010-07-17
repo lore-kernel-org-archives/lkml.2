@@ -1,53 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936170Ab0GQMMj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 08:12:39 -0400
-Received: from smtp-out-005.synserver.de ([212.40.180.5]:1035 "HELO
+	id S966310Ab0GQMNs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 08:13:48 -0400
+Received: from smtp-out-005.synserver.de ([212.40.180.5]:1073 "HELO
 	smtp-out-003.synserver.de" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with SMTP id S1759882Ab0GQMMh (ORCPT
+	by vger.kernel.org with SMTP id S932200Ab0GQMNr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 08:12:37 -0400
+	Sat, 17 Jul 2010 08:13:47 -0400
 X-SynServer-TrustedSrc: 1
 X-SynServer-AuthUser: lars@laprican.de
-X-SynServer-PPID: 30814
+X-SynServer-PPID: 31910
 From: Lars-Peter Clausen <lars@metafoo.de>
 To: Ralf Baechle <ralf@linux-mips.org>
 Cc: linux-mips@linux-mips.org, linux-kernel@vger.kernel.org,
         Lars-Peter Clausen <lars@metafoo.de>
-Subject: [PATCH v4] MIPS: JZ4740: Add PWM support
-Date: Sat, 17 Jul 2010 14:12:20 +0200
-Message-Id: <1279368740-20850-1-git-send-email-lars@metafoo.de>
+Subject: [PATCH v3] MIPS: JZ4740: Add platform devices
+Date: Sat, 17 Jul 2010 14:13:29 +0200
+Message-Id: <1279368809-21006-1-git-send-email-lars@metafoo.de>
 X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1277688225-25728-1-git-send-email-lars@metafoo.de>
-References: <1277688225-25728-1-git-send-email-lars@metafoo.de>
+In-Reply-To: <1276924111-11158-14-git-send-email-lars@metafoo.de>
+References: <1276924111-11158-14-git-send-email-lars@metafoo.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds support for the PWM part of the timer unit on a JZ4740 SoC.
+This patch adds platform devices for all the JZ4740 platform drivers.
 
 Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
 
 ---
+Changes since v1
+- Add JZ4740 PCM device
+- Add ADC MFD device and remove battery device
+
 Changes since v2
-- Fix handling if the pwm clock is not available
-
-Changes since v3
-- Move pwm subsys_initcall to subsys_initcall
+- Add memory region for NAND bank
 ---
- arch/mips/jz4740/pwm.c |  177 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 177 insertions(+), 0 deletions(-)
- create mode 100644 arch/mips/jz4740/pwm.c
+ arch/mips/include/asm/mach-jz4740/platform.h |   36 ++++
+ arch/mips/jz4740/platform.c                  |  291 ++++++++++++++++++++++++++
+ 2 files changed, 327 insertions(+), 0 deletions(-)
+ create mode 100644 arch/mips/include/asm/mach-jz4740/platform.h
+ create mode 100644 arch/mips/jz4740/platform.c
 
-diff --git a/arch/mips/jz4740/pwm.c b/arch/mips/jz4740/pwm.c
+diff --git a/arch/mips/include/asm/mach-jz4740/platform.h b/arch/mips/include/asm/mach-jz4740/platform.h
 new file mode 100644
-index 0000000..a26a6fa
+index 0000000..8987a76
 --- /dev/null
-+++ b/arch/mips/jz4740/pwm.c
-@@ -0,0 +1,177 @@
++++ b/arch/mips/include/asm/mach-jz4740/platform.h
+@@ -0,0 +1,36 @@
 +/*
-+ *  Copyright (C) 2010, Lars-Peter Clausen <lars@metafoo.de>
-+ *  JZ4740 platform PWM support
++ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 platform device definitions
 + *
 + *  This program is free software; you can redistribute it and/or modify it
 + *  under  the terms of the GNU General  Public License as published by the
@@ -60,168 +63,324 @@ index 0000000..a26a6fa
 + *
 + */
 +
++
++#ifndef __JZ4740_PLATFORM_H
++#define __JZ4740_PLATFORM_H
++
++#include <linux/platform_device.h>
++
++extern struct platform_device jz4740_usb_ohci_device;
++extern struct platform_device jz4740_udc_device;
++extern struct platform_device jz4740_mmc_device;
++extern struct platform_device jz4740_rtc_device;
++extern struct platform_device jz4740_i2c_device;
++extern struct platform_device jz4740_nand_device;
++extern struct platform_device jz4740_framebuffer_device;
++extern struct platform_device jz4740_i2s_device;
++extern struct platform_device jz4740_pcm_device;
++extern struct platform_device jz4740_codec_device;
++extern struct platform_device jz4740_adc_device;
++
++void jz4740_serial_device_register(void);
++
++#endif
+diff --git a/arch/mips/jz4740/platform.c b/arch/mips/jz4740/platform.c
+new file mode 100644
+index 0000000..95bc2b5
+--- /dev/null
++++ b/arch/mips/jz4740/platform.c
+@@ -0,0 +1,291 @@
++/*
++ *  Copyright (C) 2009-2010, Lars-Peter Clausen <lars@metafoo.de>
++ *  JZ4740 platform devices
++ *
++ *  This program is free software; you can redistribute it and/or modify it
++ *  under  the terms of the GNU General  Public License as published by the
++ *  Free Software Foundation;  either version 2 of the License, or (at your
++ *  option) any later version.
++ *
++ *  You should have received a copy of the GNU General Public License along
++ *  with this program; if not, write to the Free Software Foundation, Inc.,
++ *  675 Mass Ave, Cambridge, MA 02139, USA.
++ *
++ */
++
++#include <linux/device.h>
++#include <linux/init.h>
 +#include <linux/kernel.h>
++#include <linux/platform_device.h>
++#include <linux/resource.h>
 +
-+#include <linux/clk.h>
-+#include <linux/err.h>
-+#include <linux/pwm.h>
-+#include <linux/gpio.h>
++#include <linux/dma-mapping.h>
 +
-+#include <asm/mach-jz4740/gpio.h>
-+#include "timer.h"
++#include <asm/mach-jz4740/platform.h>
++#include <asm/mach-jz4740/base.h>
++#include <asm/mach-jz4740/irq.h>
 +
-+static struct clk *jz4740_pwm_clk;
++#include <linux/serial_core.h>
++#include <linux/serial_8250.h>
 +
-+DEFINE_MUTEX(jz4740_pwm_mutex);
++#include "serial.h"
++#include "clock.h"
 +
-+struct pwm_device {
-+	unsigned int id;
-+	unsigned int gpio;
-+	bool used;
++/* OHCI controller */
++static struct resource jz4740_usb_ohci_resources[] = {
++	{
++		.start	= JZ4740_UHC_BASE_ADDR,
++		.end	= JZ4740_UHC_BASE_ADDR + 0x1000 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= JZ4740_IRQ_UHC,
++		.end	= JZ4740_IRQ_UHC,
++		.flags	= IORESOURCE_IRQ,
++	},
 +};
 +
-+static struct pwm_device jz4740_pwm_list[] = {
-+	{ 2, JZ_GPIO_PWM2, false },
-+	{ 3, JZ_GPIO_PWM3, false },
-+	{ 4, JZ_GPIO_PWM4, false },
-+	{ 5, JZ_GPIO_PWM5, false },
-+	{ 6, JZ_GPIO_PWM6, false },
-+	{ 7, JZ_GPIO_PWM7, false },
++struct platform_device jz4740_usb_ohci_device = {
++	.name		= "jz4740-ohci",
++	.id		= -1,
++	.dev = {
++		.dma_mask = &jz4740_usb_ohci_device.dev.coherent_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++	.num_resources	= ARRAY_SIZE(jz4740_usb_ohci_resources),
++	.resource	= jz4740_usb_ohci_resources,
 +};
 +
-+struct pwm_device *pwm_request(int id, const char *label)
-+{
-+	int ret = 0;
-+	struct pwm_device *pwm;
++/* UDC (USB gadget controller) */
++static struct resource jz4740_usb_gdt_resources[] = {
++	{
++		.start	= JZ4740_UDC_BASE_ADDR,
++		.end	= JZ4740_UDC_BASE_ADDR + 0x1000 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= JZ4740_IRQ_UDC,
++		.end	= JZ4740_IRQ_UDC,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
 +
-+	if (id < 2 || id > 7 || !jz4740_pwm_clk)
-+		return ERR_PTR(-ENODEV);
++struct platform_device jz4740_udc_device = {
++	.name		= "jz-udc",
++	.id		= -1,
++	.dev = {
++		.dma_mask = &jz4740_udc_device.dev.coherent_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++	.num_resources	= ARRAY_SIZE(jz4740_usb_gdt_resources),
++	.resource	= jz4740_usb_gdt_resources,
++};
 +
-+	mutex_lock(&jz4740_pwm_mutex);
++/* MMC/SD controller */
++static struct resource jz4740_mmc_resources[] = {
++	{
++		.start	= JZ4740_MSC_BASE_ADDR,
++		.end	= JZ4740_MSC_BASE_ADDR + 0x1000 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= JZ4740_IRQ_MSC,
++		.end	= JZ4740_IRQ_MSC,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
 +
-+	pwm = &jz4740_pwm_list[id - 2];
-+	if (pwm->used)
-+		ret = -EBUSY;
-+	else
-+		pwm->used = true;
++struct platform_device jz4740_mmc_device = {
++	.name		= "jz4740-mmc",
++	.id		= 0,
++	.dev = {
++		.dma_mask = &jz4740_mmc_device.dev.coherent_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++	.num_resources  = ARRAY_SIZE(jz4740_mmc_resources),
++	.resource	= jz4740_mmc_resources,
++};
 +
-+	mutex_unlock(&jz4740_pwm_mutex);
++/* RTC controller */
++static struct resource jz4740_rtc_resources[] = {
++	{
++		.start	= JZ4740_RTC_BASE_ADDR,
++		.end	= JZ4740_RTC_BASE_ADDR + 0x38 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start  = JZ4740_IRQ_RTC,
++		.end	= JZ4740_IRQ_RTC,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
 +
-+	if (ret)
-+		return ERR_PTR(ret);
++struct platform_device jz4740_rtc_device = {
++	.name		= "jz4740-rtc",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(jz4740_rtc_resources),
++	.resource	= jz4740_rtc_resources,
++};
 +
-+	ret = gpio_request(pwm->gpio, label);
++/* I2C controller */
++static struct resource jz4740_i2c_resources[] = {
++	{
++		.start	= JZ4740_I2C_BASE_ADDR,
++		.end	= JZ4740_I2C_BASE_ADDR + 0x1000 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= JZ4740_IRQ_I2C,
++		.end	= JZ4740_IRQ_I2C,
++		.flags	= IORESOURCE_IRQ,
++	}
++};
 +
-+	if (ret) {
-+		printk(KERN_ERR "Failed to request pwm gpio: %d\n", ret);
-+		pwm->used = false;
-+		return ERR_PTR(ret);
++struct platform_device jz4740_i2c_device = {
++	.name		= "jz4740-i2c",
++	.id		= 0,
++	.num_resources  = ARRAY_SIZE(jz4740_i2c_resources),
++	.resource	= jz4740_i2c_resources,
++};
++
++/* NAND controller */
++static struct resource jz4740_nand_resources[] = {
++	{
++		.name	= "mmio",
++		.start	= JZ4740_EMC_BASE_ADDR,
++		.end	= JZ4740_EMC_BASE_ADDR + 0x1000 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.name	= "bank",
++		.start	= 0x18000000,
++		.end	= 0x180C0000 - 1,
++		.flags = IORESOURCE_MEM,
++	},
++};
++
++struct platform_device jz4740_nand_device = {
++	.name = "jz4740-nand",
++	.num_resources = ARRAY_SIZE(jz4740_nand_resources),
++	.resource = jz4740_nand_resources,
++};
++
++/* LCD controller */
++static struct resource jz4740_framebuffer_resources[] = {
++	{
++		.start	= JZ4740_LCD_BASE_ADDR,
++		.end	= JZ4740_LCD_BASE_ADDR + 0x1000 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++struct platform_device jz4740_framebuffer_device = {
++	.name		= "jz4740-fb",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(jz4740_framebuffer_resources),
++	.resource	= jz4740_framebuffer_resources,
++	.dev = {
++		.dma_mask = &jz4740_framebuffer_device.dev.coherent_dma_mask,
++		.coherent_dma_mask = DMA_BIT_MASK(32),
++	},
++};
++
++/* I2S controller */
++static struct resource jz4740_i2s_resources[] = {
++	{
++		.start	= JZ4740_AIC_BASE_ADDR,
++		.end	= JZ4740_AIC_BASE_ADDR + 0x38 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++struct platform_device jz4740_i2s_device = {
++	.name		= "jz4740-i2s",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(jz4740_i2s_resources),
++	.resource	= jz4740_i2s_resources,
++};
++
++/* PCM */
++struct platform_device jz4740_pcm_device = {
++	.name		= "jz4740-pcm",
++	.id		= -1,
++};
++
++/* Codec */
++static struct resource jz4740_codec_resources[] = {
++	{
++		.start	= JZ4740_AIC_BASE_ADDR + 0x80,
++		.end	= JZ4740_AIC_BASE_ADDR + 0x88 - 1,
++		.flags	= IORESOURCE_MEM,
++	},
++};
++
++struct platform_device jz4740_codec_device = {
++	.name		= "jz4740-codec",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(jz4740_codec_resources),
++	.resource	= jz4740_codec_resources,
++};
++
++/* ADC controller */
++static struct resource jz4740_adc_resources[] = {
++	{
++		.start	= JZ4740_SADC_BASE_ADDR,
++		.end	= JZ4740_SADC_BASE_ADDR + 0x30,
++		.flags	= IORESOURCE_MEM,
++	},
++	{
++		.start	= JZ4740_IRQ_SADC,
++		.end	= JZ4740_IRQ_SADC,
++		.flags	= IORESOURCE_IRQ,
++	},
++	{
++		.start	= JZ4740_IRQ_ADC_BASE,
++		.end	= JZ4740_IRQ_ADC_BASE,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++struct platform_device jz4740_adc_device = {
++	.name		= "jz4740-adc",
++	.id		= -1,
++	.num_resources	= ARRAY_SIZE(jz4740_adc_resources),
++	.resource	= jz4740_adc_resources,
++};
++
++/* Serial */
++#define JZ4740_UART_DATA(_id) \
++	{ \
++		.flags = UPF_SKIP_TEST | UPF_IOREMAP | UPF_FIXED_TYPE, \
++		.iotype = UPIO_MEM, \
++		.regshift = 2, \
++		.serial_out = jz4740_serial_out, \
++		.type = PORT_16550, \
++		.mapbase = JZ4740_UART ## _id ## _BASE_ADDR, \
++		.irq = JZ4740_IRQ_UART ## _id, \
 +	}
 +
-+	jz_gpio_set_function(pwm->gpio, JZ_GPIO_FUNC_PWM);
++static struct plat_serial8250_port jz4740_uart_data[] = {
++	JZ4740_UART_DATA(0),
++	JZ4740_UART_DATA(1),
++	{},
++};
 +
-+	jz4740_timer_start(id);
++static struct platform_device jz4740_uart_device = {
++	.name = "serial8250",
++	.id = 0,
++	.dev = {
++		.platform_data = jz4740_uart_data,
++	},
++};
 +
-+	return pwm;
-+}
-+
-+void pwm_free(struct pwm_device *pwm)
++void jz4740_serial_device_register(void)
 +{
-+	pwm_disable(pwm);
-+	jz4740_timer_set_ctrl(pwm->id, 0);
++	struct plat_serial8250_port *p;
 +
-+	jz_gpio_set_function(pwm->gpio, JZ_GPIO_FUNC_NONE);
-+	gpio_free(pwm->gpio);
++	for (p = jz4740_uart_data; p->flags != 0; ++p)
++		p->uartclk = jz4740_clock_bdata.ext_rate;
 +
-+	jz4740_timer_stop(pwm->id);
-+
-+	pwm->used = false;
++	platform_device_register(&jz4740_uart_device);
 +}
-+
-+int pwm_config(struct pwm_device *pwm, int duty_ns, int period_ns)
-+{
-+	unsigned long long tmp;
-+	unsigned long period, duty;
-+	unsigned int prescaler = 0;
-+	unsigned int id = pwm->id;
-+	uint16_t ctrl;
-+	bool is_enabled;
-+
-+	if (duty_ns < 0 || duty_ns > period_ns)
-+		return -EINVAL;
-+
-+	tmp = (unsigned long long)clk_get_rate(jz4740_pwm_clk) * period_ns;
-+	do_div(tmp, 1000000000);
-+	period = tmp;
-+
-+	while (period > 0xffff && prescaler < 6) {
-+		period >>= 2;
-+		++prescaler;
-+	}
-+
-+	if (prescaler == 6)
-+		return -EINVAL;
-+
-+	tmp = (unsigned long long)period * duty_ns;
-+	do_div(tmp, period_ns);
-+	duty = period - tmp;
-+
-+	if (duty >= period)
-+		duty = period - 1;
-+
-+	is_enabled = jz4740_timer_is_enabled(id);
-+	if (is_enabled)
-+		pwm_disable(pwm);
-+
-+	jz4740_timer_set_count(id, 0);
-+	jz4740_timer_set_duty(id, duty);
-+	jz4740_timer_set_period(id, period);
-+
-+	ctrl = JZ_TIMER_CTRL_PRESCALER(prescaler) | JZ_TIMER_CTRL_SRC_EXT |
-+		JZ_TIMER_CTRL_PWM_ABBRUPT_SHUTDOWN;
-+
-+	jz4740_timer_set_ctrl(id, ctrl);
-+
-+	if (is_enabled)
-+		pwm_enable(pwm);
-+
-+	return 0;
-+}
-+
-+int pwm_enable(struct pwm_device *pwm)
-+{
-+	uint32_t ctrl = jz4740_timer_get_ctrl(pwm->id);
-+
-+	ctrl |= JZ_TIMER_CTRL_PWM_ENABLE;
-+	jz4740_timer_set_ctrl(pwm->id, ctrl);
-+	jz4740_timer_enable(pwm->id);
-+
-+	return 0;
-+}
-+
-+void pwm_disable(struct pwm_device *pwm)
-+{
-+	uint32_t ctrl = jz4740_timer_get_ctrl(pwm->id);
-+
-+	ctrl &= ~JZ_TIMER_CTRL_PWM_ENABLE;
-+	jz4740_timer_disable(pwm->id);
-+	jz4740_timer_set_ctrl(pwm->id, ctrl);
-+}
-+
-+static int __init jz4740_pwm_init(void)
-+{
-+	int ret = 0;
-+
-+	jz4740_pwm_clk = clk_get(NULL, "ext");
-+
-+	if (IS_ERR(jz4740_pwm_clk)) {
-+		ret = PTR_ERR(jz4740_pwm_clk);
-+		jz4740_pwm_clk = NULL;
-+	}
-+
-+	return ret;
-+}
-+subsys_initcall(jz4740_pwm_init);
 -- 
 1.5.6.5
 
