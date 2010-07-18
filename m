@@ -1,48 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab0GRJFJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 05:05:09 -0400
-Received: from khc.piap.pl ([195.187.100.11]:55119 "EHLO khc.piap.pl"
+	id S1753718Ab0GRJV6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 05:21:58 -0400
+Received: from THUNK.ORG ([69.25.196.29]:51708 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753436Ab0GRJFG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 05:05:06 -0400
-From: Krzysztof Halasa <khc@pm.waw.pl>
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Randy Dunlap <rdunlap@xenotime.net>, Dimitrios Apostolou <jimis@gmx.net>,
+	id S1753624Ab0GRJVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 05:21:55 -0400
+Date: Sun, 18 Jul 2010 05:21:48 -0400
+From: "Ted Ts'o" <tytso@mit.edu>
+To: Dimitrios Apostolou <jimis@gmx.net>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, Krzysztof Halasa <khc@pm.waw.pl>,
         linux-kernel@vger.kernel.org, Dan Nicolaescu <dann@gnu.org>
 Subject: Re: emacs and "linux" coding style
+Message-ID: <20100718092148.GD4684@thunk.org>
+Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
+	Dimitrios Apostolou <jimis@gmx.net>,
+	Randy Dunlap <rdunlap@xenotime.net>,
+	Krzysztof Halasa <khc@pm.waw.pl>, linux-kernel@vger.kernel.org,
+	Dan Nicolaescu <dann@gnu.org>
 References: <alpine.LNX.2.00.1007131644180.1500@localhost.localdomain>
-	<m3tyny31mo.fsf@intrepid.localdomain>
-	<20100717065146.732f5449.rdunlap@xenotime.net>
-	<20100718071552.GB4684@thunk.org>
-Date: Sun, 18 Jul 2010 11:05:02 +0200
-In-Reply-To: <20100718071552.GB4684@thunk.org> (Ted Ts'o's message of "Sun, 18
-	Jul 2010 03:15:52 -0400")
-Message-ID: <m3zkxpf9dt.fsf@intrepid.localdomain>
+ <m3tyny31mo.fsf@intrepid.localdomain>
+ <20100717065146.732f5449.rdunlap@xenotime.net>
+ <20100718071552.GB4684@thunk.org>
+ <alpine.LNX.2.00.1007181149560.3666@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LNX.2.00.1007181149560.3666@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ted Ts'o <tytso@mit.edu> writes:
+On Sun, Jul 18, 2010 at 12:10:09PM +0300, Dimitrios Apostolou wrote:
+> 
+> FWIW that way will show the parameters unaligned to anyone using a
+> different tab length. There is one way to align such lines properly:
 
-> Actually, what my code use is tabs with a tab stop of 8 followed by
-> enough spaces (< 7) to align function parameters and to align
-> open/close parenthesis in C expression line wrap.
+As Randy said, the One True Tab Stop Length is 8.  I don't think
+that's going to change anytime soon.  You might as well complain that
+things don't look right if you like to use a font with variable width
+characters...
 
-To be honest, I do precisely the same, though I think it's far from
-perfect. It's just emacs which can't do better (or I don't know how to
-make it do better).
-
-> The main problem seems to be that Chapter 9 in
-> Documentation/CodingStyle is written by someone who feels that since
-> vi makes it easy to only align parameters using tabs, that everybody
-> should do it the same way as vi.  I'm simply challenging Chapter 9 as
-> being canon.  I certainly ignore it, and as a maintainer I tend to
-> accept either vi or emacs-style indentations with respect to
-> parameters and C expressions.
-
-Fully agreed.
--- 
-Krzysztof Halasa
+					- Ted
