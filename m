@@ -1,56 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751522Ab0GRH1d (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 03:27:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42476 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab0GRH1c (ORCPT
+	id S1751868Ab0GRHpj (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 03:45:39 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51707 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751075Ab0GRHpi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 03:27:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=GVcZyiEUEayJ18qIE2hmujipSyQ7CaRN7hpeAoixSIn9kEB1G8xq+Uq//5wPqU4fa0
-         KRtvc0whw8YiDtrPzL2b08KRfime+lrJnye3buAVfQ8AKQznT2TGhWaboEcwdshk76f5
-         dD80lwDgEYiW1nIPhV3whTpGUbrjxN6LhekQE=
-Subject: Re: [PATCH 1/6] Mtd: fixed coding style indent errors
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Neal B <nealb001@gmail.com>
-Cc: Artem.Bityutskiy@nokia.com, dwmw2@infradead.org,
-        rmk+kernel@arm.linux.org.uk, cascardo@holoscopio.com,
-        mohanlaljangir@gmail.com, maximlevitsky@gmail.com,
-        Julia Lawall <julia@diku.dk>, jkosina@suse.cz,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <4C3A8220.6040707@gmail.com>
-References: <4C3A8220.6040707@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 18 Jul 2010 10:27:26 +0300
-Message-Id: <1279438046.16247.22.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+	Sun, 18 Jul 2010 03:45:38 -0400
+Date: Sun, 18 Jul 2010 03:45:36 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH 16/16] writeback: prevent unnecessary bdi threads
+ wakeups
+Message-ID: <20100718074536.GA1191@infradead.org>
+References: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
+ <1279284312-2411-17-git-send-email-dedekind1@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279284312-2411-17-git-send-email-dedekind1@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-11 at 21:46 -0500, Neal B wrote:
-> From f4301b9c13f65d173d67759d53acaf3e8d2331c6 Mon Sep 17 00:00:00 2001
-> From: Neal Buckendahl <nealb001@gmail.com>
-> Date: Sun, 11 Jul 2010 16:58:24 -0500
-> Subject: [PATCH 1/6] Mtd: fixed coding style indent errors found by the 
-> checkpatch.pl tool
->   Signed-off-by: Neal Buckendahl <nealb001@gmail.com>
+> +		if (wb_has_dirty_io(wb) && dirty_writeback_interval) {
+> +			unsigned long wait;
+>  
+> -			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
+> -			schedule_timeout(wait_jiffies);
+> +			wait = msecs_to_jiffies(dirty_writeback_interval * 10);
+> +			schedule_timeout(wait);
 
-Unfortunately, your patches are line-wrapped. You should send
-non-wrapped patches. Use git send-email - it can do the trick (use
---dry-run first, check everything is fine, then send).
+No need for a local variable.  If you want to shorten things a bit a
+schedule_timeout_msecs helper in generic code would be nice, as there
+are lots of patterns like this in various kernel threads.
 
-Also, int the commit message, it is a bit better to specify which
-exactly warning it fixes.
+>  void __mark_inode_dirty(struct inode *inode, int flags)
+>  {
+> +	bool wakeup_bdi;
+>  	struct super_block *sb = inode->i_sb;
+> +	struct backing_dev_info *uninitialized_var(bdi);
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Just initialize wakeup_bdi and bdi here - a smart compiler will defer
+them until we need them, and it makes the code a lot easier to read, as
+well as getting rid of the uninitialized_var hack.
+
+>  		 */
+>  		if (!was_dirty) {
+> -			struct bdi_writeback *wb = &inode_to_bdi(inode)->wb;
+> -			struct backing_dev_info *bdi = wb->bdi;
+> +			bdi = inode_to_bdi(inode);
+>  
+>  			WARN(bdi_cap_writeback_dirty(bdi) &&
+>  			     !test_bit(BDI_registered, &bdi->state),
+>  			     "bdi-%s not registered\n", bdi->name);
+>  
+> +			/*
+> +			 * If this is the first dirty inode for this bdi, we
+> +			 * have to wake-up the corresponding bdi thread to make
+> +			 * sure background write-back happens later.
+> +			 */
+> +			if (!wb_has_dirty_io(&bdi->wb) &&
+> +			    bdi_cap_writeback_dirty(bdi))
+> +				wakeup_bdi = true;
+
+How about redoing this as:
+
+			if (bdi_cap_writeback_dirty(bdi)) {
+				WARN(!test_bit(BDI_registered, &bdi->state),
+				     "bdi-%s not registered\n", bdi->name);
+
+				/*
+				 * If this is the first dirty inode for this
+				 * bdi, we have to wake-up the corresponding
+				 * flusher thread to make sure background
+				 * writeback happens later.
+				 */
+				if (!wb_has_dirty_io(&bdi->wb))
+					wakeup_bdi = true;
+			}
+
+> +	if (wakeup_bdi) {
+> +		bool wakeup_default = false;
+> +
+> +		spin_lock(&bdi->wb_lock);
+> +		if (unlikely(!bdi->wb.task))
+> +			wakeup_default = true;
+> +		else
+> +			wake_up_process(bdi->wb.task);
+> +		spin_unlock(&bdi->wb_lock);
+> +
+> +		if (wakeup_default)
+> +			wake_up_process(default_backing_dev_info.wb.task);
+
+Same comment about just keeping wb_lock over the
+default_backing_dev_info wakup as for one of the earlier patches applies
+here.
+
+
+Except for these nitpicks the patch looks good to me.
+
+> diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+> index 65cb88a..818f934 100644
+> --- a/mm/backing-dev.c
+> +++ b/mm/backing-dev.c
+> @@ -326,7 +326,7 @@ static unsigned long bdi_longest_inactive(void)
+>  	unsigned long interval;
+>  
+>  	interval = msecs_to_jiffies(dirty_writeback_interval * 10);
+> -	return max(5UL * 60 * HZ, wait_jiffies);
+> +	return max(5UL * 60 * HZ, interval);
+
+So previously we just ignored interval here? 
 
