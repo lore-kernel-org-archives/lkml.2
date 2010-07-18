@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756211Ab0GROsM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 10:48:12 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:50181 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756007Ab0GROsJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 10:48:09 -0400
-Date: Sun, 18 Jul 2010 16:48:02 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: Michal Schmidt <mschmidt@redhat.com>
-Cc: Borislav Petkov <borislav.petkov@amd.com>,
-        Hans Rosenfeld <hans.rosenfeld@amd.com>, linux-kernel@vger.kernel.org,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Andreas Herrmann <andreas.herrmann3@amd.com>,
-        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/2] x86: fix keeping track of AMD C1E
-Message-ID: <20100718144802.GA6627@fancy-poultry.org>
-References: <909896077.345011279054483129.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
- <95386209.346271279054917131.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
+	id S1756267Ab0GROw6 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 10:52:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27708 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756060Ab0GROwz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 10:52:55 -0400
+Message-ID: <4C431546.9030906@redhat.com>
+Date: Sun, 18 Jul 2010 17:52:54 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <95386209.346271279054917131.JavaMail.root@zmail02.collab.prod.int.phx2.redhat.com>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100619 (GNU/Linux)
-X-Provags-ID: V02:K0:e0ST1lC+0WhpZUN0zvaTX69A+SlpsW447GC3neNvRlL
- YC1w4hDqbY1rTzIB7O+uR+gwEkWBgdn2rRQmHtKfWKnCoIX9hc
- h30a3mCo2dISJyi4vcKh1vgwRO2W+aBtxZxSkruygMzvCrTfnm
- oSFMVgqpfnWbKnGkGJNADEJqhZoiGoAct6d1faImwZbOPQK3QU
- pBKOHBklawsf6tw5m7Eqw==
+To: Zachary Amsden <zamsden@redhat.com>
+CC: KVM <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
+        Glauber Costa <glommer@redhat.com>,
+        Linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 09/18] Robust TSC compensation
+References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-10-git-send-email-zamsden@redhat.com>
+In-Reply-To: <1278987938-23873-10-git-send-email-zamsden@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14.07.2010, Michal Schmidt wrote: 
+On 07/13/2010 05:25 AM, Zachary Amsden wrote:
+> Make the match of TSC find TSC writes that are close to each other
+> instead of perfectly identical; this allows the compensator to also
+> work in migration / suspend scenarios.
+>
+>    
 
-> The chipset is 890FX. Motherboard Asus M4A89TD PRO/USB3.
-> BIOS is the latest version: 0901 (05/17/2010 according to dmidecode)
- 
- > I found another person reporting the same symptoms on
- > GIGABYTE GA-MA770T-UD3P AthlonXII 620 (4 cores) kernel 2.6.33.5
-(Mandriva)
-> (http://www.abclinuxu.cz/poradna/hardware/show/308799, in Czech)
+What scenario exactly?
 
-I have exactly the same problem on my system.
-Gigabyte GA-MA770-UD3 (Rev. 1.0), latest BIOS F9g, Phenom II X4 905e.
+> --- a/arch/x86/kvm/x86.c
+> +++ b/arch/x86/kvm/x86.c
+> @@ -926,21 +926,27 @@ void guest_write_tsc(struct kvm_vcpu *vcpu, u64 data)
+>   	struct kvm *kvm = vcpu->kvm;
+>   	u64 offset, ns, elapsed;
+>   	struct timespec ts;
+> +	s64 sdiff;
+>
+>   	spin_lock(&kvm->arch.tsc_write_lock);
+>   	offset = data - native_read_tsc();
+>   	ns = get_kernel_ns();
+>   	elapsed = ns - kvm->arch.last_tsc_nsec;
+> +	sdiff = data - kvm->arch.last_tsc_write;
+> +	if (sdiff<  0)
+> +		sdiff = -sdiff;
+>
+>   	/*
+> -	 * Special case: identical write to TSC within 5 seconds of
+> +	 * Special case: close write to TSC within 5 seconds of
+>   	 * another CPU is interpreted as an attempt to synchronize
+> -	 * (the 5 seconds is to accomodate host load / swapping).
+> +	 * The 5 seconds is to accomodate host load / swapping as
+> +	 * well as any reset of TSC during the boot process.
+>   	 *
+>   	 * In that case, for a reliable TSC, we can match TSC offsets,
+> -	 * or make a best guest using kernel_ns value.
+> +	 * or make a best guest using elapsed value.
+>   	 */
+> -	if (data == kvm->arch.last_tsc_write&&  elapsed<  5ULL * NSEC_PER_SEC) {
+> +	if (sdiff<  nsec_to_cycles(5ULL * NSEC_PER_SEC)&&
+> +	    elapsed<  5ULL * NSEC_PER_SEC) {
+>   		if (!check_tsc_unstable()) {
+>   			offset = kvm->arch.last_tsc_offset;
+>   			pr_debug("kvm: matched tsc offset for %llu\n", data);
+>    
 
-Will try your patch and report back.
+Don't we have to adjust offset to the required different between tsc?  
+Or do we assume, that if the guest wrote close enough values, it is 
+trying to cleverly compensate for IPI latency?
 
-
+-- 
+error compiling committee.c: too many arguments to function
 
