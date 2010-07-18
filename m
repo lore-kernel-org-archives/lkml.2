@@ -1,63 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab0GRONW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 10:13:22 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58708 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755214Ab0GRONU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 10:13:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=nvG1QHPzCs2cKSPRvX2iRmkALZBVGAO84wHZCAxD5dbBrvHaK+HTXj4TvL2ZhXrvro
-         gTlZ2mbmXpfi9/CYoEhM1mo+hJUifHWaSdjyjFKa9WCTFvQxMwZdhSArOpBGaAgWKRRO
-         Kkpxtxsrn0M6uSA0JezSMYJB+D9e5FO0jqdHc=
-Date: Sun, 18 Jul 2010 23:13:10 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Kyungmin Park <kmpark@infradead.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Kukjin Kim <kgene.kim@samsung.com>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v2
-Message-ID: <20100718141240.GA30402@barrios-desktop>
-References: <1279448311-29788-1-git-send-email-minchan.kim@gmail.com>
- <AANLkTilQf-43GMAIDa-MKmcB2afdVgkERMg0b5mhIbhE@mail.gmail.com>
+	id S1755477Ab0GROSQ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 10:18:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:56726 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755240Ab0GROSN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 10:18:13 -0400
+Message-ID: <4C430D1C.3060203@redhat.com>
+Date: Sun, 18 Jul 2010 17:18:04 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilQf-43GMAIDa-MKmcB2afdVgkERMg0b5mhIbhE@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Lai Jiangshan <laijs@cn.fujitsu.com>, Nick Piggin <npiggin@suse.de>
+CC: LKML <linux-kernel@vger.kernel.org>, kvm@vger.kernel.org,
+        Marcelo Tosatti <mtosatti@redhat.com>
+Subject: Re: [PATCH 6/6] kvm, faster and simpler version of get_user_page_and_protection()
+References: <4C3FC03A.9040504@cn.fujitsu.com>
+In-Reply-To: <4C3FC03A.9040504@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kyoungmin, 
+On 07/16/2010 05:13 AM, Lai Jiangshan wrote:
+> a light weight version of get_user_page_and_protection()
+>
+>
+> @@ -375,3 +374,83 @@ slow_irqon:
+>   		return ret;
+>   	}
+>   }
+> +
+> +/*
+> + * get a current mapped page fast, and test whether the page is writable.
+> + * equivalent version(but slower):
+> + * {
+> + *	struct page *page[1];
+> + *
+> + *	if (__get_user_pages_fast(addr, 1, 1, page) == 1) {
+> + *		*writable = 1;
+> + *		return page[0];
+> + *	}
+> + *	if (__get_user_pages_fast(addr, 1, 0, page) == 1) {
+> + *		*writable = 0;
+> + *		return page[0];
+> + *	}
+> + *	return NULL;
+> + * }
+> + */
+> +struct page *get_user_page_and_protection(unsigned long addr, int *writable)
+> +{
+>
+>    
 
-On Sun, Jul 18, 2010 at 08:53:25PM +0900, Kyungmin Park wrote:
-> Hi Minchan,
-> 
-> Please see the OneDRAM spec. it's OneDRAM memory usage.
-> Actually memory size is 80MiB + 16MiB at AP side and it's used 80MiB
-> for dedicated AP.
-> The shared 16MiB used between AP and CP. So we also use the 16MiB.
+<snip lots of code>
 
-It's not only s5pv210 but general problem of memmap hole 
-on ARM's sparsemem. 
+> +}
+> +EXPORT_SYMBOL_GPL(get_user_page_and_protection);
+> +
+>    
 
-It doesn't matter with 16M or 80M. 
-The thing is that section size is greater than physical memory's groups.
+This a duplication of __get_user_pages_fast(), no?
 
-Current sparsemen aren't designed to have memmap hole but ARM makes holes
-to save memory space. So we should solve it by not SECTION_SIZE but more 
-fundamental solution.
+I think a better way is to have a __get_user_pages_ptes(..., struct page 
+*pages, pte_t *ptes, ...), and write __get_user_pages_fast() in terms of 
+that.  There's lots of useful info from the pte we can use:
 
-I think this patch suggests it.
+- writeable bit (used here)
+- page size (we can stick it in some user bits, speeds up 
+host_mapping_level())
+- dirty bit (if set, we can set it for speculative sptes and save the 
+CPU a RMW)
+- page attribute (for device assignment, when snooping is not available)
+
+Nick, is __get_user_pages_ptes() fine with you?
+
 -- 
-Kind regards,
-Minchan Kim
+error compiling committee.c: too many arguments to function
+
