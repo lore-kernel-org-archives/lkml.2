@@ -1,58 +1,213 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753930Ab0GRJnP (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 05:43:15 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43738 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753700Ab0GRJnO (ORCPT
+	id S1753969Ab0GRJp3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 05:45:29 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:59246 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753700Ab0GRJp1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 05:43:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Zb6PoQ6FGJPBIzhwngs648tZC4BJ3x2tbr79ualzvNdRCWVF8ZIafpb3jtP2uzDdOf
-         Oi5qhsNpZPc8MRRpOEvQiZy8rtrJj+l7HK01Eu+dLMrHSxZARV2VPHaoAZR/0Mu82iP9
-         jAdGIXWw0GxyJJ+iSOadU/BVR06x35XrBZlJ4=
-Subject: Re: [RFC][PATCH 01/16] writeback: do not self-wakeup
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100718064435.GA23811@infradead.org>
-References: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
-	 <1279284312-2411-2-git-send-email-dedekind1@gmail.com>
-	 <20100718064435.GA23811@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 18 Jul 2010 12:43:09 +0300
-Message-Id: <1279446189.16247.49.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 8bit
+	Sun, 18 Jul 2010 05:45:27 -0400
+Message-ID: <4C42CD52.3070601@vflare.org>
+Date: Sun, 18 Jul 2010 15:15:54 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc13 Thunderbird/3.1
+MIME-Version: 1.0
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/8] Basic zcache functionality
+References: <1279283870-18549-1-git-send-email-ngupta@vflare.org> <1279283870-18549-3-git-send-email-ngupta@vflare.org> <4C42B7EA.4020409@cs.helsinki.fi>
+In-Reply-To: <4C42B7EA.4020409@cs.helsinki.fi>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-18 at 02:44 -0400, Christoph Hellwig wrote:
-> On Fri, Jul 16, 2010 at 03:44:57PM +0300, Artem Bityutskiy wrote:
-> > From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> > 
-> > The bdi forker thread wakes up itself via 'bdi_add_to_pending()'.
-> > And the thread is the only user of 'bdi_add_to_pending()'. Thus,
-> > we can safely zap the unneeded 'wake_up_process()' call.
+
+On 07/18/2010 01:44 PM, Pekka Enberg wrote:
+> Nitin Gupta wrote:
+>> +/*
+>> + * Individual percpu values can go negative but the sum across all CPUs
+>> + * must always be positive (we store various counts). So, return sum as
+>> + * unsigned value.
+>> + */
+>> +static u64 zcache_get_stat(struct zcache_pool *zpool,
+>> +        enum zcache_pool_stats_index idx)
+>> +{
+>> +    int cpu;
+>> +    s64 val = 0;
+>> +
+>> +    for_each_possible_cpu(cpu) {
+>> +        unsigned int start;
+>> +        struct zcache_pool_stats_cpu *stats;
+>> +
+>> +        stats = per_cpu_ptr(zpool->stats, cpu);
+>> +        do {
+>> +            start = u64_stats_fetch_begin(&stats->syncp);
+>> +            val += stats->count[idx];
+>> +        } while (u64_stats_fetch_retry(&stats->syncp, start));
 > 
-> At least right now it's called using call_rcu, which offloads the function
-> to a RCU thread of some sorts.
+> Can we use 'struct percpu_counter' for this? OTOH, the warning on top of include/linux/percpu_counter.h makes me think not.
+>
 
-Christoph, thanks for your review. I'll amend my series and re-send. And
-I also have to think about some of your suggestions.
+Yes, that warning only scared me :)
 
-I did not CC you to spam your mailbox less, since I'm sure you would not
-miss the series in the fsdevel ML. But if you prefer being CCed, let me
-know.
+ 
+>> +    }
+>> +
+>> +    BUG_ON(val < 0);
+> 
+> BUG_ON() seems overly aggressive. How about
+> 
+>   if (WARN_ON(val < 0))
+>           return 0;
+> 
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Yes, this sounds better. I will change it.
 
+
+>> +    return val;
+>> +}
+>> +
+>> +static void zcache_add_stat(struct zcache_pool *zpool,
+>> +        enum zcache_pool_stats_index idx, s64 val)
+>> +{
+>> +    struct zcache_pool_stats_cpu *stats;
+>> +
+>> +    preempt_disable();
+>> +    stats = __this_cpu_ptr(zpool->stats);
+>> +    u64_stats_update_begin(&stats->syncp);
+>> +    stats->count[idx] += val;
+>> +    u64_stats_update_end(&stats->syncp);
+>> +    preempt_enable();
+> 
+> What is the preempt_disable/preempt_enable trying to do here?
+>
+
+On 32-bit there will be no seqlock to protect this value. So, if we
+get preempted after __this_cpu_ptr(), two CPUs can end up racy-writing
+to the same variable. I think for the same reason this_cpu_add() finally
+does increment with preempt disabled.
+
+Also, I think we shouldn't use this_cpu_add (as you suggested in
+another mail) since we have to do this_cpu_ptr() first to get access
+to seqlock (stats->syncp) anyways. So, simple increment on thus
+obtained pcpu pointer should be okay.
+
+ 
+>> +static void zcache_destroy_pool(struct zcache_pool *zpool)
+>> +{
+>> +    int i;
+>> +
+>> +    if (!zpool)
+>> +        return;
+>> +
+>> +    spin_lock(&zcache->pool_lock);
+>> +    zcache->num_pools--;
+>> +    for (i = 0; i < MAX_ZCACHE_POOLS; i++)
+>> +        if (zcache->pools[i] == zpool)
+>> +            break;
+>> +    zcache->pools[i] = NULL;
+>> +    spin_unlock(&zcache->pool_lock);
+>> +
+>> +    if (!RB_EMPTY_ROOT(&zpool->inode_tree)) {
+> 
+> Use WARN_ON here to get a stack trace?
+>
+
+This sounds better, will change it.
+
+ 
+>> +        pr_warn("Memory leak detected. Freeing non-empty pool!\n");
+>> +        zcache_dump_stats(zpool);
+>> +    }
+>> +
+>> +    free_percpu(zpool->stats);
+>> +    kfree(zpool);
+>> +}
+>> +
+>> +/*
+>> + * Allocate a new zcache pool and set default memlimit.
+>> + *
+>> + * Returns pool_id on success, negative error code otherwise.
+>> + */
+>> +int zcache_create_pool(void)
+>> +{
+>> +    int ret;
+>> +    u64 memlimit;
+>> +    struct zcache_pool *zpool = NULL;
+>> +
+>> +    spin_lock(&zcache->pool_lock);
+>> +    if (zcache->num_pools == MAX_ZCACHE_POOLS) {
+>> +        spin_unlock(&zcache->pool_lock);
+>> +        pr_info("Cannot create new pool (limit: %u)\n",
+>> +                    MAX_ZCACHE_POOLS);
+>> +        ret = -EPERM;
+>> +        goto out;
+>> +    }
+>> +    zcache->num_pools++;
+>> +    spin_unlock(&zcache->pool_lock);
+>> +
+>> +    zpool = kzalloc(sizeof(*zpool), GFP_KERNEL);
+>> +    if (!zpool) {
+>> +        spin_lock(&zcache->pool_lock);
+>> +        zcache->num_pools--;
+>> +        spin_unlock(&zcache->pool_lock);
+>> +        ret = -ENOMEM;
+>> +        goto out;
+>> +    }
+> 
+> Why not kmalloc() an new struct zcache_pool object first and then take zcache->pool_lock() and check for MAX_ZCACHE_POOLS? That should make the locking little less confusing here.
+> 
+
+kmalloc() before this check should be better. This also avoids unnecessary
+num_pools decrement later if kmalloc fails.
+
+
+>> +
+>> +    src_data = kmap_atomic(page, KM_USER0);
+>> +    dest_data = kmap_atomic(zpage, KM_USER1);
+>> +    memcpy(dest_data, src_data, PAGE_SIZE);
+>> +    kunmap_atomic(src_data, KM_USER0);
+>> +    kunmap_atomic(dest_data, KM_USER1);
+> 
+> copy_highpage()
+>
+
+Ok. But we will again have to open-code this memcpy() when we start using
+xvmalloc (patch 7/8). Same applies to another instance you pointed out.
+ 
+
+>> +static int zcache_get_page(int pool_id, ino_t inode_no,
+>> +            pgoff_t index, struct page *page)
+>> +{
+>> +    int ret = -1;
+>> +    unsigned long flags;
+>> +    struct page *src_page;
+>> +    void *src_data, *dest_data;
+>> +    struct zcache_inode_rb *znode;
+>> +    struct zcache_pool *zpool = zcache->pools[pool_id];
+>> +
+>> +    znode = zcache_find_inode(zpool, inode_no);
+>> +    if (!znode)
+>> +        goto out;
+>> +
+>> +    BUG_ON(znode->inode_no != inode_no);
+> 
+> Maybe use WARN_ON here and return -1?
+>
+
+okay.
+
+
+Thanks for the review.
+Nitin
