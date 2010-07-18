@@ -1,45 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757231Ab0GRThl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 15:37:41 -0400
-Received: from arkanian.console-pimps.org ([212.110.184.194]:41063 "EHLO
+	id S1757248Ab0GRUGN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 16:06:13 -0400
+Received: from arkanian.console-pimps.org ([212.110.184.194]:39268 "EHLO
 	arkanian.console-pimps.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757153Ab0GRThk (ORCPT
+	by vger.kernel.org with ESMTP id S1757209Ab0GRUGN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 15:37:40 -0400
+	Sun, 18 Jul 2010 16:06:13 -0400
 From: Matt Fleming <matt@console-pimps.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>, Will Deacon <will.deacon@arm.com>,
-        paulus <paulus@samba.org>, stephane eranian <eranian@googlemail.com>,
-        Robert Richter <robert.richter@amd.com>,
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Gui Jianfeng <guijianfeng@cn.fujitsu.com>,
+        Yanmin Zhang <yanmin_zhang@linux.intel.com>, mingo@elte.hu,
+        linux kernel mailing list <linux-kernel@vger.kernel.org>,
         Paul Mundt <lethal@linux-sh.org>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Cyrill Gorcunov <gorcunov@gmail.com>, Lin Ming <ming.m.lin@intel.com>,
-        Yanmin <yanmin_zhang@linux.intel.com>,
-        Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-        David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 00/11] perf pmu interface -v2
-In-Reply-To: <20100708111936.GA5926@elte.hu>
-References: <20100624142804.431553874@chello.nl> <1277464288.26786.3.camel@e102144-lin.cambridge.arm.com> <1277464589.32034.276.camel@twins> <1277476604.24751.8.camel@e102144-lin.cambridge.arm.com> <1277477401.32034.670.camel@twins> <1277994970.1917.184.camel@laptop> <1277996555.1917.205.camel@laptop> <20100701153112.GA13511@console-pimps.org> <1277998793.1917.212.camel@laptop> <1278587622.1900.79.camel@laptop> <20100708111936.GA5926@elte.hu>
+        Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 2/3] perf: Remove dead code in buildin-record.c
+In-Reply-To: <87pqzd3jx5.fsf@linux-g6p1.site>
+References: <4C241140.9090008@cn.fujitsu.com> <4C24119B.60200@cn.fujitsu.com>  <20100625131356.GB4078@ghostprotocols.net> <1277477285.32034.666.camel@twins> <87pqzd3jx5.fsf@linux-g6p1.site>
 User-Agent: Notmuch/0.3.1-61-g3f63bb6 (http://notmuchmail.org) Emacs/23.1.90.2 (x86_64-unknown-linux-gnu)
-Date: Sun, 18 Jul 2010 20:37:39 +0100
-Message-ID: <87k4oszim4.fsf@linux-g6p1.site>
+Date: Sun, 18 Jul 2010 21:06:11 +0100
+Message-ID: <87hbjwzhak.fsf@linux-g6p1.site>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 8 Jul 2010 13:19:36 +0200, Ingo Molnar <mingo@elte.hu> wrote:
+On Sat, 26 Jun 2010 16:14:46 +0100, Matt Fleming <matt@console-pimps.org> wrote:
+> On Fri, 25 Jun 2010 16:48:05 +0200, Peter Zijlstra <peterz@infradead.org> wrote:
+> > 
+> > Ah, yes, it would be nice for SH (which doesn't have a PMI) to couple a
+> > software timer with their hardware counter to get samples.
+> > 
+> > Never got around to actually implementing that though, maybe Paul has a
+> > minion interested in making that work?
 > 
-> And if the platform code implements this then the tooling side already takes 
-> care of it - even if the CPU itself cannot geneate interrupts based on say 
-> cachemisses or branches (but can measure them via counts).
+> I'll take a look at it.
 
-I finally got a bit of time to work on this. I'm confused about how the
-tools will take care of this at the moment. How much support currently
-exists for these sorts of weighted samples? The only thing I can find
-that looks related is PERF_SAMPLE_READ, but I don't think that's exactly
-what we need.
+How does the 'group_fd' parameter relate to the lack of PMI? Is the idea
+to have one hrtimer that, when it fires, we sample all the counters? So
+the first counter to be created is the group leader, which starts the
+hrtimer, and all other counters are linked to this one? I had a go at
+using a hrtimer per counter (minus any weighting of samples) and it
+worked OK and seemed sensible given that we may want to sample counters
+at different frequencies.
 
-Could someone point me in the right direction?
+Is this what you had in mind with the 'group_fd' paramter, Peter? That
+there'd be only one hrtimer?
