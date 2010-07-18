@@ -1,94 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756898Ab0GRSSO (ORCPT <rfc822;w@1wt.eu>);
+	id S1756914Ab0GRSSR (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 14:18:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:48910 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756899Ab0GRSSO convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sun, 18 Jul 2010 14:18:14 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:25788 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756864Ab0GRSSM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 14:18:12 -0400
-X-SpamScore: -26
-X-BigFish: VPS-26(zz1432N98dN936eMzz1202hzz15d4Rz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L5RMTV-02-4EF-02
-X-M-MSG: 
-Date: Sun, 18 Jul 2010 20:17:36 +0200
-From: Borislav Petkov <borislav.petkov@amd.com>
-To: Heinz Diehl <htd@fancy-poultry.org>
-CC: Michal Schmidt <mschmidt@redhat.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Herrmann3, Andreas" <Andreas.Herrmann3@amd.com>,
-        Shaohua Li <shaohua.li@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>
-Subject: Re: [PATCH 1/2] x86: fix keeping track of AMD C1E
-Message-ID: <20100718181736.GA10886@aftab>
-References: <20100713185816.2866.17837.stgit@localhost.localdomain>
- <20100713185957.2866.50995.stgit@localhost.localdomain>
- <20100714160704.GA10473@kryptos.osrc.amd.com>
- <20100714232201.00433aa9@hammerfall>
- <20100714233102.0f64614b@hammerfall>
- <20100718162239.GA21151@fancy-poultry.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100718162239.GA21151@fancy-poultry.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+In-Reply-To: <AANLkTin1noI6IUfuQsbAgVVzj2rSOhm-Cx3WpsMBgdJ6@mail.gmail.com>
+References: <20100714154923.947138065@efficios.com>
+	<20100714155804.049012415@efficios.com>
+	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	<20100714170617.GB4955@Krystal>
+	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	<20100714203940.GC22096@Krystal>
+	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
+	<20100714222115.GA30122@Krystal>
+	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
+	<AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
+	<4C42DF9A.5090908@redhat.com>
+	<AANLkTin1noI6IUfuQsbAgVVzj2rSOhm-Cx3WpsMBgdJ6@mail.gmail.com>
+Date: Sun, 18 Jul 2010 11:17:32 -0700
+Message-ID: <AANLkTildediWa_vkY76mLWoAjgdaEgIbWP0DsKu3Ujap@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Avi Kivity <avi@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Heinz Diehl <htd@fancy-poultry.org>
-Date: Sun, Jul 18, 2010 at 12:22:39PM -0400
+On Sun, Jul 18, 2010 at 10:36 AM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
+>
+> Lookie here, the %rsp comparison really isn't that hard:
 
-> On 15.07.2010, Michal Schmidt wrote: 
-> 
-> > This suggests that another way to fix my problem would be this (tested):
-> [....]
-> 
-> Did apply this patch to stock 2.6.35-rc5, it does _not_ fix my C1E problem.
-> It takes a lot of key pressing in the boot process to get the system up,
-> just as it has been before.
+A few notes on that (still) untested code suggestion:
 
-Well, no wonder it wouldn't work - you seem to have that funny Gigabyte
-BIOS which botches lapic and ioapic id enumeration and obviously
-enabling C1E in the SMI handler (excerpt from your dmesg):
+>  nmi:
+>      pushq %rax
+>      pushq %rdx
+>      movq %rsp,%rdx          # current stack top
+>      movq 40(%rsp),%rax   # old stack top
+>      xor %rax,%rdx              # same 8kB aligned area?
+>      shrq $13,%rdx             # ignore low 13 bits
+>      je it_is_a_nested_nmi   # looks nested..
+>  non_nested:
+>      ...
+>      ... ok, we're not nested, do normal NMI handling ...
+>      ...
 
-ACPI: LAPIC (acpi_id[0x00] lapic_id[0x00] enabled)
-ACPI: LAPIC (acpi_id[0x01] lapic_id[0x01] enabled)
-ACPI: LAPIC (acpi_id[0x02] lapic_id[0x02] enabled)
-ACPI: LAPIC (acpi_id[0x03] lapic_id[0x03] enabled)
-ACPI: LAPIC (acpi_id[0x04] lapic_id[0x04] disabled)
-ACPI: LAPIC (acpi_id[0x05] lapic_id[0x05] disabled)
-ACPI: LAPIC (acpi_id[0x06] lapic_id[0x06] disabled)
-ACPI: LAPIC (acpi_id[0x07] lapic_id[0x07] disabled)
-ACPI: LAPIC_NMI (acpi_id[0x00] dfl dfl lint[0x1])
-ACPI: LAPIC_NMI (acpi_id[0x01] dfl dfl lint[0x1])
-ACPI: LAPIC_NMI (acpi_id[0x02] dfl dfl lint[0x1])
-ACPI: LAPIC_NMI (acpi_id[0x03] dfl dfl lint[0x1])
-ACPI: LAPIC_NMI (acpi_id[0x04] dfl dfl lint[0x1])
-ACPI: LAPIC_NMI (acpi_id[0x05] dfl dfl lint[0x1])
-ACPI: LAPIC_NMI (acpi_id[0x06] dfl dfl lint[0x1])
-ACPI: LAPIC_NMI (acpi_id[0x07] dfl dfl lint[0x1])
-ACPI: IOAPIC (id[0x02] address[0xfec00000] gsi_base[0])
-IOAPIC[0]: apic_id 2, version 33, address 0xfec00000, GSI 0-23
+The non_nested case still needs to start off with moving it's stack
+frame to a safe area that won't be overwritten by any nesting NMI's
+(note that they cannot nest at this point, since we've done nothing
+that can fault). So we'd still need that
 
-See how the IOAPIC's and the third LAPIC's ids are the same?
-That's wrong. There are couple people with the same problem:
-https://bugzilla.kernel.org/show_bug.cgi?id=15289. And as comment #53
-says, we're trying to talk to Gigabyte to fix this and the C1E problem.
-For now, you can disable C1E in the BIOS, use "idle=mwait" and put
-yourself on the CC list of that bug. Sorry, I wish I could give you
-better news.
+    7* pushq 48(%rsp)
 
--- 
-Regards/Gruss,
-Boris.
+which copies the five words that got pushed by hardware, and the two
+register-save locations that we used for the nesting check and special
+return.
 
-Advanced Micro Devices GmbH
-Einsteinring 24, 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Gemeinde Aschheim, Landkreis Muenchen
-Registergericht Muenchen, HRB Nr. 43632
+After we've done those 7 pushes, we can then run code that may take a
+fault. Because when the fault returns with an "iret" and re-enables
+NMI's, our nesting code is ready.
 
+So all told, we need a maximum of about 216 bytes of stack for the
+nested NMI case: 56 bytes for the seven copied words, and the 160
+bytes that we build up _under_ the stack pointer for the nested case.
+And we need the NMI stack itself to be aligned in order for that
+"ignore low bits" check to work. Although we don't actually have to do
+that "xor+shr", we could do the test equally well with a "sub+unsigned
+compare against stack size".
+
+Other than that, I think the extra test that we're really nested might
+better be done differently:
+
+>  it_is_a_nested_nmi:
+>      cmpw $0,48(%rsp)     # double-check that it really was a nested exception
+>      jne non_nested           # from user space or something..
+>      # this is the nested case
+
+It migth be safer to check the saved CS rather than the saved SS on
+the stack to see that we really are in kernel mode. It's possible that
+somebody could load a NULL SS in user mode and then just not use the
+stack - and try to make it look like they are in kernel mode for when
+the NMI happens. Now, I _think_ that loading a zero SS is supposed to
+trap, but checking CS is still likely to be the better test for "were
+we in kernel mode". That's where the CPL is really encoded, after all.
+
+So that "cmpw $0,48(%rsp)" is probably ok, but it would likely be
+better to do it as
+
+   testl $3,24(%rsp)
+   jne non_nested
+
+instead. That's what entry_64.S does everywhere else.
+
+Oh, and the non-nested case obviously needs all the regular "make the
+kernel state look right" code. Like the swapgs stuff etc if required.
+My example code was really meant to just document the nesting
+handling, not the existing stuff we already need to do with
+save_paranoid etc.
+
+And I really think it should work, but I'd again like to stress that
+it's just a RFD code sequence with no testing what-so-ever etc.
+
+                      Linus
