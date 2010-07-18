@@ -1,67 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756746Ab0GRRAQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 13:00:16 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49676 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756685Ab0GRRAO (ORCPT
+	id S1756763Ab0GRRCp (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 13:02:45 -0400
+Received: from mailhost.informatik.uni-hamburg.de ([134.100.9.70]:41913 "EHLO
+	mailhost.informatik.uni-hamburg.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756669Ab0GRRCo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 13:00:14 -0400
+	Sun, 18 Jul 2010 13:02:44 -0400
+Message-ID: <4C43338E.7030706@metafoo.de>
+Date: Sun, 18 Jul 2010 19:02:06 +0200
+From: Lars-Peter Clausen <lars@metafoo.de>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100329)
 MIME-Version: 1.0
-In-Reply-To: <4C430F52.7040400@superonline.com>
-References: <alpine.LFD.2.00.1001270327580.24253@localhost.localdomain>
-	<1264605932-8540-1-git-send-email-chris@chris-wilson.co.uk>
-	<alpine.LFD.2.00.1001270738220.24253@localhost.localdomain>
-	<89k77n$ms73l9@fmsmga001.fm.intel.com>
-	<alpine.LFD.2.00.1001270917120.24253@localhost.localdomain>
-	<AANLkTilpK6FfgbgVf4e7jJSvVwVDVLfrxIy3WmgliuLK@mail.gmail.com>
-	<89khjo$fr177d@orsmga002.jf.intel.com>
-	<AANLkTilwmuXlNYhlFkmpYHSmegPy3ws4x-YRFwkbk8Xm@mail.gmail.com>
-	<AANLkTinLB5YtqsnFwWrP37i3Ucr4fOaQzVuDLnyWBRGQ@mail.gmail.com>
-	<4C2D180C.5050805@superonline.com>
-	<AANLkTiklUBmNYs3710WftVX0Z3QihxFtDlK7tPlHZh8H@mail.gmail.com>
-	<AANLkTilOWu6ZwWjwPfHvNXDhyjb6n4N5KV1rUx6byJmq@mail.gmail.com>
-	<AANLkTilfkCBfZtRQlybQ721PSF4lSlqeOKL3rYnEz2G1@mail.gmail.com>
-	<AANLkTikpw42jE5Eh0EkXuRh70mb9x3njX6R4JNshawe5@mail.gmail.com>
-	<4C41FD6E.9090603@superonline.com>
-	<AANLkTikqSwnLqJXPYGjMP0NS8TJ4D2uOBLDipoV89Qwc@mail.gmail.com>
-	<4C430F52.7040400@superonline.com>
-Date: Sun, 18 Jul 2010 09:59:28 -0700
-Message-ID: <AANLkTin8sbiCQCOUatWAadfLBKuOXUQHKAH1Bs0aTztp@mail.gmail.com>
-Subject: Re: [Intel-gfx] [PATCH] drm/i915: Selectively enable self-reclaim
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "M. Vefa Bicakci" <bicave@superonline.com>
-Cc: Dave Airlie <airlied@gmail.com>, Chris Wilson <chris@chris-wilson.co.uk>,
-        earny@net4u.de, Roman Jarosz <kedgedev@gmail.com>,
-        intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-        jcnengel@googlemail.com, "A. Boulan" <arnaud.boulan@libertysurf.fr>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, A Rojas <nqn1976list@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, rientjes@google.com,
-        michael@reinelt.co.at, stable@kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+To: dedekind1@gmail.com
+CC: Ralf Baechle <ralf@linux-mips.org>, linux-mips@linux-mips.org,
+        linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+        linux-mtd@lists.infradead.org
+Subject: Re: [PATCH v3] MTD: Nand: Add JZ4740 NAND driver
+References: <1276924111-11158-18-git-send-email-lars@metafoo.de>         <1279368929-21193-1-git-send-email-lars@metafoo.de> <1279472048.16247.63.camel@localhost.localdomain>
+In-Reply-To: <1279472048.16247.63.camel@localhost.localdomain>
+X-Enigmail-Version: 0.95.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 18, 2010 at 7:27 AM, M. Vefa Bicakci <bicave@superonline.com> wrote:
->
-> After hours of testing I came up with the following result: We need
-> to have the __GFP_RECLAIMABLE flag in addition to GFP_HIGHUSER.
+Artem Bityutskiy wrote:
+> On Sat, 2010-07-17 at 14:15 +0200, Lars-Peter Clausen wrote:
+>> This patch adds support for the NAND controller on JZ4740 SoCs.
+>>
+>> Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
+>> Cc: David Woodhouse <dwmw2@infradead.org>
+>> Cc: linux-mtd@lists.infradead.org
+>>
+> 
+> Do you expect this patch to go in via the MTD tree? I guess it might be
+> better if it was MIPS tree?
 
-Thanks for the extensive testing, and I'm committing the one-liner to
-add it, and cc'ing it to stable. I'm pretty certain that there is
-something overly fragile in the i915 driver that this flag makes so
-much of a difference, but at the same time I'm actually happy that
-it's that reclaimable flag, because at least that one was always the
-"conceptually makes sense" one.
+Hi
 
-So I suspected it would be some low-memory issue and the flag that
-woudl turn out to matter would be the NOMEMALLOC one, but I'm happy to
-have been wrong. Adding __GFP_RECLAIMABLE is sane, although I really
-would like to understand why the i915 driver apparently cares so
-deeply about the allocation/freeing patterns.
+Yes, letting it go through the MIPS tree is the plan.
 
-But whatever. Thanks again for being such a thorough tester,
-
-                        Linus
+- Lars
