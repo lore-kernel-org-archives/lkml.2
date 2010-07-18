@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760173Ab0GRBtU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 17 Jul 2010 21:49:20 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39247 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752449Ab0GRBtN (ORCPT
+	id S1760183Ab0GRBtW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 17 Jul 2010 21:49:22 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51332 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755668Ab0GRBtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 17 Jul 2010 21:49:13 -0400
+	Sat, 17 Jul 2010 21:49:10 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Peter Zijlstra <peterz@infradead.org>,
+        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+        Peter Zijlstra <peterz@infradead.org>,
         Stephane Eranian <eranian@google.com>
-Subject: [PATCH 1/3] perf ui: Make END go to the last entry, not the top of the last page
-Date: Sat, 17 Jul 2010 22:48:54 -0300
-Message-Id: <1279417736-4396-2-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 0/3] perf/core improvements
+Date: Sat, 17 Jul 2010 22:48:53 -0300
+Message-Id: <1279417736-4396-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1279417736-4396-1-git-send-email-acme@infradead.org>
-References: <1279417736-4396-1-git-send-email-acme@infradead.org>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Stephane Eranian <eranian@google.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/newt.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+        Please pull from:
 
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index 06f248f..932f124 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -491,11 +491,11 @@ static int ui_browser__run(struct ui_browser *self, struct newtExitStruct *es)
- 			break;
- 		case NEWT_KEY_END:
- 			offset = self->height - 1;
-+			if (offset >= self->nr_entries)
-+				offset = self->nr_entries - 1;
- 
--			if (offset > self->nr_entries)
--				offset = self->nr_entries;
--
--			self->index = self->first_visible_entry_idx = self->nr_entries - 1 - offset;
-+			self->index = self->nr_entries - 1;
-+			self->first_visible_entry_idx = self->index - offset;
- 			self->seek(self, -offset, SEEK_END);
- 			break;
- 		case NEWT_KEY_RIGHT:
--- 
-1.6.2.5
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
+
+Regards,
+
+- Arnaldo
+
+Arnaldo Carvalho de Melo (3):
+  perf ui: Make END go to the last entry, not the top of the last page
+  perf ui: Make ui_browser__run exit on unhandled hot keys
+  perf hists: Factor out duplicated code
+
+ tools/perf/util/hist.c |   36 ++++++++++++++++++------------------
+ tools/perf/util/newt.c |   14 +++++---------
+ 2 files changed, 23 insertions(+), 27 deletions(-)
 
