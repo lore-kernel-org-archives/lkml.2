@@ -1,68 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757048Ab0GRSge (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 14:36:34 -0400
-Received: from mail.pripojeni.net ([217.66.174.14]:58321 "EHLO
-	smtp.pripojeni.net" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
-	with ESMTP id S1756994Ab0GRSgb (ORCPT
+	id S1757064Ab0GRSiZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 14:38:25 -0400
+Received: from e28smtp08.in.ibm.com ([122.248.162.8]:34717 "EHLO
+	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756994Ab0GRSiY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 14:36:31 -0400
-From: Jiri Slaby <jslaby@suse.cz>
-To: mchehab@infradead.org
-Cc: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        jirislaby@gmail.com, Markus Rechberger <markus.rechberger@amd.com>
-Subject: [PATCH 1/1] DVB: fix dvr node refcounting
-Date: Sun, 18 Jul 2010 20:34:18 +0200
-Message-Id: <1279478058-974-1-git-send-email-jslaby@suse.cz>
-X-Mailer: git-send-email 1.7.1
+	Sun, 18 Jul 2010 14:38:24 -0400
+Message-ID: <4C434A19.9050207@linux.vnet.ibm.com>
+Date: Mon, 19 Jul 2010 00:08:17 +0530
+From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: Robert Hancock <hancockrwd@gmail.com>,
+        Bryan Hundven <bryanhundven@gmail.com>, mchehab@redhat.com
+Subject: Re: Interrupt Affinity in SMP
+References: <AANLkTimhqRAMjaVNwo50GJO9B6kTzySWVtK04gEdu0rg@mail.gmail.com> <4C37C365.6090508@gmail.com> <AANLkTilH9Hn0MHvfOEOyEeRmDcPTrRXIFB3K8pq31yIH@mail.gmail.com> <AANLkTikZCBrZwROGgGTj-JREywN3fUnvaANtTGgkok--@mail.gmail.com> <AANLkTinbj4ScYca7WlnUiIKgsVkVbQwEO4ypgxFe5Zbo@mail.gmail.com> <AANLkTinSjNHPyariuoUuYZCRcbTf8nQALma81I4CPdsv@mail.gmail.com>
+In-Reply-To: <AANLkTinSjNHPyariuoUuYZCRcbTf8nQALma81I4CPdsv@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In dvb_dvr_release, there is a test dvbdev->users==-1, but users are
-never negative. This error results in hung tasks:
-  task                        PC stack   pid father
-bash          D ffffffffa000c948     0  3264   3170 0x00000000
- ffff88003aec5ce8 0000000000000086 0000000000011f80 0000000000011f80
- ffff88003aec5fd8 ffff88003aec5fd8 ffff88003b848670 0000000000011f80
- ffff88003aec5fd8 0000000000011f80 ffff88003e02a030 ffff88003b848670
-Call Trace:
- [<ffffffff813dd4a5>] dvb_dmxdev_release+0xc5/0x130
- [<ffffffff8107b750>] ? autoremove_wake_function+0x0/0x40
- [<ffffffffa00013a2>] dvb_usb_adapter_dvb_exit+0x42/0x70 [dvb_usb]
- [<ffffffffa0000525>] dvb_usb_exit+0x55/0xd0 [dvb_usb]
- [<ffffffffa00005ee>] dvb_usb_device_exit+0x4e/0x70 [dvb_usb]
- [<ffffffffa000a065>] af9015_usb_device_exit+0x55/0x60 [dvb_usb_af9015]
- [<ffffffff813a3f05>] usb_unbind_interface+0x55/0x1a0
- [<ffffffff81316000>] __device_release_driver+0x70/0xe0
-...
+Bryan Hundven wrote:
+> On Sat, Jul 10, 2010 at 6:20 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
+>   
+>> On Sat, Jul 10, 2010 at 1:46 PM, Bryan Hundven <bryanhundven@gmail.com> wrote:
+>>     
+>>> I was able to set eth0 and it's TxRx queues to cpu1, but it is my
+>>> understanding that 0xFFFFFFFF should distribute the interrupts across all
+>>> cpus, much like LOC in my output of /proc/interrupts.
+>>>
+>>> I don't have access to the computer this weekend, but I will provide more
+>>> info on Monday.
+>>>       
+>> That may be chipset dependent, I don't think all chipsets have the
+>> ability to distribute the interrupts like that. Round-robin interrupt
+>> distribution for a given handler isn't optimal for performance anyway
+>> since it causes the relevant cache lines for the interrupt handler to
+>> be ping-ponged between the different CPUs.
+>>
+>>     
+>>> -bryan
+>>>
+>>> On Jul 9, 2010 5:48 PM, "Robert Hancock" <hancockrwd@gmail.com> wrote:
+>>>
+>>> On 07/09/2010 04:59 PM, Bryan Hundven wrote:
+>>>       
+>>>> Mauro, list,
+>>>>
+>>>> (please CC me in replies, I am not...
+>>>>         
+>>> Tried changing these files to exclude CPU0?
+>>>
+>>> Have you tried running the irqbalance daemon? That's what you likely want to
+>>> be doing anyway..
+>>>
+>>>       
+>>>> =====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====
+>>>>
+>>>> =====8<=====8<=====8<==...
+>>>>         
+>
+> Please see the two attached examples.
+>
+> Notice on the 5410 example how we start with the affinity set to 0xff,
+> and change it to 0xf0.
+> This should spread the interrupts over the last 4 cores of this quad
+> core - dual processor system.
+>
+> Also notice on the 5645 example, with the same commands we start with
+> 0xffffff and change to 0xfff000 to spread the interrupts over the last
+> 12 cores, but only the first of the last twelve cores receive
+> interrupts.
+>
+> This is the inconsistency I was trying to explain before.
+>   
+What was the status of irqbalance daemon? Was it turned on? If it is 
+running, there is a chance that the interrupt count is within the 
+threshold limit and interrupts are not being routed to the other core.
+Could you also try with increasing the interrupt load and see if the 
+distribution is happening among the cores?
 
-So check against 1 there instead.
-
-BTW why's the TODO there? Adding TODOs to the code without
-descriptions is like adding nothing.
-
-Signed-off-by: Jiri Slaby <jslaby@suse.cz>
-Cc: Markus Rechberger <markus.rechberger@amd.com>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
----
- drivers/media/dvb/dvb-core/dmxdev.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/media/dvb/dvb-core/dmxdev.c b/drivers/media/dvb/dvb-core/dmxdev.c
-index 425862f..0042306 100644
---- a/drivers/media/dvb/dvb-core/dmxdev.c
-+++ b/drivers/media/dvb/dvb-core/dmxdev.c
-@@ -207,7 +207,7 @@ static int dvb_dvr_release(struct inode *inode, struct file *file)
- 	}
- 	/* TODO */
- 	dvbdev->users--;
--	if(dvbdev->users==-1 && dmxdev->exit==1) {
-+	if (dvbdev->users == 1 && dmxdev->exit == 1) {
- 		fops_put(file->f_op);
- 		file->f_op = NULL;
- 		mutex_unlock(&dmxdev->mutex);
--- 
-1.7.1
-
+-Ciju
+> --Bryan
+>   
 
