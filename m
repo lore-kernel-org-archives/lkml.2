@@ -1,135 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757178Ab0GRTWt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 15:22:49 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45117 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757153Ab0GRTWs (ORCPT
+	id S1757185Ab0GRT1j (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 15:27:39 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42291 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757153Ab0GRT1g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 15:22:48 -0400
-Message-ID: <4C435481.5080506@linux.vnet.ibm.com>
-Date: Mon, 19 Jul 2010 00:52:41 +0530
-From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
+	Sun, 18 Jul 2010 15:27:36 -0400
 MIME-Version: 1.0
-To: Bryan Hundven <bryanhundven@gmail.com>
-CC: linux-kernel@vger.kernel.org, Robert Hancock <hancockrwd@gmail.com>,
-        mchehab@redhat.com
-Subject: Re: Interrupt Affinity in SMP
-References: <AANLkTimhqRAMjaVNwo50GJO9B6kTzySWVtK04gEdu0rg@mail.gmail.com> <4C37C365.6090508@gmail.com> <AANLkTilH9Hn0MHvfOEOyEeRmDcPTrRXIFB3K8pq31yIH@mail.gmail.com> <AANLkTikZCBrZwROGgGTj-JREywN3fUnvaANtTGgkok--@mail.gmail.com> <AANLkTinbj4ScYca7WlnUiIKgsVkVbQwEO4ypgxFe5Zbo@mail.gmail.com> <AANLkTinSjNHPyariuoUuYZCRcbTf8nQALma81I4CPdsv@mail.gmail.com> <4C434A19.9050207@linux.vnet.ibm.com> <AANLkTim8s_noUR8u5FTmT-C8_MA1n6y6TP2LQz7oxxkh@mail.gmail.com>
-In-Reply-To: <AANLkTim8s_noUR8u5FTmT-C8_MA1n6y6TP2LQz7oxxkh@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1279478630.12913.15.camel@gandalf.stny.rr.com>
+References: <20100714154923.947138065@efficios.com>
+	<20100714155804.049012415@efficios.com>
+	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
+	<20100714170617.GB4955@Krystal>
+	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
+	<20100714203940.GC22096@Krystal>
+	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
+	<20100714222115.GA30122@Krystal>
+	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
+	<AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
+	<4C42DF9A.5090908@redhat.com>
+	<AANLkTin1noI6IUfuQsbAgVVzj2rSOhm-Cx3WpsMBgdJ6@mail.gmail.com>
+	<AANLkTildediWa_vkY76mLWoAjgdaEgIbWP0DsKu3Ujap@mail.gmail.com>
+	<1279478630.12913.15.camel@gandalf.stny.rr.com>
+Date: Sun, 18 Jul 2010 12:26:59 -0700
+Message-ID: <AANLkTimnUopZImJCrrupNfbkk647zu-q93FwQIKVW9w5@mail.gmail.com>
+Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: rostedt@goodmis.org
+Cc: Avi Kivity <avi@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
+        Peter Zijlstra <peterz@infradead.org>,
+        Steven Rostedt <rostedt@rostedt.homelinux.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+        Johannes Berg <johannes.berg@intel.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Tom Zanussi <tzanussi@gmail.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+        Jeremy Fitzhardinge <jeremy@goop.org>,
+        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bryan Hundven wrote:
-> On Sun, Jul 18, 2010 at 11:38 AM, Ciju Rajan K <ciju@linux.vnet.ibm.com> wrote:
->   
->> Bryan Hundven wrote:
->>     
->>> On Sat, Jul 10, 2010 at 6:20 PM, Robert Hancock <hancockrwd@gmail.com>
->>> wrote:
->>>
->>>       
->>>> On Sat, Jul 10, 2010 at 1:46 PM, Bryan Hundven <bryanhundven@gmail.com>
->>>> wrote:
->>>>
->>>>         
->>>>> I was able to set eth0 and it's TxRx queues to cpu1, but it is my
->>>>> understanding that 0xFFFFFFFF should distribute the interrupts across
->>>>> all
->>>>> cpus, much like LOC in my output of /proc/interrupts.
->>>>>
->>>>> I don't have access to the computer this weekend, but I will provide
->>>>> more
->>>>> info on Monday.
->>>>>
->>>>>           
->>>> That may be chipset dependent, I don't think all chipsets have the
->>>> ability to distribute the interrupts like that. Round-robin interrupt
->>>> distribution for a given handler isn't optimal for performance anyway
->>>> since it causes the relevant cache lines for the interrupt handler to
->>>> be ping-ponged between the different CPUs.
->>>>
->>>>
->>>>         
->>>>> -bryan
->>>>>
->>>>> On Jul 9, 2010 5:48 PM, "Robert Hancock" <hancockrwd@gmail.com> wrote:
->>>>>
->>>>> On 07/09/2010 04:59 PM, Bryan Hundven wrote:
->>>>>
->>>>>           
->>>>>> Mauro, list,
->>>>>>
->>>>>> (please CC me in replies, I am not...
->>>>>>
->>>>>>             
->>>>> Tried changing these files to exclude CPU0?
->>>>>
->>>>> Have you tried running the irqbalance daemon? That's what you likely
->>>>> want to
->>>>> be doing anyway..
->>>>>
->>>>>
->>>>>           
->>>>>> =====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====
->>>>>>
->>>>>> =====8<=====8<=====8<==...
->>>>>>
->>>>>>             
->>> Please see the two attached examples.
->>>
->>> Notice on the 5410 example how we start with the affinity set to 0xff,
->>> and change it to 0xf0.
->>> This should spread the interrupts over the last 4 cores of this quad
->>> core - dual processor system.
->>>
->>> Also notice on the 5645 example, with the same commands we start with
->>> 0xffffff and change to 0xfff000 to spread the interrupts over the last
->>> 12 cores, but only the first of the last twelve cores receive
->>> interrupts.
->>>
->>> This is the inconsistency I was trying to explain before.
->>>
->>>       
->> What was the status of irqbalance daemon? Was it turned on? If it is
->> running, there is a chance that the interrupt count is within the threshold
->> limit and interrupts are not being routed to the other core.
->>     
+On Sun, Jul 18, 2010 at 11:43 AM, Steven Rostedt <rostedt@goodmis.org> wrote:
 >
-> irqbalance daemon was not running on either setup.
->
->   
->> Could you also try with increasing the interrupt load and see if the
->> distribution is happening among the cores?
->>     
->
-> We use spirent testcenter l2/l3 test equipment and pushed 100%
-> throughput with the same distribution. Nothing changed.
->   
-In the example that you have given, I could see just 7 interrupts after 
-15 seconds.
-So thought of checking it. Let me try to see this problem locally.
+> Are you sure you don't want to use Mathieu's 2/2 patch?
 
--Ciju
-> This isn't affecting just ethernet drivers. I have also seen the same
-> issues with hardware encryption devices and other hardware that gets a
-> software interrupt.
->
-> --Bryan
->
->   
->> -Ciju
->>     
->>> --Bryan
->>>
->>>       
->>     
->
->
->
->   
+Yeah, I'm pretty sure. Unless somebody can show that it's faster, I
+really don't want to muck with regular iret's. Also, as shown during
+the discussion, even with Mathieu's 2/2 patch, we'd _still_ need NMI
+to also save cr2 etc.
 
+So the sane thing to do is to put all the NMI crap where it belongs.
+NMI's need to know about the fact that them taking exceptions is
+special. That whole "vmalloc_sync_all()" is simply pure brokenness.
+
+In other words, it is _not_ just about 'iret' fixup. It's a bigger
+thing. NMI's are special, and we don't want to spread that specialness
+around.
+
+                  Linus
