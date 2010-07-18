@@ -1,137 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab0GRSwu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 14:52:50 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55403 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757097Ab0GRSwt (ORCPT
+	id S1757178Ab0GRTWt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 15:22:49 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45117 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757153Ab0GRTWs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 14:52:49 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=dzy1xkewTQznbGdnc2g0luJc6pz0m96i5uxM6/gWZ92fgH1fNMq9z63EyFhdl0/tvj
-         UdKHHZrawGnxeRDz3As0npO1/IFGazMSzZzXM6ihHhpE3+oho13wk2Nr5yt1kXZXqK7x
-         b2m/+FCVIsjwpPCR1RDw/msI+POb8iIfB1RAA=
+	Sun, 18 Jul 2010 15:22:48 -0400
+Message-ID: <4C435481.5080506@linux.vnet.ibm.com>
+Date: Mon, 19 Jul 2010 00:52:41 +0530
+From: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-In-Reply-To: <4C434A19.9050207@linux.vnet.ibm.com>
-References: <AANLkTimhqRAMjaVNwo50GJO9B6kTzySWVtK04gEdu0rg@mail.gmail.com>
-	<4C37C365.6090508@gmail.com>
-	<AANLkTilH9Hn0MHvfOEOyEeRmDcPTrRXIFB3K8pq31yIH@mail.gmail.com>
-	<AANLkTikZCBrZwROGgGTj-JREywN3fUnvaANtTGgkok--@mail.gmail.com>
-	<AANLkTinbj4ScYca7WlnUiIKgsVkVbQwEO4ypgxFe5Zbo@mail.gmail.com>
-	<AANLkTinSjNHPyariuoUuYZCRcbTf8nQALma81I4CPdsv@mail.gmail.com>
-	<4C434A19.9050207@linux.vnet.ibm.com>
-Date: Sun, 18 Jul 2010 11:52:48 -0700
-Message-ID: <AANLkTim8s_noUR8u5FTmT-C8_MA1n6y6TP2LQz7oxxkh@mail.gmail.com>
-Subject: Re: Interrupt Affinity in SMP
-From: Bryan Hundven <bryanhundven@gmail.com>
-To: Ciju Rajan K <ciju@linux.vnet.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Robert Hancock <hancockrwd@gmail.com>,
+To: Bryan Hundven <bryanhundven@gmail.com>
+CC: linux-kernel@vger.kernel.org, Robert Hancock <hancockrwd@gmail.com>,
         mchehab@redhat.com
-Content-Type: text/plain; charset=UTF-8
+Subject: Re: Interrupt Affinity in SMP
+References: <AANLkTimhqRAMjaVNwo50GJO9B6kTzySWVtK04gEdu0rg@mail.gmail.com> <4C37C365.6090508@gmail.com> <AANLkTilH9Hn0MHvfOEOyEeRmDcPTrRXIFB3K8pq31yIH@mail.gmail.com> <AANLkTikZCBrZwROGgGTj-JREywN3fUnvaANtTGgkok--@mail.gmail.com> <AANLkTinbj4ScYca7WlnUiIKgsVkVbQwEO4ypgxFe5Zbo@mail.gmail.com> <AANLkTinSjNHPyariuoUuYZCRcbTf8nQALma81I4CPdsv@mail.gmail.com> <4C434A19.9050207@linux.vnet.ibm.com> <AANLkTim8s_noUR8u5FTmT-C8_MA1n6y6TP2LQz7oxxkh@mail.gmail.com>
+In-Reply-To: <AANLkTim8s_noUR8u5FTmT-C8_MA1n6y6TP2LQz7oxxkh@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, Jul 18, 2010 at 11:38 AM, Ciju Rajan K <ciju@linux.vnet.ibm.com> wrote:
-> Bryan Hundven wrote:
->>
->> On Sat, Jul 10, 2010 at 6:20 PM, Robert Hancock <hancockrwd@gmail.com>
->> wrote:
->>
->>>
->>> On Sat, Jul 10, 2010 at 1:46 PM, Bryan Hundven <bryanhundven@gmail.com>
+Bryan Hundven wrote:
+> On Sun, Jul 18, 2010 at 11:38 AM, Ciju Rajan K <ciju@linux.vnet.ibm.com> wrote:
+>   
+>> Bryan Hundven wrote:
+>>     
+>>> On Sat, Jul 10, 2010 at 6:20 PM, Robert Hancock <hancockrwd@gmail.com>
 >>> wrote:
 >>>
+>>>       
+>>>> On Sat, Jul 10, 2010 at 1:46 PM, Bryan Hundven <bryanhundven@gmail.com>
+>>>> wrote:
 >>>>
->>>> I was able to set eth0 and it's TxRx queues to cpu1, but it is my
->>>> understanding that 0xFFFFFFFF should distribute the interrupts across
->>>> all
->>>> cpus, much like LOC in my output of /proc/interrupts.
+>>>>         
+>>>>> I was able to set eth0 and it's TxRx queues to cpu1, but it is my
+>>>>> understanding that 0xFFFFFFFF should distribute the interrupts across
+>>>>> all
+>>>>> cpus, much like LOC in my output of /proc/interrupts.
+>>>>>
+>>>>> I don't have access to the computer this weekend, but I will provide
+>>>>> more
+>>>>> info on Monday.
+>>>>>
+>>>>>           
+>>>> That may be chipset dependent, I don't think all chipsets have the
+>>>> ability to distribute the interrupts like that. Round-robin interrupt
+>>>> distribution for a given handler isn't optimal for performance anyway
+>>>> since it causes the relevant cache lines for the interrupt handler to
+>>>> be ping-ponged between the different CPUs.
 >>>>
->>>> I don't have access to the computer this weekend, but I will provide
->>>> more
->>>> info on Monday.
 >>>>
+>>>>         
+>>>>> -bryan
+>>>>>
+>>>>> On Jul 9, 2010 5:48 PM, "Robert Hancock" <hancockrwd@gmail.com> wrote:
+>>>>>
+>>>>> On 07/09/2010 04:59 PM, Bryan Hundven wrote:
+>>>>>
+>>>>>           
+>>>>>> Mauro, list,
+>>>>>>
+>>>>>> (please CC me in replies, I am not...
+>>>>>>
+>>>>>>             
+>>>>> Tried changing these files to exclude CPU0?
+>>>>>
+>>>>> Have you tried running the irqbalance daemon? That's what you likely
+>>>>> want to
+>>>>> be doing anyway..
+>>>>>
+>>>>>
+>>>>>           
+>>>>>> =====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====
+>>>>>>
+>>>>>> =====8<=====8<=====8<==...
+>>>>>>
+>>>>>>             
+>>> Please see the two attached examples.
 >>>
->>> That may be chipset dependent, I don't think all chipsets have the
->>> ability to distribute the interrupts like that. Round-robin interrupt
->>> distribution for a given handler isn't optimal for performance anyway
->>> since it causes the relevant cache lines for the interrupt handler to
->>> be ping-ponged between the different CPUs.
+>>> Notice on the 5410 example how we start with the affinity set to 0xff,
+>>> and change it to 0xf0.
+>>> This should spread the interrupts over the last 4 cores of this quad
+>>> core - dual processor system.
 >>>
+>>> Also notice on the 5645 example, with the same commands we start with
+>>> 0xffffff and change to 0xfff000 to spread the interrupts over the last
+>>> 12 cores, but only the first of the last twelve cores receive
+>>> interrupts.
 >>>
->>>>
->>>> -bryan
->>>>
->>>> On Jul 9, 2010 5:48 PM, "Robert Hancock" <hancockrwd@gmail.com> wrote:
->>>>
->>>> On 07/09/2010 04:59 PM, Bryan Hundven wrote:
->>>>
->>>>>
->>>>> Mauro, list,
->>>>>
->>>>> (please CC me in replies, I am not...
->>>>>
->>>>
->>>> Tried changing these files to exclude CPU0?
->>>>
->>>> Have you tried running the irqbalance daemon? That's what you likely
->>>> want to
->>>> be doing anyway..
->>>>
->>>>
->>>>>
->>>>> =====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====
->>>>>
->>>>> =====8<=====8<=====8<==...
->>>>>
->>
->> Please see the two attached examples.
->>
->> Notice on the 5410 example how we start with the affinity set to 0xff,
->> and change it to 0xf0.
->> This should spread the interrupts over the last 4 cores of this quad
->> core - dual processor system.
->>
->> Also notice on the 5645 example, with the same commands we start with
->> 0xffffff and change to 0xfff000 to spread the interrupts over the last
->> 12 cores, but only the first of the last twelve cores receive
->> interrupts.
->>
->> This is the inconsistency I was trying to explain before.
->>
+>>> This is the inconsistency I was trying to explain before.
+>>>
+>>>       
+>> What was the status of irqbalance daemon? Was it turned on? If it is
+>> running, there is a chance that the interrupt count is within the threshold
+>> limit and interrupts are not being routed to the other core.
+>>     
 >
-> What was the status of irqbalance daemon? Was it turned on? If it is
-> running, there is a chance that the interrupt count is within the threshold
-> limit and interrupts are not being routed to the other core.
-
-irqbalance daemon was not running on either setup.
-
-> Could you also try with increasing the interrupt load and see if the
-> distribution is happening among the cores?
-
-We use spirent testcenter l2/l3 test equipment and pushed 100%
-throughput with the same distribution. Nothing changed.
-
-This isn't affecting just ethernet drivers. I have also seen the same
-issues with hardware encryption devices and other hardware that gets a
-software interrupt.
-
---Bryan
-
+> irqbalance daemon was not running on either setup.
 >
-> -Ciju
->>
->> --Bryan
->>
+>   
+>> Could you also try with increasing the interrupt load and see if the
+>> distribution is happening among the cores?
+>>     
+>
+> We use spirent testcenter l2/l3 test equipment and pushed 100%
+> throughput with the same distribution. Nothing changed.
+>   
+In the example that you have given, I could see just 7 interrupts after 
+15 seconds.
+So thought of checking it. Let me try to see this problem locally.
+
+-Ciju
+> This isn't affecting just ethernet drivers. I have also seen the same
+> issues with hardware encryption devices and other hardware that gets a
+> software interrupt.
+>
+> --Bryan
+>
+>   
+>> -Ciju
+>>     
+>>> --Bryan
+>>>
+>>>       
+>>     
 >
 >
+>
+>   
 
-
-
--- 
-Bryan Hundven
-bryanhundven@gmail.com
