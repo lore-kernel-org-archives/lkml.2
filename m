@@ -1,48 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752867Ab0GRIoO (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 04:44:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:36116 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752532Ab0GRIoM (ORCPT
+	id S1752994Ab0GRIoh (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 04:44:37 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49728 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934Ab0GRIof (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 04:44:12 -0400
+	Sun, 18 Jul 2010 04:44:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=p2nLvDEm20Jh5Sf+ZDtu7d8ifzs7JYfhi3ByU35MWq55iAXN67698cXCwDD3m1/zT9
-         4m/XknxfqIDzPPw3af6bIImD3Kp84IxZWolvq5c0IkLdqKyuLGprWvST03vJMq86iWTT
-         0GmJivO3wMiEk7UqcQuqxLIswic5PcA7JgwMQ=
-Subject: Re: [PATCH] s3c nand: parsing commad-line partitions prior to
- set->partitions
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Conke Hu <conke@maxwit.com>
-Cc: support@simtec.co.uk, linux@simtec.co.uk, ben-linux@fluff.org,
-        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
-In-Reply-To: <1278996990-4380-1-git-send-email-conke@maxwit.com>
-References: <1278996990-4380-1-git-send-email-conke@maxwit.com>
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=Xc+bSOYYxMuWSmYvrUoHNTK8sdCsSddJpJYKBPcm1l3VqKrYX+80+x74x5xN8o8WDL
+         GnkYk7yDuSkN+f0ogGSXg7g1fhn2af1Y2Q7q8zEkr4HLXDJLIOuvqDER7FW19r5PWdJB
+         +lrQCYuQNKWZsaR6jSOb5Ct651zynSaC9EjTQ=
+Subject: Re: [PATCH 2/8] Basic zcache functionality
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1279283870-18549-3-git-send-email-ngupta@vflare.org>
+References: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
+	 <1279283870-18549-3-git-send-email-ngupta@vflare.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 18 Jul 2010 11:44:08 +0300
-Message-Id: <1279442648.16247.42.camel@localhost.localdomain>
+Date: Sun, 18 Jul 2010 10:44:31 +0200
+Message-ID: <1279442671.2476.34.camel@edumazet-laptop>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-13 at 12:56 +0800, Conke Hu wrote:
-> Current driver prevents command-line partitions from being parsed when built-in 
-> partitions are defined in s3c2410_nand_set object, but it is not desirable in some 
-> cases. This patch tries to parse commad-line partitions prior to the built-in.
-> 
-> Signed-off-by: Conke Hu <conke@maxwit.com>
+Le vendredi 16 juillet 2010 à 18:07 +0530, Nitin Gupta a écrit :
 
-Pushed to l2-mtd-2.6.git / master, thanks.
+> This particular patch implemets basic functionality only:
+> +static u64 zcache_get_stat(struct zcache_pool *zpool,
+> +		enum zcache_pool_stats_index idx)
+> +{
+> +	int cpu;
+> +	s64 val = 0;
+> +
+> +	for_each_possible_cpu(cpu) {
+> +		unsigned int start;
+> +		struct zcache_pool_stats_cpu *stats;
+> +
+> +		stats = per_cpu_ptr(zpool->stats, cpu);
+> +		do {
+> +			start = u64_stats_fetch_begin(&stats->syncp);
+> +			val += stats->count[idx];
+> +		} while (u64_stats_fetch_retry(&stats->syncp, start));
+> +	}
+> +
+> +	BUG_ON(val < 0);
+> +	return val;
+> +}
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+Sorry this is wrong.
+
+Inside the fetch/retry block you should not do the addition to val, only
+a read of value to a temporary variable, since this might be done
+several times.
+
+You want something like :
+
+static u64 zcache_get_stat(struct zcache_pool *zpool,
+			   enum zcache_pool_stats_index idx)
+{
+	int cpu;
+	s64 temp, val = 0;
+
+	for_each_possible_cpu(cpu) {
+		unsigned int start;
+		struct zcache_pool_stats_cpu *stats;
+
+		stats = per_cpu_ptr(zpool->stats, cpu);
+		do {
+			start = u64_stats_fetch_begin(&stats->syncp);
+			temp = stats->count[idx];
+		} while (u64_stats_fetch_retry(&stats->syncp, start));
+		val += temp;
+	}
+
+...
+}
+
+
 
