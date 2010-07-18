@@ -1,89 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757115Ab0GRSoF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 14:44:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:50552 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757025Ab0GRSoB (ORCPT
+	id S1757133Ab0GRSwu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 14:52:50 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55403 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757097Ab0GRSwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 14:44:01 -0400
-X-Authority-Analysis: v=1.1 cv=g9Y3NohClm0xo0Au7hiKM/lwvZwqTqjWC8eysRFNA3U= c=1 sm=0 a=ZI5MULQygNwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=Sq3EUCS3E7k_EMHr108A:9 a=1qQa-TZagDt7Pa8O1sc6oPLk3OsA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Avi Kivity <avi@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-In-Reply-To: <AANLkTildediWa_vkY76mLWoAjgdaEgIbWP0DsKu3Ujap@mail.gmail.com>
-References: <20100714154923.947138065@efficios.com>
-	 <20100714155804.049012415@efficios.com>
-	 <AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>
-	 <20100714170617.GB4955@Krystal>
-	 <AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>
-	 <20100714203940.GC22096@Krystal>
-	 <AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>
-	 <20100714222115.GA30122@Krystal>
-	 <AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>
-	 <AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>
-	 <4C42DF9A.5090908@redhat.com>
-	 <AANLkTin1noI6IUfuQsbAgVVzj2rSOhm-Cx3WpsMBgdJ6@mail.gmail.com>
-	 <AANLkTildediWa_vkY76mLWoAjgdaEgIbWP0DsKu3Ujap@mail.gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Sun, 18 Jul 2010 14:43:50 -0400
-Message-ID: <1279478630.12913.15.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 18 Jul 2010 14:52:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=dzy1xkewTQznbGdnc2g0luJc6pz0m96i5uxM6/gWZ92fgH1fNMq9z63EyFhdl0/tvj
+         UdKHHZrawGnxeRDz3As0npO1/IFGazMSzZzXM6ihHhpE3+oho13wk2Nr5yt1kXZXqK7x
+         b2m/+FCVIsjwpPCR1RDw/msI+POb8iIfB1RAA=
+MIME-Version: 1.0
+In-Reply-To: <4C434A19.9050207@linux.vnet.ibm.com>
+References: <AANLkTimhqRAMjaVNwo50GJO9B6kTzySWVtK04gEdu0rg@mail.gmail.com>
+	<4C37C365.6090508@gmail.com>
+	<AANLkTilH9Hn0MHvfOEOyEeRmDcPTrRXIFB3K8pq31yIH@mail.gmail.com>
+	<AANLkTikZCBrZwROGgGTj-JREywN3fUnvaANtTGgkok--@mail.gmail.com>
+	<AANLkTinbj4ScYca7WlnUiIKgsVkVbQwEO4ypgxFe5Zbo@mail.gmail.com>
+	<AANLkTinSjNHPyariuoUuYZCRcbTf8nQALma81I4CPdsv@mail.gmail.com>
+	<4C434A19.9050207@linux.vnet.ibm.com>
+Date: Sun, 18 Jul 2010 11:52:48 -0700
+Message-ID: <AANLkTim8s_noUR8u5FTmT-C8_MA1n6y6TP2LQz7oxxkh@mail.gmail.com>
+Subject: Re: Interrupt Affinity in SMP
+From: Bryan Hundven <bryanhundven@gmail.com>
+To: Ciju Rajan K <ciju@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Robert Hancock <hancockrwd@gmail.com>,
+        mchehab@redhat.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-18 at 11:17 -0700, Linus Torvalds wrote:
+On Sun, Jul 18, 2010 at 11:38 AM, Ciju Rajan K <ciju@linux.vnet.ibm.com> wrote:
+> Bryan Hundven wrote:
+>>
+>> On Sat, Jul 10, 2010 at 6:20 PM, Robert Hancock <hancockrwd@gmail.com>
+>> wrote:
+>>
+>>>
+>>> On Sat, Jul 10, 2010 at 1:46 PM, Bryan Hundven <bryanhundven@gmail.com>
+>>> wrote:
+>>>
+>>>>
+>>>> I was able to set eth0 and it's TxRx queues to cpu1, but it is my
+>>>> understanding that 0xFFFFFFFF should distribute the interrupts across
+>>>> all
+>>>> cpus, much like LOC in my output of /proc/interrupts.
+>>>>
+>>>> I don't have access to the computer this weekend, but I will provide
+>>>> more
+>>>> info on Monday.
+>>>>
+>>>
+>>> That may be chipset dependent, I don't think all chipsets have the
+>>> ability to distribute the interrupts like that. Round-robin interrupt
+>>> distribution for a given handler isn't optimal for performance anyway
+>>> since it causes the relevant cache lines for the interrupt handler to
+>>> be ping-ponged between the different CPUs.
+>>>
+>>>
+>>>>
+>>>> -bryan
+>>>>
+>>>> On Jul 9, 2010 5:48 PM, "Robert Hancock" <hancockrwd@gmail.com> wrote:
+>>>>
+>>>> On 07/09/2010 04:59 PM, Bryan Hundven wrote:
+>>>>
+>>>>>
+>>>>> Mauro, list,
+>>>>>
+>>>>> (please CC me in replies, I am not...
+>>>>>
+>>>>
+>>>> Tried changing these files to exclude CPU0?
+>>>>
+>>>> Have you tried running the irqbalance daemon? That's what you likely
+>>>> want to
+>>>> be doing anyway..
+>>>>
+>>>>
+>>>>>
+>>>>> =====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====8<=====
+>>>>>
+>>>>> =====8<=====8<=====8<==...
+>>>>>
+>>
+>> Please see the two attached examples.
+>>
+>> Notice on the 5410 example how we start with the affinity set to 0xff,
+>> and change it to 0xf0.
+>> This should spread the interrupts over the last 4 cores of this quad
+>> core - dual processor system.
+>>
+>> Also notice on the 5645 example, with the same commands we start with
+>> 0xffffff and change to 0xfff000 to spread the interrupts over the last
+>> 12 cores, but only the first of the last twelve cores receive
+>> interrupts.
+>>
+>> This is the inconsistency I was trying to explain before.
+>>
+>
+> What was the status of irqbalance daemon? Was it turned on? If it is
+> running, there is a chance that the interrupt count is within the threshold
+> limit and interrupts are not being routed to the other core.
 
-> Oh, and the non-nested case obviously needs all the regular "make the
-> kernel state look right" code. Like the swapgs stuff etc if required.
-> My example code was really meant to just document the nesting
-> handling, not the existing stuff we already need to do with
-> save_paranoid etc.
-> 
-> And I really think it should work, but I'd again like to stress that
-> it's just a RFD code sequence with no testing what-so-ever etc.
-> 
+irqbalance daemon was not running on either setup.
 
-Are you sure you don't want to use Mathieu's 2/2 patch? We are fixing
-the x86 problem that iret re-enables NMIs, and you don't want to touch
-anything else but the NMI code. But it may be saner to just fix the
-places that call iret. We can perhaps encapsulate those into a single
-macro that we can get right and will be correct everywhere it is used.
+> Could you also try with increasing the interrupt load and see if the
+> distribution is happening among the cores?
 
-The ugliest part of Mathieu's code is dealing with paravirt, but
-paravirt is ugly to begin with.
+We use spirent testcenter l2/l3 test equipment and pushed 100%
+throughput with the same distribution. Nothing changed.
 
-Doing this prevents nested NMIs as well as all the unknowns that will
-come with dealing with nested NMIs. Where as, handling all iret's should
-be straight forward, although a bit more intrusive than what we would
-like.
+This isn't affecting just ethernet drivers. I have also seen the same
+issues with hardware encryption devices and other hardware that gets a
+software interrupt.
 
-Just saying,
+--Bryan
 
--- Steve
+>
+> -Ciju
+>>
+>> --Bryan
+>>
+>
+>
 
 
+
+-- 
+Bryan Hundven
+bryanhundven@gmail.com
