@@ -1,83 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757597Ab0GRXX6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 19:23:58 -0400
-Received: from smtp5-g21.free.fr ([212.27.42.5]:52735 "EHLO smtp5-g21.free.fr"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757531Ab0GRXX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 19:23:57 -0400
-Date: Mon, 19 Jul 2010 01:28:38 +0200
-From: Yann Dirson <ydirson@free.fr>
-To: linux-ide@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH] via82cxxx: fix typo for VT6415 PCIE PATA IDE Host
- Controller support.
-Message-ID: <20100718232838.GA3245@home.lan>
-References: <1279494644-3762-1-git-send-email-ydirson@altern.org>
+	id S1757620Ab0GRXcG (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 19:32:06 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40150 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757532Ab0GRXcE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 19:32:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding
+         :content-disposition:message-id;
+        b=rS1+lZ29ef0dgmsWm5UschvdoV62gKIS2FKy1NpSB2e6Ga4qtAWqftlD6wIyeq39sB
+         FY90zDWM1kw3MXDHLAK5tkCAX9VtQ7cCN1AT/YTEsG0wJ+Qbylps3PNb0snkUuYMQ/ws
+         pAv2GqRTujYweyqxCukpuiGggGHsmTsDPeqWY=
+From: Denys Vlasenko <vda.linux@googlemail.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Subject: Re: Testing of function/data-sections on linux-2.6.35-rc4
+Date: Mon, 19 Jul 2010 01:31:56 +0200
+User-Agent: KMail/1.8.2
+Cc: Tim Abbott <tabbott@ksplice.com>, Tim Bird <tim.bird@am.sony.com>,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
+        linux-kernel@vger.kernel.org, Matt Fleming <matt@console-pimps.org>,
+        linux-arch@vger.kernel.org, Arnd Bergmann <arnd@arndb.de>,
+        Sam Ravnborg <sam@ravnborg.org>, Michal Marek <mmarek@suse.cz>,
+        Parisc List <linux-parisc@vger.kernel.org>
+References: <201007181703.17022.vda.linux@googlemail.com> <AANLkTin-9VsTJxGclRUrJIizn9aDZ6pjxmByBCWB0Hqr@mail.gmail.com>
+In-Reply-To: <AANLkTin-9VsTJxGclRUrJIizn9aDZ6pjxmByBCWB0Hqr@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <1279494644-3762-1-git-send-email-ydirson@altern.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Message-Id: <201007190131.56633.vda.linux@googlemail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 01:13:24AM +0200, Yann Dirson wrote:
-> Without this fix, init of the via82cxxx driver causes a oops with a
-> stack resembling the one below, and the boot blocks between init of
-> USB devices and launch of init (was easy to bisect by booting with
-> init=/bin/sh).
+On Sunday 18 July 2010 20:24, Geert Uytterhoeven wrote:
+> On Sun, Jul 18, 2010 at 17:03, Denys Vlasenko <vda.linux@googlemail.com> wrote:
+> > I am sending this email from the machine which runs the kernel
+> > built with -ffunction-sections -fdata-sections --gc-sections.
+> 
+> (sorry for the previous HTML-email)
+> 
+> For the record, what are the metrics of this kernel vs. the standard one?
 
-Looks like I was a bit too quick - this backtrace is not one of those
-I got without this fix (they never made it to the disk), but happens
-with the fix applied.
+Kernel:
 
-> 
->  Pid: 279, comm: work_for_cpu Not tainted 2.6.34.1-00003-ga42ea77 #2
->  Call Trace:
->   [<ffffffff81045691>] ? warn_slowpath_common+0x76/0x8c
->   [<ffffffff810456f9>] ? warn_slowpath_fmt+0x40/0x45
->   [<ffffffff812eb5a1>] ? printk+0x40/0x47
->   [<ffffffff8108e1fd>] ? enable_irq+0x3e/0x64
->   [<ffffffffa0003900>] ? ide_probe_port+0x55c/0x589 [ide_core]
->   [<ffffffffa0003f22>] ? ide_host_register+0x273/0x628 [ide_core]
->   [<ffffffffa00083e3>] ? ide_pci_init_two+0x4da/0x5c5 [ide_core]
->   [<ffffffff8106117e>] ? up+0xe/0x36
->   [<ffffffff81045d7e>] ? release_console_sem+0x17e/0x1ae
->   [<ffffffff812d945b>] ? klist_iter_exit+0x14/0x1e
->   [<ffffffff8120ed23>] ? bus_find_device+0x75/0x83
->   [<ffffffffa0022832>] ? via_init_one+0x269/0x28a [via82cxxx]
->   [<ffffffffa00223a2>] ? init_chipset_via82cxxx+0x0/0x1ea [via82cxxx]
->   [<ffffffff81059f25>] ? do_work_for_cpu+0x0/0x1b
->   [<ffffffff81190c65>] ? local_pci_probe+0x12/0x16
->   [<ffffffff81059f30>] ? do_work_for_cpu+0xb/0x1b
->   [<ffffffff8105d0dd>] ? kthread+0x75/0x7d
->   [<ffffffff810097e4>] ? kernel_thread_helper+0x4/0x10
->   [<ffffffff8105d068>] ? kthread+0x0/0x7d
->   [<ffffffff810097e0>] ? kernel_thread_helper+0x0/0x10
->  ---[ end trace 89c8cb70379b5bda ]---
-> 
-> The typo was introduced in a354ae8747d0687093ce244e76b15b6174d2f098,
-> and affects 2.6.33-rc4 and later.
-> 
-> Signed-off-by: Yann Dirson <ydirson@altern.org>
-> ---
->  drivers/ide/via82cxxx.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/ide/via82cxxx.c b/drivers/ide/via82cxxx.c
-> index 101f400..d2a0997 100644
-> --- a/drivers/ide/via82cxxx.c
-> +++ b/drivers/ide/via82cxxx.c
-> @@ -79,7 +79,7 @@ static struct via_isa_bridge {
->  	{ "vt8261",	PCI_DEVICE_ID_VIA_8261,     0x00, 0x2f, ATA_UDMA6, VIA_BAD_AST },
->  	{ "vt8237s",	PCI_DEVICE_ID_VIA_8237S,    0x00, 0x2f, ATA_UDMA6, VIA_BAD_AST },
->  	{ "vt6410",	PCI_DEVICE_ID_VIA_6410,     0x00, 0x2f, ATA_UDMA6, VIA_BAD_AST },
-> -	{ "vt6415",	PCI_DEVICE_ID_VIA_6410,     0x00, 0xff, ATA_UDMA6, VIA_BAD_AST },
-> +	{ "vt6415",	PCI_DEVICE_ID_VIA_6415,     0x00, 0xff, ATA_UDMA6, VIA_BAD_AST },
->  	{ "vt8251",	PCI_DEVICE_ID_VIA_8251,     0x00, 0x2f, ATA_UDMA6, VIA_BAD_AST },
->  	{ "vt8237",	PCI_DEVICE_ID_VIA_8237,     0x00, 0x2f, ATA_UDMA6, VIA_BAD_AST },
->  	{ "vt8237a",	PCI_DEVICE_ID_VIA_8237A,    0x00, 0x2f, ATA_UDMA6, VIA_BAD_AST },
-> -- 
-> 1.7.1
+   text    data     bss     dec     hex filename
+8299299  857324  785348 9941971  97b3d3 linux-2.6.35-rc4.obj/vmlinux
+7656461  841508  783700 9281669  8da085 linux-2.6.35-rc4-fs.obj/vmlinux
+7566908  832388  717844 9117140  8b1dd4 linux-2.6.35-rc4-fsgs.obj/vmlinux
+
+The largest module in my build:
+   text    data     bss     dec     hex filename
+ 451009   54640    2224  507873   7bfe1 linux-2.6.35-rc4.obj/fs/xfs/xfs.ko
+ 450519   54292    2202  507013   7bc85 linux-2.6.35-rc4-fs.obj/fs/xfs/xfs.ko
+ 450521   54292    2202  507015   7bc87 linux-2.6.35-rc4-fsgs.obj/fs/xfs/xfs.ko
+
+
+-- 
+vda
