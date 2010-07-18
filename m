@@ -1,86 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752632Ab0GRHRd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 03:17:33 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:49752 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751075Ab0GRHRb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 03:17:31 -0400
-Date: Sun, 18 Jul 2010 09:17:16 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Subject: Re: [GIT PULL 0/3] perf/core improvements
-Message-ID: <20100718071716.GA32016@elte.hu>
-References: <1279417736-4396-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279417736-4396-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.1
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
-	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
-	[score: 0.0329]
+	id S1751522Ab0GRH1d (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 03:27:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42476 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab0GRH1c (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 03:27:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
+         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=GVcZyiEUEayJ18qIE2hmujipSyQ7CaRN7hpeAoixSIn9kEB1G8xq+Uq//5wPqU4fa0
+         KRtvc0whw8YiDtrPzL2b08KRfime+lrJnye3buAVfQ8AKQznT2TGhWaboEcwdshk76f5
+         dD80lwDgEYiW1nIPhV3whTpGUbrjxN6LhekQE=
+Subject: Re: [PATCH 1/6] Mtd: fixed coding style indent errors
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Neal B <nealb001@gmail.com>
+Cc: Artem.Bityutskiy@nokia.com, dwmw2@infradead.org,
+        rmk+kernel@arm.linux.org.uk, cascardo@holoscopio.com,
+        mohanlaljangir@gmail.com, maximlevitsky@gmail.com,
+        Julia Lawall <julia@diku.dk>, jkosina@suse.cz,
+        linux-mtd@lists.infradead.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4C3A8220.6040707@gmail.com>
+References: <4C3A8220.6040707@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 18 Jul 2010 10:27:26 +0300
+Message-Id: <1279438046.16247.22.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 2010-07-11 at 21:46 -0500, Neal B wrote:
+> From f4301b9c13f65d173d67759d53acaf3e8d2331c6 Mon Sep 17 00:00:00 2001
+> From: Neal Buckendahl <nealb001@gmail.com>
+> Date: Sun, 11 Jul 2010 16:58:24 -0500
+> Subject: [PATCH 1/6] Mtd: fixed coding style indent errors found by the 
+> checkpatch.pl tool
+>   Signed-off-by: Neal Buckendahl <nealb001@gmail.com>
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+Unfortunately, your patches are line-wrapped. You should send
+non-wrapped patches. Use git send-email - it can do the trick (use
+--dry-run first, check everything is fine, then send).
 
-> Hi Ingo,
-> 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (3):
->   perf ui: Make END go to the last entry, not the top of the last page
->   perf ui: Make ui_browser__run exit on unhandled hot keys
->   perf hists: Factor out duplicated code
-> 
->  tools/perf/util/hist.c |   36 ++++++++++++++++++------------------
->  tools/perf/util/newt.c |   14 +++++---------
->  2 files changed, 23 insertions(+), 27 deletions(-)
+Also, int the commit message, it is a bit better to specify which
+exactly warning it fixes.
 
-Pulled, thanks Arnaldo!
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
-FYI, i'm still seeing problems with 'perf report --parent xyz' functionality, 
-as the Newt interface segfaults:
-
-#0  0x00007ffff7dddcdb in ?? () from /usr/lib64/libnewt.so.0.52
-#1  0x00007ffff7dd5ab6 in ?? () from /usr/lib64/libnewt.so.0.52
-#2  0x00007ffff7dd5260 in ?? () from /usr/lib64/libnewt.so.0.52
-#3  0x00007ffff7dd61ff in newtFormRun () from /usr/lib64/libnewt.so.0.52
-#4  0x00000000004552a1 in hists__browse (self=0xa302b0, helpline=<value optimized out>, 
-    ev_name=0x4e5dde "cycles") at util/newt.c:968
-#5  0x0000000000455bc0 in hists__tui_browse_tree (self=<value optimized out>, 
-    help=0x4e0710 "For a higher level overview, try: perf report --sort comm,dso")
-    at util/newt.c:1142
-#6  0x00000000004109e3 in __cmd_report (argc=<value optimized out>, argv=<value optimized out>, 
-    prefix=<value optimized out>) at builtin-report.c:346
-#7  cmd_report (argc=<value optimized out>, argv=<value optimized out>, 
-    prefix=<value optimized out>) at builtin-report.c:508
-#8  0x0000000000406188 in run_builtin (p=0x722590, argc=3, argv=0x7fffffffe570) at perf.c:286
-#9  0x0000000000406be6 in handle_internal_command (argc=3, argv=0x7fffffffe570) at perf.c:357
-#10 run_argv (argc=3, argv=0x7fffffffe570) at perf.c:401
-#11 main (argc=3, argv=0x7fffffffe570) at perf.c:487
-
-newt-0.52.11-2.fc13.x86_64
-
-perf version 2.6.35.rc5.1194.g16950e5
-
-Thanks,
-
-	Ingo
