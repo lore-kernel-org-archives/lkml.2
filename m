@@ -1,44 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab0GRU1Q (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 16:27:16 -0400
-Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:30222 "EHLO
-	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757252Ab0GRU1P (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 16:27:15 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAL//QkxQycsO/2dsb2JhbACfbnK9Xg2FGAQ
-Date: Sun, 18 Jul 2010 22:27:12 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Viresh KUMAR <viresh.kumar@st.com>, armando.visconti@st.com,
-        shiraz.hashim@st.com, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH resend] Watchdog: Adding support for ARM Primecell
-	SP805 Watchdog
-Message-ID: <20100718202712.GA17786@infomag.iguana.be>
-References: <1275465783-14052-1-git-send-email-viresh.kumar@st.com> <4C11B711.70907@st.com> <20100611053049.GM3788@infomag.iguana.be> <4C285A72.7030303@st.com> <20100628162430.GN3788@infomag.iguana.be> <20100718193425.GD24707@n2100.arm.linux.org.uk>
+	id S1757291Ab0GRUew (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 16:34:52 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:56928 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757252Ab0GRUev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 16:34:51 -0400
+Message-ID: <4C436566.8060609@fusionio.com>
+Date: Sun, 18 Jul 2010 14:34:46 -0600
+From: Jens Axboe <jaxboe@fusionio.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100718193425.GD24707@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Tejun Heo <tj@kernel.org>, "jgarzik@pobox.com" <jgarzik@pobox.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: Re: [PATCH[RFC] Quirk macbook pro 6,2 into ahci mode
+References: <4C4325E0.5020407@fusionio.com> <20100718184243.GA4062@srcf.ucam.org>
+In-Reply-To: <20100718184243.GA4062@srcf.ucam.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi All,
-
-> > I'm chasing another bug and must admit I almost forgot about this one.
-> > So, yes, I still need to look at this one.
+On 07/18/2010 12:42 PM, Matthew Garrett wrote:
+> On Sun, Jul 18, 2010 at 10:03:44AM -0600, Jens Axboe wrote:
 > 
-> Any news on this - its still sitting in the patch system since May 31st...
-> What do I do about it?
+>> So while the below works, it doesn't work when the laptop is
+>> coming out of suspend. I can't seem to find out why, since it's
+>> a bit hard to debug when you are on the road. What happens is
+>> that it comes back with a bit of a delay, and then the disks are
+>> apparently gone. I've tried adding a resume quirk to re-AHCI the
+>> thing, but it doesn't help.
+> 
+> You'll certainly need to re-quirk on resume, since there's no guarantee 
+> that the firmware will do it for you. My suspicion is that it comes up 
+> in PATA mode with legacy firmware in order to improve compatibility with 
+> XP, and you'd have ahci if you booted through EFI. I don't have 
+> something handy to test that right now, though.
 
-The bug was finally fixed and all other code testing that had to be done is also completed since today. I'll have a look at it later this week.
+See this is where I'm getting confused, since I'm not entirely sure what
+the boot process is. If I boot a DVD directly, then it's in piix mode.
+Booting through refit -> Linux, it's in piix mode. So my logic was that
+it is probably getting switched into ahci mode by the OSX boot loader or
+perhaps the driver does it there.
 
-Kind regards,
-Wim.
+The resume re-quirk makes no difference, so it's likely that it needs a
+bit more love when it's coming out of that state.
+
+>> Looking at the specs, I don't see what I am missing to make this
+>> work for resume. I'm assuming that EFI did initialize some bits
+>> that am missing when coming out of resume, but I don't know which
+>> bits.
+> 
+> There's no guarantee that the AHCI BAR is programmed by the firmware (it 
+> seems to be on the Macs, but won't be on most hardware). Is it getting 
+> reprogrammed on resume?
+
+The BARs are fine with just the patch I sent:
+
+Region 0: I/O ports at 3128 [size=8]
+Region 1: I/O ports at 313c [size=4]
+Region 2: I/O ports at 0170 [size=8]
+Region 3: I/O ports at 0374 [size=1]
+Region 4: I/O ports at 3020 [size=32]
+Region 5: Memory at a2800000 (32-bit, non-prefetchable) [size=2K]
+
+Since everything is screwed on resume and all file systems are gone,
+there's no easy way for me to printk() and verify anything on resume. So
+unless anyone has any stellar ideas on what to try, I guess it'll have
+to wait until I can log some output somehow.
+
+-- 
+Jens Axboe
 
