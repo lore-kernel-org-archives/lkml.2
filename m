@@ -1,25 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab0GSAJi (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 20:09:38 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51117 "EHLO gate.crashing.org"
+	id S1757753Ab0GSAQB (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 20:16:01 -0400
+Received: from gate.crashing.org ([63.228.1.57]:60922 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757646Ab0GSAJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 20:09:37 -0400
-Subject: Re: [S+Q2 07/19] slub: Allow removal of slab caches during boot
+	id S1757668Ab0GSAQA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 20:16:00 -0400
+Subject: Re: linux-next: build failure after merge of the final tree
+ (powerpc related)
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: David Rientjes <rientjes@google.com>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
-        Roland Dreier <rdreier@cisco.com>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@suse.de>
-In-Reply-To: <alpine.DEB.2.00.1007141647340.29110@chino.kir.corp.google.com>
-References: <20100709190706.938177313@quilx.com>
-	 <20100709190853.770833931@quilx.com>
-	 <alpine.DEB.2.00.1007141647340.29110@chino.kir.corp.google.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Martyn Welch <martyn.welch@ge.com>
+In-Reply-To: <20100716171920.51ce1b88.sfr@canb.auug.org.au>
+References: <20100716171920.51ce1b88.sfr@canb.auug.org.au>
 Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Jul 2010 10:07:10 +1000
-Message-ID: <1279498030.10390.1760.camel@pasglop>
+Date: Mon, 19 Jul 2010 10:15:41 +1000
+Message-ID: <1279498541.10390.1773.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -27,28 +25,21 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-14 at 16:48 -0700, David Rientjes wrote:
-> On Fri, 9 Jul 2010, Christoph Lameter wrote:
+On Fri, 2010-07-16 at 17:19 +1000, Stephen Rothwell wrote:
+> Hi all,
 > 
-> > If a slab cache is removed before we have setup sysfs then simply skip over
-> > the sysfs handling.
-> > 
-> > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > Cc: Roland Dreier <rdreier@cisco.com>
-> > Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
+> After merging the final tree, today's linux-next build (powerpc
+> allmodconfig) failed like this:
 > 
-> Acked-by: David Rientjes <rientjes@google.com>
+> ERROR: "of_i8042_kbd_irq" [drivers/input/serio/i8042.ko] undefined!
+> ERROR: "of_i8042_aux_irq" [drivers/input/serio/i8042.ko] undefined!
 > 
-> I missed this case earlier because I didn't consider slab caches being 
-> created and destroyed prior to slab_state == SYSFS, sorry!
+> Presumably missing EXPORT_SYMBOLs ..
 
-Ok so I may be a bit sleepy or something but I still fail to see how
-this whole thing isn't totally racy...
+Thanks. I'll fix that up.
 
-AFAIK. By the time we switch the slab state, we -do- have all CPUs up
-and can race happily between creating slab caches and creating the sysfs
-files...
-
+Cheers,
 Ben.
- 
+
+
 
