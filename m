@@ -1,97 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935852Ab0GSPR4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 11:17:56 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56451 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S935158Ab0GSPRy convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 11:17:54 -0400
+	id S935974Ab0GSPVc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 11:21:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55120 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935696Ab0GSPVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 11:21:31 -0400
+Date: Mon, 19 Jul 2010 18:16:10 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
+        Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: 2.6.35 Regression/oops from virtio: return ENOMEM on out of
+ memory patch
+Message-ID: <20100719151609.GA4267@redhat.com>
+References: <20100719150216.GC8623@think>
 MIME-Version: 1.0
-In-Reply-To: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-Date: Mon, 19 Jul 2010 08:17:14 -0700
-Message-ID: <AANLkTikuzYqYpGHcubb7QVciZW0dNFjOG82qIwy5M4gO@mail.gmail.com>
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
-	file stats available [ver #6]
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Howells <dhowells@redhat.com>
-Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100719150216.GC8623@think>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 7:17 PM, David Howells <dhowells@redhat.com> wrote:
->
->        ssize_t ret = xstat(int dfd,
->                            const char *filename,
->                            unsigned flags,
->                            const struct xstat_parameters *params,
->                            struct xstat *buffer,
->                            size_t buflen);
+On Mon, Jul 19, 2010 at 11:02:16AM -0400, Chris Mason wrote:
+> Hi everyone,
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=686d363786a53ed28ee875b84ef24e6d5126ef6f
+> 
+> I've been having problems with my long running stress runs and tracked
+> it down to the above commit.  Under load I get a couple of GFP_ATOMIC
+> allocation failures from virtio per day (not really surprising), and in
+> the past it would carry on happily.
+> 
+> Now I get the atomic allocation failure followed by this:
+> 
+> BUG: unable to handle kernel paging request at ffff88087c37e458
+> IP: [<ffffffff812e3752>] virtqueue_add_buf_gfp+0x305/0x353
+> 
+> (Full oops below).
+> 
+> Looking at virtqueue_add_buf_gfp, it does:
+> 
+>         /* If the host supports indirect descriptor tables, and we have multiple 
+>          * buffers, then go indirect. FIXME: tune this threshold */
+>         if (vq->indirect && (out + in) > 1 && vq->num_free) {
+>                 head = vring_add_indirect(vq, sg, out, in, gfp);
+>                 if (head != vq->vring.num)
+>                         goto add_head;
+>         }
+> [ ... ]
+> 
+> add_head:
+>         /* Set token. */
+>         vq->data[head] = data;
+> 
+> Since vring_add_indirect is returning -ENOMEM, head is -ENOMEM and things
+> go bad pretty quickly.  Full oops below, afraid I don't know the virtio
+> code well enough to provide the clean and obvious fix (outside of
+> reverting) at this late rc.
 
-Ugh. So I think this is pretty disgusting. For a few reasons:
+Good catch! Can you verify this fix please?
 
- - that whole xstat buffer handling is just a mess. I think you
-already fixed the "xstat_parameters" crud and just made it a simple
-unsigned long and a direct argument, but the "buffer+buflen" thing is
-still disgusting.
+virtio: fix oops on OOM
 
-   Why not just leave a few empty fields at the end, and make the rule
-be: "We don't just add random crap, so don't expect it to grow widely
-in the future".
+virtio ring was changed to return an error code on OOM,
+but one caller was missed and still checks for vq->vring.num.
+The fix is just to check for <0 error code.
 
- - you use "long long" all over the place. Don't do that. If you want
-a fixed size, say so, and use "u64/s64". That's the _real_ fixed size,
-and "long long" just _happens_ to be the same size on all current
-architectures.
+Long term it might make sense to change goto add_head to
+just return an error on oom instead, but let's apply
+a minimal fix for 2.6.35.
 
-   Put another way: "long" just _happened_ to be 32 bits way back when
-on pretty much all targets. That's where all the 64-bit compatibility
-mess came from. Don't make the same mistake. Besides, if the point is
-to make things be the same, _document_ that point by using a type that
-is explicitly sized.
+Reported-by: Chris Mason <chris.mason@oracle.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
- - why create that new kind of xstat() that realistically absolutely
-nobody will use outside of some very special cases, and that has no
-real advantages for 99.9% of all people?
+---
 
-   You could make it a "atomic stat+open" by replacing the useless
-"size" return value with a "fd" return value, add a flag saying "we're
-also interested in opening it" (in the same result set flags), and
-instead of that stupid "buflen" input, give the "mode" input that open
-needs.
-
-   Tadaa! You now have something that more people might be interested
-in, if only because it avoids a system call and might be a performance
-win. Who knows. Ask the Wine people what strange
-open-function-from-hell they are interested in.
-
->        ssize_t ret = fxstat(unsigned fd,
-
-Quite frankly, my gut feel is that once you do "xstat(dfd, filename,
-...)" then it's damn stupid to do a separate "fxstat()", when you
-might as well say that "xtstat(dfd, NULL, ...)" is the same as
-"fxstat(fd, ...)"
-
-Now, the difference between adding one or two system calls may not be
-huge, but just from a cleanliness angle, I really don't see the point
-of having another fstat variant when the extended xstat() already very
-naturally supports the thing. And let's face it, using a NULL path
-pointer just makes sense if you don't have a path. You already passed
-it a target file descriptor in the dfd.
-
-Anyway, I didn't look at whether the new xstat fields made any sense,
-but I hated the interface enough that I can't be bothered to. Don't
-make up baroque new things that will never be used. Make a better
-argument for why anybody would use them despite the lack of
-standardization etc. And make sure they are as simple as possible
-(which is why I hate that "buflen" thing etc).
-
-                    Linus
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index dd35b34..bffec32 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -164,7 +164,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
+ 			  gfp_t gfp)
+ {
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
+-	unsigned int i, avail, head, uninitialized_var(prev);
++	unsigned int i, avail, uninitialized_var(prev);
++	int head;
+ 
+ 	START_USE(vq);
+ 
+@@ -174,8 +175,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
+ 	 * buffers, then go indirect. FIXME: tune this threshold */
+ 	if (vq->indirect && (out + in) > 1 && vq->num_free) {
+ 		head = vring_add_indirect(vq, sg, out, in, gfp);
+-		if (head != vq->vring.num)
++		if (likely(head >= 0))
+ 			goto add_head;
+ 	}
+ 
+ 	BUG_ON(out + in > vq->vring.num);
