@@ -1,75 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967126Ab0GSWpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 18:45:18 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:48399 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S966833Ab0GSWpQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 18:45:16 -0400
-Date: Tue, 20 Jul 2010 08:45:12 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: linux-ext4@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35-r5 ext3 corruptions
-Message-ID: <20100719224512.GD32635@dastard>
-References: <20100715105745.GI30737@dastard>
+	id S967138Ab0GSWsw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 18:48:52 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:45474 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966583Ab0GSWsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 18:48:50 -0400
+Date: Tue, 20 Jul 2010 00:48:39 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 8/8] vmscan: Kick flusher threads to clean pages when
+ reclaim is encountering dirty pages
+Message-ID: <20100719224838.GC16031@cmpxchg.org>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
+ <1279545090-19169-9-git-send-email-mel@csn.ul.ie>
+ <20100719142349.GE12510@infradead.org>
+ <20100719143737.GQ13117@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100715105745.GI30737@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100719143737.GQ13117@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 08:57:45PM +1000, Dave Chinner wrote:
-> Upgrading my test vms from 2.6.35-rc3 to 2.6.35-rc5 is resulting in
-> repeated errors on the root drive of a test VM:
+On Mon, Jul 19, 2010 at 03:37:37PM +0100, Mel Gorman wrote:
+> On Mon, Jul 19, 2010 at 10:23:49AM -0400, Christoph Hellwig wrote:
+> > On Mon, Jul 19, 2010 at 02:11:30PM +0100, Mel Gorman wrote:
+> > > +	/*
+> > > +	 * If reclaim is encountering dirty pages, it may be because
+> > > +	 * dirty pages are reaching the end of the LRU even though
+> > > +	 * the dirty_ratio may be satisified. In this case, wake
+> > > +	 * flusher threads to pro-actively clean some pages
+> > > +	 */
+> > > +	wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty + nr_dirty / 2);
+> > > +
+> > 
+> > Where is the laptop-mode magic coming from?
+> > 
 > 
-> { 1532.368808] EXT3-fs error (device sda1): ext3_lookup: deleted inode referenced: 211043
-> [ 1532.370859] Aborting journal on device sda1.
-> [ 1532.376957] EXT3-fs (sda1): 
-> [ 1532.376976] EXT3-fs (sda1): error: ext3_journal_start_sb: Detected aborted journal
-> [ 1532.376980] EXT3-fs (sda1): error: remounting filesystem read-only
-> [ 1532.420361] error: remounting filesystem read-only
-> [ 1532.621209] EXT3-fs error (device sda1): ext3_lookup: deleted inode referenced: 211043
+> It comes from other parts of page reclaim where writing pages is avoided
+> by page reclaim where possible. Things like this
 > 
-> The filesysetm is a mess when checked on reboot - lots of illegal
-> references to blocks, multiply linked blocks, etc, but repairs.
-> Files are lots, truncated, etc, so there is visible filesystem
-> damage.
-> 
-> I did lots of testing on 2.6.35-rc3 and came across no problems;
-> problems only seemed to start with 2.6.35-rc5, and I've reproduced
-> the problem on a vanilla 2.6.35-rc4.
-> 
-> The problem seems to occur randomly - sometimes during boot or when
-> idle after boot, sometimes a while after boot. I haven't done any
-> digging at all for the cause - all I've done so far is confirm that
-> it is reproducable and it's not my code causing the problem.
+> 	wakeup_flusher_threads(laptop_mode ? 0 : total_scanned);
 
-Looks like this problem was isolated to a single VM and root
-filesystem. I could not reproduce it on anything other than the
-one filesystem that was failing.
+Actually, it's not avoiding writing pages in laptop mode, instead it
+is lumping writeouts aggressively (as I wrote in my other mail,
+.nr_pages=0 means 'write everything') to keep disk spinups rare and
+make maximum use of them.
 
-Unfortunately, I had a fat-fingered moment and backed up the wrong
-filesystem image at the outset. So after I smashed the original
-filesystem into oblivion (one failure lead to half the filesystem in
-lost+found), I had nothing to restore from to continue testing.
+> although the latter can get disabled too. Deleting the magic is an
+> option which would trade IO efficiency for power efficiency but my
+> current thinking is laptop mode preferred reduced power.
 
-So I re-imaged the root filesystem and the problem has not occurred
-despite trying for more than a day. When it was bad, it didn't take
-more than a few minutes of activity to reproduce. Hence I can only
-conclude there was something wrong with the filesystem itself that
-wasn't being detected, not some more generic problem....
-
-I'll go add this to the bugzilla and close it down.
-
-Cheers,
-
-Dave.
-
--- 
-Dave Chinner
-david@fromorbit.com
+Maybe couple your wakeup with sc->may_writepage?  It is usually false
+for laptop_mode but direct reclaimers enable it at one point in
+do_try_to_free_pages() when it scanned more than 150% of the reclaim
+target, so you could use existing disk spin-up points instead of
+introducing new ones or disabling the heuristics in laptop mode.
