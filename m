@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760979Ab0GTAAn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 20:00:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64814 "EHLO
+	id S967232Ab0GSX7O (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 19:59:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64418 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967255Ab0GSX7j (ORCPT
+	with ESMTP id S967070Ab0GSX64 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 19:59:39 -0400
+	Mon, 19 Jul 2010 19:58:56 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,93 +16,67 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 43/49] x86, memblock: Add memblock_x86_memory_in_range()
-Date: Mon, 19 Jul 2010 16:56:52 -0700
-Message-Id: <1279583818-14249-44-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 41/49] x86, memblock: Add memblock_x86_find_in_range_node()
+Date: Mon, 19 Jul 2010 16:56:50 -0700
+Message-Id: <1279583818-14249-42-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
 References: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090204.4C44E6A8.01B7,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090205.4C44E68F.00CC,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will return memory size in specified range according to memblock.memory.region
+It can be used to find NODE_DATA for numa.
 
-Try to share some code with memblock_x86_free_memory_in_range() by passing get_free to
-__memblock_x86_memory_in_range().
-
--v2: Ben want _in_range in the name instead of size
+Need to make sure early_node_map[] is filled before it is called, otherwise
+it will fallback to memblock_find_in_range(), with node range.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
  arch/x86/include/asm/memblock.h |    1 +
- arch/x86/mm/memblock.c          |   18 +++++++++++++++++-
- 2 files changed, 18 insertions(+), 1 deletions(-)
+ arch/x86/mm/memblock.c          |   15 +++++++++++++++
+ 2 files changed, 16 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-index fc3c230..2c304bb 100644
+index 16af28d..3a86b10 100644
 --- a/arch/x86/include/asm/memblock.h
 +++ b/arch/x86/include/asm/memblock.h
-@@ -16,5 +16,6 @@ void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
+@@ -14,5 +14,6 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
+ void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
+ 					 unsigned long last_pfn);
  u64 memblock_x86_hole_size(u64 start, u64 end);
- u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
- u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
-+u64 memblock_x86_memory_in_range(u64 addr, u64 limit);
++u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
  
  #endif
 diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index 3882caa..53b0f60 100644
+index bceb885..a3dece6 100644
 --- a/arch/x86/mm/memblock.c
 +++ b/arch/x86/mm/memblock.c
-@@ -217,7 +217,7 @@ void __init memblock_x86_to_bootmem(u64 start, u64 end)
- }
- #endif
- 
--u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
-+static u64 __init __memblock_x86_memory_in_range(u64 addr, u64 limit, bool get_free)
- {
- 	int i, count;
- 	struct range *range;
-@@ -246,6 +246,10 @@ u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
- 	}
- 	subtract_range(range, count, 0, addr);
- 	subtract_range(range, count, limit, -1ULL);
-+
-+	/* Subtract memblock.reserved.region in range ? */
-+	if (!get_free)
-+		goto sort_and_count_them;
- 	for_each_memblock(reserved, r) {
- 		final_start = PFN_DOWN(r->base);
- 		final_end = PFN_UP(r->base + r->size);
-@@ -256,6 +260,8 @@ u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
- 
- 		subtract_range(range, count, final_start, final_end);
- 	}
-+
-+sort_and_count_them:
- 	nr_range = clean_sort_range(range, count);
- 
- 	free_size = 0;
-@@ -265,6 +271,16 @@ u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
- 	return free_size << PAGE_SHIFT;
+@@ -240,6 +240,21 @@ void __init memblock_x86_free_range(u64 start, u64 end)
  }
  
-+u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
+ /*
++ * Need to call this function after memblock_x86_register_active_regions,
++ * so early_node_map[] is filled already.
++ */
++u64 __init memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align)
 +{
-+	return __memblock_x86_memory_in_range(addr, limit, true);
++	u64 addr;
++	addr = find_memory_core_early(nid, size, align, start, end);
++	if (addr != MEMBLOCK_ERROR)
++		return addr;
++
++	/* Fallback, should already have start end within node range */
++	return memblock_find_in_range(start, end, size, align);
 +}
 +
-+u64 __init memblock_x86_memory_in_range(u64 addr, u64 limit)
-+{
-+	return __memblock_x86_memory_in_range(addr, limit, false);
-+}
-+
- void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
- {
- 	if (start == end)
++/*
+  * Finds an active region in the address range from start_pfn to last_pfn and
+  * returns its range in ei_startpfn and ei_endpfn for the memblock entry.
+  */
 -- 
 1.6.4.2
 
