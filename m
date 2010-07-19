@@ -1,103 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760652Ab0GSMGP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 08:06:15 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:65042 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760598Ab0GSMGN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 08:06:13 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Mon, 19 Jul 2010 14:07:31 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
-In-reply-to: <590491.14987.qm@web180309.mail.gq1.yahoo.com>
-To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>
-Cc: David Brownell <dbrownell@users.sourceforge.net>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        linux-kernel@vger.kernel.org,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-        stable <stable@kernel.org>
-Message-id: <op.vf3amtx27p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <590491.14987.qm@web180309.mail.gq1.yahoo.com>
+	id S1760686Ab0GSM2I (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 08:28:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47459 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760675Ab0GSM2E (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 08:28:04 -0400
+Message-ID: <4C4444C2.6040607@redhat.com>
+Date: Mon, 19 Jul 2010 14:27:46 +0200
+From: Milan Broz <mbroz@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100608 Lightning/1.0b2 Thunderbird/3.1
+MIME-Version: 1.0
+To: device-mapper development <dm-devel@redhat.com>,
+        Andi Kleen <andi@firstfloor.org>
+CC: agk@redhat.com, linux-kernel@vger.kernel.org, eric.dumazet@gmail.com
+Subject: Re: [dm-devel] [PATCH] DM-CRYPT: Scale to multiple CPUs v2
+References: <20100601075259.GA13333@basil.fritz.box>
+In-Reply-To: <20100601075259.GA13333@basil.fritz.box>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jul 2010 12:08:36 +0200, David Brownell <david-b@pacbell.net> wrote:
->> It in no way duplicates functionality of the composite layer.
+ On 06/01/2010 09:52 AM, Andi Kleen wrote:
+> DM-CRYPT: Scale to multiple CPUs v2
+>
+> Updated version with the per CPU access improvements Eric suggested.
+Hi,
 
-> Beyond the obvious "Set serial number" ...
+seems that this approach is probably the best one we can use now...
+(I would better see threads in crypto layer but that's taken of
+the programme for today, seems.)
 
-In that case, should all the composite gadgets stop setting
-the iManufacturer, iProduct and iSerialNumber?  My understanding
-is that the composite module parameters are only meant as a way
-to override what the module uses as default.  Using your
-rationale, modules should not only stop setting those fields but
-also the idVendor and idProduct.
+I did some tests and it works for me, even tries some strange stacked
+mapping etc.
+Do you have some exact numbers for particular tests btw?
 
->> As a matter of fact, without this patch, the
->> iSerialNumber module parameter won't work
+Anyway, I have just one comment - please can we make the per-cpu attribute
+for IV generic? IOW not add explicit ie (ESSIV) but void * iv_private
+- see attached patch.
 
-> So submit a bugfix for that alone, making it
-> work everywhere...
+(I'll try discuss this with Alasdair to review for next merge
+window, I think you requested that already in some private mail...)
 
-iSerialNumber not working is not the main issue.  The main issue
-is that the serial number is not set by default which makes
-Windows sad (Windows uses serial number to distinguish different
-devices with the same vendor and product ID).  The serial number
-has to be set by default without the need for user to give a
-module parameter.
+Otherwise ack and
 
-So even if composite.c were to be modified the code in mass
-storage gadget would have to stay anyway.
+Reviewed-by: Milan Broz <mbroz@redhat.com>
 
-> Do you know when it broke?  That code has been
-> tested in the past, and observed to work.  So if
-> it's not working now, someone broke it and that
-> should just be fixed.
+Thanks,
+Milan
+----
 
-It never broke.  It was "broken" from the beginning.  Here's part of
-composite.c that handles the iSerialNumber:
+[PATCH] Use generic private pointer in per-cpu struct
 
-	if (cdev->desc.iSerialNumber && iSerialNumber)
-		string_override(composite->strings,
-			cdev->desc.iSerialNumber, iSerialNumber);
+If an IV need to use per-cpu struct, it should allocate
+it in its constructor and free in destructor.
+(There will be possible more compatibility IVs which need per-cpu struct.)
 
-As you see, the iSerialNumber module parameter is ignored unless the
-gadget driver sets the iSerialNumber field of the device descriptor.
-This patch makes mass storage gadget and g_multi set it.  As said
-above, this is orthogonal to changing the behaviour of the
-iSerialNumber module parameter.
+For ESSIV, only tfm pointer is needed so use iv_private directly.
 
+Signed-off-by: Milan Broz <mbroz@redhat.com>
+---
+ drivers/md/dm-crypt.c |   41 ++++++++++++++++++++++++-----------------
+ 1 files changed, 24 insertions(+), 17 deletions(-)
 
->> The second patch (by Yann Cantin) adds a serial module
->> parameter to
->> the File Storage Gadget.  FSG is not a composite
->> gadget
-
-> OK, so it should add a module param with the same
-> name as used elsewhere ...
-
-I was going to propose that but file storage gadget uses names
-different from composite anyway (ie. vendor and product instead of
-idVendor and idProduct) so I dunno if it's worth it.  As a matter
-of fact, "serial" seems to match the other names better.
-
-> makes sense to me.  I Alan Acks that patch, go for it.
-
-I believe Alan already agreed on this patch.  I'm merely updating
-it to use the changes introduced by my patch to mass storage and
-g_multi.
-
+diff --git a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
+index 13b1675..f7b2cf6 100644
+--- a/drivers/md/dm-crypt.c
++++ b/drivers/md/dm-crypt.c
+@@ -82,11 +82,6 @@ struct iv_essiv_private {
+ 	u8 *salt;
+ };
+ 
+-/* Duplicated per CPU state for cipher */
+-struct iv_essiv_private_cpu {
+-	struct crypto_cipher *tfm;
+-};
+-
+ struct iv_benbi_private {
+ 	int shift;
+ };
+@@ -101,7 +96,9 @@ enum flags { DM_CRYPT_SUSPENDED, DM_CRYPT_KEY_VALID };
+ struct crypt_cpu {
+ 	struct ablkcipher_request *req;
+ 	struct crypto_ablkcipher *tfm;
+-	struct iv_essiv_private_cpu ie;
++
++	/* ESSIV: struct crypto_cipher *essiv_tfm */
++	void *iv_private;
+ };
+ 
+ /*
+@@ -235,6 +232,8 @@ static int crypt_iv_essiv_init(struct crypt_config *cc)
+ 	struct iv_essiv_private *essiv = &cc->iv_gen_private.essiv;
+ 	struct hash_desc desc;
+ 	struct scatterlist sg;
++	struct crypt_cpu *cs;
++	struct crypto_cipher *essiv_tfm;
+ 	int err, n, cpu;
+ 
+ 	sg_init_one(&sg, cc->key, cc->key_size);
+@@ -246,9 +245,10 @@ static int crypt_iv_essiv_init(struct crypt_config *cc)
+ 		return err;
+ 
+ 	for_each_possible_cpu (cpu) {
+-		struct crypt_cpu *cs = per_cpu_ptr(cc->cpu, cpu);
++		cs = per_cpu_ptr(cc->cpu, cpu);
++		essiv_tfm = cs->iv_private,
+ 
+-		n = crypto_cipher_setkey(cs->ie.tfm, essiv->salt,
++		n = crypto_cipher_setkey(essiv_tfm, essiv->salt,
+ 				    crypto_hash_digestsize(essiv->hash_tfm));
+ 		if (n) {
+ 			err = n;
+@@ -264,14 +264,17 @@ static int crypt_iv_essiv_wipe(struct crypt_config *cc)
+ {
+ 	struct iv_essiv_private *essiv = &cc->iv_gen_private.essiv;
+ 	unsigned salt_size = crypto_hash_digestsize(essiv->hash_tfm);
++	struct crypt_cpu *cs;
++	struct crypto_cipher *essiv_tfm;
+ 	int cpu, err, n;
+ 
+ 	memset(essiv->salt, 0, salt_size);
+ 
+ 	err = 0;
+ 	for_each_possible_cpu (cpu) {
+-		struct crypt_cpu *cs = per_cpu_ptr(cc->cpu, cpu);
+-		n = crypto_cipher_setkey(cs->ie.tfm, essiv->salt, salt_size);
++		cs = per_cpu_ptr(cc->cpu, cpu);
++		essiv_tfm = cs->iv_private;
++		n = crypto_cipher_setkey(essiv_tfm, essiv->salt, salt_size);
+ 		if (n)
+ 			err = n;
+ 	}
+@@ -314,6 +317,8 @@ static struct crypto_cipher *setup_essiv_cpu(struct crypt_config *cc,
+ static void crypt_iv_essiv_dtr(struct crypt_config *cc)
+ {
+ 	int cpu;
++	struct crypt_cpu *cs;
++	struct crypto_cipher *essiv_tfm;
+ 	struct iv_essiv_private *essiv = &cc->iv_gen_private.essiv;
+ 
+ 	crypto_free_hash(essiv->hash_tfm);
+@@ -323,11 +328,11 @@ static void crypt_iv_essiv_dtr(struct crypt_config *cc)
+ 	essiv->salt = NULL;
+ 
+ 	for_each_possible_cpu (cpu) {
+-		struct crypt_cpu *cs = per_cpu_ptr(cc->cpu, cpu);
+-		if (cs->ie.tfm) {
+-			crypto_free_cipher(cs->ie.tfm);
+-			cs->ie.tfm = NULL;
+-		}
++		cs = per_cpu_ptr(cc->cpu, cpu);
++		essiv_tfm = cs->iv_private;
++		if (essiv_tfm)
++			crypto_free_cipher(essiv_tfm);
++		cs->iv_private = NULL;
+ 	}
+ }
+ 
+@@ -371,7 +376,7 @@ static int crypt_iv_essiv_ctr(struct crypt_config *cc, struct dm_target *ti,
+ 			crypt_iv_essiv_dtr(cc);
+ 			return PTR_ERR(essiv_tfm);
+ 		}
+-		per_cpu_ptr(cc->cpu, cpu)->ie.tfm = essiv_tfm;
++		per_cpu_ptr(cc->cpu, cpu)->iv_private = essiv_tfm;
+ 	}
+ 	return 0;
+ 
+@@ -384,9 +389,11 @@ bad:
+ 
+ static int crypt_iv_essiv_gen(struct crypt_config *cc, u8 *iv, sector_t sector)
+ {
++	struct crypto_cipher *essiv_tfm = crypt_me(cc)->iv_private;
++
+ 	memset(iv, 0, cc->iv_size);
+ 	*(u64 *)iv = cpu_to_le64(sector);
+-	crypto_cipher_encrypt_one(crypt_me(cc)->ie.tfm, iv, iv);
++	crypto_cipher_encrypt_one(essiv_tfm, iv, iv);
+ 	return 0;
+ }
+ 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.7.1
+
+
+
