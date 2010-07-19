@@ -1,60 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934961Ab0GSO0k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 10:26:40 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:34003 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933554Ab0GSO0i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 10:26:38 -0400
-Date: Mon, 19 Jul 2010 15:26:22 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in
-	direct reclaim
-Message-ID: <20100719142621.GP13117@csn.ul.ie>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie> <1279545090-19169-5-git-send-email-mel@csn.ul.ie> <20100719141934.GB12510@infradead.org>
+	id S934828Ab0GSOhP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 10:37:15 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40211 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934486Ab0GSOhN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 10:37:13 -0400
+Date: Mon, 19 Jul 2010 16:37:11 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: David Miller <davem@davemloft.net>
+Cc: joe@perches.com, shemminger@vyatta.com, dongdong.deng@windriver.com,
+        jkosina@suse.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vamos-dev@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 07/11] Removing dead ARCH_PNX010X
+Message-ID: <20100719143711.GI12299@faui48a.informatik.uni-erlangen.de>
+References: <cover.1279110894.git.siccegge@cs.fau.de> <395890e97bb1e879725ea56562f362d4af61c463.1279110895.git.siccegge@cs.fau.de> <20100714.133916.71109591.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100719141934.GB12510@infradead.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <20100714.133916.71109591.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 10:19:34AM -0400, Christoph Hellwig wrote:
-> On Mon, Jul 19, 2010 at 02:11:26PM +0100, Mel Gorman wrote:
-> > As the call-chain for writing anonymous pages is not expected to be deep
-> > and they are not cleaned by flusher threads, anonymous pages are still
-> > written back in direct reclaim.
+On Wed, Jul 14, 2010 at 01:39:16PM -0700, David Miller wrote:
+> From: Christoph Egger <siccegge@cs.fau.de>
+> Date: Wed, 14 Jul 2010 14:41:09 +0200
 > 
-> While it is not quite as deep as it skips the filesystem allocator and
-> extent mapping code it can still be quite deep for swap given that it
-> still has to traverse the whole I/O stack.  Probably not worth worrying
-> about now, but we need to keep an eye on it.
+> > ARCH_PNX010X doesn't exist in Kconfig, therefore removing all
+> > references for it from the source code.
+> > 
+> > Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 > 
-
-Agreed that we need to keep an eye on it. If this ever becomes a
-problem, we're going to need to consider a flusher for anonymous pages.
-If you look at the figures, we are still doing a lot of writeback of
-anonymous pages. Granted, the layout of swap sucks anyway but it's
-something to keep at the back of the mind.
-
-> The patch looks fine to me anyway.
+> If you are going to kill this off, kill the references in
+> driver/net/Kconfig at the same time.
 > 
+> Please fix this up and resubmit your patch, thanks.
 
-Thanks.
+DOne, patch below
 
+Thanks
+
+    CHristoph
+
+---
+>From ed6ffbfd77e14f17fa7d75ddf70b0d3b0126848c Mon Sep 17 00:00:00 2001
+From: Christoph Egger <siccegge@cs.fau.de>
+Date: Wed, 14 Jul 2010 14:19:15 +0200
+Subject: [PATCH] Removing dead ARCH_PNX010X
+
+ARCH_PNX010X doesn't exist in Kconfig, therefore removing all
+references for it from the source code/Kconfig.
+
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ drivers/net/Kconfig  |    4 ++--
+ drivers/net/cs89x0.c |   45 ---------------------------------------------
+ 2 files changed, 2 insertions(+), 47 deletions(-)
+
+diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
+index ce2fcdd..ba5b862 100644
+--- a/drivers/net/Kconfig
++++ b/drivers/net/Kconfig
+@@ -1463,7 +1463,7 @@ config FORCEDETH
+ config CS89x0
+ 	tristate "CS89x0 support"
+ 	depends on NET_ETHERNET && (ISA || EISA || MACH_IXDP2351 \
+-		|| ARCH_IXDP2X01 || ARCH_PNX010X || MACH_MX31ADS)
++		|| ARCH_IXDP2X01 || MACH_MX31ADS)
+ 	---help---
+ 	  Support for CS89x0 chipset based Ethernet cards. If you have a
+ 	  network (Ethernet) card of this type, say Y and read the
+@@ -1477,7 +1477,7 @@ config CS89x0
+ config CS89x0_NONISA_IRQ
+ 	def_bool y
+ 	depends on CS89x0 != n
+-	depends on MACH_IXDP2351 || ARCH_IXDP2X01 || ARCH_PNX010X || MACH_MX31ADS
++	depends on MACH_IXDP2351 || ARCH_IXDP2X01 || MACH_MX31ADS
+ 
+ config TC35815
+ 	tristate "TOSHIBA TC35815 Ethernet support"
+diff --git a/drivers/net/cs89x0.c b/drivers/net/cs89x0.c
+index 2ccb9f1..7a5d787 100644
+--- a/drivers/net/cs89x0.c
++++ b/drivers/net/cs89x0.c
+@@ -180,12 +180,6 @@ static unsigned int cs8900_irq_map[] = {IRQ_IXDP2351_CS8900, 0, 0, 0};
+ #elif defined(CONFIG_ARCH_IXDP2X01)
+ static unsigned int netcard_portlist[] __used __initdata = {IXDP2X01_CS8900_VIRT_BASE, 0};
+ static unsigned int cs8900_irq_map[] = {IRQ_IXDP2X01_CS8900, 0, 0, 0};
+-#elif defined(CONFIG_ARCH_PNX010X)
+-#include <mach/gpio.h>
+-#define CIRRUS_DEFAULT_BASE	IO_ADDRESS(EXT_STATIC2_s0_BASE + 0x200000)	/* = Physical address 0x48200000 */
+-#define CIRRUS_DEFAULT_IRQ	VH_INTC_INT_NUM_CASCADED_INTERRUPT_1 /* Event inputs bank 1 - ID 35/bit 3 */
+-static unsigned int netcard_portlist[] __used __initdata = {CIRRUS_DEFAULT_BASE, 0};
+-static unsigned int cs8900_irq_map[] = {CIRRUS_DEFAULT_IRQ, 0, 0, 0};
+ #elif defined(CONFIG_MACH_MX31ADS)
+ #include <mach/board-mx31ads.h>
+ static unsigned int netcard_portlist[] __used __initdata = {
+@@ -372,18 +366,6 @@ writeword(unsigned long base_addr, int portno, u16 value)
+ {
+ 	__raw_writel(value, base_addr + (portno << 1));
+ }
+-#elif defined(CONFIG_ARCH_PNX010X)
+-static u16
+-readword(unsigned long base_addr, int portno)
+-{
+-	return inw(base_addr + (portno << 1));
+-}
+-
+-static void
+-writeword(unsigned long base_addr, int portno, u16 value)
+-{
+-	outw(value, base_addr + (portno << 1));
+-}
+ #else
+ static u16
+ readword(unsigned long base_addr, int portno)
+@@ -546,30 +528,6 @@ cs89x0_probe1(struct net_device *dev, int ioaddr, int modular)
+ #endif
+         }
+ 
+-#ifdef CONFIG_ARCH_PNX010X
+-	initialize_ebi();
+-
+-	/* Map GPIO registers for the pins connected to the CS8900a. */
+-	if (map_cirrus_gpio() < 0)
+-		return -ENODEV;
+-
+-	reset_cirrus();
+-
+-	/* Map event-router registers. */
+-	if (map_event_router() < 0)
+-		return -ENODEV;
+-
+-	enable_cirrus_irq();
+-
+-	unmap_cirrus_gpio();
+-	unmap_event_router();
+-
+-	dev->base_addr = ioaddr;
+-
+-	for (i = 0 ; i < 3 ; i++)
+-		readreg(dev, 0);
+-#endif
+-
+ 	/* Grab the region so we can find another board if autoIRQ fails. */
+ 	/* WTF is going on here? */
+ 	if (!request_region(ioaddr & ~3, NETCARD_IO_EXTENT, DRV_NAME)) {
+@@ -1391,9 +1349,6 @@ net_open(struct net_device *dev)
+ 	case A_CNF_MEDIA_10B_2: result = lp->adapter_cnf & A_CNF_10B_2; break;
+         default: result = lp->adapter_cnf & (A_CNF_10B_T | A_CNF_AUI | A_CNF_10B_2);
+         }
+-#ifdef CONFIG_ARCH_PNX010X
+-	result = A_CNF_10B_T;
+-#endif
+         if (!result) {
+                 printk(KERN_ERR "%s: EEPROM is configured for unavailable media\n", dev->name);
+ release_dma:
 -- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+1.7.0.4
+
