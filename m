@@ -1,164 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934828Ab0GSOhP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 10:37:15 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:40211 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934486Ab0GSOhN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 10:37:13 -0400
-Date: Mon, 19 Jul 2010 16:37:11 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: David Miller <davem@davemloft.net>
-Cc: joe@perches.com, shemminger@vyatta.com, dongdong.deng@windriver.com,
-        jkosina@suse.cz, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 07/11] Removing dead ARCH_PNX010X
-Message-ID: <20100719143711.GI12299@faui48a.informatik.uni-erlangen.de>
-References: <cover.1279110894.git.siccegge@cs.fau.de> <395890e97bb1e879725ea56562f362d4af61c463.1279110895.git.siccegge@cs.fau.de> <20100714.133916.71109591.davem@davemloft.net>
+	id S935003Ab0GSOhy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 10:37:54 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:46585 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934486Ab0GSOhx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 10:37:53 -0400
+Date: Mon, 19 Jul 2010 15:37:37 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 8/8] vmscan: Kick flusher threads to clean pages when
+	reclaim is encountering dirty pages
+Message-ID: <20100719143737.GQ13117@csn.ul.ie>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie> <1279545090-19169-9-git-send-email-mel@csn.ul.ie> <20100719142349.GE12510@infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-15
 Content-Disposition: inline
-In-Reply-To: <20100714.133916.71109591.davem@davemloft.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100719142349.GE12510@infradead.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 01:39:16PM -0700, David Miller wrote:
-> From: Christoph Egger <siccegge@cs.fau.de>
-> Date: Wed, 14 Jul 2010 14:41:09 +0200
+On Mon, Jul 19, 2010 at 10:23:49AM -0400, Christoph Hellwig wrote:
+> On Mon, Jul 19, 2010 at 02:11:30PM +0100, Mel Gorman wrote:
+> > +	/*
+> > +	 * If reclaim is encountering dirty pages, it may be because
+> > +	 * dirty pages are reaching the end of the LRU even though
+> > +	 * the dirty_ratio may be satisified. In this case, wake
+> > +	 * flusher threads to pro-actively clean some pages
+> > +	 */
+> > +	wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty + nr_dirty / 2);
+> > +
 > 
-> > ARCH_PNX010X doesn't exist in Kconfig, therefore removing all
-> > references for it from the source code.
-> > 
-> > Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> Where is the laptop-mode magic coming from?
 > 
-> If you are going to kill this off, kill the references in
-> driver/net/Kconfig at the same time.
+
+It comes from other parts of page reclaim where writing pages is avoided
+by page reclaim where possible. Things like this
+
+	wakeup_flusher_threads(laptop_mode ? 0 : total_scanned);
+
+and
+
+	.may_writepage = !laptop_mode
+
+although the latter can get disabled too. Deleting the magic is an
+option which would trade IO efficiency for power efficiency but my
+current thinking is laptop mode preferred reduced power.
+
+> And btw, at least currently wakeup_flusher_threads writes back nr_pages
+> for each BDI, which might not be what you want. 
+
+I saw you pointing that out in another thread all right although I can't
+remember the context. It's not exactly what I want but then again we
+really want writing back of pages from a particular zone which we don't
+get either. There did not seem to be an ideal here and this appeared to
+be "less bad" than the alternatives.
+
+> Then again probably
+> no caller wants it, but I don't see an easy way to fix it.
 > 
-> Please fix this up and resubmit your patch, thanks.
 
-DOne, patch below
+I didn't either but my writeback-foo is weak (getting better but still weak). I
+hoped to bring it up at MM Summit and maybe at the Filesystem Summit too to
+see what ideas exist to improve this.
 
-Thanks
+When this idea was first floated, you called it a band-aid and I
+prioritised writing back old inodes over this. How do you feel about
+this approach now?
 
-    CHristoph
-
----
->From ed6ffbfd77e14f17fa7d75ddf70b0d3b0126848c Mon Sep 17 00:00:00 2001
-From: Christoph Egger <siccegge@cs.fau.de>
-Date: Wed, 14 Jul 2010 14:19:15 +0200
-Subject: [PATCH] Removing dead ARCH_PNX010X
-
-ARCH_PNX010X doesn't exist in Kconfig, therefore removing all
-references for it from the source code/Kconfig.
-
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- drivers/net/Kconfig  |    4 ++--
- drivers/net/cs89x0.c |   45 ---------------------------------------------
- 2 files changed, 2 insertions(+), 47 deletions(-)
-
-diff --git a/drivers/net/Kconfig b/drivers/net/Kconfig
-index ce2fcdd..ba5b862 100644
---- a/drivers/net/Kconfig
-+++ b/drivers/net/Kconfig
-@@ -1463,7 +1463,7 @@ config FORCEDETH
- config CS89x0
- 	tristate "CS89x0 support"
- 	depends on NET_ETHERNET && (ISA || EISA || MACH_IXDP2351 \
--		|| ARCH_IXDP2X01 || ARCH_PNX010X || MACH_MX31ADS)
-+		|| ARCH_IXDP2X01 || MACH_MX31ADS)
- 	---help---
- 	  Support for CS89x0 chipset based Ethernet cards. If you have a
- 	  network (Ethernet) card of this type, say Y and read the
-@@ -1477,7 +1477,7 @@ config CS89x0
- config CS89x0_NONISA_IRQ
- 	def_bool y
- 	depends on CS89x0 != n
--	depends on MACH_IXDP2351 || ARCH_IXDP2X01 || ARCH_PNX010X || MACH_MX31ADS
-+	depends on MACH_IXDP2351 || ARCH_IXDP2X01 || MACH_MX31ADS
- 
- config TC35815
- 	tristate "TOSHIBA TC35815 Ethernet support"
-diff --git a/drivers/net/cs89x0.c b/drivers/net/cs89x0.c
-index 2ccb9f1..7a5d787 100644
---- a/drivers/net/cs89x0.c
-+++ b/drivers/net/cs89x0.c
-@@ -180,12 +180,6 @@ static unsigned int cs8900_irq_map[] = {IRQ_IXDP2351_CS8900, 0, 0, 0};
- #elif defined(CONFIG_ARCH_IXDP2X01)
- static unsigned int netcard_portlist[] __used __initdata = {IXDP2X01_CS8900_VIRT_BASE, 0};
- static unsigned int cs8900_irq_map[] = {IRQ_IXDP2X01_CS8900, 0, 0, 0};
--#elif defined(CONFIG_ARCH_PNX010X)
--#include <mach/gpio.h>
--#define CIRRUS_DEFAULT_BASE	IO_ADDRESS(EXT_STATIC2_s0_BASE + 0x200000)	/* = Physical address 0x48200000 */
--#define CIRRUS_DEFAULT_IRQ	VH_INTC_INT_NUM_CASCADED_INTERRUPT_1 /* Event inputs bank 1 - ID 35/bit 3 */
--static unsigned int netcard_portlist[] __used __initdata = {CIRRUS_DEFAULT_BASE, 0};
--static unsigned int cs8900_irq_map[] = {CIRRUS_DEFAULT_IRQ, 0, 0, 0};
- #elif defined(CONFIG_MACH_MX31ADS)
- #include <mach/board-mx31ads.h>
- static unsigned int netcard_portlist[] __used __initdata = {
-@@ -372,18 +366,6 @@ writeword(unsigned long base_addr, int portno, u16 value)
- {
- 	__raw_writel(value, base_addr + (portno << 1));
- }
--#elif defined(CONFIG_ARCH_PNX010X)
--static u16
--readword(unsigned long base_addr, int portno)
--{
--	return inw(base_addr + (portno << 1));
--}
--
--static void
--writeword(unsigned long base_addr, int portno, u16 value)
--{
--	outw(value, base_addr + (portno << 1));
--}
- #else
- static u16
- readword(unsigned long base_addr, int portno)
-@@ -546,30 +528,6 @@ cs89x0_probe1(struct net_device *dev, int ioaddr, int modular)
- #endif
-         }
- 
--#ifdef CONFIG_ARCH_PNX010X
--	initialize_ebi();
--
--	/* Map GPIO registers for the pins connected to the CS8900a. */
--	if (map_cirrus_gpio() < 0)
--		return -ENODEV;
--
--	reset_cirrus();
--
--	/* Map event-router registers. */
--	if (map_event_router() < 0)
--		return -ENODEV;
--
--	enable_cirrus_irq();
--
--	unmap_cirrus_gpio();
--	unmap_event_router();
--
--	dev->base_addr = ioaddr;
--
--	for (i = 0 ; i < 3 ; i++)
--		readreg(dev, 0);
--#endif
--
- 	/* Grab the region so we can find another board if autoIRQ fails. */
- 	/* WTF is going on here? */
- 	if (!request_region(ioaddr & ~3, NETCARD_IO_EXTENT, DRV_NAME)) {
-@@ -1391,9 +1349,6 @@ net_open(struct net_device *dev)
- 	case A_CNF_MEDIA_10B_2: result = lp->adapter_cnf & A_CNF_10B_2; break;
-         default: result = lp->adapter_cnf & (A_CNF_10B_T | A_CNF_AUI | A_CNF_10B_2);
-         }
--#ifdef CONFIG_ARCH_PNX010X
--	result = A_CNF_10B_T;
--#endif
-         if (!result) {
-                 printk(KERN_ERR "%s: EEPROM is configured for unavailable media\n", dev->name);
- release_dma:
 -- 
-1.7.0.4
-
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
