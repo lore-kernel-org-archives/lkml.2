@@ -1,92 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757059Ab0GSHp1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 03:45:27 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:33988 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755209Ab0GSHpZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 03:45:25 -0400
-To: Zach Pfeffer <zpfeffer@codeaurora.org>
-Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device memory management
-References: <4C3C0032.5020702@codeaurora.org>
-	<20100713150311B.fujita.tomonori@lab.ntt.co.jp>
-	<20100713121420.GB4263@codeaurora.org>
-	<20100714104353B.fujita.tomonori@lab.ntt.co.jp>
-	<20100714201149.GA14008@codeaurora.org>
-	<20100714220536.GE18138@n2100.arm.linux.org.uk>
-	<20100715012958.GB2239@codeaurora.org>
-	<20100715085535.GC26212@n2100.arm.linux.org.uk>
-	<20100719065233.GD11054@codeaurora.org>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Mon, 19 Jul 2010 00:44:49 -0700
-In-Reply-To: <20100719065233.GD11054@codeaurora.org> (Zach Pfeffer's message of "Sun\, 18 Jul 2010 23\:52\:33 -0700")
-Message-ID: <m1mxtndifi.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1758720Ab0GSIBm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 04:01:42 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57874 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1756782Ab0GSIBk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 04:01:40 -0400
+Message-ID: <4C44066A.3080701@cn.fujitsu.com>
+Date: Mon, 19 Jul 2010 16:01:46 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100413 Fedora/3.0.4-2.fc13 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
+To: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
+CC: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
+        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
+        zheng.yan@oracle.com, Jens Axboe <axboe@kernel.dk>,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: kernel BUG at fs/btrfs/extent-tree.c:1353
+References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <201007141725.24507.johannes.hirte@fem.tu-ilmenau.de> <20100715001104.GF30737@dastard> <201007152014.52924.johannes.hirte@fem.tu-ilmenau.de>
+In-Reply-To: <201007152014.52924.johannes.hirte@fem.tu-ilmenau.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Zach Pfeffer <zpfeffer@codeaurora.org> writes:
-
-> On Thu, Jul 15, 2010 at 09:55:35AM +0100, Russell King - ARM Linux wrote:
->> On Wed, Jul 14, 2010 at 06:29:58PM -0700, Zach Pfeffer wrote:
->> > The VCM ensures that all mappings that map a given physical buffer:
->> > IOMMU mappings, CPU mappings and one-to-one device mappings all map
->> > that buffer using the same (or compatible) attributes. At this point
->> > the only attribute that users can pass is CACHED. In the absence of
->> > CACHED all accesses go straight through to the physical memory.
->> 
->> So what you're saying is that if I have a buffer in kernel space
->> which I already have its virtual address, I can pass this to VCM and
->> tell it !CACHED, and it'll setup another mapping which is not cached
->> for me?
+On Thu, 15 Jul 2010 20:14:51 +0200, Johannes Hirte wrote:
+> Am Donnerstag 15 Juli 2010, 02:11:04 schrieb Dave Chinner:
+>> On Wed, Jul 14, 2010 at 05:25:23PM +0200, Johannes Hirte wrote:
+>>> Am Donnerstag 08 Juli 2010, 16:31:09 schrieb Chris Mason:
+>>> I'm not sure if btrfs is to blame for this error. After the errors I
+>>> switched to XFS on this system and got now this error:
+>>>
+>>> ls -l .kde4/share/apps/akregator/data/
+>>> ls: cannot access .kde4/share/apps/akregator/data/feeds.opml: Structure
+>>> needs cleaning
+>>> total 4
+>>> ?????????? ? ?    ?        ?            ? feeds.opml
+>>
+>> What is the error reported in dmesg when the XFS filesytem shuts down?
 >
-> Not quite. The existing mapping will be represented by a reservation
-> from the prebuilt VCM of the VM. This reservation has been marked
-> non-cached. Another reservation on a IOMMU VCM, also marked non-cached
-> will be backed with the same physical memory. This is legal in ARM,
-> allowing the vcm_back call to succeed. If you instead passed cached on
-> the second mapping, the first mapping would be non-cached and the
-> second would be cached. If the underlying architecture supported this
-> than the vcm_back would go through.
+> Nothing. I double checked the logs. There are only the messages when mounting
+> the filesystem. No other errors are reported than the inaccessible file and the
+> output from xfs_check.
 
-How does this compare with the x86 pat code?
+Is there anything wrong with your disks or memory?
+Sometimes the bad memory can break the filesystem. I have met this kind of problem
+some time ago.
 
->> You are aware that multiple V:P mappings for the same physical page
->> with different attributes are being outlawed with ARMv6 and ARMv7
->> due to speculative prefetching.  The cache can be searched even for
->> a mapping specified as 'normal, uncached' and you can get cache hits
->> because the data has been speculatively loaded through a separate
->> cached mapping of the same physical page.
->
-> I didn't know that. Thanks for the heads up.
->
->> FYI, during the next merge window, I will be pushing a patch which makes
->> ioremap() of system RAM fail, which should be the last core code creator
->> of mappings with different memory types.  This behaviour has been outlawed
->> (as unpredictable) in the architecture specification and does cause
->> problems on some CPUs.
->
-> That's fair enough, but it seems like it should only be outlawed for
-> those processors on which it breaks.
+If there is no problem with your disk and memory, Could you tell us the parameter of
+mkfs.btrfs and mount?
 
-To my knowledge mismatch of mapping attributes is a problem on most
-cpus on every architecture.  I don't see it making sense to encourage
-coding constructs that will fail in the strangest most difficult to
-debug ways.
-
-Eric
-
+Thanks
+Miao Xie
