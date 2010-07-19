@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966344Ab0GSS6z (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 14:58:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41913 "EHLO mx1.redhat.com"
+	id S966364Ab0GSTAb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 15:00:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6002 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965095Ab0GSS6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 14:58:52 -0400
+	id S965169Ab0GSTAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 15:00:30 -0400
 From: Jeff Moyer <jmoyer@redhat.com>
 To: Vivek Goyal <vgoyal@redhat.com>
 Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
         dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
-Subject: Re: [PATCH 2/3] cfq-iosched: Implement a new tunable group_idle
+Subject: Re: [PATCH 3/3] cfq-iosched: Print per slice sectors dispatched in blktrace
 References: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
-	<1279560008-2905-3-git-send-email-vgoyal@redhat.com>
+	<1279560008-2905-4-git-send-email-vgoyal@redhat.com>
 X-PGP-KeyID: 1F78E1B4
 X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
 X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 19 Jul 2010 14:58:41 -0400
-In-Reply-To: <1279560008-2905-3-git-send-email-vgoyal@redhat.com> (Vivek
-	Goyal's message of "Mon, 19 Jul 2010 13:20:07 -0400")
-Message-ID: <x49iq4bti1q.fsf@segfault.boston.devel.redhat.com>
+Date: Mon, 19 Jul 2010 14:59:59 -0400
+In-Reply-To: <1279560008-2905-4-git-send-email-vgoyal@redhat.com> (Vivek
+	Goyal's message of "Mon, 19 Jul 2010 13:20:08 -0400")
+Message-ID: <x49eiezthzk.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -29,116 +29,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Vivek Goyal <vgoyal@redhat.com> writes:
 
-> o Implement a new tunable group_idle, which allows idling on the group
->   instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
->   on the individual queues but idle on the group. This way on fast storage
->   we can get fairness between groups at the same time overall throughput
->   improves.
->
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  block/cfq-iosched.c |   60 +++++++++++++++++++++++++++++++++++++++++++++------
->  1 files changed, 53 insertions(+), 7 deletions(-)
->
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index f44064c..b23d7f4 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -30,6 +30,7 @@ static const int cfq_slice_sync = HZ / 10;
->  static int cfq_slice_async = HZ / 25;
->  static const int cfq_slice_async_rq = 2;
->  static int cfq_slice_idle = HZ / 125;
-> +static int cfq_group_idle = HZ / 125;
->  static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
->  static const int cfq_hist_divisor = 4;
->  
-> @@ -198,6 +199,8 @@ struct cfq_group {
->  	struct hlist_node cfqd_node;
->  	atomic_t ref;
->  #endif
-> +	/* number of requests that are on the dispatch list or inside driver */
-> +	int dispatched;
->  };
->  
->  /*
-> @@ -271,6 +274,7 @@ struct cfq_data {
->  	unsigned int cfq_slice[2];
->  	unsigned int cfq_slice_async_rq;
->  	unsigned int cfq_slice_idle;
-> +	unsigned int cfq_group_idle;
->  	unsigned int cfq_latency;
->  	unsigned int cfq_group_isolation;
->  
-> @@ -1856,6 +1860,9 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  	BUG_ON(!service_tree);
->  	BUG_ON(!service_tree->count);
->  
-> +	if (!cfqd->cfq_slice_idle)
-> +		return false;
-> +
->  	/* We never do for idle class queues. */
->  	if (prio == IDLE_WORKLOAD)
->  		return false;
-> @@ -1880,7 +1887,7 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
->  {
->  	struct cfq_queue *cfqq = cfqd->active_queue;
->  	struct cfq_io_context *cic;
-> -	unsigned long sl;
-> +	unsigned long sl, group_idle = 0;
->  
->  	/*
->  	 * SSD device without seek penalty, disable idling. But only do so
-> @@ -1896,8 +1903,13 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
->  	/*
->  	 * idle is disabled, either manually or by past process history
->  	 */
-> -	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq))
-> -		return;
-> +	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq)) {
+> - Divyesh had gotten rid of this code in the past. I want to re-introduce it
+>   back as it helps me a lot during debugging.
 
-The check for cfqd->cfq_slice_idle is now redundant (as it's done in
-cfq_should_idle).
+Fine with me.
 
-> @@ -2215,7 +2236,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
->  			cfqq = NULL;
->  			goto keep_queue;
->  		} else
-> -			goto expire;
-> +			goto check_group_idle;
->  	}
->  
->  	/*
-> @@ -2249,6 +2270,17 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
->  		goto keep_queue;
->  	}
->  
-> +	/*
-> +	 * If group idle is enabled and there are requests dispatched from
-> +	 * this group, wait for requests to complete.
-> +	 */
-> +check_group_idle:
-> +	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
-> +	    && cfqq->cfqg->dispatched) {
-> +		cfqq = NULL;
-> +		goto keep_queue;
-> +	}
-
-I really wish we could roll all of this logic into cfq_should_idle.
-
-> @@ -3420,7 +3453,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
->  		 * the queue.
->  		 */
->  		if (cfq_should_wait_busy(cfqd, cfqq)) {
-> -			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
-> +			unsigned long extend_sl = cfqd->cfq_slice_idle;
-> +			if (!cfqd->cfq_slice_idle)
-> +				extend_sl = cfqd->cfq_group_idle;
-> +			cfqq->slice_end = jiffies + extend_sl;
-
-So, if slice_idle and group_idle are both set, slice_idle trumps
-group_idle?  Did you give that case any thought?  If it doesn't make
-sense to configure both, then we should probably make sure they can't
-both be set.
-
-Cheers,
-Jeff
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
