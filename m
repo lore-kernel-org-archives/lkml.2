@@ -1,86 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936342Ab0GSQIc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 12:08:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59581 "EHLO mx1.redhat.com"
+	id S936355Ab0GSQLK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 12:11:10 -0400
+Received: from lo.gmane.org ([80.91.229.12]:54889 "EHLO lo.gmane.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936315Ab0GSQIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 12:08:30 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, axboe@kernel.dk,
-        Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
-	<x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
-	<x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
-	<x49eif7p3z0.fsf@segfault.boston.devel.redhat.com>
-	<20100713195650.GA21044@redhat.com>
-	<x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
-	<20100713204236.GB21044@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 19 Jul 2010 12:08:23 -0400
-In-Reply-To: <20100713204236.GB21044@redhat.com> (Vivek Goyal's message of
-	"Tue, 13 Jul 2010 16:42:36 -0400")
-Message-ID: <x4939vfv4i0.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S936201Ab0GSQLI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 12:11:08 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+From: Bill Davidsen <davidsen@tmr.com>
+Subject: Re: A few V7 fs improvements
+Date: Mon, 19 Jul 2010 12:10:55 -0400
+Message-ID: <4C44790F.30309@tmr.com>
+References: <1279559802-19154-1-git-send-email-lkundrak@v3.sk>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+Cc: Christoph Hellwig <hch@lst.de>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+X-Gmane-NNTP-Posting-Host: pool-70-18-102-89.alb.east.verizon.net
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.1.21) Gecko/20090507 Fedora/1.1.16-1.fc9 NOT Firefox/3.0.11 pango-text SeaMonkey/1.1.16
+In-Reply-To: <1279559802-19154-1-git-send-email-lkundrak@v3.sk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+Lubomir Rintel wrote:
+> I'm resending these once again, since I suspect they may have gotten lost
+> in a spam filter due to improper MTA configuration of mine.
+> 
+> They basically improve usability of PC v7 filesystems; such as those of
+> PC/IX.
+> 
+I remember PC/IX fondly, I had people using it on an old XT for data entry. Wish 
+I still had an install kit, I bet the AT version would install nicely in a VM. 
+Would be a good teaching tool.
 
-> On Tue, Jul 13, 2010 at 04:30:23PM -0400, Jeff Moyer wrote:
->> Vivek Goyal <vgoyal@redhat.com> writes:
+-- 
+Bill Davidsen <davidsen@tmr.com>
+   "We have more to fear from the bungling of the incompetent than from
+the machinations of the wicked."  - from Slashdot
 
-> I don't mind looking at traces. Do let me know where can I access those.
-
-Forwarded privately.
-
->> Now, to answer your question, the jbd2 thread runs and issues a barrier,
->> which causes a forced dispatch of requests.  After that a new queue is
->> selected, and since the fs_mark thread is blocked on the journal commit,
->> it's always the fio process that gets to run.
->
-> Ok, that explains it.  So somehow after the barrier, fio always wins
-> as issues next read request before the fs_mark is able to issue the
-> next set of writes.
->
->> 
->> This, of course, raises the question of why the blk_yield patches didn't
->> run into the same problem.  Looking back at some saved traces, I don't
->> see WBS (write barrier sync) requests, so I wonder if barriers weren't
->> supported by my last storage system.
->
-> I think that blk_yield patches will also run into the same issue if
-> barriers are enabled.
-
-Agreed.
-
-Here are the results again with barriers disabled for Corrado's patch:
-
-fs_mark: 348.2 files/sec
-fio: 53324.6 KB/s
-
-Remember that deadline was seeing 450 files/sec and 78 MB/s.  So, in
-this case, the buffered reader appears to be starved.  Looking into this
-further, I found that the journal thread is running with I/O priority 0,
-while the fio and fs_mark processes are running at the default (4).
-Because the jbd thread has a higher I/O priority, its requests are
-always closer to the front of the sort list, and thus the sync-noidle
-workload is chosen more often than the sync workload.  This essentially
-results in an elevated I/O priority for the fs_mark process as well.
-While troubling, that problem is not directly related to the problem
-we're looking at.
-
-So, I'm still in favor of Corrado's approach.  Are there any remaining
-dissenting opinions on this?
-
-Cheers,
-Jeff
