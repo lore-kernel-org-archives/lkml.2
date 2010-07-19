@@ -1,55 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760485Ab0GSKOX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 06:14:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38455 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760452Ab0GSKOW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 06:14:22 -0400
-Message-ID: <4C442549.4030006@kernel.org>
-Date: Mon, 19 Jul 2010 12:13:29 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1760512Ab0GSKnL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 06:43:11 -0400
+Received: from [196.3.96.162] ([196.3.96.162]:54193 "EHLO mail.up.ac.mz"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1760470Ab0GSKnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 06:43:10 -0400
+From: "=?UTF-8?Q?Western=C2=AE_Union_Mo?=ney Transfer" 
+	<info@westernunion.com>
+Reply-To: wes.uniontransfer@fastservice.com
+Subject: Western Union Office
+Date: Mon, 19 Jul 2010 12:37:10 +0300
+Message-Id: <20100719093710.M60597@westernunion.com>
+X-Mailer: OpenWebMail 2.53 
+X-OriginatingIP: 41.138.190.226 (xiiicongresso@up.ac.mz)
 MIME-Version: 1.0
-To: Jens Axboe <jaxboe@fusionio.com>
-CC: Jeff Garzik <jgarzik@pobox.com>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH[RFC] Quirk macbook pro 6,2 into ahci mode
-References: <4C4325E0.5020407@fusionio.com> <20100718184243.GA4062@srcf.ucam.org> <4C4383D9.3060705@pobox.com> <4C439B6D.7050103@fusionio.com>
-In-Reply-To: <4C439B6D.7050103@fusionio.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 19 Jul 2010 10:13:32 +0000 (UTC)
+Content-Type: text/plain;
+	charset=utf-8
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Welcome To Western Union Money Transfer
+Website: www.westernunion.com
 
-On 07/19/2010 02:25 AM, Jens Axboe wrote:
-> +static void pch_update_bar(struct pci_dev *pdev)
-> +{
-> +	if (pcim_iomap_regions(pdev, 1 << 5, "AHCI quirk")) {
-> +		int ret;
-> +
-> +		printk("AHCI BAR not set - attempting to program... ");
-> +		pdev->resource[5].flags = IORESOURCE_MEM;
-> +		ret = pci_allocate_resource(pdev, 5);
-> +		if (ret)
-> +			printk (KERN_INFO "Failed to allocate new region\n");
-> +		else
-> +			printk (KERN_INFO "Succeeded\n");
-> +	} else
-> +		pcim_iounmap_regions(pdev, 1 << 5);
-> +}
+Dear Western Union Customer,
 
-Hmm... as the firmware is setting up the resource during boot,
-wouldn't it be better to save it and restore it during resume?  That
-would be simpler and more robust.
+This is the second email we are sending you now after two weeks, if you get 
+this one, I write to inform you that we have already sent you $5000.00 USD 
+dollars through our Western Union as we have been given the mandate to 
+transfer your full compensation payment of $800,000.00 USD via Western Union 
+by this government.  So,I decided to email you the MTCN and sender name, so 
+you can pick up this $5000.00 USD to enable us send another $5000.00 USD by 
+tomorrow as you know we will be sending you only $5000.00 USD per day. Please 
+pick up this information and run to any Western Union in your country to pick 
+up the $5000.00 USD and call me back to send you another payment tomorrow.
 
-Thanks.
+Manager: Mrs.Green David 
+Phone:+4470111 96960
+Email: w.uniontransfer@london.com or wes.uniontransfer@fastservice.com
 
--- 
-tejun
+Call or email me once you picked up this $5000.00 USD today. Here is the 
+western union payment information to pick up the first $5000.00 USD, Don't 
+forget that you have 2 hours to pick up this money after receiving our mail 
+and your full name is the receiver's name.
+
+
+Information's to pick up the money
+
+MTCN: 7863288780 
+Sender First Name: Tammy 
+Sender Last Name: Wishert
+Sent From: London
+Test Question: Pay
+Test Answer: Cash
+Amount: $5000 USD
+
+
+For verification Kindly call our International service number +18003256000 or 
++448007314814 and follow the voice prompt, then insert the control number 
+above to hear the availability of your funds ready for pick up. Please you 
+are to check the status of the transfer before going to any western union 
+office and you can also check the status via our web site below.
+
+https://wumt.westernunion.com/asp/orderStatus.asp?country=global
+
+Get back to us as soon as you received the first payment so that we can go 
+ahead with the other payment tomorrow. Thank you for using Western Union.
+
+Regards,
+Mrs.Green David.
+
