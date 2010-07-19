@@ -1,109 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760699Ab0GSRCQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:02:16 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:16329 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755167Ab0GSRCO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:02:14 -0400
-Date: Mon, 19 Jul 2010 10:02:13 -0700 (PDT)
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-X-X-Sender: sbhatewara@localhost.localdomain
-To: David Miller <davem@davemloft.net>
-cc: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "pv-drivers@vmware.com" <pv-drivers@vmware.com>,
-        Ronghua Zhang <ronghua@vmware.com>,
-        Matthieu Bucchianeri <matthieu@vmware.com>
-Subject: Re: [PATCH 2.6.35-rc1] net-next: vmxnet3 fixes [4/5] Do not reset
- when the device is not opened
-In-Reply-To: <20100717.163538.137865264.davem@davemloft.net>
-Message-ID: <alpine.LRH.2.00.1007190958480.9943@localhost.localdomain>
-References: <alpine.LRH.2.00.1007151448260.25472@localhost.localdomain> <20100715.183210.226762655.davem@davemloft.net> <alpine.LRH.2.00.1007160108240.12503@localhost.localdomain> <20100717.163538.137865264.davem@davemloft.net>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1760695Ab0GSRFr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:05:47 -0400
+Received: from mga14.intel.com ([143.182.124.37]:48635 "EHLO mga14.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753705Ab0GSRFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 13:05:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,227,1278313200"; 
+   d="scan'208";a="301817509"
+Date: Mon, 19 Jul 2010 10:05:41 -0700
+From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
+To: Thomas Meyer <thomas@m3y3r.de>
+Cc: tpmdd-devel@lists.sourceforge.net,
+        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org
+Subject: Re: TPM bug fix causes hang on suspend (2.6.35-rc4)
+Message-ID: <20100719170541.GA3004@xanatos>
+References: <20100717000033.GA2509@xanatos>
+ <1279375943.4731.0.camel@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279375943.4731.0.camel@localhost.localdomain>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Sat, 17 Jul 2010, David Miller wrote:
-
-> From: Shreyas Bhatewara <sbhatewara@vmware.com>
-> Date: Fri, 16 Jul 2010 01:17:29 -0700 (PDT)
+On Sat, Jul 17, 2010 at 04:12:23PM +0200, Thomas Meyer wrote:
+> Am Freitag, den 16.07.2010, 17:00 -0700 schrieb Sarah Sharp:
+> > I recently upgraded to 2.6.35-rc4, and I discovered that suspend no
+> > longer works on my Thinkpad x200s.  When I suspend with some programs
+> > open (specifically while buffy is reading my maildirs), the suspend
+> > light blinks forever and the system never suspends.
+> > 
+> > I bisected the issue down to commit b5edfef, which is a merge of James
+> > Morris' security-testing-2.6 tree, that only included this commit:
+> > 
+> > commit 02a077c52ef7631275a79862ffd9f3dbe9d38bc2
+> > Author: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+> > Date:   Mon Jun 14 13:58:22 2010 -0300
+> > 
+> >     TPM: ReadPubEK output struct fix
+> >     
+> >     This patch adds a missing element of the ReadPubEK command output,
+> >     that prevents future overflow of this buffer when copying the
+> >     TPM output result into it.
+> >     
+> >     Prevents a kernel panic in case the user tries to read the
+> >     pubek from sysfs.
+> >     
+> >     Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
+> >     Signed-off-by: James Morris <jmorris@namei.org>
+> > 
+> > diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
+> > index 8e00b4d..792868d 100644
+> > --- a/drivers/char/tpm/tpm.h
+> > +++ b/drivers/char/tpm/tpm.h
+> > @@ -224,6 +224,7 @@ struct      tpm_readpubek_params_out {
+> >         u8      algorithm[4];
+> >         u8      encscheme[2];
+> >         u8      sigscheme[2];
+> > +       __be32  paramsize;
+> >         u8      parameters[12]; /*assuming RSA*/
+> >         __be32  keysize;
+> >         u8      modulus[256];
+> > 
+> > The dmesg captured over netconsole when suspend fails is attached, but
+> > it doesn't look very interesting.  lspci output is also attached.  I
+> > don't have any userspace programs installed that can use TPM, like
+> > trousers or libtspi1.
+> > 
+> > If I try just removing the tpm_tis, tpm_bios, and tpm modules before
+> > suspending, the suspend still fails.  If I recompile without TPM
+> > hardware support (CONFIG_TCG_TPM=n), suspend still fails.  However, if I
+> > also turn off the securityFS config option (CONFIG_SECURITYFS),
+> > suspend succeeds.
+> > 
+> > It looks like an odd commit to cause a suspend failure, but when I reset
+> > the git HEAD to the commit before the merge of this patch, and suspend
+> > works fine.  Can you fix this?
+> > 
+> > Sarah Sharp
 > 
-> > 
-> > 
-> > On Thu, 15 Jul 2010, David Miller wrote:
-> > 
-> >> From: Shreyas Bhatewara <sbhatewara@vmware.com>
-> >> Date: Thu, 15 Jul 2010 18:20:52 -0700 (PDT)
-> >> 
-> >> > Is this what you suggest :
-> >> > 
-> >> > ---
-> >> > 
-> >> > Hold rtnl_lock to get the right link state.
-> >> 
-> >> It ought to work, but make sure that it is legal to take the
-> >> RTNL semaphore in all contexts in which this code block
-> >> might be called.
-> >> 
-> > 
-> > This code block is called only from the workqueue handler, which runs in
-> > process context, so it is legal to take rtnl semaphore.
-> > Tested this code by simulating event interrupts (which schedule this 
-> > code) at considerable frequency while the interface was brought up and
-> > down in a loop. Similar stress testing had revealed the bug originally. 
-> 
-> Awesome, please submit this formally.  The copy you sent lacked a commit
-> message and signoff.
-> 
+> Maybe same as https://bugzilla.kernel.org/show_bug.cgi?id=16256 ?
 
-Reposting the patch formally.
+That doesn't look really similar.  The user found a different patch at
+fault, and they were also able to successfully suspend when the tpm_tis
+module was removed, but suspend still breaks for me in that case.
+Suspend breaks with that commit even when I don't compile any tpm
+modules at all.  But I'll try Helmut's fix[1] and let you know if it
+works.
 
-David,
-Thanks for your coperation.
+Sarah Sharp
 
-->Shreyas
-
----
-From: Shreyas Bhatewara <sbhatewara@vmware.com>
-
-Hold rtnl_lock to get the right link state.
-
-While asynchronously resetting the device, hold rtnl_lock to get the
-right value from netif_running. If a reset is scheduled, and the device
-goes thru close and open, it may happen that reset and open may run in
-parallel. Holding rtnl_lock will avoid this.
-
-Signed-off-by: Shreyas Bhatewara <sbhatewara@vmware.com>
-
----
-
- drivers/net/vmxnet3/vmxnet3_drv.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/net/vmxnet3/vmxnet3_drv.c b/drivers/net/vmxnet3/vmxnet3_drv.c
-index 1b0ce8c..c4d7e42 100644
---- a/drivers/net/vmxnet3/vmxnet3_drv.c
-+++ b/drivers/net/vmxnet3/vmxnet3_drv.c
-@@ -2420,6 +2420,7 @@ vmxnet3_reset_work(struct work_struct *data)
- 		return;
- 
- 	/* if the device is closed, we must leave it alone */
-+	rtnl_lock();
- 	if (netif_running(adapter->netdev)) {
- 		printk(KERN_INFO "%s: resetting\n", adapter->netdev->name);
- 		vmxnet3_quiesce_dev(adapter);
-@@ -2428,6 +2429,7 @@ vmxnet3_reset_work(struct work_struct *data)
- 	} else {
- 		printk(KERN_INFO "%s: already closed\n", adapter->netdev->name);
- 	}
-+	rtnl_unlock();
- 
- 	clear_bit(VMXNET3_STATE_BIT_RESETTING, &adapter->state);
- }
+[1] http://sourceforge.net/mailarchive/message.php?msg_name=201006091511.09810.helmut.schaa%40googlemail.com
