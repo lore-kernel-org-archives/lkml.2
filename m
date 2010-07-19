@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936477Ab0GSR7o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:59:44 -0400
-Received: from mga09.intel.com ([134.134.136.24]:48677 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934711Ab0GSR7n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:59:43 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,227,1278313200"; 
-   d="scan'208";a="639812445"
-Message-ID: <4C44928E.8060506@linux.intel.com>
-Date: Mon, 19 Jul 2010 10:59:42 -0700
-From: Arjan van de Ven <arjan@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1760853Ab0GSSNd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 14:13:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:58504 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760784Ab0GSSNc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 14:13:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:date:message-id:subject:from:to:cc:
+	content-type:x-system-of-record;
+	b=IGSft4t1BwfDT5pp0FOpWGVLq1h8gcddkSSKN5wReEsToBV3cffymEysukCPrM/WG
+	bmdVyizJF+xtKoCDcBh1Q==
 MIME-Version: 1.0
-To: linux-kernel <linux-kernel@vger.kernel.org>
-CC: Andrew Morton <akpm@linux-foundation.org>,
-        Pekka Enberg <penberg@cs.helsinki.fi>
-Subject: [PATCH] slab: use deferable timers for its periodic housekeeping
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Date: Mon, 19 Jul 2010 14:13:27 -0400
+Message-ID: <AANLkTimoosNfYOG4FSJYvlOVpEFpukF9dwxBbXA8k6yc@mail.gmail.com>
+Subject: [patch] usbnet: fix 100% CPU use on suspended device
+From: Elly Jones <ellyjones@google.com>
+To: dbrownell@users.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, linux-usb@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Elly Jones <ellyjones@google.com>
 
-From: Arjan van de Ven <arjan@linux.intel.com>
-Subject: [PATCH] slab: use deferable timers for its periodic housekeeping
-
-slab has a "once every 2 second" timer for its housekeeping.
-As the number of logical processors is growing, its more and more
-common that this 2 second timer becomes the primary wakeup source.
-
-This patch turns this housekeeping timer into a deferable timer,
-which means that the timer does not interrupt idle, but just runs
-at the next event that wakes the cpu up.
-
-The impact is that the timer likely runs a bit later, but during the
-delay no code is running so there's not all that much reason for
-a difference in housekeeping to occur because of this delay.
-
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+This patch causes the usbnet module not to attempt to submit URBs to the device
+if the device is not ready to accept them. This fixes a misbehavior trigged by
+the Qualcomm Gobi driver (released under GPL through their Code Aurora
+initiative) which causes the usbnet core to consume 100% of CPU attempting and
+failing to submit URBs. This patch is against Linus's 2.6 repo commit
+a9f7f2e74ae0e6a801a2433dc8e9124d73da0cb4.
+Signed-off-by: Elizabeth Jones <ellyjones@google.com>
 ---
-  mm/slab.c |    2 +-
-  1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/slab.c b/mm/slab.c
-index 7451bda..ef3cd3d 100644
---- a/mm/slab.c
-+++ b/mm/slab.c
-@@ -884,7 +884,7 @@ static void __cpuinit start_cpu_timer(int cpu)
-       */
-      if (keventd_up() && reap_work->work.func == NULL) {
-          init_reap_node(cpu);
--        INIT_DELAYED_WORK(reap_work, cache_reap);
-+        INIT_DELAYED_WORK_DEFERRABLE(reap_work, cache_reap);
-          schedule_delayed_work_on(cpu, reap_work,
-                      __round_jiffies_relative(HZ, cpu));
-      }
--- 
-1.6.1.3
-
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 81c76ad..df7e72e 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -1172,6 +1172,7 @@ static void usbnet_bh (unsigned long param)
+ 	// or are we maybe short a few urbs?
+ 	} else if (netif_running (dev->net) &&
+ 		   netif_device_present (dev->net) &&
++		   dev->udev->can_submit &&
+ 		   !timer_pending (&dev->delay) &&
+ 		   !test_bit (EVENT_RX_HALT, &dev->flags)) {
+ 		int	temp = dev->rxq.qlen;
