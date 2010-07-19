@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932200Ab0GSMmw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 08:42:52 -0400
-Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:39630 "EHLO
-	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932109Ab0GSMmv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 08:42:51 -0400
-Subject: [GIT PULL] kmemleak fixes for 2.6.35
-From: Catalin Marinas <catalin.marinas@arm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Organization: ARM Limited
-Date: Mon, 19 Jul 2010 12:55:05 +0100
-Message-ID: <1279540505.10760.8.camel@e102109-lin.cambridge.arm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 Jul 2010 11:55:06.0316 (UTC) FILETIME=[3ACA80C0:01CB2739]
+	id S932727Ab0GSNLl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 09:11:41 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:39930 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932484Ab0GSNLh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 09:11:37 -0400
+From: Mel Gorman <mel@csn.ul.ie>
+To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
+        Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>
+Subject: [PATCH 6/8] fs,xfs: Allow kswapd to writeback pages
+Date: Mon, 19 Jul 2010 14:11:28 +0100
+Message-Id: <1279545090-19169-7-git-send-email-mel@csn.ul.ie>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+As only kswapd and memcg are writing back pages, there should be no
+danger of overflowing the stack. Allow the writing back of dirty pages
+in xfs from the VM.
 
-Could you please pull two kmemleak fixes for 2.6.35? Thanks.
+Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+---
+ fs/xfs/linux-2.6/xfs_aops.c |   15 ---------------
+ 1 files changed, 0 insertions(+), 15 deletions(-)
 
-The following changes since commit 815c4163b6c8ebf8152f42b0a5fd015cfdcedc78:
-  Linus Torvalds (1):
-        Linux 2.6.35-rc4
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/cmarinas/linux-2.6-cm.git kmemleak
-
-Catalin Marinas (2):
-      kmemleak: Annotate false positive in init_section_page_cgroup()
-      kmemleak: Add support for NO_BOOTMEM configurations
-
- kernel/early_res.c |    6 ++++++
- mm/page_alloc.c    |    5 +++++
- mm/page_cgroup.c   |    7 +++++++
- 3 files changed, 18 insertions(+), 0 deletions(-)
-
+diff --git a/fs/xfs/linux-2.6/xfs_aops.c b/fs/xfs/linux-2.6/xfs_aops.c
+index 34640d6..4c89db3 100644
+--- a/fs/xfs/linux-2.6/xfs_aops.c
++++ b/fs/xfs/linux-2.6/xfs_aops.c
+@@ -1333,21 +1333,6 @@ xfs_vm_writepage(
+ 	trace_xfs_writepage(inode, page, 0);
+ 
+ 	/*
+-	 * Refuse to write the page out if we are called from reclaim context.
+-	 *
+-	 * This is primarily to avoid stack overflows when called from deep
+-	 * used stacks in random callers for direct reclaim, but disabling
+-	 * reclaim for kswap is a nice side-effect as kswapd causes rather
+-	 * suboptimal I/O patters, too.
+-	 *
+-	 * This should really be done by the core VM, but until that happens
+-	 * filesystems like XFS, btrfs and ext4 have to take care of this
+-	 * by themselves.
+-	 */
+-	if (current->flags & PF_MEMALLOC)
+-		goto out_fail;
+-
+-	/*
+ 	 * We need a transaction if:
+ 	 *  1. There are delalloc buffers on the page
+ 	 *  2. The page is uptodate and we have unmapped buffers
 -- 
-Catalin
+1.7.1
 
