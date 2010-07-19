@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936332Ab0GSQAP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 12:00:15 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:48444 "EHLO mx2.suse.de"
+	id S936345Ab0GSQAc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 12:00:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48483 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934478Ab0GSQAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 12:00:13 -0400
-Date: Mon, 19 Jul 2010 18:00:12 +0200
-Message-ID: <s5haapnfomr.wl%tiwai@suse.de>
+	id S936335Ab0GSQAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 12:00:30 -0400
+Date: Mon, 19 Jul 2010 18:00:29 +0200
+Message-ID: <s5h8w57foma.wl%tiwai@suse.de>
 From: Takashi Iwai <tiwai@suse.de>
-To: Giuliano Pochini <pochini@shiny.it>
-Cc: Kulikov Vasiliy <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
-        Jaroslav Kysela <perex@perex.cz>, Julia Lawall <julia@diku.dk>,
-        linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
-Subject: Re: [PATCH 11/15] pci: echoaudio: check kmalloc() result
-In-Reply-To: <20100716211650.4abb6387@Jay>
-References: <1279296943-25187-1-git-send-email-segooon@gmail.com>
-	<20100716211650.4abb6387@Jay>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: kernel-janitors@vger.kernel.org, Jaroslav Kysela <perex@perex.cz>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Dan Carpenter <error27@gmail.com>,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Roel Kluin <roel.kluin@gmail.com>, linux-kernel@vger.kernel.org,
+        alsa-devel@alsa-project.org
+Subject: Re: [PATCH 12/15] pci: riptide: check kzalloc() result
+In-Reply-To: <1279296959-25227-1-git-send-email-segooon@gmail.com>
+References: <1279296959-25227-1-git-send-email-segooon@gmail.com>
 User-Agent: Wanderlust/2.15.6 (Almost Unreal) SEMI/1.14.6 (Maruoka)
  FLIM/1.14.9 (=?UTF-8?B?R29qxY0=?=) APEL/10.7 Emacs/23.1
  (x86_64-suse-linux-gnu) MULE/6.0 (HANACHIRUSATO)
@@ -26,39 +28,48 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-At Fri, 16 Jul 2010 21:16:50 +0200,
-Giuliano Pochini wrote:
+At Fri, 16 Jul 2010 20:15:59 +0400,
+Kulikov Vasiliy wrote:
 > 
-> On Fri, 16 Jul 2010 20:15:43 +0400
-> Kulikov Vasiliy <segooon@gmail.com> wrote:
+> If kzalloc() fails exit with -ENOMEM.
 > 
-> > If kmalloc() fails exit with -ENOMEM.
-> > 
-> > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> > ---
-> >  sound/pci/echoaudio/echoaudio.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/sound/pci/echoaudio/echoaudio.c b/sound/pci/echoaudio/echoaudio.c
-> > index 668a5ec..20763dd 100644
-> > --- a/sound/pci/echoaudio/echoaudio.c
-> > +++ b/sound/pci/echoaudio/echoaudio.c
-> > @@ -2250,6 +2250,8 @@ static int snd_echo_resume(struct pci_dev *pci)
-> >  	DE_INIT(("resume start\n"));
-> >  	pci_restore_state(pci);
-> >  	commpage_bak = kmalloc(sizeof(struct echoaudio), GFP_KERNEL);
-> > +	if (commpage_bak == NULL)
-> > +		return -ENOMEM;
-> >  	commpage = chip->comm_page;
-> >  	memcpy(commpage_bak, commpage, sizeof(struct comm_page));
-> >  
-> 
-> Yes, of course. Thank you.
-> 
-> 
-> Ack-by: Giuliano Pochini <pochini@shiny.it>
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 
-Applied now.  Thanks.
+Thanks, applied now.
 
 
 Takashi
+
+> ---
+>  sound/pci/riptide/riptide.c |    6 ++++++
+>  1 files changed, 6 insertions(+), 0 deletions(-)
+> 
+> diff --git a/sound/pci/riptide/riptide.c b/sound/pci/riptide/riptide.c
+> index 59d7996..f64fb7d 100644
+> --- a/sound/pci/riptide/riptide.c
+> +++ b/sound/pci/riptide/riptide.c
+> @@ -1615,7 +1615,10 @@ static int snd_riptide_playback_open(struct snd_pcm_substream *substream)
+>  
+>  	chip->playback_substream[sub_num] = substream;
+>  	runtime->hw = snd_riptide_playback;
+> +
+>  	data = kzalloc(sizeof(struct pcmhw), GFP_KERNEL);
+> +	if (data == NULL)
+> +		return -ENOMEM;
+>  	data->paths = lbus_play_paths[sub_num];
+>  	data->id = play_ids[sub_num];
+>  	data->source = play_sources[sub_num];
+> @@ -1635,7 +1638,10 @@ static int snd_riptide_capture_open(struct snd_pcm_substream *substream)
+>  
+>  	chip->capture_substream = substream;
+>  	runtime->hw = snd_riptide_capture;
+> +
+>  	data = kzalloc(sizeof(struct pcmhw), GFP_KERNEL);
+> +	if (data == NULL)
+> +		return -ENOMEM;
+>  	data->paths = lbus_rec_path;
+>  	data->id = PADC;
+>  	data->source = ACLNK2PADC;
+> -- 
+> 1.7.0.4
+> 
