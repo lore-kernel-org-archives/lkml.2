@@ -1,94 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760732Ab0GSRUU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:20:20 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:27161 "EHLO mx1.redhat.com"
+	id S1760768Ab0GSRU3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:20:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23013 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756782Ab0GSRUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:20:19 -0400
+	id S1756782Ab0GSRUW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 13:20:22 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, axboe@kernel.dk
 Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
         jmoyer@redhat.com, czoccolo@gmail.com, vgoyal@redhat.com
-Subject: [RFC PATCH] cfq-iosched: Implement group idle V2
-Date: Mon, 19 Jul 2010 13:20:05 -0400
-Message-Id: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 1/3] cfq-iosched: Improve time slice charging logic
+Date: Mon, 19 Jul 2010 13:20:06 -0400
+Message-Id: <1279560008-2905-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
+References: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+- Currently in CFQ there are many situations where don't know how
+  much time slice has been consumed by a queue. For example, all
+  the random reader/writer queues where we don't idle on
+  individual queues and we expire the queue either immediately
+  after the request dispatch.
 
-[ Got Jens's mail id wrong in last post hence reposting. Sorry for cluttering
-your mailboxes.]
+- In this case time consumed by a queue is just a memory copy
+  operation. Actually time measurement is possible only if we
+  idle on a queue and allow dispatch from a queue for significant
+  amount of time.
 
-Hi,
+- As of today, in such cases we calculate the time since the
+  dispatch from the queue started and charge all that time.
+  Generally this rounds to 1 jiffy but in some cases it can
+  be more. For example, if we are driving high request queue
+  depth and driver is too busy and does not ask for new
+  requests for 8-10 jiffies. In such cases, the active queue
+  gets charged very unfairly.
 
-This is V2 of the group_idle implementation patchset. I have done some more
-testing since V1 and fixed couple of bugs since V1.
+- So fundamentally, whole notion of charging for time slice
+  is valid only if we have been idling on the queue. Otherwise
+  in an NCQ queue, there might be other requests on the queue
+  and we can not do the time slice calculation.
 
-What's the problem
-------------------
-On high end storage (I got on HP EVA storage array with 12 SATA disks in 
-RAID 5), CFQ's model of dispatching requests from a single queue at a
-time (sequential readers/write sync writers etc), becomes a bottleneck.
-Often we don't drive enough request queue depth to keep all the disks busy
-and suffer a lot in terms of overall throughput.
+- This patch tweaks the slice charging logic a bit so that
+  in the cases where we can't know the amount of time, we
+  start charging in terms of number of requests dispatched
+  (IOPS). This practically switching CFQ fairness model to
+  fairness in terms of IOPS with slice_idle=0.
 
-All these problems primarily originate from two things. Idling on per
-cfq queue and quantum (dispatching limited number of requests from a
-single queue) and till then not allowing dispatch from other queues. Once
-you set the slice_idle=0 and quantum to higher value, most of the CFQ's
-problem on higher end storage disappear.
+- As of today this will primarily be useful only with
+  group_idle patches so that we get fairness in terms of
+  IOPS across groups. The idea is that on fast storage
+  one can run CFQ with slice_idle=0 and still get IO
+  controller working without losing too much of
+  throughput.
 
-This problem also becomes visible in IO controller where one creates
-multiple groups and gets the fairness but overall throughput is less. In
-the following table, I am running increasing number of sequential readers
-(1,2,4,8) in 8 groups of weight 100 to 800.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/cfq-iosched.c |   24 +++++++++++++++++++++---
+ 1 files changed, 21 insertions(+), 3 deletions(-)
 
-Kernel=2.6.35-rc5-gi-sl-accounting+
-GROUPMODE=1          NRGRP=8             
-DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4                 
-Workload=bsr      iosched=cfq     Filesz=512M bs=4K   
-group_isolation=1 slice_idle=8    group_idle=8    quantum=8    
-=========================================================================
-AVERAGE[bsr]    [bw in KB/s]    
-------- 
-job     Set NR  test1  test2  test3  test4  test5  test6  test7  test8  total  
----     --- --  ---------------------------------------------------------------
-bsr     1   1   6245   12776  16591  23471  28746  36799  43031  49778  217437 
-bsr     1   2   5100   11063  17216  23136  23738  30391  35910  40874  187428 
-bsr     1   4   4623   9718   14746  18356  22875  30407  33215  38073  172013 
-bsr     1   8   4720   10143  13499  19115  22157  29126  31688  30784  161232 
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 7982b83..f44064c 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -896,16 +896,34 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+ 		 * if there are mutiple queues in the group, each can dispatch
+ 		 * a single request on seeky media and cause lots of seek time
+ 		 * and group will never know it.
++		 *
++		 * If drive is NCQ and we are driving deep queue depths, then
++		 * it is not reasonable to charge the slice since dispatch
++		 * started because this time will include time taken by all
++		 * the other requests in the queue.
++		 *
++		 * Actually there is no reasonable way to know the disk time
++		 * here and we need to come up with some approximation. If
++		 * disk is non NCQ, we should be driving request queue depth
++		 * 1, then charge for time since dispatch start and this will
++		 * account for seek time properly on seeky media. If request
++		 * queue depth is high, then charge for number of requests
++		 * dispatched from the queue. This will sort of becoming
++		 * charging in terms of IOPS.
+ 		 */
+-		slice_used = max_t(unsigned, (jiffies - cfqq->dispatch_start),
+-					1);
++		if (cfqq->cfqd->hw_tag == 0)
++			slice_used = max_t(unsigned,
++					(jiffies - cfqq->dispatch_start), 1);
++		else
++			slice_used = cfqq->slice_dispatch;
+ 	} else {
+ 		slice_used = jiffies - cfqq->slice_start;
+ 		if (slice_used > cfqq->allocated_slice)
+ 			slice_used = cfqq->allocated_slice;
+ 	}
+ 
+-	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
++	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u, sl_disp=%u", slice_used,
++			cfqq->slice_dispatch);
+ 	return slice_used;
+ }
+ 
+-- 
+1.7.1.1
 
-Notice that overall throughput is just around 160MB/s with 8 sequential reader
-in each group.
-
-With this patch set, I have set slice_idle=0 and re-ran same test.
-
-Kernel=2.6.35-rc5-gi-sl-accounting+
-GROUPMODE=1          NRGRP=8             
-DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4                 
-Workload=bsr      iosched=cfq     Filesz=512M bs=4K   
-group_isolation=1 slice_idle=0    group_idle=8    quantum=8    
-=========================================================================
-AVERAGE[bsr]    [bw in KB/s]    
-------- 
-job     Set NR  test1  test2  test3  test4  test5  test6  test7  test8  total  
----     --- --  ---------------------------------------------------------------
-bsr     1   1   6789   12764  17174  23111  28528  36807  42753  48826  216752 
-bsr     1   2   9845   20617  30521  39061  45514  51607  63683  63770  324618 
-bsr     1   4   14835  24241  42444  55207  45914  51318  54661  60318  348938 
-bsr     1   8   12022  24478  36732  48651  54333  60974  64856  72930  374976 
-
-Notice how overall throughput has shot upto 374MB/s while retaining the ability
-to do the IO control.
-
-So this is not the default mode. This new tunable group_idle, allows one to
-set slice_idle=0 to disable some of the CFQ features and and use primarily
-group service differentation feature.
-
-If you have thoughts on other ways of solving the problem, I am all ears
-to it.
-
-Thanks
-Vivek
