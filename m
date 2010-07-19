@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967362Ab0GTAE5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 20:04:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:65399 "EHLO
+	id S966774Ab0GSX6z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 19:58:55 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64345 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761058Ab0GTAEd (ORCPT
+	with ESMTP id S1760996Ab0GSX6q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 20:04:33 -0400
+	Mon, 19 Jul 2010 19:58:46 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,775 +16,890 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 47/49] x86: Remove not used early_res code
-Date: Mon, 19 Jul 2010 16:56:56 -0700
-Message-Id: <1279583818-14249-48-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 46/49] x86: Replace e820_/_early string with memblock_
+Date: Mon, 19 Jul 2010 16:56:55 -0700
+Message-Id: <1279583818-14249-47-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
 References: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C44E68F.0068,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090205.4C44E684.0209,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-and some functions in e820.c that are not used anymore
+1.include linux/memblock.h directly. so later could reduce e820.h reference.
+2 this patch is done by sed scripts mainly
+
+-v2: use MEMBLOCK_ERROR instead of -1ULL or -1UL
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |   14 -
- arch/x86/kernel/e820.c      |   52 ----
- include/linux/early_res.h   |   23 --
- kernel/Makefile             |    1 -
- kernel/early_res.c          |  590 -------------------------------------------
- 5 files changed, 0 insertions(+), 680 deletions(-)
- delete mode 100644 include/linux/early_res.h
- delete mode 100644 kernel/early_res.c
+ arch/x86/include/asm/efi.h      |    2 +-
+ arch/x86/kernel/acpi/sleep.c    |    7 ++++---
+ arch/x86/kernel/apic/numaq_32.c |    3 ++-
+ arch/x86/kernel/efi.c           |    5 +++--
+ arch/x86/kernel/head32.c        |    4 ++--
+ arch/x86/kernel/head64.c        |    4 ++--
+ arch/x86/kernel/setup.c         |   29 ++++++++++++++---------------
+ arch/x86/kernel/trampoline.c    |    8 ++++----
+ arch/x86/mm/init.c              |    7 ++++---
+ arch/x86/mm/init_32.c           |   12 +++++++-----
+ arch/x86/mm/init_64.c           |   11 ++++++-----
+ arch/x86/mm/k8topology_64.c     |    4 +++-
+ arch/x86/mm/memtest.c           |    7 +++----
+ arch/x86/mm/numa_32.c           |   25 +++++++++++++------------
+ arch/x86/mm/numa_64.c           |   34 +++++++++++++++++-----------------
+ arch/x86/mm/srat_32.c           |    3 ++-
+ arch/x86/mm/srat_64.c           |   11 ++++++-----
+ arch/x86/xen/mmu.c              |    5 +++--
+ arch/x86/xen/setup.c            |    3 ++-
+ mm/bootmem.c                    |    4 ++--
+ 20 files changed, 100 insertions(+), 88 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 388fed2..7186463 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -112,31 +112,17 @@ static inline void early_memtest(unsigned long start, unsigned long end)
- }
- #endif
+diff --git a/arch/x86/include/asm/efi.h b/arch/x86/include/asm/efi.h
+index 8406ed7..8e4a165 100644
+--- a/arch/x86/include/asm/efi.h
++++ b/arch/x86/include/asm/efi.h
+@@ -90,7 +90,7 @@ extern void __iomem *efi_ioremap(unsigned long addr, unsigned long size,
+ #endif /* CONFIG_X86_32 */
  
--extern unsigned long end_user_pfn;
--
--extern u64 find_e820_area(u64 start, u64 end, u64 size, u64 align);
--extern u64 find_e820_area_size(u64 start, u64 *sizep, u64 align);
--extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
--
- extern unsigned long e820_end_of_ram_pfn(void);
- extern unsigned long e820_end_of_low_ram_pfn(void);
--extern void e820_register_active_regions(int nid, unsigned long start_pfn,
--					 unsigned long end_pfn);
--extern u64 e820_hole_size(u64 start, u64 end);
--
- extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+ extern int add_efi_memmap;
+-extern void efi_reserve_early(void);
++extern void efi_memblock_x86_reserve_range(void);
+ extern void efi_call_phys_prelog(void);
+ extern void efi_call_phys_epilog(void);
  
- void memblock_x86_fill(void);
--
- extern void finish_e820_parsing(void);
- extern void e820_reserve_resources(void);
- extern void e820_reserve_resources_late(void);
- extern void setup_memory_map(void);
- extern char *default_machine_specific_memory_setup(void);
+diff --git a/arch/x86/kernel/acpi/sleep.c b/arch/x86/kernel/acpi/sleep.c
+index 82e5086..426af03 100644
+--- a/arch/x86/kernel/acpi/sleep.c
++++ b/arch/x86/kernel/acpi/sleep.c
+@@ -7,6 +7,7 @@
  
--void reserve_early(u64 start, u64 end, char *name);
--void free_early(u64 start, u64 end);
--
- /*
-  * Returns true iff the specified range [s,e) is completely contained inside
-  * the ISA region.
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index a9221d1..d5fd894 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -739,32 +739,6 @@ core_initcall(e820_mark_nvs_memory);
- #endif
+ #include <linux/acpi.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/dmi.h>
+ #include <linux/cpumask.h>
+ #include <asm/segment.h>
+@@ -133,15 +134,15 @@ void __init acpi_reserve_wakeup_memory(void)
+ 		return;
+ 	}
  
- /*
-- * Find a free area with specified alignment in a specific range.
-- */
--u64 __init find_e820_area(u64 start, u64 end, u64 size, u64 align)
--{
--	u64 mem = memblock_find_in_range(start, end, size, align);
--
--	if (mem == MEMBLOCK_ERROR)
--		return -1ULL;
--
--	return mem;
--}
--
--/*
-- * Find next free range after *start
-- */
--u64 __init find_e820_area_size(u64 start, u64 *sizep, u64 align)
--{
--	u64 mem = memblock_x86_find_in_range_size(start, sizep, align);
--
--	if (mem == MEMBLOCK_ERROR)
--		return -1ULL
--
--	return mem;
--}
--
--/*
-  * pre allocated 4k and reserved it in memblock and e820_saved
-  */
- u64 __init early_reserve_e820(u64 startt, u64 sizet, u64 align)
-@@ -856,32 +830,6 @@ unsigned long __init e820_end_of_low_ram_pfn(void)
- 	return e820_end_pfn(1UL<<(32 - PAGE_SHIFT), E820_RAM);
+-	mem = find_e820_area(0, 1<<20, WAKEUP_SIZE, PAGE_SIZE);
++	mem = memblock_find_in_range(0, 1<<20, WAKEUP_SIZE, PAGE_SIZE);
+ 
+-	if (mem == -1L) {
++	if (mem == MEMBLOCK_ERROR) {
+ 		printk(KERN_ERR "ACPI: Cannot allocate lowmem, S3 disabled.\n");
+ 		return;
+ 	}
+ 	acpi_realmode = (unsigned long) phys_to_virt(mem);
+ 	acpi_wakeup_address = mem;
+-	reserve_early(mem, mem + WAKEUP_SIZE, "ACPI WAKEUP");
++	memblock_x86_reserve_range(mem, mem + WAKEUP_SIZE, "ACPI WAKEUP");
  }
  
--/* Walk the e820 map and register active regions within a node */
--void __init e820_register_active_regions(int nid, unsigned long start_pfn,
--					 unsigned long last_pfn)
--{
--	memblock_x86_register_active_regions(nid, start_pfn, last_pfn);
--}
--
--/*
-- * Find the hole size (in bytes) in the memory range.
-- * @start: starting address of the memory range to scan
-- * @end: ending address of the memory range to scan
-- */
--u64 __init e820_hole_size(u64 start, u64 end)
--{
--	return memblock_x86_hole_size(start, end);
--}
--
--void reserve_early(u64 start, u64 end, char *name)
--{
--	memblock_x86_reserve_range(start, end, name);
--}
--void free_early(u64 start, u64 end)
--{
--	memblock_x86_free_range(start, end);
--}
--
- static void early_panic(char *msg)
+ 
+diff --git a/arch/x86/kernel/apic/numaq_32.c b/arch/x86/kernel/apic/numaq_32.c
+index 3e28401..960f26a 100644
+--- a/arch/x86/kernel/apic/numaq_32.c
++++ b/arch/x86/kernel/apic/numaq_32.c
+@@ -26,6 +26,7 @@
+ #include <linux/nodemask.h>
+ #include <linux/topology.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/threads.h>
+ #include <linux/cpumask.h>
+ #include <linux/kernel.h>
+@@ -88,7 +89,7 @@ static inline void numaq_register_node(int node, struct sys_cfg_data *scd)
+ 	node_end_pfn[node] =
+ 		 MB_TO_PAGES(eq->hi_shrd_mem_start + eq->hi_shrd_mem_size);
+ 
+-	e820_register_active_regions(node, node_start_pfn[node],
++	memblock_x86_register_active_regions(node, node_start_pfn[node],
+ 						node_end_pfn[node]);
+ 
+ 	memory_present(node, node_start_pfn[node], node_end_pfn[node]);
+diff --git a/arch/x86/kernel/efi.c b/arch/x86/kernel/efi.c
+index c2fa9b8..0fe27d7 100644
+--- a/arch/x86/kernel/efi.c
++++ b/arch/x86/kernel/efi.c
+@@ -30,6 +30,7 @@
+ #include <linux/init.h>
+ #include <linux/efi.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/spinlock.h>
+ #include <linux/uaccess.h>
+ #include <linux/time.h>
+@@ -275,7 +276,7 @@ static void __init do_add_efi_memmap(void)
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
+ 
+-void __init efi_reserve_early(void)
++void __init efi_memblock_x86_reserve_range(void)
  {
- 	early_printk(msg);
-diff --git a/include/linux/early_res.h b/include/linux/early_res.h
-deleted file mode 100644
-index 29c09f5..0000000
---- a/include/linux/early_res.h
-+++ /dev/null
-@@ -1,23 +0,0 @@
--#ifndef _LINUX_EARLY_RES_H
--#define _LINUX_EARLY_RES_H
--#ifdef __KERNEL__
--
--extern void reserve_early(u64 start, u64 end, char *name);
--extern void reserve_early_overlap_ok(u64 start, u64 end, char *name);
--extern void free_early(u64 start, u64 end);
--void free_early_partial(u64 start, u64 end);
--extern void early_res_to_bootmem(u64 start, u64 end);
--
--void reserve_early_without_check(u64 start, u64 end, char *name);
--u64 find_early_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
--			 u64 size, u64 align);
--u64 find_early_area_size(u64 ei_start, u64 ei_last, u64 start,
--			 u64 *sizep, u64 align);
--u64 find_fw_memmap_area(u64 start, u64 end, u64 size, u64 align);
--u64 get_max_mapped(void);
--#include <linux/range.h>
--int get_free_all_memory_range(struct range **rangep, int nodeid);
--
--#endif /* __KERNEL__ */
--
--#endif /* _LINUX_EARLY_RES_H */
-diff --git a/kernel/Makefile b/kernel/Makefile
-index 057472f..80e61c3 100644
---- a/kernel/Makefile
-+++ b/kernel/Makefile
-@@ -11,7 +11,6 @@ obj-y     = sched.o fork.o exec_domain.o panic.o printk.o \
- 	    hrtimer.o rwsem.o nsproxy.o srcu.o semaphore.o \
- 	    notifier.o ksysfs.o pm_qos_params.o sched_clock.o cred.o \
- 	    async.o range.o
--obj-$(CONFIG_HAVE_EARLY_RES) += early_res.o
- obj-y += groups.o
+ 	unsigned long pmap;
  
- ifdef CONFIG_FUNCTION_TRACER
-diff --git a/kernel/early_res.c b/kernel/early_res.c
-deleted file mode 100644
-index 7bfae88..0000000
---- a/kernel/early_res.c
-+++ /dev/null
-@@ -1,590 +0,0 @@
--/*
-- * early_res, could be used to replace bootmem
-- */
--#include <linux/kernel.h>
--#include <linux/types.h>
--#include <linux/init.h>
--#include <linux/bootmem.h>
--#include <linux/mm.h>
--#include <linux/early_res.h>
--#include <linux/slab.h>
--#include <linux/kmemleak.h>
--
--/*
-- * Early reserved memory areas.
-- */
--/*
-- * need to make sure this one is bigger enough before
-- * find_fw_memmap_area could be used
-- */
--#define MAX_EARLY_RES_X 32
--
--struct early_res {
--	u64 start, end;
--	char name[15];
--	char overlap_ok;
--};
--static struct early_res early_res_x[MAX_EARLY_RES_X] __initdata;
--
--static int max_early_res __initdata = MAX_EARLY_RES_X;
--static struct early_res *early_res __initdata = &early_res_x[0];
--static int early_res_count __initdata;
--
--static int __init find_overlapped_early(u64 start, u64 end)
--{
--	int i;
--	struct early_res *r;
--
--	for (i = 0; i < max_early_res && early_res[i].end; i++) {
--		r = &early_res[i];
--		if (end > r->start && start < r->end)
--			break;
--	}
--
--	return i;
--}
--
--/*
-- * Drop the i-th range from the early reservation map,
-- * by copying any higher ranges down one over it, and
-- * clearing what had been the last slot.
-- */
--static void __init drop_range(int i)
--{
--	int j;
--
--	for (j = i + 1; j < max_early_res && early_res[j].end; j++)
--		;
--
--	memmove(&early_res[i], &early_res[i + 1],
--	       (j - 1 - i) * sizeof(struct early_res));
--
--	early_res[j - 1].end = 0;
--	early_res_count--;
--}
--
--static void __init drop_range_partial(int i, u64 start, u64 end)
--{
--	u64 common_start, common_end;
--	u64 old_start, old_end;
--
--	old_start = early_res[i].start;
--	old_end = early_res[i].end;
--	common_start = max(old_start, start);
--	common_end = min(old_end, end);
--
--	/* no overlap ? */
--	if (common_start >= common_end)
--		return;
--
--	if (old_start < common_start) {
--		/* make head segment */
--		early_res[i].end = common_start;
--		if (old_end > common_end) {
--			char name[15];
--
--			/*
--			 * Save a local copy of the name, since the
--			 * early_res array could get resized inside
--			 * reserve_early_without_check() ->
--			 * __check_and_double_early_res(), which would
--			 * make the current name pointer invalid.
--			 */
--			strncpy(name, early_res[i].name,
--					 sizeof(early_res[i].name) - 1);
--			/* add another for left over on tail */
--			reserve_early_without_check(common_end, old_end, name);
--		}
--		return;
--	} else {
--		if (old_end > common_end) {
--			/* reuse the entry for tail left */
--			early_res[i].start = common_end;
--			return;
--		}
--		/* all covered */
--		drop_range(i);
--	}
--}
--
--/*
-- * Split any existing ranges that:
-- *  1) are marked 'overlap_ok', and
-- *  2) overlap with the stated range [start, end)
-- * into whatever portion (if any) of the existing range is entirely
-- * below or entirely above the stated range.  Drop the portion
-- * of the existing range that overlaps with the stated range,
-- * which will allow the caller of this routine to then add that
-- * stated range without conflicting with any existing range.
-- */
--static void __init drop_overlaps_that_are_ok(u64 start, u64 end)
--{
--	int i;
--	struct early_res *r;
--	u64 lower_start, lower_end;
--	u64 upper_start, upper_end;
--	char name[15];
--
--	for (i = 0; i < max_early_res && early_res[i].end; i++) {
--		r = &early_res[i];
--
--		/* Continue past non-overlapping ranges */
--		if (end <= r->start || start >= r->end)
--			continue;
--
--		/*
--		 * Leave non-ok overlaps as is; let caller
--		 * panic "Overlapping early reservations"
--		 * when it hits this overlap.
--		 */
--		if (!r->overlap_ok)
--			return;
--
--		/*
--		 * We have an ok overlap.  We will drop it from the early
--		 * reservation map, and add back in any non-overlapping
--		 * portions (lower or upper) as separate, overlap_ok,
--		 * non-overlapping ranges.
--		 */
--
--		/* 1. Note any non-overlapping (lower or upper) ranges. */
--		strncpy(name, r->name, sizeof(name) - 1);
--
--		lower_start = lower_end = 0;
--		upper_start = upper_end = 0;
--		if (r->start < start) {
--			lower_start = r->start;
--			lower_end = start;
--		}
--		if (r->end > end) {
--			upper_start = end;
--			upper_end = r->end;
--		}
--
--		/* 2. Drop the original ok overlapping range */
--		drop_range(i);
--
--		i--;		/* resume for-loop on copied down entry */
--
--		/* 3. Add back in any non-overlapping ranges. */
--		if (lower_end)
--			reserve_early_overlap_ok(lower_start, lower_end, name);
--		if (upper_end)
--			reserve_early_overlap_ok(upper_start, upper_end, name);
--	}
--}
--
--static void __init __reserve_early(u64 start, u64 end, char *name,
--						int overlap_ok)
--{
--	int i;
--	struct early_res *r;
--
--	i = find_overlapped_early(start, end);
--	if (i >= max_early_res)
--		panic("Too many early reservations");
--	r = &early_res[i];
--	if (r->end)
--		panic("Overlapping early reservations "
--		      "%llx-%llx %s to %llx-%llx %s\n",
--		      start, end - 1, name ? name : "", r->start,
--		      r->end - 1, r->name);
--	r->start = start;
--	r->end = end;
--	r->overlap_ok = overlap_ok;
--	if (name)
--		strncpy(r->name, name, sizeof(r->name) - 1);
--	early_res_count++;
--}
--
--/*
-- * A few early reservtations come here.
-- *
-- * The 'overlap_ok' in the name of this routine does -not- mean it
-- * is ok for these reservations to overlap an earlier reservation.
-- * Rather it means that it is ok for subsequent reservations to
-- * overlap this one.
-- *
-- * Use this entry point to reserve early ranges when you are doing
-- * so out of "Paranoia", reserving perhaps more memory than you need,
-- * just in case, and don't mind a subsequent overlapping reservation
-- * that is known to be needed.
-- *
-- * The drop_overlaps_that_are_ok() call here isn't really needed.
-- * It would be needed if we had two colliding 'overlap_ok'
-- * reservations, so that the second such would not panic on the
-- * overlap with the first.  We don't have any such as of this
-- * writing, but might as well tolerate such if it happens in
-- * the future.
-- */
--void __init reserve_early_overlap_ok(u64 start, u64 end, char *name)
--{
--	drop_overlaps_that_are_ok(start, end);
--	__reserve_early(start, end, name, 1);
--}
--
--static void __init __check_and_double_early_res(u64 ex_start, u64 ex_end)
--{
--	u64 start, end, size, mem;
--	struct early_res *new;
--
--	/* do we have enough slots left ? */
--	if ((max_early_res - early_res_count) > max(max_early_res/8, 2))
--		return;
--
--	/* double it */
--	mem = -1ULL;
--	size = sizeof(struct early_res) * max_early_res * 2;
--	if (early_res == early_res_x)
--		start = 0;
--	else
--		start = early_res[0].end;
--	end = ex_start;
--	if (start + size < end)
--		mem = find_fw_memmap_area(start, end, size,
--					 sizeof(struct early_res));
--	if (mem == -1ULL) {
--		start = ex_end;
--		end = get_max_mapped();
--		if (start + size < end)
--			mem = find_fw_memmap_area(start, end, size,
--						 sizeof(struct early_res));
--	}
--	if (mem == -1ULL)
--		panic("can not find more space for early_res array");
--
--	new = __va(mem);
--	/* save the first one for own */
--	new[0].start = mem;
--	new[0].end = mem + size;
--	new[0].overlap_ok = 0;
--	/* copy old to new */
--	if (early_res == early_res_x) {
--		memcpy(&new[1], &early_res[0],
--			 sizeof(struct early_res) * max_early_res);
--		memset(&new[max_early_res+1], 0,
--			 sizeof(struct early_res) * (max_early_res - 1));
--		early_res_count++;
--	} else {
--		memcpy(&new[1], &early_res[1],
--			 sizeof(struct early_res) * (max_early_res - 1));
--		memset(&new[max_early_res], 0,
--			 sizeof(struct early_res) * max_early_res);
--	}
--	memset(&early_res[0], 0, sizeof(struct early_res) * max_early_res);
--	early_res = new;
--	max_early_res *= 2;
--	printk(KERN_DEBUG "early_res array is doubled to %d at [%llx - %llx]\n",
--		max_early_res, mem, mem + size - 1);
--}
--
--/*
-- * Most early reservations come here.
-- *
-- * We first have drop_overlaps_that_are_ok() drop any pre-existing
-- * 'overlap_ok' ranges, so that we can then reserve this memory
-- * range without risk of panic'ing on an overlapping overlap_ok
-- * early reservation.
-- */
--void __init reserve_early(u64 start, u64 end, char *name)
--{
--	if (start >= end)
--		return;
--
--	__check_and_double_early_res(start, end);
--
--	drop_overlaps_that_are_ok(start, end);
--	__reserve_early(start, end, name, 0);
--}
--
--void __init reserve_early_without_check(u64 start, u64 end, char *name)
--{
--	struct early_res *r;
--
--	if (start >= end)
--		return;
--
--	__check_and_double_early_res(start, end);
--
--	r = &early_res[early_res_count];
--
--	r->start = start;
--	r->end = end;
--	r->overlap_ok = 0;
--	if (name)
--		strncpy(r->name, name, sizeof(r->name) - 1);
--	early_res_count++;
--}
--
--void __init free_early(u64 start, u64 end)
--{
--	struct early_res *r;
--	int i;
--
--	kmemleak_free_part(__va(start), end - start);
--
--	i = find_overlapped_early(start, end);
--	r = &early_res[i];
--	if (i >= max_early_res || r->end != end || r->start != start)
--		panic("free_early on not reserved area: %llx-%llx!",
--			 start, end - 1);
--
--	drop_range(i);
--}
--
--void __init free_early_partial(u64 start, u64 end)
--{
--	struct early_res *r;
--	int i;
--
--	kmemleak_free_part(__va(start), end - start);
--
--	if (start == end)
--		return;
--
--	if (WARN_ONCE(start > end, "  wrong range [%#llx, %#llx]\n", start, end))
--		return;
--
--try_next:
--	i = find_overlapped_early(start, end);
--	if (i >= max_early_res)
--		return;
--
--	r = &early_res[i];
--	/* hole ? */
--	if (r->end >= end && r->start <= start) {
--		drop_range_partial(i, start, end);
--		return;
--	}
--
--	drop_range_partial(i, start, end);
--	goto try_next;
--}
--
--#ifdef CONFIG_NO_BOOTMEM
--static void __init subtract_early_res(struct range *range, int az)
--{
--	int i, count;
--	u64 final_start, final_end;
--	int idx = 0;
--
--	count  = 0;
--	for (i = 0; i < max_early_res && early_res[i].end; i++)
--		count++;
--
--	/* need to skip first one ?*/
--	if (early_res != early_res_x)
--		idx = 1;
--
--#define DEBUG_PRINT_EARLY_RES 1
--
--#if DEBUG_PRINT_EARLY_RES
--	printk(KERN_INFO "Subtract (%d early reservations)\n", count);
--#endif
--	for (i = idx; i < count; i++) {
--		struct early_res *r = &early_res[i];
--#if DEBUG_PRINT_EARLY_RES
--		printk(KERN_INFO "  #%d [%010llx - %010llx] %15s\n", i,
--			r->start, r->end, r->name);
--#endif
--		final_start = PFN_DOWN(r->start);
--		final_end = PFN_UP(r->end);
--		if (final_start >= final_end)
--			continue;
--		subtract_range(range, az, final_start, final_end);
--	}
--
--}
--
--int __init get_free_all_memory_range(struct range **rangep, int nodeid)
--{
--	int i, count;
--	u64 start = 0, end;
--	u64 size;
--	u64 mem;
--	struct range *range;
--	int nr_range;
--
--	count  = 0;
--	for (i = 0; i < max_early_res && early_res[i].end; i++)
--		count++;
--
--	count *= 2;
--
--	size = sizeof(struct range) * count;
--	end = get_max_mapped();
--#ifdef MAX_DMA32_PFN
--	if (end > (MAX_DMA32_PFN << PAGE_SHIFT))
--		start = MAX_DMA32_PFN << PAGE_SHIFT;
--#endif
--	mem = find_fw_memmap_area(start, end, size, sizeof(struct range));
--	if (mem == -1ULL)
--		panic("can not find more space for range free");
--
--	range = __va(mem);
--	/* use early_node_map[] and early_res to get range array at first */
--	memset(range, 0, size);
--	nr_range = 0;
--
--	/* need to go over early_node_map to find out good range for node */
--	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
--#ifdef CONFIG_X86_32
--	subtract_range(range, count, max_low_pfn, -1ULL);
--#endif
--	subtract_early_res(range, count);
--	nr_range = clean_sort_range(range, count);
--
--	/* need to clear it ? */
--	if (nodeid == MAX_NUMNODES) {
--		memset(&early_res[0], 0,
--			 sizeof(struct early_res) * max_early_res);
--		early_res = NULL;
--		max_early_res = 0;
--	}
--
--	*rangep = range;
--	return nr_range;
--}
--#else
--void __init early_res_to_bootmem(u64 start, u64 end)
--{
--	int i, count;
--	u64 final_start, final_end;
--	int idx = 0;
--
--	count  = 0;
--	for (i = 0; i < max_early_res && early_res[i].end; i++)
--		count++;
--
--	/* need to skip first one ?*/
--	if (early_res != early_res_x)
--		idx = 1;
--
--	printk(KERN_INFO "(%d/%d early reservations) ==> bootmem [%010llx - %010llx]\n",
--			 count - idx, max_early_res, start, end);
--	for (i = idx; i < count; i++) {
--		struct early_res *r = &early_res[i];
--		printk(KERN_INFO "  #%d [%010llx - %010llx] %16s", i,
--			r->start, r->end, r->name);
--		final_start = max(start, r->start);
--		final_end = min(end, r->end);
--		if (final_start >= final_end) {
--			printk(KERN_CONT "\n");
--			continue;
--		}
--		printk(KERN_CONT " ==> [%010llx - %010llx]\n",
--			final_start, final_end);
--		reserve_bootmem_generic(final_start, final_end - final_start,
--				BOOTMEM_DEFAULT);
--	}
--	/* clear them */
--	memset(&early_res[0], 0, sizeof(struct early_res) * max_early_res);
--	early_res = NULL;
--	max_early_res = 0;
--	early_res_count = 0;
--}
--#endif
--
--/* Check for already reserved areas */
--static inline int __init bad_addr(u64 *addrp, u64 size, u64 align)
--{
--	int i;
--	u64 addr = *addrp;
--	int changed = 0;
--	struct early_res *r;
--again:
--	i = find_overlapped_early(addr, addr + size);
--	r = &early_res[i];
--	if (i < max_early_res && r->end) {
--		*addrp = addr = round_up(r->end, align);
--		changed = 1;
--		goto again;
--	}
--	return changed;
--}
--
--/* Check for already reserved areas */
--static inline int __init bad_addr_size(u64 *addrp, u64 *sizep, u64 align)
--{
--	int i;
--	u64 addr = *addrp, last;
--	u64 size = *sizep;
--	int changed = 0;
--again:
--	last = addr + size;
--	for (i = 0; i < max_early_res && early_res[i].end; i++) {
--		struct early_res *r = &early_res[i];
--		if (last > r->start && addr < r->start) {
--			size = r->start - addr;
--			changed = 1;
--			goto again;
--		}
--		if (last > r->end && addr < r->end) {
--			addr = round_up(r->end, align);
--			size = last - addr;
--			changed = 1;
--			goto again;
--		}
--		if (last <= r->end && addr >= r->start) {
--			(*sizep)++;
--			return 0;
--		}
--	}
--	if (changed) {
--		*addrp = addr;
--		*sizep = size;
--	}
--	return changed;
--}
--
--/*
-- * Find a free area with specified alignment in a specific range.
-- * only with the area.between start to end is active range from early_node_map
-- * so they are good as RAM
-- */
--u64 __init find_early_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
--			 u64 size, u64 align)
--{
--	u64 addr, last;
--
--	addr = round_up(ei_start, align);
--	if (addr < start)
--		addr = round_up(start, align);
--	if (addr >= ei_last)
--		goto out;
--	while (bad_addr(&addr, size, align) && addr+size <= ei_last)
--		;
--	last = addr + size;
--	if (last > ei_last)
--		goto out;
--	if (last > end)
--		goto out;
--
--	return addr;
--
--out:
--	return -1ULL;
--}
--
--u64 __init find_early_area_size(u64 ei_start, u64 ei_last, u64 start,
--			 u64 *sizep, u64 align)
--{
--	u64 addr, last;
--
--	addr = round_up(ei_start, align);
--	if (addr < start)
--		addr = round_up(start, align);
--	if (addr >= ei_last)
--		goto out;
--	*sizep = ei_last - addr;
--	while (bad_addr_size(&addr, sizep, align) && addr + *sizep <= ei_last)
--		;
--	last = addr + *sizep;
--	if (last > ei_last)
--		goto out;
--
--	return addr;
--
--out:
--	return -1ULL;
--}
+@@ -290,7 +291,7 @@ void __init efi_reserve_early(void)
+ 		boot_params.efi_info.efi_memdesc_size;
+ 	memmap.desc_version = boot_params.efi_info.efi_memdesc_version;
+ 	memmap.desc_size = boot_params.efi_info.efi_memdesc_size;
+-	reserve_early(pmap, pmap + memmap.nr_map * memmap.desc_size,
++	memblock_x86_reserve_range(pmap, pmap + memmap.nr_map * memmap.desc_size,
+ 		      "EFI memmap");
+ }
+ 
+diff --git a/arch/x86/kernel/head32.c b/arch/x86/kernel/head32.c
+index da60aa8..74e4cf6 100644
+--- a/arch/x86/kernel/head32.c
++++ b/arch/x86/kernel/head32.c
+@@ -42,7 +42,7 @@ void __init i386_start_kernel(void)
+ 	memblock_x86_reserve_range(PAGE_SIZE, PAGE_SIZE + PAGE_SIZE, "EX TRAMPOLINE");
+ #endif
+ 
+-	reserve_early(__pa_symbol(&_text), __pa_symbol(&__bss_stop), "TEXT DATA BSS");
++	memblock_x86_reserve_range(__pa_symbol(&_text), __pa_symbol(&__bss_stop), "TEXT DATA BSS");
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	/* Reserve INITRD */
+@@ -51,7 +51,7 @@ void __init i386_start_kernel(void)
+ 		u64 ramdisk_image = boot_params.hdr.ramdisk_image;
+ 		u64 ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 		u64 ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		reserve_early(ramdisk_image, ramdisk_end, "RAMDISK");
++		memblock_x86_reserve_range(ramdisk_image, ramdisk_end, "RAMDISK");
+ 	}
+ #endif
+ 
+diff --git a/arch/x86/kernel/head64.c b/arch/x86/kernel/head64.c
+index b0b23e8..3f271ef 100644
+--- a/arch/x86/kernel/head64.c
++++ b/arch/x86/kernel/head64.c
+@@ -101,7 +101,7 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 
+ 	copy_bootdata(__va(real_mode_data));
+ 
+-	reserve_early(__pa_symbol(&_text), __pa_symbol(&__bss_stop), "TEXT DATA BSS");
++	memblock_x86_reserve_range(__pa_symbol(&_text), __pa_symbol(&__bss_stop), "TEXT DATA BSS");
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+ 	/* Reserve INITRD */
+@@ -110,7 +110,7 @@ void __init x86_64_start_reservations(char *real_mode_data)
+ 		unsigned long ramdisk_image = boot_params.hdr.ramdisk_image;
+ 		unsigned long ramdisk_size  = boot_params.hdr.ramdisk_size;
+ 		unsigned long ramdisk_end   = PAGE_ALIGN(ramdisk_image + ramdisk_size);
+-		reserve_early(ramdisk_image, ramdisk_end, "RAMDISK");
++		memblock_x86_reserve_range(ramdisk_image, ramdisk_end, "RAMDISK");
+ 	}
+ #endif
+ 
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index bbe0aaf..a4f0173 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -302,7 +302,7 @@ static inline void init_gbpages(void)
+ static void __init reserve_brk(void)
+ {
+ 	if (_brk_end > _brk_start)
+-		reserve_early(__pa(_brk_start), __pa(_brk_end), "BRK");
++		memblock_x86_reserve_range(__pa(_brk_start), __pa(_brk_end), "BRK");
+ 
+ 	/* Mark brk area as locked down and no longer taking any
+ 	   new allocations */
+@@ -324,17 +324,16 @@ static void __init relocate_initrd(void)
+ 	char *p, *q;
+ 
+ 	/* We need to move the initrd down into lowmem */
+-	ramdisk_here = find_e820_area(0, end_of_lowmem, area_size,
++	ramdisk_here = memblock_find_in_range(0, end_of_lowmem, area_size,
+ 					 PAGE_SIZE);
+ 
+-	if (ramdisk_here == -1ULL)
++	if (ramdisk_here == MEMBLOCK_ERROR)
+ 		panic("Cannot find place for new RAMDISK of size %lld\n",
+ 			 ramdisk_size);
+ 
+ 	/* Note: this includes all the lowmem currently occupied by
+ 	   the initrd, we rely on that fact to keep the data intact. */
+-	reserve_early(ramdisk_here, ramdisk_here + area_size,
+-			 "NEW RAMDISK");
++	memblock_x86_reserve_range(ramdisk_here, ramdisk_here + area_size, "NEW RAMDISK");
+ 	initrd_start = ramdisk_here + PAGE_OFFSET;
+ 	initrd_end   = initrd_start + ramdisk_size;
+ 	printk(KERN_INFO "Allocated new RAMDISK: %08llx - %08llx\n",
+@@ -390,7 +389,7 @@ static void __init reserve_initrd(void)
+ 	initrd_start = 0;
+ 
+ 	if (ramdisk_size >= (end_of_lowmem>>1)) {
+-		free_early(ramdisk_image, ramdisk_end);
++		memblock_x86_free_range(ramdisk_image, ramdisk_end);
+ 		printk(KERN_ERR "initrd too large to handle, "
+ 		       "disabling initrd\n");
+ 		return;
+@@ -413,7 +412,7 @@ static void __init reserve_initrd(void)
+ 
+ 	relocate_initrd();
+ 
+-	free_early(ramdisk_image, ramdisk_end);
++	memblock_x86_free_range(ramdisk_image, ramdisk_end);
+ }
+ #else
+ static void __init reserve_initrd(void)
+@@ -469,7 +468,7 @@ static void __init e820_reserve_setup_data(void)
+ 	e820_print_map("reserve setup_data");
+ }
+ 
+-static void __init reserve_early_setup_data(void)
++static void __init memblock_x86_reserve_range_setup_data(void)
+ {
+ 	struct setup_data *data;
+ 	u64 pa_data;
+@@ -481,7 +480,7 @@ static void __init reserve_early_setup_data(void)
+ 	while (pa_data) {
+ 		data = early_memremap(pa_data, sizeof(*data));
+ 		sprintf(buf, "setup data %x", data->type);
+-		reserve_early(pa_data, pa_data+sizeof(*data)+data->len, buf);
++		memblock_x86_reserve_range(pa_data, pa_data+sizeof(*data)+data->len, buf);
+ 		pa_data = data->next;
+ 		early_iounmap(data, sizeof(*data));
+ 	}
+@@ -519,23 +518,23 @@ static void __init reserve_crashkernel(void)
+ 	if (crash_base <= 0) {
+ 		const unsigned long long alignment = 16<<20;	/* 16M */
+ 
+-		crash_base = find_e820_area(alignment, ULONG_MAX, crash_size,
++		crash_base = memblock_find_in_range(alignment, ULONG_MAX, crash_size,
+ 				 alignment);
+-		if (crash_base == -1ULL) {
++		if (crash_base == MEMBLOCK_ERROR) {
+ 			pr_info("crashkernel reservation failed - No suitable area found.\n");
+ 			return;
+ 		}
+ 	} else {
+ 		unsigned long long start;
+ 
+-		start = find_e820_area(crash_base, ULONG_MAX, crash_size,
++		start = memblock_find_in_range(crash_base, ULONG_MAX, crash_size,
+ 				 1<<20);
+ 		if (start != crash_base) {
+ 			pr_info("crashkernel reservation failed - memory is in use.\n");
+ 			return;
+ 		}
+ 	}
+-	reserve_early(crash_base, crash_base + crash_size, "CRASH KERNEL");
++	memblock_x86_reserve_range(crash_base, crash_base + crash_size, "CRASH KERNEL");
+ 
+ 	printk(KERN_INFO "Reserving %ldMB of memory at %ldMB "
+ 			"for crashkernel (System RAM: %ldMB)\n",
+@@ -786,7 +785,7 @@ void __init setup_arch(char **cmdline_p)
+ #endif
+ 	 4)) {
+ 		efi_enabled = 1;
+-		efi_reserve_early();
++		efi_memblock_x86_reserve_range();
+ 	}
+ #endif
+ 
+@@ -846,7 +845,7 @@ void __init setup_arch(char **cmdline_p)
+ 	vmi_activate();
+ 
+ 	/* after early param, so could get panic from serial */
+-	reserve_early_setup_data();
++	memblock_x86_reserve_range_setup_data();
+ 
+ 	if (acpi_mps_check()) {
+ #ifdef CONFIG_X86_LOCAL_APIC
+diff --git a/arch/x86/kernel/trampoline.c b/arch/x86/kernel/trampoline.c
+index c652ef6..bbfec06 100644
+--- a/arch/x86/kernel/trampoline.c
++++ b/arch/x86/kernel/trampoline.c
+@@ -1,7 +1,7 @@
+ #include <linux/io.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/trampoline.h>
+-#include <asm/e820.h>
+ 
+ #if defined(CONFIG_X86_64) && defined(CONFIG_ACPI_SLEEP)
+ #define __trampinit
+@@ -19,12 +19,12 @@ void __init reserve_trampoline_memory(void)
+ 	unsigned long mem;
+ 
+ 	/* Has to be in very low memory so we can execute real-mode AP code. */
+-	mem = find_e820_area(0, 1<<20, TRAMPOLINE_SIZE, PAGE_SIZE);
+-	if (mem == -1L)
++	mem = memblock_find_in_range(0, 1<<20, TRAMPOLINE_SIZE, PAGE_SIZE);
++	if (mem == MEMBLOCK_ERROR)
+ 		panic("Cannot allocate trampoline\n");
+ 
+ 	trampoline_base = __va(mem);
+-	reserve_early(mem, mem + TRAMPOLINE_SIZE, "TRAMPOLINE");
++	memblock_x86_reserve_range(mem, mem + TRAMPOLINE_SIZE, "TRAMPOLINE");
+ }
+ 
+ /*
+diff --git a/arch/x86/mm/init.c b/arch/x86/mm/init.c
+index b278535..6a9fffb 100644
+--- a/arch/x86/mm/init.c
++++ b/arch/x86/mm/init.c
+@@ -2,6 +2,7 @@
+ #include <linux/initrd.h>
+ #include <linux/ioport.h>
+ #include <linux/swap.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/cacheflush.h>
+ #include <asm/e820.h>
+@@ -75,9 +76,9 @@ static void __init find_early_table_space(unsigned long end, int use_pse,
+ #else
+ 	start = 0x8000;
+ #endif
+-	e820_table_start = find_e820_area(start, max_pfn_mapped<<PAGE_SHIFT,
++	e820_table_start = memblock_find_in_range(start, max_pfn_mapped<<PAGE_SHIFT,
+ 					tables, PAGE_SIZE);
+-	if (e820_table_start == -1UL)
++	if (e820_table_start == MEMBLOCK_ERROR)
+ 		panic("Cannot find space for the kernel page tables");
+ 
+ 	e820_table_start >>= PAGE_SHIFT;
+@@ -299,7 +300,7 @@ unsigned long __init_refok init_memory_mapping(unsigned long start,
+ 	__flush_tlb_all();
+ 
+ 	if (!after_bootmem && e820_table_end > e820_table_start)
+-		reserve_early(e820_table_start << PAGE_SHIFT,
++		memblock_x86_reserve_range(e820_table_start << PAGE_SHIFT,
+ 				 e820_table_end << PAGE_SHIFT, "PGTABLE");
+ 
+ 	if (!after_bootmem)
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index 90e0545..49adf16 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -25,6 +25,7 @@
+ #include <linux/pfn.h>
+ #include <linux/poison.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/proc_fs.h>
+ #include <linux/memory_hotplug.h>
+ #include <linux/initrd.h>
+@@ -712,14 +713,14 @@ void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn,
+ 	highstart_pfn = highend_pfn = max_pfn;
+ 	if (max_pfn > max_low_pfn)
+ 		highstart_pfn = max_low_pfn;
+-	e820_register_active_regions(0, 0, highend_pfn);
++	memblock_x86_register_active_regions(0, 0, highend_pfn);
+ 	sparse_memory_present_with_active_regions(0);
+ 	printk(KERN_NOTICE "%ldMB HIGHMEM available.\n",
+ 		pages_to_mb(highend_pfn - highstart_pfn));
+ 	num_physpages = highend_pfn;
+ 	high_memory = (void *) __va(highstart_pfn * PAGE_SIZE - 1) + 1;
+ #else
+-	e820_register_active_regions(0, 0, max_low_pfn);
++	memblock_x86_register_active_regions(0, 0, max_low_pfn);
+ 	sparse_memory_present_with_active_regions(0);
+ 	num_physpages = max_low_pfn;
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE - 1) + 1;
+@@ -781,11 +782,11 @@ void __init setup_bootmem_allocator(void)
+ 	 * Initialize the boot-time allocator (with low memory only):
+ 	 */
+ 	bootmap_size = bootmem_bootmap_pages(max_low_pfn)<<PAGE_SHIFT;
+-	bootmap = find_e820_area(0, max_pfn_mapped<<PAGE_SHIFT, bootmap_size,
++	bootmap = memblock_find_in_range(0, max_pfn_mapped<<PAGE_SHIFT, bootmap_size,
+ 				 PAGE_SIZE);
+-	if (bootmap == -1L)
++	if (bootmap == MEMBLOCK_ERROR)
+ 		panic("Cannot find bootmem map of size %ld\n", bootmap_size);
+-	reserve_early(bootmap, bootmap + bootmap_size, "BOOTMAP");
++	memblock_x86_reserve_range(bootmap, bootmap + bootmap_size, "BOOTMAP");
+ #endif
+ 
+ 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
+@@ -1069,3 +1070,4 @@ void mark_rodata_ro(void)
+ #endif
+ }
+ #endif
++
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 634fa08..592b236 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -21,6 +21,7 @@
+ #include <linux/initrd.h>
+ #include <linux/pagemap.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/proc_fs.h>
+ #include <linux/pci.h>
+ #include <linux/pfn.h>
+@@ -577,18 +578,18 @@ void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn,
+ 	unsigned long bootmap_size, bootmap;
+ 
+ 	bootmap_size = bootmem_bootmap_pages(end_pfn)<<PAGE_SHIFT;
+-	bootmap = find_e820_area(0, end_pfn<<PAGE_SHIFT, bootmap_size,
++	bootmap = memblock_find_in_range(0, end_pfn<<PAGE_SHIFT, bootmap_size,
+ 				 PAGE_SIZE);
+-	if (bootmap == -1L)
++	if (bootmap == MEMBLOCK_ERROR)
+ 		panic("Cannot find bootmem map of size %ld\n", bootmap_size);
+-	reserve_early(bootmap, bootmap + bootmap_size, "BOOTMAP");
++	memblock_x86_reserve_range(bootmap, bootmap + bootmap_size, "BOOTMAP");
+ 	/* don't touch min_low_pfn */
+ 	bootmap_size = init_bootmem_node(NODE_DATA(0), bootmap >> PAGE_SHIFT,
+ 					 0, end_pfn);
+-	e820_register_active_regions(0, start_pfn, end_pfn);
++	memblock_x86_register_active_regions(0, start_pfn, end_pfn);
+ 	free_bootmem_with_active_regions(0, end_pfn);
+ #else
+-	e820_register_active_regions(0, start_pfn, end_pfn);
++	memblock_x86_register_active_regions(0, start_pfn, end_pfn);
+ #endif
+ }
+ #endif
+diff --git a/arch/x86/mm/k8topology_64.c b/arch/x86/mm/k8topology_64.c
+index 970ed57..966de93 100644
+--- a/arch/x86/mm/k8topology_64.c
++++ b/arch/x86/mm/k8topology_64.c
+@@ -11,6 +11,8 @@
+ #include <linux/string.h>
+ #include <linux/module.h>
+ #include <linux/nodemask.h>
++#include <linux/memblock.h>
++
+ #include <asm/io.h>
+ #include <linux/pci_ids.h>
+ #include <linux/acpi.h>
+@@ -222,7 +224,7 @@ int __init k8_scan_nodes(void)
+ 	for_each_node_mask(i, node_possible_map) {
+ 		int j;
+ 
+-		e820_register_active_regions(i,
++		memblock_x86_register_active_regions(i,
+ 				nodes[i].start >> PAGE_SHIFT,
+ 				nodes[i].end >> PAGE_SHIFT);
+ 		for (j = apicid_base; j < cores + apicid_base; j++)
+diff --git a/arch/x86/mm/memtest.c b/arch/x86/mm/memtest.c
+index 18d244f..92faf3a 100644
+--- a/arch/x86/mm/memtest.c
++++ b/arch/x86/mm/memtest.c
+@@ -6,8 +6,7 @@
+ #include <linux/smp.h>
+ #include <linux/init.h>
+ #include <linux/pfn.h>
+-
+-#include <asm/e820.h>
++#include <linux/memblock.h>
+ 
+ static u64 patterns[] __initdata = {
+ 	0,
+@@ -35,7 +34,7 @@ static void __init reserve_bad_mem(u64 pattern, u64 start_bad, u64 end_bad)
+ 	       (unsigned long long) pattern,
+ 	       (unsigned long long) start_bad,
+ 	       (unsigned long long) end_bad);
+-	reserve_early(start_bad, end_bad, "BAD RAM");
++	memblock_x86_reserve_range(start_bad, end_bad, "BAD RAM");
+ }
+ 
+ static void __init memtest(u64 pattern, u64 start_phys, u64 size)
+@@ -74,7 +73,7 @@ static void __init do_one_pass(u64 pattern, u64 start, u64 end)
+ 	u64 size = 0;
+ 
+ 	while (start < end) {
+-		start = find_e820_area_size(start, &size, 1);
++		start = memblock_x86_find_in_range_size(start, &size, 1);
+ 
+ 		/* done ? */
+ 		if (start >= end)
+diff --git a/arch/x86/mm/numa_32.c b/arch/x86/mm/numa_32.c
+index 809baaa..ddf9730 100644
+--- a/arch/x86/mm/numa_32.c
++++ b/arch/x86/mm/numa_32.c
+@@ -24,6 +24,7 @@
+ 
+ #include <linux/mm.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/mmzone.h>
+ #include <linux/highmem.h>
+ #include <linux/initrd.h>
+@@ -120,7 +121,7 @@ int __init get_memcfg_numa_flat(void)
+ 
+ 	node_start_pfn[0] = 0;
+ 	node_end_pfn[0] = max_pfn;
+-	e820_register_active_regions(0, 0, max_pfn);
++	memblock_x86_register_active_regions(0, 0, max_pfn);
+ 	memory_present(0, 0, max_pfn);
+ 	node_remap_size[0] = node_memmap_size_bytes(0, 0, max_pfn);
+ 
+@@ -161,14 +162,14 @@ static void __init allocate_pgdat(int nid)
+ 		NODE_DATA(nid) = (pg_data_t *)node_remap_start_vaddr[nid];
+ 	else {
+ 		unsigned long pgdat_phys;
+-		pgdat_phys = find_e820_area(min_low_pfn<<PAGE_SHIFT,
++		pgdat_phys = memblock_find_in_range(min_low_pfn<<PAGE_SHIFT,
+ 				 max_pfn_mapped<<PAGE_SHIFT,
+ 				 sizeof(pg_data_t),
+ 				 PAGE_SIZE);
+ 		NODE_DATA(nid) = (pg_data_t *)(pfn_to_kaddr(pgdat_phys>>PAGE_SHIFT));
+ 		memset(buf, 0, sizeof(buf));
+ 		sprintf(buf, "NODE_DATA %d",  nid);
+-		reserve_early(pgdat_phys, pgdat_phys + sizeof(pg_data_t), buf);
++		memblock_x86_reserve_range(pgdat_phys, pgdat_phys + sizeof(pg_data_t), buf);
+ 	}
+ 	printk(KERN_DEBUG "allocate_pgdat: node %d NODE_DATA %08lx\n",
+ 		nid, (unsigned long)NODE_DATA(nid));
+@@ -291,15 +292,15 @@ static __init unsigned long calculate_numa_remap_pages(void)
+ 						 PTRS_PER_PTE);
+ 		node_kva_target <<= PAGE_SHIFT;
+ 		do {
+-			node_kva_final = find_e820_area(node_kva_target,
++			node_kva_final = memblock_find_in_range(node_kva_target,
+ 					((u64)node_end_pfn[nid])<<PAGE_SHIFT,
+ 						((u64)size)<<PAGE_SHIFT,
+ 						LARGE_PAGE_BYTES);
+ 			node_kva_target -= LARGE_PAGE_BYTES;
+-		} while (node_kva_final == -1ULL &&
++		} while (node_kva_final == MEMBLOCK_ERROR &&
+ 			 (node_kva_target>>PAGE_SHIFT) > (node_start_pfn[nid]));
+ 
+-		if (node_kva_final == -1ULL)
++		if (node_kva_final == MEMBLOCK_ERROR)
+ 			panic("Can not get kva ram\n");
+ 
+ 		node_remap_size[nid] = size;
+@@ -318,9 +319,9 @@ static __init unsigned long calculate_numa_remap_pages(void)
+ 		 *  but we could have some hole in high memory, and it will only
+ 		 *  check page_is_ram(pfn) && !page_is_reserved_early(pfn) to decide
+ 		 *  to use it as free.
+-		 *  So reserve_early here, hope we don't run out of that array
++		 *  So memblock_x86_reserve_range here, hope we don't run out of that array
+ 		 */
+-		reserve_early(node_kva_final,
++		memblock_x86_reserve_range(node_kva_final,
+ 			      node_kva_final+(((u64)size)<<PAGE_SHIFT),
+ 			      "KVA RAM");
+ 
+@@ -367,14 +368,14 @@ void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn,
+ 
+ 	kva_target_pfn = round_down(max_low_pfn - kva_pages, PTRS_PER_PTE);
+ 	do {
+-		kva_start_pfn = find_e820_area(kva_target_pfn<<PAGE_SHIFT,
++		kva_start_pfn = memblock_find_in_range(kva_target_pfn<<PAGE_SHIFT,
+ 					max_low_pfn<<PAGE_SHIFT,
+ 					kva_pages<<PAGE_SHIFT,
+ 					PTRS_PER_PTE<<PAGE_SHIFT) >> PAGE_SHIFT;
+ 		kva_target_pfn -= PTRS_PER_PTE;
+-	} while (kva_start_pfn == -1UL && kva_target_pfn > min_low_pfn);
++	} while (kva_start_pfn == MEMBLOCK_ERROR && kva_target_pfn > min_low_pfn);
+ 
+-	if (kva_start_pfn == -1UL)
++	if (kva_start_pfn == MEMBLOCK_ERROR)
+ 		panic("Can not get kva space\n");
+ 
+ 	printk(KERN_INFO "kva_start_pfn ~ %lx max_low_pfn ~ %lx\n",
+@@ -382,7 +383,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long end_pfn,
+ 	printk(KERN_INFO "max_pfn = %lx\n", max_pfn);
+ 
+ 	/* avoid clash with initrd */
+-	reserve_early(kva_start_pfn<<PAGE_SHIFT,
++	memblock_x86_reserve_range(kva_start_pfn<<PAGE_SHIFT,
+ 		      (kva_start_pfn + kva_pages)<<PAGE_SHIFT,
+ 		     "KVA PG");
+ #ifdef CONFIG_HIGHMEM
+diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+index 3d54f9f..984b1ff 100644
+--- a/arch/x86/mm/numa_64.c
++++ b/arch/x86/mm/numa_64.c
+@@ -87,16 +87,16 @@ static int __init allocate_cachealigned_memnodemap(void)
+ 
+ 	addr = 0x8000;
+ 	nodemap_size = roundup(sizeof(s16) * memnodemapsize, L1_CACHE_BYTES);
+-	nodemap_addr = find_e820_area(addr, max_pfn<<PAGE_SHIFT,
++	nodemap_addr = memblock_find_in_range(addr, max_pfn<<PAGE_SHIFT,
+ 				      nodemap_size, L1_CACHE_BYTES);
+-	if (nodemap_addr == -1UL) {
++	if (nodemap_addr == MEMBLOCK_ERROR) {
+ 		printk(KERN_ERR
+ 		       "NUMA: Unable to allocate Memory to Node hash map\n");
+ 		nodemap_addr = nodemap_size = 0;
+ 		return -1;
+ 	}
+ 	memnodemap = phys_to_virt(nodemap_addr);
+-	reserve_early(nodemap_addr, nodemap_addr + nodemap_size, "MEMNODEMAP");
++	memblock_x86_reserve_range(nodemap_addr, nodemap_addr + nodemap_size, "MEMNODEMAP");
+ 
+ 	printk(KERN_DEBUG "NUMA: Allocated memnodemap from %lx - %lx\n",
+ 	       nodemap_addr, nodemap_addr + nodemap_size);
+@@ -227,7 +227,7 @@ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
+ 	if (node_data[nodeid] == NULL)
+ 		return;
+ 	nodedata_phys = __pa(node_data[nodeid]);
+-	reserve_early(nodedata_phys, nodedata_phys + pgdat_size, "NODE_DATA");
++	memblock_x86_reserve_range(nodedata_phys, nodedata_phys + pgdat_size, "NODE_DATA");
+ 	printk(KERN_INFO "  NODE_DATA [%016lx - %016lx]\n", nodedata_phys,
+ 		nodedata_phys + pgdat_size - 1);
+ 	nid = phys_to_nid(nodedata_phys);
+@@ -246,7 +246,7 @@ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
+ 	 * Find a place for the bootmem map
+ 	 * nodedata_phys could be on other nodes by alloc_bootmem,
+ 	 * so need to sure bootmap_start not to be small, otherwise
+-	 * early_node_mem will get that with find_e820_area instead
++	 * early_node_mem will get that with memblock_find_in_range instead
+ 	 * of alloc_bootmem, that could clash with reserved range
+ 	 */
+ 	bootmap_pages = bootmem_bootmap_pages(last_pfn - start_pfn);
+@@ -258,12 +258,12 @@ setup_node_bootmem(int nodeid, unsigned long start, unsigned long end)
+ 	bootmap = early_node_mem(nodeid, bootmap_start, end,
+ 				 bootmap_pages<<PAGE_SHIFT, PAGE_SIZE);
+ 	if (bootmap == NULL)  {
+-		free_early(nodedata_phys, nodedata_phys + pgdat_size);
++		memblock_x86_free_range(nodedata_phys, nodedata_phys + pgdat_size);
+ 		node_data[nodeid] = NULL;
+ 		return;
+ 	}
+ 	bootmap_start = __pa(bootmap);
+-	reserve_early(bootmap_start, bootmap_start+(bootmap_pages<<PAGE_SHIFT),
++	memblock_x86_reserve_range(bootmap_start, bootmap_start+(bootmap_pages<<PAGE_SHIFT),
+ 			"BOOTMAP");
+ 
+ 	bootmap_size = init_bootmem_node(NODE_DATA(nodeid),
+@@ -417,7 +417,7 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr,
+ 		nr_nodes = MAX_NUMNODES;
+ 	}
+ 
+-	size = (max_addr - addr - e820_hole_size(addr, max_addr)) / nr_nodes;
++	size = (max_addr - addr - memblock_x86_hole_size(addr, max_addr)) / nr_nodes;
+ 	/*
+ 	 * Calculate the number of big nodes that can be allocated as a result
+ 	 * of consolidating the remainder.
+@@ -453,7 +453,7 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr,
+ 			 * non-reserved memory is less than the per-node size.
+ 			 */
+ 			while (end - physnodes[i].start -
+-				e820_hole_size(physnodes[i].start, end) < size) {
++				memblock_x86_hole_size(physnodes[i].start, end) < size) {
+ 				end += FAKE_NODE_MIN_SIZE;
+ 				if (end > physnodes[i].end) {
+ 					end = physnodes[i].end;
+@@ -467,7 +467,7 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr,
+ 			 * this one must extend to the boundary.
+ 			 */
+ 			if (end < dma32_end && dma32_end - end -
+-			    e820_hole_size(end, dma32_end) < FAKE_NODE_MIN_SIZE)
++			    memblock_x86_hole_size(end, dma32_end) < FAKE_NODE_MIN_SIZE)
+ 				end = dma32_end;
+ 
+ 			/*
+@@ -476,7 +476,7 @@ static int __init split_nodes_interleave(u64 addr, u64 max_addr,
+ 			 * physical node.
+ 			 */
+ 			if (physnodes[i].end - end -
+-			    e820_hole_size(end, physnodes[i].end) < size)
++			    memblock_x86_hole_size(end, physnodes[i].end) < size)
+ 				end = physnodes[i].end;
+ 
+ 			/*
+@@ -504,7 +504,7 @@ static u64 __init find_end_of_node(u64 start, u64 max_addr, u64 size)
+ {
+ 	u64 end = start + size;
+ 
+-	while (end - start - e820_hole_size(start, end) < size) {
++	while (end - start - memblock_x86_hole_size(start, end) < size) {
+ 		end += FAKE_NODE_MIN_SIZE;
+ 		if (end > max_addr) {
+ 			end = max_addr;
+@@ -533,7 +533,7 @@ static int __init split_nodes_size_interleave(u64 addr, u64 max_addr, u64 size)
+ 	 * creates a uniform distribution of node sizes across the entire
+ 	 * machine (but not necessarily over physical nodes).
+ 	 */
+-	min_size = (max_addr - addr - e820_hole_size(addr, max_addr)) /
++	min_size = (max_addr - addr - memblock_x86_hole_size(addr, max_addr)) /
+ 						MAX_NUMNODES;
+ 	min_size = max(min_size, FAKE_NODE_MIN_SIZE);
+ 	if ((min_size & FAKE_NODE_MIN_HASH_MASK) < min_size)
+@@ -566,7 +566,7 @@ static int __init split_nodes_size_interleave(u64 addr, u64 max_addr, u64 size)
+ 			 * this one must extend to the boundary.
+ 			 */
+ 			if (end < dma32_end && dma32_end - end -
+-			    e820_hole_size(end, dma32_end) < FAKE_NODE_MIN_SIZE)
++			    memblock_x86_hole_size(end, dma32_end) < FAKE_NODE_MIN_SIZE)
+ 				end = dma32_end;
+ 
+ 			/*
+@@ -575,7 +575,7 @@ static int __init split_nodes_size_interleave(u64 addr, u64 max_addr, u64 size)
+ 			 * physical node.
+ 			 */
+ 			if (physnodes[i].end - end -
+-			    e820_hole_size(end, physnodes[i].end) < size)
++			    memblock_x86_hole_size(end, physnodes[i].end) < size)
+ 				end = physnodes[i].end;
+ 
+ 			/*
+@@ -639,7 +639,7 @@ static int __init numa_emulation(unsigned long start_pfn,
+ 	 */
+ 	remove_all_active_ranges();
+ 	for_each_node_mask(i, node_possible_map) {
+-		e820_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
++		memblock_x86_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
+ 						nodes[i].end >> PAGE_SHIFT);
+ 		setup_node_bootmem(i, nodes[i].start, nodes[i].end);
+ 	}
+@@ -692,7 +692,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+ 	node_set(0, node_possible_map);
+ 	for (i = 0; i < nr_cpu_ids; i++)
+ 		numa_set_node(i, 0);
+-	e820_register_active_regions(0, start_pfn, last_pfn);
++	memblock_x86_register_active_regions(0, start_pfn, last_pfn);
+ 	setup_node_bootmem(0, start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT);
+ }
+ 
+diff --git a/arch/x86/mm/srat_32.c b/arch/x86/mm/srat_32.c
+index 9324f13..a17dffd 100644
+--- a/arch/x86/mm/srat_32.c
++++ b/arch/x86/mm/srat_32.c
+@@ -25,6 +25,7 @@
+  */
+ #include <linux/mm.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/mmzone.h>
+ #include <linux/acpi.h>
+ #include <linux/nodemask.h>
+@@ -264,7 +265,7 @@ int __init get_memcfg_from_srat(void)
+ 		if (node_read_chunk(chunk->nid, chunk))
+ 			continue;
+ 
+-		e820_register_active_regions(chunk->nid, chunk->start_pfn,
++		memblock_x86_register_active_regions(chunk->nid, chunk->start_pfn,
+ 					     min(chunk->end_pfn, max_pfn));
+ 	}
+ 	/* for out of order entries in SRAT */
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index f9897f7..7f44eb6 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -16,6 +16,7 @@
+ #include <linux/module.h>
+ #include <linux/topology.h>
+ #include <linux/bootmem.h>
++#include <linux/memblock.h>
+ #include <linux/mm.h>
+ #include <asm/proto.h>
+ #include <asm/numa.h>
+@@ -98,15 +99,15 @@ void __init acpi_numa_slit_init(struct acpi_table_slit *slit)
+ 	unsigned long phys;
+ 
+ 	length = slit->header.length;
+-	phys = find_e820_area(0, max_pfn_mapped<<PAGE_SHIFT, length,
++	phys = memblock_find_in_range(0, max_pfn_mapped<<PAGE_SHIFT, length,
+ 		 PAGE_SIZE);
+ 
+-	if (phys == -1L)
++	if (phys == MEMBLOCK_ERROR)
+ 		panic(" Can not save slit!\n");
+ 
+ 	acpi_slit = __va(phys);
+ 	memcpy(acpi_slit, slit, length);
+-	reserve_early(phys, phys + length, "ACPI SLIT");
++	memblock_x86_reserve_range(phys, phys + length, "ACPI SLIT");
+ }
+ 
+ /* Callback for Proximity Domain -> x2APIC mapping */
+@@ -324,7 +325,7 @@ static int __init nodes_cover_memory(const struct bootnode *nodes)
+ 			pxmram = 0;
+ 	}
+ 
+-	e820ram = max_pfn - (e820_hole_size(0, max_pfn<<PAGE_SHIFT)>>PAGE_SHIFT);
++	e820ram = max_pfn - (memblock_x86_hole_size(0, max_pfn<<PAGE_SHIFT)>>PAGE_SHIFT);
+ 	/* We seem to lose 3 pages somewhere. Allow 1M of slack. */
+ 	if ((long)(e820ram - pxmram) >= (1<<(20 - PAGE_SHIFT))) {
+ 		printk(KERN_ERR
+@@ -421,7 +422,7 @@ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
+ 	}
+ 
+ 	for_each_node_mask(i, nodes_parsed)
+-		e820_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
++		memblock_x86_register_active_regions(i, nodes[i].start >> PAGE_SHIFT,
+ 						nodes[i].end >> PAGE_SHIFT);
+ 	/* for out of order entries in SRAT */
+ 	sort_node_map();
+diff --git a/arch/x86/xen/mmu.c b/arch/x86/xen/mmu.c
+index 914f046..b511f19 100644
+--- a/arch/x86/xen/mmu.c
++++ b/arch/x86/xen/mmu.c
+@@ -44,6 +44,7 @@
+ #include <linux/bug.h>
+ #include <linux/module.h>
+ #include <linux/gfp.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/tlbflush.h>
+@@ -1735,7 +1736,7 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+ 	__xen_write_cr3(true, __pa(pgd));
+ 	xen_mc_issue(PARAVIRT_LAZY_CPU);
+ 
+-	reserve_early(__pa(xen_start_info->pt_base),
++	memblock_x86_reserve_range(__pa(xen_start_info->pt_base),
+ 		      __pa(xen_start_info->pt_base +
+ 			   xen_start_info->nr_pt_frames * PAGE_SIZE),
+ 		      "XEN PAGETABLES");
+@@ -1773,7 +1774,7 @@ __init pgd_t *xen_setup_kernel_pagetable(pgd_t *pgd,
+ 
+ 	pin_pagetable_pfn(MMUEXT_PIN_L3_TABLE, PFN_DOWN(__pa(swapper_pg_dir)));
+ 
+-	reserve_early(__pa(xen_start_info->pt_base),
++	memblock_x86_reserve_range(__pa(xen_start_info->pt_base),
+ 		      __pa(xen_start_info->pt_base +
+ 			   xen_start_info->nr_pt_frames * PAGE_SIZE),
+ 		      "XEN PAGETABLES");
+diff --git a/arch/x86/xen/setup.c b/arch/x86/xen/setup.c
+index ad0047f..2ac8f29 100644
+--- a/arch/x86/xen/setup.c
++++ b/arch/x86/xen/setup.c
+@@ -8,6 +8,7 @@
+ #include <linux/sched.h>
+ #include <linux/mm.h>
+ #include <linux/pm.h>
++#include <linux/memblock.h>
+ 
+ #include <asm/elf.h>
+ #include <asm/vdso.h>
+@@ -61,7 +62,7 @@ char * __init xen_memory_setup(void)
+ 	 *  - xen_start_info
+ 	 * See comment above "struct start_info" in <xen/interface/xen.h>
+ 	 */
+-	reserve_early(__pa(xen_start_info->mfn_list),
++	memblock_x86_reserve_range(__pa(xen_start_info->mfn_list),
+ 		      __pa(xen_start_info->pt_base),
+ 			"XEN START INFO");
+ 
+diff --git a/mm/bootmem.c b/mm/bootmem.c
+index fda01a2..13b0caa 100644
+--- a/mm/bootmem.c
++++ b/mm/bootmem.c
+@@ -436,7 +436,7 @@ void __init free_bootmem_node(pg_data_t *pgdat, unsigned long physaddr,
+ {
+ #ifdef CONFIG_NO_BOOTMEM
+ 	kmemleak_free_part(__va(physaddr), size);
+-	free_early(physaddr, physaddr + size);
++	memblock_x86_free_range(physaddr, physaddr + size);
+ #else
+ 	unsigned long start, end;
+ 
+@@ -462,7 +462,7 @@ void __init free_bootmem(unsigned long addr, unsigned long size)
+ {
+ #ifdef CONFIG_NO_BOOTMEM
+ 	kmemleak_free_part(__va(addr), size);
+-	free_early(addr, addr + size);
++	memblock_x86_free_range(addr, addr + size);
+ #else
+ 	unsigned long start, end;
+ 
 -- 
 1.6.4.2
 
