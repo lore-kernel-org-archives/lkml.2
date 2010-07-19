@@ -1,46 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967129Ab0GSWje (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 18:39:34 -0400
-Received: from tex.lwn.net ([70.33.254.29]:42241 "EHLO vena.lwn.net"
+	id S1760872Ab0GSWmP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 18:42:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:64579 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967071Ab0GSWjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 18:39:33 -0400
-Date: Mon, 19 Jul 2010 16:39:30 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, Tejun Heo <tj@kernel.org>,
-        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vamos-dev@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH 4/4] drivers/media/video: Remove dead CONFIG_OLPC_X0_1
-Message-ID: <20100719163930.6c3333a7@bike.lwn.net>
-In-Reply-To: <966ac7deeee8b102b9b8d829ca14e177f9368f21.1279111369.git.qy03fugy@stud.informatik.uni-erlangen.de>
-References: <cover.1279111369.git.qy03fugy@stud.informatik.uni-erlangen.de>
-	<966ac7deeee8b102b9b8d829ca14e177f9368f21.1279111369.git.qy03fugy@stud.informatik.uni-erlangen.de>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.5; x86_64-redhat-linux-gnu)
+	id S1757194Ab0GSWmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 18:42:13 -0400
+Date: Mon, 19 Jul 2010 18:41:53 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Ian Kent <raven@themaw.net>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH 27/38] union-mount: In-kernel file copyup routines
+Message-ID: <20100719224152.GC11089@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-28-git-send-email-vaurora@redhat.com> <20100713045619.GI3949@zeus.themaw.net>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100713045619.GI3949@zeus.themaw.net>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 14 Jul 2010 15:21:48 +0200
-Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de> wrote:
+On Tue, Jul 13, 2010 at 12:56:20PM +0800, Ian Kent wrote:
+> On Tue, Jun 15, 2010 at 11:39:57AM -0700, Valerie Aurora wrote:
+> > When a file on the read-only layer of a union mount is altered, it
+> > must be copied up to the topmost read-write layer.  This patch creates
+> > union_copyup() and its supporting routines.
+> > 
+> > Thanks to Valdis Kletnieks for a bug fix.
+> > 
+> > Cc: Valdis.Kletnieks@vt.edu
+> > ---
+> >  fs/union.c |  323 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+> >  fs/union.h |    7 +-
+> >  2 files changed, 329 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/fs/union.c b/fs/union.c
+> > index 76a6c34..0982446 100644
+> > --- a/fs/union.c
+> > +++ b/fs/union.c
+> > +/**
+> > + * do_union_copyup_len - Copy up a file given its path (and its parent's)
+> > + *
+> > + * @nd: nameidata for topmost parent dir
+> > + * @path: path of file to be copied up
+> > + * @copy_all: if set, copy all of the file's data and ignore @len
+> > + * @len: if @copy_all is not set, number of bytes of file data to copy up
+> > + *
+> > + * Newly copied up path is returned in @path.
+> > + */
+> > +
+> > +static int do_union_copyup_len(struct nameidata *nd, struct path *path,
+> > +			       int copy_all, size_t len)
+> > +{
+> > +	struct path *parent = &nd->path;
+> > +	int error;
+> > +
+> > +	if (!IS_DIR_UNIONED(parent->dentry))
+> > +		return 0;
+> > +	if (parent->mnt == path->mnt)
+> > +		return 0;
+> > +	if (!S_ISREG(path->dentry->d_inode->i_mode) &&
+> > +	    !S_ISLNK(path->dentry->d_inode->i_mode))
+> > +		return 0;
+> > +
+> > +	BUG_ON(!S_ISDIR(parent->dentry->d_inode->i_mode));
+> > +
+> > +	mutex_lock(&parent->dentry->d_inode->i_mutex);
+> > +	error = -ENOENT;
+> > +	if (IS_DEADDIR(parent->dentry->d_inode))
+> > +		goto out_unlock;
+> > +
+> > +	if (copy_all && S_ISREG(path->dentry->d_inode->i_mode)) {
+> > +		error = -EFBIG;
+> > +		len = i_size_read(path->dentry->d_inode);
+> > +		if (((size_t)len != len) || ((ssize_t)len != len))
+> > +			goto out_unlock;
+> 
+> OK, call me dumb, but what does this comparison of len to len do?
 
-> CONFIG_OLPC_X0_1 doesn't exist in Kconfig and is never defined anywhere
-> else, therefore removing all references for it from the source code.
+It checks if len (the size of the file to be copied up) will overflow
+size_t or ssize_t on this machine.  The file could have been created
+on a 64-bit box, and be too big to be manipulated on a 32-bit box.  It
+could use a comment, fixed.
 
-That symbol is, needless to say, an OLPC thing; it's in their
-repository.  I do think they plan to upstream all of that at some
-point, but I think they're a little busy at the moment.
-
-Deleting this code will increase the delta between the OLPC and
-mainline trees.  My preference would be for that not to happen.  If it
-does, though, life will obviously go on, and this code can be restored
-when the rest is upstreamed.  If you must do that, though, could I ask
-that you preserve the CONFIG_OLPC_XO_1 version of the code, which is
-the version which has traditionally been in the mainline?
-
-jon
+-VAL
