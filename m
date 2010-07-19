@@ -1,13 +1,13 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934499Ab0GSOTh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 10:19:37 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57657 "EHLO
+	id S934572Ab0GSOUz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 10:20:55 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57699 "EHLO
 	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933995Ab0GSOTg (ORCPT
+	with ESMTP id S933836Ab0GSOUx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 10:19:36 -0400
-Date: Mon, 19 Jul 2010 10:19:34 -0400
+	Mon, 19 Jul 2010 10:20:53 -0400
+Date: Mon, 19 Jul 2010 10:20:51 -0400
 From: Christoph Hellwig <hch@infradead.org>
 To: Mel Gorman <mel@csn.ul.ie>
 Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
@@ -20,15 +20,14 @@ Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in direct
- reclaim
-Message-ID: <20100719141934.GB12510@infradead.org>
+Subject: Re: [PATCH 6/8] fs,xfs: Allow kswapd to writeback pages
+Message-ID: <20100719142051.GC12510@infradead.org>
 References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
- <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
+ <1279545090-19169-7-git-send-email-mel@csn.ul.ie>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <1279545090-19169-7-git-send-email-mel@csn.ul.ie>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
 	See http://www.infradead.org/rpr.html
@@ -36,15 +35,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 02:11:26PM +0100, Mel Gorman wrote:
-> As the call-chain for writing anonymous pages is not expected to be deep
-> and they are not cleaned by flusher threads, anonymous pages are still
-> written back in direct reclaim.
+On Mon, Jul 19, 2010 at 02:11:28PM +0100, Mel Gorman wrote:
+> As only kswapd and memcg are writing back pages, there should be no
+> danger of overflowing the stack. Allow the writing back of dirty pages
+> in xfs from the VM.
 
-While it is not quite as deep as it skips the filesystem allocator and
-extent mapping code it can still be quite deep for swap given that it
-still has to traverse the whole I/O stack.  Probably not worth worrying
-about now, but we need to keep an eye on it.
-
-The patch looks fine to me anyway.
+As pointed out during the discussion on one of your previous post memcg
+does pose a huge risk of stack overflows.  In the XFS tree we've already
+relaxed the check to allow writeback from kswapd, and until the memcg
+situation we'll need to keep that check.
 
