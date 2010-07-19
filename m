@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965627Ab0GSSj7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 14:39:59 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:26498 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965478Ab0GSSjt (ORCPT
+	id S965739Ab0GSSkG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 14:40:06 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:26040 "EHLO
+	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965636Ab0GSSkA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 14:39:49 -0400
-Subject: [PATCH 08/26] cciss: factor out cciss_find_cfgtables
+	Mon, 19 Jul 2010 14:40:00 -0400
+Subject: [PATCH 10/26] cciss: factor out cciss_find_board_params
 To: axboe@kernel.dk
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
         linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
-Date: Mon, 19 Jul 2010 13:45:21 -0500
-Message-ID: <20100719184521.7908.18837.stgit@beardog.cce.hp.com>
+Date: Mon, 19 Jul 2010 13:45:31 -0500
+Message-ID: <20100719184531.7908.8575.stgit@beardog.cce.hp.com>
 In-Reply-To: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
 References: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -26,100 +26,82 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-cciss: factor out cciss_find_cfgtables
+cciss: factor out cciss_find_board_params
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/block/cciss.c |   68 +++++++++++++++++++++++++------------------------
- 1 files changed, 34 insertions(+), 34 deletions(-)
+ drivers/block/cciss.c |   52 ++++++++++++++++++++++++-------------------------
+ 1 files changed, 25 insertions(+), 27 deletions(-)
 
 diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 286c81d..c297d31 100644
+index b702471..97feb50 100644
 --- a/drivers/block/cciss.c
 +++ b/drivers/block/cciss.c
-@@ -4041,13 +4041,40 @@ static int __devinit cciss_wait_for_board_ready(ctlr_info_t *h)
- 	return -ENODEV;
+@@ -4072,6 +4072,30 @@ static int __devinit cciss_find_cfgtables(ctlr_info_t *h)
+ 	return 0;
  }
  
-+static int __devinit cciss_find_cfgtables(ctlr_info_t *h)
++/* Interrogate the hardware for some limits:
++ * max commands, max SG elements without chaining, and with chaining,
++ * SG chain block size, etc.
++ */
++static void __devinit cciss_find_board_params(ctlr_info_t *h)
 +{
-+	u64 cfg_offset;
-+	u32 cfg_base_addr;
-+	u64 cfg_base_addr_index;
-+	u32 trans_offset;
-+
-+	/* get the address index number */
-+	cfg_base_addr = readl(h->vaddr + SA5_CTCFG_OFFSET);
-+	cfg_base_addr &= (u32) 0x0000ffff;
-+	cfg_base_addr_index = find_PCI_BAR_index(h->pdev, cfg_base_addr);
-+	if (cfg_base_addr_index == -1) {
-+		dev_warn(&h->pdev->dev, "cannot find cfg_base_addr_index\n");
-+		return -ENODEV;
++	h->max_commands = readl(&(h->cfgtable->MaxPerformantModeCommands));
++	h->nr_cmds = h->max_commands - 4; /* Allow room for some ioctls */
++	h->maxsgentries = readl(&(h->cfgtable->MaxSGElements));
++	/*
++	 * Limit in-command s/g elements to 32 save dma'able memory.
++	 * Howvever spec says if 0, use 31
++	 */
++	h->max_cmd_sgentries = 31;
++	if (h->maxsgentries > 512) {
++		h->max_cmd_sgentries = 32;
++		h->chainsize = h->maxsgentries - h->max_cmd_sgentries + 1;
++		h->maxsgentries--; /* save one for chain pointer */
++	} else {
++		h->maxsgentries = 31; /* default to traditional values */
++		h->chainsize = 0;
 +	}
-+	cfg_offset = readl(h->vaddr + SA5_CTMEM_OFFSET);
-+	h->cfgtable = remap_pci_mem(pci_resource_start(h->pdev,
-+			       cfg_base_addr_index) + cfg_offset,
-+				sizeof(h->cfgtable));
-+	if (!h->cfgtable)
-+		return -ENOMEM;
-+	/* Find performant mode table. */
-+	trans_offset = readl(&(h->cfgtable->TransMethodOffset));
-+	h->transtable = remap_pci_mem(pci_resource_start(h->pdev,
-+				cfg_base_addr_index)+cfg_offset+trans_offset,
-+				sizeof(*h->transtable));
-+	if (!h->transtable)
-+		return -ENOMEM;
-+	return 0;
 +}
 +
  static int __devinit cciss_pci_init(ctlr_info_t *c)
  {
--	__u64 cfg_offset;
--	__u32 cfg_base_addr;
--	__u64 cfg_base_addr_index;
--	__u32 trans_offset;
--	int i, prod_index, err;
-+	int prod_index, err;
- 
- 	prod_index = cciss_lookup_board_id(c->pdev, &c->board_id);
- 	if (prod_index < 0)
-@@ -4090,36 +4117,9 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
- 	err = cciss_wait_for_board_ready(c);
- 	if (err)
- 		goto err_out_free_res;
--
--	/* get the address index number */
--	cfg_base_addr = readl(c->vaddr + SA5_CTCFG_OFFSET);
--	cfg_base_addr &= (__u32) 0x0000ffff;
--#ifdef CCISS_DEBUG
--	printk("cfg base address = %x\n", cfg_base_addr);
--#endif				/* CCISS_DEBUG */
--	cfg_base_addr_index = find_PCI_BAR_index(c->pdev, cfg_base_addr);
--#ifdef CCISS_DEBUG
--	printk("cfg base address index = %llx\n",
--		(unsigned long long)cfg_base_addr_index);
--#endif				/* CCISS_DEBUG */
--	if (cfg_base_addr_index == -1) {
--		printk(KERN_WARNING "cciss: Cannot find cfg_base_addr_index\n");
--		err = -ENODEV;
-+	err = cciss_find_cfgtables(c);
-+	if (err)
- 		goto err_out_free_res;
--	}
--
--	cfg_offset = readl(c->vaddr + SA5_CTMEM_OFFSET);
--#ifdef CCISS_DEBUG
--	printk("cfg offset = %llx\n", (unsigned long long)cfg_offset);
--#endif				/* CCISS_DEBUG */
--	c->cfgtable = remap_pci_mem(pci_resource_start(c->pdev,
--						       cfg_base_addr_index) +
--				    cfg_offset, sizeof(CfgTable_struct));
--	/* Find performant mode table. */
--	trans_offset = readl(&(c->cfgtable->TransMethodOffset));
--	c->transtable = remap_pci_mem(pci_resource_start(c->pdev,
--		cfg_base_addr_index) + cfg_offset+trans_offset,
--		sizeof(*c->transtable));
+ 	int prod_index, err;
+@@ -4127,34 +4151,8 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
  #ifdef CCISS_DEBUG
  	print_cfg_table(c->cfgtable);
  #endif				/* CCISS_DEBUG */
++	cciss_find_board_params(c);
+ 
+-	/* Some controllers support Zero Memory Raid (ZMR).
+-	 * When configured in ZMR mode the number of supported
+-	 * commands drops to 64. So instead of just setting an
+-	 * arbitrary value we make the driver a little smarter.
+-	 * We read the config table to tell us how many commands
+-	 * are supported on the controller then subtract 4 to
+-	 * leave a little room for ioctl calls.
+-	 */
+-	c->max_commands = readl(&(c->cfgtable->MaxPerformantModeCommands));
+-	c->maxsgentries = readl(&(c->cfgtable->MaxSGElements));
+-
+-	/*
+-	 * Limit native command to 32 s/g elements to save dma'able memory.
+-	 * Howvever spec says if 0, use 31
+-	 */
+-
+-	c->max_cmd_sgentries = 31;
+-	if (c->maxsgentries > 512) {
+-		c->max_cmd_sgentries = 32;
+-		c->chainsize = c->maxsgentries - c->max_cmd_sgentries + 1;
+-		c->maxsgentries -= 1;   /* account for chain pointer */
+-	} else {
+-		c->maxsgentries = 31;   /* Default to traditional value */
+-		c->chainsize = 0;       /* traditional */
+-	}
+-
+-	c->nr_cmds = c->max_commands - 4;
+ 	if ((readb(&c->cfgtable->Signature[0]) != 'C') ||
+ 	    (readb(&c->cfgtable->Signature[1]) != 'I') ||
+ 	    (readb(&c->cfgtable->Signature[2]) != 'S') ||
 
