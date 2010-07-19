@@ -1,138 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760211Ab0GSIXm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 04:23:42 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50148 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760186Ab0GSIXl (ORCPT
+	id S1760257Ab0GSI4q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 04:56:46 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:52557 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760247Ab0GSI4o (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 04:23:41 -0400
-Date: Mon, 19 Jul 2010 09:22:13 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Zach Pfeffer <zpfeffer@codeaurora.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
-	memory management
-Message-ID: <20100719082213.GA7421@n2100.arm.linux.org.uk>
-References: <20100713121420.GB4263@codeaurora.org> <20100714104353B.fujita.tomonori@lab.ntt.co.jp> <20100714201149.GA14008@codeaurora.org> <20100715080710T.fujita.tomonori@lab.ntt.co.jp> <20100715014148.GC2239@codeaurora.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100715014148.GC2239@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 19 Jul 2010 04:56:44 -0400
+Subject: Re: [PPC64/Power7 - 2.6.35-rc5] Bad relocation warnings while
+	Building a CONFIG_RELOCATABLE kernel with CONFIG_ISERIES enabled
+From: Subrata Modak <subrata@linux.vnet.ibm.com>
+Reply-To: subrata@linux.vnet.ibm.com
+To: Michael Neuling <mikey@neuling.org>
+Cc: Paul Mackerras <paulus@samba.org>, sachinp <sachinp@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, divya.vikas@in.ibm.com
+In-Reply-To: <4635.1279245899@neuling.org>
+References: <1273060251.13463.8.camel@subratamodak.linux.ibm.com>
+	 <20100507054034.GB25173@drongo>
+	 <1279193743.10707.5.camel@subratamodak.linux.ibm.com>
+	 <4635.1279245899@neuling.org>
+Content-Type: text/plain
+Organization: IBM
+Date: Mon, 19 Jul 2010 14:26:17 +0530
+Message-Id: <1279529778.4985.1.camel@subratamodak.linux.ibm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.2) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 14, 2010 at 06:41:48PM -0700, Zach Pfeffer wrote:
-> On Thu, Jul 15, 2010 at 08:07:28AM +0900, FUJITA Tomonori wrote:
-> > Why we we need a new abstraction layer to solve the problem that the
-> > current API can handle?
+On Fri, 2010-07-16 at 12:04 +1000, Michael Neuling wrote:
+> > commit e62cee42e66dcca83aae02748535f62e0f564a0c solved the problem for
+> > 2.6.34-rc6. However some other bad relocation warnings generated against
+> > 2.6.35-rc5 on Power7/ppc64 below:
+> > 
+> > MODPOST 2004 modules^M
+> > WARNING: 2 bad relocations^M
+> > c000000000008590 R_PPC64_ADDR32    .text+0x4000000000008460^M
+> > c000000000008594 R_PPC64_ADDR32    .text+0x4000000000008598^M
 > 
-> The current API can't really handle it because the DMA API doesn't
-> separate buffer allocation from buffer mapping.
+> I can't replicate this with your config with gcc 4.4.4 and binutils
+> 2.20.  What are you using?
 
-That's not entirely correct.  The DMA API provides two things:
+Well, i also have the following GCC (from Fedora 13 Rawhide)
+# gcc --version
+gcc (GCC) 4.4.4 20100611 (Red Hat 4.4.4-8)
+Copyright (C) 2010 Free Software Foundation, Inc.
 
-1. An API for allocating DMA coherent buffers
-2. An API for mapping streaming buffers
+and binutils-2.20.51.0.2-22.fc13.ppc,
 
-Some implementations of (2) end up using (1) to work around broken
-hardware - but that's a separate problem (and causes its own set of
-problems.)
+Regards--
+Subrata
 
-> For instance: I need 10, 1 MB physical buffers and a 64 KB physical
-> buffer. With the DMA API I need to allocate 10*1MB/PAGE_SIZE + 64
-> KB/PAGE_SIZE scatterlist elements, fix them all up to follow the
-> chaining specification and then go through all of them again to fix up
-> their virtual mappings for the mapper that's mapping the physical
-> buffer.
+> 
+> Mikey
+> 
+> > 
+> > Config file attached.
+> > 
+> > Regards--
+> > Subrata
+> > 
+> > On Fri, 2010-05-07 at 15:40 +1000, Paul Mackerras wrote:
+> > > On Wed, May 05, 2010 at 05:20:51PM +0530, Subrata Modak wrote:
+> > > 
+> > > > I built 2.6.34-rc6 with the attached Fedora Config file
+> > > > (config-2.6.33.1-19.fc13.ppc64) on my P5 Fedora Box and got the
+> > > > following warning. Is the following expected ?
+> > > > 
+> > > > CALL    arch/powerpc/relocs_check.pl
+> > > > Building modules, stage 2.
+> > > > WARNING: 4 bad relocations
+> > > > c00000000007216e R_PPC64_ADDR16_HIGHEST  __ksymtab+0x00000000009dcec8
+> > > > c000000000072172 R_PPC64_ADDR16_HIGHER  __ksymtab+0x00000000009dcec8
+> > > > c00000000007217a R_PPC64_ADDR16_HI  __ksymtab+0x00000000009dcec8
+> > > > c00000000007217e R_PPC64_ADDR16_LO  __ksymtab+0x00000000009dcec8
+> > > 
+> > > No, it's not expected.  It's in iSeries code, so you could avoid it
+> > > just by disabling CONFIG_ISERIES (I don't think any distro still
+> > > supports legacy iSeries).  I'll post a patch to fix the problem
+> > > properly.
+> > > 
+> > > Paul.
 
-You're making it sound like extremely hard work.
-
-	struct scatterlist *sg;
-	int i, nents = 11;
-
-	sg = kmalloc(sizeof(*sg) * nents, GFP_KERNEL);
-	if (!sg)
-		return -ENOMEM;
-
-	sg_init_table(sg, nents);
-	for (i = 0; i < nents; i++) {
-		if (i != nents - 1)
-			len = 1048576;
-		else
-			len = 64*1024;
-		buf = alloc_buffer(len);
-		sg_set_buf(&sg[i], buf, len);
-	}
-
-There's no need to split the scatterlist elements up into individual
-pages - the block layer doesn't do that when it passes scatterlists
-down to block device drivers.
-
-I'm not saying that it's reasonable to pass (or even allocate) a 1MB
-buffer via the DMA API.
-
-> If I want to share the buffer with another device I have to
-> make a copy of the entire thing then fix up the virtual mappings for
-> the other device I'm sharing with.
-
-This is something the DMA API doesn't do - probably because there hasn't
-been a requirement for it.
-
-One of the issues for drivers is that by separating the mapped scatterlist
-from the input buffer scatterlist, it creates something else for them to
-allocate, which causes an additional failure point - and as all users sit
-well with the current API, there's little reason to change especially
-given the number of drivers which would need to be updated.
-
-What you can do is:
-
-struct map {
-	dma_addr_t addr;
-	size_t len;
-};
-
-int map_sg(struct device *dev, struct scatterlist *list,
-	unsigned int nents, struct map *map, enum dma_data_direction dir)
-{
-	struct scatterlist *sg;
-	unsigned int i, j = 0;
-
-	for_each_sg(list, sg, nents, i) {
-		map[j]->addr = dma_map_page(dev, sg_page(sg), sg->offset,
-					sg->length, dir);
-		map[j]->len = length;
-		if (dma_mapping_error(map[j]->addr))
-			break;
-		j++;
-	}
-
-	return j;
-}
-
-void unmap(struct device *dev, struct map *map, unsigned int nents,
-	enum dma_data_direction dir)
-{
-	while (nents) {
-		dma_unmap_page(dev, map->addr, map->len, dir);
-		map++;
-		nents--;
-	}
-}
-
-Note: this may not be portable to all architectures.  It may also break
-if there's something like the dmabounce or swiotlb code remapping buffers
-which don't fit the DMA mask for the device - that's a different problem.
-
-You can then map the same scatterlist into multiple different 'map'
-arrays for several devices simultaneously.  What you can't do is access
-the buffers from the CPU while they're mapped to any device.
-
-I'm not saying that you should do the above - I'm just proving that it's
-not as hard as you seem to be making out.
