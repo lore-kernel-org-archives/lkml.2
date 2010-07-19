@@ -1,158 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936230Ab0GSPbi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 11:31:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8801 "EHLO mx1.redhat.com"
+	id S936249Ab0GSPbp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 11:31:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:34756 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936185Ab0GSPba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 11:31:30 -0400
+	id S936233Ab0GSPbj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 11:31:39 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
         mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
         mtosatti@redhat.com
-Subject: [PATCH v5 03/12] Add async PF initialization to PV guest.
-Date: Mon, 19 Jul 2010 18:30:53 +0300
-Message-Id: <1279553462-7036-4-git-send-email-gleb@redhat.com>
+Subject: [PATCH v5 02/12] Add PV MSR to enable asynchronous page faults delivery.
+Date: Mon, 19 Jul 2010 18:30:52 +0300
+Message-Id: <1279553462-7036-3-git-send-email-gleb@redhat.com>
 In-Reply-To: <1279553462-7036-1-git-send-email-gleb@redhat.com>
 References: <1279553462-7036-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Enable async PF in a guest if async PF capability is discovered.
+Guess enables async PF vcpu functionality using this MSR.
 
+Reviewed-by: Rik van Riel <riel@redhat.com>
 Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
- arch/x86/include/asm/kvm_para.h |    5 +++
- arch/x86/kernel/kvm.c           |   68 +++++++++++++++++++++++++++++++++++++++
- 2 files changed, 73 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    3 ++
+ arch/x86/include/asm/kvm_para.h |    4 +++
+ arch/x86/kvm/x86.c              |   49 +++++++++++++++++++++++++++++++++++++-
+ include/linux/kvm.h             |    1 +
+ 4 files changed, 55 insertions(+), 2 deletions(-)
 
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 502e53f..245831a 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -364,6 +364,9 @@ struct kvm_vcpu_arch {
+ 	u64 hv_vapic;
+ 
+ 	cpumask_var_t wbinvd_dirty_mask;
++
++	u32 __user *apf_data;
++	u64 apf_msr_val;
+ };
+ 
+ struct kvm_arch {
 diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
-index 5b05e9f..f1662d7 100644
+index 42298ab..5b05e9f 100644
 --- a/arch/x86/include/asm/kvm_para.h
 +++ b/arch/x86/include/asm/kvm_para.h
-@@ -65,6 +65,11 @@ struct kvm_mmu_op_release_pt {
- 	__u64 pt_phys;
- };
+@@ -20,6 +20,7 @@
+  * are available. The use of 0x11 and 0x12 is deprecated
+  */
+ #define KVM_FEATURE_CLOCKSOURCE2        3
++#define KVM_FEATURE_ASYNC_PF		4
  
-+struct kvm_vcpu_pv_apf_data {
-+	__u32 reason;
-+	__u32 enabled;
-+};
+ /* The last 8 bits are used to indicate how to interpret the flags field
+  * in pvclock structure. If no bits are set, all flags are ignored.
+@@ -32,9 +33,12 @@
+ /* Custom MSRs falls in the range 0x4b564d00-0x4b564dff */
+ #define MSR_KVM_WALL_CLOCK_NEW  0x4b564d00
+ #define MSR_KVM_SYSTEM_TIME_NEW 0x4b564d01
++#define MSR_KVM_ASYNC_PF_EN 0x4b564d02
+ 
+ #define KVM_MAX_MMU_OP_BATCH           32
+ 
++#define KVM_ASYNC_PF_ENABLED			(1 << 0)
 +
- #ifdef __KERNEL__
- #include <asm/processor.h>
+ /* Operations for KVM_HC_MMU_OP */
+ #define KVM_MMU_OP_WRITE_PTE            1
+ #define KVM_MMU_OP_FLUSH_TLB	        2
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 84bfb51..b09bf61 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -726,12 +726,12 @@ EXPORT_SYMBOL_GPL(kvm_get_dr);
+  * kvm-specific. Those are put in the beginning of the list.
+  */
  
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index e6db179..5177dd1 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -27,7 +27,10 @@
- #include <linux/mm.h>
- #include <linux/highmem.h>
- #include <linux/hardirq.h>
-+#include <linux/notifier.h>
-+#include <linux/reboot.h>
- #include <asm/timer.h>
-+#include <asm/cpu.h>
- 
- #define MMU_QUEUE_SIZE 1024
- 
-@@ -37,6 +40,7 @@ struct kvm_para_state {
- };
- 
- static DEFINE_PER_CPU(struct kvm_para_state, para_state);
-+static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
- 
- static struct kvm_para_state *kvm_para_state(void)
- {
-@@ -231,12 +235,72 @@ static void __init paravirt_ops_setup(void)
- #endif
+-#define KVM_SAVE_MSRS_BEGIN	7
++#define KVM_SAVE_MSRS_BEGIN	8
+ static u32 msrs_to_save[] = {
+ 	MSR_KVM_SYSTEM_TIME, MSR_KVM_WALL_CLOCK,
+ 	MSR_KVM_SYSTEM_TIME_NEW, MSR_KVM_WALL_CLOCK_NEW,
+ 	HV_X64_MSR_GUEST_OS_ID, HV_X64_MSR_HYPERCALL,
+-	HV_X64_MSR_APIC_ASSIST_PAGE,
++	HV_X64_MSR_APIC_ASSIST_PAGE, MSR_KVM_ASYNC_PF_EN,
+ 	MSR_IA32_SYSENTER_CS, MSR_IA32_SYSENTER_ESP, MSR_IA32_SYSENTER_EIP,
+ 	MSR_K6_STAR,
+ #ifdef CONFIG_X86_64
+@@ -1214,6 +1214,37 @@ static int set_msr_hyperv(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 	return 0;
  }
  
-+void __cpuinit kvm_guest_cpu_init(void)
++static int kvm_pv_enable_async_pf(struct kvm_vcpu *vcpu, u64 data)
 +{
-+	if (!kvm_para_available())
-+		return;
++	u64 gpa = data & ~0x3f;
++	int offset = offset_in_page(gpa);
++	unsigned long addr;
 +
-+	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF)) {
-+		u64 pa = __pa(&__get_cpu_var(apf_reason));
++	/* Bits 1:5 are resrved, Should be zero */
++	if (data & 0x3e)
++		return 1;
 +
-+		if (native_write_msr_safe(MSR_KVM_ASYNC_PF_EN,
-+					  pa | KVM_ASYNC_PF_ENABLED, pa >> 32))
-+			return;
-+		__get_cpu_var(apf_reason).enabled = 1;
-+		printk(KERN_INFO"KVM setup async PF for cpu %d\n",
-+		       smp_processor_id());
++	vcpu->arch.apf_msr_val = data;
++
++	if (!(data & KVM_ASYNC_PF_ENABLED)) {
++		vcpu->arch.apf_data = NULL;
++		return 0;
 +	}
-+}
 +
-+static void kvm_pv_disable_apf(void *unused)
-+{
-+	if (!__get_cpu_var(apf_reason).enabled)
-+		return;
++	addr = gfn_to_hva(vcpu->kvm, gpa >> PAGE_SHIFT);
++	if (kvm_is_error_hva(addr))
++		return 1;
 +
-+	wrmsrl(MSR_KVM_ASYNC_PF_EN, 0);
-+	__get_cpu_var(apf_reason).enabled = 0;
++	vcpu->arch.apf_data = (u32 __user*)(addr + offset);
 +
-+	printk(KERN_INFO"Unregister pv shared memory for cpu %d\n",
-+	       smp_processor_id());
-+}
-+
-+static int kvm_pv_reboot_notify(struct notifier_block *nb,
-+				unsigned long code, void *unused)
-+{
-+	if (code == SYS_RESTART)
-+		on_each_cpu(kvm_pv_disable_apf, NULL, 1);
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block kvm_pv_reboot_nb = {
-+	.notifier_call = kvm_pv_reboot_notify,
-+};
-+
- #ifdef CONFIG_SMP
- static void __init kvm_smp_prepare_boot_cpu(void)
- {
- 	WARN_ON(kvm_register_clock("primary cpu clock"));
-+	kvm_guest_cpu_init();
- 	native_smp_prepare_boot_cpu();
- }
-+
-+static int __cpuinit kvm_cpu_notify(struct notifier_block *self,
-+				    unsigned long action, void *hcpu)
-+{
-+	switch (action) {
-+	case CPU_ONLINE:
-+	case CPU_ONLINE_FROZEN:
-+		kvm_guest_cpu_init();
-+		break;
-+	default:
-+		break;
++	/* check if address is mapped */
++	if (get_user(offset, vcpu->arch.apf_data)) {
++		vcpu->arch.apf_data = NULL;
++		return 1;
 +	}
-+	return NOTIFY_OK;
++	return 0;
 +}
 +
-+static struct notifier_block __cpuinitdata kvm_cpu_notifier = {
-+        .notifier_call  = kvm_cpu_notify,
-+};
- #endif
+ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ {
+ 	switch (msr) {
+@@ -1296,6 +1327,10 @@ int kvm_set_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 data)
+ 		kvm_request_guest_time_update(vcpu);
+ 		break;
+ 	}
++	case MSR_KVM_ASYNC_PF_EN:
++		if (kvm_pv_enable_async_pf(vcpu, data))
++			return 1;
++		break;
+ 	case MSR_IA32_MCG_CTL:
+ 	case MSR_IA32_MCG_STATUS:
+ 	case MSR_IA32_MC0_CTL ... MSR_IA32_MC0_CTL + 4 * KVM_MAX_MCE_BANKS - 1:
+@@ -1548,6 +1583,9 @@ int kvm_get_msr_common(struct kvm_vcpu *vcpu, u32 msr, u64 *pdata)
+ 	case MSR_KVM_SYSTEM_TIME_NEW:
+ 		data = vcpu->arch.time;
+ 		break;
++	case MSR_KVM_ASYNC_PF_EN:
++		data = vcpu->arch.apf_msr_val;
++		break;
+ 	case MSR_IA32_P5_MC_ADDR:
+ 	case MSR_IA32_P5_MC_TYPE:
+ 	case MSR_IA32_MCG_CAP:
+@@ -1683,6 +1721,7 @@ int kvm_dev_ioctl_check_extension(long ext)
+ 	case KVM_CAP_DEBUGREGS:
+ 	case KVM_CAP_X86_ROBUST_SINGLESTEP:
+ 	case KVM_CAP_XSAVE:
++	case KVM_CAP_ASYNC_PF:
+ 		r = 1;
+ 		break;
+ 	case KVM_CAP_COALESCED_MMIO:
+@@ -5357,6 +5396,9 @@ free_vcpu:
  
- void __init kvm_guest_init(void)
-@@ -245,7 +309,11 @@ void __init kvm_guest_init(void)
- 		return;
+ void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
+ {
++	vcpu->arch.apf_data = NULL;
++	vcpu->arch.apf_msr_val = 0;
++
+ 	vcpu_load(vcpu);
+ 	kvm_mmu_unload(vcpu);
+ 	vcpu_put(vcpu);
+@@ -5375,6 +5417,9 @@ int kvm_arch_vcpu_reset(struct kvm_vcpu *vcpu)
+ 	vcpu->arch.dr6 = DR6_FIXED_1;
+ 	vcpu->arch.dr7 = DR7_FIXED_1;
  
- 	paravirt_ops_setup();
-+	register_reboot_notifier(&kvm_pv_reboot_nb);
- #ifdef CONFIG_SMP
- 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
-+	register_cpu_notifier(&kvm_cpu_notifier);
-+#else
-+	kvm_guest_cpu_init();
- #endif
++	vcpu->arch.apf_data = NULL;
++	vcpu->arch.apf_msr_val = 0;
++
+ 	return kvm_x86_ops->vcpu_reset(vcpu);
  }
+ 
+diff --git a/include/linux/kvm.h b/include/linux/kvm.h
+index 636fc38..bab7ef0 100644
+--- a/include/linux/kvm.h
++++ b/include/linux/kvm.h
+@@ -530,6 +530,7 @@ struct kvm_enable_cap {
+ #ifdef __KVM_HAVE_XCRS
+ #define KVM_CAP_XCRS 56
+ #endif
++#define KVM_CAP_ASYNC_PF 57
+ 
+ #ifdef KVM_CAP_IRQ_ROUTING
+ 
 -- 
 1.7.1
 
