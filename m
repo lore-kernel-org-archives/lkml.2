@@ -1,114 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757964Ab0GSBC7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 21:02:59 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63176 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1757904Ab0GSBC6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 21:02:58 -0400
-Message-ID: <4C43A3B1.30803@cn.fujitsu.com>
-Date: Mon, 19 Jul 2010 09:00:33 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Jeff Moyer <jmoyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <axboe@kernel.dk>, Corrado Zoccolo <czoccolo@gmail.com>,
-        Shaohua Li <shaohua.li@intel.com>,
-        linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [RFC] CFQ: Make prio_trees per cfq group basis to improve
- IO performance
-References: <4C40247C.2010405@cn.fujitsu.com>	<20100716140034.GC15382@redhat.com>	<x49y6dbv75x.fsf@segfault.boston.devel.redhat.com>	<20100716145600.GF15382@redhat.com> <x49tynzv52b.fsf@segfault.boston.devel.redhat.com>
-In-Reply-To: <x49tynzv52b.fsf@segfault.boston.devel.redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1757957Ab0GSBL4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 21:11:56 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34181 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757900Ab0GSBLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 21:11:55 -0400
+Subject: Re: [PPC64/Power7 - 2.6.35-rc5] Bad relocation warnings while
+ Building a CONFIG_RELOCATABLE kernel with CONFIG_ISERIES enabled
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: subrata@linux.vnet.ibm.com
+Cc: Paul Mackerras <paulus@samba.org>, sachinp <sachinp@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, divya.vikas@in.ibm.com,
+        Alexander Graf <agraf@suse.de>
+In-Reply-To: <1279193743.10707.5.camel@subratamodak.linux.ibm.com>
+References: <1273060251.13463.8.camel@subratamodak.linux.ibm.com>
+	 <20100507054034.GB25173@drongo>
+	 <1279193743.10707.5.camel@subratamodak.linux.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Jul 2010 11:11:29 +1000
+Message-ID: <1279501889.10390.1834.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jeff Moyer wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
+On Thu, 2010-07-15 at 17:05 +0530, Subrata Modak wrote:
+> commit e62cee42e66dcca83aae02748535f62e0f564a0c solved the problem for
+> 2.6.34-rc6. However some other bad relocation warnings generated against
+> 2.6.35-rc5 on Power7/ppc64 below:
 > 
->> On Fri, Jul 16, 2010 at 10:21:46AM -0400, Jeff Moyer wrote:
->>> Vivek Goyal <vgoyal@redhat.com> writes:
->>>
->>>> On Fri, Jul 16, 2010 at 05:21:00PM +0800, Gui Jianfeng wrote:
->>>>> Currently, prio_trees is global, and we rely on cfqq_close() to search
->>>>> a coorperator. If the returned cfqq and the active cfqq don't belong to
->>>>> the same group, coorperator searching fails. Actually, that's not the case.
->>>>> Even if cfqq_close() returns a cfqq which belong to another cfq group, 
->>>>> it's still likely that a coorperator(same cfqg) resides in prio_trees.
->>>>> This patch introduces per cfq group prio_trees that should solve the above
->>>>> issue.
->>>>>
->>>> Hi Gui,
->>>>
->>>> I am not sure I understand the issue here.  So are you saying that once
->>>> we find a cfqq which is close but belongs to a different group we reject
->>>> it. But there could be another cfqq in the same group which is not as
->>>> close but still close enough.
->>>>
->>>> For example, assume there are two queues q1 and q2 and in group and third
->>>> queue q3 in group B. Assume q1 is active queue and we are searching for
->>>> cooperator. If cooperator code finds q3 as closest then we will not pick
->>>> this queue as it belongs to a different group. But it could happen that
->>>> q2 is also close enough and we never considered that possibility.
->>>>
->>>> If yes, then its a good theoritical concern but I am worried practically
->>>> how often does it happen. Do you have any workload which suffers because
->>>> of this?
->>> That was my reading.  It also means that, in the case that we have
->>> cgroups in use, each rb tree will be smaller.
->>>
->>>> I am not too inclined to push more complexity in CFQ until and unless we
->>>> have a good use case.
->>> I don't think this adds complexity, does it?  It simply moves the
->>> priority trees up a level, which is arguably where they belong.
->> What happens when cfqq moves to a different group. group_isolation=0. Then
->> we also need to add code to change prio tree of the cfqq. Curretnly prio
->> tree are global so we don't have to worry about it. I don't think this
->> patch takes are of that issue.
-> 
-> Yeah, that had occurred to me.
-> 
->> That's a different thing that I am beginning to not like group_isoation=0
->> because this additional variable that cfqq's can move dynamically across
->> groups is making life hard while adding more code in CFQ. So if nobody
->> is using it I was thinking of getting rid of group_isolation tunable.
->>
->> It does bring the issue of severe performance penalty for sync-noidle
->> workloads across groups. I think that should be solved by a different
->> tunable like don't worry about fairness if group is not driving a minimum
->> queue depth and this should be adjustable by tunable so that system admin
->> can decide the right balance between fairness/isolation and throughput.
-> 
-> I'm not sure what you concluded here.  ;-)
-> 
-> The way I see it, Gui's patch makes sense.  It sounds like you agree,
-> but you didn't like it because you have to write extra code to deal with
-> the case of group_isolation=0.  I simply don't agree with that line of
-> reasoning.
-> 
-> Now, there is the question of whether Gui's patch introduces any *real*
-> benefit.  I'd honestly be surprised if it did.  Gui, can you give us
-> some benchmark results that show the benefit?  If there is no benefit,
-> then I'm happy to leave the code the way it is.
+> MODPOST 2004 modules^M
+> WARNING: 2 bad relocations^M
+> c000000000008590 R_PPC64_ADDR32    .text+0x4000000000008460^M
+> c000000000008594 R_PPC64_ADDR32    .text+0x4000000000008598^M
 
-Hi Jeff, Vivek
+I think this is KVM + CONFIG_RELOCATABLE. Caused by:
 
-Sorry for the very late reply.
+.global kvmppc_trampoline_lowmem
+kvmppc_trampoline_lowmem:
+	.long kvmppc_handler_lowmem_trampoline - CONFIG_KERNEL_START
 
-IMO, this patch give us the following benefits:
-1 Fix the unexpected coorperator searching fail.
-2 shring the prio_tree size to save searching time.
+.global kvmppc_trampoline_enter
+kvmppc_trampoline_enter:
+	.long kvmppc_handler_trampoline_enter - CONFIG_KERNEL_START
 
-I'd still like to do some performance tests to see how well this 
-patch works.
+Alex, can you turn these into 64-bit on ppc64 so the relocator
+can grok them ?
 
-Thanks,
-Gui
+Cheers,
+Ben.
 
+> Config file attached.
 > 
-> Cheers,
-> Jeff
+> Regards--
+> Subrata
 > 
-> 
+> On Fri, 2010-05-07 at 15:40 +1000, Paul Mackerras wrote:
+> > On Wed, May 05, 2010 at 05:20:51PM +0530, Subrata Modak wrote:
+> > 
+> > > I built 2.6.34-rc6 with the attached Fedora Config file
+> > > (config-2.6.33.1-19.fc13.ppc64) on my P5 Fedora Box and got the
+> > > following warning. Is the following expected ?
+> > > 
+> > > CALL    arch/powerpc/relocs_check.pl
+> > > Building modules, stage 2.
+> > > WARNING: 4 bad relocations
+> > > c00000000007216e R_PPC64_ADDR16_HIGHEST  __ksymtab+0x00000000009dcec8
+> > > c000000000072172 R_PPC64_ADDR16_HIGHER  __ksymtab+0x00000000009dcec8
+> > > c00000000007217a R_PPC64_ADDR16_HI  __ksymtab+0x00000000009dcec8
+> > > c00000000007217e R_PPC64_ADDR16_LO  __ksymtab+0x00000000009dcec8
+> > 
+> > No, it's not expected.  It's in iSeries code, so you could avoid it
+> > just by disabling CONFIG_ISERIES (I don't think any distro still
+> > supports legacy iSeries).  I'll post a patch to fix the problem
+> > properly.
+> > 
+> > Paul.
+> _______________________________________________
+> Linuxppc-dev mailing list
+> Linuxppc-dev@lists.ozlabs.org
+> https://lists.ozlabs.org/listinfo/linuxppc-dev
+
+
