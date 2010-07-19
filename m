@@ -1,58 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934033Ab0GSOJm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 10:09:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1029 "EHLO mx1.redhat.com"
+	id S934131Ab0GSOK6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 10:10:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59985 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933591Ab0GSOJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 10:09:40 -0400
+	id S933745Ab0GSOK4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 10:10:56 -0400
 Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
 	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
 	Kingdom.
 	Registered in England and Wales under Company Registration No. 3798903
 From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100718084955.GB27794@infradead.org>
-References: <20100718084955.GB27794@infradead.org> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021720.5544.19973.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100718085048.GC27794@infradead.org>
+References: <20100718085048.GC27794@infradead.org> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021723.5544.85730.stgit@warthog.procyon.org.uk>
 To: Christoph Hellwig <hch@infradead.org>
 Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
         linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
         linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
         samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 09/18] xstat: Make special system filesystems return FS_SPECIAL_FL [ver #6]
-Date: Mon, 19 Jul 2010 15:09:33 +0100
-Message-ID: <8426.1279548573@redhat.com>
+Subject: Re: [PATCH 12/18] xstat: Add a dentry op to handle automounting rather than abusing follow_link() [ver #6]
+Date: Mon, 19 Jul 2010 15:10:48 +0100
+Message-ID: <8474.1279548648@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 Christoph Hellwig <hch@infradead.org> wrote:
 
-> special is not a very useful identifier.  Also what you are returning
-> is per-filesystem data, not per-file.  This needs to go into statfs,
-> not into stat.  We're about to introduce flags for statfs, so try
-> to do it ontop of those.
-> 
-> The same thing applies to the remote flag in the next patch.
+> Moving this out of ->follow_link is a good idea, but please submit this
+> as a separate patch series, as it has very little to do with stat().
 
-Which means that you have to do two calls (xstat+statfs) to find this
-information that we can return pretty much for free here, though you can cache
-it based on st_dev, I suppose.
-
-Also, not all the flags are per-filesystem.  The following are:
-
-	FS_SPECIAL_FL		/* Special file as found in procfs/sysfs */
-	FS_REMOTE_FL		/* File is remote */
-
-but the rest aren't:
-
-	FS_AUTOMOUNT_FL		/* Specific automount point */
-	FS_AUTOMOUNT_ANY_FL	/* Unspecific automount directory */
-	FS_ENCRYPTED_FL		/* File is encrypted */
-	FS_HIDDEN_FL		/* File is marked hidden (DOS+) */
-	FS_SYSTEM_FL		/* File is marked system (DOS+) */
-	FS_ARCHIVE_FL		/* File is marked archive (DOS+) */
-	FS_TEMPORARY_FL		/* File is temporary (NTFS/CIFS) */
-	FS_OFFLINE_FL		/* File is offline (CIFS) */
-	FS_REPARSE_POINT_FL	/* Reparse point (NTFS/CIFS) */
+Except that I want to use it to create a new AT flag for xstat() (and also
+fstatat()), but fair enough.
 
 David
