@@ -1,71 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936179Ab0GSPkk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 11:40:40 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:47976 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935158Ab0GSPki (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 11:40:38 -0400
-To: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Gene Heskett <gene.heskett@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35-rc4, no boot
-References: <201007051250.17010.gene.heskett@gmail.com>
-	<m1aapodlby.fsf@fess.ebiederm.org>
-	<20100719083340.195d4496.rdunlap@xenotime.net>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Mon, 19 Jul 2010 08:40:34 -0700
-In-Reply-To: <20100719083340.195d4496.rdunlap@xenotime.net> (Randy Dunlap's message of "Mon\, 19 Jul 2010 08\:33\:40 -0700")
-Message-ID: <m1mxtn7a4t.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S936214Ab0GSPqV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 11:46:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46624 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936124Ab0GSPqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 11:46:19 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH v2] pci: Allow read/write access to sysfs I/O port resources
+To: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
+        chrisw@redhat.com, ddutile@redhat.com, bjorn.helgaas@hp.com,
+        eike-kernel@sf-tec.de
+Date: Mon, 19 Jul 2010 09:45:34 -0600
+Message-ID: <20100719154321.11535.39055.stgit@localhost6.localdomain6>
+In-Reply-To: <20100719031148.13524.25354.stgit@localhost6.localdomain6>
+References: <20100719031148.13524.25354.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.4.80
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap <rdunlap@xenotime.net> writes:
+PCI sysfs resource files currently only allow mmap'ing.  On x86 this
+works fine for memory backed BARs, but doesn't work at all for I/O
+port backed BARs.  Add read/write to I/O port PCI sysfs resource
+files to allow userspace access to these device regions.
 
-> On Sun, 18 Jul 2010 23:42:09 -0700 Eric W. Biederman wrote:
->
->> Gene Heskett <gene.heskett@gmail.com> writes:
->> 
->> > Phenom 9550, 4G ram, asus m2n-sli deluxe mobo, all sata drives (4 + optical 
->> > burner)
->> >
->> > I have now built 35-rc4 4 times, the last 2 with
->> >
->> > 2.6.31-12-mdv.config & make oldconfig (lots of accepts), & build
->> >
->> > And a working .config from 2.6.35-rc3 + make oldconfig (no changes reported) 
->> > & build.
->> >
->> > Both fail at the attached image point booting from a grub2 menu on a 
->> > different drive that has been working with rc3 for quite a few boots but its 
->> > all bitchy this morning so is booted to the mdv 2.6.31-12 kernel above ATM.
->> >
->> > Last .config also attached.
->> >
->> > What do I need to do here?
->> 
->> That does sound bizarre.  You have some weird initrd dependency on the
->> kernel doing something, but it isn't clear to me what that might be.
->> Shrug.
->> 
->> Not being able to mount /dev and /sys feels like they simply weren't
->> compiled in.  But your config suggests otherwise.
->
-> I would change the second line below to be enabled:
->
-> CONFIG_DEVTMPFS=y
-> # CONFIG_DEVTMPFS_MOUNT is not set
->
-> and give that a shot.
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-That is such a truly evil option. *shiver*
+ v2: hopefully better commit log, remove unneeded cast, use bool
 
-Eric
+ Documentation/filesystems/sysfs-pci.txt |    7 ++-
+ drivers/pci/pci-sysfs.c                 |   68 +++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/filesystems/sysfs-pci.txt b/Documentation/filesystems/sysfs-pci.txt
+index 85354b3..74eaac2 100644
+--- a/Documentation/filesystems/sysfs-pci.txt
++++ b/Documentation/filesystems/sysfs-pci.txt
+@@ -39,7 +39,7 @@ files, each with their own function.
+        local_cpus	   nearby CPU mask (cpumask, ro)
+        remove		   remove device from kernel's list (ascii, wo)
+        resource		   PCI resource host addresses (ascii, ro)
+-       resource0..N	   PCI resource N, if present (binary, mmap)
++       resource0..N	   PCI resource N, if present (binary, mmap, rw[1])
+        resource0_wc..N_wc  PCI WC map resource N, if prefetchable (binary, mmap)
+        rom		   PCI ROM resource, if present (binary, ro)
+        subsystem_device	   PCI subsystem device (ascii, ro)
+@@ -54,13 +54,16 @@ files, each with their own function.
+   binary - file contains binary data
+   cpumask - file contains a cpumask type
+ 
++[1] rw for RESOURCE_IO (I/O port) regions only
++
+ The read only files are informational, writes to them will be ignored, with
+ the exception of the 'rom' file.  Writable files can be used to perform
+ actions on the device (e.g. changing config space, detaching a device).
+ mmapable files are available via an mmap of the file at offset 0 and can be
+ used to do actual device programming from userspace.  Note that some platforms
+ don't support mmapping of certain resources, so be sure to check the return
+-value from any attempted mmap.
++value from any attempted mmap.  The most notable of these are I/O port
++resources, which also provide read/write access.
+ 
+ The 'enable' file provides a counter that indicates how many times the device 
+ has been enabled.  If the 'enable' file currently returns '4', and a '1' is
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 5935b85..f7692dc 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -778,6 +778,70 @@ pci_mmap_resource_wc(struct file *filp, struct kobject *kobj,
+ 	return pci_mmap_resource(kobj, attr, vma, 1);
+ }
+ 
++static ssize_t
++pci_resource_io(struct file *filp, struct kobject *kobj,
++		struct bin_attribute *attr, char *buf,
++		loff_t off, size_t count, bool write)
++{
++	struct pci_dev *pdev = to_pci_dev(container_of(kobj,
++						       struct device, kobj));
++	struct resource *res = attr->private;
++	unsigned long port = off;
++	int i;
++
++	for (i = 0; i < PCI_ROM_RESOURCE; i++)
++		if (res == &pdev->resource[i])
++			break;
++	if (i >= PCI_ROM_RESOURCE)
++		return -ENODEV;
++
++	port += pci_resource_start(pdev, i);
++
++	if (port > pci_resource_end(pdev, i))
++		return 0;
++
++	if (port + count - 1 > pci_resource_end(pdev, i))
++		return -EINVAL;
++
++	switch (count) {
++	case 1:
++		if (write)
++			outb(*(u8 *)buf, port);
++		else
++			*(u8 *)buf = inb(port);
++		return 1;
++	case 2:
++		if (write)
++			outw(*(u16 *)buf, port);
++		else
++			*(u16 *)buf = inw(port);
++		return 2;
++	case 4:
++		if (write)
++			outl(*(u32 *)buf, port);
++		else
++			*(u32 *)buf = inl(port);
++		return 4;
++	}
++	return -EINVAL;
++}
++
++static ssize_t
++pci_read_resource_io(struct file *filp, struct kobject *kobj,
++		     struct bin_attribute *attr, char *buf,
++		     loff_t off, size_t count)
++{
++	return pci_resource_io(filp, kobj, attr, buf, off, count, false);
++}
++
++static ssize_t
++pci_write_resource_io(struct file *filp, struct kobject *kobj,
++		      struct bin_attribute *attr, char *buf,
++		      loff_t off, size_t count)
++{
++	return pci_resource_io(filp, kobj, attr, buf, off, count, true);
++}
++
+ /**
+  * pci_remove_resource_files - cleanup resource files
+  * @pdev: dev to cleanup
+@@ -828,6 +892,10 @@ static int pci_create_attr(struct pci_dev *pdev, int num, int write_combine)
+ 			sprintf(res_attr_name, "resource%d", num);
+ 			res_attr->mmap = pci_mmap_resource_uc;
+ 		}
++		if (pci_resource_flags(pdev, num) & IORESOURCE_IO) {
++			res_attr->read = pci_read_resource_io;
++			res_attr->write = pci_write_resource_io;
++		}
+ 		res_attr->attr.name = res_attr_name;
+ 		res_attr->attr.mode = S_IRUSR | S_IWUSR;
+ 		res_attr->size = pci_resource_len(pdev, num);
+
