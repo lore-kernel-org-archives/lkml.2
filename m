@@ -1,36 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760197Ab0GSILs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 04:11:48 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13163 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758688Ab0GSILq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 04:11:46 -0400
-Message-ID: <4C4408BF.1020207@redhat.com>
-Date: Sun, 18 Jul 2010 22:11:43 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1760211Ab0GSIXm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 04:23:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:50148 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760186Ab0GSIXl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 04:23:41 -0400
+Date: Mon, 19 Jul 2010 09:22:13 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+	memory management
+Message-ID: <20100719082213.GA7421@n2100.arm.linux.org.uk>
+References: <20100713121420.GB4263@codeaurora.org> <20100714104353B.fujita.tomonori@lab.ntt.co.jp> <20100714201149.GA14008@codeaurora.org> <20100715080710T.fujita.tomonori@lab.ntt.co.jp> <20100715014148.GC2239@codeaurora.org>
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: KVM <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: KVM timekeeping fixes, V2
-References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <4C431904.7050005@redhat.com>
-In-Reply-To: <4C431904.7050005@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100715014148.GC2239@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2010 05:08 AM, Avi Kivity wrote:
-> On 07/13/2010 05:25 AM, Zachary Amsden wrote:
->> Discovered brammage in patches due to unresolved merge.
->> Also, had to move 09/18 past 08/18 to resolve compile issue.
->
-> Ok, so I made some comments out of habit, but they're all very minor 
-> compared to the complexity of the subject.
->
+On Wed, Jul 14, 2010 at 06:41:48PM -0700, Zach Pfeffer wrote:
+> On Thu, Jul 15, 2010 at 08:07:28AM +0900, FUJITA Tomonori wrote:
+> > Why we we need a new abstraction layer to solve the problem that the
+> > current API can handle?
+> 
+> The current API can't really handle it because the DMA API doesn't
+> separate buffer allocation from buffer mapping.
 
-It's okay, there will be a V3 coming now.
+That's not entirely correct.  The DMA API provides two things:
+
+1. An API for allocating DMA coherent buffers
+2. An API for mapping streaming buffers
+
+Some implementations of (2) end up using (1) to work around broken
+hardware - but that's a separate problem (and causes its own set of
+problems.)
+
+> For instance: I need 10, 1 MB physical buffers and a 64 KB physical
+> buffer. With the DMA API I need to allocate 10*1MB/PAGE_SIZE + 64
+> KB/PAGE_SIZE scatterlist elements, fix them all up to follow the
+> chaining specification and then go through all of them again to fix up
+> their virtual mappings for the mapper that's mapping the physical
+> buffer.
+
+You're making it sound like extremely hard work.
+
+	struct scatterlist *sg;
+	int i, nents = 11;
+
+	sg = kmalloc(sizeof(*sg) * nents, GFP_KERNEL);
+	if (!sg)
+		return -ENOMEM;
+
+	sg_init_table(sg, nents);
+	for (i = 0; i < nents; i++) {
+		if (i != nents - 1)
+			len = 1048576;
+		else
+			len = 64*1024;
+		buf = alloc_buffer(len);
+		sg_set_buf(&sg[i], buf, len);
+	}
+
+There's no need to split the scatterlist elements up into individual
+pages - the block layer doesn't do that when it passes scatterlists
+down to block device drivers.
+
+I'm not saying that it's reasonable to pass (or even allocate) a 1MB
+buffer via the DMA API.
+
+> If I want to share the buffer with another device I have to
+> make a copy of the entire thing then fix up the virtual mappings for
+> the other device I'm sharing with.
+
+This is something the DMA API doesn't do - probably because there hasn't
+been a requirement for it.
+
+One of the issues for drivers is that by separating the mapped scatterlist
+from the input buffer scatterlist, it creates something else for them to
+allocate, which causes an additional failure point - and as all users sit
+well with the current API, there's little reason to change especially
+given the number of drivers which would need to be updated.
+
+What you can do is:
+
+struct map {
+	dma_addr_t addr;
+	size_t len;
+};
+
+int map_sg(struct device *dev, struct scatterlist *list,
+	unsigned int nents, struct map *map, enum dma_data_direction dir)
+{
+	struct scatterlist *sg;
+	unsigned int i, j = 0;
+
+	for_each_sg(list, sg, nents, i) {
+		map[j]->addr = dma_map_page(dev, sg_page(sg), sg->offset,
+					sg->length, dir);
+		map[j]->len = length;
+		if (dma_mapping_error(map[j]->addr))
+			break;
+		j++;
+	}
+
+	return j;
+}
+
+void unmap(struct device *dev, struct map *map, unsigned int nents,
+	enum dma_data_direction dir)
+{
+	while (nents) {
+		dma_unmap_page(dev, map->addr, map->len, dir);
+		map++;
+		nents--;
+	}
+}
+
+Note: this may not be portable to all architectures.  It may also break
+if there's something like the dmabounce or swiotlb code remapping buffers
+which don't fit the DMA mask for the device - that's a different problem.
+
+You can then map the same scatterlist into multiple different 'map'
+arrays for several devices simultaneously.  What you can't do is access
+the buffers from the CPU while they're mapped to any device.
+
+I'm not saying that you should do the above - I'm just proving that it's
+not as hard as you seem to be making out.
