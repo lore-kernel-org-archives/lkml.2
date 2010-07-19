@@ -1,60 +1,223 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760796Ab0GSRUk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:20:40 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:29521 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760789Ab0GSRUi convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:20:38 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Mon, 19 Jul 2010 19:21:57 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
-In-reply-to: <Pine.LNX.4.44L0.1007191256480.1657-100000@iolanthe.rowland.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
-Message-id: <op.vf3o6v067p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <Pine.LNX.4.44L0.1007191256480.1657-100000@iolanthe.rowland.org>
+	id S1760809Ab0GSRU7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:20:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:63434 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760755Ab0GSRUZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 13:20:25 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
+Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
+        jmoyer@redhat.com, czoccolo@gmail.com, vgoyal@redhat.com
+Subject: [PATCH 2/3] cfq-iosched: Implement a new tunable group_idle
+Date: Mon, 19 Jul 2010 13:20:07 -0400
+Message-Id: <1279560008-2905-3-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
+References: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jul 2010 19:06:32 +0200, Alan Stern <stern@rowland.harvard.edu> wrote:
->> 1/3: http://lkml.org/lkml/2010/7/8/317
+o Implement a new tunable group_idle, which allows idling on the group
+  instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
+  on the individual queues but idle on the group. This way on fast storage
+  we can get fairness between groups at the same time overall throughput
+  improves.
 
-> Ah, yes.  My personal taste would be to write fsg_string_serial_fill_n
-> as an inline routine instead of as a macro, and not try to make it
-> separate from fsg_string_serial_fill.
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/cfq-iosched.c |   60 +++++++++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 53 insertions(+), 7 deletions(-)
 
->> 2/3: http://lkml.org/lkml/2010/7/8/318
-
-> I have only one objection to this patch: The new parameter's name
-> should be "serial", not "serial_parm".  (Compare it to all the other
-> parameter names.)
-
-Will change the two tomorrow.
-
-> As for the discussion between you and David...  I haven't tried to
-> follow the details very carefully.  I get the impression that the two
-> of you are talking past each other instead of coming to grips with a
-> genuine issue.
-
-I'm not entirely sure of what the issue with the patches is really.
-It merely adds a serial number to the gadgets using MSF and that's all.
-
-In any event, I am sure we will come to an agreement at one point. :)
-
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index f44064c..b23d7f4 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -30,6 +30,7 @@ static const int cfq_slice_sync = HZ / 10;
+ static int cfq_slice_async = HZ / 25;
+ static const int cfq_slice_async_rq = 2;
+ static int cfq_slice_idle = HZ / 125;
++static int cfq_group_idle = HZ / 125;
+ static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
+ static const int cfq_hist_divisor = 4;
+ 
+@@ -198,6 +199,8 @@ struct cfq_group {
+ 	struct hlist_node cfqd_node;
+ 	atomic_t ref;
+ #endif
++	/* number of requests that are on the dispatch list or inside driver */
++	int dispatched;
+ };
+ 
+ /*
+@@ -271,6 +274,7 @@ struct cfq_data {
+ 	unsigned int cfq_slice[2];
+ 	unsigned int cfq_slice_async_rq;
+ 	unsigned int cfq_slice_idle;
++	unsigned int cfq_group_idle;
+ 	unsigned int cfq_latency;
+ 	unsigned int cfq_group_isolation;
+ 
+@@ -1856,6 +1860,9 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 	BUG_ON(!service_tree);
+ 	BUG_ON(!service_tree->count);
+ 
++	if (!cfqd->cfq_slice_idle)
++		return false;
++
+ 	/* We never do for idle class queues. */
+ 	if (prio == IDLE_WORKLOAD)
+ 		return false;
+@@ -1880,7 +1887,7 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+ {
+ 	struct cfq_queue *cfqq = cfqd->active_queue;
+ 	struct cfq_io_context *cic;
+-	unsigned long sl;
++	unsigned long sl, group_idle = 0;
+ 
+ 	/*
+ 	 * SSD device without seek penalty, disable idling. But only do so
+@@ -1896,8 +1903,13 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+ 	/*
+ 	 * idle is disabled, either manually or by past process history
+ 	 */
+-	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq))
+-		return;
++	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq)) {
++		/* no queue idling. Check for group idling */
++		if (cfqd->cfq_group_idle)
++			group_idle = cfqd->cfq_group_idle;
++		else
++			return;
++	}
+ 
+ 	/*
+ 	 * still active requests from this queue, don't idle
+@@ -1924,13 +1936,21 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+ 		return;
+ 	}
+ 
++	/* There are other queues in the group, don't do group idle */
++	if (group_idle && cfqq->cfqg->nr_cfqq > 1)
++		return;
++
+ 	cfq_mark_cfqq_wait_request(cfqq);
+ 
+-	sl = cfqd->cfq_slice_idle;
++	if (group_idle)
++		sl = cfqd->cfq_group_idle;
++	else
++		sl = cfqd->cfq_slice_idle;
+ 
+ 	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
+ 	cfq_blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
+-	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
++	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu group_idle: %d", sl,
++			group_idle ? 1 : 0);
+ }
+ 
+ /*
+@@ -1946,6 +1966,7 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
+ 	cfqq->next_rq = cfq_find_next_rq(cfqd, cfqq, rq);
+ 	cfq_remove_request(rq);
+ 	cfqq->dispatched++;
++	(RQ_CFQG(rq))->dispatched++;
+ 	elv_dispatch_sort(q, rq);
+ 
+ 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+@@ -2215,7 +2236,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+ 			cfqq = NULL;
+ 			goto keep_queue;
+ 		} else
+-			goto expire;
++			goto check_group_idle;
+ 	}
+ 
+ 	/*
+@@ -2249,6 +2270,17 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+ 		goto keep_queue;
+ 	}
+ 
++	/*
++	 * If group idle is enabled and there are requests dispatched from
++	 * this group, wait for requests to complete.
++	 */
++check_group_idle:
++	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
++	    && cfqq->cfqg->dispatched) {
++		cfqq = NULL;
++		goto keep_queue;
++	}
++
+ expire:
+ 	cfq_slice_expired(cfqd, 0);
+ new_queue:
+@@ -3391,6 +3423,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+ 	WARN_ON(!cfqq->dispatched);
+ 	cfqd->rq_in_driver--;
+ 	cfqq->dispatched--;
++	(RQ_CFQG(rq))->dispatched--;
+ 	cfq_blkiocg_update_completion_stats(&cfqq->cfqg->blkg,
+ 			rq_start_time_ns(rq), rq_io_start_time_ns(rq),
+ 			rq_data_dir(rq), rq_is_sync(rq));
+@@ -3420,7 +3453,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+ 		 * the queue.
+ 		 */
+ 		if (cfq_should_wait_busy(cfqd, cfqq)) {
+-			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
++			unsigned long extend_sl = cfqd->cfq_slice_idle;
++			if (!cfqd->cfq_slice_idle)
++				extend_sl = cfqd->cfq_group_idle;
++			cfqq->slice_end = jiffies + extend_sl;
+ 			cfq_mark_cfqq_wait_busy(cfqq);
+ 			cfq_log_cfqq(cfqd, cfqq, "will busy wait");
+ 		}
+@@ -3865,6 +3901,7 @@ static void *cfq_init_queue(struct request_queue *q)
+ 	cfqd->cfq_slice[1] = cfq_slice_sync;
+ 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
+ 	cfqd->cfq_slice_idle = cfq_slice_idle;
++	cfqd->cfq_group_idle = cfq_group_idle;
+ 	cfqd->cfq_latency = 1;
+ 	cfqd->cfq_group_isolation = 0;
+ 	cfqd->hw_tag = -1;
+@@ -3937,6 +3974,7 @@ SHOW_FUNCTION(cfq_fifo_expire_async_show, cfqd->cfq_fifo_expire[0], 1);
+ SHOW_FUNCTION(cfq_back_seek_max_show, cfqd->cfq_back_max, 0);
+ SHOW_FUNCTION(cfq_back_seek_penalty_show, cfqd->cfq_back_penalty, 0);
+ SHOW_FUNCTION(cfq_slice_idle_show, cfqd->cfq_slice_idle, 1);
++SHOW_FUNCTION(cfq_group_idle_show, cfqd->cfq_group_idle, 1);
+ SHOW_FUNCTION(cfq_slice_sync_show, cfqd->cfq_slice[1], 1);
+ SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
+ SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
+@@ -3969,6 +4007,7 @@ STORE_FUNCTION(cfq_back_seek_max_store, &cfqd->cfq_back_max, 0, UINT_MAX, 0);
+ STORE_FUNCTION(cfq_back_seek_penalty_store, &cfqd->cfq_back_penalty, 1,
+ 		UINT_MAX, 0);
+ STORE_FUNCTION(cfq_slice_idle_store, &cfqd->cfq_slice_idle, 0, UINT_MAX, 1);
++STORE_FUNCTION(cfq_group_idle_store, &cfqd->cfq_group_idle, 0, UINT_MAX, 1);
+ STORE_FUNCTION(cfq_slice_sync_store, &cfqd->cfq_slice[1], 1, UINT_MAX, 1);
+ STORE_FUNCTION(cfq_slice_async_store, &cfqd->cfq_slice[0], 1, UINT_MAX, 1);
+ STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
+@@ -3990,6 +4029,7 @@ static struct elv_fs_entry cfq_attrs[] = {
+ 	CFQ_ATTR(slice_async),
+ 	CFQ_ATTR(slice_async_rq),
+ 	CFQ_ATTR(slice_idle),
++	CFQ_ATTR(group_idle),
+ 	CFQ_ATTR(low_latency),
+ 	CFQ_ATTR(group_isolation),
+ 	__ATTR_NULL
+@@ -4043,6 +4083,12 @@ static int __init cfq_init(void)
+ 	if (!cfq_slice_idle)
+ 		cfq_slice_idle = 1;
+ 
++#ifdef CONFIG_CFQ_GROUP_IOSCHED
++	if (!cfq_group_idle)
++		cfq_group_idle = 1;
++#else
++		cfq_group_idle = 0;
++#endif
+ 	if (cfq_slab_setup())
+ 		return -ENOMEM;
+ 
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.7.1.1
+
