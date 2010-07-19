@@ -1,131 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966652Ab0GSUGS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 16:06:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6968 "EHLO mx1.redhat.com"
+	id S966665Ab0GSUHF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 16:07:05 -0400
+Received: from d1.icnet.pl ([212.160.220.21]:57976 "EHLO d1.icnet.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966388Ab0GSUGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 16:06:16 -0400
-Message-ID: <4C44B035.7080604@redhat.com>
-Date: Mon, 19 Jul 2010 10:06:13 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S966655Ab0GSUHB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 16:07:01 -0400
+From: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+Organization: Tele-Info-System, Poznan, PL
+To: Richard Purdie <rpurdie@rpsys.net>
+Subject: [PATCH] LEDS: Add output invertion option to backlight trigger
+Date: Mon, 19 Jul 2010 22:05:49 +0200
+User-Agent: KMail/1.9.10
+Cc: "linux-fbdev@vger.kernel.org" <linux-fbdev@vger.kernel.org>,
+        linux-kernel@vger.kernel.org, e3-hacking@earth.li
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: KVM <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/18] Make cpu_tsc_khz updates use local CPU
-References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-5-git-send-email-zamsden@redhat.com> <4C431374.2020804@redhat.com>
-In-Reply-To: <4C431374.2020804@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain;
+  charset="us-ascii"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201007192205.50877.jkrzyszt@tis.icnet.pl>
+X-SA-Exim-Scanned: No (on d1.icnet); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2010 04:45 AM, Avi Kivity wrote:
-> On 07/13/2010 05:25 AM, Zachary Amsden wrote:
->> This simplifies much of the init code; we can now simply always
->> call tsc_khz_changed, optionally passing it a new value, or letting
->> it figure out the existing value (while interrupts are disabled, and
->> thus, by inference from the rule, not raceful against CPU hotplug or
->> frequency updates, which will issue IPIs to the local CPU to perform
->> this very same task).
->>
->>
->> @@ -893,6 +893,15 @@ static void kvm_set_time_scale(uint32_t tsc_khz, 
->> struct pvclock_vcpu_time_info *
->>
->>   static DEFINE_PER_CPU(unsigned long, cpu_tsc_khz);
->>
->> +static inline int kvm_tsc_changes_freq(void)
->> +{
->> +    int cpu = get_cpu();
->> +    int ret = !boot_cpu_has(X86_FEATURE_CONSTANT_TSC)&&
->> +          cpufreq_quick_get(cpu) != 0;
->> +    put_cpu();
->> +    return ret;
->> +}
->> +
->>   void guest_write_tsc(struct kvm_vcpu *vcpu, u64 data)
->>   {
->>       struct kvm *kvm = vcpu->kvm;
->> @@ -937,7 +946,7 @@ void guest_write_tsc(struct kvm_vcpu *vcpu, u64 
->> data)
->>   }
->>   EXPORT_SYMBOL_GPL(guest_write_tsc);
->>
->> -static void kvm_write_guest_time(struct kvm_vcpu *v)
->> +static int kvm_write_guest_time(struct kvm_vcpu *v)
->>   {
->>       struct timespec ts;
->>       unsigned long flags;
->> @@ -946,24 +955,27 @@ static void kvm_write_guest_time(struct 
->> kvm_vcpu *v)
->>       unsigned long this_tsc_khz;
->>
->>       if ((!vcpu->time_page))
->> -        return;
->> -
->> -    this_tsc_khz = get_cpu_var(cpu_tsc_khz);
->> -    if (unlikely(vcpu->hv_clock_tsc_khz != this_tsc_khz)) {
->> -        kvm_set_time_scale(this_tsc_khz,&vcpu->hv_clock);
->> -        vcpu->hv_clock_tsc_khz = this_tsc_khz;
->> -    }
->> -    put_cpu_var(cpu_tsc_khz);
->> +        return 0;
->>
->>       /* Keep irq disabled to prevent changes to the clock */
->>       local_irq_save(flags);
->>       kvm_get_msr(v, MSR_IA32_TSC,&vcpu->hv_clock.tsc_timestamp);
->>       ktime_get_ts(&ts);
->>       monotonic_to_bootbased(&ts);
->> +    this_tsc_khz = __get_cpu_var(cpu_tsc_khz);
->>       local_irq_restore(flags);
->>
->> -    /* With all the info we got, fill in the values */
->> +    if (unlikely(this_tsc_khz == 0)) {
->> +        kvm_make_request(KVM_REQ_KVMCLOCK_UPDATE, v);
->> +        return 1;
->> +    }
->
-> Presumably, this will spin until cpufreq writes the frequency?
+This patch extends the LED backlight tirgger driver with an option that allows 
+for inverting the trigger output polarity.
 
-Only during CPU re-add; we can only get here if running before cpu 
-notifiers have told us about the new CPU.
+Whith the invertion option provided, I (ab)use the backlight trigger for 
+driving a led that indicates LCD display blank condtition on my Amstrad Delta 
+videophone. Since the machine has no dedicated power LED, it was not possible 
+to distinguish if its display was blanked or it was turned off, without 
+touching it.
 
->
->> @@ -4131,9 +4138,23 @@ int kvm_fast_pio_out(struct kvm_vcpu *vcpu, 
->> int size, unsigned short port)
->>   }
->>   EXPORT_SYMBOL_GPL(kvm_fast_pio_out);
->>
->> -static void bounce_off(void *info)
->> +static void tsc_bad(void *info)
->> +{
->> +    __get_cpu_var(cpu_tsc_khz) = 0;
->> +}
->> +
->> +static void tsc_khz_changed(void *data)
->>   {
->> -    /* nothing */
->> +    struct cpufreq_freqs *freq = data;
->> +    unsigned long khz = 0;
->> +
->> +    if (data)
->> +        khz = freq->new;
->> +    else if (!boot_cpu_has(X86_FEATURE_CONSTANT_TSC))
->> +        khz = cpufreq_quick_get(raw_smp_processor_id());
->> +    if (!khz)
->> +        khz = tsc_khz;
->> +    __get_cpu_var(cpu_tsc_khz) = khz;
->>   }
->
-> Do we really need to cache cpufreq_quick_get()?  If it's really quick, 
-> why not just use it everywhere instead of cacheing it?  Not a comment 
-> on this patch.
->
+The invert sysfs control is modeled after a similiar function provided by the 
+gpio trigger driver.
 
-If cpufreq is compiled in, but disabled, it returns zero, so we need 
-some sort of logic.
+Created and tested against linux-2.6.35-rc3 on Amstrad Delta.
+
+Signed-off-by: Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>
+---
+diff -uprN git/drivers/leds/ledtrig-backlight.c 
+git/drivers/leds/ledtrig-backlight.c
+--- git/drivers/leds/ledtrig-backlight.c	2010-06-15 18:01:50.000000000 +0200
++++ git/drivers/leds/ledtrig-backlight.c	2010-06-23 02:48:44.000000000 +0200
+@@ -26,6 +26,7 @@ struct bl_trig_notifier {
+ 	int brightness;
+ 	int old_status;
+ 	struct notifier_block notifier;
++	unsigned invert;
+ };
+ 
+ static int fb_notifier_callback(struct notifier_block *p,
+@@ -39,13 +40,15 @@ static int fb_notifier_callback(struct n
+ 
+ 	switch (event) {
+ 	case FB_EVENT_BLANK :
+-		if (*blank && n->old_status == UNBLANK) {
++		if ((!n->invert && *blank && n->old_status == UNBLANK) ||
++			    (n->invert && !*blank && n->old_status == BLANK)) {
+ 			n->brightness = led->brightness;
+ 			led_set_brightness(led, LED_OFF);
+-			n->old_status = BLANK;
+-		} else if (!*blank && n->old_status == BLANK) {
++			n->old_status = n->invert ? UNBLANK : BLANK;
++		} else if ((!n->invert && !*blank && n->old_status == BLANK) ||
++			    (n->invert && *blank && n->old_status == UNBLANK)) {
+ 			led_set_brightness(led, n->brightness);
+-			n->old_status = UNBLANK;
++			n->old_status = n->invert ? BLANK : UNBLANK;
+ 		}
+ 		break;
+ 	}
+@@ -53,6 +56,43 @@ static int fb_notifier_callback(struct n
+ 	return 0;
+ }
+ 
++static ssize_t bl_trig_invert_show(struct device *dev,
++		struct device_attribute *attr, char *buf)
++{
++	struct led_classdev *led = dev_get_drvdata(dev);
++	struct bl_trig_notifier *n = led->trigger_data;
++
++	return sprintf(buf, "%s\n", n->invert ? "yes" : "no");
++}
++
++static ssize_t bl_trig_invert_store(struct device *dev,
++		struct device_attribute *attr, const char *buf, size_t num)
++{
++	struct led_classdev *led = dev_get_drvdata(dev);
++	struct bl_trig_notifier *n = led->trigger_data;
++	unsigned invert;
++	int ret;
++
++	ret = sscanf(buf, "%u", &invert);
++	if (ret < 1) {
++		dev_err(dev, "invalid value\n");
++		return -EINVAL;
++	}
++
++	n->invert = !!invert;
++
++	/* After inverting, we need to update the LED. */
++	if ((!n->invert && n->old_status == UNBLANK) ||
++			(n->invert && n->old_status == BLANK))
++		led_set_brightness(led, n->brightness);
++	else if ((!n->invert && n->old_status == BLANK) ||
++			(n->invert && n->old_status == UNBLANK))
++		led_set_brightness(led, LED_OFF);
++
++	return num;
++}
++static DEVICE_ATTR(invert, 0644, bl_trig_invert_show, bl_trig_invert_store);
++
+ static void bl_trig_activate(struct led_classdev *led)
+ {
+ 	int ret;
+@@ -66,6 +106,10 @@ static void bl_trig_activate(struct led_
+ 		return;
+ 	}
+ 
++	ret = device_create_file(led->dev, &dev_attr_invert);
++	if (ret)
++		goto err_invert;
++
+ 	n->led = led;
+ 	n->brightness = led->brightness;
+ 	n->old_status = UNBLANK;
+@@ -74,6 +118,12 @@ static void bl_trig_activate(struct led_
+ 	ret = fb_register_client(&n->notifier);
+ 	if (ret)
+ 		dev_err(led->dev, "unable to register backlight trigger\n");
++
++	return;
++
++err_invert:
++	led->trigger_data = NULL;
++	kfree(n);
+ }
+ 
+ static void bl_trig_deactivate(struct led_classdev *led)
+@@ -82,6 +132,7 @@ static void bl_trig_deactivate(struct le
+ 		(struct bl_trig_notifier *) led->trigger_data;
+ 
+ 	if (n) {
++		device_remove_file(led->dev, &dev_attr_invert);
+ 		fb_unregister_client(&n->notifier);
+ 		kfree(n);
+ 	}
