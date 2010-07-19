@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760746Ab0GSRIa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:08:30 -0400
-Received: from g4t0015.houston.hp.com ([15.201.24.18]:20201 "EHLO
-	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753705Ab0GSRI1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:08:27 -0400
-Message-ID: <4C448688.1070507@hp.com>
-Date: Mon, 19 Jul 2010 10:08:24 -0700
-From: Rick Jones <rick.jones2@hp.com>
-User-Agent: Mozilla/5.0 (X11; U; HP-UX 9000/785; en-US; rv:1.7.13) Gecko/20060601
-X-Accept-Language: en-us, en
-MIME-Version: 1.0
-To: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
-CC: Patrick McManus <mcmanus@ducksong.com>, David Miller <davem@davemloft.net>,
-        davidsen@tmr.com, lists@wildgooses.com, linux-kernel@vger.kernel.org,
-        netdev@vger.kernel.org
-Subject: Re: Raise initial congestion window size / speedup slow start?
-References: <4C3D94E3.9080103@wildgooses.com> <4C3DD5EB.9070908@tmr.com>	<20100714.111553.104052157.davem@davemloft.net>	<AANLkTil3MVGwJUG12dikut9X1s9Ozc_3GwMjx_gErvxI@mail.gmail.com>	<1279299709.2156.5814.camel@tng> <AANLkTil_c-TH6k2BDW2r5c0HYXFxiu85aMda1bT0nJt3@mail.gmail.com>
-In-Reply-To: <AANLkTil_c-TH6k2BDW2r5c0HYXFxiu85aMda1bT0nJt3@mail.gmail.com>
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1760721Ab0GSROi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:14:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:23359 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755087Ab0GSROg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 13:14:36 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: linux-kernel@vger.kernel.org, jens.axboe@kernel.dk
+Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
+        jmoyer@redhat.com, czoccolo@gmail.com, vgoyal@redhat.com
+Subject: [PATCH 1/3] cfq-iosched: Improve time slice charging logic
+Date: Mon, 19 Jul 2010 13:14:10 -0400
+Message-Id: <1279559652-2775-2-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1279559652-2775-1-git-send-email-vgoyal@redhat.com>
+References: <1279559652-2775-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H.K. Jerry Chu wrote:
-> On Fri, Jul 16, 2010 at 10:01 AM, Patrick McManus <mcmanus@ducksong.com> wrote:
->>can you tell us more about the impl concerns of initcwnd stored on the
->>route?
-> 
-> 
-> We have found two issues when altering initcwnd through the ip route cmd:
-> 1. initcwnd is actually capped by sndbuf (i.e., tcp_wmem[1], which is
-> defaulted to a small value of 16KB). This problem has been made obscured
-> by the TSO code, which fudges the flow control limit (and could be a bug by
-> itself).
+- Currently in CFQ there are many situations where don't know how
+  much time slice has been consumed by a queue. For example, all
+  the random reader/writer queues where we don't idle on
+  individual queues and we expire the queue either immediately
+  after the request dispatch.
 
-I'll ask my Emily Litella question of the day and inquire as to why that would 
-be unique to altering initcwnd via the route?
+- In this case time consumed by a queue is just a memory copy
+  operation. Actually time measurement is possible only if we
+  idle on a queue and allow dispatch from a queue for significant
+  amount of time.
 
-The slightly less Emily Litella-esque question is why an appliction with a 
-desire to know it could send more than 16K at one time wouldn't have either 
-asked via its install docs to have the minimum tweaked (certainly if one is 
-already tweaking routes...), or "gone all the way" and made an explicit 
-setsockopt(SO_SNDBUF) call?  We are in a realm of applications for which there 
-was a proposal to allow them to pick their own initcwnd right?  Having them pick 
-an SO_SNDBUF size would seem to be no more to ask.
+- As of today, in such cases we calculate the time since the
+  dispatch from the queue started and charge all that time.
+  Generally this rounds to 1 jiffy but in some cases it can
+  be more. For example, if we are driving high request queue
+  depth and driver is too busy and does not ask for new
+  requests for 8-10 jiffies. In such cases, the active queue
+  gets charged very unfairly.
 
-rick jones
+- So fundamentally, whole notion of charging for time slice
+  is valid only if we have been idling on the queue. Otherwise
+  in an NCQ queue, there might be other requests on the queue
+  and we can not do the time slice calculation.
 
-sendbuf_init = max(tcp_mem,initcwnd)?
+- This patch tweaks the slice charging logic a bit so that
+  in the cases where we can't know the amount of time, we
+  start charging in terms of number of requests dispatched
+  (IOPS). This practically switching CFQ fairness model to
+  fairness in terms of IOPS with slice_idle=0.
+
+- As of today this will primarily be useful only with
+  group_idle patches so that we get fairness in terms of
+  IOPS across groups. The idea is that on fast storage
+  one can run CFQ with slice_idle=0 and still get IO
+  controller working without losing too much of
+  throughput.
+
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/cfq-iosched.c |   24 +++++++++++++++++++++---
+ 1 files changed, 21 insertions(+), 3 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index 7982b83..f44064c 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -896,16 +896,34 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+ 		 * if there are mutiple queues in the group, each can dispatch
+ 		 * a single request on seeky media and cause lots of seek time
+ 		 * and group will never know it.
++		 *
++		 * If drive is NCQ and we are driving deep queue depths, then
++		 * it is not reasonable to charge the slice since dispatch
++		 * started because this time will include time taken by all
++		 * the other requests in the queue.
++		 *
++		 * Actually there is no reasonable way to know the disk time
++		 * here and we need to come up with some approximation. If
++		 * disk is non NCQ, we should be driving request queue depth
++		 * 1, then charge for time since dispatch start and this will
++		 * account for seek time properly on seeky media. If request
++		 * queue depth is high, then charge for number of requests
++		 * dispatched from the queue. This will sort of becoming
++		 * charging in terms of IOPS.
+ 		 */
+-		slice_used = max_t(unsigned, (jiffies - cfqq->dispatch_start),
+-					1);
++		if (cfqq->cfqd->hw_tag == 0)
++			slice_used = max_t(unsigned,
++					(jiffies - cfqq->dispatch_start), 1);
++		else
++			slice_used = cfqq->slice_dispatch;
+ 	} else {
+ 		slice_used = jiffies - cfqq->slice_start;
+ 		if (slice_used > cfqq->allocated_slice)
+ 			slice_used = cfqq->allocated_slice;
+ 	}
+ 
+-	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
++	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u, sl_disp=%u", slice_used,
++			cfqq->slice_dispatch);
+ 	return slice_used;
+ }
+ 
+-- 
+1.7.1.1
+
