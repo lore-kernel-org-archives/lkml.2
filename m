@@ -1,40 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab0GSGiA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 02:38:00 -0400
-Received: from a.mx.secunet.com ([195.81.216.161]:45313 "EHLO a.mx.secunet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754199Ab0GSGh4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 02:37:56 -0400
-Date: Mon, 19 Jul 2010 08:40:50 +0200
-From: Steffen Klassert <steffen.klassert@secunet.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Dan Kruchinin <dkruchinin@acm.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/3] padata: cpumasks
-Message-ID: <20100719064050.GA11081@secunet.com>
-References: <20100714142951.22817d0c@leibniz>
- <20100719060426.GA19696@gondor.apana.org.au>
+	id S1754349Ab0GSGmN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 02:42:13 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:38830 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752133Ab0GSGmM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 02:42:12 -0400
+To: Gene Heskett <gene.heskett@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35-rc4, no boot
+References: <201007051250.17010.gene.heskett@gmail.com>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Sun, 18 Jul 2010 23:42:09 -0700
+In-Reply-To: <201007051250.17010.gene.heskett@gmail.com> (Gene Heskett's message of "Mon\, 5 Jul 2010 12\:50\:16 -0400")
+Message-ID: <m1aapodlby.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100719060426.GA19696@gondor.apana.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 19 Jul 2010 06:37:53.0507 (UTC) FILETIME=[EA5A5330:01CB270C]
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in02.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 02:04:26PM +0800, Herbert Xu wrote:
-> 
-> All applied.  Thanks!
+Gene Heskett <gene.heskett@gmail.com> writes:
 
-Hm, I was just about to write some comments on these patches,
-they still have some issues. For example, handling empty cpumasks
-is broken again (NULL pointer dereference in padata_replace).
-The cpu_index is zero for all cpus now, so can we leak objects
-on cpu hotplug etc. Also I'm not that happy with some of the
-API changes. I'll try to fix this up with some patches.
+> Phenom 9550, 4G ram, asus m2n-sli deluxe mobo, all sata drives (4 + optical 
+> burner)
+>
+> I have now built 35-rc4 4 times, the last 2 with
+>
+> 2.6.31-12-mdv.config & make oldconfig (lots of accepts), & build
+>
+> And a working .config from 2.6.35-rc3 + make oldconfig (no changes reported) 
+> & build.
+>
+> Both fail at the attached image point booting from a grub2 menu on a 
+> different drive that has been working with rc3 for quite a few boots but its 
+> all bitchy this morning so is booted to the mdv 2.6.31-12 kernel above ATM.
+>
+> Last .config also attached.
+>
+> What do I need to do here?
 
-Steffen
+That does sound bizarre.  You have some weird initrd dependency on the
+kernel doing something, but it isn't clear to me what that might be.
+Shrug.
+
+Not being able to mount /dev and /sys feels like they simply weren't
+compiled in.  But your config suggests otherwise.
+
+Eric
