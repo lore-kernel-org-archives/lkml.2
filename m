@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967373Ab0GTAGz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 20:06:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64141 "EHLO
+	id S967386Ab0GTAG7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 20:06:59 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64129 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760963Ab0GSX6e (ORCPT
+	with ESMTP id S1760961Ab0GSX6d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 19:58:34 -0400
+	Mon, 19 Jul 2010 19:58:33 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,105 +15,106 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 24/49] memblock: NUMA allocate can now use early_pfn_map
-Date: Mon, 19 Jul 2010 16:56:33 -0700
-Message-Id: <1279583818-14249-25-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 42/49] x86, memblock: Add memblock_x86_free_memory_in_range()
+Date: Mon, 19 Jul 2010 16:56:51 -0700
+Message-Id: <1279583818-14249-43-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
 References: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C44E688.003D,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4C44E68A.0124,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+It will return free memory size in specified range.
 
-We now provide a default (weak) implementation of memblock_nid_range()
-which uses the early_pfn_map[] if CONFIG_ARCH_POPULATES_NODE_MAP
-is set. Sparc still needs to use its own method due to the way
-the pages can be scattered between nodes.
+We can not use memory_size - reserved_size here, because some reserved area
+may not be in the scope of memblock.memory.region.
 
-This implementation is inefficient due to our main algorithm and
-callback construct wanting to work on an ascending addresses bases
-while early_pfn_map[] would rather work with nid's (it's unsorted
-at that stage). But it should work and we can look into improving
-it subsequently, possibly using arch compile options to chose a
-different algorithm alltogether.
+Use memblock.memory.region subtracting memblock.reserved.region to get free range array.
+then count size of all free ranges.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+-v2: Ben insist on using _in_range
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/memblock.h |    3 +++
- mm/memblock.c            |   28 +++++++++++++++++++++++++++-
- 2 files changed, 30 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/memblock.h |    1 +
+ arch/x86/mm/memblock.c          |   48 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 49 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 15da7d9..b69c243 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -47,6 +47,9 @@ extern long memblock_remove(phys_addr_t base, phys_addr_t size);
- extern long __init memblock_free(phys_addr_t base, phys_addr_t size);
- extern long __init memblock_reserve(phys_addr_t base, phys_addr_t size);
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+index 3a86b10..fc3c230 100644
+--- a/arch/x86/include/asm/memblock.h
++++ b/arch/x86/include/asm/memblock.h
+@@ -15,5 +15,6 @@ void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
+ 					 unsigned long last_pfn);
+ u64 memblock_x86_hole_size(u64 start, u64 end);
+ u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
++u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
  
-+/* The numa aware allocator is only available if
-+ * CONFIG_ARCH_POPULATES_NODE_MAP is set
-+ */
- extern phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid);
- extern phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align);
+ #endif
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+index a3dece6..3882caa 100644
+--- a/arch/x86/mm/memblock.c
++++ b/arch/x86/mm/memblock.c
+@@ -217,6 +217,54 @@ void __init memblock_x86_to_bootmem(u64 start, u64 end)
+ }
+ #endif
  
-diff --git a/mm/memblock.c b/mm/memblock.c
-index b4870cf..a9c15a5 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -15,6 +15,7 @@
- #include <linux/init.h>
- #include <linux/bitops.h>
- #include <linux/poison.h>
-+#include <linux/pfn.h>
- #include <linux/memblock.h>
- 
- struct memblock memblock;
-@@ -451,11 +452,36 @@ phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
- /*
-  * Additional node-local allocators. Search for node memory is bottom up
-  * and walks memblock regions within that node bottom-up as well, but allocation
-- * within an memblock region is top-down.
-+ * within an memblock region is top-down. XXX I plan to fix that at some stage
-+ *
-+ * WARNING: Only available after early_node_map[] has been populated,
-+ * on some architectures, that is after all the calls to add_active_range()
-+ * have been done to populate it.
-  */
- 
- phys_addr_t __weak __init memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid)
- {
-+#ifdef CONFIG_ARCH_POPULATES_NODE_MAP
-+	/*
-+	 * This code originates from sparc which really wants use to walk by addresses
-+	 * and returns the nid. This is not very convenient for early_pfn_map[] users
-+	 * as the map isn't sorted yet, and it really wants to be walked by nid.
-+	 *
-+	 * For now, I implement the inefficient method below which walks the early
-+	 * map multiple times. Eventually we may want to use an ARCH config option
-+	 * to implement a completely different method for both case.
-+	 */
-+	unsigned long start_pfn, end_pfn;
-+	int i;
++u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
++{
++	int i, count;
++	struct range *range;
++	int nr_range;
++	u64 final_start, final_end;
++	u64 free_size;
++	struct memblock_region *r;
 +
-+	for (i = 0; i < MAX_NUMNODES; i++) {
-+		get_pfn_range_for_nid(i, &start_pfn, &end_pfn);
-+		if (start < PFN_PHYS(start_pfn) || start >= PFN_PHYS(end_pfn))
++	count = (memblock.reserved.cnt + memblock.memory.cnt) * 2;
++
++	range = find_range_array(count);
++	nr_range = 0;
++
++	addr = PFN_UP(addr);
++	limit = PFN_DOWN(limit);
++
++	for_each_memblock(memory, r) {
++		final_start = PFN_UP(r->base);
++		final_end = PFN_DOWN(r->base + r->size);
++		if (final_start >= final_end)
 +			continue;
-+		*nid = i;
-+		return min(end, PFN_PHYS(end_pfn));
++		if (final_start >= limit || final_end <= addr)
++			continue;
++
++		nr_range = add_range(range, count, nr_range, final_start, final_end);
 +	}
-+#endif
- 	*nid = 0;
- 
- 	return end;
++	subtract_range(range, count, 0, addr);
++	subtract_range(range, count, limit, -1ULL);
++	for_each_memblock(reserved, r) {
++		final_start = PFN_DOWN(r->base);
++		final_end = PFN_UP(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		if (final_start >= limit || final_end <= addr)
++			continue;
++
++		subtract_range(range, count, final_start, final_end);
++	}
++	nr_range = clean_sort_range(range, count);
++
++	free_size = 0;
++	for (i = 0; i < nr_range; i++)
++		free_size += range[i].end - range[i].start;
++
++	return free_size << PAGE_SHIFT;
++}
++
+ void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
+ {
+ 	if (start == end)
 -- 
 1.6.4.2
 
