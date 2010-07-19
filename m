@@ -1,52 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935894Ab0GSPE7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 11:04:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:23919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935215Ab0GSPE6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 11:04:58 -0400
-Date: Mon, 19 Jul 2010 12:04:33 -0300
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
-To: Christoph Hellwig <hch@lst.de>
-Cc: a.p.zijlstra@chello.nl, paulus@samba.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org
-Subject: Re: perf can't keep up with mmap data
-Message-ID: <20100719150433.GB5222@ghostprotocols.net>
-References: <20100719074813.GA418@lst.de>
+	id S935852Ab0GSPR4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 11:17:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56451 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S935158Ab0GSPRy convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 11:17:54 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100719074813.GA418@lst.de>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+Date: Mon, 19 Jul 2010 08:17:14 -0700
+Message-ID: <AANLkTikuzYqYpGHcubb7QVciZW0dNFjOG82qIwy5M4gO@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Mon, Jul 19, 2010 at 09:48:13AM +0200, Christoph Hellwig escreveu:
-> When running current -tip perf in my 32-bit x86 kvm guest I get lots
-> of messages like:
-> 
-> WARNING: failed to keep up with mmap data.
-> 
-> when starting perf top, and still quite a few everytime it refreshes the
-> display.
+On Wed, Jul 14, 2010 at 7:17 PM, David Howells <dhowells@redhat.com> wrote:
+>
+>        ssize_t ret = xstat(int dfd,
+>                            const char *filename,
+>                            unsigned flags,
+>                            const struct xstat_parameters *params,
+>                            struct xstat *buffer,
+>                            size_t buflen);
 
-Should be better reported, probably with a message suggesting to use:
+Ugh. So I think this is pretty disgusting. For a few reasons:
 
-perf top -r RTPRIO
+ - that whole xstat buffer handling is just a mess. I think you
+already fixed the "xstat_parameters" crud and just made it a simple
+unsigned long and a direct argument, but the "buffer+buflen" thing is
+still disgusting.
 
-or to reduce the sampling frequency:
+   Why not just leave a few empty fields at the end, and make the rule
+be: "We don't just add random crap, so don't expect it to grow widely
+in the future".
 
-perf top -F 500
+ - you use "long long" all over the place. Don't do that. If you want
+a fixed size, say so, and use "u64/s64". That's the _real_ fixed size,
+and "long long" just _happens_ to be the same size on all current
+architectures.
 
-to have:
+   Put another way: "long" just _happened_ to be 32 bits way back when
+on pretty much all targets. That's where all the 64-bit compatibility
+mess came from. Don't make the same mistake. Besides, if the point is
+to make things be the same, _document_ that point by using a type that
+is explicitly sized.
 
-   PerfTop: 287 irqs/sec  kernel:40.8%  exact:  0.0% [500Hz cycles], (all, 2 CPUs)
+ - why create that new kind of xstat() that realistically absolutely
+nobody will use outside of some very special cases, and that has no
+real advantages for 99.9% of all people?
 
-Instead of the default:
+   You could make it a "atomic stat+open" by replacing the useless
+"size" return value with a "fd" return value, add a flag saying "we're
+also interested in opening it" (in the same result set flags), and
+instead of that stupid "buflen" input, give the "mode" input that open
+needs.
 
-   PerfTop:  35 irqs/sec  kernel:25.7%  exact:  0.0% [1000Hz cycles], (all, 2 CPUs)
+   Tadaa! You now have something that more people might be interested
+in, if only because it avoids a system call and might be a performance
+win. Who knows. Ask the Wine people what strange
+open-function-from-hell they are interested in.
 
-- Arnaldo
+>        ssize_t ret = fxstat(unsigned fd,
+
+Quite frankly, my gut feel is that once you do "xstat(dfd, filename,
+...)" then it's damn stupid to do a separate "fxstat()", when you
+might as well say that "xtstat(dfd, NULL, ...)" is the same as
+"fxstat(fd, ...)"
+
+Now, the difference between adding one or two system calls may not be
+huge, but just from a cleanliness angle, I really don't see the point
+of having another fstat variant when the extended xstat() already very
+naturally supports the thing. And let's face it, using a NULL path
+pointer just makes sense if you don't have a path. You already passed
+it a target file descriptor in the dfd.
+
+Anyway, I didn't look at whether the new xstat fields made any sense,
+but I hated the interface enough that I can't be bothered to. Don't
+make up baroque new things that will never be used. Make a better
+argument for why anybody would use them despite the lack of
+standardization etc. And make sure they are as simple as possible
+(which is why I hate that "buflen" thing etc).
+
+                    Linus
