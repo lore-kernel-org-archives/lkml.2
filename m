@@ -1,89 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760816Ab0GSR3D (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:29:03 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:42765 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760755Ab0GSR3B (ORCPT
+	id S1760821Ab0GSRjP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:39:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:60583 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760783Ab0GSRjN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:29:01 -0400
-MIME-Version: 1.0
-In-Reply-To: <AANLkTikP1szEIZK4jw9sSgGa_0ojOMYk8MTsIsvH5a1a@mail.gmail.com>
-References: <AANLkTikP1szEIZK4jw9sSgGa_0ojOMYk8MTsIsvH5a1a@mail.gmail.com>
-Date: Mon, 19 Jul 2010 10:22:45 -0700
-Message-ID: <AANLkTilq-vCQux83WRzN18AbLi41-YlG-afCia3oLerm@mail.gmail.com>
-Subject: Fwd: persistent ramfs issue
-From: "Ryan O'Neill" <ryan@bitlackeys.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Jul 2010 13:39:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=WZumzJPsohJeomXA46wktQ3pryUZxEvHpkdmu5z5fWgAFPO8XPI8VJl8lZn2vU+niG
+         ZLecEwq5clOWqyPcsDB7ZGzVo3l3t0LwKgEp/YG0vgQYFUmhTllwgin43giBg2YDfLGQ
+         RHrTYrbgTG2rk7b2a6ZkTBlIetbjEvu/fXCcg=
+Subject: Re: [PATCHv2] tcp: fix crash in tcp_xmit_retransmit_queue
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ilpo =?ISO-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
+Cc: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
+        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
+In-Reply-To: <alpine.DEB.2.00.1007192013010.30181@melkinpaasi.cs.helsinki.fi>
+References: <4C358AAA.9080400@kernel.org>
+	 <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi>
+	 <4C3EF7EA.2040900@nets.rwth-aachen.de>
+	 <1279195528.2496.2.camel@edumazet-laptop>
+	 <4C3F053F.7090704@nets.rwth-aachen.de>
+	 <alpine.DEB.2.00.1007161448330.13946@melkinpaasi.cs.helsinki.fi>
+	 <4C404FC5.6040107@nets.rwth-aachen.de>
+	 <alpine.DEB.2.00.1007161602510.13946@melkinpaasi.cs.helsinki.fi>
+	 <4C440771.7080107@nets.rwth-aachen.de>
+	 <alpine.DEB.2.00.1007191319010.13002@wel-95.cs.helsinki.fi>
+	 <1279548555.2553.51.camel@edumazet-laptop>
+	 <alpine.DEB.2.00.1007192013010.30181@melkinpaasi.cs.helsinki.fi>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Jul 2010 19:39:08 +0200
+Message-ID: <1279561148.2553.150.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Not sure how active fsdevel is so I forwarded my question along to you
-guys as well. Many thanks.
+Le lundi 19 juillet 2010 à 20:25 +0300, Ilpo Järvinen a écrit :
+
+> This difference is well thought and intentional, I didn't use different 
+> one by accident. We want to make sure we won't use NULL from 
+> tcp_write_queue_head() while the pre 08ebd1721ab8fd3 kernels was 
+> interested mainly whether the first loop should run or not (and of course 
+> ends up avoid the null deref too but it's more optimization like 
+> thing in there, ie., if there's no lost packets no work to-do). The deref 
+> could have been fixed by moving TCP_SKB_CB(skb)->sacked a bit later but 
+> that would again make us depend on the side-effect of the send_head check 
+> (in the case of packets_out being zero and wq empty) which is something I 
+> don't like too much.
+> 
+
+Thanks Ilpo.
+
+Do you know in what exact circumstance the bug triggers ?
+
+It's hard to believe thousand of machines on the Internet never hit
+it :(
+
+Maybe another problem in congestion control ?
 
 
----------- Forwarded message ----------
-From: Ryan O'Neill <ryan@bitlackeys.com>
-Date: Mon, Jul 19, 2010 at 10:09 AM
-Subject: persistent ramfs issue
-To: linux-fsdevel@vger.kernel.org
-
-
-I have developed a file system, it is a virtual memory (RAM) file system
-with persistence -- the persistence essentially works by storing the
-fs data (from memory) into the slack space
-of ext3 files (We are working on CentOS 5.3 -- old I know). The
-following details should be sufficient.
-
-I keep the inode size the same so that utilities don't see the hidden
-data -- it appears do_sync_read which ext3 uses and the function that
-it uses (such as generic_file_read) do not read past the size of the
-inode.
-
-When storing this persistent data in the slack space of ext3, I create
-something like a journal that contains the names of the ext3 files and
-how much data we have in the slack space. So when I remount my file
-system, a read_Journal()
-happens, and here is the issue --
-
-I temporarily extend the size of the inode of the ext3 file so I can
-get at the hidden data, then I put the inode size back. For along time
-this returned 0's, I then ( believe this made the change) marked the
-inode as dirty
-and flushed the page so it forced the change of the inode extension,
-because I knew the data was there. Now I get the actual data -- but it
-only works for the first file in the journal. read_journal() works in
-a loop, it reads through each journal entry, and when it tries to
-perforrm
-the same operation on another ext3 file, after extending the inode it
-just gets zeroes back. But I know the data is there, because if I
-leave the inode extended, I use 'vi' to open the file and I can see
-the data.
-
-Is this some type of page cache issue? How can I get around this? Any
-input would be greatly appreciated. Thank you.
-
-I can't really give code slices, but the general idea is
-
-i_size = i_size_read(inode);
-i_size += extended_size;
-i_size_write(inode, isize);
-mark_inode_dirty(ext3_inode);
-wakeup_pdflush(0); <- I realize this is an overkill, but I was just
-trying to get it to work before I used aops->commit_write on the
-actual page of the inode.
-
-ext3_file->f_op->llseek(seek to start of hidden data);
-ext3_file->f_op->read(read in the data that is hidden at this location)
-
-The first time I go through this operation it works, I get the data
-back into memory and can reconstruct a file in virtual memory
-all subsequent attempts fail -- although I believe once or twice it did work.
-
-I simply don't understand the underlying page cache enough I'm
-guessing. Any help would be greatly appreciated on this, thank you
-all.
-
-Regards, Ryan.
