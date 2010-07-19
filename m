@@ -1,67 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758012Ab0GSBlm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 21:41:42 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:35572 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757944Ab0GSBll convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 21:41:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type:content-transfer-encoding;
-        b=RuX3wXUwqZ2C3XroaTMyipqjhSalfXJbP1n+suXvRmsPt5qkDzAMeZ/lAmRIKzUvAz
-         oEIlSHgRR5HLOZUUHFvUalwyl2+0Kx+zeqJ0btlu0sUGWOYhJ38yuWH6BtkoKFlxvZI2
-         8wEftzQlxmBc3uyOtx39ft+Bty6hiIqYCRas4=
+	id S1758380Ab0GSDQb (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 23:16:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1467 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758150Ab0GSDQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 23:16:30 -0400
+From: Alex Williamson <alex.williamson@redhat.com>
+Subject: [PATCH] pci: Allow read/write access to I/O port resources
+To: linux-pci@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
+        chrisw@redhat.com, ddutile@redhat.com, bjorn.helgaas@hp.com
+Date: Sun, 18 Jul 2010 21:15:48 -0600
+Message-ID: <20100719031148.13524.25354.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Reply-To: axel.lin@gmail.com
-In-Reply-To: <20100715085932.GA23529@rakim.wolfsonmicro.main>
-References: <1279162147.29294.2.camel@mola> <20100715085932.GA23529@rakim.wolfsonmicro.main>
-From: Axel Lin <axel.lin@gmail.com>
-Date: Mon, 19 Jul 2010 09:41:20 +0800
-Message-ID: <AANLkTikSPYLmrIVkyD_GOVZ76Bkha7DNxED33ZZgQNKJ@mail.gmail.com>
-Subject: Re: [PATCH 0/12] sound/alsa/soc/codec: fix memory leak and resource 
-	relaim in error path
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
-        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
-        alsa-devel@alsa-project.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hi Mark,
+PCI sysfs resource files currently only allow mmap'ing, which doesn't
+work on all architectures, particularly x86.  Add read/write to
+allow access to these device regions using sysfs.
 
-2010/7/15 Mark Brown <broonie@opensource.wolfsonmicro.com>:
-> On Thu, Jul 15, 2010 at 10:49:07AM +0800, Axel Lin wrote:
->
->> [PATCH 1/12] ad1836: fix a memory leak if another ad1836 is registered
->> [PATCH 2/12] ak4642: fix a memory leak if failed to initialise AK4642
->> [PATCH 3/12] da7210: fix a memory leak if failed to initialise da7210 audio codec
->> [PATCH 4/12] wm8523: fix resource reclaim in wm8523_register error path
->> [PATCH 5/12] wm8711: fix a memory leak if another WM8711 is registered
->> [PATCH 6/12] wm8904: fix resource reclaim in wm8904_register error path
->> [PATCH 7/12] wm8940: fix resource reclaim in wm8940_register error path
->> [PATCH 8/12] wm8955: fix resource reclaim in wm8955_register error path
->> [PATCH 9/12] wm8961: fix resource reclaim in wm8961_register error path
->> [PATCH 10/12] wm8974: fix a memory leak if another WM8974 is registered
->> [PATCH 11/12] wm8978: fix a memory leak if another WM8978 is registered
->> [PATCH 12/12] wm9081: fix resource reclaim in wm9081_register error path
->
-> If you're going to be submiting large batches of small patches like this
-> it would be really helpful if you could make sure you format the subject
-> lines for your patches so that they match the standards for the area of
-> the kernel you're updating.  This makes them much easier to apply.
->
+Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+---
 
-After checking Liam's multi-component branch, I think this serial of
-fix is not necessary.
-If you think it still has value to merge this serial of fix for
-current implementation, just let me know.
+ I intend to use this for KVM PCI device assignment to avoid raw in/out
+ in the code and allow permissions based on pci sysfs files rather than
+ iopl/ioperm.
 
-Regards,
-Axel
+ Documentation/filesystems/sysfs-pci.txt |    7 ++-
+ drivers/pci/pci-sysfs.c                 |   68 +++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 2 deletions(-)
+
+diff --git a/Documentation/filesystems/sysfs-pci.txt b/Documentation/filesystems/sysfs-pci.txt
+index 85354b3..74eaac2 100644
+--- a/Documentation/filesystems/sysfs-pci.txt
++++ b/Documentation/filesystems/sysfs-pci.txt
+@@ -39,7 +39,7 @@ files, each with their own function.
+        local_cpus	   nearby CPU mask (cpumask, ro)
+        remove		   remove device from kernel's list (ascii, wo)
+        resource		   PCI resource host addresses (ascii, ro)
+-       resource0..N	   PCI resource N, if present (binary, mmap)
++       resource0..N	   PCI resource N, if present (binary, mmap, rw[1])
+        resource0_wc..N_wc  PCI WC map resource N, if prefetchable (binary, mmap)
+        rom		   PCI ROM resource, if present (binary, ro)
+        subsystem_device	   PCI subsystem device (ascii, ro)
+@@ -54,13 +54,16 @@ files, each with their own function.
+   binary - file contains binary data
+   cpumask - file contains a cpumask type
+ 
++[1] rw for RESOURCE_IO (I/O port) regions only
++
+ The read only files are informational, writes to them will be ignored, with
+ the exception of the 'rom' file.  Writable files can be used to perform
+ actions on the device (e.g. changing config space, detaching a device).
+ mmapable files are available via an mmap of the file at offset 0 and can be
+ used to do actual device programming from userspace.  Note that some platforms
+ don't support mmapping of certain resources, so be sure to check the return
+-value from any attempted mmap.
++value from any attempted mmap.  The most notable of these are I/O port
++resources, which also provide read/write access.
+ 
+ The 'enable' file provides a counter that indicates how many times the device 
+ has been enabled.  If the 'enable' file currently returns '4', and a '1' is
+diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+index 5935b85..c98ea15 100644
+--- a/drivers/pci/pci-sysfs.c
++++ b/drivers/pci/pci-sysfs.c
+@@ -778,6 +778,70 @@ pci_mmap_resource_wc(struct file *filp, struct kobject *kobj,
+ 	return pci_mmap_resource(kobj, attr, vma, 1);
+ }
+ 
++static ssize_t
++pci_resource_io(struct file *filp, struct kobject *kobj,
++		struct bin_attribute *attr, char *buf,
++		loff_t off, size_t count, int write)
++{
++	struct pci_dev *pdev = to_pci_dev(container_of(kobj,
++						       struct device, kobj));
++	struct resource *res = (struct resource *)attr->private;
++	unsigned long port = off;
++	int i;
++
++	for (i = 0; i < PCI_ROM_RESOURCE; i++)
++		if (res == &pdev->resource[i])
++			break;
++	if (i >= PCI_ROM_RESOURCE)
++		return -ENODEV;
++
++	port += pci_resource_start(pdev, i);
++
++	if (port > pci_resource_end(pdev, i))
++		return 0;
++
++	if (port + count - 1 > pci_resource_end(pdev, i))
++		return -EINVAL;
++
++	switch (count) {
++	case 1:
++		if (write)
++			outb(*(u8 *)buf, port);
++		else
++			*(u8 *)buf = inb(port);
++		return 1;
++	case 2:
++		if (write)
++			outw(*(u16 *)buf, port);
++		else
++			*(u16 *)buf = inw(port);
++		return 2;
++	case 4:
++		if (write)
++			outl(*(u32 *)buf, port);
++		else
++			*(u32 *)buf = inl(port);
++		return 4;
++	}
++	return -EINVAL;
++}
++
++static ssize_t
++pci_read_resource_io(struct file *filp, struct kobject *kobj,
++		     struct bin_attribute *attr, char *buf,
++		     loff_t off, size_t count)
++{
++	return pci_resource_io(filp, kobj, attr, buf, off, count, 0);
++}
++
++static ssize_t
++pci_write_resource_io(struct file *filp, struct kobject *kobj,
++		      struct bin_attribute *attr, char *buf,
++		      loff_t off, size_t count)
++{
++	return pci_resource_io(filp, kobj, attr, buf, off, count, 1);
++}
++
+ /**
+  * pci_remove_resource_files - cleanup resource files
+  * @pdev: dev to cleanup
+@@ -828,6 +892,10 @@ static int pci_create_attr(struct pci_dev *pdev, int num, int write_combine)
+ 			sprintf(res_attr_name, "resource%d", num);
+ 			res_attr->mmap = pci_mmap_resource_uc;
+ 		}
++		if (pci_resource_flags(pdev, num) & IORESOURCE_IO) {
++			res_attr->read = pci_read_resource_io;
++			res_attr->write = pci_write_resource_io;
++		}
+ 		res_attr->attr.name = res_attr_name;
+ 		res_attr->attr.mode = S_IRUSR | S_IWUSR;
+ 		res_attr->size = pci_resource_len(pdev, num);
+
