@@ -1,72 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966916Ab0GSV6Y (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 17:58:24 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:43598 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965308Ab0GSV6W convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 17:58:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Ba91t/M6tTFkdVsIkNrUcSnYRAHnbw88phu0xgUMSXIJ3oGELNVOC1YOnOv/01YviD
-         9dFwu6C4dgeV4+yI7z1TRnuv+PEiegqsEYilxwdJPoYOJmTyx0DNl0WptHBn4A4BwB+h
-         BElmDYfyQW3gGYLbXt1e7YfJDfN8rP7eh6zh4=
-MIME-Version: 1.0
-In-Reply-To: <1279296925-25147-1-git-send-email-segooon@gmail.com>
-References: <1279296925-25147-1-git-send-email-segooon@gmail.com>
-Date: Mon, 19 Jul 2010 16:58:21 -0500
-Message-ID: <AANLkTil-rrLA9iLJRkf9C4aGK1CnvitSIVktScMpjvxx@mail.gmail.com>
-Subject: Re: [PATCH 10/15] fs: cifs: check kmalloc() result
-From: Steve French <smfrench@gmail.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Steve French <sfrench@samba.org>,
-        Jeff Layton <jlayton@redhat.com>,
-        Dave Kleikamp <shaggy@linux.vnet.ibm.com>, Tejun Heo <tj@kernel.org>,
-        Joe Perches <joe@perches.com>, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S966971Ab0GSV6k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 17:58:40 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39179 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966938Ab0GSV6g (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 17:58:36 -0400
+Date: Mon, 19 Jul 2010 17:58:06 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Ian Kent <raven@themaw.net>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 22/38] union-mount: Implement union lookup
+Message-ID: <20100719215806.GA11089@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-23-git-send-email-vaurora@redhat.com> <20100713044909.GG3949@zeus.themaw.net>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100713044909.GG3949@zeus.themaw.net>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-merged into cifs-2.6.git
+On Tue, Jul 13, 2010 at 12:49:10PM +0800, Ian Kent wrote:
+> On Tue, Jun 15, 2010 at 11:39:52AM -0700, Valerie Aurora wrote:
+> > Implement unioned directories, whiteouts, and fallthrus in pathname
+> > lookup routines.  do_lookup() and lookup_hash() call lookup_union()
+> > after looking up the dentry from the top-level file system.
+> > lookup_union() is centered around __lookup_hash(), which does cached
+> > and/or real lookups and revalidates each dentry in the union stack.
+> > 
+> > XXX - implement negative union cache entries
+> > 
+> > XXX - What about different permissions on different layers on the same
+> > directory name?  Should complain, fail, test permissions on all
+> > layers, what?
+> > ---
+> >  fs/namei.c |  171 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++-
+> >  fs/union.c |   94 +++++++++++++++++++++++++++++++++
+> >  fs/union.h |    7 +++
+> >  3 files changed, 271 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/fs/namei.c b/fs/namei.c
+> > index 06aad7e..45be5e5 100644
+> > --- a/fs/namei.c
+> > +++ b/fs/namei.c
+> > @@ -35,6 +35,7 @@
+> >  #include <asm/uaccess.h>
+> >  
+> >  #include "internal.h"
+> > +#include "union.h"
+> >  
+> >  /* [Feb-1997 T. Schoebel-Theuer]
+> >   * Fundamental changes in the pathname lookup mechanisms (namei)
+> > @@ -722,6 +723,160 @@ static __always_inline void follow_dotdot(struct nameidata *nd)
+> >  	follow_mount(&nd->path);
+> >  }
+> >  
+> > +static struct dentry *__lookup_hash(struct qstr *name, struct dentry *base,
+> > +				    struct nameidata *nd);
+> > +
+> > +/*
+> > + * __lookup_union - Given a path from the topmost layer, lookup and
+> > + * revalidate each dentry in its union stack, building it if necessary
+> > + *
+> > + * @nd - nameidata for the parent of @topmost
+> > + * @name - pathname from this element on
+> > + * @topmost - path of the topmost matching dentry
+> > + *
+> > + * Given the nameidata and the path of the topmost dentry for this
+> > + * pathname, lookup, revalidate, and build the associated union stack.
+> > + * @topmost must be either a negative dentry or a directory, and not a
+> > + * whiteout.
+> > + *
+> > + * This function may stomp nd->path with the path of the parent
+> > + * directory of lower layer, so the caller must save nd->path and
+> > + * restore it afterwards.  You probably want to use lookup_union(),
+> > + * not __lookup_union().
+> > + */
+> > +
+> > +static int __lookup_union(struct nameidata *nd, struct qstr *name,
+> > +			  struct path *topmost)
+> > +{
+> > +	struct path parent = nd->path;
+> > +	struct path lower, upper;
+> > +	struct union_dir *ud;
+> > +	/* new_ud is the tail of the list of union dirs for this dentry */
+> 
+> Should new_ud be next_ud, since there is no new_ud defined?
 
-On Fri, Jul 16, 2010 at 11:15 AM, Kulikov Vasiliy <segooon@gmail.com> wrote:
-> If kmalloc() fails exit with -ENOMEM.
->
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> ---
->  fs/cifs/readdir.c |    5 +++++
->  1 files changed, 5 insertions(+), 0 deletions(-)
->
-> diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
-> index daf1753..d5e591f 100644
-> --- a/fs/cifs/readdir.c
-> +++ b/fs/cifs/readdir.c
-> @@ -847,6 +847,11 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
->                end_of_smb = cifsFile->srch_inf.ntwrk_buf_start + max_len;
->
->                tmp_buf = kmalloc(UNICODE_NAME_MAX, GFP_KERNEL);
-> +               if (tmp_buf == NULL) {
-> +                       rc = -ENOMEM;
-> +                       break;
-> +               }
-> +
->                for (i = 0; (i < num_to_fill) && (rc == 0); i++) {
->                        if (current_entry == NULL) {
->                                /* evaluate whether this case is an error */
-> --
-> 1.7.0.4
->
->
+It's also the head of the list.  Good anti-comment, there.  Fixed, thanks!
 
-
-
--- 
-Thanks,
-
-Steve
+-VAL
