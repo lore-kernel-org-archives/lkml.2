@@ -1,60 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755380Ab0GSHcy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 03:32:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20871 "EHLO mx1.redhat.com"
+	id S1755545Ab0GSHgr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 03:36:47 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54046 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752605Ab0GSHcx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 03:32:53 -0400
-Message-ID: <4C43FF73.1070305@redhat.com>
-Date: Mon, 19 Jul 2010 10:32:03 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Ingo Molnar <mingo@elte.hu>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Steven Rostedt <rostedt@rostedt.homelinux.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-        Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-        Johannes Berg <johannes.berg@intel.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Tom Zanussi <tzanussi@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-        Jeremy Fitzhardinge <jeremy@goop.org>,
-        "Frank Ch. Eigler" <fche@redhat.com>, Tejun Heo <htejun@gmail.com>
-Subject: Re: [patch 1/2] x86_64 page fault NMI-safe
-References: <20100714154923.947138065@efficios.com>	<20100714155804.049012415@efficios.com>	<AANLkTiml2uwYqQayTKjMN2gI3LnjVFpwxXkv8GN3McEE@mail.gmail.com>	<20100714170617.GB4955@Krystal>	<AANLkTinLB3gQNKFk9QRfBS8YEfxL3qxZDFw7vWHDOnmL@mail.gmail.com>	<20100714203940.GC22096@Krystal>	<AANLkTinM0eFnreNB5l_6f20oSGBchqAtYPb57tM01kUB@mail.gmail.com>	<20100714222115.GA30122@Krystal>	<AANLkTikLG4xVYfvuMtbuzsqcnzo1ut4dFAm6piqy2Lh7@mail.gmail.com>	<AANLkTin21xBD-BFY4ZX2BPRFnT5-LkgGugvWsvTEP4Mr@mail.gmail.com>	<4C42DF9A.5090908@redhat.com>	<AANLkTin1noI6IUfuQsbAgVVzj2rSOhm-Cx3WpsMBgdJ6@mail.gmail.com>	<4C434223.8030202@redhat.com> <AANLkTinQQoLkCg5ru8X5jtPnpCx2B3JnhcHvg3vm4BFQ@mail.gmail.com>
-In-Reply-To: <AANLkTinQQoLkCg5ru8X5jtPnpCx2B3JnhcHvg3vm4BFQ@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755250Ab0GSHgq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 03:36:46 -0400
+Subject: Re: [PPC64/Power7 - 2.6.35-rc5] Bad relocation warnings while Building a CONFIG_RELOCATABLE kernel with CONFIG_ISERIES enabled
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <1279501889.10390.1834.camel@pasglop>
+Date: Mon, 19 Jul 2010 09:36:39 +0200
+Cc: subrata@linux.vnet.ibm.com, Paul Mackerras <paulus@samba.org>,
+        sachinp <sachinp@linux.vnet.ibm.com>,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
+        Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
+        Paul Mackerras <paulus@au1.ibm.com>, divya.vikas@in.ibm.com
+Content-Transfer-Encoding: 8BIT
+Message-Id: <8C4BCF61-7F5D-4C80-A311-93CF8521FBF5@suse.de>
+References: <1273060251.13463.8.camel@subratamodak.linux.ibm.com> <20100507054034.GB25173@drongo> <1279193743.10707.5.camel@subratamodak.linux.ibm.com> <1279501889.10390.1834.camel@pasglop>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/18/2010 09:22 PM, Linus Torvalds wrote:
-> On Sun, Jul 18, 2010 at 11:04 AM, Avi Kivity<avi@redhat.com>  wrote:
->    
->> Too simple - an MCE will switch to its own stack, failing the test.  Now
->> that we have correctable MCEs, that's not a good idea.
->>      
-> Ahh, true. And I think we do DEBUG traps with IST too.
->
-> So we do need the explicit flag over the region. Too bad. I was hoping
-> to handle the nested case without having to set up the percpu segment
-> (that whole conditional swapgs thing, which is extra painful in NMI).
->    
 
-Well, we have to do that anyway for the non-nested case.  So we just do 
-it before checking whether we're nested or not, and undo it on the popf; 
-retf path.
+On 19.07.2010, at 03:11, Benjamin Herrenschmidt wrote:
 
--- 
-error compiling committee.c: too many arguments to function
+> On Thu, 2010-07-15 at 17:05 +0530, Subrata Modak wrote:
+>> commit e62cee42e66dcca83aae02748535f62e0f564a0c solved the problem for
+>> 2.6.34-rc6. However some other bad relocation warnings generated against
+>> 2.6.35-rc5 on Power7/ppc64 below:
+>> 
+>> MODPOST 2004 modules^M
+>> WARNING: 2 bad relocations^M
+>> c000000000008590 R_PPC64_ADDR32    .text+0x4000000000008460^M
+>> c000000000008594 R_PPC64_ADDR32    .text+0x4000000000008598^M
+> 
+> I think this is KVM + CONFIG_RELOCATABLE. Caused by:
+> 
+> .global kvmppc_trampoline_lowmem
+> kvmppc_trampoline_lowmem:
+> 	.long kvmppc_handler_lowmem_trampoline - CONFIG_KERNEL_START
+> 
+> .global kvmppc_trampoline_enter
+> kvmppc_trampoline_enter:
+> 	.long kvmppc_handler_trampoline_enter - CONFIG_KERNEL_START
+> 
+> Alex, can you turn these into 64-bit on ppc64 so the relocator
+> can grok them ?
+
+If I turn them into 64-bit, will the values be > RMA? In that case things would break anyways. How does relocation work on PPC? Are the first few megs copied over to low memory? Would I have to mask anything in the above code to make sure I use the real values?
+
+Alex
 
