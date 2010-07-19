@@ -1,53 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966475Ab0GSSoQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 14:44:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38243 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966401Ab0GSSoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 14:44:10 -0400
-Message-ID: <4C449CBA.5090703@redhat.com>
-Date: Mon, 19 Jul 2010 14:43:06 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+	id S965388Ab0GSSjt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 14:39:49 -0400
+Received: from g4t0017.houston.hp.com ([15.201.24.20]:26432 "EHLO
+	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S965320Ab0GSSjj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 14:39:39 -0400
+Subject: [PATCH 06/26] cciss: factor out cciss_find_memory_BAR()
+To: axboe@kernel.dk
+From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+Cc: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
+Date: Mon, 19 Jul 2010 13:45:10 -0500
+Message-ID: <20100719184510.7908.93329.stgit@beardog.cce.hp.com>
+In-Reply-To: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
+References: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
-To: Mel Gorman <mel@csn.ul.ie>
-CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Johannes Weiner <hannes@cmpxchg.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background writeback
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie> <1279545090-19169-8-git-send-email-mel@csn.ul.ie>
-In-Reply-To: <1279545090-19169-8-git-send-email-mel@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2010 09:11 AM, Mel Gorman wrote:
-> From: Wu Fengguang<fengguang.wu@intel.com>
->
-> A background flush work may run for ever. So it's reasonable for it to
-> mimic the kupdate behavior of syncing old/expired inodes first.
->
-> This behavior also makes sense from the perspective of page reclaim.
-> File pages are added to the inactive list and promoted if referenced
-> after one recycling. If not referenced, it's very easy for pages to be
-> cleaned from reclaim context which is inefficient in terms of IO. If
-> background flush is cleaning pages, it's best it cleans old pages to
-> help minimise IO from reclaim.
->
-> Signed-off-by: Wu Fengguang<fengguang.wu@intel.com>
-> Signed-off-by: Mel Gorman<mel@csn.ul.ie>
+From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-Acked-by: Rik van Riel <riel@redhat.com>
+cciss: factor out cciss_find_memory_BAR()
 
-It can probably be optimized, but we really need something
-like this...
+Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+---
+ drivers/block/cciss.c |   37 +++++++++++++++++++------------------
+ 1 files changed, 19 insertions(+), 18 deletions(-)
+
+diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
+index bb22a80..9c9c79c 100644
+--- a/drivers/block/cciss.c
++++ b/drivers/block/cciss.c
+@@ -4009,6 +4009,23 @@ static inline bool cciss_board_disabled(ctlr_info_t *h)
+ 	return ((command & PCI_COMMAND_MEMORY) == 0);
+ }
+ 
++static int __devinit cciss_pci_find_memory_BAR(struct pci_dev *pdev,
++	unsigned long *memory_bar)
++{
++	int i;
++
++	for (i = 0; i < DEVICE_COUNT_RESOURCE; i++)
++		if (pci_resource_flags(pdev, i) & IORESOURCE_MEM) {
++			/* addressing mode bits already removed */
++			*memory_bar = pci_resource_start(pdev, i);
++			dev_dbg(&pdev->dev, "memory BAR = %lx\n",
++				*memory_bar);
++			return 0;
++		}
++	dev_warn(&pdev->dev, "no memory BAR found\n");
++	return -ENODEV;
++}
++
+ static int __devinit cciss_pci_init(ctlr_info_t *c)
+ {
+ 	__u32 scratchpad = 0;
+@@ -4052,25 +4069,9 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
+  * else we use the IO-APIC interrupt assigned to us by system ROM.
+  */
+ 	cciss_interrupt_mode(c);
+-
+-	/* find the memory BAR */
+-	for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
+-		if (pci_resource_flags(c->pdev, i) & IORESOURCE_MEM)
+-			break;
+-	}
+-	if (i == DEVICE_COUNT_RESOURCE) {
+-		printk(KERN_WARNING "cciss: No memory BAR found\n");
+-		err = -ENODEV;
++	err = cciss_pci_find_memory_BAR(c->pdev, &c->paddr);
++	if (err)
+ 		goto err_out_free_res;
+-	}
+-
+-	c->paddr = pci_resource_start(c->pdev, i); /* addressing mode bits
+-						 * already removed
+-						 */
+-
+-#ifdef CCISS_DEBUG
+-	printk("address 0 = %lx\n", c->paddr);
+-#endif				/* CCISS_DEBUG */
+ 	c->vaddr = remap_pci_mem(c->paddr, 0x250);
+ 
+ 	/* Wait for the board to become ready.  (PCI hotplug needs this.)
+
