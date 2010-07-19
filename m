@@ -1,233 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933798Ab0GSOF3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 10:05:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4219 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933627Ab0GSOF1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 10:05:27 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100718084824.GA27794@infradead.org>
-References: <20100718084824.GA27794@infradead.org> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org,
-        drepper@redhat.com, torvalds@linux-foundation.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
-Date: Mon, 19 Jul 2010 15:05:08 +0100
-Message-ID: <8363.1279548308@redhat.com>
+	id S933871Ab0GSOJW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 10:09:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62760 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933591Ab0GSOJU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 10:09:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=YOH8LdqQs2ynoe1Z3oeVGT53p+MaprABjWpsDYYw+p5FRlZNfsQTBRq5YWRAaxF3ZI
+         PE8tJ4DrQh9LrZr/5WdyKlZ+YNFlkrGv3a2dpVG8RxQgRTrj5wznYCWn7OjRNiq1vJty
+         uwiLUKeC7g6gvaaLveNNKsYW7PsHcueTGm3vw=
+Subject: Re: [PATCHv2] tcp: fix crash in tcp_xmit_retransmit_queue
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Ilpo =?ISO-8859-1?Q?J=E4rvinen?= <ilpo.jarvinen@helsinki.fi>
+Cc: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>,
+        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
+        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
+In-Reply-To: <alpine.DEB.2.00.1007191319010.13002@wel-95.cs.helsinki.fi>
+References: <4C358AAA.9080400@kernel.org>
+	 <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi>
+	 <4C3EF7EA.2040900@nets.rwth-aachen.de>
+	 <1279195528.2496.2.camel@edumazet-laptop>
+	 <4C3F053F.7090704@nets.rwth-aachen.de>
+	 <alpine.DEB.2.00.1007161448330.13946@melkinpaasi.cs.helsinki.fi>
+	 <4C404FC5.6040107@nets.rwth-aachen.de>
+	 <alpine.DEB.2.00.1007161602510.13946@melkinpaasi.cs.helsinki.fi>
+	 <4C440771.7080107@nets.rwth-aachen.de>
+	 <alpine.DEB.2.00.1007191319010.13002@wel-95.cs.helsinki.fi>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Jul 2010 16:09:15 +0200
+Message-ID: <1279548555.2553.51.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph Hellwig <hch@infradead.org> wrote:
+Le lundi 19 juillet 2010 à 14:16 +0300, Ilpo Järvinen a écrit :
 
-> Adding Uli to the Cc list to make sure this system call is useful
-> for glibc / can be exported by it.  Otherwise it's rather pointless
-> to add it.
+> Thanks for testing.
 > 
-> > (6) BSD stat compatibility: Including more fields from the BSD stat such
-> >     as creation time (st_btime) and inode generation number (st_gen)
-> >     [Jeremy Allison, Bernd Schubert]
+> DaveM, I think this oops was introduced for 2.6.28 (in 
+> 08ebd1721ab8fd362e90ae17b461c07b23fa2824 it seems, to be exact) so to 
+> stables it should go too please. I've only tweaked the message (so no need 
+> for Lennart to retest v2 :-)).
 > 
-> How is this different from (1) and (4)?
-
-A matter of intent, really, and who proposed it.
-
-> > (7) Extra coherency data may be useful in making backups [Andreas Dilger].
+> --
+> [PATCHv2] tcp: fix crash in tcp_xmit_retransmit_queue
 > 
-> What do you mean with that?
-
-There are extra dates and version numbers potentially available.  This may be
-useful in making backups.  Ask Andreas.
-
-> > (8) Allow the filesystem to indicate what it can/cannot provide: A
-> >     filesystem can now say it doesn't support a standard stat feature if
-> >     that isn't available.
+> It can happen that there are no packets in queue while calling
+> tcp_xmit_retransmit_queue(). tcp_write_queue_head() then returns
+> NULL and that gets deref'ed to get sacked into a local var.
 > 
-> What for?
-
-So that you can decide not to use it.  Some of our filesystems fabricate things
-that they don't actually store.
-
-> >  (9) Make the fields a consistent size on all arches, and make them large.
+> There is no work to do if no packets are outstanding so we just
+> exit early.
 > 
-> Why making them large for the sake of it?  We'll need massive changes
-> all through libc and applications to ever make use of this.  So please
-> coordinate the types used with Uli.
-
-Otherwise we end up with #ifdefs and duplicated fields of different sizes
-within stat structs, and fields of "long" types which vary in size, depending
-on the environment.
-
-I just want to make sure that:
-
-       - st_ino is stored as 64-bit
-       - st_size and st_blocks are stored 64-bit
-       - st.{a,b,c,m}time.tv_sec are stored 64-bit
-
-We could probably stand to make st_blksize 32-bit.  I'd quite like to leave
-st_gen as 64-bits and I definitely want to leave st_data_version as 64-bits.
-
-> > The following structures are defined for the use of these new system calls:
-> > 
-> > 	struct xstat_parameters {
-> > 		unsigned long long	request_mask;
-> > 	};
+> This oops was introduced by 08ebd1721ab8fd (tcp: remove tp->lost_out
+> guard to make joining diff nicer).
 > 
-> Just pass this as a single flag by value.  And just make it an unsigned
-> long to make the calling convention a lot simpler.
 
-Already done.
+But prior to commit 08ebd1721ab8fd3, we were not testing
+tp->packets_out, but tp->lost_out
 
-> > 	struct xstat_dev {
-> > 		unsigned int		major, minor;
-> > 	};
-> > 
-> > 	struct xstat_time {
-> > 		unsigned long long	tv_sec, tv_nsec;
-> > 	};
+if it was 0, we were not doing the tcp_for_write_queue_from() loop.
+
+Not sure it makes a difference ?
+
+> Signed-off-by: Ilpo Järvinen <ilpo.jarvinen@helsinki.fi>
+> Reported-by: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
+> Tested-by: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>
+> ---
+>  net/ipv4/tcp_output.c |    3 +++
+>  1 files changed, 3 insertions(+), 0 deletions(-)
 > 
-> No point in adding special types here that aren't genericly useful.
-> Also this is the first and only system call using split major/minor
-> values for the dev_t.  All this just creates more churn than it helps.
+> diff --git a/net/ipv4/tcp_output.c b/net/ipv4/tcp_output.c
+> index b4ed957..7ed9dc1 100644
+> --- a/net/ipv4/tcp_output.c
+> +++ b/net/ipv4/tcp_output.c
+> @@ -2208,6 +2208,9 @@ void tcp_xmit_retransmit_queue(struct sock *sk)
+>  	int mib_idx;
+>  	int fwd_rexmitting = 0;
+>  
+> +	if (!tp->packets_out)
+> +		return;
+> +
+>  	if (!tp->lost_out)
+>  		tp->retransmit_high = tp->snd_una;
+>  
 
-I can perhaps agree on the device numbers, though some filesystems we have can
-store numbers that can't be represented by dev_t.  I think, however, everything
-we have can be handled by a 32:32 split.  The numbers could then be encoded as
-desired in userspace.
 
-The problem with using extant time structs is they use "long" or "unsigned
-long".  And I specifically want to get away from that, since it might be
-32-bits or it might be 64-bits.
-
-> > 
-> > 	struct xstat {
-> > 		unsigned long long	st_result_mask;
-> 
-> Just st_mask?
-
-Perhaps, but it contrasts nicely with request_mask, and makes it easier to
-document.
-
-> > 		unsigned long long	st_data_version;
-> 
-> st version?
-
-Acceptable.
-
-> > 		unsigned long long	st_inode_flags;
-> 
-> 
-> 
-> > The defined bits in request_mask and st_result_mask are:
-> > 
-> > 	XSTAT_REQUEST_MODE		Want/got st_mode
-> > 	XSTAT_REQUEST_NLINK		Want/got st_nlink
-> > 	XSTAT_REQUEST_UID		Want/got st_uid
-> > 	XSTAT_REQUEST_GID		Want/got st_gid
-> > 	XSTAT_REQUEST_RDEV		Want/got st_rdev
-> > 	XSTAT_REQUEST_ATIME		Want/got st_atime
-> > 	XSTAT_REQUEST_MTIME		Want/got st_mtime
-> > 	XSTAT_REQUEST_CTIME		Want/got st_ctime
-> > 	XSTAT_REQUEST_INO		Want/got st_ino
-> > 	XSTAT_REQUEST_SIZE		Want/got st_size
-> > 	XSTAT_REQUEST_BLOCKS		Want/got st_blocks
-> > 	XSTAT_REQUEST__BASIC_STATS	The stuff in the normal stat struct
-> > 	XSTAT_REQUEST_BTIME		Want/got st_btime
-> > 	XSTAT_REQUEST_GEN		Want/got st_gen
-> > 	XSTAT_REQUEST_DATA_VERSION	Want/got st_data_version
-> > 	XSTAT_REQUEST_INODE_FLAGS	Want/got st_inode_flags
-> > 	XSTAT_REQUEST__EXTENDED_STATS	The stuff in the xstat struct
-> > 	XSTAT_REQUEST__ALL_STATS	The defined set of requestables
-> 
-> What's the point of the REQUEST in the name?
-
-Well, they are.
-
-> Also no double underscores inside the identifier.  Instead adding a _MASK
-> postfix for masks would make it a lot more clear.
-
-Perhaps.
-
-> > The defined bits in st_inode_flags are the usual FS_xxx_FL flags in the
-> > LSW, plus some extra flags in the MSW:
-> > 
-> > 	FS_SPECIAL_FL		Special kernel file, such as found in procfs
-> > 	FS_AUTOMOUNT_FL		Specific automount point
-> > 	FS_AUTOMOUNT_ANY_FL	Free-form automount directory
-> > 	FS_REMOTE_FL		File is remote
-> > 	FS_ENCRYPTED_FL		File is encrypted
-> > 	FS_SYSTEM_FL		File is marked system (DOS/NTFS/CIFS)
-> > 	FS_TEMPORARY_FL		File is temporary (NTFS/CIFS)
-> > 	FS_OFFLINE_FL		File is offline (CIFS)
-> 
-> Please don't overload the FL_ namespace even more.  It's already a
-> complete mess given that it overloads the extN on-disk namespace.
-> You're much better off just adding a clean new namespace.
-
-Yeah.  I've been thinking that's probably the better thing to do.
-
-> > The system calls are:
-> > 
-> > 	ssize_t ret = xstat(int dfd,
-> > 			    const char *filename,
-> > 			    unsigned flags,
-> > 			    const struct xstat_parameters *params,
-> > 			    struct xstat *buffer,
-> > 			    size_t buflen);
-> 
-> If you already have a buflen parameter there is absolute no need for
-> the extra results field.  Just define new fields at the end and include
-> them if the bufsize is big enough and it's in the mask of requested
-> fields.
-
-Or, as someone else has already said, return -E2BIG if the result won't fit.
-
-> > The request_mask should be set by the caller to specify extra results that
-> > the caller may desire.  These come in a number of classes:
-> > 
-> >  (0) dev, blksize.
-> > 
-> >      These are local data and are always available.
-> > 
-> >  (1) mode, nlinks, uid, gid, [amc]time, ino, size, blocks.
-> > 
-> >      These will be returned whether the caller asks for them or not.  The
-> >      corresponding bits in result_mask will be set to indicate their
-> >      presence.
-> > 
-> >      If the caller didn't ask for them, then they may be approximated.  For
-> >      example, NFS won't waste any time updating them from the server,
-> >      unless as a byproduct of updating something requested.
-> 
-> Please don't introduce tons of special cases.  Instead use a simple rule
-> like:
->
->  - a filesystem must return all attributes requests, or return an
->    error if it can't.
->  - a filesystem may return additional attributes, the caller can detect
->    this by looking at st_mask.
-> 
-> plus possibly a list of attributes the filesystem must be able to
-> provide if requests.  I don't see a reason to make that mask different
-> from the attributes required by Posix.
-
-Firstly: Lightweight stat: I want to say that the filesystem may return data
-that is out of date if it isn't asked for specifically, but the filesystem has
-a copy available.  But I'm not sure that this should apply to non-standard
-fields.
-
-Secondly: It doesn't matter what POSIX wants; not all filesystems we support
-have everything available.  Where something that's standard is not available,
-we have the opportunity to indicate this, whilst still providing a fabricated
-result, so that the user can take note of this fact if they choose to, whilst
-totally ignoring the indication if they prefer, and just using the fabrication.
-
-Davod
