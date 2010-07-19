@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760738Ab0GSRGu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:06:50 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53562 "EHLO
+	id S1760749Ab0GSRGw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:06:52 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62817 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760720Ab0GSRGo (ORCPT
+	with ESMTP id S1760719Ab0GSRGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Jul 2010 13:06:44 -0400
 From: Eric B Munson <emunson@mgebm.net>
@@ -13,163 +13,30 @@ Cc: mingo@redhat.com, hugh.dickins@tiscali.co.uk, riel@redhat.com,
         peterz@infradead.org, anton@samba.org, hch@infradead.org,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH 1/2] Add trace points to mmap, munmap, and brk
-Date: Mon, 19 Jul 2010 18:06:33 +0100
-Message-Id: <f6a595dfac141397dcac8c29475be73d10f5248c.1279558781.git.emunson@mgebm.net>
+Subject: [PATCH 0/2 V2] Add trace points to [m|mun|mre]map and brk
+Date: Mon, 19 Jul 2010 18:06:32 +0100
+Message-Id: <cover.1279558781.git.emunson@mgebm.net>
 X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1279558781.git.emunson@mgebm.net>
-References: <cover.1279558781.git.emunson@mgebm.net>
-In-Reply-To: <cover.1279558781.git.emunson@mgebm.net>
-References: <cover.1279558781.git.emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds trace points to mmap, munmap, and brk that will report
-relevant addresses and sizes before each function exits successfully.
+This patch set is a resubmit of several patches I sent out earlier that adds
+trace points to the mmap family.  These events report addresses and sizes when
+each function returns success.  They will be used by a userspace tool that will model memory usage.
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
----
- include/trace/events/mm.h |   75 +++++++++++++++++++++++++++++++++++++++++++++
- mm/mmap.c                 |   15 ++++++++-
- 2 files changed, 89 insertions(+), 1 deletions(-)
+Changes from V1:
+- Group mmap, munmap, and brk into first patch (all in mmap.c) and mremap into
+  second (in mremap.c)
+- Use DEFINE_EVENT_CLASS and DEFINE_EVENT for mmap and brk events
+
+Eric B Munson (2):
+  Add trace points to mmap, munmap, and brk
+  Add mremap trace point
+
+ include/trace/events/mm.h |   97 +++++++++++++++++++++++++++++++++++++++++++++
+ mm/mmap.c                 |   15 ++++++-
+ mm/mremap.c               |    4 ++
+ 3 files changed, 115 insertions(+), 1 deletions(-)
  create mode 100644 include/trace/events/mm.h
-
-diff --git a/include/trace/events/mm.h b/include/trace/events/mm.h
-new file mode 100644
-index 0000000..892bbe3
---- /dev/null
-+++ b/include/trace/events/mm.h
-@@ -0,0 +1,75 @@
-+/*
-+ * Copyright (c) 2010, Eric Munson
-+ * All Rights Reserved.
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License as
-+ * published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it would be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write the Free Software Foundation,
-+ * Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
-+ */
-+#undef TRACE_SYSTEM
-+#define TRACE_SYSTEM mm
-+
-+#if !defined(_TRACE_MM_H) || defined(TRACE_HEADER_MULTI_READ)
-+#define _TRACE_MM_H
-+
-+#include <linux/tracepoint.h>
-+
-+DECLARE_EVENT_CLASS(
-+		mm_mmap_class,
-+		TP_PROTO(unsigned long addr, unsigned long len),
-+		TP_ARGS(addr, len),
-+		TP_STRUCT__entry(
-+			__field(unsigned long, addr)
-+			__field(unsigned long, len)
-+		),
-+		TP_fast_assign(
-+			__entry->addr = addr;
-+			__entry->len = len;
-+		),
-+		TP_printk("%lu bytes at 0x%lx\n", __entry->len, __entry->addr)
-+);
-+
-+DEFINE_EVENT(
-+		mm_mmap_class,
-+		mmap,
-+		TP_PROTO(unsigned long addr, unsigned long len),
-+		TP_ARGS(addr, len)
-+);
-+
-+
-+DEFINE_EVENT(
-+		mm_mmap_class,
-+		brk,
-+		TP_PROTO(unsigned long addr, unsigned long len),
-+		TP_ARGS(addr, len)
-+);
-+
-+TRACE_EVENT(
-+		munmap,
-+		TP_PROTO(unsigned long start, size_t len),
-+		TP_ARGS(start, len),
-+		TP_STRUCT__entry(
-+			__field(unsigned long, start)
-+			__field(size_t, len)
-+		),
-+		TP_fast_assign(
-+			__entry->start = start;
-+			__entry->len = len;
-+		),
-+
-+		TP_printk("%u bytes at 0x%lx\n", __entry->len, __entry->start)
-+);
-+
-+#endif /* _TRACE_MM_H */
-+
-+#include <trace/define_trace.h>
-+
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 456ec6f..430ce46 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -29,6 +29,9 @@
- #include <linux/mmu_notifier.h>
- #include <linux/perf_event.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/mm.h>
-+
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
- #include <asm/tlb.h>
-@@ -949,6 +952,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 	unsigned int vm_flags;
- 	int error;
- 	unsigned long reqprot = prot;
-+	unsigned long ret;
- 
- 	/*
- 	 * Does the application expect PROT_READ to imply PROT_EXEC?
-@@ -1074,7 +1078,12 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
- 	if (error)
- 		return error;
- 
--	return mmap_region(file, addr, len, flags, vm_flags, pgoff);
-+	ret = mmap_region(file, addr, len, flags, vm_flags, pgoff);
-+
-+	if(!(ret & ~PAGE_MASK))
-+		trace_mmap(addr,len);
-+
-+	return ret;
- }
- EXPORT_SYMBOL(do_mmap_pgoff);
- 
-@@ -2079,6 +2088,8 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
- 		}
- 	}
- 
-+	trace_munmap(start, len);
-+
- 	/*
- 	 * Remove the vma's, and unmap the actual pages
- 	 */
-@@ -2213,6 +2224,8 @@ out:
- 		if (!mlock_vma_pages_range(vma, addr, addr + len))
- 			mm->locked_vm += (len >> PAGE_SHIFT);
- 	}
-+
-+	trace_brk(addr, len);
- 	return addr;
- }
- 
--- 
-1.7.0.4
 
