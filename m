@@ -1,127 +1,282 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936204Ab0GSPbd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 11:31:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42968 "EHLO mx1.redhat.com"
+	id S936306Ab0GSPcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 11:32:51 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8622 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936033Ab0GSPbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 11:31:31 -0400
+	id S936218Ab0GSPbf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 11:31:35 -0400
 From: Gleb Natapov <gleb@redhat.com>
 To: kvm@vger.kernel.org
 Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
         mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
         hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
         mtosatti@redhat.com
-Subject: [PATCH v5 10/12] Handle async PF in non preemptable context
-Date: Mon, 19 Jul 2010 18:31:00 +0300
-Message-Id: <1279553462-7036-11-git-send-email-gleb@redhat.com>
-In-Reply-To: <1279553462-7036-1-git-send-email-gleb@redhat.com>
-References: <1279553462-7036-1-git-send-email-gleb@redhat.com>
+Subject: [PATCH v5 00/12] KVM: Add host swap event notifications for PV guest
+Date: Mon, 19 Jul 2010 18:30:50 +0300
+Message-Id: <1279553462-7036-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If async page fault is received by idle task or when preemp_count is
-not zero guest cannot reschedule, so do sti; hlt and wait for page to be
-ready. vcpu can still process interrupts while it waits for the page to
-be ready.
+KVM virtualizes guest memory by means of shadow pages or HW assistance
+like NPT/EPT. Not all memory used by a guest is mapped into the guest
+address space or even present in a host memory at any given time.
+When vcpu tries to access memory page that is not mapped into the guest
+address space KVM is notified about it. KVM maps the page into the guest
+address space and resumes vcpu execution. If the page is swapped out
+from host memory vcpu execution is suspended till the page is not swapped
+into the memory again. This is inefficient since vcpu can do other work
+(run other task or serve interrupts) while page gets swapped in.
 
-Acked-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Gleb Natapov <gleb@redhat.com>
----
- arch/x86/kernel/kvm.c |   36 ++++++++++++++++++++++++++++++++----
- 1 files changed, 32 insertions(+), 4 deletions(-)
+To overcome this inefficiency this patch series implements "asynchronous
+page fault" for paravirtualized KVM guests. If a page that vcpu is
+trying to access is swapped out KVM sends an async PF to the vcpu
+and continues vcpu execution. Requested page is swapped in by another
+thread in parallel.  When vcpu gets async PF it puts faulted task to
+sleep until "wake up" interrupt is delivered. When the page is brought
+to the host memory KVM sends "wake up" interrupt and the guest's task
+resumes execution.
 
-diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
-index a6db92e..914b0fc 100644
---- a/arch/x86/kernel/kvm.c
-+++ b/arch/x86/kernel/kvm.c
-@@ -37,6 +37,7 @@
- #include <asm/cpu.h>
- #include <asm/traps.h>
- #include <asm/desc.h>
-+#include <asm/tlbflush.h>
- 
- #define MMU_QUEUE_SIZE 1024
- 
-@@ -68,6 +69,8 @@ struct kvm_task_sleep_node {
- 	wait_queue_head_t wq;
- 	u32 token;
- 	int cpu;
-+	bool halted;
-+	struct mm_struct *mm;
- };
- 
- static struct kvm_task_sleep_head {
-@@ -96,6 +99,11 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
- 	struct kvm_task_sleep_head *b = &async_pf_sleepers[key];
- 	struct kvm_task_sleep_node n, *e;
- 	DEFINE_WAIT(wait);
-+	int cpu, idle;
-+
-+	cpu = get_cpu();
-+	idle = idle_cpu(cpu);
-+	put_cpu();
- 
- 	spin_lock(&b->lock);
- 	e = _find_apf_task(b, token);
-@@ -109,17 +117,31 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
- 
- 	n.token = token;
- 	n.cpu = smp_processor_id();
-+	n.mm = current->active_mm;
-+	n.halted = idle || preempt_count() > 1;
-+	atomic_inc(&n.mm->mm_count);
- 	init_waitqueue_head(&n.wq);
- 	hlist_add_head(&n.link, &b->list);
- 	spin_unlock(&b->lock);
- 
- 	for (;;) {
--		prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
-+		if (!n.halted)
-+			prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
- 		if (hlist_unhashed(&n.link))
- 			break;
--		schedule();
-+
-+		if (!n.halted) {
-+			schedule();
-+		} else {
-+			/*
-+			 * We cannot reschedule. So halt.
-+			 */
-+			native_safe_halt();
-+			local_irq_disable();
-+		}
- 	}
--	finish_wait(&n.wq, &wait);
-+	if (!n.halted)
-+		finish_wait(&n.wq, &wait);
- 
- 	return;
- }
-@@ -127,7 +149,12 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
- static void apf_task_wake_one(struct kvm_task_sleep_node *n)
- {
- 	hlist_del_init(&n->link);
--	if (waitqueue_active(&n->wq))
-+	if (!n->mm)
-+		return;
-+	mmdrop(n->mm);
-+	if (n->halted)
-+		smp_send_reschedule(n->cpu);
-+	else if (waitqueue_active(&n->wq))
- 		wake_up(&n->wq);
- }
- 
-@@ -157,6 +184,7 @@ again:
- 		}
- 		n->token = token;
- 		n->cpu = smp_processor_id();
-+		n->mm = NULL;
- 		init_waitqueue_head(&n->wq);
- 		hlist_add_head(&n->link, &b->list);
- 	} else
--- 
-1.7.1
+To measure performance benefits I use a simple benchmark program (below)
+that starts number of threads. Some of them do work (increment counter),
+others access huge array in random location trying to generate host page
+faults. The size of the array is smaller then guest memory bug bigger
+then host memory so we are guarantied that host will swap out part of
+the array.
 
+Running the benchmark inside guest with 4 cpus 2G memory running in 512M
+container in the host using the command line "./bm -f 4 -w 4 -t 60" (run 4
+faulting threads and 4 working threads for a minute) I get this result:
+
+With async pf:
+start
+worker 0: 63972141051
+worker 1: 65149033299
+worker 2: 66301967246
+worker 3: 63423000989
+total: 258846142585
+
+
+Without async pf:
+start
+worker 0: 30619912622
+worker 1: 33951339266
+worker 2: 31577780093
+worker 3: 33603607972
+total: 129752639953
+
+The gain is 50%.
+
+Perf data look like this:
+With async pf:
+    97.93%       bm  bm                    [.] work_thread
+     1.74%       bm  [kernel.kallsyms]     [k] retint_careful
+     0.10%       bm  [kernel.kallsyms]     [k] _raw_spin_unlock_irq
+     0.08%       bm  bm                    [.] fault_thread
+     0.05%       bm  [kernel.kallsyms]     [k] _raw_spin_unlock_irqrestore
+     0.02%       bm  [kernel.kallsyms]     [k] __do_softirq
+     0.02%       bm  [kernel.kallsyms]     [k] rcu_process_gp_end
+
+Without async pf:
+    63.42%       bm  bm                    [.] work_thread
+    13.64%       bm  [kernel.kallsyms]     [k] __do_softirq
+     8.95%       bm  bm                    [.] fault_thread
+     5.27%       bm  [kernel.kallsyms]     [k] _raw_spin_unlock_irq
+     2.79%       bm  [kernel.kallsyms]     [k] hrtimer_run_pending
+     2.35%       bm  [kernel.kallsyms]     [k] run_timer_softirq
+     1.28%       bm  [kernel.kallsyms]     [k] _raw_spin_lock_irq
+     1.16%       bm  [kernel.kallsyms]     [k] debug_smp_processor_id
+     0.23%       bm  libc-2.10.2.so        [.] random_r
+     0.18%       bm  [kernel.kallsyms]     [k] rcu_bh_qs
+     0.18%       bm  [kernel.kallsyms]     [k] find_busiest_group
+     0.14%       bm  [kernel.kallsyms]     [k] retint_careful
+     0.14%       bm  libc-2.10.2.so        [.] random
+
+Changes:
+ v1->v2
+   Use MSR instead of hypercall.
+   Move most of the code into arch independent place.
+   halt inside a guest instead of doing "wait for page" hypercall if
+    preemption is disabled.
+ v2->v3
+   Use MSR from range 0x4b564dxx.
+   Add slot version tracking.
+   Support migration by restarting all guest processes after migration.
+   Drop patch that tract preemptability for non-preemptable kernels
+    due to performance concerns. Send async PF to non-preemptable
+    guests only when vcpu is executing userspace code.
+ v3->v4
+  Provide alternative page fault handler in PV guest instead of adding hook to
+   standard page fault handler and patch it out on non-PV guests.
+  Allow only limited number of outstanding async page fault per vcpu.
+  Unify  gfn_to_pfn and gfn_to_pfn_async code.
+  Cancel outstanding slow work on reset.
+ v4->v5
+  Move async pv cpu initialization into cpu hotplug notifier.
+  Use GFP_NOWAIT instead of GFP_ATOMIC for allocation that shouldn't sleep
+  Process KVM_REQ_MMU_SYNC even in page_fault_other_cr3() before changing
+   cr3 back
+
+Gleb Natapov (12):
+  Move kvm_smp_prepare_boot_cpu() from kvmclock.c to kvm.c.
+  Add PV MSR to enable asynchronous page faults delivery.
+  Add async PF initialization to PV guest.
+  Provide special async page fault handler when async PF capability is
+    detected
+  Export __get_user_pages_fast.
+  Add get_user_pages() variant that fails if major fault is required.
+  Maintain memslot version number
+  Inject asynchronous page fault into a guest if page is swapped out.
+  Retry fault before vmentry
+  Handle async PF in non preemptable context
+  Let host know whether the guest can handle async PF in non-userspace
+    context.
+  Send async PF when guest is not in userspace too.
+
+ arch/x86/include/asm/kvm_host.h |   27 ++++-
+ arch/x86/include/asm/kvm_para.h |   14 ++
+ arch/x86/include/asm/traps.h    |    1 +
+ arch/x86/kernel/entry_32.S      |   10 ++
+ arch/x86/kernel/entry_64.S      |    3 +
+ arch/x86/kernel/kvm.c           |  280 +++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/kvmclock.c      |   13 +--
+ arch/x86/kvm/Kconfig            |    2 +
+ arch/x86/kvm/mmu.c              |   62 ++++++++-
+ arch/x86/kvm/paging_tmpl.h      |   53 +++++++-
+ arch/x86/kvm/x86.c              |  122 +++++++++++++++++-
+ arch/x86/mm/gup.c               |    2 +
+ fs/ncpfs/mmap.c                 |    2 +
+ include/linux/kvm.h             |    1 +
+ include/linux/kvm_host.h        |   32 +++++
+ include/linux/mm.h              |    5 +
+ include/trace/events/kvm.h      |   60 +++++++++
+ mm/filemap.c                    |    3 +
+ mm/memory.c                     |   31 ++++-
+ mm/shmem.c                      |    8 +-
+ virt/kvm/Kconfig                |    3 +
+ virt/kvm/kvm_main.c             |  266 ++++++++++++++++++++++++++++++++++++-
+ 22 files changed, 966 insertions(+), 34 deletions(-)
+
+=== benchmark.c ===
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+
+#define FAULTING_THREADS 1
+#define WORKING_THREADS 1
+#define TIMEOUT 5
+#define MEMORY 1024*1024*1024
+
+pthread_barrier_t barrier;
+volatile int stop;
+size_t pages;
+
+void *fault_thread(void* p)
+{
+	char *mem = p;
+
+	pthread_barrier_wait(&barrier);
+
+	while (!stop)
+		mem[(random() % pages) << 12] = 10;
+
+	pthread_barrier_wait(&barrier);
+
+	return NULL;
+}
+
+void *work_thread(void* p)
+{
+	unsigned long *i = p;
+
+	pthread_barrier_wait(&barrier);
+
+	while (!stop)
+		(*i)++;
+
+	pthread_barrier_wait(&barrier);
+
+	return NULL;
+}
+
+int main(int argc, char **argv)
+{
+	int ft = FAULTING_THREADS, wt = WORKING_THREADS;
+	unsigned int timeout = TIMEOUT;
+	size_t mem = MEMORY;
+	void *buf;
+	int i, opt, verbose = 0;
+	pthread_t t;
+	pthread_attr_t pattr;
+	unsigned long *res, sum = 0;
+
+	while((opt = getopt(argc, argv, "f:w:m:t:v")) != -1) {
+		switch (opt) {
+		case 'f':
+			ft = atoi(optarg);
+			break;
+		case 'w':
+			wt = atoi(optarg);
+			break;
+		case 'm':
+			mem = atoi(optarg);
+			break;
+		case 't':
+			timeout = atoi(optarg);
+			break;
+		case 'v':
+			verbose++;
+			break;
+		default:
+			fprintf(stderr, "Usage %s [-f num] [-w num] [-m byte] [-t secs]\n", argv[0]);
+			exit(1);
+		}
+	}
+
+	if (verbose)
+		printf("fault=%d work=%d mem=%lu timeout=%d\n", ft, wt, mem, timeout);
+
+	pages = mem >> 12;
+	posix_memalign(&buf, 4096, pages << 12);
+	res = malloc(sizeof (unsigned long) * wt);
+	memset(res, 0, sizeof (unsigned long) * wt);
+
+	pthread_attr_init(&pattr);
+	pthread_barrier_init(&barrier, NULL, ft + wt + 1);
+
+	for (i = 0; i < ft; i++) {
+		pthread_create(&t, &pattr, fault_thread, buf);
+		pthread_detach(t);
+	}
+
+	for (i = 0; i < wt; i++) {
+		pthread_create(&t, &pattr, work_thread, &res[i]);
+		pthread_detach(t);
+	}
+
+	/* prefault memory */
+	memset(buf, 0, pages << 12);
+	printf("start\n");
+
+	pthread_barrier_wait(&barrier);
+
+	pthread_barrier_destroy(&barrier);
+	pthread_barrier_init(&barrier, NULL, ft + wt + 1);
+
+	sleep(timeout);
+	stop = 1;
+
+	pthread_barrier_wait(&barrier);
+
+	for (i = 0; i < wt; i++) {
+		sum += res[i];
+		printf("worker %d: %lu\n", i, res[i]);
+	}
+	printf("total: %lu\n", sum);
+
+	return 0;
+}
