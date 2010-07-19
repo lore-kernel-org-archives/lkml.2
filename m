@@ -1,98 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760428Ab0GSJvs (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 05:51:48 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55010 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760384Ab0GSJvr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 05:51:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=F8pH9ezuOGGGA/fuk1D/xttAh/zQgMfSnhrAFdDKbs4p4UCXZ6Q5THGBU8roCZEBg7
-         CofsSQhnQzfLnafGzwPuRFFq/cvffsGdIS/5Iu5L3mjs0Hph+MBnT5JV9ReW5zDjaxot
-         RzmkZPnQo9oGy2YqGLicsmkgJhg6a8542QuwE=
+	id S1760462Ab0GSKJh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 06:09:37 -0400
+Received: from n10.bullet.mail.ac4.yahoo.com ([76.13.13.238]:39501 "HELO
+	n10.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1760451Ab0GSKJg convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 06:09:36 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 685430.93282.bm@omp125.mail.gq1.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=pacbell.net;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=xxuNX1YO3RdU65OAHmXovQ6l94nSb1XjGVBCPG+pBNDfpnoVQEMHaUkudIXw1KTKJdsExa58/hEVLsZEhlQZg3OsK0RTui78F68J+CbFqaGQSh94IH20dGv4CQsg2fDSZKzZxxRlzFQILjWtJbkxc+Z4ATcPbSB0JNdi+ZDAnpE=;
+Message-ID: <590491.14987.qm@web180309.mail.gq1.yahoo.com>
+X-YMail-OSG: j9UJNAUVM1mgNJ7cbIfnC3RVbftAnPzvPMAEkT24qIDz5Wy
+ FcM79Pau3__RepC_aY3sSHwrTNxoqb5hba_z8QKQ8TkiKA_NVDb2EQ2JWkjN
+ eGZ6sb25c8Y04uoTlHUoakjoIWdZQvtWuyvGr_rd7aGjnMXfXEQZyTZ31XrM
+ AXDeAS8pbbE8jrkMyHw6EgwBX_lOfgVg7KXsuZa53yNQfAUUwGer_N.ZGNyW
+ GafqIfHH9FbO8Unv76twNfoKHWXJXLOzG5OFkgS5LVj37laAsM9BlnvrHUZ1
+ NRonNtHqRYNuDdqLkrUV1ejxqMK3XCQy5HkG9ED3tSBIo3GfJCS81bA--
+X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.104.276605
+Date: Mon, 19 Jul 2010 03:08:36 -0700 (PDT)
+From: David Brownell <david-b@pacbell.net>
+Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
+To: Greg KH <greg@kroah.com>,
+        =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        stable <stable@kernel.org>
+In-Reply-To: <op.vf21vchq7p4s8u@pikus>
 MIME-Version: 1.0
-In-Reply-To: <20100718071716.GA32016@elte.hu>
-References: <1279417736-4396-1-git-send-email-acme@infradead.org>
-	<20100718071716.GA32016@elte.hu>
-Date: Mon, 19 Jul 2010 11:51:45 +0200
-Message-ID: <AANLkTimAkqui3KAO5d3g1UkLHolvqJgFL4lEWEWiT7Af@mail.gmail.com>
-Subject: Re: [GIT PULL 0/3] perf/core improvements
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        linux-kernel@vger.kernel.org, Mike Galbraith <efault@gmx.de>,
-        Paul Mackerras <paulus@samba.org>,
-        Peter Zijlstra <peterz@infradead.org>,
-        Stephane Eranian <eranian@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/18 Ingo Molnar <mingo@elte.hu>:
->
-> * Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
->
->> Hi Ingo,
->>
->>         Please pull from:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf/core
->>
->> Regards,
->>
->> - Arnaldo
->>
->> Arnaldo Carvalho de Melo (3):
->>   perf ui: Make END go to the last entry, not the top of the last page
->>   perf ui: Make ui_browser__run exit on unhandled hot keys
->>   perf hists: Factor out duplicated code
->>
->>  tools/perf/util/hist.c |   36 ++++++++++++++++++------------------
->>  tools/perf/util/newt.c |   14 +++++---------
->>  2 files changed, 23 insertions(+), 27 deletions(-)
->
-> Pulled, thanks Arnaldo!
->
-> FYI, i'm still seeing problems with 'perf report --parent xyz' functionality,
-> as the Newt interface segfaults:
+
+> Â  It in no way duplicates functionality of
+> the composite layer.
+
+Beyond the obvious "Set serial number" ...
 
 
-Hmm, I've fixed the --parent thing in ascii but did not test with newt.
-I hope I haven't added some breakage with this fix :-s
+> As a matter of fact, without
+> this patch, the
+> iSerialNumber module parameter won't work
 
-I'll have a look.
+So submit a bugfix for that alone, making it
+work everywhere... 
+
+> (not tested, just looked at the code).
+
+Do you know when it broke?  That code has been
+tested in the past, and observed to work.  So if
+it's not working now, someone broke it and that
+should just be fixed.
 
 
->
-> #0  0x00007ffff7dddcdb in ?? () from /usr/lib64/libnewt.so.0.52
-> #1  0x00007ffff7dd5ab6 in ?? () from /usr/lib64/libnewt.so.0.52
-> #2  0x00007ffff7dd5260 in ?? () from /usr/lib64/libnewt.so.0.52
-> #3  0x00007ffff7dd61ff in newtFormRun () from /usr/lib64/libnewt.so.0.52
-> #4  0x00000000004552a1 in hists__browse (self=0xa302b0, helpline=<value optimized out>,
->    ev_name=0x4e5dde "cycles") at util/newt.c:968
-> #5  0x0000000000455bc0 in hists__tui_browse_tree (self=<value optimized out>,
->    help=0x4e0710 "For a higher level overview, try: perf report --sort comm,dso")
->    at util/newt.c:1142
-> #6  0x00000000004109e3 in __cmd_report (argc=<value optimized out>, argv=<value optimized out>,
->    prefix=<value optimized out>) at builtin-report.c:346
-> #7  cmd_report (argc=<value optimized out>, argv=<value optimized out>,
->    prefix=<value optimized out>) at builtin-report.c:508
-> #8  0x0000000000406188 in run_builtin (p=0x722590, argc=3, argv=0x7fffffffe570) at perf.c:286
-> #9  0x0000000000406be6 in handle_internal_command (argc=3, argv=0x7fffffffe570) at perf.c:357
-> #10 run_argv (argc=3, argv=0x7fffffffe570) at perf.c:401
-> #11 main (argc=3, argv=0x7fffffffe570) at perf.c:487
->
-> newt-0.52.11-2.fc13.x86_64
->
-> perf version 2.6.35.rc5.1194.g16950e5
->
-> Thanks,
->
->        Ingo
->
+
+> The second patch (by Yann Cantin) adds a serial module
+> parameter to
+> the File Storage Gadget.Â  FSG is not a composite
+> gadget 
+
+OK, so it should add a module param with the same
+name as used elsewhere ... makes sense to me.  If
+Alan Acks that patch, go for it.
+
+- Dave
+
+
