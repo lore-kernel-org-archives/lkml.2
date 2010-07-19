@@ -1,74 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966342Ab0GSSo6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 14:44:58 -0400
-Received: from g4t0017.houston.hp.com ([15.201.24.20]:26532 "EHLO
-	g4t0017.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965267Ab0GSSjy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 14:39:54 -0400
-Subject: [PATCH 09/26] cciss: fix leak of ioremapped memory
-To: axboe@kernel.dk
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
-Date: Mon, 19 Jul 2010 13:45:26 -0500
-Message-ID: <20100719184526.7908.43912.stgit@beardog.cce.hp.com>
-In-Reply-To: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
-References: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	id S966475Ab0GSSoQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 14:44:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38243 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S966401Ab0GSSoK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 14:44:10 -0400
+Message-ID: <4C449CBA.5090703@redhat.com>
+Date: Mon, 19 Jul 2010 14:43:06 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Mel Gorman <mel@csn.ul.ie>
+CC: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Johannes Weiner <hannes@cmpxchg.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background writeback
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie> <1279545090-19169-8-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <1279545090-19169-8-git-send-email-mel@csn.ul.ie>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+On 07/19/2010 09:11 AM, Mel Gorman wrote:
+> From: Wu Fengguang<fengguang.wu@intel.com>
+>
+> A background flush work may run for ever. So it's reasonable for it to
+> mimic the kupdate behavior of syncing old/expired inodes first.
+>
+> This behavior also makes sense from the perspective of page reclaim.
+> File pages are added to the inactive list and promoted if referenced
+> after one recycling. If not referenced, it's very easy for pages to be
+> cleaned from reclaim context which is inefficient in terms of IO. If
+> background flush is cleaning pages, it's best it cleans old pages to
+> help minimise IO from reclaim.
+>
+> Signed-off-by: Wu Fengguang<fengguang.wu@intel.com>
+> Signed-off-by: Mel Gorman<mel@csn.ul.ie>
 
-cciss: fix leak of ioremapped memory
-in cciss_pci_init error path.
+Acked-by: Rik van Riel <riel@redhat.com>
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- drivers/block/cciss.c |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index c297d31..b702471 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -4114,6 +4114,10 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
- 	if (err)
- 		goto err_out_free_res;
- 	c->vaddr = remap_pci_mem(c->paddr, 0x250);
-+	if (!c->vaddr) {
-+		err = -ENOMEM;
-+		goto err_out_free_res;
-+	}
- 	err = cciss_wait_for_board_ready(c);
- 	if (err)
- 		goto err_out_free_res;
-@@ -4198,6 +4202,12 @@ err_out_free_res:
- 	 * Deliberately omit pci_disable_device(): it does something nasty to
- 	 * Smart Array controllers that pci_enable_device does not undo
- 	 */
-+	if (c->transtable)
-+		iounmap(c->transtable);
-+	if (c->cfgtable)
-+		iounmap(c->cfgtable);
-+	if (c->vaddr)
-+		iounmap(c->vaddr);
- 	pci_release_regions(c->pdev);
- 	return err;
- }
-@@ -4745,6 +4755,8 @@ static void __devexit cciss_remove_one(struct pci_dev *pdev)
- 		pci_disable_msi(hba[i]->pdev);
- #endif				/* CONFIG_PCI_MSI */
- 
-+	iounmap(hba[i]->transtable);
-+	iounmap(hba[i]->cfgtable);
- 	iounmap(hba[i]->vaddr);
- 
- 	pci_free_consistent(hba[i]->pdev, hba[i]->nr_cmds * sizeof(CommandList_struct),
-
+It can probably be optimized, but we really need something
+like this...
