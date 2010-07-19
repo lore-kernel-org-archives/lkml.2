@@ -1,69 +1,175 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760713Ab0GSRGe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:06:34 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:58032 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753705Ab0GSRGd (ORCPT
+	id S1760738Ab0GSRGu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:06:50 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53562 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760720Ab0GSRGo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:06:33 -0400
-Date: Mon, 19 Jul 2010 13:06:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
-Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
-In-Reply-To: <op.vf3mmwoa7p4s8u@pikus>
-Message-ID: <Pine.LNX.4.44L0.1007191256480.1657-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 19 Jul 2010 13:06:44 -0400
+From: Eric B Munson <emunson@mgebm.net>
+To: akpm@linux-foundation.org
+Cc: mingo@redhat.com, hugh.dickins@tiscali.co.uk, riel@redhat.com,
+        peterz@infradead.org, anton@samba.org, hch@infradead.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Eric B Munson <emunson@mgebm.net>
+Subject: [PATCH 1/2] Add trace points to mmap, munmap, and brk
+Date: Mon, 19 Jul 2010 18:06:33 +0100
+Message-Id: <f6a595dfac141397dcac8c29475be73d10f5248c.1279558781.git.emunson@mgebm.net>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <cover.1279558781.git.emunson@mgebm.net>
+References: <cover.1279558781.git.emunson@mgebm.net>
+In-Reply-To: <cover.1279558781.git.emunson@mgebm.net>
+References: <cover.1279558781.git.emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jul 2010, [utf-8] Michał Nazarewicz wrote:
+This patch adds trace points to mmap, munmap, and brk that will report
+relevant addresses and sizes before each function exits successfully.
 
-> >>> I have lost track of the current state of that patch.  When you finish
-> >>> updating it, please post it for my review.
-> 
-> > On Mon, 19 Jul 2010, Michal‚ Nazarewicz wrote:
-> >> This is still the v3 patchset (only the first two should be of
-> >> interest to you), still want me to resend?
-> 
-> On Mon, 19 Jul 2010 18:14:01 +0200, Alan Stern wrote:
-> > Or provide a URL for them in the mailing list archives.
-> 
-> 1/3: http://lkml.org/lkml/2010/7/8/317
-> 	Adds serial to mass storage gadget and g_multi introducing
-> 	fsg_string_serial_fill() macro used by abovementioned
-> 	gadgets and file storage gadget.
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+---
+ include/trace/events/mm.h |   75 +++++++++++++++++++++++++++++++++++++++++++++
+ mm/mmap.c                 |   15 ++++++++-
+ 2 files changed, 89 insertions(+), 1 deletions(-)
+ create mode 100644 include/trace/events/mm.h
 
-Ah, yes.  My personal taste would be to write fsg_string_serial_fill_n 
-as an inline routine instead of as a macro, and not try to make it 
-separate from fsg_string_serial_fill.
-
-> 2/3: http://lkml.org/lkml/2010/7/8/318
-> 	Modification of Yann Cantin's patch, delta in comment for 1/3.
-
-I have only one objection to this patch: The new parameter's name 
-should be "serial", not "serial_parm".  (Compare it to all the other 
-parameter names.)
-
-> 3/3: http://lkml.org/lkml/2010/7/8/316
-> 	Modification of patch for earlier patch for g_multi.  Dunno if
-> 	you want to look at it.  Providing URL for completeness.
-
-No comment on that one.
-
-As for the discussion between you and David...  I haven't tried to 
-follow the details very carefully.  I get the impression that the two 
-of you are talking past each other instead of coming to grips with a 
-genuine issue.
-
-Alan Stern
+diff --git a/include/trace/events/mm.h b/include/trace/events/mm.h
+new file mode 100644
+index 0000000..892bbe3
+--- /dev/null
++++ b/include/trace/events/mm.h
+@@ -0,0 +1,75 @@
++/*
++ * Copyright (c) 2010, Eric Munson
++ * All Rights Reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License as
++ * published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it would be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write the Free Software Foundation,
++ * Inc.,  51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
++ */
++#undef TRACE_SYSTEM
++#define TRACE_SYSTEM mm
++
++#if !defined(_TRACE_MM_H) || defined(TRACE_HEADER_MULTI_READ)
++#define _TRACE_MM_H
++
++#include <linux/tracepoint.h>
++
++DECLARE_EVENT_CLASS(
++		mm_mmap_class,
++		TP_PROTO(unsigned long addr, unsigned long len),
++		TP_ARGS(addr, len),
++		TP_STRUCT__entry(
++			__field(unsigned long, addr)
++			__field(unsigned long, len)
++		),
++		TP_fast_assign(
++			__entry->addr = addr;
++			__entry->len = len;
++		),
++		TP_printk("%lu bytes at 0x%lx\n", __entry->len, __entry->addr)
++);
++
++DEFINE_EVENT(
++		mm_mmap_class,
++		mmap,
++		TP_PROTO(unsigned long addr, unsigned long len),
++		TP_ARGS(addr, len)
++);
++
++
++DEFINE_EVENT(
++		mm_mmap_class,
++		brk,
++		TP_PROTO(unsigned long addr, unsigned long len),
++		TP_ARGS(addr, len)
++);
++
++TRACE_EVENT(
++		munmap,
++		TP_PROTO(unsigned long start, size_t len),
++		TP_ARGS(start, len),
++		TP_STRUCT__entry(
++			__field(unsigned long, start)
++			__field(size_t, len)
++		),
++		TP_fast_assign(
++			__entry->start = start;
++			__entry->len = len;
++		),
++
++		TP_printk("%u bytes at 0x%lx\n", __entry->len, __entry->start)
++);
++
++#endif /* _TRACE_MM_H */
++
++#include <trace/define_trace.h>
++
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 456ec6f..430ce46 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -29,6 +29,9 @@
+ #include <linux/mmu_notifier.h>
+ #include <linux/perf_event.h>
+ 
++#define CREATE_TRACE_POINTS
++#include <trace/events/mm.h>
++
+ #include <asm/uaccess.h>
+ #include <asm/cacheflush.h>
+ #include <asm/tlb.h>
+@@ -949,6 +952,7 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+ 	unsigned int vm_flags;
+ 	int error;
+ 	unsigned long reqprot = prot;
++	unsigned long ret;
+ 
+ 	/*
+ 	 * Does the application expect PROT_READ to imply PROT_EXEC?
+@@ -1074,7 +1078,12 @@ unsigned long do_mmap_pgoff(struct file *file, unsigned long addr,
+ 	if (error)
+ 		return error;
+ 
+-	return mmap_region(file, addr, len, flags, vm_flags, pgoff);
++	ret = mmap_region(file, addr, len, flags, vm_flags, pgoff);
++
++	if(!(ret & ~PAGE_MASK))
++		trace_mmap(addr,len);
++
++	return ret;
+ }
+ EXPORT_SYMBOL(do_mmap_pgoff);
+ 
+@@ -2079,6 +2088,8 @@ int do_munmap(struct mm_struct *mm, unsigned long start, size_t len)
+ 		}
+ 	}
+ 
++	trace_munmap(start, len);
++
+ 	/*
+ 	 * Remove the vma's, and unmap the actual pages
+ 	 */
+@@ -2213,6 +2224,8 @@ out:
+ 		if (!mlock_vma_pages_range(vma, addr, addr + len))
+ 			mm->locked_vm += (len >> PAGE_SHIFT);
+ 	}
++
++	trace_brk(addr, len);
+ 	return addr;
+ }
+ 
+-- 
+1.7.0.4
 
