@@ -1,84 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888Ab0GSAZm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 20:25:42 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44184 "EHLO smtps.tip.net.au"
+	id S1757877Ab0GSAj5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 20:39:57 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:45819 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757772Ab0GSAZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 20:25:26 -0400
-Date: Mon, 19 Jul 2010 10:25:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Suresh Jayaraman <sjayaraman@suse.de>,
-        Steve French <sfrench@us.ibm.com>, <linux-cifs@vger.kernel.org>
-Subject: linux-next: build failure after merge of the vfs tree
-Message-Id: <20100719102520.a2d4f103.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1757803Ab0GSAj4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 20:39:56 -0400
+Message-ID: <4C439ED5.8010002@kernel.dk>
+Date: Sun, 18 Jul 2010 18:39:49 -0600
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: Martin Pirker <lkml.collector@gmail.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: 2.6.35-rc5 inconsistent lock state
+References: <AANLkTikDF0TL6OyPVCzPlUTwxFehcrETn3ysgSSeTq92@mail.gmail.com>	<201007142304.48660.rjw@sisk.pl>	<AANLkTin5Bj6HEEriLVFDQKptrZHmh698TsnMWHzVYt5H@mail.gmail.com>	<4C42099C.3070708@kernel.dk> <AANLkTikk_UNVoo9CC9DhCSwiI5mEB3j1RrXqqOPdei1L@mail.gmail.com>
+In-Reply-To: <AANLkTikk_UNVoo9CC9DhCSwiI5mEB3j1RrXqqOPdei1L@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Al,
+On 07/18/2010 11:56 AM, Martin Pirker wrote:
+> On Sat, Jul 17, 2010 at 9:50 PM, Jens Axboe <axboe@kernel.dk> wrote:
+>> Can anyone try this completed untested patch?
+>>
+>> diff --git a/block/blk-core.c b/block/blk-core.c
+>> index 5ab3ac2..a108b8e 100644
+> ....
+> 
+> /usr/src/linux-2.6.35-rc5 # patch -p1 <jens.patch
+> patching file block/blk-core.c
+> Hunk #1 FAILED at 451.
+> Hunk #2 FAILED at 515.
+> 2 out of 2 hunks FAILED -- saving rejects to file block/blk-core.c.rej
+> patching file include/linux/backing-dev.h
+> Hunk #1 FAILED at 84.
+> 1 out of 1 hunk FAILED -- saving rejects to file include/linux/backing-dev.h.rej
+> patching file include/linux/writeback.h
+> patching file mm/page-writeback.c
+> Hunk #1 FAILED at 698.
+> Hunk #2 FAILED at 719.
+> Hunk #3 FAILED at 739.
+> 3 out of 3 hunks FAILED -- saving rejects to file mm/page-writeback.c.rej
+> 
+> 
+> ummmm.... help?
 
-After merging the vfs tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
-
-fs/cifs/cifsfs.c:498: error: unknown field 'clear_inode' specified in initializer
-
-Caused by commit 139f224817a203ff434eda5e6d3f457bc1579f27 ("cifs: define
-inode-level cache object and register them") from the cifs tree
-interacting with commit a8036d5aec0547a2bd7e3040c69bd172e474d860
-("convert remaining ->clear_inode() to ->evict_inode()") from the vfs
-tree.
-
-I added the following merge fix patch (by effectively copy and paste from
-some of the other file system fixups in the vfs commit).  I have no idea
-if this is correct - someone should check.  I can carry this patch as
-necessary.
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Mon, 19 Jul 2010 10:15:47 +1000
-Subject: [PATCH] cifs: fix for clear_inode -> evict_inode API change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- fs/cifs/cifsfs.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-index ba893b9..2fc5ed1 100644
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -330,8 +330,10 @@ cifs_destroy_inode(struct inode *inode)
- }
- 
- static void
--cifs_clear_inode(struct inode *inode)
-+cifs_evict_inode(struct inode *inode)
- {
-+	truncate_inode_pages(&inode->i_data, 0);
-+	end_writeback(inode);
- 	cifs_fscache_release_inode_cookie(inode);
- }
- 
-@@ -495,7 +497,7 @@ static const struct super_operations cifs_super_ops = {
- 	.alloc_inode = cifs_alloc_inode,
- 	.destroy_inode = cifs_destroy_inode,
- 	.drop_inode	= cifs_drop_inode,
--	.clear_inode	= cifs_clear_inode,
-+	.evict_inode	= cifs_evict_inode,
- /*	.delete_inode	= cifs_delete_inode,  */  /* Do not need above
- 	function unless later we add lazy close of inodes or unless the
- 	kernel forgets to call us with the same number of releases (closes)
--- 
-1.7.1
-
+Oh, the patch is for the next branches. I'll see if I can fiddle it into
+.35-rcX
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Jens Axboe
+
