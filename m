@@ -1,170 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966687Ab0GSUUg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 16:20:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38046 "EHLO mx1.redhat.com"
+	id S966716Ab0GSUbP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 16:31:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27256 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966644Ab0GSUUf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 16:20:35 -0400
-Date: Mon, 19 Jul 2010 16:20:24 -0400
+	id S966644Ab0GSUbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 16:31:13 -0400
+Date: Mon, 19 Jul 2010 16:31:09 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
-        dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
-Subject: Re: [PATCH 2/3] cfq-iosched: Implement a new tunable group_idle
-Message-ID: <20100719202024.GD32503@redhat.com>
-References: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
- <1279560008-2905-3-git-send-email-vgoyal@redhat.com>
- <x49iq4bti1q.fsf@segfault.boston.devel.redhat.com>
+Cc: Corrado Zoccolo <czoccolo@gmail.com>, axboe@kernel.dk,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
+Message-ID: <20100719203109.GE32503@redhat.com>
+References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
+ <x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
+ <AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
+ <x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
+ <AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
+ <x49eif7p3z0.fsf@segfault.boston.devel.redhat.com>
+ <20100713195650.GA21044@redhat.com>
+ <x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
+ <20100713204236.GB21044@redhat.com>
+ <x4939vfv4i0.fsf@segfault.boston.devel.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <x49iq4bti1q.fsf@segfault.boston.devel.redhat.com>
+In-Reply-To: <x4939vfv4i0.fsf@segfault.boston.devel.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 02:58:41PM -0400, Jeff Moyer wrote:
+On Mon, Jul 19, 2010 at 12:08:23PM -0400, Jeff Moyer wrote:
 > Vivek Goyal <vgoyal@redhat.com> writes:
 > 
-> > o Implement a new tunable group_idle, which allows idling on the group
-> >   instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
-> >   on the individual queues but idle on the group. This way on fast storage
-> >   we can get fairness between groups at the same time overall throughput
-> >   improves.
+> > On Tue, Jul 13, 2010 at 04:30:23PM -0400, Jeff Moyer wrote:
+> >> Vivek Goyal <vgoyal@redhat.com> writes:
+> 
+> > I don't mind looking at traces. Do let me know where can I access those.
+> 
+> Forwarded privately.
+> 
+> >> Now, to answer your question, the jbd2 thread runs and issues a barrier,
+> >> which causes a forced dispatch of requests.  After that a new queue is
+> >> selected, and since the fs_mark thread is blocked on the journal commit,
+> >> it's always the fio process that gets to run.
 > >
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > ---
-> >  block/cfq-iosched.c |   60 +++++++++++++++++++++++++++++++++++++++++++++------
-> >  1 files changed, 53 insertions(+), 7 deletions(-)
+> > Ok, that explains it.  So somehow after the barrier, fio always wins
+> > as issues next read request before the fs_mark is able to issue the
+> > next set of writes.
 > >
-> > diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> > index f44064c..b23d7f4 100644
-> > --- a/block/cfq-iosched.c
-> > +++ b/block/cfq-iosched.c
-> > @@ -30,6 +30,7 @@ static const int cfq_slice_sync = HZ / 10;
-> >  static int cfq_slice_async = HZ / 25;
-> >  static const int cfq_slice_async_rq = 2;
-> >  static int cfq_slice_idle = HZ / 125;
-> > +static int cfq_group_idle = HZ / 125;
-> >  static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
-> >  static const int cfq_hist_divisor = 4;
-> >  
-> > @@ -198,6 +199,8 @@ struct cfq_group {
-> >  	struct hlist_node cfqd_node;
-> >  	atomic_t ref;
-> >  #endif
-> > +	/* number of requests that are on the dispatch list or inside driver */
-> > +	int dispatched;
-> >  };
-> >  
-> >  /*
-> > @@ -271,6 +274,7 @@ struct cfq_data {
-> >  	unsigned int cfq_slice[2];
-> >  	unsigned int cfq_slice_async_rq;
-> >  	unsigned int cfq_slice_idle;
-> > +	unsigned int cfq_group_idle;
-> >  	unsigned int cfq_latency;
-> >  	unsigned int cfq_group_isolation;
-> >  
-> > @@ -1856,6 +1860,9 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
-> >  	BUG_ON(!service_tree);
-> >  	BUG_ON(!service_tree->count);
-> >  
-> > +	if (!cfqd->cfq_slice_idle)
-> > +		return false;
-> > +
-> >  	/* We never do for idle class queues. */
-> >  	if (prio == IDLE_WORKLOAD)
-> >  		return false;
-> > @@ -1880,7 +1887,7 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
-> >  {
-> >  	struct cfq_queue *cfqq = cfqd->active_queue;
-> >  	struct cfq_io_context *cic;
-> > -	unsigned long sl;
-> > +	unsigned long sl, group_idle = 0;
-> >  
-> >  	/*
-> >  	 * SSD device without seek penalty, disable idling. But only do so
-> > @@ -1896,8 +1903,13 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
-> >  	/*
-> >  	 * idle is disabled, either manually or by past process history
-> >  	 */
-> > -	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq))
-> > -		return;
-> > +	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq)) {
+> >> 
+> >> This, of course, raises the question of why the blk_yield patches didn't
+> >> run into the same problem.  Looking back at some saved traces, I don't
+> >> see WBS (write barrier sync) requests, so I wonder if barriers weren't
+> >> supported by my last storage system.
+> >
+> > I think that blk_yield patches will also run into the same issue if
+> > barriers are enabled.
 > 
-> The check for cfqd->cfq_slice_idle is now redundant (as it's done in
-> cfq_should_idle).
-
-Yep. I will get rid of extra check.
-
+> Agreed.
 > 
-> > @@ -2215,7 +2236,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
-> >  			cfqq = NULL;
-> >  			goto keep_queue;
-> >  		} else
-> > -			goto expire;
-> > +			goto check_group_idle;
-> >  	}
-> >  
-> >  	/*
-> > @@ -2249,6 +2270,17 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
-> >  		goto keep_queue;
-> >  	}
-> >  
-> > +	/*
-> > +	 * If group idle is enabled and there are requests dispatched from
-> > +	 * this group, wait for requests to complete.
-> > +	 */
-> > +check_group_idle:
-> > +	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
-> > +	    && cfqq->cfqg->dispatched) {
-> > +		cfqq = NULL;
-> > +		goto keep_queue;
-> > +	}
+> Here are the results again with barriers disabled for Corrado's patch:
 > 
-> I really wish we could roll all of this logic into cfq_should_idle.
-
-Currently whether to idle on queue or not logic is also part of select_queue().
-So to keep it same it makes sense to keep group logic also in select_queue().
-
+> fs_mark: 348.2 files/sec
+> fio: 53324.6 KB/s
 > 
-> > @@ -3420,7 +3453,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
-> >  		 * the queue.
-> >  		 */
-> >  		if (cfq_should_wait_busy(cfqd, cfqq)) {
-> > -			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
-> > +			unsigned long extend_sl = cfqd->cfq_slice_idle;
-> > +			if (!cfqd->cfq_slice_idle)
-> > +				extend_sl = cfqd->cfq_group_idle;
-> > +			cfqq->slice_end = jiffies + extend_sl;
+> Remember that deadline was seeing 450 files/sec and 78 MB/s.  So, in
+> this case, the buffered reader appears to be starved.  Looking into this
+> further, I found that the journal thread is running with I/O priority 0,
+> while the fio and fs_mark processes are running at the default (4).
+> Because the jbd thread has a higher I/O priority, its requests are
+> always closer to the front of the sort list, and thus the sync-noidle
+> workload is chosen more often than the sync workload.  This essentially
+> results in an elevated I/O priority for the fs_mark process as well.
+> While troubling, that problem is not directly related to the problem
+> we're looking at.
 > 
-> So, if slice_idle and group_idle are both set, slice_idle trumps
-> group_idle?  Did you give that case any thought?  If it doesn't make
-> sense to configure both, then we should probably make sure they can't
-> both be set.
+> So, I'm still in favor of Corrado's approach.  Are there any remaining
+> dissenting opinions on this?
 
-Actually, the wait busy logic makes sense in case of slice_idle, where we
-can give an extended slice to a queue and to make sure a queue/group does
-not get deleted immediately after completing the slice and hence losing
-the share.
+Nope. I am fine with moving all WRITE_SYNC with RQ_NOIDLE to sync-noidle
+tree and also marking jbd writes as WRITE_SYNC. By bringing dependent
+threads on single service tree, we don't have to worry about slice
+yielding.
 
-Now in case of slice_idle=0, if there is only one queue in the group then
-it becomes the same case as one queue in the group with slice_idle=8.
-
-So yes, slice_idle trumps group_idle. group_idle kicks in only if
-slice_idle=0. I think by default it being set it does not harm. What good
-it will do if slice_idle=8 and group_idle=0. Instead it will become
-more work for user to also set one more tunable if he plans to set
-slice_idle=0.
+Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
 Thanks
 Vivek
-
-
-
-> 
-> Cheers,
-> Jeff
