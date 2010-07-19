@@ -1,127 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965648Ab0GSSrh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 14:47:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20045 "EHLO mx1.redhat.com"
+	id S965403Ab0GSSux (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 14:50:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39619 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965204Ab0GSSre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 14:47:34 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
-        dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
-Subject: Re: [PATCH 1/3] cfq-iosched: Improve time slice charging logic
-References: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
-	<1279560008-2905-2-git-send-email-vgoyal@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Mon, 19 Jul 2010 14:47:20 -0400
-In-Reply-To: <1279560008-2905-2-git-send-email-vgoyal@redhat.com> (Vivek
-	Goyal's message of "Mon, 19 Jul 2010 13:20:06 -0400")
-Message-ID: <x49mxtntikn.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S934942Ab0GSSuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 14:50:50 -0400
+Date: Mon, 19 Jul 2010 14:50:20 -0400
+From: Jeff Layton <jlayton@redhat.com>
+To: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+Cc: Kulikov Vasiliy <segooon@gmail.com>, kernel-janitors@vger.kernel.org,
+        Steve French <sfrench@samba.org>, Tejun Heo <tj@kernel.org>,
+        Joe Perches <joe@perches.com>, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 10/15] fs: cifs: check kmalloc() result
+Message-ID: <20100719145020.205ece82@tlielax.poochiereds.net>
+In-Reply-To: <1279298130.26876.12.camel@shaggy-w500>
+References: <1279296925-25147-1-git-send-email-segooon@gmail.com>
+	<1279298130.26876.12.camel@shaggy-w500>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
+On Fri, 16 Jul 2010 11:35:30 -0500
+Dave Kleikamp <shaggy@linux.vnet.ibm.com> wrote:
 
-> - Currently in CFQ there are many situations where don't know how
->   much time slice has been consumed by a queue. For example, all
->   the random reader/writer queues where we don't idle on
->   individual queues and we expire the queue either immediately
->   after the request dispatch.
->
-> - In this case time consumed by a queue is just a memory copy
->   operation. Actually time measurement is possible only if we
->   idle on a queue and allow dispatch from a queue for significant
->   amount of time.
->
-> - As of today, in such cases we calculate the time since the
->   dispatch from the queue started and charge all that time.
->   Generally this rounds to 1 jiffy but in some cases it can
->   be more. For example, if we are driving high request queue
->   depth and driver is too busy and does not ask for new
->   requests for 8-10 jiffies. In such cases, the active queue
->   gets charged very unfairly.
->
-> - So fundamentally, whole notion of charging for time slice
->   is valid only if we have been idling on the queue. Otherwise
->   in an NCQ queue, there might be other requests on the queue
->   and we can not do the time slice calculation.
->
-> - This patch tweaks the slice charging logic a bit so that
->   in the cases where we can't know the amount of time, we
->   start charging in terms of number of requests dispatched
->   (IOPS). This practically switching CFQ fairness model to
->   fairness in terms of IOPS with slice_idle=0.
->
-> - As of today this will primarily be useful only with
->   group_idle patches so that we get fairness in terms of
->   IOPS across groups. The idea is that on fast storage
->   one can run CFQ with slice_idle=0 and still get IO
->   controller working without losing too much of
->   throughput.
+> On Fri, 2010-07-16 at 20:15 +0400, Kulikov Vasiliy wrote:
+> > If kmalloc() fails exit with -ENOMEM.
+> 
+> Looks good to me.  Add my ack if you want it.
+> 
+> > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+> 
+> Acked-by: Dave Kleikamp <shaggy@linux.vnet.ibm.com>
+> 
+> > ---
+> >  fs/cifs/readdir.c |    5 +++++
+> >  1 files changed, 5 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/fs/cifs/readdir.c b/fs/cifs/readdir.c
+> > index daf1753..d5e591f 100644
+> > --- a/fs/cifs/readdir.c
+> > +++ b/fs/cifs/readdir.c
+> > @@ -847,6 +847,11 @@ int cifs_readdir(struct file *file, void *direntry, filldir_t filldir)
+> >  		end_of_smb = cifsFile->srch_inf.ntwrk_buf_start + max_len;
+> > 
+> >  		tmp_buf = kmalloc(UNICODE_NAME_MAX, GFP_KERNEL);
+> > +		if (tmp_buf == NULL) {
+> > +			rc = -ENOMEM;
+> > +			break;
+> > +		}
+> > +
+> >  		for (i = 0; (i < num_to_fill) && (rc == 0); i++) {
+> >  			if (current_entry == NULL) {
+> >  				/* evaluate whether this case is an error */
+> 
 
-I'm not fluent in the cgroup code, my apologies for that.  However, just
-trying to make sense of this is giving me a headache.  Now, in some
-cases you are using IOPS *in place of* jiffies.  How are we to know
-which is which and in what cases?
+Looks good to me too.
 
-It sounds like this is addressing an important problem, but I'm having a
-hard time picking out what that problem is.  Is this problem noticable
-for competing sync-noidle workloads (competing between groups, that is)?
-If not, then what?
-
-Thanks,
-Jeff
-
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> ---
->  block/cfq-iosched.c |   24 +++++++++++++++++++++---
->  1 files changed, 21 insertions(+), 3 deletions(-)
->
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 7982b83..f44064c 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -896,16 +896,34 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
->  		 * if there are mutiple queues in the group, each can dispatch
->  		 * a single request on seeky media and cause lots of seek time
->  		 * and group will never know it.
-> +		 *
-> +		 * If drive is NCQ and we are driving deep queue depths, then
-> +		 * it is not reasonable to charge the slice since dispatch
-> +		 * started because this time will include time taken by all
-> +		 * the other requests in the queue.
-> +		 *
-> +		 * Actually there is no reasonable way to know the disk time
-> +		 * here and we need to come up with some approximation. If
-> +		 * disk is non NCQ, we should be driving request queue depth
-> +		 * 1, then charge for time since dispatch start and this will
-> +		 * account for seek time properly on seeky media. If request
-> +		 * queue depth is high, then charge for number of requests
-> +		 * dispatched from the queue. This will sort of becoming
-> +		 * charging in terms of IOPS.
->  		 */
-> -		slice_used = max_t(unsigned, (jiffies - cfqq->dispatch_start),
-> -					1);
-> +		if (cfqq->cfqd->hw_tag == 0)
-> +			slice_used = max_t(unsigned,
-> +					(jiffies - cfqq->dispatch_start), 1);
-> +		else
-> +			slice_used = cfqq->slice_dispatch;
->  	} else {
->  		slice_used = jiffies - cfqq->slice_start;
->  		if (slice_used > cfqq->allocated_slice)
->  			slice_used = cfqq->allocated_slice;
->  	}
->  
-> -	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
-> +	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u, sl_disp=%u", slice_used,
-> +			cfqq->slice_dispatch);
->  	return slice_used;
->  }
+Acked-by: Jeff Layton <jlayton@redhat.com>
