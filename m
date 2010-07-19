@@ -1,223 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760761Ab0GSROk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:14:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12569 "EHLO mx1.redhat.com"
+	id S1760736Ab0GSROj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:14:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:6039 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760234Ab0GSROh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756782Ab0GSROh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Jul 2010 13:14:37 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, jens.axboe@kernel.dk
 Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
         jmoyer@redhat.com, czoccolo@gmail.com, vgoyal@redhat.com
-Subject: [PATCH 2/3] cfq-iosched: Implement a new tunable group_idle
-Date: Mon, 19 Jul 2010 13:14:11 -0400
-Message-Id: <1279559652-2775-3-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 3/3] cfq-iosched: Print per slice sectors dispatched in blktrace
+Date: Mon, 19 Jul 2010 13:14:12 -0400
+Message-Id: <1279559652-2775-4-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1279559652-2775-1-git-send-email-vgoyal@redhat.com>
 References: <1279559652-2775-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o Implement a new tunable group_idle, which allows idling on the group
-  instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
-  on the individual queues but idle on the group. This way on fast storage
-  we can get fairness between groups at the same time overall throughput
-  improves.
+- Divyesh had gotten rid of this code in the past. I want to re-introduce it
+  back as it helps me a lot during debugging.
 
 Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
 ---
- block/cfq-iosched.c |   60 +++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 53 insertions(+), 7 deletions(-)
+ block/cfq-iosched.c |    8 ++++++--
+ 1 files changed, 6 insertions(+), 2 deletions(-)
 
 diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index f44064c..b23d7f4 100644
+index b23d7f4..1f0d4ea 100644
 --- a/block/cfq-iosched.c
 +++ b/block/cfq-iosched.c
-@@ -30,6 +30,7 @@ static const int cfq_slice_sync = HZ / 10;
- static int cfq_slice_async = HZ / 25;
- static const int cfq_slice_async_rq = 2;
- static int cfq_slice_idle = HZ / 125;
-+static int cfq_group_idle = HZ / 125;
- static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
- static const int cfq_hist_divisor = 4;
- 
-@@ -198,6 +199,8 @@ struct cfq_group {
- 	struct hlist_node cfqd_node;
- 	atomic_t ref;
- #endif
-+	/* number of requests that are on the dispatch list or inside driver */
-+	int dispatched;
+@@ -148,6 +148,8 @@ struct cfq_queue {
+ 	struct cfq_queue *new_cfqq;
+ 	struct cfq_group *cfqg;
+ 	struct cfq_group *orig_cfqg;
++	/* Number of sectors dispatched from queue in single dispatch round */
++	unsigned long nr_sectors;
  };
  
  /*
-@@ -271,6 +274,7 @@ struct cfq_data {
- 	unsigned int cfq_slice[2];
- 	unsigned int cfq_slice_async_rq;
- 	unsigned int cfq_slice_idle;
-+	unsigned int cfq_group_idle;
- 	unsigned int cfq_latency;
- 	unsigned int cfq_group_isolation;
- 
-@@ -1856,6 +1860,9 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- 	BUG_ON(!service_tree);
- 	BUG_ON(!service_tree->count);
- 
-+	if (!cfqd->cfq_slice_idle)
-+		return false;
-+
- 	/* We never do for idle class queues. */
- 	if (prio == IDLE_WORKLOAD)
- 		return false;
-@@ -1880,7 +1887,7 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
- {
- 	struct cfq_queue *cfqq = cfqd->active_queue;
- 	struct cfq_io_context *cic;
--	unsigned long sl;
-+	unsigned long sl, group_idle = 0;
- 
- 	/*
- 	 * SSD device without seek penalty, disable idling. But only do so
-@@ -1896,8 +1903,13 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
- 	/*
- 	 * idle is disabled, either manually or by past process history
- 	 */
--	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq))
--		return;
-+	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq)) {
-+		/* no queue idling. Check for group idling */
-+		if (cfqd->cfq_group_idle)
-+			group_idle = cfqd->cfq_group_idle;
-+		else
-+			return;
-+	}
- 
- 	/*
- 	 * still active requests from this queue, don't idle
-@@ -1924,13 +1936,21 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
- 		return;
+@@ -926,8 +928,8 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+ 			slice_used = cfqq->allocated_slice;
  	}
  
-+	/* There are other queues in the group, don't do group idle */
-+	if (group_idle && cfqq->cfqg->nr_cfqq > 1)
-+		return;
-+
- 	cfq_mark_cfqq_wait_request(cfqq);
- 
--	sl = cfqd->cfq_slice_idle;
-+	if (group_idle)
-+		sl = cfqd->cfq_group_idle;
-+	else
-+		sl = cfqd->cfq_slice_idle;
- 
- 	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
- 	cfq_blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
--	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
-+	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu group_idle: %d", sl,
-+			group_idle ? 1 : 0);
+-	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u, sl_disp=%u", slice_used,
+-			cfqq->slice_dispatch);
++	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u, disp=%u sect=%u",
++			slice_used, cfqq->slice_dispatch, cfqq->nr_sectors);
+ 	return slice_used;
  }
  
- /*
-@@ -1946,6 +1966,7 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
- 	cfqq->next_rq = cfq_find_next_rq(cfqd, cfqq, rq);
- 	cfq_remove_request(rq);
- 	cfqq->dispatched++;
-+	(RQ_CFQG(rq))->dispatched++;
+@@ -1608,6 +1610,7 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+ 		cfqq->allocated_slice = 0;
+ 		cfqq->slice_end = 0;
+ 		cfqq->slice_dispatch = 0;
++		cfqq->nr_sectors = 0;
+ 
+ 		cfq_clear_cfqq_wait_request(cfqq);
+ 		cfq_clear_cfqq_must_dispatch(cfqq);
+@@ -1970,6 +1973,7 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
  	elv_dispatch_sort(q, rq);
  
  	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
-@@ -2215,7 +2236,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
- 			cfqq = NULL;
- 			goto keep_queue;
- 		} else
--			goto expire;
-+			goto check_group_idle;
- 	}
- 
- 	/*
-@@ -2249,6 +2270,17 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
- 		goto keep_queue;
- 	}
- 
-+	/*
-+	 * If group idle is enabled and there are requests dispatched from
-+	 * this group, wait for requests to complete.
-+	 */
-+check_group_idle:
-+	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
-+	    && cfqq->cfqg->dispatched) {
-+		cfqq = NULL;
-+		goto keep_queue;
-+	}
-+
- expire:
- 	cfq_slice_expired(cfqd, 0);
- new_queue:
-@@ -3391,6 +3423,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
- 	WARN_ON(!cfqq->dispatched);
- 	cfqd->rq_in_driver--;
- 	cfqq->dispatched--;
-+	(RQ_CFQG(rq))->dispatched--;
- 	cfq_blkiocg_update_completion_stats(&cfqq->cfqg->blkg,
- 			rq_start_time_ns(rq), rq_io_start_time_ns(rq),
- 			rq_data_dir(rq), rq_is_sync(rq));
-@@ -3420,7 +3453,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
- 		 * the queue.
- 		 */
- 		if (cfq_should_wait_busy(cfqd, cfqq)) {
--			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
-+			unsigned long extend_sl = cfqd->cfq_slice_idle;
-+			if (!cfqd->cfq_slice_idle)
-+				extend_sl = cfqd->cfq_group_idle;
-+			cfqq->slice_end = jiffies + extend_sl;
- 			cfq_mark_cfqq_wait_busy(cfqq);
- 			cfq_log_cfqq(cfqd, cfqq, "will busy wait");
- 		}
-@@ -3865,6 +3901,7 @@ static void *cfq_init_queue(struct request_queue *q)
- 	cfqd->cfq_slice[1] = cfq_slice_sync;
- 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
- 	cfqd->cfq_slice_idle = cfq_slice_idle;
-+	cfqd->cfq_group_idle = cfq_group_idle;
- 	cfqd->cfq_latency = 1;
- 	cfqd->cfq_group_isolation = 0;
- 	cfqd->hw_tag = -1;
-@@ -3937,6 +3974,7 @@ SHOW_FUNCTION(cfq_fifo_expire_async_show, cfqd->cfq_fifo_expire[0], 1);
- SHOW_FUNCTION(cfq_back_seek_max_show, cfqd->cfq_back_max, 0);
- SHOW_FUNCTION(cfq_back_seek_penalty_show, cfqd->cfq_back_penalty, 0);
- SHOW_FUNCTION(cfq_slice_idle_show, cfqd->cfq_slice_idle, 1);
-+SHOW_FUNCTION(cfq_group_idle_show, cfqd->cfq_group_idle, 1);
- SHOW_FUNCTION(cfq_slice_sync_show, cfqd->cfq_slice[1], 1);
- SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
- SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
-@@ -3969,6 +4007,7 @@ STORE_FUNCTION(cfq_back_seek_max_store, &cfqd->cfq_back_max, 0, UINT_MAX, 0);
- STORE_FUNCTION(cfq_back_seek_penalty_store, &cfqd->cfq_back_penalty, 1,
- 		UINT_MAX, 0);
- STORE_FUNCTION(cfq_slice_idle_store, &cfqd->cfq_slice_idle, 0, UINT_MAX, 1);
-+STORE_FUNCTION(cfq_group_idle_store, &cfqd->cfq_group_idle, 0, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_sync_store, &cfqd->cfq_slice[1], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_store, &cfqd->cfq_slice[0], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
-@@ -3990,6 +4029,7 @@ static struct elv_fs_entry cfq_attrs[] = {
- 	CFQ_ATTR(slice_async),
- 	CFQ_ATTR(slice_async_rq),
- 	CFQ_ATTR(slice_idle),
-+	CFQ_ATTR(group_idle),
- 	CFQ_ATTR(low_latency),
- 	CFQ_ATTR(group_isolation),
- 	__ATTR_NULL
-@@ -4043,6 +4083,12 @@ static int __init cfq_init(void)
- 	if (!cfq_slice_idle)
- 		cfq_slice_idle = 1;
- 
-+#ifdef CONFIG_CFQ_GROUP_IOSCHED
-+	if (!cfq_group_idle)
-+		cfq_group_idle = 1;
-+#else
-+		cfq_group_idle = 0;
-+#endif
- 	if (cfq_slab_setup())
- 		return -ENOMEM;
- 
++	cfqq->nr_sectors += blk_rq_sectors(rq);
+ 	cfq_blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
+ 					rq_data_dir(rq), rq_is_sync(rq));
+ }
 -- 
 1.7.1.1
 
