@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933852Ab0GSRpq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:45:46 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:56577 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932452Ab0GSRpo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:45:44 -0400
-From: Kamal Mostafa <kamal@canonical.com>
-To: linux-kernel@vger.kernel.org
-Cc: kernel-team@lists.ubuntu.com, Kamal Mostafa <kamal@canonical.com>,
-        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>,
-        Elliott Sales de Andrade <quantum.analyst@gmail.com>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-input@vger.kernel.org
-Subject: [PATCH] i8042: add Gigabyte Spring Peak to dmi_noloop_table
-Date: Mon, 19 Jul 2010 10:45:34 -0700
-Message-Id: <1279561534-3551-1-git-send-email-kamal@canonical.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S936276Ab0GSRrf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:47:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58344 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932452Ab0GSRrd convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 13:47:33 -0400
+MIME-Version: 1.0
+In-Reply-To: <11817.1279560400@redhat.com>
+References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<AANLkTikuzYqYpGHcubb7QVciZW0dNFjOG82qIwy5M4gO@mail.gmail.com>
+	<10783.1279556132@redhat.com>
+	<AANLkTinVns77R7yCCh-lydd0eQufdAF9O2OaWmCL7uSn@mail.gmail.com>
+	<11817.1279560400@redhat.com>
+Date: Mon, 19 Jul 2010 10:46:55 -0700
+Message-ID: <AANLkTikxHJgguNn6EOK6fX53xYSRPmcNjIeGSTigQ9qu@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Gigabyte "Spring Peak" notebook indicates wrong chassis-type, tripping up
-i8042 and breaking the touchpad.  Add this model to i8042_dmi_noloop_table[]
-to resolve.
+On Mon, Jul 19, 2010 at 10:26 AM, David Howells <dhowells@redhat.com> wrote:
+>
+>> Ask your samba people, for example, if they'd _ever_ do just a "xstat()"?
+>
+> I suspect they would, though maybe they can say otherwise.  What about SMB
+> directory enumeration?  I believe that is effectively getdents-with-stat.
+> Having to do open+stat for each file for that would be painful.
 
-BugLink: https://bugs.launchpad.net/bugs/580664
+Yeah, but do you need xstat information at all for something like
+that? Most people try very hard to make do with the information
+returned by readdir itself (d_type and inode number), because if you
+end up looking up each name you've already pretty much lost in a
+performance model.
 
-Signed-off-by: Kamal Mostafa <kamal@canonical.com>
-Cc: <stable@kernel.org>
----
- drivers/input/serio/i8042-x86ia64io.h |    7 +++++++
- 1 files changed, 7 insertions(+), 0 deletions(-)
+(And I do agree that a "readdirplus()" is probably something that a
+lot of server people would find useful, but obviously that's another
+cross-filesystem nightmare. Only a few filesystems can cheaply give
+you anything but d_type/d_ino, and not all do even that),
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 6168469..d953d65 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -166,6 +166,13 @@ static const struct dmi_system_id __initconst i8042_dmi_noloop_table[] = {
- 		},
- 	},
- 	{
-+		/* Gigabyte Spring Peak */
-+		.matches = {
-+			DMI_MATCH(DMI_SYS_VENDOR, "GIGABYTE"),
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Spring Peak"),
-+		},
-+	},
-+	{
- 		.matches = {
- 			DMI_MATCH(DMI_SYS_VENDOR, "Hewlett-Packard"),
- 			DMI_MATCH(DMI_PRODUCT_NAME, "HP Pavilion dv9700"),
--- 
-1.7.0.4
-
+                      Linus
