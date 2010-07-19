@@ -1,154 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965937Ab0GSS6k (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 14:58:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58634 "EHLO mx1.redhat.com"
+	id S966344Ab0GSS6z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 14:58:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:41913 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965095Ab0GSS6j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 14:58:39 -0400
-Date: Mon, 19 Jul 2010 14:58:29 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
+	id S965095Ab0GSS6w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 14:58:52 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
 Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
         dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
-Subject: Re: [PATCH 1/3] cfq-iosched: Improve time slice charging logic
-Message-ID: <20100719185828.GB32503@redhat.com>
+Subject: Re: [PATCH 2/3] cfq-iosched: Implement a new tunable group_idle
 References: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
- <1279560008-2905-2-git-send-email-vgoyal@redhat.com>
- <x49mxtntikn.fsf@segfault.boston.devel.redhat.com>
+	<1279560008-2905-3-git-send-email-vgoyal@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 19 Jul 2010 14:58:41 -0400
+In-Reply-To: <1279560008-2905-3-git-send-email-vgoyal@redhat.com> (Vivek
+	Goyal's message of "Mon, 19 Jul 2010 13:20:07 -0400")
+Message-ID: <x49iq4bti1q.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49mxtntikn.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 02:47:20PM -0400, Jeff Moyer wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
-> > - Currently in CFQ there are many situations where don't know how
-> >   much time slice has been consumed by a queue. For example, all
-> >   the random reader/writer queues where we don't idle on
-> >   individual queues and we expire the queue either immediately
-> >   after the request dispatch.
-> >
-> > - In this case time consumed by a queue is just a memory copy
-> >   operation. Actually time measurement is possible only if we
-> >   idle on a queue and allow dispatch from a queue for significant
-> >   amount of time.
-> >
-> > - As of today, in such cases we calculate the time since the
-> >   dispatch from the queue started and charge all that time.
-> >   Generally this rounds to 1 jiffy but in some cases it can
-> >   be more. For example, if we are driving high request queue
-> >   depth and driver is too busy and does not ask for new
-> >   requests for 8-10 jiffies. In such cases, the active queue
-> >   gets charged very unfairly.
-> >
-> > - So fundamentally, whole notion of charging for time slice
-> >   is valid only if we have been idling on the queue. Otherwise
-> >   in an NCQ queue, there might be other requests on the queue
-> >   and we can not do the time slice calculation.
-> >
-> > - This patch tweaks the slice charging logic a bit so that
-> >   in the cases where we can't know the amount of time, we
-> >   start charging in terms of number of requests dispatched
-> >   (IOPS). This practically switching CFQ fairness model to
-> >   fairness in terms of IOPS with slice_idle=0.
-> >
-> > - As of today this will primarily be useful only with
-> >   group_idle patches so that we get fairness in terms of
-> >   IOPS across groups. The idea is that on fast storage
-> >   one can run CFQ with slice_idle=0 and still get IO
-> >   controller working without losing too much of
-> >   throughput.
-> 
-> I'm not fluent in the cgroup code, my apologies for that.  However, just
-> trying to make sense of this is giving me a headache.  Now, in some
-> cases you are using IOPS *in place of* jiffies.  How are we to know
-> which is which and in what cases?
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Yes it is mixed now for default CFQ case. Whereever we don't have the
-capability to determine the slice_used, we charge IOPS.
+> o Implement a new tunable group_idle, which allows idling on the group
+>   instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
+>   on the individual queues but idle on the group. This way on fast storage
+>   we can get fairness between groups at the same time overall throughput
+>   improves.
+>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/cfq-iosched.c |   60 +++++++++++++++++++++++++++++++++++++++++++++------
+>  1 files changed, 53 insertions(+), 7 deletions(-)
+>
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index f44064c..b23d7f4 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -30,6 +30,7 @@ static const int cfq_slice_sync = HZ / 10;
+>  static int cfq_slice_async = HZ / 25;
+>  static const int cfq_slice_async_rq = 2;
+>  static int cfq_slice_idle = HZ / 125;
+> +static int cfq_group_idle = HZ / 125;
+>  static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
+>  static const int cfq_hist_divisor = 4;
+>  
+> @@ -198,6 +199,8 @@ struct cfq_group {
+>  	struct hlist_node cfqd_node;
+>  	atomic_t ref;
+>  #endif
+> +	/* number of requests that are on the dispatch list or inside driver */
+> +	int dispatched;
+>  };
+>  
+>  /*
+> @@ -271,6 +274,7 @@ struct cfq_data {
+>  	unsigned int cfq_slice[2];
+>  	unsigned int cfq_slice_async_rq;
+>  	unsigned int cfq_slice_idle;
+> +	unsigned int cfq_group_idle;
+>  	unsigned int cfq_latency;
+>  	unsigned int cfq_group_isolation;
+>  
+> @@ -1856,6 +1860,9 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>  	BUG_ON(!service_tree);
+>  	BUG_ON(!service_tree->count);
+>  
+> +	if (!cfqd->cfq_slice_idle)
+> +		return false;
+> +
+>  	/* We never do for idle class queues. */
+>  	if (prio == IDLE_WORKLOAD)
+>  		return false;
+> @@ -1880,7 +1887,7 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+>  {
+>  	struct cfq_queue *cfqq = cfqd->active_queue;
+>  	struct cfq_io_context *cic;
+> -	unsigned long sl;
+> +	unsigned long sl, group_idle = 0;
+>  
+>  	/*
+>  	 * SSD device without seek penalty, disable idling. But only do so
+> @@ -1896,8 +1903,13 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+>  	/*
+>  	 * idle is disabled, either manually or by past process history
+>  	 */
+> -	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq))
+> -		return;
+> +	if (!cfqd->cfq_slice_idle || !cfq_should_idle(cfqd, cfqq)) {
 
-For slice_idle=0 case, we should charge IOPS almost all the time. Though
-if there is a workload where single cfqq can keep the request queue
-saturated, then current code will charge in terms of time.
+The check for cfqd->cfq_slice_idle is now redundant (as it's done in
+cfq_should_idle).
 
-I agree that this is little confusing. May be in case of slice_idle=0
-we can always charge in terms of IOPS. 
+> @@ -2215,7 +2236,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+>  			cfqq = NULL;
+>  			goto keep_queue;
+>  		} else
+> -			goto expire;
+> +			goto check_group_idle;
+>  	}
+>  
+>  	/*
+> @@ -2249,6 +2270,17 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+>  		goto keep_queue;
+>  	}
+>  
+> +	/*
+> +	 * If group idle is enabled and there are requests dispatched from
+> +	 * this group, wait for requests to complete.
+> +	 */
+> +check_group_idle:
+> +	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
+> +	    && cfqq->cfqg->dispatched) {
+> +		cfqq = NULL;
+> +		goto keep_queue;
+> +	}
 
-> 
-> It sounds like this is addressing an important problem, but I'm having a
-> hard time picking out what that problem is.  Is this problem noticable
-> for competing sync-noidle workloads (competing between groups, that is)?
-> If not, then what?
+I really wish we could roll all of this logic into cfq_should_idle.
 
-I noticed problem during competing workloads in different groups. With
-slice_idle 0, we will drive full queue depth of 32. Sometimes when we
-hit high queue depth, say 32, for few jiffies, driver did not ask for
-new requests. So say for 10-12 ms, requests only completed and new
-requests did not get issued. In that case, all this 10-12 ms gets charged
-to active queue and the fact is that this active queue did not even get
-to dispatch more than 1 request. This queue was just unfortunate to be
-there at that time. The higher weight queue ofen run into this situation
-because CFQ tries to keep them as active queue more often.
+> @@ -3420,7 +3453,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+>  		 * the queue.
+>  		 */
+>  		if (cfq_should_wait_busy(cfqd, cfqq)) {
+> -			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
+> +			unsigned long extend_sl = cfqd->cfq_slice_idle;
+> +			if (!cfqd->cfq_slice_idle)
+> +				extend_sl = cfqd->cfq_group_idle;
+> +			cfqq->slice_end = jiffies + extend_sl;
 
-So if you are driving full queue depth where in NCQ request queue there
-are requests pending from multiple queues and groups, you have no way to
-measure the time. My impression is that on fast devices, we can no longer
-stick to the model of measuring the time. If we switch to IOPS model,
-then we can drive deeper requests queue depths and keep the device
-saturated, at the same time achieve group IO control.
+So, if slice_idle and group_idle are both set, slice_idle trumps
+group_idle?  Did you give that case any thought?  If it doesn't make
+sense to configure both, then we should probably make sure they can't
+both be set.
 
-Thanks
-Vivek
-
-> 
-> Thanks,
-> Jeff
-> 
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > ---
-> >  block/cfq-iosched.c |   24 +++++++++++++++++++++---
-> >  1 files changed, 21 insertions(+), 3 deletions(-)
-> >
-> > diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> > index 7982b83..f44064c 100644
-> > --- a/block/cfq-iosched.c
-> > +++ b/block/cfq-iosched.c
-> > @@ -896,16 +896,34 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
-> >  		 * if there are mutiple queues in the group, each can dispatch
-> >  		 * a single request on seeky media and cause lots of seek time
-> >  		 * and group will never know it.
-> > +		 *
-> > +		 * If drive is NCQ and we are driving deep queue depths, then
-> > +		 * it is not reasonable to charge the slice since dispatch
-> > +		 * started because this time will include time taken by all
-> > +		 * the other requests in the queue.
-> > +		 *
-> > +		 * Actually there is no reasonable way to know the disk time
-> > +		 * queue depth is high, then charge for number of requests
-> > +		 * dispatched from the queue. This will sort of becoming
-> > +		 * charging in terms of IOPS.
-> >  		 */
-> > -		slice_used = max_t(unsigned, (jiffies - cfqq->dispatch_start),
-> > -					1);
-> > +		if (cfqq->cfqd->hw_tag == 0)
-> > +			slice_used = max_t(unsigned,
-> > +					(jiffies - cfqq->dispatch_start), 1);
-> > +		else
-> > +			slice_used = cfqq->slice_dispatch;
-> >  	} else {
-> >  		slice_used = jiffies - cfqq->slice_start;
-> >  		if (slice_used > cfqq->allocated_slice)
-> >  			slice_used = cfqq->allocated_slice;
-> >  	}
-> >  
-> > -	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
-> > +	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u, sl_disp=%u", slice_used,
-> > +			cfqq->slice_dispatch);
-> >  	return slice_used;
-> >  }
+Cheers,
+Jeff
