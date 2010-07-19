@@ -1,142 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967103Ab0GSWOi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 18:14:38 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:39167 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S966906Ab0GSWOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 18:14:35 -0400
-Date: Tue, 20 Jul 2010 00:14:20 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in direct
- reclaim
-Message-ID: <20100719221420.GA16031@cmpxchg.org>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
- <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
+	id S967095Ab0GSWQz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 18:16:55 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:50419 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966632Ab0GSWQy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 18:16:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:from:date:message-id:
+	subject:to:cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=g47ZSCsTs5caY/ouViA3E9vYxVcENhXXNLac2Rn1xo1uGnGCfwpGBQXRv8ycVJg0Y
+	6oC16ueHidhu+tOyTL39w==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
+In-Reply-To: <1279560008-2905-4-git-send-email-vgoyal@redhat.com>
+References: <1279560008-2905-1-git-send-email-vgoyal@redhat.com> 
+	<1279560008-2905-4-git-send-email-vgoyal@redhat.com>
+From: Divyesh Shah <dpshah@google.com>
+Date: Mon, 19 Jul 2010 15:16:29 -0700
+Message-ID: <AANLkTik_GAOXAuIXBS36RjI2tX0Kes5G7ghMgMlsx6RH@mail.gmail.com>
+Subject: Re: [PATCH 3/3] cfq-iosched: Print per slice sectors dispatched in 
+	blktrace
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        guijianfeng@cn.fujitsu.com, jmoyer@redhat.com, czoccolo@gmail.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mel,
+Looks good to me.
 
-On Mon, Jul 19, 2010 at 02:11:26PM +0100, Mel Gorman wrote:
-> @@ -406,7 +461,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
->  		return PAGE_SUCCESS;
->  	}
+Reviewed-by: Divyesh Shah <dpshah@google.com>
 
-Did you forget to delete the worker code from pageout() which is now
-in write_reclaim_page()?
-
-> -	return PAGE_CLEAN;
-> +	return write_reclaim_page(page, mapping, sync_writeback);
->  }
->  
->  /*
-> @@ -639,6 +694,9 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
->  	pagevec_free(&freed_pvec);
->  }
->  
-> +/* Direct lumpy reclaim waits up to 5 seconds for background cleaning */
-> +#define MAX_SWAP_CLEAN_WAIT 50
-> +
->  /*
->   * shrink_page_list() returns the number of reclaimed pages
->   */
-> @@ -646,13 +704,19 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  					struct scan_control *sc,
->  					enum pageout_io sync_writeback)
->  {
-> -	LIST_HEAD(ret_pages);
->  	LIST_HEAD(free_pages);
-> -	int pgactivate = 0;
-> +	LIST_HEAD(putback_pages);
-> +	LIST_HEAD(dirty_pages);
-> +	int pgactivate;
-> +	int dirty_isolated = 0;
-> +	unsigned long nr_dirty;
->  	unsigned long nr_reclaimed = 0;
->  
-> +	pgactivate = 0;
->  	cond_resched();
->  
-> +restart_dirty:
-> +	nr_dirty = 0;
->  	while (!list_empty(page_list)) {
->  		enum page_references references;
->  		struct address_space *mapping;
-> @@ -741,7 +805,19 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			}
->  		}
->  
-> -		if (PageDirty(page)) {
-> +		if (PageDirty(page))  {
-> +			/*
-> +			 * If the caller cannot writeback pages, dirty pages
-> +			 * are put on a separate list for cleaning by either
-> +			 * a flusher thread or kswapd
-> +			 */
-> +			if (!reclaim_can_writeback(sc, page)) {
-> +				list_add(&page->lru, &dirty_pages);
-> +				unlock_page(page);
-> +				nr_dirty++;
-> +				goto keep_dirty;
-> +			}
-> +
->  			if (references == PAGEREF_RECLAIM_CLEAN)
->  				goto keep_locked;
->  			if (!may_enter_fs)
-> @@ -852,13 +928,39 @@ activate_locked:
->  keep_locked:
->  		unlock_page(page);
->  keep:
-> -		list_add(&page->lru, &ret_pages);
-> +		list_add(&page->lru, &putback_pages);
-> +keep_dirty:
->  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
->  	}
->  
-> +	if (dirty_isolated < MAX_SWAP_CLEAN_WAIT && !list_empty(&dirty_pages)) {
-> +		/*
-> +		 * Wakeup a flusher thread to clean at least as many dirty
-> +		 * pages as encountered by direct reclaim. Wait on congestion
-> +		 * to throttle processes cleaning dirty pages
-> +		 */
-> +		wakeup_flusher_threads(nr_dirty);
-> +		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> +
-> +		/*
-> +		 * As lumpy reclaim and memcg targets specific pages, wait on
-> +		 * them to be cleaned and try reclaim again.
-> +		 */
-> +		if (sync_writeback == PAGEOUT_IO_SYNC ||
-> +						sc->mem_cgroup != NULL) {
-> +			dirty_isolated++;
-> +			list_splice(&dirty_pages, page_list);
-> +			INIT_LIST_HEAD(&dirty_pages);
-> +			goto restart_dirty;
-> +		}
-> +	}
-
-I think it would turn out more natural to just return dirty pages on
-page_list and have the whole looping logic in shrink_inactive_list().
-
-Mixing dirty pages with other 'please try again' pages is probably not
-so bad anyway, it means we could retry all temporary unavailable pages
-instead of twiddling thumbs over that particular bunch of pages until
-the flushers catch up.
-
-What do you think?
+On Mon, Jul 19, 2010 at 10:20 AM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> - Divyesh had gotten rid of this code in the past. I want to re-introduce it
+>  back as it helps me a lot during debugging.
+>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/cfq-iosched.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+>
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index b23d7f4..1f0d4ea 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -148,6 +148,8 @@ struct cfq_queue {
+>        struct cfq_queue *new_cfqq;
+>        struct cfq_group *cfqg;
+>        struct cfq_group *orig_cfqg;
+> +       /* Number of sectors dispatched from queue in single dispatch round */
+> +       unsigned long nr_sectors;
+>  };
+>
+>  /*
+> @@ -926,8 +928,8 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+>                        slice_used = cfqq->allocated_slice;
+>        }
+>
+> -       cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u, sl_disp=%u", slice_used,
+> -                       cfqq->slice_dispatch);
+> +       cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u, disp=%u sect=%u",
+> +                       slice_used, cfqq->slice_dispatch, cfqq->nr_sectors);
+>        return slice_used;
+>  }
+>
+> @@ -1608,6 +1610,7 @@ static void __cfq_set_active_queue(struct cfq_data *cfqd,
+>                cfqq->allocated_slice = 0;
+>                cfqq->slice_end = 0;
+>                cfqq->slice_dispatch = 0;
+> +               cfqq->nr_sectors = 0;
+>
+>                cfq_clear_cfqq_wait_request(cfqq);
+>                cfq_clear_cfqq_must_dispatch(cfqq);
+> @@ -1970,6 +1973,7 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
+>        elv_dispatch_sort(q, rq);
+>
+>        cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
+> +       cfqq->nr_sectors += blk_rq_sectors(rq);
+>        cfq_blkiocg_update_dispatch_stats(&cfqq->cfqg->blkg, blk_rq_bytes(rq),
+>                                        rq_data_dir(rq), rq_is_sync(rq));
+>  }
+> --
+> 1.7.1.1
+>
+>
