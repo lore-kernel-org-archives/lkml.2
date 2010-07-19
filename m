@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933391Ab0GSNnW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 09:43:22 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:44030
-	"EHLO VA3EHSOBE010.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S932391Ab0GSNnU (ORCPT
+	id S933506Ab0GSNz6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 09:55:58 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:52393 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933306Ab0GSNz4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 09:43:20 -0400
-X-SpamScore: -25
-X-BigFish: VPS-25(z21eRz98dNzz1202hzz15d4Rz32i87h2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L5T4RU-01-GMX-02
-X-M-MSG: 
-Date: Mon, 19 Jul 2010 15:44:54 +0200
-From: "Roedel, Joerg" <Joerg.Roedel@amd.com>
-To: Tom Lyon <pugs@cisco.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        "iommu@lists.linux-foundation.org" <iommu@lists.linux-foundation.org>,
-        "chrisw@sous-sol.org" <chrisw@sous-sol.org>,
-        "mst@redhat.com" <mst@redhat.com>,
-        "dwmw2@infradead.org" <dwmw2@infradead.org>,
-        "aafabbri@cisco.com" <aafabbri@cisco.com>,
-        "scofeldm@cisco.com" <scofeldm@cisco.com>
-Subject: Re: [PATCH V3] 2.6.34: simple IOMMU API extension to check safe
- interrupt remapping
-Message-ID: <20100719134453.GD7454@amd.com>
-References: <4c2e526e.HXT+zIj7fSMwTdy/%pugs@cisco.com>
+	Mon, 19 Jul 2010 09:55:56 -0400
+Date: Mon, 19 Jul 2010 14:55:52 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: linux-pm@lists.linux-foundation.org
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Power management minisummit at LPC
+Message-ID: <20100719135552.GB15785@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4c2e526e.HXT+zIj7fSMwTdy/%pugs@cisco.com>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 02, 2010 at 04:56:14PM -0400, Tom Lyon wrote:
-> This patch allows IOMMU users to determine whether the hardware and software
-> support safe, isolated interrupt remapping.  Not all Intel IOMMUs have the
-> hardware, and the software for AMD is not there yet.
-> 	Signed-off-by: Tom Lyon <pugs@cisco.com>
+I'm running a power management session at the Linux Plumbers Conference 
+this year. Unlike most traditional conferences where the aim is to 
+present new solutions, LPC focuses on discussing the problems that we 
+haven't completely solved yet.
 
-Applied, thanks.
+This has been an especially interesting year in the field. We've landed 
+the infrastructure for generic runtime power management, glued that into 
+PCI and started implementing that at the driver level. pm_qos is being 
+reworked to improve performance and scalability as we start seeing more 
+drivers that need to express their own constraints. And, of course, we 
+had the wakelock/suspend blockers conversation that didn't end in a 
+terribly satisfactory manner, although Rafael is now working on an 
+implementation that presents equivalent functionality with a different 
+userspace API. Runtime full-system suspend isn't solved yet either - the 
+current cpuidle-based solution doesn't work well on multicore systems. 
+And maybe we could be more aggressive still by looking at reclocking 
+more system components on the fly even if the existing interfaces don't 
+allow that. Do we have all the hooks we need to identify which system 
+resources are being used? Are we doing the best we can in terms of 
+avoiding trading off performance for power savings?
+
+Head to 
+http://www.linuxplumbersconf.org/2010/ocw/events/LPC2010MC/proposals to 
+add a suggestion for a topic to be discussed at the miniconference. It's 
+also possible to submit a proposal for the main presentation tyou have 
+menrelated that you think would be appropriate for a wider audience, 
+then please propose it there as well.
 
 -- 
-Joerg Roedel - AMD Operating System Research Center
-
-Advanced Micro Devices GmbH Einsteinring 24 85609 Dornach
-General Managers: Alberto Bozzo, Andrew Bowd
-Registration: Dornach, Landkr. Muenchen; Registerger. Muenchen, HRB Nr. 43632
-
+Matthew Garrett | mjg59@srcf.ucam.org
