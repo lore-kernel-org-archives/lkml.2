@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760512Ab0GSKnL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 06:43:11 -0400
-Received: from [196.3.96.162] ([196.3.96.162]:54193 "EHLO mail.up.ac.mz"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1760470Ab0GSKnK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 06:43:10 -0400
-From: "=?UTF-8?Q?Western=C2=AE_Union_Mo?=ney Transfer" 
-	<info@westernunion.com>
-Reply-To: wes.uniontransfer@fastservice.com
-Subject: Western Union Office
-Date: Mon, 19 Jul 2010 12:37:10 +0300
-Message-Id: <20100719093710.M60597@westernunion.com>
-X-Mailer: OpenWebMail 2.53 
-X-OriginatingIP: 41.138.190.226 (xiiicongresso@up.ac.mz)
+	id S1760528Ab0GSKr5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 06:47:57 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760503Ab0GSKr4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 06:47:56 -0400
+Date: Mon, 19 Jul 2010 13:42:02 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: vgoyal@redhat.com, "David S. Miller" <davem@davemloft.net>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>, seto.hidetoshi@jp.fujitsu.com,
+        Matt Carlson <mcarlson@broadcom.com>,
+        Michael Chan <mchan@broadcom.com>, linux-pci@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH repost] pci: fix compilation when CONFIG_PCI_MSI=n
+Message-ID: <20100719104202.GA32031@redhat.com>
+References: <20100716142050.GA4970@redhat.com>
+ <20100716120603.5c3de0bd@virtuousgeek.org>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=utf-8
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100716120603.5c3de0bd@virtuousgeek.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Welcome To Western Union Money Transfer
-Website: www.westernunion.com
+On Fri, Jul 16, 2010 at 12:06:03PM -0700, Jesse Barnes wrote:
+> On Fri, 16 Jul 2010 17:20:50 +0300
+> "Michael S. Tsirkin" <mst@redhat.com> wrote:
+> 
+> > vers/pci/pci.c:2277: error: redefinition of ‘pci_msi_off’
+> > include/linux/pci.h:786: note: previous definition of ‘pci_msi_off’ was here
+> > 
+> > No need for ifdef: we must disable the capability at startup even if the
+> > current kernel does not support MSI, otherwise the device won't work.
+> > 
+> > Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+> > ---
+> > 
+> > Looks like I didn't tag this old patch of mine clearly enough
+> > so it's still not fixed in -rc5.
+> > It's late in the cycle, but the patch is trivial
+> > and it's a build fix, so ... please consider for 2.6.35.
+> 
+> I don't see the same context in the current tree.  So this patch must
+> be against the virtualization tree I guess?
 
-Dear Western Union Customer,
-
-This is the second email we are sending you now after two weeks, if you get 
-this one, I write to inform you that we have already sent you $5000.00 USD 
-dollars through our Western Union as we have been given the mandate to 
-transfer your full compensation payment of $800,000.00 USD via Western Union 
-by this government.  So,I decided to email you the MTCN and sender name, so 
-you can pick up this $5000.00 USD to enable us send another $5000.00 USD by 
-tomorrow as you know we will be sending you only $5000.00 USD per day. Please 
-pick up this information and run to any Western Union in your country to pick 
-up the $5000.00 USD and call me back to send you another payment tomorrow.
-
-Manager: Mrs.Green David 
-Phone:+4470111 96960
-Email: w.uniontransfer@london.com or wes.uniontransfer@fastservice.com
-
-Call or email me once you picked up this $5000.00 USD today. Here is the 
-western union payment information to pick up the first $5000.00 USD, Don't 
-forget that you have 2 hours to pick up this money after receiving our mail 
-and your full name is the receiver's name.
-
-
-Information's to pick up the money
-
-MTCN: 7863288780 
-Sender First Name: Tammy 
-Sender Last Name: Wishert
-Sent From: London
-Test Question: Pay
-Test Answer: Cash
-Amount: $5000 USD
-
-
-For verification Kindly call our International service number +18003256000 or 
-+448007314814 and follow the voice prompt, then insert the control number 
-above to hear the availability of your funds ready for pick up. Please you 
-are to check the status of the transfer before going to any western union 
-office and you can also check the status via our web site below.
-
-https://wumt.westernunion.com/asp/orderStatus.asp?country=global
-
-Get back to us as soon as you received the first payment so that we can go 
-ahead with the other payment tomorrow. Thank you for using Western Union.
-
-Regards,
-Mrs.Green David.
-
+Yes, looks like it got fixed in the virtualization tree.
+Thanks,
+MST
