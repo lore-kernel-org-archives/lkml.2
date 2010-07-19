@@ -1,22 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760774Ab0GSRPS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:15:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5280 "EHLO mx1.redhat.com"
+	id S1760732Ab0GSRUU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:20:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27161 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760703Ab0GSROh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:14:37 -0400
+	id S1756782Ab0GSRUT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 13:20:19 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, jens.axboe@kernel.dk
+To: linux-kernel@vger.kernel.org, axboe@kernel.dk
 Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
         jmoyer@redhat.com, czoccolo@gmail.com, vgoyal@redhat.com
 Subject: [RFC PATCH] cfq-iosched: Implement group idle V2
-Date: Mon, 19 Jul 2010 13:14:09 -0400
-Message-Id: <1279559652-2775-1-git-send-email-vgoyal@redhat.com>
+Date: Mon, 19 Jul 2010 13:20:05 -0400
+Message-Id: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+
+[ Got Jens's mail id wrong in last post hence reposting. Sorry for cluttering
+your mailboxes.]
 
 Hi,
 
