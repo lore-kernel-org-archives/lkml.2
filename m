@@ -1,173 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936472Ab0GSQnD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 12:43:03 -0400
-Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:35559 "EHLO
-	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936440Ab0GSQnA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 12:43:00 -0400
-Date: Mon, 19 Jul 2010 11:39:11 -0500 (CDT)
-From: Christoph Lameter <cl@linux-foundation.org>
-X-X-Sender: cl@router.home
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-cc: David Rientjes <rientjes@google.com>,
-        Pekka Enberg <penberg@cs.helsinki.fi>, linux-mm@kvack.org,
-        Roland Dreier <rdreier@cisco.com>, linux-kernel@vger.kernel.org,
-        Nick Piggin <npiggin@suse.de>
-Subject: Re: [S+Q2 07/19] slub: Allow removal of slab caches during boot
-In-Reply-To: <1279498030.10390.1760.camel@pasglop>
-Message-ID: <alpine.DEB.2.00.1007191058220.29361@router.home>
-References: <20100709190706.938177313@quilx.com>  <20100709190853.770833931@quilx.com>  <alpine.DEB.2.00.1007141647340.29110@chino.kir.corp.google.com> <1279498030.10390.1760.camel@pasglop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1751906Ab0GSQv4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 12:51:56 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:57362 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750740Ab0GSQvx convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 12:51:53 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <10783.1279556132@redhat.com>
+References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<AANLkTikuzYqYpGHcubb7QVciZW0dNFjOG82qIwy5M4gO@mail.gmail.com>
+	<10783.1279556132@redhat.com>
+Date: Mon, 19 Jul 2010 09:51:13 -0700
+Message-ID: <AANLkTinVns77R7yCCh-lydd0eQufdAF9O2OaWmCL7uSn@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jul 2010, Benjamin Herrenschmidt wrote:
-
-> On Wed, 2010-07-14 at 16:48 -0700, David Rientjes wrote:
-> > On Fri, 9 Jul 2010, Christoph Lameter wrote:
-> >
-> > > If a slab cache is removed before we have setup sysfs then simply skip over
-> > > the sysfs handling.
-> > >
-> > > Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> > > Cc: Roland Dreier <rdreier@cisco.com>
-> > > Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
-> >
-> > Acked-by: David Rientjes <rientjes@google.com>
-> >
-> > I missed this case earlier because I didn't consider slab caches being
-> > created and destroyed prior to slab_state == SYSFS, sorry!
+On Mon, Jul 19, 2010 at 9:15 AM, David Howells <dhowells@redhat.com> wrote:
+> Linus Torvalds <torvalds@linux-foundation.org> wrote:
 >
-> Ok so I may be a bit sleepy or something but I still fail to see how
-> this whole thing isn't totally racy...
+>>  - that whole xstat buffer handling is just a mess. I think you
+>> already fixed the "xstat_parameters" crud and just made it a simple
+>> unsigned long and a direct argument,
 >
-> AFAIK. By the time we switch the slab state, we -do- have all CPUs up
-> and can race happily between creating slab caches and creating the sysfs
-> files...
+> I was thinking more of an unsigned int argument, since it can't have more than
+> 32 flags in it if it is also to work on 32-bit arches.
 
-If kmem_cache_init_late() is called after all other processors are up then
-we need to serialize the activities. But we cannot do that since the
-slub_lock is taken during kmalloc() for dynamic dma creation (lockdep
-will complain although we never use dma caches for sysfs....).
+That's fine.
 
-After removal of dynamic dma creation we can take the lock for all of slab
-creation and removal.
+>> but the "buffer+buflen" thing is still disgusting.
+>>
+>>    Why not just leave a few empty fields at the end, and make the rule
+>> be: "We don't just add random crap, so don't expect it to grow widely
+>> in the future".
+>
+> Because it gets allocated on the kernel stack.  It's already 160 bytes, and
+> expanding it will eat more kernel stack space.  Now, I can offset that by: (a)
+> embedding it in struct kstat so that we allocate less stack space in xstat()
+> overall, and (b) allocating kstat/xstat structs with kmalloc() rather than on
+> the stack in all the stat syscalls.
 
-Like in the following patch:
+Using implementation issues like that as a reason for some odd
+interface that we'll have to live with for the next decades sounds
+bad. It's basically a broken form of versioning, since if you end up
+using buffer sizes, everybody will just use "sizeof()" except for some
+random crazy developer that decides to re-use a buffer they use for
+something else, and then use the size of that instead.
 
-Subject: slub: Allow removal of slab caches during boot
+End result: the kernel gets passed in some random constant that
+depends on just which version of glibc they were compiled against _or_
+on just how crazy they were. And it all just encourages people to do
+odd things. For example, the glibc developers, who love adding their
+own random fields for crazy "forwards compatibility", will start
+extending the xstat structure on their own and then just pass in the
+larger size and emulate a few new fields à la that whole vfstat thing.
+And then if/when we want to extend on it, we're screwed.
 
-Serialize kmem_cache_create and kmem_cache_destroy using the slub_lock. Only
-possible after the use of the slub_lock during dynamic dma creation has been
-removed.
+So making it fixed is not only simpler, it avoids all the "I'm passing
+in random integers" crud.
 
-Then make sure that the setup of the slab sysfs entries does not race
-with kmem_cache_create and kmem_cache destroy.
+You don't need to allocate the whole thing inside the kernel anyway.
+Quite the reverse. You probably want to continue using the kernel
+"kstat" interface with some extensions. That's the point of kstat,
+after all - allowing the filesystem interfaces to share _one_
+interface rather than having new interfaces at the VFS level for every
+damn new stat implementation we have to do for user space.
 
-If a slab cache is removed before we have setup sysfs then simply skip over
-the sysfs handling.
+In short, your stack space usage is all totally bogus. You should copy
+the kstat to the user xstat one field at a time, and NOT allocate an
+xstat on the kernel stack at all. There is no advantage to using
+"memcpy_to_user()" (after having filled in the kernel struct one field
+at a time) over just filling in the user struct directly.
 
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Roland Dreier <rdreier@cisco.com>
-Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
+Just do "access_ok() + several __put_user() calls", in other words.
 
----
- mm/slub.c |   24 +++++++++++++++---------
- 1 file changed, 15 insertions(+), 9 deletions(-)
+I think you wanted to use "memcpy_to_user()" just because you had that
+broken "bufsize" argument to begin with. If you get rid of the
+bufsize, you also get rid of the potential for partial structures, and
+all the reasons to use memcpy go away.
 
-Index: linux-2.6/mm/slub.c
-===================================================================
---- linux-2.6.orig/mm/slub.c	2010-07-19 11:02:15.000000000 -0500
-+++ linux-2.6/mm/slub.c	2010-07-19 11:33:32.000000000 -0500
-@@ -2490,7 +2490,6 @@ void kmem_cache_destroy(struct kmem_cach
- 	s->refcount--;
- 	if (!s->refcount) {
- 		list_del(&s->list);
--		up_write(&slub_lock);
- 		if (kmem_cache_close(s)) {
- 			printk(KERN_ERR "SLUB %s: %s called for cache that "
- 				"still has objects.\n", s->name, __func__);
-@@ -2499,8 +2498,8 @@ void kmem_cache_destroy(struct kmem_cach
- 		if (s->flags & SLAB_DESTROY_BY_RCU)
- 			rcu_barrier();
- 		sysfs_slab_remove(s);
--	} else
--		up_write(&slub_lock);
-+	}
-+	up_write(&slub_lock);
- }
- EXPORT_SYMBOL(kmem_cache_destroy);
+Just do the obvious thing.
 
-@@ -3226,14 +3225,12 @@ struct kmem_cache *kmem_cache_create(con
- 		 */
- 		s->objsize = max(s->objsize, (int)size);
- 		s->inuse = max_t(int, s->inuse, ALIGN(size, sizeof(void *)));
--		up_write(&slub_lock);
+>>  - you use "long long" all over the place. Don't do that. If you want
+>> a fixed size, say so, and use "u64/s64". That's the _real_ fixed size,
+>> and "long long" just _happens_ to be the same size on all current
+>> architectures.
+>
+> I was following struct stat/stat64 in arch/x86/include/asm/stat.h which do the
+> same.  Also, if this is going to be seen by userspace, isn't it better to use
+> uint32_t and suchlike?
 
- 		if (sysfs_slab_alias(s, name)) {
--			down_write(&slub_lock);
- 			s->refcount--;
--			up_write(&slub_lock);
- 			goto err;
- 		}
-+		up_write(&slub_lock);
- 		return s;
- 	}
+The arch/x86/include/asm stuff isn't trying to be the same image on
+different architectures, it's just x86[-64]-specific. But if you want
+to have a cross-architectural thing, you want to use
+cross-architectural types. Don't use "long long".
 
-@@ -3242,14 +3239,12 @@ struct kmem_cache *kmem_cache_create(con
- 		if (kmem_cache_open(s, GFP_KERNEL, name,
- 				size, align, flags, ctor)) {
- 			list_add(&s->list, &slab_caches);
--			up_write(&slub_lock);
- 			if (sysfs_slab_add(s)) {
--				down_write(&slub_lock);
- 				list_del(&s->list);
--				up_write(&slub_lock);
- 				kfree(s);
- 				goto err;
- 			}
-+			up_write(&slub_lock);
- 			return s;
- 		}
- 		kfree(s);
-@@ -4507,6 +4502,13 @@ static int sysfs_slab_add(struct kmem_ca
+Yeah, we may well do it somewhere, but there's no reason to add new ones.
 
- static void sysfs_slab_remove(struct kmem_cache *s)
- {
-+	if (slab_state < SYSFS)
-+		/*
-+		 * Sysfs has not been setup yet so no need to remove the
-+		 * cache from sysfs.
-+		 */
-+		return;
-+
- 	kobject_uevent(&s->kobj, KOBJ_REMOVE);
- 	kobject_del(&s->kobj);
- 	kobject_put(&s->kobj);
-@@ -4552,8 +4554,11 @@ static int __init slab_sysfs_init(void)
- 	struct kmem_cache *s;
- 	int err;
+Another thing you should look for in things like this - make sure that
+u64 is always naturally aligned. Otherwise some architectures will
+align it at 4-byte boundaries (notably x86-32), while others will
+align it at 8-byte boundaries (native 64-bit).
 
-+	down_write(&slub_lock);
-+
- 	slab_kset = kset_create_and_add("slab", &slab_uevent_ops, kernel_kobj);
- 	if (!slab_kset) {
-+		up_write(&slub_lock);
- 		printk(KERN_ERR "Cannot register slab subsystem.\n");
- 		return -ENOSYS;
- 	}
-@@ -4578,6 +4583,7 @@ static int __init slab_sysfs_init(void)
- 		kfree(al);
- 	}
+>>  - why create that new kind of xstat() that realistically absolutely
+>> nobody will use outside of some very special cases, and that has no
+>> real advantages for 99.9% of all people?
+>
+> The new information is useful for some cases.  Samba for example.  At least
+> two of the fields I'm adding are also made available through BSD's stat()
+> call, and will automatically be used for some things by autoconf magic if they
+> become available.
 
-+	up_write(&slub_lock);
- 	resiliency_test();
- 	return 0;
- }
+.. that' a pointless argument. If the only way something gets used is
+through autoconf, then clearly nobody cares. Yeah, maybe it adds a
+flag to "ls", but let's face is - that isn't actually _buying_
+anything.
 
+So the only thing that matters for new system calls is who actually
+really seriously wants to use the information, even if it's not there
+by default. Is it _anybody_ else than samba?
 
+That's why I asked about maybe making it "open+stat". Because that at
+least _potentially_ opens things up to another class of users.
+
+Because if it really is just samba that wants some odd crap that not
+even all filesystems support, then why add a whole new xstat for it?
+If nobody else clamors for it (except for people who just want new
+interfaces), then it's not generic enough to be worth something like
+that.
+
+In other words, in the absense of some seriously generic users, it
+sounds more like an ioctl to me to ask for something like "creation
+time" or "inode version", when not all filesystems support anything
+like that.
+
+>> [open+stat}
+>
+> Which would be used by even fewer people, I suspect.
+
+Umm, no. It would be used by _at_least_ as many people.
+
+And don't get me wrong - I'm not saying "you need to make it
+open+stat". I'm saying "you need to make the case that the thing is so
+generically useful that it's worth a whole new system call, rather
+than just a filesystem specific ioctl".
+
+> Also, I'm not sure how much use the atomicity is, given that the file may have
+> changed state between the gathering of the stat data and userspace getting to
+> do anything with it.
+
+It's a security issue. It's not atomic wrt the file being edited, but
+it would be atomic wrt the filename changing. IOW, the same thing as
+why web servers etc need to do "open+fstat" rather than "stat+open".
+
+And yes, we can already do open+fstat. But exactly because it's a
+fairly common pattern, and the kinds of programs that do it tend to
+also care about performance, maybe they'd like a single system call.
+
+Ask your samba people, for example, if they'd _ever_ do just a
+"xstat()"? Somehow I suspect that most server kind of apps almost
+always end up doing open+fstat, just because they don't want just the
+stat information, and need to do the fstat in order to guarantee they
+are talking about the same file.
+
+But again - the whole "open+stat" is not because I think they need to
+be done together. It's because I'm trying to see if it could make the
+system call worth it at all.
+
+>> >        ssize_t ret = fxstat(unsigned fd,
+>>
+>> Quite frankly, my gut feel is that once you do "xstat(dfd, filename,
+>> ...)" then it's damn stupid to do a separate "fxstat()", when you
+>> might as well say that "xtstat(dfd, NULL, ...)" is the same as
+>> "fxstat(fd, ...)"
+>
+> This has been suggested and denounced as stupid already.  That said, I agree
+> with you.
+
+Hey, whoever denounced it as stupid obviously doesn't have the neurons
+to go around to be involved in the discussion. Ignore them.
+
+                Linus
