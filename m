@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966371Ab0GSSpz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 14:45:55 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:25781 "EHLO
+	id S965539Ab0GSSjx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 14:39:53 -0400
+Received: from g4t0014.houston.hp.com ([15.201.24.17]:25986 "EHLO
 	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936529Ab0GSSjZ (ORCPT
+	with ESMTP id S965267Ab0GSSjo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 14:39:25 -0400
-Subject: [PATCH 03/26] cciss: factor out cciss_lookup_board_id
+	Mon, 19 Jul 2010 14:39:44 -0400
+Subject: [PATCH 07/26] cciss: factor out cciss_wait_for_board_ready()
 To: axboe@kernel.dk
 From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
 Cc: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
         linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
-Date: Mon, 19 Jul 2010 13:44:55 -0500
-Message-ID: <20100719184455.7908.24283.stgit@beardog.cce.hp.com>
+Date: Mon, 19 Jul 2010 13:45:15 -0500
+Message-ID: <20100719184515.7908.55471.stgit@beardog.cce.hp.com>
 In-Reply-To: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
 References: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
 User-Agent: StGit/0.15
@@ -26,130 +26,91 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-cciss: factor out cciss_lookup_board_id
+cciss: factor out cciss_wait_for_board_ready()
 
 Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 ---
- drivers/block/cciss.c |   66 ++++++++++++++++++++++++++-----------------------
- 1 files changed, 35 insertions(+), 31 deletions(-)
+ drivers/block/cciss.c |   32 +++++++++++++++++---------------
+ drivers/block/cciss.h |   15 +++++++++++++++
+ 2 files changed, 32 insertions(+), 15 deletions(-)
 
 diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index b79ce8e..d4167c2 100644
+index 9c9c79c..286c81d 100644
 --- a/drivers/block/cciss.c
 +++ b/drivers/block/cciss.c
-@@ -3980,35 +3980,43 @@ default_int_mode:
- 	return;
+@@ -4026,9 +4026,23 @@ static int __devinit cciss_pci_find_memory_BAR(struct pci_dev *pdev,
+ 	return -ENODEV;
  }
  
--static int __devinit cciss_pci_init(ctlr_info_t *c)
-+static int __devinit cciss_lookup_board_id(struct pci_dev *pdev, u32 *board_id)
- {
--	ushort subsystem_vendor_id, subsystem_device_id, command;
--	__u32 board_id, scratchpad = 0;
--	__u64 cfg_offset;
--	__u32 cfg_base_addr;
--	__u64 cfg_base_addr_index;
--	int i, prod_index, err;
--	__u32 trans_offset;
++static int __devinit cciss_wait_for_board_ready(ctlr_info_t *h)
++{
 +	int i;
-+	u32 subsystem_vendor_id, subsystem_device_id;
- 
--	subsystem_vendor_id = c->pdev->subsystem_vendor;
--	subsystem_device_id = c->pdev->subsystem_device;
--	board_id = (((__u32) (subsystem_device_id << 16) & 0xffff0000) |
--		    subsystem_vendor_id);
-+	subsystem_vendor_id = pdev->subsystem_vendor;
-+	subsystem_device_id = pdev->subsystem_device;
-+	*board_id = ((subsystem_device_id << 16) & 0xffff0000) |
-+			subsystem_vendor_id;
- 
- 	for (i = 0; i < ARRAY_SIZE(products); i++) {
- 		/* Stand aside for hpsa driver on request */
- 		if (cciss_allow_hpsa && products[i].board_id == HPSA_BOUNDARY)
- 			return -ENODEV;
--		if (board_id == products[i].board_id)
--			break;
-+		if (*board_id == products[i].board_id)
-+			return i;
- 	}
--	prod_index = i;
--	if (prod_index == ARRAY_SIZE(products)) {
--		dev_warn(&c->pdev->dev,
--			"unrecognized board ID: 0x%08lx, ignoring.\n",
--			(unsigned long) board_id);
-+	dev_warn(&pdev->dev, "unrecognized board ID: 0x%08x, ignoring.\n",
-+		*board_id);
++	u32 scratchpad;
++
++	for (i = 0; i < CCISS_BOARD_READY_ITERATIONS; i++) {
++		scratchpad = readl(h->vaddr + SA5_SCRATCHPAD_OFFSET);
++		if (scratchpad == CCISS_FIRMWARE_READY)
++			return 0;
++		msleep(CCISS_BOARD_READY_POLL_INTERVAL_MSECS);
++	}
++	dev_warn(&h->pdev->dev, "board not ready, timed out.\n");
 +	return -ENODEV;
 +}
 +
-+static int __devinit cciss_pci_init(ctlr_info_t *c)
-+{
-+	ushort command;
-+	__u32 scratchpad = 0;
-+	__u64 cfg_offset;
-+	__u32 cfg_base_addr;
-+	__u64 cfg_base_addr_index;
-+	__u32 trans_offset;
-+	int i, prod_index, err;
-+
-+	prod_index = cciss_lookup_board_id(c->pdev, &c->board_id);
-+	if (prod_index < 0)
- 		return -ENODEV;
--	}
-+	c->product_name = products[prod_index].product_name;
-+	c->access = *(products[prod_index].access);
- 
- 	/* check to see if controller has been disabled */
- 	/* BEFORE trying to enable it */
-@@ -4035,13 +4043,13 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
- #ifdef CCISS_DEBUG
- 	printk(KERN_INFO "command = %x\n", command);
- 	printk(KERN_INFO "irq = %x\n", c->pdev->irq);
--	printk(KERN_INFO "board_id = %x\n", board_id);
-+	printk(KERN_INFO "board_id = %x\n", c->board_id);
- #endif				/* CCISS_DEBUG */
- 
- /* If the kernel supports MSI/MSI-X we will try to enable that functionality,
-  * else we use the IO-APIC interrupt assigned to us by system ROM.
-  */
--	cciss_interrupt_mode(c, board_id);
-+	cciss_interrupt_mode(c, c->board_id);
- 
- 	/* find the memory BAR */
- 	for (i = 0; i < DEVICE_COUNT_RESOURCE; i++) {
-@@ -4107,11 +4115,9 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
- 	c->transtable = remap_pci_mem(pci_resource_start(c->pdev,
- 		cfg_base_addr_index) + cfg_offset+trans_offset,
- 		sizeof(*c->transtable));
--	c->board_id = board_id;
+ static int __devinit cciss_pci_init(ctlr_info_t *c)
+ {
+-	__u32 scratchpad = 0;
+ 	__u64 cfg_offset;
+ 	__u32 cfg_base_addr;
+ 	__u64 cfg_base_addr_index;
+@@ -4073,21 +4087,9 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
+ 	if (err)
+ 		goto err_out_free_res;
+ 	c->vaddr = remap_pci_mem(c->paddr, 0x250);
 -
--	#ifdef CCISS_DEBUG
--		print_cfg_table(c->cfgtable);
--	#endif				/* CCISS_DEBUG */
-+#ifdef CCISS_DEBUG
-+	print_cfg_table(c->cfgtable);
-+#endif				/* CCISS_DEBUG */
+-	/* Wait for the board to become ready.  (PCI hotplug needs this.)
+-	 * We poll for up to 120 secs, once per 100ms. */
+-	for (i = 0; i < 1200; i++) {
+-		scratchpad = readl(c->vaddr + SA5_SCRATCHPAD_OFFSET);
+-		if (scratchpad == CCISS_FIRMWARE_READY)
+-			break;
+-		set_current_state(TASK_INTERRUPTIBLE);
+-		schedule_timeout(msecs_to_jiffies(100));	/* wait 100ms */
+-	}
+-	if (scratchpad != CCISS_FIRMWARE_READY) {
+-		printk(KERN_WARNING "cciss: Board not ready.  Timed out.\n");
+-		err = -ENODEV;
++	err = cciss_wait_for_board_ready(c);
++	if (err)
+ 		goto err_out_free_res;
+-	}
  
- 	/* Some controllers support Zero Memory Raid (ZMR).
- 	 * When configured in ZMR mode the number of supported
-@@ -4139,8 +4145,6 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
- 		c->chainsize = 0;       /* traditional */
- 	}
+ 	/* get the address index number */
+ 	cfg_base_addr = readl(c->vaddr + SA5_CTCFG_OFFSET);
+diff --git a/drivers/block/cciss.h b/drivers/block/cciss.h
+index 8a9f5b5..c2ef9dd 100644
+--- a/drivers/block/cciss.h
++++ b/drivers/block/cciss.h
+@@ -190,6 +190,21 @@ struct ctlr_info
  
--	c->product_name = products[prod_index].product_name;
--	c->access = *(products[prod_index].access);
- 	c->nr_cmds = c->max_commands - 4;
- 	if ((readb(&c->cfgtable->Signature[0]) != 'C') ||
- 	    (readb(&c->cfgtable->Signature[1]) != 'I') ||
-@@ -4165,8 +4169,8 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
- 	 * We've disabled prefetch for some time now. Testing with XEN
- 	 * kernels revealed a bug in the refetch if dom0 resides on a P600.
- 	 */
--	if(board_id == 0x3225103C) {
--			__u32 dma_prefetch;
-+	if (c->board_id == 0x3225103C) {
-+		__u32 dma_prefetch;
- 		__u32 dma_refetch;
- 		dma_prefetch = readl(c->vaddr + I2O_DMA1_CFG);
- 		dma_prefetch |= 0x8000;
+ #define CCISS_INTR_ON 	1 
+ #define CCISS_INTR_OFF	0
++
++
++/* CCISS_BOARD_READY_WAIT_SECS is how long to wait for a board
++ * to become ready, in seconds, before giving up on it.
++ * CCISS_BOARD_READY_POLL_INTERVAL_MSECS * is how long to wait
++ * between polling the board to see if it is ready, in
++ * milliseconds.  CCISS_BOARD_READY_ITERATIONS is derived
++ * the above.
++ */
++#define CCISS_BOARD_READY_WAIT_SECS (120)
++#define CCISS_BOARD_READY_POLL_INTERVAL_MSECS (100)
++#define CCISS_BOARD_READY_ITERATIONS \
++	((CCISS_BOARD_READY_WAIT_SECS * 1000) / \
++		CCISS_BOARD_READY_POLL_INTERVAL_MSECS)
++
+ /* 
+ 	Send the command to the hardware 
+ */
 
