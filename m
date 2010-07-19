@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760999Ab0GSX6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 19:58:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64318 "EHLO
+	id S1760981Ab0GSX6m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 19:58:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64034 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760979Ab0GSX6l (ORCPT
+	with ESMTP id S1760937Ab0GSX63 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 19:58:41 -0400
+	Mon, 19 Jul 2010 19:58:29 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,50 +15,153 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 04/49] memblock: No reason to include asm/memblock.h late
-Date: Mon, 19 Jul 2010 16:56:13 -0700
-Message-Id: <1279583818-14249-5-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 34/49] x86, memblock: Add memblock_x86_find_in_range_size()
+Date: Mon, 19 Jul 2010 16:56:43 -0700
+Message-Id: <1279583818-14249-35-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
 References: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C44E688.004C,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090203.4C44E685.0276,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+size is returned according free range.
+Will be used to find free ranges for early_memtest and memory corruption check
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Do not mess it up with lib/memblock.c yet.
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/memblock.h |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/memblock.h |    8 ++++
+ arch/x86/mm/Makefile            |    2 +
+ arch/x86/mm/memblock.c          |   88 +++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 98 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/memblock.h
+ create mode 100644 arch/x86/mm/memblock.c
 
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 86e7daf..4b69313 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -16,6 +16,8 @@
- #include <linux/init.h>
- #include <linux/mm.h>
- 
-+#include <asm/memblock.h>
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+new file mode 100644
+index 0000000..c14219a
+--- /dev/null
++++ b/arch/x86/include/asm/memblock.h
+@@ -0,0 +1,8 @@
++#ifndef _X86_MEMBLOCK_H
++#define _X86_MEMBLOCK_H
 +
- #define MAX_MEMBLOCK_REGIONS 128
++#define ARCH_DISCARD_MEMBLOCK
++
++u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
++
++#endif
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index a4c7683..5554339 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -26,4 +26,6 @@ obj-$(CONFIG_NUMA)		+= numa.o numa_$(BITS).o
+ obj-$(CONFIG_K8_NUMA)		+= k8topology_64.o
+ obj-$(CONFIG_ACPI_NUMA)		+= srat_$(BITS).o
  
- struct memblock_region {
-@@ -82,8 +84,6 @@ memblock_end_pfn(struct memblock_type *type, unsigned long region_nr)
- 	       memblock_size_pages(type, region_nr);
- }
- 
--#include <asm/memblock.h>
--
- #endif /* __KERNEL__ */
- 
- #endif /* _LINUX_MEMBLOCK_H */
++obj-$(CONFIG_HAVE_MEMBLOCK)		+= memblock.o
++
+ obj-$(CONFIG_MEMTEST)		+= memtest.o
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+new file mode 100644
+index 0000000..c602afb
+--- /dev/null
++++ b/arch/x86/mm/memblock.c
+@@ -0,0 +1,88 @@
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/init.h>
++#include <linux/bitops.h>
++#include <linux/memblock.h>
++#include <linux/bootmem.h>
++#include <linux/mm.h>
++#include <linux/range.h>
++
++/* Check for already reserved areas */
++static inline bool __init bad_addr_size(u64 *addrp, u64 *sizep, u64 align)
++{
++	struct memblock_region *r;
++	u64 addr = *addrp, last;
++	u64 size = *sizep;
++	bool changed = false;
++
++again:
++	last = addr + size;
++	for_each_memblock(reserved, r) {
++		if (last > r->base && addr < r->base) {
++			size = r->base - addr;
++			changed = true;
++			goto again;
++		}
++		if (last > (r->base + r->size) && addr < (r->base + r->size)) {
++			addr = round_up(r->base + r->size, align);
++			size = last - addr;
++			changed = true;
++			goto again;
++		}
++		if (last <= (r->base + r->size) && addr >= r->base) {
++			(*sizep)++;
++			return false;
++		}
++	}
++	if (changed) {
++		*addrp = addr;
++		*sizep = size;
++	}
++	return changed;
++}
++
++static u64 __init __memblock_x86_find_in_range_size(u64 ei_start, u64 ei_last, u64 start,
++			 u64 *sizep, u64 align)
++{
++	u64 addr, last;
++
++	addr = round_up(ei_start, align);
++	if (addr < start)
++		addr = round_up(start, align);
++	if (addr >= ei_last)
++		goto out;
++	*sizep = ei_last - addr;
++	while (bad_addr_size(&addr, sizep, align) && addr + *sizep <= ei_last)
++		;
++	last = addr + *sizep;
++	if (last > ei_last)
++		goto out;
++
++	return addr;
++
++out:
++	return MEMBLOCK_ERROR;
++}
++
++/*
++ * Find next free range after start, and size is returned in *sizep
++ */
++u64 __init memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align)
++{
++	struct memblock_region *r;
++
++	for_each_memblock(memory, r) {
++		u64 ei_start = r->base;
++		u64 ei_last = ei_start + r->size;
++		u64 addr;
++
++		addr = __memblock_x86_find_in_range_size(ei_start, ei_last, start,
++					 sizep, align);
++
++		if (addr != MEMBLOCK_ERROR)
++			return addr;
++	}
++
++	return MEMBLOCK_ERROR;
++}
++
 -- 
 1.6.4.2
 
