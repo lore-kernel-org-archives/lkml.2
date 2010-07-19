@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935729Ab0GSO67 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 10:58:59 -0400
-Received: from verein.lst.de ([213.95.11.210]:38921 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935221Ab0GSO66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 10:58:58 -0400
-Date: Mon, 19 Jul 2010 16:58:51 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Lubomir Rintel <lkundrak@v3.sk>
-Cc: Christoph Hellwig <hch@lst.de>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 3/3] [fs/sysv] V7: Add support for non-PDP11 v7 filesystems
-Message-ID: <20100719145851.GD25279@lst.de>
-References: <1279559802-19154-1-git-send-email-lkundrak@v3.sk> <1279559802-19154-2-git-send-email-lkundrak@v3.sk> <1279559802-19154-3-git-send-email-lkundrak@v3.sk> <1279559802-19154-4-git-send-email-lkundrak@v3.sk>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279559802-19154-4-git-send-email-lkundrak@v3.sk>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+	id S935798Ab0GSPAj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 11:00:39 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:22094 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935221Ab0GSPAi convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 11:00:38 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Mon, 19 Jul 2010 17:01:55 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
+In-reply-to: <583384.61837.qm@web180312.mail.gq1.yahoo.com>
+To: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        linux-kernel@vger.kernel.org,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
+        stable <stable@kernel.org>
+Message-id: <op.vf3iphex7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <583384.61837.qm@web180312.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 07:16:42PM +0200, Lubomir Rintel wrote:
-> A mount-time option was added that makes it possible to override the
-> endianness and an attempt is made to autodetect it (which seems easy,
-> given the disk addresses are 3-byte.
-> 
-> No attempt is made to detect big-endian filesystems -- were there any?
-> Tested with PDP-11 v7 filesystems and PC-IX maintenance floppy.
+>> As you see, the iSerialNumber module parameter
+>> is ignored unless the
+>> gadget driver sets the iSerialNumber field of
+>> the device descriptor.
 
-Do you actually need the mount option?  We get away just fine with
-it for sysv filesystems.  And if not I'd be consistent and accept the
-options for both sysv and v7 filesystems.
+On Mon, 19 Jul 2010 16:44:55 +0200, David Brownell <david-b@pacbell.net> wrote:
+> So make that gadget code do that ...
 
-> +	/* plausibility check on root inode: it is a directory,
-> +	   with a nonzero size that is a multiple of 16 */
-> +	if ((bh2 = sb_bread(sb, 2)) == NULL) {
-> +		return 0;
-> +	}
+That's exactly what I have done.  I have added a code that sets
+the iSerialNumber.
 
-A little style nitpick, this should be:
-
-	bh2 = sb_bread(sb, 2);
-	if (!bh)
-		return 0;
-
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
