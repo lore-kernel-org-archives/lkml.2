@@ -1,42 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760749Ab0GSRGw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:06:52 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:62817 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760719Ab0GSRGo (ORCPT
+	id S1760728Ab0GSRGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:06:45 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:55106 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760717Ab0GSRGm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:06:44 -0400
+	Mon, 19 Jul 2010 13:06:42 -0400
 From: Eric B Munson <emunson@mgebm.net>
 To: akpm@linux-foundation.org
 Cc: mingo@redhat.com, hugh.dickins@tiscali.co.uk, riel@redhat.com,
         peterz@infradead.org, anton@samba.org, hch@infradead.org,
         linux-kernel@vger.kernel.org, linux-mm@kvack.org,
         Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH 0/2 V2] Add trace points to [m|mun|mre]map and brk
-Date: Mon, 19 Jul 2010 18:06:32 +0100
-Message-Id: <cover.1279558781.git.emunson@mgebm.net>
+Subject: [PATCH 2/2] Add mremap trace point
+Date: Mon, 19 Jul 2010 18:06:34 +0100
+Message-Id: <bf5053d17b7fa3260f33da4103cac824b0113a22.1279558781.git.emunson@mgebm.net>
 X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <cover.1279558781.git.emunson@mgebm.net>
+References: <cover.1279558781.git.emunson@mgebm.net>
+In-Reply-To: <cover.1279558781.git.emunson@mgebm.net>
+References: <cover.1279558781.git.emunson@mgebm.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch set is a resubmit of several patches I sent out earlier that adds
-trace points to the mmap family.  These events report addresses and sizes when
-each function returns success.  They will be used by a userspace tool that will model memory usage.
+This patch adds the trace point for mremap which reports relevant addresses
+and sizes when mremap exits successfully.
 
-Changes from V1:
-- Group mmap, munmap, and brk into first patch (all in mmap.c) and mremap into
-  second (in mremap.c)
-- Use DEFINE_EVENT_CLASS and DEFINE_EVENT for mmap and brk events
+Signed-off-by: Eric B Munson <emunson@mgebm.net>
+---
+ include/trace/events/mm.h |   22 ++++++++++++++++++++++
+ mm/mremap.c               |    4 ++++
+ 2 files changed, 26 insertions(+), 0 deletions(-)
 
-Eric B Munson (2):
-  Add trace points to mmap, munmap, and brk
-  Add mremap trace point
-
- include/trace/events/mm.h |   97 +++++++++++++++++++++++++++++++++++++++++++++
- mm/mmap.c                 |   15 ++++++-
- mm/mremap.c               |    4 ++
- 3 files changed, 115 insertions(+), 1 deletions(-)
- create mode 100644 include/trace/events/mm.h
+diff --git a/include/trace/events/mm.h b/include/trace/events/mm.h
+index 892bbe3..16f8c36 100644
+--- a/include/trace/events/mm.h
++++ b/include/trace/events/mm.h
+@@ -69,6 +69,28 @@ TRACE_EVENT(
+ 		TP_printk("%u bytes at 0x%lx\n", __entry->len, __entry->start)
+ );
+ 
++TRACE_EVENT(
++		mremap,
++		TP_PROTO(unsigned long addr, unsigned long old_len,
++			 unsigned long new_addr, unsigned long new_len),
++		TP_ARGS(addr, old_len, new_addr, new_len),
++		TP_STRUCT__entry(
++			__field(unsigned long, addr)
++			__field(unsigned long, old_len)
++			__field(unsigned long, new_addr)
++			__field(unsigned long, new_len)
++		),
++		TP_fast_assign(
++			__entry->addr = addr;
++			__entry->old_len = old_len;
++			__entry->new_addr = new_addr;
++			__entry->new_len = new_len;
++		),
++		TP_printk("%lu bytes from 0x%lx to %lu bytes at 0x%lx\n",
++			__entry->old_len, __entry->addr, __entry->new_len,
++			__entry->new_addr)
++);
++
+ #endif /* _TRACE_MM_H */
+ 
+ #include <trace/define_trace.h>
+diff --git a/mm/mremap.c b/mm/mremap.c
+index cde56ee..4ef1dd3 100644
+--- a/mm/mremap.c
++++ b/mm/mremap.c
+@@ -20,6 +20,8 @@
+ #include <linux/syscalls.h>
+ #include <linux/mmu_notifier.h>
+ 
++#include <trace/events/mm.h>
++
+ #include <asm/uaccess.h>
+ #include <asm/cacheflush.h>
+ #include <asm/tlbflush.h>
+@@ -504,6 +506,8 @@ unsigned long do_mremap(unsigned long addr,
+ out:
+ 	if (ret & ~PAGE_MASK)
+ 		vm_unacct_memory(charged);
++	else
++		trace_mremap(addr, old_len, new_addr, new_len);
+ 	return ret;
+ }
+ 
+-- 
+1.7.0.4
 
