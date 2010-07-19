@@ -1,65 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936318Ab0GSPd6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 11:33:58 -0400
-Received: from xenotime.net ([72.52.115.56]:37284 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S936210Ab0GSPdv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 11:33:51 -0400
-Date: Mon, 19 Jul 2010 08:33:40 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Gene Heskett <gene.heskett@gmail.com>, linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35-rc4, no boot
-Message-Id: <20100719083340.195d4496.rdunlap@xenotime.net>
-In-Reply-To: <m1aapodlby.fsf@fess.ebiederm.org>
-References: <201007051250.17010.gene.heskett@gmail.com>
-	<m1aapodlby.fsf@fess.ebiederm.org>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S936289Ab0GSPet (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 11:34:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20379 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936072Ab0GSPb1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 11:31:27 -0400
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: [PATCH v5 11/12] Let host know whether the guest can handle async PF in non-userspace context.
+Date: Mon, 19 Jul 2010 18:31:01 +0300
+Message-Id: <1279553462-7036-12-git-send-email-gleb@redhat.com>
+In-Reply-To: <1279553462-7036-1-git-send-email-gleb@redhat.com>
+References: <1279553462-7036-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 18 Jul 2010 23:42:09 -0700 Eric W. Biederman wrote:
+If guest can detect that it runs in non-preemptable context it can
+handle async PFs at any time, so let host know that it can send async
+PF even if guest cpu is not in userspace.
 
-> Gene Heskett <gene.heskett@gmail.com> writes:
-> 
-> > Phenom 9550, 4G ram, asus m2n-sli deluxe mobo, all sata drives (4 + optical 
-> > burner)
-> >
-> > I have now built 35-rc4 4 times, the last 2 with
-> >
-> > 2.6.31-12-mdv.config & make oldconfig (lots of accepts), & build
-> >
-> > And a working .config from 2.6.35-rc3 + make oldconfig (no changes reported) 
-> > & build.
-> >
-> > Both fail at the attached image point booting from a grub2 menu on a 
-> > different drive that has been working with rc3 for quite a few boots but its 
-> > all bitchy this morning so is booted to the mdv 2.6.31-12 kernel above ATM.
-> >
-> > Last .config also attached.
-> >
-> > What do I need to do here?
-> 
-> That does sound bizarre.  You have some weird initrd dependency on the
-> kernel doing something, but it isn't clear to me what that might be.
-> Shrug.
-> 
-> Not being able to mount /dev and /sys feels like they simply weren't
-> compiled in.  But your config suggests otherwise.
-
-I would change the second line below to be enabled:
-
-CONFIG_DEVTMPFS=y
-# CONFIG_DEVTMPFS_MOUNT is not set
-
-and give that a shot.
-
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ arch/x86/include/asm/kvm_host.h |    1 +
+ arch/x86/include/asm/kvm_para.h |    1 +
+ arch/x86/kernel/kvm.c           |    3 +++
+ arch/x86/kvm/x86.c              |    5 +++--
+ 4 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 45e6c12..c675d5d 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -367,6 +367,7 @@ struct kvm_vcpu_arch {
+ 	cpumask_var_t wbinvd_dirty_mask;
+ 
+ 	u32 __user *apf_data;
++	bool apf_send_user_only;
+ 	u32 apf_memslot_ver;
+ 	u64 apf_msr_val;
+ 	u32 async_pf_id;
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index edf07cf..a33372c 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -38,6 +38,7 @@
+ #define KVM_MAX_MMU_OP_BATCH           32
+ 
+ #define KVM_ASYNC_PF_ENABLED			(1 << 0)
++#define KVM_ASYNC_PF_SEND_ALWAYS		(1 << 1)
+ 
+ /* Operations for KVM_HC_MMU_OP */
+ #define KVM_MMU_OP_WRITE_PTE            1
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index 914b0fc..462b47d 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -429,6 +429,9 @@ void __cpuinit kvm_guest_cpu_init(void)
+ 	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF)) {
+ 		u64 pa = __pa(&__get_cpu_var(apf_reason));
+ 
++#ifdef CONFIG_PREEMPT
++		pa |= KVM_ASYNC_PF_SEND_ALWAYS;
++#endif
+ 		if (native_write_msr_safe(MSR_KVM_ASYNC_PF_EN,
+ 					  pa | KVM_ASYNC_PF_ENABLED, pa >> 32))
+ 			return;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 5482db0..ba351f5 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -1222,8 +1222,8 @@ static int kvm_pv_enable_async_pf(struct kvm_vcpu *vcpu, u64 data)
+ 	int offset = offset_in_page(gpa);
+ 	unsigned long addr;
+ 
+-	/* Bits 1:5 are resrved, Should be zero */
+-	if (data & 0x3e)
++	/* Bits 2:5 are resrved, Should be zero */
++	if (data & 0x3c)
+ 		return 1;
+ 
+ 	vcpu->arch.apf_msr_val = data;
+@@ -1246,6 +1246,7 @@ static int kvm_pv_enable_async_pf(struct kvm_vcpu *vcpu, u64 data)
+ 		return 1;
+ 	}
+ 	vcpu->arch.apf_memslot_ver = vcpu->kvm->memslot_version;
++	vcpu->arch.apf_send_user_only = !(data & KVM_ASYNC_PF_SEND_ALWAYS);
+ 	kvm_async_pf_wakeup_all(vcpu);
+ 	return 0;
+ }
+-- 
+1.7.1
+
