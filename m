@@ -1,98 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760695Ab0GSRFr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:05:47 -0400
-Received: from mga14.intel.com ([143.182.124.37]:48635 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753705Ab0GSRFq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:05:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,227,1278313200"; 
-   d="scan'208";a="301817509"
-Date: Mon, 19 Jul 2010 10:05:41 -0700
-From: Sarah Sharp <sarah.a.sharp@linux.intel.com>
-To: Thomas Meyer <thomas@m3y3r.de>
-Cc: tpmdd-devel@lists.sourceforge.net,
-        Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
-        James Morris <jmorris@namei.org>, linux-kernel@vger.kernel.org
-Subject: Re: TPM bug fix causes hang on suspend (2.6.35-rc4)
-Message-ID: <20100719170541.GA3004@xanatos>
-References: <20100717000033.GA2509@xanatos>
- <1279375943.4731.0.camel@localhost.localdomain>
+	id S1760713Ab0GSRGe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:06:34 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:58032 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753705Ab0GSRGd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 13:06:33 -0400
+Date: Mon, 19 Jul 2010 13:06:32 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
+Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
+In-Reply-To: <op.vf3mmwoa7p4s8u@pikus>
+Message-ID: <Pine.LNX.4.44L0.1007191256480.1657-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279375943.4731.0.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 17, 2010 at 04:12:23PM +0200, Thomas Meyer wrote:
-> Am Freitag, den 16.07.2010, 17:00 -0700 schrieb Sarah Sharp:
-> > I recently upgraded to 2.6.35-rc4, and I discovered that suspend no
-> > longer works on my Thinkpad x200s.  When I suspend with some programs
-> > open (specifically while buffy is reading my maildirs), the suspend
-> > light blinks forever and the system never suspends.
-> > 
-> > I bisected the issue down to commit b5edfef, which is a merge of James
-> > Morris' security-testing-2.6 tree, that only included this commit:
-> > 
-> > commit 02a077c52ef7631275a79862ffd9f3dbe9d38bc2
-> > Author: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-> > Date:   Mon Jun 14 13:58:22 2010 -0300
-> > 
-> >     TPM: ReadPubEK output struct fix
-> >     
-> >     This patch adds a missing element of the ReadPubEK command output,
-> >     that prevents future overflow of this buffer when copying the
-> >     TPM output result into it.
-> >     
-> >     Prevents a kernel panic in case the user tries to read the
-> >     pubek from sysfs.
-> >     
-> >     Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-> >     Signed-off-by: James Morris <jmorris@namei.org>
-> > 
-> > diff --git a/drivers/char/tpm/tpm.h b/drivers/char/tpm/tpm.h
-> > index 8e00b4d..792868d 100644
-> > --- a/drivers/char/tpm/tpm.h
-> > +++ b/drivers/char/tpm/tpm.h
-> > @@ -224,6 +224,7 @@ struct      tpm_readpubek_params_out {
-> >         u8      algorithm[4];
-> >         u8      encscheme[2];
-> >         u8      sigscheme[2];
-> > +       __be32  paramsize;
-> >         u8      parameters[12]; /*assuming RSA*/
-> >         __be32  keysize;
-> >         u8      modulus[256];
-> > 
-> > The dmesg captured over netconsole when suspend fails is attached, but
-> > it doesn't look very interesting.  lspci output is also attached.  I
-> > don't have any userspace programs installed that can use TPM, like
-> > trousers or libtspi1.
-> > 
-> > If I try just removing the tpm_tis, tpm_bios, and tpm modules before
-> > suspending, the suspend still fails.  If I recompile without TPM
-> > hardware support (CONFIG_TCG_TPM=n), suspend still fails.  However, if I
-> > also turn off the securityFS config option (CONFIG_SECURITYFS),
-> > suspend succeeds.
-> > 
-> > It looks like an odd commit to cause a suspend failure, but when I reset
-> > the git HEAD to the commit before the merge of this patch, and suspend
-> > works fine.  Can you fix this?
-> > 
-> > Sarah Sharp
+On Mon, 19 Jul 2010, [utf-8] Michał Nazarewicz wrote:
+
+> >>> I have lost track of the current state of that patch.  When you finish
+> >>> updating it, please post it for my review.
 > 
-> Maybe same as https://bugzilla.kernel.org/show_bug.cgi?id=16256 ?
+> > On Mon, 19 Jul 2010, Michal‚ Nazarewicz wrote:
+> >> This is still the v3 patchset (only the first two should be of
+> >> interest to you), still want me to resend?
+> 
+> On Mon, 19 Jul 2010 18:14:01 +0200, Alan Stern wrote:
+> > Or provide a URL for them in the mailing list archives.
+> 
+> 1/3: http://lkml.org/lkml/2010/7/8/317
+> 	Adds serial to mass storage gadget and g_multi introducing
+> 	fsg_string_serial_fill() macro used by abovementioned
+> 	gadgets and file storage gadget.
 
-That doesn't look really similar.  The user found a different patch at
-fault, and they were also able to successfully suspend when the tpm_tis
-module was removed, but suspend still breaks for me in that case.
-Suspend breaks with that commit even when I don't compile any tpm
-modules at all.  But I'll try Helmut's fix[1] and let you know if it
-works.
+Ah, yes.  My personal taste would be to write fsg_string_serial_fill_n 
+as an inline routine instead of as a macro, and not try to make it 
+separate from fsg_string_serial_fill.
 
-Sarah Sharp
+> 2/3: http://lkml.org/lkml/2010/7/8/318
+> 	Modification of Yann Cantin's patch, delta in comment for 1/3.
 
-[1] http://sourceforge.net/mailarchive/message.php?msg_name=201006091511.09810.helmut.schaa%40googlemail.com
+I have only one objection to this patch: The new parameter's name 
+should be "serial", not "serial_parm".  (Compare it to all the other 
+parameter names.)
+
+> 3/3: http://lkml.org/lkml/2010/7/8/316
+> 	Modification of patch for earlier patch for g_multi.  Dunno if
+> 	you want to look at it.  Providing URL for completeness.
+
+No comment on that one.
+
+As for the discussion between you and David...  I haven't tried to 
+follow the details very carefully.  I get the impression that the two 
+of you are talking past each other instead of coming to grips with a 
+genuine issue.
+
+Alan Stern
+
