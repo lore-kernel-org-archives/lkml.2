@@ -1,58 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967010Ab0GSVnB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 17:43:01 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58446 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966904Ab0GSVm4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 17:42:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=WC81SDmGgtZXAgCGo1j87BLD9XZl9p+UORYxX4FX0kSiKewACFSbvkaoS2ZN93U1TM
-         HZ127gShUZSJ8dzER5E5KKNoPN0Cfa2FezgtydZYasMWM6c84fPjSRRUt8Epg57BNRQ6
-         LuR/sJTi5izJplen18pzDaGoOHGg8hjRDcJYA=
-Date: Tue, 20 Jul 2010 01:42:51 +0400
-From: "Alexander Y. Fomichev" <git.user@gmail.com>
-To: Dave Airlie <airlied@redhat.com>, Alex Deucher <alexdeucher@gmail.com>,
-        Robert Noland <rnoland@2hip.net>, Matt Turner <mattst88@gmail.com>,
-        Jerome Glisse <jglisse@redhat.com>, akpm@linux-foundation.org,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: drivers/gpu/drm/radeon/r600_blit.c: fix possible NULL pointer
- derefernce
-Message-ID: <20100720014251.46b91cdd@mad-cat.localdomain>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S967001Ab0GSVmL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 17:42:11 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:40072 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S966873Ab0GSViy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 17:38:54 -0400
+Message-Id: <20100719213853.607589770@sgi.com>
+User-Agent: quilt/0.47-1
+Date: Mon, 19 Jul 2010 16:32:33 -0500
+From: steiner@sgi.com
+To: akpm@osdl.org, linux-kernel@vger.kernel.org
+Subject: [Patch 15/25] GRU - reorder interrupt processing
+References: <20100719213651.362618144@sgi.com>
+Content-Disposition: inline; filename=uv_gru_preload_tlb_inval
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fix possible NULL pointer dereference when
-r600_prepare_blit_copy tries to fill dev_priv->blit_vb->file_priv
-without check of dev_priv->blit_vb. dev_priv->blit_vb should be
-filled by r600_nomm_get_vb but latest can fail with EAGAIN.
-Addresses: https://bugzilla.kernel.org/show_bug.cgi?id=16375
+From: Jack Steiner <steiner@sgi.com>
+
+Reorder the servicing of CBR completion interrupts & TLB miss interrupts.
+There is a small performance gain to service TLB misses first. Completion
+interrupts are rare.
+
+
+Signed-off-by: Jack Steiner <steiner@sgi.com>
 
 ---
- drivers/gpu/drm/radeon/r600_blit.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ drivers/misc/sgi-gru/grufault.c |   24 +++++++++++++-----------
+ 1 file changed, 13 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/gpu/drm/radeon/r600_blit.c b/drivers/gpu/drm/radeon/r600_blit.c
-index f4fb88e..0df4a2b 100644
---- a/drivers/gpu/drm/radeon/r600_blit.c
-+++ b/drivers/gpu/drm/radeon/r600_blit.c
-@@ -541,6 +541,8 @@ r600_prepare_blit_copy(struct drm_device *dev, struct drm_file *file_priv)
-        DRM_DEBUG("\n");
+Index: linux/drivers/misc/sgi-gru/grufault.c
+===================================================================
+--- linux.orig/drivers/misc/sgi-gru/grufault.c	2010-07-19 10:25:40.978392010 -0500
++++ linux/drivers/misc/sgi-gru/grufault.c	2010-07-19 10:25:45.626240841 -0500
+@@ -7,7 +7,7 @@
+  * These misses are reported either via interrupts or user polling of
+  * the user CB.
+  *
+- *  Copyright (c) 2008 Silicon Graphics, Inc.  All Rights Reserved.
++ *  Copyright (c) 2008-2010 Silicon Graphics, Inc.  All Rights Reserved.
+  *
+  *  This program is free software; you can redistribute it and/or modify
+  *  it under the terms of the GNU General Public License as published by
+@@ -559,19 +559,10 @@ static irqreturn_t gru_intr(int chiplet,
+ 		imap.fault_bits[0], imap.fault_bits[1],
+ 		dmap.fault_bits[0], dmap.fault_bits[1]);
+ 
+-	for_each_cbr_in_tfm(cbrnum, dmap.fault_bits) {
+-		STAT(intr_cbr);
+-		cmp = gru->gs_async_wq[cbrnum];
+-		if (cmp)
+-			complete(cmp);
+-		gru_dbg(grudev, "gid %d, cbr_done %d, done %d\n",
+-			gru->gs_gid, cbrnum, cmp ? cmp->done : -1);
+-	}
+-
+ 	for_each_cbr_in_tfm(cbrnum, imap.fault_bits) {
+-		STAT(intr_tfh);
+ 		tfh = get_tfh_by_index(gru, cbrnum);
+ 		prefetchw(tfh);	/* Helps on hdw, required for emulator */
++		STAT(intr_tfh);
+ 
+ 		/*
+ 		 * When hardware sets a bit in the faultmap, it implicitly
+@@ -596,6 +587,8 @@ static irqreturn_t gru_intr(int chiplet,
+ 			gts->ustats.interrupts++;
+ 		gts->ustats.fmm_tlbmiss++;
+ 		multi = 1;
++		if (!gts->ts_mm)
++			continue;
+ 		if (!gts->ts_force_cch_reload &&
+ 					down_read_trylock(&gts->ts_mm->mmap_sem)) {
+ 			gru_try_dropin(gru, gts, tfh, NULL);
+@@ -605,6 +598,15 @@ static irqreturn_t gru_intr(int chiplet,
+ 			STAT(intr_mm_lock_failed);
+ 		}
+ 	}
++	for_each_cbr_in_tfm(cbrnum, dmap.fault_bits) {
++		STAT(intr_cbr);
++		cmp = gru->gs_async_wq[cbrnum];
++		if (cmp)
++			complete(cmp);
++		gru_dbg(grudev, "gid %d, cbr_done %d, done %d\n",
++			gru->gs_gid, cbrnum, cmp ? cmp->done : -1);
++	}
++
+ 	return IRQ_HANDLED;
+ }
+ 
 
-        r600_nomm_get_vb(dev);
-+       if (!dev_priv->blit_vb)
-+               return;
-
-        dev_priv->blit_vb->file_priv = file_priv;
-
---
-1.7.1.1
