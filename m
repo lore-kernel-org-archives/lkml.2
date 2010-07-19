@@ -1,40 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936522Ab0GSShh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 14:37:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:1264 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S936510Ab0GSShK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 14:37:10 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,228,1278313200"; 
-   d="scan'208";a="639823102"
-Message-Id: <20100719181941.971215286@sbs-t61.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Mon, 19 Jul 2010 11:35:41 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [patch 0/3] x86: xsaveopt kernel enabling patches
+	id S936534Ab0GSShl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 14:37:41 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49580 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S936511Ab0GSShP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 14:37:15 -0400
+Date: Mon, 19 Jul 2010 14:37:13 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
+Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
+In-Reply-To: <op.vf3o6v067p4s8u@pikus>
+Message-ID: <Pine.LNX.4.44L0.1007191428290.1657-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-AVX Programming Reference (June, 2010 version) located at
-http://software.intel.com/en-us/avx/ refers to the optimized
-extended state save instruction "xsaveopt".
+On Mon, 19 Jul 2010, [utf-8] Michał Nazarewicz wrote:
 
-xsaveopt is similar to xsave and incorporates optimizations specifically
-targeted for speeding up context switch save, like:
-a. if a state is in an INIT state, the instruction may clear the corresponding
-   bit in the xheader.bv with out writing the actual state in to the memory.
-b. if the state hasn't been modified since the last xrstor, the instruction
-   may not write out the state to the save area.
+> On Mon, 19 Jul 2010 19:06:32 +0200, Alan Stern <stern@rowland.harvard.edu> wrote:
+> >> 1/3: http://lkml.org/lkml/2010/7/8/317
+> 
+> > Ah, yes.  My personal taste would be to write fsg_string_serial_fill_n
+> > as an inline routine instead of as a macro, and not try to make it
+> > separate from fsg_string_serial_fill.
+> 
+> >> 2/3: http://lkml.org/lkml/2010/7/8/318
+> 
+> > I have only one objection to this patch: The new parameter's name
+> > should be "serial", not "serial_parm".  (Compare it to all the other
+> > parameter names.)
+> 
+> Will change the two tomorrow.
 
-Following patches enable the use of xsaveopt for context switch save/restore
-of the extended state.
+Come to think of it, there was one other issue.  The serial number
+parameter is important enough that it should be available even on
+builds without CONFIG_USB_FILE_STORAGE_TEST (because for general use,
+we must make it possible to set the serial number to a unique value for
+every instance of the gadget).  Moving the code around should be fairly
+easy.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+Alan Stern
 
