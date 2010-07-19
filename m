@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967266Ab0GSX7n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 19:59:43 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64808 "EHLO
+	id S1760979Ab0GTAAn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 20:00:43 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64814 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967254Ab0GSX7j (ORCPT
+	with ESMTP id S967255Ab0GSX7j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 19 Jul 2010 19:59:39 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -15,101 +15,94 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 25/49] memblock: Separate memblock_alloc_nid() and memblock_alloc_try_nid()
-Date: Mon, 19 Jul 2010 16:56:34 -0700
-Message-Id: <1279583818-14249-26-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 43/49] x86, memblock: Add memblock_x86_memory_in_range()
+Date: Mon, 19 Jul 2010 16:56:52 -0700
+Message-Id: <1279583818-14249-44-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
 References: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C44E6A8.01BC,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090204.4C44E6A8.01B7,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+It will return memory size in specified range according to memblock.memory.region
 
-The former is now strict, it will fail if it cannot honor the allocation
-within the node, while the later implements the previous semantic which
-falls back to allocating anywhere.
+Try to share some code with memblock_x86_free_memory_in_range() by passing get_free to
+__memblock_x86_memory_in_range().
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+-v2: Ben want _in_range in the name instead of size
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/sparc/mm/init_64.c  |    4 ++--
- include/linux/memblock.h |    6 +++++-
- mm/memblock.c            |   14 ++++++++++++++
- 3 files changed, 21 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/memblock.h |    1 +
+ arch/x86/mm/memblock.c          |   18 +++++++++++++++++-
+ 2 files changed, 18 insertions(+), 1 deletions(-)
 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index 0883113..dc584d2 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -820,7 +820,7 @@ static void __init allocate_node_data(int nid)
- 	struct pglist_data *p;
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+index fc3c230..2c304bb 100644
+--- a/arch/x86/include/asm/memblock.h
++++ b/arch/x86/include/asm/memblock.h
+@@ -16,5 +16,6 @@ void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
+ u64 memblock_x86_hole_size(u64 start, u64 end);
+ u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
+ u64 memblock_x86_free_memory_in_range(u64 addr, u64 limit);
++u64 memblock_x86_memory_in_range(u64 addr, u64 limit);
  
- #ifdef CONFIG_NEED_MULTIPLE_NODES
--	paddr = memblock_alloc_nid(sizeof(struct pglist_data), SMP_CACHE_BYTES, nid);
-+	paddr = memblock_alloc_try_nid(sizeof(struct pglist_data), SMP_CACHE_BYTES, nid);
- 	if (!paddr) {
- 		prom_printf("Cannot allocate pglist_data for nid[%d]\n", nid);
- 		prom_halt();
-@@ -840,7 +840,7 @@ static void __init allocate_node_data(int nid)
- 	if (p->node_spanned_pages) {
- 		num_pages = bootmem_bootmap_pages(p->node_spanned_pages);
+ #endif
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+index 3882caa..53b0f60 100644
+--- a/arch/x86/mm/memblock.c
++++ b/arch/x86/mm/memblock.c
+@@ -217,7 +217,7 @@ void __init memblock_x86_to_bootmem(u64 start, u64 end)
+ }
+ #endif
  
--		paddr = memblock_alloc_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid);
-+		paddr = memblock_alloc_try_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid);
- 		if (!paddr) {
- 			prom_printf("Cannot allocate bootmap for nid[%d]\n",
- 				  nid);
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index b69c243..08a12cf 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -50,7 +50,11 @@ extern long __init memblock_reserve(phys_addr_t base, phys_addr_t size);
- /* The numa aware allocator is only available if
-  * CONFIG_ARCH_POPULATES_NODE_MAP is set
-  */
--extern phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int nid);
-+extern phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align,
-+					int nid);
-+extern phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align,
-+					    int nid);
-+
- extern phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align);
- 
- /* Flags for memblock_alloc_base() amd __memblock_alloc_base() */
-diff --git a/mm/memblock.c b/mm/memblock.c
-index a9c15a5..c3c499e 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -537,9 +537,23 @@ phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int n
- 			return ret;
+-u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
++static u64 __init __memblock_x86_memory_in_range(u64 addr, u64 limit, bool get_free)
+ {
+ 	int i, count;
+ 	struct range *range;
+@@ -246,6 +246,10 @@ u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
  	}
+ 	subtract_range(range, count, 0, addr);
+ 	subtract_range(range, count, limit, -1ULL);
++
++	/* Subtract memblock.reserved.region in range ? */
++	if (!get_free)
++		goto sort_and_count_them;
+ 	for_each_memblock(reserved, r) {
+ 		final_start = PFN_DOWN(r->base);
+ 		final_end = PFN_UP(r->base + r->size);
+@@ -256,6 +260,8 @@ u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
  
-+	return 0;
-+}
+ 		subtract_range(range, count, final_start, final_end);
+ 	}
 +
-+phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, int nid)
-+{
-+	phys_addr_t res = memblock_alloc_nid(size, align, nid);
-+
-+	if (res)
-+		return res;
- 	return memblock_alloc(size, align);
++sort_and_count_them:
+ 	nr_range = clean_sort_range(range, count);
+ 
+ 	free_size = 0;
+@@ -265,6 +271,16 @@ u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
+ 	return free_size << PAGE_SHIFT;
  }
  
++u64 __init memblock_x86_free_memory_in_range(u64 addr, u64 limit)
++{
++	return __memblock_x86_memory_in_range(addr, limit, true);
++}
 +
-+/*
-+ * Remaining API functions
-+ */
++u64 __init memblock_x86_memory_in_range(u64 addr, u64 limit)
++{
++	return __memblock_x86_memory_in_range(addr, limit, false);
++}
 +
- /* You must call memblock_analyze() before this. */
- phys_addr_t __init memblock_phys_mem_size(void)
+ void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
  {
+ 	if (start == end)
 -- 
 1.6.4.2
 
