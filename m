@@ -1,84 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755273Ab0GSGwi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 02:52:38 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:28159 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752468Ab0GSGwg (ORCPT
+	id S1755904Ab0GSHdR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 03:33:17 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:40192 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755467Ab0GSHdE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 02:52:36 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6047"; a="47894678"
-Date: Sun, 18 Jul 2010 23:52:33 -0700
-From: Zach Pfeffer <zpfeffer@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
- memory management
-Message-ID: <20100719065233.GD11054@codeaurora.org>
-References: <4C3C0032.5020702@codeaurora.org>
- <20100713150311B.fujita.tomonori@lab.ntt.co.jp>
- <20100713121420.GB4263@codeaurora.org>
- <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
- <20100714201149.GA14008@codeaurora.org>
- <20100714220536.GE18138@n2100.arm.linux.org.uk>
- <20100715012958.GB2239@codeaurora.org>
- <20100715085535.GC26212@n2100.arm.linux.org.uk>
+	Mon, 19 Jul 2010 03:33:04 -0400
+Date: Mon, 19 Jul 2010 15:32:55 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Steffen Klassert <steffen.klassert@secunet.com>
+Cc: Dan Kruchinin <dkruchinin@acm.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        linux-crypto@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 0/3] padata: cpumasks
+Message-ID: <20100719073255.GA20403@gondor.apana.org.au>
+References: <20100714142951.22817d0c@leibniz> <20100719060426.GA19696@gondor.apana.org.au> <20100719064050.GA11081@secunet.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100715085535.GC26212@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100719064050.GA11081@secunet.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 09:55:35AM +0100, Russell King - ARM Linux wrote:
-> On Wed, Jul 14, 2010 at 06:29:58PM -0700, Zach Pfeffer wrote:
-> > The VCM ensures that all mappings that map a given physical buffer:
-> > IOMMU mappings, CPU mappings and one-to-one device mappings all map
-> > that buffer using the same (or compatible) attributes. At this point
-> > the only attribute that users can pass is CACHED. In the absence of
-> > CACHED all accesses go straight through to the physical memory.
+On Mon, Jul 19, 2010 at 08:40:50AM +0200, Steffen Klassert wrote:
+> On Mon, Jul 19, 2010 at 02:04:26PM +0800, Herbert Xu wrote:
+> > 
+> > All applied.  Thanks!
 > 
-> So what you're saying is that if I have a buffer in kernel space
-> which I already have its virtual address, I can pass this to VCM and
-> tell it !CACHED, and it'll setup another mapping which is not cached
-> for me?
+> Hm, I was just about to write some comments on these patches,
+> they still have some issues. For example, handling empty cpumasks
+> is broken again (NULL pointer dereference in padata_replace).
+> The cpu_index is zero for all cpus now, so can we leak objects
+> on cpu hotplug etc. Also I'm not that happy with some of the
+> API changes. I'll try to fix this up with some patches.
 
-Not quite. The existing mapping will be represented by a reservation
-from the prebuilt VCM of the VM. This reservation has been marked
-non-cached. Another reservation on a IOMMU VCM, also marked non-cached
-will be backed with the same physical memory. This is legal in ARM,
-allowing the vcm_back call to succeed. If you instead passed cached on
-the second mapping, the first mapping would be non-cached and the
-second would be cached. If the underlying architecture supported this
-than the vcm_back would go through.
+OK I'll take your fixes on top when you're ready.
 
-> 
-> You are aware that multiple V:P mappings for the same physical page
-> with different attributes are being outlawed with ARMv6 and ARMv7
-> due to speculative prefetching.  The cache can be searched even for
-> a mapping specified as 'normal, uncached' and you can get cache hits
-> because the data has been speculatively loaded through a separate
-> cached mapping of the same physical page.
-
-I didn't know that. Thanks for the heads up.
-
-> FYI, during the next merge window, I will be pushing a patch which makes
-> ioremap() of system RAM fail, which should be the last core code creator
-> of mappings with different memory types.  This behaviour has been outlawed
-> (as unpredictable) in the architecture specification and does cause
-> problems on some CPUs.
-
-That's fair enough, but it seems like it should only be outlawed for
-those processors on which it breaks.
-
-> 
-> We've also the issue of multiple mappings with differing cache attributes
-> which needs addressing too...
-
-The VCM has been architected to handle these things.
+Thanks!
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
