@@ -1,87 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936275Ab0GSPcW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 11:32:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16913 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S936235Ab0GSPcQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 11:32:16 -0400
-Date: Mon, 19 Jul 2010 11:31:49 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: 2.6.35 Regression/oops from virtio: return ENOMEM on out of
- memory patch
-Message-ID: <20100719153149.GF8623@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	"Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-	Rusty Russell <rusty@rustcorp.com.au>
-References: <20100719150216.GC8623@think>
- <20100719151609.GA4267@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100719151609.GA4267@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C446FEE.02CE:SCFMA4539814,ss=1,fgs=0
+	id S936204Ab0GSPbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 11:31:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42968 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S936033Ab0GSPbb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 11:31:31 -0400
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: [PATCH v5 10/12] Handle async PF in non preemptable context
+Date: Mon, 19 Jul 2010 18:31:00 +0300
+Message-Id: <1279553462-7036-11-git-send-email-gleb@redhat.com>
+In-Reply-To: <1279553462-7036-1-git-send-email-gleb@redhat.com>
+References: <1279553462-7036-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 06:16:10PM +0300, Michael S. Tsirkin wrote:
-> On Mon, Jul 19, 2010 at 11:02:16AM -0400, Chris Mason wrote:
-> > Hi everyone,
-> > 
-> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=686d363786a53ed28ee875b84ef24e6d5126ef6f
-> > 
-> > I've been having problems with my long running stress runs and tracked
-> > it down to the above commit.  Under load I get a couple of GFP_ATOMIC
-> > allocation failures from virtio per day (not really surprising), and in
-> > the past it would carry on happily.
-> > 
-> > Now I get the atomic allocation failure followed by this:
-> > 
-> > BUG: unable to handle kernel paging request at ffff88087c37e458
-> > IP: [<ffffffff812e3752>] virtqueue_add_buf_gfp+0x305/0x353
-> > 
-> > (Full oops below).
-> > 
-> > Looking at virtqueue_add_buf_gfp, it does:
-> > 
-> >         /* If the host supports indirect descriptor tables, and we have multiple 
-> >          * buffers, then go indirect. FIXME: tune this threshold */
-> >         if (vq->indirect && (out + in) > 1 && vq->num_free) {
-> >                 head = vring_add_indirect(vq, sg, out, in, gfp);
-> >                 if (head != vq->vring.num)
-> >                         goto add_head;
-> >         }
-> > [ ... ]
-> > 
-> > add_head:
-> >         /* Set token. */
-> >         vq->data[head] = data;
-> > 
-> > Since vring_add_indirect is returning -ENOMEM, head is -ENOMEM and things
-> > go bad pretty quickly.  Full oops below, afraid I don't know the virtio
-> > code well enough to provide the clean and obvious fix (outside of
-> > reverting) at this late rc.
-> 
-> Good catch! Can you verify this fix please?
-> 
-> virtio: fix oops on OOM
-> 
-> virtio ring was changed to return an error code on OOM,
-> but one caller was missed and still checks for vq->vring.num.
-> The fix is just to check for <0 error code.
-> 
-> Long term it might make sense to change goto add_head to
-> just return an error on oom instead, but let's apply
-> a minimal fix for 2.6.35.
-> 
+If async page fault is received by idle task or when preemp_count is
+not zero guest cannot reschedule, so do sti; hlt and wait for page to be
+ready. vcpu can still process interrupts while it waits for the page to
+be ready.
 
-Great, that looks sane, I'll give it a shot.
+Acked-by: Rik van Riel <riel@redhat.com>
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
+---
+ arch/x86/kernel/kvm.c |   36 ++++++++++++++++++++++++++++++++----
+ 1 files changed, 32 insertions(+), 4 deletions(-)
 
--chris
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index a6db92e..914b0fc 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -37,6 +37,7 @@
+ #include <asm/cpu.h>
+ #include <asm/traps.h>
+ #include <asm/desc.h>
++#include <asm/tlbflush.h>
+ 
+ #define MMU_QUEUE_SIZE 1024
+ 
+@@ -68,6 +69,8 @@ struct kvm_task_sleep_node {
+ 	wait_queue_head_t wq;
+ 	u32 token;
+ 	int cpu;
++	bool halted;
++	struct mm_struct *mm;
+ };
+ 
+ static struct kvm_task_sleep_head {
+@@ -96,6 +99,11 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
+ 	struct kvm_task_sleep_head *b = &async_pf_sleepers[key];
+ 	struct kvm_task_sleep_node n, *e;
+ 	DEFINE_WAIT(wait);
++	int cpu, idle;
++
++	cpu = get_cpu();
++	idle = idle_cpu(cpu);
++	put_cpu();
+ 
+ 	spin_lock(&b->lock);
+ 	e = _find_apf_task(b, token);
+@@ -109,17 +117,31 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
+ 
+ 	n.token = token;
+ 	n.cpu = smp_processor_id();
++	n.mm = current->active_mm;
++	n.halted = idle || preempt_count() > 1;
++	atomic_inc(&n.mm->mm_count);
+ 	init_waitqueue_head(&n.wq);
+ 	hlist_add_head(&n.link, &b->list);
+ 	spin_unlock(&b->lock);
+ 
+ 	for (;;) {
+-		prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
++		if (!n.halted)
++			prepare_to_wait(&n.wq, &wait, TASK_UNINTERRUPTIBLE);
+ 		if (hlist_unhashed(&n.link))
+ 			break;
+-		schedule();
++
++		if (!n.halted) {
++			schedule();
++		} else {
++			/*
++			 * We cannot reschedule. So halt.
++			 */
++			native_safe_halt();
++			local_irq_disable();
++		}
+ 	}
+-	finish_wait(&n.wq, &wait);
++	if (!n.halted)
++		finish_wait(&n.wq, &wait);
+ 
+ 	return;
+ }
+@@ -127,7 +149,12 @@ static void apf_task_wait(struct task_struct *tsk, u32 token)
+ static void apf_task_wake_one(struct kvm_task_sleep_node *n)
+ {
+ 	hlist_del_init(&n->link);
+-	if (waitqueue_active(&n->wq))
++	if (!n->mm)
++		return;
++	mmdrop(n->mm);
++	if (n->halted)
++		smp_send_reschedule(n->cpu);
++	else if (waitqueue_active(&n->wq))
+ 		wake_up(&n->wq);
+ }
+ 
+@@ -157,6 +184,7 @@ again:
+ 		}
+ 		n->token = token;
+ 		n->cpu = smp_processor_id();
++		n->mm = NULL;
+ 		init_waitqueue_head(&n->wq);
+ 		hlist_add_head(&n->link, &b->list);
+ 	} else
+-- 
+1.7.1
+
