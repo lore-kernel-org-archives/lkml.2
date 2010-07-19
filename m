@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966505Ab0GSTMw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 15:12:52 -0400
-Received: from e23smtp06.au.ibm.com ([202.81.31.148]:59608 "EHLO
-	e23smtp06.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S966450Ab0GSTMq (ORCPT
+	id S966520Ab0GSTNA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 15:13:00 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:48353 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S966503Ab0GSTMw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 15:12:46 -0400
+	Mon, 19 Jul 2010 15:12:52 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
         corbet@lwn.net, neilb@suse.de, npiggin@suse.de, hooanon05@yahoo.co.jp,
@@ -14,9 +14,9 @@ To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
         linux-kernel@vger.kernel.org,
         "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V17 04/12] vfs: Allow handle based open on symlinks
-Date: Tue, 20 Jul 2010 00:41:59 +0530
-Message-Id: <1279566727-16598-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V17 05/12] vfs: Support null pathname in readlink
+Date: Tue, 20 Jul 2010 00:42:00 +0530
+Message-Id: <1279566727-16598-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.2.rc3.43.g24e7a
 In-Reply-To: <1279566727-16598-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1279566727-16598-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -24,90 +24,74 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch update may_open to allow handle based open on symlinks.
-The file handle based API use file descritor returned from open_by_handle_at
-to do different file system operations. To find the link target name we
-need to get a file descriptor on symlinks.
+From: NeilBrown <neilb@suse.de>
 
-We should be able to read the link target using file handle. The exact
-usecase is with respect to implementing READLINK operation on a
-userspace NFS server. The request contain the file handle and the
-response include target name.
+This enables to use readlink to get the link target name
+from a file descriptor point to the link. This can be used
+with open_by_handle syscall that returns a file descriptor for a link.
+We can then use this file descriptor to get the target name.
 
+This is similar to utimensat(2) interface
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/namei.c                  |   24 ++++++++++++++++++++++--
- include/asm-generic/fcntl.h |    1 +
- include/linux/fs.h          |    1 +
- 3 files changed, 24 insertions(+), 2 deletions(-)
+ fs/stat.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 4789839..6f4f9f6 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1457,7 +1457,20 @@ int may_open(struct path *path, int acc_mode, int flag)
+diff --git a/fs/stat.c b/fs/stat.c
+index c4ecd52..a66a0ef 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 		char __user *, buf, int, bufsiz)
+ {
+-	struct path path;
+-	int error;
++	int error = 0, fput_needed;
++	struct path path, *pp;
++	struct file *file = NULL;
  
- 	switch (inode->i_mode & S_IFMT) {
- 	case S_IFLNK:
--		return -ELOOP;
-+		/*
-+		 * Allow only if acc_mode contain
-+		 * open link request.
-+		 */
-+		if (!(acc_mode & MAY_OPEN_LINK))
-+			return -ELOOP;
-+		/*
-+		 * Allow open on symlink only with
-+		 * open flag O_NOACCESS. We don't
-+		 * allow read/write on symlinks
-+		 */
-+		if (flag != O_NOACCESS)
-+			return -ELOOP;
-+		break;
- 	case S_IFDIR:
- 		if (acc_mode & MAY_WRITE)
- 			return -EISDIR;
-@@ -2046,8 +2059,15 @@ long do_handle_open(int mountdirfd,
- 	 */
- 	if (open_flag & __O_SYNC)
- 		open_flag |= O_DSYNC;
-+	/*
-+	 * Handle based API allow open on a symlink
-+	 */
-+	if (S_ISLNK(path->dentry->d_inode->i_mode))
-+		acc_mode = MAY_OPEN_LINK;
-+	else
-+		acc_mode = MAY_OPEN;
+ 	if (bufsiz <= 0)
+ 		return -EINVAL;
  
--	acc_mode = MAY_OPEN | ACC_MODE(open_flag);
-+	acc_mode |= ACC_MODE(open_flag);
+-	error = user_path_at(dfd, pathname, 0, &path);
++	if (pathname == NULL && dfd != AT_FDCWD) {
++		file = fget_light(dfd, &fput_needed);
++
++		if (file)
++			pp = &file->f_path;
++		else
++			error = -EBADF;
++	} else {
++		error = user_path_at(dfd, pathname, 0, &path);
++		pp = &path;
++	}
+ 	if (!error) {
+-		struct inode *inode = path.dentry->d_inode;
++		struct inode *inode = pp->dentry->d_inode;
  
- 	/* O_TRUNC implies we need access checks for write permissions */
- 	if (open_flag & O_TRUNC)
-diff --git a/include/asm-generic/fcntl.h b/include/asm-generic/fcntl.h
-index fcd268c..76f172a 100644
---- a/include/asm-generic/fcntl.h
-+++ b/include/asm-generic/fcntl.h
-@@ -7,6 +7,7 @@
- #define O_RDONLY	00000000
- #define O_WRONLY	00000001
- #define O_RDWR		00000002
-+#define O_NOACCESS	00000003	/* No read/write access */
- #ifndef O_CREAT
- #define O_CREAT		00000100	/* not fcntl */
- #endif
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 79898ac..b791159 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -53,6 +53,7 @@ struct inodes_stat_t {
- #define MAY_APPEND 8
- #define MAY_ACCESS 16
- #define MAY_OPEN 32
-+#define MAY_OPEN_LINK 64
- 
- /*
-  * flags in file.f_mode.  Note that FMODE_READ and FMODE_WRITE must correspond
+ 		error = -EINVAL;
+ 		if (inode->i_op->readlink) {
+-			error = security_inode_readlink(path.dentry);
++			error = security_inode_readlink(pp->dentry);
+ 			if (!error) {
+-				touch_atime(path.mnt, path.dentry);
+-				error = inode->i_op->readlink(path.dentry,
++				touch_atime(pp->mnt, pp->dentry);
++				error = inode->i_op->readlink(pp->dentry,
+ 							      buf, bufsiz);
+ 			}
+ 		}
+-		path_put(&path);
++		if (file)
++			fput_light(file, fput_needed);
++		else
++			path_put(&path);
+ 	}
+ 	return error;
+ }
 -- 
 1.7.2.rc3.43.g24e7a
 
