@@ -1,123 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967161Ab0GSWv2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 18:51:28 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:63681 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967151Ab0GSWv0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 18:51:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=xz5X5Ba33jDi3TZDzUf/zTRDPiWSPxM+AFjIvFNph0CQeDj5GmA+ctqVqEa31hTkOL
-         Bh2CLX2zJ8jiuDFEe0XDZh3BEgYYpcbNO1B3kHbLXy/a9so5UUgcsAveQjHO24f4sde0
-         85SVXp66T2PXx7NwDQs11JaP7EF3prEibi9MA=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTil_2nzwEUS56U48CJpdqkrpnGXAwfcE9bU_Wqhw@mail.gmail.com>
-References: <1277770577-11024-1-git-send-email-linus.walleij@stericsson.com>
-	<AANLkTimYqUZvxaWVvT5FPsW36NTpqLLCqCiSuRAy_ER5@mail.gmail.com>
-	<AANLkTinqKHCYeGTLuTtKikcR2IA8TY0vy2tSznxLay0N@mail.gmail.com>
-	<AANLkTimHBWMYAeFrET2EpeA8KogcUmQldAHM_uhSv-gt@mail.gmail.com>
-	<AANLkTil_2nzwEUS56U48CJpdqkrpnGXAwfcE9bU_Wqhw@mail.gmail.com>
-Date: Mon, 19 Jul 2010 15:51:23 -0700
-X-Google-Sender-Auth: 41F3YJpE_VB8uDtlLTOOCq8g89o
-Message-ID: <AANLkTilAGPmOuS_LjA3TEq1mIcqLxX-T7P-PI-lBTZi0@mail.gmail.com>
-Subject: Re: [PATCH 1/3] DMAENGINE: generic slave channel control
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.ml.walleij@gmail.com>
-Cc: linux-kernel@vger.kernel.org, vinod.koul@intel.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S967204Ab0GSXI0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 19:08:26 -0400
+Received: from mga11.intel.com ([192.55.52.93]:31293 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S967173Ab0GSXIV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 19:08:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,229,1278313200"; 
+   d="scan'208";a="819623861"
+Message-Id: <20100719230205.351459480@sbs-t61.sc.intel.com>
+User-Agent: quilt/0.47-1
+Date: Mon, 19 Jul 2010 16:05:49 -0700
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Suresh Siddha <suresh.b.siddha@intel.com>
+Subject: [patch 2/5] x86: sync xsave memory layout with its header for user handling
+References: <20100719225747.372816924@sbs-t61.sc.intel.com>
+Content-Disposition: inline; filename=fix_signal_handling_with_xsaveopt_init_optimization.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 3:44 PM, Linus Walleij
-<linus.ml.walleij@gmail.com> wrote:
-> 2010/7/19 Dan Williams <dan.j.williams@intel.com>:
->
->> The recently submitted intel_mid driver [1] seems to have a similar structure:
->
-> This is very interesting, let's examine this closely as a comparison!
-> I'm looking at it from the point of a generic slave control mechanism,
-> though I suspect it is designed to be Intel-specific so keep that in mind.
->
->> +/**
->> + * struct intel_mid_dma_slave - DMA slave structure
->> + *
->> + * @dma_dev: DMA master client
->> + * @tx_reg: physical address of data register used for
->> + *     memory-to-peripheral transfers
->> + * @rx_reg: physical address of data register used for
->> + *     peripheral-to-memory transfers
->> + * @tx_width: tx register width
->> + * @rx_width: rx register width
->> + * @dirn: DMA trf direction
->> + * @cfg_hi: Platform-specific initializer for the CFG_HI register
->> + * @cfg_lo: Platform-specific initializer for the CFG_LO register
->> + * @ tx_width: width of src and dstn
->> + * @ hs_mode: SW or HW handskaking mode
->> + * @ cfg_mode: Mode configuration, DMA mem to mem to dev & mem
->> + */
->> +struct intel_mid_dma_slave {
->> +       enum dma_data_direction         dirn;
->> +       enum intel_mid_dma_width        src_width; /*width of DMA src txn*/
->> +       enum intel_mid_dma_width        dst_width; /*width of DMA dst txn*/
->> +       enum intel_mid_dma_hs_mode      hs_mode;  /*handshaking*/
->> +       enum intel_mid_dma_mode         cfg_mode; /*mode configuration*/
->> +       enum intel_mid_dma_msize        src_msize; /*size if src burst*/
->> +       enum intel_mid_dma_msize        dst_msize; /*size of dst burst*/
->> +       dma_async_tx_callback           callback; /*callback function*/
->> +       void                            *callback_param; /*param for callback*/
->> +       unsigned int            device_instance; /*0, 1 for periphral instance*/
->> +};
->> +
->
-> kerneldoc and struct members seem to be out-of-sync but I
-> see the general idea.
->
-> Of these members handshaking, cfg_mode, hs_mode
-> and I suspect also device_instance are candidates for
-> the private config  since they cannot be assumed to
-> exist on all DMA engines. (Also goes for cfg_[lo|hi] from
-> the kerneldoc)
->
-> The callback and callback param are configured
-> per-transfer in the current API, so I don't see what they
-> are doing here at all.
+With xsaveopt, if a processor implementation discern that a processor state
+component is in its initialized state it may modify the corresponding bit in
+the xsave_hdr.xstate_bv as '0', with out modifying the corresponding memory
+layout. Hence wHile presenting the xstate information to the user, we always
+ensure that the memory layout of a feature will be in the init state if the
+corresponding header bit is zero. This ensures the consistency and avoids the
+condition of the user seeing some some stale state in the memory layout during
+signal handling, debugging etc.
 
-Yeah, I already pointed that out...
+Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+---
+ arch/x86/include/asm/i387.h  |   14 ++++++
+ arch/x86/include/asm/xsave.h |   10 ++++
+ arch/x86/kernel/i387.c       |   11 +++++
+ arch/x86/kernel/xsave.c      |   89 ++++++++++++++++++++++++++++++++++++++++++-
+ 4 files changed, 123 insertions(+), 1 deletion(-)
 
->
-> Remains: direction, then register address, burstsize and
-> word width of the source and destination.
->
-> (Register address present in kerneldoc but not in struct,
-> burstsize present in struct but not in kerneldoc, whatever)
->
-> I don't have src/dst pairs in my API, because since the
-> only data provision mechanisms to slaves are sglists,
-> and these provide either source or destination address
-> depending on transfer direction.
->
-> Also I assume that since sglists will be mem->peripheral
-> or peripheral->mem, you know what is required on the
-> memory side of things for word width and burstsize, and
-> these only affect the device side of things.
->
-> So that is why my API is more minimalistic.
->
-> If you feel src/dst versions of wordwidth, register address
-> and burstsize are a must, I can add them, no big thing,
-> just makes for some nonused parameters, mostly.
+Index: tip-linux-2.6/arch/x86/kernel/xsave.c
+===================================================================
+--- tip-linux-2.6.orig/arch/x86/kernel/xsave.c
++++ tip-linux-2.6/arch/x86/kernel/xsave.c
+@@ -24,6 +24,76 @@ struct _fpx_sw_bytes fx_sw_reserved_ia32
+ static unsigned int *xstate_offsets, *xstate_sizes, xstate_features;
+ 
+ /*
++ * If a processor implementation discern that a processor state component is
++ * in its initialized state it may modify the corresponding bit in the
++ * xsave_hdr.xstate_bv as '0', with out modifying the corresponding memory
++ * layout in the case of xsaveopt. While presenting the xstate information to
++ * the user, we always ensure that the memory layout of a feature will be in
++ * the init state if the corresponding header bit is zero. This is to ensure
++ * that the user doesn't see some stale state in the memory layout during
++ * signal handling, debugging etc.
++ */
++void __sanitize_i387_state(struct task_struct *tsk)
++{
++	u64 xstate_bv;
++	int feature_bit = 0x2;
++	struct i387_fxsave_struct *fx = &tsk->thread.fpu.state->fxsave;
++
++	if (!fx)
++		return;
++
++	BUG_ON(task_thread_info(tsk)->status & TS_USEDFPU);
++
++	xstate_bv = tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv;
++
++	/*
++	 * None of the feature bits are in init state. So nothing else
++	 * to do for us, as the memory layout is upto date.
++	 */
++	if ((xstate_bv & pcntxt_mask) == pcntxt_mask)
++		return;
++
++	/*
++	 * FP is in init state
++	 */
++	if (!(xstate_bv & XSTATE_FP)) {
++		fx->cwd = 0x37f;
++		fx->swd = 0;
++		fx->twd = 0;
++		fx->fop = 0;
++		fx->rip = 0;
++		fx->rdp = 0;
++		memset(&fx->st_space[0], 0, 128);
++	}
++
++	/*
++	 * SSE is in init state
++	 */
++	if (!(xstate_bv & XSTATE_SSE))
++		memset(&fx->xmm_space[0], 0, 256);
++
++	xstate_bv = (pcntxt_mask & ~xstate_bv) >> 2;
++
++	/*
++	 * Update all the other memory layouts for which the corresponding
++	 * header bit is in the init state.
++	 */
++	while (xstate_bv) {
++		if (xstate_bv & 0x1) {
++			int offset = xstate_offsets[feature_bit];
++			int size = xstate_sizes[feature_bit];
++
++			memcpy(((void *) fx) + offset,
++			       ((void *) init_xstate_buf) + offset,
++			       size);
++		}
++
++		xstate_bv >>= 1;
++		feature_bit++;
++	}
++}
++
++/*
+  * Check for the presence of extended state information in the
+  * user fpstate pointer in the sigcontext.
+  */
+@@ -104,6 +174,7 @@ int save_i387_xstate(void __user *buf)
+ 		task_thread_info(tsk)->status &= ~TS_USEDFPU;
+ 		stts();
+ 	} else {
++		sanitize_i387_state(tsk);
+ 		if (__copy_to_user(buf, &tsk->thread.fpu.state->fxsave,
+ 				   xstate_size))
+ 			return -1;
+@@ -325,10 +396,26 @@ static void setup_xstate_features(void)
+  */
+ static void __init setup_xstate_init(void)
+ {
++	setup_xstate_features();
++
++	/*
++	 * Setup init_xstate_buf to represent the init state of
++	 * all the features managed by the xsave
++	 */
+ 	init_xstate_buf = alloc_bootmem(xstate_size);
+ 	init_xstate_buf->i387.mxcsr = MXCSR_DEFAULT;
+ 
+-	setup_xstate_features();
++	clts();
++	/*
++	 * Init all the features state with header_bv being 0x0
++	 */
++	xrstor_state(init_xstate_buf, -1);
++	/*
++	 * Dump the init state again. This is to identify the init state
++	 * of any feature which is not represented by all zero's.
++	 */
++	xsave_state(init_xstate_buf, -1);
++	stts();
+ }
+ 
+ /*
+Index: tip-linux-2.6/arch/x86/kernel/i387.c
+===================================================================
+--- tip-linux-2.6.orig/arch/x86/kernel/i387.c
++++ tip-linux-2.6/arch/x86/kernel/i387.c
+@@ -190,6 +190,8 @@ int xfpregs_get(struct task_struct *targ
+ 	if (ret)
+ 		return ret;
+ 
++	sanitize_i387_state(target);
++
+ 	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
+ 				   &target->thread.fpu.state->fxsave, 0, -1);
+ }
+@@ -207,6 +209,8 @@ int xfpregs_set(struct task_struct *targ
+ 	if (ret)
+ 		return ret;
+ 
++	sanitize_i387_state(target);
++
+ 	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
+ 				 &target->thread.fpu.state->fxsave, 0, -1);
+ 
+@@ -446,6 +450,8 @@ int fpregs_get(struct task_struct *targe
+ 					   -1);
+ 	}
+ 
++	sanitize_i387_state(target);
++
+ 	if (kbuf && pos == 0 && count == sizeof(env)) {
+ 		convert_from_fxsr(kbuf, target);
+ 		return 0;
+@@ -467,6 +473,8 @@ int fpregs_set(struct task_struct *targe
+ 	if (ret)
+ 		return ret;
+ 
++	sanitize_i387_state(target);
++
+ 	if (!HAVE_HWFP)
+ 		return fpregs_soft_set(target, regset, pos, count, kbuf, ubuf);
+ 
+@@ -533,6 +541,9 @@ static int save_i387_xsave(void __user *
+ 	struct _fpstate_ia32 __user *fx = buf;
+ 	int err = 0;
+ 
++
++	sanitize_i387_state(tsk);
++
+ 	/*
+ 	 * For legacy compatible, we always set FP/SSE bits in the bit
+ 	 * vector while saving the state to the user context.
+Index: tip-linux-2.6/arch/x86/include/asm/i387.h
+===================================================================
+--- tip-linux-2.6.orig/arch/x86/include/asm/i387.h
++++ tip-linux-2.6/arch/x86/include/asm/i387.h
+@@ -58,11 +58,25 @@ extern int restore_i387_xstate_ia32(void
+ 
+ #define X87_FSW_ES (1 << 7)	/* Exception Summary */
+ 
++static __always_inline __pure bool use_xsaveopt(void)
++{
++	return 0;
++}
++
+ static __always_inline __pure bool use_xsave(void)
+ {
+ 	return static_cpu_has(X86_FEATURE_XSAVE);
+ }
+ 
++extern void __sanitize_i387_state(struct task_struct *);
++
++static inline void sanitize_i387_state(struct task_struct *tsk)
++{
++	if (!use_xsaveopt())
++		return;
++	__sanitize_i387_state(tsk);
++}
++
+ #ifdef CONFIG_X86_64
+ 
+ /* Ignore delayed exceptions from user space */
+Index: tip-linux-2.6/arch/x86/include/asm/xsave.h
+===================================================================
+--- tip-linux-2.6.orig/arch/x86/include/asm/xsave.h
++++ tip-linux-2.6/arch/x86/include/asm/xsave.h
+@@ -121,6 +121,16 @@ static inline void xrstor_state(struct x
+ 		     :   "memory");
+ }
+ 
++static inline void xsave_state(struct xsave_struct *fx, u64 mask)
++{
++	u32 lmask = mask;
++	u32 hmask = mask >> 32;
++
++	asm volatile(".byte " REX_PREFIX "0x0f,0xae,0x27\n\t"
++		     : : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask)
++		     :   "memory");
++}
++
+ static inline void fpu_xsave(struct fpu *fpu)
+ {
+ 	/* This, however, we can work around by forcing the compiler to select
 
-Unused parameters is what I want to avoid, and getting drivers that
-can wrap dma_slave_config to actually do so is the final kicker.
 
-Thoughts Vinod?
-
-Thanks,
-Dan
