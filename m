@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967243Ab0GSX7S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 19:59:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64463 "EHLO
+	id S967251Ab0GSX7g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 19:59:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64687 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967202Ab0GSX7G (ORCPT
+	with ESMTP id S1760913Ab0GSX70 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 19:59:06 -0400
+	Mon, 19 Jul 2010 19:59:26 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,109 +16,112 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
         Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 01/49] x86, numa: fix boot without RAM on node0 again
-Date: Mon, 19 Jul 2010 16:56:10 -0700
-Message-Id: <1279583818-14249-2-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 48/49] x86, memblock: Use memblock_memory_size()/memblock_free_memory_size() to get correct dma_reserve
+Date: Mon, 19 Jul 2010 16:56:57 -0700
+Message-Id: <1279583818-14249-49-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
 References: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C44E6A7.0244,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4C44E6A8.0191,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-|commit e534c7c5f8d6e9fc46f57fab067c7e48d8ceb172
-|Author: Lee Schermerhorn <lee.schermerhorn@hp.com>
-|Date:   Wed May 26 14:44:58 2010 -0700
-|
-|    numa: x86_64: use generic percpu var numa_node_id() implementation
-|
-|    x86 arch specific changes to use generic numa_node_id() based on generic
-|    percpu variable infrastructure.  Back out x86's custom version of
-|    numa_node_id()
+memblock_memory_size() will return memory size in memblock.memory.region.
+memblock_free_memory_size() will return free memory size in memblock.memory.region.
 
-broke numa system that doesn't have ram on node0 when MEMORY_HOTPLUG is enabled.
+So We can get exact reseved size in specified range.
 
-because cpu_up() will call cpu_to_node() before per_cpu(numa_node) is setup for
-APs.
+Set the size right after initmem_init(), because later bootmem API will
+get area above 16M. (except some fallback).
 
-When Node0 doesn't have RAM, on x86, cpus already round it to nearest node with
-RAM in x86_cpu_to_node_map. and per_cpu(numa_node) is not set up until in c_init for APs.
+Later after we remove the bootmem, We could call that just before paging_init().
 
-when later cpu_up() calling cpu_to_node() will get 0 again, and make it online
-even there is no RAM on node0. so later all APs can not booted up, and later
-will have panic.
-
-[    1.611101] On node 0 totalpages: 0
-.........
-[    2.608558] On node 0 totalpages: 0
-[    2.612065] Brought up 1 CPUs
-[    2.615199] Total of 1 processors activated (3990.31 BogoMIPS).
-...
-   93.225341] calling  loop_init+0x0/0x1a4 @ 1
-[   93.229314] PERCPU: allocation failed, size=80 align=8, failed to populate
-[   93.246539] Pid: 1, comm: swapper Tainted: G        W   2.6.35-rc4-tip-yh-04371-gd64e6c4-dirty #354
-[   93.264621] Call Trace:
-[   93.266533]  [<ffffffff81125e43>] pcpu_alloc+0x83a/0x8e7
-[   93.270710]  [<ffffffff81125f15>] __alloc_percpu+0x10/0x12
-[   93.285849]  [<ffffffff8140786c>] alloc_disk_node+0x94/0x16d
-[   93.291811]  [<ffffffff81407956>] alloc_disk+0x11/0x13
-[   93.306157]  [<ffffffff81503e51>] loop_alloc+0xa7/0x180
-[   93.310538]  [<ffffffff8277ef48>] loop_init+0x9b/0x1a4
-[   93.324909]  [<ffffffff8277eead>] ? loop_init+0x0/0x1a4
-[   93.329650]  [<ffffffff810001f2>] do_one_initcall+0x57/0x136
-[   93.345197]  [<ffffffff827486d0>] kernel_init+0x184/0x20e
-[   93.348146]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
-[   93.365194]  [<ffffffff81c7cc3c>] ? restore_args+0x0/0x30
-[   93.369305]  [<ffffffff8274854c>] ? kernel_init+0x0/0x20e
-[   93.386011]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
-[   93.392047] loop: out of memory
-...
-
-Try to assign per_cpu(numa_node) early
-
-Signed-off-by: Yinghai <yinghai@kernel.org>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/setup_percpu.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/e820.h |    2 ++
+ arch/x86/kernel/e820.c      |   17 +++++++++++++++++
+ arch/x86/kernel/setup.c     |    1 +
+ arch/x86/mm/init_64.c       |    7 -------
+ 4 files changed, 20 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
-index de3b63a..b03959c 100644
---- a/arch/x86/kernel/setup_percpu.c
-+++ b/arch/x86/kernel/setup_percpu.c
-@@ -238,6 +238,15 @@ void __init setup_per_cpu_areas(void)
- #ifdef CONFIG_NUMA
- 		per_cpu(x86_cpu_to_node_map, cpu) =
- 			early_per_cpu_map(x86_cpu_to_node_map, cpu);
-+		/*
-+		 * make sure boot cpu numa_node is right, when boot cpu is on
-+		 *  the node that doesn't have mem installed
-+		 * also cpu_up() will call cpu_to_node() for APs when
-+		 *  MEMORY_HOTPLUG is defined, before per_cpu(numa_node) is set
-+		 *  up later with c_init aka intel_init/amd_init
-+		 * So set them all (boot cpu and all APs)
-+		 */
-+		set_cpu_numa_node(cpu, early_cpu_to_node(cpu));
- #endif
- #endif
- 		/*
-@@ -257,14 +266,6 @@ void __init setup_per_cpu_areas(void)
- 	early_per_cpu_ptr(x86_cpu_to_node_map) = NULL;
+diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
+index 7186463..5be1542 100644
+--- a/arch/x86/include/asm/e820.h
++++ b/arch/x86/include/asm/e820.h
+@@ -117,6 +117,8 @@ extern unsigned long e820_end_of_low_ram_pfn(void);
+ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
+ 
+ void memblock_x86_fill(void);
++void memblock_find_dma_reserve(void);
++
+ extern void finish_e820_parsing(void);
+ extern void e820_reserve_resources(void);
+ extern void e820_reserve_resources_late(void);
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index d5fd894..f0db4c4 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -1105,3 +1105,20 @@ void __init memblock_x86_fill(void)
+ 	memblock_analyze();
+ 	memblock_dump_all();
+ }
++
++void __init memblock_find_dma_reserve(void)
++{
++#ifdef CONFIG_X86_64
++	u64 free_size_pfn;
++	u64 mem_size_pfn;
++	/*
++	 * need to find out used area below MAX_DMA_PFN
++	 * need to use memblock to get free size in [0, MAX_DMA_PFN]
++	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
++	 */
++	mem_size_pfn = memblock_x86_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	free_size_pfn = memblock_x86_free_memory_in_range(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	set_dma_reserve(mem_size_pfn - free_size_pfn);
++#endif
++}
++
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index a4f0173..924c8f7 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1013,6 +1013,7 @@ void __init setup_arch(char **cmdline_p)
  #endif
  
--#if defined(CONFIG_X86_64) && defined(CONFIG_NUMA)
--	/*
--	 * make sure boot cpu numa_node is right, when boot cpu is on the
--	 * node that doesn't have mem installed
--	 */
--	set_cpu_numa_node(boot_cpu_id, early_cpu_to_node(boot_cpu_id));
--#endif
+ 	initmem_init(0, max_pfn, acpi, k8);
++	memblock_find_dma_reserve();
+ #ifndef CONFIG_NO_BOOTMEM
+ 	memblock_x86_to_bootmem(0, max_low_pfn<<PAGE_SHIFT);
+ #endif
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 592b236..d6d4084 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -53,8 +53,6 @@
+ #include <asm/init.h>
+ #include <linux/bootmem.h>
+ 
+-static unsigned long dma_reserve __initdata;
 -
- 	/* Setup node to cpumask map */
- 	setup_node_to_cpumask_map();
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+ 	direct_gbpages = 0;
+@@ -821,11 +819,6 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
  
+ 	reserve_bootmem(phys, len, flags);
+ 
+-	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+-		dma_reserve += len / PAGE_SIZE;
+-		set_dma_reserve(dma_reserve);
+-	}
+-
+ 	return 0;
+ }
+ #endif
 -- 
 1.6.4.2
 
