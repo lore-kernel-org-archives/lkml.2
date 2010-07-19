@@ -1,51 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967115Ab0GSW1F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 18:27:05 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:47116 "EHLO cmpxchg.org"
+	id S967129Ab0GSWje (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 18:39:34 -0400
+Received: from tex.lwn.net ([70.33.254.29]:42241 "EHLO vena.lwn.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967061Ab0GSW1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 18:27:03 -0400
-Date: Tue, 20 Jul 2010 00:26:50 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 8/8] vmscan: Kick flusher threads to clean pages when
- reclaim is encountering dirty pages
-Message-ID: <20100719222650.GB16031@cmpxchg.org>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
- <1279545090-19169-9-git-send-email-mel@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279545090-19169-9-git-send-email-mel@csn.ul.ie>
+	id S967071Ab0GSWjd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 18:39:33 -0400
+Date: Mon, 19 Jul 2010 16:39:30 -0600
+From: Jonathan Corbet <corbet@lwn.net>
+To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, Tejun Heo <tj@kernel.org>,
+        linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vamos-dev@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH 4/4] drivers/media/video: Remove dead CONFIG_OLPC_X0_1
+Message-ID: <20100719163930.6c3333a7@bike.lwn.net>
+In-Reply-To: <966ac7deeee8b102b9b8d829ca14e177f9368f21.1279111369.git.qy03fugy@stud.informatik.uni-erlangen.de>
+References: <cover.1279111369.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<966ac7deeee8b102b9b8d829ca14e177f9368f21.1279111369.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Organization: LWN.net
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.5; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 02:11:30PM +0100, Mel Gorman wrote:
-> @@ -933,13 +934,16 @@ keep_dirty:
->  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
->  	}
->  
-> +	/*
-> +	 * If reclaim is encountering dirty pages, it may be because
-> +	 * dirty pages are reaching the end of the LRU even though
-> +	 * the dirty_ratio may be satisified. In this case, wake
-> +	 * flusher threads to pro-actively clean some pages
-> +	 */
-> +	wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty + nr_dirty / 2);
+On Wed, 14 Jul 2010 15:21:48 +0200
+Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de> wrote:
 
-An argument of 0 means 'every dirty page in the system', I assume this
-is not what you wanted, right?  Something like this?
+> CONFIG_OLPC_X0_1 doesn't exist in Kconfig and is never defined anywhere
+> else, therefore removing all references for it from the source code.
 
-	if (nr_dirty && !laptop_mode)
-		wakeup_flusher_threads(nr_dirty + nr_dirty / 2);
+That symbol is, needless to say, an OLPC thing; it's in their
+repository.  I do think they plan to upstream all of that at some
+point, but I think they're a little busy at the moment.
+
+Deleting this code will increase the delta between the OLPC and
+mainline trees.  My preference would be for that not to happen.  If it
+does, though, life will obviously go on, and this code can be restored
+when the rest is upstreamed.  If you must do that, though, could I ask
+that you preserve the CONFIG_OLPC_XO_1 version of the code, which is
+the version which has traditionally been in the mainline?
+
+jon
