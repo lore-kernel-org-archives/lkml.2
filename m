@@ -1,103 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935974Ab0GSPVc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 11:21:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55120 "EHLO mx1.redhat.com"
+	id S936230Ab0GSPbi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 11:31:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8801 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S935696Ab0GSPVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 11:21:31 -0400
-Date: Mon, 19 Jul 2010 18:16:10 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-        Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: 2.6.35 Regression/oops from virtio: return ENOMEM on out of
- memory patch
-Message-ID: <20100719151609.GA4267@redhat.com>
-References: <20100719150216.GC8623@think>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100719150216.GC8623@think>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S936185Ab0GSPba (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 11:31:30 -0400
+From: Gleb Natapov <gleb@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org, avi@redhat.com,
+        mingo@elte.hu, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+        hpa@zytor.com, riel@redhat.com, cl@linux-foundation.org,
+        mtosatti@redhat.com
+Subject: [PATCH v5 03/12] Add async PF initialization to PV guest.
+Date: Mon, 19 Jul 2010 18:30:53 +0300
+Message-Id: <1279553462-7036-4-git-send-email-gleb@redhat.com>
+In-Reply-To: <1279553462-7036-1-git-send-email-gleb@redhat.com>
+References: <1279553462-7036-1-git-send-email-gleb@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 11:02:16AM -0400, Chris Mason wrote:
-> Hi everyone,
-> 
-> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=686d363786a53ed28ee875b84ef24e6d5126ef6f
-> 
-> I've been having problems with my long running stress runs and tracked
-> it down to the above commit.  Under load I get a couple of GFP_ATOMIC
-> allocation failures from virtio per day (not really surprising), and in
-> the past it would carry on happily.
-> 
-> Now I get the atomic allocation failure followed by this:
-> 
-> BUG: unable to handle kernel paging request at ffff88087c37e458
-> IP: [<ffffffff812e3752>] virtqueue_add_buf_gfp+0x305/0x353
-> 
-> (Full oops below).
-> 
-> Looking at virtqueue_add_buf_gfp, it does:
-> 
->         /* If the host supports indirect descriptor tables, and we have multiple 
->          * buffers, then go indirect. FIXME: tune this threshold */
->         if (vq->indirect && (out + in) > 1 && vq->num_free) {
->                 head = vring_add_indirect(vq, sg, out, in, gfp);
->                 if (head != vq->vring.num)
->                         goto add_head;
->         }
-> [ ... ]
-> 
-> add_head:
->         /* Set token. */
->         vq->data[head] = data;
-> 
-> Since vring_add_indirect is returning -ENOMEM, head is -ENOMEM and things
-> go bad pretty quickly.  Full oops below, afraid I don't know the virtio
-> code well enough to provide the clean and obvious fix (outside of
-> reverting) at this late rc.
+Enable async PF in a guest if async PF capability is discovered.
 
-Good catch! Can you verify this fix please?
-
-virtio: fix oops on OOM
-
-virtio ring was changed to return an error code on OOM,
-but one caller was missed and still checks for vq->vring.num.
-The fix is just to check for <0 error code.
-
-Long term it might make sense to change goto add_head to
-just return an error on oom instead, but let's apply
-a minimal fix for 2.6.35.
-
-Reported-by: Chris Mason <chris.mason@oracle.com>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-
+Signed-off-by: Gleb Natapov <gleb@redhat.com>
 ---
+ arch/x86/include/asm/kvm_para.h |    5 +++
+ arch/x86/kernel/kvm.c           |   68 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 73 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index dd35b34..bffec32 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -164,7 +164,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
- 			  gfp_t gfp)
+diff --git a/arch/x86/include/asm/kvm_para.h b/arch/x86/include/asm/kvm_para.h
+index 5b05e9f..f1662d7 100644
+--- a/arch/x86/include/asm/kvm_para.h
++++ b/arch/x86/include/asm/kvm_para.h
+@@ -65,6 +65,11 @@ struct kvm_mmu_op_release_pt {
+ 	__u64 pt_phys;
+ };
+ 
++struct kvm_vcpu_pv_apf_data {
++	__u32 reason;
++	__u32 enabled;
++};
++
+ #ifdef __KERNEL__
+ #include <asm/processor.h>
+ 
+diff --git a/arch/x86/kernel/kvm.c b/arch/x86/kernel/kvm.c
+index e6db179..5177dd1 100644
+--- a/arch/x86/kernel/kvm.c
++++ b/arch/x86/kernel/kvm.c
+@@ -27,7 +27,10 @@
+ #include <linux/mm.h>
+ #include <linux/highmem.h>
+ #include <linux/hardirq.h>
++#include <linux/notifier.h>
++#include <linux/reboot.h>
+ #include <asm/timer.h>
++#include <asm/cpu.h>
+ 
+ #define MMU_QUEUE_SIZE 1024
+ 
+@@ -37,6 +40,7 @@ struct kvm_para_state {
+ };
+ 
+ static DEFINE_PER_CPU(struct kvm_para_state, para_state);
++static DEFINE_PER_CPU(struct kvm_vcpu_pv_apf_data, apf_reason) __aligned(64);
+ 
+ static struct kvm_para_state *kvm_para_state(void)
  {
- 	struct vring_virtqueue *vq = to_vvq(_vq);
--	unsigned int i, avail, head, uninitialized_var(prev);
-+	unsigned int i, avail, uninitialized_var(prev);
-+	int head;
+@@ -231,12 +235,72 @@ static void __init paravirt_ops_setup(void)
+ #endif
+ }
  
- 	START_USE(vq);
++void __cpuinit kvm_guest_cpu_init(void)
++{
++	if (!kvm_para_available())
++		return;
++
++	if (kvm_para_has_feature(KVM_FEATURE_ASYNC_PF)) {
++		u64 pa = __pa(&__get_cpu_var(apf_reason));
++
++		if (native_write_msr_safe(MSR_KVM_ASYNC_PF_EN,
++					  pa | KVM_ASYNC_PF_ENABLED, pa >> 32))
++			return;
++		__get_cpu_var(apf_reason).enabled = 1;
++		printk(KERN_INFO"KVM setup async PF for cpu %d\n",
++		       smp_processor_id());
++	}
++}
++
++static void kvm_pv_disable_apf(void *unused)
++{
++	if (!__get_cpu_var(apf_reason).enabled)
++		return;
++
++	wrmsrl(MSR_KVM_ASYNC_PF_EN, 0);
++	__get_cpu_var(apf_reason).enabled = 0;
++
++	printk(KERN_INFO"Unregister pv shared memory for cpu %d\n",
++	       smp_processor_id());
++}
++
++static int kvm_pv_reboot_notify(struct notifier_block *nb,
++				unsigned long code, void *unused)
++{
++	if (code == SYS_RESTART)
++		on_each_cpu(kvm_pv_disable_apf, NULL, 1);
++	return NOTIFY_DONE;
++}
++
++static struct notifier_block kvm_pv_reboot_nb = {
++	.notifier_call = kvm_pv_reboot_notify,
++};
++
+ #ifdef CONFIG_SMP
+ static void __init kvm_smp_prepare_boot_cpu(void)
+ {
+ 	WARN_ON(kvm_register_clock("primary cpu clock"));
++	kvm_guest_cpu_init();
+ 	native_smp_prepare_boot_cpu();
+ }
++
++static int __cpuinit kvm_cpu_notify(struct notifier_block *self,
++				    unsigned long action, void *hcpu)
++{
++	switch (action) {
++	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
++		kvm_guest_cpu_init();
++		break;
++	default:
++		break;
++	}
++	return NOTIFY_OK;
++}
++
++static struct notifier_block __cpuinitdata kvm_cpu_notifier = {
++        .notifier_call  = kvm_cpu_notify,
++};
+ #endif
  
-@@ -174,8 +175,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
- 	 * buffers, then go indirect. FIXME: tune this threshold */
- 	if (vq->indirect && (out + in) > 1 && vq->num_free) {
- 		head = vring_add_indirect(vq, sg, out, in, gfp);
--		if (head != vq->vring.num)
-+		if (likely(head >= 0))
- 			goto add_head;
- 	}
+ void __init kvm_guest_init(void)
+@@ -245,7 +309,11 @@ void __init kvm_guest_init(void)
+ 		return;
  
- 	BUG_ON(out + in > vq->vring.num);
+ 	paravirt_ops_setup();
++	register_reboot_notifier(&kvm_pv_reboot_nb);
+ #ifdef CONFIG_SMP
+ 	smp_ops.smp_prepare_boot_cpu = kvm_smp_prepare_boot_cpu;
++	register_cpu_notifier(&kvm_cpu_notifier);
++#else
++	kvm_guest_cpu_init();
+ #endif
+ }
+-- 
+1.7.1
+
