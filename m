@@ -1,116 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S965539Ab0GSSjx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 14:39:53 -0400
-Received: from g4t0014.houston.hp.com ([15.201.24.17]:25986 "EHLO
-	g4t0014.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965267Ab0GSSjo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 14:39:44 -0400
-Subject: [PATCH 07/26] cciss: factor out cciss_wait_for_board_ready()
-To: axboe@kernel.dk
-From: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
-Cc: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
-        linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
-Date: Mon, 19 Jul 2010 13:45:15 -0500
-Message-ID: <20100719184515.7908.55471.stgit@beardog.cce.hp.com>
-In-Reply-To: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
-References: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
-User-Agent: StGit/0.15
+	id S965648Ab0GSSrh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 14:47:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20045 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S965204Ab0GSSre (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 14:47:34 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
+Subject: Re: [PATCH 1/3] cfq-iosched: Improve time slice charging logic
+References: <1279560008-2905-1-git-send-email-vgoyal@redhat.com>
+	<1279560008-2905-2-git-send-email-vgoyal@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Mon, 19 Jul 2010 14:47:20 -0400
+In-Reply-To: <1279560008-2905-2-git-send-email-vgoyal@redhat.com> (Vivek
+	Goyal's message of "Mon, 19 Jul 2010 13:20:06 -0400")
+Message-ID: <x49mxtntikn.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen M. Cameron <scameron@beardog.cce.hp.com>
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-cciss: factor out cciss_wait_for_board_ready()
+> - Currently in CFQ there are many situations where don't know how
+>   much time slice has been consumed by a queue. For example, all
+>   the random reader/writer queues where we don't idle on
+>   individual queues and we expire the queue either immediately
+>   after the request dispatch.
+>
+> - In this case time consumed by a queue is just a memory copy
+>   operation. Actually time measurement is possible only if we
+>   idle on a queue and allow dispatch from a queue for significant
+>   amount of time.
+>
+> - As of today, in such cases we calculate the time since the
+>   dispatch from the queue started and charge all that time.
+>   Generally this rounds to 1 jiffy but in some cases it can
+>   be more. For example, if we are driving high request queue
+>   depth and driver is too busy and does not ask for new
+>   requests for 8-10 jiffies. In such cases, the active queue
+>   gets charged very unfairly.
+>
+> - So fundamentally, whole notion of charging for time slice
+>   is valid only if we have been idling on the queue. Otherwise
+>   in an NCQ queue, there might be other requests on the queue
+>   and we can not do the time slice calculation.
+>
+> - This patch tweaks the slice charging logic a bit so that
+>   in the cases where we can't know the amount of time, we
+>   start charging in terms of number of requests dispatched
+>   (IOPS). This practically switching CFQ fairness model to
+>   fairness in terms of IOPS with slice_idle=0.
+>
+> - As of today this will primarily be useful only with
+>   group_idle patches so that we get fairness in terms of
+>   IOPS across groups. The idea is that on fast storage
+>   one can run CFQ with slice_idle=0 and still get IO
+>   controller working without losing too much of
+>   throughput.
 
-Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
----
- drivers/block/cciss.c |   32 +++++++++++++++++---------------
- drivers/block/cciss.h |   15 +++++++++++++++
- 2 files changed, 32 insertions(+), 15 deletions(-)
+I'm not fluent in the cgroup code, my apologies for that.  However, just
+trying to make sense of this is giving me a headache.  Now, in some
+cases you are using IOPS *in place of* jiffies.  How are we to know
+which is which and in what cases?
 
-diff --git a/drivers/block/cciss.c b/drivers/block/cciss.c
-index 9c9c79c..286c81d 100644
---- a/drivers/block/cciss.c
-+++ b/drivers/block/cciss.c
-@@ -4026,9 +4026,23 @@ static int __devinit cciss_pci_find_memory_BAR(struct pci_dev *pdev,
- 	return -ENODEV;
- }
- 
-+static int __devinit cciss_wait_for_board_ready(ctlr_info_t *h)
-+{
-+	int i;
-+	u32 scratchpad;
-+
-+	for (i = 0; i < CCISS_BOARD_READY_ITERATIONS; i++) {
-+		scratchpad = readl(h->vaddr + SA5_SCRATCHPAD_OFFSET);
-+		if (scratchpad == CCISS_FIRMWARE_READY)
-+			return 0;
-+		msleep(CCISS_BOARD_READY_POLL_INTERVAL_MSECS);
-+	}
-+	dev_warn(&h->pdev->dev, "board not ready, timed out.\n");
-+	return -ENODEV;
-+}
-+
- static int __devinit cciss_pci_init(ctlr_info_t *c)
- {
--	__u32 scratchpad = 0;
- 	__u64 cfg_offset;
- 	__u32 cfg_base_addr;
- 	__u64 cfg_base_addr_index;
-@@ -4073,21 +4087,9 @@ static int __devinit cciss_pci_init(ctlr_info_t *c)
- 	if (err)
- 		goto err_out_free_res;
- 	c->vaddr = remap_pci_mem(c->paddr, 0x250);
--
--	/* Wait for the board to become ready.  (PCI hotplug needs this.)
--	 * We poll for up to 120 secs, once per 100ms. */
--	for (i = 0; i < 1200; i++) {
--		scratchpad = readl(c->vaddr + SA5_SCRATCHPAD_OFFSET);
--		if (scratchpad == CCISS_FIRMWARE_READY)
--			break;
--		set_current_state(TASK_INTERRUPTIBLE);
--		schedule_timeout(msecs_to_jiffies(100));	/* wait 100ms */
--	}
--	if (scratchpad != CCISS_FIRMWARE_READY) {
--		printk(KERN_WARNING "cciss: Board not ready.  Timed out.\n");
--		err = -ENODEV;
-+	err = cciss_wait_for_board_ready(c);
-+	if (err)
- 		goto err_out_free_res;
--	}
- 
- 	/* get the address index number */
- 	cfg_base_addr = readl(c->vaddr + SA5_CTCFG_OFFSET);
-diff --git a/drivers/block/cciss.h b/drivers/block/cciss.h
-index 8a9f5b5..c2ef9dd 100644
---- a/drivers/block/cciss.h
-+++ b/drivers/block/cciss.h
-@@ -190,6 +190,21 @@ struct ctlr_info
- 
- #define CCISS_INTR_ON 	1 
- #define CCISS_INTR_OFF	0
-+
-+
-+/* CCISS_BOARD_READY_WAIT_SECS is how long to wait for a board
-+ * to become ready, in seconds, before giving up on it.
-+ * CCISS_BOARD_READY_POLL_INTERVAL_MSECS * is how long to wait
-+ * between polling the board to see if it is ready, in
-+ * milliseconds.  CCISS_BOARD_READY_ITERATIONS is derived
-+ * the above.
-+ */
-+#define CCISS_BOARD_READY_WAIT_SECS (120)
-+#define CCISS_BOARD_READY_POLL_INTERVAL_MSECS (100)
-+#define CCISS_BOARD_READY_ITERATIONS \
-+	((CCISS_BOARD_READY_WAIT_SECS * 1000) / \
-+		CCISS_BOARD_READY_POLL_INTERVAL_MSECS)
-+
- /* 
- 	Send the command to the hardware 
- */
+It sounds like this is addressing an important problem, but I'm having a
+hard time picking out what that problem is.  Is this problem noticable
+for competing sync-noidle workloads (competing between groups, that is)?
+If not, then what?
 
+Thanks,
+Jeff
+
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/cfq-iosched.c |   24 +++++++++++++++++++++---
+>  1 files changed, 21 insertions(+), 3 deletions(-)
+>
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 7982b83..f44064c 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -896,16 +896,34 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+>  		 * if there are mutiple queues in the group, each can dispatch
+>  		 * a single request on seeky media and cause lots of seek time
+>  		 * and group will never know it.
+> +		 *
+> +		 * If drive is NCQ and we are driving deep queue depths, then
+> +		 * it is not reasonable to charge the slice since dispatch
+> +		 * started because this time will include time taken by all
+> +		 * the other requests in the queue.
+> +		 *
+> +		 * Actually there is no reasonable way to know the disk time
+> +		 * here and we need to come up with some approximation. If
+> +		 * disk is non NCQ, we should be driving request queue depth
+> +		 * 1, then charge for time since dispatch start and this will
+> +		 * account for seek time properly on seeky media. If request
+> +		 * queue depth is high, then charge for number of requests
+> +		 * dispatched from the queue. This will sort of becoming
+> +		 * charging in terms of IOPS.
+>  		 */
+> -		slice_used = max_t(unsigned, (jiffies - cfqq->dispatch_start),
+> -					1);
+> +		if (cfqq->cfqd->hw_tag == 0)
+> +			slice_used = max_t(unsigned,
+> +					(jiffies - cfqq->dispatch_start), 1);
+> +		else
+> +			slice_used = cfqq->slice_dispatch;
+>  	} else {
+>  		slice_used = jiffies - cfqq->slice_start;
+>  		if (slice_used > cfqq->allocated_slice)
+>  			slice_used = cfqq->allocated_slice;
+>  	}
+>  
+> -	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
+> +	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u, sl_disp=%u", slice_used,
+> +			cfqq->slice_dispatch);
+>  	return slice_used;
+>  }
