@@ -1,94 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760728Ab0GSRGp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:06:45 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:55106 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760717Ab0GSRGm (ORCPT
+	id S1760746Ab0GSRIa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:08:30 -0400
+Received: from g4t0015.houston.hp.com ([15.201.24.18]:20201 "EHLO
+	g4t0015.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753705Ab0GSRI1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:06:42 -0400
-From: Eric B Munson <emunson@mgebm.net>
-To: akpm@linux-foundation.org
-Cc: mingo@redhat.com, hugh.dickins@tiscali.co.uk, riel@redhat.com,
-        peterz@infradead.org, anton@samba.org, hch@infradead.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Eric B Munson <emunson@mgebm.net>
-Subject: [PATCH 2/2] Add mremap trace point
-Date: Mon, 19 Jul 2010 18:06:34 +0100
-Message-Id: <bf5053d17b7fa3260f33da4103cac824b0113a22.1279558781.git.emunson@mgebm.net>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <cover.1279558781.git.emunson@mgebm.net>
-References: <cover.1279558781.git.emunson@mgebm.net>
-In-Reply-To: <cover.1279558781.git.emunson@mgebm.net>
-References: <cover.1279558781.git.emunson@mgebm.net>
+	Mon, 19 Jul 2010 13:08:27 -0400
+Message-ID: <4C448688.1070507@hp.com>
+Date: Mon, 19 Jul 2010 10:08:24 -0700
+From: Rick Jones <rick.jones2@hp.com>
+User-Agent: Mozilla/5.0 (X11; U; HP-UX 9000/785; en-US; rv:1.7.13) Gecko/20060601
+X-Accept-Language: en-us, en
+MIME-Version: 1.0
+To: "H.K. Jerry Chu" <hkjerry.chu@gmail.com>
+CC: Patrick McManus <mcmanus@ducksong.com>, David Miller <davem@davemloft.net>,
+        davidsen@tmr.com, lists@wildgooses.com, linux-kernel@vger.kernel.org,
+        netdev@vger.kernel.org
+Subject: Re: Raise initial congestion window size / speedup slow start?
+References: <4C3D94E3.9080103@wildgooses.com> <4C3DD5EB.9070908@tmr.com>	<20100714.111553.104052157.davem@davemloft.net>	<AANLkTil3MVGwJUG12dikut9X1s9Ozc_3GwMjx_gErvxI@mail.gmail.com>	<1279299709.2156.5814.camel@tng> <AANLkTil_c-TH6k2BDW2r5c0HYXFxiu85aMda1bT0nJt3@mail.gmail.com>
+In-Reply-To: <AANLkTil_c-TH6k2BDW2r5c0HYXFxiu85aMda1bT0nJt3@mail.gmail.com>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds the trace point for mremap which reports relevant addresses
-and sizes when mremap exits successfully.
+H.K. Jerry Chu wrote:
+> On Fri, Jul 16, 2010 at 10:01 AM, Patrick McManus <mcmanus@ducksong.com> wrote:
+>>can you tell us more about the impl concerns of initcwnd stored on the
+>>route?
+> 
+> 
+> We have found two issues when altering initcwnd through the ip route cmd:
+> 1. initcwnd is actually capped by sndbuf (i.e., tcp_wmem[1], which is
+> defaulted to a small value of 16KB). This problem has been made obscured
+> by the TSO code, which fudges the flow control limit (and could be a bug by
+> itself).
 
-Signed-off-by: Eric B Munson <emunson@mgebm.net>
----
- include/trace/events/mm.h |   22 ++++++++++++++++++++++
- mm/mremap.c               |    4 ++++
- 2 files changed, 26 insertions(+), 0 deletions(-)
+I'll ask my Emily Litella question of the day and inquire as to why that would 
+be unique to altering initcwnd via the route?
 
-diff --git a/include/trace/events/mm.h b/include/trace/events/mm.h
-index 892bbe3..16f8c36 100644
---- a/include/trace/events/mm.h
-+++ b/include/trace/events/mm.h
-@@ -69,6 +69,28 @@ TRACE_EVENT(
- 		TP_printk("%u bytes at 0x%lx\n", __entry->len, __entry->start)
- );
- 
-+TRACE_EVENT(
-+		mremap,
-+		TP_PROTO(unsigned long addr, unsigned long old_len,
-+			 unsigned long new_addr, unsigned long new_len),
-+		TP_ARGS(addr, old_len, new_addr, new_len),
-+		TP_STRUCT__entry(
-+			__field(unsigned long, addr)
-+			__field(unsigned long, old_len)
-+			__field(unsigned long, new_addr)
-+			__field(unsigned long, new_len)
-+		),
-+		TP_fast_assign(
-+			__entry->addr = addr;
-+			__entry->old_len = old_len;
-+			__entry->new_addr = new_addr;
-+			__entry->new_len = new_len;
-+		),
-+		TP_printk("%lu bytes from 0x%lx to %lu bytes at 0x%lx\n",
-+			__entry->old_len, __entry->addr, __entry->new_len,
-+			__entry->new_addr)
-+);
-+
- #endif /* _TRACE_MM_H */
- 
- #include <trace/define_trace.h>
-diff --git a/mm/mremap.c b/mm/mremap.c
-index cde56ee..4ef1dd3 100644
---- a/mm/mremap.c
-+++ b/mm/mremap.c
-@@ -20,6 +20,8 @@
- #include <linux/syscalls.h>
- #include <linux/mmu_notifier.h>
- 
-+#include <trace/events/mm.h>
-+
- #include <asm/uaccess.h>
- #include <asm/cacheflush.h>
- #include <asm/tlbflush.h>
-@@ -504,6 +506,8 @@ unsigned long do_mremap(unsigned long addr,
- out:
- 	if (ret & ~PAGE_MASK)
- 		vm_unacct_memory(charged);
-+	else
-+		trace_mremap(addr, old_len, new_addr, new_len);
- 	return ret;
- }
- 
--- 
-1.7.0.4
+The slightly less Emily Litella-esque question is why an appliction with a 
+desire to know it could send more than 16K at one time wouldn't have either 
+asked via its install docs to have the minimum tweaked (certainly if one is 
+already tweaking routes...), or "gone all the way" and made an explicit 
+setsockopt(SO_SNDBUF) call?  We are in a realm of applications for which there 
+was a proposal to allow them to pick their own initcwnd right?  Having them pick 
+an SO_SNDBUF size would seem to be no more to ask.
 
+rick jones
+
+sendbuf_init = max(tcp_mem,initcwnd)?
