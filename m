@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933258Ab0GSNMv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 09:12:51 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:39920 "EHLO gir.skynet.ie"
+	id S933359Ab0GSNNO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 09:13:14 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:39901 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932380Ab0GSNLg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 09:11:36 -0400
+	id S932342Ab0GSNLf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 09:11:35 -0400
 From: Mel Gorman <mel@csn.ul.ie>
 To: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
         linux-mm@kvack.org
@@ -18,9 +18,9 @@ Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
         KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
         Andrea Arcangeli <aarcange@redhat.com>, Mel Gorman <mel@csn.ul.ie>
-Subject: [PATCH 4/8] vmscan: Do not writeback filesystem pages in direct reclaim
-Date: Mon, 19 Jul 2010 14:11:26 +0100
-Message-Id: <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
+Subject: [PATCH 3/8] vmscan: tracing: Update post-processing script to distinguish between anon and file IO from page reclaim
+Date: Mon, 19 Jul 2010 14:11:25 +0100
+Message-Id: <1279545090-19169-4-git-send-email-mel@csn.ul.ie>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
 References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
@@ -28,199 +28,196 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When memory is under enough pressure, a process may enter direct
-reclaim to free pages in the same manner kswapd does. If a dirty page is
-encountered during the scan, this page is written to backing storage using
-mapping->writepage. This can result in very deep call stacks, particularly
-if the target storage or filesystem are complex. It has already been observed
-on XFS that the stack overflows but the problem is not XFS-specific.
-
-This patch prevents direct reclaim writing back filesystem pages by checking
-if current is kswapd or the page is anonymous before writing back.  If the
-dirty pages cannot be written back, they are placed back on the LRU lists
-for either background writing by the BDI threads or kswapd. If in direct
-lumpy reclaim and dirty pages are encountered, the process will stall for
-the background flusher before trying to reclaim the pages again.
-
-As the call-chain for writing anonymous pages is not expected to be deep
-and they are not cleaned by flusher threads, anonymous pages are still
-written back in direct reclaim.
+It is useful to distinguish between IO for anon and file pages. This patch
+updates
+vmscan-tracing-add-a-postprocessing-script-for-reclaim-related-ftrace-events.patch
+so the post-processing script can handle the additional information.
 
 Signed-off-by: Mel Gorman <mel@csn.ul.ie>
 ---
- mm/vmscan.c |  116 +++++++++++++++++++++++++++++++++++++++++++++++++++++++----
- 1 files changed, 109 insertions(+), 7 deletions(-)
+ .../trace/postprocess/trace-vmscan-postprocess.pl  |   89 +++++++++++++-------
+ 1 files changed, 57 insertions(+), 32 deletions(-)
 
-diff --git a/mm/vmscan.c b/mm/vmscan.c
-index 6587155..bc50937 100644
---- a/mm/vmscan.c
-+++ b/mm/vmscan.c
-@@ -323,6 +323,61 @@ typedef enum {
- 	PAGE_CLEAN,
- } pageout_t;
+diff --git a/Documentation/trace/postprocess/trace-vmscan-postprocess.pl b/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
+index d1ddc33..7795a9b 100644
+--- a/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
++++ b/Documentation/trace/postprocess/trace-vmscan-postprocess.pl
+@@ -21,9 +21,12 @@ use constant MM_VMSCAN_KSWAPD_SLEEP		=> 4;
+ use constant MM_VMSCAN_LRU_SHRINK_ACTIVE	=> 5;
+ use constant MM_VMSCAN_LRU_SHRINK_INACTIVE	=> 6;
+ use constant MM_VMSCAN_LRU_ISOLATE		=> 7;
+-use constant MM_VMSCAN_WRITEPAGE_SYNC		=> 8;
+-use constant MM_VMSCAN_WRITEPAGE_ASYNC		=> 9;
+-use constant EVENT_UNKNOWN			=> 10;
++use constant MM_VMSCAN_WRITEPAGE_FILE_SYNC	=> 8;
++use constant MM_VMSCAN_WRITEPAGE_ANON_SYNC	=> 9;
++use constant MM_VMSCAN_WRITEPAGE_FILE_ASYNC	=> 10;
++use constant MM_VMSCAN_WRITEPAGE_ANON_ASYNC	=> 11;
++use constant MM_VMSCAN_WRITEPAGE_ASYNC		=> 12;
++use constant EVENT_UNKNOWN			=> 13;
  
-+int write_reclaim_page(struct page *page, struct address_space *mapping,
-+						enum pageout_io sync_writeback)
-+{
-+	int res;
-+	struct writeback_control wbc = {
-+		.sync_mode = WB_SYNC_NONE,
-+		.nr_to_write = SWAP_CLUSTER_MAX,
-+		.range_start = 0,
-+		.range_end = LLONG_MAX,
-+		.nonblocking = 1,
-+		.for_reclaim = 1,
-+	};
-+
-+	if (!clear_page_dirty_for_io(page))
-+		return PAGE_CLEAN;
-+
-+	SetPageReclaim(page);
-+	res = mapping->a_ops->writepage(page, &wbc);
-+	if (res < 0)
-+		handle_write_error(mapping, page, res);
-+	if (res == AOP_WRITEPAGE_ACTIVATE) {
-+		ClearPageReclaim(page);
-+		return PAGE_ACTIVATE;
-+	}
-+
-+	/*
-+	 * Wait on writeback if requested to. This happens when
-+	 * direct reclaiming a large contiguous area and the
-+	 * first attempt to free a range of pages fails.
-+	 */
-+	if (PageWriteback(page) && sync_writeback == PAGEOUT_IO_SYNC)
-+		wait_on_page_writeback(page);
-+
-+	if (!PageWriteback(page)) {
-+		/* synchronous write or broken a_ops? */
-+		ClearPageReclaim(page);
-+	}
-+	trace_mm_vmscan_writepage(page,
-+		page_is_file_cache(page),
-+		sync_writeback == PAGEOUT_IO_SYNC);
-+	inc_zone_page_state(page, NR_VMSCAN_WRITE);
-+
-+	return PAGE_SUCCESS;
-+}
-+
-+/*
-+ * For now, only kswapd can writeback filesystem pages as otherwise
-+ * there is a stack overflow risk
-+ */
-+static inline bool reclaim_can_writeback(struct scan_control *sc,
-+					struct page *page)
-+{
-+	return !page_is_file_cache(page) || current_is_kswapd();
-+}
-+
- /*
-  * pageout is called by shrink_page_list() for each dirty page.
-  * Calls ->writepage().
-@@ -406,7 +461,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
- 		return PAGE_SUCCESS;
- 	}
+ # Per-order events
+ use constant MM_VMSCAN_DIRECT_RECLAIM_BEGIN_PERORDER => 11;
+@@ -55,9 +58,11 @@ my $opt_read_procstat;
+ my $total_wakeup_kswapd;
+ my ($total_direct_reclaim, $total_direct_nr_scanned);
+ my ($total_direct_latency, $total_kswapd_latency);
+-my ($total_direct_writepage_sync, $total_direct_writepage_async);
++my ($total_direct_writepage_file_sync, $total_direct_writepage_file_async);
++my ($total_direct_writepage_anon_sync, $total_direct_writepage_anon_async);
+ my ($total_kswapd_nr_scanned, $total_kswapd_wake);
+-my ($total_kswapd_writepage_sync, $total_kswapd_writepage_async);
++my ($total_kswapd_writepage_file_sync, $total_kswapd_writepage_file_async);
++my ($total_kswapd_writepage_anon_sync, $total_kswapd_writepage_anon_async);
  
--	return PAGE_CLEAN;
-+	return write_reclaim_page(page, mapping, sync_writeback);
- }
+ # Catch sigint and exit on request
+ my $sigint_report = 0;
+@@ -101,7 +106,7 @@ my $regex_wakeup_kswapd_default = 'nid=([0-9]*) zid=([0-9]*) order=([0-9]*)';
+ my $regex_lru_isolate_default = 'isolate_mode=([0-9]*) order=([0-9]*) nr_requested=([0-9]*) nr_scanned=([0-9]*) nr_taken=([0-9]*) contig_taken=([0-9]*) contig_dirty=([0-9]*) contig_failed=([0-9]*)';
+ my $regex_lru_shrink_inactive_default = 'lru=([A-Z_]*) nr_scanned=([0-9]*) nr_reclaimed=([0-9]*) priority=([0-9]*)';
+ my $regex_lru_shrink_active_default = 'lru=([A-Z_]*) nr_scanned=([0-9]*) nr_rotated=([0-9]*) priority=([0-9]*)';
+-my $regex_writepage_default = 'page=([0-9a-f]*) pfn=([0-9]*) sync_io=([0-9]*)';
++my $regex_writepage_default = 'page=([0-9a-f]*) pfn=([0-9]*) file=([0-9]) sync_io=([0-9]*)';
  
- /*
-@@ -639,6 +694,9 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
- 	pagevec_free(&freed_pvec);
- }
+ # Dyanically discovered regex
+ my $regex_direct_begin;
+@@ -209,7 +214,7 @@ $regex_lru_shrink_active = generate_traceevent_regex(
+ $regex_writepage = generate_traceevent_regex(
+ 			"vmscan/mm_vmscan_writepage",
+ 			$regex_writepage_default,
+-			"page", "pfn", "sync_io");
++			"page", "pfn", "file", "sync_io");
  
-+/* Direct lumpy reclaim waits up to 5 seconds for background cleaning */
-+#define MAX_SWAP_CLEAN_WAIT 50
-+
- /*
-  * shrink_page_list() returns the number of reclaimed pages
-  */
-@@ -646,13 +704,19 @@ static unsigned long shrink_page_list(struct list_head *page_list,
- 					struct scan_control *sc,
- 					enum pageout_io sync_writeback)
- {
--	LIST_HEAD(ret_pages);
- 	LIST_HEAD(free_pages);
--	int pgactivate = 0;
-+	LIST_HEAD(putback_pages);
-+	LIST_HEAD(dirty_pages);
-+	int pgactivate;
-+	int dirty_isolated = 0;
-+	unsigned long nr_dirty;
- 	unsigned long nr_reclaimed = 0;
- 
-+	pgactivate = 0;
- 	cond_resched();
- 
-+restart_dirty:
-+	nr_dirty = 0;
- 	while (!list_empty(page_list)) {
- 		enum page_references references;
- 		struct address_space *mapping;
-@@ -741,7 +805,19 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+ sub read_statline($) {
+ 	my $pid = $_[0];
+@@ -379,11 +384,20 @@ EVENT_PROCESS:
+ 				next;
  			}
- 		}
  
--		if (PageDirty(page)) {
-+		if (PageDirty(page))  {
-+			/*
-+			 * If the caller cannot writeback pages, dirty pages
-+			 * are put on a separate list for cleaning by either
-+			 * a flusher thread or kswapd
-+			 */
-+			if (!reclaim_can_writeback(sc, page)) {
-+				list_add(&page->lru, &dirty_pages);
-+				unlock_page(page);
-+				nr_dirty++;
-+				goto keep_dirty;
-+			}
-+
- 			if (references == PAGEREF_RECLAIM_CLEAN)
- 				goto keep_locked;
- 			if (!may_enter_fs)
-@@ -852,13 +928,39 @@ activate_locked:
- keep_locked:
- 		unlock_page(page);
- keep:
--		list_add(&page->lru, &ret_pages);
-+		list_add(&page->lru, &putback_pages);
-+keep_dirty:
- 		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
- 	}
+-			my $sync_io = $3;
++			my $file = $3;
++			my $sync_io = $4;
+ 			if ($sync_io) {
+-				$perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_SYNC}++;
++				if ($file) {
++					$perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC}++;
++				} else {
++					$perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC}++;
++				}
+ 			} else {
+-				$perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_ASYNC}++;
++				if ($file) {
++					$perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC}++;
++				} else {
++					$perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC}++;
++				}
+ 			}
+ 		} else {
+ 			$perprocesspid{$process_pid}->{EVENT_UNKNOWN}++;
+@@ -427,7 +441,7 @@ sub dump_stats {
+ 		while (defined $stats{$process_pid}->{HIGH_DIRECT_RECLAIM_LATENCY}[$index] ||
+ 			defined $stats{$process_pid}->{HIGH_KSWAPD_LATENCY}[$index]) {
  
-+	if (dirty_isolated < MAX_SWAP_CLEAN_WAIT && !list_empty(&dirty_pages)) {
-+		/*
-+		 * Wakeup a flusher thread to clean at least as many dirty
-+		 * pages as encountered by direct reclaim. Wait on congestion
-+		 * to throttle processes cleaning dirty pages
-+		 */
-+		wakeup_flusher_threads(nr_dirty);
-+		congestion_wait(BLK_RW_ASYNC, HZ/10);
+-			if ($stats{$process_pid}->{HIGH_DIRECT_RECLAIM_LATENCY}[$index]) {
++			if ($stats{$process_pid}->{HIGH_DIRECT_RECLAIM_LATENCY}[$index]) { 
+ 				printf("%s ", $stats{$process_pid}->{HIGH_DIRECT_RECLAIM_LATENCY}[$index]) if !$opt_ignorepid;
+ 				my ($dummy, $latency) = split(/-/, $stats{$process_pid}->{HIGH_DIRECT_RECLAIM_LATENCY}[$index]);
+ 				$total_direct_latency += $latency;
+@@ -454,8 +468,11 @@ sub dump_stats {
+ 		$total_direct_reclaim += $stats{$process_pid}->{MM_VMSCAN_DIRECT_RECLAIM_BEGIN};
+ 		$total_wakeup_kswapd += $stats{$process_pid}->{MM_VMSCAN_WAKEUP_KSWAPD};
+ 		$total_direct_nr_scanned += $stats{$process_pid}->{HIGH_NR_SCANNED};
+-		$total_direct_writepage_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_SYNC};
+-		$total_direct_writepage_async += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ASYNC};
++		$total_direct_writepage_file_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC};
++		$total_direct_writepage_anon_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC};
++		$total_direct_writepage_file_async += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC};
 +
-+		/*
-+		 * As lumpy reclaim and memcg targets specific pages, wait on
-+		 * them to be cleaned and try reclaim again.
-+		 */
-+		if (sync_writeback == PAGEOUT_IO_SYNC ||
-+						sc->mem_cgroup != NULL) {
-+			dirty_isolated++;
-+			list_splice(&dirty_pages, page_list);
-+			INIT_LIST_HEAD(&dirty_pages);
-+			goto restart_dirty;
-+		}
-+	}
-+
- 	free_page_list(&free_pages);
++		$total_direct_writepage_anon_async += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC};
  
--	list_splice(&ret_pages, page_list);
-+	if (!list_empty(&dirty_pages))
-+		list_splice(&dirty_pages, page_list);
-+	list_splice(&putback_pages, page_list);
-+
- 	count_vm_events(PGACTIVATE, pgactivate);
- 	return nr_reclaimed;
+ 		my $index = 0;
+ 		my $this_reclaim_delay = 0;
+@@ -470,8 +487,8 @@ sub dump_stats {
+ 			$stats{$process_pid}->{MM_VMSCAN_DIRECT_RECLAIM_BEGIN},
+ 			$stats{$process_pid}->{MM_VMSCAN_WAKEUP_KSWAPD},
+ 			$stats{$process_pid}->{HIGH_NR_SCANNED},
+-			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_SYNC},
+-			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ASYNC},
++			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC} + $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC},
++			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC} + $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC},
+ 			$this_reclaim_delay / 1000);
+ 
+ 		if ($stats{$process_pid}->{MM_VMSCAN_DIRECT_RECLAIM_BEGIN}) {
+@@ -515,16 +532,18 @@ sub dump_stats {
+ 
+ 		$total_kswapd_wake += $stats{$process_pid}->{MM_VMSCAN_KSWAPD_WAKE};
+ 		$total_kswapd_nr_scanned += $stats{$process_pid}->{HIGH_NR_SCANNED};
+-		$total_kswapd_writepage_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_SYNC};
+-		$total_kswapd_writepage_async += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ASYNC};
++		$total_kswapd_writepage_file_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC};
++		$total_kswapd_writepage_anon_sync += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC};
++		$total_kswapd_writepage_file_async += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC};
++		$total_kswapd_writepage_anon_async += $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC};
+ 
+ 		printf("%-" . $max_strlen . "s %8d %10d   %8u   %8i %8u",
+ 			$process_pid,
+ 			$stats{$process_pid}->{MM_VMSCAN_KSWAPD_WAKE},
+ 			$stats{$process_pid}->{HIGH_KSWAPD_REWAKEUP},
+ 			$stats{$process_pid}->{HIGH_NR_SCANNED},
+-			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_SYNC},
+-			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ASYNC});
++			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC} + $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC},
++			$stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC} + $stats{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC});
+ 
+ 		if ($stats{$process_pid}->{MM_VMSCAN_KSWAPD_WAKE}) {
+ 			print "      ";
+@@ -551,18 +570,22 @@ sub dump_stats {
+ 	$total_direct_latency /= 1000;
+ 	$total_kswapd_latency /= 1000;
+ 	print "\nSummary\n";
+-	print "Direct reclaims:     		$total_direct_reclaim\n";
+-	print "Direct reclaim pages scanned:	$total_direct_nr_scanned\n";
+-	print "Direct reclaim write sync I/O:	$total_direct_writepage_sync\n";
+-	print "Direct reclaim write async I/O:	$total_direct_writepage_async\n";
+-	print "Wake kswapd requests:		$total_wakeup_kswapd\n";
+-	printf "Time stalled direct reclaim: 	%-1.2f ms\n", $total_direct_latency;
++	print "Direct reclaims:     			$total_direct_reclaim\n";
++	print "Direct reclaim pages scanned:		$total_direct_nr_scanned\n";
++	print "Direct reclaim write file sync I/O:	$total_direct_writepage_file_sync\n";
++	print "Direct reclaim write anon sync I/O:	$total_direct_writepage_anon_sync\n";
++	print "Direct reclaim write file async I/O:	$total_direct_writepage_file_async\n";
++	print "Direct reclaim write anon async I/O:	$total_direct_writepage_anon_async\n";
++	print "Wake kswapd requests:			$total_wakeup_kswapd\n";
++	printf "Time stalled direct reclaim: 		%-1.2f ms\n", $total_direct_latency;
+ 	print "\n";
+-	print "Kswapd wakeups:			$total_kswapd_wake\n";
+-	print "Kswapd pages scanned:		$total_kswapd_nr_scanned\n";
+-	print "Kswapd reclaim write sync I/O:	$total_kswapd_writepage_sync\n";
+-	print "Kswapd reclaim write async I/O:	$total_kswapd_writepage_async\n";
+-	printf "Time kswapd awake:		%-1.2f ms\n", $total_kswapd_latency;
++	print "Kswapd wakeups:				$total_kswapd_wake\n";
++	print "Kswapd pages scanned:			$total_kswapd_nr_scanned\n";
++	print "Kswapd reclaim write file sync I/O:	$total_kswapd_writepage_file_sync\n";
++	print "Kswapd reclaim write anon sync I/O:	$total_kswapd_writepage_anon_sync\n";
++	print "Kswapd reclaim write file async I/O:	$total_kswapd_writepage_file_async\n";
++	print "Kswapd reclaim write anon async I/O:	$total_kswapd_writepage_anon_async\n";
++	printf "Time kswapd awake:			%-1.2f ms\n", $total_kswapd_latency;
  }
+ 
+ sub aggregate_perprocesspid() {
+@@ -582,8 +605,10 @@ sub aggregate_perprocesspid() {
+ 		$perprocess{$process}->{MM_VMSCAN_WAKEUP_KSWAPD} += $perprocesspid{$process_pid}->{MM_VMSCAN_WAKEUP_KSWAPD};
+ 		$perprocess{$process}->{HIGH_KSWAPD_REWAKEUP} += $perprocesspid{$process_pid}->{HIGH_KSWAPD_REWAKEUP};
+ 		$perprocess{$process}->{HIGH_NR_SCANNED} += $perprocesspid{$process_pid}->{HIGH_NR_SCANNED};
+-		$perprocess{$process}->{MM_VMSCAN_WRITEPAGE_SYNC} += $perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_SYNC};
+-		$perprocess{$process}->{MM_VMSCAN_WRITEPAGE_ASYNC} += $perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_ASYNC};
++		$perprocess{$process}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC} += $perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_SYNC};
++		$perprocess{$process}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC} += $perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_SYNC};
++		$perprocess{$process}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC} += $perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_FILE_ASYNC};
++		$perprocess{$process}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC} += $perprocesspid{$process_pid}->{MM_VMSCAN_WRITEPAGE_ANON_ASYNC};
+ 
+ 		for (my $order = 0; $order < 20; $order++) {
+ 			$perprocess{$process}->{MM_VMSCAN_DIRECT_RECLAIM_BEGIN_PERORDER}[$order] += $perprocesspid{$process_pid}->{MM_VMSCAN_DIRECT_RECLAIM_BEGIN_PERORDER}[$order];
 -- 
 1.7.1
 
