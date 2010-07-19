@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757957Ab0GSBL4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 18 Jul 2010 21:11:56 -0400
-Received: from gate.crashing.org ([63.228.1.57]:34181 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757900Ab0GSBLz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 18 Jul 2010 21:11:55 -0400
-Subject: Re: [PPC64/Power7 - 2.6.35-rc5] Bad relocation warnings while
- Building a CONFIG_RELOCATABLE kernel with CONFIG_ISERIES enabled
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: subrata@linux.vnet.ibm.com
-Cc: Paul Mackerras <paulus@samba.org>, sachinp <sachinp@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, divya.vikas@in.ibm.com,
-        Alexander Graf <agraf@suse.de>
-In-Reply-To: <1279193743.10707.5.camel@subratamodak.linux.ibm.com>
-References: <1273060251.13463.8.camel@subratamodak.linux.ibm.com>
-	 <20100507054034.GB25173@drongo>
-	 <1279193743.10707.5.camel@subratamodak.linux.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 19 Jul 2010 11:11:29 +1000
-Message-ID: <1279501889.10390.1834.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758012Ab0GSBlm (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 18 Jul 2010 21:41:42 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:35572 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757944Ab0GSBll convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 18 Jul 2010 21:41:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=RuX3wXUwqZ2C3XroaTMyipqjhSalfXJbP1n+suXvRmsPt5qkDzAMeZ/lAmRIKzUvAz
+         oEIlSHgRR5HLOZUUHFvUalwyl2+0Kx+zeqJ0btlu0sUGWOYhJ38yuWH6BtkoKFlxvZI2
+         8wEftzQlxmBc3uyOtx39ft+Bty6hiIqYCRas4=
+MIME-Version: 1.0
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20100715085932.GA23529@rakim.wolfsonmicro.main>
+References: <1279162147.29294.2.camel@mola> <20100715085932.GA23529@rakim.wolfsonmicro.main>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Mon, 19 Jul 2010 09:41:20 +0800
+Message-ID: <AANLkTikSPYLmrIVkyD_GOVZ76Bkha7DNxED33ZZgQNKJ@mail.gmail.com>
+Subject: Re: [PATCH 0/12] sound/alsa/soc/codec: fix memory leak and resource 
+	relaim in error path
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-15 at 17:05 +0530, Subrata Modak wrote:
-> commit e62cee42e66dcca83aae02748535f62e0f564a0c solved the problem for
-> 2.6.34-rc6. However some other bad relocation warnings generated against
-> 2.6.35-rc5 on Power7/ppc64 below:
-> 
-> MODPOST 2004 modules^M
-> WARNING: 2 bad relocations^M
-> c000000000008590 R_PPC64_ADDR32    .text+0x4000000000008460^M
-> c000000000008594 R_PPC64_ADDR32    .text+0x4000000000008598^M
+hi Mark,
 
-I think this is KVM + CONFIG_RELOCATABLE. Caused by:
+2010/7/15 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Thu, Jul 15, 2010 at 10:49:07AM +0800, Axel Lin wrote:
+>
+>> [PATCH 1/12] ad1836: fix a memory leak if another ad1836 is registered
+>> [PATCH 2/12] ak4642: fix a memory leak if failed to initialise AK4642
+>> [PATCH 3/12] da7210: fix a memory leak if failed to initialise da7210 audio codec
+>> [PATCH 4/12] wm8523: fix resource reclaim in wm8523_register error path
+>> [PATCH 5/12] wm8711: fix a memory leak if another WM8711 is registered
+>> [PATCH 6/12] wm8904: fix resource reclaim in wm8904_register error path
+>> [PATCH 7/12] wm8940: fix resource reclaim in wm8940_register error path
+>> [PATCH 8/12] wm8955: fix resource reclaim in wm8955_register error path
+>> [PATCH 9/12] wm8961: fix resource reclaim in wm8961_register error path
+>> [PATCH 10/12] wm8974: fix a memory leak if another WM8974 is registered
+>> [PATCH 11/12] wm8978: fix a memory leak if another WM8978 is registered
+>> [PATCH 12/12] wm9081: fix resource reclaim in wm9081_register error path
+>
+> If you're going to be submiting large batches of small patches like this
+> it would be really helpful if you could make sure you format the subject
+> lines for your patches so that they match the standards for the area of
+> the kernel you're updating.  This makes them much easier to apply.
+>
 
-.global kvmppc_trampoline_lowmem
-kvmppc_trampoline_lowmem:
-	.long kvmppc_handler_lowmem_trampoline - CONFIG_KERNEL_START
+After checking Liam's multi-component branch, I think this serial of
+fix is not necessary.
+If you think it still has value to merge this serial of fix for
+current implementation, just let me know.
 
-.global kvmppc_trampoline_enter
-kvmppc_trampoline_enter:
-	.long kvmppc_handler_trampoline_enter - CONFIG_KERNEL_START
-
-Alex, can you turn these into 64-bit on ppc64 so the relocator
-can grok them ?
-
-Cheers,
-Ben.
-
-> Config file attached.
-> 
-> Regards--
-> Subrata
-> 
-> On Fri, 2010-05-07 at 15:40 +1000, Paul Mackerras wrote:
-> > On Wed, May 05, 2010 at 05:20:51PM +0530, Subrata Modak wrote:
-> > 
-> > > I built 2.6.34-rc6 with the attached Fedora Config file
-> > > (config-2.6.33.1-19.fc13.ppc64) on my P5 Fedora Box and got the
-> > > following warning. Is the following expected ?
-> > > 
-> > > CALL    arch/powerpc/relocs_check.pl
-> > > Building modules, stage 2.
-> > > WARNING: 4 bad relocations
-> > > c00000000007216e R_PPC64_ADDR16_HIGHEST  __ksymtab+0x00000000009dcec8
-> > > c000000000072172 R_PPC64_ADDR16_HIGHER  __ksymtab+0x00000000009dcec8
-> > > c00000000007217a R_PPC64_ADDR16_HI  __ksymtab+0x00000000009dcec8
-> > > c00000000007217e R_PPC64_ADDR16_LO  __ksymtab+0x00000000009dcec8
-> > 
-> > No, it's not expected.  It's in iSeries code, so you could avoid it
-> > just by disabling CONFIG_ISERIES (I don't think any distro still
-> > supports legacy iSeries).  I'll post a patch to fix the problem
-> > properly.
-> > 
-> > Paul.
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
-
-
+Regards,
+Axel
