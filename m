@@ -1,91 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760872Ab0GSWmP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 18:42:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:64579 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757194Ab0GSWmN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 18:42:13 -0400
-Date: Mon, 19 Jul 2010 18:41:53 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Ian Kent <raven@themaw.net>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH 27/38] union-mount: In-kernel file copyup routines
-Message-ID: <20100719224152.GC11089@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-28-git-send-email-vaurora@redhat.com> <20100713045619.GI3949@zeus.themaw.net>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100713045619.GI3949@zeus.themaw.net>
-User-Agent: Mutt/1.4.2.2i
+	id S966760Ab0GSWop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 18:44:45 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:63827 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760858Ab0GSWon convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 18:44:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=qE7CaqcqGsT2vHtbJ44v7IX1FjRCM+OVpgNuol3/a2KaxhyF66O6A+SuTQYp8rBLDc
+         U/t1YIhE1eEiF7Y9FmMBsT+lvUDuzUJyBwOAmrgQ+Ua638oRdSrX67k63rs0TMeKi4LG
+         uByRn7tLuPRga+3R5VyS5DTRpFWh+e2e8fUyc=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimHBWMYAeFrET2EpeA8KogcUmQldAHM_uhSv-gt@mail.gmail.com>
+References: <1277770577-11024-1-git-send-email-linus.walleij@stericsson.com>
+	<AANLkTimYqUZvxaWVvT5FPsW36NTpqLLCqCiSuRAy_ER5@mail.gmail.com>
+	<AANLkTinqKHCYeGTLuTtKikcR2IA8TY0vy2tSznxLay0N@mail.gmail.com>
+	<AANLkTimHBWMYAeFrET2EpeA8KogcUmQldAHM_uhSv-gt@mail.gmail.com>
+Date: Tue, 20 Jul 2010 00:44:40 +0200
+Message-ID: <AANLkTil_2nzwEUS56U48CJpdqkrpnGXAwfcE9bU_Wqhw@mail.gmail.com>
+Subject: Re: [PATCH 1/3] DMAENGINE: generic slave channel control
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, vinod.koul@intel.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 12:56:20PM +0800, Ian Kent wrote:
-> On Tue, Jun 15, 2010 at 11:39:57AM -0700, Valerie Aurora wrote:
-> > When a file on the read-only layer of a union mount is altered, it
-> > must be copied up to the topmost read-write layer.  This patch creates
-> > union_copyup() and its supporting routines.
-> > 
-> > Thanks to Valdis Kletnieks for a bug fix.
-> > 
-> > Cc: Valdis.Kletnieks@vt.edu
-> > ---
-> >  fs/union.c |  323 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-> >  fs/union.h |    7 +-
-> >  2 files changed, 329 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/fs/union.c b/fs/union.c
-> > index 76a6c34..0982446 100644
-> > --- a/fs/union.c
-> > +++ b/fs/union.c
-> > +/**
-> > + * do_union_copyup_len - Copy up a file given its path (and its parent's)
-> > + *
-> > + * @nd: nameidata for topmost parent dir
-> > + * @path: path of file to be copied up
-> > + * @copy_all: if set, copy all of the file's data and ignore @len
-> > + * @len: if @copy_all is not set, number of bytes of file data to copy up
-> > + *
-> > + * Newly copied up path is returned in @path.
-> > + */
-> > +
-> > +static int do_union_copyup_len(struct nameidata *nd, struct path *path,
-> > +			       int copy_all, size_t len)
-> > +{
-> > +	struct path *parent = &nd->path;
-> > +	int error;
-> > +
-> > +	if (!IS_DIR_UNIONED(parent->dentry))
-> > +		return 0;
-> > +	if (parent->mnt == path->mnt)
-> > +		return 0;
-> > +	if (!S_ISREG(path->dentry->d_inode->i_mode) &&
-> > +	    !S_ISLNK(path->dentry->d_inode->i_mode))
-> > +		return 0;
-> > +
-> > +	BUG_ON(!S_ISDIR(parent->dentry->d_inode->i_mode));
-> > +
-> > +	mutex_lock(&parent->dentry->d_inode->i_mutex);
-> > +	error = -ENOENT;
-> > +	if (IS_DEADDIR(parent->dentry->d_inode))
-> > +		goto out_unlock;
-> > +
-> > +	if (copy_all && S_ISREG(path->dentry->d_inode->i_mode)) {
-> > +		error = -EFBIG;
-> > +		len = i_size_read(path->dentry->d_inode);
-> > +		if (((size_t)len != len) || ((ssize_t)len != len))
-> > +			goto out_unlock;
-> 
-> OK, call me dumb, but what does this comparison of len to len do?
+2010/7/19 Dan Williams <dan.j.williams@intel.com>:
 
-It checks if len (the size of the file to be copied up) will overflow
-size_t or ssize_t on this machine.  The file could have been created
-on a 64-bit box, and be too big to be manipulated on a 32-bit box.  It
-could use a comment, fixed.
+> The recently submitted intel_mid driver [1] seems to have a similar structure:
 
--VAL
+This is very interesting, let's examine this closely as a comparison!
+I'm looking at it from the point of a generic slave control mechanism,
+though I suspect it is designed to be Intel-specific so keep that in mind.
+
+> +/**
+> + * struct intel_mid_dma_slave - DMA slave structure
+> + *
+> + * @dma_dev: DMA master client
+> + * @tx_reg: physical address of data register used for
+> + *     memory-to-peripheral transfers
+> + * @rx_reg: physical address of data register used for
+> + *     peripheral-to-memory transfers
+> + * @tx_width: tx register width
+> + * @rx_width: rx register width
+> + * @dirn: DMA trf direction
+> + * @cfg_hi: Platform-specific initializer for the CFG_HI register
+> + * @cfg_lo: Platform-specific initializer for the CFG_LO register
+> + * @ tx_width: width of src and dstn
+> + * @ hs_mode: SW or HW handskaking mode
+> + * @ cfg_mode: Mode configuration, DMA mem to mem to dev & mem
+> + */
+> +struct intel_mid_dma_slave {
+> +       enum dma_data_direction         dirn;
+> +       enum intel_mid_dma_width        src_width; /*width of DMA src txn*/
+> +       enum intel_mid_dma_width        dst_width; /*width of DMA dst txn*/
+> +       enum intel_mid_dma_hs_mode      hs_mode;  /*handshaking*/
+> +       enum intel_mid_dma_mode         cfg_mode; /*mode configuration*/
+> +       enum intel_mid_dma_msize        src_msize; /*size if src burst*/
+> +       enum intel_mid_dma_msize        dst_msize; /*size of dst burst*/
+> +       dma_async_tx_callback           callback; /*callback function*/
+> +       void                            *callback_param; /*param for callback*/
+> +       unsigned int            device_instance; /*0, 1 for periphral instance*/
+> +};
+> +
+
+kerneldoc and struct members seem to be out-of-sync but I
+see the general idea.
+
+Of these members handshaking, cfg_mode, hs_mode
+and I suspect also device_instance are candidates for
+the private config  since they cannot be assumed to
+exist on all DMA engines. (Also goes for cfg_[lo|hi] from
+the kerneldoc)
+
+The callback and callback param are configured
+per-transfer in the current API, so I don't see what they
+are doing here at all.
+
+Remains: direction, then register address, burstsize and
+word width of the source and destination.
+
+(Register address present in kerneldoc but not in struct,
+burstsize present in struct but not in kerneldoc, whatever)
+
+I don't have src/dst pairs in my API, because since the
+only data provision mechanisms to slaves are sglists,
+and these provide either source or destination address
+depending on transfer direction.
+
+Also I assume that since sglists will be mem->peripheral
+or peripheral->mem, you know what is required on the
+memory side of things for word width and burstsize, and
+these only affect the device side of things.
+
+So that is why my API is more minimalistic.
+
+If you feel src/dst versions of wordwidth, register address
+and burstsize are a must, I can add them, no big thing,
+just makes for some nonused parameters, mostly.
+
+Yours,
+Linus Walleij
