@@ -1,70 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S966837Ab0GSVdS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 17:33:18 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:63516 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S965514Ab0GSVdR (ORCPT
+	id S966848Ab0GSVgO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 17:36:14 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:45780 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S966832Ab0GSVgN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 17:33:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=uwkpoRwMbKWiFseRb6QEzrng83Iuw94v3hFGoj8v9etfCBevSZk/CqZpjgiqmCLV3U
-         IjbbgU5E7i2Pz2VBNfkkDVXOJD7WDRQECRS2DL1K8mNXRwvL4VQsEiiOrdzyLVrWElAt
-         7tD7GzPs6VyCd7xFODYWxg0q7bXAi6mTchYFE=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinMxn8bNx8BZH-8UcB_5ULFu5uNWLrFyAoeoUzt@mail.gmail.com>
-References: <AANLkTimhqRAMjaVNwo50GJO9B6kTzySWVtK04gEdu0rg@mail.gmail.com>
-	<4C37C365.6090508@gmail.com>
-	<AANLkTilH9Hn0MHvfOEOyEeRmDcPTrRXIFB3K8pq31yIH@mail.gmail.com>
-	<AANLkTikZCBrZwROGgGTj-JREywN3fUnvaANtTGgkok--@mail.gmail.com>
-	<AANLkTinbj4ScYca7WlnUiIKgsVkVbQwEO4ypgxFe5Zbo@mail.gmail.com>
-	<AANLkTinSjNHPyariuoUuYZCRcbTf8nQALma81I4CPdsv@mail.gmail.com>
-	<AANLkTik9OzNu-jaE6qiJJznb0riOn5CsgPO6aBoDaYHJ@mail.gmail.com>
-	<AANLkTinMxn8bNx8BZH-8UcB_5ULFu5uNWLrFyAoeoUzt@mail.gmail.com>
-Date: Mon, 19 Jul 2010 15:33:16 -0600
-Message-ID: <AANLkTilY7c1C2BYZCfEQU9SUA3-h2TPzD0RlHIBEhTph@mail.gmail.com>
-Subject: Re: Interrupt Affinity in SMP
-From: Robert Hancock <hancockrwd@gmail.com>
-To: Bryan Hundven <bryanhundven@gmail.com>
-Cc: linux-kernel@vger.kernel.org, mchehab@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
+	Mon, 19 Jul 2010 17:36:13 -0400
+Date: Mon, 19 Jul 2010 14:35:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] writeback: avoid unnecessary calculation of bdi
+ dirty thresholds
+Message-Id: <20100719143520.d9af9649.akpm@linux-foundation.org>
+In-Reply-To: <20100711021748.879183413@intel.com>
+References: <20100711020656.340075560@intel.com>
+	<20100711021748.879183413@intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 2:03 PM, Bryan Hundven <bryanhundven@gmail.com> wrote:
-> On Mon, Jul 19, 2010 at 12:22 PM, Robert Hancock <hancockrwd@gmail.com> wrote:
->> On Sat, Jul 17, 2010 at 2:02 PM, Bryan Hundven <bryanhundven@gmail.com> wrote:
->>> Please see the two attached examples.
->>>
->>> Notice on the 5410 example how we start with the affinity set to 0xff,
->>> and change it to 0xf0.
->>> This should spread the interrupts over the last 4 cores of this quad
->>> core - dual processor system.
->>>
->>> Also notice on the 5645 example, with the same commands we start with
->>> 0xffffff and change to 0xfff000 to spread the interrupts over the last
->>> 12 cores, but only the first of the last twelve cores receive
->>> interrupts.
->>>
->>> This is the inconsistency I was trying to explain before.
->>
->> As I mentioned before, I believe the behavior in this case is chipset
->> dependent, and potentially not something the kernel has control over.
->> In most cases distributing the same interrupt across multiple cores is
->> likely a bad idea in any case, unless the interrupt load is actually
->> so high that a single CPU can't handle it.
->
-> Can anyone confirm that this is how the 5520 and newer xeon chipsets
-> handle affinity?
->
-> I might be totally wrong, but I thought that RSS (Receive Side
-> Scaling, which is available on the 82576 network card in that 5645
-> xeon example) helps in that scenario?
+On Sun, 11 Jul 2010 10:06:59 +0800
+Wu Fengguang <fengguang.wu@intel.com> wrote:
 
-It looks like that card gives you multiple interrupt vectors that can
-be serviced independently by multiple CPUs. However, each interrupt
-vector is likely to only be handled by one CPU at a time.
+> Split get_dirty_limits() into global_dirty_limits()+bdi_dirty_limit(),
+> so that the latter can be avoided when under global dirty background
+> threshold (which is the normal state for most systems).
+> 
+
+mm/page-writeback.c: In function 'balance_dirty_pages_ratelimited_nr':
+mm/page-writeback.c:466: warning: 'dirty_exceeded' may be used uninitialized in this function
+
+This was a real bug.
+
+--- a/mm/page-writeback.c~writeback-avoid-unnecessary-calculation-of-bdi-dirty-thresholds-fix
++++ a/mm/page-writeback.c
+@@ -463,7 +463,7 @@ static void balance_dirty_pages(struct a
+ 	unsigned long bdi_thresh;
+ 	unsigned long pages_written = 0;
+ 	unsigned long pause = 1;
+-	int dirty_exceeded;
++	bool dirty_exceeded = false;
+ 	struct backing_dev_info *bdi = mapping->backing_dev_info;
+ 
+ 	for (;;) {
+_
+
