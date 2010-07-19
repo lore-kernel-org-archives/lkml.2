@@ -1,95 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760789Ab0GSRZK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 13:25:10 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:54191 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760573Ab0GSRZI (ORCPT
+	id S1760805Ab0GSR11 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 13:27:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28402 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760718Ab0GSR1Z convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 13:25:08 -0400
-Date: Mon, 19 Jul 2010 20:25:06 +0300 (EEST)
-From: "=?ISO-8859-15?Q?Ilpo_J=E4rvinen?=" <ilpo.jarvinen@helsinki.fi>
-X-X-Sender: ijjarvin@melkinpaasi.cs.helsinki.fi
-To: Eric Dumazet <eric.dumazet@gmail.com>
-cc: Lennart Schulte <lennart.schulte@nets.rwth-aachen.de>,
-        David Miller <davem@davemloft.net>, Tejun Heo <tj@kernel.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "Fehrmann, Henning" <henning.fehrmann@aei.mpg.de>,
-        Carsten Aulbert <carsten.aulbert@aei.mpg.de>
-Subject: Re: [PATCHv2] tcp: fix crash in tcp_xmit_retransmit_queue
-In-Reply-To: <1279548555.2553.51.camel@edumazet-laptop>
-Message-ID: <alpine.DEB.2.00.1007192013010.30181@melkinpaasi.cs.helsinki.fi>
-References: <4C358AAA.9080400@kernel.org>  <alpine.DEB.2.00.1007111825510.15736@melkinpaasi.cs.helsinki.fi>  <4C3EF7EA.2040900@nets.rwth-aachen.de>  <1279195528.2496.2.camel@edumazet-laptop>  <4C3F053F.7090704@nets.rwth-aachen.de> 
- <alpine.DEB.2.00.1007161448330.13946@melkinpaasi.cs.helsinki.fi>  <4C404FC5.6040107@nets.rwth-aachen.de>  <alpine.DEB.2.00.1007161602510.13946@melkinpaasi.cs.helsinki.fi>  <4C440771.7080107@nets.rwth-aachen.de>  <alpine.DEB.2.00.1007191319010.13002@wel-95.cs.helsinki.fi>
- <1279548555.2553.51.camel@edumazet-laptop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 19 Jul 2010 13:27:25 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <AANLkTinVns77R7yCCh-lydd0eQufdAF9O2OaWmCL7uSn@mail.gmail.com>
+References: <AANLkTinVns77R7yCCh-lydd0eQufdAF9O2OaWmCL7uSn@mail.gmail.com> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> <AANLkTikuzYqYpGHcubb7QVciZW0dNFjOG82qIwy5M4gO@mail.gmail.com> <10783.1279556132@redhat.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: dhowells@redhat.com, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
 MIME-Version: 1.0
-Content-Type: MULTIPART/MIXED; BOUNDARY="-696250871-1543959423-1279560307=:30181"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 19 Jul 2010 18:26:40 +0100
+Message-ID: <11817.1279560400@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  This message is in MIME format.  The first part should be readable text,
-  while the remaining parts are likely unreadable without MIME-aware tools.
+Linus Torvalds <torvalds@linux-foundation.org> wrote:
 
----696250871-1543959423-1279560307=:30181
-Content-Type: TEXT/PLAIN; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-
-On Mon, 19 Jul 2010, Eric Dumazet wrote:
-
-> Le lundi 19 juillet 2010 Ã  14:16 +0300, Ilpo JÃ¤rvinen a Ã©crit :
+> > The new information is useful for some cases.  Samba for example.  At
+> > least two of the fields I'm adding are also made available through BSD's
+> > stat() call, and will automatically be used for some things by autoconf
+> > magic if they become available.
 > 
-> > Thanks for testing.
-> > 
-> > DaveM, I think this oops was introduced for 2.6.28 (in 
-> > 08ebd1721ab8fd362e90ae17b461c07b23fa2824 it seems, to be exact) so to 
-> > stables it should go too please. I've only tweaked the message (so no need 
-> > for Lennart to retest v2 :-)).
-> > 
-> > --
-> > [PATCHv2] tcp: fix crash in tcp_xmit_retransmit_queue
-> > 
-> > It can happen that there are no packets in queue while calling
-> > tcp_xmit_retransmit_queue(). tcp_write_queue_head() then returns
-> > NULL and that gets deref'ed to get sacked into a local var.
-> > 
-> > There is no work to do if no packets are outstanding so we just
-> > exit early.
-> > 
-> > This oops was introduced by 08ebd1721ab8fd (tcp: remove tp->lost_out
-> > guard to make joining diff nicer).
-> > 
-> 
-> But prior to commit 08ebd1721ab8fd3, we were not testing
-> tp->packets_out, but tp->lost_out
+> .. that' a pointless argument. If the only way something gets used is
+> through autoconf, then clearly nobody cares.
 
-That's right, but back then we were not testing it for the same purpose.
- 
-> if it was 0, we were not doing the tcp_for_write_queue_from() loop.
+That's not what I meant at all.  I meant there may be things out there that
+will just use st_btime and st_gen as soon as they appear without anything
+having to be done to them because these fields already exist in the BSD stat
+struct.
 
-This invariant _should_ be true all the time:
- lost_out <= packets_out
+Samba is such an example as this.  It will use st_btime immediately if it
+exists as the SMB protocol wants to pass the creation time around.
 
-...and if it's not we would get Leak printouts every now and then. Thus is 
-packets_out is zero no NULL defer with the if lost_out either. The other 
-loop too (in pre 08eb kernels) will work because of earlier mentioned 
-send_head check side-effects.
+> Yeah, maybe it adds a flag to "ls", but let's face is - that isn't actually
+> _buying_ anything.
 
-> Not sure it makes a difference ?
+Not having ls cause a mass automount just because you did an ls of a directory
+full of automount points would be very nice.
 
-This difference is well thought and intentional, I didn't use different 
-one by accident. We want to make sure we won't use NULL from 
-tcp_write_queue_head() while the pre 08ebd1721ab8fd3 kernels was 
-interested mainly whether the first loop should run or not (and of course 
-ends up avoid the null deref too but it's more optimization like 
-thing in there, ie., if there's no lost packets no work to-do). The deref 
-could have been fixed by moving TCP_SKB_CB(skb)->sacked a bit later but 
-that would again make us depend on the side-effect of the send_head check 
-(in the case of packets_out being zero and wq empty) which is something I 
-don't like too much.
+> So the only thing that matters for new system calls is who actually
+> really seriously wants to use the information, even if it's not there
+> by default. Is it _anybody_ else than samba?
 
--- 
- i.
----696250871-1543959423-1279560307=:30181--
+Perhaps.  As previously mentioned, BSD (and other unices) already make some of
+these fields available (notably st_btime and st_gen).  We could also make a
+BSD-compatible st_flags available.
+
+> In other words, in the absense of some seriously generic users, it
+> sounds more like an ioctl to me to ask for something like "creation
+> time" or "inode version", when not all filesystems support anything
+> like that.
+
+I initially did them by getxattr(), but that didn't go down too well.
+
+> Ask your samba people, for example, if they'd _ever_ do just a "xstat()"?
+
+I suspect they would, though maybe they can say otherwise.  What about SMB
+directory enumeration?  I believe that is effectively getdents-with-stat.
+Having to do open+stat for each file for that would be painful.
+
+David
