@@ -1,60 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755545Ab0GSHgr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 03:36:47 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54046 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755250Ab0GSHgq convert rfc822-to-8bit (ORCPT
+	id S1757059Ab0GSHp1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 03:45:27 -0400
+Received: from out01.mta.xmission.com ([166.70.13.231]:33988 "EHLO
+	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755209Ab0GSHpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 03:36:46 -0400
-Subject: Re: [PPC64/Power7 - 2.6.35-rc5] Bad relocation warnings while Building a CONFIG_RELOCATABLE kernel with CONFIG_ISERIES enabled
-Mime-Version: 1.0 (Apple Message framework v1078)
+	Mon, 19 Jul 2010 03:45:25 -0400
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device memory management
+References: <4C3C0032.5020702@codeaurora.org>
+	<20100713150311B.fujita.tomonori@lab.ntt.co.jp>
+	<20100713121420.GB4263@codeaurora.org>
+	<20100714104353B.fujita.tomonori@lab.ntt.co.jp>
+	<20100714201149.GA14008@codeaurora.org>
+	<20100714220536.GE18138@n2100.arm.linux.org.uk>
+	<20100715012958.GB2239@codeaurora.org>
+	<20100715085535.GC26212@n2100.arm.linux.org.uk>
+	<20100719065233.GD11054@codeaurora.org>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Mon, 19 Jul 2010 00:44:49 -0700
+In-Reply-To: <20100719065233.GD11054@codeaurora.org> (Zach Pfeffer's message of "Sun\, 18 Jul 2010 23\:52\:33 -0700")
+Message-ID: <m1mxtndifi.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <1279501889.10390.1834.camel@pasglop>
-Date: Mon, 19 Jul 2010 09:36:39 +0200
-Cc: subrata@linux.vnet.ibm.com, Paul Mackerras <paulus@samba.org>,
-        sachinp <sachinp@linux.vnet.ibm.com>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        Kamalesh Babulal <kamalesh@linux.vnet.ibm.com>,
-        Linuxppc-dev <Linuxppc-dev@ozlabs.org>,
-        Paul Mackerras <paulus@au1.ibm.com>, divya.vikas@in.ibm.com
-Content-Transfer-Encoding: 8BIT
-Message-Id: <8C4BCF61-7F5D-4C80-A311-93CF8521FBF5@suse.de>
-References: <1273060251.13463.8.camel@subratamodak.linux.ibm.com> <20100507054034.GB25173@drongo> <1279193743.10707.5.camel@subratamodak.linux.ibm.com> <1279501889.10390.1834.camel@pasglop>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-X-Mailer: Apple Mail (2.1078)
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.4.80;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.4.80
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-SA-Exim-Scanned: No (on in01.mta.xmission.com); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Zach Pfeffer <zpfeffer@codeaurora.org> writes:
 
-On 19.07.2010, at 03:11, Benjamin Herrenschmidt wrote:
-
-> On Thu, 2010-07-15 at 17:05 +0530, Subrata Modak wrote:
->> commit e62cee42e66dcca83aae02748535f62e0f564a0c solved the problem for
->> 2.6.34-rc6. However some other bad relocation warnings generated against
->> 2.6.35-rc5 on Power7/ppc64 below:
+> On Thu, Jul 15, 2010 at 09:55:35AM +0100, Russell King - ARM Linux wrote:
+>> On Wed, Jul 14, 2010 at 06:29:58PM -0700, Zach Pfeffer wrote:
+>> > The VCM ensures that all mappings that map a given physical buffer:
+>> > IOMMU mappings, CPU mappings and one-to-one device mappings all map
+>> > that buffer using the same (or compatible) attributes. At this point
+>> > the only attribute that users can pass is CACHED. In the absence of
+>> > CACHED all accesses go straight through to the physical memory.
 >> 
->> MODPOST 2004 modules^M
->> WARNING: 2 bad relocations^M
->> c000000000008590 R_PPC64_ADDR32    .text+0x4000000000008460^M
->> c000000000008594 R_PPC64_ADDR32    .text+0x4000000000008598^M
-> 
-> I think this is KVM + CONFIG_RELOCATABLE. Caused by:
-> 
-> .global kvmppc_trampoline_lowmem
-> kvmppc_trampoline_lowmem:
-> 	.long kvmppc_handler_lowmem_trampoline - CONFIG_KERNEL_START
-> 
-> .global kvmppc_trampoline_enter
-> kvmppc_trampoline_enter:
-> 	.long kvmppc_handler_trampoline_enter - CONFIG_KERNEL_START
-> 
-> Alex, can you turn these into 64-bit on ppc64 so the relocator
-> can grok them ?
+>> So what you're saying is that if I have a buffer in kernel space
+>> which I already have its virtual address, I can pass this to VCM and
+>> tell it !CACHED, and it'll setup another mapping which is not cached
+>> for me?
+>
+> Not quite. The existing mapping will be represented by a reservation
+> from the prebuilt VCM of the VM. This reservation has been marked
+> non-cached. Another reservation on a IOMMU VCM, also marked non-cached
+> will be backed with the same physical memory. This is legal in ARM,
+> allowing the vcm_back call to succeed. If you instead passed cached on
+> the second mapping, the first mapping would be non-cached and the
+> second would be cached. If the underlying architecture supported this
+> than the vcm_back would go through.
 
-If I turn them into 64-bit, will the values be > RMA? In that case things would break anyways. How does relocation work on PPC? Are the first few megs copied over to low memory? Would I have to mask anything in the above code to make sure I use the real values?
+How does this compare with the x86 pat code?
 
-Alex
+>> You are aware that multiple V:P mappings for the same physical page
+>> with different attributes are being outlawed with ARMv6 and ARMv7
+>> due to speculative prefetching.  The cache can be searched even for
+>> a mapping specified as 'normal, uncached' and you can get cache hits
+>> because the data has been speculatively loaded through a separate
+>> cached mapping of the same physical page.
+>
+> I didn't know that. Thanks for the heads up.
+>
+>> FYI, during the next merge window, I will be pushing a patch which makes
+>> ioremap() of system RAM fail, which should be the last core code creator
+>> of mappings with different memory types.  This behaviour has been outlawed
+>> (as unpredictable) in the architecture specification and does cause
+>> problems on some CPUs.
+>
+> That's fair enough, but it seems like it should only be outlawed for
+> those processors on which it breaks.
+
+To my knowledge mismatch of mapping attributes is a problem on most
+cpus on every architecture.  I don't see it making sense to encourage
+coding constructs that will fail in the strangest most difficult to
+debug ways.
+
+Eric
 
