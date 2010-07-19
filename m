@@ -1,477 +1,440 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760628Ab0GSLff (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 07:35:35 -0400
-Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:49217 "EHLO
+	id S932073Ab0GSLfh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 07:35:37 -0400
+Received: from mail2-relais-roc.national.inria.fr ([192.134.164.83]:44855 "EHLO
 	mail2-relais-roc.national.inria.fr" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1760609Ab0GSLfX (ORCPT
+	by vger.kernel.org with ESMTP id S1760610Ab0GSLfY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 07:35:23 -0400
+	Mon, 19 Jul 2010 07:35:24 -0400
 X-IronPort-AV: E=Sophos;i="4.55,226,1278280800"; 
-   d="scan'208";a="55778620"
+   d="scan'208";a="55778622"
 From: Tomasz Buchert <tomasz.buchert@inria.fr>
 To: linux-kernel@vger.kernel.org, Stanislaw Gruszka <sgruszka@redhat.com>,
         Peter Zijlstra <peterz@infradead.org>
 Cc: Tomasz Buchert <tomasz.buchert@inria.fr>
-Subject: [PATCH 1/4] posix-timers: Refactoring of CPUCLOCK* macros
-Date: Mon, 19 Jul 2010 13:34:46 +0200
-Message-Id: <1279539289-27628-2-git-send-email-tomasz.buchert@inria.fr>
+Subject: [PATCH 2/4] posix-cpu-timers: Introduction of wall clocks
+Date: Mon, 19 Jul 2010 13:34:47 +0200
+Message-Id: <1279539289-27628-3-git-send-email-tomasz.buchert@inria.fr>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1279539289-27628-1-git-send-email-tomasz.buchert@inria.fr>
+In-Reply-To: <1279539289-27628-2-git-send-email-tomasz.buchert@inria.fr>
 References: <1279539289-27628-1-git-send-email-tomasz.buchert@inria.fr>
+ <1279539289-27628-2-git-send-email-tomasz.buchert@inria.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is merely a preparation to introduce wall time
-clocks for threads/processes. All occurences of
-CPUCLOCK* macros were replaced by CLOCK*.
+Currently Linux lacks a good way to get an elapsed time
+of a process/thread. This patch adds the interface to
+obtain this piece of information. The access to the new
+thread/process clock is restricted according to the same
+rules as the access to the CPU clocks.
+
+CLOCK_WALL occupies previously unused value (CLOCK_MAX)
+in the clockid_t representation of a clock.
 
 Signed-off-by: Tomasz Buchert <tomasz.buchert@inria.fr>
 ---
- include/linux/posix-timers.h |   24 +++++-----
- include/linux/sched.h        |    2 +-
- kernel/itimer.c              |   14 +++---
- kernel/posix-cpu-timers.c    |   96 +++++++++++++++++++++---------------------
- 4 files changed, 68 insertions(+), 68 deletions(-)
+ include/linux/posix-timers.h |   27 ++++++
+ include/linux/time.h         |    2 +
+ kernel/posix-cpu-timers.c    |  214 +++++++++++++++++++++++++++++++++++++++---
+ kernel/posix-timers.c        |   25 ++++-
+ 4 files changed, 252 insertions(+), 16 deletions(-)
 
 diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 4f71bf4..02444c2 100644
+index 02444c2..1282958 100644
 --- a/include/linux/posix-timers.h
 +++ b/include/linux/posix-timers.h
-@@ -17,22 +17,22 @@ struct cpu_timer_list {
- 	int firing;
- };
+@@ -27,12 +27,22 @@ struct cpu_timer_list {
+ #define CLOCK_PROF		0
+ #define CLOCK_VIRT		1
+ #define CLOCK_SCHED		2
++#define CLOCK_WALL		3
+ #define CLOCK_MAX		3
  
--#define CPUCLOCK_PID(clock)		((pid_t) ~((clock) >> 3))
--#define CPUCLOCK_PERTHREAD(clock) \
--	(((clock) & (clockid_t) CPUCLOCK_PERTHREAD_MASK) != 0)
--#define CPUCLOCK_PID_MASK	7
--#define CPUCLOCK_PERTHREAD_MASK	4
--#define CPUCLOCK_WHICH(clock)	((clock) & (clockid_t) CPUCLOCK_CLOCK_MASK)
--#define CPUCLOCK_CLOCK_MASK	3
--#define CPUCLOCK_PROF		0
--#define CPUCLOCK_VIRT		1
--#define CPUCLOCK_SCHED		2
--#define CPUCLOCK_MAX		3
-+#define CLOCK_PID(clock)		((pid_t) ~((clock) >> 3))
-+#define CLOCK_PERTHREAD(clock) \
-+	(((clock) & (clockid_t) CLOCK_PERTHREAD_MASK) != 0)
-+#define CLOCK_PID_MASK	7
-+#define CLOCK_PERTHREAD_MASK	4
-+#define CLOCK_WHICH(clock)	((clock) & (clockid_t) CLOCK_WHICH_MASK)
-+#define CLOCK_WHICH_MASK	3
-+#define CLOCK_PROF		0
-+#define CLOCK_VIRT		1
-+#define CLOCK_SCHED		2
-+#define CLOCK_MAX		3
- 
++#define IS_CPU_CLOCK(clock)  ((clock) < 0 &&  \
++		(CLOCK_WHICH(clock) ^ CLOCK_WALL))
++#define IS_WALL_CLOCK(clock)  ((clock) < 0 && \
++		!(CLOCK_WHICH(clock) ^ CLOCK_WALL))
++
  #define MAKE_PROCESS_CPUCLOCK(pid, clock) \
  	((~(clockid_t) (pid) << 3) | (clockid_t) (clock))
  #define MAKE_THREAD_CPUCLOCK(tid, clock) \
--	MAKE_PROCESS_CPUCLOCK((tid), (clock) | CPUCLOCK_PERTHREAD_MASK)
-+	MAKE_PROCESS_CPUCLOCK((tid), (clock) | CLOCK_PERTHREAD_MASK)
+ 	MAKE_PROCESS_CPUCLOCK((tid), (clock) | CLOCK_PERTHREAD_MASK)
++#define MAKE_PROCESS_WALLCLOCK(pid) \
++	MAKE_PROCESS_CPUCLOCK(pid, CLOCK_WALL)
++#define MAKE_THREAD_WALLCLOCK(pid) \
++	MAKE_THREAD_CPUCLOCK(pid, CLOCK_WALL)
  
  /* POSIX.1b interval timer structure. */
  struct k_itimer {
-diff --git a/include/linux/sched.h b/include/linux/sched.h
-index 747fcae..84a5fa7 100644
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -562,7 +562,7 @@ struct signal_struct {
+@@ -94,6 +104,8 @@ int do_posix_clock_nosettime(const clockid_t, struct timespec *tp);
+ /* function to call to trigger timer event */
+ int posix_timer_event(struct k_itimer *timr, int si_private);
  
- 	/*
- 	 * ITIMER_PROF and ITIMER_VIRTUAL timers for the process, we use
--	 * CPUCLOCK_PROF and CPUCLOCK_VIRT for indexing array as these
-+	 * CLOCK_PROF and CLOCK_VIRT for indexing array as these
- 	 * values are defined to 0 and 1 respectively
- 	 */
- 	struct cpu_itimer it[2];
-diff --git a/kernel/itimer.c b/kernel/itimer.c
-index d802883..17d65e1 100644
---- a/kernel/itimer.c
-+++ b/kernel/itimer.c
-@@ -57,10 +57,10 @@ static void get_cpu_itimer(struct task_struct *tsk, unsigned int clock_id,
- 		cputime_t t;
++/* CPU clocks */
++
+ int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *ts);
+ int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *ts);
+ int posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *ts);
+@@ -119,4 +131,19 @@ long clock_nanosleep_restart(struct restart_block *restart_block);
  
- 		thread_group_cputimer(tsk, &cputime);
--		if (clock_id == CPUCLOCK_PROF)
-+		if (clock_id == CLOCK_PROF)
- 			t = cputime_add(cputime.utime, cputime.stime);
- 		else
--			/* CPUCLOCK_VIRT */
-+			/* CLOCK_VIRT */
- 			t = cputime.utime;
+ void update_rlimit_cpu(unsigned long rlim_new);
  
- 		if (cputime_le(cval, t))
-@@ -89,10 +89,10 @@ int do_getitimer(int which, struct itimerval *value)
- 		spin_unlock_irq(&tsk->sighand->siglock);
- 		break;
- 	case ITIMER_VIRTUAL:
--		get_cpu_itimer(tsk, CPUCLOCK_VIRT, value);
-+		get_cpu_itimer(tsk, CLOCK_VIRT, value);
- 		break;
- 	case ITIMER_PROF:
--		get_cpu_itimer(tsk, CPUCLOCK_PROF, value);
-+		get_cpu_itimer(tsk, CLOCK_PROF, value);
- 		break;
- 	default:
- 		return(-EINVAL);
-@@ -171,7 +171,7 @@ static void set_cpu_itimer(struct task_struct *tsk, unsigned int clock_id,
- 	it->incr = ninterval;
- 	it->error = error;
- 	it->incr_error = incr_error;
--	trace_itimer_state(clock_id == CPUCLOCK_VIRT ?
-+	trace_itimer_state(clock_id == CLOCK_VIRT ?
- 			   ITIMER_VIRTUAL : ITIMER_PROF, value, nval);
++/* Wall clocks */
++
++int wall_clock_getres(clockid_t which_clock, struct timespec *tp);
++int wall_clock_get(clockid_t which_clock, struct timespec *tp);
++int wall_clock_set(const clockid_t which_clock, struct timespec *tp);
++int wall_nsleep(const clockid_t which_clock, int flags,
++		struct timespec *tsave, struct timespec __user *rmtp);
++long wall_nsleep_restart(struct restart_block *restart_block);
++int wall_timer_get(struct k_itimer *timr, struct itimerspec *cur_setting);
++int wall_timer_create(struct k_itimer *new_timer);
++int wall_timer_set(struct k_itimer *timr, int flags,
++			struct itimerspec *new_setting,
++			struct itimerspec *old_setting);
++int wall_timer_del(struct k_itimer *timer);
++
+ #endif
+diff --git a/include/linux/time.h b/include/linux/time.h
+index ea3559f..596e6fb 100644
+--- a/include/linux/time.h
++++ b/include/linux/time.h
+@@ -275,6 +275,8 @@ struct itimerval {
+ #define CLOCK_MONOTONIC_RAW		4
+ #define CLOCK_REALTIME_COARSE		5
+ #define CLOCK_MONOTONIC_COARSE		6
++#define CLOCK_PROCESS_WALLTIME_ID	7
++#define CLOCK_THREAD_WALLTIME_ID	8
  
- 	spin_unlock_irq(&tsk->sighand->siglock);
-@@ -228,10 +228,10 @@ again:
- 		spin_unlock_irq(&tsk->sighand->siglock);
- 		break;
- 	case ITIMER_VIRTUAL:
--		set_cpu_itimer(tsk, CPUCLOCK_VIRT, value, ovalue);
-+		set_cpu_itimer(tsk, CLOCK_VIRT, value, ovalue);
- 		break;
- 	case ITIMER_PROF:
--		set_cpu_itimer(tsk, CPUCLOCK_PROF, value, ovalue);
-+		set_cpu_itimer(tsk, CLOCK_PROF, value, ovalue);
- 		break;
- 	default:
- 		return -EINVAL;
+ /*
+  * The IDs of various hardware clocks:
 diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index 9829646..03e8116 100644
+index 03e8116..7495593 100644
 --- a/kernel/posix-cpu-timers.c
 +++ b/kernel/posix-cpu-timers.c
-@@ -21,7 +21,7 @@ void update_rlimit_cpu(unsigned long rlim_new)
- 	cputime_t cputime = secs_to_cputime(rlim_new);
- 
- 	spin_lock_irq(&current->sighand->siglock);
--	set_process_cpu_timer(current, CPUCLOCK_PROF, &cputime, NULL);
-+	set_process_cpu_timer(current, CLOCK_PROF, &cputime, NULL);
+@@ -25,29 +25,201 @@ void update_rlimit_cpu(unsigned long rlim_new)
  	spin_unlock_irq(&current->sighand->siglock);
  }
  
-@@ -29,9 +29,9 @@ static int check_clock(const clockid_t which_clock)
+-static int check_clock(const clockid_t which_clock)
++static int check_task_clock(const clockid_t which_clock)
  {
  	int error = 0;
  	struct task_struct *p;
--	const pid_t pid = CPUCLOCK_PID(which_clock);
-+	const pid_t pid = CLOCK_PID(which_clock);
+ 	const pid_t pid = CLOCK_PID(which_clock);
  
--	if (CPUCLOCK_WHICH(which_clock) >= CPUCLOCK_MAX)
-+	if (CLOCK_WHICH(which_clock) >= CLOCK_MAX)
- 		return -EINVAL;
- 
+-	if (CLOCK_WHICH(which_clock) >= CLOCK_MAX)
+-		return -EINVAL;
+-
  	if (pid == 0)
-@@ -39,7 +39,7 @@ static int check_clock(const clockid_t which_clock)
+ 		return 0;
  
- 	read_lock(&tasklist_lock);
+-	read_lock(&tasklist_lock);
++	rcu_read_lock();
  	p = find_task_by_vpid(pid);
--	if (!p || !(CPUCLOCK_PERTHREAD(which_clock) ?
-+	if (!p || !(CLOCK_PERTHREAD(which_clock) ?
+ 	if (!p || !(CLOCK_PERTHREAD(which_clock) ?
  		   same_thread_group(p, current) : thread_group_leader(p))) {
  		error = -EINVAL;
  	}
-@@ -53,7 +53,7 @@ timespec_to_sample(const clockid_t which_clock, const struct timespec *tp)
- {
- 	union cpu_time_count ret;
- 	ret.sched = 0;		/* high half always zero when .cpu used */
--	if (CPUCLOCK_WHICH(which_clock) == CPUCLOCK_SCHED) {
-+	if (CLOCK_WHICH(which_clock) == CLOCK_SCHED) {
- 		ret.sched = (unsigned long long)tp->tv_sec * NSEC_PER_SEC + tp->tv_nsec;
- 	} else {
- 		ret.cpu = timespec_to_cputime(tp);
-@@ -65,7 +65,7 @@ static void sample_to_timespec(const clockid_t which_clock,
- 			       union cpu_time_count cpu,
- 			       struct timespec *tp)
- {
--	if (CPUCLOCK_WHICH(which_clock) == CPUCLOCK_SCHED)
-+	if (CLOCK_WHICH(which_clock) == CLOCK_SCHED)
- 		*tp = ns_to_timespec(cpu.sched);
- 	else
- 		cputime_to_timespec(cpu.cpu, tp);
-@@ -75,7 +75,7 @@ static inline int cpu_time_before(const clockid_t which_clock,
- 				  union cpu_time_count now,
- 				  union cpu_time_count then)
- {
--	if (CPUCLOCK_WHICH(which_clock) == CPUCLOCK_SCHED) {
-+	if (CLOCK_WHICH(which_clock) == CLOCK_SCHED) {
- 		return now.sched < then.sched;
- 	}  else {
- 		return cputime_lt(now.cpu, then.cpu);
-@@ -85,7 +85,7 @@ static inline void cpu_time_add(const clockid_t which_clock,
- 				union cpu_time_count *acc,
- 			        union cpu_time_count val)
- {
--	if (CPUCLOCK_WHICH(which_clock) == CPUCLOCK_SCHED) {
-+	if (CLOCK_WHICH(which_clock) == CLOCK_SCHED) {
- 		acc->sched += val.sched;
- 	}  else {
- 		acc->cpu = cputime_add(acc->cpu, val.cpu);
-@@ -95,7 +95,7 @@ static inline union cpu_time_count cpu_time_sub(const clockid_t which_clock,
- 						union cpu_time_count a,
- 						union cpu_time_count b)
- {
--	if (CPUCLOCK_WHICH(which_clock) == CPUCLOCK_SCHED) {
-+	if (CLOCK_WHICH(which_clock) == CLOCK_SCHED) {
- 		a.sched -= b.sched;
- 	}  else {
- 		a.cpu = cputime_sub(a.cpu, b.cpu);
-@@ -128,7 +128,7 @@ static void bump_cpu_timer(struct k_itimer *timer,
- 	if (timer->it.cpu.incr.sched == 0)
- 		return;
+-	read_unlock(&tasklist_lock);
++	rcu_read_unlock();
  
--	if (CPUCLOCK_WHICH(timer->it_clock) == CPUCLOCK_SCHED) {
-+	if (CLOCK_WHICH(timer->it_clock) == CLOCK_SCHED) {
- 		unsigned long long delta, incr;
+ 	return error;
+ }
  
- 		if (now.sched < timer->it.cpu.expires.sched)
-@@ -182,7 +182,7 @@ int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *tp)
++static inline int check_cpu_clock(const clockid_t which_clock)
++{
++	return !IS_CPU_CLOCK(which_clock) ?
++		-EINVAL : check_task_clock(which_clock);
++}
++
++static inline int check_wall_clock(const clockid_t which_clock)
++{
++	return !IS_WALL_CLOCK(which_clock) ?
++		-EINVAL : check_task_clock(which_clock);
++}
++
++/* Wall time clocks */
++
++/* Get the start time of the process/thread referenced by the wall clock.
++ * RCU lock required. */
++
++static int get_start_time(clockid_t which_clock, struct timespec *start)
++{
++	struct task_struct *p =
++		find_task_by_vpid(CLOCK_PID(which_clock));
++	if (p && (
++		(CLOCK_PERTHREAD(which_clock) &&
++			same_thread_group(p, current)) ||
++		(!CLOCK_PERTHREAD(which_clock) &&
++			thread_group_leader(p) && p->sighand))) {
++		*start = p->start_time;
++		return 0;
++	}
++	return -EINVAL;
++}
++
++/* monotonic clock is used to get start_time and uptime
++ * so the precision is twice the precision of the monotonic clock */
++
++int wall_clock_getres(clockid_t which_clock, struct timespec *tp)
++{
++	int error = check_wall_clock(which_clock);
++	if (error)
++		return error;
++	error = hrtimer_get_res(CLOCK_MONOTONIC, tp);
++	if (error)
++		return error;
++	*tp = timespec_add_safe(*tp, *tp);
++	return 0;
++}
++
++int wall_clock_get(clockid_t which_clock, struct timespec *tp)
++{
++	struct timespec uptime, start;
++	int error = -EINVAL;
++
++	if (!IS_WALL_CLOCK(which_clock))
++		return error;
++
++	if (CLOCK_PID(which_clock) == 0) {
++		start = (CLOCK_PERTHREAD(which_clock) ?
++			current : current->group_leader)->start_time;
++		error = 0;
++	} else {
++		rcu_read_lock();
++		error = get_start_time(which_clock, &start);
++		rcu_read_unlock();
++	}
++
++	if (error)
++		return error;
++
++	do_posix_clock_monotonic_gettime(&uptime);
++	*tp = timespec_sub(uptime, start);
++
++	return 0;
++}
++
++int wall_clock_set(const clockid_t which_clock,
++				   struct timespec *tp)
++{
++	return check_wall_clock(which_clock) ?: -EPERM;
++}
++
++int wall_nsleep(const clockid_t which_clock, int flags,
++		struct timespec *tsave, struct timespec __user *rmtp)
++{
++	if (!IS_WALL_CLOCK(which_clock))
++		return -EINVAL;
++
++	if (flags & TIMER_ABSTIME) {
++		int error;
++		struct timespec start;
++
++		rcu_read_lock();
++		error = get_start_time(which_clock, &start);
++		rcu_read_unlock();
++
++		if (error)
++			return error;
++		*tsave = timespec_add_safe(*tsave, start);
++	}
++	return hrtimer_nanosleep(tsave, rmtp, flags & TIMER_ABSTIME ?
++				 HRTIMER_MODE_ABS : HRTIMER_MODE_REL,
++				 CLOCK_MONOTONIC);
++}
++
++long wall_nsleep_restart(struct restart_block *restart_block)
++{
++	return -EINVAL;
++}
++
++int wall_timer_get(struct k_itimer *timr,
++		struct itimerspec *cur_setting)
++{
++	return -EINVAL;
++}
++
++int wall_timer_create(struct k_itimer *new_timer)
++{
++	return -EINVAL;
++}
++
++int wall_timer_set(struct k_itimer *timr, int flags,
++			struct itimerspec *new_setting,
++			struct itimerspec *old_setting)
++{
++	return -EINVAL;
++}
++
++int wall_timer_del(struct k_itimer *timer)
++{
++	return -EINVAL;
++}
++
++#define PROCESS_WALLCLOCK	MAKE_PROCESS_WALLCLOCK(0)
++#define THREAD_WALLCLOCK	MAKE_THREAD_WALLCLOCK(0)
++
++static int process_wall_getres(const clockid_t which_clock,
++				    struct timespec *tp)
++{
++	return wall_clock_getres(PROCESS_WALLCLOCK, tp);
++}
++static int process_wall_get(const clockid_t which_clock, struct timespec *tp)
++{
++	return wall_clock_get(PROCESS_WALLCLOCK, tp);
++}
++static int process_wall_nsleep(const clockid_t which_clock, int flags,
++			      struct timespec *rqtp,
++			      struct timespec __user *rmtp)
++{
++	return wall_nsleep(PROCESS_WALLCLOCK, flags, rqtp, rmtp);
++}
++static long process_wall_nsleep_restart(struct restart_block *restart_block)
++{
++	return -EINVAL;
++}
++static int thread_wall_getres(const clockid_t which_clock,
++				   struct timespec *tp)
++{
++	return wall_clock_getres(THREAD_WALLCLOCK, tp);
++}
++static int thread_wall_get(const clockid_t which_clock, struct timespec *tp)
++{
++	return wall_clock_get(THREAD_WALLCLOCK, tp);
++}
++static int thread_wall_nsleep(const clockid_t which_clock, int flags,
++			      struct timespec *rqtp,
++			      struct timespec __user *rmtp)
++{
++	return wall_nsleep(THREAD_WALLCLOCK, flags, rqtp, rmtp);
++}
++static long thread_wall_nsleep_restart(struct restart_block *restart_block)
++{
++	return -EINVAL;
++}
++
++/* CPU time clocks */
++
+ static inline union cpu_time_count
+ timespec_to_sample(const clockid_t which_clock, const struct timespec *tp)
+ {
+@@ -178,7 +350,7 @@ static inline cputime_t virt_ticks(struct task_struct *p)
+ 
+ int posix_cpu_clock_getres(const clockid_t which_clock, struct timespec *tp)
+ {
+-	int error = check_clock(which_clock);
++	int error = check_cpu_clock(which_clock);
  	if (!error) {
  		tp->tv_sec = 0;
  		tp->tv_nsec = ((NSEC_PER_SEC + HZ - 1) / HZ);
--		if (CPUCLOCK_WHICH(which_clock) == CPUCLOCK_SCHED) {
-+		if (CLOCK_WHICH(which_clock) == CLOCK_SCHED) {
- 			/*
- 			 * If sched_clock is using a cycle counter, we
- 			 * don't have any idea of its true resolution
-@@ -214,16 +214,16 @@ int posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
- static int cpu_clock_sample(const clockid_t which_clock, struct task_struct *p,
- 			    union cpu_time_count *cpu)
- {
--	switch (CPUCLOCK_WHICH(which_clock)) {
-+	switch (CLOCK_WHICH(which_clock)) {
- 	default:
- 		return -EINVAL;
--	case CPUCLOCK_PROF:
-+	case CLOCK_PROF:
- 		cpu->cpu = prof_ticks(p);
- 		break;
--	case CPUCLOCK_VIRT:
-+	case CLOCK_VIRT:
- 		cpu->cpu = virt_ticks(p);
- 		break;
--	case CPUCLOCK_SCHED:
-+	case CLOCK_SCHED:
- 		cpu->sched = task_sched_runtime(p);
- 		break;
+@@ -200,7 +372,7 @@ int posix_cpu_clock_set(const clockid_t which_clock, const struct timespec *tp)
+ 	 * You can never reset a CPU clock, but we check for other errors
+ 	 * in the call before failing with EPERM.
+ 	 */
+-	int error = check_clock(which_clock);
++	int error = check_cpu_clock(which_clock);
+ 	if (error == 0) {
+ 		error = -EPERM;
  	}
-@@ -305,18 +305,18 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
+@@ -1612,7 +1784,7 @@ static long thread_cpu_nsleep_restart(struct restart_block *restart_block)
+ 
+ static __init int init_posix_cpu_timers(void)
  {
- 	struct task_cputime cputime;
+-	struct k_clock process = {
++	struct k_clock cpu_process = {
+ 		.clock_getres = process_cpu_clock_getres,
+ 		.clock_get = process_cpu_clock_get,
+ 		.clock_set = do_posix_clock_nosettime,
+@@ -1620,7 +1792,7 @@ static __init int init_posix_cpu_timers(void)
+ 		.nsleep = process_cpu_nsleep,
+ 		.nsleep_restart = process_cpu_nsleep_restart,
+ 	};
+-	struct k_clock thread = {
++	struct k_clock cpu_thread = {
+ 		.clock_getres = thread_cpu_clock_getres,
+ 		.clock_get = thread_cpu_clock_get,
+ 		.clock_set = do_posix_clock_nosettime,
+@@ -1628,10 +1800,28 @@ static __init int init_posix_cpu_timers(void)
+ 		.nsleep = thread_cpu_nsleep,
+ 		.nsleep_restart = thread_cpu_nsleep_restart,
+ 	};
++	struct k_clock wall_process = {
++		.clock_getres = process_wall_getres,
++		.clock_get = process_wall_get,
++		.clock_set = wall_clock_set,
++		.timer_create = wall_timer_create,
++		.nsleep = process_wall_nsleep,
++		.nsleep_restart = process_wall_nsleep_restart,
++	};
++	struct k_clock wall_thread = {
++		.clock_getres = thread_wall_getres,
++		.clock_get = thread_wall_get,
++		.clock_set = wall_clock_set,
++		.timer_create = wall_timer_create,
++		.nsleep = thread_wall_nsleep,
++		.nsleep_restart = thread_wall_nsleep_restart,
++	};
+ 	struct timespec ts;
  
--	switch (CPUCLOCK_WHICH(which_clock)) {
-+	switch (CLOCK_WHICH(which_clock)) {
- 	default:
- 		return -EINVAL;
--	case CPUCLOCK_PROF:
-+	case CLOCK_PROF:
- 		thread_group_cputime(p, &cputime);
- 		cpu->cpu = cputime_add(cputime.utime, cputime.stime);
- 		break;
--	case CPUCLOCK_VIRT:
-+	case CLOCK_VIRT:
- 		thread_group_cputime(p, &cputime);
- 		cpu->cpu = cputime.utime;
- 		break;
--	case CPUCLOCK_SCHED:
-+	case CLOCK_SCHED:
- 		cpu->sched = thread_group_sched_runtime(p);
- 		break;
- 	}
-@@ -326,7 +326,7 @@ static int cpu_clock_sample_group(const clockid_t which_clock,
+-	register_posix_clock(CLOCK_PROCESS_CPUTIME_ID, &process);
+-	register_posix_clock(CLOCK_THREAD_CPUTIME_ID, &thread);
++	register_posix_clock(CLOCK_PROCESS_CPUTIME_ID, &cpu_process);
++	register_posix_clock(CLOCK_THREAD_CPUTIME_ID, &cpu_thread);
++	register_posix_clock(CLOCK_PROCESS_WALLTIME_ID, &wall_process);
++	register_posix_clock(CLOCK_THREAD_WALLTIME_ID, &wall_thread);
  
- int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
- {
--	const pid_t pid = CPUCLOCK_PID(which_clock);
-+	const pid_t pid = CLOCK_PID(which_clock);
- 	int error = -EINVAL;
- 	union cpu_time_count rtn;
- 
-@@ -335,7 +335,7 @@ int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
- 		 * Special case constant value for our own clocks.
- 		 * We don't have to do any lookup to find ourselves.
- 		 */
--		if (CPUCLOCK_PERTHREAD(which_clock)) {
-+		if (CLOCK_PERTHREAD(which_clock)) {
- 			/*
- 			 * Sampling just ourselves we can do with no locking.
- 			 */
-@@ -356,7 +356,7 @@ int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
- 		rcu_read_lock();
- 		p = find_task_by_vpid(pid);
- 		if (p) {
--			if (CPUCLOCK_PERTHREAD(which_clock)) {
-+			if (CLOCK_PERTHREAD(which_clock)) {
- 				if (same_thread_group(p, current)) {
- 					error = cpu_clock_sample(which_clock,
- 								 p, &rtn);
-@@ -389,16 +389,16 @@ int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
- int posix_cpu_timer_create(struct k_itimer *new_timer)
- {
- 	int ret = 0;
--	const pid_t pid = CPUCLOCK_PID(new_timer->it_clock);
-+	const pid_t pid = CLOCK_PID(new_timer->it_clock);
- 	struct task_struct *p;
- 
--	if (CPUCLOCK_WHICH(new_timer->it_clock) >= CPUCLOCK_MAX)
-+	if (CLOCK_WHICH(new_timer->it_clock) >= CLOCK_MAX)
- 		return -EINVAL;
- 
- 	INIT_LIST_HEAD(&new_timer->it.cpu.entry);
- 
- 	read_lock(&tasklist_lock);
--	if (CPUCLOCK_PERTHREAD(new_timer->it_clock)) {
-+	if (CLOCK_PERTHREAD(new_timer->it_clock)) {
- 		if (pid == 0) {
- 			p = current;
- 		} else {
-@@ -560,14 +560,14 @@ static void arm_timer(struct k_itimer *timer)
- 	struct cpu_timer_list *const nt = &timer->it.cpu;
- 	struct cpu_timer_list *next;
- 
--	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
-+	if (CLOCK_PERTHREAD(timer->it_clock)) {
- 		head = p->cpu_timers;
- 		cputime_expires = &p->cputime_expires;
- 	} else {
- 		head = p->signal->cpu_timers;
- 		cputime_expires = &p->signal->cputime_expires;
- 	}
--	head += CPUCLOCK_WHICH(timer->it_clock);
-+	head += CLOCK_WHICH(timer->it_clock);
- 
- 	listpos = head;
- 	list_for_each_entry(next, head, entry) {
-@@ -587,16 +587,16 @@ static void arm_timer(struct k_itimer *timer)
- 		 * and RLIMIT_CPU and for thread timers with RLIMIT_RTTIME.
- 		 */
- 
--		switch (CPUCLOCK_WHICH(timer->it_clock)) {
--		case CPUCLOCK_PROF:
-+		switch (CLOCK_WHICH(timer->it_clock)) {
-+		case CLOCK_PROF:
- 			if (expires_gt(cputime_expires->prof_exp, exp->cpu))
- 				cputime_expires->prof_exp = exp->cpu;
- 			break;
--		case CPUCLOCK_VIRT:
-+		case CLOCK_VIRT:
- 			if (expires_gt(cputime_expires->virt_exp, exp->cpu))
- 				cputime_expires->virt_exp = exp->cpu;
- 			break;
--		case CPUCLOCK_SCHED:
-+		case CLOCK_SCHED:
- 			if (cputime_expires->sched_exp == 0 ||
- 			    cputime_expires->sched_exp > exp->sched)
- 				cputime_expires->sched_exp = exp->sched;
-@@ -650,16 +650,16 @@ static int cpu_timer_sample_group(const clockid_t which_clock,
- 	struct task_cputime cputime;
- 
- 	thread_group_cputimer(p, &cputime);
--	switch (CPUCLOCK_WHICH(which_clock)) {
-+	switch (CLOCK_WHICH(which_clock)) {
- 	default:
- 		return -EINVAL;
--	case CPUCLOCK_PROF:
-+	case CLOCK_PROF:
- 		cpu->cpu = cputime_add(cputime.utime, cputime.stime);
- 		break;
--	case CPUCLOCK_VIRT:
-+	case CLOCK_VIRT:
- 		cpu->cpu = cputime.utime;
- 		break;
--	case CPUCLOCK_SCHED:
-+	case CLOCK_SCHED:
- 		cpu->sched = cputime.sum_exec_runtime + task_delta_exec(p);
- 		break;
- 	}
-@@ -724,7 +724,7 @@ int posix_cpu_timer_set(struct k_itimer *timer, int flags,
- 	 * times (in arm_timer).  With an absolute time, we must
- 	 * check if it's already passed.  In short, we need a sample.
- 	 */
--	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
-+	if (CLOCK_PERTHREAD(timer->it_clock)) {
- 		cpu_clock_sample(timer->it_clock, p, &val);
- 	} else {
- 		cpu_timer_sample_group(timer->it_clock, p, &val);
-@@ -858,7 +858,7 @@ void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp)
- 	/*
- 	 * Sample the clock to take the difference with the expiry time.
- 	 */
--	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
-+	if (CLOCK_PERTHREAD(timer->it_clock)) {
- 		cpu_clock_sample(timer->it_clock, p, &now);
- 		clear_dead = p->exit_state;
- 	} else {
-@@ -1128,9 +1128,9 @@ static void check_process_timers(struct task_struct *tsk,
- 	/*
- 	 * Check for the special case process timers.
- 	 */
--	check_cpu_itimer(tsk, &sig->it[CPUCLOCK_PROF], &prof_expires, ptime,
-+	check_cpu_itimer(tsk, &sig->it[CLOCK_PROF], &prof_expires, ptime,
- 			 SIGPROF);
--	check_cpu_itimer(tsk, &sig->it[CPUCLOCK_VIRT], &virt_expires, utime,
-+	check_cpu_itimer(tsk, &sig->it[CLOCK_VIRT], &virt_expires, utime,
- 			 SIGVTALRM);
- 	soft = ACCESS_ONCE(sig->rlim[RLIMIT_CPU].rlim_cur);
- 	if (soft != RLIM_INFINITY) {
-@@ -1188,7 +1188,7 @@ void posix_cpu_timer_schedule(struct k_itimer *timer)
- 	/*
- 	 * Fetch the current sample and update the timer's expiry time.
- 	 */
--	if (CPUCLOCK_PERTHREAD(timer->it_clock)) {
-+	if (CLOCK_PERTHREAD(timer->it_clock)) {
- 		cpu_clock_sample(timer->it_clock, p, &now);
- 		bump_cpu_timer(timer, now);
- 		if (unlikely(p->exit_state)) {
-@@ -1382,7 +1382,7 @@ void set_process_cpu_timer(struct task_struct *tsk, unsigned int clock_idx,
- {
- 	union cpu_time_count now;
- 
--	BUG_ON(clock_idx == CPUCLOCK_SCHED);
-+	BUG_ON(clock_idx == CLOCK_SCHED);
- 	cpu_timer_sample_group(clock_idx, tsk, &now);
- 
- 	if (oldval) {
-@@ -1410,11 +1410,11 @@ void set_process_cpu_timer(struct task_struct *tsk, unsigned int clock_idx,
- 	 * RLIMIT_CPU limit is earlier than prof_exp cpu timer expire.
- 	 */
- 	switch (clock_idx) {
--	case CPUCLOCK_PROF:
-+	case CLOCK_PROF:
- 		if (expires_gt(tsk->signal->cputime_expires.prof_exp, *newval))
- 			tsk->signal->cputime_expires.prof_exp = *newval;
- 		break;
--	case CPUCLOCK_VIRT:
-+	case CLOCK_VIRT:
- 		if (expires_gt(tsk->signal->cputime_expires.virt_exp, *newval))
- 			tsk->signal->cputime_expires.virt_exp = *newval;
- 		break;
-@@ -1498,9 +1498,9 @@ int posix_cpu_nsleep(const clockid_t which_clock, int flags,
- 	/*
- 	 * Diagnose required errors first.
- 	 */
--	if (CPUCLOCK_PERTHREAD(which_clock) &&
--	    (CPUCLOCK_PID(which_clock) == 0 ||
--	     CPUCLOCK_PID(which_clock) == current->pid))
-+	if (CLOCK_PERTHREAD(which_clock) &&
-+	    (CLOCK_PID(which_clock) == 0 ||
-+	     CLOCK_PID(which_clock) == current->pid))
- 		return -EINVAL;
- 
- 	error = do_cpu_nanosleep(which_clock, flags, rqtp, &it);
-@@ -1557,8 +1557,8 @@ long posix_cpu_nsleep_restart(struct restart_block *restart_block)
+ 	cputime_to_timespec(cputime_one_jiffy, &ts);
+ 	onecputick = ts.tv_nsec;
+diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
+index ad72342..beaef9e 100644
+--- a/kernel/posix-timers.c
++++ b/kernel/posix-timers.c
+@@ -153,12 +153,29 @@ static inline void unlock_timer(struct k_itimer *timr, unsigned long flags)
  }
  
+ /*
++ * Call either POSIX CPU clocks or wall clocks.
++ */
++
++#define CLOCK_DISPATCH_PERTASK(clock, call, arglist) \
++	(IS_CPU_CLOCK(clock) ? \
++		posix_cpu_##call arglist : wall_##call arglist)
++
++/*
+  * Call the k_clock hook function if non-null, or the default function.
+  */
++
++#define CLOCK_DISPATCH_NORMAL(clock, call, arglist) \
++	(posix_clocks[clock].call != NULL ? \
++		(*posix_clocks[clock].call) arglist : common_##call arglist)
++
++/*
++ * Dispatch between thread/process clocks and global clocks.
++ */
++
+ #define CLOCK_DISPATCH(clock, call, arglist) \
+- 	((clock) < 0 ? posix_cpu_##call arglist : \
+- 	 (posix_clocks[clock].call != NULL \
+- 	  ? (*posix_clocks[clock].call) arglist : common_##call arglist))
++	((clock) < 0 ? \
++		CLOCK_DISPATCH_PERTASK((clock), call, arglist) : \
++		CLOCK_DISPATCH_NORMAL((clock), call, arglist))
  
--#define PROCESS_CLOCK	MAKE_PROCESS_CPUCLOCK(0, CPUCLOCK_SCHED)
--#define THREAD_CLOCK	MAKE_THREAD_CPUCLOCK(0, CPUCLOCK_SCHED)
-+#define PROCESS_CLOCK	MAKE_PROCESS_CPUCLOCK(0, CLOCK_SCHED)
-+#define THREAD_CLOCK	MAKE_THREAD_CPUCLOCK(0, CLOCK_SCHED)
- 
- static int process_cpu_clock_getres(const clockid_t which_clock,
- 				    struct timespec *tp)
+ /*
+  * Default clock hook functions when the struct k_clock passed
+@@ -213,7 +230,7 @@ static int no_nsleep(const clockid_t which_clock, int flags,
+  */
+ static inline int invalid_clockid(const clockid_t which_clock)
+ {
+-	if (which_clock < 0)	/* CPU clock, posix_cpu_* will check it */
++	if (which_clock < 0)	/* per task clock, checked later */
+ 		return 0;
+ 	if ((unsigned) which_clock >= MAX_CLOCKS)
+ 		return 1;
 -- 
 1.6.3.3
 
