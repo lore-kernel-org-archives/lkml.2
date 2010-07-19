@@ -1,192 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967090Ab0GSWOg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 18:14:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18796 "EHLO mx1.redhat.com"
+	id S967103Ab0GSWOi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 18:14:38 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:39167 "EHLO cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S965985Ab0GSWOe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 18:14:34 -0400
-Date: Mon, 19 Jul 2010 18:14:16 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Ian Kent <raven@themaw.net>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, Theodore Tso <tytso@mit.edu>,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 11/38] whiteout: ext2 whiteout support
-Message-ID: <20100719221416.GB11089@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com> <1276627208-17242-12-git-send-email-vaurora@redhat.com> <20100713042418.GC3949@zeus.themaw.net>
-Mime-Version: 1.0
+	id S966906Ab0GSWOf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 18:14:35 -0400
+Date: Tue, 20 Jul 2010 00:14:20 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in direct
+ reclaim
+Message-ID: <20100719221420.GA16031@cmpxchg.org>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
+ <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100713042418.GC3949@zeus.themaw.net>
-User-Agent: Mutt/1.4.2.2i
+In-Reply-To: <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 13, 2010 at 12:24:20PM +0800, Ian Kent wrote:
-> On Tue, Jun 15, 2010 at 11:39:41AM -0700, Valerie Aurora wrote:
-> > From: Jan Blunck <jblunck@suse.de>
-> > 
-> > This patch adds whiteout support to EXT2. A whiteout is an empty directory
-> > entry (inode == 0) with the file type set to EXT2_FT_WHT. Therefore it
-> > allocates space in directories. Due to being implemented as a filetype it is
-> > necessary to have the EXT2_FEATURE_INCOMPAT_FILETYPE flag set.
-> > 
-> > XXX - Needs serious review.  Al wonders: What happens with a delete at
-> > the beginning of a block?  Will we find the matching dentry or the
-> > first empty space?
-> > 
-> > Signed-off-by: Jan Blunck <jblunck@suse.de>
-> > Signed-off-by: Valerie Aurora <vaurora@redhat.com>
-> > Cc: Theodore Tso <tytso@mit.edu>
-> > Cc: linux-ext4@vger.kernel.org
-> > ---
-> >  fs/ext2/dir.c           |   96 +++++++++++++++++++++++++++++++++++++++++++++--
-> >  fs/ext2/ext2.h          |    3 +
-> >  fs/ext2/inode.c         |   11 ++++-
-> >  fs/ext2/namei.c         |   67 +++++++++++++++++++++++++++++++-
-> >  fs/ext2/super.c         |    6 +++
-> >  include/linux/ext2_fs.h |    4 ++
-> >  6 files changed, 177 insertions(+), 10 deletions(-)
-> > 
-> > diff --git a/fs/ext2/dir.c b/fs/ext2/dir.c
-> > index 57207a9..030bd46 100644
-> > --- a/fs/ext2/dir.c
-> > +++ b/fs/ext2/dir.c
-> > @@ -219,7 +219,7 @@ static inline int ext2_match (int len, const char * const name,
-> >  {
-> >  	if (len != de->name_len)
-> >  		return 0;
-> > -	if (!de->inode)
-> > +	if (!de->inode && (de->file_type != EXT2_FT_WHT))
-> >  		return 0;
-> >  	return !memcmp(name, de->name, len);
-> >  }
-> > @@ -255,6 +255,7 @@ static unsigned char ext2_filetype_table[EXT2_FT_MAX] = {
-> >  	[EXT2_FT_FIFO]		= DT_FIFO,
-> >  	[EXT2_FT_SOCK]		= DT_SOCK,
-> >  	[EXT2_FT_SYMLINK]	= DT_LNK,
-> > +	[EXT2_FT_WHT]		= DT_WHT,
-> >  };
-> >  
-> >  #define S_SHIFT 12
-> > @@ -448,6 +449,26 @@ ino_t ext2_inode_by_name(struct inode *dir, struct qstr *child)
-> >  	return res;
-> >  }
-> >  
-> > +/* Special version for filetype based whiteout support */
-> > +ino_t ext2_inode_by_dentry(struct inode *dir, struct dentry *dentry)
-> > +{
-> > +	ino_t res = 0;
-> > +	struct ext2_dir_entry_2 *de;
-> > +	struct page *page;
-> > +
-> > +	de = ext2_find_entry (dir, &dentry->d_name, &page);
-> > +	if (de) {
-> > +		res = le32_to_cpu(de->inode);
-> > +		if (!res && de->file_type == EXT2_FT_WHT) {
-> > +			spin_lock(&dentry->d_lock);
-> > +			dentry->d_flags |= DCACHE_WHITEOUT;
-> > +			spin_unlock(&dentry->d_lock);
-> > +		}
-> > +		ext2_put_page(page);
-> > +	}
-> > +	return res;
-> > +}
-> > +
-> >  /* Releases the page */
-> >  void ext2_set_link(struct inode *dir, struct ext2_dir_entry_2 *de,
-> >  		   struct page *page, struct inode *inode, int update_times)
-> > @@ -523,7 +544,8 @@ static ext2_dirent * ext2_append_entry(struct dentry * dentry,
-> >  				goto got_it;
-> >  			name_len = EXT2_DIR_REC_LEN(de->name_len);
-> >  			rec_len = ext2_rec_len_from_disk(de->rec_len);
-> > -			if (!de->inode && rec_len >= reclen)
-> > +			if (!de->inode && (de->file_type != EXT2_FT_WHT) &&
-> > +			    (rec_len >= reclen))
-> >  				goto got_it;
-> >  			if (rec_len >= name_len + reclen)
-> >  				goto got_it;
-> > @@ -564,8 +586,11 @@ int ext2_add_link (struct dentry *dentry, struct inode *inode)
-> >  		return PTR_ERR(de);
-> >  
-> >  	err = -EEXIST;
-> > -	if (ext2_match (namelen, name, de))
-> > +	if (ext2_match (namelen, name, de)) {
-> > +		if (de->file_type == EXT2_FT_WHT)
-> > +			goto got_it;
-> >  		goto out_unlock;
-> > +	}
-> >  
-> >  got_it:
-> >  	name_len = EXT2_DIR_REC_LEN(de->name_len);
-> > @@ -577,7 +602,8 @@ got_it:
-> >  							&page, NULL);
-> >  	if (err)
-> >  		goto out_unlock;
-> > -	if (de->inode) {
-> > +	if (de->inode || ((de->file_type == EXT2_FT_WHT) &&
-> > +			  !ext2_match (namelen, name, de))) {
-> >  		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
-> >  		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
-> >  		de->rec_len = ext2_rec_len_to_disk(name_len);
-> > @@ -646,6 +672,68 @@ out:
-> >  	return err;
-> >  }
-> >  
-> > +int ext2_whiteout_entry (struct inode * dir, struct dentry * dentry,
-> > +			 struct ext2_dir_entry_2 * de, struct page * page)
-> > +{
-> > +	const char *name = dentry->d_name.name;
-> > +	int namelen = dentry->d_name.len;
-> > +	unsigned short rec_len, name_len;
-> > +	loff_t pos;
-> > +	int err;
-> > +
-> > +	if (!de) {
-> > +		de = ext2_append_entry(dentry, &page);
-> > +		BUG_ON(!de);
-> > +	}
-> > +
-> > +	err = -EEXIST;
-> > +	if (ext2_match (namelen, name, de) &&
-> > +	    (de->file_type == EXT2_FT_WHT)) {
-> > +		ext2_error(dir->i_sb, __func__,
-> > +			   "entry is already a whiteout in directory #%lu",
-> > +			   dir->i_ino);
-> > +		goto out_unlock;
-> > +	}
-> > +
-> > +	name_len = EXT2_DIR_REC_LEN(de->name_len);
-> > +	rec_len = ext2_rec_len_from_disk(de->rec_len);
-> > +
-> > +	pos = page_offset(page) +
-> > +		(char*)de - (char*)page_address(page);
-> > +	err = __ext2_write_begin(NULL, page->mapping, pos, rec_len, 0,
-> > +							&page, NULL);
-> > +	if (err)
-> > +		goto out_unlock;
-> > +	/*
-> > +	 * We whiteout an existing entry. Do what ext2_delete_entry() would do,
-> > +	 * except that we don't need to merge with the previous entry since
-> > +	 * we are going to reuse it.
-> > +	 */
-> > +	if (ext2_match (namelen, name, de))
-> > +		de->inode = 0;
-> > +	if (de->inode || (de->file_type == EXT2_FT_WHT)) {
-> > +		ext2_dirent *de1 = (ext2_dirent *) ((char *) de + name_len);
-> > +		de1->rec_len = ext2_rec_len_to_disk(rec_len - name_len);
-> > +		de->rec_len = ext2_rec_len_to_disk(name_len);
-> > +		de = de1;
-> > +	}
-> 
-> This looks odd, can someone tell me what's actually going with de and de1
-> here please?
+Hi Mel,
 
-This patch needs serious review (as noted).  I will corner some ext*
-developer at some point to look at it.
+On Mon, Jul 19, 2010 at 02:11:26PM +0100, Mel Gorman wrote:
+> @@ -406,7 +461,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
+>  		return PAGE_SUCCESS;
+>  	}
 
--VAL
+Did you forget to delete the worker code from pageout() which is now
+in write_reclaim_page()?
+
+> -	return PAGE_CLEAN;
+> +	return write_reclaim_page(page, mapping, sync_writeback);
+>  }
+>  
+>  /*
+> @@ -639,6 +694,9 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
+>  	pagevec_free(&freed_pvec);
+>  }
+>  
+> +/* Direct lumpy reclaim waits up to 5 seconds for background cleaning */
+> +#define MAX_SWAP_CLEAN_WAIT 50
+> +
+>  /*
+>   * shrink_page_list() returns the number of reclaimed pages
+>   */
+> @@ -646,13 +704,19 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  					struct scan_control *sc,
+>  					enum pageout_io sync_writeback)
+>  {
+> -	LIST_HEAD(ret_pages);
+>  	LIST_HEAD(free_pages);
+> -	int pgactivate = 0;
+> +	LIST_HEAD(putback_pages);
+> +	LIST_HEAD(dirty_pages);
+> +	int pgactivate;
+> +	int dirty_isolated = 0;
+> +	unsigned long nr_dirty;
+>  	unsigned long nr_reclaimed = 0;
+>  
+> +	pgactivate = 0;
+>  	cond_resched();
+>  
+> +restart_dirty:
+> +	nr_dirty = 0;
+>  	while (!list_empty(page_list)) {
+>  		enum page_references references;
+>  		struct address_space *mapping;
+> @@ -741,7 +805,19 @@ static unsigned long shrink_page_list(struct list_head *page_list,
+>  			}
+>  		}
+>  
+> -		if (PageDirty(page)) {
+> +		if (PageDirty(page))  {
+> +			/*
+> +			 * If the caller cannot writeback pages, dirty pages
+> +			 * are put on a separate list for cleaning by either
+> +			 * a flusher thread or kswapd
+> +			 */
+> +			if (!reclaim_can_writeback(sc, page)) {
+> +				list_add(&page->lru, &dirty_pages);
+> +				unlock_page(page);
+> +				nr_dirty++;
+> +				goto keep_dirty;
+> +			}
+> +
+>  			if (references == PAGEREF_RECLAIM_CLEAN)
+>  				goto keep_locked;
+>  			if (!may_enter_fs)
+> @@ -852,13 +928,39 @@ activate_locked:
+>  keep_locked:
+>  		unlock_page(page);
+>  keep:
+> -		list_add(&page->lru, &ret_pages);
+> +		list_add(&page->lru, &putback_pages);
+> +keep_dirty:
+>  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
+>  	}
+>  
+> +	if (dirty_isolated < MAX_SWAP_CLEAN_WAIT && !list_empty(&dirty_pages)) {
+> +		/*
+> +		 * Wakeup a flusher thread to clean at least as many dirty
+> +		 * pages as encountered by direct reclaim. Wait on congestion
+> +		 * to throttle processes cleaning dirty pages
+> +		 */
+> +		wakeup_flusher_threads(nr_dirty);
+> +		congestion_wait(BLK_RW_ASYNC, HZ/10);
+> +
+> +		/*
+> +		 * As lumpy reclaim and memcg targets specific pages, wait on
+> +		 * them to be cleaned and try reclaim again.
+> +		 */
+> +		if (sync_writeback == PAGEOUT_IO_SYNC ||
+> +						sc->mem_cgroup != NULL) {
+> +			dirty_isolated++;
+> +			list_splice(&dirty_pages, page_list);
+> +			INIT_LIST_HEAD(&dirty_pages);
+> +			goto restart_dirty;
+> +		}
+> +	}
+
+I think it would turn out more natural to just return dirty pages on
+page_list and have the whole looping logic in shrink_inactive_list().
+
+Mixing dirty pages with other 'please try again' pages is probably not
+so bad anyway, it means we could retry all temporary unavailable pages
+instead of twiddling thumbs over that particular bunch of pages until
+the flushers catch up.
+
+What do you think?
