@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758423Ab0GTMc2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 08:32:28 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:34256 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755463Ab0GTMc1 (ORCPT
+	id S1761273Ab0GTMia (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 08:38:30 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:5025 "EHLO
+	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758287Ab0GTMi1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 08:32:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=raxAEFbXfxion1Ly5RxRRZzljegQTE7AZcBL/V9T7VD/N+gyw3R01ZOO8jzYGM0zLl
-         iGMm5WrDcLZXIGcmo+jS8xUvZEWplXdoFznI3IJvrIojYTbv65Uy+pX+Y56H9MCw1to1
-         Ck3LJZk6FXq1hHCYDsLiH+O83knABkRyRy14A=
-Date: Tue, 20 Jul 2010 16:32:22 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Yulia Vilensky <vilensky@compulab.co.il>,
-        Geert Stappers <stappers@stappers.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ds2782_battery: Rename get_current and get_voltage
- operations
-Message-ID: <20100720123222.GA403@oksana.dev.rtsoft.ru>
-References: <1279584175.4883.226.camel@localhost>
- <20100720074659.GA32073@oksana.dev.rtsoft.ru>
- <1279619066.4883.249.camel@localhost>
- <20100720105712.GA20366@oksana.dev.rtsoft.ru>
- <20100720115019.GD3331@decadent.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100720115019.GD3331@decadent.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 20 Jul 2010 08:38:27 -0400
+Message-ID: <000801cb2808$72aef870$66f8800a@maildom.okisemi.com>
+From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+To: "Arnd Bergmann" <arnd@arndb.de>
+Cc: "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>,
+        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
+        <linux-i2c@vger.kernel.org>, "LKML" <linux-kernel@vger.kernel.org>,
+        <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
+        <joel.clark@intel.com>, <andrew.chih.howe.khor@intel.com>
+References: <4C204B0D.2030201@dsn.okisemi.com> <201007152135.00280.arnd@arndb.de> <000401cb27c7$ce732960$66f8800a@maildom.okisemi.com> <201007201127.57510.arnd@arndb.de>
+Subject: Re: [PATCH] I2C driver of Topcliff PCH
+Date: Tue, 20 Jul 2010 21:38:22 +0900
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2800.1983
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2800.1983
+X-Hosting-Pf: 0
+X-NAI-Spam-Score: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 12:50:19PM +0100, Ben Hutchings wrote:
-> On Tue, Jul 20, 2010 at 02:57:12PM +0400, Anton Vorontsov wrote:
-> > On Tue, Jul 20, 2010 at 10:44:26AM +0100, Ben Hutchings wrote:
-> > > On Tue, 2010-07-20 at 11:46 +0400, Anton Vorontsov wrote:
-> > > > On Tue, Jul 20, 2010 at 01:02:55AM +0100, Ben Hutchings wrote:
-> > > > > commit 9b9ade6b612e562c4a5bd02ef38cc32e10f3f9ba "ds2782_battery: Add
-> > > > > support for ds2786 battery gas gauge" introduced an operation named
-> > > > > get_current.  Since get_current() is defined as a macro on some
-> > > > > architectures this driver no longer compiles on those architectures.
-> > > > > 
-> > > > > Rename get_current to get_current_now to avoid the macro.
-> > > > > Rename get_voltage to get_voltage_now for consistency.
-> > > > > 
-> > > > > Reported-by: Geert Stappers <stappers@stappers.nl>
-> > > > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > > > > ---
-> > > > 
-> > > > Thanks for the patch, but I have a similar fix in the
-> > > > battery-2.6.git tree (for -next):
-> > > [...]
-> > > 
-> > > This fix needs to go into 2.6.35.
-> > 
-> > Did you read why I don't push it into 2.6.35? Reread my email,
-> > pay attention to the very bottom.
-> 
-> It is a 2.6.35 regression; these operations were introduced in 2.6.35-rc1.
-> (Hint: use 'git describe --contains' not 'git describe'.  Or even
-> 'git grep -w get_current v2.6.34:drivers/power/ds2782_battery.c'.)
+Hi Arnd,
 
-Oh, I got it.
+> If you pass IRQF_SHARED, you can register any number of handlers
+> for the same IRQ number using different dev pointers.
+I will modify like above.
 
-Will push, thanks!
+Thanks, Ohtake.
+----- Original Message ----- 
+From: "Arnd Bergmann" <arnd@arndb.de>
+To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
+Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>; "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>;
+<linux-i2c@vger.kernel.org>; "LKML" <linux-kernel@vger.kernel.org>; <qi.wang@intel.com>; "Wang, Yong Y"
+<yong.y.wang@intel.com>; <joel.clark@intel.com>; <andrew.chih.howe.khor@intel.com>
+Sent: Tuesday, July 20, 2010 6:27 PM
+Subject: Re: [PATCH] I2C driver of Topcliff PCH
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+
+> On Tuesday 20 July 2010, Masayuki Ohtake wrote:
+> > > > +
+> > > > + dev_dbg(&pdev->dev,
+> > > > + "i2c_add_adapter returns %d for channel-%d\n", ret, i);
+> > > > + pch_init(&adap_info->pch_data[i]);
+> > > > + dev_dbg(&pdev->dev, "pch_init invoked successfully\n");
+> > > > + }
+> > > > +
+> > > > + ret = request_irq(pdev->irq, &pch_handler, IRQF_SHARED,
+> > > > +   MODULE_NAME, adap_info);
+> > >
+> > > Similarly, you would create a new channel data structure for each channel here
+> > > and register it separately, and then request the interrupt with that
+> > > data structure as the info.
+> >
+> > With I2c multi-cahnnel IOH, IRQ number is in common.
+> > Thus, I think our PCH I2C driver can't be implemented like above.
+>
+> If you pass IRQF_SHARED, you can register any number of handlers
+> for the same IRQ number using different dev pointers.
+>
+> Arnd
+>
+
+
