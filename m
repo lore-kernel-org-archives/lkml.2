@@ -1,427 +1,325 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761610Ab0GTUgq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 16:36:46 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38640 "EHLO hera.kernel.org"
+	id S1761634Ab0GTUgz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 16:36:55 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38639 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758705Ab0GTUfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758691Ab0GTUfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Jul 2010 16:35:47 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, dhowells@redhat.com, sfrench@samba.org,
         anton@samba.org, swhiteho@redhat.com, airlied@linux.ie,
         dri-devel@lists.freedesktop.org
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 2/7] fscache: convert operation to use workqueue instead of slow-work
-Date: Tue, 20 Jul 2010 22:34:57 +0200
-Message-Id: <1279658102-20069-3-git-send-email-tj@kernel.org>
+Subject: [PATCH 5/7] gfs2: use workqueue instead of slow-work
+Date: Tue, 20 Jul 2010 22:35:00 +0200
+Message-Id: <1279658102-20069-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279658102-20069-1-git-send-email-tj@kernel.org>
 References: <1279658102-20069-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Jul 2010 20:35:19 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Jul 2010 20:35:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make fscache operation to use only workqueue instead of combination of
-workqueue and slow-work.  FSCACHE_OP_SLOW is dropped and
-FSCACHE_OP_FAST is renamed to FSCACHE_OP_ASYNC and uses newly added
-fscache_op_wq workqueue to execute op->processor().
-fscache_operation_init_slow() is dropped and fscache_operation_init()
-now takes @processor argument directly.
+Workqueue can now handle high concurrency.  Convert gfs to use
+workqueue instead of slow-work.
 
-* Unbound workqueue is used.
+* Steven pointed out that recovery path might be run from allocation
+  path and thus requires forward progress guarantee without memory
+  allocation.  Create and use gfs_recovery_wq with rescuer.  Please
+  note that forward progress wasn't guaranteed with slow-work.
 
-* fscache_retrieval_work() is no longer necessary as OP_ASYNC now does
-  the equivalent thing.
-
-* sysctl fscache.operation_max_active added to control concurrency.
-  The default value is nr_cpus clamped between 2 and
-  WQ_UNBOUND_MAX_ACTIVE.
-
-* debugfs support is dropped for now.  Tracing API based debug
-  facility is planned to be added.
+* Updated to use non-reentrant workqueue.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: David Howells <dhowells@redhat.com>
+Cc: Steven Whitehouse <swhiteho@redhat.com>
 ---
- fs/cachefiles/rdwr.c          |    4 +-
- fs/fscache/internal.h         |    1 +
- fs/fscache/main.c             |   23 ++++++++++++++
- fs/fscache/operation.c        |   67 +++++------------------------------------
- fs/fscache/page.c             |   36 +++++-----------------
- include/linux/fscache-cache.h |   37 +++++++----------------
- 6 files changed, 53 insertions(+), 115 deletions(-)
+ fs/gfs2/Kconfig      |    1 -
+ fs/gfs2/incore.h     |    3 +-
+ fs/gfs2/main.c       |   14 +++++++-----
+ fs/gfs2/ops_fstype.c |    8 +++---
+ fs/gfs2/recovery.c   |   54 +++++++++++++++++++------------------------------
+ fs/gfs2/recovery.h   |    6 +++-
+ fs/gfs2/sys.c        |    3 +-
+ 7 files changed, 40 insertions(+), 49 deletions(-)
 
-diff --git a/fs/cachefiles/rdwr.c b/fs/cachefiles/rdwr.c
-index 0f0d41f..0e3c092 100644
---- a/fs/cachefiles/rdwr.c
-+++ b/fs/cachefiles/rdwr.c
-@@ -422,7 +422,7 @@ int cachefiles_read_or_alloc_page(struct fscache_retrieval *op,
- 	shift = PAGE_SHIFT - inode->i_sb->s_blocksize_bits;
+diff --git a/fs/gfs2/Kconfig b/fs/gfs2/Kconfig
+index a47b431..cc96655 100644
+--- a/fs/gfs2/Kconfig
++++ b/fs/gfs2/Kconfig
+@@ -7,7 +7,6 @@ config GFS2_FS
+ 	select IP_SCTP if DLM_SCTP
+ 	select FS_POSIX_ACL
+ 	select CRC32
+-	select SLOW_WORK
+ 	select QUOTACTL
+ 	help
+ 	  A cluster filesystem.
+diff --git a/fs/gfs2/incore.h b/fs/gfs2/incore.h
+index b5d7363..dd8f2e6 100644
+--- a/fs/gfs2/incore.h
++++ b/fs/gfs2/incore.h
+@@ -12,7 +12,6 @@
  
- 	op->op.flags &= FSCACHE_OP_KEEP_FLAGS;
--	op->op.flags |= FSCACHE_OP_FAST;
-+	op->op.flags |= FSCACHE_OP_ASYNC;
- 	op->op.processor = cachefiles_read_copier;
+ #include <linux/fs.h>
+ #include <linux/workqueue.h>
+-#include <linux/slow-work.h>
+ #include <linux/dlm.h>
+ #include <linux/buffer_head.h>
  
- 	pagevec_init(&pagevec, 0);
-@@ -729,7 +729,7 @@ int cachefiles_read_or_alloc_pages(struct fscache_retrieval *op,
- 	pagevec_init(&pagevec, 0);
+@@ -383,7 +382,7 @@ struct gfs2_journal_extent {
+ struct gfs2_jdesc {
+ 	struct list_head jd_list;
+ 	struct list_head extent_list;
+-	struct slow_work jd_work;
++	struct work_struct jd_work;
+ 	struct inode *jd_inode;
+ 	unsigned long jd_flags;
+ #define JDF_RECOVERY 1
+diff --git a/fs/gfs2/main.c b/fs/gfs2/main.c
+index fb2a5f9..b1e9630 100644
+--- a/fs/gfs2/main.c
++++ b/fs/gfs2/main.c
+@@ -15,7 +15,6 @@
+ #include <linux/init.h>
+ #include <linux/gfs2_ondisk.h>
+ #include <asm/atomic.h>
+-#include <linux/slow-work.h>
  
- 	op->op.flags &= FSCACHE_OP_KEEP_FLAGS;
--	op->op.flags |= FSCACHE_OP_FAST;
-+	op->op.flags |= FSCACHE_OP_ASYNC;
- 	op->op.processor = cachefiles_read_copier;
+ #include "gfs2.h"
+ #include "incore.h"
+@@ -24,6 +23,7 @@
+ #include "util.h"
+ #include "glock.h"
+ #include "quota.h"
++#include "recovery.h"
  
- 	INIT_LIST_HEAD(&backpages);
-diff --git a/fs/fscache/internal.h b/fs/fscache/internal.h
-index 6e0b5fb..6a02644 100644
---- a/fs/fscache/internal.h
-+++ b/fs/fscache/internal.h
-@@ -83,6 +83,7 @@ extern unsigned fscache_defer_create;
- extern unsigned fscache_debug;
- extern struct kobject *fscache_root;
- extern struct workqueue_struct *fscache_object_wq;
-+extern struct workqueue_struct *fscache_op_wq;
- DECLARE_PER_CPU(wait_queue_head_t, fscache_object_cong_wait);
+ static struct shrinker qd_shrinker = {
+ 	.shrink = gfs2_shrink_qd_memory,
+@@ -138,9 +138,11 @@ static int __init init_gfs2_fs(void)
+ 	if (error)
+ 		goto fail_unregister;
  
- static inline bool fscache_object_congested(void)
-diff --git a/fs/fscache/main.c b/fs/fscache/main.c
-index bb8d4c3..44d13dd 100644
---- a/fs/fscache/main.c
-+++ b/fs/fscache/main.c
-@@ -42,11 +42,13 @@ MODULE_PARM_DESC(fscache_debug,
+-	error = slow_work_register_user(THIS_MODULE);
+-	if (error)
+-		goto fail_slow;
++	error = -ENOMEM;
++	gfs_recovery_wq = alloc_workqueue("gfs_recovery",
++					  WQ_NON_REENTRANT | WQ_RESCUER, 0);
++	if (!gfs_recovery_wq)
++		goto fail_wq;
  
- struct kobject *fscache_root;
- struct workqueue_struct *fscache_object_wq;
-+struct workqueue_struct *fscache_op_wq;
+ 	gfs2_register_debugfs();
  
- DEFINE_PER_CPU(wait_queue_head_t, fscache_object_cong_wait);
+@@ -148,7 +150,7 @@ static int __init init_gfs2_fs(void)
  
- /* these values serve as lower bounds, will be adjusted in fscache_init() */
- static unsigned fscache_object_max_active = 4;
-+static unsigned fscache_op_max_active = 2;
+ 	return 0;
  
- #ifdef CONFIG_SYSCTL
- static struct ctl_table_header *fscache_sysctl_header;
-@@ -74,6 +76,14 @@ ctl_table fscache_sysctls[] = {
- 		.proc_handler	= fscache_max_active_sysctl,
- 		.extra1		= &fscache_object_wq,
- 	},
-+	{
-+		.procname	= "operation_max_active",
-+		.data		= &fscache_op_max_active,
-+		.maxlen		= sizeof(unsigned),
-+		.mode		= 0644,
-+		.proc_handler	= fscache_max_active_sysctl,
-+		.extra1		= &fscache_op_wq,
-+	},
- 	{}
- };
+-fail_slow:
++fail_wq:
+ 	unregister_filesystem(&gfs2meta_fs_type);
+ fail_unregister:
+ 	unregister_filesystem(&gfs2_fs_type);
+@@ -190,7 +192,7 @@ static void __exit exit_gfs2_fs(void)
+ 	gfs2_unregister_debugfs();
+ 	unregister_filesystem(&gfs2_fs_type);
+ 	unregister_filesystem(&gfs2meta_fs_type);
+-	slow_work_unregister_user(THIS_MODULE);
++	destroy_workqueue(gfs_recovery_wq);
  
-@@ -110,6 +120,16 @@ static int __init fscache_init(void)
- 	if (!fscache_object_wq)
- 		goto error_object_wq;
+ 	kmem_cache_destroy(gfs2_quotad_cachep);
+ 	kmem_cache_destroy(gfs2_rgrpd_cachep);
+diff --git a/fs/gfs2/ops_fstype.c b/fs/gfs2/ops_fstype.c
+index 3593b3a..9a08e1b 100644
+--- a/fs/gfs2/ops_fstype.c
++++ b/fs/gfs2/ops_fstype.c
+@@ -17,7 +17,6 @@
+ #include <linux/namei.h>
+ #include <linux/mount.h>
+ #include <linux/gfs2_ondisk.h>
+-#include <linux/slow-work.h>
+ #include <linux/quotaops.h>
  
-+	fscache_op_max_active =
-+		clamp_val(fscache_object_max_active / 2,
-+			  fscache_op_max_active, WQ_UNBOUND_MAX_ACTIVE);
+ #include "gfs2.h"
+@@ -673,7 +672,7 @@ static int gfs2_jindex_hold(struct gfs2_sbd *sdp, struct gfs2_holder *ji_gh)
+ 			break;
+ 
+ 		INIT_LIST_HEAD(&jd->extent_list);
+-		slow_work_init(&jd->jd_work, &gfs2_recover_ops);
++		INIT_WORK(&jd->jd_work, gfs2_recover_func);
+ 		jd->jd_inode = gfs2_lookupi(sdp->sd_jindex, &name, 1);
+ 		if (!jd->jd_inode || IS_ERR(jd->jd_inode)) {
+ 			if (!jd->jd_inode)
+@@ -782,7 +781,8 @@ static int init_journal(struct gfs2_sbd *sdp, int undo)
+ 	if (sdp->sd_lockstruct.ls_first) {
+ 		unsigned int x;
+ 		for (x = 0; x < sdp->sd_journals; x++) {
+-			error = gfs2_recover_journal(gfs2_jdesc_find(sdp, x));
++			error = gfs2_recover_journal(gfs2_jdesc_find(sdp, x),
++						     true);
+ 			if (error) {
+ 				fs_err(sdp, "error recovering journal %u: %d\n",
+ 				       x, error);
+@@ -792,7 +792,7 @@ static int init_journal(struct gfs2_sbd *sdp, int undo)
+ 
+ 		gfs2_others_may_mount(sdp);
+ 	} else if (!sdp->sd_args.ar_spectator) {
+-		error = gfs2_recover_journal(sdp->sd_jdesc);
++		error = gfs2_recover_journal(sdp->sd_jdesc, true);
+ 		if (error) {
+ 			fs_err(sdp, "error recovering my journal: %d\n", error);
+ 			goto fail_jinode_gh;
+diff --git a/fs/gfs2/recovery.c b/fs/gfs2/recovery.c
+index 4b9bece..f7f89a9 100644
+--- a/fs/gfs2/recovery.c
++++ b/fs/gfs2/recovery.c
+@@ -14,7 +14,6 @@
+ #include <linux/buffer_head.h>
+ #include <linux/gfs2_ondisk.h>
+ #include <linux/crc32.h>
+-#include <linux/slow-work.h>
+ 
+ #include "gfs2.h"
+ #include "incore.h"
+@@ -28,6 +27,8 @@
+ #include "util.h"
+ #include "dir.h"
+ 
++struct workqueue_struct *gfs_recovery_wq;
 +
-+	ret = -ENOMEM;
-+	fscache_op_wq = alloc_workqueue("fscache_operation", WQ_UNBOUND,
-+					fscache_op_max_active);
-+	if (!fscache_op_wq)
-+		goto error_op_wq;
-+
- 	for_each_possible_cpu(cpu)
- 		init_waitqueue_head(&per_cpu(fscache_object_cong_wait, cpu));
- 
-@@ -152,6 +172,8 @@ error_sysctl:
- #endif
- 	fscache_proc_cleanup();
- error_proc:
-+	destroy_workqueue(fscache_op_wq);
-+error_op_wq:
- 	destroy_workqueue(fscache_object_wq);
- error_object_wq:
- 	slow_work_unregister_user(THIS_MODULE);
-@@ -172,6 +194,7 @@ static void __exit fscache_exit(void)
- 	kmem_cache_destroy(fscache_cookie_jar);
- 	unregister_sysctl_table(fscache_sysctl_header);
- 	fscache_proc_cleanup();
-+	destroy_workqueue(fscache_op_wq);
- 	destroy_workqueue(fscache_object_wq);
- 	slow_work_unregister_user(THIS_MODULE);
- 	printk(KERN_NOTICE "FS-Cache: Unloaded\n");
-diff --git a/fs/fscache/operation.c b/fs/fscache/operation.c
-index f17ceca..b9f34ea 100644
---- a/fs/fscache/operation.c
-+++ b/fs/fscache/operation.c
-@@ -42,16 +42,12 @@ void fscache_enqueue_operation(struct fscache_operation *op)
- 
- 	fscache_stat(&fscache_n_op_enqueue);
- 	switch (op->flags & FSCACHE_OP_TYPE) {
--	case FSCACHE_OP_FAST:
--		_debug("queue fast");
-+	case FSCACHE_OP_ASYNC:
-+		_debug("queue async");
- 		atomic_inc(&op->usage);
--		if (!schedule_work(&op->fast_work))
-+		if (!queue_work(fscache_op_wq, &op->work))
- 			fscache_put_operation(op);
- 		break;
--	case FSCACHE_OP_SLOW:
--		_debug("queue slow");
--		slow_work_enqueue(&op->slow_work);
--		break;
- 	case FSCACHE_OP_MYTHREAD:
- 		_debug("queue for caller's attention");
- 		break;
-@@ -455,36 +451,13 @@ void fscache_operation_gc(struct work_struct *work)
+ int gfs2_replay_read_block(struct gfs2_jdesc *jd, unsigned int blk,
+ 			   struct buffer_head **bh)
+ {
+@@ -443,23 +444,7 @@ static void gfs2_recovery_done(struct gfs2_sbd *sdp, unsigned int jid,
+         kobject_uevent_env(&sdp->sd_kobj, KOBJ_CHANGE, envp);
  }
  
- /*
-- * allow the slow work item processor to get a ref on an operation
-- */
--static int fscache_op_get_ref(struct slow_work *work)
+-static int gfs2_recover_get_ref(struct slow_work *work)
 -{
--	struct fscache_operation *op =
--		container_of(work, struct fscache_operation, slow_work);
--
--	atomic_inc(&op->usage);
+-	struct gfs2_jdesc *jd = container_of(work, struct gfs2_jdesc, jd_work);
+-	if (test_and_set_bit(JDF_RECOVERY, &jd->jd_flags))
+-		return -EBUSY;
 -	return 0;
 -}
 -
--/*
-- * allow the slow work item processor to discard a ref on an operation
-- */
--static void fscache_op_put_ref(struct slow_work *work)
+-static void gfs2_recover_put_ref(struct slow_work *work)
 -{
--	struct fscache_operation *op =
--		container_of(work, struct fscache_operation, slow_work);
--
--	fscache_put_operation(op);
+-	struct gfs2_jdesc *jd = container_of(work, struct gfs2_jdesc, jd_work);
+-	clear_bit(JDF_RECOVERY, &jd->jd_flags);
+-	smp_mb__after_clear_bit();
+-	wake_up_bit(&jd->jd_flags, JDF_RECOVERY);
 -}
 -
--/*
-- * execute an operation using the slow thread pool to provide processing context
-- * - the caller holds a ref to this object, so we don't need to hold one
-+ * execute an operation using fs_op_wq to provide processing context -
-+ * the caller holds a ref to this object, so we don't need to hold one
-  */
--static void fscache_op_execute(struct slow_work *work)
-+void fscache_op_work_func(struct work_struct *work)
+-static void gfs2_recover_work(struct slow_work *work)
++void gfs2_recover_func(struct work_struct *work)
  {
- 	struct fscache_operation *op =
--		container_of(work, struct fscache_operation, slow_work);
-+		container_of(work, struct fscache_operation, work);
- 	unsigned long start;
+ 	struct gfs2_jdesc *jd = container_of(work, struct gfs2_jdesc, jd_work);
+ 	struct gfs2_inode *ip = GFS2_I(jd->jd_inode);
+@@ -578,7 +563,7 @@ static void gfs2_recover_work(struct slow_work *work)
+ 		gfs2_glock_dq_uninit(&j_gh);
  
- 	_enter("{OBJ%x OP%x,%d}",
-@@ -494,31 +467,7 @@ static void fscache_op_execute(struct slow_work *work)
- 	start = jiffies;
- 	op->processor(op);
- 	fscache_hist(fscache_ops_histogram, start);
-+	fscache_put_operation(op);
+ 	fs_info(sdp, "jid=%u: Done\n", jd->jd_jid);
+-	return;
++	goto done;
  
- 	_leave("");
+ fail_gunlock_tr:
+ 	gfs2_glock_dq_uninit(&t_gh);
+@@ -590,32 +575,35 @@ fail_gunlock_j:
+ 	}
+ 
+ 	fs_info(sdp, "jid=%u: %s\n", jd->jd_jid, (error) ? "Failed" : "Done");
+-
+ fail:
+ 	gfs2_recovery_done(sdp, jd->jd_jid, LM_RD_GAVEUP);
++done:
++	clear_bit(JDF_RECOVERY, &jd->jd_flags);
++	smp_mb__after_clear_bit();
++	wake_up_bit(&jd->jd_flags, JDF_RECOVERY);
  }
--
--/*
-- * describe an operation for slow-work debugging
-- */
--#ifdef CONFIG_SLOW_WORK_DEBUG
--static void fscache_op_desc(struct slow_work *work, struct seq_file *m)
--{
--	struct fscache_operation *op =
--		container_of(work, struct fscache_operation, slow_work);
--
--	seq_printf(m, "FSC: OBJ%x OP%x: %s/%s fl=%lx",
--		   op->object->debug_id, op->debug_id,
--		   op->name, op->state, op->flags);
--}
--#endif
--
--const struct slow_work_ops fscache_op_slow_work_ops = {
--	.owner		= THIS_MODULE,
--	.get_ref	= fscache_op_get_ref,
--	.put_ref	= fscache_op_put_ref,
--	.execute	= fscache_op_execute,
--#ifdef CONFIG_SLOW_WORK_DEBUG
--	.desc		= fscache_op_desc,
--#endif
+ 
+-struct slow_work_ops gfs2_recover_ops = {
+-	.owner	 = THIS_MODULE,
+-	.get_ref = gfs2_recover_get_ref,
+-	.put_ref = gfs2_recover_put_ref,
+-	.execute = gfs2_recover_work,
 -};
-diff --git a/fs/fscache/page.c b/fs/fscache/page.c
-index 723b889..41c441c 100644
---- a/fs/fscache/page.c
-+++ b/fs/fscache/page.c
-@@ -105,7 +105,7 @@ bool __fscache_maybe_release_page(struct fscache_cookie *cookie,
- 
- page_busy:
- 	/* we might want to wait here, but that could deadlock the allocator as
--	 * the slow-work threads writing to the cache may all end up sleeping
-+	 * the work threads writing to the cache may all end up sleeping
- 	 * on memory allocation */
- 	fscache_stat(&fscache_n_store_vmscan_busy);
- 	return false;
-@@ -188,9 +188,8 @@ int __fscache_attr_changed(struct fscache_cookie *cookie)
- 		return -ENOMEM;
- 	}
- 
--	fscache_operation_init(op, NULL);
--	fscache_operation_init_slow(op, fscache_attr_changed_op);
--	op->flags = FSCACHE_OP_SLOW | (1 << FSCACHE_OP_EXCLUSIVE);
-+	fscache_operation_init(op, fscache_attr_changed_op, NULL);
-+	op->flags = FSCACHE_OP_ASYNC | (1 << FSCACHE_OP_EXCLUSIVE);
- 	fscache_set_op_name(op, "Attr");
- 
- 	spin_lock(&cookie->lock);
-@@ -218,24 +217,6 @@ nobufs:
- EXPORT_SYMBOL(__fscache_attr_changed);
- 
- /*
-- * handle secondary execution given to a retrieval op on behalf of the
-- * cache
-- */
--static void fscache_retrieval_work(struct work_struct *work)
--{
--	struct fscache_retrieval *op =
--		container_of(work, struct fscache_retrieval, op.fast_work);
--	unsigned long start;
 -
--	_enter("{OP%x}", op->op.debug_id);
 -
--	start = jiffies;
--	op->op.processor(&op->op);
--	fscache_hist(fscache_ops_histogram, start);
--	fscache_put_operation(&op->op);
--}
--
--/*
-  * release a retrieval op reference
-  */
- static void fscache_release_retrieval_op(struct fscache_operation *_op)
-@@ -269,13 +250,12 @@ static struct fscache_retrieval *fscache_alloc_retrieval(
- 		return NULL;
- 	}
- 
--	fscache_operation_init(&op->op, fscache_release_retrieval_op);
-+	fscache_operation_init(&op->op, NULL, fscache_release_retrieval_op);
- 	op->op.flags	= FSCACHE_OP_MYTHREAD | (1 << FSCACHE_OP_WAITING);
- 	op->mapping	= mapping;
- 	op->end_io_func	= end_io_func;
- 	op->context	= context;
- 	op->start_time	= jiffies;
--	INIT_WORK(&op->op.fast_work, fscache_retrieval_work);
- 	INIT_LIST_HEAD(&op->to_do);
- 	fscache_set_op_name(&op->op, "Retr");
- 	return op;
-@@ -795,9 +775,9 @@ int __fscache_write_page(struct fscache_cookie *cookie,
- 	if (!op)
- 		goto nomem;
- 
--	fscache_operation_init(&op->op, fscache_release_write_op);
--	fscache_operation_init_slow(&op->op, fscache_write_op);
--	op->op.flags = FSCACHE_OP_SLOW | (1 << FSCACHE_OP_WAITING);
-+	fscache_operation_init(&op->op, fscache_write_op,
-+			       fscache_release_write_op);
-+	op->op.flags = FSCACHE_OP_ASYNC | (1 << FSCACHE_OP_WAITING);
- 	fscache_set_op_name(&op->op, "Write1");
- 
- 	ret = radix_tree_preload(gfp & ~__GFP_HIGHMEM);
-@@ -852,7 +832,7 @@ int __fscache_write_page(struct fscache_cookie *cookie,
- 	fscache_stat(&fscache_n_store_ops);
- 	fscache_stat(&fscache_n_stores_ok);
- 
--	/* the slow work queue now carries its own ref on the object */
-+	/* the work queue now carries its own ref on the object */
- 	fscache_put_operation(&op->op);
- 	_leave(" = 0");
- 	return 0;
-diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
-index 27c8df5..17ed9c1 100644
---- a/include/linux/fscache-cache.h
-+++ b/include/linux/fscache-cache.h
-@@ -77,18 +77,14 @@ typedef void (*fscache_operation_release_t)(struct fscache_operation *op);
- typedef void (*fscache_operation_processor_t)(struct fscache_operation *op);
- 
- struct fscache_operation {
--	union {
--		struct work_struct fast_work;	/* record for fast ops */
--		struct slow_work slow_work;	/* record for (very) slow ops */
--	};
-+	struct work_struct	work;		/* record for async ops */
- 	struct list_head	pend_link;	/* link in object->pending_ops */
- 	struct fscache_object	*object;	/* object to be operated upon */
- 
- 	unsigned long		flags;
- #define FSCACHE_OP_TYPE		0x000f	/* operation type */
--#define FSCACHE_OP_FAST		0x0001	/* - fast op, processor may not sleep for disk */
--#define FSCACHE_OP_SLOW		0x0002	/* - (very) slow op, processor may sleep for disk */
--#define FSCACHE_OP_MYTHREAD	0x0003	/* - processing is done be issuing thread, not pool */
-+#define FSCACHE_OP_ASYNC	0x0001	/* - async op, processor may sleep for disk */
-+#define FSCACHE_OP_MYTHREAD	0x0002	/* - processing is done be issuing thread, not pool */
- #define FSCACHE_OP_WAITING	4	/* cleared when op is woken */
- #define FSCACHE_OP_EXCLUSIVE	5	/* exclusive op, other ops must wait */
- #define FSCACHE_OP_DEAD		6	/* op is now dead */
-@@ -106,7 +102,8 @@ struct fscache_operation {
- 	/* operation releaser */
- 	fscache_operation_release_t release;
- 
--#ifdef CONFIG_SLOW_WORK_DEBUG
-+#ifdef CONFIG_WORKQUEUE_DEBUGFS
-+	struct work_struct put_work;	/* work to delay operation put */
- 	const char *name;		/* operation name */
- 	const char *state;		/* operation state */
- #define fscache_set_op_name(OP, N)	do { (OP)->name  = (N); } while(0)
-@@ -118,7 +115,7 @@ struct fscache_operation {
- };
- 
- extern atomic_t fscache_op_debug_id;
--extern const struct slow_work_ops fscache_op_slow_work_ops;
-+extern void fscache_op_work_func(struct work_struct *work);
- 
- extern void fscache_enqueue_operation(struct fscache_operation *);
- extern void fscache_put_operation(struct fscache_operation *);
-@@ -129,33 +126,21 @@ extern void fscache_put_operation(struct fscache_operation *);
-  * @release: The release function to assign
-  *
-  * Do basic initialisation of an operation.  The caller must still set flags,
-- * object, either fast_work or slow_work if necessary, and processor if needed.
-+ * object and processor if needed.
-  */
- static inline void fscache_operation_init(struct fscache_operation *op,
--					  fscache_operation_release_t release)
-+					fscache_operation_processor_t processor,
-+					fscache_operation_release_t release)
+ static int gfs2_recovery_wait(void *word)
  {
-+	INIT_WORK(&op->work, fscache_op_work_func);
- 	atomic_set(&op->usage, 1);
- 	op->debug_id = atomic_inc_return(&fscache_op_debug_id);
-+	op->processor = processor;
- 	op->release = release;
- 	INIT_LIST_HEAD(&op->pend_link);
- 	fscache_set_op_state(op, "Init");
+ 	schedule();
+ 	return 0;
  }
  
--/**
-- * fscache_operation_init_slow - Do additional initialisation of a slow op
-- * @op: The operation to initialise
-- * @processor: The processor function to assign
-- *
-- * Do additional initialisation of an operation as required for slow work.
-- */
--static inline
--void fscache_operation_init_slow(struct fscache_operation *op,
--				 fscache_operation_processor_t processor)
--{
--	op->processor = processor;
--	slow_work_init(&op->slow_work, &fscache_op_slow_work_ops);
--}
--
- /*
-  * data read operation
-  */
+-int gfs2_recover_journal(struct gfs2_jdesc *jd)
++int gfs2_recover_journal(struct gfs2_jdesc *jd, bool wait)
+ {
+ 	int rv;
+-	rv = slow_work_enqueue(&jd->jd_work);
+-	if (rv)
+-		return rv;
+-	wait_on_bit(&jd->jd_flags, JDF_RECOVERY, gfs2_recovery_wait, TASK_UNINTERRUPTIBLE);
++
++	if (test_and_set_bit(JDF_RECOVERY, &jd->jd_flags))
++		return -EBUSY;
++
++	/* we have JDF_RECOVERY, queue should always succeed */
++	rv = queue_work(gfs_recovery_wq, &jd->jd_work);
++	BUG_ON(!rv);
++
++	if (wait)
++		wait_on_bit(&jd->jd_flags, JDF_RECOVERY, gfs2_recovery_wait,
++			    TASK_UNINTERRUPTIBLE);
++
+ 	return 0;
+ }
+ 
+diff --git a/fs/gfs2/recovery.h b/fs/gfs2/recovery.h
+index 1616ac2..2226136 100644
+--- a/fs/gfs2/recovery.h
++++ b/fs/gfs2/recovery.h
+@@ -12,6 +12,8 @@
+ 
+ #include "incore.h"
+ 
++extern struct workqueue_struct *gfs_recovery_wq;
++
+ static inline void gfs2_replay_incr_blk(struct gfs2_sbd *sdp, unsigned int *blk)
+ {
+ 	if (++*blk == sdp->sd_jdesc->jd_blocks)
+@@ -27,8 +29,8 @@ extern void gfs2_revoke_clean(struct gfs2_sbd *sdp);
+ 
+ extern int gfs2_find_jhead(struct gfs2_jdesc *jd,
+ 		    struct gfs2_log_header_host *head);
+-extern int gfs2_recover_journal(struct gfs2_jdesc *gfs2_jd);
+-extern struct slow_work_ops gfs2_recover_ops;
++extern int gfs2_recover_journal(struct gfs2_jdesc *gfs2_jd, bool wait);
++extern void gfs2_recover_func(struct work_struct *work);
+ 
+ #endif /* __RECOVERY_DOT_H__ */
+ 
+diff --git a/fs/gfs2/sys.c b/fs/gfs2/sys.c
+index 37f5393..6b60316 100644
+--- a/fs/gfs2/sys.c
++++ b/fs/gfs2/sys.c
+@@ -25,6 +25,7 @@
+ #include "quota.h"
+ #include "util.h"
+ #include "glops.h"
++#include "recovery.h"
+ 
+ struct gfs2_attr {
+ 	struct attribute attr;
+@@ -352,7 +353,7 @@ static ssize_t recover_store(struct gfs2_sbd *sdp, const char *buf, size_t len)
+ 	list_for_each_entry(jd, &sdp->sd_jindex_list, jd_list) {
+ 		if (jd->jd_jid != jid)
+ 			continue;
+-		rv = slow_work_enqueue(&jd->jd_work);
++		rv = gfs2_recover_journal(jd, false);
+ 		break;
+ 	}
+ out:
 -- 
 1.6.4.2
 
