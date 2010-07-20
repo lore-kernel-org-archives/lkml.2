@@ -1,66 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932488Ab0GTPny (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 11:43:54 -0400
-Received: from mailout4.w1.samsung.com ([210.118.77.14]:41707 "EHLO
-	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932392Ab0GTPnx convert rfc822-to-8bit (ORCPT
+	id S932501Ab0GTPux (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 11:50:53 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:42177 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932367Ab0GTPuv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 11:43:53 -0400
+	Tue, 20 Jul 2010 11:50:51 -0400
 MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Tue, 20 Jul 2010 17:45:13 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
-In-reply-to: <289287.8629.qm@web180303.mail.gq1.yahoo.com>
-To: Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <david-b@pacbell.net>
-Cc: Greg KH <greg@kroah.com>, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
-Message-id: <op.vf5fdnc27p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <289287.8629.qm@web180303.mail.gq1.yahoo.com>
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Tue, 20 Jul 2010 17:51:27 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCH 4/4] arm: Added CMA to Aquila and Goni
+In-reply-to: <b356e2fbc65342d902ed67a5b0aa00459a04fe49.1279639238.git.m.nazarewicz@samsung.com>
+To: linux-mm@kvack.org
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Xiaolin Zhang <xiaolin.zhang@intel.com>,
+        Hiremath Vaibhav <hvaibhav@ti.com>,
+        Robert Fekete <robert.fekete@stericsson.com>,
+        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        Michal Nazarewicz <m.nazarewicz@samsung.com>,
+        Kyungmin Park <kyungmin.park@samsung.com>
+Message-id: <ba86bb724b47e834c5639256e851f3937f5a40e7.1279639238.git.m.nazarewicz@samsung.com>
+X-Mailer: git-send-email 1.7.1
+References: <cover.1279639238.git.m.nazarewicz@samsung.com>
+ <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
+ <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
+ <b356e2fbc65342d902ed67a5b0aa00459a04fe49.1279639238.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>> Plus, you seem to be overlooking the basic need
->>> (for userspace) to manage these IDs so they're
->>> properly unique.  Two gadgets should never end
->>> up using the same serial number
+Added the CMA initialisation code to two Samsung platforms.
 
-> --- On Tue, 7/20/10, Michał Nazarewicz <m.nazarewicz@samsung.com> wrote:
->> I'm not overlooking that.  I simply consider that a separate
->> issue. Driver should provide some kind of default.
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
+---
+ arch/arm/Kconfig                    |    1 +
+ arch/arm/mach-s5pv210/Kconfig       |    1 +
+ arch/arm/mach-s5pv210/mach-aquila.c |    7 +++++++
+ arch/arm/mach-s5pv210/mach-goni.c   |    7 +++++++
+ 4 files changed, 16 insertions(+), 0 deletions(-)
 
-On Tue, 20 Jul 2010 17:01:37 +0200, David Brownell <david-b@pacbell.net> wrote:
-> It can't do that and guarantee uniqueness.
-
-I never claimed otherwise.
-
-> Your concept is (still/again) broken.
-
-I don't buy that.  The driver works better with a non-unique
-serial number then without any.  As such, a default serial
-number should, in my opinion, be provided.
-
->> (just like File Storage Gadget) and the fact that user space
->> should override it is another matter in my opinion.
-
-> The value must come from userspace in the first
-> place, else it can't be correctly managed!!
-
-I would say it *should* come from userspace but if userspace fails to
-provide one *something* is better then *nothing*.  I see how gadgets
-should print a warning if serial is not provided from user space but
-other then that I still think gadget should provide some value.
-
+diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
+index 2e5b0f3..40c7380 100644
+--- a/arch/arm/Kconfig
++++ b/arch/arm/Kconfig
+@@ -691,6 +691,7 @@ config ARCH_S5PC100
+ 	select CPU_V7
+ 	select ARM_L1_CACHE_SHIFT_6
+ 	select ARCH_USES_GETTIMEOFFSET
++	select ARCH_CMA_POSSIBLE
+ 	help
+ 	  Samsung S5PC100 series based systems
+ 
+diff --git a/arch/arm/mach-s5pv210/Kconfig b/arch/arm/mach-s5pv210/Kconfig
+index e65825f..5fa1378 100644
+--- a/arch/arm/mach-s5pv210/Kconfig
++++ b/arch/arm/mach-s5pv210/Kconfig
+@@ -14,6 +14,7 @@ config CPU_S5PV210
+ 	select PLAT_S5P
+ 	select S3C_PL330_DMA
+ 	select S5P_EXT_INT
++	select ARCH_CMA_POSSIBLE
+ 	help
+ 	  Enable S5PV210 CPU support
+ 
+diff --git a/arch/arm/mach-s5pv210/mach-aquila.c b/arch/arm/mach-s5pv210/mach-aquila.c
+index 0992618..4044233 100644
+--- a/arch/arm/mach-s5pv210/mach-aquila.c
++++ b/arch/arm/mach-s5pv210/mach-aquila.c
+@@ -19,6 +19,7 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+ #include <linux/gpio.h>
++#include <linux/cma-int.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -454,6 +455,11 @@ static void __init aquila_map_io(void)
+ 	s3c24xx_init_uarts(aquila_uartcfgs, ARRAY_SIZE(aquila_uartcfgs));
+ }
+ 
++static void __init aquila_reserve(void)
++{
++	cma_regions_allocate(NULL);
++}
++
+ static void __init aquila_machine_init(void)
+ {
+ 	/* PMIC */
+@@ -478,4 +484,5 @@ MACHINE_START(AQUILA, "Aquila")
+ 	.map_io		= aquila_map_io,
+ 	.init_machine	= aquila_machine_init,
+ 	.timer		= &s3c24xx_timer,
++	.reserve	= aquila_reserve,
+ MACHINE_END
+diff --git a/arch/arm/mach-s5pv210/mach-goni.c b/arch/arm/mach-s5pv210/mach-goni.c
+index 7b18505..8ab0751 100644
+--- a/arch/arm/mach-s5pv210/mach-goni.c
++++ b/arch/arm/mach-s5pv210/mach-goni.c
+@@ -19,6 +19,7 @@
+ #include <linux/gpio_keys.h>
+ #include <linux/input.h>
+ #include <linux/gpio.h>
++#include <linux/cma-int.h>
+ 
+ #include <asm/mach/arch.h>
+ #include <asm/mach/map.h>
+@@ -435,6 +436,11 @@ static void __init goni_map_io(void)
+ 	s3c24xx_init_uarts(goni_uartcfgs, ARRAY_SIZE(goni_uartcfgs));
+ }
+ 
++static void __init goni_reserve(void)
++{
++	cma_regions_allocate(NULL);
++}
++
+ static void __init goni_machine_init(void)
+ {
+ 	/* PMIC */
+@@ -456,4 +462,5 @@ MACHINE_START(GONI, "GONI")
+ 	.map_io		= goni_map_io,
+ 	.init_machine	= goni_machine_init,
+ 	.timer		= &s3c24xx_timer,
++	.reserve	= goni_reserve,
+ MACHINE_END
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.7.1
+
