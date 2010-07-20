@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761299Ab0GTPCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 11:02:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40905 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758194Ab0GTPC3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 11:02:29 -0400
-Date: Tue, 20 Jul 2010 17:02:23 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: "Miller, Mike (OS Dev)" <Mike.Miller@hp.com>
-Cc: Kulikov Vasiliy <segooon@gmail.com>,
-        Kernel Janitors <kernel-janitors@vger.kernel.org>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        "Stephen M. Cameron" <scameron@beardog.cce.hp.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Patterson, Andrew D (LeftHand Networks)" <andrew.patterson@hp.com>,
-        ISS StorageDev <iss_storagedev@hp.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 01/16] trivial: use ARRAY_SIZE
-In-Reply-To: <0F5B06BAB751E047AB5C87D1F77A77887D03473B46@GVW0547EXC.americas.hpqcorp.net>
-Message-ID: <alpine.LNX.2.00.1007201702020.4741@pobox.suse.cz>
-References: <1277726085-24434-1-git-send-email-segooon@gmail.com> <0F5B06BAB751E047AB5C87D1F77A77887D03473B46@GVW0547EXC.americas.hpqcorp.net>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S932100Ab0GTPDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 11:03:00 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62589 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758194Ab0GTPC7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 11:02:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=GsZJP7vbqDVoeAsqOQ1xKF1tKF7rQhAEObwVAo5EywXFeo5sBS1dqwG5BayPLZO6ob
+         CUtsPFh7QQF3G6boKHmspMzgrNpBlzZHVRGwBasOa+LjqxFi02qcaDF6VR/t/xnEI2mZ
+         gmIjxm/AM20Bp2bi6CUH6wEyK/DUlR0mTbSIU=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Reply-To: axel.lin@gmail.com
+In-Reply-To: <20100720110722.GN10222@rakim.wolfsonmicro.main>
+References: <1279619362.11179.2.camel@mola> <20100720110722.GN10222@rakim.wolfsonmicro.main>
+From: Axel Lin <axel.lin@gmail.com>
+Date: Tue, 20 Jul 2010 23:02:37 +0800
+Message-ID: <AANLkTinTT3_yy02wGJfKwannKT2rrZN899JKrdlvtLz7@mail.gmail.com>
+Subject: Re: [PATCH] wm8960: fix compile error
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        Liam Girdwood <lrg@slimlogic.co.uk>, Jaroslav Kysela <perex@perex.cz>,
+        Takashi Iwai <tiwai@suse.de>, Tejun Heo <tj@kernel.org>,
+        alsa-devel@alsa-project.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 28 Jun 2010, Miller, Mike (OS Dev) wrote:
+hi Mark,
 
-> > Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
-> > 
-> > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> Acked-by: Mike Miller <mike.miller@hp.com>
+2010/7/20 Mark Brown <broonie@opensource.wolfsonmicro.com>:
+> On Tue, Jul 20, 2010 at 05:49:22PM +0800, Axel Lin wrote:
+>
+>> This patch is against Liam's multi-component branch.
+>
+> Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+>
+> but please do try to bear in mind the feedback you've previously been
+> given about formatting your patches so they can be easily applied.  You
+I'm a little bit confused about the meaning of "formatting your patches"?
+Do you mean my patches cannot be applied by git am command? or?
+( I tried the git am command with the mail I sent and it looks ok )
 
-Not present in linux-next as of today. Applied, thanks.
+> probably also want to look at the CC list for your patches, I'm not sure
+> why you're CCing Tejun here.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+I get the CC list by get_maintainer.pl. Looks like the script gives me wrong
+CC list.
+
+Regards,
+Axel
