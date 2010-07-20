@@ -1,42 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758084Ab0GTC1Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 22:27:16 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37738 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754981Ab0GTC1P convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 22:27:15 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100719181240.fc3066cd.randy.dunlap@oracle.com>
-References: <20100719181240.fc3066cd.randy.dunlap@oracle.com>
-Date: Mon, 19 Jul 2010 19:27:13 -0700
-Message-ID: <AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com>
-Subject: Re: [git pull] documentation: fix almost duplicate filenames 
-	(io/IO-mapping.txt)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Kees Bakker <kees.bakker@xs4all.nl>,
-        Keith Packard <keithp@keithp.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758119Ab0GTCeG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 22:34:06 -0400
+Received: from mail.perches.com ([173.55.12.10]:1962 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754981Ab0GTCeE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 22:34:04 -0400
+Subject: Re: linux-next: manual merge of the net tree with the net-current
+ tree
+From: Joe Perches <joe@perches.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Miller <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jeff Dike <jdike@addtoit.com>, "Michael S. Tsirkin" <mst@redhat.com>
+In-Reply-To: <20100720122032.88e0fcd9.sfr@canb.auug.org.au>
+References: <20100720122032.88e0fcd9.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Jul 2010 19:34:00 -0700
+Message-ID: <1279593240.19374.2.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 6:12 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
->
-> (hopefully I got this right.  I'm not a big git user.)
+On Tue, 2010-07-20 at 12:20 +1000, Stephen Rothwell wrote:
+> I fixed it up (see below) and can carry the fix as necessary.
+@@@ -527,15 -527,12 +527,14 @@@ static long vhost_net_set_backend(struc
+  
+        /* start polling new socket */
+        oldsock = vq->private_data;
+-       if (sock == oldsock)
+-               goto done;
++       if (sock != oldsock){
 
-Hmm. No.
+Trivial: missing space before open brace in commit
+dd1f4078f0d2de74a308f00a2dffbd550cfba59f
 
-The commit otherwise looks correct, but the commit message is
-buggered. The first line of the message is
 
-   From: Randy Dunlap <randy.dunlap@oracle.com>
-
-rather than the subject of the patch itself.
-
-No fear. Practice makes perfect. Just try again ;)
-
-                Linus
