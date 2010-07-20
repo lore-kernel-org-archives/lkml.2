@@ -1,59 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761888Ab0GTWTU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 18:19:20 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59036 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761870Ab0GTWTP (ORCPT
+	id S932670Ab0GTWUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 18:20:07 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:30840 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761857Ab0GTWUD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 18:19:15 -0400
-Message-ID: <4C462082.9030001@oracle.com>
-Date: Tue, 20 Jul 2010 15:17:38 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Tue, 20 Jul 2010 18:20:03 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6049"; a="47938807"
+Date: Tue, 20 Jul 2010 15:20:01 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+Message-ID: <20100720221959.GC12250@codeaurora.org>
+References: <20100713121420.GB4263@codeaurora.org>
+ <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
+ <20100714201149.GA14008@codeaurora.org>
+ <20100715080710T.fujita.tomonori@lab.ntt.co.jp>
+ <20100715014148.GC2239@codeaurora.org>
+ <20100719082213.GA7421@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: lkml <linux-kernel@vger.kernel.org>, Kees Bakker <kees.bakker@xs4all.nl>,
-        Keith Packard <keithp@keithp.com>
-Subject: [git pull v3] documentation: fix almost duplicate filenames  (io/IO-mapping.txt)
-References: <20100719181240.fc3066cd.randy.dunlap@oracle.com>	<AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com>	<4C45C33C.9090907@oracle.com> <AANLkTilwwEklGyp1Nu8tx7wxu1pDeJkEZ1vaa3E18j32@mail.gmail.com>
-In-Reply-To: <AANLkTilwwEklGyp1Nu8tx7wxu1pDeJkEZ1vaa3E18j32@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C4620B8.0113:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100719082213.GA7421@n2100.arm.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-OK, I'll try this one more time...
+On Mon, Jul 19, 2010 at 09:22:13AM +0100, Russell King - ARM Linux wrote:
+> On Wed, Jul 14, 2010 at 06:41:48PM -0700, Zach Pfeffer wrote:
+> > On Thu, Jul 15, 2010 at 08:07:28AM +0900, FUJITA Tomonori wrote:
+> > > Why we we need a new abstraction layer to solve the problem that the
+> > > current API can handle?
+> > 
+> > The current API can't really handle it because the DMA API doesn't
+> > separate buffer allocation from buffer mapping.
+> 
+> That's not entirely correct.  The DMA API provides two things:
+> 
+> 1. An API for allocating DMA coherent buffers
+> 2. An API for mapping streaming buffers
+> 
+> Some implementations of (2) end up using (1) to work around broken
+> hardware - but that's a separate problem (and causes its own set of
+> problems.)
+> 
+> > For instance: I need 10, 1 MB physical buffers and a 64 KB physical
+> > buffer. With the DMA API I need to allocate 10*1MB/PAGE_SIZE + 64
+> > KB/PAGE_SIZE scatterlist elements, fix them all up to follow the
+> > chaining specification and then go through all of them again to fix up
+> > their virtual mappings for the mapper that's mapping the physical
+> > buffer.
+> 
+> You're making it sound like extremely hard work.
+> 
+> 	struct scatterlist *sg;
+> 	int i, nents = 11;
+> 
+> 	sg = kmalloc(sizeof(*sg) * nents, GFP_KERNEL);
+> 	if (!sg)
+> 		return -ENOMEM;
+> 
+> 	sg_init_table(sg, nents);
+> 	for (i = 0; i < nents; i++) {
+> 		if (i != nents - 1)
+> 			len = 1048576;
+> 		else
+> 			len = 64*1024;
+> 		buf = alloc_buffer(len);
+> 		sg_set_buf(&sg[i], buf, len);
+> 	}
+> 
+> There's no need to split the scatterlist elements up into individual
+> pages - the block layer doesn't do that when it passes scatterlists
+> down to block device drivers.
 
+Okay. Thank you for the example.
 
-Please pull from
-	git://git.kernel.org/pub/scm/linux/kernel/git/rdunlap/linux-docs/ #linuxdocs
+> 
+> I'm not saying that it's reasonable to pass (or even allocate) a 1MB
+> buffer via the DMA API.
 
-for one changeset:
+But given a bunch of large chunks of memory, is there any API that can
+manage them (asked this on the other thread as well)?
 
-commit 9fe41e4197f351bc78547ab2d8808e1aca30d87c
-Author: Randy Dunlap <randy.dunlap@oracle.com>
-Date:   Mon Jul 19 22:20:27 2010 +0000
+> > If I want to share the buffer with another device I have to
+> > make a copy of the entire thing then fix up the virtual mappings for
+> > the other device I'm sharing with.
+> 
+> This is something the DMA API doesn't do - probably because there hasn't
+> been a requirement for it.
+> 
+> One of the issues for drivers is that by separating the mapped scatterlist
+> from the input buffer scatterlist, it creates something else for them to
+> allocate, which causes an additional failure point - and as all users sit
+> well with the current API, there's little reason to change especially
+> given the number of drivers which would need to be updated.
+> 
+> What you can do is:
+> 
+> struct map {
+> 	dma_addr_t addr;
+> 	size_t len;
+> };
+> 
+> int map_sg(struct device *dev, struct scatterlist *list,
+> 	unsigned int nents, struct map *map, enum dma_data_direction dir)
+> {
+> 	struct scatterlist *sg;
+> 	unsigned int i, j = 0;
+> 
+> 	for_each_sg(list, sg, nents, i) {
+> 		map[j]->addr = dma_map_page(dev, sg_page(sg), sg->offset,
+> 					sg->length, dir);
+> 		map[j]->len = length;
+> 		if (dma_mapping_error(map[j]->addr))
+> 			break;
+> 		j++;
+> 	}
+> 
+> 	return j;
+> }
+> 
+> void unmap(struct device *dev, struct map *map, unsigned int nents,
+> 	enum dma_data_direction dir)
+> {
+> 	while (nents) {
+> 		dma_unmap_page(dev, map->addr, map->len, dir);
+> 		map++;
+> 		nents--;
+> 	}
+> }
+> 
+> Note: this may not be portable to all architectures.  It may also break
+> if there's something like the dmabounce or swiotlb code remapping buffers
+> which don't fit the DMA mask for the device - that's a different problem.
 
-    documentation: fix almost duplicate filenames (IO/io-mapping.txt)
-    
-    Having both IO-mapping.txt and io-mapping.txt in Documentation/
-    was confusing and/or bothersome to some people, so rename
-    IO-mapping.txt to bus-virt-phys-mapping.txt.  Also update
-    Documentation/00-INDEX for both of these files.
-    
-    Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+True but given a higher-level "map(virtual_range, physical_chunks)"
+wouldn't break on all architectures.
 
----
-patch summary:
+> You can then map the same scatterlist into multiple different 'map'
+> arrays for several devices simultaneously.  What you can't do is access
+> the buffers from the CPU while they're mapped to any device.
 
- Documentation/00-INDEX                             |    6 ++++--
- .../{IO-mapping.txt => bus-virt-phys-mapping.txt}  |    0
- 2 files changed, 4 insertions(+), 2 deletions(-)
- rename Documentation/{IO-mapping.txt => bus-virt-phys-mapping.txt} (100%)
+Which is considered a feature  ;)
 
+> I'm not saying that you should do the above - I'm just proving that it's
+> not as hard as you seem to be making out.
+
+That's fair. I didn't mean to say things were hard, just that using
+the DMA API for big buffer management and mapping was not ideal since
+our goals are to allocate big buffers using a device specific
+algorithm, give them various attributes and share them. What we
+created looked generally useful.
