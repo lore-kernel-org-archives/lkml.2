@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761470Ab0GTTWO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:22:14 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35820 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758567Ab0GTTWI (ORCPT
+	id S1761482Ab0GTTXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 15:23:08 -0400
+Received: from smtp11.hushmail.com ([65.39.178.133]:36514 "EHLO
+	smtp11.hushmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758658Ab0GTTXF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:22:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=NpCxWRCkmSvgt8SLmIptJ4qBxM8lXiDZfaSOT2l76Zbf4dUKWaEYnwvBY0oi/44X2k
-         hLqO1FJivbrWqGRGtMXkRAyjgJIT35ZX4LYGOlN73Ss7nYnARVicqnX/c8kxcKjggCEN
-         Jt1wtaWm2XFUt0/uOXpwB5zP6MsJ+HzDFD8OQ=
-Date: Tue, 20 Jul 2010 21:19:23 +0200
-From: Marcin Slusarz <marcin.slusarz@gmail.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-fbdev@vger.kernel.org, nouveau@lists.freedesktop.org
-Subject: [PATCH] vga16fb: refuse to load in face of other driver
- controlling primary card
-Message-ID: <20100720191923.GA11056@joi.lan>
+	Tue, 20 Jul 2010 15:23:05 -0400
+X-Hush-Verified-Domain: hushmail.com
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Date: Tue, 20 Jul 2010 22:22:56 +0300
+To: maciej.rutecki@gmail.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: netfilter/iptables stopped logging 2.6.35-rc
+From: auto401300@hushmail.com
+Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="UTF-8"
+Message-Id: <20100720192256.EC3661200AA@smtp.hushmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We don't want vga16fb to mess with hardware initialized by other driver.
-Detect it and refuse to load.
-It fixes nouveau interrupt storm on some machines.
 
-Signed-off-by: Marcin Slusarz <marcin.slusarz@gmail.com>
----
- drivers/video/vga16fb.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/video/vga16fb.c b/drivers/video/vga16fb.c
-index 28ccab4..4505446 100644
---- a/drivers/video/vga16fb.c
-+++ b/drivers/video/vga16fb.c
-@@ -22,6 +22,7 @@
- #include <linux/platform_device.h>
- #include <linux/screen_info.h>
- 
-+#include <asm/fb.h>
- #include <asm/io.h>
- #include <video/vga.h>
- 
-@@ -1415,7 +1416,7 @@ static struct platform_device *vga16fb_device;
- 
- static int __init vga16fb_init(void)
- {
--	int ret;
-+	int ret, i;
- #ifndef MODULE
- 	char *option = NULL;
- 
-@@ -1424,6 +1425,16 @@ static int __init vga16fb_init(void)
- 
- 	vga16fb_setup(option);
- #endif
-+	for (i = 0 ; i < FB_MAX; i++) {
-+		if (!registered_fb[i])
-+			continue;
-+		if (fb_is_primary_device(registered_fb[i])) {
-+			printk(KERN_INFO "vga16fb: %s is driving the primary card, refusing to load\n",
-+				registered_fb[i]->fix.id);
-+			return -EBUSY;
-+		}
-+	}
-+
- 	ret = platform_driver_register(&vga16fb_driver);
- 
- 	if (!ret) {
--- 
-1.7.1
+On Tue, 20 Jul 2010 15:51:03 +0300 Maciej Rutecki 
+<maciej.rutecki@gmail.com> wrote:
+>On sobota, 17 lipca 2010 o 09:20:36 auto401300@hushmail.com wrote:
+>> Hi!
+>> 
+>> Has something broken with netfilter/iptables logging in 2.6.35-
+>rc,
+>> or is there something new I should set in .config since .34?
+>> 
+>> 
+>> I just verified that if I boot .34 and ping the pc it does 
+>logging:
+>> 
+>> Jul 17 09:42:49 xxxxx kernel: Linux version 2.6.34-ab 
+>(root@xxxxx)
+>> (gcc version 4.4.4 (Debian 4.4.4-1) ) #1 SMP PREEMPT Mon May 17
+>> 09:15
+>> 
+>> :15 EEST 2010
+>> 
+>> ....
+>> Jul 17 09:44:52 xxxxx kernel: DENY  in: IN=eth0 OUT= MAC=xxxxx
+>> SRC=xxxxx DST=xxxxx LEN=60 TOS=0x00 PREC=0x00 TTL=127 ID=38945
+>> PROTO=ICMP TYPE=8 CODE=0 ID=512 SEQ=256
+>> 
+>> 
+>> but if I boot .35-rc4 and ping:
+>> 
+>> Jul 17 09:48:08 xxxxx kernel: Linux version 2.6.35-rc4-aa
+>> (root@xxxxx) (gcc version 4.4.4 (Debian 4.4.4-6) ) #1 SMP 
+>PREEMPT
+>> Mon Jul 5 15:22:02 EEST 2010
+>> ....
+>> nothing from iptables in log
+>> 
+>> 
+>> userspace is same, only booted different kernel versions
+>
+>I created a Bugzilla entry at 
+>https://bugzilla.kernel.org/show_bug.cgi?id=16423
+>for your bug report, please add your address to the CC list in 
+>there, thanks!
+>
+>-- 
+>Maciej Rutecki
+>http://www.maciek.unixy.pl
 
+
+I just thought that whole initramfs may be also different and tried 
+to compile
+.34 again to test if it still does iptables logging with current 
+toolchain but
+just now debian kernel-package is broken due to
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=589700
+I will try again when that is fixed
+
+thanks.
 
