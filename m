@@ -1,38 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932904Ab0GTW1K (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 18:27:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:45769 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932870Ab0GTW1G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 18:27:06 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,234,1278313200"; 
-   d="scan'208";a="537316552"
-Subject: Re: [PATCH 10/10] x86, xsave: make init_xstate_buf static
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1279651857-24639-11-git-send-email-robert.richter@amd.com>
-References: <1279651857-24639-1-git-send-email-robert.richter@amd.com>
-	 <1279651857-24639-11-git-send-email-robert.richter@amd.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Tue, 20 Jul 2010 15:26:31 -0700
-Message-Id: <1279664791.2899.55.camel@sbs-t61.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S932922Ab0GTWbW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 18:31:22 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53980 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932855Ab0GTWbV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 18:31:21 -0400
+Date: Tue, 20 Jul 2010 23:29:52 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: stepanm@codeaurora.org
+Cc: Michael Bohan <mbohan@codeaurora.org>, Tim HRM <zt.tmzt@gmail.com>,
+        Zach Pfeffer <zpfeffer@codeaurora.org>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+	memory management
+Message-ID: <20100720222952.GD10553@n2100.arm.linux.org.uk>
+References: <20100714104353B.fujita.tomonori@lab.ntt.co.jp> <20100714201149.GA14008@codeaurora.org> <20100714220536.GE18138@n2100.arm.linux.org.uk> <20100715012958.GB2239@codeaurora.org> <20100715085535.GC26212@n2100.arm.linux.org.uk> <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com> <20100716075856.GC16124@n2100.arm.linux.org.uk> <4C449183.20000@codeaurora.org> <20100719184002.GA21608@n2100.arm.linux.org.uk> <bb667e285fd8be82ea8cc9cc25cf335b.squirrel@www.codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <bb667e285fd8be82ea8cc9cc25cf335b.squirrel@www.codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-20 at 11:50 -0700, Robert Richter wrote:
-> The pointer is only used in xsave.c. Making it static.
+On Tue, Jul 20, 2010 at 03:02:34PM -0700, stepanm@codeaurora.org wrote:
+> Russell-
 > 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> If a driver wants to allow a device to access memory (and cache coherency
+> is off/not present for device addesses), the driver needs to remap that
+> memory as non-cacheable.
 
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+If that memory is not part of the kernel's managed memory, then that's
+fine.  But if it _is_ part of the kernel's managed memory, then it is
+not permitted by the ARM architecture specification to allow maps of
+the memory with differing [memory type, sharability, cache] attributes.
 
+Basically, if a driver wants to create these kinds of mappings, then
+they should expect the system to become unreliable and unpredictable.
+That's not something any sane person should be aiming to do.
+
+> Suppose there exists a chunk of
+> physically-contiguous memory (say, memory reserved for device use) that
+> happened to be already mapped into the kernel as normal memory (cacheable,
+> etc). One way to remap this memory is to use ioremap (and then never touch
+> the original virtual mapping, which would now have conflicting
+> attributes).
+
+This doesn't work, and is unpredictable on ARMv6 and ARMv7.  Not touching
+the original mapping is _not_ _sufficient_ to guarantee that the mapping
+is not used.  (We've seen problems on OMAP as a result of this.)
+
+Any mapping which exists can be speculatively prefetched by such CPUs
+at any time, which can lead it to be read into the cache.  Then, your
+different attributes for your "other" mapping can cause problems if you
+hit one of these cache lines - and then you can have (possibly silent)
+data corruption.
+
+> I feel as if there should be a better way to remap memory for
+> device access, either by altering the attributes on the original mapping,
+> or removing the original mapping and creating a new one with attributes
+> set to non-cacheable.
+
+This is difficult to achieve without remapping kernel memory using L2
+page tables, so we can unmap pages on 4K page granularity.  That's
+going to increase TLB overhead and result in lower system performance
+as there'll be a greater number of MMU misses.
+
+However, one obvious case would be to use highmem-only pages for
+remapping - but you then have to ensure that those pages are never
+kmapped in any way, because those mappings will fall into the same
+unpredictable category that we're already trying to avoid.  This
+may be possible, but you'll have to ensure that most of the system
+RAM is in highmem - which poses other problems (eg, if lowmem gets
+low.)
