@@ -1,122 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932285Ab0GTSgb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 14:36:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27631 "EHLO
+	id S1761426Ab0GTShI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 14:37:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:29370 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754253Ab0GTSg3 (ORCPT
+	with ESMTP id S1753667Ab0GTShG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 14:36:29 -0400
-Message-ID: <4C45EC59.3030304@kernel.org>
-Date: Tue, 20 Jul 2010 11:35:05 -0700
+	Tue, 20 Jul 2010 14:37:06 -0400
+Message-ID: <4C45EC8E.7060602@kernel.org>
+Date: Tue, 20 Jul 2010 11:35:58 -0700
 From: Yinghai Lu <yinghai@kernel.org>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
 To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] x86, numa: fix boot without RAM on node0 again
+CC: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        Conny Seidel <conny.seidel@amd.com>,
+        "Petkov, Borislav" <Borislav.Petkov@amd.com>,
+        LKML <linux-kernel@vger.kernel.org>, stable <stable@kernel.org>
+Subject: [PATCH -v3] x86,nobootmem: make alloc_bootmem_node fall back to other
+ node when 32bit numa are used
+References: <20100709145415.GC11199@aftab>	<4C3773C4.1010609@kernel.org>	<20100709215202.4be679a8@marah.osrc.amd.com>	<4C37841F.4030500@kernel.org>	<20100709224231.5736113b@marah.osrc.amd.com>	<4C379DB6.3040605@kernel.org> <20100710015142.3f94b9dd@marah.osrc.amd.com>
+In-Reply-To: <20100710015142.3f94b9dd@marah.osrc.amd.com>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C45EC66.00B8,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4C45ECB6.01B9,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-|commit e534c7c5f8d6e9fc46f57fab067c7e48d8ceb172
-|Author: Lee Schermerhorn <lee.schermerhorn@hp.com>
-|Date:   Wed May 26 14:44:58 2010 -0700
-|
-|    numa: x86_64: use generic percpu var numa_node_id() implementation
-|
-|    x86 arch specific changes to use generic numa_node_id() based on generic
-|    percpu variable infrastructure.  Back out x86's custom version of
-|    numa_node_id()
+Borislav Petkov reported his 32bit numa system has problem:
 
-broke numa system that doesn't have ram on node0 when MEMORY_HOTPLUG is enabled.
-
-because cpu_up() will call cpu_to_node() before per_cpu(numa_node) is setup for
-APs.
-
-When Node0 doesn't have RAM, on x86, cpus already round it to nearest node with
-RAM in x86_cpu_to_node_map. and per_cpu(numa_node) is not set up until in c_init for APs.
-
-when later cpu_up() calling cpu_to_node() will get 0 again, and make it online
-even there is no RAM on node0. so later all APs can not booted up, and later
-will have panic.
-
-[    1.611101] On node 0 totalpages: 0
-.........
-[    2.608558] On node 0 totalpages: 0
-[    2.612065] Brought up 1 CPUs
-[    2.615199] Total of 1 processors activated (3990.31 BogoMIPS).
+[    0.000000] Reserving total of 4c00 pages for numa KVA remap
+[    0.000000] kva_start_pfn ~ 32800 max_low_pfn ~ 375fe
+[    0.000000] max_pfn = 238000
+[    0.000000] 8202MB HIGHMEM available.
+[    0.000000] 885MB LOWMEM available.
+[    0.000000]   mapped low ram: 0 - 375fe000
+[    0.000000]   low ram: 0 - 375fe000
+[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 1000 1000 => 34e7000
+[    0.000000] alloc (nid=8 100000 - 7ee00000) (1000000 - ffffffff) 200 40 => 34c9d80
+[    0.000000] alloc (nid=0 100000 - 7ee00000) (1000000 - ffffffffffffffff) 180 40 => 34e6140
+[    0.000000] alloc (nid=1 80000000 - c7e60000) (1000000 - ffffffffffffffff) 240 40 => 80000000
+[    0.000000] BUG: unable to handle kernel paging request at 40000000
+[    0.000000] IP: [<c2c8cff1>] __alloc_memory_core_early+0x147/0x1d6
+[    0.000000] *pdpt = 0000000000000000 *pde = f000ff53f000ff00 
 ...
-   93.225341] calling  loop_init+0x0/0x1a4 @ 1
-[   93.229314] PERCPU: allocation failed, size=80 align=8, failed to populate
-[   93.246539] Pid: 1, comm: swapper Tainted: G        W   2.6.35-rc4-tip-yh-04371-gd64e6c4-dirty #354
-[   93.264621] Call Trace:
-[   93.266533]  [<ffffffff81125e43>] pcpu_alloc+0x83a/0x8e7
-[   93.270710]  [<ffffffff81125f15>] __alloc_percpu+0x10/0x12
-[   93.285849]  [<ffffffff8140786c>] alloc_disk_node+0x94/0x16d
-[   93.291811]  [<ffffffff81407956>] alloc_disk+0x11/0x13
-[   93.306157]  [<ffffffff81503e51>] loop_alloc+0xa7/0x180
-[   93.310538]  [<ffffffff8277ef48>] loop_init+0x9b/0x1a4
-[   93.324909]  [<ffffffff8277eead>] ? loop_init+0x0/0x1a4
-[   93.329650]  [<ffffffff810001f2>] do_one_initcall+0x57/0x136
-[   93.345197]  [<ffffffff827486d0>] kernel_init+0x184/0x20e
-[   93.348146]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
-[   93.365194]  [<ffffffff81c7cc3c>] ? restore_args+0x0/0x30
-[   93.369305]  [<ffffffff8274854c>] ? kernel_init+0x0/0x20e
-[   93.386011]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
-[   93.392047] loop: out of memory
-...
+[    0.000000] Call Trace:
+[    0.000000]  [<c2c8b4f8>] ? __alloc_bootmem_node+0x216/0x22f
+[    0.000000]  [<c2c90c9b>] ? sparse_early_usemaps_alloc_node+0x5a/0x10b
+[    0.000000]  [<c2c9149e>] ? sparse_init+0x1dc/0x499
+[    0.000000]  [<c2c79118>] ? paging_init+0x168/0x1df
+[    0.000000]  [<c2c780ff>] ? native_pagetable_setup_start+0xef/0x1bb
 
-Try to assign per_cpu(numa_node) early
+looks like it allocate much high address for bootmem.
 
-Signed-off-by: Yinghai <yinghai@kernel.org>
+try to cut limit with get_max_mapped()
+
+-v3: make alloc_bootmem_node could fallback to other node.
+     just like old alloc_bootmem_node did
+
+need this one for 2.6.34 and 2.6.35
+
+Reported-by: Borislav Petkov <borislav.petkov@amd.com>
+Tested-by: Conny Seidel <conny.seidel@amd.com>
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: stable@kernel.org
 
 ---
- arch/x86/kernel/setup_percpu.c |   17 +++++++++--------
- 1 file changed, 9 insertions(+), 8 deletions(-)
+ mm/bootmem.c    |   24 ++++++++++++++++++++----
+ mm/page_alloc.c |    3 +++
+ 2 files changed, 23 insertions(+), 4 deletions(-)
 
-Index: linux-2.6/arch/x86/kernel/setup_percpu.c
+Index: linux-2.6/mm/page_alloc.c
 ===================================================================
---- linux-2.6.orig/arch/x86/kernel/setup_percpu.c
-+++ linux-2.6/arch/x86/kernel/setup_percpu.c
-@@ -238,6 +238,15 @@ void __init setup_per_cpu_areas(void)
- #ifdef CONFIG_NUMA
- 		per_cpu(x86_cpu_to_node_map, cpu) =
- 			early_per_cpu_map(x86_cpu_to_node_map, cpu);
-+		/*
-+		 * make sure boot cpu numa_node is right, when boot cpu is on
-+		 *  the node that doesn't have mem installed
-+		 * also cpu_up() will call cpu_to_node() for APs when
-+		 *  MEMORY_HOTPLUG is defined, before per_cpu(numa_node) is set
-+		 *  up later with c_init aka intel_init/amd_init
-+		 * So set them all (boot cpu and all APs)
-+		 */
-+		set_cpu_numa_node(cpu, early_cpu_to_node(cpu));
- #endif
- #endif
- 		/*
-@@ -257,14 +266,6 @@ void __init setup_per_cpu_areas(void)
- 	early_per_cpu_ptr(x86_cpu_to_node_map) = NULL;
- #endif
+--- linux-2.6.orig/mm/page_alloc.c
++++ linux-2.6/mm/page_alloc.c
+@@ -3634,6 +3634,9 @@ void * __init __alloc_memory_core_early(
+ 	int i;
+ 	void *ptr;
  
--#if defined(CONFIG_X86_64) && defined(CONFIG_NUMA)
--	/*
--	 * make sure boot cpu numa_node is right, when boot cpu is on the
--	 * node that doesn't have mem installed
--	 */
--	set_cpu_numa_node(boot_cpu_id, early_cpu_to_node(boot_cpu_id));
--#endif
--
- 	/* Setup node to cpumask map */
- 	setup_node_to_cpumask_map();
++	if (limit > get_max_mapped())
++		limit = get_max_mapped();
++
+ 	/* need to go over early_node_map to find out good range for node */
+ 	for_each_active_range_index_in_nid(i, nid) {
+ 		u64 addr;
+Index: linux-2.6/mm/bootmem.c
+===================================================================
+--- linux-2.6.orig/mm/bootmem.c
++++ linux-2.6/mm/bootmem.c
+@@ -833,15 +833,24 @@ static void * __init ___alloc_bootmem_no
+ void * __init __alloc_bootmem_node(pg_data_t *pgdat, unsigned long size,
+ 				   unsigned long align, unsigned long goal)
+ {
++	void *ptr;
++
+ 	if (WARN_ON_ONCE(slab_is_available()))
+ 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
  
+ #ifdef CONFIG_NO_BOOTMEM
+-	return __alloc_memory_core_early(pgdat->node_id, size, align,
++	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
++					 goal, -1ULL);
++	if (ptr)
++		return ptr;
++
++	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
+ 					 goal, -1ULL);
+ #else
+-	return ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
++	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align, goal, 0);
+ #endif
++
++	return ptr;
+ }
+ 
+ void * __init __alloc_bootmem_node_high(pg_data_t *pgdat, unsigned long size,
+@@ -977,14 +986,21 @@ void * __init __alloc_bootmem_low(unsign
+ void * __init __alloc_bootmem_low_node(pg_data_t *pgdat, unsigned long size,
+ 				       unsigned long align, unsigned long goal)
+ {
++	void *ptr;
++
+ 	if (WARN_ON_ONCE(slab_is_available()))
+ 		return kzalloc_node(size, GFP_NOWAIT, pgdat->node_id);
+ 
+ #ifdef CONFIG_NO_BOOTMEM
+-	return __alloc_memory_core_early(pgdat->node_id, size, align,
++	ptr = __alloc_memory_core_early(pgdat->node_id, size, align,
++				goal, ARCH_LOW_ADDRESS_LIMIT);
++	if (ptr)
++		return ptr;
++	ptr = __alloc_memory_core_early(MAX_NUMNODES, size, align,
+ 				goal, ARCH_LOW_ADDRESS_LIMIT);
+ #else
+-	return ___alloc_bootmem_node(pgdat->bdata, size, align,
++	ptr = ___alloc_bootmem_node(pgdat->bdata, size, align,
+ 				goal, ARCH_LOW_ADDRESS_LIMIT);
+ #endif
++	return ptr;
+ }
