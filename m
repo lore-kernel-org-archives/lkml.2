@@ -1,48 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761144Ab0GTJ4N (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 05:56:13 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:14868 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761100Ab0GTJ4J convert rfc822-to-8bit (ORCPT
+	id S1761187Ab0GTKHT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 06:07:19 -0400
+Received: from host.aloksahu.com ([69.167.171.24]:53762 "EHLO
+	host.aloksahu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761172Ab0GTKHQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 05:56:09 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Tue, 20 Jul 2010 11:57:28 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
-In-reply-to: <Pine.LNX.4.44L0.1007191256480.1657-100000@iolanthe.rowland.org>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
-Message-id: <op.vf4y92vu7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <Pine.LNX.4.44L0.1007191256480.1657-100000@iolanthe.rowland.org>
+	Tue, 20 Jul 2010 06:07:16 -0400
+X-Greylist: delayed 2825 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jul 2010 06:07:16 EDT
+To: linux-kernel@vger.kernel.org
+Subject: Confidential business proposal and your discretion is required....
+Recieved: 
+Date: Tue, 20 Jul 2010 05:20:10 -0400
+From: 3W-Outsource | Sunita <sunita@3w-outsource.com>
+Message-ID: <f30a62164b978071a7d65114f5710c8b@aloksahu.com>
+X-Priority: 3
+X-Mailer: PHPMailer [version 1.73]
+X-Mailer: phplist v2.10.12
+X-MessageID: 1
+X-ListMember: linux-kernel@vger.kernel.org
+MIME-Version: 1.0
+Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="UTF-8"
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - host.aloksahu.com
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [99 99] / [47 12]
+X-AntiAbuse: Sender Address Domain - host.aloksahu.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Mon, 19 Jul 2010, [utf-8] Michal‚ Nazarewicz wrote:
->> 1/3: http://lkml.org/lkml/2010/7/8/317
->> 	Adds serial to mass storage gadget and g_multi introducing
->> 	fsg_string_serial_fill() macro used by abovementioned
->> 	gadgets and file storage gadget.
 
-On Mon, 19 Jul 2010 19:06:32 +0200, Alan Stern <stern@rowland.harvard.edu> wrote:
-> Ah, yes.  My personal taste would be to write fsg_string_serial_fill_n
-> as an inline routine instead of as a macro, and not try to make it
-> separate from fsg_string_serial_fill.
 
-Not sure what you meant by "make it separate from fsg_string_serial_fill".
+Dear Sir/Madam,
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+3w-outsource is a leading software development company in India
+providing Offshore Software Development Services & solutions.
+ 
+Our services are 
+· outsourcing software development India
+· Web Development India
+· Product Development
+· E-strategy Consulting
+· Web-Enablement Designing
+· Offshore Application development
+· .Net Development India
+· PHP Development
+· Multimedia and Design Solutions
+· Email marketing services (capable to send you 5000-10000 quality
+contact emails addresses per week of your interested area from your
+country). 
+
+3w-outsource is a leading customized process-driven software solutions
+provider based in India. 
+ 
+Kindly let me know, if you are interested for any of our services. 
+
+Kind Regards
+
+Sunita
+
+Marketing Director (3w-outsource)
+
+A-4 Vidyva Vihar Padmnabhpur Durg
+
+Chhattisgarh
+
+India
+
++917882344623
+
+Email: sunita@3w-outsource.com
+
+Website: www.3w-outsource.com
+
+
+
+--
+If you do not want to receive any more newsletters, 
+http://3w-outsource.net/list/?p=unsubscribe&uid=1b51e6cefc9092ec4e7b3cba461ddcb7
+
+To update your preferences and to unsubscribe visit
+http://3w-outsource.net/list/?p=preferences&uid=1b51e6cefc9092ec4e7b3cba461ddcb7
+Forward a Message to Someone
+http://3w-outsource.net/list/?p=forward&uid=1b51e6cefc9092ec4e7b3cba461ddcb7&mid=1
+
+
+--
+Powered by PHPlist, www.phplist.com --
+
+
