@@ -1,127 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761192Ab0GTKQb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 06:16:31 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:33532 "EHLO cmpxchg.org"
+	id S1753134Ab0GTKcF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 06:32:05 -0400
+Received: from norkia.v3.sk ([91.210.183.14]:57873 "EHLO norkia.v3.sk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756900Ab0GTKQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 06:16:30 -0400
-Date: Tue, 20 Jul 2010 12:15:58 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>, Mel Gorman <mel@csn.ul.ie>,
-        linux-mm <linux-mm@kvack.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v2
-Message-ID: <20100720101557.GD16031@cmpxchg.org>
-References: <1279448311-29788-1-git-send-email-minchan.kim@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279448311-29788-1-git-send-email-minchan.kim@gmail.com>
+	id S1752150Ab0GTKcD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 06:32:03 -0400
+Subject: Re: [PATCH 2/3] [fs/sysv] V7: Adjust sanity checks for some volumes
+From: Lubomir Rintel <lkundrak@v3.sk>
+To: Christoph Hellwig <hch@lst.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20100719145457.GC25279@lst.de>
+References: <1279559802-19154-1-git-send-email-lkundrak@v3.sk>
+	 <1279559802-19154-2-git-send-email-lkundrak@v3.sk>
+	 <1279559802-19154-3-git-send-email-lkundrak@v3.sk>
+	 <20100719145457.GC25279@lst.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Jul 2010 12:31:33 +0200
+Message-ID: <1279621893.18203.12.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-07-19 at 16:54 +0200, Christoph Hellwig wrote:
 
-On Sun, Jul 18, 2010 at 07:18:31PM +0900, Minchan Kim wrote:
-> Kukjin reported oops happen while he change min_free_kbytes
-> http://www.spinics.net/lists/arm-kernel/msg92894.html
-> It happen by memory map on sparsemem.
+> >  	v7i = (struct sysv_inode *)(bh2->b_data + 64);
+> >  	if ((fs16_to_cpu(sbi, v7i->i_mode) & ~0777) != S_IFDIR ||
+> >  	    (fs32_to_cpu(sbi, v7i->i_size) == 0) ||
+> > -	    (fs32_to_cpu(sbi, v7i->i_size) & 017) != 0)
+> > +	    (fs32_to_cpu(sbi, v7i->i_size) & 017)
+> > +	    (fs32_to_cpu(sbi, v7i->i_size) > V7_NFILES *
+> > +	     sizeof (struct sysv_dir_entry))) {
 > 
-> The system has a memory map following as. 
->      section 0             section 1              section 2
-> 0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
-> SECTION_SIZE_BITS 28(256M)
-> 
-> It means section 0 is an incompletely filled section.
-> Nontheless, current pfn_valid of sparsemem checks pfn loosely. 
-> It checks only mem_section's validation but ARM can free mem_map on hole 
-> to save memory space. So in above case, pfn on 0x25000000 can pass pfn_valid's 
-> validation check. It's not what we want.
->
-> We can match section size to smallest valid size.(ex, above case, 16M)
-> But Russell doesn't like it due to mem_section's memory overhead with different
-> configuration(ex, 512K section).
->
-> I tried to add valid pfn range in mem_section but everyone doesn't like it 
-> due to size overhead. This patch is suggested by KAMEZAWA-san. 
-> I just fixed compile error and change some naming.
+> Maybe I'm missing something, but without and additional || on the
+> first line you added this doesn't look like it will compile.
 
-I did not like it, because it messes up the whole concept of a
-section.
+You're right. In fact this hunk is fixed in a commit that followed it, I
+probably incorrectly merged the fixups in git (the latter commit also
+had an useless comment change and such).
 
-But most importantly, we already have a crutch for ARM in place,
-namely memmap_valid_within().  Looking at Kukjin's bug report,
-wouldn't it be enough to use that check in
-setup_zone_migrate_reserve()?
+I'll follow up with a fixed commit tomorrow, since I'm unable to test it
+now.
 
-Your approach makes every pfn_valid() more expensive, although the
-extensive checks are not not needed everywhere (check the comment
-above memmap_valid_within): vm_normal_page() for example can probably
-assume that a PTE won't point to a hole within the memory map.
+Thanks,
+Lubo
 
-OTOH, if the ARM people do not care, we could probably go with your
-approach, encode it all into pfn_valid(), and also get rid of
-memmap_valid_within() completely.  But I would prefer doing a bugfix
-first and such a conceptual change in a different patch, would you
-agree?
+-- 
+Flash is the Web2.0 version of blink and animated gifs.
+                                     -- Stephen Smoogen
 
-Kukjin, does the appended patch also fix your problem?
-
-	Hannes
-
----
-From: Johannes Weiner <hannes@cmpxchg.org>
-Subject: mm: check mem_map backing in setup_zone_migrate_reserve
-
-Kukjin encountered kernel oopsen when changing
-/proc/sys/vm/min_free_kbytes.  The problem is that his sparse memory
-layout on ARM is the following:
-
-     section 0             section 1              section 2
-0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
-SECTION_SIZE_BITS 28(256M)
-
-where there is a memory hole at the end of section 0.
-
-Since section 0 has _some_ memory, pfn_valid() will return true for
-all PFNs in this section.  But ARM releases the mem_map pages of this
-hole and pfn_valid() alone is not enough anymore to ensure there is a
-valid page struct behind a PFN.
-
-We acknowledged that ARM does this already and have a function to
-double-check for mem_map in cases where we do PFN range walks (as
-opposed to coming from a page table entry, which should not point to a
-memory hole in the first place e.g.).
-
-setup_zone_migrate_reserve() contains one such range walk which does
-not have the extra check and was also the cause of the oopsen Kukjin
-encountered.
-
-This patch adds the needed memmap_valid_within() check.
-
-Reported-by: Kukjin Kim <kgene.kim@samsung.com>
-Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
----
-
-diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-index 0b0b629..cb6d6d3 100644
---- a/mm/page_alloc.c
-+++ b/mm/page_alloc.c
-@@ -3168,6 +3168,10 @@ static void setup_zone_migrate_reserve(struct zone *zone)
- 			continue;
- 		page = pfn_to_page(pfn);
- 
-+		/* Watch out for holes in the memory map */
-+		if (!memmap_valid_within(pfn, page, zone))
-+			continue;
-+
- 		/* Watch out for overlapping nodes */
- 		if (page_to_nid(page) != zone_to_nid(zone))
- 			continue;
