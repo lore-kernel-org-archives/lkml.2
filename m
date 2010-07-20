@@ -1,162 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932670Ab0GTWUH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 18:20:07 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:30840 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761857Ab0GTWUD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 18:20:03 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6049"; a="47938807"
-Date: Tue, 20 Jul 2010 15:20:01 -0700
-From: Zach Pfeffer <zpfeffer@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
- memory management
-Message-ID: <20100720221959.GC12250@codeaurora.org>
-References: <20100713121420.GB4263@codeaurora.org>
- <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
- <20100714201149.GA14008@codeaurora.org>
- <20100715080710T.fujita.tomonori@lab.ntt.co.jp>
- <20100715014148.GC2239@codeaurora.org>
- <20100719082213.GA7421@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100719082213.GA7421@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932834Ab0GTWVJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 18:21:09 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56948 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932819Ab0GTWVA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 18:21:00 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,234,1278313200"; 
+   d="scan'208";a="588120598"
+Subject: Re: [PATCH 05/10] x86, xsave: make xsave_cntxt_init() static
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1279651857-24639-6-git-send-email-robert.richter@amd.com>
+References: <1279651857-24639-1-git-send-email-robert.richter@amd.com>
+	 <1279651857-24639-6-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Tue, 20 Jul 2010 15:20:24 -0700
+Message-Id: <1279664424.2899.47.camel@sbs-t61.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 19, 2010 at 09:22:13AM +0100, Russell King - ARM Linux wrote:
-> On Wed, Jul 14, 2010 at 06:41:48PM -0700, Zach Pfeffer wrote:
-> > On Thu, Jul 15, 2010 at 08:07:28AM +0900, FUJITA Tomonori wrote:
-> > > Why we we need a new abstraction layer to solve the problem that the
-> > > current API can handle?
-> > 
-> > The current API can't really handle it because the DMA API doesn't
-> > separate buffer allocation from buffer mapping.
+On Tue, 2010-07-20 at 11:50 -0700, Robert Richter wrote:
+> There is a lot of cross referencing between fpu and xsave code. This
+> patch reduces this by making xsave_cntxt_init() a static function.
 > 
-> That's not entirely correct.  The DMA API provides two things:
-> 
-> 1. An API for allocating DMA coherent buffers
-> 2. An API for mapping streaming buffers
-> 
-> Some implementations of (2) end up using (1) to work around broken
-> hardware - but that's a separate problem (and causes its own set of
-> problems.)
-> 
-> > For instance: I need 10, 1 MB physical buffers and a 64 KB physical
-> > buffer. With the DMA API I need to allocate 10*1MB/PAGE_SIZE + 64
-> > KB/PAGE_SIZE scatterlist elements, fix them all up to follow the
-> > chaining specification and then go through all of them again to fix up
-> > their virtual mappings for the mapper that's mapping the physical
-> > buffer.
-> 
-> You're making it sound like extremely hard work.
-> 
-> 	struct scatterlist *sg;
-> 	int i, nents = 11;
-> 
-> 	sg = kmalloc(sizeof(*sg) * nents, GFP_KERNEL);
-> 	if (!sg)
-> 		return -ENOMEM;
-> 
-> 	sg_init_table(sg, nents);
-> 	for (i = 0; i < nents; i++) {
-> 		if (i != nents - 1)
-> 			len = 1048576;
-> 		else
-> 			len = 64*1024;
-> 		buf = alloc_buffer(len);
-> 		sg_set_buf(&sg[i], buf, len);
-> 	}
-> 
-> There's no need to split the scatterlist elements up into individual
-> pages - the block layer doesn't do that when it passes scatterlists
-> down to block device drivers.
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
+>  arch/x86/include/asm/xsave.h |    1 -
+>  arch/x86/kernel/i387.c       |    5 ++---
+>  arch/x86/kernel/xsave.c      |    9 +++++++--
+>  3 files changed, 9 insertions(+), 6 deletions(-)
 
-Okay. Thank you for the example.
+Perhaps we can fold this patch into 
+[PATCH 06/10] x86, xsave: do not initialize xsave in fpu_init()
+
+and probably do  fpu_init() first followed by xsave_init() so that
+fpu_init() will set xstate_size based on fpu features and xsave_init()
+can later overwrite xstate_size based on xstate features.
+
+thanks.
 
 > 
-> I'm not saying that it's reasonable to pass (or even allocate) a 1MB
-> buffer via the DMA API.
+> diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
+> index 94d5f84..4d3b5d1 100644
+> --- a/arch/x86/include/asm/xsave.h
+> +++ b/arch/x86/include/asm/xsave.h
+> @@ -28,7 +28,6 @@ extern u64 pcntxt_mask;
+>  extern struct xsave_struct *init_xstate_buf;
+>  extern u64 xstate_fx_sw_bytes[USER_XSTATE_FX_SW_WORDS];
+>  
+> -extern void xsave_cntxt_init(void);
+>  extern void xsave_init(void);
+>  extern void update_regset_xstate_info(unsigned int size, u64 xstate_mask);
+>  extern int init_fpu(struct task_struct *child);
+> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
+> index 2f32ef0..196b8c7 100644
+> --- a/arch/x86/kernel/i387.c
+> +++ b/arch/x86/kernel/i387.c
+> @@ -66,10 +66,9 @@ void __cpuinit init_thread_xstate(void)
+>  		return;
+>  	}
+>  
+> -	if (cpu_has_xsave) {
+> -		xsave_cntxt_init();
+> +	if (cpu_has_xsave)
+> +		/* xstate_size was already initialized */
+>  		return;
+> -	}
+>  
+>  	if (cpu_has_fxsr)
+>  		xstate_size = sizeof(struct i387_fxsave_struct);
+> diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+> index ab9ad48..c46082d 100644
+> --- a/arch/x86/kernel/xsave.c
+> +++ b/arch/x86/kernel/xsave.c
+> @@ -429,10 +429,13 @@ static void __init setup_xstate_init(void)
+>  /*
+>   * Enable and initialize the xsave feature.
+>   */
+> -void __ref xsave_cntxt_init(void)
+> +static void __cpuinit xsave_cntxt_init(void)
+>  {
+>  	unsigned int eax, ebx, ecx, edx;
+>  
+> +	if (!cpu_has_xsave)
+> +		return;
+> +
+>  	cpuid_count(0xd, 0, &eax, &ebx, &ecx, &edx);
+>  	pcntxt_mask = eax + ((u64)edx << 32);
+>  
+> @@ -469,7 +472,9 @@ void __cpuinit xsave_init(void)
+>  	/*
+>  	 * Boot processor to setup the FP and extended state context info.
+>  	 */
+> -	if (!smp_processor_id())
+> +	if (!smp_processor_id()) {
+> +		xsave_cntxt_init();
+>  		init_thread_xstate();
+> +	}
+>  	__xsave_init();
+>  }
 
-But given a bunch of large chunks of memory, is there any API that can
-manage them (asked this on the other thread as well)?
-
-> > If I want to share the buffer with another device I have to
-> > make a copy of the entire thing then fix up the virtual mappings for
-> > the other device I'm sharing with.
-> 
-> This is something the DMA API doesn't do - probably because there hasn't
-> been a requirement for it.
-> 
-> One of the issues for drivers is that by separating the mapped scatterlist
-> from the input buffer scatterlist, it creates something else for them to
-> allocate, which causes an additional failure point - and as all users sit
-> well with the current API, there's little reason to change especially
-> given the number of drivers which would need to be updated.
-> 
-> What you can do is:
-> 
-> struct map {
-> 	dma_addr_t addr;
-> 	size_t len;
-> };
-> 
-> int map_sg(struct device *dev, struct scatterlist *list,
-> 	unsigned int nents, struct map *map, enum dma_data_direction dir)
-> {
-> 	struct scatterlist *sg;
-> 	unsigned int i, j = 0;
-> 
-> 	for_each_sg(list, sg, nents, i) {
-> 		map[j]->addr = dma_map_page(dev, sg_page(sg), sg->offset,
-> 					sg->length, dir);
-> 		map[j]->len = length;
-> 		if (dma_mapping_error(map[j]->addr))
-> 			break;
-> 		j++;
-> 	}
-> 
-> 	return j;
-> }
-> 
-> void unmap(struct device *dev, struct map *map, unsigned int nents,
-> 	enum dma_data_direction dir)
-> {
-> 	while (nents) {
-> 		dma_unmap_page(dev, map->addr, map->len, dir);
-> 		map++;
-> 		nents--;
-> 	}
-> }
-> 
-> Note: this may not be portable to all architectures.  It may also break
-> if there's something like the dmabounce or swiotlb code remapping buffers
-> which don't fit the DMA mask for the device - that's a different problem.
-
-True but given a higher-level "map(virtual_range, physical_chunks)"
-wouldn't break on all architectures.
-
-> You can then map the same scatterlist into multiple different 'map'
-> arrays for several devices simultaneously.  What you can't do is access
-> the buffers from the CPU while they're mapped to any device.
-
-Which is considered a feature  ;)
-
-> I'm not saying that you should do the above - I'm just proving that it's
-> not as hard as you seem to be making out.
-
-That's fair. I didn't mean to say things were hard, just that using
-the DMA API for big buffer management and mapping was not ideal since
-our goals are to allocate big buffers using a device specific
-algorithm, give them various attributes and share them. What we
-created looked generally useful.
