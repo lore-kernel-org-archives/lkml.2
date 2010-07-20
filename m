@@ -1,110 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761438Ab0GTSaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 14:30:35 -0400
-Received: from va3ehsobe003.messaging.microsoft.com ([216.32.180.13]:48482
-	"EHLO VA3EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1761424Ab0GTSac (ORCPT
+	id S932285Ab0GTSgb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 14:36:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27631 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754253Ab0GTSg3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 14:30:32 -0400
-X-SpamScore: -17
-X-BigFish: VPS-17(zz1432N98dN936eM10d1Izz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L5VCQK-02-1IB-02
-X-M-MSG: 
-Date: Tue, 20 Jul 2010 20:30:18 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-CC: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [rfc] Describe events in a structured way via sysfs
-Message-ID: <20100720183018.GN26154@erda.amd.com>
-References: <20100624173315.GA30403@elte.hu>
- <1277792114.5400.5.camel@minggr.sh.intel.com>
- <20100629085532.GE22344@elte.hu>
- <1277803248.5400.16.camel@minggr.sh.intel.com>
- <20100629102656.GA25512@elte.hu>
- <1278057996.3841.26.camel@minggr.sh.intel.com>
- <4C40F750.4000607@linux.vnet.ibm.com>
- <1279604908.23815.21.camel@minggr.sh.intel.com>
- <20100720151920.GC21909@erda.amd.com>
- <4C45E1C9.6010402@linux.vnet.ibm.com>
+	Tue, 20 Jul 2010 14:36:29 -0400
+Message-ID: <4C45EC59.3030304@kernel.org>
+Date: Tue, 20 Jul 2010 11:35:05 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4C45E1C9.6010402@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, numa: fix boot without RAM on node0 again
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C45EC66.00B8,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.07.10 13:50:01, Corey Ashford wrote:
 
-> > ... and then extend the syscall to enable an event by its sysfs id:
-> >
-> >              memset(&attr, 0, sizeof(attr));
-> >              attr.type        = PERF_TYPE_SYSFS;
-> >              attr.sysfs_id    = sysfs_id;
-> >              attr.sample_type = PERF_SAMPLE_CPU | PERF_SAMPLE_RAW;
-> >              attr.config      = config;
-> > 	    ...
+|commit e534c7c5f8d6e9fc46f57fab067c7e48d8ceb172
+|Author: Lee Schermerhorn <lee.schermerhorn@hp.com>
+|Date:   Wed May 26 14:44:58 2010 -0700
+|
+|    numa: x86_64: use generic percpu var numa_node_id() implementation
+|
+|    x86 arch specific changes to use generic numa_node_id() based on generic
+|    percpu variable infrastructure.  Back out x86's custom version of
+|    numa_node_id()
 
-> Your example above still shows the .config member being set.  Was that 
-> intentional?
-> 
-> Maybe another way to accomplish this would be to reuse the .config field 
-> for the sysfs_id.
+broke numa system that doesn't have ram on node0 when MEMORY_HOTPLUG is enabled.
 
-This was intended as this could be used to configure the event,
-otherwise there is no way to setup the event with certain
-parameters. The config value will be event specific then and we can be
-sure the parameter belongs to _this_ kind of event.
+because cpu_up() will call cpu_to_node() before per_cpu(numa_node) is setup for
+APs.
 
-> We still need a way to deal with event attributes though, so something 
-> more than a single sysfs_id would be needed to specify the event completely.
+When Node0 doesn't have RAM, on x86, cpus already round it to nearest node with
+RAM in x86_cpu_to_node_map. and per_cpu(numa_node) is not set up until in c_init for APs.
 
-It is true that you still need knowledge of what the event is
-measuring and how it is set up or configured. Maybe the configuration
-may left blank if the event can be setup without it. But with this
-approach you can get file descriptors for every event a user may be
-interested in simply by looking into sysfs.
+when later cpu_up() calling cpu_to_node() will get 0 again, and make it online
+even there is no RAM on node0. so later all APs can not booted up, and later
+will have panic.
 
-For example, I was thinking of perfctr events vs. ibs events. The cpu
-could setup something like:
+[    1.611101] On node 0 totalpages: 0
+.........
+[    2.608558] On node 0 totalpages: 0
+[    2.612065] Brought up 1 CPUs
+[    2.615199] Total of 1 processors activated (3990.31 BogoMIPS).
+...
+   93.225341] calling  loop_init+0x0/0x1a4 @ 1
+[   93.229314] PERCPU: allocation failed, size=80 align=8, failed to populate
+[   93.246539] Pid: 1, comm: swapper Tainted: G        W   2.6.35-rc4-tip-yh-04371-gd64e6c4-dirty #354
+[   93.264621] Call Trace:
+[   93.266533]  [<ffffffff81125e43>] pcpu_alloc+0x83a/0x8e7
+[   93.270710]  [<ffffffff81125f15>] __alloc_percpu+0x10/0x12
+[   93.285849]  [<ffffffff8140786c>] alloc_disk_node+0x94/0x16d
+[   93.291811]  [<ffffffff81407956>] alloc_disk+0x11/0x13
+[   93.306157]  [<ffffffff81503e51>] loop_alloc+0xa7/0x180
+[   93.310538]  [<ffffffff8277ef48>] loop_init+0x9b/0x1a4
+[   93.324909]  [<ffffffff8277eead>] ? loop_init+0x0/0x1a4
+[   93.329650]  [<ffffffff810001f2>] do_one_initcall+0x57/0x136
+[   93.345197]  [<ffffffff827486d0>] kernel_init+0x184/0x20e
+[   93.348146]  [<ffffffff81034954>] kernel_thread_helper+0x4/0x10
+[   93.365194]  [<ffffffff81c7cc3c>] ? restore_args+0x0/0x30
+[   93.369305]  [<ffffffff8274854c>] ? kernel_init+0x0/0x20e
+[   93.386011]  [<ffffffff81034950>] ? kernel_thread_helper+0x0/0x10
+[   93.392047] loop: out of memory
+...
 
-/sys/devices/system/cpu/cpu0...cpuN/events/perfctr/id
-/sys/devices/system/cpu/cpu0...cpuN/events/ibs_op/id
+Try to assign per_cpu(numa_node) early
 
-Both events are setup with one 64 bit config value that is basically
-the event's configuration msr (x86 perfctr or AMD IBS). These are
-definded in the hardware specifications. Its formats differ. You could
-then open the event file descriptor using the sysfs id and use the
-config value to customize the event. You don't have a complicated
-setup or implementation to detect which kind of event you want to use
-as the id indicates the type of event.
+Signed-off-by: Yinghai <yinghai@kernel.org>
 
-Actually, we could setup e.g. also trace events with this mechanism.
+---
+ arch/x86/kernel/setup_percpu.c |   17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+Index: linux-2.6/arch/x86/kernel/setup_percpu.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/setup_percpu.c
++++ linux-2.6/arch/x86/kernel/setup_percpu.c
+@@ -238,6 +238,15 @@ void __init setup_per_cpu_areas(void)
+ #ifdef CONFIG_NUMA
+ 		per_cpu(x86_cpu_to_node_map, cpu) =
+ 			early_per_cpu_map(x86_cpu_to_node_map, cpu);
++		/*
++		 * make sure boot cpu numa_node is right, when boot cpu is on
++		 *  the node that doesn't have mem installed
++		 * also cpu_up() will call cpu_to_node() for APs when
++		 *  MEMORY_HOTPLUG is defined, before per_cpu(numa_node) is set
++		 *  up later with c_init aka intel_init/amd_init
++		 * So set them all (boot cpu and all APs)
++		 */
++		set_cpu_numa_node(cpu, early_cpu_to_node(cpu));
+ #endif
+ #endif
+ 		/*
+@@ -257,14 +266,6 @@ void __init setup_per_cpu_areas(void)
+ 	early_per_cpu_ptr(x86_cpu_to_node_map) = NULL;
+ #endif
+ 
+-#if defined(CONFIG_X86_64) && defined(CONFIG_NUMA)
+-	/*
+-	 * make sure boot cpu numa_node is right, when boot cpu is on the
+-	 * node that doesn't have mem installed
+-	 */
+-	set_cpu_numa_node(boot_cpu_id, early_cpu_to_node(boot_cpu_id));
+-#endif
+-
+ 	/* Setup node to cpumask map */
+ 	setup_node_to_cpumask_map();
+ 
