@@ -1,125 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752629Ab0GTNUU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 09:20:20 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:19459 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752281Ab0GTNUT (ORCPT
+	id S1752933Ab0GTNZI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 09:25:08 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:56685 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab0GTNZF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 09:20:19 -0400
-Subject: Re: [RFC][PATCH 16/16] writeback: prevent unnecessary bdi threads
- wakeups
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100718074536.GA1191@infradead.org>
-References: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
-	 <1279284312-2411-17-git-send-email-dedekind1@gmail.com>
-	 <20100718074536.GA1191@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Jul 2010 16:13:14 +0300
-Message-ID: <1279631594.16462.139.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 20 Jul 2010 13:19:36.0746 (UTC) FILETIME=[336A78A0:01CB280E]
-X-Nokia-AV: Clean
+	Tue, 20 Jul 2010 09:25:05 -0400
+Message-ID: <4C45A3AB.6090407@austin.ibm.com>
+Date: Tue, 20 Jul 2010 08:24:59 -0500
+From: Nathan Fontenot <nfont@austin.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, greg@kroah.com
+Subject: Re: [PATCH 2/8] v3 Add new phys_index properties
+References: <4C451BF5.50304@austin.ibm.com> <4C451D92.6020406@austin.ibm.com>
+In-Reply-To: <4C451D92.6020406@austin.ibm.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-18 at 03:45 -0400, Christoph Hellwig wrote:
-> > +		if (wb_has_dirty_io(wb) && dirty_writeback_interval) {
-> > +			unsigned long wait;
-> >  
-> > -			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
-> > -			schedule_timeout(wait_jiffies);
-> > +			wait = msecs_to_jiffies(dirty_writeback_interval * 10);
-> > +			schedule_timeout(wait);
-> 
-> No need for a local variable.  If you want to shorten things a bit a
-> schedule_timeout_msecs helper in generic code would be nice, as there
-> are lots of patterns like this in various kernel threads.
+Update the 'phys_index' properties of a memory block to include a
+'start_phys_index' which is the same as the current 'phys_index' property.
+This also adds an 'end_phys_index' property to indicate the id of the
+last section in th memory block.
 
-OK, do you want me to ignore the 80-lines limitation or you want me
-to add schedule_timeout_msecs() as a part of this patch series?
+Patch updated to keep the name of the phys_index property instead of
+renaming it to start_phys_index.
 
-> >  void __mark_inode_dirty(struct inode *inode, int flags)
-> >  {
-> > +	bool wakeup_bdi;
-> >  	struct super_block *sb = inode->i_sb;
-> > +	struct backing_dev_info *uninitialized_var(bdi);
-> 
-> Just initialize wakeup_bdi and bdi here - a smart compiler will defer
-> them until we need them, and it makes the code a lot easier to read, as
-> well as getting rid of the uninitialized_var hack.
+Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+---
+ drivers/base/memory.c  |   28 ++++++++++++++++++++--------
+ include/linux/memory.h |    3 ++-
+ 2 files changed, 22 insertions(+), 9 deletions(-)
 
-OK.
-
-> > +			/*
-> > +			 * If this is the first dirty inode for this bdi, we
-> > +			 * have to wake-up the corresponding bdi thread to make
-> > +			 * sure background write-back happens later.
-> > +			 */
-> > +			if (!wb_has_dirty_io(&bdi->wb) &&
-> > +			    bdi_cap_writeback_dirty(bdi))
-> > +				wakeup_bdi = true;
-> 
-> How about redoing this as:
-> 
-> 			if (bdi_cap_writeback_dirty(bdi)) {
-> 				WARN(!test_bit(BDI_registered, &bdi->state),
-> 				     "bdi-%s not registered\n", bdi->name);
-> 
-> 				/*
-> 				 * If this is the first dirty inode for this
-> 				 * bdi, we have to wake-up the corresponding
-> 				 * flusher thread to make sure background
-> 				 * writeback happens later.
-> 				 */
-> 				if (!wb_has_dirty_io(&bdi->wb))
-> 					wakeup_bdi = true;
-> 			}
-
-OK.
-
-> > +	if (wakeup_bdi) {
-> > +		bool wakeup_default = false;
-> > +
-> > +		spin_lock(&bdi->wb_lock);
-> > +		if (unlikely(!bdi->wb.task))
-> > +			wakeup_default = true;
-> > +		else
-> > +			wake_up_process(bdi->wb.task);
-> > +		spin_unlock(&bdi->wb_lock);
-> > +
-> > +		if (wakeup_default)
-> > +			wake_up_process(default_backing_dev_info.wb.task);
-> 
-> Same comment about just keeping wb_lock over the
-> default_backing_dev_info wakup as for one of the earlier patches applies
-> here.
-
-I just figured that I have to add 'trace_writeback_nothread(bdi, work)'
-here, just like in 'bdi_queue_work()'. I'd feel safer to call tracer
-outside the spinlock. What do you think?
-
-> > --- a/mm/backing-dev.c
-> > +++ b/mm/backing-dev.c
-> > @@ -326,7 +326,7 @@ static unsigned long bdi_longest_inactive(void)
-> >  	unsigned long interval;
-> >  
-> >  	interval = msecs_to_jiffies(dirty_writeback_interval * 10);
-> > -	return max(5UL * 60 * HZ, wait_jiffies);
-> > +	return max(5UL * 60 * HZ, interval);
-> 
-> So previously we just ignored interval here? 
-
-Yes, my fault, thanks for catching.
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Index: linux-2.6/drivers/base/memory.c
+===================================================================
+--- linux-2.6.orig/drivers/base/memory.c	2010-07-19 20:42:11.000000000 -0500
++++ linux-2.6/drivers/base/memory.c	2010-07-20 06:38:21.000000000 -0500
+@@ -109,12 +109,20 @@ unregister_memory(struct memory_block *m
+  * uses.
+  */
+ 
+-static ssize_t show_mem_phys_index(struct sys_device *dev,
++static ssize_t show_mem_start_phys_index(struct sys_device *dev,
+ 			struct sysdev_attribute *attr, char *buf)
+ {
+ 	struct memory_block *mem =
+ 		container_of(dev, struct memory_block, sysdev);
+-	return sprintf(buf, "%08lx\n", mem->phys_index);
++	return sprintf(buf, "%08lx\n", mem->start_phys_index);
++}
++
++static ssize_t show_mem_end_phys_index(struct sys_device *dev,
++			struct sysdev_attribute *attr, char *buf)
++{
++	struct memory_block *mem =
++		container_of(dev, struct memory_block, sysdev);
++	return sprintf(buf, "%08lx\n", mem->end_phys_index);
+ }
+ 
+ /*
+@@ -128,7 +136,7 @@ static ssize_t show_mem_removable(struct
+ 	struct memory_block *mem =
+ 		container_of(dev, struct memory_block, sysdev);
+ 
+-	start_pfn = section_nr_to_pfn(mem->phys_index);
++	start_pfn = section_nr_to_pfn(mem->start_phys_index);
+ 	ret = is_mem_section_removable(start_pfn, PAGES_PER_SECTION);
+ 	return sprintf(buf, "%d\n", ret);
+ }
+@@ -191,7 +199,7 @@ memory_block_action(struct memory_block
+ 	int ret;
+ 	int old_state = mem->state;
+ 
+-	psection = mem->phys_index;
++	psection = mem->start_phys_index;
+ 	first_page = pfn_to_page(psection << PFN_SECTION_SHIFT);
+ 
+ 	/*
+@@ -264,7 +272,7 @@ store_mem_state(struct sys_device *dev,
+ 	int ret = -EINVAL;
+ 
+ 	mem = container_of(dev, struct memory_block, sysdev);
+-	phys_section_nr = mem->phys_index;
++	phys_section_nr = mem->start_phys_index;
+ 
+ 	if (!present_section_nr(phys_section_nr))
+ 		goto out;
+@@ -296,7 +304,8 @@ static ssize_t show_phys_device(struct s
+ 	return sprintf(buf, "%d\n", mem->phys_device);
+ }
+ 
+-static SYSDEV_ATTR(phys_index, 0444, show_mem_phys_index, NULL);
++static SYSDEV_ATTR(phys_index, 0444, show_mem_start_phys_index, NULL);
++static SYSDEV_ATTR(end_phys_index, 0444, show_mem_end_phys_index, NULL);
+ static SYSDEV_ATTR(state, 0644, show_mem_state, store_mem_state);
+ static SYSDEV_ATTR(phys_device, 0444, show_phys_device, NULL);
+ static SYSDEV_ATTR(removable, 0444, show_mem_removable, NULL);
+@@ -476,16 +485,18 @@ static int add_memory_block(int nid, str
+ 	if (!mem)
+ 		return -ENOMEM;
+ 
+-	mem->phys_index = __section_nr(section);
++	mem->start_phys_index = __section_nr(section);
+ 	mem->state = state;
+ 	mutex_init(&mem->state_mutex);
+-	start_pfn = section_nr_to_pfn(mem->phys_index);
++	start_pfn = section_nr_to_pfn(mem->start_phys_index);
+ 	mem->phys_device = arch_get_memory_phys_device(start_pfn);
+ 
+ 	ret = register_memory(mem, section);
+ 	if (!ret)
+ 		ret = mem_create_simple_file(mem, phys_index);
+ 	if (!ret)
++		ret = mem_create_simple_file(mem, end_phys_index);
++	if (!ret)
+ 		ret = mem_create_simple_file(mem, state);
+ 	if (!ret)
+ 		ret = mem_create_simple_file(mem, phys_device);
+@@ -507,6 +518,7 @@ int remove_memory_block(unsigned long no
+ 	mem = find_memory_block(section);
+ 	unregister_mem_sect_under_nodes(mem);
+ 	mem_remove_simple_file(mem, phys_index);
++	mem_remove_simple_file(mem, end_phys_index);
+ 	mem_remove_simple_file(mem, state);
+ 	mem_remove_simple_file(mem, phys_device);
+ 	mem_remove_simple_file(mem, removable);
+Index: linux-2.6/include/linux/memory.h
+===================================================================
+--- linux-2.6.orig/include/linux/memory.h	2010-07-19 20:42:11.000000000 -0500
++++ linux-2.6/include/linux/memory.h	2010-07-20 06:35:38.000000000 -0500
+@@ -21,7 +21,8 @@
+ #include <linux/mutex.h>
+ 
+ struct memory_block {
+-	unsigned long phys_index;
++	unsigned long start_phys_index;
++	unsigned long end_phys_index;
+ 	unsigned long state;
+ 	/*
+ 	 * This serializes all state change requests.  It isn't
