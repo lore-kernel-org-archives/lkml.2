@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932444Ab0GTTId (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:08:33 -0400
-Received: from kroah.org ([198.145.64.141]:38371 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932356Ab0GTTId (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:08:33 -0400
-Date: Tue, 20 Jul 2010 12:08:26 -0700
-From: Greg KH <greg@kroah.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Ben Greear <greearb@candelatech.com>,
-        Jacob Pan <jacob.jun.pan@linux.intel.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86/pci/mrst: add extra check in fixed bar detection
-Message-ID: <20100720190826.GA16162@kroah.com>
-References: <1279306706-27087-1-git-send-email-jacob.jun.pan@linux.intel.com>
- <4C45DA7F.1060801@candelatech.com>
- <4C45DC30.5000308@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C45DC30.5000308@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932536Ab0GTTKr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 15:10:47 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:56351 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932367Ab0GTTKq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 15:10:46 -0400
+Subject: Re: [PATCH 2/8] v3 Add new phys_index properties
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, greg@kroah.com
+In-Reply-To: <4C45A3AB.6090407@austin.ibm.com>
+References: <4C451BF5.50304@austin.ibm.com>
+	 <4C451D92.6020406@austin.ibm.com>  <4C45A3AB.6090407@austin.ibm.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 20 Jul 2010 12:10:04 -0700
+Message-ID: <1279653004.9207.296.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 10:26:08AM -0700, H. Peter Anvin wrote:
-> On 07/20/2010 10:18 AM, Ben Greear wrote:
-> > On 07/16/2010 11:58 AM, Jacob Pan wrote:
-> >> Fixed bar capability structure is searched in PCI extended configuration
-> >> space. We need to make sure there is a valid capability id to begin with
-> >> otherwise, the search code may stuck in a infinite loop which results in
-> >> boot hang.
-> >> This patch adds additional check for cap ID 0, which is also invalid.
-> > 
-> > I think this should be added to the stable tree for 2.6.34
-> > as well...
-> > 
+On Tue, 2010-07-20 at 08:24 -0500, Nathan Fontenot wrote:
+> Update the 'phys_index' properties of a memory block to include a
+> 'start_phys_index' which is the same as the current 'phys_index' property.
+> This also adds an 'end_phys_index' property to indicate the id of the
+> last section in th memory block.
 > 
-> Agreed. Greg, could you consider upstream
-> f82c3d71d6fd2e6a3e3416f09099e29087e39abf for -stable 2.6.34?
+> Patch updated to keep the name of the phys_index property instead of
+> renaming it to start_phys_index.
 
-Will do.
+KAME is right on this.  We should keep the old one if at all possible.  
 
-thanks,
+The only other thing we might want to do is move 'phys_index' to
+'start_phys_index', and make a new 'phys_index' that does a WARN_ONCE(),
+gives a deprecated warning, then calls the new 'start_phys_index' code.
 
-greg k-h
+So, basically make the new, more clear name, but keep the old one for a
+while and deprecate it.  Maybe we could get away with removing it in ten
+years. :)
+
+-- Dave
+
