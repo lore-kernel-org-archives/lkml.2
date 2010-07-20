@@ -1,157 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757639Ab0GTAYR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 20:24:17 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61123 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754734Ab0GTAYP (ORCPT
+	id S1757633Ab0GTAdh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 20:33:37 -0400
+Received: from smtp101.rog.mail.re2.yahoo.com ([206.190.36.79]:30512 "HELO
+	smtp101.rog.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1756894Ab0GTAdf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 20:24:15 -0400
-Date: Mon, 19 Jul 2010 17:23:10 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, Scott Smedley <ss@aao.gov.au>,
-        gregkh@suse.de
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        Marek Lindner <lindner_marek@yahoo.de>,
-        Simon Wunderlich <siwu@hrz.tu-chemnitz.de>,
-        Andrew Lunn <andrew@lunn.ch>, b.a.t.m.a.n@lists.open-mesh.net
-Subject: [PATCH -next] staging: don't use default init_module/cleanup_module
- function names
-Message-Id: <20100719172310.87625ce4.randy.dunlap@oracle.com>
-In-Reply-To: <20100719133841.babc9ccb.sfr@canb.auug.org.au>
-References: <20100719133841.babc9ccb.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Mon, 19 Jul 2010 20:33:35 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=rogers.com;
+  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:Organization:To:Subject:Date:User-Agent:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id;
+  b=dK/K90UEnkvEHCnUjOGXFNR63MRy8+hW5XbM3UPjBWBPYr56LBWeUYIUYoS0uPvRLaIQahNsttiAkXZnN7/5y3LU/G5fQ00OZwWV/z/XmrJRJnjFfVqhIEJnV9wUwoSzC38kWDBLPswvr8cK9DYCUjKkAwDB570jg9QqeuLcIvo=  ;
+X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
+X-YMail-OSG: 8PFubD0VM1nyJ7vr7vjvMmlWdfREtRhw0Xu36.NzhaSC_3i
+ sbIX5ObkWDkz5HL6gYBwSeTytUGP0DWQzWZ4VCxQ4F.6SUiq5fmGk_2jLx5w
+ xt33bRWML4A0sMgDP4QKyH4_TJisrjkH2Alk0VxwYW2IZNjDJvGJylLcSpXK
+ 7p53VAXvVHsD4LIa1F7G544WV2yE2ubTSYAicLcwlnd.NMzE1xI3KqL4j3F8
+ mPhAANc9GGrzhpFD9.BcUPDUz_xZ5dvXjerV_s6lcFV5jLDec86NriK.PoKR
+ GCvxrEE8wkDXBomcuqunpfKCcfr3XUkvQxZgFrXCq_oXWAi1uus4z56GlKed
+ QJ83tKBS.fPZRDtT8m13v8YOnycgYPDsSRjChYK9MidGtBsfjiAW0RO6JaNH
+ 7C11ICqABoRO3Gjo0ZKpN3Jr3V1mfTT7iMNSREw--
+X-Yahoo-Newman-Property: ymail-3
+From: Shawn Starr <shawn.starr@rogers.com>
+Organization: sh0n.net
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: 2.6.35-rc4-git3: Reported regressions from 2.6.34
+Date: Mon, 19 Jul 2010 20:33:30 -0400
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4; KDE/4.4.92; x86_64; ; )
+References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com> <201007082336.25201.shawn.starr@rogers.com>
+In-Reply-To: <201007082336.25201.shawn.starr@rogers.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C44EC93.00FF:SCFMA4539814,ss=1,fgs=0
+Message-Id: <201007192033.30849.shawn.starr@rogers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fromy: Randy Dunlap <randy.dunlap@oracle.com>
+On Thursday, July 08, 2010 11:36:25 pm Shawn Starr wrote:
 
-Fix two staging drivers to use module_init()/module_exit()
-instead of default init_module() and cleanup_module() function names
-so that there are no name conflicts when both are built-in.
+<snip>
 
-drivers/staging/dt3155/built-in.o: In function `cleanup_module':
-(.text+0xc0): multiple definition of `cleanup_module'
-drivers/staging/batman-adv/built-in.o:(.text+0x330): first defined here
-drivers/staging/dt3155/built-in.o: In function `init_module':
-(.text+0xe60): multiple definition of `init_module'
-drivers/staging/batman-adv/built-in.o:(.text+0x400): first defined here
+> > > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16311
+> > > Subject         : [REGRESSION][SUSPEND] 2.6.35-rcX won't suspend Lenovo
+> > > W500 laptop Submitter       : Shawn Starr <shawn.starr@rogers.com>
+> > > Date            : 2010-06-28 0:45 (11 days old)
+> > > Message-ID      : <201006272045.17004.shawn.starr@rogers.com>
+> > > References      :
+> > > http://marc.info/?l=linux-kernel&m=127768633705286&w=2
+> > 
+> > I think this might be usefully bisected. Shawn?
+> 
+> I'll have to try bisecting this weekend. It continues in Linux sh0n.net
+> 2.6.35-rc4+ #1 SMP Wed Jul 7 23:58:41 EDT 2010 x86_64 x86_64 x86_64
+> GNU/Linux
+> 
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Scott Smedley <ss@aao.gov.au>
-Cc: Marek  Lindner  <lindner_marek@yahoo.de>
-Cc: Simon  Wunderlich  <siwu@hrz.tu-chemnitz.de>
-Cc:	Andrew Lunn <andrew@lunn.ch>
-Cc:	b.a.t.m.a.n@lists.open-mesh.net
-Cc:	Greg Kroah-Hartman <gregkh@suse.de
----
- drivers/staging/batman-adv/main.c   |    7 +++++--
- drivers/staging/dt3155/dt3155_drv.c |   23 ++++++++++-------------
- 2 files changed, 15 insertions(+), 15 deletions(-)
+This continues even with no USB devices plugged in. Will try with today's 
+snapshot build from Linus's tree. If this still happens, I'll see about 
+bisecting.
 
---- linux-next-20100719.orig/drivers/staging/batman-adv/main.c
-+++ linux-next-20100719/drivers/staging/batman-adv/main.c
-@@ -59,7 +59,7 @@ static struct packet_type batman_adv_pac
- 
- struct workqueue_struct *bat_event_workqueue;
- 
--int init_module(void)
-+int batman_init(void)
- {
- 	int retval;
- 
-@@ -131,7 +131,7 @@ end:
- 	return -ENOMEM;
- }
- 
--void cleanup_module(void)
-+void batman_exit(void)
- {
- 	deactivate_module();
- 
-@@ -273,6 +273,9 @@ int is_mcast(uint8_t *addr)
- 	return *addr & 0x01;
- }
- 
-+module_init(batman_init);
-+module_exit(batman_exit);
-+
- MODULE_LICENSE("GPL");
- 
- MODULE_AUTHOR(DRIVER_AUTHOR);
---- linux-next-20100719.orig/drivers/staging/dt3155/dt3155_drv.c
-+++ linux-next-20100719/drivers/staging/dt3155/dt3155_drv.c
-@@ -47,7 +47,7 @@ MA 02111-1307 USA
-  + might want to get rid of MAXboards for allocating initial buffer.
-     confusing and not necessary
- 
-- + in cleanup_module the MOD_IN_USE looks like it is check after it should
-+ + in dt3155_exit the MOD_IN_USE looks like it is check after it should
- 
-  * GFP_DMA should not be set with a PCI system (pg 291)
- 
-@@ -166,7 +166,7 @@ static void quick_stop (int minor)
-  *
-  * - looks like this isr supports IRQ sharing (or could) JML
-  * - Assumes irq's are disabled, via SA_INTERRUPT flag
-- * being set in request_irq() call from init_module()
-+ * being set in request_irq() call from dt3155_init()
-  *****************************************************/
- static void dt3155_isr(int irq, void *dev_id, struct pt_regs *regs)
- {
-@@ -836,7 +836,7 @@ dt3155_unlocked_ioctl(struct file *file,
- 
- /*****************************************************
-  * file operations supported by DT3155 driver
-- *  needed by init_module
-+ *  needed by dt3155_init
-  *  register_chrdev
-  *****************************************************/
- static struct file_operations dt3155_fops = {
-@@ -937,10 +937,8 @@ err:
- 
- u32 allocatorAddr = 0;
- 
--/*****************************************************
-- * init_module()
-- *****************************************************/
--int init_module(void)
-+
-+int dt3155_init(void)
- {
-   struct dt3155_status *dts;
-   int index;
-@@ -1059,16 +1057,13 @@ int init_module(void)
-   return 0;
- }
- 
--/*****************************************************
-- * cleanup_module(void)
-- *
-- *****************************************************/
--void cleanup_module(void)
-+
-+void dt3155_exit(void)
- {
-   struct dt3155_status *dts;
-   int index;
- 
--  printk("DT3155:  cleanup_module called\n");
-+  printk("DT3155:  dt3155_exit called\n");
- 
-   /* removed DMA allocated with the allocator */
- #ifdef STANDALONE_ALLOCATOR
-@@ -1092,3 +1087,5 @@ void cleanup_module(void)
-     }
- }
- 
-+module_init(dt3155_init);
-+module_exit(dt3155_exit);
+Thanks,
+Shawn.
