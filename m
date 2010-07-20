@@ -1,154 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757388Ab0GTNr6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 09:47:58 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58291 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754402Ab0GTNrb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 09:47:31 -0400
-Message-Id: <20100720134729.906231600@ett.arch.suse.de>
-User-Agent: quilt/0.47-15.10
-Date: Tue, 20 Jul 2010 15:44:49 +0200
-From: trenn@suse.de
-To: jbaron@redhat.com
-Cc: trenn@suse.de, linux-kernel@vger.kernel.org, yehuda@hq.newdream.net
-Subject: [patch 2/3] Dynamic Debug: Introduce ddebug_query= boot parameter
-References: <20100720134447.983521886@ett.arch.suse.de>
-Content-Disposition: inline; filename=patches.drivers/dynamic_debug_boot_param_enhance.patch
+	id S1754836Ab0GTNuh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 09:50:37 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:48743 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752373Ab0GTNuf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 09:50:35 -0400
+Message-ID: <4C45A9BA.1090903@vflare.org>
+Date: Tue, 20 Jul 2010 19:20:50 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc13 Thunderbird/3.1
+MIME-Version: 1.0
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/8] zcache: page cache compression support
+References: <1279283870-18549-1-git-send-email-ngupta@vflare.org> <4f986c65-c17e-47d8-9c30-60cd17809cbb@default>
+In-Reply-To: <4f986c65-c17e-47d8-9c30-60cd17809cbb@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dynamic debug lacks the ability to enable debug messages at boot time.
-One could patch initramfs or service startup scripts to write to
-/sys/../dynamic_debug/control, but this sucks.
+On 07/20/2010 01:27 AM, Dan Magenheimer wrote:
+>> We only keep pages that compress to PAGE_SIZE/2 or less. Compressed
+>> chunks are
+>> stored using xvmalloc memory allocator which is already being used by
+>> zram
+>> driver for the same purpose. Zero-filled pages are checked and no
+>> memory is
+>> allocated for them.
+> 
+> I'm curious about this policy choice.  I can see why one
+> would want to ensure that the average page is compressed
+> to less than PAGE_SIZE/2, and preferably PAGE_SIZE/2
+> minus the overhead of the data structures necessary to
+> track the page.  And I see that this makes no difference
+> when the reclamation algorithm is random (as it is for
+> now).  But once there is some better reclamation logic,
+> I'd hope that this compression factor restriction would
+> be lifted and replaced with something much higher.  IIRC,
+> compression is much more expensive than decompression
+> so there's no CPU-overhead argument here either,
+> correct?
+> 
+>
 
-This patch makes it possible to pass a query in the same format one can
-write to /sys/../dynamic_debug/control via boot param.
-When dynamic debug gets initialized, this query will automatically be
-applied.
+Its true that we waste CPU cycles for every incompressible page
+encountered but still we can't keep such pages in RAM since this
+is what host wanted to reclaim and we can't help since compression
+failed. Compressed caching makes sense only when we keep highly
+compressible pages in RAM, regardless of reclaim scheme.
 
+Keeping (nearly) incompressible pages in RAM probably makes sense
+for Xen's case where cleancache provider runs *inside* a VM, sending
+pages to host. So, if VM is limited to say 512M and host has 64G RAM,
+caching guest pages, with or without compression, will help.
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-CC: jbaron@redhat.com
-CC: linux-kernel@vger.kernel.org
-CC: yehuda@hq.newdream.net
-
----
- Documentation/dynamic-debug-howto.txt |   22 +++++++++++++++++++++-
- Documentation/kernel-parameters.txt   |    7 ++++++-
- lib/dynamic_debug.c                   |   25 +++++++++++++++++++++++++
- 3 files changed, 52 insertions(+), 2 deletions(-)
-
-Index: linux-2.6.34-master/lib/dynamic_debug.c
-===================================================================
---- linux-2.6.34-master.orig/lib/dynamic_debug.c
-+++ linux-2.6.34-master/lib/dynamic_debug.c
-@@ -450,6 +450,19 @@ static int ddebug_exec_query(char *query
- 	return 0;
- }
- 
-+static __initdata char ddebug_setup_string[1024];
-+static __init int ddebug_setup_query(char *str)
-+{
-+	if (strlen(str) >= 1024) {
-+		pr_warning("ddebug boot param string too large\n");
-+		return 0;
-+	}
-+	strcpy(ddebug_setup_string, str);
-+	return 1;
-+}
-+
-+__setup("ddebug_query=", ddebug_setup_query);
-+
- /*
-  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
-  * command text from userspace, parses and executes it.
-@@ -769,6 +782,18 @@ static int __init dynamic_debug_init(voi
- 		}
- 		ret = ddebug_add_module(iter_start, n, modname);
- 	}
-+
-+	/* ddebug_query boot param got passed -> set it up */
-+	if (ddebug_setup_string[0] != '\0') {
-+		ret = ddebug_exec_query(ddebug_setup_string);
-+		if (ret)
-+			pr_warning("Invalid ddebug boot param %s",
-+				   ddebug_setup_string);
-+		else
-+			pr_info("ddebug initialized with string %s",
-+				ddebug_setup_string);
-+	}
-+
- out_free:
- 	if (ret) {
- 		ddebug_remove_all_tables();
-Index: linux-2.6.34-master/Documentation/dynamic-debug-howto.txt
-===================================================================
---- linux-2.6.34-master.orig/Documentation/dynamic-debug-howto.txt
-+++ linux-2.6.34-master/Documentation/dynamic-debug-howto.txt
-@@ -24,7 +24,7 @@ Dynamic debug has even more useful featu
-    read to display the complete list of known debug statements, to help guide you
- 
- Controlling dynamic debug Behaviour
--===============================
-+===================================
- 
- The behaviour of pr_debug()/dev_debug()s are controlled via writing to a
- control file in the 'debugfs' filesystem. Thus, you must first mount the debugfs
-@@ -212,6 +212,26 @@ Note the regexp ^[-+=][scp]+$ matches a
- Note also that there is no convenient syntax to remove all
- the flags at once, you need to use "-psc".
- 
-+
-+Debug messages during boot process
-+==================================
-+
-+To be able to activate debug messages during the boot process,
-+even before userspace and debugfs exists, use the boot parameter:
-+ddebug_query="QUERY"
-+
-+QUERY follows the syntax described above, but must not exceed 1023
-+characters. The enablement of debug messages is done as an arch_initcall.
-+Thus you can enable debug messages in all code processed after this
-+arch_initcall via this boot parameter.
-+On an x86 system for example ACPI enablement is a subsys_initcall and
-+ddebug_query="file ec.c +p"
-+will show early Embedded Controller transactions during ACPI setup if
-+your machine (typically a laptop) has an Embedded Controller.
-+PCI (or other devices) initialization also is a hot candidate for using
-+this boot parameter for debugging purposes.
-+
-+
- Examples
- ========
- 
-Index: linux-2.6.34-master/Documentation/kernel-parameters.txt
-===================================================================
---- linux-2.6.34-master.orig/Documentation/kernel-parameters.txt
-+++ linux-2.6.34-master/Documentation/kernel-parameters.txt
-@@ -43,10 +43,11 @@ parameter is applicable:
- 	AVR32	AVR32 architecture is enabled.
- 	AX25	Appropriate AX.25 support is enabled.
- 	BLACKFIN Blackfin architecture is enabled.
--	DRM	Direct Rendering Management support is enabled.
- 	EDD	BIOS Enhanced Disk Drive Services (EDD) is enabled
- 	EFI	EFI Partitioning (GPT) is enabled
- 	EIDE	EIDE/ATAPI support is enabled.
-+	DRM	Direct Rendering Management support is enabled.
-+	DYNAMIC_DEBUG Build in debug messages and enable them at runtime
- 	FB	The frame buffer device is enabled.
- 	GCOV	GCOV profiling is enabled.
- 	HW	Appropriate hardware is enabled.
-@@ -601,6 +602,10 @@ and is between 256 and 4096 characters.
- 			Format: <port#>,<type>
- 			See also Documentation/input/joystick-parport.txt
- 
-+	ddebug_query=   [KNL,DYNAMIC_DEBUG] Enable debug messages at early boot
-+			time. See Documentation/dynamic-debug-howto.txt for
-+			details.
-+
- 	debug		[KNL] Enable kernel debugging (events log level).
- 
- 	debug_locks_verbose=
-
+Thanks,
+Nitin
