@@ -1,407 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932627Ab0GTUwn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 16:52:43 -0400
-Received: from tex.lwn.net ([70.33.254.29]:53841 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761590Ab0GTUwl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 16:52:41 -0400
-Date: Tue, 20 Jul 2010 14:52:38 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-Message-ID: <20100720145238.29111716@bike.lwn.net>
-In-Reply-To: <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
-	<d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
-	<adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.5; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S932657Ab0GTUyL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 16:54:11 -0400
+Received: from mail.bluewatersys.com ([202.124.120.130]:53093 "EHLO
+	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932624Ab0GTUyI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 16:54:08 -0400
+Message-ID: <4C460D0B.4040407@bluewatersys.com>
+Date: Wed, 21 Jul 2010 08:54:35 +1200
+From: Ryan Mallon <ryan@bluewatersys.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>, Takashi Iwai <tiwai@suse.de>,
+        linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk+kernel@arm.linux.org.uk>
+Subject: Re: linux-next: manual merge of the sound tree with the arm tree
+References: <20100719110054.de489964.sfr@canb.auug.org.au> <20100720090355.GL10222@rakim.wolfsonmicro.main>
+In-Reply-To: <20100720090355.GL10222@rakim.wolfsonmicro.main>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jul 2010 17:51:25 +0200
-Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
-
-> The Contiguous Memory Allocator framework is a set of APIs for
-> allocating physically contiguous chunks of memory.
+On 07/20/2010 09:03 PM, Mark Brown wrote:
+> On Mon, Jul 19, 2010 at 11:00:54AM +1000, Stephen Rothwell wrote:
 > 
-> Various chips require contiguous blocks of memory to operate.  Those
-> chips include devices such as cameras, hardware video decoders and
-> encoders, etc.
+>> Today's linux-next merge of the sound tree got a conflict in
+>> arch/arm/mach-ep93xx/clock.c between commit
+>> 5c6649e3c1511b183f12d2e884d2c172fe9001e0 ("ARM: AMBA: Add pclk definition
+>> for platforms using primecells") from the arm tree and commit
+>> ed67ea82c0d9a163458dc6a69a7a3123db1a8b3b ("EP93xx: Add i2s core support")
+>> from the sound tree.
+> 
+>> Just overlapping additions.  I fixed it up (see below) and can carry the
+>> fix as necessary.
+> 
+> Ryan, can you investigate where (if anywhere is good) the best place to
+> carry the merge fixup is please?
 
-Certainly this is something that many of us have run into; a general
-solution would make life easier. I do wonder if this implementation
-isn't a bit more complex than is really needed, though.
+The fix is fine. I don't really know much about how merge conflicts are
+handled across trees, but I would think that it is probably easiest if
+Stephen carries it.
 
-> diff --git a/Documentation/cma.txt b/Documentation/cma.txt
+~Ryan
 
-"cma.txt" is not a name that will say much to people browsing the
-directory, especially since you didn't add a 00-INDEX entry for it.  Maybe
-something like contiguous-memory.txt would be better?
+-- 
+Bluewater Systems Ltd - ARM Technology Solution Centre
 
-[...]
-
-> +    For instance, let say that there are two memory banks and for
-> +    performance reasons a device uses buffers in both of them.  In
-> +    such case, the device driver would define two kinds and use it for
-> +    different buffers.  Command line arguments could look as follows:
-> +
-> +            cma=a=32M@0,b=32M@512M cma_map=foo/a=a;foo/b=b
-
-About the time I get here I really have to wonder if we *really* need all
-of this.  A rather large portion of the entire patch is parsing code.  Are
-there real-world use cases for this kind of functionality?
-
-> +    And whenever the driver allocated the memory it would specify the
-> +    kind of memory:
-> +
-> +            buffer1 = cma_alloc(dev, 1 << 20, 0, "a");
-> +            buffer2 = cma_alloc(dev, 1 << 20, 0, "b");
-
-This example, above, is not consistent with:
-
-> +
-> +    There are four calls provided by the CMA framework to devices.  To
-> +    allocate a chunk of memory cma_alloc() function needs to be used:
-> +
-> +            unsigned long cma_alloc(const struct device *dev,
-> +                                    const char *kind,
-> +                                    unsigned long size,
-> +                                    unsigned long alignment);
-
-It looks like the API changed and the example didn't get updated?
-
-> +
-> +    If required, device may specify alignment that the chunk need to
-> +    satisfy.  It have to be a power of two or zero.  The chunks are
-> +    always aligned at least to a page.
-
-So is the alignment specified in bytes or pages?
-
-> +    Allocated chunk is freed via a cma_put() function:
-> +
-> +            int cma_put(unsigned long addr);
-> +
-> +    It takes physical address of the chunk as an argument and
-> +    decreases it's reference counter.  If the counter reaches zero the
-> +    chunk is freed.  Most of the time users do not need to think about
-> +    reference counter and simply use the cma_put() as a free call.
-
-A return value from a put() function is mildly different; when would that
-value be useful?
-
-> +    If one, however, were to share a chunk with others built in
-> +    reference counter may turn out to be handy.  To increment it, one
-> +    needs to use cma_get() function:
-> +
-> +            int cma_put(unsigned long addr);
-
-Somebody's been cut-n-pasting a little too quickly...:)
-
-> +    Creating an allocator for CMA needs four functions to be
-> +    implemented.
-> +
-> +
-> +    The first two are used to initialise an allocator far given driver
-> +    and clean up afterwards:
-> +
-> +            int  cma_foo_init(struct cma_region *reg);
-> +            void cma_foo_done(struct cma_region *reg);
-> +
-> +    The first is called during platform initialisation.  The
-> +    cma_region structure has saved starting address of the region as
-> +    well as its size.  It has also alloc_params field with optional
-> +    parameters passed via command line (allocator is free to interpret
-> +    those in any way it pleases).  Any data that allocate associated
-> +    with the region can be saved in private_data field.
-> +
-> +    The second call cleans up and frees all resources the allocator
-> +    has allocated for the region.  The function can assume that all
-> +    chunks allocated form this region have been freed thus the whole
-> +    region is free.
-> +
-> +
-> +    The two other calls are used for allocating and freeing chunks.
-> +    They are:
-> +
-> +            struct cma_chunk *cma_foo_alloc(struct cma_region *reg,
-> +                                            unsigned long size,
-> +                                            unsigned long alignment);
-> +            void cma_foo_free(struct cma_chunk *chunk);
-> +
-> +    As names imply the first allocates a chunk and the other frees
-> +    a chunk of memory.  It also manages a cma_chunk object
-> +    representing the chunk in physical memory.
-> +
-> +    Either of those function can assume that they are the only thread
-> +    accessing the region.  Therefore, allocator does not need to worry
-> +    about concurrency.
-> +
-> +
-> +    When allocator is ready, all that is left is register it by adding
-> +    a line to "mm/cma-allocators.h" file:
-> +
-> +            CMA_ALLOCATOR("foo", foo)
-> +
-> +    The first "foo" is a named that will be available to use with
-> +    command line argument.  The second is the part used in function
-> +    names.
-
-This is a bit of an awkward way to register new allocators.  Why not just
-have new allocators fill in an operations structure can call something like
-cma_allocator_register() at initialization time?  That would let people
-write allocators as modules and would eliminate the need to add allocators
-to a central include file.  It would also get rid of some ugly and (IMHO)
-unnecessary preprocessor hackery.
-
-[...]
-
-> +** Future work
-> +
-> +    In the future, implementation of mechanisms that would allow the
-> +    free space inside the regions to be used as page cache, filesystem
-> +    buffers or swap devices is planned.  With such mechanisms, the
-> +    memory would not be wasted when not used.
-
-Ouch.  You'd need to be able to evacuate that space again when it's needed,
-or the whole point of CMA has been lost.  Once again, is it worth the
-complexity?
-
-
-[...]
-> diff --git a/include/linux/cma-int.h b/include/linux/cma-int.h
-> new file mode 100644
-> index 0000000..b588e9b
-> --- /dev/null
-> +++ b/include/linux/cma-int.h
-
-> +struct cma_region {
-> +	const char *name;
-> +	unsigned long start;
-> +	unsigned long size, free_space;
-> +	unsigned long alignment;
-> +
-> +	struct cma_allocator *alloc;
-> +	const char *alloc_name;
-> +	const char *alloc_params;
-> +	void *private_data;
-> +
-> +	unsigned users;
-> +	/*
-> +	 * Protects the "users" and "free_space" fields and any calls
-> +	 * to allocator on this region thus guarantees only one call
-> +	 * to allocator will operate on this region..
-> +	 */
-> +	struct mutex mutex;
-> +};
-
-The use of mutexes means that allocation/free functions cannot be called
-from atomic context.  Perhaps that will never be a problem, but it might
-also be possible to use spinlocks instead?
-
-[...]
-
-> diff --git a/mm/cma-allocators.h b/mm/cma-allocators.h
-> new file mode 100644
-> index 0000000..564f705
-> --- /dev/null
-> +++ b/mm/cma-allocators.h
-> @@ -0,0 +1,42 @@
-> +#ifdef __CMA_ALLOCATORS_H
-> +
-> +/* List all existing allocators here using CMA_ALLOCATOR macro. */
-> +
-> +#ifdef CONFIG_CMA_BEST_FIT
-> +CMA_ALLOCATOR("bf", bf)
-> +#endif
-
-This is the kind of thing I think it would be nice to avoid; is there any
-real reason why allocators need to be put into this central file?
-
-This is some weird ifdef stuff as well; it processes the CMA_ALLOCATOR()
-invocations if it's included twice?
-
-> +
-> +#  undef CMA_ALLOCATOR
-> +#else
-> +#  define __CMA_ALLOCATORS_H
-> +
-> +/* Function prototypes */
-> +#  ifndef __LINUX_CMA_ALLOCATORS_H
-> +#    define __LINUX_CMA_ALLOCATORS_H
-> +#    define CMA_ALLOCATOR(name, infix)				\
-> +	extern int cma_ ## infix ## _init(struct cma_region *);		\
-> +	extern void cma_ ## infix ## _cleanup(struct cma_region *);	\
-> +	extern struct cma_chunk *					\
-> +	cma_ ## infix ## _alloc(struct cma_region *,			\
-> +			      unsigned long, unsigned long);		\
-> +	extern void cma_ ## infix ## _free(struct cma_chunk *);
-> +#    include "cma-allocators.h"
-> +#  endif
-> +
-> +/* The cma_allocators array */
-> +#  ifdef CMA_ALLOCATORS_LIST
-> +#    define CMA_ALLOCATOR(_name, infix) {		\
-> +		.name    = _name,			\
-> +		.init    = cma_ ## infix ## _init,	\
-> +		.cleanup = cma_ ## infix ## _cleanup,	\
-> +		.alloc   = cma_ ## infix ## _alloc,	\
-> +		.free    = cma_ ## infix ## _free,	\
-> +	},
-
-Different implementations of the macro in different places in the same
-kernel can cause confusion.  To what end?  As I said before, a simple
-registration function called by the allocators would eliminate the need for
-this kind of stuff.
-
-> diff --git a/mm/cma-best-fit.c b/mm/cma-best-fit.c
-
-[...]
-
-> +int cma_bf_init(struct cma_region *reg)
-> +{
-> +	struct cma_bf_private *prv;
-> +	struct cma_bf_item *item;
-> +
-> +	prv = kzalloc(sizeof *prv, GFP_NOWAIT);
-> +	if (unlikely(!prv))
-> +		return -ENOMEM;
-
-I'll say this once, but the comment applies all over this code: I hate it
-when people go nuts with likely/unlikely().  This is an initialization
-function, we don't actually care if the branch prediction gets it wrong.
-Classic premature optimization.  The truth of the matter is that
-*programmers* often get this wrong.  Have you profiled all these
-ocurrences?  Maybe it would be better to take them out?
-
-[...]
-
-> +struct cma_chunk *cma_bf_alloc(struct cma_region *reg,
-> +			       unsigned long size, unsigned long alignment)
-> +{
-> +	struct cma_bf_private *prv = reg->private_data;
-> +	struct rb_node *node = prv->by_size_root.rb_node;
-> +	struct cma_bf_item *item = NULL;
-> +	unsigned long start, end;
-> +
-> +	/* First first item that is large enough */
-> +	while (node) {
-> +		struct cma_bf_item *i =
-> +			rb_entry(node, struct cma_bf_item, by_size);
-
-This is about where I start to wonder about locking.  I take it that the
-allocator code is relying upon locking at the CMA level to prevent
-concurrent calls?  If so, it would be good to document what guarantees the
-CMA level provides.
-
-> +/************************* Basic Tree Manipulation *************************/
-> +
-> +#define __CMA_BF_HOLE_INSERT(root, node, field) ({			\
-> +	bool equal = false;						\
-> +	struct rb_node **link = &(root).rb_node, *parent = NULL;	\
-> +	const unsigned long value = item->field;			\
-> +	while (*link) {							\
-> +		struct cma_bf_item *i;					\
-> +		parent = *link;						\
-> +		i = rb_entry(parent, struct cma_bf_item, node);		\
-> +		link = value <= i->field				\
-> +			? &parent->rb_left				\
-> +			: &parent->rb_right;				\
-> +		equal = equal || value == i->field;			\
-> +	}								\
-> +	rb_link_node(&item->node, parent, link);			\
-> +	rb_insert_color(&item->node, &root);				\
-> +	equal;								\
-> +})
-
-Is there a reason why this is a macro?  The code might be more readable if
-you just wrote out the two versions that you need.
-
-[...]
-
-> diff --git a/mm/cma.c b/mm/cma.c
-> new file mode 100644
-> index 0000000..6a0942f
-> --- /dev/null
-> +++ b/mm/cma.c
-
-[...]
-
-> +static const char *__must_check
-> +__cma_where_from(const struct device *dev, const char *kind)
-> +{
-> +	/*
-> +	 * This function matches the pattern given at command line
-> +	 * parameter agains given device name and kind.  Kind may be
-> +	 * of course NULL or an emtpy string.
-> +	 */
-> +
-> +	const char **spec, *name;
-> +	int name_matched = 0;
-> +
-> +	/* Make sure dev was given and has name */
-> +	if (unlikely(!dev))
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	name = dev_name(dev);
-> +	if (WARN_ON(!name || !*name))
-> +		return ERR_PTR(-EINVAL);
-> +
-> +	/* kind == NULL is just like an empty kind */
-> +	if (!kind)
-> +		kind = "";
-> +
-> +	/*
-> +	 * Now we go throught the cma_map array.  It is an array of
-> +	 * pointers to chars (ie. array of strings) so in each
-> +	 * iteration we take each of the string.  The strings is
-> +	 * basically what user provided at the command line separated
-> +	 * by semicolons.
-> +	 */
-> +	for (spec = cma_map; *spec; ++spec) {
-> +		/*
-> +		 * This macro tries to match pattern pointed by s to
-> +		 * @what.  If, while reading the spec, we ecnounter
-> +		 * comma it means that the pattern does not match and
-> +		 * we need to start over with another spec.  If there
-> +		 * is a character that does not match, we neet to try
-> +		 * again looking if there is another spec.
-> +		 */
-> +#define TRY_MATCH(what) do {				\
-> +		const char *c = what;			\
-> +		for (; *s != '*' && *c; ++c, ++s)	\
-> +			if (*s == ',')			\
-> +				goto again;		\
-> +			else if (*s != '?' && *c != *s)	\
-> +				goto again_maybe;	\
-> +		if (*s == '*')				\
-> +			++s;				\
-> +	} while (0)
-
-This kind of thing rarely contributes to the readability or maintainability
-of the code.  Is it really necessary?  Or (as asked before) is all this
-functionality really necessary?
-
-[...]
-
-One other comment: it might be nice if drivers could provide allocation
-regions of their own.  The viafb driver, for example, really needs an
-allocator to hand out chunks of framebuffer memory - including large chunks
-for things like video frames.  If that driver could hand responsibility
-for that over to CMA, it could eliminate the need for yet another
-driver-quality memory manager.
-
-jon
+Ryan Mallon         		5 Amuri Park, 404 Barbadoes St
+ryan@bluewatersys.com         	PO Box 13 889, Christchurch 8013
+http://www.bluewatersys.com	New Zealand
+Phone: +64 3 3779127		Freecall: Australia 1800 148 751
+Fax:   +64 3 3779135			  USA 1800 261 2934
