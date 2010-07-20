@@ -1,57 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761242Ab0GTPEd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 11:04:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:40971 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758553Ab0GTPEb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 11:04:31 -0400
-Date: Tue, 20 Jul 2010 17:04:28 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Paul Fulghum <paulkf@microgate.com>
-Cc: Kulikov Vasiliy <segooon@gmail.com>,
-        Kernel Janitors <kernel-janitors@vger.kernel.org>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 02/16] trivial: use ARRAY_SIZE
-In-Reply-To: <4C2A36C6.3020101@microgate.com>
-Message-ID: <alpine.LNX.2.00.1007201704120.4741@pobox.suse.cz>
-References: <1277726089-24467-1-git-send-email-segooon@gmail.com> <4C2A36C6.3020101@microgate.com>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1761314Ab0GTPF3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 11:05:29 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40646 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1760904Ab0GTPF1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 11:05:27 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100720065925.GB16367@liondog.tnic>
+References: <20100719181240.fc3066cd.randy.dunlap@oracle.com>
+	<AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com>
+	<20100719220545.098cb7aa.randy.dunlap@oracle.com>
+	<20100720065925.GB16367@liondog.tnic>
+Date: Tue, 20 Jul 2010 08:04:49 -0700
+Message-ID: <AANLkTil_yFXag1H-8eh-AMLweDbqF47oqQZ02Dtfb4bP@mail.gmail.com>
+Subject: Re: [git pull] documentation: fix almost duplicate filenames 
+	(io/IO-mapping.txt)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Borislav Petkov <bp@alien8.de>, Randy Dunlap <randy.dunlap@oracle.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Kees Bakker <kees.bakker@xs4all.nl>, Keith Packard <keithp@keithp.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 29 Jun 2010, Paul Fulghum wrote:
+On Mon, Jul 19, 2010 at 11:59 PM, Borislav Petkov <bp@alien8.de> wrote:
+>>
+>> Will do... but how do I edit the commit message?
+>
+> git commit --amend
+>
+> after you've made sure that the commit you want to edit is at the tip of
+> the current branch.
 
-> > Change sizeof(x) / sizeof(*x) to ARRAY_SIZE(x).
-> > 
-> > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
-> > ---
-> >  drivers/char/synclink_gt.c |    2 +-
-> >  1 files changed, 1 insertions(+), 1 deletions(-)
-> > 
-> > diff --git a/drivers/char/synclink_gt.c b/drivers/char/synclink_gt.c
-> > index 4561ce2..334cf5c 100644
-> > --- a/drivers/char/synclink_gt.c
-> > +++ b/drivers/char/synclink_gt.c
-> > @@ -4845,7 +4845,7 @@ static int register_test(struct slgt_info *info)
-> >  {
-> >  	static unsigned short patterns[] =
-> >  		{0x0000, 0xffff, 0xaaaa, 0x5555, 0x6969, 0x9696};
-> > -	static unsigned int count = sizeof(patterns)/sizeof(patterns[0]);
-> > +	static unsigned int count = ARRAY_SIZE(patterns);
-> >  	unsigned int i;
-> >  	int rc = 0;
-> >  
-> 
-> Acked-by: Paul Fulghum <paulkf@microgate.com>
+.. and if it's not at the top (like it is this time), do "man
+git-rebase" and then you can use "git rebase -i origin" (where
+"origin" is whatever your upstream is).
 
-The patch is not in linux-next as of today. Applied, thanks guys.
+And yeah, this is not something you really should do to anything
+you've published, but you'll know better next time and fix it all up
+_before_ you publish it and ask me to pull ;)
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+              Linus
