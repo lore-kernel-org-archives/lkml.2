@@ -1,132 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761796Ab0GTWPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 18:15:00 -0400
-Received: from smtp-outbound-2.vmware.com ([65.115.85.73]:41585 "EHLO
-	smtp-outbound-2.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751010Ab0GTWO6 (ORCPT
+	id S1761888Ab0GTWTU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 18:19:20 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59036 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761870Ab0GTWTP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 18:14:58 -0400
-Subject: Re: swiotlb detection should be memory hotplug aware ?
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Petr Vandrovec <petr@vmware.com>
-In-Reply-To: <1268866113.20507.26.camel@ank32>
-References: <1268446032.13691.69.camel@ank32>
-	 <4B9B01F5.3000807@linux.intel.com>
-	 <20100316005140.GB7622@phenom.dumpdata.com>
-	 <20100316103259E.fujita.tomonori@lab.ntt.co.jp>
-	 <20100316124556.GA25340@phenom.dumpdata.com>
-	 <1268866113.20507.26.camel@ank32>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Tue, 20 Jul 2010 15:14:57 -0700
-Message-Id: <1279664097.21596.43.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
+	Tue, 20 Jul 2010 18:19:15 -0400
+Message-ID: <4C462082.9030001@oracle.com>
+Date: Tue, 20 Jul 2010 15:17:38 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: lkml <linux-kernel@vger.kernel.org>, Kees Bakker <kees.bakker@xs4all.nl>,
+        Keith Packard <keithp@keithp.com>
+Subject: [git pull v3] documentation: fix almost duplicate filenames  (io/IO-mapping.txt)
+References: <20100719181240.fc3066cd.randy.dunlap@oracle.com>	<AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com>	<4C45C33C.9090907@oracle.com> <AANLkTilwwEklGyp1Nu8tx7wxu1pDeJkEZ1vaa3E18j32@mail.gmail.com>
+In-Reply-To: <AANLkTilwwEklGyp1Nu8tx7wxu1pDeJkEZ1vaa3E18j32@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090203.4C4620B8.0113:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, 
+OK, I'll try this one more time...
 
-Reviving a 4 month old thread. 
-I am still waiting for any clues on this question below. 
 
->> 2. Instead of checking the max_pfn value in pci_swiotlb_detect, check
->> for max_hotpluggable_pfn (or some such) value. Though I don't see such a
->> value readily available. I could parse the SRAT and get hotplug memory
->> information but that will make swiotlb detection logic a little too
->> complex. A quick look around srat_xx.c files and the acpi_memhotplug
->> module didn't find any useful API that could be used directly either.
->> So was wondering if any of you are aware of an easy way to get such
->> information ?
+Please pull from
+	git://git.kernel.org/pub/scm/linux/kernel/git/rdunlap/linux-docs/ #linuxdocs
 
-Thanks,
-Alok
+for one changeset:
 
-On Wed, 2010-03-17 at 15:48 -0700, Alok Kataria wrote:
-> On Tue, 2010-03-16 at 05:45 -0700, Konrad Rzeszutek Wilk wrote:
-> > On Tue, Mar 16, 2010 at 10:33:20AM +0900, FUJITA Tomonori wrote:
-> > > On Mon, 15 Mar 2010 20:51:40 -0400
-> > > Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
-> > > 
-> > > > On Fri, Mar 12, 2010 at 07:09:41PM -0800, Andi Kleen wrote:
-> > > > > , Alok Kataria wrote:
-> > > > >
-> > > > > Hi Alok,
-> > > > >
-> > > > >> Hi,
-> > > > >>
-> > > > >> Looking at the current code swiotlb is initialized for 64bit kernels
-> > > > >> only when the max_pfn value is greater than 4G (MAX_DMA32_PFN value).
-> > > > >> So in cases when the initial memory is less than 4GB the kernel boots
-> > > > >> without enabling swiotlb, when we hotadd memory to such a kernel and go
-> > > > >> beyond the 4G limit, swiotlb is still disabled. As a result when any
-> > > > >> 32bit devices start using this newly added memory beyond 4G, the kernel
-> > > > >> starts spitting error messages like below or in some cases it causes
-> > > > >> kernel panics.
-> > > > >
-> > > > > Yes seems like a real problem.
-> > > > >
-> > > > >>
-> > > > >> 1. Enable swiotlb for all 64bit kernels which have memory hot-add
-> > > > >> support.
-> > > > >
-> > > > > I don't think that's a good idea. It would enable it everywhere on
-> > > > > distributions which compile with hotadd. Need (2)
-> > > > >
-> > > > >> 2. Instead of checking the max_pfn value in pci_swiotlb_detect, check
-> > > > >> for max_hotpluggable_pfn (or some such) value. Though I don't see such a
-> > > > >> value readily available. I could parse the SRAT and get hotplug memory
-> > > > >> information but that will make swiotlb detection logic a little too
-> > > > >> complex. A quick look around srat_xx.c files and the acpi_memhotplug
-> > > > >> module didn't find any useful API that could be used directly either.
-> > > > >> So was wondering if any of you are aware of an easy way to get such
-> > > > >> information ?
-> > > > >
-> > > > > I have a patchkit to revamp the SRAT parsing to store the hotadd information
-> > > > 
-> 
-> Andi...ping any pointers to the patchkit. 
+commit 9fe41e4197f351bc78547ab2d8808e1aca30d87c
+Author: Randy Dunlap <randy.dunlap@oracle.com>
+Date:   Mon Jul 19 22:20:27 2010 +0000
 
-> > > > There is a late mechanism to do kickoff the SWIOTLB. Perhaps the hot-add
-> > > > could use swiotlb_init_late and start up the SWIOTLB?
-> 
-> I don't see why we need to do this via late_init, swiotlb detection that
-> happens through pci_swiotlb_detect, is already late enough that SRAT is
-> already parsed. Or am I missing something ?
-> > > 
-> > > I guess that you are talking about
-> > > swiotlb_late_init_with_default_size(), which IA64 uses. However, you
-> > > can use swiotlb_late_init_with_default_size() only before we
-> > > initialize devices. Making it work after initializing devices is not
-> > > so easy, I think (that is, we need to change dma_ops).
-> 
-> > That is a good point. Especially if we have some outstanding DMA pages
-> > allocated via dma_alloc_coherent.
-> > 
-> > I thought that the machines that have hot-add memory they have their
-> > own fancy IOMMU. For example the IBM x3955 (and its family) utilize the
-> > Calgary IOMMU. The HP boxes utilize the Intel VT-D (or the AMD
-> > equivalant).
-> > So is this mostly specialized in the areas of virtualized guests? (Xen
-> > PV guests with PCI passthrough suffer the same problem, btw).
-> 
-> 
-> I am assuming that there were Intel based servers which supported memory
-> hot-add before VT-d too. So, IMO this is not specialized to
-> virtualization, though might be hard to prove if there are actual
-> physical machines out there which have similar constraints (no HWIOMMU +
-> MEMHOT add support)
-> 
-> Thanks,
-> Alok
+    documentation: fix almost duplicate filenames (IO/io-mapping.txt)
+    
+    Having both IO-mapping.txt and io-mapping.txt in Documentation/
+    was confusing and/or bothersome to some people, so rename
+    IO-mapping.txt to bus-virt-phys-mapping.txt.  Also update
+    Documentation/00-INDEX for both of these files.
+    
+    Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+
+---
+patch summary:
+
+ Documentation/00-INDEX                             |    6 ++++--
+ .../{IO-mapping.txt => bus-virt-phys-mapping.txt}  |    0
+ 2 files changed, 4 insertions(+), 2 deletions(-)
+ rename Documentation/{IO-mapping.txt => bus-virt-phys-mapping.txt} (100%)
 
