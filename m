@@ -1,86 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758507Ab0GTOaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 10:30:00 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:40842 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758163Ab0GTO36 (ORCPT
+	id S1758590Ab0GTOaX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 10:30:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:37944 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758556Ab0GTOaS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 10:29:58 -0400
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
- interfaces with random MAC address
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stefan Assmann <sassmann@redhat.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        davem@davemloft.net, Andy Gospodarek <gospo@redhat.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        Casey Leedom <leedom@chelsio.com>, Harald Hoyer <harald@redhat.com>
-In-Reply-To: <4C45996B.3000003@redhat.com>
-References: <4C457F72.8090708@redhat.com>
-	 <1279624844.2110.3.camel@achroite.uk.solarflarecom.com>
-	 <4C458CB7.3030508@redhat.com>
-	 <1279627656.2110.13.camel@achroite.uk.solarflarecom.com>
-	 <4C45996B.3000003@redhat.com>
-Content-Type: text/plain
-Organization: Solarflare Communications
-Date: Tue, 20 Jul 2010 15:29:54 +0100
-Message-Id: <1279636194.2110.45.camel@achroite.uk.solarflarecom.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 (2.26.1-2.fc11) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Jul 2010 14:31:26.0001 (UTC) FILETIME=[3BEE9A10:01CB2818]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17516.005
-X-TM-AS-Result: No--36.967000-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Tue, 20 Jul 2010 10:30:18 -0400
+MIME-Version: 1.0
+Message-ID: <9e4cae1f-c102-43ea-9ba0-611c8ad68c9b@default>
+Date: Tue, 20 Jul 2010 07:28:04 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: ngupta@vflare.org
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: RE: [PATCH 0/8] zcache: page cache compression support
+References: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
+ <4f986c65-c17e-47d8-9c30-60cd17809cbb@default 4C45A9BA.1090903@vflare.org>
+In-Reply-To: <4C45A9BA.1090903@vflare.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
+ 12.0.6535.5005]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C45B27A.02E3:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-20 at 14:41 +0200, Stefan Assmann wrote:
-> On 20.07.2010 14:07, Ben Hutchings wrote:
-> > On Tue, 2010-07-20 at 13:47 +0200, Stefan Assmann wrote:
-> >> On 20.07.2010 13:20, Ben Hutchings wrote:
-> >>> On Tue, 2010-07-20 at 12:50 +0200, Stefan Assmann wrote:
-> >>>> From: Stefan Assmann <sassmann@redhat.com>
+> On 07/20/2010 01:27 AM, Dan Magenheimer wrote:
+> >> We only keep pages that compress to PAGE_SIZE/2 or less. Compressed
+> >> chunks are
+> >> stored using xvmalloc memory allocator which is already being used
+> by
+> >> zram
+> >> driver for the same purpose. Zero-filled pages are checked and no
+> >> memory is
+> >> allocated for them.
+> >
+> > I'm curious about this policy choice.  I can see why one
+> > would want to ensure that the average page is compressed
+> > to less than PAGE_SIZE/2, and preferably PAGE_SIZE/2
+> > minus the overhead of the data structures necessary to
+> > track the page.  And I see that this makes no difference
+> > when the reclamation algorithm is random (as it is for
+> > now).  But once there is some better reclamation logic,
+> > I'd hope that this compression factor restriction would
+> > be lifted and replaced with something much higher.  IIRC,
+> > compression is much more expensive than decompression
+> > so there's no CPU-overhead argument here either,
+> > correct?
 > 
-> [snip]
+> Its true that we waste CPU cycles for every incompressible page
+> encountered but still we can't keep such pages in RAM since this
+> is what host wanted to reclaim and we can't help since compression
+> failed. Compressed caching makes sense only when we keep highly
+> compressible pages in RAM, regardless of reclaim scheme.
 > 
-> >> Actually Dave Miller suggested to put it there. What other place is
-> >> there to put it?
-> > 
-> > If Dave said that then I'm sure it's OK.
-> > 
-> > However, if you define this as an interface flag (net_device::flags;
-> > <linux/if.h>) and add it to the set of changeable flags in
-> > __dev_change_flags(), user-space will be able to clear the flag if it
-> > later sets a stable address.
-> 
-> As I said I'm not that knowledgeable about this MAC address stealing
-> thing and I'm assuming that's what you're aiming at. Would you really
-> want/need it to be user-space writable? Currently all I can think of is
-> the scenario where you set a "stable" address that outlasts a reboot so
-> udev might be able to assign it a permanent name after it gets stable.
->
-> So it might make sense to have it writable, but I'd like to avoid to add
-> unnecessary complexity that may cause errors if it's not necessary.
-> Read-only is simple, just read the flag and deal with it.
+> Keeping (nearly) incompressible pages in RAM probably makes sense
+> for Xen's case where cleancache provider runs *inside* a VM, sending
+> pages to host. So, if VM is limited to say 512M and host has 64G RAM,
+> caching guest pages, with or without compression, will help.
 
-Once this flag has been added, it may be used by any tool and not just
-udev, so it ought to indicate the status of the currently assigned
-address.  That requires that it be writable.
+I agree that the use model is a bit different, but PAGE_SIZE/2
+still seems like an unnecessarily strict threshold.  For
+example, saving 3000 clean pages in 2000*PAGE_SIZE of RAM
+still seems like a considerable space savings.  And as
+long as the _average_ is less than some threshold, saving
+a few slightly-less-than-ideally-compressible pages doesn't
+seem like it would be a problem.  For example, IMHO, saving two
+pages when one compresses to 2047 bytes and the other compresses
+to 2049 bytes seems just as reasonable as saving two pages that
+both compress to 2048 bytes.
 
-> Btw, the driver itself could also alter the flag. Then we'd have a well
-> defined way of setting a stable address.
-
-The driver can't know whether an address assigned by the user is stable.
-
-Ben.
-
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
-
+Maybe the best solution is to make the threshold a sysfs
+settable?  Or maybe BOTH the single-page threshold and
+the average threshold as two different sysfs settables?
+E.g. throw away a put page if either it compresses poorly
+or adding it to the pool would push the average over.
