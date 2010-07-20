@@ -1,96 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab0GTLND (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 07:13:03 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:41919 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab0GTLNA (ORCPT
+	id S1757241Ab0GTLNk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 07:13:40 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:43382 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755734Ab0GTLNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 07:13:00 -0400
-Date: Tue, 20 Jul 2010 07:09:52 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: Re: [RFC PATCH v3 2/5] napi: convert trace_napi_poll to TRACE_EVENT
-Message-ID: <20100720110952.GB1995@hmsreliant.think-freely.org>
-References: <4C44F12F.5090908@jp.fujitsu.com>
- <4C44F1FB.8080309@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C44F1FB.8080309@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+	Tue, 20 Jul 2010 07:13:39 -0400
+Subject: Re: [RFC][PATCH 12/16] writeback: add to bdi_list in the forker
+ thread
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100718065851.GJ23811@infradead.org>
+References: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
+	 <1279284312-2411-13-git-send-email-dedekind1@gmail.com>
+	 <20100718065851.GJ23811@infradead.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Jul 2010 14:07:04 +0300
+Message-ID: <1279624024.16462.114.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 20 Jul 2010 11:13:29.0485 (UTC) FILETIME=[94FA13D0:01CB27FC]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 09:46:51AM +0900, Koki Sanagi wrote:
-> From: Neil Horman <nhorman@tuxdriver.com>
-> 
-> This patch converts trace_napi_poll from DECLARE_EVENT to TRACE_EVENT to improve
-> the usability of napi_poll tracepoint.
-> 
->           <idle>-0     [001] 241302.750777: napi_poll: napi poll on napi struct f6acc480 for device eth3
->           <idle>-0     [000] 241302.852389: napi_poll: napi poll on napi struct f5d0d70c for device eth1
-> 
-> An original patch is below.
-> http://marc.info/?l=linux-kernel&m=126021713809450&w=2
-> Signed-off-by: Neil Horman <nhorman@tuxdriver.com>
-> 
-> And add a fix by Steven Rostedt.
-> http://marc.info/?l=linux-kernel&m=126150506519173&w=2
-> 
-> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> ---
->  include/trace/events/napi.h |   25 +++++++++++++++++++++++--
->  1 files changed, 23 insertions(+), 2 deletions(-)
-> 
-> diff --git a/include/trace/events/napi.h b/include/trace/events/napi.h
-> index 188deca..8fe1e93 100644
-> --- a/include/trace/events/napi.h
-> +++ b/include/trace/events/napi.h
-> @@ -6,10 +6,31 @@
->  
->  #include <linux/netdevice.h>
->  #include <linux/tracepoint.h>
-> +#include <linux/ftrace.h>
-> +
-> +#define NO_DEV "(no_device)"
-> +
-> +TRACE_EVENT(napi_poll,
->  
-> -DECLARE_TRACE(napi_poll,
->  	TP_PROTO(struct napi_struct *napi),
-> -	TP_ARGS(napi));
-> +
-> +	TP_ARGS(napi),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	struct napi_struct *,	napi)
-> +		__string(	dev_name, napi->dev ? napi->dev->name : NO_DEV)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->napi = napi;
-> +		__assign_str(dev_name, napi->dev ? napi->dev->name : NO_DEV);
-> +	),
-> +
-> +	TP_printk("napi poll on napi struct %p for device %s",
-> +		__entry->napi, __get_str(dev_name))
-> +);
-> +
-> +#undef NO_DEV
->  
->  #endif /* _TRACE_NAPI_H_ */
->  
-> 
-NAK, This change will create a build break in the drop monitor code.  You'll
-need to fix that up if you want to make this change.
-Neil
+On Sun, 2010-07-18 at 02:58 -0400, Christoph Hellwig wrote:
+> What about never removing a bdi from bdi_list?  If we have the
+> correct checks for dirty_io and the task there's no need to
+> ever remove a life bdi from the list.  Just add it in bdi_register
+> and remove it in bdi_unregister.
+
+Good idea, thanks, indeed I do not see why we need removing it.
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
