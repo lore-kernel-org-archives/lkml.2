@@ -1,98 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753288Ab0GTHhf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 03:37:35 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43161 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751548Ab0GTHhe convert rfc822-to-8bit (ORCPT
+	id S1754225Ab0GTHrI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 03:47:08 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60173 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab0GTHrG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 03:37:34 -0400
-Subject: Re: [PPC64/Power7 - 2.6.35-rc5] Bad relocation warnings whileBuilding a CONFIG_RELOCATABLE kernel with CONFIG_ISERIES enabled
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Alexander Graf <agraf@suse.de>
-In-Reply-To: <reloc-2010-07-19-3@mdm.bga.com>
-Date: Tue, 20 Jul 2010 09:37:27 +0200
-Cc: Subrata Modak <subrata@linux.vnet.ibm.com>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        linuxppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        linux-kernel List <linux-kernel@vger.kernel.org>,
-        kvm-ppc@vger.kernel.org, KVM list <kvm@vger.kernel.org>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <0D8EEF0C-CC43-4E37-B184-0D3B9BC400D1@suse.de>
-References: <4C443E78.6020902@suse.de> <reloc-2010-07-19@mdm.bga.com> <8C4BCF61-7F5D-4C80-A311-93CF8521FBF5@suse.de> <1273060251.13463.8.camel@subratamodak.linux.ibm.com> <20100507054034.GB25173@drongo> <1279193743.10707.5.camel@subratamodak.linux.ibm.com> <1279501889.10390.1834.camel@pasglop> <reloc-2010-07-19-2@mdm.bga.com> <reloc-2010-07-19-3@mdm.bga.com>
-To: Milton Miller <miltonm@bga.com>
-X-Mailer: Apple Mail (2.1078)
+	Tue, 20 Jul 2010 03:47:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=LFEd54I19zEKZRa1xpcdreuriWx1x1dusae5PeiYcVdm/f76D6/SVwk0n72xA3b1Ng
+         2xwF5JIISrs+uxEYlnYpOFHIjqMLulQH/E7GxR6IVahjyHb3/70r4u7+h3GuPZy6NvGB
+         O5w0e20cQN0uUHzNONHvLitdmqvksjt/zPfFY=
+Date: Tue, 20 Jul 2010 11:46:59 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Yulia Vilensky <vilensky@compulab.co.il>,
+        Geert Stappers <stappers@stappers.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ds2782_battery: Rename get_current and get_voltage
+ operations
+Message-ID: <20100720074659.GA32073@oksana.dev.rtsoft.ru>
+References: <1279584175.4883.226.camel@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1279584175.4883.226.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On 20.07.2010, at 09:27, Milton Miller wrote:
-
-> On Mon, 19 Jul 2010 about 14:00:56 +0200, Alexander Graf wrote:
->> Milton Miller wrote:
->>> I wrote:
->>> 
->>> Oh yea, and for book-3s, the code copies from 0x100 to __end_interrupts
->>> in arch/powerpc/kernel/exceptions-64s.h down to the real 0, but the rest
->>> of the kernel is at some disjointed address.  The interrupt will go to
->>> the copy at the real zero.  Any references to code outside that region
->>> must be done via a full indrect branch (not a relative one), simiar to
->>> the secondary startup (via following the function pointer in a descriptor
->>> set in very low memory), or syscall entry and exception vectors via paca.
->>> 
->> 
->> That would still break on normal PPC boxes, as any address accessed in
->> real mode has to be inside the RMA. And the #include for
->> kvm/book3s_rmhandlers.S happens after __end_interrupts. So I'd end up
->> with code that gets executed outside of the RMA after a relocation, right?
->> 
->> Alex
->> 
+On Tue, Jul 20, 2010 at 01:02:55AM +0100, Ben Hutchings wrote:
+> commit 9b9ade6b612e562c4a5bd02ef38cc32e10f3f9ba "ds2782_battery: Add
+> support for ds2786 battery gas gauge" introduced an operation named
+> get_current.  Since get_current() is defined as a macro on some
+> architectures this driver no longer compiles on those architectures.
 > 
-> Weither its outside of the RMA or not, DO_KVM is creating a branch outside
-> of code copied to lowmem.
+> Rename get_current to get_current_now to avoid the macro.
+> Rename get_voltage to get_voltage_now for consistency.
 > 
-> This is BROKEN.
-> 
-> We have a hard limit that we can't extend _end_interrupts past 0x7000, and
-> a soft limit that we can't exceed 0x6000.  If there is space, we could
-> move the real mode handler extensions inside end_interrupts in
-> exceptions-64s.S, and store the full address in a .quad so it gets
-> relocated properly.  Don't subtract the start, we have designed the kernel
-> to run with start at a VA that can be used as a EA in real mode.
+> Reported-by: Geert Stappers <stappers@stappers.nl>
+> Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> ---
 
-Moving everything to exceptions-64s.S sounds like the best thing to do. All the code in real mode really is there so it stays inside the RMA. I don't think we can guarantee that for any code that is not copied, right?
+Thanks for the patch, but I have a similar fix in the
+battery-2.6.git tree (for -next):
 
-> Otherwise we need to mark KVM_BOOK3S_64 depends on (!RELOCATABLE ||
-> BROKEN) for 2.6.35 until we get fixes.
+commit eb9650d6d989f24f21232a055d8fd45f1a9dcf99
+Author: Peter Huewe <peterhuewe@gmx.de>
+Date:   Thu May 13 01:54:57 2010 +0200
 
-Well - it's only broken when really getting relocated. But I agree, the current state doesn't cope with Linux's relocation logic.
+    ds2782_battery: Rename get_current to fix build failure / name conflict
 
-> I took a read though the book3s code as of 2.6.34.   A few things I noticed:
-> 
-> (1) The code is using slb large to control the segment size.   It should
-> be using SLB B field (or just impliment 256M segments only).
+    This patch changes the name of get_current function pointer to
+    get_battery_current to resolve a name conflict with the get_current
+    macro defined in current.h.
 
-I'm not sure I understand this part? We only use 256MB segments for now.
+    This conflict resulted in a build-failure[1] for the sh4 arch
+    allyesconfig:
 
-> (2) It appears that the mtspr and mfspr code is using the same storage for
-> bats 4-7 as 0-3 ... I would have expected a 4 + a few places.
+      drivers/power/ds2782_battery.c:216:48: error: macro "get_current"
+      passed 2 arguments, but takes just
 
-Yes, that one is fixed in more recent versions already.
+    This patch fixes the issue. To be consistent the other function pointers
+    (_voltage,_capacity) were renamed too.
 
-> (3) Its not clear to me that you clear RI when transitioning to the guest
-> but its obviously required because you place state in srr0 & srr1.
+    Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+    Acked-by: Ryan Mallon <ryan@bluewatersys.com>
+    Acked-by: Mike Rapoport <mike@compulab.co.il>
+    Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
 
-Uh - do I have to clear RI? I'm not prepared to take an interrupt anyways and RI is just a soft flag for Linux's handlers, right?
+I'm not pushing this into 2.6.35 as this is not a 2.6.35 regression,
+it's there since 2.6.33, and nobody seemed to care for two releases.
+So, I'm not considering this as urgent.
 
-> (4) I don't understand why __kvmppc_vcpu_run turns on interrupts so that
-> __kvmppc_vcpu_entry can turn them back off.   Something to do with
-> irq trace annotations?
+Thanks!
 
-__kvmppc_vcpu_run turns on soft interrupts while __kvmppc_vcpu_entry turns them off in MSR. This is so that when enabling interrupts again on guest exit, we have the soft enable bit set.
-
-
-Alex
-
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
