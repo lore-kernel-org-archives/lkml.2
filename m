@@ -1,75 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932678Ab0GTVMU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 17:12:20 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:47183 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932356Ab0GTVMR (ORCPT
+	id S932699Ab0GTVRG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 17:17:06 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:54858 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758659Ab0GTVRE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 17:12:17 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: akpm@linux-foundation.org, Mauro Carvalho Chehab <mchehab@redhat.com>,
-        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
-        linux-input@vger.kernel.org
-Subject: Re: mmotm 2010-07-19-16-37 uploaded
-In-Reply-To: Your message of "Tue, 20 Jul 2010 13:50:27 PDT."
-             <201007201350.28961.dmitry.torokhov@gmail.com>
-From: Valdis.Kletnieks@vt.edu
-References: <201007200007.o6K07Xbg028863@imap1.linux-foundation.org> <6434.1279658492@localhost>
-            <201007201350.28961.dmitry.torokhov@gmail.com>
+	Tue, 20 Jul 2010 17:17:04 -0400
+Date: Tue, 20 Jul 2010 23:16:55 +0200
+From: =?UTF-8?B?TWljaGHFgiBHw7Nybnk=?= <gentoo@mgorny.alt.pl>
+To: Michal Marek <mmarek@suse.cz>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] KERNEL BUILD: Make the setlocalversion script
+ POSIX-compliant.
+Message-ID: <20100720231655.2226a38b@pomiocik.lan>
+In-Reply-To: <4C45ABFD.8060308@suse.cz>
+References: <20100718102640.01729af9@pomiocik.lan>
+	<4C45ABFD.8060308@suse.cz>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1279660300_4556P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Tue, 20 Jul 2010 17:11:40 -0400
-Message-ID: <4825.1279660300@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020209.4C46110D.00D2,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1279660300_4556P
-Content-Type: text/plain; charset=us-ascii
+On Tue, 20 Jul 2010 16:00:29 +0200
+Michal Marek <mmarek@suse.cz> wrote:
 
-On Tue, 20 Jul 2010 13:50:27 PDT, Dmitry Torokhov said:
-
-> > And things go downhill from there...
+> > There is one 'bashism' left which I wasn't able to fix -- the use of
+> > 'test -ef'. I'm not aware of any POSIX equivalent of that.
 > 
-> I guess you need these 2 from Jarod...
+> Me neither, POSIX does not know stat(1) AFAICS. Does it matter in real
+> life? Is there a distro that installs posh or a similarly strict shell
+> as /bin/sh? It seems to work with dash after your changes.
 
-Hmm. I seem to remember 2 similar patches from the last time I reported it. :)
+I am not aware of any, and it does work with dash indeed. That's why I
+have submitted the patch. I left that notice mostly because the actual
+description suggested the script becomes 'POSIX-compliant'.
 
-System boots fine after applying those two patches.  I'll let somebody else
-worry about making sure they end up in linux-next in time for the next merge
-window...
+The second reason for that notice is that someone might want to fix
+that sometime. But I guess the best way would be through complete
+change of the check logic.
 
+-- 
+Best regards,
+Michał Górny
 
-
-
---==_Exmh_1279660300_4556P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMRhEMcC3lWbTT17ARApgmAKDuaOnw5ZPweP2rszvEhnHX2p4KcACeJEi3
-82lzDW9t3GLKQUD8q2KN/8M=
-=45BE
------END PGP SIGNATURE-----
-
---==_Exmh_1279660300_4556P--
-
+<http://mgorny.alt.pl>
+<xmpp:mgorny@jabber.ru>
