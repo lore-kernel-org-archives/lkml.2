@@ -1,57 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751694Ab0GTEPI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 00:15:08 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52098 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750756Ab0GTEPG (ORCPT
+	id S1751960Ab0GTESh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 00:18:37 -0400
+Received: from usmamail.tilera.com ([72.1.168.231]:45419 "EHLO
+	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab0GTESf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 00:15:06 -0400
-Date: Mon, 19 Jul 2010 21:14:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <a.p.zijlstra@chello.nl>,
-        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        Linux Memory Management List <linux-mm@kvack.org>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 3/6] writeback: avoid unnecessary calculation of bdi
- dirty thresholds
-Message-Id: <20100719211400.c2bd5494.akpm@linux-foundation.org>
-In-Reply-To: <20100720033437.GE6087@localhost>
-References: <20100711020656.340075560@intel.com>
-	<20100711021748.879183413@intel.com>
-	<20100719143520.d9af9649.akpm@linux-foundation.org>
-	<20100720033437.GE6087@localhost>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 20 Jul 2010 00:18:35 -0400
+Message-ID: <4C452399.3050708@tilera.com>
+Date: Tue, 20 Jul 2010 00:18:33 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Jiri Slaby <jirislaby@gmail.com>, <linux-next@vger.kernel.org>,
+        <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: linux-next: manual merge of the limits tree with the tile tree
+References: <20100720134833.4082eed4.sfr@canb.auug.org.au>
+In-Reply-To: <20100720134833.4082eed4.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="ISO-8859-1"
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jul 2010 11:34:37 +0800 Wu Fengguang <fengguang.wu@intel.com> wrote:
+On 7/19/2010 11:48 PM, Stephen Rothwell wrote:
+> Hi Jiri,
+>
+> Today's linux-next merge of the limits tree got a conflict in
+> include/asm-generic/unistd.h between commits
+> 5360bd776f73d0a7da571d72a09a03f237e99900 ("Fix up the "generic" unistd.h
+> ABI to be more useful") and b51cae21ee66f77a368428e6bdf75a0c012c9fd7
+> ("Add wait4() back to the set of <asm-generic/unistd.h> syscalls") from
+> the tile tree and commit f33ebbe9da2c3c24664a0ad4f8fd83f293547e63
+> ("unistd: add __NR_prlimit64 syscall numbers") from the limits tree.
+>
+> I fixed it up (see below) and can carry the fix as necessary.
+>   
 
-> On Tue, Jul 20, 2010 at 05:35:20AM +0800, Andrew Morton wrote:
-> > On Sun, 11 Jul 2010 10:06:59 +0800
-> > Wu Fengguang <fengguang.wu@intel.com> wrote:
-> > 
-> > > Split get_dirty_limits() into global_dirty_limits()+bdi_dirty_limit(),
-> > > so that the latter can be avoided when under global dirty background
-> > > threshold (which is the normal state for most systems).
-> > > 
-> > 
-> > mm/page-writeback.c: In function 'balance_dirty_pages_ratelimited_nr':
-> > mm/page-writeback.c:466: warning: 'dirty_exceeded' may be used uninitialized in this function
-> > 
-> > This was a real bug.
-> 
-> Thanks! But how do you catch this? There are no warnings in my compile test.
+Jiri, would it be possible to put __NR_prlimit64 as number 261 in
+<asm-generic/syscall.h>?  This would avoid the requirement for Tilera
+users to have a "flag day" to renumber some of our syscalls.  I assume
+there are no users at all of this flavor of the __NR_prlimit64 syscall
+number yet otherwise, except the "score" architecture folks who
+presumably wouldn't have started trying to use the syscall yet.
 
-Basic `make allmodconfig'.  But I use a range of different compiler
-versions.  Different versions of gcc detect different stuff.  This was 4.1.0
-or 4.0.2, I forget which.
+Thanks, and Stephen, thanks for the fixup.
 
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
