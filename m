@@ -1,142 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761464Ab0GTUIe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 16:08:34 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:54291 "EHLO
+	id S1760940Ab0GTUNN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 16:13:13 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39328 "EHLO
 	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750934Ab0GTUIb (ORCPT
+	with ESMTP id S1758581Ab0GTUNL convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 16:08:31 -0400
+	Tue, 20 Jul 2010 16:13:11 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:mime-version:content-type
-         :content-transfer-encoding:content-disposition:message-id;
-        b=V+3w5vovm78EefOz1HME6AsozQpnGPHmBCRWXFkePZNsgTi1b/Qgw7+DscOKpOQM4j
-         RNHeXUa5TfFGkhR2Sz3CZtjDp+RyCyJG/F5ua6Vk6Ak60enI8Y/1poqe6XIOzDDWDjvx
-         IH9WqnWm67fwns8/oWjC6Wu1YO1Ui6FxktFzg=
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Jens Axboe <axboe@kernel.dk>,
-        "Linux-Kernel" <linux-kernel@vger.kernel.org>
-Subject: [PATCH] cfq: improve fsync performance for small files
-Date: Tue, 20 Jul 2010 22:09:04 +0200
-User-Agent: KMail/1.11.4 (Linux/2.6.33.4cz; KDE/4.2.4; i686; ; )
-Cc: Jeff Moyer <jmoyer@redhat.com>, Vivek Goyal <vgoyal@redhat.com>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=KMkYK9py6v6aCUMB1e7bnKK5jdYT6zKbNLJ1snIxPJCrm++9YEp275s+hPZl+VEOfO
+         M3RC2FZ04MA2pQFFw+aGZbEYVlQBTcfNxEg887yh4zkz+U36RqH1cEhyP3zNKpIJw6sn
+         4S0TNFEa5OAhHILjPlIa/JE+M6lSoZxfsIYpQ=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-Message-Id: <201007202209.04627.czoccolo@gmail.com>
+In-Reply-To: <AANLkTimVSZ584-dTIJFalTStvT1kPBQmnDdgUTsoSFQT@mail.gmail.com>
+References: <AANLkTimVSZ584-dTIJFalTStvT1kPBQmnDdgUTsoSFQT@mail.gmail.com>
+Date: Tue, 20 Jul 2010 23:13:08 +0300
+X-Google-Sender-Auth: hpiZhXOSqTgq1IjEnUUgg09S1wI
+Message-ID: <AANLkTikZLVYavu0EeQJ2VelymBoC2LQZTfc44FOAzwe4@mail.gmail.com>
+Subject: Re: Regression 2.6.33->2.6.34: OOPS at boot, kmalloc corruption?
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Torsten Kaiser <just.for.lkml@googlemail.com>
+Cc: linux-kernel@vger.kernel.org, Christoph Lameter <cl@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fsync performance for small files achieved by cfq on high-end disks is
-lower than what deadline can achieve, due to idling introduced between
-the sync write happening in process context and the journal commit.
+Hi Torsten,
 
-Moreover, when competing with a sequential reader, a process writing
-small files and fsync-ing them is starved.
+On Sun, Jul 11, 2010 at 9:55 PM, Torsten Kaiser
+<just.for.lkml@googlemail.com> wrote:
+> Trying to upgrade my system from 2.6.33 to 2.6.34, I can't get it to boot.
+>
+> All tries used CONFIG_SLUB=y
+>
+> The gentoo version of 2.6.34 generated an OOPS during network
+> initialization and then came to a stop. (It seemed that all processes
+> got stuck waiting on some locks.)
+> As in this instance the system was able to start the syslog, I was
+> able to capture the complete OOPS:
+> Jul  3 05:51:43 ariolc kernel: [   32.674367] BUG: unable to handle
+> kernel NULL pointer dereference at 0000000000000003
+> Jul  3 05:51:43 ariolc kernel: [   32.675674] IP: [<ffffffff810aab89>]
+> __kmalloc_track_caller+0x69/0x110
+> Jul  3 05:51:43 ariolc kernel: [   32.676951] PGD 11e7e5067 PUD 11fd3d067 PMD 0
+> Jul  3 05:51:43 ariolc kernel: [   32.678224] Oops: 0000 [#1] SMP
+> Jul  3 05:51:43 ariolc kernel: [   32.679477] last sysfs file:
+> /sys/devices/virtual/block/md0/md/metadata_version
+> Jul  3 05:51:43 ariolc kernel: [   32.680745] CPU 1
+> Jul  3 05:51:43 ariolc kernel: [   32.680761] Modules linked in:
+> aes_x86_64(+) aes_generic sg
+> Jul  3 05:51:43 ariolc kernel: [   32.682764]
+> Jul  3 05:51:43 ariolc kernel: [   32.682764] Pid: 4652, comm:
+> modprobe Not tainted 2.6.34-gentoo-r1 #1 MS-7368/MS-7368
+> Jul  3 05:51:43 ariolc kernel: [   32.682764] RIP:
+> 0010:[<ffffffff810aab89>]  [<ffffffff810aab89>]
+> __kmalloc_track_caller+0x69/0x110
+> Jul  3 05:51:43 ariolc kernel: [   32.682764] RSP:
+> 0018:ffff88011e75fe08  EFLAGS: 00010006
+> Jul  3 05:51:43 ariolc kernel: [   32.687268] RAX: ffff880001b0f088
+> RBX: ffffffff8170d4d0 RCX: ffff88011e574b80
+> Jul  3 05:51:43 ariolc kernel: [   32.688564] RDX: 0000000000000000
+> RSI: 00000000000000d0 RDI: 00000000000002d0
+> Jul  3 05:51:43 ariolc kernel: [   32.688564] RBP: 0000000000000296
+> R08: 0000000000000014 R09: ffff88011e574800
+> Jul  3 05:51:43 ariolc kernel: [   32.691414] R10: 0000000000000001
+> R11: ffff880001a12008 R12: 00000000000000d0
+> Jul  3 05:51:43 ariolc kernel: [   32.691414] R13: 0000000000000003
+> R14: ffffffff81064abb R15: ffffc90010729d68
+> Jul  3 05:51:43 ariolc kernel: [   32.691414] FS:
+> 00007f0a9acb8700(0000) GS:ffff880001b00000(0000)
+> knlGS:0000000000000000
+> Jul  3 05:51:43 ariolc kernel: [   32.691414] CS:  0010 DS: 0000 ES:
+> 0000 CR0: 0000000080050033
+> Jul  3 05:51:43 ariolc kernel: [   32.697212] CR2: 0000000000000003
+> CR3: 000000011d03e000 CR4: 00000000000006e0
+> Jul  3 05:51:43 ariolc kernel: [   32.698792] DR0: 0000000000000000
+> DR1: 0000000000000000 DR2: 0000000000000000
+> Jul  3 05:51:43 ariolc kernel: [   32.698792] DR3: 0000000000000000
+> DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Jul  3 05:51:43 ariolc kernel: [   32.698792] Process modprobe (pid:
+> 4652, threadinfo ffff88011e75e000, task ffff88011d114150)
+> Jul  3 05:51:43 ariolc kernel: [   32.698792] Stack:
+> Jul  3 05:51:43 ariolc kernel: [   32.698792]  0000000000000000
+> ffffc90010729c97 0000000000000008 ffff88011e574800
+> Jul  3 05:51:43 ariolc kernel: [   32.698792] <0> ffff88011e574aa0
+> ffffffff8108c27b ffffffffa0018920 ffffc900000000d0
+> Jul  3 05:51:43 ariolc kernel: [   32.698792] <0> ffffffffa0018920
+> ffffc90010728000 ffffc90010729d68 ffffffff81064abb
+> Jul  3 05:51:43 ariolc kernel: [   32.708636] Call Trace:
+> Jul  3 05:51:43 ariolc kernel: [   32.708636]  [<ffffffff8108c27b>] ?
+> kstrdup+0x3b/0x70
+> Jul  3 05:51:43 ariolc kernel: [   32.711488]  [<ffffffff81064abb>] ?
+> load_module+0x13eb/0x1730
+> Jul  3 05:51:43 ariolc kernel: [   32.711488]  [<ffffffff81064e7b>] ?
+> sys_init_module+0x7b/0x260
+> Jul  3 05:51:43 ariolc kernel: [   32.711488]  [<ffffffff810024ab>] ?
+> system_call_fastpath+0x16/0x1b
+> Jul  3 05:51:43 ariolc kernel: [   32.716465] Code: 23 25 dc 47 6f 00
+> 41 f6 c4 10 75 66 9c 5d fa 65 48 8b 14 25 a8 d1 00 00 48 8b 03 48 8d
+> 04 02 4c 8b 28 4d 85 ed 74 55 48 63 53 18 <49> 8b 54 15 00 48 89 10 55
+> 9d 4d 85 ed 74 06 66 45 85 e4 78 22
+> Jul  3 05:51:43 ariolc kernel: [   32.718865] RIP
+> [<ffffffff810aab89>] __kmalloc_track_caller+0x69/0x110
+> Jul  3 05:51:43 ariolc kernel: [   32.718865]  RSP <ffff88011e75fe08>
+> Jul  3 05:51:43 ariolc kernel: [   32.718865] CR2: 0000000000000003
+> Jul  3 05:51:43 ariolc kernel: [   32.718865] ---[ end trace
+> 692101747f991cfb ]---
+>
+> Two other OOPSen in __kmalloc() followed this one.
+>
+> I tried to switch from CONFIG_NO_BOOTMEM=y to unsetting this option.
+> This kernel froze before the userspace was started, I did not see any
+> OOPS output.
+>
+> Today I tried the vanilla 2.6.34.1 (again with CONFIG_NO_BOOTMEM=y).
+> The vanilla kernel also crashed before userspace, again in
+> __kmalloc(), but with a visible OOPS.
+> I wrote the following informations down:
+> OPPS was: BUG: unable to handle kernel NULL pointer dereference at
+> 0000000000000003
+> Callchain started with:
+> ffffffff810aab39 : __kmalloc_track_caller+0x69/0x110
+> ffffffff8108c23b : kstrdup+0x3b/0x70
+> called from sysfs_new_dirent
+> there where no modules loaded at this time, the faulting process was
+> Pid: 1, comm: swapper
 
-This patch fixes the two problems by:
-- marking journal commits as WRITE_SYNC, so that they get the REQ_NOIDLE
-  flag set,
-- force all queues that have REQ_NOIDLE requests to be put in the noidle
-  tree.
+[snip]
 
-Having the queue associated to the fsync-ing process and the one associated
- to journal commits in the noidle tree allows:
-- switching between them without idling,
-- fairness vs. competing idling queues, since they will be serviced only
-  after the noidle tree expires its slice.
+> From this assembly, I would guess its this line in slub.c / slab_alloc():
+> c->freelist = get_freepointer(s, object);
+>
+> A short test with 2.6.35-rc4 suggest that this problem has been fixed
+> on master, although 2.6.35-rc4 only boots with radeon.modset=0. With
+> KMS enabled the display turns off and the system does not even respond
+> to SysRq+B.
+> (I will report this KMS issue in another mail.)
+>
+> The system is an AMD RS690 with an Athlon X2 BE-2400.
+> Under 2.6.33 the system is perfectly stable, KMS is working and enabled.
+>
+> Any guesses what this might cause?
 
-Acked-by: Vivek Goyal <vgoyal@redhat.com>
-Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
-Tested-by: Jeff Moyer <jmoyer@redhat.com>
-Signed-off-by: Corrado Zoccolo <czoccolo@gmail.com>
----
- block/cfq-iosched.c |   18 ++++--------------
- fs/jbd/commit.c     |    2 +-
- fs/jbd2/commit.c    |    2 +-
- 3 files changed, 6 insertions(+), 16 deletions(-)
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index eb4086f..49dada4 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -216,7 +216,6 @@ struct cfq_data {
- 	enum wl_type_t serving_type;
- 	unsigned long workload_expires;
- 	struct cfq_group *serving_group;
--	bool noidle_tree_requires_idle;
- 
- 	/*
- 	 * Each priority tree is sorted by next_request position.  These
-@@ -2126,7 +2125,6 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
- 	slice = max_t(unsigned, slice, CFQ_MIN_TT);
- 	cfq_log(cfqd, "workload slice:%d", slice);
- 	cfqd->workload_expires = jiffies + slice;
--	cfqd->noidle_tree_requires_idle = false;
- }
- 
- static struct cfq_group *cfq_get_next_cfqg(struct cfq_data *cfqd)
-@@ -3108,7 +3106,9 @@ cfq_update_idle_window(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 	if (cfqq->queued[0] + cfqq->queued[1] >= 4)
- 		cfq_mark_cfqq_deep(cfqq);
- 
--	if (!atomic_read(&cic->ioc->nr_tasks) || !cfqd->cfq_slice_idle ||
-+	if (cfqq->next_rq && (cfqq->next_rq->cmd_flags & REQ_NOIDLE))
-+		enable_idle = 0;
-+	else if (!atomic_read(&cic->ioc->nr_tasks) || !cfqd->cfq_slice_idle ||
- 	    (!cfq_cfqq_deep(cfqq) && CFQQ_SEEKY(cfqq)))
- 		enable_idle = 0;
- 	else if (sample_valid(cic->ttime_samples)) {
-@@ -3421,17 +3421,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
- 			cfq_slice_expired(cfqd, 1);
- 		else if (sync && cfqq_empty &&
- 			 !cfq_close_cooperator(cfqd, cfqq)) {
--			cfqd->noidle_tree_requires_idle |=
--				!(rq->cmd_flags & REQ_NOIDLE);
--			/*
--			 * Idling is enabled for SYNC_WORKLOAD.
--			 * SYNC_NOIDLE_WORKLOAD idles at the end of the tree
--			 * only if we processed at least one !REQ_NOIDLE request
--			 */
--			if (cfqd->serving_type == SYNC_WORKLOAD
--			    || cfqd->noidle_tree_requires_idle
--			    || cfqq->cfqg->nr_cfqq == 1)
--				cfq_arm_slice_timer(cfqd);
-+			cfq_arm_slice_timer(cfqd);
- 		}
- 	}
- 
-diff --git a/fs/jbd/commit.c b/fs/jbd/commit.c
-index 28a9dda..d97a0c6 100644
---- a/fs/jbd/commit.c
-+++ b/fs/jbd/commit.c
-@@ -317,7 +317,7 @@ void journal_commit_transaction(journal_t *journal)
- 	int first_tag = 0;
- 	int tag_flag;
- 	int i;
--	int write_op = WRITE;
-+	int write_op = WRITE_SYNC;
- 
- 	/*
- 	 * First job: lock down the current transaction and wait for
-diff --git a/fs/jbd2/commit.c b/fs/jbd2/commit.c
-index 75716d3..a078744 100644
---- a/fs/jbd2/commit.c
-+++ b/fs/jbd2/commit.c
-@@ -369,7 +369,7 @@ void jbd2_journal_commit_transaction(journal_t *journal)
- 	int tag_bytes = journal_tag_bytes(journal);
- 	struct buffer_head *cbh = NULL; /* For transactional checksums */
- 	__u32 crc32_sum = ~0;
--	int write_op = WRITE;
-+	int write_op = WRITE_SYNC;
- 
- 	/*
- 	 * First job: lock down the current transaction and wait for
--- 
-1.6.2.5
-
-
+It's slab corruption that can be cause by many things. Can you please
+try to reproduce with CONFIG_SLUB_DEBUG_ON=y?
