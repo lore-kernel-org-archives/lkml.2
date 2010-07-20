@@ -1,188 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754493Ab0GTFsQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 01:48:16 -0400
-Received: from mga03.intel.com ([143.182.124.21]:48118 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753842Ab0GTFsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 01:48:15 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,230,1278313200"; 
-   d="scan'208";a="302041219"
-Subject: Re: [rfc] Describe events in a structured way via sysfs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Johannes Berg <johannes@sipsolutions.net>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <4C40F750.4000607@linux.vnet.ibm.com>
-References: <1277187920.4467.3.camel@minggr.sh.intel.com>
-	 <1277189971.3637.5.camel@jlt3.sipsolutions.net>
-	 <1277191359.5025.4.camel@minggr.sh.intel.com>
-	 <1277192007.3637.8.camel@jlt3.sipsolutions.net>
-	 <20100624093625.GA26931@elte.hu>
-	 <1277396053.3870.16.camel@jlt3.sipsolutions.net>
-	 <20100624173315.GA30403@elte.hu>
-	 <1277792114.5400.5.camel@minggr.sh.intel.com>
-	 <20100629085532.GE22344@elte.hu>
-	 <1277803248.5400.16.camel@minggr.sh.intel.com>
-	 <20100629102656.GA25512@elte.hu>
-	 <1278057996.3841.26.camel@minggr.sh.intel.com>
-	 <4C40F750.4000607@linux.vnet.ibm.com>
+	id S932085Ab0GTGAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 02:00:14 -0400
+Received: from darkcity.gna.ch ([195.226.6.51]:50825 "EHLO mail.gna.ch"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754693Ab0GTGAM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 02:00:12 -0400
+X-Quarantine-ID: <L8Ayj7xgeWKb>
+X-Amavis-Alert: BAD HEADER, Improper folded header field made up entirely of
+	whitespace (char 09 hex): Face: ...MWASAkVVViQjzP\n jycPrvgA\n\t\n
+	R1goSzOnkp14Y[...]
+Subject: Re: Regression 2.6.34+ -> 2.6.34-rc5: radeon KMS rs780 problems
+From: Michel =?ISO-8859-1?Q?D=E4nzer?= <michel@daenzer.net>
+To: Ed Tomlinson <edt@aei.ca>
+Cc: linux-kernel@vger.kernel.org, Alex Deucher <alexdeucher@gmail.com>,
+        dri-devel@lists.freedesktop.org
+In-Reply-To: <201007192300.15124.edt@aei.ca>
+References: <201007171856.39564.edt@aei.ca>
+	 <1279550060.9986.89.camel@thor.local>  <201007192300.15124.edt@aei.ca>
+Face: iVBORw0KGgoAAAANSUhEUgAAADAAAAAwBAMAAAClLOS0AAAAAXNSR0IArs4c6QAAADBQTFRFDg4OHh4eLCwsOzs7S0tLWlpaa2treXl5hISEjY2NmJiYqKiotLS0xsbG1dXV/Pz81CO0SQAAArtJREFUOMtd1M9P01AcAHCI/4AtGq/QDfDHRfraEX8eaNeJFw1rO/DCYet7mxc1ZG0x3sStHQkmZpqtHDwAi+tMiFEzbZdwNWEJR48cjPG4g5HhELUbrHvjpYe2n7zvt++977cD/7rjsCry8uNG93Gge9OKUyAAgLB1AlpTZICmAzR15QTEiQAPAKADYLMPfhNnEJR4HvD0tT5YI2KGUcyqihQN7mDwZ3hMN4q2N4ol+gEGTSLWhorrjYXrGPwc0jTDOoKP4xi8G0W6adl2Gz6zGDwag5p5PMON7vZgJuSB976+3U6y2QdeKNet1+uum9/qwVQHvEjtKesY0EIb7CNYe+7DIRXCID/vQ4tksVAY7JFBD7yvqrWTL93xoUmOQsPIddbnuk8v+bBPsigB2KRlFxS4nL/owwEpKBSg2MU3UcDf+nATyyHEQwrHzJZFNpXeuOHDC0qW4sMhEHESFGOUrvgQpWUYFVNQdjQxca8abnSB55CmehdcLSxa1ifoQ4JBpmGYWbhsly3X0fxQ7xmkW3Y5CztLcXI+fAu2oWho3nbV6s5rH35xSC/aBR2tOpVa/Utv25tcTDPL6aT21kG17WrvaFtMBJmFhJCsVF4uu9VG76DWBaRnEiNs7pU659pYlfwtQSRy9GCYlwR7C6/dPQgBw3MsTPNWA4d9SeMDDC9JYdnqq/amdF+diGnVhXFztQ/2lJSWjulOxjRX+uC7EkOqhLRk2ejrqHVBEqCqJLO5cmEXgx8TrBiWVQh1u2DhzQlPsyIveU2YLGorGBxODoR5notlpcUieoLB1/NEmGc4AalGJpLe8WF/8txMWASAkVVViQjzP
+ jycPrvgA	
+ R1goSzOnkp14YCYHsp7QJHAS5QcXDqG1jBxdSITVgBNkBTFloj88Q/gMkFcuItYiQPUCBGc2xh5drsD/wGZrgsgDOE4ZAAAAABJRU5ErkJggg==
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Jul 2010 13:48:28 +0800
-Message-ID: <1279604908.23815.21.camel@minggr.sh.intel.com>
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 20 Jul 2010 08:00:06 +0200
+Message-ID: <1279605606.9986.113.camel@thor.local>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-07-17 at 08:20 +0800, Corey Ashford wrote:
-> On 07/02/2010 01:06 AM, Lin Ming wrote:
-> > On Tue, 2010-06-29 at 18:26 +0800, Ingo Molnar wrote:
-> >> * Lin Ming<ming.m.lin@intel.com>  wrote:
-> >>
-> >>>> Also, we can (optionally) consider 'generic', subsystem level events to
-> >>>> also show up under:
-> >>>>
-> >>>>     /sys/bus/pci/drivers/i915/events/
-> >>>>
-> >>>> This would give a model to non-device-specific events to be listed one
-> >>>> level higher in the sysfs hierarchy.
-> >>>>
-> >>>> This too would be done in the driver, not by generic code. It's generally
-> >>>> the driver which knows how the events should be categorized.
-> >>>
-> >>> This is a bit difficult. I'd like not to touch TRACE_EVENT(). [...]
-> >>
-> >> We can certainly start with the simpler variant - it's also the more common
-> >> case.
-> >>
-> >>> [...] How does the driver know if an event is 'generic' if TRACE_EVENT is
-> >>> not touched?
-> >>
-> >> Well, it's per driver code which creates the 'events' directory anyway, so
-> >> that code decides where to link things. It can link it to the per driver kobj
-> >> - or to the per subsys kobj.
-> >>
-> >>>> I'd imagine something similar for wireless drivers as well - most
-> >>>> currently defined events would show up on a per device basis there.
-> >>>>
-> >>>> Can you see practical problems with this scheme?
-> >>>
-> >>> Not now. I may find some problems when write more detail code.
-> >>
-> >> Ok. Feel free to post RFC patches (even if they are not fully complete yet),
-> >> so that we can see how things are progressing.
-> >>
-> >> I suspect the best approach would be to try to figure out the right sysfs
-> >> placement for one or two existing driver tracepoints, so that we can see it
-> >> all in practice. (Obviously any changes to drivers will have to go via the
-> >> relevant driver maintainer tree(s).)
-> >
-> > Well, take i915 tracepoints as an example, the sys structures as below
-> >
-> > /sys/class/drm/card0/events/
-> > |-- i915_gem_object_bind
-> > |   |-- enable
-> > |   |-- filter
-> > |   |-- format
-> > |   `-- id
-> ...
+On Mon, 2010-07-19 at 23:00 -0400, Ed Tomlinson wrote: 
+> On Monday 19 July 2010 10:34:20 Michel Dänzer wrote:
+> > On Sam, 2010-07-17 at 18:56 -0400, Ed Tomlinson wrote: 
+> > > 
+> > > My 790gx chipset supplies an rs780.  With .34+ all is ok.
+> > > With .35-rc5 basic function seems ok (kde works) but games like
+> > > extreme tux racer have problems.  The cursor does not display when on
+> > > the tux racer window and various objects flicker on and off as I
+> > > attempt to play the game.   
+> > 
+> > Sounds like it might be
+> > https://bugs.freedesktop.org/show_bug.cgi?id=28341 . Does the X driver
+> > patch attached there fix the problem?
 > 
-> Hi Lin,
+> Michel,
 > 
-> Sorry for my late reply on this thread.  I had missed these posts 
-> earlier because I had an email filter that was set to look for messages 
-> with "perf" in the subject, and so I missed this entire thread.
+> xf86-video-ati git from today fails.  Applying the revert patch in the above message
+> fixes the problem.  Its an interesting bug in that the kernel change triggers the 
+> driver bug.  Might be a good idea to get this fixed, one way or another, before
+> -35 gets released?
 
-Sorry for my late reply too.
-I have been busy with some other stuff. Hope I can send a more
-functional patches this week.
-
-> 
-> With your example here, let's say I want to open this event with the 
-> perf_events ABI... how would I go about doing that?  Have you figured 
-> out whether the caller would read the id and pass that into the 
-> interface, or perhaps pass in the fd of the id file (or perhaps the fd 
-> of the specific event directory).
-
-Please just ignore my above example. Now I have some uncompleted new
-patches to export hardware/software/tracepoint events via sysfs, like
-below.
-
-The event path is passed in with perf's "-e" option, for example
-perf record -e /sys/kernel/events/page-faults -- <some commands>
-
-The caller reads config and type and pass them into perf_event_attr.
-
-1. Hardware events
-/sys/devices/system/cpu/cpu0...cpuN/events
-|-- L1-dcache-load-misses  ===> event name
-|   |-- config             ===> config value for the event
-|   `-- type               ===> event type
-|-- cycles
-|   |-- config
-|   `-- type
-.....
-
-2. Software events
-/sys/kernel/events
-|-- page-faults
-|   |-- config
-|   `-- type
-|-- context-switches
-|   |-- config
-|   `-- type
-....
-
-3. Tracepoint events
-/sys/devices/pci0000:00/0000:00:02.0/events
-|-- i915_gem_object_create
-|   |-- config
-|   `-- type
-|-- i915_gem_object_bind
-|   |-- config
-|   `-- type
-....
-....
-/sys/devices/system/kvm/kvm0/events
-|-- kvm_entry
-|   |-- config
-|   `-- type
-|-- kvm_hypercall
-|   |-- config
-|   `-- type
-....
-....
-
-> 
-> Also, I see the filter and format fields here.  Would the caller write 
-> to these fields to set them up?  What's the format of the data that's 
-> written to them?  Would it be totally device dependent?  It seems like 
-> there should be a way for a user space tool to discover what can be 
-> programmed into the filter and format fields.
-
-Now only read-only event attributes(config and type) are exported.
-I want to first make some minimal functional patches. Then to implement
-the complex writable attributes.
-
-Lin Ming
+It's basically a userspace bug, the buggy userspace code is just only
+active with new functionality in the new kernel.
 
 
+-- 
+Earthling Michel Dänzer           |                http://www.vmware.com
+Libre software enthusiast         |          Debian, X and DRI developer
