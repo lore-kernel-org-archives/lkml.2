@@ -1,105 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932740Ab0GTVSv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 17:18:51 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:33167 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932655Ab0GTVSs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 17:18:48 -0400
-Message-ID: <4C4612B2.6050401@linux.vnet.ibm.com>
-Date: Tue, 20 Jul 2010 14:18:42 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Robert Richter <robert.richter@amd.com>
-CC: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Subject: Re: [rfc] Describe events in a structured way via sysfs
-References: <20100624173315.GA30403@elte.hu> <1277792114.5400.5.camel@minggr.sh.intel.com> <20100629085532.GE22344@elte.hu> <1277803248.5400.16.camel@minggr.sh.intel.com> <20100629102656.GA25512@elte.hu> <1278057996.3841.26.camel@minggr.sh.intel.com> <4C40F750.4000607@linux.vnet.ibm.com> <1279604908.23815.21.camel@minggr.sh.intel.com> <20100720151920.GC21909@erda.amd.com> <4C45E1C9.6010402@linux.vnet.ibm.com> <20100720183018.GN26154@erda.amd.com>
-In-Reply-To: <20100720183018.GN26154@erda.amd.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932759Ab0GTVTG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 17:19:06 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46591
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S932412Ab0GTVTB convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 17:19:01 -0400
+Date: Tue, 20 Jul 2010 14:19:17 -0700 (PDT)
+Message-Id: <20100720.141917.22550218.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2010 11:30 AM, Robert Richter wrote:
-> On 20.07.10 13:50:01, Corey Ashford wrote:
->
->>> ... and then extend the syscall to enable an event by its sysfs id:
->>>
->>>               memset(&attr, 0, sizeof(attr));
->>>               attr.type        = PERF_TYPE_SYSFS;
->>>               attr.sysfs_id    = sysfs_id;
->>>               attr.sample_type = PERF_SAMPLE_CPU | PERF_SAMPLE_RAW;
->>>               attr.config      = config;
->>> 	    ...
->
->> Your example above still shows the .config member being set.  Was that
->> intentional?
->>
->> Maybe another way to accomplish this would be to reuse the .config field
->> for the sysfs_id.
->
-> This was intended as this could be used to configure the event,
-> otherwise there is no way to setup the event with certain
-> parameters. The config value will be event specific then and we can be
-> sure the parameter belongs to _this_ kind of event.
->
->> We still need a way to deal with event attributes though, so something
->> more than a single sysfs_id would be needed to specify the event completely.
->
-> It is true that you still need knowledge of what the event is
-> measuring and how it is set up or configured. Maybe the configuration
-> may left blank if the event can be setup without it. But with this
-> approach you can get file descriptors for every event a user may be
-> interested in simply by looking into sysfs.
->
 
-Yes, that would be a nice feature.
+Several really small fixes, as is customary this late in the -rc
+series...
 
-> For example, I was thinking of perfctr events vs. ibs events. The cpu
-> could setup something like:
->
-> /sys/devices/system/cpu/cpu0...cpuN/events/perfctr/id
-> /sys/devices/system/cpu/cpu0...cpuN/events/ibs_op/id
->
-> Both events are setup with one 64 bit config value that is basically
-> the event's configuration msr (x86 perfctr or AMD IBS). These are
-> definded in the hardware specifications. Its formats differ. You could
-> then open the event file descriptor using the sysfs id and use the
-> config value to customize the event. You don't have a complicated
-> setup or implementation to detect which kind of event you want to use
-> as the id indicates the type of event.
->
-> Actually, we could setup e.g. also trace events with this mechanism.
+1) Three bluetooth fixes via Marcel Holtmann:
+   a) Fix L2CAP state machine race, from Andrei Emeltchenko
 
-In perf_events, as I recall, they started out with a combined type and 
-config field, but it quickly became obvious that config was going to get 
-too crowded even with 64 bits available, so they were split up into 
-separate type and config fields.  I fear that's what would happen to the 
-sysfs_id value as well... it would be too crowded.
+   b) HCI conn security level must be reset after auth failure, from
+      Johan Hedberg.
 
-Retaining the type and config nodes in sysfs makes it very clear for a 
-programmer as to how to use them.... just read and copy them into the 
-attr struct's corresponding members, and requires no changes to the 
-existing attr struct (at least for the moment).
+   c) Existng HCI connections need auth levels adjusted when
+      constrained by new connection settings.  From Ville Tervo.
 
-- Corey
+2) TX queue hash is set incorrectly in stacked device situations
+   because of how we early orphan the socket from the SKB these
+   days.  Fix, by remembering sk->sk_hash in skb->rxhash and using
+   it later, from Eric Dumazet.
+
+3) Neighbour ->cache_update header op is optional, check for NULL
+   was missing in neigh_update_hhs() leading to OOPS with GRE
+   tunnels.  Fix from Doug Kehn.
+
+4) RFS Socket sk->sk_tx_queue_mapping is read asynchronously from it's
+   setting.  Therefore doing two reads (one to analyze it's validity,
+   a second to fetch the actual value) is racey.  Do it on one read
+   to fix the problem.  From Tom Herbert.
+
+5) Don't do vhost-net flushes with mutex held, otherwise we deadlock
+   with workqueue.  From Michael S. Tsirkin.
+
+
+6) Guest triggerable condition results in pr_err() log, change to
+   pr_debug().  Also From Michael S. Tsirkin.
+
+7) Multicast router code in ipv4 leaks SKB is fib lookup fails, fix
+   from Ben Greear.
+
+8) Initialize workqueue earlier in rt2x00 wireless to avoid access to
+   uninitialized lock on probe failure.  From Stephen Boyd.
+
+9) Dangling hypervisor VIO interrupt can wedge ibmveth device on close.
+   Fix using explicit hypervisor call to disable it before the free.
+   From Robert Jennings.
+
+10) Mobile ipv6 routing header code checks wrong address, should look at
+    ipv6 header address not the one in the routing header.  From
+    Arnaud Ebalard.
+
+11) There are circumstances, that which we do not %100 understand yet but
+    is proven by testing and experimentation, where we can call
+    tcp_xmit_retransmit_queue() when the send queue of the socket is empty.
+
+    If this happens, we deref a NULL skb trying to look at SACK information
+    of the head skb.
+
+    Just return immediately if ->packets_out is zero.
+
+    From Ilpo Järvinen.
+
+12) Bridge netpoll support is buggy, but we were only able to fix the
+    problem with a series of non-trivial changes in net-next-2.6 which
+    are not appropriate this late in the -rc series.  Just disable
+    netpoll support in bridging for 2.6.35, it'll be working fine in
+    2.6.36
+
+13) Phone SKB leak fix from Rémi Denis-Courmont.
+
+14) 8168dp ID fix in r8169 driver from Francois Romieu.
+
+15) Packet scheduler NAT module requires all ICMPs to have an IP
+    header in their payload, this is not correct, only some ICMPs do.
+    Fix from Changli Gao based upon a patch and analysis by Rodrigo
+    Partearroyo González.
+
+16) NET_DSA needs to depend upon NET_ETHERNET.  Based upon a report by
+    Randy Dunlap.
+
+17) Fix locking in the axnet_cs interrupt handler since it can be
+    invoked by the watchdog too.  From Ken Kawasaki.
+
+18) hostap driver must unconditionally set dev->base_addr during probe.
+    From John W. Linville.
+
+19) Fix crash in xfrm bundle lookup, it assumed template resolution always
+    results in constructed xfrms.  From Timo Teräs.
+
+20) tcp_splice_read() doesn't hit sock_rps_record_flow() but it needs to.
+    From Changli Gao.
+
+Please pull, thanks a lot!
+
+The following changes since commit 2f7989efd4398d92b8adffce2e07dd043a0895fe:
+
+  Merge master.kernel.org:/home/rmk/linux-2.6-arm (2010-07-14 17:28:13 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Andrei Emeltchenko (1):
+      Bluetooth: Check L2CAP pending status before sending connect request
+
+Arnaud Ebalard (1):
+      IPv6: fix CoA check in RH2 input handler (mip6_rthdr_input())
+
+Ben Greear (1):
+      ipmr: Don't leak memory if fib lookup fails.
+
+Changli Gao (2):
+      act_nat: not all of the ICMP packets need an IP header payload
+      rfs: call sock_rps_record_flow() in tcp_splice_read()
+
+David S. Miller (4):
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+      dsa: Fix Kconfig dependencies.
+      Merge branch 'vhost-net' of git://git.kernel.org/.../mst/vhost
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+
+Doug Kehn (1):
+      net/core: neighbour update Oops
+
+Eric Dumazet (1):
+      net: skb_tx_hash() fix relative to skb_orphan_try()
+
+Francois Romieu (1):
+      r8169: incorrect identifier for a 8168dp
+
+Herbert Xu (1):
+      bridge: Partially disable netpoll support
+
+Ilpo Järvinen (1):
+      tcp: fix crash in tcp_xmit_retransmit_queue
+
+Johan Hedberg (1):
+      Bluetooth: Reset the security level after an authentication failure
+
+John W. Linville (1):
+      hostap_pci: set dev->base_addr during probe
+
+Ken Kawasaki (1):
+      axnet_cs: use spin_lock_irqsave in ax_interrupt
+
+Michael S. Tsirkin (2):
+      vhost-net: avoid flush under lock
+      vhost: avoid pr_err on condition guest can trigger
+
+Rajkumar Manoharan (1):
+      ath9k_htc: fix memory leak in ath9k_hif_usb_alloc_urbs
+
+Reinette Chatre (1):
+      iwlwifi: remove key information during device restart
+
+Robert Jennings (1):
+      ibmveth: lost IRQ while closing/opening device leads to service loss
+
+Rémi Denis-Courmont (1):
+      Phonet: fix skb leak in pipe endpoint accept()
+
+Stephen Boyd (1):
+      rt2x00: Fix lockdep warning in rt2x00lib_probe_dev()
+
+Timo Teräs (1):
+      xfrm: do not assume that template resolving always returns xfrms
+
+Tom Herbert (1):
+      net: fix problem in reading sock TX queue
+
+Ville Tervo (1):
+      Bluetooth: Update sec_level/auth_type for already existing connections
+
+ drivers/net/ibmveth.c                    |    4 +++-
+ drivers/net/pcmcia/axnet_cs.c            |    7 ++++---
+ drivers/net/r8169.c                      |    2 +-
+ drivers/net/wireless/ath/ath9k/hif_usb.c |    8 ++++++--
+ drivers/net/wireless/hostap/hostap_pci.c |    1 +
+ drivers/net/wireless/iwlwifi/iwl-sta.h   |   11 +++++++++++
+ drivers/net/wireless/rt2x00/rt2x00dev.c  |   10 +++++-----
+ drivers/vhost/net.c                      |   13 +++++++++----
+ include/net/sock.h                       |    7 +------
+ net/bluetooth/hci_conn.c                 |    5 +++++
+ net/bluetooth/hci_event.c                |    2 ++
+ net/bluetooth/l2cap.c                    |   14 +++++++++++---
+ net/bridge/br_device.c                   |    9 ---------
+ net/bridge/br_forward.c                  |   23 +----------------------
+ net/core/dev.c                           |   20 +++++++++++++-------
+ net/core/neighbour.c                     |    5 ++++-
+ net/dsa/Kconfig                          |    2 +-
+ net/ipv4/ipmr.c                          |    8 ++++++--
+ net/ipv4/tcp.c                           |    1 +
+ net/ipv4/tcp_output.c                    |    3 +++
+ net/ipv6/mip6.c                          |    3 ++-
+ net/phonet/pep.c                         |    1 +
+ net/sched/act_nat.c                      |    5 ++++-
+ net/xfrm/xfrm_policy.c                   |   15 +++++++++++++--
+ 24 files changed, 108 insertions(+), 71 deletions(-)
