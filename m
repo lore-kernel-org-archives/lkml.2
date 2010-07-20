@@ -1,90 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab0GTExz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 00:53:55 -0400
-Received: from mail4.hitachi.co.jp ([133.145.228.5]:46070 "EHLO
-	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752340Ab0GTExy (ORCPT
+	id S1753170Ab0GTEyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 00:54:15 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:50033 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752761Ab0GTEyL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 00:53:54 -0400
-X-AuditID: b753bd60-a9cd2ba000005dcc-ab-4c452bdf40d4
-Message-ID: <4C452BD6.7080901@hitachi.com>
-Date: Tue, 20 Jul 2010 13:53:42 +0900
-From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
-Organization: Systems Development Lab., Hitachi, Ltd., Japan
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Roland McGrath <roland@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: kprobes: fix swapped segment registers in kretprobe
-References: <20100718221111.19BC24B2C9@magilla.sf.frob.com>
-In-Reply-To: <20100718221111.19BC24B2C9@magilla.sf.frob.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Brightmail-Tracker: AAAAAA==
-X-FMFTCR: RANGEC
+	Tue, 20 Jul 2010 00:54:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=cTj/1PC4gqW7IXcNUeydWJshBsqhqiflT360wdkvlGNETQoX8r0fL0KxGirvojP/BQ
+         GLW20FRTjqWPJ5oe7fssj+fEQ/74sJEJyuzGN+/Ogmt1UdkSGBt+RfQySTH7dcecT5wy
+         nIvCJ6Pf0ixWW9JDdJC/+DM42+InGIyQYImns=
+Subject: Re: [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, nhorman@tuxdriver.com,
+        laijs@cn.fujitsu.com, scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        fweisbec@gmail.com, mathieu.desnoyers@polymtl.ca
+In-Reply-To: <4C44F286.1050907@jp.fujitsu.com>
+References: <4C44F12F.5090908@jp.fujitsu.com>
+	 <4C44F286.1050907@jp.fujitsu.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Jul 2010 06:54:03 +0200
+Message-ID: <1279601643.2458.64.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Roland McGrath wrote:
-> The following changes since commit bea9a6d239cb2aa2ced4dcb0a05e1827ce61fa3d:
+Le mardi 20 juillet 2010 à 09:49 +0900, Koki Sanagi a écrit :
+> [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
+> This patch adds tracepoint to consume_skb, dev_kfree_skb_irq and
+> skb_free_datagram_locked. Combinating with tracepoint on dev_hard_start_xmit,
+> we can check how long it takes to free transmited packets. And using it, we can
+> calculate how many packets driver had at that time. It is useful when a drop of
+> transmited packet is a problem.
 > 
->   Merge branch 'upstream-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2 (2010-07-18 10:09:25 -0700)
+>           <idle>-0     [001] 241409.218333: consume_skb: skbaddr=dd6b2fb8
+>           <idle>-0     [001] 241409.490555: dev_kfree_skb_irq: skbaddr=f5e29840
 > 
-> are available in the git repository at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/frob/linux-2.6-roland.git x86/kprobes
-> 
-> Roland McGrath (1):
->       x86: kprobes: fix swapped segment registers in kretprobe
-> 
->  arch/x86/kernel/kprobes.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
+>         udp-recv-302   [001] 515031.206008: skb_free_datagram_locked: skbaddr=f5b1d900
 > 
 > 
-> Thanks,
-> Roland
+> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
 > ---
-> [PATCH] x86: kprobes: fix swapped segment registers in kretprobe
+>  include/trace/events/skb.h |   42 ++++++++++++++++++++++++++++++++++++++++++
+>  net/core/datagram.c        |    1 +
+>  net/core/dev.c             |    2 ++
+>  net/core/skbuff.c          |    1 +
+>  4 files changed, 46 insertions(+), 0 deletions(-)
 > 
-> In commit f007ea26, the order of the %es and %ds segment registers
-> got accidentally swapped, so synthesized 'struct pt_regs' frames
-> have the two values inverted.  It's almost sure that these values
-> never matter, and that they also never differ.  But wrong is wrong.
+> diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
+> index 4b2be6d..84c9041 100644
+> --- a/include/trace/events/skb.h
+> +++ b/include/trace/events/skb.h
+> @@ -35,6 +35,48 @@ TRACE_EVENT(kfree_skb,
+>  		__entry->skbaddr, __entry->protocol, __entry->location)
+>  );
+>  
+> +DECLARE_EVENT_CLASS(free_skb,
+> +
+> +	TP_PROTO(struct sk_buff *skb),
+> +
+> +	TP_ARGS(skb),
+> +
+> +	TP_STRUCT__entry(
+> +		__field(	void *,	skbaddr	)
+> +	),
+> +
+> +	TP_fast_assign(
+> +		__entry->skbaddr = skb;
+> +	),
+> +
+> +	TP_printk("skbaddr=%p", __entry->skbaddr)
+> +
+> +);
+> +
+> +DEFINE_EVENT(free_skb, consume_skb,
+> +
+> +	TP_PROTO(struct sk_buff *skb),
+> +
+> +	TP_ARGS(skb)
+> +
+> +);
+> +
+> +DEFINE_EVENT(free_skb, dev_kfree_skb_irq,
+> +
+> +	TP_PROTO(struct sk_buff *skb),
+> +
+> +	TP_ARGS(skb)
+> +
+> +);
+> +
+> +DEFINE_EVENT(free_skb, skb_free_datagram_locked,
+> +
+> +	TP_PROTO(struct sk_buff *skb),
+> +
+> +	TP_ARGS(skb)
+> +
+> +);
+> +
+>  TRACE_EVENT(skb_copy_datagram_iovec,
+>  
+>  	TP_PROTO(const struct sk_buff *skb, int len),
+> diff --git a/net/core/datagram.c b/net/core/datagram.c
+> index f5b6f43..1ea32a0 100644
+> --- a/net/core/datagram.c
+> +++ b/net/core/datagram.c
+> @@ -231,6 +231,7 @@ void skb_free_datagram_locked(struct sock *sk, struct sk_buff *skb)
+>  {
+>  	bool slow;
+>  
+> +	trace_skb_free_datagram_locked(skb);
 
-Oops, thanks Roland for finding it.
+Here you unconditionally trace before the test on skb->users
 
-Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+>  	if (likely(atomic_read(&skb->users) == 1))
+>  		smp_rmb();
+>  	else if (likely(!atomic_dec_and_test(&skb->users)))
+> diff --git a/net/core/dev.c b/net/core/dev.c
+> index 4acfec6..d979847 100644
+> --- a/net/core/dev.c
+> +++ b/net/core/dev.c
+> @@ -131,6 +131,7 @@
+>  #include <linux/random.h>
+>  #include <trace/events/napi.h>
+>  #include <trace/events/net.h>
+> +#include <trace/events/skb.h>
+>  #include <linux/pci.h>
+>  
+>  #include "net-sysfs.h"
+> @@ -1581,6 +1582,7 @@ void dev_kfree_skb_irq(struct sk_buff *skb)
+>  		struct softnet_data *sd;
+>  		unsigned long flags;
+>  
+> +		trace_dev_kfree_skb_irq(skb);
+>  		local_irq_save(flags);
+>  		sd = &__get_cpu_var(softnet_data);
+>  		skb->next = sd->completion_queue;
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index 34432b4..a7b4036 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -466,6 +466,7 @@ void consume_skb(struct sk_buff *skb)
+>  		smp_rmb();
+>  	else if (likely(!atomic_dec_and_test(&skb->users)))
+>  		return;
+
+While here you trace _after_ the test on skb->users - and a "return;" ,
+so you miss some consume_skb() calls
 
 
+> +	trace_consume_skb(skb);
+>  	__kfree_skb(skb);
+>  }
+>  EXPORT_SYMBOL(consume_skb);
 > 
-> Signed-off-by: Roland McGrath <roland@redhat.com>
-> ---
->  arch/x86/kernel/kprobes.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-> index 345a4b1..675879b 100644
-> --- a/arch/x86/kernel/kprobes.c
-> +++ b/arch/x86/kernel/kprobes.c
-> @@ -640,8 +640,8 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
->  	/* Skip cs, ip, orig_ax and gs. */	\
->  	"	subl $16, %esp\n"	\
->  	"	pushl %fs\n"		\
-> -	"	pushl %ds\n"		\
->  	"	pushl %es\n"		\
-> +	"	pushl %ds\n"		\
->  	"	pushl %eax\n"		\
->  	"	pushl %ebp\n"		\
->  	"	pushl %edi\n"		\
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+
 
