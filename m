@@ -1,66 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab0GTK5T (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 06:57:19 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:46566 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752894Ab0GTK5R (ORCPT
+	id S1758103Ab0GTLBZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 07:01:25 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:60744 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757816Ab0GTLBY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 06:57:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=vMiqTEI9gopdIj8m2Rkc+1M4PyPueaG7L9zYD3QQ6QMHgTQ74OEFY+cnRTtmXyGEYx
-         T+kbDsbVgnPjBdg9SuDhU9Y7Jx/cH7/odWoMHKWLq5eNoUfd9w6nXCEaJ8EgJjAJcTxR
-         Lk0S+fBP/lRSWyFQctyZo80umKuuqbgYfAlTA=
-Date: Tue, 20 Jul 2010 14:57:12 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: David Woodhouse <dwmw2@infradead.org>,
-        Yulia Vilensky <vilensky@compulab.co.il>,
-        Geert Stappers <stappers@stappers.nl>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] ds2782_battery: Rename get_current and get_voltage
- operations
-Message-ID: <20100720105712.GA20366@oksana.dev.rtsoft.ru>
-References: <1279584175.4883.226.camel@localhost>
- <20100720074659.GA32073@oksana.dev.rtsoft.ru>
- <1279619066.4883.249.camel@localhost>
+	Tue, 20 Jul 2010 07:01:24 -0400
+Date: Tue, 20 Jul 2010 12:01:23 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: dd diasemi <dd.diasemi@gmail.com>
+Cc: linux-kernel@vger.kernel.org, jic23@cam.ac.uk
+Subject: Re: [PATCHv3 2/11] GPIO: GPIO Driver for DA9052 PMIC
+Message-ID: <20100720110122.GF7002@sirena.org.uk>
+References: <AANLkTimaml4sINBBSJUS7hu5sgkGZP0ZR4ugpdgN5iH7@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279619066.4883.249.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimaml4sINBBSJUS7hu5sgkGZP0ZR4ugpdgN5iH7@mail.gmail.com>
+X-Cookie: Courage is your greatest present need.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 10:44:26AM +0100, Ben Hutchings wrote:
-> On Tue, 2010-07-20 at 11:46 +0400, Anton Vorontsov wrote:
-> > On Tue, Jul 20, 2010 at 01:02:55AM +0100, Ben Hutchings wrote:
-> > > commit 9b9ade6b612e562c4a5bd02ef38cc32e10f3f9ba "ds2782_battery: Add
-> > > support for ds2786 battery gas gauge" introduced an operation named
-> > > get_current.  Since get_current() is defined as a macro on some
-> > > architectures this driver no longer compiles on those architectures.
-> > > 
-> > > Rename get_current to get_current_now to avoid the macro.
-> > > Rename get_voltage to get_voltage_now for consistency.
-> > > 
-> > > Reported-by: Geert Stappers <stappers@stappers.nl>
-> > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-> > > ---
-> > 
-> > Thanks for the patch, but I have a similar fix in the
-> > battery-2.6.git tree (for -next):
-> [...]
-> 
-> This fix needs to go into 2.6.35.
+On Tue, Jul 20, 2010 at 11:14:42AM +0100, dd diasemi wrote:
 
-Did you read why I don't push it into 2.6.35? Reread my email,
-pay attention to the very bottom.
+> +#if (DA9052_GPIO_PIN_0 == DA9052_GPIO_CONFIG)
+> +	msg.addr = DA9052_GPIO0001_REG;
+> +	msg.data = 0;
+> +
 
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+As has been said many times now with most of your drivers things like
+this should be pased in as platform data rather than supplied via
+Kconfig.  It should be possible to build a kernel that works on many
+systems so compile time in-driver configuration is undesirable.  There's
+also an awful lot of redundant code with just small data differences in
+these blocks from the looks of it.
+
+> +	if (da9052->read(da9052, &msg)) {
+> +		da9052_unlock(da9052);
+> +		return -EIO;
+
+Better to feed back the original error code from the read function
+surely?
+
+> +s32 da9052_gpio_read_port(struct da9052_gpio_read_write *read_port,
+> +				struct da9052 *da9052)
+> +{
+
+This looks like it should be static, or possibly part of the core driver?
+
+> +s32 da9052_gpio_multiple_read(struct da9052_gpio_multiple_read *multiple_port,
+> +				struct da9052 *da9052)
+> +{
+
+This too.
+
+> +config DA9052_GPIO_ENABLE
+> +	bool "Dialog Semiconductor DA9052 GPIO Driver"
+> +	depends on PMIC_DA9052
+> +	help
+> +	  Say Y  to enable the GPIO driver for the DA9052 chip
+> +
+
+No need for the _ENABLE in the name (look at existing drivers and try to
+make your functionality consistent).
+
+> +/* Currently used defines for GPIO PINs  */
+> +/*--------------------------------------------------------------------------*/
+> +#define DA9052_GPIO_PIN_0	DA9052_GPIO_CONFIG_ADC
+> +#define DA9052_GPIO_PIN_1	DA9052_GPIO_CONFIG_ADC
+> +#define DA9052_GPIO_PIN_2	DA9052_GPIO_CONFIG_ADC
+> +
+> +#define DA9052_GPIO_PIN_3	DA9052_GPIO_CONFIG_TSI
+> +#define DA9052_GPIO_PIN_4	DA9052_GPIO_CONFIG_TSI
+> +#define DA9052_GPIO_PIN_5	DA9052_GPIO_CONFIG_TSI
+> +#define DA9052_GPIO_PIN_6	DA9052_GPIO_CONFIG_TSI
+> +#define DA9052_GPIO_PIN_7	DA9052_GPIO_CONFIG_TSI
+> +
+> +#define DA9052_GPIO_PIN_8	DA9052_GPIO_CONFIG
+> +#define DA9052_GPIO_PIN_9	DA9052_GPIO_CONFIG
+> +#define DA9052_GPIO_PIN_10	DA9052_GPIO_CONFIG
+> +#define DA9052_GPIO_PIN_11	DA9052_GPIO_CONFIG
+> +
+> +#define DA9052_GPIO_PIN_12	DA9052_GPIO_CONFIG
+> +#define DA9052_GPIO_PIN_13	DA9052_GPIO_CONFIG
+> +
+> +#define DA9052_GPIO_PIN_14	DA9052_GPIO_CONFIG_I2C
+> +#define DA9052_GPIO_PIN_15	DA9052_GPIO_CONFIG_I2C
+
+These all look like platform data...
+
+> +enum ip_op_type {
+> +	ALTERNATE_FUNCTIONALITY = 0,
+> +	INPUT,
+> +	OUTPUT_OPENDRAIN,
+> +	OUTPUT_PUSHPULL
+> +};
+
+These and most of the other defines in the remainder of the file need to
+be namespaced.
