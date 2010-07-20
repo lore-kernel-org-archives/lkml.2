@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761273Ab0GTMia (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 08:38:30 -0400
-Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:5025 "EHLO
+	id S1761283Ab0GTMkF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 08:40:05 -0400
+Received: from sm-d311v.smileserver.ne.jp ([203.211.202.206]:38821 "EHLO
 	sm-d311v.smileserver.ne.jp" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758287Ab0GTMi1 (ORCPT
+	by vger.kernel.org with ESMTP id S1756581Ab0GTMkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 08:38:27 -0400
-Message-ID: <000801cb2808$72aef870$66f8800a@maildom.okisemi.com>
+	Tue, 20 Jul 2010 08:40:04 -0400
+Message-ID: <000d01cb2808$ac78d300$66f8800a@maildom.okisemi.com>
 From: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
 To: "Arnd Bergmann" <arnd@arndb.de>
-Cc: "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>,
+Cc: <andrew.chih.howe.khor@intel.com>, <joel.clark@intel.com>,
+        "Wang, Yong Y" <yong.y.wang@intel.com>, <qi.wang@intel.com>,
+        "LKML" <linux-kernel@vger.kernel.org>, <linux-i2c@vger.kernel.org>,
         "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
-        <linux-i2c@vger.kernel.org>, "LKML" <linux-kernel@vger.kernel.org>,
-        <qi.wang@intel.com>, "Wang, Yong Y" <yong.y.wang@intel.com>,
-        <joel.clark@intel.com>, <andrew.chih.howe.khor@intel.com>
-References: <4C204B0D.2030201@dsn.okisemi.com> <201007152135.00280.arnd@arndb.de> <000401cb27c7$ce732960$66f8800a@maildom.okisemi.com> <201007201127.57510.arnd@arndb.de>
+        "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>
+References: <4C204B0D.2030201@dsn.okisemi.com> <201007152135.00280.arnd@arndb.de> <000601cb27e4$3768c170$66f8800a@maildom.okisemi.com> <201007201129.53110.arnd@arndb.de>
 Subject: Re: [PATCH] I2C driver of Topcliff PCH
-Date: Tue, 20 Jul 2010 21:38:22 +0900
+Date: Tue, 20 Jul 2010 21:40:00 +0900
 X-Priority: 3
 X-MSMail-Priority: Normal
 X-Mailer: Microsoft Outlook Express 6.00.2800.1983
@@ -30,41 +30,46 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi Arnd,
 
-> If you pass IRQF_SHARED, you can register any number of handlers
-> for the same IRQ number using different dev pointers.
-I will modify like above.
+> That is a highly unusual interface and I would definitely not recommend doing
+> this. Please use an ioctl operation for anything that has both input and output
+> data.
+I will delete the special interface from our i2c driver.
 
-Thanks, Ohtake.
+Thanks, Ohtake
 ----- Original Message ----- 
 From: "Arnd Bergmann" <arnd@arndb.de>
 To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Cc: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>; "Ben Dooks (embedded platforms)" <ben-linux@fluff.org>;
-<linux-i2c@vger.kernel.org>; "LKML" <linux-kernel@vger.kernel.org>; <qi.wang@intel.com>; "Wang, Yong Y"
-<yong.y.wang@intel.com>; <joel.clark@intel.com>; <andrew.chih.howe.khor@intel.com>
-Sent: Tuesday, July 20, 2010 6:27 PM
+Cc: <andrew.chih.howe.khor@intel.com>; <joel.clark@intel.com>; "Wang, Yong Y" <yong.y.wang@intel.com>;
+<qi.wang@intel.com>; "LKML" <linux-kernel@vger.kernel.org>; <linux-i2c@vger.kernel.org>; "Ben Dooks (embedded
+platforms)" <ben-linux@fluff.org>; "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>
+Sent: Tuesday, July 20, 2010 6:29 PM
 Subject: Re: [PATCH] I2C driver of Topcliff PCH
 
 
 > On Tuesday 20 July 2010, Masayuki Ohtake wrote:
-> > > > +
-> > > > + dev_dbg(&pdev->dev,
-> > > > + "i2c_add_adapter returns %d for channel-%d\n", ret, i);
-> > > > + pch_init(&adap_info->pch_data[i]);
-> > > > + dev_dbg(&pdev->dev, "pch_init invoked successfully\n");
+> > > > @@ -147,6 +148,11 @@ static ssize_t i2cdev_read(struct file *file, char __user *buf, size_t count,
+> > > >  if (tmp == NULL)
+> > > >  return -ENOMEM;
+> > > >
+> > > > + if (copy_from_user(tmp, buf, count)) {
+> > > > + kfree(tmp);
+> > > > + return -EFAULT;
 > > > > + }
 > > > > +
-> > > > + ret = request_irq(pdev->irq, &pch_handler, IRQF_SHARED,
-> > > > +   MODULE_NAME, adap_info);
+> > > >  pr_debug("i2c-dev: i2c-%d reading %zu bytes.\n",
+> > > >  iminor(file->f_path.dentry->d_inode), count);
 > > >
-> > > Similarly, you would create a new channel data structure for each channel here
-> > > and register it separately, and then request the interrupt with that
-> > > data structure as the info.
+> > >
+> > > A read function should not do copy_from_user, only copy_to_user.
+> > > If you are worried about returning invalid data from kernel space,
+> > > better use kzalloc instead of kmalloc to get the buffer.
 > >
-> > With I2c multi-cahnnel IOH, IRQ number is in common.
-> > Thus, I think our PCH I2C driver can't be implemented like above.
+> > Our I2C HW has special mode.
+> > To control the mode, our i2c driver has copy_from_user.
 >
-> If you pass IRQF_SHARED, you can register any number of handlers
-> for the same IRQ number using different dev pointers.
+> That is a highly unusual interface and I would definitely not recommend doing
+> this. Please use an ioctl operation for anything that has both input and output
+> data.
 >
 > Arnd
 >
