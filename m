@@ -1,59 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932477Ab0GTPko (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 11:40:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35636 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932356Ab0GTPkm (ORCPT
+	id S932488Ab0GTPny (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 11:43:54 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:41707 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932392Ab0GTPnx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 11:40:42 -0400
-Message-ID: <4C45C33C.9090907@oracle.com>
-Date: Tue, 20 Jul 2010 08:39:40 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: lkml <linux-kernel@vger.kernel.org>, Kees Bakker <kees.bakker@xs4all.nl>,
-        Keith Packard <keithp@keithp.com>
-Subject: [git pull v2] documentation: fix almost duplicate filenames  (io/IO-mapping.txt)
-References: <20100719181240.fc3066cd.randy.dunlap@oracle.com> <AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com>
-In-Reply-To: <AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C45C350.0209:SCFMA4539814,ss=1,fgs=0
+	Tue, 20 Jul 2010 11:43:53 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Tue, 20 Jul 2010 17:45:13 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
+In-reply-to: <289287.8629.qm@web180303.mail.gq1.yahoo.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>
+Cc: Greg KH <greg@kroah.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
+Message-id: <op.vf5fdnc27p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <289287.8629.qm@web180303.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from
-	git://git.kernel.org/pub/scm/linux/kernel/git/rdunlap/linux-docs/ #linuxdocs
+>>> Plus, you seem to be overlooking the basic need
+>>> (for userspace) to manage these IDs so they're
+>>> properly unique.  Two gadgets should never end
+>>> up using the same serial number
 
-for one changeset:
+> --- On Tue, 7/20/10, Michał Nazarewicz <m.nazarewicz@samsung.com> wrote:
+>> I'm not overlooking that.  I simply consider that a separate
+>> issue. Driver should provide some kind of default.
 
-commit f0e4984f0df34e344809c35387d895b57eab5dcc
-Author: Randy Dunlap <randy.dunlap@oracle.com>
-Date:   Mon Jul 19 22:20:27 2010 +0000
+On Tue, 20 Jul 2010 17:01:37 +0200, David Brownell <david-b@pacbell.net> wrote:
+> It can't do that and guarantee uniqueness.
 
-    Subject: documentation: fix almost duplicate filenames (IO/io-mapping.txt)
-    From: Randy Dunlap <randy.dunlap@oracle.com>
-    
-    Having both IO-mapping.txt and io-mapping.txt in Documentation/
-    was confusing and/or bothersome to some people, so rename
-    IO-mapping.txt to bus-virt-phys-mapping.txt.  Also update
-    Documentation/00-INDEX for both of these files.
-    
-    Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+I never claimed otherwise.
 
----
-patch summary:
+> Your concept is (still/again) broken.
 
- Documentation/00-INDEX                             |    6 ++++--
- .../{IO-mapping.txt => bus-virt-phys-mapping.txt}  |    0
- 2 files changed, 4 insertions(+), 2 deletions(-)
- rename Documentation/{IO-mapping.txt => bus-virt-phys-mapping.txt} (100%)
+I don't buy that.  The driver works better with a non-unique
+serial number then without any.  As such, a default serial
+number should, in my opinion, be provided.
 
+>> (just like File Storage Gadget) and the fact that user space
+>> should override it is another matter in my opinion.
 
-and thanks for your help.
+> The value must come from userspace in the first
+> place, else it can't be correctly managed!!
+
+I would say it *should* come from userspace but if userspace fails to
+provide one *something* is better then *nothing*.  I see how gadgets
+should print a warning if serial is not provided from user space but
+other then that I still think gadget should provide some value.
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
