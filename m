@@ -1,114 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932244Ab0GTLx2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 07:53:28 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:42790 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757102Ab0GTLx1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 07:53:27 -0400
-Date: Tue, 20 Jul 2010 07:50:44 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: Re: [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
-Message-ID: <20100720115044.GD1995@hmsreliant.think-freely.org>
-References: <4C44F12F.5090908@jp.fujitsu.com>
- <4C44F286.1050907@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C44F286.1050907@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+	id S1758508Ab0GTMHP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 08:07:15 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33809 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758069Ab0GTMHN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 08:07:13 -0400
+Message-Id: <20100720120054.875277707@ett.arch.suse.de>
+User-Agent: quilt/0.47-15.10
+Date: Tue, 20 Jul 2010 14:00:54 +0200
+From: trenn@suse.de
+To: jbaron@redhat.com
+Cc: linux-kernel@vger.kernel.org, yehuda@hq.newdream.net
+Subject: [patch 0/1] Dynamic Debug providing early boot debug messages via boot parameter
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 09:49:10AM +0900, Koki Sanagi wrote:
-> [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
-> This patch adds tracepoint to consume_skb, dev_kfree_skb_irq and
-> skb_free_datagram_locked. Combinating with tracepoint on dev_hard_start_xmit,
-> we can check how long it takes to free transmited packets. And using it, we can
-> calculate how many packets driver had at that time. It is useful when a drop of
-> transmited packet is a problem.
-> 
->           <idle>-0     [001] 241409.218333: consume_skb: skbaddr=dd6b2fb8
->           <idle>-0     [001] 241409.490555: dev_kfree_skb_irq: skbaddr=f5e29840
-> 
->         udp-recv-302   [001] 515031.206008: skb_free_datagram_locked: skbaddr=f5b1d900
-> 
-> 
-> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> ---
->  include/trace/events/skb.h |   42 ++++++++++++++++++++++++++++++++++++++++++
->  net/core/datagram.c        |    1 +
->  net/core/dev.c             |    2 ++
->  net/core/skbuff.c          |    1 +
->  4 files changed, 46 insertions(+), 0 deletions(-)
-> 
-> diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
-> index 4b2be6d..84c9041 100644
-> --- a/include/trace/events/skb.h
-> +++ b/include/trace/events/skb.h
-> @@ -35,6 +35,48 @@ TRACE_EVENT(kfree_skb,
->  		__entry->skbaddr, __entry->protocol, __entry->location)
->  );
->  
-> +DECLARE_EVENT_CLASS(free_skb,
-> +
-> +	TP_PROTO(struct sk_buff *skb),
-> +
-> +	TP_ARGS(skb),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	void *,	skbaddr	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->skbaddr = skb;
-> +	),
-> +
-> +	TP_printk("skbaddr=%p", __entry->skbaddr)
-> +
-> +);
-> +
-> +DEFINE_EVENT(free_skb, consume_skb,
-> +
-> +	TP_PROTO(struct sk_buff *skb),
-> +
-> +	TP_ARGS(skb)
-> +
-> +);
-> +
-> +DEFINE_EVENT(free_skb, dev_kfree_skb_irq,
-> +
-> +	TP_PROTO(struct sk_buff *skb),
-> +
-> +	TP_ARGS(skb)
-> +
-> +);
-> +
-> +DEFINE_EVENT(free_skb, skb_free_datagram_locked,
-> +
-> +	TP_PROTO(struct sk_buff *skb),
-> +
-> +	TP_ARGS(skb)
-> +
-> +);
-> +
+this patch is against 2.6.35-rc5. Not sure whether Jason's latest fix is
+in there already and whether it conflicts with this series,
+but it should patch.
 
-Why create these last two tracepoints at all?  dev_kfree_skb_irq will eventually
-pass through kfree_skb anyway, getting picked up by the tracepoint there, the
-while the latter won't (since it uses __kfree_skb instead), I think that could
-be fixed up by add a call to trace_kfree_skb there directly, saving you two
-tracepoints.
+Please tell me if I should (have to) re-diff and against which branch
+I should do that.
 
-Neil
+The patches got boot tested via ddebug_query="file ec.c +p" which worked
+out fine.
 
-> 
+Would be great to see these in the next kernel cycle (2.6.36).
+
+Thanks,
+
+     Thomas
+
+-- 
+£›ÀËÌÀ$Ø²|š³Iâ—\ÆÓbI'zæ¥–¥Å'çç¦Æ'%&gsuØ3³‚%`*™…æ§&(éÇí³}iÕ.•ùäIÒ*i>?†Ù,žµ¬0åm›ç¶øÃ×µ6«77Þ0
