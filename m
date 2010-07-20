@@ -1,118 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761819Ab0GTWFB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 18:05:01 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:38016 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755552Ab0GTWE6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 18:04:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=SPDVk1oJoa+idGt1KkWo3RfhGbaPJrfpXQK3adJkg4weRm0IulZGHjGyapMS7OiZIP
-         9YFUus6+S/4WxA3lt12Cu+AJb8LO9Jn5aXIs2nN1aovFmzEwZeDEXfNbbhzLH3vsJCoP
-         boENEkxImTDhZhQvQ/GLmANIlj62NpMZfFUc8=
+	id S1761852Ab0GTWF6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 18:05:58 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:60729 "EHLO cmpxchg.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761502Ab0GTWF5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 18:05:57 -0400
+Date: Wed, 21 Jul 2010 00:05:51 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Wu Fengguang <fengguang.wu@intel.com>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 8/8] vmscan: Kick flusher threads to clean pages when
+ reclaim is encountering dirty pages
+Message-ID: <20100720220550.GF16031@cmpxchg.org>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
+ <1279545090-19169-9-git-send-email-mel@csn.ul.ie>
+ <20100719142349.GE12510@infradead.org>
+ <20100719143737.GQ13117@csn.ul.ie>
+ <20100719224838.GC16031@cmpxchg.org>
+ <20100720141049.GV13117@csn.ul.ie>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinXCIfB94WXHtS7cej_8zi8n_hqjtVsZsOCTmqk@mail.gmail.com>
-References: <AANLkTim3VQ7afK91Opco06jzHJ35hHfn13heiXUp7YJ2@mail.gmail.com>
-	<AANLkTimAUG9DZpCyFBgf_XV9asj7ClBe2Lrjkh8tM0ll@mail.gmail.com>
-	<AANLkTikQ5GE4Ob1IAakEiwyWEGKTAL8Uox12jsSusJJl@mail.gmail.com>
-	<AANLkTik87QXCEHgG8ph6ehfFo1yvCvRz7JbvaC_uKWJd@mail.gmail.com>
-	<AANLkTiljMvaCttFAI_GoajBHwK9OHS5MPmx1P6_qDOdY@mail.gmail.com>
-	<AANLkTimuBRwuD0MjtzZyd--2JSUfWejuYb7t-GE6oK3T@mail.gmail.com>
-	<AANLkTinXCIfB94WXHtS7cej_8zi8n_hqjtVsZsOCTmqk@mail.gmail.com>
-Date: Tue, 20 Jul 2010 18:04:57 -0400
-Message-ID: <AANLkTilLJ1OvL-Nggh_Kt8UmLSttJIa_N4Pik9eCBP6v@mail.gmail.com>
-Subject: Re: Blank (disconnected) screen during boot with latest 2.6.35-rcX 
-	kernels
-From: Alex Deucher <alexdeucher@gmail.com>
-To: trapdoor6@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>, xorg-driver-ati@lists.x.org,
-        trapDoor <trapdoor6@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100720141049.GV13117@csn.ul.ie>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 5:54 PM, trapDoor <trapdoor6@gmail.com> wrote:
->> The attached patch should fix the connectors to report properly.
->> There are a number of similar ASUS cards with the same quirk.
->>
->
-> Right. I have applied your second patch on top of 2.6.35-rc5-git4 +
-> 0001-drm-radeon-kms-fix-shared-ddc-harder.patch
->
-> After successful boot from the new kernel, these lines in Xorg.0.log
-> corresponds now to the outputs I have on my card:
->
-> ### for LCD connected to the first DVI port:
-> [    19.582] (II) RADEON(0): Output DVI-0 connected
-> [    19.582] (II) RADEON(0): Output DIN disconnected
-> [    19.582] (II) RADEON(0): Output DVI-1 disconnected
-> [    19.582] (II) RADEON(0): Using exact sizes for initial modes
-> [    19.582] (II) RADEON(0): Output DVI-0 using initial mode 1920x1080
->
-> ### LCD connected to the other DVI port:
-> [    18.068] (II) RADEON(0): Output DVI-0 disconnected
-> [    18.068] (II) RADEON(0): Output DIN disconnected
-> [    18.068] (II) RADEON(0): Output DVI-1 connected
-> [    18.068] (II) RADEON(0): Using exact sizes for initial modes
-> [    18.068] (II) RADEON(0): Output DVI-1 using initial mode 1920x1080
->
-> HDMI output isn't listed any more. So that's seems good. Thanks a lot
-> for fixing this.
+On Tue, Jul 20, 2010 at 03:10:49PM +0100, Mel Gorman wrote:
+> On Tue, Jul 20, 2010 at 12:48:39AM +0200, Johannes Weiner wrote:
+> > On Mon, Jul 19, 2010 at 03:37:37PM +0100, Mel Gorman wrote:
+> > > although the latter can get disabled too. Deleting the magic is an
+> > > option which would trade IO efficiency for power efficiency but my
+> > > current thinking is laptop mode preferred reduced power.
+> > 
+> > Maybe couple your wakeup with sc->may_writepage?  It is usually false
+> > for laptop_mode but direct reclaimers enable it at one point in
+> > do_try_to_free_pages() when it scanned more than 150% of the reclaim
+> > target, so you could use existing disk spin-up points instead of
+> > introducing new ones or disabling the heuristics in laptop mode.
+> > 
+> 
+> How about the following?
+> 
+>         if (nr_dirty && sc->may_writepage)
+>                 wakeup_flusher_threads(laptop_mode ? 0 :
+>                                                 nr_dirty + nr_dirty / 2);
+> 
+> 
+> 1. Wakup flusher threads if dirty pages are encountered
+> 2. For direct reclaim, only wake them up if may_writepage is set
+>    indicating that the system is ready to spin up disks and start
+>    reclaiming
+> 3. In laptop_mode, flush everything to reduce future spin-ups
 
-Thanks for testing.
+Sounds like the sanest approach to me.  Thanks.
 
->
-> I'm just wondering now what will happen if I connect some HDMI device
-> via DVI > HDMI adaptor. Should it work? Is HDMI still supported on my
-> card after applying the last patch? Unfortunately I don't own any
-> device I could test it on.
-
-It will not affect your ability to use HDMI.  It only affects the naming.
-
->
-> Do you expect any problems with applying this patch onto 2.6.34.1? If
-> not, I could do it as on that kernel the first DVI port is still shown
-> as HDMI. If the patch works OK on 2.6.34.1, it could be submitted
-> upstream to the stable branch ?
-
-I'll CC stable.
-
->
->>>
->>> Where I see a real 3D performance drop now is for example Armagetron
->>> Advanced - a game I use just for testing. I enabled certain features
->>> using 3D in it. Without going into details I just say that with kernel
->>> 2.6.34.1 the overall 3D performance in AA is about twice better. The
->>> game runs quite smooth, number of fps doesn't go under 60. With kernel
->>> 2.6.35-rc5-git3 on the same system, with the same drivers, mesa, drm
->>> etc., the game runs slower and not so smooth, certain details look
->>> slightly worse and I won't get more than 35 fps.
->>>
->>> Apart from that I don't notice any regressions on my desktop, with
->>> compiz effects etc. I'd run some other tests if you could recommend
->>> some tools, but not too complex and rather some specialised software
->>> just for testing purposes, not games.
->>
->> If it's just the kernel that changed is there any chance you could
->> bisect what caused the performance regression?
->>
->
-> I could find some time for bisecting tomorrow around evening. Prior to
-> that I'd need a quick look into some manuals ..
->
-
-Sounds good.
-
-Alex
-
->
-> --
-> Regards
-> trapDoor
->
+	Hannes
