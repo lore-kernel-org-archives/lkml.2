@@ -1,67 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761490Ab0GTT1Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:27:25 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:64519 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761443Ab0GTT1W (ORCPT
+	id S1754334Ab0GTT3g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 15:29:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:50867 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750909Ab0GTT3b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:27:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=avt1fbBXbxOxCWuMf2TMuGBhG5p3qcqcYHmY8FWODuOISlO7WfFFAIo4JeHPfGWbDx
-         3URYbl3DMpcoa9VdJeJ5M7YWPRdYQ3Yq0W6dWLRo2Y+FbjWSwGnngnOYVUVsdCJACcw6
-         z/Ghov1YK1ARoS3D19m2F9ewAF39JiDyLc4Zo=
-Date: Tue, 20 Jul 2010 23:27:17 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/10] x86, xsave: some code cleanups and reworks
-Message-ID: <20100720192717.GC6227@lenovo>
-References: <1279651857-24639-1-git-send-email-robert.richter@amd.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279651857-24639-1-git-send-email-robert.richter@amd.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 20 Jul 2010 15:29:31 -0400
+Date: Tue, 20 Jul 2010 12:28:31 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
+        Denys Vlasenko <vda.linux@googlemail.com>,
+        Lee Schermerhorn <lee.schermerhorn@hp.com>,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86, numa: fix boot without RAM on node0 again
+Message-Id: <20100720122831.f1aad864.akpm@linux-foundation.org>
+In-Reply-To: <4C45F5F0.8010409@zytor.com>
+References: <4C45EC59.3030304@kernel.org>
+	<4C45F5F0.8010409@zytor.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 08:50:47PM +0200, Robert Richter wrote:
->
-> This patch series contains some cleanups and reworks I made during
-> code review and feature implementation for upcoming cpus.
+On Tue, 20 Jul 2010 12:16:00 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
+
+> On 07/20/2010 11:35 AM, Yinghai Lu wrote:
 > 
-> Most patches refactor the xsave initialization that is very dependent
-> on fpu initialization. This series starts to decouple this a little
-> bit as xsave not only supports fpu features. Also this is an attempt
-> to ease the xsave interface by making some of the functions and
-> variables static.
-> 
-> There is also one patch that removes boot_cpu_id variable, which is
-> not really related to xsave. Maybe this should be applied to another
-> branch.
-> 
-> The patches are relative to today's tip/x86/xsave branch.
-> 
-> (The patches are small for better review and rebasing.)
-> 
-> -Robert
+> That was not what Linus (and I) asked you to do.  He asked specifically
+> that you resend them under a separate 0/2 cover with an explanation.
 > 
 
-Hi Robert, I recall there was a thread related to boot_cpu_id and
-cpu = 0. Unfortunately I can't find it neither in my mbox nor somewhere
-in net at moment. Ie technically speaking -- yes boot_cpu_id will be 0
-but perhaps instead of magic !cpu and friends explicit boot_cpu_id might
-be better for code reading. It might be is_boot_cpu() macro helper or
-so as well.
+And this patch is missing my patch which fixed up that block comment.
 
-Though I don't have strong opinion but for ones who will be
-reading the code first time it might be confusing :) Agreed?
+I'll send both these patches into Linus today.  I'm a bit behind due to
+various linux-next catastrophies.
 
-	-- Cyrill
+Catastrophies which have been known about for up to a week, yet all the
+offending patches are still in linux-next, unaltered.  Go figure.
+
