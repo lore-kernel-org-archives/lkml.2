@@ -1,67 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757633Ab0GTAdh (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 20:33:37 -0400
-Received: from smtp101.rog.mail.re2.yahoo.com ([206.190.36.79]:30512 "HELO
-	smtp101.rog.mail.re2.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1756894Ab0GTAdf (ORCPT
+	id S1757859Ab0GTAh5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 20:37:57 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32111 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756845Ab0GTAhz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 20:33:35 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=rogers.com;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:Organization:To:Subject:Date:User-Agent:References:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding:Message-Id;
-  b=dK/K90UEnkvEHCnUjOGXFNR63MRy8+hW5XbM3UPjBWBPYr56LBWeUYIUYoS0uPvRLaIQahNsttiAkXZnN7/5y3LU/G5fQ00OZwWV/z/XmrJRJnjFfVqhIEJnV9wUwoSzC38kWDBLPswvr8cK9DYCUjKkAwDB570jg9QqeuLcIvo=  ;
-X-Yahoo-SMTP: rZzhDImswBA_40COIyZI42.8nAz5YXic.zo1v550XQVtX7k-
-X-YMail-OSG: 8PFubD0VM1nyJ7vr7vjvMmlWdfREtRhw0Xu36.NzhaSC_3i
- sbIX5ObkWDkz5HL6gYBwSeTytUGP0DWQzWZ4VCxQ4F.6SUiq5fmGk_2jLx5w
- xt33bRWML4A0sMgDP4QKyH4_TJisrjkH2Alk0VxwYW2IZNjDJvGJylLcSpXK
- 7p53VAXvVHsD4LIa1F7G544WV2yE2ubTSYAicLcwlnd.NMzE1xI3KqL4j3F8
- mPhAANc9GGrzhpFD9.BcUPDUz_xZ5dvXjerV_s6lcFV5jLDec86NriK.PoKR
- GCvxrEE8wkDXBomcuqunpfKCcfr3XUkvQxZgFrXCq_oXWAi1uus4z56GlKed
- QJ83tKBS.fPZRDtT8m13v8YOnycgYPDsSRjChYK9MidGtBsfjiAW0RO6JaNH
- 7C11ICqABoRO3Gjo0ZKpN3Jr3V1mfTT7iMNSREw--
-X-Yahoo-Newman-Property: ymail-3
-From: Shawn Starr <shawn.starr@rogers.com>
-Organization: sh0n.net
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: 2.6.35-rc4-git3: Reported regressions from 2.6.34
-Date: Mon, 19 Jul 2010 20:33:30 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc4; KDE/4.4.92; x86_64; ; )
-References: <-IGZ64uxA6G.A.P0H.bLmNMB@chimera> <AANLkTiknnzWyVpqnPCpyiEVHLgkewd0zaGzLInABRe2G@mail.gmail.com> <201007082336.25201.shawn.starr@rogers.com>
-In-Reply-To: <201007082336.25201.shawn.starr@rogers.com>
+	Mon, 19 Jul 2010 20:37:55 -0400
+Message-ID: <4C44EF39.9000500@kernel.org>
+Date: Mon, 19 Jul 2010 17:35:05 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH -v25 00/49] Use memblock with x86
+References: <1279583818-14249-1-git-send-email-yinghai@kernel.org> <AANLkTimC5Yio93MQ3QPjat_vpOp4gKkV_p1hmI-Nvl3B@mail.gmail.com>
+In-Reply-To: <AANLkTimC5Yio93MQ3QPjat_vpOp4gKkV_p1hmI-Nvl3B@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007192033.30849.shawn.starr@rogers.com>
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C44EF9E.00E5,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 08, 2010 11:36:25 pm Shawn Starr wrote:
-
-<snip>
-
-> > > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=16311
-> > > Subject         : [REGRESSION][SUSPEND] 2.6.35-rcX won't suspend Lenovo
-> > > W500 laptop Submitter       : Shawn Starr <shawn.starr@rogers.com>
-> > > Date            : 2010-06-28 0:45 (11 days old)
-> > > Message-ID      : <201006272045.17004.shawn.starr@rogers.com>
-> > > References      :
-> > > http://marc.info/?l=linux-kernel&m=127768633705286&w=2
-> > 
-> > I think this might be usefully bisected. Shawn?
+On 07/19/2010 05:14 PM, Linus Torvalds wrote:
+> On Mon, Jul 19, 2010 at 4:56 PM, Yinghai Lu <yinghai@kernel.org> wrote:
+>> New memblock could be used to replace early_res in x86.
+>>
+>> Suggested by: David, Ben, and Thomas
 > 
-> I'll have to try bisecting this weekend. It continues in Linux sh0n.net
-> 2.6.35-rc4+ #1 SMP Wed Jul 7 23:58:41 EDT 2010 x86_64 x86_64 x86_64
-> GNU/Linux
+> So how is this related to Ben's git tree that was tested on sparc? Not
+> clear from the changelog.
+
+base on Ben's git tree that was tested on sparc.
+fold one patch from me to patch 19. so will not break bisecting.
+
+Maybe Ben can check patch from 3 to 27 to see if the folding is right or not.
+
 > 
+>> First two patches are needed for 2.6.35. need to be applied at first.
+> 
+> Please send those two as a separate series with a separate cover-sheet
+> and explanation. If they are regressions or major fixes for existing
+> code, they should not go into some 50-patch series for the future.
+> That way they just get lost in the noise, and it's not at all as clear
+> that they are important for current kernels.
 
-This continues even with no USB devices plugged in. Will try with today's 
-snapshot build from Linus's tree. If this still happens, I'll see about 
-bisecting.
+those two are already in Andrew's -mm, but were not into tip/x86 yet.
+and some of patches (patch 28-49) could have some merging conflicts if
+those two are not applied at first.
 
-Thanks,
-Shawn.
+> 
+> In fact, in general, the fewer 50-series patches we see, the better.
+> If a series of 50 patches could be split up into separate independent
+> series ("independent" in the sense that they do different things -
+> maybe one series depends on another series for infrastructure, but
+> then actually concentrates on a different issue), that would be good.
+> 
+> Because, quite frankly, when I get email-bombed by tens of patches, I
+> immediately lose about 99% of my eagerness to actually check the
+> patches out. And I bet I'm not the only one. So it would likely be
+> much more productive if these kinds of things can be sent out as
+> multiple smaller series that can be looked at separately (and not sent
+> out at the same time).
+
+ok, 
+1. let's wait Ingo or hpa to pick first two.
+2. wait Ben to rebase patch 3-27, and send them out at first.
+3. then I will resend from 28 to 49.
+
+Thanks
+
+Yinghai
