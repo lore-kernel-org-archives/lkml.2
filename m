@@ -1,89 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758170Ab0GTDM0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 23:12:26 -0400
-Received: from out1.smtp.messagingengine.com ([66.111.4.25]:53550 "EHLO
-	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757941Ab0GTDMZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 23:12:25 -0400
-X-Sasl-enc: pK1T/I0ESVKSnR02rXk8s6RUl4uODUgf5aATTYfNoeft 1279595543
-Subject: Re: [PATCH 21/38] union-mount: Support for mounting union mount
- file systems
-From: Ian Kent <raven@themaw.net>
-To: Valerie Aurora <vaurora@redhat.com>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
-        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
-        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100716210226.GD21201@shell>
-References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
-	 <1276627208-17242-22-git-send-email-vaurora@redhat.com>
-	 <20100713044701.GF3949@zeus.themaw.net>  <20100716210226.GD21201@shell>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Jul 2010 11:12:17 +0800
-Message-ID: <1279595537.2979.10.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1758260Ab0GTDen (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 23:34:43 -0400
+Received: from mga01.intel.com ([192.55.52.88]:29014 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758226Ab0GTDem (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 23:34:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,230,1278313200"; 
+   d="scan'208";a="587810493"
+Date: Tue, 20 Jul 2010 11:34:37 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        Linux Memory Management List <linux-mm@kvack.org>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 3/6] writeback: avoid unnecessary calculation of bdi
+ dirty thresholds
+Message-ID: <20100720033437.GE6087@localhost>
+References: <20100711020656.340075560@intel.com>
+ <20100711021748.879183413@intel.com>
+ <20100719143520.d9af9649.akpm@linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100719143520.d9af9649.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-16 at 17:02 -0400, Valerie Aurora wrote:
-> On Tue, Jul 13, 2010 at 12:47:02PM +0800, Ian Kent wrote:
-> > On Tue, Jun 15, 2010 at 11:39:51AM -0700, Valerie Aurora wrote:
-> > > +
-> > > +static int
-> > > +check_mnt_union(struct path *mntpnt, struct vfsmount *topmost_mnt, int mnt_flags)
-> > > +{
-> > > +	struct vfsmount *lower_mnt = mntpnt->mnt;
-> > > +
-> > > +	if (!(mnt_flags & MNT_UNION))
-> > > +		return 0;
-> > > +
-> > > +#ifndef CONFIG_UNION_MOUNT
-> > > +	return -EINVAL;
-> > > +#endif
-> > > +	if (!(lower_mnt->mnt_sb->s_flags & MS_RDONLY))
-> > > +		return -EBUSY;
-> > > +
-> > > +	if (!list_empty(&lower_mnt->mnt_mounts))
-> > > +		return -EBUSY;
-> > > +
-> > > +	if (!IS_ROOT(mntpnt->dentry))
-> > > +		return -EINVAL;
-> > > +
-> > > +	if (mnt_flags & MNT_READONLY)
-> > > +		return -EROFS;
-> > > +
-> > > +	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT))
-> > > +		return -EINVAL;
-> > > +
+On Tue, Jul 20, 2010 at 05:35:20AM +0800, Andrew Morton wrote:
+> On Sun, 11 Jul 2010 10:06:59 +0800
+> Wu Fengguang <fengguang.wu@intel.com> wrote:
+> 
+> > Split get_dirty_limits() into global_dirty_limits()+bdi_dirty_limit(),
+> > so that the latter can be avoided when under global dirty background
+> > threshold (which is the normal state for most systems).
 > > 
-> > Is there a need to check fallthru, umm ... that probably doesn't
-> > apply for the ROOT(), right?
 > 
-> Actually, that's on my todo list - right now I'm assuming MS_WHITEOUT
-> implies fallthru support as well.  But it doesn't.
+> mm/page-writeback.c: In function 'balance_dirty_pages_ratelimited_nr':
+> mm/page-writeback.c:466: warning: 'dirty_exceeded' may be used uninitialized in this function
 > 
-> We're a little short on MS_* flags.  I'm thinking of just checking
-> ->whiteout and ->fallthru for non-NULL on the root dir and getting rid
-> of MS_WHITEOUT entirely.  Thoughts?
+> This was a real bug.
 
-Checking for the methods is a good idea I think, since they are assumed
-to be present by the code, at least in some places.
+Thanks! But how do you catch this? There are no warnings in my compile test.
 
-Although it shouldn't happen, it is possible for a file system to create
-the root dentry with these methods defined but other dentrys without
-them defined, so a file system implementation error could cause some
-unpleasant crashes. Maybe requiring the flags to indicate support would
-help avoid unpleasant implementation problems like this, not sure
-really. 
+I noticed that there is a gcc option "-Wuninitialized", which will be turned on
+with "-Wall" and "-O2" as used in the following command:
 
-Also not sure if a method existence check should always be made prior to
-use, regardless.
-
-Ian
+  gcc -Wp,-MD,mm/.page-writeback.o.d  -nostdinc -isystem /usr/lib/gcc/x86_64-linux-gnu/4.4.4/include -I/cc/linux-2.6.33/arch/x86/include -Iinclude  -include include/generated/autoconf.h -D__KERNEL__ -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -fno-delete-null-pointer-checks -O2 -m64 -march=core2 -mno-red-zone -mcmodel=kernel -funit-at-a-time -maccumulate-outgoing-args -DCONFIG_AS_CFI=1 -DCONFIG_AS_CFI_SIGNAL_FRAME=1 -pipe -Wno-sign-compare -fno-asynchronous-unwind-tables -mno-sse -mno-mmx -mno-sse2 -mno-3dnow -Wframe-larger-than=2048 -fno-stack-protector -fno-omit-frame-pointer -fno-optimize-sibling-calls -g -pg -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fno-dwarf2-cfi-asm -fconserve-stack   -D"KBUILD_STR(s)=#s" -D"KBUILD_BASENAME=KBUILD_STR(page_writeback)"  -D"KBUILD_MODNAME=KBUILD_STR(page_writeback)"  -c -o mm/page-writeback.o mm/page-writeback.c
 
 
+My gcc version is 
+
+$ gcc -v
+Using built-in specs.
+Target: x86_64-linux-gnu
+Configured with: ../src/configure -v --with-pkgversion='Debian 4.4.4-6' --with-bugurl=file:///usr/share/doc/gcc-4.4/README.Bugs --ena
+ble-languages=c,c++,fortran,objc,obj-c++ --prefix=/usr --enable-shared --enable-multiarch --enable-linker-build-id --with-system-zlib --libexecdir=/usr/lib --without-included-gettext --enable-threads=posix --with-gxx-include-dir=/usr/include/c++/4.4 --program-suffix=-4.4 --enable-nls --enable-clocale=gnu --enable-libstdcxx-debug --enable-objc-gc --with-arch-32=i586 --with-tune=generic --enable-checking=release --build=x86_64-linux-gnu --host=x86_64-linux-gnu --target=x86_64-linux-gnu                                            Thread model: posix
+gcc version 4.4.4 (Debian 4.4.4-6) 
+
+Thanks,
+Fengguang
+
+> --- a/mm/page-writeback.c~writeback-avoid-unnecessary-calculation-of-bdi-dirty-thresholds-fix
+> +++ a/mm/page-writeback.c
+> @@ -463,7 +463,7 @@ static void balance_dirty_pages(struct a
+>  	unsigned long bdi_thresh;
+>  	unsigned long pages_written = 0;
+>  	unsigned long pause = 1;
+> -	int dirty_exceeded;
+> +	bool dirty_exceeded = false;
+>  	struct backing_dev_info *bdi = mapping->backing_dev_info;
+>  
+>  	for (;;) {
+> _
