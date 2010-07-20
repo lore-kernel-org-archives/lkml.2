@@ -1,105 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760389Ab0GTTzt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:55:49 -0400
-Received: from claw.goop.org ([74.207.240.146]:40319 "EHLO claw.goop.org"
+	id S932582Ab0GTUFu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 16:05:50 -0400
+Received: from mga02.intel.com ([134.134.136.20]:55931 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753586Ab0GTTzs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:55:48 -0400
-Message-ID: <4C45FF43.2030108@goop.org>
-Date: Tue, 20 Jul 2010 12:55:47 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Ingo Molnar <mingo@redhat.com>, the arch/x86 maintainers <x86@kernel.org>,
-        "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Dave McCracken <dcm@mccr.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: [PATCH] x86/hugetlb: use set_pmd for huge pte operations
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+	id S932506Ab0GTUFs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 16:05:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,234,1278313200"; 
+   d="scan'208";a="640183543"
+Subject: Re: [PATCH 00/10] x86, xsave: some code cleanups and reworks
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100720194606.GO26154@erda.amd.com>
+References: <1279651857-24639-1-git-send-email-robert.richter@amd.com>
+	 <20100720192717.GC6227@lenovo>  <20100720194606.GO26154@erda.amd.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Tue, 20 Jul 2010 13:05:11 -0700
+Message-Id: <1279656311.2899.9.camel@sbs-t61.sc.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dave McCracken <dave.mccracken@oracle.com>
+On Tue, 2010-07-20 at 12:46 -0700, Robert Richter wrote:
+> On 20.07.10 15:27:17, Cyrill Gorcunov wrote:
+> > On Tue, Jul 20, 2010 at 08:50:47PM +0200, Robert Richter wrote:
+> > >
+> > > This patch series contains some cleanups and reworks I made during
+> > > code review and feature implementation for upcoming cpus.
+> > > 
+> > > Most patches refactor the xsave initialization that is very dependent
+> > > on fpu initialization. This series starts to decouple this a little
+> > > bit as xsave not only supports fpu features. Also this is an attempt
+> > > to ease the xsave interface by making some of the functions and
+> > > variables static.
+> > > 
+> > > There is also one patch that removes boot_cpu_id variable, which is
+> > > not really related to xsave. Maybe this should be applied to another
+> > > branch.
+> > > 
+> > > The patches are relative to today's tip/x86/xsave branch.
+> > > 
+> > > (The patches are small for better review and rebasing.)
+> > > 
+> > > -Robert
+> > > 
+> > 
+> > Hi Robert, I recall there was a thread related to boot_cpu_id and
+> > cpu = 0. Unfortunately I can't find it neither in my mbox nor somewhere
+> > in net at moment.
+> 
+> I found this patch:
+> 
+>  b3572e3 x86/voyager: fix compile breakage caused by dc1e35c6e95e8923cf1d3510438b63c600fee1e2
+> 
+> indicating that boot cpu id could be different than 0.
+> 
+> But either this is broken again, or the issue is gone in a different
+> way.
 
-On x86, a huge pte is logically a pte, but structurally a pmd.  Among
-other issues, pmds and ptes overload some flags for multiple uses (PAT
-vs PSE), so it is necessary to know which structural level a pagetable
-entry is in order interpret it properly.
+Voyager code was removed from the tree since then.
 
-When huge pages are used within a paravirtualized system, it is therefore
-appropriate to use the pmd set of function to operate on them, so that
-the hypervisor can correctly validate the update.
-
-Signed-off-by: Dave McCracken <dave.mccracken@oracle.com>
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-
-diff --git a/arch/x86/include/asm/hugetlb.h b/arch/x86/include/asm/hugetlb.h
-index 439a9ac..4cfd4de 100644
---- a/arch/x86/include/asm/hugetlb.h
-+++ b/arch/x86/include/asm/hugetlb.h
-@@ -36,16 +36,24 @@ static inline void hugetlb_free_pgd_range(struct mmu_gather *tlb,
- 	free_pgd_range(tlb, addr, end, floor, ceiling);
- }
- 
-+static inline pte_t huge_ptep_get(pte_t *ptep)
-+{
-+	return *ptep;
-+}
-+
- static inline void set_huge_pte_at(struct mm_struct *mm, unsigned long addr,
- 				   pte_t *ptep, pte_t pte)
- {
--	set_pte_at(mm, addr, ptep, pte);
-+	set_pmd((pmd_t *)ptep, __pmd(pte_val(pte)));
- }
- 
- static inline pte_t huge_ptep_get_and_clear(struct mm_struct *mm,
- 					    unsigned long addr, pte_t *ptep)
- {
--	return ptep_get_and_clear(mm, addr, ptep);
-+	pte_t pte = huge_ptep_get(ptep);
-+
-+	set_huge_pte_at(mm, addr, ptep, __pte(0));
-+	return pte;
- }
- 
- static inline void huge_ptep_clear_flush(struct vm_area_struct *vma,
-@@ -66,19 +74,25 @@ static inline pte_t huge_pte_wrprotect(pte_t pte)
- static inline void huge_ptep_set_wrprotect(struct mm_struct *mm,
- 					   unsigned long addr, pte_t *ptep)
- {
--	ptep_set_wrprotect(mm, addr, ptep);
-+	pte_t pte = huge_ptep_get(ptep);
-+
-+	pte = pte_wrprotect(pte);
-+	set_huge_pte_at(mm, addr, ptep, pte);
- }
- 
- static inline int huge_ptep_set_access_flags(struct vm_area_struct *vma,
- 					     unsigned long addr, pte_t *ptep,
- 					     pte_t pte, int dirty)
- {
--	return ptep_set_access_flags(vma, addr, ptep, pte, dirty);
--}
-+	pte_t oldpte = huge_ptep_get(ptep);
-+	int changed = !pte_same(oldpte, pte);
- 
--static inline pte_t huge_ptep_get(pte_t *ptep)
--{
--	return *ptep;
-+	if (changed && dirty) {
-+		set_huge_pte_at(vma->vm_mm, addr, ptep, pte);
-+		flush_tlb_page(vma, addr);
-+	}
-+
-+	return changed;
- }
- 
- static inline int arch_prepare_hugepage(struct page *page)
-
+thanks
+suresh
 
