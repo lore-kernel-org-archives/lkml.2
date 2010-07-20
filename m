@@ -1,88 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758590Ab0GTOaX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 10:30:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:37944 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758556Ab0GTOaS convert rfc822-to-8bit (ORCPT
+	id S1758580Ab0GTOjW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 10:39:22 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:37234 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758499Ab0GTOjV convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 10:30:18 -0400
-MIME-Version: 1.0
-Message-ID: <9e4cae1f-c102-43ea-9ba0-611c8ad68c9b@default>
-Date: Tue, 20 Jul 2010 07:28:04 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: ngupta@vflare.org
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/8] zcache: page cache compression support
-References: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
- <4f986c65-c17e-47d8-9c30-60cd17809cbb@default 4C45A9BA.1090903@vflare.org>
-In-Reply-To: <4C45A9BA.1090903@vflare.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
- 12.0.6535.5005]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C45B27A.02E3:SCFMA4539814,ss=1,fgs=0
+	Tue, 20 Jul 2010 10:39:21 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Tue, 20 Jul 2010 16:40:38 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
+In-reply-to: <Pine.LNX.4.44L0.1007201007510.1631-100000@iolanthe.rowland.org>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Greg KH <greg@kroah.com>, David Brownell <david-b@pacbell.net>,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
+Message-id: <op.vf5cd0ap7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <Pine.LNX.4.44L0.1007201007510.1631-100000@iolanthe.rowland.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 07/20/2010 01:27 AM, Dan Magenheimer wrote:
-> >> We only keep pages that compress to PAGE_SIZE/2 or less. Compressed
-> >> chunks are
-> >> stored using xvmalloc memory allocator which is already being used
-> by
-> >> zram
-> >> driver for the same purpose. Zero-filled pages are checked and no
-> >> memory is
-> >> allocated for them.
-> >
-> > I'm curious about this policy choice.  I can see why one
-> > would want to ensure that the average page is compressed
-> > to less than PAGE_SIZE/2, and preferably PAGE_SIZE/2
-> > minus the overhead of the data structures necessary to
-> > track the page.  And I see that this makes no difference
-> > when the reclamation algorithm is random (as it is for
-> > now).  But once there is some better reclamation logic,
-> > I'd hope that this compression factor restriction would
-> > be lifted and replaced with something much higher.  IIRC,
-> > compression is much more expensive than decompression
-> > so there's no CPU-overhead argument here either,
-> > correct?
-> 
-> Its true that we waste CPU cycles for every incompressible page
-> encountered but still we can't keep such pages in RAM since this
-> is what host wanted to reclaim and we can't help since compression
-> failed. Compressed caching makes sense only when we keep highly
-> compressible pages in RAM, regardless of reclaim scheme.
-> 
-> Keeping (nearly) incompressible pages in RAM probably makes sense
-> for Xen's case where cleancache provider runs *inside* a VM, sending
-> pages to host. So, if VM is limited to say 512M and host has 64G RAM,
-> caching guest pages, with or without compression, will help.
+On Tue, 20 Jul 2010 16:08:53 +0200, Alan Stern <stern@rowland.harvard.edu> wrote:
 
-I agree that the use model is a bit different, but PAGE_SIZE/2
-still seems like an unnecessarily strict threshold.  For
-example, saving 3000 clean pages in 2000*PAGE_SIZE of RAM
-still seems like a considerable space savings.  And as
-long as the _average_ is less than some threshold, saving
-a few slightly-less-than-ideally-compressible pages doesn't
-seem like it would be a problem.  For example, IMHO, saving two
-pages when one compresses to 2047 bytes and the other compresses
-to 2049 bytes seems just as reasonable as saving two pages that
-both compress to 2048 bytes.
+> On Tue, 20 Jul 2010, [utf-8] MichaÅ‚ Nazarewicz wrote:
+>
+>> > On Mon, 19 Jul 2010, [utf-8] Michalâ€š Nazarewicz wrote:
+>> >> 1/3: http://lkml.org/lkml/2010/7/8/317
+>> >> 	Adds serial to mass storage gadget and g_multi introducing
+>> >> 	fsg_string_serial_fill() macro used by abovementioned
+>> >> 	gadgets and file storage gadget.
+>>
+>> On Mon, 19 Jul 2010 19:06:32 +0200, Alan Stern <stern@rowland.harvard.edu> wrote:
+>> > Ah, yes.  My personal taste would be to write fsg_string_serial_fill_n
+>> > as an inline routine instead of as a macro, and not try to make it
+>> > separate from fsg_string_serial_fill.
+>>
+>> Not sure what you meant by "make it separate from fsg_string_serial_fill".
+>
+> I mean have a single function, called "fsg_string_serial_fill", instead
+> of two separate macros called "fsg_string_serial_fill" and
+> "fsg_string_serial_fill_n".
 
-Maybe the best solution is to make the threshold a sysfs
-settable?  Or maybe BOTH the single-page threshold and
-the average threshold as two different sysfs settables?
-E.g. throw away a put page if either it compresses poorly
-or adding it to the pool would push the average over.
+I wanted to keep fsg_string_serial_fill() as a macro so that it can
+use ARRAY_SIZE() on the first argument to check the size.  If there
+was a single function it would have to explicitly take the length of
+the destination array as an argument -- that's what the *_n() function
+is for.
+
+The rationale is that not having to use ARRAY_SIZE() is, well,
+simpler. ;)
+
+Basically, what you are proposing is to remove the
+fsg_string_serial_fill() macro and leave only the *_n() changed to
+an inline function and force all callers use sizeof/ARRAY_SIZE().
+
+Am I getting that right?  Personally, I'd leave things like they are
+changing the *_n() to a function.  What do you think?
+
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
