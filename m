@@ -1,52 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab0GTOwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 10:52:34 -0400
-Received: from n3b.bullet.mail.ac4.yahoo.com ([76.13.13.73]:29795 "HELO
-	n3b.bullet.mail.ac4.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1758407Ab0GTOwd convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 10:52:33 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 692254.18867.bm@omp127.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=5legExwlfiD/FkWiShQQ+TcgK902Fj6wKQ/HM8Zb2vaXJiPVlO0lIEheevF/ZBgGJhPdU0YVZ1jNWAhqJobsHjenU8TqdvFXmkO9AIpvfLohLZgWgX7+gl9Fs8dw7+harb0rSWQc+mG/SYu1x4ODCgGD8bNVrx0eJ7Lab9GDVDo=;
-Message-ID: <491292.34390.qm@web180315.mail.gq1.yahoo.com>
-X-YMail-OSG: TRghloEVM1ncoN_c.J0GoS8vNhF7_m2Fz7EVwjpQvKpFEAB
- zXD64z1dyEX9PgOphKlX654mLprpcPZXz9Zhij8fmsuAsAYMYfKRSmFSvTIQ
- mHGdksjeIZmadI34M2NVRbyDsbM28TRTRvv2vDQ2udrKRnAAVLGpGTiH4QZ7
- HwLN_b05RaGmjw3Wzf7r.9l3Y0uK_EKhsOQ7C.GG.fe.zTZTg9fSegol9IdP
- qELRxMp7oxktwRHvpAntchJnUsYy5AnB55gpztzGPs7rdw0xylycUTROw1_z
- V4J5Q.PM8.BMbiI0y3RP6aizLQr5lA4cP9GrylHNRQ.ENkapA0_QW
-X-Mailer: YahooMailClassic/11.2.4 YahooMailWebService/0.8.104.276605
-Date: Tue, 20 Jul 2010 07:52:31 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
-To: Alan Stern <stern@rowland.harvard.edu>,
-        =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Cc: Greg KH <greg@kroah.com>, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Kernel development list <linux-kernel@vger.kernel.org>,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
-In-Reply-To: <op.vf5cd0ap7p4s8u@pikus>
+	id S1758592Ab0GTOxp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 10:53:45 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:53908 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758237Ab0GTOxm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 10:53:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=g5sgJ2BuownfCE5tbp6AiIEkjbQa1a0YIBHTVHPNmHGqT4FlWG8E+kDxthubcyYt0r
+         zY30D7d+M7BiQKOreV3+FbLch3GncXVdnFafPm/RsiOMCn76yHXMognfaMoN6v75IMGr
+         sVm16BuLQb4ingVn03Nu7EJPfJELu83ecPwUA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+In-Reply-To: <4C45AF40.7030800@kernel.org>
+References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>
+	<4C2F5ECB.1040505@kernel.org>
+	<AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>
+	<4C2F61AB.9030806@kernel.org>
+	<AANLkTilYOT45q8OUJ-_V61_fnYy9HIk6GAv5ZPiomCaT@mail.gmail.com>
+	<4C317C04.20500@kernel.org>
+	<AANLkTilupyieml9yaWO9BUNPmQQ0g2w1HLWj6R9MwDZf@mail.gmail.com>
+	<4C32CE50.6010501@kernel.org>
+	<AANLkTikehTO1j6Gd7Y_g32_P6Yg9KB8Z8qwbNJh10aOU@mail.gmail.com>
+	<4C341598.6040004@kernel.org>
+	<AANLkTik4zkcIyVxwtX8GA1BsQSZaAeODpPlY3mRVBc-4@mail.gmail.com>
+	<4C34A1D5.1090202@kernel.org>
+	<AANLkTilgQSu3qi7qoTtjnV22r-8Sh1hbDAB_nlPImWNt@mail.gmail.com>
+	<4C34B8BE.5080504@kernel.org>
+	<AANLkTilDbrA6lLPSOAtA8_4mLNkUZibHweTliqU5jd03@mail.gmail.com>
+	<4C44BD42.3030904@kernel.org>
+	<7141c88bc8c27f26c2187252c0594318.squirrel@thechecks.ca>
+	<4C45AF40.7030800@kernel.org>
+Date: Tue, 20 Jul 2010 07:53:39 -0700
+Message-ID: <AANLkTilXlTmTIdRZa5rTDIo6gSZKeU1-CSAskxmRJwtl@mail.gmail.com>
+Subject: Re: Drives missing at boot
+From: Mark Knecht <markknecht@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Paul Check <paul@thechecks.ca>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---- On Tue, 7/20/10, Michał Nazarewicz <m.nazarewicz@samsung.com> wrote:
+On Tue, Jul 20, 2010 at 7:14 AM, Tejun Heo <tj@kernel.org> wrote:
+> Helo,
+>
+> On 07/20/2010 05:14 AM, Paul Check wrote:
+>> Hey Tejun: I guess this is the same patch that you sent me to fix my issue
+>> with missing drives.  Good news: I've been through about 10 reboots now
+>> and no problems.  Based on my prior experience, I'd say with the old
+>> setup, 10 clean boots in a row was probably less than a 1% event.  So, it
+>> seems that this has fixed my problem.
+>
+> Yeap, it's the same one.  I'm forwarding the patch upstream now but,
+> Mark, please let me know the test result.
+>
+> Thanks.
+>
+> --
+> tejun
+>
 
-> The rationale is that not having to use ARRAY_SIZE() is,
-> well, simpler. ;)
+Tejun,
+   I'm traveling but back tonight. I'll try it then.
 
-And more foolish.  Do work at compile
-time, not run time, when it's that easy.
-
-- Dave
-
-
-
+Thanks,
+Mark
