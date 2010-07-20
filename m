@@ -1,60 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933115Ab0GTXeo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 19:34:44 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:52108 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750992Ab0GTXem (ORCPT
+	id S933159Ab0GTXfX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 19:35:23 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:47454 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751341Ab0GTXfW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 19:34:42 -0400
-Date: Wed, 21 Jul 2010 08:34:37 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Hannes Eder <heder@google.com>
-Cc: Patrick McHardy <kaber@trash.net>, lvs-devel@vger.kernel.org,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        netfilter@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
-        Julius Volz <julius.volz@gmail.com>,
-        "David S. Miller" <davem@davemloft.net>,
-        Netfilter Development Mailinglist 
-	<netfilter-devel@vger.kernel.org>
-Subject: Re: [patch v2.2 1/4] [PATCH v2.1 1/4] netfilter: xt_ipvs
- (netfilter matcher for IPVS)
-Message-ID: <20100720233437.GH9569@verge.net.au>
-References: <20100501032014.406353538@vergenet.net>
- <20100501032120.298829234@vergenet.net>
- <4BDC543F.7060500@trash.net>
- <AANLkTikIzHuzxo4z1_8_fEGLBC2-0Uz0X8SOc8n2msuX@mail.gmail.com>
- <20100622071326.GB9928@verge.net.au>
- <AANLkTimUEJGAJ6tsPKGltUGBwrdotK5YyKBIkQWbA8qZ@mail.gmail.com>
+	Tue, 20 Jul 2010 19:35:22 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimUEJGAJ6tsPKGltUGBwrdotK5YyKBIkQWbA8qZ@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100720233238.GS32635@dastard>
+References: <20100720004630.GH23223@dastard>
+	<20100720233238.GS32635@dastard>
+Date: Tue, 20 Jul 2010 16:35:14 -0700
+Message-ID: <AANLkTil1kuHOTWRGe0o3j2dmrD9TLJSOqdF2IINp4aDx@mail.gmail.com>
+Subject: Re: [GIT PULL] Shrinker fixes for XFS for 2.6.36-rc6
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 02:44:11PM +0200, Hannes Eder wrote:
-> Hi Simon,
-> 
-> On Tue, Jun 22, 2010 at 09:13, Simon Horman <horms@verge.net.au> wrote:
-> > On Mon, May 03, 2010 at 01:29:46PM +0200, Hannes Eder wrote:
-> >> Thank you for picking this series of patches up again and thanks for
-> >> the feedback.
-> >>
-> >> I'll send an updated version in the next days.
-> >
-> > Hi Hanes,
-> >
-> > more than a few days seems to have passed.
-> > Do you have time to fix the patches up?
-> > If not, I'll take a stab at it.
-> 
-> /me working through the backlog of emails after vacation, however this
-> email was buried in my inbox before my vacation, my bad.  I've been
-> extremely busy lately and I did not have the time to work on the
-> patches.  I saw your updated versions, I appreciate very much that you
-> are taking it from there.
+On Tue, Jul 20, 2010 at 4:32 PM, Dave Chinner <david@fromorbit.com> wrote:
+>
+> Ijust rebased the series - the shrinker context patch did not pickup
+> the new shrinker in the TTM DRM code for radeon. New pull-request output
+> below.
 
-No problem, I assumed that you were busy with something.
+Not good. I already pulled the earlier version yesterday. So a rebased
+series is useless.
+
+                          Linus
