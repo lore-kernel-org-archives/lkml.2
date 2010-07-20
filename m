@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754836Ab0GTNuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 09:50:37 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:48743 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752373Ab0GTNuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 09:50:35 -0400
-Message-ID: <4C45A9BA.1090903@vflare.org>
-Date: Tue, 20 Jul 2010 19:20:50 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc13 Thunderbird/3.1
+	id S1756178Ab0GTOAR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 10:00:17 -0400
+Received: from cantor.suse.de ([195.135.220.2]:58622 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754176Ab0GTOAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 10:00:14 -0400
+Message-ID: <4C45ABFD.8060308@suse.cz>
+Date: Tue, 20 Jul 2010 16:00:29 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm <linux-mm@kvack.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/8] zcache: page cache compression support
-References: <1279283870-18549-1-git-send-email-ngupta@vflare.org> <4f986c65-c17e-47d8-9c30-60cd17809cbb@default>
-In-Reply-To: <4f986c65-c17e-47d8-9c30-60cd17809cbb@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: =?UTF-8?B?TWljaGHFgiBHw7Nybnk=?= <gentoo@mgorny.alt.pl>
+Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
+Subject: Re: [PATCH] KERNEL BUILD: Make the setlocalversion script POSIX-compliant.
+References: <20100718102640.01729af9@pomiocik.lan>
+In-Reply-To: <20100718102640.01729af9@pomiocik.lan>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2010 01:27 AM, Dan Magenheimer wrote:
->> We only keep pages that compress to PAGE_SIZE/2 or less. Compressed
->> chunks are
->> stored using xvmalloc memory allocator which is already being used by
->> zram
->> driver for the same purpose. Zero-filled pages are checked and no
->> memory is
->> allocated for them.
+On 18.7.2010 10:26, Michał Górny wrote:
+> The 'source' builtin is a bash alias to the '.' (dot) builtin. While the
+> former is supported only by bash, the latter is specified in POSIX and
+> works fine with all POSIX-compliant shells I am aware of.
 > 
-> I'm curious about this policy choice.  I can see why one
-> would want to ensure that the average page is compressed
-> to less than PAGE_SIZE/2, and preferably PAGE_SIZE/2
-> minus the overhead of the data structures necessary to
-> track the page.  And I see that this makes no difference
-> when the reclamation algorithm is random (as it is for
-> now).  But once there is some better reclamation logic,
-> I'd hope that this compression factor restriction would
-> be lifted and replaced with something much higher.  IIRC,
-> compression is much more expensive than decompression
-> so there's no CPU-overhead argument here either,
-> correct?
+> The '$_' special parameter is specific to bash. It is partially
+> supported in dash too but it always evaluates to the current script path
+> (which causes the script to enter a loop recursively re-executing
+> itself). This is why I have replaced the two occurences of '$_' with the
+> explicit parameter.
 > 
->
+> The 'local' builtin is another example of bash-specific code. Although
+> it is supported by all POSIX-compliant shells I am aware of, it is not
+> part of POSIX specification and thus the code should not rely on it
+> assigning a specific value to the local variable. Moreover, the 'posh'
+> shell has a limited version of 'local' builtin not supporting direct
+> variable assignments. Thus, I have broken one of the 'local'
+> declarations down into a (non-POSIX) 'local' declaration and a plain
+> (POSIX-compliant) variable assignment.
+> 
+> Signed-off-by: Michał Górny <gentoo@mgorny.alt.pl>
 
-Its true that we waste CPU cycles for every incompressible page
-encountered but still we can't keep such pages in RAM since this
-is what host wanted to reclaim and we can't help since compression
-failed. Compressed caching makes sense only when we keep highly
-compressible pages in RAM, regardless of reclaim scheme.
+Thanks a lot, applied to the kbuild tree.
 
-Keeping (nearly) incompressible pages in RAM probably makes sense
-for Xen's case where cleancache provider runs *inside* a VM, sending
-pages to host. So, if VM is limited to say 512M and host has 64G RAM,
-caching guest pages, with or without compression, will help.
 
-Thanks,
-Nitin
+> ---
+> 
+> There is one 'bashism' left which I wasn't able to fix -- the use of
+> 'test -ef'. I'm not aware of any POSIX equivalent of that.
+
+Me neither, POSIX does not know stat(1) AFAICS. Does it matter in real
+life? Is there a distro that installs posh or a similarly strict shell
+as /bin/sh? It seems to work with dash after your changes.
+
+Michal
