@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab0GTD43 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 23:56:29 -0400
-Received: from e4.ny.us.ibm.com ([32.97.182.144]:40680 "EHLO e4.ny.us.ibm.com"
+	id S1758103Ab0GTD5k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 23:57:40 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:40787 "EHLO e4.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757341Ab0GTD42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 23:56:28 -0400
-Message-ID: <4C451E60.8080702@austin.ibm.com>
-Date: Mon, 19 Jul 2010 22:56:16 -0500
+	id S1757341Ab0GTD5j (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 23:57:39 -0400
+Message-ID: <4C451EAF.1080505@austin.ibm.com>
+Date: Mon, 19 Jul 2010 22:57:35 -0500
 From: Nathan Fontenot <nfont@austin.ibm.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
 MIME-Version: 1.0
 To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
 CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, greg@kroah.com
-Subject: [PATCH 5/8] v3 Update the find_memory_block declaration
+Subject: [PATCH 6/8] v3 Update the node sysfs code
 References: <4C451BF5.50304@austin.ibm.com>
 In-Reply-To: <4C451BF5.50304@austin.ibm.com>
 Content-Type: text/plain; charset=ISO-8859-1
@@ -22,24 +22,81 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Update the find_memory_block declaration to to take a struct mem_section *
-so that it matches the definition.
+Update the node sysfs code to be aware of the new capability for a memory
+block to contain multiple memory sections.  This requires an additional
+parameter to unregister_mem_sect_under_nodes so that we know which memory
+section of the memory block to unregister.
 
 Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 ---
- include/linux/memory.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/base/memory.c |    2 +-
+ drivers/base/node.c   |   12 ++++++++----
+ include/linux/node.h  |    3 ++-
+ 3 files changed, 11 insertions(+), 6 deletions(-)
 
-Index: linux-2.6/include/linux/memory.h
+Index: linux-2.6/drivers/base/node.c
 ===================================================================
---- linux-2.6.orig/include/linux/memory.h	2010-07-19 21:10:28.000000000 -0500
-+++ linux-2.6/include/linux/memory.h	2010-07-19 21:12:46.000000000 -0500
-@@ -116,7 +116,7 @@ extern int memory_dev_init(void);
- extern int remove_memory_block(unsigned long, struct mem_section *, int);
- extern int memory_notify(unsigned long val, void *v);
- extern int memory_isolate_notify(unsigned long val, void *v);
--extern struct memory_block *find_memory_block(unsigned long);
-+extern struct memory_block *find_memory_block(struct mem_section *);
- extern int memory_is_hidden(struct mem_section *);
- #define CONFIG_MEM_BLOCK_SIZE	(PAGES_PER_SECTION<<PAGE_SHIFT)
- enum mem_add_context { BOOT, HOTPLUG };
+--- linux-2.6.orig/drivers/base/node.c	2010-07-19 21:10:25.000000000 -0500
++++ linux-2.6/drivers/base/node.c	2010-07-19 21:13:11.000000000 -0500
+@@ -346,8 +346,10 @@ int register_mem_sect_under_node(struct
+ 		return -EFAULT;
+ 	if (!node_online(nid))
+ 		return 0;
+-	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
+-	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
++
++	sect_start_pfn = section_nr_to_pfn(mem_blk->start_phys_index);
++	sect_end_pfn = section_nr_to_pfn(mem_blk->end_phys_index);
++	sect_end_pfn += PAGES_PER_SECTION - 1;
+ 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
+ 		int page_nid;
+ 
+@@ -371,7 +373,8 @@ int register_mem_sect_under_node(struct
+ }
+ 
+ /* unregister memory section under all nodes that it spans */
+-int unregister_mem_sect_under_nodes(struct memory_block *mem_blk)
++int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
++				    unsigned long phys_index)
+ {
+ 	NODEMASK_ALLOC(nodemask_t, unlinked_nodes, GFP_KERNEL);
+ 	unsigned long pfn, sect_start_pfn, sect_end_pfn;
+@@ -383,7 +386,8 @@ int unregister_mem_sect_under_nodes(stru
+ 	if (!unlinked_nodes)
+ 		return -ENOMEM;
+ 	nodes_clear(*unlinked_nodes);
+-	sect_start_pfn = section_nr_to_pfn(mem_blk->phys_index);
++
++	sect_start_pfn = section_nr_to_pfn(phys_index);
+ 	sect_end_pfn = sect_start_pfn + PAGES_PER_SECTION - 1;
+ 	for (pfn = sect_start_pfn; pfn <= sect_end_pfn; pfn++) {
+ 		int nid;
+Index: linux-2.6/drivers/base/memory.c
+===================================================================
+--- linux-2.6.orig/drivers/base/memory.c	2010-07-19 21:12:22.000000000 -0500
++++ linux-2.6/drivers/base/memory.c	2010-07-19 21:13:11.000000000 -0500
+@@ -550,9 +550,9 @@ int remove_memory_block(unsigned long no
+ 
+ 	mem = find_memory_block(section);
+ 	atomic_dec(&mem->section_count);
++	unregister_mem_sect_under_nodes(mem, __section_nr(section));
+ 
+ 	if (atomic_read(&mem->section_count) == 0) {
+-		unregister_mem_sect_under_nodes(mem);
+ 		mem_remove_simple_file(mem, start_phys_index);
+ 		mem_remove_simple_file(mem, end_phys_index);
+ 		mem_remove_simple_file(mem, state);
+Index: linux-2.6/include/linux/node.h
+===================================================================
+--- linux-2.6.orig/include/linux/node.h	2010-07-19 21:10:25.000000000 -0500
++++ linux-2.6/include/linux/node.h	2010-07-19 21:13:11.000000000 -0500
+@@ -44,7 +44,8 @@ extern int register_cpu_under_node(unsig
+ extern int unregister_cpu_under_node(unsigned int cpu, unsigned int nid);
+ extern int register_mem_sect_under_node(struct memory_block *mem_blk,
+ 						int nid);
+-extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk);
++extern int unregister_mem_sect_under_nodes(struct memory_block *mem_blk,
++					   unsigned long phys_index);
+ 
+ #ifdef CONFIG_HUGETLBFS
+ extern void register_hugetlbfs_with_node(node_registration_func_t doregister,
