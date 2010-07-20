@@ -1,102 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S936570Ab0GTB7U (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 21:59:20 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:47045 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932088Ab0GTB7T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 21:59:19 -0400
-Date: Tue, 20 Jul 2010 10:47:58 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [PATCH 0/7] memcg reclaim tracepoint
-Message-Id: <20100720104758.376c4fc7.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100716191006.7369.A69D9226@jp.fujitsu.com>
-References: <20100716191006.7369.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758127Ab0GTCHK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 22:07:10 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43958 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758084Ab0GTCHI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 22:07:08 -0400
+Date: Tue, 20 Jul 2010 02:06:40 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <tip-*@git.kernel.org>
+References: <tip-*@git.kernel.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/cpu] x86, cpu: Clean up formatting in cpufeature.h, remove override
+Message-ID: <tip-278bc5f6abd69dd868746dbd642266ac09a9c9c6@git.kernel.org>
+Git-Commit-ID: 278bc5f6abd69dd868746dbd642266ac09a9c9c6
+X-Mailer: tip-git-log-daemon
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Jul 2010 02:06:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jul 2010 19:12:46 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+Commit-ID:  278bc5f6abd69dd868746dbd642266ac09a9c9c6
+Gitweb:     http://git.kernel.org/tip/278bc5f6abd69dd868746dbd642266ac09a9c9c6
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Mon, 19 Jul 2010 18:53:51 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 19 Jul 2010 19:02:35 -0700
 
-> Recently, Mel Gorman added some vmscan tracepoint. but they can't
-> trace memcg. So, This patch series does.
-> 
-> 
-> following three patches are nit fix and cleanups.
-> 
->   memcg: sc.nr_to_reclaim should be initialized
->   memcg: mem_cgroup_shrink_node_zone() doesn't need sc.nodemask
->   memcg: nid and zid can be calculated from zone
-> 
-I'm not so familiar with tracepoints, but I don't have any objection to these
-3 fix/cleanup for memcg.
+x86, cpu: Clean up formatting in cpufeature.h, remove override
 
-Thanks,
-Daisuke Nishimura
+Clean up the formatting in cpufeature.h, and remove an unnecessary
+name override.
 
-> following four patches are tracepoint conversion and adding memcg tracepoints.
-> 
->   vmscan:        convert direct reclaim tracepoint to DEFINE_EVENT
->   memcg, vmscan: add memcg reclaim tracepoint
->   vmscan:        convert mm_vmscan_lru_isolate to DEFINE_EVENT
->   memcg, vmscan: add mm_vmscan_memcg_isolate tracepoint
-> 
-> 
-> diffstat
-> ================
->  include/linux/memcontrol.h    |    6 ++--
->  include/linux/mmzone.h        |    5 +++
->  include/linux/swap.h          |    3 +-
->  include/trace/events/vmscan.h |   79 +++++++++++++++++++++++++++++++++++++++--
->  mm/memcontrol.c               |   15 +++++---
->  mm/vmscan.c                   |   35 ++++++++++++------
->  6 files changed, 118 insertions(+), 25 deletions(-)
-> 
-> 
-> Sameple output is here.
-> =========================
-> 
->               dd-1851  [001]   158.837763: mm_vmscan_memcg_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
->               dd-1851  [001]   158.837783: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
->               dd-1851  [001]   158.837860: mm_vmscan_memcg_reclaim_end: nr_reclaimed=32
->   (...)
->               dd-1970  [000]   266.608235: mm_vmscan_wakeup_kswapd: nid=0 zid=1 order=0
->               dd-1970  [000]   266.608239: mm_vmscan_wakeup_kswapd: nid=1 zid=1 order=0
->               dd-1970  [000]   266.608248: mm_vmscan_wakeup_kswapd: nid=2 zid=1 order=0
->          kswapd1-348   [001]   266.608254: mm_vmscan_kswapd_wake: nid=1 order=0
->               dd-1970  [000]   266.608254: mm_vmscan_wakeup_kswapd: nid=3 zid=1 order=0
->          kswapd3-350   [000]   266.608266: mm_vmscan_kswapd_wake: nid=3 order=0
->   (...)
->          kswapd0-347   [001]   267.328891: mm_vmscan_memcg_softlimit_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
->          kswapd0-347   [001]   267.328897: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
->          kswapd0-347   [001]   267.328915: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
->          kswapd0-347   [001]   267.328989: mm_vmscan_memcg_softlimit_reclaim_end: nr_reclaimed=32
->          kswapd0-347   [001]   267.329019: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
->          kswapd0-347   [001]   267.330562: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
->   (...)
->          kswapd2-349   [001]   267.407081: mm_vmscan_kswapd_sleep: nid=2
->          kswapd3-350   [001]   267.408077: mm_vmscan_kswapd_sleep: nid=3
->          kswapd1-348   [000]   267.427858: mm_vmscan_kswapd_sleep: nid=1
->          kswapd0-347   [001]   267.430064: mm_vmscan_kswapd_sleep: nid=0
-> 
-> 
-> 
-> 
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>
+LKML-Reference: <tip-*@git.kernel.org>
+---
+ arch/x86/include/asm/cpufeature.h |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/arch/x86/include/asm/cpufeature.h b/arch/x86/include/asm/cpufeature.h
+index d5ea3e3..4be50dd 100644
+--- a/arch/x86/include/asm/cpufeature.h
++++ b/arch/x86/include/asm/cpufeature.h
+@@ -165,7 +165,7 @@
+ #define X86_FEATURE_ARAT	(7*32+ 1) /* Always Running APIC Timer */
+ #define X86_FEATURE_CPB		(7*32+ 2) /* AMD Core Performance Boost */
+ #define X86_FEATURE_EPB		(7*32+ 3) /* IA32_ENERGY_PERF_BIAS support */
+-#define X86_FEATURE_XSAVEOPT	(7*32+4) /* "xsaveopt" Optimized Xsave */
++#define X86_FEATURE_XSAVEOPT	(7*32+ 4) /* Optimized Xsave */
+ 
+ /* Virtualization flags: Linux defined, word 8 */
+ #define X86_FEATURE_TPR_SHADOW  (8*32+ 0) /* Intel TPR Shadow */
+@@ -173,13 +173,13 @@
+ #define X86_FEATURE_FLEXPRIORITY (8*32+ 2) /* Intel FlexPriority */
+ #define X86_FEATURE_EPT         (8*32+ 3) /* Intel Extended Page Table */
+ #define X86_FEATURE_VPID        (8*32+ 4) /* Intel Virtual Processor ID */
+-#define X86_FEATURE_NPT		(8*32+5)  /* AMD Nested Page Table support */
+-#define X86_FEATURE_LBRV	(8*32+6)  /* AMD LBR Virtualization support */
+-#define X86_FEATURE_SVML	(8*32+7)  /* "svm_lock" AMD SVM locking MSR */
+-#define X86_FEATURE_NRIPS	(8*32+8)  /* "nrip_save" AMD SVM next_rip save */
++#define X86_FEATURE_NPT		(8*32+ 5) /* AMD Nested Page Table support */
++#define X86_FEATURE_LBRV	(8*32+ 6) /* AMD LBR Virtualization support */
++#define X86_FEATURE_SVML	(8*32+ 7) /* "svm_lock" AMD SVM locking MSR */
++#define X86_FEATURE_NRIPS	(8*32+ 8) /* "nrip_save" AMD SVM next_rip save */
+ 
+ /* Intel-defined CPU features, CPUID level 0x00000007:0 (ebx), word 9 */
+-#define X86_FEATURE_FSGSBASE	(9*32+0)  /* {RD/WR}{FS/GS}BASE instructions*/
++#define X86_FEATURE_FSGSBASE	(9*32+ 0) /* {RD/WR}{FS/GS}BASE instructions*/
+ 
+ #if defined(__KERNEL__) && !defined(__ASSEMBLY__)
+ 
