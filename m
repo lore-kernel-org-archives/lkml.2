@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab0GTErJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 00:47:09 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:46835 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752614Ab0GTEq7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 00:46:59 -0400
-Date: Tue, 20 Jul 2010 14:46:57 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Li Zefan <lizf@cn.fujitsu.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-        Peter Zijlstra <peterz@infradead.org>
-Subject: linux-next: manual merge of the workqueues tree with the tip tree
-Message-Id: <20100720144657.47ad6afb.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753336Ab0GTErZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 00:47:25 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:18376 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753198Ab0GTErV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 00:47:21 -0400
+To: Christof Schmitt <christof.schmitt@de.ibm.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [patch 0/1] Apply segment size and segment boundary to integrity data
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20100715153410.774329000@de.ibm.com>
+	<yq1mxtspwab.fsf@sermon.lab.mkp.net>
+	<20100716083034.GA7474@schmichrtp.ibm.com>
+Date: Tue, 20 Jul 2010 00:45:49 -0400
+In-Reply-To: <20100716083034.GA7474@schmichrtp.ibm.com> (Christof Schmitt's
+	message of "Fri, 16 Jul 2010 10:30:34 +0200")
+Message-ID: <yq1bpa292wy.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C452A51.001B:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Tejun,
+>>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
 
-Today's linux-next merge of the workqueues tree got a conflict in
-kernel/trace/Kconfig between commit
-039ca4e74a1cf60bd7487324a564ecf5c981f254 ("tracing: Remove kmemtrace
-ftrace plugin") from the tip tree and commit
-64166699752006f1a23a9cf7c96ae36654ccfc2c ("workqueue: temporarily remove
-workqueue tracing") from the workqueues tree.
+Christof,
 
-Juts context changes.  I fixed it up (see below) and can carry the fix as
-necessary.
+Christof> The motivation stems from research how the integrity data can
+Christof> be mapped to the hardware interface used by the zfcp
+Christof> driver. When passing data segments to the zfcp hardware
+Christof> controller, there is the constraint that each data segment has
+Christof> a maximum size of 4k and a segment must not cross a 4k
+Christof> boundary.
+
+Ok.
+
+
+Christof> Right now, this is done by reporting the maximum segment size
+Christof> and segment boundary accordingly from zfcp. When issuing a
+Christof> request, zfcp simply walks the sg list and passes the segments
+Christof> to the hardware controller, no mapping or readjustment is
+Christof> necessary in the driver.
+
+In that case I don't really have a problem with adhering to the queue
+segment size and segment boundary for the integrity metadata.  As long
+as we avoid using the max number of data segments to cap the integrity
+scatterlist because that'll definitely break a lot of stuff.
+
+Does the zfcp hardware have scatterlist length constraints?
+
+
+>> Your change also has repercussions when merging requests and bios.
+>> We'd need to honor the DI segmentation constraints when merging.
+>> Otherwise we may end up going beyond the controller limits when
+>> mapping the sgl.
+
+Christof> Meaning the integrity data sg list would have more entries
+Christof> than max_segments? I have not seen this during my experiments,
+Christof> but then i likely have not hit every case of a possible
+Christof> request layout.
+
+It happens all the time.
+
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-diff --cc kernel/trace/Kconfig
-index f669092,a0d95c1f..0000000
---- a/kernel/trace/Kconfig
-+++ b/kernel/trace/Kconfig
-@@@ -354,17 -371,26 +354,6 @@@ config STACK_TRACE
-  
-  	  Say N if unsure.
-  
-- config WORKQUEUE_TRACER
-- 	bool "Trace workqueues"
-- 	select GENERIC_TRACER
-- 	help
-- 	  The workqueue tracer provides some statistical information
--           about each cpu workqueue thread such as the number of the
--           works inserted and executed since their creation. It can help
--           to evaluate the amount of work each of them has to perform.
--           For example it can help a developer to decide whether he should
--           choose a per-cpu workqueue instead of a singlethreaded one.
-- 
- -config KMEMTRACE
- -	bool "Trace SLAB allocations"
- -	select GENERIC_TRACER
- -	help
- -	  kmemtrace provides tracing for slab allocator functions, such as
- -	  kmalloc, kfree, kmem_cache_alloc, kmem_cache_free, etc. Collected
- -	  data is then fed to the userspace application in order to analyse
- -	  allocation hotspots, internal fragmentation and so on, making it
- -	  possible to see how well an allocator performs, as well as debug
- -	  and profile kernel code.
- -
- -	  This requires an userspace application to use. See
- -	  Documentation/trace/kmemtrace.txt for more information.
- -
- -	  Saying Y will make the kernel somewhat larger and slower. However,
- -	  if you disable kmemtrace at run-time or boot-time, the performance
- -	  impact is minimal (depending on the arch the kernel is built for).
- -
- -	  If unsure, say N.
- -
-  config BLK_DEV_IO_TRACE
-  	bool "Support for tracing block IO actions"
-  	depends on SYSFS
+Martin K. Petersen	Oracle Linux Engineering
