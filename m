@@ -1,158 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932279Ab0GTMtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 08:49:43 -0400
-Received: from mailout3.samsung.com ([203.254.224.33]:9557 "EHLO
-	mailout3.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932194Ab0GTMtm (ORCPT
+	id S932298Ab0GTMvR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 08:51:17 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54147 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932155Ab0GTMvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 08:49:42 -0400
-Date: Tue, 20 Jul 2010 21:49:45 +0900
-From: Kukjin Kim <kgene.kim@samsung.com>
-Subject: RE: [PATCH] Tight check of pfn_valid on sparsemem - v2
-In-reply-to: <20100720101557.GD16031@cmpxchg.org>
-To: "'Johannes Weiner'" <hannes@cmpxchg.org>,
-        "'Minchan Kim'" <minchan.kim@gmail.com>
-Cc: "'Andrew Morton'" <akpm@linux-foundation.org>,
-        "'Russell King'" <linux@arm.linux.org.uk>,
-        "'Mel Gorman'" <mel@csn.ul.ie>, "'linux-mm'" <linux-mm@kvack.org>,
-        "'linux-arm-kernel'" <linux-arm-kernel@lists.infradead.org>,
-        "'LKML'" <linux-kernel@vger.kernel.org>,
-        "'KAMEZAWA Hiroyuki'" <kamezawa.hiroyu@jp.fujitsu.com>
-Message-id: <004201cb280a$0b15e780$2141b680$%kim@samsung.com>
-MIME-version: 1.0
-X-Mailer: Microsoft Office Outlook 12.0
-Content-type: text/plain; charset=US-ASCII
-Content-language: ko
-Content-transfer-encoding: 7BIT
-Thread-index: Acsn9KEwYzr5B8lPSrafhRAX7j41HgAFIpeQ
-References: <1279448311-29788-1-git-send-email-minchan.kim@gmail.com>
- <20100720101557.GD16031@cmpxchg.org>
+	Tue, 20 Jul 2010 08:51:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=AGNiS/4RuvAAkH2jhCVq18x69H5l4LUKv/+wK7qCXUPnj0CmQCkRv4ctn3BuUs9z89
+         +GRbCiib3GlItMQwSLPQyXNB8hP2NHx6SVyXX+mppYK8HfUayucjGYRfw+12b7B5m8LH
+         cYVTmpowHZRJL8RD0AXWG4ibkebf6ezBmZ4C0=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: auto401300@hushmail.com
+Subject: Re: netfilter/iptables stopped logging 2.6.35-rc
+Date: Tue, 20 Jul 2010 14:51:03 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc5; KDE/4.4.4; i686; ; )
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+References: <20100717072036.1BBE52804B@smtp.hushmail.com>
+In-Reply-To: <20100717072036.1BBE52804B@smtp.hushmail.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007201451.03666.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Johannes Weiner wrote:
+On sobota, 17 lipca 2010 o 09:20:36 auto401300@hushmail.com wrote:
+> Hi!
 > 
-> Hi,
+> Has something broken with netfilter/iptables logging in 2.6.35-rc,
+> or is there something new I should set in .config since .34?
 > 
-> On Sun, Jul 18, 2010 at 07:18:31PM +0900, Minchan Kim wrote:
-> > Kukjin reported oops happen while he change min_free_kbytes
-> > http://www.spinics.net/lists/arm-kernel/msg92894.html
-> > It happen by memory map on sparsemem.
-> >
-> > The system has a memory map following as.
-> >      section 0             section 1              section 2
-> > 0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
-> > SECTION_SIZE_BITS 28(256M)
-> >
-> > It means section 0 is an incompletely filled section.
-> > Nontheless, current pfn_valid of sparsemem checks pfn loosely.
-> > It checks only mem_section's validation but ARM can free mem_map on hole
-> > to save memory space. So in above case, pfn on 0x25000000 can pass
-> pfn_valid's
-> > validation check. It's not what we want.
-> >
-> > We can match section size to smallest valid size.(ex, above case, 16M)
-> > But Russell doesn't like it due to mem_section's memory overhead with
-different
-> > configuration(ex, 512K section).
-> >
-> > I tried to add valid pfn range in mem_section but everyone doesn't like
-it
-> > due to size overhead. This patch is suggested by KAMEZAWA-san.
-> > I just fixed compile error and change some naming.
 > 
-> I did not like it, because it messes up the whole concept of a
-> section.
+> I just verified that if I boot .34 and ping the pc it does logging:
 > 
-> But most importantly, we already have a crutch for ARM in place,
-> namely memmap_valid_within().  Looking at Kukjin's bug report,
-> wouldn't it be enough to use that check in
-> setup_zone_migrate_reserve()?
+> Jul 17 09:42:49 xxxxx kernel: Linux version 2.6.34-ab (root@xxxxx)
+> (gcc version 4.4.4 (Debian 4.4.4-1) ) #1 SMP PREEMPT Mon May 17
+> 09:15
 > 
-> Your approach makes every pfn_valid() more expensive, although the
-> extensive checks are not not needed everywhere (check the comment
-> above memmap_valid_within): vm_normal_page() for example can probably
-> assume that a PTE won't point to a hole within the memory map.
+> :15 EEST 2010
 > 
-> OTOH, if the ARM people do not care, we could probably go with your
-> approach, encode it all into pfn_valid(), and also get rid of
-> memmap_valid_within() completely.  But I would prefer doing a bugfix
-> first and such a conceptual change in a different patch, would you
-> agree?
+> ....
+> Jul 17 09:44:52 xxxxx kernel: DENY  in: IN=eth0 OUT= MAC=xxxxx
+> SRC=xxxxx DST=xxxxx LEN=60 TOS=0x00 PREC=0x00 TTL=127 ID=38945
+> PROTO=ICMP TYPE=8 CODE=0 ID=512 SEQ=256
 > 
-> Kukjin, does the appended patch also fix your problem?
 > 
-Yes, did not happen problem with your patch.
+> but if I boot .35-rc4 and ping:
+> 
+> Jul 17 09:48:08 xxxxx kernel: Linux version 2.6.35-rc4-aa
+> (root@xxxxx) (gcc version 4.4.4 (Debian 4.4.4-6) ) #1 SMP PREEMPT
+> Mon Jul 5 15:22:02 EEST 2010
+> ....
+> nothing from iptables in log
+> 
+> 
+> userspace is same, only booted different kernel versions
 
-But already Minchan requested test on the board with same patch.
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16423
+for your bug report, please add your address to the CC list in there, thanks!
 
-And you can find it in following thread about that.
-http://lists.infradead.org/pipermail/linux-arm-kernel/2010-July/020199.html
-
-I'm not sure which approach is better to us right now.
-
-Hmm...
-
-Thanks.
-
-Best regards,
-Kgene.
---
-Kukjin Kim <kgene.kim@samsung.com>, Senior Engineer,
-SW Solution Development Team, Samsung Electronics Co., Ltd.
-
-> 	Hannes
-> 
-> ---
-> From: Johannes Weiner <hannes@cmpxchg.org>
-> Subject: mm: check mem_map backing in setup_zone_migrate_reserve
-> 
-> Kukjin encountered kernel oopsen when changing
-> /proc/sys/vm/min_free_kbytes.  The problem is that his sparse memory
-> layout on ARM is the following:
-> 
->      section 0             section 1              section 2
-> 0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
-> SECTION_SIZE_BITS 28(256M)
-> 
-> where there is a memory hole at the end of section 0.
-> 
-> Since section 0 has _some_ memory, pfn_valid() will return true for
-> all PFNs in this section.  But ARM releases the mem_map pages of this
-> hole and pfn_valid() alone is not enough anymore to ensure there is a
-> valid page struct behind a PFN.
-> 
-> We acknowledged that ARM does this already and have a function to
-> double-check for mem_map in cases where we do PFN range walks (as
-> opposed to coming from a page table entry, which should not point to a
-> memory hole in the first place e.g.).
-> 
-> setup_zone_migrate_reserve() contains one such range walk which does
-> not have the extra check and was also the cause of the oopsen Kukjin
-> encountered.
-> 
-> This patch adds the needed memmap_valid_within() check.
-> 
-> Reported-by: Kukjin Kim <kgene.kim@samsung.com>
-> Signed-off-by: Johannes Weiner <hannes@cmpxchg.org>
-> ---
-> 
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 0b0b629..cb6d6d3 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -3168,6 +3168,10 @@ static void setup_zone_migrate_reserve(struct zone
-> *zone)
->  			continue;
->  		page = pfn_to_page(pfn);
-> 
-> +		/* Watch out for holes in the memory map */
-> +		if (!memmap_valid_within(pfn, page, zone))
-> +			continue;
-> +
->  		/* Watch out for overlapping nodes */
->  		if (page_to_nid(page) != zone_to_nid(zone))
->  			continue;
-
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
