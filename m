@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758182Ab0GTHzK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 03:55:10 -0400
-Received: from mail.renesas.com ([202.234.163.13]:35784 "EHLO
-	mail01.idc.renesas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754681Ab0GTHzH (ORCPT
+	id S1758202Ab0GTHzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 03:55:51 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:37184 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754629Ab0GTHzt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 03:55:07 -0400
-X-AuditID: ac140384-0000000b000004f6-71-4c4555dc6f58
-Date: Tue, 20 Jul 2010 16:52:58 +0900
-From: Yusuke Goda <yusuke.goda.sx@renesas.com>
-Subject: [PATCH] tmio_mmc: Allow 2 byte requests in 4-bit mode
-To: ian@mnementh.co.uk, damm@opensource.se, sameo@linux.intel.com,
-        Paul Mundt <lethal@linux-sh.org>, g.liakhovetski@gmx.de,
-        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Message-id: <4C4555DA.40203@renesas.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=ISO-2022-JP
-Content-transfer-encoding: 7bit
-User-Agent: Thunderbird 2.0.0.9 (Windows/20071031)
-X-Brightmail-Tracker: AAAAAA==
+	Tue, 20 Jul 2010 03:55:49 -0400
+Date: Tue, 20 Jul 2010 09:55:46 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 0/4] Finer granularity and task/cgroup irq time
+ accounting
+Message-ID: <20100720095546.2f899e04@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <1279583835-22854-1-git-send-email-venki@google.com>
+References: <1279583835-22854-1-git-send-email-venki@google.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Adjust the tmio_mmc block size check to accept 2-byte requests in 4-bit mode.
-Tested with the SDHI hardware block included in sh7724.
+On Mon, 19 Jul 2010 16:57:11 -0700
+Venkatesh Pallipadi <venki@google.com> wrote:
 
-Signed-off-by: Yusuke Goda <yusuke.goda.sx@renesas.com>
----
- drivers/mmc/host/tmio_mmc.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+> Currently, the softirq and hardirq time reporting is only done at the
+> CPU level. There are usecases where reporting this time against task
+> or task groups or cgroups will be useful for user/administrator
+> in terms of resource planning and utilization charging. Also, as the
+> accoounting is already done at the CPU level, reporting the same at
+> the task level does not add any significant computational overhead
+> other than task level storage (patch 1).
 
-diff --git a/drivers/mmc/host/tmio_mmc.c b/drivers/mmc/host/tmio_mmc.c
-index ee7d0a5..f49d945 100644
---- a/drivers/mmc/host/tmio_mmc.c
-+++ b/drivers/mmc/host/tmio_mmc.c
-@@ -660,8 +660,8 @@ static int tmio_mmc_start_data(struct tmio_mmc_host *host,
- 	pr_debug("setup data transfer: blocksize %08x  nr_blocks %d\n",
- 		 data->blksz, data->blocks);
+I never understood why the softirq and hardirq time gets accounted to a
+task at all. Why is it that the poor task that is running gets charged
+with the cpu time of an interrupt that has nothing to do with the task?
+I consider this to be a bug, and now this gets formalized in the
+taskstats interface? Imho not a good idea.
 
--	/* Hardware cannot perform 1 and 2 byte requests in 4 bit mode */
--	if (data->blksz < 4 && host->mmc->ios.bus_width == MMC_BUS_WIDTH_4) {
-+	/* Hardware cannot perform 1 byte requests in 4 bit mode */
-+	if (data->blksz < 2 && host->mmc->ios.bus_width == MMC_BUS_WIDTH_4) {
- 		pr_err("%s: %d byte block unsupported in 4 bit mode\n",
- 		       mmc_hostname(host->mmc), data->blksz);
- 		return -EINVAL;
+> The softirq/hardirq statistics commonly done based on tick based sampling.
+> Though some archs have CONFIG_VIRT_CPU_ACCOUNTING based fine granularity
+> accounting. Having similar mechanism to get fine granularity accounting
+> on x86 will be a major challenge, given the state of TSC reliability
+> on various platforms and also the overhead it may add in common paths
+> like syscall entry exit.
+> 
+> An alternative is to have a generic (sched_clock based) and configurable
+> fine-granularity accounting of si and hi time which can be reported
+> over the /proc/<pid>/stat API (patch 2).
+
+To get fine granular accounting for interrupts you need to do a
+sched_clock call on irq entry and another one on irq exit. Isn't that
+too expensive on a x86 system? (I do think this is a good idea but
+still there is the worry about the overhead).
+
 -- 
-1.7.0
+blue skies,
+   Martin.
 
-
+"Reality continues to ruin my life." - Calvin.
 
