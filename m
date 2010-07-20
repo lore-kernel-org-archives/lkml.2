@@ -1,115 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761250Ab0GTMHn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 08:07:43 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:34292 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761242Ab0GTMHk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 08:07:40 -0400
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
- interfaces with random MAC address
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stefan Assmann <sassmann@redhat.com>
-Cc: netdev <netdev@vger.kernel.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        davem@davemloft.net, Andy Gospodarek <gospo@redhat.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        Casey Leedom <leedom@chelsio.com>, Harald Hoyer <harald@redhat.com>
-In-Reply-To: <4C458CB7.3030508@redhat.com>
-References: <4C457F72.8090708@redhat.com>
-	 <1279624844.2110.3.camel@achroite.uk.solarflarecom.com>
-	 <4C458CB7.3030508@redhat.com>
-Content-Type: text/plain
-Organization: Solarflare Communications
-Date: Tue, 20 Jul 2010 13:07:36 +0100
-Message-Id: <1279627656.2110.13.camel@achroite.uk.solarflarecom.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 (2.26.1-2.fc11) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Jul 2010 12:09:07.0592 (UTC) FILETIME=[5AA4C880:01CB2804]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17516.005
-X-TM-AS-Result: No--35.490300-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S1758459Ab0GTMLO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 08:11:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13935 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751014Ab0GTMLK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 08:11:10 -0400
+From: Xiaotian Feng <dfeng@redhat.com>
+To: cpufreq@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
+        Dave Jones <davej@redhat.com>, Thomas Renninger <trenn@suse.de>,
+        Prarit Bhargava <prarit@redhat.com>
+Subject: [PATCH] cpufreq: fix memory leak in cpufreq_add_dev
+Date: Tue, 20 Jul 2010 20:11:02 +0800
+Message-Id: <1279627862-4107-1-git-send-email-dfeng@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-20 at 13:47 +0200, Stefan Assmann wrote:
-> On 20.07.2010 13:20, Ben Hutchings wrote:
-> > On Tue, 2010-07-20 at 12:50 +0200, Stefan Assmann wrote:
-> >> From: Stefan Assmann <sassmann@redhat.com>
-> >>
-> >> Reserve a bit in struct net_device to indicate whether an interface
-> >> generates its MAC address randomly, and expose the information via
-> >> sysfs.
-> >> May look like this:
-> >> /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/net/eth0/ifrndmac
-> >>
-> >> By default the value of ifrndmac is 0. Any driver that generates the MAC
-> >> address randomly should return a value to 1.
-> > 
-> > The name should incorporate 'address', not 'mac', for consistency with
-> > the generic 'address' attribute.
-> 
-> We can call it "ifrndhwaddr" if that's more consistent.
-> 
-> > 
-> > What about devices that 'steal' MAC addresses from slave devices?
-> > Currently I believe udev has special cases for them but ideally these
-> > drivers would indicate explicitly that their addresses are not stable
-> > identifiers (even though they aren't random).
-> 
-> It's really up to the driver to decide whether it makes sense to set the
-> flag or not. The question is what should udev do with these MAC address
-> stealing devices apart from ignoring them? Sorry I have no higher
-> insight into it.
-> This flag has the purpose to allow udev to explicitly handle devices
-> that generate their MAC address randomly and generate a persistent
-> rule based on the device path instead of the MAC address.
-> I'm open for suggestions but I'm not sure we can handle both cases with
-> a single flag.
+We didn't free policy->related_cpus in error path err_unlock_policy.
+This is catched by following kmemleak report:
 
-OK, then call it something like 'address_temporary'.
+unreferenced object 0xffff88022a0b96d0 (size 512):
+  comm "modprobe", pid 886, jiffies 4294689177 (age 780.694s)
+  hex dump (first 32 bytes):
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+    00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00  ................
+  backtrace:
+    [<ffffffff8111ebe5>] create_object+0x186/0x281
+    [<ffffffff814fad4f>] kmemleak_alloc+0x60/0xa7
+    [<ffffffff8111127a>] kmem_cache_alloc_node_notrace+0x120/0x142
+    [<ffffffff81262e4f>] alloc_cpumask_var_node+0x2c/0xd7
+    [<ffffffff81262f0b>] alloc_cpumask_var+0x11/0x13
+    [<ffffffff81262f1c>] zalloc_cpumask_var+0xf/0x11
+    [<ffffffff8140fac0>] cpufreq_add_dev+0x11f/0x547
+    [<ffffffff81334bda>] sysdev_driver_register+0xc2/0x11d
+    [<ffffffff8140e334>] cpufreq_register_driver+0xcb/0x1b8
+    [<ffffffffa032e040>] 0xffffffffa032e040
+    [<ffffffff810021ba>] do_one_initcall+0x5e/0x15c
+    [<ffffffff81087f94>] sys_init_module+0xa6/0x1e6
+    [<ffffffff81009bc2>] system_call_fastpath+0x16/0x1b
+    [<ffffffffffffffff>] 0xffffffffffffffff
 
-> JFYI this is an alternative approach to changing the kernel name of VFs
-> to vfeth. The advantage of this way should be that we don't break any
-> user-space applications that rely on network interfaces being names
-> "ethX". Actually this goes in the direction of "fixing udev" which was
-> what you asked for in your comment on my first patch concering vfeth. :)
-> 
-> > 
-> > [...]
-> >> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-> >> index b626289..2ea0298 100644
-> >> --- a/include/linux/netdevice.h
-> >> +++ b/include/linux/netdevice.h
-> >> @@ -845,6 +845,7 @@ struct net_device {
-> >>  #define NETIF_F_FCOE_MTU	(1 << 26) /* Supports max FCoE MTU, 2158 bytes*/
-> >>  #define NETIF_F_NTUPLE		(1 << 27) /* N-tuple filters supported */
-> >>  #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
-> >> +#define NETIF_F_RNDMAC		(1 << 29) /* Interface with random MAC address */
-> > [...]
-> > 
-> > This is not really a feature, and we are running out of real feature
-> > bits.  Can you find somewhere else to put this flag?
-> 
-> Actually Dave Miller suggested to put it there. What other place is
-> there to put it?
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+Cc: Dave Jones <davej@redhat.com>
+Cc: Thomas Renninger <trenn@suse.de>
+Cc: Prarit Bhargava <prarit@redhat.com>
+---
+ drivers/cpufreq/cpufreq.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-If Dave said that then I'm sure it's OK.
-
-However, if you define this as an interface flag (net_device::flags;
-<linux/if.h>) and add it to the set of changeable flags in
-__dev_change_flags(), user-space will be able to clear the flag if it
-later sets a stable address.
-
-Ben.
-
+diff --git a/drivers/cpufreq/cpufreq.c b/drivers/cpufreq/cpufreq.c
+index 063b218..12263b4 100644
+--- a/drivers/cpufreq/cpufreq.c
++++ b/drivers/cpufreq/cpufreq.c
+@@ -1077,6 +1077,7 @@ err_out_unregister:
+ 
+ err_unlock_policy:
+ 	unlock_policy_rwsem_write(cpu);
++	free_cpumask_var(policy->related_cpus);
+ err_free_cpumask:
+ 	free_cpumask_var(policy->cpus);
+ err_free_policy:
 -- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.1.1
 
