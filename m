@@ -1,110 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755160Ab0GTGjB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 02:39:01 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:51445 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753884Ab0GTGjA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 02:39:00 -0400
-Date: Tue, 20 Jul 2010 12:08:05 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 0/13]  Uprobes Patches:
-Message-ID: <20100720063805.GA19375@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
- <20100720041938.GA28533@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100720041938.GA28533@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755356Ab0GTGl4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 02:41:56 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34226 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752458Ab0GTGlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 02:41:55 -0400
+Date: Tue, 20 Jul 2010 16:41:45 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Al Viro <viro@zeniv.linux.org.uk>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: OOPS at boot time
+Message-Id: <20100720164145.e06242b3.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__20_Jul_2010_16_41_45_+1000_s.dqRGPPDIEJB74W"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+--Signature=_Tue__20_Jul_2010_16_41_45_+1000_s.dqRGPPDIEJB74W
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> I tried this again and it worked.  That is kinda worked becuase I could
+Hi Al,
 
-Thanks for trying.
+All of my PowerPC boot tests are getting this after getting to user mode
+(sometimes several times):
 
-> use it to trace things in my running bash instance, but haven't really
-> figured out how to trace something useful using the pid based interface.
-> The processes I care about really don't run long enough for that.
+------------[ cut here ]------------
+kernel BUG at fs/inode.c:1244!
+Oops: Exception in kernel mode, sig: 5 [#1]
+SMP NR_CPUS=3D128 NUMA pSeries
+last sysfs file: /sys/kernel/uevent_seqnum
+Modules linked in: ehea xt_tcpudp iptable_filter ip_tables nfnetlink nf_con=
+ntrack_ipv4 nf_defrag_ipv4 xt_state nf_conntrack ipt_REJECT x_tables dm_mir=
+ror dm_region_hash dm_log dm_zero dm_snapshot parport_pc parport dm_multipa=
+th autofs4
+NIP: c000000000168074 LR: c000000000168064 CTR: 0000000000000000
+REGS: c0000000063d39f0 TRAP: 0700   Not tainted  (2.6.35-rc5-autokern1)
+MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 22008422  XER: 20000001
+TASK =3D c000000003a25840[4995] 'rm' THREAD: c0000000063d0000 CPU: 2
+GPR00: 0000000000000001 c0000000063d3c70 c000000000bfdea0 c0000000015f2090=
+=20
+GPR04: 0000000000000003 0000000000000001 c0000000063d3bd0 c000000000c5a388=
+=20
+GPR08: 80c0000000000000 0000000000000006 6000000000000000 8000000000000000=
+=20
+GPR12: c0000000056c0598 c0000000074d6400 0000000003100000 0000000000779b68=
+=20
+GPR16: 00000000007782f0 0000000010018875 00000000ff9c74b8 0000000000000000=
+=20
+GPR20: 0000000000000000 0000000000000000 0000000010010000 0000000010010000=
+=20
+GPR24: 0000000000000001 00000000fffba994 0000000000000002 000000001001a038=
+=20
+GPR28: c000000006617800 c000000000aefd40 c000000000b586b8 c0000000056c0748=
+=20
+NIP [c000000000168074] .iput+0x288/0x2d0
+LR [c000000000168064] .iput+0x278/0x2d0
+Call Trace:
+[c0000000063d3c70] [c000000000168064] .iput+0x278/0x2d0 (unreliable)
+[c0000000063d3d00] [c00000000015e964] .do_unlinkat+0x124/0x1b8
+[c0000000063d3e30] [c000000000008554] syscall_exit+0x0/0x40
+Instruction dump:
+38000000 f81f0008 f81f0000 e87e8090 48457d8d 60000000 7fe3fb78 4bfff339=20
+e81f03b0 68000060 3120ffff 7c090110 <0b000000> 38210090 7fe3fb78 e8010010=20
+---[ end trace 9ace9d3884bc0aac ]---
+Trace/breakpoint trap
+------------[ cut here ]------------
 
-I am working/(continue to work) on file based probes. But
-currently spending some of my time merging the current patchset to
-latest tip. Once this patchset gets pushed to tip, I should be able to
-speed up the file based probing.
+This is:
+	BUG_ON(inode->i_state !=3D (I_FREEING | I_CLEAR));
+in iput_final().
 
-> 
-> So thanks for the good work so far, but we'll really need a way to
-> define the trace points per-file and have a way to invoke a program
-> with tracing that uses it enabled.
-> 
-> A minor note on perf probe -S output:  This seems to include a lot of
-> T.456 or similar labels, which from my recollection are gcc internal
-> things.  It would be good to filter those out as they aren't quite
-> useful and just fill up the list.
+That BUG_ON was added by commit c0ae81f2 ("Make ->drop_inode() just
+return whether inode needs to be dropped").
 
-Okay .. will take a look. Offhand I dont know about the T.456
-labels, so I will google and see if its possible for us to identify if
-its a t.456 label. However if you know how to identify a t456 label
-from normal functions, then it would be great.
+Has anyone seen this or something similar?
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-> 
-> 
-> And I really need to complain about the per-patch changelogs inside
-> the visible commit message again.  I know you disagree, but it's
-> a real pain to read through it in git-log when you look for information
-> about the patch (which for some of the patches is rather short anyway)
-> and all you see is some rather useless patch versioning changelogs.
+--Signature=_Tue__20_Jul_2010_16_41_45_+1000_s.dqRGPPDIEJB74W
+Content-Type: application/pgp-signature
 
-I am okay with dropping the Changelog or moving the Changelog under the
---- section. However I had retained it because Stephen Rostedt
-replied to your post saying he found Changelog to be useful. 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-Assuming, he is fine dropping the changelog, I will move the
-Changelog to the --- section as suggested by you. 
+iQEcBAEBAgAGBQJMRUUpAAoJEDMEi1NhKgbsE/4H/0fzqd6GrZ/oPJYAnrvsKd27
+dLs2wLvTBJCEfHCuXHp7yjO6i16Sr9W3n8dtM6ymRLiYw8tJefS87GNTr+cge6RJ
+7dWhns+NNdq+K14nLdp0jSDCtP/ZVvGfeDMi6fVKnPWf3XZUZz8MIU7dPMbFpkj4
+8VZ54D62i8gl3PtF+RUvv7vc/QAuANCsaDYtcGj94SpRiWz6ZN9Pil1rUOiUsmms
+jx5HL7XoJ19GXKt+e5IpZSYETe6KZRPEpo9IZEwv39NA8Mncc4DLDLJ3DTa4seaa
+olL1qrUEtV/Gws1Ty05arUmWX8IvlQ/rCPaEjpHHq4TZj5xh8o5Csr2O2sT/J9A=
+=BBdx
+-----END PGP SIGNATURE-----
 
-> This is what basically all patches to the kernel do, and what's also
-> suggested in Documentation/SubmittingPatches.
-
-Agree. 
-
-> 
-> While talking about changelogs: your patches duplicate the patch
-> subject line inside the mail body, leading to rather funny git
-> commit messages after a git-am:
-> 
-> commit c32a1b63db113bb1508dbf01af34d29f6cda747a
-> Author: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-> Date:   Mon Jul 12 16:04:42 2010 +0530
-> 
->     perf: show functions in a file without using pid
->         
->     [RFC] perf: show functions in a file without using pid
-
-Okay, I shall drop the Subject from the body of the patch next time I
-send the patchset.
-
---
-Thanks and Regards
-Srikar
+--Signature=_Tue__20_Jul_2010_16_41_45_+1000_s.dqRGPPDIEJB74W--
