@@ -1,76 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155Ab0GTDIn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 23:08:43 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:41318 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757941Ab0GTDIm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 23:08:42 -0400
-Message-ID: <4C451335.8090406@fusionio.com>
-Date: Mon, 19 Jul 2010 21:08:37 -0600
-From: Jens Axboe <jaxboe@fusionio.com>
-MIME-Version: 1.0
-To: Mike Snitzer <snitzer@gmail.com>
-CC: Tino Keitel <tino.keitel@tikei.de>, Matthew Garrett <mjg59@srcf.ucam.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, "jgarzik@pobox.com" <jgarzik@pobox.com>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>,
-        "pjones@redhat.com" <pjones@redhat.com>
-Subject: Re: using grub.efi on fedora13? [was: Re: [PATCH[RFC] Quirk macbook
- pro   6,2 into ahci mode]
-References: <AANLkTil7vGSNZAWeubOuW4Z7tCpjQTxyECm0bVoh7SY5@mail.gmail.com>
-In-Reply-To: <AANLkTil7vGSNZAWeubOuW4Z7tCpjQTxyECm0bVoh7SY5@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758170Ab0GTDM0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 23:12:26 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:53550 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757941Ab0GTDMZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 23:12:25 -0400
+X-Sasl-enc: pK1T/I0ESVKSnR02rXk8s6RUl4uODUgf5aATTYfNoeft 1279595543
+Subject: Re: [PATCH 21/38] union-mount: Support for mounting union mount
+ file systems
+From: Ian Kent <raven@themaw.net>
+To: Valerie Aurora <vaurora@redhat.com>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+        Miklos Szeredi <miklos@szeredi.hu>, Jan Blunck <jblunck@suse.de>,
+        Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+In-Reply-To: <20100716210226.GD21201@shell>
+References: <1276627208-17242-1-git-send-email-vaurora@redhat.com>
+	 <1276627208-17242-22-git-send-email-vaurora@redhat.com>
+	 <20100713044701.GF3949@zeus.themaw.net>  <20100716210226.GD21201@shell>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Jul 2010 11:12:17 +0800
+Message-ID: <1279595537.2979.10.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2010 06:47 PM, Mike Snitzer wrote:
-> On Mon, Jul 19, 2010 at 4:40 PM, Jens Axboe <jaxboe@fusionio.com> wrote:
->> On 07/19/2010 11:23 AM, Mike Snitzer wrote:
->>> On Mon, Jul 19, 2010 at 11:55 AM, Jens Axboe <jaxboe@fusionio.com> wrote:
->>>> On 07/19/2010 09:53 AM, Tino Keitel wrote:
->>>>> On Mon, Jul 19, 2010 at 09:49:49 -0600, Jens Axboe wrote:
->>>>>
->>>>> [...]
->>>>>
->>>>>> Great! That sounds way better. DO you have a pointer to grub-efi? I'm
->>>>>> finding some grub2 efi stuff with google, just want to make sure that is
->>>>>> it. A grub 0.9x with efi would be preferable, I find grub2 to be horrible
->>>>>> to work with in general...
->>>>>
->>>>> With grub-efi I meant the EFI support in grub2. AFAIK grub 0.9x never
->>>>> supported EFI.
->>>>>
->>>>> What information do you need?
->>>>
->>>> Just that, if there was some special grub 0.9x efi variant or whether
->>>> you meant grub2 when you said grub-efi.
->>>
->>> Fedora's grub 0.9x has efi support.
->>>
->>> But that efi support hasn't been propagated to all the other distros
->>> since grub 0.9x really doesn't have an upstream.
->>
->> This is Fedora 13. What magic do I need to enable the EFI grub bits
->> then?
+On Fri, 2010-07-16 at 17:02 -0400, Valerie Aurora wrote:
+> On Tue, Jul 13, 2010 at 12:47:02PM +0800, Ian Kent wrote:
+> > On Tue, Jun 15, 2010 at 11:39:51AM -0700, Valerie Aurora wrote:
+> > > +
+> > > +static int
+> > > +check_mnt_union(struct path *mntpnt, struct vfsmount *topmost_mnt, int mnt_flags)
+> > > +{
+> > > +	struct vfsmount *lower_mnt = mntpnt->mnt;
+> > > +
+> > > +	if (!(mnt_flags & MNT_UNION))
+> > > +		return 0;
+> > > +
+> > > +#ifndef CONFIG_UNION_MOUNT
+> > > +	return -EINVAL;
+> > > +#endif
+> > > +	if (!(lower_mnt->mnt_sb->s_flags & MS_RDONLY))
+> > > +		return -EBUSY;
+> > > +
+> > > +	if (!list_empty(&lower_mnt->mnt_mounts))
+> > > +		return -EBUSY;
+> > > +
+> > > +	if (!IS_ROOT(mntpnt->dentry))
+> > > +		return -EINVAL;
+> > > +
+> > > +	if (mnt_flags & MNT_READONLY)
+> > > +		return -EROFS;
+> > > +
+> > > +	if (!(topmost_mnt->mnt_sb->s_flags & MS_WHITEOUT))
+> > > +		return -EINVAL;
+> > > +
+> > 
+> > Is there a need to check fallthru, umm ... that probably doesn't
+> > apply for the ROOT(), right?
 > 
-> I've never used it.. I was more delivering the message that Fedora's
-> grub supports efi ;)
+> Actually, that's on my todo list - right now I'm assuming MS_WHITEOUT
+> implies fallthru support as well.  But it doesn't.
 > 
-> I found these, but no official fedora installation docs (that I could find):
-> http://fedoraproject.org/wiki/Features/EFI
-> http://blog.fpmurphy.com/2009/12/using-uefi-duet-to-boot-fedora-12.html
-> http://blog.christophersmart.com/2009/07/23/linux-on-an-apple-xserve-efi-only-machine/
-> 
-> 'man grub.efi' would be awesome but no such luck...
-> 
-> Cc'ing Peter who should be able to steer you in the right direction.
+> We're a little short on MS_* flags.  I'm thinking of just checking
+> ->whiteout and ->fallthru for non-NULL on the root dir and getting rid
+> of MS_WHITEOUT entirely.  Thoughts?
 
-Thanks for the pointers, I'll take it off list at this point, it's getting somewhat
-off topic :-)
+Checking for the methods is a good idea I think, since they are assumed
+to be present by the code, at least in some places.
 
--- 
-Jens Axboe
+Although it shouldn't happen, it is possible for a file system to create
+the root dentry with these methods defined but other dentrys without
+them defined, so a file system implementation error could cause some
+unpleasant crashes. Maybe requiring the flags to indicate support would
+help avoid unpleasant implementation problems like this, not sure
+really. 
+
+Also not sure if a method existence check should always be made prior to
+use, regardless.
+
+Ian
+
 
