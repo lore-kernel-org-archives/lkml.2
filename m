@@ -1,102 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761239Ab0GTMH1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 08:07:27 -0400
-Received: from cantor.suse.de ([195.135.220.2]:54417 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758210Ab0GTMHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 08:07:14 -0400
-Message-Id: <20100720120709.851214980@ett.arch.suse.de>
-User-Agent: quilt/0.47-15.10
-Date: Tue, 20 Jul 2010 14:00:55 +0200
-From: trenn@suse.de
-To: jbaron@redhat.com
-Cc: linux-kernel@vger.kernel.org, yehuda@hq.newdream.net
-Subject: [patch 1/1] Dynamic Debug: Split out query string parsing/setup from proc_write
-References: <20100720120054.875277707@ett.arch.suse.de>
-Content-Disposition: inline; filename=patches.drivers/dynamic_debug_split_up_query_exec.patch
+	id S1761250Ab0GTMHn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 08:07:43 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:34292 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761242Ab0GTMHk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 08:07:40 -0400
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
+ interfaces with random MAC address
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stefan Assmann <sassmann@redhat.com>
+Cc: netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        davem@davemloft.net, Andy Gospodarek <gospo@redhat.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        Casey Leedom <leedom@chelsio.com>, Harald Hoyer <harald@redhat.com>
+In-Reply-To: <4C458CB7.3030508@redhat.com>
+References: <4C457F72.8090708@redhat.com>
+	 <1279624844.2110.3.camel@achroite.uk.solarflarecom.com>
+	 <4C458CB7.3030508@redhat.com>
+Content-Type: text/plain
+Organization: Solarflare Communications
+Date: Tue, 20 Jul 2010 13:07:36 +0100
+Message-Id: <1279627656.2110.13.camel@achroite.uk.solarflarecom.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 (2.26.1-2.fc11) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Jul 2010 12:09:07.0592 (UTC) FILETIME=[5AA4C880:01CB2804]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17516.005
+X-TM-AS-Result: No--35.490300-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The parsing and applying of dynamic debug strings is not only useful for
-/sys/../dynamic_debug/control write access, but can also be used for
-boot parameter parsing.
-The boot parameter is introduced in a follow up patch.
+On Tue, 2010-07-20 at 13:47 +0200, Stefan Assmann wrote:
+> On 20.07.2010 13:20, Ben Hutchings wrote:
+> > On Tue, 2010-07-20 at 12:50 +0200, Stefan Assmann wrote:
+> >> From: Stefan Assmann <sassmann@redhat.com>
+> >>
+> >> Reserve a bit in struct net_device to indicate whether an interface
+> >> generates its MAC address randomly, and expose the information via
+> >> sysfs.
+> >> May look like this:
+> >> /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/net/eth0/ifrndmac
+> >>
+> >> By default the value of ifrndmac is 0. Any driver that generates the MAC
+> >> address randomly should return a value to 1.
+> > 
+> > The name should incorporate 'address', not 'mac', for consistency with
+> > the generic 'address' attribute.
+> 
+> We can call it "ifrndhwaddr" if that's more consistent.
+> 
+> > 
+> > What about devices that 'steal' MAC addresses from slave devices?
+> > Currently I believe udev has special cases for them but ideally these
+> > drivers would indicate explicitly that their addresses are not stable
+> > identifiers (even though they aren't random).
+> 
+> It's really up to the driver to decide whether it makes sense to set the
+> flag or not. The question is what should udev do with these MAC address
+> stealing devices apart from ignoring them? Sorry I have no higher
+> insight into it.
+> This flag has the purpose to allow udev to explicitly handle devices
+> that generate their MAC address randomly and generate a persistent
+> rule based on the device path instead of the MAC address.
+> I'm open for suggestions but I'm not sure we can handle both cases with
+> a single flag.
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-CC: jbaron@redhat.com
-CC: linux-kernel@vger.kernel.org
-CC: yehuda@hq.newdream.net
+OK, then call it something like 'address_temporary'.
 
----
- lib/dynamic_debug.c |   40 +++++++++++++++++++++++++---------------
- 1 file changed, 25 insertions(+), 15 deletions(-)
+> JFYI this is an alternative approach to changing the kernel name of VFs
+> to vfeth. The advantage of this way should be that we don't break any
+> user-space applications that rely on network interfaces being names
+> "ethX". Actually this goes in the direction of "fixing udev" which was
+> what you asked for in your comment on my first patch concering vfeth. :)
+> 
+> > 
+> > [...]
+> >> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> >> index b626289..2ea0298 100644
+> >> --- a/include/linux/netdevice.h
+> >> +++ b/include/linux/netdevice.h
+> >> @@ -845,6 +845,7 @@ struct net_device {
+> >>  #define NETIF_F_FCOE_MTU	(1 << 26) /* Supports max FCoE MTU, 2158 bytes*/
+> >>  #define NETIF_F_NTUPLE		(1 << 27) /* N-tuple filters supported */
+> >>  #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
+> >> +#define NETIF_F_RNDMAC		(1 << 29) /* Interface with random MAC address */
+> > [...]
+> > 
+> > This is not really a feature, and we are running out of real feature
+> > bits.  Can you find somewhere else to put this flag?
+> 
+> Actually Dave Miller suggested to put it there. What other place is
+> there to put it?
 
-Index: linux-2.6.34-master/lib/dynamic_debug.c
-===================================================================
---- linux-2.6.34-master.orig/lib/dynamic_debug.c
-+++ linux-2.6.34-master/lib/dynamic_debug.c
-@@ -429,6 +429,27 @@ static int ddebug_parse_flags(const char
- 	return 0;
- }
- 
-+static int ddebug_exec_query(char *query_string)
-+{
-+	unsigned int flags = 0, mask = 0;
-+	struct ddebug_query query;
-+#define MAXWORDS 9
-+	int nwords;
-+	char *words[MAXWORDS];
-+
-+	nwords = ddebug_tokenize(query_string, words, MAXWORDS);
-+	if (nwords <= 0)
-+		return -EINVAL;
-+	if (ddebug_parse_query(words, nwords-1, &query))
-+		return -EINVAL;
-+	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
-+		return -EINVAL;
-+
-+	/* actually go and implement the change */
-+	ddebug_change(&query, flags, mask);
-+	return 0;
-+}
-+
- /*
-  * File_ops->write method for <debugfs>/dynamic_debug/conrol.  Gathers the
-  * command text from userspace, parses and executes it.
-@@ -436,12 +457,8 @@ static int ddebug_parse_flags(const char
- static ssize_t ddebug_proc_write(struct file *file, const char __user *ubuf,
- 				  size_t len, loff_t *offp)
- {
--	unsigned int flags = 0, mask = 0;
--	struct ddebug_query query;
--#define MAXWORDS 9
--	int nwords;
--	char *words[MAXWORDS];
- 	char tmpbuf[256];
-+	int ret;
- 
- 	if (len == 0)
- 		return 0;
-@@ -455,16 +472,9 @@ static ssize_t ddebug_proc_write(struct
- 		printk(KERN_INFO "%s: read %d bytes from userspace\n",
- 			__func__, (int)len);
- 
--	nwords = ddebug_tokenize(tmpbuf, words, MAXWORDS);
--	if (nwords <= 0)
--		return -EINVAL;
--	if (ddebug_parse_query(words, nwords-1, &query))
--		return -EINVAL;
--	if (ddebug_parse_flags(words[nwords-1], &flags, &mask))
--		return -EINVAL;
--
--	/* actually go and implement the change */
--	ddebug_change(&query, flags, mask);
-+	ret = ddebug_exec_query(tmpbuf);
-+	if (ret)
-+		return ret;
- 
- 	*offp += len;
- 	return len;
+If Dave said that then I'm sure it's OK.
+
+However, if you define this as an interface flag (net_device::flags;
+<linux/if.h>) and add it to the set of changeable flags in
+__dev_change_flags(), user-space will be able to clear the flag if it
+later sets a stable address.
+
+Ben.
+
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
