@@ -1,110 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967229Ab0GTADY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 20:03:24 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:64455 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S967187Ab0GSX7E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 19:59:04 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 44/49] x86, memblock: Use memblock_debug to control debug message print out
-Date: Mon, 19 Jul 2010 16:56:53 -0700
-Message-Id: <1279583818-14249-45-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
-References: <1279583818-14249-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C44E699.0084,ss=1,fgs=0
+	id S1761049Ab0GTADV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 20:03:21 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:38437 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757430Ab0GTADS convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 20:03:18 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>
+Cc: Yulia Vilensky <vilensky@compulab.co.il>,
+        Geert Stappers <stappers@stappers.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 20 Jul 2010 01:02:55 +0100
+Message-ID: <1279584175.4883.226.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: [PATCH] ds2782_battery: Rename get_current and get_voltage
+ operations
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also let memblock_x86_reserve_range/memblock_x86_free_range could print out name if memblock=debug is
-specified
+commit 9b9ade6b612e562c4a5bd02ef38cc32e10f3f9ba "ds2782_battery: Add
+support for ds2786 battery gas gauge" introduced an operation named
+get_current.  Since get_current() is defined as a macro on some
+architectures this driver no longer compiles on those architectures.
 
-will also print ther name when reserve_memblock_area/free_memblock_area are called.
+Rename get_current to get_current_now to avoid the macro.
+Rename get_voltage to get_voltage_now for consistency.
 
--v2: according to Ingo, put " if (memblock_debug) " in one place
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Reported-by: Geert Stappers <stappers@stappers.nl>
+Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
 ---
- arch/x86/mm/memblock.c |   20 ++++++++++++--------
- 1 files changed, 12 insertions(+), 8 deletions(-)
+ drivers/power/ds2782_battery.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index 53b0f60..70a6bba 100644
---- a/arch/x86/mm/memblock.c
-+++ b/arch/x86/mm/memblock.c
-@@ -122,10 +122,10 @@ static void __init memblock_x86_subtract_reserved(struct range *range, int az)
+diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
+index d762a0c..8d0673f 100644
+--- a/drivers/power/ds2782_battery.c
++++ b/drivers/power/ds2782_battery.c
+@@ -43,8 +43,8 @@
+ struct ds278x_info;
  
- 	count  = memblock.reserved.cnt;
+ struct ds278x_battery_ops {
+-	int	(*get_current)(struct ds278x_info *info, int *current_uA);
+-	int	(*get_voltage)(struct ds278x_info *info, int *voltage_uA);
++	int	(*get_current_now)(struct ds278x_info *info, int *current_uA);
++	int	(*get_voltage_now)(struct ds278x_info *info, int *voltage_uA);
+ 	int	(*get_capacity)(struct ds278x_info *info, int *capacity_uA);
  
--	pr_info("Subtract (%d early reservations)\n", count);
-+	memblock_dbg("Subtract (%d early reservations)\n", count);
+ };
+@@ -213,7 +213,7 @@ static int ds278x_get_status(struct ds278x_info *info, int *status)
+ 	int current_uA;
+ 	int capacity;
  
- 	for_each_memblock(reserved, r) {
--		pr_info("  [%010llx-%010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
-+		memblock_dbg("  [%#010llx-%#010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
- 		final_start = PFN_DOWN(r->base);
- 		final_end = PFN_UP(r->base + r->size);
- 		if (final_start >= final_end)
-@@ -198,16 +198,16 @@ void __init memblock_x86_to_bootmem(u64 start, u64 end)
- 		memblock_free(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
+-	err = info->ops->get_current(info, &current_uA);
++	err = info->ops->get_current_now(info, &current_uA);
+ 	if (err)
+ 		return err;
  
- 	count  = memblock.reserved.cnt;
--	pr_info("(%d early reservations) ==> bootmem [%010llx-%010llx]\n", count, start, end - 1);
-+	memblock_dbg("(%d early reservations) ==> bootmem [%#010llx-%#010llx]\n", count, start, end - 1);
- 	for_each_memblock(reserved, r) {
--		pr_info("  [%010llx-%010llx] ", (u64)r->base, (u64)r->base + r->size - 1);
-+		memblock_dbg("  [%#010llx-%#010llx] ", (u64)r->base, (u64)r->base + r->size - 1);
- 		final_start = max(start, r->base);
- 		final_end = min(end, r->base + r->size);
- 		if (final_start >= final_end) {
--			pr_cont("\n");
-+			memblock_dbg("\n");
- 			continue;
- 		}
--		pr_cont(" ==> [%010llx-%010llx]\n", final_start, final_end - 1);
-+		memblock_dbg(" ==> [%#010llx-%#010llx]\n", final_start, final_end - 1);
- 		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
+@@ -250,11 +250,11 @@ static int ds278x_battery_get_property(struct power_supply *psy,
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
+-		ret = info->ops->get_voltage(info, &val->intval);
++		ret = info->ops->get_voltage_now(info, &val->intval);
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_CURRENT_NOW:
+-		ret = info->ops->get_current(info, &val->intval);
++		ret = info->ops->get_current_now(info, &val->intval);
+ 		break;
+ 
+ 	case POWER_SUPPLY_PROP_TEMP:
+@@ -307,14 +307,14 @@ enum ds278x_num_id {
+ 
+ static struct ds278x_battery_ops ds278x_ops[] = {
+ 	[DS2782] = {
+-		.get_current  = ds2782_get_current,
+-		.get_voltage  = ds2782_get_voltage,
+-		.get_capacity = ds2782_get_capacity,
++		.get_current_now = ds2782_get_current,
++		.get_voltage_now = ds2782_get_voltage,
++		.get_capacity    = ds2782_get_capacity,
+ 	},
+ 	[DS2786] = {
+-		.get_current  = ds2786_get_current,
+-		.get_voltage  = ds2786_get_voltage,
+-		.get_capacity = ds2786_get_capacity,
++		.get_current_now = ds2786_get_current,
++		.get_voltage_now = ds2786_get_voltage,
++		.get_capacity    = ds2786_get_capacity,
  	}
- 
-@@ -286,9 +286,11 @@ void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
- 	if (start == end)
- 		return;
- 
--	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx]\n", start, end))
-+	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx)\n", start, end))
- 		return;
- 
-+	memblock_dbg("    memblock_x86_reserve_range: [%#010llx-%#010llx] %16s\n", start, end - 1, name);
-+
- 	memblock_reserve(start, end - start);
- }
- 
-@@ -297,9 +299,11 @@ void __init memblock_x86_free_range(u64 start, u64 end)
- 	if (start == end)
- 		return;
- 
--	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx]\n", start, end))
-+	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx)\n", start, end))
- 		return;
- 
-+	memblock_dbg("       memblock_x86_free_range: [%#010llx-%#010llx]\n", start, end - 1);
-+
- 	memblock_free(start, end - start);
- }
+ };
  
 -- 
-1.6.4.2
+1.7.1
+
 
