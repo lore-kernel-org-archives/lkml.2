@@ -1,114 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933154Ab0GTXTs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 19:19:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42859 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932655Ab0GTXTq (ORCPT
+	id S1752139Ab0GTXcn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 19:32:43 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:52288 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750992Ab0GTXcm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 19:19:46 -0400
-X-Authority-Analysis: v=1.1 cv=kjawQlkT3vujM0lFy4b69hWxQTW3SR1XdVtFii1ut0g= c=1 sm=0 a=9EqqMJltFOkA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=7gkXJVJtAAAA:8 a=pGLkceISAAAA:8 a=meVymXHHAAAA:8 a=tK5Uc55__jqkC-baTJMA:9 a=r35oolPpt3YQkuA5YpoA:7 a=78ckj2HLtX5BtaYkeidddgExbhYA:4 a=PUjeQqilurYA:10 a=JmBWkid0h3cA:10 a=MSl-tDqOz04A:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: [PATCH][GIT PULL][v2.6.35] tracing: Properly align linker defined
- symbols
-From: Steven Rostedt <rostedt@goodmis.org>
-To: LKML <linux-kernel@vger.kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Sam Ravnborg <sam@ravnborg.org>,
-        Zeev Tarantov <zeev.tarantov@gmail.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Tue, 20 Jul 2010 19:19:44 -0400
-Message-ID: <1279667984.4818.21.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Jul 2010 19:32:42 -0400
+Date: Wed, 21 Jul 2010 09:32:38 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Shrinker fixes for XFS for 2.6.36-rc6
+Message-ID: <20100720233238.GS32635@dastard>
+References: <20100720004630.GH23223@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100720004630.GH23223@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, Jul 20, 2010 at 10:46:30AM +1000, Dave Chinner wrote:
+> Hi Linus,
+> 
+> The following patches address shrinker lockdep and performance
+> regressions introduced into XFS in 2.6.34 when a shrinker was
+> added at the last moment to address OOM issues with lazy XFS inode
+> reclaim.
+> 
+> The first two patches are the saem as I originally posted to solve
+> the problem for 2.6.34. They did not pass review in time for 2.6.34,
+> and attempts to address said review comments resulted in a bigger,
+> more contentious patchset that has much bigger issues than this
+> patchset. Time has run out and I really don't want to have another
+> kernel released with XFS causing lockdep to trigger the moment
+> memory reclaim starts, so I'm asking if you will accept the original
+> fixes I posted for the problem.
+> 
+> The third patch addresses shrinker inode scanning performance
+> problems raised in recently here:
+> 
+> https://bugzilla.kernel.org/show_bug.cgi?id=16348
+> 
+> Please consider these commits for 2.6.26-rc6.
 
-Ingo,
+Ijust rebased the series - the shrinker context patch did not pickup
+the new shrinker in the TTM DRM code for radeon. New pull-request output
+below.
 
-Linus did like this patch better. My original patch seemed to fix the
-problem, but this is probably a more robust fix.
+Cheers,
 
-Please pull the latest tip/perf/urgent tree, which can be found at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-tip/perf/urgent
-
-
-Sam Ravnborg (1):
-      tracing: Properly align linker defined symbols
-
-----
- include/asm-generic/vmlinux.lds.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
----------------------------
-commit 07fca0e57fca925032526349f4370f97ed580cc9
-Author: Sam Ravnborg <sam@ravnborg.org>
-Date:   Sat Jul 10 08:35:00 2010 +0200
-
-    tracing: Properly align linker defined symbols
-    
-    We define a number of symbols in the linker scipt like this:
-    
-        __start_syscalls_metadata = .;
-        *(__syscalls_metadata)
-    
-    But we do not know the alignment of "." when we assign
-    the __start_syscalls_metadata symbol.
-    gcc started to uses bigger alignment for structs (32 bytes),
-    so we saw situations where the linker due to alignment
-    constraints increased the value of "." after the symbol assignment.
-    
-    This resulted in boot fails.
-    
-    Fix this by forcing a 32 byte alignment of "." before the
-    assignment.
-    
-    This patch introduces the forced alignment for
-    ftrace_events and syscalls_metadata.
-    It may be required in more places.
-    
-    Reported-by: Zeev Tarantov <zeev.tarantov@gmail.com>
-    Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-    LKML-Reference: <20100710063459.GA14596@merkur.ravnborg.org>
-    Cc: Frederic Weisbecker <fweisbec@gmail.com>
-    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 48c5299..4b5902a 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -63,6 +63,12 @@
- /* Align . to a 8 byte boundary equals to maximum function alignment. */
- #define ALIGN_FUNCTION()  . = ALIGN(8)
- 
-+/*
-+ * Align to a 32 byte boundary equal to the
-+ * alignment gcc 4.5 uses for a struct
-+ */
-+#define STRUCT_ALIGN() . = ALIGN(32)
-+
- /* The actual configuration determine if the init/exit sections
-  * are handled as text/data or they can be discarded (which
-  * often happens at runtime)
-@@ -166,7 +172,11 @@
- 	LIKELY_PROFILE()		       				\
- 	BRANCH_PROFILE()						\
- 	TRACE_PRINTKS()							\
-+									\
-+	STRUCT_ALIGN();							\
- 	FTRACE_EVENTS()							\
-+									\
-+	STRUCT_ALIGN();							\
- 	TRACE_SYSCALLS()
- 
- /*
+Dave.
 
 
+The following changes since commit d0c6f6258478e1dba532bf7c28e2cd6e1047d3a4:
+
+  Merge branch 'x86-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-07-19 13:19:32 -0700)
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev shrinker
+
+Dave Chinner (3):
+      mm: add context argument to shrinker callback
+      xfs: convert inode shrinker to per-filesystem contexts
+      xfs: track AGs with reclaimable inodes in per-ag radix tree
+
+ arch/x86/kvm/mmu.c                   |    2 +-
+ drivers/gpu/drm/i915/i915_gem.c      |    2 +-
+ drivers/gpu/drm/ttm/ttm_page_alloc.c |    2 +-
+ fs/dcache.c                          |    2 +-
+ fs/gfs2/glock.c                      |    2 +-
+ fs/gfs2/quota.c                      |    2 +-
+ fs/gfs2/quota.h                      |    2 +-
+ fs/inode.c                           |    2 +-
+ fs/mbcache.c                         |    5 +-
+ fs/nfs/dir.c                         |    2 +-
+ fs/nfs/internal.h                    |    3 +-
+ fs/quota/dquot.c                     |    2 +-
+ fs/ubifs/shrinker.c                  |    2 +-
+ fs/ubifs/ubifs.h                     |    2 +-
+ fs/xfs/linux-2.6/xfs_buf.c           |    5 +-
+ fs/xfs/linux-2.6/xfs_super.c         |    2 -
+ fs/xfs/linux-2.6/xfs_sync.c          |  130 ++++++++++++++++++++--------------
+ fs/xfs/linux-2.6/xfs_sync.h          |    2 -
+ fs/xfs/linux-2.6/xfs_trace.h         |    3 +
+ fs/xfs/quota/xfs_qm.c                |    7 ++-
+ fs/xfs/xfs_mount.h                   |    2 +-
+ include/linux/mm.h                   |    2 +-
+ mm/vmscan.c                          |    8 ++-
+ net/sunrpc/auth.c                    |    2 +-
+ 24 files changed, 113 insertions(+), 82 deletions(-)
+-- 
+Dave Chinner
+david@fromorbit.com
