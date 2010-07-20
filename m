@@ -1,82 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932922Ab0GTWbW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 18:31:22 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53980 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932855Ab0GTWbV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 18:31:21 -0400
-Date: Tue, 20 Jul 2010 23:29:52 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: stepanm@codeaurora.org
-Cc: Michael Bohan <mbohan@codeaurora.org>, Tim HRM <zt.tmzt@gmail.com>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
-	memory management
-Message-ID: <20100720222952.GD10553@n2100.arm.linux.org.uk>
-References: <20100714104353B.fujita.tomonori@lab.ntt.co.jp> <20100714201149.GA14008@codeaurora.org> <20100714220536.GE18138@n2100.arm.linux.org.uk> <20100715012958.GB2239@codeaurora.org> <20100715085535.GC26212@n2100.arm.linux.org.uk> <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com> <20100716075856.GC16124@n2100.arm.linux.org.uk> <4C449183.20000@codeaurora.org> <20100719184002.GA21608@n2100.arm.linux.org.uk> <bb667e285fd8be82ea8cc9cc25cf335b.squirrel@www.codeaurora.org>
+	id S932897Ab0GTWh1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 18:37:27 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42174 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932733Ab0GTWh0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 18:37:26 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Len Brown <lenb@kernel.org>
+Subject: [PATCH] ACPI / Sleep: Allow the NVS saving to be skipped during suspend to RAM
+Date: Wed, 21 Jul 2010 00:35:02 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc5-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Len Brown <len.brown@intel.com>,
+        ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
+        linux-pm@lists.linux-foundation.org, Matthew Garrett <mjg@redhat.com>,
+        "Linux-kernel" <linux-kernel@vger.kernel.org>,
+        tomas m <tmezzadra@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <bb667e285fd8be82ea8cc9cc25cf335b.squirrel@www.codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007210035.02688.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 03:02:34PM -0700, stepanm@codeaurora.org wrote:
-> Russell-
-> 
-> If a driver wants to allow a device to access memory (and cache coherency
-> is off/not present for device addesses), the driver needs to remap that
-> memory as non-cacheable.
+From: Rafael J. Wysocki <rjw@sisk.pl>
 
-If that memory is not part of the kernel's managed memory, then that's
-fine.  But if it _is_ part of the kernel's managed memory, then it is
-not permitted by the ARM architecture specification to allow maps of
-the memory with differing [memory type, sharability, cache] attributes.
+Commit 2a6b69765ad794389f2fc3e14a0afa1a995221c2
+(ACPI: Store NVS state even when entering suspend to RAM) caused the
+ACPI suspend code to save the NVS area during suspend and restore it
+during resume unconditionally, although it is known that some systems
+need to use acpi_sleep=s4_nonvs for hibernation to work.  To allow
+the affected systems to avoid saving and restoring the NVS area
+during suspend to RAM and resume, introduce kernel command line
+option acpi_sleep=nonvs and make acpi_sleep=s4_nonvs work as its
+alias temporarily (add acpi_sleep=s4_nonvs to the feature removal
+file).
 
-Basically, if a driver wants to create these kinds of mappings, then
-they should expect the system to become unreliable and unpredictable.
-That's not something any sane person should be aiming to do.
+Addresses https://bugzilla.kernel.org/show_bug.cgi?id=16396 .
 
-> Suppose there exists a chunk of
-> physically-contiguous memory (say, memory reserved for device use) that
-> happened to be already mapped into the kernel as normal memory (cacheable,
-> etc). One way to remap this memory is to use ioremap (and then never touch
-> the original virtual mapping, which would now have conflicting
-> attributes).
+Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Reported-and-tested-by: tomas m <tmezzadra@gmail.com>
+---
+ Documentation/feature-removal-schedule.txt |    8 ++++++
+ Documentation/kernel-parameters.txt        |    4 +--
+ arch/x86/kernel/acpi/sleep.c               |    4 ++-
+ drivers/acpi/sleep.c                       |   35 ++++++++++++++---------------
+ include/linux/acpi.h                       |    2 -
+ 5 files changed, 31 insertions(+), 22 deletions(-)
 
-This doesn't work, and is unpredictable on ARMv6 and ARMv7.  Not touching
-the original mapping is _not_ _sufficient_ to guarantee that the mapping
-is not used.  (We've seen problems on OMAP as a result of this.)
-
-Any mapping which exists can be speculatively prefetched by such CPUs
-at any time, which can lead it to be read into the cache.  Then, your
-different attributes for your "other" mapping can cause problems if you
-hit one of these cache lines - and then you can have (possibly silent)
-data corruption.
-
-> I feel as if there should be a better way to remap memory for
-> device access, either by altering the attributes on the original mapping,
-> or removing the original mapping and creating a new one with attributes
-> set to non-cacheable.
-
-This is difficult to achieve without remapping kernel memory using L2
-page tables, so we can unmap pages on 4K page granularity.  That's
-going to increase TLB overhead and result in lower system performance
-as there'll be a greater number of MMU misses.
-
-However, one obvious case would be to use highmem-only pages for
-remapping - but you then have to ensure that those pages are never
-kmapped in any way, because those mappings will fall into the same
-unpredictable category that we're already trying to avoid.  This
-may be possible, but you'll have to ensure that most of the system
-RAM is in highmem - which poses other problems (eg, if lowmem gets
-low.)
+Index: linux-2.6/drivers/acpi/sleep.c
+===================================================================
+--- linux-2.6.orig/drivers/acpi/sleep.c
++++ linux-2.6/drivers/acpi/sleep.c
+@@ -82,6 +82,20 @@ static int acpi_sleep_prepare(u32 acpi_s
+ static u32 acpi_target_sleep_state = ACPI_STATE_S0;
+ 
+ /*
++ * The ACPI specification wants us to save NVS memory regions during hibernation
++ * and to restore them during the subsequent resume.  Windows does that also for
++ * suspend to RAM.  However, it is known that this mechanism does not work on
++ * all machines, so we allow the user to disable it with the help of the
++ * 'acpi_sleep=nonvs' kernel command line option.
++ */
++static bool nvs_nosave;
++
++void __init acpi_nvs_nosave(void)
++{
++	nvs_nosave = true;
++}
++
++/*
+  * ACPI 1.0 wants us to execute _PTS before suspending devices, so we allow the
+  * user to request that behavior by using the 'acpi_old_suspend_ordering'
+  * kernel command line option that causes the following variable to be set.
+@@ -204,8 +218,7 @@ static int acpi_suspend_begin(suspend_st
+ 	u32 acpi_state = acpi_suspend_states[pm_state];
+ 	int error = 0;
+ 
+-	error = suspend_nvs_alloc();
+-
++	error = nvs_nosave ? 0 : suspend_nvs_alloc();
+ 	if (error)
+ 		return error;
+ 
+@@ -389,20 +402,6 @@ static struct dmi_system_id __initdata a
+ #endif /* CONFIG_SUSPEND */
+ 
+ #ifdef CONFIG_HIBERNATION
+-/*
+- * The ACPI specification wants us to save NVS memory regions during hibernation
+- * and to restore them during the subsequent resume.  However, it is not certain
+- * if this mechanism is going to work on all machines, so we allow the user to
+- * disable this mechanism using the 'acpi_sleep=s4_nonvs' kernel command line
+- * option.
+- */
+-static bool s4_no_nvs;
+-
+-void __init acpi_s4_no_nvs(void)
+-{
+-	s4_no_nvs = true;
+-}
+-
+ static unsigned long s4_hardware_signature;
+ static struct acpi_table_facs *facs;
+ static bool nosigcheck;
+@@ -416,7 +415,7 @@ static int acpi_hibernation_begin(void)
+ {
+ 	int error;
+ 
+-	error = s4_no_nvs ? 0 : suspend_nvs_alloc();
++	error = nvs_nosave ? 0 : suspend_nvs_alloc();
+ 	if (!error) {
+ 		acpi_target_sleep_state = ACPI_STATE_S4;
+ 		acpi_sleep_tts_switch(acpi_target_sleep_state);
+@@ -500,7 +499,7 @@ static int acpi_hibernation_begin_old(vo
+ 	error = acpi_sleep_prepare(ACPI_STATE_S4);
+ 
+ 	if (!error) {
+-		if (!s4_no_nvs)
++		if (!nvs_nosave)
+ 			error = suspend_nvs_alloc();
+ 		if (!error)
+ 			acpi_target_sleep_state = ACPI_STATE_S4;
+Index: linux-2.6/arch/x86/kernel/acpi/sleep.c
+===================================================================
+--- linux-2.6.orig/arch/x86/kernel/acpi/sleep.c
++++ linux-2.6/arch/x86/kernel/acpi/sleep.c
+@@ -158,8 +158,10 @@ static int __init acpi_sleep_setup(char 
+ 		if (strncmp(str, "s4_nohwsig", 10) == 0)
+ 			acpi_no_s4_hw_signature();
+ 		if (strncmp(str, "s4_nonvs", 8) == 0)
+-			acpi_s4_no_nvs();
++			acpi_nvs_nosave();
+ #endif
++		if (strncmp(str, "nonvs", 5) == 0)
++			acpi_nvs_nosave();
+ 		if (strncmp(str, "old_ordering", 12) == 0)
+ 			acpi_old_suspend_ordering();
+ 		str = strchr(str, ',');
+Index: linux-2.6/include/linux/acpi.h
+===================================================================
+--- linux-2.6.orig/include/linux/acpi.h
++++ linux-2.6/include/linux/acpi.h
+@@ -253,7 +253,7 @@ int acpi_resources_are_enforced(void);
+ #ifdef CONFIG_PM_SLEEP
+ void __init acpi_no_s4_hw_signature(void);
+ void __init acpi_old_suspend_ordering(void);
+-void __init acpi_s4_no_nvs(void);
++void __init acpi_nvs_nosave(void);
+ #endif /* CONFIG_PM_SLEEP */
+ 
+ struct acpi_osc_context {
+Index: linux-2.6/Documentation/kernel-parameters.txt
+===================================================================
+--- linux-2.6.orig/Documentation/kernel-parameters.txt
++++ linux-2.6/Documentation/kernel-parameters.txt
+@@ -254,8 +254,8 @@ and is between 256 and 4096 characters. 
+ 			control method, with respect to putting devices into
+ 			low power states, to be enforced (the ACPI 2.0 ordering
+ 			of _PTS is used by default).
+-			s4_nonvs prevents the kernel from saving/restoring the
+-			ACPI NVS memory during hibernation.
++			nonvs prevents the kernel from saving/restoring the
++			ACPI NVS memory during suspend/hibernation and resume.
+ 			sci_force_enable causes the kernel to set SCI_EN directly
+ 			on resume from S1/S3 (which is against the ACPI spec,
+ 			but some broken systems don't work without it).
+Index: linux-2.6/Documentation/feature-removal-schedule.txt
+===================================================================
+--- linux-2.6.orig/Documentation/feature-removal-schedule.txt
++++ linux-2.6/Documentation/feature-removal-schedule.txt
+@@ -647,3 +647,11 @@ Who:	Stefan Richter <stefanr@s5r6.in-ber
+ 
+ ----------------------------
+ 
++What:	The acpi_sleep=s4_nonvs command line option
++When:	2.6.37
++Files:	arch/x86/kernel/acpi/sleep.c
++Why:	superseded by acpi_sleep=nonvs
++Who:	Rafael J. Wysocki <rjw@sisk.pl>
++
++----------------------------
++
