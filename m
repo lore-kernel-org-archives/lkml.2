@@ -1,47 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754334Ab0GTT3g (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:29:36 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50867 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750909Ab0GTT3b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:29:31 -0400
-Date: Tue, 20 Jul 2010 12:28:31 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai Lu <yinghai@kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@redhat.com>, Tejun Heo <tj@kernel.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, numa: fix boot without RAM on node0 again
-Message-Id: <20100720122831.f1aad864.akpm@linux-foundation.org>
-In-Reply-To: <4C45F5F0.8010409@zytor.com>
-References: <4C45EC59.3030304@kernel.org>
-	<4C45F5F0.8010409@zytor.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	id S1754851Ab0GTTaS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 15:30:18 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:35357 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972Ab0GTTaP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 15:30:15 -0400
+Subject: Re: [PATCH 2/3] xfs: convert inode shrinker to per-filesystem
+ contexts
+From: Alex Elder <aelder@sgi.com>
+Reply-To: aelder@sgi.com
+To: Dave Chinner <david@fromorbit.com>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+In-Reply-To: <1279194418-16119-3-git-send-email-david@fromorbit.com>
+References: <1279194418-16119-1-git-send-email-david@fromorbit.com>
+	 <1279194418-16119-3-git-send-email-david@fromorbit.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 20 Jul 2010 14:30:11 -0500
+Message-ID: <1279654211.1859.235.camel@doink>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Jul 2010 19:30:11.0659 (UTC) FILETIME=[F874F1B0:01CB2841]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jul 2010 12:16:00 -0700
-"H. Peter Anvin" <hpa@zytor.com> wrote:
-
-> On 07/20/2010 11:35 AM, Yinghai Lu wrote:
+On Thu, 2010-07-15 at 21:46 +1000, Dave Chinner wrote:
+> From: Dave Chinner <dchinner@redhat.com>
 > 
-> That was not what Linus (and I) asked you to do.  He asked specifically
-> that you resend them under a separate 0/2 cover with an explanation.
+> Now the shrinker passes us a context, wire up a shrinker context per
+> filesystem. This allows us to remove the global mount list and the
+> locking problems that introduced. It also means that a shrinker call
+> does not need to traverse clean filesystems before finding a
+> filesystem with reclaimable inodes.  This significantly reduces
+> scanning overhead when lots of filesystems are present.
 > 
 
-And this patch is missing my patch which fixed up that block comment.
+I have a comment below about an optimization you made.
+It's not necessarily a bug, but I thought I'd call
+attention to it anyway.
 
-I'll send both these patches into Linus today.  I'm a bit behind due to
-various linux-next catastrophies.
+Outside of that it looks good to me.
 
-Catastrophies which have been known about for up to a week, yet all the
-offending patches are still in linux-next, unaltered.  Go figure.
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
+>  fs/xfs/linux-2.6/xfs_super.c |    2 -
+>  fs/xfs/linux-2.6/xfs_sync.c  |   62 +++++++++--------------------------------
+>  fs/xfs/linux-2.6/xfs_sync.h  |    2 -
+>  fs/xfs/xfs_mount.h           |    2 +-
+>  4 files changed, 15 insertions(+), 53 deletions(-)
+
+. . .
+
+> diff --git a/fs/xfs/linux-2.6/xfs_sync.c b/fs/xfs/linux-2.6/xfs_sync.c
+> index be37582..f433819 100644
+> --- a/fs/xfs/linux-2.6/xfs_sync.c
+> +++ b/fs/xfs/linux-2.6/xfs_sync.c
+> @@ -828,14 +828,7 @@ xfs_reclaim_inodes(
+>  
+>  /*
+>   * Shrinker infrastructure.
+> - *
+> - * This is all far more complex than it needs to be. It adds a global list of
+> - * mounts because the shrinkers can only call a global context. We need to make
+> - * the shrinkers pass a context to avoid the need for global state.
+>   */
+> -static LIST_HEAD(xfs_mount_list);
+> -static struct rw_semaphore xfs_mount_list_lock;
+> -
+>  static int
+>  xfs_reclaim_inode_shrink(
+>  	struct shrinker	*shrink,
+> @@ -847,65 +840,38 @@ xfs_reclaim_inode_shrink(
+>  	xfs_agnumber_t	ag;
+>  	int		reclaimable = 0;
+>  
+> +	mp = container_of(shrink, struct xfs_mount, m_inode_shrink);
+>  	if (nr_to_scan) {
+>  		if (!(gfp_mask & __GFP_FS))
+>  			return -1;
+>  
+> -		down_read(&xfs_mount_list_lock);
+> -		list_for_each_entry(mp, &xfs_mount_list, m_mplist) {
+> -			xfs_inode_ag_iterator(mp, xfs_reclaim_inode, 0,
+> +		xfs_inode_ag_iterator(mp, xfs_reclaim_inode, 0,
+>  					XFS_ICI_RECLAIM_TAG, 1, &nr_to_scan);
+> -			if (nr_to_scan <= 0)
+> -				break;
+> -		}
+> -		up_read(&xfs_mount_list_lock);
+> -	}
+> +		/* if we don't exhaust the scan, don't bother coming back */
+> +		if (nr_to_scan > 0)
+> +			return -1;
+
+This short-circuit return here sort of circumvents the
+SLABS_SCANNED VM event counting.  On the other hand, it
+seems to be counting nr_to_scan repeatedly, which isn't
+necessarily that meaningful in this case either.  (I
+don't know how important this is.)
+
+It also means that shrink_slab() under-counts the number
+of objects freed.  Again, this may not in practice be
+an issue--especially since more will have actually been
+freed than is claimed.
+
+					-Alex
+
+> +       }
+>  
+> -	down_read(&xfs_mount_list_lock);
+> -	list_for_each_entry(mp, &xfs_mount_list, m_mplist) {
+> -		for (ag = 0; ag < mp->m_sb.sb_agcount; ag++) {
+> -			pag = xfs_perag_get(mp, ag);
+> -			reclaimable += pag->pag_ici_reclaimable;
+> -			xfs_perag_put(pag);
+> -		}
+> +	for (ag = 0; ag < mp->m_sb.sb_agcount; ag++) {
+> +		pag = xfs_perag_get(mp, ag);
+> +		reclaimable += pag->pag_ici_reclaimable;
+> +		xfs_perag_put(pag);
+>  	}
+> -	up_read(&xfs_mount_list_lock);
+>  	return reclaimable;
+>  }
+>  
+. . .
 
