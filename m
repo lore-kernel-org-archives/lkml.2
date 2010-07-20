@@ -1,175 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758065Ab0GTLon (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 07:44:43 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:55478 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754044Ab0GTLom (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 07:44:42 -0400
-Date: Tue, 20 Jul 2010 07:41:52 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: Re: [RFC PATCH v3 3/5] netdev: add tracepoints to netdev layer
-Message-ID: <20100720114152.GC1995@hmsreliant.think-freely.org>
-References: <4C44F12F.5090908@jp.fujitsu.com>
- <4C44F23F.6050800@jp.fujitsu.com>
+	id S932225Ab0GTLrQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 07:47:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32022 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758282Ab0GTLrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 07:47:14 -0400
+Message-ID: <4C458CB7.3030508@redhat.com>
+Date: Tue, 20 Jul 2010 13:47:03 +0200
+From: Stefan Assmann <sassmann@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C44F23F.6050800@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        davem@davemloft.net, Andy Gospodarek <gospo@redhat.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        Casey Leedom <leedom@chelsio.com>, Harald Hoyer <harald@redhat.com>
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces
+ with random MAC address
+References: <4C457F72.8090708@redhat.com> <1279624844.2110.3.camel@achroite.uk.solarflarecom.com>
+In-Reply-To: <1279624844.2110.3.camel@achroite.uk.solarflarecom.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 09:47:59AM +0900, Koki Sanagi wrote:
-> This patch adds tracepoint to dev_queue_xmit, dev_hard_start_xmit and
-> netif_receive_skb. These tracepoints help you to monitor network driver's
-> input/output.
+On 20.07.2010 13:20, Ben Hutchings wrote:
+> On Tue, 2010-07-20 at 12:50 +0200, Stefan Assmann wrote:
+>> From: Stefan Assmann <sassmann@redhat.com>
+>>
+>> Reserve a bit in struct net_device to indicate whether an interface
+>> generates its MAC address randomly, and expose the information via
+>> sysfs.
+>> May look like this:
+>> /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/net/eth0/ifrndmac
+>>
+>> By default the value of ifrndmac is 0. Any driver that generates the MAC
+>> address randomly should return a value to 1.
 > 
->             sshd-4445  [001] 241367.066046: net_dev_queue: dev=eth3 skbaddr=dd6b2538 len=114
->             sshd-4445  [001] 241367.066047: net_dev_xmit: dev=eth3 skbaddr=dd6b2538 len=114 rc=0
->           <idle>-0     [001] 241367.067472: net_dev_receive: dev=eth3 skbaddr=f5e59000 len=52
+> The name should incorporate 'address', not 'mac', for consistency with
+> the generic 'address' attribute.
+
+We can call it "ifrndhwaddr" if that's more consistent.
+
 > 
-> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> ---
->  include/trace/events/net.h |   75 ++++++++++++++++++++++++++++++++++++++++++++
->  net/core/dev.c             |    5 +++
->  net/core/net-traces.c      |    1 +
->  3 files changed, 81 insertions(+), 0 deletions(-)
+> What about devices that 'steal' MAC addresses from slave devices?
+> Currently I believe udev has special cases for them but ideally these
+> drivers would indicate explicitly that their addresses are not stable
+> identifiers (even though they aren't random).
+
+It's really up to the driver to decide whether it makes sense to set the
+flag or not. The question is what should udev do with these MAC address
+stealing devices apart from ignoring them? Sorry I have no higher
+insight into it.
+This flag has the purpose to allow udev to explicitly handle devices
+that generate their MAC address randomly and generate a persistent
+rule based on the device path instead of the MAC address.
+I'm open for suggestions but I'm not sure we can handle both cases with
+a single flag.
+
+JFYI this is an alternative approach to changing the kernel name of VFs
+to vfeth. The advantage of this way should be that we don't break any
+user-space applications that rely on network interfaces being names
+"ethX". Actually this goes in the direction of "fixing udev" which was
+what you asked for in your comment on my first patch concering vfeth. :)
+
 > 
-> diff --git a/include/trace/events/net.h b/include/trace/events/net.h
-> new file mode 100644
-> index 0000000..8a21361
-> --- /dev/null
-> +++ b/include/trace/events/net.h
-> @@ -0,0 +1,75 @@
-> +#undef TRACE_SYSTEM
-> +#define TRACE_SYSTEM net
-> +
-> +#if !defined(_TRACE_NET_H) || defined(TRACE_HEADER_MULTI_READ)
-> +#define _TRACE_NET_H
-> +
-> +#include <linux/skbuff.h>
-> +#include <linux/netdevice.h>
-> +#include <linux/ip.h>
-> +#include <linux/tracepoint.h>
-> +
-> +TRACE_EVENT(net_dev_xmit,
-> +
-> +	TP_PROTO(struct sk_buff *skb,
-> +		 int rc),
-> +
-> +	TP_ARGS(skb, rc),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	void *,		skbaddr		)
-> +		__field(	unsigned int,	len		)
-> +		__field(	int,		rc		)
-> +		__string(	name,		skb->dev->name	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->skbaddr = skb;
-> +		__entry->len = skb->len;
-> +		__entry->rc = rc;
-> +		__assign_str(name, skb->dev->name);
-> +	),
-> +
-> +	TP_printk("dev=%s skbaddr=%p len=%u rc=%d",
-> +		__get_str(name), __entry->skbaddr, __entry->len, __entry->rc)
-> +);
-> +
-> +DECLARE_EVENT_CLASS(net_dev_template,
-> +
-> +	TP_PROTO(struct sk_buff *skb),
-> +
-> +	TP_ARGS(skb),
-> +
-> +	TP_STRUCT__entry(
-> +		__field(	void *,		skbaddr		)
-> +		__field(	unsigned int,	len		)
-> +		__string(	name,		skb->dev->name	)
-> +	),
-> +
-> +	TP_fast_assign(
-> +		__entry->skbaddr = skb;
-> +		__entry->len = skb->len;
-> +		__assign_str(name, skb->dev->name);
-> +	),
-> +
-> +	TP_printk("dev=%s skbaddr=%p len=%u",
-> +		__get_str(name), __entry->skbaddr, __entry->len)
-> +)
-> +
-> +DEFINE_EVENT(net_dev_template, net_dev_queue,
-> +
-> +	TP_PROTO(struct sk_buff *skb),
-> +
-> +	TP_ARGS(skb)
-> +);
-> +
-> +DEFINE_EVENT(net_dev_template, net_dev_receive,
-> +
-> +	TP_PROTO(struct sk_buff *skb),
-> +
-> +	TP_ARGS(skb)
-> +);
-> +#endif /* _TRACE_NET_H */
-> +
-> +/* This part must be outside protection */
-> +#include <trace/define_trace.h>
-> diff --git a/net/core/dev.c b/net/core/dev.c
-> index 93b8929..4acfec6 100644
-> --- a/net/core/dev.c
-> +++ b/net/core/dev.c
-> @@ -130,6 +130,7 @@
->  #include <linux/jhash.h>
->  #include <linux/random.h>
->  #include <trace/events/napi.h>
-> +#include <trace/events/net.h>
->  #include <linux/pci.h>
->  
->  #include "net-sysfs.h"
-> @@ -1955,6 +1956,7 @@ int dev_hard_start_xmit(struct sk_buff *skb, struct net_device *dev,
->  		}
->  
->  		rc = ops->ndo_start_xmit(skb, dev);
-> +		trace_net_dev_xmit(skb, rc);
->  		if (rc == NETDEV_TX_OK)
->  			txq_trans_update(txq);
->  		return rc;
-> @@ -1975,6 +1977,7 @@ gso:
->  			skb_dst_drop(nskb);
->  
->  		rc = ops->ndo_start_xmit(nskb, dev);
-> +		trace_net_dev_xmit(nskb, rc);
->  		if (unlikely(rc != NETDEV_TX_OK)) {
->  			if (rc & ~NETDEV_TX_MASK)
->  				goto out_kfree_gso_skb;
-> @@ -2165,6 +2168,7 @@ int dev_queue_xmit(struct sk_buff *skb)
->  #ifdef CONFIG_NET_CLS_ACT
->  	skb->tc_verd = SET_TC_AT(skb->tc_verd, AT_EGRESS);
->  #endif
-> +	trace_net_dev_queue(skb);
->  	if (q->enqueue) {
->  		rc = __dev_xmit_skb(skb, q, dev, txq);
->  		goto out;
-> @@ -2939,6 +2943,7 @@ int netif_receive_skb(struct sk_buff *skb)
->  	if (netdev_tstamp_prequeue)
->  		net_timestamp_check(skb);
->  
-> +	trace_net_dev_receive(skb);
+> [...]
+>> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+>> index b626289..2ea0298 100644
+>> --- a/include/linux/netdevice.h
+>> +++ b/include/linux/netdevice.h
+>> @@ -845,6 +845,7 @@ struct net_device {
+>>  #define NETIF_F_FCOE_MTU	(1 << 26) /* Supports max FCoE MTU, 2158 bytes*/
+>>  #define NETIF_F_NTUPLE		(1 << 27) /* N-tuple filters supported */
+>>  #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
+>> +#define NETIF_F_RNDMAC		(1 << 29) /* Interface with random MAC address */
+> [...]
+> 
+> This is not really a feature, and we are running out of real feature
+> bits.  Can you find somewhere else to put this flag?
 
-I imagine for completeness you'll want to make a call to this in netif_rx and
-netif_rx_ni as well.
+Actually Dave Miller suggested to put it there. What other place is
+there to put it?
 
-
+  Stefan
+--
+Stefan Assmann         | Red Hat GmbH
+Software Engineer      | Otto-Hahn-Strasse 20, 85609 Dornach
+                       | HR: Amtsgericht Muenchen HRB 153243
+                       | GF: Brendan Lane, Charlie Peters,
+sassmann at redhat.com |     Michael Cunningham, Charles Cachera
