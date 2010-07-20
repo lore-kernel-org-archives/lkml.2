@@ -1,56 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752952Ab0GTFGH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 01:06:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:41152 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab0GTFGD convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 01:06:03 -0400
-Date: Mon, 19 Jul 2010 22:05:45 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: lkml <linux-kernel@vger.kernel.org>, Kees Bakker <kees.bakker@xs4all.nl>,
-        Keith Packard <keithp@keithp.com>
-Subject: Re: [git pull] documentation: fix almost duplicate filenames 
- (io/IO-mapping.txt)
-Message-Id: <20100719220545.098cb7aa.randy.dunlap@oracle.com>
-In-Reply-To: <AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com>
-References: <20100719181240.fc3066cd.randy.dunlap@oracle.com>
-	<AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1753614Ab0GTFGZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 01:06:25 -0400
+Received: from mail.perches.com ([173.55.12.10]:1968 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753198Ab0GTFGK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 01:06:10 -0400
+Subject: [PATCH net-next] drivers/acpi/acpica/utmisc.c: Use printk
+ extension %pV
+From: Joe Perches <joe@perches.com>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netdev <netdev@vger.kernel.org>, David Miller <davem@davemloft.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 19 Jul 2010 22:06:07 -0700
+Message-ID: <1279602367.19374.20.camel@Joe-Laptop.home>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0201.4C452EAE.0108:SCFMA4539814,ss=1,fgs=0
+X-Mailer: Evolution 2.30.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jul 2010 19:27:13 -0700 Linus Torvalds wrote:
+Consolidates the printk messages to a single
+call so the messages can not be interleaved.
 
-> On Mon, Jul 19, 2010 at 6:12 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> >
-> > (hopefully I got this right.  I'm not a big git user.)
-> 
-> Hmm. No.
-> 
-> The commit otherwise looks correct, but the commit message is
-> buggered. The first line of the message is
-> 
->    From: Randy Dunlap <randy.dunlap@oracle.com>
-> 
-> rather than the subject of the patch itself.
-> 
-> No fear. Practice makes perfect. Just try again ;)
+Reduces text a bit.
 
+$ size drivers/acpi/acpica/utmisc.o.*
+   text	   data	    bss	    dec	    hex	filename
+   7822	     56	   1832	   9710	   25ee	drivers/acpi/acpica/utmisc.o.old
+   7748	     56	   1736	   9540	   2544	drivers/acpi/acpica/utmisc.o.new
 
-Will do... but how do I edit the commit message?
+Depends on net-next commit 7db6f5fb65a82af03229eef104dc9899c5eecf33
+(vsprintf: Recursive vsnprintf: Add "%pV", struct va_format)
 
-thanks,
+Compile tested only
+
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ drivers/acpi/acpica/utmisc.c |   78 ++++++++++++++++++++++++++++--------------
+ 1 files changed, 52 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/acpi/acpica/utmisc.c b/drivers/acpi/acpica/utmisc.c
+index e8d0724..d9a4a64 100644
+--- a/drivers/acpi/acpica/utmisc.c
++++ b/drivers/acpi/acpica/utmisc.c
+@@ -53,8 +53,8 @@ ACPI_MODULE_NAME("utmisc")
+ /*
+  * Common suffix for messages
+  */
+-#define ACPI_COMMON_MSG_SUFFIX \
+-	acpi_os_printf(" (%8.8X/%s-%u)\n", ACPI_CA_VERSION, module_name, line_number)
++#define ACPI_COMMON_MSG_SUFFIX_FMT  " (%8.8X/%s-%u)"
++#define ACPI_COMMON_MSG_SUFFIX_ARGS ACPI_CA_VERSION, module_name, line_number
+ /*******************************************************************************
+  *
+  * FUNCTION:    acpi_ut_validate_exception
+@@ -1063,12 +1063,16 @@ void ACPI_INTERNAL_VAR_XFACE
+ acpi_error(const char *module_name, u32 line_number, const char *format, ...)
+ {
+ 	va_list args;
+-
+-	acpi_os_printf("ACPI Error: ");
++	struct va_format vaf;
+ 
+ 	va_start(args, format);
+-	acpi_os_vprintf(format, args);
+-	ACPI_COMMON_MSG_SUFFIX;
++
++	vaf.fmt = format;
++	vaf.va = &args;
++
++	acpi_os_printf("ACPI Error: %pV" ACPI_COMMON_MSG_SUFFIX_FMT "\n",
++		       &vaf, ACPI_COMMON_MSG_SUFFIX_ARGS);
++
+ 	va_end(args);
+ }
+ 
+@@ -1077,12 +1081,18 @@ acpi_exception(const char *module_name,
+ 	       u32 line_number, acpi_status status, const char *format, ...)
+ {
+ 	va_list args;
+-
+-	acpi_os_printf("ACPI Exception: %s, ", acpi_format_exception(status));
++	struct va_format vaf;
+ 
+ 	va_start(args, format);
+-	acpi_os_vprintf(format, args);
+-	ACPI_COMMON_MSG_SUFFIX;
++
++	vaf.fmt = format;
++	vaf.va = &args;
++
++	acpi_os_printf("ACPI Exception: %s, %pV"
++		       ACPI_COMMON_MSG_SUFFIX_FMT "\n",
++		       acpi_format_exception(status), &vaf,
++		       ACPI_COMMON_MSG_SUFFIX_ARGS);
++
+ 	va_end(args);
+ }
+ 
+@@ -1090,12 +1100,16 @@ void ACPI_INTERNAL_VAR_XFACE
+ acpi_warning(const char *module_name, u32 line_number, const char *format, ...)
+ {
+ 	va_list args;
+-
+-	acpi_os_printf("ACPI Warning: ");
++	struct va_format vaf;
+ 
+ 	va_start(args, format);
+-	acpi_os_vprintf(format, args);
+-	ACPI_COMMON_MSG_SUFFIX;
++
++	vaf.fmt = format;
++	vaf.va = &args;
++
++	acpi_os_printf("ACPI Warning: %pV" ACPI_COMMON_MSG_SUFFIX_FMT "\n",
++		       &vaf, ACPI_COMMON_MSG_SUFFIX_ARGS);
++
+ 	va_end(args);
+ }
+ 
+@@ -1103,12 +1117,15 @@ void ACPI_INTERNAL_VAR_XFACE
+ acpi_info(const char *module_name, u32 line_number, const char *format, ...)
+ {
+ 	va_list args;
+-
+-	acpi_os_printf("ACPI: ");
++	struct va_format vaf;
+ 
+ 	va_start(args, format);
+-	acpi_os_vprintf(format, args);
+-	acpi_os_printf("\n");
++
++	vaf.fmt = format;
++	vaf.va = &args;
++
++	acpi_os_printf("ACPI: %pV\n", &vaf);
++
+ 	va_end(args);
+ }
+ 
+@@ -1143,6 +1160,7 @@ acpi_ut_predefined_warning(const char *module_name,
+ 			   u8 node_flags, const char *format, ...)
+ {
+ 	va_list args;
++	struct va_format vaf;
+ 
+ 	/*
+ 	 * Warning messages for this method/object will be disabled after the
+@@ -1152,11 +1170,15 @@ acpi_ut_predefined_warning(const char *module_name,
+ 		return;
+ 	}
+ 
+-	acpi_os_printf("ACPI Warning for %s: ", pathname);
+-
+ 	va_start(args, format);
+-	acpi_os_vprintf(format, args);
+-	ACPI_COMMON_MSG_SUFFIX;
++
++	vaf.fmt = format;
++	vaf.va = &args;
++
++	acpi_os_printf("ACPI Warning for %s: %pV"
++		       ACPI_COMMON_MSG_SUFFIX_FMT "\n",
++		       pathname, &vaf, ACPI_COMMON_MSG_SUFFIX_ARGS);
++
+ 	va_end(args);
+ }
+ 
+@@ -1185,6 +1207,7 @@ acpi_ut_predefined_info(const char *module_name,
+ 			char *pathname, u8 node_flags, const char *format, ...)
+ {
+ 	va_list args;
++	struct va_format vaf;
+ 
+ 	/*
+ 	 * Warning messages for this method/object will be disabled after the
+@@ -1194,10 +1217,13 @@ acpi_ut_predefined_info(const char *module_name,
+ 		return;
+ 	}
+ 
+-	acpi_os_printf("ACPI Info for %s: ", pathname);
+-
+ 	va_start(args, format);
+-	acpi_os_vprintf(format, args);
+-	ACPI_COMMON_MSG_SUFFIX;
++
++	vaf.fmt = format;
++	vaf.va = &args;
++
++	acpi_os_printf("ACPI Info for %s: %pV" ACPI_COMMON_MSG_SUFFIX_FMT "\n",
++		       pathname, &vaf, ACPI_COMMON_MSG_SUFFIX_ARGS);
++
+ 	va_end(args);
+ }
+
+
