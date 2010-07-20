@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761267Ab0GTMaG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 08:30:06 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:58269 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755463Ab0GTMaD (ORCPT
+	id S1758423Ab0GTMc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 08:32:28 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:34256 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755463Ab0GTMc1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 08:30:03 -0400
-Subject: Re: [RFC][PATCH 14/16] writeback: move bdi threads exiting logic
- to the forker thread
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <20100718070231.GK23811@infradead.org>
-References: <1279284312-2411-1-git-send-email-dedekind1@gmail.com>
-	 <1279284312-2411-15-git-send-email-dedekind1@gmail.com>
-	 <20100718070231.GK23811@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Jul 2010 15:23:19 +0300
-Message-ID: <1279628599.16462.120.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 20 Jul 2010 12:29:45.0913 (UTC) FILETIME=[3CBD9290:01CB2807]
-X-Nokia-AV: Clean
+	Tue, 20 Jul 2010 08:32:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=raxAEFbXfxion1Ly5RxRRZzljegQTE7AZcBL/V9T7VD/N+gyw3R01ZOO8jzYGM0zLl
+         iGMm5WrDcLZXIGcmo+jS8xUvZEWplXdoFznI3IJvrIojYTbv65Uy+pX+Y56H9MCw1to1
+         Ck3LJZk6FXq1hHCYDsLiH+O83knABkRyRy14A=
+Date: Tue, 20 Jul 2010 16:32:22 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Yulia Vilensky <vilensky@compulab.co.il>,
+        Geert Stappers <stappers@stappers.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ds2782_battery: Rename get_current and get_voltage
+ operations
+Message-ID: <20100720123222.GA403@oksana.dev.rtsoft.ru>
+References: <1279584175.4883.226.camel@localhost>
+ <20100720074659.GA32073@oksana.dev.rtsoft.ru>
+ <1279619066.4883.249.camel@localhost>
+ <20100720105712.GA20366@oksana.dev.rtsoft.ru>
+ <20100720115019.GD3331@decadent.org.uk>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100720115019.GD3331@decadent.org.uk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-07-18 at 03:02 -0400, Christoph Hellwig wrote:
-> > +	if (wakeup_default) {
-> >  		trace_writeback_nothread(bdi, work);
-> >  		wake_up_process(default_backing_dev_info.wb.task);
+On Tue, Jul 20, 2010 at 12:50:19PM +0100, Ben Hutchings wrote:
+> On Tue, Jul 20, 2010 at 02:57:12PM +0400, Anton Vorontsov wrote:
+> > On Tue, Jul 20, 2010 at 10:44:26AM +0100, Ben Hutchings wrote:
+> > > On Tue, 2010-07-20 at 11:46 +0400, Anton Vorontsov wrote:
+> > > > On Tue, Jul 20, 2010 at 01:02:55AM +0100, Ben Hutchings wrote:
+> > > > > commit 9b9ade6b612e562c4a5bd02ef38cc32e10f3f9ba "ds2782_battery: Add
+> > > > > support for ds2786 battery gas gauge" introduced an operation named
+> > > > > get_current.  Since get_current() is defined as a macro on some
+> > > > > architectures this driver no longer compiles on those architectures.
+> > > > > 
+> > > > > Rename get_current to get_current_now to avoid the macro.
+> > > > > Rename get_voltage to get_voltage_now for consistency.
+> > > > > 
+> > > > > Reported-by: Geert Stappers <stappers@stappers.nl>
+> > > > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > > > > ---
+> > > > 
+> > > > Thanks for the patch, but I have a similar fix in the
+> > > > battery-2.6.git tree (for -next):
+> > > [...]
+> > > 
+> > > This fix needs to go into 2.6.35.
+> > 
+> > Did you read why I don't push it into 2.6.35? Reread my email,
+> > pay attention to the very bottom.
 > 
-> Why not simply do the defaul thread wakeup under wb_lock, too?
-> It keeps the code a lot simpler, and this is not a typical path anyway.
+> It is a 2.6.35 regression; these operations were introduced in 2.6.35-rc1.
+> (Hint: use 'git describe --contains' not 'git describe'.  Or even
+> 'git grep -w get_current v2.6.34:drivers/power/ds2782_battery.c'.)
 
-Will address.
+Oh, I got it.
 
-> >  		if (dirty_writeback_interval) {
-> > +			unsigned long wait_jiffies;
-> > +
-> >  			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
-> >  			schedule_timeout(wait_jiffies);
-> 
-> No real need for a local variable here.
-
-Will address.
-
-> > @@ -364,7 +395,7 @@ static int bdi_forker_thread(void *ptr)
-> >  		if (!list_empty(&me->bdi->work_list))
-> >  			__set_current_state(TASK_RUNNING);
-> >  
-> > -		if (!fork) {
-> > +		if (!fork && !kill) {
-> 
-> I think the code here would be a lot cleaner if you implement the
-> suggestion I have for the forking restructuring.
-
-As I replied earlier, to fork/kill the the thread from inside list walk
-we'd need to drop the spinlock, which is not very nice. So I am keeping
-this part intact so far.
+Will push, thanks!
 
 -- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
