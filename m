@@ -1,93 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761825Ab0GTWCl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 18:02:41 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:25876 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761779Ab0GTWCg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 18:02:36 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6049"; a="48091429"
-Message-ID: <bb667e285fd8be82ea8cc9cc25cf335b.squirrel@www.codeaurora.org>
-In-Reply-To: <20100719184002.GA21608@n2100.arm.linux.org.uk>
-References: <20100713150311B.fujita.tomonori@lab.ntt.co.jp>
-    <20100713121420.GB4263@codeaurora.org>
-    <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
-    <20100714201149.GA14008@codeaurora.org>
-    <20100714220536.GE18138@n2100.arm.linux.org.uk>
-    <20100715012958.GB2239@codeaurora.org>
-    <20100715085535.GC26212@n2100.arm.linux.org.uk>
-    <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com>
-    <20100716075856.GC16124@n2100.arm.linux.org.uk>
-    <4C449183.20000@codeaurora.org>
-    <20100719184002.GA21608@n2100.arm.linux.org.uk>
-Date: Tue, 20 Jul 2010 15:02:34 -0700 (PDT)
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU,
-      CPU and device memory management
-From: stepanm@codeaurora.org
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Cc: "Michael Bohan" <mbohan@codeaurora.org>, "Tim HRM" <zt.tmzt@gmail.com>,
-        "Zach Pfeffer" <zpfeffer@codeaurora.org>,
-        "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>,
-        ebiederm@xmission.com, linux-arch@vger.kernel.org,
-        dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
-        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	id S1761835Ab0GTWDy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 18:03:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38943 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761676Ab0GTWDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 18:03:52 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C2DAEBB.7090607@kernel.org>
+References: <4C2DAEBB.7090607@kernel.org> <4C2A2688.1020206@kernel.org> <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <25085.1277847455@redhat.com> 
+To: Tejun Heo <tj@kernel.org>
+Cc: dhowells@redhat.com, Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        torvalds@linux-foundation.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, jeff@garzik.org,
+        akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
+Date: Tue, 20 Jul 2010 23:01:42 +0100
+Message-ID: <31872.1279663302@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell-
+Tejun Heo <tj@kernel.org> wrote:
 
-If a driver wants to allow a device to access memory (and cache coherency
-is off/not present for device addesses), the driver needs to remap that
-memory as non-cacheable. Suppose there exists a chunk of
-physically-contiguous memory (say, memory reserved for device use) that
-happened to be already mapped into the kernel as normal memory (cacheable,
-etc). One way to remap this memory is to use ioremap (and then never touch
-the original virtual mapping, which would now have conflicting
-attributes). I feel as if there should be a better way to remap memory for
-device access, either by altering the attributes on the original mapping,
-or removing the original mapping and creating a new one with attributes
-set to non-cacheable. Is there a better way to do this than calling
-ioremap() on that memory? Please advise.
+> David, this should work for fscache/slow-work the same way too.  That
+> should relieve your concern, right?
 
-Thanks
-Steve
+Not at the moment.  What does this mean:
 
+	 * Unbound workqueues aren't concurrency managed and should be
+	 * dispatched to workers immediately.
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Does this mean you don't get reentrancy guarantees with unbounded work queues?
 
+I can't work out how you're achieving it with unbounded queues.  I presume with
+CPU-bound workqueues your doing it by binding the work item to the current CPU
+still...
 
-> On Mon, Jul 19, 2010 at 10:55:15AM -0700, Michael Bohan wrote:
->>
->> On 7/16/2010 12:58 AM, Russell King - ARM Linux wrote:
->>
->>> As the patch has been out for RFC since early April on the
->>> linux-arm-kernel
->>> mailing list (Subject: [RFC] Prohibit ioremap() on kernel managed RAM),
->>> and no comments have come back from Qualcomm folk.
->>
->> Would it be unreasonable to allow a map request to succeed if the
->> requested attributes matched that of the preexisting mapping?
->
-> What would be the point of creating such a mapping?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-arm-msm"
-> in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+Btw, how does this fare in an RT system, where work items bound to a CPU can't
+get executed because their CPU is busy with an RT thread, even though there are
+other, idle CPUs?
 
+> Oh, and Frederic suggested that we would be better off with something based
+> on tracing API and I agree, so the debugfs thing is currently dropped from
+> the tree.  What do you think?
 
+I probably disagree.  I just want to be able to cat a file and see the current
+runqueue state.  I don't want to have to write and distribute a special program
+to do this.  Of course, I don't know that much about the tracing API, so
+cat'ing a file to get the runqueue listed nicely may be possible with that.
 
-
-
-
+David
