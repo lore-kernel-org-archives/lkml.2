@@ -1,108 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933167Ab0GTXRO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 19:17:14 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60495 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933154Ab0GTXRK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 19:17:10 -0400
-Subject: Re: [PATCH 0/3] Add proper STGT <-> bs_sg passthrough v3
-From: James Bottomley <James.Bottomley@suse.de>
-To: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
-Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, stgt@vger.kernel.org,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        michaelc@cs.wisc.edu, bharrosh@panasas.com, dgilbert@interlog.com
-In-Reply-To: <1275956389.6498.8.camel@haakon2.linux-iscsi.org>
-References: <1275882615-5354-1-git-send-email-nab@linux-iscsi.org>
-	 <20100607154432Y.fujita.tomonori@lab.ntt.co.jp>
-	 <1275899236.26888.40.camel@haakon2.linux-iscsi.org>
-	 <20100608084443C.fujita.tomonori@lab.ntt.co.jp>
-	 <1275956389.6498.8.camel@haakon2.linux-iscsi.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Jul 2010 16:17:00 -0700
-Message-ID: <1279667820.6594.18.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S933170Ab0GTXUl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 19:20:41 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:51570 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933098Ab0GTXUj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 19:20:39 -0400
+Date: Tue, 20 Jul 2010 16:22:50 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org
+cc: linux-kernel@vger.kernel.org, ceph-devel@vger.kernel.org
+Subject: [GIT PULL] ceph fixes for 2.6.35-rc6
+Message-ID: <Pine.LNX.4.64.1007151246150.655@cobra.newdream.net>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-06-07 at 17:19 -0700, Nicholas A. Bellinger wrote:
-> On Tue, 2010-06-08 at 08:45 +0900, FUJITA Tomonori wrote:
-> > On Mon, 07 Jun 2010 01:27:16 -0700
-> > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > 
-> > > On Mon, 2010-06-07 at 15:45 +0900, FUJITA Tomonori wrote:
-> > > > On Sun,  6 Jun 2010 20:50:15 -0700
-> > > > "Nicholas A. Bellinger" <nab@linux-iscsi.org> wrote:
-> > > > 
-> > > > > From: Nicholas Bellinger <nab@linux-iscsi.org>
-> > > > > 
-> > > > > Greeting STGT folks,
-> > > > > 
-> > > > > This is the third round of patches for adding proper LUN passthrough support into STGT
-> > > > > using struct scsi_lu->cmd_perform() and struct scsi_lu->cmd_done() callers with existing
-> > > > > SG_IO and the new BSG v4 backstores.
-> > > > > 
-> > > > > Following Tomo-san's input, the changelog between v2 -> v3 is as follows:
-> > > > > 
-> > > > > 1) Add struct device_type_template sg_template for SG_IO and BSG in usr/bs_sg.c instead
-> > > > >    of making changes to usr/sbc.c
-> > > > > 
-> > > > > 2) Add struct backingstore_template->bs_passthrough member of type int for SG_IO and BSG.
-> > > > > 
-> > > > > 3) In usr/target.c:tgt_device_create() pass bst->bs_passthrough into device_type_lookup()
-> > > > >    and for passthrough case use the new device_type_passthrough() to locate
-> > > > >    struct device_type_template sg_template.
-> > > > > 
-> > > > > 4) Remove unnecessary post_cmd_done() from usr/target.c:__cmd_done_passthrough()
-> > > > > 
-> > > > > This patch series has been tested with STGT/iSCSI using 'sg'+'bsg' and 'rdwr' for non
-> > > > > passthrough mode backstores into TCM_Loop LLD emulated iSCSI target ports.
-> > > > > 
-> > > > > Best,
-> > > > > 
-> > > > > Signed-off-by: Nicholas A. Bellinger <nab@linux-iscsi.org
-> > > > > 
-> > > > > Nicholas Bellinger (3):
-> > > > >   [tgt]: Add proper STGT LUN backstore passthrough support (rev 3)
-> > > > >   [tgt]: Add bs_sg struct device_type_template sg_template and struct
-> > > > >     backingstore_template->bs_init()
-> > > > >   [tgt]: Add BSG v4 backstore support to usr/bs_sg.c
-> > > > > 
-> > > > >  usr/bs_sg.c     |  247 ++++++++++++++++++++++++++++++++++++++++++++++++++++--
-> > > > >  usr/scsi_cmnd.h |    7 ++
-> > > > >  usr/target.c    |  113 +++++++++++++++++++++++---
-> > > > >  usr/tgtd.h      |   16 ++++
-> > > > >  4 files changed, 362 insertions(+), 21 deletions(-)
-> > > > 
-> > > > The first and second patches Look fine overall. I have some comments
-> > > > and wrote some cleanup patches.
-> > > > 
-> > > > I've put the first two patches with my cleanups:
-> > > > 
-> > > > git://git.kernel.org/pub/scm/linux/kernel/git/tomo/tgt.git pass
-> > > > 
-> > > > Can you confirm that it works for you? Then I can merge them into
-> > > > master.
-> > > 
-> > > The pass branch works fine using '-E sg -Y pt' for SG_IO backstore <->
-> > > fabric LUN assocation with TCM_Loop LLD Target Ports.  Thanks for
-> > > cleaning things up to use TYPE_PT btw, I should have asked about that
-> > > earlier. ;)
-> > 
-> > Thanks for the confirmation. I've merged these patches into master.
-> > 
-> > I'll merge your bsg patch if nobody complains about dropping sg
-> > support in a few days.
-> > 
-> 
-> Perfect, thank you Tomo-san.
+Hi Linus,
 
-Ping on this ... is it actually all working and we could remove the STGT
-code in favour of this?
+Please pull the following Ceph fixes for 2.6.35-rc6 from
 
-James
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
+There are two memory leak fixes, a fix for an occasional crash when OSDs 
+restart, mds reconnect fixes, and fixes for IPv6 addresses.  One of those 
+(fix printing of ipv6 addrs') was overrunning a buffer and is a must-fix.  
+The other two just make IPv6 addresses work properly. The recovering MDS 
+patches fix a couple bugs that turn up when replaying uncommitted requests 
+against a recovering MDS.
 
+Thanks!
+sage
+
+Dan Carpenter (1):
+      ceph: add kfree() to error path
+
+Sage Weil (7):
+      ceph: fix message revocation
+      ceph: fix leak of mon authorizer
+      ceph: fix printing of ipv6 addrs
+      ceph: fix parsing of ipv6 addresses
+      ceph: fix creation of ipv6 sockets
+      ceph: reuse request message when replaying against recovering mds
+      ceph: do not include cap/dentry releases in replayed messages
+
+ fs/ceph/auth_x.c     |    3 ++
+ fs/ceph/mds_client.c |   35 +++++++++++++++++++++---
+ fs/ceph/mds_client.h |    1 +
+ fs/ceph/messenger.c  |   71 ++++++++++++++++++++++++++------------------------
+ fs/ceph/osdmap.c     |    1 +
+ 5 files changed, 72 insertions(+), 39 deletions(-)
