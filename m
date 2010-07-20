@@ -1,47 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761504Ab0GTURf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 16:17:35 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60256
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753637Ab0GTURc (ORCPT
+	id S932364Ab0GTURq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 16:17:46 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:47207 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759100Ab0GTURm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 16:17:32 -0400
-Date: Tue, 20 Jul 2010 13:17:48 -0700 (PDT)
-Message-Id: <20100720.131748.51255156.davem@davemloft.net>
-To: bhutchings@solarflare.com
-Cc: sassmann@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        gospo@redhat.com, gregory.v.rose@intel.com,
-        alexander.h.duyck@intel.com, leedom@chelsio.com, harald@redhat.com
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
- interfaces with random MAC address
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1279636194.2110.45.camel@achroite.uk.solarflarecom.com>
-References: <1279627656.2110.13.camel@achroite.uk.solarflarecom.com>
-	<4C45996B.3000003@redhat.com>
-	<1279636194.2110.45.camel@achroite.uk.solarflarecom.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Jul 2010 16:17:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=CTfE/c8F7weik+lOcb1QjII8QalvhKJoC8zRuvzDq0gUyeyDcsl/rDyXht8U0DbLaj
+         ETnt5CbTZTNh7m1wrdovJQcAb6AiIS2UL7PMEgyjrwwbw+7ZOce394lH9oAGQGhF3xhX
+         g2lYqP6ZnS/HX7awqaalx8g3SsmvGV0Q9Si3w=
+Date: Wed, 21 Jul 2010 00:17:40 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Robert Richter <robert.richter@amd.com>, "H. Peter Anvin" <hpa@zytor.com>,
+        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/10] x86, xsave: some code cleanups and reworks
+Message-ID: <20100720201740.GE6227@lenovo>
+References: <1279651857-24639-1-git-send-email-robert.richter@amd.com> <20100720192717.GC6227@lenovo> <20100720194606.GO26154@erda.amd.com> <20100720200729.GD6227@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100720200729.GD6227@lenovo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <bhutchings@solarflare.com>
-Date: Tue, 20 Jul 2010 15:29:54 +0100
-
-> On Tue, 2010-07-20 at 14:41 +0200, Stefan Assmann wrote:
->> Btw, the driver itself could also alter the flag. Then we'd have a well
->> defined way of setting a stable address.
+On Wed, Jul 21, 2010 at 12:07:29AM +0400, Cyrill Gorcunov wrote:
+...
+> > 
+> > But first question is, is it always !smp_processor_id()? At least
+> > current implementation indicates this:
+> > 
 > 
-> The driver can't know whether an address assigned by the user is stable.
+> I guess so, since it's assigned from boot_cpu_id iirc
+> 
 
-If userspace can somehow obtain a persistent address, it can kick
-udev too.
+well, not true, this id is being set in setup_per_cpu_areas()
+note the snippet
 
-I really don't see any real value provided by letting userspace mess
-with this.  Because the permanence communicated in this value is from
-the perspective of the kernel driver, it's really therefore about the
-thing that's in ->perm_addr[] not what happens to be in ->addr[] right
-now.
+		if (cpu == boot_cpu_id)
+			switch_to_new_gdt(cpu);
+
+but cycle of assignment is done over all possible cpus so
+smp_processor_id will be = 0 for BP but definitely it's
+confusing and better to check for BP via explicit cpu == boot_cpu_id
+I think. Though I might be missing something.
+
+> >  void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
+> >  {
+> >  	BUG_ON(c == &boot_cpu_data);
+> >  	...
+> > 
+> > with:
+> > 
+> >  #define boot_cpu_data cpu_data[0]
+> > 
+> > ... which is valid for 32 and 64 bit.
+> >
+ 
+	-- Cyrill
