@@ -1,128 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758148Ab0GTD7I (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 23:59:08 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:51839 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757341Ab0GTD7G (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 23:59:06 -0400
-Message-ID: <4C451F05.9010502@austin.ibm.com>
-Date: Mon, 19 Jul 2010 22:59:01 -0500
-From: Nathan Fontenot <nfont@austin.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100527 Thunderbird/3.0.5
+	id S1750892Ab0GTEAG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 00:00:06 -0400
+Received: from d72-38-7-254.commercial1.cgocable.net ([72.38.7.254]:2442 "EHLO
+	max" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757341Ab0GTEAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 00:00:04 -0400
+X-Greylist: delayed 2733 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jul 2010 00:00:04 EDT
+Message-ID: <7141c88bc8c27f26c2187252c0594318.squirrel@thechecks.ca>
+In-Reply-To: <4C44BD42.3030904@kernel.org>
+References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>
+    <4C2F5ECB.1040505@kernel.org>
+    <AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>
+    <4C2F61AB.9030806@kernel.org>
+    <AANLkTilYOT45q8OUJ-_V61_fnYy9HIk6GAv5ZPiomCaT@mail.gmail.com>
+    <4C317C04.20500@kernel.org>
+    <AANLkTilupyieml9yaWO9BUNPmQQ0g2w1HLWj6R9MwDZf@mail.gmail.com>
+    <4C32CE50.6010501@kernel.org>
+    <AANLkTikehTO1j6Gd7Y_g32_P6Yg9KB8Z8qwbNJh10aOU@mail.gmail.com>
+    <4C341598.6040004@kernel.org>
+    <AANLkTik4zkcIyVxwtX8GA1BsQSZaAeODpPlY3mRVBc-4@mail.gmail.com>
+    <4C34A1D5.1090202@kernel.org>
+    <AANLkTilgQSu3qi7qoTtjnV22r-8Sh1hbDAB_nlPImWNt@mail.gmail.com>
+    <4C34B8BE.5080504@kernel.org>
+    <AANLkTilDbrA6lLPSOAtA8_4mLNkUZibHweTliqU5jd03@mail.gmail.com>
+    <4C44BD42.3030904@kernel.org>
+Date: Mon, 19 Jul 2010 23:14:25 -0400
+From: "Paul Check" <paul@thechecks.ca>
+To: "Tejun Heo" <tj@kernel.org>
+Cc: "Mark Knecht" <markknecht@gmail.com>,
+        "Linux Kernel List" <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+User-Agent: SquirrelMail/1.4.20
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org
-CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, greg@kroah.com
-Subject: [PATCH 7/8] v3 Define memory_block_size_bytes() for ppc/pseries
-References: <4C451BF5.50304@austin.ibm.com>
-In-Reply-To: <4C451BF5.50304@austin.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+X-Priority: 3 (Normal)
+Importance: Normal
+X-SA-Exim-Connect-IP: 72.38.7.254
+X-SA-Exim-Mail-From: paul@thechecks.ca
+Subject: Re: Drives missing at boot
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-SA-Exim-Version: 4.2.1 (built Mon, 22 Mar 2010 06:51:10 +0000)
+X-SA-Exim-Scanned: Yes (on max)
+X-bounce-key: openstreet.com-1;paul@thechecks.ca;1279598404;0235d49a;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Define a version of memory_block_size_bytes() for powerpc/pseries such that
-a memory block spans an entire lmb.
+Hey Tejun: I guess this is the same patch that you sent me to fix my issue
+with missing drives.  Good news: I've been through about 10 reboots now
+and no problems.  Based on my prior experience, I'd say with the old
+setup, 10 clean boots in a row was probably less than a 1% event.  So, it
+seems that this has fixed my problem.
 
-Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
----
- arch/powerpc/platforms/pseries/hotplug-memory.c |   66 +++++++++++++++++++-----
- 1 file changed, 53 insertions(+), 13 deletions(-)
+Thanks!
 
-Index: linux-2.6/arch/powerpc/platforms/pseries/hotplug-memory.c
-===================================================================
---- linux-2.6.orig/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-07-19 21:10:24.000000000 -0500
-+++ linux-2.6/arch/powerpc/platforms/pseries/hotplug-memory.c	2010-07-19 21:13:32.000000000 -0500
-@@ -17,6 +17,54 @@
- #include <asm/pSeries_reconfig.h>
- #include <asm/sparsemem.h>
- 
-+static u32 get_memblock_size(void)
-+{
-+	struct device_node *np;
-+	unsigned int memblock_size = 0;
-+
-+	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
-+	if (np) {
-+		const unsigned int *size;
-+
-+		size = of_get_property(np, "ibm,lmb-size", NULL);
-+		memblock_size = size ? *size : 0;
-+
-+		of_node_put(np);
-+	} else {
-+		unsigned int memzero_size = 0;
-+		const unsigned int *regs;
-+
-+		np = of_find_node_by_path("/memory@0");
-+		if (np) {
-+			regs = of_get_property(np, "reg", NULL);
-+			memzero_size = regs ? regs[3] : 0;
-+			of_node_put(np);
-+		}
-+
-+		if (memzero_size) {
-+			/* We now know the size of memory@0, use this to find
-+			 * the first memoryblock and get its size.
-+			 */
-+			char buf[64];
-+
-+			sprintf(buf, "/memory@%x", memzero_size);
-+			np = of_find_node_by_path(buf);
-+			if (np) {
-+				regs = of_get_property(np, "reg", NULL);
-+				memblock_size = regs ? regs[3] : 0;
-+				of_node_put(np);
-+			}
-+		}
-+	}
-+
-+	return memblock_size;
-+}
-+
-+u32 memory_block_size_bytes(void)
-+{
-+	return get_memblock_size();
-+}
-+
- static int pseries_remove_memblock(unsigned long base, unsigned int memblock_size)
- {
- 	unsigned long start, start_pfn;
-@@ -127,30 +175,22 @@ static int pseries_add_memory(struct dev
- 
- static int pseries_drconf_memory(unsigned long *base, unsigned int action)
- {
--	struct device_node *np;
--	const unsigned long *memblock_size;
-+	unsigned long memblock_size;
- 	int rc;
- 
--	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
--	if (!np)
-+	memblock_size = get_memblock_size();
-+	if (!memblock_size)
- 		return -EINVAL;
- 
--	memblock_size = of_get_property(np, "ibm,memblock-size", NULL);
--	if (!memblock_size) {
--		of_node_put(np);
--		return -EINVAL;
--	}
--
- 	if (action == PSERIES_DRCONF_MEM_ADD) {
--		rc = memblock_add(*base, *memblock_size);
-+		rc = memblock_add(*base, memblock_size);
- 		rc = (rc < 0) ? -EINVAL : 0;
- 	} else if (action == PSERIES_DRCONF_MEM_REMOVE) {
--		rc = pseries_remove_memblock(*base, *memblock_size);
-+		rc = pseries_remove_memblock(*base, memblock_size);
- 	} else {
- 		rc = -EINVAL;
- 	}
- 
--	of_node_put(np);
- 	return rc;
- }
- 
+Regards, Paul
+
+> Hello,
+>
+> On 07/19/2010 09:31 PM, Mark Knecht wrote:
+>>    With about 10-12 day of testing, 1-2 boots/day, I've not had a
+>> single boot failure since adding the patch. Only twice has it said
+>> tries=2. Every other time it's tries=1. The machine seems to work fine
+>> either way.
+>
+> Hmmm... can you please test the attached patch instead?  It seems
+> likely that the root cause is not flakiness of SIDPR but incorrect
+> locking in libata EH code.
+>
+> Thanks.
+>
+> --
+> tejun
+>
+
+
