@@ -1,61 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758924Ab0GTJaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 05:30:07 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:61909 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758491Ab0GTJaE (ORCPT
+	id S1758884Ab0GTJbU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 05:31:20 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:57017 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758491Ab0GTJbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 05:30:04 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Masayuki Ohtake" <masa-korg@dsn.okisemi.com>
-Subject: Re: [PATCH] I2C driver of Topcliff PCH
-Date: Tue, 20 Jul 2010 11:29:52 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.35-8-generic; KDE/4.3.2; x86_64; ; )
-Cc: andrew.chih.howe.khor@intel.com, joel.clark@intel.com,
-        "Wang, Yong Y" <yong.y.wang@intel.com>, qi.wang@intel.com,
-        "LKML" <linux-kernel@vger.kernel.org>, linux-i2c@vger.kernel.org,
-        "Ben Dooks \(embedded platforms\)" <ben-linux@fluff.org>,
-        "Jean Delvare \(PC drivers, core\)" <khali@linux-fr.org>
-References: <4C204B0D.2030201@dsn.okisemi.com> <201007152135.00280.arnd@arndb.de> <000601cb27e4$3768c170$66f8800a@maildom.okisemi.com>
-In-Reply-To: <000601cb27e4$3768c170$66f8800a@maildom.okisemi.com>
+	Tue, 20 Jul 2010 05:31:18 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andreas Gruenbacher <agruen@suse.de>
+Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, adilger@sun.com, sandeen@redhat.com,
+        tytso@mit.edu, staubach@redhat.com, bfields@citi.umich.edu,
+        jlayton@redhat.com, linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
+        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V2 00/16]  New ACL format for better NFSv4 acl interoperability
+In-Reply-To: <201007192119.50868.agruen@suse.de>
+References: <1278096227-16784-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <201007192119.50868.agruen@suse.de>
+User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Tue, 20 Jul 2010 15:01:07 +0530
+Message-ID: <m34ofucxes.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007201129.53110.arnd@arndb.de>
-X-Provags-ID: V02:K0:fkLLwGQCugJGcKcV52tsYuUyPmuO/OJ/UcK7n+sHokw
- mYtDpcrITqkP8NPtvyo7XyJOX0SQp5xcJt7jD6d2/u7t6Zj4Sr
- AcLm4ArHq/PTlX5r7Y0U/xTumN62BGFN+s/xBKQbpVHXkNtBAX
- GRwwBfMJ2FDsp/28bBdH6HoMGftw+Z7YiF/yf5kLXNczRfN5N9
- bvItOQ1AeX3UpwAFpD4Ug==
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 20 July 2010, Masayuki Ohtake wrote:
-> > > @@ -147,6 +148,11 @@ static ssize_t i2cdev_read(struct file *file, char __user *buf, size_t count,
-> > >  if (tmp == NULL)
-> > >  return -ENOMEM;
-> > >
-> > > + if (copy_from_user(tmp, buf, count)) {
-> > > + kfree(tmp);
-> > > + return -EFAULT;
-> > > + }
-> > > +
-> > >  pr_debug("i2c-dev: i2c-%d reading %zu bytes.\n",
-> > >  iminor(file->f_path.dentry->d_inode), count);
-> >
-> >
-> > A read function should not do copy_from_user, only copy_to_user.
-> > If you are worried about returning invalid data from kernel space,
-> > better use kzalloc instead of kmalloc to get the buffer.
+On Mon, 19 Jul 2010 21:19:50 +0200, Andreas Gruenbacher <agruen@suse.de> wrote:
+> Aneesh,
 > 
-> Our I2C HW has special mode.
-> To control the mode, our i2c driver has copy_from_user.
+> here is a patch on top of the richacl-upstream queue.
+> 
+> So far, we were assuming that acls are always masked, and the file masks
+> could be set so that they would not mask any permissions.  This is fine
+> for permission checking, but richacl_apply_masks() didn't recognize when
+> the file masks were set to mask nothing, and was still transforming such
+> acls unnecessarily.  This could lead to correct but surprising results.
+> 
+> Instead of using a flag here we could check if the file masks are set to
+> "ineffective" values, but that would require the same computation as
+> richacl_compute_max_masks(), which can be a slow on large acls.  It is a
+> lot easier to instead remember if the file masks are "effective".
+> 
+> (We still need to compute the file masks in nfsd where no file masks are
+> supplied so that the file permission bits will be set to a reasonable
+> value. user space will always pass valid file masks in, so we are covered
+> in that side.)
 
-That is a highly unusual interface and I would definitely not recommend doing
-this. Please use an ioctl operation for anything that has both input and output
-data.
+We need to update ACL4_VALID_FLAGS to now consider ACL4_MASKED as a
+valid flag. This is also needed for userspace. On a related note,
+should we move ACL4_MASKED and ACL4_POSIX_MAPPED to be the higher
+bits ? That would make sure we will be able to accomodate new flag
+value NFSv4 define. Something like 
 
-	Arnd
+diff --git a/include/linux/richacl.h b/include/linux/richacl.h
+index 929cc32..ff3c12b 100644
+--- a/include/linux/richacl.h
++++ b/include/linux/richacl.h
+@@ -50,16 +50,17 @@ struct richacl {
+ /* a_flags values */
+ #define ACL4_AUTO_INHERIT		0x01
+ #define ACL4_PROTECTED			0x02
+-/*#define ACL4_DEFAULTED			0x04*/
+-#define ACL4_MASKED			0x08
+-#define ACL4_POSIX_MAPPED		0x10
++#define ACL4_DEFAULTED			0x04
++/* flag value defined by Richacl */
++#define ACL4_MASKED			0x40
++#define ACL4_POSIX_MAPPED		0x80
+ 
+ #define ACL4_VALID_FLAGS (	\
+ 	ACL4_AUTO_INHERIT |	\
+ 	ACL4_PROTECTED |	\
++	ACL4_MASKED |		\
+ 	ACL4_POSIX_MAPPED)
+ 
+-
+ /* e_type values */
+ #define ACE4_ACCESS_ALLOWED_ACE_TYPE	0x0000
+ #define ACE4_ACCESS_DENIED_ACE_TYPE	0x0001
+
+
+
+-aneesh
+
+
