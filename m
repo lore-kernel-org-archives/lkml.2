@@ -1,94 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761486Ab0GTUNp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 16:13:45 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51568 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758581Ab0GTUNo convert rfc822-to-8bit (ORCPT
+	id S1761504Ab0GTURf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 16:17:35 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60256
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753637Ab0GTURc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 16:13:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=EMnkEuWn4/9Myvi5sKlx2mmSgL48NS+NNYjzEBh6ULOMD0pkGwrF+mK2V9aMGoP5Ak
-         BYMFBKDOeU/CIXwP6cLAWk0a8xBSpNa/txYZRGXs2WMYjJl3WDC1ijsB3gNXrmT1HiM5
-         aahI9REmTB/Gvy1Nbs82eVkXycC4Zqag6Ue0I=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTilKlM9NyGgBom7ncq4cNx1O_GtS1dgsMExwdck3@mail.gmail.com>
-References: <20100720014251.46b91cdd@mad-cat.localdomain>
-	<AANLkTilKlM9NyGgBom7ncq4cNx1O_GtS1dgsMExwdck3@mail.gmail.com>
-Date: Wed, 21 Jul 2010 00:13:42 +0400
-Message-ID: <AANLkTikTetZ9vREMFfCSmJa7f9w1cmSFk145SthSFpPu@mail.gmail.com>
-Subject: Re: drivers/gpu/drm/radeon/r600_blit.c: fix possible NULL pointer 
-	derefernce
-From: "Alexander Y. Fomichev" <git.user@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: Dave Airlie <airlied@redhat.com>, Robert Noland <rnoland@2hip.net>,
-        Matt Turner <mattst88@gmail.com>, Jerome Glisse <jglisse@redhat.com>,
-        akpm@linux-foundation.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Jul 2010 16:17:32 -0400
+Date: Tue, 20 Jul 2010 13:17:48 -0700 (PDT)
+Message-Id: <20100720.131748.51255156.davem@davemloft.net>
+To: bhutchings@solarflare.com
+Cc: sassmann@redhat.com, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        gospo@redhat.com, gregory.v.rose@intel.com,
+        alexander.h.duyck@intel.com, leedom@chelsio.com, harald@redhat.com
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
+ interfaces with random MAC address
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1279636194.2110.45.camel@achroite.uk.solarflarecom.com>
+References: <1279627656.2110.13.camel@achroite.uk.solarflarecom.com>
+	<4C45996B.3000003@redhat.com>
+	<1279636194.2110.45.camel@achroite.uk.solarflarecom.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 9:37 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> On Mon, Jul 19, 2010 at 5:42 PM, Alexander Y. Fomichev
-> <git.user@gmail.com> wrote:
->> This patch fix possible NULL pointer dereference when
->> r600_prepare_blit_copy tries to fill dev_priv->blit_vb->file_priv
->> without check of dev_priv->blit_vb. dev_priv->blit_vb should be
->> filled by r600_nomm_get_vb but latest can fail with EAGAIN.
->> Addresses: https://bugzilla.kernel.org/show_bug.cgi?id=16375
->>
->> ---
->>  drivers/gpu/drm/radeon/r600_blit.c |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/drivers/gpu/drm/radeon/r600_blit.c b/drivers/gpu/drm/radeon/r600_blit.c
->> index f4fb88e..0df4a2b 100644
->> --- a/drivers/gpu/drm/radeon/r600_blit.c
->> +++ b/drivers/gpu/drm/radeon/r600_blit.c
->> @@ -541,6 +541,8 @@ r600_prepare_blit_copy(struct drm_device *dev, struct drm_file *file_priv)
->>        DRM_DEBUG("\n");
->>
->>        r600_nomm_get_vb(dev);
->> +       if (!dev_priv->blit_vb)
->> +               return;
->
-> r600_prepare_blit_copy returns an int so something like this would be better:
-> --- a/drivers/gpu/drm/radeon/r600_blit.c
-> +++ b/drivers/gpu/drm/radeon/r600_blit.c
-> @@ -539,8 +539,10 @@ r600_prepare_blit_copy(struct drm_device *dev,
-> struct drm_file *file_priv)
->  {
->        drm_radeon_private_t *dev_priv = dev->dev_private;
->        DRM_DEBUG("\n");
-> +       int ret = r600_nomm_get_vb(dev);
->
-> -       r600_nomm_get_vb(dev);
-> +       if (ret)
-> +               return ret;
->
->        dev_priv->blit_vb->file_priv = file_priv;
->
->
-> Alex
->
->>
->>        dev_priv->blit_vb->file_priv = file_priv;
->>
->> --
->> 1.7.1.1
->>
->
+From: Ben Hutchings <bhutchings@solarflare.com>
+Date: Tue, 20 Jul 2010 15:29:54 +0100
 
-i haven't any preferneces, the only thing is - it would be logical
-to have every check in common style, so other cases
-(r600_blit_copy, r600_blit_swap) should be fixed, nop?
+> On Tue, 2010-07-20 at 14:41 +0200, Stefan Assmann wrote:
+>> Btw, the driver itself could also alter the flag. Then we'd have a well
+>> defined way of setting a stable address.
+> 
+> The driver can't know whether an address assigned by the user is stable.
 
--- 
-Best regards.
-       Alexander Y. Fomichev <git.user@gmail.com>
+If userspace can somehow obtain a persistent address, it can kick
+udev too.
+
+I really don't see any real value provided by letting userspace mess
+with this.  Because the permanence communicated in this value is from
+the perspective of the kernel driver, it's really therefore about the
+thing that's in ->perm_addr[] not what happens to be in ->addr[] right
+now.
