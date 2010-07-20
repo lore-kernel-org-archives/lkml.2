@@ -1,59 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab0GTOAR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 10:00:17 -0400
-Received: from cantor.suse.de ([195.135.220.2]:58622 "EHLO mx1.suse.de"
+	id S1757019Ab0GTODH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 10:03:07 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24572 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754176Ab0GTOAO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 10:00:14 -0400
-Message-ID: <4C45ABFD.8060308@suse.cz>
-Date: Tue, 20 Jul 2010 16:00:29 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1752373Ab0GTODD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 10:03:03 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Corrado Zoccolo <czoccolo@gmail.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, axboe@kernel.dk,
+        Linux-Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
+References: <AANLkTim1wmWOJTbzrQgqQnB_VHJF8gWfr41DbjP9r8AJ@mail.gmail.com>
+	<x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
+	<x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
+	<AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
+	<x49eif7p3z0.fsf@segfault.boston.devel.redhat.com>
+	<20100713195650.GA21044@redhat.com>
+	<x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
+	<20100713204236.GB21044@redhat.com>
+	<x4939vfv4i0.fsf@segfault.boston.devel.redhat.com>
+	<20100719203109.GE32503@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Tue, 20 Jul 2010 10:02:45 -0400
+In-Reply-To: <20100719203109.GE32503@redhat.com> (Vivek Goyal's message of
+	"Mon, 19 Jul 2010 16:31:09 -0400")
+Message-ID: <x49k4oq45fe.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: =?UTF-8?B?TWljaGHFgiBHw7Nybnk=?= <gentoo@mgorny.alt.pl>
-Cc: linux-kernel@vger.kernel.org, trivial@kernel.org
-Subject: Re: [PATCH] KERNEL BUILD: Make the setlocalversion script POSIX-compliant.
-References: <20100718102640.01729af9@pomiocik.lan>
-In-Reply-To: <20100718102640.01729af9@pomiocik.lan>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 18.7.2010 10:26, Michał Górny wrote:
-> The 'source' builtin is a bash alias to the '.' (dot) builtin. While the
-> former is supported only by bash, the latter is specified in POSIX and
-> works fine with all POSIX-compliant shells I am aware of.
-> 
-> The '$_' special parameter is specific to bash. It is partially
-> supported in dash too but it always evaluates to the current script path
-> (which causes the script to enter a loop recursively re-executing
-> itself). This is why I have replaced the two occurences of '$_' with the
-> explicit parameter.
-> 
-> The 'local' builtin is another example of bash-specific code. Although
-> it is supported by all POSIX-compliant shells I am aware of, it is not
-> part of POSIX specification and thus the code should not rely on it
-> assigning a specific value to the local variable. Moreover, the 'posh'
-> shell has a limited version of 'local' builtin not supporting direct
-> variable assignments. Thus, I have broken one of the 'local'
-> declarations down into a (non-POSIX) 'local' declaration and a plain
-> (POSIX-compliant) variable assignment.
-> 
-> Signed-off-by: Michał Górny <gentoo@mgorny.alt.pl>
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-Thanks a lot, applied to the kbuild tree.
+> On Mon, Jul 19, 2010 at 12:08:23PM -0400, Jeff Moyer wrote:
+>> So, I'm still in favor of Corrado's approach.  Are there any remaining
+>> dissenting opinions on this?
+>
+> Nope. I am fine with moving all WRITE_SYNC with RQ_NOIDLE to sync-noidle
+> tree and also marking jbd writes as WRITE_SYNC. By bringing dependent
+> threads on single service tree, we don't have to worry about slice
+> yielding.
+>
+> Acked-by: Vivek Goyal <vgoyal@redhat.com>
 
+Corrado, would you mind reposting the patches and adding:
 
-> ---
-> 
-> There is one 'bashism' left which I wasn't able to fix -- the use of
-> 'test -ef'. I'm not aware of any POSIX equivalent of that.
+Reviewed-by: Jeff Moyer <jmoyer@redhat.com>
+Tested-by: Jeff Moyer <jmoyer@redhat.com>
 
-Me neither, POSIX does not know stat(1) AFAICS. Does it matter in real
-life? Is there a distro that installs posh or a similarly strict shell
-as /bin/sh? It seems to work with dash after your changes.
-
-Michal
+Thanks!
+Jeff
