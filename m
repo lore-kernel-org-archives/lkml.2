@@ -1,116 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761525Ab0GTVtT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 17:49:19 -0400
-Received: from mga02.intel.com ([134.134.136.20]:13062 "EHLO mga02.intel.com"
+	id S1761608Ab0GTVuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 17:50:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7025 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751503Ab0GTVtS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 17:49:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,234,1278313200"; 
-   d="scan'208";a="537306764"
-Subject: Re: [PATCH 04/10] x86, xsave: moving boot cpu initialization to
- xsave_init()
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Robert Richter <robert.richter@amd.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1279651857-24639-5-git-send-email-robert.richter@amd.com>
-References: <1279651857-24639-1-git-send-email-robert.richter@amd.com>
-	 <1279651857-24639-5-git-send-email-robert.richter@amd.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Tue, 20 Jul 2010 14:48:43 -0700
-Message-Id: <1279662523.2899.16.camel@sbs-t61.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1751503Ab0GTVuU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 17:50:20 -0400
+Date: Tue, 20 Jul 2010 17:41:12 -0400
+From: Jarod Wilson <jarod@redhat.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, akpm@linux-foundation.org,
+        Mauro Carvalho Chehab <mchehab@redhat.com>,
+        linux-kernel@vger.kernel.org, linux-media@vger.kernel.org,
+        linux-input@vger.kernel.org
+Subject: Re: mmotm 2010-07-19-16-37 uploaded
+Message-ID: <20100720214112.GM13176@redhat.com>
+References: <201007200007.o6K07Xbg028863@imap1.linux-foundation.org>
+ <6434.1279658492@localhost>
+ <201007201350.28961.dmitry.torokhov@gmail.com>
+ <4825.1279660300@localhost>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4825.1279660300@localhost>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-20 at 11:50 -0700, Robert Richter wrote:
-> This patch moves boot cpu initialization to xsave_init(). Now all cpus
-> are initialized in one single function.
+On Tue, Jul 20, 2010 at 05:11:40PM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Tue, 20 Jul 2010 13:50:27 PDT, Dmitry Torokhov said:
 > 
-> Signed-off-by: Robert Richter <robert.richter@amd.com>
-> ---
->  arch/x86/kernel/cpu/common.c |    6 ------
->  arch/x86/kernel/i387.c       |    5 -----
->  arch/x86/kernel/xsave.c      |   14 ++++++++++++--
->  3 files changed, 12 insertions(+), 13 deletions(-)
-
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-
+> > > And things go downhill from there...
+> > 
+> > I guess you need these 2 from Jarod...
 > 
-> diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-> index 433afed..1a053e0 100644
-> --- a/arch/x86/kernel/cpu/common.c
-> +++ b/arch/x86/kernel/cpu/common.c
-> @@ -1270,12 +1270,6 @@ void __cpuinit cpu_init(void)
->  	clear_used_math();
->  	mxcsr_feature_mask_init();
->  
-> -	/*
-> -	 * Boot processor to setup the FP and extended state context info.
-> -	 */
-> -	if (!smp_processor_id())
-> -		init_thread_xstate();
-> -
->  	xsave_init();
->  }
->  #endif
-> diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-> index 6106af9..2f32ef0 100644
-> --- a/arch/x86/kernel/i387.c
-> +++ b/arch/x86/kernel/i387.c
-> @@ -93,11 +93,6 @@ void __cpuinit fpu_init(void)
->  
->  	write_cr0(oldcr0 & ~(X86_CR0_TS|X86_CR0_EM)); /* clear TS and EM */
->  
-> -	/*
-> -	 * Boot processor to setup the FP and extended state context info.
-> -	 */
-> -	if (!smp_processor_id())
-> -		init_thread_xstate();
->  	xsave_init();
->  
->  	mxcsr_feature_mask_init();
-> diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-> index 368047c..ab9ad48 100644
-> --- a/arch/x86/kernel/xsave.c
-> +++ b/arch/x86/kernel/xsave.c
-> @@ -360,7 +360,7 @@ unsigned int sig_xstate_size = sizeof(struct _fpstate);
->  /*
->   * Enable the extended processor state save/restore feature
->   */
-> -void __cpuinit xsave_init(void)
-> +static void __cpuinit __xsave_init(void)
->  {
->  	if (!cpu_has_xsave)
->  		return;
-> @@ -446,7 +446,7 @@ void __ref xsave_cntxt_init(void)
->  	 * Support only the state known to OS.
->  	 */
->  	pcntxt_mask = pcntxt_mask & XCNTXT_MASK;
-> -	xsave_init();
-> +	__xsave_init();
->  
->  	/*
->  	 * Recompute the context size for enabled features
-> @@ -463,3 +463,13 @@ void __ref xsave_cntxt_init(void)
->  	       "cntxt size 0x%x\n",
->  	       pcntxt_mask, xstate_size);
->  }
-> +
-> +void __cpuinit xsave_init(void)
-> +{
-> +	/*
-> +	 * Boot processor to setup the FP and extended state context info.
-> +	 */
-> +	if (!smp_processor_id())
-> +		init_thread_xstate();
-> +	__xsave_init();
-> +}
+> Hmm. I seem to remember 2 similar patches from the last time I reported it. :)
+> 
+> System boots fine after applying those two patches.  I'll let somebody else
+> worry about making sure they end up in linux-next in time for the next merge
+> window...
+
+I believe Mauro's on vacation at the moment, but due back Real Soon Now,
+and I'd expect him to pick up both fixes shortly after he settles back in
+at his desk, so they should be in next before much longer, and definitely
+before the merge window.
+
+-- 
+Jarod Wilson
+jarod@redhat.com
 
