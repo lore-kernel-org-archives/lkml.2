@@ -1,34 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761430Ab0GTTQ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:16:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33187 "EHLO mail.zytor.com"
+	id S1761454Ab0GTTSP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 15:18:15 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:33205 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758567Ab0GTTQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:16:26 -0400
-Message-ID: <4C45F5F0.8010409@zytor.com>
-Date: Tue, 20 Jul 2010 12:16:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        Tejun Heo <tj@kernel.org>, Andrew Morton <akpm@linux-foundation.org>,
-        Denys Vlasenko <vda.linux@googlemail.com>,
-        Lee Schermerhorn <lee.schermerhorn@hp.com>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, numa: fix boot without RAM on node0 again
-References: <4C45EC59.3030304@kernel.org>
-In-Reply-To: <4C45EC59.3030304@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758567Ab0GTTSM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 15:18:12 -0400
+Subject: Re: [PATCH 4/8] v3 Allow memory_block to span multiple memory
+ sections
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, greg@kroah.com
+In-Reply-To: <4C451E1C.8070907@austin.ibm.com>
+References: <4C451BF5.50304@austin.ibm.com>
+	 <4C451E1C.8070907@austin.ibm.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 20 Jul 2010 12:18:01 -0700
+Message-ID: <1279653481.9785.4.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2010 11:35 AM, Yinghai Lu wrote:
+On Mon, 2010-07-19 at 22:55 -0500, Nathan Fontenot wrote:
+> +static int add_memory_section(int nid, struct mem_section *section,
+> +                       unsigned long state, enum mem_add_context context)
+> +{
+> +       struct memory_block *mem;
+> +       int ret = 0;
+> +
+> +       mem = find_memory_block(section);
+> +       if (mem) {
+> +               atomic_inc(&mem->section_count);
+> +               kobject_put(&mem->sysdev.kobj);
+> +       } else
+> +               ret = init_memory_block(&mem, section, state);
+> +
+>         if (!ret) {
+> -               if (context == HOTPLUG)
+> +               if (context == HOTPLUG &&
+> +                   atomic_read(&mem->section_count) == sections_per_block)
+>                         ret = register_mem_sect_under_node(mem, nid);
+>         } 
 
-That was not what Linus (and I) asked you to do.  He asked specifically
-that you resend them under a separate 0/2 cover with an explanation.
+I think the atomic_inc() can race with the atomic_dec_and_test() in
+remove_memory_block().
 
-	-hpa
+Thread 1 does:
+
+	mem = find_memory_block(section);
+
+Thread 2 does 
+
+	atomic_dec_and_test(&mem->section_count);
+
+and destroys the memory block,  Thread 1 runs again:
+	
+       if (mem) {
+               atomic_inc(&mem->section_count);
+               kobject_put(&mem->sysdev.kobj);
+       } else
+
+but now mem got destroyed by Thread 2.  You probably need to change
+find_memory_block() to itself take a reference, and to use
+atomic_inc_unless().
+
+-- Dave
+
