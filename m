@@ -1,74 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758229Ab0GTIdm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 04:33:42 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:41391 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752922Ab0GTIdk (ORCPT
+	id S1758289Ab0GTIk3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 04:40:29 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:10206 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754802Ab0GTIk2 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 04:33:40 -0400
-Date: Tue, 20 Jul 2010 11:33:38 +0300 (EEST)
-From: "=?ISO-8859-15?Q?Ilpo_J=E4rvinen?=" <ilpo.jarvinen@helsinki.fi>
-X-X-Sender: ijjarvin@wel-95.cs.helsinki.fi
-To: David Miller <davem@davemloft.net>
-cc: eric.dumazet@gmail.com, lennart.schulte@nets.rwth-aachen.de, tj@kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
-        henning.fehrmann@aei.mpg.de, carsten.aulbert@aei.mpg.de
-Subject: Re: [PATCHv2] tcp: fix crash in tcp_xmit_retransmit_queue
-In-Reply-To: <20100719.125500.257479409.davem@davemloft.net>
-Message-ID: <alpine.DEB.2.00.1007201101090.14034@wel-95.cs.helsinki.fi>
-References: <1279548555.2553.51.camel@edumazet-laptop> <alpine.DEB.2.00.1007192013010.30181@melkinpaasi.cs.helsinki.fi> <1279561148.2553.150.camel@edumazet-laptop> <20100719.125500.257479409.davem@davemloft.net>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 20 Jul 2010 04:40:28 -0400
+Date: Tue, 20 Jul 2010 10:41:46 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCHv3 1/3] USB: gadget: mass/file storage: set serial number
+In-reply-to: <463626.69698.qm@web180301.mail.gq1.yahoo.com>
+To: Alan Stern <stern@rowland.harvard.edu>,
+        David Brownell <david-b@pacbell.net>
+Cc: Greg KH <greg@kroah.com>, Kyungmin Park <kyungmin.park@samsung.com>,
+        Marek Szyprowski <m.szyprowski@samsung.com>,
+        Kernel development list <linux-kernel@vger.kernel.org>,
+        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
+Message-id: <op.vf4vrwa67p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <463626.69698.qm@web180301.mail.gq1.yahoo.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jul 2010, David Miller wrote:
+On Mon, 19 Jul 2010 19:41:10 +0200, David Brownell <david-b@pacbell.net> wrote:
+>> I'm not entirely sure of what the issue with
+>> the patches is really. It merely adds a serial
+>> number to the gadgets using MSF and that's all.
+>
+> Go back and read what I wrote then.  The issue is
+> that THERE ALREADY IS SUCH A MECHANISM.  We neither
+> need or want another way to do it.  The answer is to
+> use the existing mechanism correctly.
 
-> From: Eric Dumazet <eric.dumazet@gmail.com>
-> Date: Mon, 19 Jul 2010 19:39:08 +0200
-> 
-> > Do you know in what exact circumstance the bug triggers ?
-> > 
-> > It's hard to believe thousand of machines on the Internet never hit
-> > it :(
-> > 
-> > Maybe another problem in congestion control ?
-> 
-> This is something to investigate, but the conditions under which
-> tcp_fastretrans_alert() (the main invoker of tcp_xmit_retransmit_queue())
-> does it's thing are complicated enough that I'm going to add this fix
-> for the time being and push it out to stable too.
+There is no existing mechanism.  If the module does not set the
+iSerialNumber field the iSerialNumber module parameter won't work
+and I don't see any other way to set the string.  If there is one,
+please show it to me.
 
-This is so true. ...So far I've managed to twice rule out of the 
-possibility of this being really triggerable (ie., it would mean
-Lennart's out of tree changes broke it), and once in the middle came
-into opposite conclusion. Thus by majority voting we can deduce that it 
-won't happen - how reassuring :-/. It seems that tcp_try_undo_recovery 
-causes return if TCP remained in CA_Loss/CA_Recovery and that 
-tcp_time_to_recover won't really let past return either under normal 
-circumstances (more details below), and tcp_simple_retransmit 
-requires lost_out to change; seems safe in mainline to me.
+> Plus, you seem to be overlooking the basic need
+> (for userspace) to manage these IDs so they're
+> properly unique.  Two gadgets should never end up
+> using the same serial number.
 
-Hmm... It seems that I've just solved another report too. ...Somebody a 
-while back found out that setting reordering sysctl to zero (ie. to a 
-value which does not make too much sense) crashed the kernel. It seems 
-that at least then tcp_time_to_recover() would return true and trigger 
-this bug (though I'm not sure if that's the only breakage to happen).
+I'm not overlooking that.  I simply consider that a separate issue.
+Driver should provide some kind of default (just like File Storage
+Gadget) and the fact that user space should override it is another
+matter in my opinion.
 
-Also worth to keep in mind is the bugzilla entry ("New freez in 
-TCP" or something like that) so I'm not really sure I could say for sure 
-nobody never hit it. The bugzilla one goes away by disable SACK (at least 
-for some) but it might mix two different issues. It seems that there 
-really are two different issues, the other may have something to do with 
-SACK though there are other variables then involved, e.g., the changes in 
-retransmission logic/timing, so it's impossible to say if the SACK disable 
-really "fixed" the bugzilla one or not. Also Tejun's ->next == NULL 
-finding points out to a different bug than this Lennart's one.
-
+This is especially true, since the iSerialNumber module parameter
+won't work without iSerialNumber set (which I pointed several
+times).
 
 -- 
- i.
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
