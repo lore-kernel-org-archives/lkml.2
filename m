@@ -1,61 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761749Ab0GTV5I (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 17:57:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:5876 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761675Ab0GTV5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 17:57:06 -0400
-Message-ID: <4C461BAF.90804@redhat.com>
-Date: Tue, 20 Jul 2010 11:57:03 -1000
-From: Zachary Amsden <zamsden@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1761724Ab0GTWAW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 18:00:22 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39242 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756424Ab0GTWAU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 18:00:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type;
+        b=hvOXH4ZOGrhuAvB0ACtb2KL84AGCd7aLQoV7e5TNPxyhixWph3HbX4nSicbOMGqVyA
+         TSxUGweCDHnK+0kk7K6FUilOW7H6E+SjI/puYOk4TVItTJiICyNnr7fZkNuIv2gC8Pno
+         EDZEAR+GyoR0hfvKUB2fGWPrAKnynib62c/bg=
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: KVM <kvm@vger.kernel.org>, Marcelo Tosatti <mtosatti@redhat.com>,
-        Glauber Costa <glommer@redhat.com>,
-        Linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 04/18] Make cpu_tsc_khz updates use local CPU
-References: <1278987938-23873-1-git-send-email-zamsden@redhat.com> <1278987938-23873-5-git-send-email-zamsden@redhat.com> <4C431374.2020804@redhat.com> <4C44B035.7080604@redhat.com> <4C456422.7030708@redhat.com>
-In-Reply-To: <4C456422.7030708@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Reply-To: trapdoor6@gmail.com
+In-Reply-To: <AANLkTimuBRwuD0MjtzZyd--2JSUfWejuYb7t-GE6oK3T@mail.gmail.com>
+References: <AANLkTim3VQ7afK91Opco06jzHJ35hHfn13heiXUp7YJ2@mail.gmail.com>
+	<AANLkTimAUG9DZpCyFBgf_XV9asj7ClBe2Lrjkh8tM0ll@mail.gmail.com>
+	<AANLkTikQ5GE4Ob1IAakEiwyWEGKTAL8Uox12jsSusJJl@mail.gmail.com>
+	<AANLkTik87QXCEHgG8ph6ehfFo1yvCvRz7JbvaC_uKWJd@mail.gmail.com>
+	<AANLkTiljMvaCttFAI_GoajBHwK9OHS5MPmx1P6_qDOdY@mail.gmail.com>
+	<AANLkTimuBRwuD0MjtzZyd--2JSUfWejuYb7t-GE6oK3T@mail.gmail.com>
+Date: Tue, 20 Jul 2010 22:54:10 +0100
+Message-ID: <AANLkTinXCIfB94WXHtS7cej_8zi8n_hqjtVsZsOCTmqk@mail.gmail.com>
+Subject: Re: Blank (disconnected) screen during boot with latest 2.6.35-rcX 
+	kernels
+From: trapDoor <trapdoor6@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, xorg-driver-ati@lists.x.org,
+        trapDoor <trapdoor6@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2010 10:53 PM, Avi Kivity wrote:
-> On 07/19/2010 11:06 PM, Zachary Amsden wrote:
->>>> +static void tsc_khz_changed(void *data)
->>>>   {
->>>> -    /* nothing */
->>>> +    struct cpufreq_freqs *freq = data;
->>>> +    unsigned long khz = 0;
->>>> +
->>>> +    if (data)
->>>> +        khz = freq->new;
->>>> +    else if (!boot_cpu_has(X86_FEATURE_CONSTANT_TSC))
->>>> +        khz = cpufreq_quick_get(raw_smp_processor_id());
->>>> +    if (!khz)
->>>> +        khz = tsc_khz;
->>>> +    __get_cpu_var(cpu_tsc_khz) = khz;
->>>>   }
->>>
->>> Do we really need to cache cpufreq_quick_get()?  If it's really 
->>> quick, why not just use it everywhere instead of cacheing it?  Not a 
->>> comment on this patch.
->>>
->>
->>
->> If cpufreq is compiled in, but disabled, it returns zero, so we need 
->> some sort of logic.
->
-> Maybe it's better to put it into cpufreq_quick_get().  Inconsistent 
-> APIs that appear to work are bad.
+> The attached patch should fix the connectors to report properly.
+> There are a number of similar ASUS cards with the same quirk.
 >
 
-I don't think it's quite so simple; cpufreq is platform independent and 
-tsc_khz is a platform specific export.  It seems cpufreq is designed to 
-return zero when disabled and we're the unusual ones for wanting to use it.
+Right. I have applied your second patch on top of 2.6.35-rc5-git4 +
+0001-drm-radeon-kms-fix-shared-ddc-harder.patch
 
-Zach
+After successful boot from the new kernel, these lines in Xorg.0.log
+corresponds now to the outputs I have on my card:
+
+### for LCD connected to the first DVI port:
+[    19.582] (II) RADEON(0): Output DVI-0 connected
+[    19.582] (II) RADEON(0): Output DIN disconnected
+[    19.582] (II) RADEON(0): Output DVI-1 disconnected
+[    19.582] (II) RADEON(0): Using exact sizes for initial modes
+[    19.582] (II) RADEON(0): Output DVI-0 using initial mode 1920x1080
+
+### LCD connected to the other DVI port:
+[    18.068] (II) RADEON(0): Output DVI-0 disconnected
+[    18.068] (II) RADEON(0): Output DIN disconnected
+[    18.068] (II) RADEON(0): Output DVI-1 connected
+[    18.068] (II) RADEON(0): Using exact sizes for initial modes
+[    18.068] (II) RADEON(0): Output DVI-1 using initial mode 1920x1080
+
+HDMI output isn't listed any more. So that's seems good. Thanks a lot
+for fixing this.
+
+I'm just wondering now what will happen if I connect some HDMI device
+via DVI > HDMI adaptor. Should it work? Is HDMI still supported on my
+card after applying the last patch? Unfortunately I don't own any
+device I could test it on.
+
+Do you expect any problems with applying this patch onto 2.6.34.1? If
+not, I could do it as on that kernel the first DVI port is still shown
+as HDMI. If the patch works OK on 2.6.34.1, it could be submitted
+upstream to the stable branch ?
+
+>>
+>> Where I see a real 3D performance drop now is for example Armagetron
+>> Advanced - a game I use just for testing. I enabled certain features
+>> using 3D in it. Without going into details I just say that with kernel
+>> 2.6.34.1 the overall 3D performance in AA is about twice better. The
+>> game runs quite smooth, number of fps doesn't go under 60. With kernel
+>> 2.6.35-rc5-git3 on the same system, with the same drivers, mesa, drm
+>> etc., the game runs slower and not so smooth, certain details look
+>> slightly worse and I won't get more than 35 fps.
+>>
+>> Apart from that I don't notice any regressions on my desktop, with
+>> compiz effects etc. I'd run some other tests if you could recommend
+>> some tools, but not too complex and rather some specialised software
+>> just for testing purposes, not games.
+>
+> If it's just the kernel that changed is there any chance you could
+> bisect what caused the performance regression?
+>
+
+I could find some time for bisecting tomorrow around evening. Prior to
+that I'd need a quick look into some manuals ..
+
+
+-- 
+Regards
+trapDoor
