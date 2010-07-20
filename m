@@ -1,67 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932364Ab0GTURq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 16:17:46 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:47207 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759100Ab0GTURm (ORCPT
+	id S1761518Ab0GTUSY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 16:18:24 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60264
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758636Ab0GTUSX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 16:17:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=CTfE/c8F7weik+lOcb1QjII8QalvhKJoC8zRuvzDq0gUyeyDcsl/rDyXht8U0DbLaj
-         ETnt5CbTZTNh7m1wrdovJQcAb6AiIS2UL7PMEgyjrwwbw+7ZOce394lH9oAGQGhF3xhX
-         g2lYqP6ZnS/HX7awqaalx8g3SsmvGV0Q9Si3w=
-Date: Wed, 21 Jul 2010 00:17:40 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Robert Richter <robert.richter@amd.com>, "H. Peter Anvin" <hpa@zytor.com>,
-        Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/10] x86, xsave: some code cleanups and reworks
-Message-ID: <20100720201740.GE6227@lenovo>
-References: <1279651857-24639-1-git-send-email-robert.richter@amd.com> <20100720192717.GC6227@lenovo> <20100720194606.GO26154@erda.amd.com> <20100720200729.GD6227@lenovo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100720200729.GD6227@lenovo>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 20 Jul 2010 16:18:23 -0400
+Date: Tue, 20 Jul 2010 13:18:39 -0700 (PDT)
+Message-Id: <20100720.131839.134093789.davem@davemloft.net>
+To: sassmann@redhat.com
+Cc: abadea@ixiacom.com, bhutchings@solarflare.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
+        leedom@chelsio.com, harald@redhat.com
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
+ interfaces with random MAC address
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C4593DA.9040207@redhat.com>
+References: <4C458CB7.3030508@redhat.com>
+	<4C458F50.4070200@ixiacom.com>
+	<4C4593DA.9040207@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 12:07:29AM +0400, Cyrill Gorcunov wrote:
-...
-> > 
-> > But first question is, is it always !smp_processor_id()? At least
-> > current implementation indicates this:
-> > 
+From: Stefan Assmann <sassmann@redhat.com>
+Date: Tue, 20 Jul 2010 14:17:30 +0200
+
+> On 20.07.2010 13:58, Alex Badea wrote:
+>> Hi,
+>> 
+>> On 07/20/2010 02:47 PM, Stefan Assmann wrote:
+>>>> What about devices that 'steal' MAC addresses from slave devices?
+>> 
+>> Might I suggest an attribute such as "address_type", which could report
+>> "permanent", "random", "stolen", or something else in the future?
 > 
-> I guess so, since it's assigned from boot_cpu_id iirc
-> 
+> In case there's demand for such a multi-purpose attribute I see no
+> reason to object. More thoughts on this?
 
-well, not true, this id is being set in setup_per_cpu_areas()
-note the snippet
+I think this is a great idea.
 
-		if (cpu == boot_cpu_id)
-			switch_to_new_gdt(cpu);
+Now it makes sense to use a new 'u8' in struct netdevice or similar to
+store this, since we'll have more than a boolean here.
 
-but cycle of assignment is done over all possible cpus so
-smp_processor_id will be = 0 for BP but definitely it's
-confusing and better to check for BP via explicit cpu == boot_cpu_id
-I think. Though I might be missing something.
-
-> >  void __cpuinit identify_secondary_cpu(struct cpuinfo_x86 *c)
-> >  {
-> >  	BUG_ON(c == &boot_cpu_data);
-> >  	...
-> > 
-> > with:
-> > 
-> >  #define boot_cpu_data cpu_data[0]
-> > 
-> > ... which is valid for 32 and 64 bit.
-> >
- 
-	-- Cyrill
