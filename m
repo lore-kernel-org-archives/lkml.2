@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136Ab0GTKun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 06:50:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55924 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753009Ab0GTKul (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 06:50:41 -0400
-Message-ID: <4C457F72.8090708@redhat.com>
-Date: Tue, 20 Jul 2010 12:50:26 +0200
-From: Stefan Assmann <sassmann@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Thunderbird/3.1
+	id S932144Ab0GTK5T (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 06:57:19 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:46566 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752894Ab0GTK5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 06:57:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=vMiqTEI9gopdIj8m2Rkc+1M4PyPueaG7L9zYD3QQ6QMHgTQ74OEFY+cnRTtmXyGEYx
+         T+kbDsbVgnPjBdg9SuDhU9Y7Jx/cH7/odWoMHKWLq5eNoUfd9w6nXCEaJ8EgJjAJcTxR
+         Lk0S+fBP/lRSWyFQctyZo80umKuuqbgYfAlTA=
+Date: Tue, 20 Jul 2010 14:57:12 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Ben Hutchings <ben@decadent.org.uk>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Yulia Vilensky <vilensky@compulab.co.il>,
+        Geert Stappers <stappers@stappers.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ds2782_battery: Rename get_current and get_voltage
+ operations
+Message-ID: <20100720105712.GA20366@oksana.dev.rtsoft.ru>
+References: <1279584175.4883.226.camel@localhost>
+ <20100720074659.GA32073@oksana.dev.rtsoft.ru>
+ <1279619066.4883.249.camel@localhost>
 MIME-Version: 1.0
-To: netdev <netdev@vger.kernel.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        davem@davemloft.net, Andy Gospodarek <gospo@redhat.com>,
-        "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
-        Ben Hutchings <bhutchings@solarflare.com>,
-        Casey Leedom <leedom@chelsio.com>, Harald Hoyer <harald@redhat.com>
-Subject: [PATCH net-next] sysfs: add entry to indicate network interfaces
- with random MAC address
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1279619066.4883.249.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefan Assmann <sassmann@redhat.com>
+On Tue, Jul 20, 2010 at 10:44:26AM +0100, Ben Hutchings wrote:
+> On Tue, 2010-07-20 at 11:46 +0400, Anton Vorontsov wrote:
+> > On Tue, Jul 20, 2010 at 01:02:55AM +0100, Ben Hutchings wrote:
+> > > commit 9b9ade6b612e562c4a5bd02ef38cc32e10f3f9ba "ds2782_battery: Add
+> > > support for ds2786 battery gas gauge" introduced an operation named
+> > > get_current.  Since get_current() is defined as a macro on some
+> > > architectures this driver no longer compiles on those architectures.
+> > > 
+> > > Rename get_current to get_current_now to avoid the macro.
+> > > Rename get_voltage to get_voltage_now for consistency.
+> > > 
+> > > Reported-by: Geert Stappers <stappers@stappers.nl>
+> > > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > > ---
+> > 
+> > Thanks for the patch, but I have a similar fix in the
+> > battery-2.6.git tree (for -next):
+> [...]
+> 
+> This fix needs to go into 2.6.35.
 
-Reserve a bit in struct net_device to indicate whether an interface
-generates its MAC address randomly, and expose the information via
-sysfs.
-May look like this:
-/sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/net/eth0/ifrndmac
+Did you read why I don't push it into 2.6.35? Reread my email,
+pay attention to the very bottom.
 
-By default the value of ifrndmac is 0. Any driver that generates the MAC
-address randomly should return a value to 1.
-
-This simplifies the handling of network devices with random MAC addresses
-as user-space may just query sysfs to find out if the MAC is real or fake.
-Udev may check sysfs for devices that generate their MAC address
-randomly and create persistent net rules by using the unique device path
-if the value returned is 1.
-
-Also introducing a helper function to assist driver adoption.
-
-Signed-off-by: Stefan Assmann <sassmann@redhat.com>
----
- include/linux/etherdevice.h |   14 ++++++++++++++
- include/linux/netdevice.h   |    1 +
- net/core/net-sysfs.c        |   12 ++++++++++++
- 3 files changed, 27 insertions(+), 0 deletions(-)
-
-diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
-index 3d7a668..ebb34ac 100644
---- a/include/linux/etherdevice.h
-+++ b/include/linux/etherdevice.h
-@@ -127,6 +127,20 @@ static inline void random_ether_addr(u8 *addr)
- }
-
- /**
-+ * dev_hw_addr_random - Create random MAC and set device flag
-+ * @dev: pointer to net_device structure
-+ * @addr: Pointer to a six-byte array containing the Ethernet address
-+ *
-+ * Generate random MAC to be used by a device and set NETIF_F_RNDMAC flag
-+ * so the state can be read by sysfs and be used by udev.
-+ */
-+static inline void dev_hw_addr_random(struct net_device *dev, u8 *hwaddr)
-+{
-+	dev->features |= NETIF_F_RNDMAC;
-+	random_ether_addr(hwaddr);
-+}
-+
-+/**
-  * compare_ether_addr - Compare two Ethernet addresses
-  * @addr1: Pointer to a six-byte array containing the Ethernet address
-  * @addr2: Pointer other six-byte array containing the Ethernet address
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index b626289..2ea0298 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -845,6 +845,7 @@ struct net_device {
- #define NETIF_F_FCOE_MTU	(1 << 26) /* Supports max FCoE MTU, 2158 bytes*/
- #define NETIF_F_NTUPLE		(1 << 27) /* N-tuple filters supported */
- #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
-+#define NETIF_F_RNDMAC		(1 << 29) /* Interface with random MAC address */
-
- 	/* Segmentation offload features */
- #define NETIF_F_GSO_SHIFT	16
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index d2b5965..91a9808 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -188,6 +188,17 @@ static ssize_t show_dormant(struct device *dev,
- 	return -EINVAL;
- }
-
-+static ssize_t show_ifrndmac(struct device *dev,
-+			     struct device_attribute *attr, char *buf)
-+{
-+	struct net_device *net = to_net_dev(dev);
-+
-+	if (net->features & NETIF_F_RNDMAC)
-+		return sprintf(buf, fmt_dec, 1);
-+	else
-+		return sprintf(buf, fmt_dec, 0);
-+}
-+
- static const char *const operstates[] = {
- 	"unknown",
- 	"notpresent", /* currently unused */
-@@ -300,6 +311,7 @@ static struct device_attribute net_class_attributes[] = {
- 	__ATTR(ifalias, S_IRUGO | S_IWUSR, show_ifalias, store_ifalias),
- 	__ATTR(iflink, S_IRUGO, show_iflink, NULL),
- 	__ATTR(ifindex, S_IRUGO, show_ifindex, NULL),
-+	__ATTR(ifrndmac, S_IRUGO, show_ifrndmac, NULL),
- 	__ATTR(features, S_IRUGO, show_features, NULL),
- 	__ATTR(type, S_IRUGO, show_type, NULL),
- 	__ATTR(link_mode, S_IRUGO, show_link_mode, NULL),
 -- 
-1.6.5.2
-
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
