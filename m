@@ -1,55 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933094Ab0GTXGs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 19:06:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:55825 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932946Ab0GTXGq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 19:06:46 -0400
-Message-ID: <4C462B93.2050403@oracle.com>
-Date: Tue, 20 Jul 2010 16:04:51 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
-MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] debugfs: no longer needs to depend on SYSFS
-References: <20100712155109.d997bf1c.sfr@canb.auug.org.au> <20100712124750.8ab5e870.randy.dunlap@oracle.com> <20100712212126.GA2684@suse.de>
-In-Reply-To: <20100712212126.GA2684@suse.de>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C462BFF.00F4:SCFMA4539814,ss=1,fgs=0
+	id S933111Ab0GTXIo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 19:08:44 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:57753 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932946Ab0GTXIn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 19:08:43 -0400
+To: linux-kernel@vger.kernel.org
+Subject: [PATCH] x86, UV: make kdump avoid stack dumps
+Cc: mingo@elte.hu, hpa@zytor.com
+Message-Id: <E1ObLvt-0005UZ-Va@eag09.americas.sgi.com>
+From: Cliff Wickman <cpw@sgi.com>
+Date: Tue, 20 Jul 2010 18:09:05 -0500
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
 
-debugfs no longer uses 'kernel_subsys' (which is gone), and other
-kernel/ksysfs.c code is always built, so DEBUG_FS does not need
-to depend on SYSFS.
+This patch is the same as one sent Jun18 2010.  It doesn't seem to 
+have been noticed.
 
-Fixes this kconfig warning:
 
-warning: (TREE_RCU_TRACE || AMD_IOMMU_STATS && AMD_IOMMU || MTD_UBI_DEBUG && MTD && SYSFS && MTD_UBI || UBIFS_FS_DEBUG && MISC_FILESYSTEMS && UBIFS_FS || DEBUG_KMEMLEAK && DEBUG_KERNEL && EXPERIMENTAL && !MEMORY_HOTPLUG && (X86 || ARM || PPC || S390 || SPARC64 || SUPERH || MICROBLAZE) && SYSFS || TRACING || X86_PTDUMP && DEBUG_KERNEL || BLK_DEV_IO_TRACE && TRACING_SUPPORT && FTRACE && SYSFS && BLOCK) selects DEBUG_FS which has unmet direct dependencies (SYSFS)
+UV NMI callback's should not write stack dumps when a kdump is to be written.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+When invoking the crash kernel to write a dump, kdump_nmi_shootdown_cpus()
+uses NMI's to get all the cpu's to save their register context and halt.
+
+But the NMI interrupt handler runs a callback list.  This patch sets a flag
+to prevent any of those callbacks from interfering with the halt of the cpu.
+
+For UV, which currently has the only callback to which this is relevant, the
+uv_handle_nmi() callback should not do dumping of stacks.
+
+The 'in_crash_kexec' flag is defined as an extern in kdebug.h firstly
+because x2apic_uv_x.c includes it.  Secondly because some future callback
+might need the flag to know that it should not enter the debugger.
+(Such a scenario was in fact present in the 2.6.32 kernel, SuSE distribution,
+ where a call to kdb needed to be avoided.)
+
+Diffed against 2.6.35
+
+Signed-off-by: Cliff Wickman <cpw@sgi.com>
 ---
- lib/Kconfig.debug |    1 -
- 1 file changed, 1 deletion(-)
+ arch/x86/include/asm/kdebug.h      |    1 +
+ arch/x86/kernel/apic/x2apic_uv_x.c |    4 ++++
+ arch/x86/kernel/crash.c            |    3 +++
+ 3 files changed, 8 insertions(+)
 
---- linux-next-20100713.orig/lib/Kconfig.debug
-+++ linux-next-20100713/lib/Kconfig.debug
-@@ -76,7 +76,6 @@ config UNUSED_SYMBOLS
+Index: linux-2.6.35-rc3/arch/x86/kernel/apic/x2apic_uv_x.c
+===================================================================
+--- linux-2.6.35-rc3.orig/arch/x86/kernel/apic/x2apic_uv_x.c
++++ linux-2.6.35-rc3/arch/x86/kernel/apic/x2apic_uv_x.c
+@@ -604,6 +604,10 @@ int uv_handle_nmi(struct notifier_block 
+ {
+ 	if (reason != DIE_NMI_IPI)
+ 		return NOTIFY_OK;
++
++	if (in_crash_kexec)
++		/* do nothing if entering the crash kernel */
++		return NOTIFY_OK;
+ 	/*
+ 	 * Use a lock so only one cpu prints at a time
+ 	 * to prevent intermixed output.
+Index: linux-2.6.35-rc3/arch/x86/kernel/crash.c
+===================================================================
+--- linux-2.6.35-rc3.orig/arch/x86/kernel/crash.c
++++ linux-2.6.35-rc3/arch/x86/kernel/crash.c
+@@ -28,6 +28,8 @@
+ #include <asm/reboot.h>
+ #include <asm/virtext.h>
  
- config DEBUG_FS
- 	bool "Debug Filesystem"
--	depends on SYSFS
- 	help
- 	  debugfs is a virtual file system that kernel developers use to put
- 	  debugging files into.  Enable this option to be able to read and
++int in_crash_kexec;
++
+ #if defined(CONFIG_SMP) && defined(CONFIG_X86_LOCAL_APIC)
+ 
+ static void kdump_nmi_callback(int cpu, struct die_args *args)
+@@ -61,6 +63,7 @@ static void kdump_nmi_callback(int cpu, 
+ 
+ static void kdump_nmi_shootdown_cpus(void)
+ {
++	in_crash_kexec = 1;
+ 	nmi_shootdown_cpus(kdump_nmi_callback);
+ 
+ 	disable_local_APIC();
+Index: linux-2.6.35-rc3/arch/x86/include/asm/kdebug.h
+===================================================================
+--- linux-2.6.35-rc3.orig/arch/x86/include/asm/kdebug.h
++++ linux-2.6.35-rc3/arch/x86/include/asm/kdebug.h
+@@ -33,5 +33,6 @@ extern void __show_regs(struct pt_regs *
+ extern void show_regs(struct pt_regs *regs);
+ extern unsigned long oops_begin(void);
+ extern void oops_end(unsigned long, struct pt_regs *, int signr);
++extern int in_crash_kexec;
+ 
+ #endif /* _ASM_X86_KDEBUG_H */
