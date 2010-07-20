@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab0GTG7c (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 02:59:32 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:47458 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753878Ab0GTG7b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 02:59:31 -0400
-Date: Tue, 20 Jul 2010 08:59:25 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Kees Bakker <kees.bakker@xs4all.nl>, Keith Packard <keithp@keithp.com>
-Subject: Re: [git pull] documentation: fix almost duplicate filenames
- (io/IO-mapping.txt)
-Message-ID: <20100720065925.GB16367@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Randy Dunlap <randy.dunlap@oracle.com>,
-	Linus Torvalds <torvalds@linux-foundation.org>,
-	lkml <linux-kernel@vger.kernel.org>,
-	Kees Bakker <kees.bakker@xs4all.nl>,
-	Keith Packard <keithp@keithp.com>
-References: <20100719181240.fc3066cd.randy.dunlap@oracle.com>
- <AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com>
- <20100719220545.098cb7aa.randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100719220545.098cb7aa.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757501Ab0GTHCc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 03:02:32 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:47803 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753282Ab0GTHCb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 03:02:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 20 Jul 2010 15:57:45 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        greg@kroah.com
+Subject: Re: [PATCH 2/8] v3 Add new phys_index properties
+Message-Id: <20100720155745.de079d69.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C451D92.6020406@austin.ibm.com>
+References: <4C451BF5.50304@austin.ibm.com>
+	<4C451D92.6020406@austin.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Mon, Jul 19, 2010 at 10:05:45PM -0700
+On Mon, 19 Jul 2010 22:52:50 -0500
+Nathan Fontenot <nfont@austin.ibm.com> wrote:
 
-> On Mon, 19 Jul 2010 19:27:13 -0700 Linus Torvalds wrote:
+> Update the 'phys_index' properties of a memory block to include a
+> 'start_phys_index' which is the same as the current 'phys_index' property.
+> This also adds an 'end_phys_index' property to indicate the id of the
+> last section in th memory block.
 > 
-> > On Mon, Jul 19, 2010 at 6:12 PM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> > >
-> > > (hopefully I got this right.  I'm not a big git user.)
-> > 
-> > Hmm. No.
-> > 
-> > The commit otherwise looks correct, but the commit message is
-> > buggered. The first line of the message is
-> > 
-> >    From: Randy Dunlap <randy.dunlap@oracle.com>
-> > 
-> > rather than the subject of the patch itself.
-> > 
-> > No fear. Practice makes perfect. Just try again ;)
-> 
-> 
-> Will do... but how do I edit the commit message?
+> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
 
-git commit --amend
+No, please remain "phys_index" as it is. please don't rename it.
+IMHO, just adding end_phys_index is better.
+please avoid interface change AFAP.
 
-after you've made sure that the commit you want to edit is at the tip of
-the current branch.
+Do you have a problem if phys_index means start_phys_index ?
 
--- 
-Regards/Gruss,
-    Boris.
+Thanks,
+-Kame
+
