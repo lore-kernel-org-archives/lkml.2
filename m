@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761297Ab0GTPIv (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 11:08:51 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41158 "EHLO mx2.suse.de"
+	id S1761330Ab0GTPKP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 11:10:15 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33212 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758559Ab0GTPIt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 11:08:49 -0400
-Date: Tue, 20 Jul 2010 17:08:47 +0200 (CEST)
+	id S1758534Ab0GTPKM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 11:10:12 -0400
+Date: Tue, 20 Jul 2010 17:10:10 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
 To: Kulikov Vasiliy <segooon@gmail.com>
 Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
-        David Airlie <airlied@linux.ie>, Eric Anholt <eric@anholt.net>,
-        Zhao Yakui <yakui.zhao@intel.com>,
-        Zhenyu Wang <zhenyuw@linux.intel.com>, Ma Ling <ling.ma@intel.com>,
-        Ian Romanick <ian.d.romanick@intel.com>,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 04/16] trivial: use ARRAY_SIZE
-In-Reply-To: <1277726097-24534-1-git-send-email-segooon@gmail.com>
-Message-ID: <alpine.LNX.2.00.1007201708300.4741@pobox.suse.cz>
-References: <1277726097-24534-1-git-send-email-segooon@gmail.com>
+        Jing Huang <huangj@brocade.com>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Krishna Gudipati <kgudipat@brocade.com>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 06/16] trivial: use ARRAY_SIZE
+In-Reply-To: <1277726105-24600-1-git-send-email-segooon@gmail.com>
+Message-ID: <alpine.LNX.2.00.1007201709500.4741@pobox.suse.cz>
+References: <1277726105-24600-1-git-send-email-segooon@gmail.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -32,34 +31,24 @@ On Mon, 28 Jun 2010, Kulikov Vasiliy wrote:
 > 
 > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 > ---
->  drivers/gpu/drm/i915/intel_sdvo.c |    4 ++--
->  1 files changed, 2 insertions(+), 2 deletions(-)
+>  drivers/scsi/bfa/bfa_core.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
 > 
-> diff --git a/drivers/gpu/drm/i915/intel_sdvo.c b/drivers/gpu/drm/i915/intel_sdvo.c
-> index 76993ac..03c231b 100644
-> --- a/drivers/gpu/drm/i915/intel_sdvo.c
-> +++ b/drivers/gpu/drm/i915/intel_sdvo.c
-> @@ -392,13 +392,13 @@ static void intel_sdvo_debug_write(struct intel_encoder *intel_encoder, u8 cmd,
->  		DRM_LOG_KMS("%02X ", ((u8 *)args)[i]);
->  	for (; i < 8; i++)
->  		DRM_LOG_KMS("   ");
-> -	for (i = 0; i < sizeof(sdvo_cmd_names) / sizeof(sdvo_cmd_names[0]); i++) {
-> +	for (i = 0; i < ARRAY_SIZE(sdvo_cmd_names); i++) {
->  		if (cmd == sdvo_cmd_names[i].cmd) {
->  			DRM_LOG_KMS("(%s)", sdvo_cmd_names[i].name);
->  			break;
->  		}
->  	}
-> -	if (i == sizeof(sdvo_cmd_names)/ sizeof(sdvo_cmd_names[0]))
-> +	if (i == ARRAY_SIZE(sdvo_cmd_names))
->  		DRM_LOG_KMS("(%02X)", cmd);
->  	DRM_LOG_KMS("\n");
+> diff --git a/drivers/scsi/bfa/bfa_core.c b/drivers/scsi/bfa/bfa_core.c
+> index 3a7b3f8..d845506 100644
+> --- a/drivers/scsi/bfa/bfa_core.c
+> +++ b/drivers/scsi/bfa/bfa_core.c
+> @@ -335,7 +335,7 @@ bfa_get_pciids(struct bfa_pciid_s **pciids, int *npciids)
+>  		{BFA_PCI_VENDOR_ID_BROCADE, BFA_PCI_DEVICE_ID_CT},
+>  	};
+>  
+> -	*npciids = sizeof(__pciids) / sizeof(__pciids[0]);
+> +	*npciids = ARRAY_SIZE(__pciids);
+>  	*pciids = __pciids;
 >  }
 
-Applied to trivial queue, as linux-next as of today doesn't carry this 
-patch.
-
-Thanks,
+Doesn't seem to be in linux-next as of today. I have applied the patch to 
+trivial queue.
 
 -- 
 Jiri Kosina
