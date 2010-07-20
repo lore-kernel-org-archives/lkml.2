@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932470Ab0GTPag (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 11:30:36 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34543 "EHLO mx1.suse.de"
+	id S932417Ab0GTPdH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 11:33:07 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34582 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932177Ab0GTPaf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 11:30:35 -0400
-Date: Tue, 20 Jul 2010 17:30:33 +0200 (CEST)
+	id S1760904Ab0GTPdD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 11:33:03 -0400
+Date: Tue, 20 Jul 2010 17:33:01 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Stephen Boyd <bebarino@gmail.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] fs/Kconfig: Fix typo Userpace -> Userspace
-In-Reply-To: <1279298804-4496-1-git-send-email-bebarino@gmail.com>
-Message-ID: <alpine.LNX.2.00.1007201730230.4741@pobox.suse.cz>
-References: <1279298804-4496-1-git-send-email-bebarino@gmail.com>
+To: Kulikov Vasiliy <segooon@gmail.com>
+Cc: Kernel Janitors <kernel-janitors@vger.kernel.org>,
+        Samuel Ortiz <samuel@sortiz.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Joe Perches <joe@perches.com>, Eric Dumazet <eric.dumazet@gmail.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 11/19] drivers/net/irda: use for_each_pci_dev()
+In-Reply-To: <1278173056-11779-1-git-send-email-segooon@gmail.com>
+Message-ID: <alpine.LNX.2.00.1007201732370.4741@pobox.suse.cz>
+References: <1278173056-11779-1-git-send-email-segooon@gmail.com>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -22,31 +26,43 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 16 Jul 2010, Stephen Boyd wrote:
+On Sat, 3 Jul 2010, Kulikov Vasiliy wrote:
 
-> Signed-off-by: Stephen Boyd <bebarino@gmail.com>
+> Use for_each_pci_dev() to simplify the code.
+> 
+> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 > ---
+>  drivers/net/irda/smsc-ircc2.c |    5 +----
+>  1 files changed, 1 insertions(+), 4 deletions(-)
 > 
-> Ah sorrry, missing subject.
-> 
->  fs/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/Kconfig b/fs/Kconfig
-> index 5f85b59..3d18530 100644
-> --- a/fs/Kconfig
-> +++ b/fs/Kconfig
-> @@ -64,7 +64,7 @@ source "fs/autofs4/Kconfig"
->  source "fs/fuse/Kconfig"
+> diff --git a/drivers/net/irda/smsc-ircc2.c b/drivers/net/irda/smsc-ircc2.c
+> index d67e484..850ca1c 100644
+> --- a/drivers/net/irda/smsc-ircc2.c
+> +++ b/drivers/net/irda/smsc-ircc2.c
+> @@ -2848,9 +2848,7 @@ static int __init smsc_ircc_preconfigure_subsystems(unsigned short ircc_cfg,
+>  	unsigned short ss_device = 0x0000;
+>  	int ret = 0;
 >  
->  config CUSE
-> -	tristate "Character device in Userpace support"
-> +	tristate "Character device in Userspace support"
->  	depends on FUSE_FS
->  	help
->  	  This FUSE extension allows character devices to be
+> -	dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev);
+> -
+> -	while (dev != NULL) {
+> +	for_each_pci_dev(dev) {
+>  		struct smsc_ircc_subsystem_configuration *conf;
+>  
+>  		/*
+> @@ -2899,7 +2897,6 @@ static int __init smsc_ircc_preconfigure_subsystems(unsigned short ircc_cfg,
+>  					ret = -ENODEV;
+>  			}
+>  		}
+> -		dev = pci_get_device(PCI_ANY_ID, PCI_ANY_ID, dev);
+>  	}
+>  
+>  	return ret;
 
-Applied, thanks Stephen.
+Doesn't seem to hit linux-next as of today. Dave, are you going to merge 
+it?
+
+Thanks,
 
 -- 
 Jiri Kosina
