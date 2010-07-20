@@ -1,93 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761187Ab0GTKHT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 06:07:19 -0400
-Received: from host.aloksahu.com ([69.167.171.24]:53762 "EHLO
-	host.aloksahu.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761172Ab0GTKHQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 06:07:16 -0400
-X-Greylist: delayed 2825 seconds by postgrey-1.27 at vger.kernel.org; Tue, 20 Jul 2010 06:07:16 EDT
-To: linux-kernel@vger.kernel.org
-Subject: Confidential business proposal and your discretion is required....
-Recieved: 
-Date: Tue, 20 Jul 2010 05:20:10 -0400
-From: 3W-Outsource | Sunita <sunita@3w-outsource.com>
-Message-ID: <f30a62164b978071a7d65114f5710c8b@aloksahu.com>
-X-Priority: 3
-X-Mailer: PHPMailer [version 1.73]
-X-Mailer: phplist v2.10.12
-X-MessageID: 1
-X-ListMember: linux-kernel@vger.kernel.org
+	id S1761197Ab0GTKKF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 06:10:05 -0400
+Received: from mail.gmx.net ([213.165.64.20]:39587 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1761151Ab0GTKKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 06:10:01 -0400
+X-Authenticated: #4630777
+X-Provags-ID: V01U2FsdGVkX19ceOZ4gvNcsPyViwLc3Z+GzRgrclygVxs7QWU1fw
+	7EXiWpq4VtafAz
+Date: Tue, 20 Jul 2010 12:09:57 +0200
+From: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+To: tyhicks@linux.vnet.ibm.com
+Cc: kirkland@canonical.com, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk
+Subject: [PATCH] ecryptfs: release reference to lower mount if interpose
+	fails
+Message-ID: <20100720100957.GB2908@lsanfilippo.unix.rd.tt.avira.com>
 MIME-Version: 1.0
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset="UTF-8"
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - host.aloksahu.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [99 99] / [47 12]
-X-AntiAbuse: Sender Address Domain - host.aloksahu.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+In ecrpytfs_lookup_and_interpose_lower() the lower mount is not decremented if allocation of a dentry info struct failed. As a result the lower filesystem cant be unmounted any more (since it is considered busy). This patch corrects the reference counting.
 
-Dear Sir/Madam,
+Signed-off-by: Lino Sanfilippo <LinoSanfilippo@gmx.de>
+---
+This patch is against 2.6.35-rc5.
 
-3w-outsource is a leading software development company in India
-providing Offshore Software Development Services & solutions.
- 
-Our services are 
-· outsourcing software development India
-· Web Development India
-· Product Development
-· E-strategy Consulting
-· Web-Enablement Designing
-· Offshore Application development
-· .Net Development India
-· PHP Development
-· Multimedia and Design Solutions
-· Email marketing services (capable to send you 5000-10000 quality
-contact emails addresses per week of your interested area from your
-country). 
-
-3w-outsource is a leading customized process-driven software solutions
-provider based in India. 
- 
-Kindly let me know, if you are interested for any of our services. 
-
-Kind Regards
-
-Sunita
-
-Marketing Director (3w-outsource)
-
-A-4 Vidyva Vihar Padmnabhpur Durg
-
-Chhattisgarh
-
-India
-
-+917882344623
-
-Email: sunita@3w-outsource.com
-
-Website: www.3w-outsource.com
-
-
-
---
-If you do not want to receive any more newsletters, 
-http://3w-outsource.net/list/?p=unsubscribe&uid=1b51e6cefc9092ec4e7b3cba461ddcb7
-
-To update your preferences and to unsubscribe visit
-http://3w-outsource.net/list/?p=preferences&uid=1b51e6cefc9092ec4e7b3cba461ddcb7
-Forward a Message to Someone
-http://3w-outsource.net/list/?p=forward&uid=1b51e6cefc9092ec4e7b3cba461ddcb7&mid=1
-
-
---
-Powered by PHPlist, www.phplist.com --
-
-
+--- a/fs/ecryptfs/inode.c	2010-07-12 23:55:33.000000000 +0200
++++ b/fs/ecryptfs/inode.c	2010-07-19 19:21:16.000000000 +0200
+@@ -264,7 +264,7 @@ int ecryptfs_lookup_and_interpose_lower(
+ 		printk(KERN_ERR "%s: Out of memory whilst attempting "
+ 		       "to allocate ecryptfs_dentry_info struct\n",
+ 			__func__);
+-		goto out_dput;
++		goto out_put;
+ 	}
+ 	ecryptfs_set_dentry_lower(ecryptfs_dentry, lower_dentry);
+ 	ecryptfs_set_dentry_lower_mnt(ecryptfs_dentry, lower_mnt);
+@@ -339,8 +339,9 @@ int ecryptfs_lookup_and_interpose_lower(
+ out_free_kmem:
+ 	kmem_cache_free(ecryptfs_header_cache_2, page_virt);
+ 	goto out;
+-out_dput:
++out_put:
+ 	dput(lower_dentry);
++	mntput(lower_mnt);
+ 	d_drop(ecryptfs_dentry);
+ out:
+ 	return rc;
