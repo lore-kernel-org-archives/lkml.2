@@ -1,82 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255Ab0GTLP2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 07:15:28 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46831 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755734Ab0GTLP1 (ORCPT
+	id S932187Ab0GTLUu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 07:20:50 -0400
+Received: from mail.solarflare.com ([216.237.3.220]:32697 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932167Ab0GTLUs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 07:15:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=WKzuGbKh/9aFzUCHaEK6P7NGeWDV+muHTmAnyGcFjZSz9Oor8+rkwry4u7VWtB4anf
-         GfyvtFJYr84EWm+1G5ZgguBFScJA3ZA8RsbuljktHe4/JIQcKBm4GdNL27m8ecCoEUqP
-         Fp5cy7fsKi/RSDKyRZVY82B6L5FFHZiygIo+o=
-Date: Tue, 20 Jul 2010 15:15:21 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        David Woodhouse <dwmw2@infradead.org>, linux-kernel@vger.kernel.org
-Subject: [GIT PULL] battery-2.6.35.git
-Message-ID: <20100720111521.GA23383@oksana.dev.rtsoft.ru>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 20 Jul 2010 07:20:48 -0400
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
+ interfaces with random MAC address
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stefan Assmann <sassmann@redhat.com>
+Cc: netdev <netdev@vger.kernel.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        davem@davemloft.net, Andy Gospodarek <gospo@redhat.com>,
+        "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>,
+        Casey Leedom <leedom@chelsio.com>, Harald Hoyer <harald@redhat.com>
+In-Reply-To: <4C457F72.8090708@redhat.com>
+References: <4C457F72.8090708@redhat.com>
+Content-Type: text/plain
+Organization: Solarflare Communications
+Date: Tue, 20 Jul 2010 12:20:44 +0100
+Message-Id: <1279624844.2110.3.camel@achroite.uk.solarflarecom.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 (2.26.1-2.fc11) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 20 Jul 2010 11:22:15.0430 (UTC) FILETIME=[CE76EA60:01CB27FD]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17516.005
+X-TM-AS-Result: No--18.261100-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On Tue, 2010-07-20 at 12:50 +0200, Stefan Assmann wrote:
+> From: Stefan Assmann <sassmann@redhat.com>
+> 
+> Reserve a bit in struct net_device to indicate whether an interface
+> generates its MAC address randomly, and expose the information via
+> sysfs.
+> May look like this:
+> /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/net/eth0/ifrndmac
+> 
+> By default the value of ifrndmac is 0. Any driver that generates the MAC
+> address randomly should return a value to 1.
 
-Please pull a small fixup for the ds2782_battery driver.
+The name should incorporate 'address', not 'mac', for consistency with
+the generic 'address' attribute.
 
-Thanks,
+What about devices that 'steal' MAC addresses from slave devices?
+Currently I believe udev has special cases for them but ideally these
+drivers would indicate explicitly that their addresses are not stable
+identifiers (even though they aren't random).
 
+[...]
+> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> index b626289..2ea0298 100644
+> --- a/include/linux/netdevice.h
+> +++ b/include/linux/netdevice.h
+> @@ -845,6 +845,7 @@ struct net_device {
+>  #define NETIF_F_FCOE_MTU	(1 << 26) /* Supports max FCoE MTU, 2158 bytes*/
+>  #define NETIF_F_NTUPLE		(1 << 27) /* N-tuple filters supported */
+>  #define NETIF_F_RXHASH		(1 << 28) /* Receive hashing offload */
+> +#define NETIF_F_RNDMAC		(1 << 29) /* Interface with random MAC address */
+[...]
 
-The following changes since commit 7e27d6e778cd87b6f2415515d7127eba53fe5d02:
-  Linus Torvalds (1):
-        Linux 2.6.35-rc3
+This is not really a feature, and we are running out of real feature
+bits.  Can you find somewhere else to put this flag?
 
-are available in the git repository at:
-
-  git://git.infradead.org/users/cbou/battery-2.6.35.git master
-
-Ryan Mallon (1):
-      ds2782_battery: Fix ds2782_get_capacity return value
-
- drivers/power/ds2782_battery.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-commit 2d31757c87a741823f77daaa07eeb8d56be63943
-Author: Ryan Mallon <ryan@bluewatersys.com>
-Date:   Tue Jun 15 12:44:59 2010 +1200
-
-    ds2782_battery: Fix ds2782_get_capacity return value
-    
-    The ds2782_get_capacity function should return 0 on success, not the
-    capacity value.
-    
-    Signed-off-by: Ryan Mallon <ryan@bluewatersys.com>
-    Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-
-diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-index d762a0c..2afbeec 100644
---- a/drivers/power/ds2782_battery.c
-+++ b/drivers/power/ds2782_battery.c
-@@ -163,7 +163,7 @@ static int ds2782_get_capacity(struct ds278x_info *info, int *capacity)
- 	if (err)
- 		return err;
- 	*capacity = raw;
--	return raw;
-+	return 0;
- }
- 
- static int ds2786_get_current(struct ds278x_info *info, int *current_uA)
+Ben.
 
 -- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
+
