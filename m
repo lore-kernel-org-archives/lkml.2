@@ -1,293 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761211Ab0GTQZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 12:25:29 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:45564 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab0GTQZ2 (ORCPT
+	id S1761343Ab0GTQdI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 12:33:08 -0400
+Received: from mandjes.xs4all.nl ([82.95.177.154]:43925 "EHLO
+	mandjes.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753692Ab0GTQdG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 12:25:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=weMj2vmUdKV/5e/mbJe5abDGeZuFnIR9mLOuaI1XBj5KooUaUNFkXbrQpLLMmYrPTb
-         FLONugTi2qG7v1SSO45eRkx9W9VAI2Fs5BAjf5Kk3jP3id7h5Diwp2w3g7mQd6fAA0Q2
-         MatAKaxBRfdoJsxE9QUqsS/4Im8PwclbK2iNE=
-Date: Wed, 21 Jul 2010 01:25:17 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Johannes Weiner <hannes@cmpxchg.org>, linux-mm <linux-mm@kvack.org>,
-        linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Kukjin Kim <kgene.kim@samsung.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH] Tight check of pfn_valid on sparsemem - v2
-Message-ID: <20100720162517.GB1940@barrios-desktop>
-References: <1279448311-29788-1-git-send-email-minchan.kim@gmail.com>
- <20100720152809.GW13117@csn.ul.ie>
-MIME-Version: 1.0
+	Tue, 20 Jul 2010 12:33:06 -0400
+Subject: Re: [git pull v2] documentation: fix almost duplicate filenames  (io/IO-mapping.txt)
+Mime-Version: 1.0 (Apple Message framework v1081)
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100720152809.GW13117@csn.ul.ie>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+From: Kees Bakker <kees.bakker@xs4all.nl>
+In-Reply-To: <4C45C33C.9090907@oracle.com>
+Date: Tue, 20 Jul 2010 18:33:03 +0200
+Cc: lkml <linux-kernel@vger.kernel.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <298FDE5E-9721-42C1-AEED-124278D60B4C@xs4all.nl>
+References: <20100719181240.fc3066cd.randy.dunlap@oracle.com> <AANLkTilwV9PPdpM5JZ65M_TYr_XfVDBHCLXLJVYkTEav@mail.gmail.com> <4C45C33C.9090907@oracle.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+X-Mailer: Apple Mail (2.1081)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 04:28:09PM +0100, Mel Gorman wrote:
-> On Sun, Jul 18, 2010 at 07:18:31PM +0900, Minchan Kim wrote:
-> > Kukjin reported oops happen while he change min_free_kbytes
-> > http://www.spinics.net/lists/arm-kernel/msg92894.html
-> > It happen by memory map on sparsemem.
-> > 
-> 
-> First off, thanks for working on this.
-> 
-> > The system has a memory map following as. 
-> >      section 0             section 1              section 2
-> > 0x20000000-0x25000000, 0x40000000-0x50000000, 0x50000000-0x58000000
-> > SECTION_SIZE_BITS 28(256M)
-> > 
-> > It means section 0 is an incompletely filled section.
-> > Nontheless, current pfn_valid of sparsemem checks pfn loosely. 
-> > It checks only mem_section's validation but ARM can free mem_map on hole 
-> > to save memory space. So in above case, pfn on 0x25000000 can pass pfn_valid's 
-> > validation check. It's not what we want. 
-> > 
-> > We can match section size to smallest valid size.(ex, above case, 16M)
-> > But Russell doesn't like it due to mem_section's memory overhead with different
-> > configuration(ex, 512K section).
-> > 
-> > I tried to add valid pfn range in mem_section but everyone doesn't like it 
-> > due to size overhead.
-> 
-> Also IIRC, it was vunerable to a hole being punched in the middle of the
-> section.
-> 
-> > This patch is suggested by KAMEZAWA-san. 
-> > I just fixed compile error and change some naming. 
-> > 
-> > This patch registers address of mem_section to memmap itself's page struct's
-> > pg->private field. This means the page is used for memmap of the section.
-> > Otherwise, the page is used for other purpose and memmap has a hole.
-> > 
-> > This patch is based on mmotm-2010-07-01-12-19.
-> > 
-> > Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
-> > Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-> > Reported-by: Kukjin Kim <kgene.kim@samsung.com>
-> > ---
-> >  arch/arm/mm/init.c     |    9 ++++++++-
-> >  include/linux/mmzone.h |   21 ++++++++++++++++++++-
-> >  mm/Kconfig             |    5 +++++
-> >  mm/sparse.c            |   41 +++++++++++++++++++++++++++++++++++++++++
-> >  4 files changed, 74 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/arch/arm/mm/init.c b/arch/arm/mm/init.c
-> > index cfe4c5e..4586f40 100644
-> > --- a/arch/arm/mm/init.c
-> > +++ b/arch/arm/mm/init.c
-> > @@ -234,6 +234,11 @@ static void __init arm_bootmem_free(struct meminfo *mi)
-> >  	arch_adjust_zones(zone_size, zhole_size);
-> >  
-> >  	free_area_init_node(0, zone_size, min, zhole_size);
-> > +
-> > +	for_each_bank(i, mi) {
-> > +		mark_memmap_hole(bank_pfn_start(&mi->bank[i]),
-> > +				bank_pfn_end(&mi->bank[i]), true);
-> > +	}
-> >  }
-> 
-> Why do we need to mark banks both valid and invalid? Is it not enough to
-> just mark the holes in free_memmap() and assume it is valid otherwise?
-> 
-Good point. 
-If we can make sure pg->private is zero, we can fix it. 
-I will check it. 
+On 20 Jul, 2010, at 17:39 , Randy Dunlap wrote:
 
-> >  
-> >  #ifndef CONFIG_SPARSEMEM
-> > @@ -386,8 +391,10 @@ free_memmap(unsigned long start_pfn, unsigned long end_pfn)
-> >  	 * If there are free pages between these,
-> >  	 * free the section of the memmap array.
-> >  	 */
-> > -	if (pg < pgend)
-> > +	if (pg < pgend) {
-> > +		mark_memmap_hole(pg >> PAGE_SHIFT, pgend >> PAGE_SHIFT, false);
-> >  		free_bootmem(pg, pgend - pg);
-> > +	}
-> >  }
-> >  
-> >  /*
-> > diff --git a/include/linux/mmzone.h b/include/linux/mmzone.h
-> > index 9ed9c45..2ed9728 100644
-> > --- a/include/linux/mmzone.h
-> > +++ b/include/linux/mmzone.h
-> > @@ -15,6 +15,7 @@
-> >  #include <linux/seqlock.h>
-> >  #include <linux/nodemask.h>
-> >  #include <linux/pageblock-flags.h>
-> > +#include <linux/mm_types.h>
-> >  #include <generated/bounds.h>
-> >  #include <asm/atomic.h>
-> >  #include <asm/page.h>
-> > @@ -1047,11 +1048,29 @@ static inline struct mem_section *__pfn_to_section(unsigned long pfn)
-> >  	return __nr_to_section(pfn_to_section_nr(pfn));
-> >  }
-> >  
-> > +void mark_memmap_hole(unsigned long start, unsigned long end, bool valid);
-> > +
+> Please pull from
+> 	git://git.kernel.org/pub/scm/linux/kernel/git/rdunlap/linux-docs/ #linuxdocs
 > 
-> The naming is confusing with the "valid" parameter.
+> for one changeset:
 > 
-> What's a "valid hole"? I can see that one being a cause of head
-> scratching in the future :)
+> commit f0e4984f0df34e344809c35387d895b57eab5dcc
+> Author: Randy Dunlap <randy.dunlap@oracle.com>
+> Date:   Mon Jul 19 22:20:27 2010 +0000
+> 
+>    Subject: documentation: fix almost duplicate filenames (IO/io-mapping.txt)
+>    From: Randy Dunlap <randy.dunlap@oracle.com>
+> 
+>    Having both IO-mapping.txt and io-mapping.txt in Documentation/
+>    was confusing and/or bothersome to some people, so rename
+>    IO-mapping.txt to bus-virt-phys-mapping.txt.  Also update
+>    Documentation/00-INDEX for both of these files.
+[...]
 
-Okay. If we call it in only free_memmap, we can change naming following as. 
-ex) mark_invalid_memmap(start, end);
-Will change. 
+Thanks Randy, for making this change. However, there are 13 other pairs of
+files that have a similar name conflict (all in the netfilter area). And it
+seems to me that these files cannot simply be renamed, because these files
+are also part of libc, or perhaps some other public library. Damn. Too late
+to complain now.
 
-> 
-> > +#ifdef CONFIG_SPARSEMEM_HAS_HOLE
-> 
-> Why not use CONFIG_ARCH_HAS_HOLES_MEMORYMODEL ?
+The files I'm talking about are:
+net/ipv4/netfilter/ipt_ECN.c            net/ipv4/netfilter/ipt_ecn.c
+net/netfilter/xt_tcpmss.c               net/netfilter/xt_TCPMSS.c
+net/netfilter/xt_DSCP.c                 net/netfilter/xt_dscp.c
+net/netfilter/xt_rateest.c              net/netfilter/xt_RATEEST.c
+net/netfilter/xt_HL.c                   net/netfilter/xt_hl.c
+include/linux/netfilter_ipv6/ip6t_hl.h  include/linux/netfilter_ipv6/ip6t_HL.h
+include/linux/netfilter/xt_tcpmss.h     include/linux/netfilter/xt_TCPMSS.h
+include/linux/netfilter/xt_rateest.h    include/linux/netfilter/xt_RATEEST.h
+include/linux/netfilter/xt_MARK.h       include/linux/netfilter/xt_mark.h
+include/linux/netfilter/xt_CONNMARK.h   include/linux/netfilter/xt_connmark.h
+include/linux/netfilter/xt_DSCP.h       include/linux/netfilter/xt_dscp.h
+include/linux/netfilter_ipv4/ipt_ECN.h  include/linux/netfilter_ipv4/ipt_ecn.h
+include/linux/netfilter_ipv4/ipt_ttl.h  include/linux/netfilter_ipv4/ipt_TTL.h
 
-As I mentioned my previous mail(reply of Hannes), if the problen can happen
-in FLATMEM, CONFIG_ARCH_HAS_HOLES_MEMORYMODEL is right.
-Please confirm this, Mel. :)
+What this means is that you cannot do a git-clone of the kernel tree on a Mac
+(which has case insensitive filesystem). It's not a huge deal, but to me it
+seemed like an unnecessary limitation. (That was when I thought it was just
+io-mapping.txt)
 
-> 
-> > +static inline int page_valid(struct mem_section *ms, unsigned long pfn)
-> > +{
-> > +	struct page *page = pfn_to_page(pfn);
-> > +	struct page *__pg = virt_to_page(page);
-> > +	return __pg->private == (unsigned long)ms;
-> > +}
-> > +#else
-> > +static inline int page_valid(struct mem_section *ms, unsigned long pfn)
-> > +{
-> > +	return 1;
-> > +}
-> > +#endif
-> > +
-> >  static inline int pfn_valid(unsigned long pfn)
-> >  {
-> > +	struct mem_section *ms;
-> >  	if (pfn_to_section_nr(pfn) >= NR_MEM_SECTIONS)
-> >  		return 0;
-> > -	return valid_section(__nr_to_section(pfn_to_section_nr(pfn)));
-> > +	ms = __nr_to_section(pfn_to_section_nr(pfn));
-> > +	return valid_section(ms) && page_valid(ms, pfn);
-> >  }
-> 
-> So it appears here that we unconditionally check page_valid() but we know
-> which sections had holes in them at the time we called mark_memmap_hole(). Can
-> the sections with holes be tagged so that only some sections need to call
-> page_valid()? As it is, ARM will be taking a an performance hit just in case
-> the section has holes but it should only need to take a performance hit
-> on the corner case where a section is not fully populated.
+	Kees
 
-In fact, I tried it with SECTION_MAP_LAST_BIT as you suggested. 
-But stucked. That's because now we can use 2 bit of section_mem_map.
-And we have used 2 bit all with different meaning. 
-I have a dumb question. Is there any case section have SECTION_MARKED_PRESENT
-but don't have SECTION_HAS_MEM_MAP except section populated time?
-I mean can't we remove SECTION_MARKED_PRESENT totally?
-If it is, we can the 1 bit for marking hole section. 
-If it isn't, I think it seems we can use lower bit of pageblock_flags.
-although it's not a good. 
-
-Thanks for careful review, Mel. 
-
-> 
-> >  
-> >  static inline int pfn_present(unsigned long pfn)
-> > diff --git a/mm/Kconfig b/mm/Kconfig
-> > index 527136b..959ac1d 100644
-> > --- a/mm/Kconfig
-> > +++ b/mm/Kconfig
-> > @@ -128,6 +128,11 @@ config SPARSEMEM_VMEMMAP
-> >  	 pfn_to_page and page_to_pfn operations.  This is the most
-> >  	 efficient option when sufficient kernel resources are available.
-> >  
-> > +config SPARSEMEM_HAS_HOLE
-> > +	bool "allow holes in sparsemem's memmap"
-> > +	depends on ARM && SPARSEMEM && !SPARSEMEM_VMEMMAP
-> > +	default n
-> > +
-> >  # eventually, we can have this option just 'select SPARSEMEM'
-> >  config MEMORY_HOTPLUG
-> >  	bool "Allow for memory hot-add"
-> > diff --git a/mm/sparse.c b/mm/sparse.c
-> > index 95ac219..76d5012 100644
-> > --- a/mm/sparse.c
-> > +++ b/mm/sparse.c
-> > @@ -615,6 +615,47 @@ void __init sparse_init(void)
-> >  	free_bootmem(__pa(usemap_map), size);
-> >  }
-> >  
-> > +#ifdef CONFIG_SPARSEMEM_HAS_HOLE
-> > +/*
-> > + * Fill memmap's pg->private with a pointer to mem_section.
-> > + * pfn_valid() will check this later. (see include/linux/mmzone.h)
-> > + * Evenry arch should call
-> > + * 	mark_memmap_hole(start, end, true) # for all allocated mem_map
-> > + * 	and, after that,
-> > + * 	mark_memmap_hole(start, end, false) # for all holes in mem_map.
-> > + * please see usage in ARM.
-> > + */
-> > +void mark_memmap_hole(unsigned long start, unsigned long end, bool valid)
-> > +{
-> > +	struct mem_section *ms;
-> > +	unsigned long pos, next;
-> > +	struct page *pg;
-> > +	void *memmap, *mapend;
-> > +
-> > +	for (pos = start; pos < end; pos = next) {
-> > +		next = (pos + PAGES_PER_SECTION) & PAGE_SECTION_MASK;
-> > +		ms = __pfn_to_section(pos);
-> > +		if (!valid_section(ms))
-> > +			continue;
-> > +
-> > +		for (memmap = (void*)pfn_to_page(pos),
-> > +			/* The last page in section */
-> > +			mapend = pfn_to_page(next-1);
-> > +			memmap < mapend; memmap += PAGE_SIZE) {
-> > +			pg = virt_to_page(memmap);
-> > +			if (valid)
-> > +				pg->private = (unsigned long)ms;
-> > +			else
-> > +				pg->private = 0;
-> > +		}
-> > +	}
-> > +}
-> > +#else
-> > +void mark_memmap_hole(unsigned long start, unsigned long end, bool valid)
-> > +{
-> > +}
-> > +#endif
-> > +
-> 
-> The patch should also delete memmap_valid_within() and replace it with a
-> call to pfn_valid_within(). The reason memmap_valid_within() existed was
-> because sparsemem had holes punched in it but I'd rather not see use of
-> that function grow.
-> 
-> >  #ifdef CONFIG_MEMORY_HOTPLUG
-> >  #ifdef CONFIG_SPARSEMEM_VMEMMAP
-> >  static inline struct page *kmalloc_section_memmap(unsigned long pnum, int nid,
-> > -- 
-> > 1.7.0.5
-> > 
-> 
-> -- 
-> Mel Gorman
-> Part-time Phd Student                          Linux Technology Center
-> University of Limerick                         IBM Dublin Software Lab
-
--- 
-Kind regards,
-Minchan Kim
