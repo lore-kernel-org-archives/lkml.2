@@ -1,46 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752701Ab0GTHOO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 03:14:14 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:18899 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab0GTHOM (ORCPT
+	id S1752894Ab0GTHUX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 03:20:23 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:36305 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab0GTHUW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 03:14:12 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:cc:content-type:x-system-of-record;
-	b=R8VNFtNRcL5Xh3kWx2hFTv1lO1/XdL6s2l4k46zSD6SsVYCR7jM9mG7GrwcbuKbRY
-	aHDVpt6iN900CJ9rtJKBg==
-MIME-Version: 1.0
-In-Reply-To: <1279219395-12088-1-git-send-email-segooon@gmail.com>
-References: <1279219395-12088-1-git-send-email-segooon@gmail.com>
-Date: Tue, 20 Jul 2010 00:14:08 -0700
-X-Google-Sender-Auth: B_Ju1TWutfdBNmnNXZ02GfhwOfo
-Message-ID: <AANLkTinFKH4Ed3UW3kMKdT5RJwmmE5n5k7nO01mB9xpO@mail.gmail.com>
-Subject: Re: [PATCH 1/8] arm/mach-tegra: fix unsigned calcs
-From: Colin Cross <ccross@android.com>
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: kernel-janitors@vger.kernel.org, Erik Gilling <konkers@android.com>,
-        Olof Johansson <olof@lixom.net>, Russell King <linux@arm.linux.org.uk>,
-        linux-tegra@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Tue, 20 Jul 2010 03:20:22 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Tue, 20 Jul 2010 16:15:32 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        greg@kroah.com
+Subject: Re: [PATCH 4/8] v3 Allow memory_block to span multiple memory
+ sections
+Message-Id: <20100720161532.31952577.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <4C451E1C.8070907@austin.ibm.com>
+References: <4C451BF5.50304@austin.ibm.com>
+	<4C451E1C.8070907@austin.ibm.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 15, 2010 at 11:43 AM, Kulikov Vasiliy <segooon@gmail.com> wrote:
-> divider_u71 is unsigned, so this check is buggy:
-> if (divider_u71 - 2 > 255 || divider_u71 - 2 < 0)
->
-> If divider_u71 is 0 or 1 both checks are lying.
-> So, it does not produce a buggy answer, but it is confusing.
+On Mon, 19 Jul 2010 22:55:08 -0500
+Nathan Fontenot <nfont@austin.ibm.com> wrote:
 
-Hi Kulikov,
-Thanks for the patch.  This problem has been fixed in another patch in
-the linux-tegra tree, I'll post it for review and update the
-linux-next tree soon.
+> Update the memory sysfs code that each sysfs memory directory is now
+> considered a memory block that can contain multiple memory sections per
+> memory block.  The default size of each memory block is SECTION_SIZE_BITS
+> to maintain the current behavior of having a single memory section per
+> memory block (i.e. one sysfs directory per memory section).
+> 
+> For architectures that want to have memory blocks span multiple
+> memory sections they need only define their own memory_block_size_bytes()
+> routine.
+> 
+> Signed-off-by: Nathan Fontenot <nfont@austin.ibm.com>
+> ---
+>  drivers/base/memory.c |  141 ++++++++++++++++++++++++++++++++++----------------
+>  1 file changed, 98 insertions(+), 43 deletions(-)
+> 
+> Index: linux-2.6/drivers/base/memory.c
+> ===================================================================
+> --- linux-2.6.orig/drivers/base/memory.c	2010-07-19 20:44:01.000000000 -0500
+> +++ linux-2.6/drivers/base/memory.c	2010-07-19 21:12:22.000000000 -0500
+> @@ -28,6 +28,14 @@
+>  #include <asm/uaccess.h>
+>  
+>  #define MEMORY_CLASS_NAME	"memory"
+> +#define MIN_MEMORY_BLOCK_SIZE	(1 << SECTION_SIZE_BITS)
+> +
+> +static int sections_per_block;
+> +
+> +static inline int base_memory_block_id(int section_nr)
+> +{
+> +	return (section_nr / sections_per_block) * sections_per_block;
+> +}
+>  
+>  static struct sysdev_class memory_sysdev_class = {
+>  	.name = MEMORY_CLASS_NAME,
+> @@ -82,22 +90,21 @@ EXPORT_SYMBOL(unregister_memory_isolate_
+>   * register_memory - Setup a sysfs device for a memory block
+>   */
+>  static
+> -int register_memory(struct memory_block *memory, struct mem_section *section)
+> +int register_memory(struct memory_block *memory)
+>  {
+>  	int error;
+>  
+>  	memory->sysdev.cls = &memory_sysdev_class;
+> -	memory->sysdev.id = __section_nr(section);
+> +	memory->sysdev.id = memory->start_phys_index;
 
-Colin Cross
+I'm curious that this memory->start_phys_index can't overflow ?
+sysdev.id is 32bit.
+
+
+Thanks,
+-Kame
+
