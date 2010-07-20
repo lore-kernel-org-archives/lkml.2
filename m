@@ -1,45 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab0GTTfg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:35:36 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:42378 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750719Ab0GTTff (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:35:35 -0400
-Subject: Re: [PATCH 6/8] xfs: fix unsigned underflow
-From: Alex Elder <aelder@sgi.com>
-Reply-To: aelder@sgi.com
-To: Kulikov Vasiliy <segooon@gmail.com>
-Cc: Christoph Hellwig <hch@infradead.org>, kernel-janitors@vger.kernel.org,
-        linux-kernel@vger.kernel.org, xfs@oss.sgi.com
-In-Reply-To: <20100715212116.GA7013@infradead.org>
-References: <1279219605-12631-1-git-send-email-segooon@gmail.com>
-	 <20100715212116.GA7013@infradead.org>
+	id S1758661Ab0GTTi0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 15:38:26 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:56496 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751429Ab0GTTiX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 15:38:23 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6049"; a="48077288"
+Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+From: Daniel Walker <dwalker@codeaurora.org>
+To: =?UTF-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Xiaolin Zhang <xiaolin.zhang@intel.com>,
+        Hiremath Vaibhav <hvaibhav@ti.com>,
+        Robert Fekete <robert.fekete@stericsson.com>,
+        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-msm@vger.kernel.org
+In-Reply-To: <op.vf5o28st7p4s8u@pikus>
+References: <cover.1279639238.git.m.nazarewicz@samsung.com>
+	 <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
+	 <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
+	 <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf5o28st7p4s8u@pikus>
 Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Jul 2010 14:35:33 -0500
-Message-ID: <1279654533.1859.242.camel@doink>
+Date: Tue, 20 Jul 2010 12:38:18 -0700
+Message-ID: <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Jul 2010 19:35:34.0411 (UTC) FILETIME=[B8D4FDB0:01CB2842]
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-15 at 17:21 -0400, Christoph Hellwig wrote:
-> On Thu, Jul 15, 2010 at 10:46:45PM +0400, Kulikov Vasiliy wrote:
-> > map_len is unsigned. Checking map_len <= 0 is buggy when it should be
-> > below zero. So, check exact expression instead of map_len.
-> > 
-> > Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
+On Tue, 2010-07-20 at 21:14 +0200, Michał Nazarewicz wrote:
+> On Tue, 20 Jul 2010 20:15:24 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
 > 
-> Looks good,
+> > On Tue, 2010-07-20 at 17:51 +0200, Michal Nazarewicz wrote:
+> >> +** Use cases
+> >> +
+> >> +    Lets analyse some imaginary system that uses the CMA to see how
+> >> +    the framework can be used and configured.
+> >> +
+> >> +
+> >> +    We have a platform with a hardware video decoder and a camera
+> >> each
+> >> +    needing 20 MiB of memory in worst case.  Our system is written in
+> >> +    such a way though that the two devices are never used at the same
+> >> +    time and memory for them may be shared.  In such a system the
+> >> +    following two command line arguments would be used:
+> >> +
+> >> +        cma=r=20M cma_map=video,camera=r
+> >
+> > This seems inelegant to me.. It seems like these should be connected
+> > with the drivers themselves vs. doing it on the command like for
+> > everything. You could have the video driver declare it needs 20megs, and
+> > the the camera does the same but both indicate it's shared ..
+> >
+> > If you have this disconnected from the drivers it will just cause
+> > confusion, since few will know what these parameters should be for a
+> > given driver set. It needs to be embedded in the kernel.
 > 
-> Reviewed-by: Christoph Hellwig <hch@lst.de>
+> I see your point but the problem is that devices drivers don't know the
+> rest of the system neither they know what kind of use cases the system
+> should support.
 > 
+> 
+> Lets say, we have a camera, a JPEG encoder, a video decoder and
+> scaler (ie. devices that scales raw image).  We want to support the
+> following 3 use cases:
+> 
+> 1. Camera's output is scaled and displayed in real-time.
+> 2. Single frame is taken from camera and saved as JPEG image.
+> 3. A video file is decoded, scaled and displayed.
+> 
+> What is apparent is that camera and video decoder are never running
+> at the same time.  The same situation is with JPEG encoder and scaler.
+>  From this knowledge we can construct the following:
+> 
+>    cma=a=10M;b=10M cma_map=camera,video=a;jpeg,scaler=b
 
-Looks good to me too.  Do you want me to pull this
-in via the XFS tree, or do you have other plans?
+It should be implicit tho. If the video driver isn't using the memory
+then it should tell your framework that the memory is not used. That way
+something else can use it.
 
-					-Alex
+(btw, these strings your creating yikes, talk about confusing ..)
+
+> One of the purposes of the CMA framework is to make it let device
+> drivers completely forget about the memory management and enjoy
+> a simple API.
+
+The driver, and it's maintainer, are really the best people to know how
+much memory they need and when it's used/unused. You don't really want
+to architect them out.
+
+Daniel
+
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
