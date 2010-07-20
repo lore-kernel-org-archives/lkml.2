@@ -1,60 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758255Ab0GTI2a (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 04:28:30 -0400
-Received: from idcmail-mo2no.shaw.ca ([64.59.134.9]:64611 "EHLO
-	idcmail-mo2no.shaw.ca" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755710Ab0GTI21 convert rfc822-to-8bit (ORCPT
+	id S1758229Ab0GTIdm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 04:33:42 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:41391 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752922Ab0GTIdk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 04:28:27 -0400
-X-Cloudmark-SP-Filtered: true
-X-Cloudmark-SP-Result: v=1.0 c=1 a=Ksu0FrVsbPQA:10 a=VphdPIyG4kEA:10 a=kj9zAlcOel0A:10
- a=c23vf5CSMVc0QQz9B4a6RA==:17 a=20KFwNOVAAAA:8 a=t4tfzCi2J8k6McczUl0A:9
- a=xsZw4V3jzg3y7eZHtRtEezmhrTUA:4 a=CjuIK1q_8ugA:10 a=jEp0ucaQiEUA:10
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
-Mime-Version: 1.0 (Apple Message framework v1078)
+	Tue, 20 Jul 2010 04:33:40 -0400
+Date: Tue, 20 Jul 2010 11:33:38 +0300 (EEST)
+From: "=?ISO-8859-15?Q?Ilpo_J=E4rvinen?=" <ilpo.jarvinen@helsinki.fi>
+X-X-Sender: ijjarvin@wel-95.cs.helsinki.fi
+To: David Miller <davem@davemloft.net>
+cc: eric.dumazet@gmail.com, lennart.schulte@nets.rwth-aachen.de, tj@kernel.org,
+        LKML <linux-kernel@vger.kernel.org>, Netdev <netdev@vger.kernel.org>,
+        henning.fehrmann@aei.mpg.de, carsten.aulbert@aei.mpg.de
+Subject: Re: [PATCHv2] tcp: fix crash in tcp_xmit_retransmit_queue
+In-Reply-To: <20100719.125500.257479409.davem@davemloft.net>
+Message-ID: <alpine.DEB.2.00.1007201101090.14034@wel-95.cs.helsinki.fi>
+References: <1279548555.2553.51.camel@edumazet-laptop> <alpine.DEB.2.00.1007192013010.30181@melkinpaasi.cs.helsinki.fi> <1279561148.2553.150.camel@edumazet-laptop> <20100719.125500.257479409.davem@davemloft.net>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <adilger@dilger.ca>
-In-Reply-To: <AANLkTikxHJgguNn6EOK6fX53xYSRPmcNjIeGSTigQ9qu@mail.gmail.com>
-Date: Tue, 20 Jul 2010 02:28:25 -0600
-Cc: David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <4161BF3D-D410-4AEC-8185-975203182B94@dilger.ca>
-References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> <AANLkTikuzYqYpGHcubb7QVciZW0dNFjOG82qIwy5M4gO@mail.gmail.com> <10783.1279556132@redhat.com> <AANLkTinVns77R7yCCh-lydd0eQufdAF9O2OaWmCL7uSn@mail.gmail.com> <11817.1279560400@redhat.com> <AANLkTikxHJgguNn6EOK6fX53xYSRPmcNjIeGSTigQ9qu@mail.gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-X-Mailer: Apple Mail (2.1078)
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-07-19, at 11:46, Linus Torvalds wrote:
-> On Mon, Jul 19, 2010 at 10:26 AM, David Howells <dhowells@redhat.com> wrote:
->> I suspect they would, though maybe they can say otherwise.  What about SMB
->> directory enumeration?  I believe that is effectively getdents-with-stat.
->> Having to do open+stat for each file for that would be painful.
+On Mon, 19 Jul 2010, David Miller wrote:
+
+> From: Eric Dumazet <eric.dumazet@gmail.com>
+> Date: Mon, 19 Jul 2010 19:39:08 +0200
 > 
-> Yeah, but do you need xstat information at all for something like
-> that? Most people try very hard to make do with the information
-> returned by readdir itself (d_type and inode number), because if you
-> end up looking up each name you've already pretty much lost in a
-> performance model.
+> > Do you know in what exact circumstance the bug triggers ?
+> > 
+> > It's hard to believe thousand of machines on the Internet never hit
+> > it :(
+> > 
+> > Maybe another problem in congestion control ?
+> 
+> This is something to investigate, but the conditions under which
+> tcp_fastretrans_alert() (the main invoker of tcp_xmit_retransmit_queue())
+> does it's thing are complicated enough that I'm going to add this fix
+> for the time being and push it out to stable too.
 
-This lightweight stat() interface is exactly needed for things like "color ls",
-which is the default on all distros today.  "ls --color" always does a stat on the file just to get the file mode to color executable files differently.  For Lustre and other distributed filesystems, getting things like the current file size is hard work (i.e. multiple RPCs per file), yet "ls" doesn't care about the size or modification times unless "ls -l" is used.  Same goes for "find".
+This is so true. ...So far I've managed to twice rule out of the 
+possibility of this being really triggerable (ie., it would mean
+Lennart's out of tree changes broke it), and once in the middle came
+into opposite conclusion. Thus by majority voting we can deduce that it 
+won't happen - how reassuring :-/. It seems that tcp_try_undo_recovery 
+causes return if TCP remained in CA_Loss/CA_Recovery and that 
+tcp_time_to_recover won't really let past return either under normal 
+circumstances (more details below), and tcp_simple_retransmit 
+requires lost_out to change; seems safe in mainline to me.
 
-> (And I do agree that a "readdirplus()" is probably something that a
-> lot of server people would find useful, but obviously that's another
-> cross-filesystem nightmare. Only a few filesystems can cheaply give
-> you anything but d_type/d_ino, and not all do even that),
+Hmm... It seems that I've just solved another report too. ...Somebody a 
+while back found out that setting reordering sysctl to zero (ie. to a 
+value which does not make too much sense) crashed the kernel. It seems 
+that at least then tcp_time_to_recover() would return true and trigger 
+this bug (though I'm not sure if that's the only breakage to happen).
 
-Having a readdirplus() syscall would be even better, but again only with the ability to request specific attributes.  Otherwise the filesystem may be doing a lot of extra work to collect all of the file attributes, and then userspace will probably be throwing most of them away.
+Also worth to keep in mind is the bugzilla entry ("New freez in 
+TCP" or something like that) so I'm not really sure I could say for sure 
+nobody never hit it. The bugzilla one goes away by disable SACK (at least 
+for some) but it might mix two different issues. It seems that there 
+really are two different issues, the other may have something to do with 
+SACK though there are other variables then involved, e.g., the changes in 
+retransmission logic/timing, so it's impossible to say if the SACK disable 
+really "fixed" the bugzilla one or not. Also Tejun's ->next == NULL 
+finding points out to a different bug than this Lennart's one.
 
-Cheers, Andreas
 
-
-
-
-
+-- 
+ i.
