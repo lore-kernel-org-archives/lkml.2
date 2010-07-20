@@ -1,109 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967517Ab0GTBwm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 21:52:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44408 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967455Ab0GTBwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 21:52:39 -0400
-Date: Tue, 20 Jul 2010 01:52:22 GMT
-From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20100719230205.604014179@sbs-t61.sc.intel.com>
-References: <20100719230205.604014179@sbs-t61.sc.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/xsave] x86, xsave: Use xsaveopt in context-switch path when supported
-Message-ID: <tip-6bad06b768920e278c7cedfdda56a0b4c6a35ee9@git.kernel.org>
-Git-Commit-ID: 6bad06b768920e278c7cedfdda56a0b4c6a35ee9
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Jul 2010 01:52:22 +0000 (UTC)
+	id S936570Ab0GTB7U (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 21:59:20 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:47045 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932088Ab0GTB7T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 21:59:19 -0400
+Date: Tue, 20 Jul 2010 10:47:58 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [PATCH 0/7] memcg reclaim tracepoint
+Message-Id: <20100720104758.376c4fc7.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100716191006.7369.A69D9226@jp.fujitsu.com>
+References: <20100716191006.7369.A69D9226@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  6bad06b768920e278c7cedfdda56a0b4c6a35ee9
-Gitweb:     http://git.kernel.org/tip/6bad06b768920e278c7cedfdda56a0b4c6a35ee9
-Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Mon, 19 Jul 2010 16:05:52 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 19 Jul 2010 17:52:24 -0700
+On Fri, 16 Jul 2010 19:12:46 +0900 (JST)
+KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
 
-x86, xsave: Use xsaveopt in context-switch path when supported
+> Recently, Mel Gorman added some vmscan tracepoint. but they can't
+> trace memcg. So, This patch series does.
+> 
+> 
+> following three patches are nit fix and cleanups.
+> 
+>   memcg: sc.nr_to_reclaim should be initialized
+>   memcg: mem_cgroup_shrink_node_zone() doesn't need sc.nodemask
+>   memcg: nid and zid can be calculated from zone
+> 
+I'm not so familiar with tracepoints, but I don't have any objection to these
+3 fix/cleanup for memcg.
 
-xsaveopt is a more optimized form of xsave specifically designed
-for the context switch usage. xsaveopt doesn't save the state that's not
-modified from the prior xrstor. And if a specific feature state gets
-modified to the init state, then xsaveopt just updates the header bit
-in the xsave memory layout without updating the corresponding memory
-layout.
+Thanks,
+Daisuke Nishimura
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <20100719230205.604014179@sbs-t61.sc.intel.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/i387.h  |    2 +-
- arch/x86/include/asm/xsave.h |    9 ++++++---
- arch/x86/kernel/cpu/common.c |    8 ++++++++
- 3 files changed, 15 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index bb370fd..59bd93a 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -60,7 +60,7 @@ extern int restore_i387_xstate_ia32(void __user *buf);
- 
- static __always_inline __pure bool use_xsaveopt(void)
- {
--	return 0;
-+	return static_cpu_has(X86_FEATURE_XSAVEOPT);
- }
- 
- static __always_inline __pure bool use_xsave(void)
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 0c72adc..ec86c5f 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -125,8 +125,11 @@ static inline void fpu_xsave(struct fpu *fpu)
- {
- 	/* This, however, we can work around by forcing the compiler to select
- 	   an addressing mode that doesn't require extended registers. */
--	__asm__ __volatile__(".byte " REX_PREFIX "0x0f,0xae,0x27"
--			     : : "D" (&(fpu->state->xsave)),
--				 "a" (-1), "d"(-1) : "memory");
-+	alternative_input(
-+		".byte " REX_PREFIX "0x0f,0xae,0x27",
-+		".byte " REX_PREFIX "0x0f,0xae,0x37",
-+		X86_FEATURE_XSAVEOPT,
-+		[fx] "D" (&fpu->state->xsave), "a" (-1), "d" (-1) :
-+		"memory");
- }
- #endif
-diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
-index c735830..3f715ef 100644
---- a/arch/x86/kernel/cpu/common.c
-+++ b/arch/x86/kernel/cpu/common.c
-@@ -140,10 +140,18 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
- static int __init x86_xsave_setup(char *s)
- {
- 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
-+	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
- 	return 1;
- }
- __setup("noxsave", x86_xsave_setup);
- 
-+static int __init x86_xsaveopt_setup(char *s)
-+{
-+	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
-+	return 1;
-+}
-+__setup("noxsaveopt", x86_xsaveopt_setup);
-+
- #ifdef CONFIG_X86_32
- static int cachesize_override __cpuinitdata = -1;
- static int disable_x86_serial_nr __cpuinitdata = 1;
+> following four patches are tracepoint conversion and adding memcg tracepoints.
+> 
+>   vmscan:        convert direct reclaim tracepoint to DEFINE_EVENT
+>   memcg, vmscan: add memcg reclaim tracepoint
+>   vmscan:        convert mm_vmscan_lru_isolate to DEFINE_EVENT
+>   memcg, vmscan: add mm_vmscan_memcg_isolate tracepoint
+> 
+> 
+> diffstat
+> ================
+>  include/linux/memcontrol.h    |    6 ++--
+>  include/linux/mmzone.h        |    5 +++
+>  include/linux/swap.h          |    3 +-
+>  include/trace/events/vmscan.h |   79 +++++++++++++++++++++++++++++++++++++++--
+>  mm/memcontrol.c               |   15 +++++---
+>  mm/vmscan.c                   |   35 ++++++++++++------
+>  6 files changed, 118 insertions(+), 25 deletions(-)
+> 
+> 
+> Sameple output is here.
+> =========================
+> 
+>               dd-1851  [001]   158.837763: mm_vmscan_memcg_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
+>               dd-1851  [001]   158.837783: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+>               dd-1851  [001]   158.837860: mm_vmscan_memcg_reclaim_end: nr_reclaimed=32
+>   (...)
+>               dd-1970  [000]   266.608235: mm_vmscan_wakeup_kswapd: nid=0 zid=1 order=0
+>               dd-1970  [000]   266.608239: mm_vmscan_wakeup_kswapd: nid=1 zid=1 order=0
+>               dd-1970  [000]   266.608248: mm_vmscan_wakeup_kswapd: nid=2 zid=1 order=0
+>          kswapd1-348   [001]   266.608254: mm_vmscan_kswapd_wake: nid=1 order=0
+>               dd-1970  [000]   266.608254: mm_vmscan_wakeup_kswapd: nid=3 zid=1 order=0
+>          kswapd3-350   [000]   266.608266: mm_vmscan_kswapd_wake: nid=3 order=0
+>   (...)
+>          kswapd0-347   [001]   267.328891: mm_vmscan_memcg_softlimit_reclaim_begin: order=0 may_writepage=1 gfp_flags=GFP_HIGHUSER_MOVABLE
+>          kswapd0-347   [001]   267.328897: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+>          kswapd0-347   [001]   267.328915: mm_vmscan_memcg_isolate: isolate_mode=0 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+>          kswapd0-347   [001]   267.328989: mm_vmscan_memcg_softlimit_reclaim_end: nr_reclaimed=32
+>          kswapd0-347   [001]   267.329019: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+>          kswapd0-347   [001]   267.330562: mm_vmscan_lru_isolate: isolate_mode=1 order=0 nr_requested=32 nr_scanned=32 nr_taken=32 contig_taken=0 contig_dirty=0 contig_failed=0
+>   (...)
+>          kswapd2-349   [001]   267.407081: mm_vmscan_kswapd_sleep: nid=2
+>          kswapd3-350   [001]   267.408077: mm_vmscan_kswapd_sleep: nid=3
+>          kswapd1-348   [000]   267.427858: mm_vmscan_kswapd_sleep: nid=1
+>          kswapd0-347   [001]   267.430064: mm_vmscan_kswapd_sleep: nid=0
+> 
+> 
+> 
+> 
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
