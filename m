@@ -1,53 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751960Ab0GTESh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 00:18:37 -0400
-Received: from usmamail.tilera.com ([72.1.168.231]:45419 "EHLO
-	USMAMAIL.TILERA.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751078Ab0GTESf (ORCPT
+	id S1752104Ab0GTEUH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 00:20:07 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:55673 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab0GTEUF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 00:18:35 -0400
-Message-ID: <4C452399.3050708@tilera.com>
-Date: Tue, 20 Jul 2010 00:18:33 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	Tue, 20 Jul 2010 00:20:05 -0400
+Date: Tue, 20 Jul 2010 00:19:39 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 0/13]  Uprobes Patches:
+Message-ID: <20100720041938.GA28533@infradead.org>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: Jiri Slaby <jirislaby@gmail.com>, <linux-next@vger.kernel.org>,
-        <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: linux-next: manual merge of the limits tree with the tile tree
-References: <20100720134833.4082eed4.sfr@canb.auug.org.au>
-In-Reply-To: <20100720134833.4082eed4.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset="ISO-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/19/2010 11:48 PM, Stephen Rothwell wrote:
-> Hi Jiri,
->
-> Today's linux-next merge of the limits tree got a conflict in
-> include/asm-generic/unistd.h between commits
-> 5360bd776f73d0a7da571d72a09a03f237e99900 ("Fix up the "generic" unistd.h
-> ABI to be more useful") and b51cae21ee66f77a368428e6bdf75a0c012c9fd7
-> ("Add wait4() back to the set of <asm-generic/unistd.h> syscalls") from
-> the tile tree and commit f33ebbe9da2c3c24664a0ad4f8fd83f293547e63
-> ("unistd: add __NR_prlimit64 syscall numbers") from the limits tree.
->
-> I fixed it up (see below) and can carry the fix as necessary.
->   
+I tried this again and it worked.  That is kinda worked becuase I could
+use it to trace things in my running bash instance, but haven't really
+figured out how to trace something useful using the pid based interface.
+The processes I care about really don't run long enough for that.
 
-Jiri, would it be possible to put __NR_prlimit64 as number 261 in
-<asm-generic/syscall.h>?  This would avoid the requirement for Tilera
-users to have a "flag day" to renumber some of our syscalls.  I assume
-there are no users at all of this flavor of the __NR_prlimit64 syscall
-number yet otherwise, except the "score" architecture folks who
-presumably wouldn't have started trying to use the syscall yet.
+So thanks for the good work so far, but we'll really need a way to
+define the trace points per-file and have a way to invoke a program
+with tracing that uses it enabled.
 
-Thanks, and Stephen, thanks for the fixup.
+A minor note on perf probe -S output:  This seems to include a lot of
+T.456 or similar labels, which from my recollection are gcc internal
+things.  It would be good to filter those out as they aren't quite
+useful and just fill up the list.
 
--- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
+
+And I really need to complain about the per-patch changelogs inside
+the visible commit message again.  I know you disagree, but it's
+a real pain to read through it in git-log when you look for information
+about the patch (which for some of the patches is rather short anyway)
+and all you see is some rather useless patch versioning changelogs.
+This is what basically all patches to the kernel do, and what's also
+suggested in Documentation/SubmittingPatches.
+
+While talking about changelogs: your patches duplicate the patch
+subject line inside the mail body, leading to rather funny git
+commit messages after a git-am:
+
+commit c32a1b63db113bb1508dbf01af34d29f6cda747a
+Author: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Date:   Mon Jul 12 16:04:42 2010 +0530
+
+    perf: show functions in a file without using pid
+        
+    [RFC] perf: show functions in a file without using pid
+
+    ...
 
