@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758575Ab0GTRoZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 13:44:25 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:40266 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750962Ab0GTRoX (ORCPT
+	id S1758262Ab0GTRuW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 13:50:22 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:41709 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750962Ab0GTRuV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 13:44:23 -0400
-Message-ID: <4C45E050.8000007@linux.vnet.ibm.com>
-Date: Tue, 20 Jul 2010 10:43:44 -0700
+	Tue, 20 Jul 2010 13:50:21 -0400
+Message-ID: <4C45E1C9.6010402@linux.vnet.ibm.com>
+Date: Tue, 20 Jul 2010 10:50:01 -0700
 From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Lin Ming <ming.m.lin@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Johannes Berg <johannes@sipsolutions.net>,
+To: Robert Richter <robert.richter@amd.com>
+CC: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+        Johannes Berg <johannes@sipsolutions.net>,
         Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
         Paul Mundt <lethal@linux-sh.org>,
@@ -31,160 +32,51 @@ CC: Ingo Molnar <mingo@elte.hu>, Johannes Berg <johannes@sipsolutions.net>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>
 Subject: Re: [rfc] Describe events in a structured way via sysfs
-References: <1277187920.4467.3.camel@minggr.sh.intel.com> <1277189971.3637.5.camel@jlt3.sipsolutions.net> <1277191359.5025.4.camel@minggr.sh.intel.com> <1277192007.3637.8.camel@jlt3.sipsolutions.net> <20100624093625.GA26931@elte.hu> <1277396053.3870.16.camel@jlt3.sipsolutions.net> <20100624173315.GA30403@elte.hu> <1277792114.5400.5.camel@minggr.sh.intel.com> <20100629085532.GE22344@elte.hu> <1277803248.5400.16.camel@minggr.sh.intel.com> <20100629102656.GA25512@elte.hu> <1278057996.3841.26.camel@minggr.sh.intel.com> <4C40F750.4000607@linux.vnet.ibm.com> <1279604908.23815.21.camel@minggr.sh.intel.com>
-In-Reply-To: <1279604908.23815.21.camel@minggr.sh.intel.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+References: <20100624093625.GA26931@elte.hu> <1277396053.3870.16.camel@jlt3.sipsolutions.net> <20100624173315.GA30403@elte.hu> <1277792114.5400.5.camel@minggr.sh.intel.com> <20100629085532.GE22344@elte.hu> <1277803248.5400.16.camel@minggr.sh.intel.com> <20100629102656.GA25512@elte.hu> <1278057996.3841.26.camel@minggr.sh.intel.com> <4C40F750.4000607@linux.vnet.ibm.com> <1279604908.23815.21.camel@minggr.sh.intel.com> <20100720151920.GC21909@erda.amd.com>
+In-Reply-To: <20100720151920.GC21909@erda.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2010 10:48 PM, Lin Ming wrote:
-> On Sat, 2010-07-17 at 08:20 +0800, Corey Ashford wrote:
->> On 07/02/2010 01:06 AM, Lin Ming wrote:
->>> On Tue, 2010-06-29 at 18:26 +0800, Ingo Molnar wrote:
->>>> * Lin Ming<ming.m.lin@intel.com>   wrote:
->>>>
->>>>>> Also, we can (optionally) consider 'generic', subsystem level events to
->>>>>> also show up under:
->>>>>>
->>>>>>      /sys/bus/pci/drivers/i915/events/
->>>>>>
->>>>>> This would give a model to non-device-specific events to be listed one
->>>>>> level higher in the sysfs hierarchy.
->>>>>>
->>>>>> This too would be done in the driver, not by generic code. It's generally
->>>>>> the driver which knows how the events should be categorized.
->>>>>
->>>>> This is a bit difficult. I'd like not to touch TRACE_EVENT(). [...]
->>>>
->>>> We can certainly start with the simpler variant - it's also the more common
->>>> case.
->>>>
->>>>> [...] How does the driver know if an event is 'generic' if TRACE_EVENT is
->>>>> not touched?
->>>>
->>>> Well, it's per driver code which creates the 'events' directory anyway, so
->>>> that code decides where to link things. It can link it to the per driver kobj
->>>> - or to the per subsys kobj.
->>>>
->>>>>> I'd imagine something similar for wireless drivers as well - most
->>>>>> currently defined events would show up on a per device basis there.
->>>>>>
->>>>>> Can you see practical problems with this scheme?
->>>>>
->>>>> Not now. I may find some problems when write more detail code.
->>>>
->>>> Ok. Feel free to post RFC patches (even if they are not fully complete yet),
->>>> so that we can see how things are progressing.
->>>>
->>>> I suspect the best approach would be to try to figure out the right sysfs
->>>> placement for one or two existing driver tracepoints, so that we can see it
->>>> all in practice. (Obviously any changes to drivers will have to go via the
->>>> relevant driver maintainer tree(s).)
->>>
->>> Well, take i915 tracepoints as an example, the sys structures as below
->>>
->>> /sys/class/drm/card0/events/
->>> |-- i915_gem_object_bind
->>> |   |-- enable
->>> |   |-- filter
->>> |   |-- format
->>> |   `-- id
->> ...
+On 07/20/2010 08:19 AM, Robert Richter wrote:
+> On 20.07.10 01:48:28, Lin Ming wrote:
+>   The caller reads config and type and pass them into perf_event_attr.
 >>
->> Hi Lin,
->>
->> Sorry for my late reply on this thread.  I had missed these posts
->> earlier because I had an email filter that was set to look for messages
->> with "perf" in the subject, and so I missed this entire thread.
+>> 1. Hardware events
+>> /sys/devices/system/cpu/cpu0...cpuN/events
+>> |-- L1-dcache-load-misses  ===>  event name
+>> |   |-- config             ===>  config value for the event
+>> |   `-- type               ===>  event type
 >
-> Sorry for my late reply too.
-> I have been busy with some other stuff. Hope I can send a more
-> functional patches this week.
+> Wouldn't it be much easier to have a unique sysfs id (could be an
+> u64):
 >
->>
->> With your example here, let's say I want to open this event with the
->> perf_events ABI... how would I go about doing that?  Have you figured
->> out whether the caller would read the id and pass that into the
->> interface, or perhaps pass in the fd of the id file (or perhaps the fd
->> of the specific event directory).
+>> |-- L1-dcache-load-misses  ===>  event name
+>> |   `-- id                 ===>  event id
 >
-> Please just ignore my above example. Now I have some uncompleted new
-> patches to export hardware/software/tracepoint events via sysfs, like
-> below.
+> ... and then extend the syscall to enable an event by its sysfs id:
 >
-> The event path is passed in with perf's "-e" option, for example
-> perf record -e /sys/kernel/events/page-faults --<some commands>
+>              memset(&attr, 0, sizeof(attr));
+>              attr.type        = PERF_TYPE_SYSFS;
+>              attr.sysfs_id    = sysfs_id;
+>              attr.sample_type = PERF_SAMPLE_CPU | PERF_SAMPLE_RAW;
+>              attr.config      = config;
+> 	    ...
 >
-> The caller reads config and type and pass them into perf_event_attr.
->
-> 1. Hardware events
-> /sys/devices/system/cpu/cpu0...cpuN/events
-> |-- L1-dcache-load-misses  ===>  event name
-> |   |-- config             ===>  config value for the event
-> |   `-- type               ===>  event type
-> |-- cycles
-> |   |-- config
-> |   `-- type
-> .....
->
-> 2. Software events
-> /sys/kernel/events
-> |-- page-faults
-> |   |-- config
-> |   `-- type
-> |-- context-switches
-> |   |-- config
-> |   `-- type
-> ....
->
-> 3. Tracepoint events
-> /sys/devices/pci0000:00/0000:00:02.0/events
-> |-- i915_gem_object_create
-> |   |-- config
-> |   `-- type
-> |-- i915_gem_object_bind
-> |   |-- config
-> |   `-- type
-> ....
-> ....
-> /sys/devices/system/kvm/kvm0/events
-> |-- kvm_entry
-> |   |-- config
-> |   `-- type
-> |-- kvm_hypercall
-> |   |-- config
-> |   `-- type
-> ....
-> ....
->
->>
->> Also, I see the filter and format fields here.  Would the caller write
->> to these fields to set them up?  What's the format of the data that's
->> written to them?  Would it be totally device dependent?  It seems like
->> there should be a way for a user space tool to discover what can be
->> programmed into the filter and format fields.
->
-> Now only read-only event attributes(config and type) are exported.
-> I want to first make some minimal functional patches. Then to implement
-> the complex writable attributes.
+> The kerrnel then knows which event is meant and the don't have to
+> provide event specific paramaters such as type/config that requires an
+> event specific setup. The advantage would be that we can open an event
+> file descriptor of every kind of event in a standardized way.
 
-I'm not seeing the value of writable attributes in sysfs at this point. 
-  Wouldn't that disconnect the event opening between the syscall and the 
-writing of attributes in user space, with no real way to tie them 
-together?  For example, what if two users wrote to the same attribute 
-with different values... which one would take precedence when you go to 
-do the open syscall?  I think all of the attribute data should be in the 
-open call, and sysfs should be read-only.
+Your example above still shows the .config member being set.  Was that 
+intentional?
 
-Earlier, I briefly presented an idea that would allow a caller to read 
-attribute formatting information, such as a shift and mask value, which 
-would allow the caller to build up a more complex .config value, 
-possibly extending into a new attr field - .config_extra[n] as dictated 
-by the shift value; shift values greater than 63 would place the 
-attribute into .config_extra[shift amount / 64] shifted by shift amount 
-% 64.  It's not the prettiest interface, but I think it could work and 
-would be extensible.
+Maybe another way to accomplish this would be to reuse the .config field 
+for the sysfs_id.
+
+We still need a way to deal with event attributes though, so something 
+more than a single sysfs_id would be needed to specify the event completely.
 
 - Corey
