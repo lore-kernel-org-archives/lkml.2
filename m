@@ -1,275 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S967505Ab0GTBwa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 19 Jul 2010 21:52:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:44392 "EHLO hera.kernel.org"
+	id S967517Ab0GTBwm (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 19 Jul 2010 21:52:42 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44408 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S967380Ab0GTBwU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 19 Jul 2010 21:52:20 -0400
-Date: Tue, 20 Jul 2010 01:52:03 GMT
+	id S967455Ab0GTBwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 19 Jul 2010 21:52:39 -0400
+Date: Tue, 20 Jul 2010 01:52:22 GMT
 From: tip-bot for Suresh Siddha <suresh.b.siddha@intel.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
         suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
         suresh.b.siddha@intel.com, tglx@linutronix.de, hpa@linux.intel.com
-In-Reply-To: <20100719230205.351459480@sbs-t61.sc.intel.com>
-References: <20100719230205.351459480@sbs-t61.sc.intel.com>
+In-Reply-To: <20100719230205.604014179@sbs-t61.sc.intel.com>
+References: <20100719230205.604014179@sbs-t61.sc.intel.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/xsave] x86, xsave: Sync xsave memory layout with its header for user handling
-Message-ID: <tip-29104e101d710dd152f807978884643a52eca8b7@git.kernel.org>
-Git-Commit-ID: 29104e101d710dd152f807978884643a52eca8b7
+Subject: [tip:x86/xsave] x86, xsave: Use xsaveopt in context-switch path when supported
+Message-ID: <tip-6bad06b768920e278c7cedfdda56a0b4c6a35ee9@git.kernel.org>
+Git-Commit-ID: 6bad06b768920e278c7cedfdda56a0b4c6a35ee9
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Jul 2010 01:52:04 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Jul 2010 01:52:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  29104e101d710dd152f807978884643a52eca8b7
-Gitweb:     http://git.kernel.org/tip/29104e101d710dd152f807978884643a52eca8b7
+Commit-ID:  6bad06b768920e278c7cedfdda56a0b4c6a35ee9
+Gitweb:     http://git.kernel.org/tip/6bad06b768920e278c7cedfdda56a0b4c6a35ee9
 Author:     Suresh Siddha <suresh.b.siddha@intel.com>
-AuthorDate: Mon, 19 Jul 2010 16:05:49 -0700
+AuthorDate: Mon, 19 Jul 2010 16:05:52 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 19 Jul 2010 17:51:30 -0700
+CommitDate: Mon, 19 Jul 2010 17:52:24 -0700
 
-x86, xsave: Sync xsave memory layout with its header for user handling
+x86, xsave: Use xsaveopt in context-switch path when supported
 
-With xsaveopt, if a processor implementation discern that a processor state
-component is in its initialized state it may modify the corresponding bit in
-the xsave_hdr.xstate_bv as '0', with out modifying the corresponding memory
-layout. Hence wHile presenting the xstate information to the user, we always
-ensure that the memory layout of a feature will be in the init state if the
-corresponding header bit is zero. This ensures the consistency and avoids the
-condition of the user seeing some some stale state in the memory layout during
-signal handling, debugging etc.
+xsaveopt is a more optimized form of xsave specifically designed
+for the context switch usage. xsaveopt doesn't save the state that's not
+modified from the prior xrstor. And if a specific feature state gets
+modified to the init state, then xsaveopt just updates the header bit
+in the xsave memory layout without updating the corresponding memory
+layout.
 
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-LKML-Reference: <20100719230205.351459480@sbs-t61.sc.intel.com>
+LKML-Reference: <20100719230205.604014179@sbs-t61.sc.intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/include/asm/i387.h  |   14 +++++++
- arch/x86/include/asm/xsave.h |   10 +++++
- arch/x86/kernel/i387.c       |   11 +++++
- arch/x86/kernel/xsave.c      |   89 +++++++++++++++++++++++++++++++++++++++++-
- 4 files changed, 123 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/i387.h  |    2 +-
+ arch/x86/include/asm/xsave.h |    9 ++++++---
+ arch/x86/kernel/cpu/common.c |    8 ++++++++
+ 3 files changed, 15 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index c991b3a..bb370fd 100644
+index bb370fd..59bd93a 100644
 --- a/arch/x86/include/asm/i387.h
 +++ b/arch/x86/include/asm/i387.h
-@@ -58,11 +58,25 @@ extern int restore_i387_xstate_ia32(void __user *buf);
+@@ -60,7 +60,7 @@ extern int restore_i387_xstate_ia32(void __user *buf);
  
- #define X87_FSW_ES (1 << 7)	/* Exception Summary */
- 
-+static __always_inline __pure bool use_xsaveopt(void)
-+{
-+	return 0;
-+}
-+
- static __always_inline __pure bool use_xsave(void)
+ static __always_inline __pure bool use_xsaveopt(void)
  {
- 	return static_cpu_has(X86_FEATURE_XSAVE);
+-	return 0;
++	return static_cpu_has(X86_FEATURE_XSAVEOPT);
  }
  
-+extern void __sanitize_i387_state(struct task_struct *);
-+
-+static inline void sanitize_i387_state(struct task_struct *tsk)
-+{
-+	if (!use_xsaveopt())
-+		return;
-+	__sanitize_i387_state(tsk);
-+}
-+
- #ifdef CONFIG_X86_64
- 
- /* Ignore delayed exceptions from user space */
+ static __always_inline __pure bool use_xsave(void)
 diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 2c4390c..0c72adc 100644
+index 0c72adc..ec86c5f 100644
 --- a/arch/x86/include/asm/xsave.h
 +++ b/arch/x86/include/asm/xsave.h
-@@ -111,6 +111,16 @@ static inline void xrstor_state(struct xsave_struct *fx, u64 mask)
- 		     :   "memory");
- }
- 
-+static inline void xsave_state(struct xsave_struct *fx, u64 mask)
-+{
-+	u32 lmask = mask;
-+	u32 hmask = mask >> 32;
-+
-+	asm volatile(".byte " REX_PREFIX "0x0f,0xae,0x27\n\t"
-+		     : : "D" (fx), "m" (*fx), "a" (lmask), "d" (hmask)
-+		     :   "memory");
-+}
-+
- static inline void fpu_xsave(struct fpu *fpu)
+@@ -125,8 +125,11 @@ static inline void fpu_xsave(struct fpu *fpu)
  {
  	/* This, however, we can work around by forcing the compiler to select
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 86cef6b..6106af9 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -190,6 +190,8 @@ int xfpregs_get(struct task_struct *target, const struct user_regset *regset,
- 	if (ret)
- 		return ret;
- 
-+	sanitize_i387_state(target);
-+
- 	return user_regset_copyout(&pos, &count, &kbuf, &ubuf,
- 				   &target->thread.fpu.state->fxsave, 0, -1);
+ 	   an addressing mode that doesn't require extended registers. */
+-	__asm__ __volatile__(".byte " REX_PREFIX "0x0f,0xae,0x27"
+-			     : : "D" (&(fpu->state->xsave)),
+-				 "a" (-1), "d"(-1) : "memory");
++	alternative_input(
++		".byte " REX_PREFIX "0x0f,0xae,0x27",
++		".byte " REX_PREFIX "0x0f,0xae,0x37",
++		X86_FEATURE_XSAVEOPT,
++		[fx] "D" (&fpu->state->xsave), "a" (-1), "d" (-1) :
++		"memory");
  }
-@@ -207,6 +209,8 @@ int xfpregs_set(struct task_struct *target, const struct user_regset *regset,
- 	if (ret)
- 		return ret;
- 
-+	sanitize_i387_state(target);
-+
- 	ret = user_regset_copyin(&pos, &count, &kbuf, &ubuf,
- 				 &target->thread.fpu.state->fxsave, 0, -1);
- 
-@@ -446,6 +450,8 @@ int fpregs_get(struct task_struct *target, const struct user_regset *regset,
- 					   -1);
- 	}
- 
-+	sanitize_i387_state(target);
-+
- 	if (kbuf && pos == 0 && count == sizeof(env)) {
- 		convert_from_fxsr(kbuf, target);
- 		return 0;
-@@ -467,6 +473,8 @@ int fpregs_set(struct task_struct *target, const struct user_regset *regset,
- 	if (ret)
- 		return ret;
- 
-+	sanitize_i387_state(target);
-+
- 	if (!HAVE_HWFP)
- 		return fpregs_soft_set(target, regset, pos, count, kbuf, ubuf);
- 
-@@ -533,6 +541,9 @@ static int save_i387_xsave(void __user *buf)
- 	struct _fpstate_ia32 __user *fx = buf;
- 	int err = 0;
- 
-+
-+	sanitize_i387_state(tsk);
-+
- 	/*
- 	 * For legacy compatible, we always set FP/SSE bits in the bit
- 	 * vector while saving the state to the user context.
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index 4993caa..368047c 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -24,6 +24,76 @@ struct _fpx_sw_bytes fx_sw_reserved_ia32;
- static unsigned int *xstate_offsets, *xstate_sizes, xstate_features;
- 
- /*
-+ * If a processor implementation discern that a processor state component is
-+ * in its initialized state it may modify the corresponding bit in the
-+ * xsave_hdr.xstate_bv as '0', with out modifying the corresponding memory
-+ * layout in the case of xsaveopt. While presenting the xstate information to
-+ * the user, we always ensure that the memory layout of a feature will be in
-+ * the init state if the corresponding header bit is zero. This is to ensure
-+ * that the user doesn't see some stale state in the memory layout during
-+ * signal handling, debugging etc.
-+ */
-+void __sanitize_i387_state(struct task_struct *tsk)
-+{
-+	u64 xstate_bv;
-+	int feature_bit = 0x2;
-+	struct i387_fxsave_struct *fx = &tsk->thread.fpu.state->fxsave;
-+
-+	if (!fx)
-+		return;
-+
-+	BUG_ON(task_thread_info(tsk)->status & TS_USEDFPU);
-+
-+	xstate_bv = tsk->thread.fpu.state->xsave.xsave_hdr.xstate_bv;
-+
-+	/*
-+	 * None of the feature bits are in init state. So nothing else
-+	 * to do for us, as the memory layout is upto date.
-+	 */
-+	if ((xstate_bv & pcntxt_mask) == pcntxt_mask)
-+		return;
-+
-+	/*
-+	 * FP is in init state
-+	 */
-+	if (!(xstate_bv & XSTATE_FP)) {
-+		fx->cwd = 0x37f;
-+		fx->swd = 0;
-+		fx->twd = 0;
-+		fx->fop = 0;
-+		fx->rip = 0;
-+		fx->rdp = 0;
-+		memset(&fx->st_space[0], 0, 128);
-+	}
-+
-+	/*
-+	 * SSE is in init state
-+	 */
-+	if (!(xstate_bv & XSTATE_SSE))
-+		memset(&fx->xmm_space[0], 0, 256);
-+
-+	xstate_bv = (pcntxt_mask & ~xstate_bv) >> 2;
-+
-+	/*
-+	 * Update all the other memory layouts for which the corresponding
-+	 * header bit is in the init state.
-+	 */
-+	while (xstate_bv) {
-+		if (xstate_bv & 0x1) {
-+			int offset = xstate_offsets[feature_bit];
-+			int size = xstate_sizes[feature_bit];
-+
-+			memcpy(((void *) fx) + offset,
-+			       ((void *) init_xstate_buf) + offset,
-+			       size);
-+		}
-+
-+		xstate_bv >>= 1;
-+		feature_bit++;
-+	}
-+}
-+
-+/*
-  * Check for the presence of extended state information in the
-  * user fpstate pointer in the sigcontext.
-  */
-@@ -112,6 +182,7 @@ int save_i387_xstate(void __user *buf)
- 		task_thread_info(tsk)->status &= ~TS_USEDFPU;
- 		stts();
- 	} else {
-+		sanitize_i387_state(tsk);
- 		if (__copy_to_user(buf, &tsk->thread.fpu.state->fxsave,
- 				   xstate_size))
- 			return -1;
-@@ -333,10 +404,26 @@ static void setup_xstate_features(void)
-  */
- static void __init setup_xstate_init(void)
+ #endif
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index c735830..3f715ef 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -140,10 +140,18 @@ EXPORT_PER_CPU_SYMBOL_GPL(gdt_page);
+ static int __init x86_xsave_setup(char *s)
  {
-+	setup_xstate_features();
-+
-+	/*
-+	 * Setup init_xstate_buf to represent the init state of
-+	 * all the features managed by the xsave
-+	 */
- 	init_xstate_buf = alloc_bootmem(xstate_size);
- 	init_xstate_buf->i387.mxcsr = MXCSR_DEFAULT;
- 
--	setup_xstate_features();
-+	clts();
-+	/*
-+	 * Init all the features state with header_bv being 0x0
-+	 */
-+	xrstor_state(init_xstate_buf, -1);
-+	/*
-+	 * Dump the init state again. This is to identify the init state
-+	 * of any feature which is not represented by all zero's.
-+	 */
-+	xsave_state(init_xstate_buf, -1);
-+	stts();
+ 	setup_clear_cpu_cap(X86_FEATURE_XSAVE);
++	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
+ 	return 1;
  }
+ __setup("noxsave", x86_xsave_setup);
  
- /*
++static int __init x86_xsaveopt_setup(char *s)
++{
++	setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
++	return 1;
++}
++__setup("noxsaveopt", x86_xsaveopt_setup);
++
+ #ifdef CONFIG_X86_32
+ static int cachesize_override __cpuinitdata = -1;
+ static int disable_x86_serial_nr __cpuinitdata = 1;
