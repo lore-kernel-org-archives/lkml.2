@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761482Ab0GTTXI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:23:08 -0400
-Received: from smtp11.hushmail.com ([65.39.178.133]:36514 "EHLO
-	smtp11.hushmail.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758658Ab0GTTXF (ORCPT
+	id S1761498Ab0GTTXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 15:23:25 -0400
+Received: from e36.co.us.ibm.com ([32.97.110.154]:38650 "EHLO
+	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758658Ab0GTTXV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:23:05 -0400
-X-Hush-Verified-Domain: hushmail.com
-MIME-Version: 1.0
-Date: Tue, 20 Jul 2010 22:22:56 +0300
-To: maciej.rutecki@gmail.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: netfilter/iptables stopped logging 2.6.35-rc
-From: auto401300@hushmail.com
+	Tue, 20 Jul 2010 15:23:21 -0400
+Subject: Re: [PATCH 8/8] v3 Update memory-hotplug documentation
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Nathan Fontenot <nfont@austin.ibm.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>, greg@kroah.com
+In-Reply-To: <4C451F3F.8000207@austin.ibm.com>
+References: <4C451BF5.50304@austin.ibm.com>
+	 <4C451F3F.8000207@austin.ibm.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Tue, 20 Jul 2010 12:23:04 -0700
+Message-ID: <1279653784.9785.6.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
-Content-Type: text/plain; charset="UTF-8"
-Message-Id: <20100720192256.EC3661200AA@smtp.hushmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-07-19 at 22:59 -0500, Nathan Fontenot wrote:
+> 
+> 
+> -Now, XXX is defined as start_address_of_section / section_size.
+> +Now, XXX is defined as (start_address_of_section / section_size) of
+> the first
+> +section conatined in the memory block.
+> 
+>  For example, assume 1GiB section size. A device for a memory starting
+> at
+>  0x100000000 is /sys/device/system/memory/memory4
+>  (0x100000000 / 1Gib = 4)
+>  This device covers address range [0x100000000 ... 0x140000000)
+> 
+> -Under each section, you can see 4 files.
+> +Under each section, you can see 5 files.
+> 
+> -/sys/devices/system/memory/memoryXXX/phys_index
+> +/sys/devices/system/memory/memoryXXX/start_phys_index
+> +/sys/devices/system/memory/memoryXXX/end_phys_index 
+
+Just wanted to make sure you didn't forget to update this after KAME's
+comments on the first couple of patches.
 
 
-On Tue, 20 Jul 2010 15:51:03 +0300 Maciej Rutecki 
-<maciej.rutecki@gmail.com> wrote:
->On sobota, 17 lipca 2010 o 09:20:36 auto401300@hushmail.com wrote:
->> Hi!
->> 
->> Has something broken with netfilter/iptables logging in 2.6.35-
->rc,
->> or is there something new I should set in .config since .34?
->> 
->> 
->> I just verified that if I boot .34 and ping the pc it does 
->logging:
->> 
->> Jul 17 09:42:49 xxxxx kernel: Linux version 2.6.34-ab 
->(root@xxxxx)
->> (gcc version 4.4.4 (Debian 4.4.4-1) ) #1 SMP PREEMPT Mon May 17
->> 09:15
->> 
->> :15 EEST 2010
->> 
->> ....
->> Jul 17 09:44:52 xxxxx kernel: DENY  in: IN=eth0 OUT= MAC=xxxxx
->> SRC=xxxxx DST=xxxxx LEN=60 TOS=0x00 PREC=0x00 TTL=127 ID=38945
->> PROTO=ICMP TYPE=8 CODE=0 ID=512 SEQ=256
->> 
->> 
->> but if I boot .35-rc4 and ping:
->> 
->> Jul 17 09:48:08 xxxxx kernel: Linux version 2.6.35-rc4-aa
->> (root@xxxxx) (gcc version 4.4.4 (Debian 4.4.4-6) ) #1 SMP 
->PREEMPT
->> Mon Jul 5 15:22:02 EEST 2010
->> ....
->> nothing from iptables in log
->> 
->> 
->> userspace is same, only booted different kernel versions
->
->I created a Bugzilla entry at 
->https://bugzilla.kernel.org/show_bug.cgi?id=16423
->for your bug report, please add your address to the CC list in 
->there, thanks!
->
->-- 
->Maciej Rutecki
->http://www.maciek.unixy.pl
-
-
-I just thought that whole initramfs may be also different and tried 
-to compile
-.34 again to test if it still does iptables logging with current 
-toolchain but
-just now debian kernel-package is broken due to
-http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=589700
-I will try again when that is fixed
-
-thanks.
+-- Dave
 
