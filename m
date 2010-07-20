@@ -1,86 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758884Ab0GTJbU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 05:31:20 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:57017 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758491Ab0GTJbS (ORCPT
+	id S1759957Ab0GTJol (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 05:44:41 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:32818 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758408Ab0GTJok (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 05:31:18 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: Andreas Gruenbacher <agruen@suse.de>
-Cc: sfrench@us.ibm.com, ffilz@us.ibm.com, adilger@sun.com, sandeen@redhat.com,
-        tytso@mit.edu, staubach@redhat.com, bfields@citi.umich.edu,
-        jlayton@redhat.com, linux-fsdevel@vger.kernel.org, nfsv4@linux-nfs.org,
-        linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V2 00/16]  New ACL format for better NFSv4 acl interoperability
-In-Reply-To: <201007192119.50868.agruen@suse.de>
-References: <1278096227-16784-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <201007192119.50868.agruen@suse.de>
-User-Agent: Notmuch/0.3.1-58-g6607fd6 (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Tue, 20 Jul 2010 15:01:07 +0530
-Message-ID: <m34ofucxes.fsf@linux.vnet.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Tue, 20 Jul 2010 05:44:40 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+        Yulia Vilensky <vilensky@compulab.co.il>,
+        Geert Stappers <stappers@stappers.nl>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100720074659.GA32073@oksana.dev.rtsoft.ru>
+References: <1279584175.4883.226.camel@localhost>
+	 <20100720074659.GA32073@oksana.dev.rtsoft.ru>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-VbnAtc3kNuesuLzmJz+A"
+Date: Tue, 20 Jul 2010 10:44:26 +0100
+Message-ID: <1279619066.4883.249.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH] ds2782_battery: Rename get_current and get_voltage
+ operations
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 19 Jul 2010 21:19:50 +0200, Andreas Gruenbacher <agruen@suse.de> wrote:
-> Aneesh,
-> 
-> here is a patch on top of the richacl-upstream queue.
-> 
-> So far, we were assuming that acls are always masked, and the file masks
-> could be set so that they would not mask any permissions.  This is fine
-> for permission checking, but richacl_apply_masks() didn't recognize when
-> the file masks were set to mask nothing, and was still transforming such
-> acls unnecessarily.  This could lead to correct but surprising results.
-> 
-> Instead of using a flag here we could check if the file masks are set to
-> "ineffective" values, but that would require the same computation as
-> richacl_compute_max_masks(), which can be a slow on large acls.  It is a
-> lot easier to instead remember if the file masks are "effective".
-> 
-> (We still need to compute the file masks in nfsd where no file masks are
-> supplied so that the file permission bits will be set to a reasonable
-> value. user space will always pass valid file masks in, so we are covered
-> in that side.)
 
-We need to update ACL4_VALID_FLAGS to now consider ACL4_MASKED as a
-valid flag. This is also needed for userspace. On a related note,
-should we move ACL4_MASKED and ACL4_POSIX_MAPPED to be the higher
-bits ? That would make sure we will be able to accomodate new flag
-value NFSv4 define. Something like 
+--=-VbnAtc3kNuesuLzmJz+A
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-diff --git a/include/linux/richacl.h b/include/linux/richacl.h
-index 929cc32..ff3c12b 100644
---- a/include/linux/richacl.h
-+++ b/include/linux/richacl.h
-@@ -50,16 +50,17 @@ struct richacl {
- /* a_flags values */
- #define ACL4_AUTO_INHERIT		0x01
- #define ACL4_PROTECTED			0x02
--/*#define ACL4_DEFAULTED			0x04*/
--#define ACL4_MASKED			0x08
--#define ACL4_POSIX_MAPPED		0x10
-+#define ACL4_DEFAULTED			0x04
-+/* flag value defined by Richacl */
-+#define ACL4_MASKED			0x40
-+#define ACL4_POSIX_MAPPED		0x80
- 
- #define ACL4_VALID_FLAGS (	\
- 	ACL4_AUTO_INHERIT |	\
- 	ACL4_PROTECTED |	\
-+	ACL4_MASKED |		\
- 	ACL4_POSIX_MAPPED)
- 
--
- /* e_type values */
- #define ACE4_ACCESS_ALLOWED_ACE_TYPE	0x0000
- #define ACE4_ACCESS_DENIED_ACE_TYPE	0x0001
+On Tue, 2010-07-20 at 11:46 +0400, Anton Vorontsov wrote:
+> On Tue, Jul 20, 2010 at 01:02:55AM +0100, Ben Hutchings wrote:
+> > commit 9b9ade6b612e562c4a5bd02ef38cc32e10f3f9ba "ds2782_battery: Add
+> > support for ds2786 battery gas gauge" introduced an operation named
+> > get_current.  Since get_current() is defined as a macro on some
+> > architectures this driver no longer compiles on those architectures.
+> >=20
+> > Rename get_current to get_current_now to avoid the macro.
+> > Rename get_voltage to get_voltage_now for consistency.
+> >=20
+> > Reported-by: Geert Stappers <stappers@stappers.nl>
+> > Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+> > ---
+>=20
+> Thanks for the patch, but I have a similar fix in the
+> battery-2.6.git tree (for -next):
+[...]
 
+This fix needs to go into 2.6.35.
 
+Ben.
 
--aneesh
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
 
+--=-VbnAtc3kNuesuLzmJz+A
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQIVAwUATEVv8+e/yOyVhhEJAQJh5RAAmyaHwunuD0wG3Q5aKRhPYbDyRG2CHLdD
+bK+KmtP1+FYYwIpJyyDqf9mVyY9DPd0vDKp23OXB6Hgl9hB2SLYTxRtDwjOlhdL9
+RPdfvKT4k6dOL38HlBNZiMM8gz3welVs8XPw34SinENOJLdQI1RXIH8vLMZuMgZk
+fo23nblphyc2kdBaFNhCp1w03ItSo+RysnUATcFmrB4rDOlLXED3EDDjrTrWA0pe
+SzKVopdhrZDTGfUGjzf5PJgd7jg9RF5G67823olBH39kmAOM/nJw6OvTd/QAp5MX
+BKsF0y/C1OlJ69FjED2ADeiK94WYbtZNUNmhUq9CfAzLnhOWi6DYNf3HcXt1biZt
+C2JnfZiHiIiAzJIYFdrGNvfbNhC1gmKwPKs9tprRIhpbB78lkJKkY5ih1NSCb3a8
+rkX2spPAoIv9K36n2/Iuwp2A9jrClEb2/tVRQAJAt60Doaj0+uYdM5kCVmHaSaee
+lIO3/DDi+mX/Rixg7S6I69puNAH3BOaLB8Xa0aGiuBRsGMG8/OGJZIQgqjYiqD4r
+zpP/xrSSM1kJTiYVfVohKXDDDWZuysoN+he+y515O6HoJEIT4KVlP5SaJ16nII2b
+SswbfeJldxE9kBmqCjWrHCKiqwXV2MhgCXe4yU118Wl9tfPFbxfFINWg5J4d+8zk
+gqHkX7trof0=
+=eXdK
+-----END PGP SIGNATURE-----
+
+--=-VbnAtc3kNuesuLzmJz+A--
