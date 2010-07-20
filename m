@@ -1,75 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753336Ab0GTErZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 00:47:25 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18376 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753198Ab0GTErV (ORCPT
+	id S1752696Ab0GTExz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 00:53:55 -0400
+Received: from mail4.hitachi.co.jp ([133.145.228.5]:46070 "EHLO
+	mail4.hitachi.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752340Ab0GTExy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 00:47:21 -0400
-To: Christof Schmitt <christof.schmitt@de.ibm.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/1] Apply segment size and segment boundary to integrity data
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20100715153410.774329000@de.ibm.com>
-	<yq1mxtspwab.fsf@sermon.lab.mkp.net>
-	<20100716083034.GA7474@schmichrtp.ibm.com>
-Date: Tue, 20 Jul 2010 00:45:49 -0400
-In-Reply-To: <20100716083034.GA7474@schmichrtp.ibm.com> (Christof Schmitt's
-	message of "Fri, 16 Jul 2010 10:30:34 +0200")
-Message-ID: <yq1bpa292wy.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	Tue, 20 Jul 2010 00:53:54 -0400
+X-AuditID: b753bd60-a9cd2ba000005dcc-ab-4c452bdf40d4
+Message-ID: <4C452BD6.7080901@hitachi.com>
+Date: Tue, 20 Jul 2010 13:53:42 +0900
+From: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
+Organization: Systems Development Lab., Hitachi, Ltd., Japan
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C452A51.001B:SCFMA4539814,ss=1,fgs=0
+To: Roland McGrath <roland@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Andrew Morton <akpm@linux-foundation.org>, x86@kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: kprobes: fix swapped segment registers in kretprobe
+References: <20100718221111.19BC24B2C9@magilla.sf.frob.com>
+In-Reply-To: <20100718221111.19BC24B2C9@magilla.sf.frob.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Brightmail-Tracker: AAAAAA==
+X-FMFTCR: RANGEC
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
+Roland McGrath wrote:
+> The following changes since commit bea9a6d239cb2aa2ced4dcb0a05e1827ce61fa3d:
+> 
+>   Merge branch 'upstream-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2 (2010-07-18 10:09:25 -0700)
+> 
+> are available in the git repository at:
+> 
+>   git://git.kernel.org/pub/scm/linux/kernel/git/frob/linux-2.6-roland.git x86/kprobes
+> 
+> Roland McGrath (1):
+>       x86: kprobes: fix swapped segment registers in kretprobe
+> 
+>  arch/x86/kernel/kprobes.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> 
+> Thanks,
+> Roland
+> ---
+> [PATCH] x86: kprobes: fix swapped segment registers in kretprobe
+> 
+> In commit f007ea26, the order of the %es and %ds segment registers
+> got accidentally swapped, so synthesized 'struct pt_regs' frames
+> have the two values inverted.  It's almost sure that these values
+> never matter, and that they also never differ.  But wrong is wrong.
 
-Christof,
+Oops, thanks Roland for finding it.
 
-Christof> The motivation stems from research how the integrity data can
-Christof> be mapped to the hardware interface used by the zfcp
-Christof> driver. When passing data segments to the zfcp hardware
-Christof> controller, there is the constraint that each data segment has
-Christof> a maximum size of 4k and a segment must not cross a 4k
-Christof> boundary.
-
-Ok.
+Acked-by: Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>
 
 
-Christof> Right now, this is done by reporting the maximum segment size
-Christof> and segment boundary accordingly from zfcp. When issuing a
-Christof> request, zfcp simply walks the sg list and passes the segments
-Christof> to the hardware controller, no mapping or readjustment is
-Christof> necessary in the driver.
+> 
+> Signed-off-by: Roland McGrath <roland@redhat.com>
+> ---
+>  arch/x86/kernel/kprobes.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
+> index 345a4b1..675879b 100644
+> --- a/arch/x86/kernel/kprobes.c
+> +++ b/arch/x86/kernel/kprobes.c
+> @@ -640,8 +640,8 @@ static int __kprobes kprobe_handler(struct pt_regs *regs)
+>  	/* Skip cs, ip, orig_ax and gs. */	\
+>  	"	subl $16, %esp\n"	\
+>  	"	pushl %fs\n"		\
+> -	"	pushl %ds\n"		\
+>  	"	pushl %es\n"		\
+> +	"	pushl %ds\n"		\
+>  	"	pushl %eax\n"		\
+>  	"	pushl %ebp\n"		\
+>  	"	pushl %edi\n"		\
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-In that case I don't really have a problem with adhering to the queue
-segment size and segment boundary for the integrity metadata.  As long
-as we avoid using the max number of data segments to cap the integrity
-scatterlist because that'll definitely break a lot of stuff.
-
-Does the zfcp hardware have scatterlist length constraints?
-
-
->> Your change also has repercussions when merging requests and bios.
->> We'd need to honor the DI segmentation constraints when merging.
->> Otherwise we may end up going beyond the controller limits when
->> mapping the sgl.
-
-Christof> Meaning the integrity data sg list would have more entries
-Christof> than max_segments? I have not seen this during my experiments,
-Christof> but then i likely have not hit every case of a possible
-Christof> request layout.
-
-It happens all the time.
-
--- 
-Martin K. Petersen	Oracle Linux Engineering
