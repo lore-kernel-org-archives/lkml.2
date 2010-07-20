@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752139Ab0GTXcn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 19:32:43 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:52288 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750992Ab0GTXcm (ORCPT
+	id S933115Ab0GTXeo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 19:34:44 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:52108 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750992Ab0GTXem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 19:32:42 -0400
-Date: Wed, 21 Jul 2010 09:32:38 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] Shrinker fixes for XFS for 2.6.36-rc6
-Message-ID: <20100720233238.GS32635@dastard>
-References: <20100720004630.GH23223@dastard>
+	Tue, 20 Jul 2010 19:34:42 -0400
+Date: Wed, 21 Jul 2010 08:34:37 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Hannes Eder <heder@google.com>
+Cc: Patrick McHardy <kaber@trash.net>, lvs-devel@vger.kernel.org,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        netfilter@vger.kernel.org, Wensong Zhang <wensong@linux-vs.org>,
+        Julius Volz <julius.volz@gmail.com>,
+        "David S. Miller" <davem@davemloft.net>,
+        Netfilter Development Mailinglist 
+	<netfilter-devel@vger.kernel.org>
+Subject: Re: [patch v2.2 1/4] [PATCH v2.1 1/4] netfilter: xt_ipvs
+ (netfilter matcher for IPVS)
+Message-ID: <20100720233437.GH9569@verge.net.au>
+References: <20100501032014.406353538@vergenet.net>
+ <20100501032120.298829234@vergenet.net>
+ <4BDC543F.7060500@trash.net>
+ <AANLkTikIzHuzxo4z1_8_fEGLBC2-0Uz0X8SOc8n2msuX@mail.gmail.com>
+ <20100622071326.GB9928@verge.net.au>
+ <AANLkTimUEJGAJ6tsPKGltUGBwrdotK5YyKBIkQWbA8qZ@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100720004630.GH23223@dastard>
+In-Reply-To: <AANLkTimUEJGAJ6tsPKGltUGBwrdotK5YyKBIkQWbA8qZ@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 10:46:30AM +1000, Dave Chinner wrote:
-> Hi Linus,
+On Tue, Jul 20, 2010 at 02:44:11PM +0200, Hannes Eder wrote:
+> Hi Simon,
 > 
-> The following patches address shrinker lockdep and performance
-> regressions introduced into XFS in 2.6.34 when a shrinker was
-> added at the last moment to address OOM issues with lazy XFS inode
-> reclaim.
+> On Tue, Jun 22, 2010 at 09:13, Simon Horman <horms@verge.net.au> wrote:
+> > On Mon, May 03, 2010 at 01:29:46PM +0200, Hannes Eder wrote:
+> >> Thank you for picking this series of patches up again and thanks for
+> >> the feedback.
+> >>
+> >> I'll send an updated version in the next days.
+> >
+> > Hi Hanes,
+> >
+> > more than a few days seems to have passed.
+> > Do you have time to fix the patches up?
+> > If not, I'll take a stab at it.
 > 
-> The first two patches are the saem as I originally posted to solve
-> the problem for 2.6.34. They did not pass review in time for 2.6.34,
-> and attempts to address said review comments resulted in a bigger,
-> more contentious patchset that has much bigger issues than this
-> patchset. Time has run out and I really don't want to have another
-> kernel released with XFS causing lockdep to trigger the moment
-> memory reclaim starts, so I'm asking if you will accept the original
-> fixes I posted for the problem.
-> 
-> The third patch addresses shrinker inode scanning performance
-> problems raised in recently here:
-> 
-> https://bugzilla.kernel.org/show_bug.cgi?id=16348
-> 
-> Please consider these commits for 2.6.26-rc6.
+> /me working through the backlog of emails after vacation, however this
+> email was buried in my inbox before my vacation, my bad.  I've been
+> extremely busy lately and I did not have the time to work on the
+> patches.  I saw your updated versions, I appreciate very much that you
+> are taking it from there.
 
-Ijust rebased the series - the shrinker context patch did not pickup
-the new shrinker in the TTM DRM code for radeon. New pull-request output
-below.
-
-Cheers,
-
-Dave.
-
-
-The following changes since commit d0c6f6258478e1dba532bf7c28e2cd6e1047d3a4:
-
-  Merge branch 'x86-fixes-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-07-19 13:19:32 -0700)
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/dgc/xfsdev shrinker
-
-Dave Chinner (3):
-      mm: add context argument to shrinker callback
-      xfs: convert inode shrinker to per-filesystem contexts
-      xfs: track AGs with reclaimable inodes in per-ag radix tree
-
- arch/x86/kvm/mmu.c                   |    2 +-
- drivers/gpu/drm/i915/i915_gem.c      |    2 +-
- drivers/gpu/drm/ttm/ttm_page_alloc.c |    2 +-
- fs/dcache.c                          |    2 +-
- fs/gfs2/glock.c                      |    2 +-
- fs/gfs2/quota.c                      |    2 +-
- fs/gfs2/quota.h                      |    2 +-
- fs/inode.c                           |    2 +-
- fs/mbcache.c                         |    5 +-
- fs/nfs/dir.c                         |    2 +-
- fs/nfs/internal.h                    |    3 +-
- fs/quota/dquot.c                     |    2 +-
- fs/ubifs/shrinker.c                  |    2 +-
- fs/ubifs/ubifs.h                     |    2 +-
- fs/xfs/linux-2.6/xfs_buf.c           |    5 +-
- fs/xfs/linux-2.6/xfs_super.c         |    2 -
- fs/xfs/linux-2.6/xfs_sync.c          |  130 ++++++++++++++++++++--------------
- fs/xfs/linux-2.6/xfs_sync.h          |    2 -
- fs/xfs/linux-2.6/xfs_trace.h         |    3 +
- fs/xfs/quota/xfs_qm.c                |    7 ++-
- fs/xfs/xfs_mount.h                   |    2 +-
- include/linux/mm.h                   |    2 +-
- mm/vmscan.c                          |    8 ++-
- net/sunrpc/auth.c                    |    2 +-
- 24 files changed, 113 insertions(+), 82 deletions(-)
--- 
-Dave Chinner
-david@fromorbit.com
+No problem, I assumed that you were busy with something.
