@@ -1,93 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761601Ab0GTUgl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 16:36:41 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38641 "EHLO hera.kernel.org"
+	id S1761576Ab0GTUhh (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 16:37:37 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38638 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759681Ab0GTUfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758689Ab0GTUfr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 20 Jul 2010 16:35:47 -0400
 From: Tejun Heo <tj@kernel.org>
 To: linux-kernel@vger.kernel.org, dhowells@redhat.com, sfrench@samba.org,
         anton@samba.org, swhiteho@redhat.com, airlied@linux.ie,
         dri-devel@lists.freedesktop.org
-Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 3/7] fscache: drop references to slow-work
-Date: Tue, 20 Jul 2010 22:34:58 +0200
-Message-Id: <1279658102-20069-4-git-send-email-tj@kernel.org>
+Subject: [PATCHSET wq#for-next] workqueue: replace slow-work with workqueue
+Date: Tue, 20 Jul 2010 22:34:55 +0200
+Message-Id: <1279658102-20069-1-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1279658102-20069-1-git-send-email-tj@kernel.org>
-References: <1279658102-20069-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Jul 2010 20:35:18 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 20 Jul 2010 20:35:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fscache no longer uses slow-work.  Drop references to it.
+Hello,
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: David Howells <dhowells@redhat.com>
----
- fs/fscache/Kconfig            |    1 -
- fs/fscache/main.c             |    7 -------
- include/linux/fscache-cache.h |    1 -
- 3 files changed, 0 insertions(+), 9 deletions(-)
+With cmwq, workqueue now can handle all use cases of slow-work.  This
+patchset converts all slow-work users to use workqueue instead and
+remove slow-work from the kernel.  The following users are converted.
 
-diff --git a/fs/fscache/Kconfig b/fs/fscache/Kconfig
-index cc94bb9..3f6dfa9 100644
---- a/fs/fscache/Kconfig
-+++ b/fs/fscache/Kconfig
-@@ -1,7 +1,6 @@
- 
- config FSCACHE
- 	tristate "General filesystem local caching manager"
--	select SLOW_WORK
- 	help
- 	  This option enables a generic filesystem caching manager that can be
- 	  used by various network and other filesystems to cache data locally.
-diff --git a/fs/fscache/main.c b/fs/fscache/main.c
-index 44d13dd..500936d 100644
---- a/fs/fscache/main.c
-+++ b/fs/fscache/main.c
-@@ -106,10 +106,6 @@ static int __init fscache_init(void)
- 	unsigned int cpu;
- 	int ret;
- 
--	ret = slow_work_register_user(THIS_MODULE);
--	if (ret < 0)
--		goto error_slow_work;
--
- 	fscache_object_max_active =
- 		clamp_val(nr_cpus,
- 			  fscache_object_max_active, WQ_UNBOUND_MAX_ACTIVE);
-@@ -176,8 +172,6 @@ error_proc:
- error_op_wq:
- 	destroy_workqueue(fscache_object_wq);
- error_object_wq:
--	slow_work_unregister_user(THIS_MODULE);
--error_slow_work:
- 	return ret;
- }
- 
-@@ -196,7 +190,6 @@ static void __exit fscache_exit(void)
- 	fscache_proc_cleanup();
- 	destroy_workqueue(fscache_op_wq);
- 	destroy_workqueue(fscache_object_wq);
--	slow_work_unregister_user(THIS_MODULE);
- 	printk(KERN_NOTICE "FS-Cache: Unloaded\n");
- }
- 
-diff --git a/include/linux/fscache-cache.h b/include/linux/fscache-cache.h
-index 17ed9c1..b8581c0 100644
---- a/include/linux/fscache-cache.h
-+++ b/include/linux/fscache-cache.h
-@@ -20,7 +20,6 @@
- 
- #include <linux/fscache.h>
- #include <linux/sched.h>
--#include <linux/slow-work.h>
- #include <linux/workqueue.h>
- 
- #define NR_MAXCACHES BITS_PER_LONG
--- 
-1.6.4.2
+* fscache-object: a dedicated unbound workqueue is used.
+* fscache-operation: a dedicated unbound workqueue is used.
+* cifs: system_nrt_wq is used.
+* gfs2: a dedicated nrt workqueue is used.
+* drm: system_nrt_wq is used.
 
+cifs and gfs2 conversions largely remained unchanged from the last
+posting.  fscache conversions are updated to use unbound workqueues
+and debugfs support is dropped for now (workqueue debugfs support is
+not included in wq#for-next).  Tracing API based debug implementation
+is planned.
+
+The drm conversion is new but the conversion is mostly trivial and my
+simplistic testing involving plugging and unplugging monitor works
+fine.
+
+David, fscache conversion now uses unbound workqueues and it should
+behave virtually the same with slow-work.
+
+As whether cmwq will get merged isn't completely clear yet, I think it
+would be better to keep these changes in the wq tree instead of
+scattering them around multiple trees.  Would the maintainers be okay
+with that?
+
+This patchset contains the following patches.
+
+ 0001-fscache-convert-object-to-use-workqueue-instead-of-s.patch
+ 0002-fscache-convert-operation-to-use-workqueue-instead-o.patch
+ 0003-fscache-drop-references-to-slow-work.patch
+ 0004-cifs-use-workqueue-instead-of-slow-work.patch
+ 0005-gfs2-use-workqueue-instead-of-slow-work.patch
+ 0006-drm-use-workqueue-instead-of-slow-work.patch
+ 0007-slow-work-kill-it.patch
+
+It's on top of the following branch.
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-next
+
+and is available in the following git branch
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git review-slow-work-conversion
+
+and contains the following changes.
+
+ Documentation/filesystems/caching/fscache.txt |   10 
+ Documentation/slow-work.txt                   |  322 -------
+ drivers/gpu/drm/drm_crtc_helper.c             |   29 
+ fs/cachefiles/namei.c                         |   13 
+ fs/cachefiles/rdwr.c                          |    4 
+ fs/cifs/Kconfig                               |    1 
+ fs/cifs/cifsfs.c                              |    5 
+ fs/cifs/cifsglob.h                            |    8 
+ fs/cifs/dir.c                                 |    2 
+ fs/cifs/file.c                                |   30 
+ fs/cifs/misc.c                                |   20 
+ fs/fscache/Kconfig                            |    1 
+ fs/fscache/internal.h                         |    8 
+ fs/fscache/main.c                             |  104 ++
+ fs/fscache/object-list.c                      |   11 
+ fs/fscache/object.c                           |  106 +-
+ fs/fscache/operation.c                        |   67 -
+ fs/fscache/page.c                             |   36 
+ fs/gfs2/Kconfig                               |    1 
+ fs/gfs2/incore.h                              |    3 
+ fs/gfs2/main.c                                |   14 
+ fs/gfs2/ops_fstype.c                          |    8 
+ fs/gfs2/recovery.c                            |   54 -
+ fs/gfs2/recovery.h                            |    6 
+ fs/gfs2/sys.c                                 |    3 
+ include/drm/drm_crtc.h                        |    3 
+ include/linux/fscache-cache.h                 |   47 -
+ include/linux/slow-work.h                     |  163 ---
+ init/Kconfig                                  |   24 
+ kernel/Makefile                               |    2 
+ kernel/slow-work-debugfs.c                    |  227 -----
+ kernel/slow-work.c                            | 1068 --------------------------
+ kernel/slow-work.h                            |   72 -
+ kernel/sysctl.c                               |    8 
+ 34 files changed, 292 insertions(+), 2188 deletions(-)
+
+Thanks.
+
+--
+tejun
