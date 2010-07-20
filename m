@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab0GTTaP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:30:15 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:41786 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1750972Ab0GTTaK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:30:10 -0400
-Subject: Re: [PATCH 1/3] mm: add context argument to shrinker callback
-From: Alex Elder <aelder@sgi.com>
-Reply-To: aelder@sgi.com
-To: Dave Chinner <david@fromorbit.com>
-Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
-In-Reply-To: <1279194418-16119-2-git-send-email-david@fromorbit.com>
-References: <1279194418-16119-1-git-send-email-david@fromorbit.com>
-	 <1279194418-16119-2-git-send-email-david@fromorbit.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 20 Jul 2010 14:30:04 -0500
-Message-ID: <1279654204.1859.232.camel@doink>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 Jul 2010 19:30:05.0565 (UTC) FILETIME=[F4D312D0:01CB2841]
+	id S1754766Ab0GTTcg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 15:32:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:57431 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751150Ab0GTTcd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 15:32:33 -0400
+Date: Tue, 20 Jul 2010 15:32:24 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Corrado Zoccolo <czoccolo@gmail.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
+        axboe@kernel.dk, Linux-Kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
+Message-ID: <20100720193224.GM8967@redhat.com>
+References: <x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
+ <AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
+ <x49eif7p3z0.fsf@segfault.boston.devel.redhat.com>
+ <20100713195650.GA21044@redhat.com>
+ <x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
+ <20100713204236.GB21044@redhat.com>
+ <x4939vfv4i0.fsf@segfault.boston.devel.redhat.com>
+ <20100720141102.GA6316@infradead.org>
+ <20100720142647.GA8967@redhat.com>
+ <AANLkTimxrPLaAoH28PuxggHr99G9Xq8GlHaDJEd_QhNT@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimxrPLaAoH28PuxggHr99G9Xq8GlHaDJEd_QhNT@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-15 at 21:46 +1000, Dave Chinner wrote:
-> From: Dave Chinner <dchinner@redhat.com>
+On Tue, Jul 20, 2010 at 09:10:56PM +0200, Corrado Zoccolo wrote:
+> On Tue, Jul 20, 2010 at 4:26 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> > On Tue, Jul 20, 2010 at 10:11:03AM -0400, Christoph Hellwig wrote:
+> >> Didn't you guys have a previous iteration of the fixes that gets
+> >> rid of REQ_NODILE by improving the heuristics inside cfq?  That
+> >> would be much, much preffered from the filesystem point of view.
+> I think the previous iteration required more complex heuristics, while
+> this one uses existing ones to handle one more class of problems.
+> I understand that you still see the complexity from the fs side, but
+> Vivek's proposal may help also there. It only needs to be tested thoroughly.
 > 
-> The current shrinker implementation requires the registered callback
-> to have global state to work from. This makes it difficult to shrink
-> caches that are not global (e.g. per-filesystem caches). Pass the shrinker
-> structure to the callback so that users can embed the shrinker structure
-> in the context the shrinker needs to operate on and get back to it in the
-> callback via container_of().
+> >
+> > Actually in this patch, I was thinking we can probably get rid of
+> > RQ_NOIDLE flag and just check for WRITE_SYNC. Any WRITE_SYNC queue
+> > gets served on sync-noidle tree. I am wondering will we not face jbd
+> > thread issues with direct writes also? If yes, then not special casing
+> > direct IO writes and treat them same as O_SYNC writes will make sense.
+> 
+> Probably it is better to submit this first, since it is already
+> tested, and then have a different patch that can finish the work
+> This will help when bisecting for possible regressions, since I'm not
+> sure why the other writes are not already marked with RQ_NOIDLE (maybe
+> it was introduced for some good reason to distinguish the two sets,
+> and we won't know unless we find the workload where it helped).
+> I'll resend the current patch with Jeff's reviewed and tested tags.
+> 
 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  arch/x86/kvm/mmu.c              |    2 +-
->  drivers/gpu/drm/i915/i915_gem.c |    2 +-
->  fs/dcache.c                     |    2 +-
->  fs/gfs2/glock.c                 |    2 +-
->  fs/gfs2/quota.c                 |    2 +-
->  fs/gfs2/quota.h                 |    2 +-
->  fs/inode.c                      |    2 +-
->  fs/mbcache.c                    |    5 +++--
->  fs/nfs/dir.c                    |    2 +-
->  fs/nfs/internal.h               |    3 ++-
->  fs/quota/dquot.c                |    2 +-
->  fs/ubifs/shrinker.c             |    2 +-
->  fs/ubifs/ubifs.h                |    2 +-
->  fs/xfs/linux-2.6/xfs_buf.c      |    5 +++--
->  fs/xfs/linux-2.6/xfs_sync.c     |    1 +
->  fs/xfs/quota/xfs_qm.c           |    7 +++++--
->  include/linux/mm.h              |    2 +-
->  mm/vmscan.c                     |    8 +++++---
->  18 files changed, 31 insertions(+), 22 deletions(-)
+I am fine with pushing this patch as it is first and then once we have
+an answer to question whether direct IO path and O_SYNC/fsync path need
+same treatment or different treatment in IO scheduler, we can fix RQ_NOIDLE
+flag issue also.
 
-You seem to have missed two registered shrinkers:
-- ttm_pool_mm_shrink() in "drivers/gpu/drm/ttm/ttm_page_alloc.c"
-- rpcauth_cache_shrinker() in "net/sunrpc/auth.c"
-
-Other that that, this looks good to me.
-
-					-Alex
-
-
-
-
-
+Vivek
