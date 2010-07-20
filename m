@@ -1,93 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932367Ab0GTTLA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 15:11:00 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:39049 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932564Ab0GTTK5 convert rfc822-to-8bit (ORCPT
+	id S1758628Ab0GTTNs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 15:13:48 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:50377 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755201Ab0GTTNo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 15:10:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=UFXmePpSzyRqP6AUgZ9BKkppCc+Eto5EnTZzVav4kMC3ke8Fy+nbIo1QxAuksqHNTN
-         OEOOKP0Xi6aIg/tl+IIxjP7Yt+9/go7n3Kit+PvSHUcp/MsZom3UI2MLIMhwILEa1KIT
-         2gc6VIGwqvjVUeOmb8EHAm2e9Xr+DinAp47As=
-MIME-Version: 1.0
-In-Reply-To: <20100720142647.GA8967@redhat.com>
-References: <x49eiffusvn.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTikulpqCK169_bIiXrHQtZIhsQpp_siBIvnahCVn@mail.gmail.com>
-	<x49vd8rt5ub.fsf@segfault.boston.devel.redhat.com>
-	<AANLkTilgHqtb1FbgK-d1vW6MyIyOT6MtpCcMmQcGlc7t@mail.gmail.com>
-	<x49eif7p3z0.fsf@segfault.boston.devel.redhat.com>
-	<20100713195650.GA21044@redhat.com>
-	<x49aapvp1k0.fsf@segfault.boston.devel.redhat.com>
-	<20100713204236.GB21044@redhat.com>
-	<x4939vfv4i0.fsf@segfault.boston.devel.redhat.com>
-	<20100720141102.GA6316@infradead.org>
-	<20100720142647.GA8967@redhat.com>
-Date: Tue, 20 Jul 2010 21:10:56 +0200
-Message-ID: <AANLkTimxrPLaAoH28PuxggHr99G9Xq8GlHaDJEd_QhNT@mail.gmail.com>
-Subject: Re: [PATCH 0/2] cfq-iosched: fixing RQ_NOIDLE handling.
-From: Corrado Zoccolo <czoccolo@gmail.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: Christoph Hellwig <hch@infradead.org>, Jeff Moyer <jmoyer@redhat.com>,
-        axboe@kernel.dk, Linux-Kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Jul 2010 15:13:44 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Tue, 20 Jul 2010 21:14:58 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+In-reply-to: <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Xiaolin Zhang <xiaolin.zhang@intel.com>,
+        Hiremath Vaibhav <hvaibhav@ti.com>,
+        Robert Fekete <robert.fekete@stericsson.com>,
+        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-msm@vger.kernel.org
+Message-id: <op.vf5o28st7p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <cover.1279639238.git.m.nazarewicz@samsung.com>
+ <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
+ <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
+ <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 4:26 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
-> On Tue, Jul 20, 2010 at 10:11:03AM -0400, Christoph Hellwig wrote:
->> Didn't you guys have a previous iteration of the fixes that gets
->> rid of REQ_NODILE by improving the heuristics inside cfq?  That
->> would be much, much preffered from the filesystem point of view.
-I think the previous iteration required more complex heuristics, while
-this one uses existing ones to handle one more class of problems.
-I understand that you still see the complexity from the fs side, but
-Vivek's proposal may help also there. It only needs to be tested thoroughly.
+On Tue, 20 Jul 2010 20:15:24 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
 
+> On Tue, 2010-07-20 at 17:51 +0200, Michal Nazarewicz wrote:
+>> +** Use cases
+>> +
+>> +    Lets analyse some imaginary system that uses the CMA to see how
+>> +    the framework can be used and configured.
+>> +
+>> +
+>> +    We have a platform with a hardware video decoder and a camera
+>> each
+>> +    needing 20 MiB of memory in worst case.  Our system is written in
+>> +    such a way though that the two devices are never used at the same
+>> +    time and memory for them may be shared.  In such a system the
+>> +    following two command line arguments would be used:
+>> +
+>> +        cma=r=20M cma_map=video,camera=r
 >
-> Actually in this patch, I was thinking we can probably get rid of
-> RQ_NOIDLE flag and just check for WRITE_SYNC. Any WRITE_SYNC queue
-> gets served on sync-noidle tree. I am wondering will we not face jbd
-> thread issues with direct writes also? If yes, then not special casing
-> direct IO writes and treat them same as O_SYNC writes will make sense.
-
-Probably it is better to submit this first, since it is already
-tested, and then have a different patch that can finish the work
-This will help when bisecting for possible regressions, since I'm not
-sure why the other writes are not already marked with RQ_NOIDLE (maybe
-it was introduced for some good reason to distinguish the two sets,
-and we won't know unless we find the workload where it helped).
-I'll resend the current patch with Jeff's reviewed and tested tags.
-
-Corrado
-
+> This seems inelegant to me.. It seems like these should be connected
+> with the drivers themselves vs. doing it on the command like for
+> everything. You could have the video driver declare it needs 20megs, and
+> the the camera does the same but both indicate it's shared ..
 >
-> I really wished that we had some blktrace of some standard workloads
-> stored somewhere which we could simply replay using "btreplay" and come
-> to some kind of conclusion whenever we are faced with taking such
-> decisions.
->
-> Thanks
-> Vivek
->
->
+> If you have this disconnected from the drivers it will just cause
+> confusion, since few will know what these parameters should be for a
+> given driver set. It needs to be embedded in the kernel.
+
+I see your point but the problem is that devices drivers don't know the
+rest of the system neither they know what kind of use cases the system
+should support.
 
 
+Lets say, we have a camera, a JPEG encoder, a video decoder and
+scaler (ie. devices that scales raw image).  We want to support the
+following 3 use cases:
+
+1. Camera's output is scaled and displayed in real-time.
+2. Single frame is taken from camera and saved as JPEG image.
+3. A video file is decoded, scaled and displayed.
+
+What is apparent is that camera and video decoder are never running
+at the same time.  The same situation is with JPEG encoder and scaler.
+ From this knowledge we can construct the following:
+
+   cma=a=10M;b=10M cma_map=camera,video=a;jpeg,scaler=b
+
+This may be a silly example but it shows that the configuration of
+memory regions and device->regions mapping should be done after
+some investigation rather then from devices which may have not enough
+knowledge.
+
+
+One of the purposes of the CMA framework is to make it let device
+drivers completely forget about the memory management and enjoy
+a simple API.
+
+
+CMA core has a cma_defaults() function which can be called from
+platform initialisation code.  It makes it easy to provide default
+values for the cma and cma_map parameters.  This makes it possible
+to provide a default which will work in many/most cases even if
+user does not provide custom cma and/or cma_map parameters.
+
+
+Having said that, some way of letting device drivers request
+a region if one has not been defined for them may be a good idea.
+I'll have to think about it...
 
 -- 
-__________________________________________________________________________
-
-dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
-PhD - Department of Computer Science - University of Pisa, Italy
---------------------------------------------------------------------------
-The self-confidence of a warrior is not the self-confidence of the average
-man. The average man seeks certainty in the eyes of the onlooker and calls
-that self-confidence. The warrior seeks impeccability in his own eyes and
-calls that humbleness.
-                               Tales of Power - C. Castaneda
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
