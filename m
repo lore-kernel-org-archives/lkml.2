@@ -1,62 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761835Ab0GTWDy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 18:03:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38943 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1761676Ab0GTWDw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 18:03:52 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <4C2DAEBB.7090607@kernel.org>
-References: <4C2DAEBB.7090607@kernel.org> <4C2A2688.1020206@kernel.org> <1277759063-24607-1-git-send-email-tj@kernel.org> <1277759063-24607-35-git-send-email-tj@kernel.org> <20100628225513.GB10104@nowhere> <4C299FD8.7030904@kernel.org> <20100629121855.GA5318@nowhere> <4C2A1558.7060007@kernel.org> <20100629155228.GK5318@nowhere> <4C2A176F.1090101@kernel.org> <4C2A220B.8080006@linux.intel.com> <25085.1277847455@redhat.com> 
-To: Tejun Heo <tj@kernel.org>
-Cc: dhowells@redhat.com, Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        torvalds@linux-foundation.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, jeff@garzik.org,
-        akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
-        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
-        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
-Date: Tue, 20 Jul 2010 23:01:42 +0100
-Message-ID: <31872.1279663302@redhat.com>
+	id S1761819Ab0GTWFB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 18:05:01 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:38016 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab0GTWE6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 18:04:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=SPDVk1oJoa+idGt1KkWo3RfhGbaPJrfpXQK3adJkg4weRm0IulZGHjGyapMS7OiZIP
+         9YFUus6+S/4WxA3lt12Cu+AJb8LO9Jn5aXIs2nN1aovFmzEwZeDEXfNbbhzLH3vsJCoP
+         boENEkxImTDhZhQvQ/GLmANIlj62NpMZfFUc8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinXCIfB94WXHtS7cej_8zi8n_hqjtVsZsOCTmqk@mail.gmail.com>
+References: <AANLkTim3VQ7afK91Opco06jzHJ35hHfn13heiXUp7YJ2@mail.gmail.com>
+	<AANLkTimAUG9DZpCyFBgf_XV9asj7ClBe2Lrjkh8tM0ll@mail.gmail.com>
+	<AANLkTikQ5GE4Ob1IAakEiwyWEGKTAL8Uox12jsSusJJl@mail.gmail.com>
+	<AANLkTik87QXCEHgG8ph6ehfFo1yvCvRz7JbvaC_uKWJd@mail.gmail.com>
+	<AANLkTiljMvaCttFAI_GoajBHwK9OHS5MPmx1P6_qDOdY@mail.gmail.com>
+	<AANLkTimuBRwuD0MjtzZyd--2JSUfWejuYb7t-GE6oK3T@mail.gmail.com>
+	<AANLkTinXCIfB94WXHtS7cej_8zi8n_hqjtVsZsOCTmqk@mail.gmail.com>
+Date: Tue, 20 Jul 2010 18:04:57 -0400
+Message-ID: <AANLkTilLJ1OvL-Nggh_Kt8UmLSttJIa_N4Pik9eCBP6v@mail.gmail.com>
+Subject: Re: Blank (disconnected) screen during boot with latest 2.6.35-rcX 
+	kernels
+From: Alex Deucher <alexdeucher@gmail.com>
+To: trapdoor6@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>, xorg-driver-ati@lists.x.org,
+        trapDoor <trapdoor6@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo <tj@kernel.org> wrote:
+On Tue, Jul 20, 2010 at 5:54 PM, trapDoor <trapdoor6@gmail.com> wrote:
+>> The attached patch should fix the connectors to report properly.
+>> There are a number of similar ASUS cards with the same quirk.
+>>
+>
+> Right. I have applied your second patch on top of 2.6.35-rc5-git4 +
+> 0001-drm-radeon-kms-fix-shared-ddc-harder.patch
+>
+> After successful boot from the new kernel, these lines in Xorg.0.log
+> corresponds now to the outputs I have on my card:
+>
+> ### for LCD connected to the first DVI port:
+> [    19.582] (II) RADEON(0): Output DVI-0 connected
+> [    19.582] (II) RADEON(0): Output DIN disconnected
+> [    19.582] (II) RADEON(0): Output DVI-1 disconnected
+> [    19.582] (II) RADEON(0): Using exact sizes for initial modes
+> [    19.582] (II) RADEON(0): Output DVI-0 using initial mode 1920x1080
+>
+> ### LCD connected to the other DVI port:
+> [    18.068] (II) RADEON(0): Output DVI-0 disconnected
+> [    18.068] (II) RADEON(0): Output DIN disconnected
+> [    18.068] (II) RADEON(0): Output DVI-1 connected
+> [    18.068] (II) RADEON(0): Using exact sizes for initial modes
+> [    18.068] (II) RADEON(0): Output DVI-1 using initial mode 1920x1080
+>
+> HDMI output isn't listed any more. So that's seems good. Thanks a lot
+> for fixing this.
 
-> David, this should work for fscache/slow-work the same way too.  That
-> should relieve your concern, right?
+Thanks for testing.
 
-Not at the moment.  What does this mean:
+>
+> I'm just wondering now what will happen if I connect some HDMI device
+> via DVI > HDMI adaptor. Should it work? Is HDMI still supported on my
+> card after applying the last patch? Unfortunately I don't own any
+> device I could test it on.
 
-	 * Unbound workqueues aren't concurrency managed and should be
-	 * dispatched to workers immediately.
+It will not affect your ability to use HDMI.  It only affects the naming.
 
-Does this mean you don't get reentrancy guarantees with unbounded work queues?
+>
+> Do you expect any problems with applying this patch onto 2.6.34.1? If
+> not, I could do it as on that kernel the first DVI port is still shown
+> as HDMI. If the patch works OK on 2.6.34.1, it could be submitted
+> upstream to the stable branch ?
 
-I can't work out how you're achieving it with unbounded queues.  I presume with
-CPU-bound workqueues your doing it by binding the work item to the current CPU
-still...
+I'll CC stable.
 
-Btw, how does this fare in an RT system, where work items bound to a CPU can't
-get executed because their CPU is busy with an RT thread, even though there are
-other, idle CPUs?
+>
+>>>
+>>> Where I see a real 3D performance drop now is for example Armagetron
+>>> Advanced - a game I use just for testing. I enabled certain features
+>>> using 3D in it. Without going into details I just say that with kernel
+>>> 2.6.34.1 the overall 3D performance in AA is about twice better. The
+>>> game runs quite smooth, number of fps doesn't go under 60. With kernel
+>>> 2.6.35-rc5-git3 on the same system, with the same drivers, mesa, drm
+>>> etc., the game runs slower and not so smooth, certain details look
+>>> slightly worse and I won't get more than 35 fps.
+>>>
+>>> Apart from that I don't notice any regressions on my desktop, with
+>>> compiz effects etc. I'd run some other tests if you could recommend
+>>> some tools, but not too complex and rather some specialised software
+>>> just for testing purposes, not games.
+>>
+>> If it's just the kernel that changed is there any chance you could
+>> bisect what caused the performance regression?
+>>
+>
+> I could find some time for bisecting tomorrow around evening. Prior to
+> that I'd need a quick look into some manuals ..
+>
 
-> Oh, and Frederic suggested that we would be better off with something based
-> on tracing API and I agree, so the debugfs thing is currently dropped from
-> the tree.  What do you think?
+Sounds good.
 
-I probably disagree.  I just want to be able to cat a file and see the current
-runqueue state.  I don't want to have to write and distribute a special program
-to do this.  Of course, I don't know that much about the tracing API, so
-cat'ing a file to get the runqueue listed nicely may be possible with that.
+Alex
 
-David
+>
+> --
+> Regards
+> trapDoor
+>
