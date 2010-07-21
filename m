@@ -1,137 +1,186 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752582Ab0GUK7c (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 06:59:32 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:47134 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751389Ab0GUK71 (ORCPT
+	id S1752664Ab0GULFY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 07:05:24 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:45876 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751657Ab0GULFW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 06:59:27 -0400
-Date: Wed, 21 Jul 2010 06:56:45 -0400
-From: Neil Horman <nhorman@tuxdriver.com>
-To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: Re: [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
-Message-ID: <20100721105645.GA21259@hmsreliant.think-freely.org>
-References: <4C44F12F.5090908@jp.fujitsu.com>
- <4C44F286.1050907@jp.fujitsu.com>
- <20100720115044.GD1995@hmsreliant.think-freely.org>
- <4C469BA1.7050900@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C469BA1.7050900@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-Spam-Score: -2.9 (--)
+	Wed, 21 Jul 2010 07:05:22 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Wed, 21 Jul 2010 20:00:33 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "nishimura@mxp.nes.nec.co.jp" <nishimura@mxp.nes.nec.co.jp>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [RFC][PATCH 2/2][memcg] use virt-array for memcg.
+Message-Id: <20100721200033.7a8031e5.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100721195831.6aa8dca5.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100721195831.6aa8dca5.kamezawa.hiroyu@jp.fujitsu.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 04:02:57PM +0900, Koki Sanagi wrote:
-> (2010/07/20 20:50), Neil Horman wrote:
-> > On Tue, Jul 20, 2010 at 09:49:10AM +0900, Koki Sanagi wrote:
-> >> [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
-> >> This patch adds tracepoint to consume_skb, dev_kfree_skb_irq and
-> >> skb_free_datagram_locked. Combinating with tracepoint on dev_hard_start_xmit,
-> >> we can check how long it takes to free transmited packets. And using it, we can
-> >> calculate how many packets driver had at that time. It is useful when a drop of
-> >> transmited packet is a problem.
-> >>
-> >>           <idle>-0     [001] 241409.218333: consume_skb: skbaddr=dd6b2fb8
-> >>           <idle>-0     [001] 241409.490555: dev_kfree_skb_irq: skbaddr=f5e29840
-> >>
-> >>         udp-recv-302   [001] 515031.206008: skb_free_datagram_locked: skbaddr=f5b1d900
-> >>
-> >>
-> >> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-> >> ---
-> >>  include/trace/events/skb.h |   42 ++++++++++++++++++++++++++++++++++++++++++
-> >>  net/core/datagram.c        |    1 +
-> >>  net/core/dev.c             |    2 ++
-> >>  net/core/skbuff.c          |    1 +
-> >>  4 files changed, 46 insertions(+), 0 deletions(-)
-> >>
-> >> diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
-> >> index 4b2be6d..84c9041 100644
-> >> --- a/include/trace/events/skb.h
-> >> +++ b/include/trace/events/skb.h
-> >> @@ -35,6 +35,48 @@ TRACE_EVENT(kfree_skb,
-> >>  		__entry->skbaddr, __entry->protocol, __entry->location)
-> >>  );
-> >>  
-> >> +DECLARE_EVENT_CLASS(free_skb,
-> >> +
-> >> +	TP_PROTO(struct sk_buff *skb),
-> >> +
-> >> +	TP_ARGS(skb),
-> >> +
-> >> +	TP_STRUCT__entry(
-> >> +		__field(	void *,	skbaddr	)
-> >> +	),
-> >> +
-> >> +	TP_fast_assign(
-> >> +		__entry->skbaddr = skb;
-> >> +	),
-> >> +
-> >> +	TP_printk("skbaddr=%p", __entry->skbaddr)
-> >> +
-> >> +);
-> >> +
-> >> +DEFINE_EVENT(free_skb, consume_skb,
-> >> +
-> >> +	TP_PROTO(struct sk_buff *skb),
-> >> +
-> >> +	TP_ARGS(skb)
-> >> +
-> >> +);
-> >> +
-> >> +DEFINE_EVENT(free_skb, dev_kfree_skb_irq,
-> >> +
-> >> +	TP_PROTO(struct sk_buff *skb),
-> >> +
-> >> +	TP_ARGS(skb)
-> >> +
-> >> +);
-> >> +
-> >> +DEFINE_EVENT(free_skb, skb_free_datagram_locked,
-> >> +
-> >> +	TP_PROTO(struct sk_buff *skb),
-> >> +
-> >> +	TP_ARGS(skb)
-> >> +
-> >> +);
-> >> +
-> > 
-> > Why create these last two tracepoints at all?  dev_kfree_skb_irq will eventually
-> > pass through kfree_skb anyway, getting picked up by the tracepoint there, the
-> > while the latter won't (since it uses __kfree_skb instead), I think that could
-> > be fixed up by add a call to trace_kfree_skb there directly, saving you two
-> > tracepoints.
-> > 
-> > Neil
-> > 
-> I think dev_kfree_skb_irq isn't chased by trace_kfree_skb or trace_consume_skb
-> completely. Because net_tx_action frees skb by __kfree_skb. So it is better to
-> add trace_kfree_skb before it. skb_free_datagram_locked is same.
-> 
-It isn't, you're right, but that was the point I made above.  Those missed areas
-could be easily handled by adding calls to trace_kfree_skb which already exists,
-to the missed areas.  Then you don't need to create those new tracepoints.  The
-way your doing this, if someone wants to trace all skb frees in debugfs, they
-would have to enable three tracepoints, not just one.  Not that thats the point
-of your patch, but its something to consider, and it simplifies your code.
-Neil
+This makes memcg to depend on CONFIG_MMU.
+==
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-> Thanks,
-> Koki Sanagi.
-> >>
-> > 
-> > 
-> 
-> 
-> 
+Using virt_array for memcg's node information.
+Now, memcg allocates an array of pointer in the lengh of MAXNUMNODES
+to hold pointers for per-node information.
+
+This has 2 bad points
+  - struct mem_cgroup can be very big.
+  - need to access a pointer table for lookup zoneinfo.
+
+This patch replaces memcg's nodeinfo with virt-array and do
+direct access. With my config on x86-64, struct mem_cgroup's
+size is changed from 4368->352.
+
+Signed-off-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+---
+ init/Kconfig    |    2 +-
+ mm/memcontrol.c |   51 ++++++++++++++++-----------------------------------
+ 2 files changed, 17 insertions(+), 36 deletions(-)
+
+Index: mmotm-2.6.35-0719/init/Kconfig
+===================================================================
+--- mmotm-2.6.35-0719.orig/init/Kconfig
++++ mmotm-2.6.35-0719/init/Kconfig
+@@ -555,7 +555,7 @@ config RESOURCE_COUNTERS
+ 
+ config CGROUP_MEM_RES_CTLR
+ 	bool "Memory Resource Controller for Control Groups"
+-	depends on CGROUPS && RESOURCE_COUNTERS
++	depends on CGROUPS && RESOURCE_COUNTERS && MMU
+ 	select MM_OWNER
+ 	help
+ 	  Provides a memory resource controller that manages both anonymous
+Index: mmotm-2.6.35-0719/mm/memcontrol.c
+===================================================================
+--- mmotm-2.6.35-0719.orig/mm/memcontrol.c
++++ mmotm-2.6.35-0719/mm/memcontrol.c
+@@ -48,6 +48,7 @@
+ #include <linux/page_cgroup.h>
+ #include <linux/cpu.h>
+ #include <linux/oom.h>
++#include <linux/virt-array.h>
+ #include "internal.h"
+ 
+ #include <asm/uaccess.h>
+@@ -119,11 +120,7 @@ struct mem_cgroup_per_zone {
+ 
+ struct mem_cgroup_per_node {
+ 	struct mem_cgroup_per_zone zoneinfo[MAX_NR_ZONES];
+-};
+-
+-struct mem_cgroup_lru_info {
+-	struct mem_cgroup_per_node *nodeinfo[MAX_NUMNODES];
+-};
++} ____cacheline_aligned_in_smp;
+ 
+ /*
+  * Cgroups above their limits are maintained in a RB-Tree, independent of
+@@ -205,7 +202,8 @@ struct mem_cgroup {
+ 	 * Per cgroup active and inactive list, similar to the
+ 	 * per zone LRU lists.
+ 	 */
+-	struct mem_cgroup_lru_info info;
++	struct mem_cgroup_per_node *nodes;
++	struct virt_array node_array;
+ 
+ 	/*
+ 	  protect against reclaim related member.
+@@ -344,7 +342,7 @@ static void drain_all_stock_async(void);
+ static struct mem_cgroup_per_zone *
+ mem_cgroup_zoneinfo(struct mem_cgroup *mem, int nid, int zid)
+ {
+-	return &mem->info.nodeinfo[nid]->zoneinfo[zid];
++	return &mem->nodes[nid].zoneinfo[zid];
+ }
+ 
+ struct cgroup_subsys_state *mem_cgroup_css(struct mem_cgroup *mem)
+@@ -3944,27 +3942,14 @@ static int register_memsw_files(struct c
+ }
+ #endif
+ 
+-static int alloc_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
++static int init_mem_cgroup_node_info(struct mem_cgroup *mem, int node)
+ {
+ 	struct mem_cgroup_per_node *pn;
+ 	struct mem_cgroup_per_zone *mz;
+ 	enum lru_list l;
+-	int zone, tmp = node;
+-	/*
+-	 * This routine is called against possible nodes.
+-	 * But it's BUG to call kmalloc() against offline node.
+-	 *
+-	 * TODO: this routine can waste much memory for nodes which will
+-	 *       never be onlined. It's better to use memory hotplug callback
+-	 *       function.
+-	 */
+-	if (!node_state(node, N_NORMAL_MEMORY))
+-		tmp = -1;
+-	pn = kmalloc_node(sizeof(*pn), GFP_KERNEL, tmp);
+-	if (!pn)
+-		return 1;
++	int zone;
+ 
+-	mem->info.nodeinfo[node] = pn;
++	pn = mem->nodes + node;
+ 	memset(pn, 0, sizeof(*pn));
+ 
+ 	for (zone = 0; zone < MAX_NR_ZONES; zone++) {
+@@ -3978,11 +3963,6 @@ static int alloc_mem_cgroup_per_zone_inf
+ 	return 0;
+ }
+ 
+-static void free_mem_cgroup_per_zone_info(struct mem_cgroup *mem, int node)
+-{
+-	kfree(mem->info.nodeinfo[node]);
+-}
+-
+ static struct mem_cgroup *mem_cgroup_alloc(void)
+ {
+ 	struct mem_cgroup *mem;
+@@ -4022,13 +4002,10 @@ static struct mem_cgroup *mem_cgroup_all
+ 
+ static void __mem_cgroup_free(struct mem_cgroup *mem)
+ {
+-	int node;
+-
+ 	mem_cgroup_remove_from_trees(mem);
+ 	free_css_id(&mem_cgroup_subsys, &mem->css);
+ 
+-	for_each_node_state(node, N_POSSIBLE)
+-		free_mem_cgroup_per_zone_info(mem, node);
++	destroy_varray(&mem->node_array);
+ 
+ 	free_percpu(mem->stat);
+ 	if (sizeof(struct mem_cgroup) < PAGE_SIZE)
+@@ -4115,10 +4092,14 @@ mem_cgroup_create(struct cgroup_subsys *
+ 	if (!mem)
+ 		return ERR_PTR(error);
+ 
+-	for_each_node_state(node, N_POSSIBLE)
+-		if (alloc_mem_cgroup_per_zone_info(mem, node))
+-			goto free_out;
++	mem->nodes = create_varray(&mem->node_array,
++			sizeof(struct mem_cgroup_per_node), MAX_NUMNODES);
+ 
++	for_each_node_state(node, N_POSSIBLE) {
++		if (!alloc_varray_item(&mem->node_array, node))
++			goto free_out;
++		init_mem_cgroup_node_info(mem, node);
++	}
+ 	/* root ? */
+ 	if (cont->parent == NULL) {
+ 		int cpu;
+
