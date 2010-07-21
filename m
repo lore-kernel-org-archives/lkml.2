@@ -1,57 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758507Ab0GUOCD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 10:02:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53023 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755624Ab0GUOCA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 10:02:00 -0400
-Message-ID: <4C46FDCD.9010007@redhat.com>
-Date: Wed, 21 Jul 2010 09:01:49 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1758575Ab0GUOCX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 10:02:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17235 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758536Ab0GUOCV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 10:02:21 -0400
+Date: Wed, 21 Jul 2010 10:01:54 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: linux-kernel@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: 2.6.35 Regression/oops from virtio: return ENOMEM on out of
+ memory patch
+Message-ID: <20100721140154.GV3133@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	"Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
+	Rusty Russell <rusty@rustcorp.com.au>
+References: <20100719150216.GC8623@think>
+ <20100719151609.GA4267@redhat.com>
 MIME-Version: 1.0
-To: =?ISO-8859-1?Q?T=F6r=F6k_Edwin?= <edwintorok@gmail.com>
-CC: Dave Chinner <david@fromorbit.com>, linux-ext4@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35-r5 ext3 corruptions
-References: <20100715105745.GI30737@dastard>	<20100719224512.GD32635@dastard>	<20100721063222.GW32635@dastard> <20100721140758.68ca16ab@debian>
-In-Reply-To: <20100721140758.68ca16ab@debian>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100719151609.GA4267@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090202.4C46FDDB.0210:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Török Edwin wrote:
-> On Wed, 21 Jul 2010 16:32:22 +1000
-> Dave Chinner <david@fromorbit.com> wrote:
-
-...
-
->> Quite frankly, data=writeback mode for ext3 is a dangerous,
->> dangerous configuration to run by default. IMO, it shouldn't be the
->> default. Patch below.
+On Mon, Jul 19, 2010 at 06:16:10PM +0300, Michael S. Tsirkin wrote:
+> On Mon, Jul 19, 2010 at 11:02:16AM -0400, Chris Mason wrote:
+> > Hi everyone,
+> > 
+> > http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=686d363786a53ed28ee875b84ef24e6d5126ef6f
+> > 
+> > I've been having problems with my long running stress runs and tracked
+> > it down to the above commit.  Under load I get a couple of GFP_ATOMIC
+> > allocation failures from virtio per day (not really surprising), and in
+> > the past it would carry on happily.
+> > 
+> > Now I get the atomic allocation failure followed by this:
+> > 
+> > BUG: unable to handle kernel paging request at ffff88087c37e458
+> > IP: [<ffffffff812e3752>] virtqueue_add_buf_gfp+0x305/0x353
+> > 
+> > (Full oops below).
+> > 
+> > Looking at virtqueue_add_buf_gfp, it does:
+> > 
+> >         /* If the host supports indirect descriptor tables, and we have multiple 
+> >          * buffers, then go indirect. FIXME: tune this threshold */
+> >         if (vq->indirect && (out + in) > 1 && vq->num_free) {
+> >                 head = vring_add_indirect(vq, sg, out, in, gfp);
+> >                 if (head != vq->vring.num)
+> >                         goto add_head;
+> >         }
+> > [ ... ]
+> > 
+> > add_head:
+> >         /* Set token. */
+> >         vq->data[head] = data;
+> > 
+> > Since vring_add_indirect is returning -ENOMEM, head is -ENOMEM and things
+> > go bad pretty quickly.  Full oops below, afraid I don't know the virtio
+> > code well enough to provide the clean and obvious fix (outside of
+> > reverting) at this late rc.
 > 
-> Hi,
+> Good catch! Can you verify this fix please?
 > 
-> I don't see CONFIG_EXT3_DEFAULTS_TO_ORDERED in my .config at all.
-> What I have in my .config is:
-> CONFIG_EXT4_FS=y
-> CONFIG_EXT4_USE_FOR_EXT23=y
-> CONFIG_EXT4_FS_XATTR=y
+> virtio: fix oops on OOM
 > 
-> So what is the equivalent of that config option for ext4 used as ext3
-> driver?
+> virtio ring was changed to return an error code on OOM,
+> but one caller was missed and still checks for vq->vring.num.
+> The fix is just to check for <0 error code.
+> 
+> Long term it might make sense to change goto add_head to
+> just return an error on oom instead, but let's apply
+> a minimal fix for 2.6.35.
 
-There is none AFAICT, just an artifact of the twisting option-paths of
-extN, I guess.  :)
+I haven't been able to trigger the allocation failure since putting this in,
+but it has run well for the last two days.  I'll let you know if there
+are problems.
 
-Good news is you should get something sane, and -not- default to writeback
-with your config.
-
--Eric
-
-> Best regards,
-> --Edwin
+-chris
 
