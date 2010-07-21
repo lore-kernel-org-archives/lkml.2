@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752851Ab0GURNg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 13:13:36 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:33334 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751707Ab0GURNe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 13:13:34 -0400
-Subject: Re: swiotlb detection should be memory hotplug aware ?
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
-        "ak@linux.intel.com" <ak@linux.intel.com>,
-        "lenb@kernel.org" <lenb@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Petr Vandrovec <petr@vmware.com>
-In-Reply-To: <20100721135750Z.fujita.tomonori@lab.ntt.co.jp>
-References: <20100316124556.GA25340@phenom.dumpdata.com>
-	 <1268866113.20507.26.camel@ank32>
-	 <1279664097.21596.43.camel@ank32.eng.vmware.com>
-	 <20100721135750Z.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Wed, 21 Jul 2010 10:13:34 -0700
-Message-Id: <1279732414.10874.6.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	id S1753106Ab0GURPq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 13:15:46 -0400
+Received: from mga01.intel.com ([192.55.52.88]:30066 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752053Ab0GURPo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 13:15:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,239,1278313200"; 
+   d="scan'208";a="588367610"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "Ben Hutchings" <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, "Geert Stappers" <stappers@stappers.nl>,
+        "Dave Airlie" <airlied@redhat.com>
+Subject: [PATCH] Fix ttm_page_alloc.c build breakage
+Date: Wed, 21 Jul 2010 10:15:39 -0700
+Message-Id: <4c472b3b227169b7c1@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+The commit 1e8655f87333def92bb8215b423adc65403b08a5
+    drm/ttm: Fix build on architectures without AGP
 
-On Tue, 2010-07-20 at 21:58 -0700, FUJITA Tomonori wrote:
-> On Tue, 20 Jul 2010 15:14:57 -0700
-> Alok Kataria <akataria@vmware.com> wrote:
-> 
-> > Reviving a 4 month old thread. 
-> > I am still waiting for any clues on this question below. 
-> 
-> Basically, you want to add hot-plug memory and enable swiotlb, right?
+looks at TTM_HAS_AGP before it has been set in ttm_bo_driver.h
+    
+Move the conditional inclusion of <asm/agp.h> *after* we have included
+ttm_bo_driver.h
 
-Not really, I am planning to do something like this, 
+Signed-of-by: Tony Luck <tony.luck@intel.com>
 
-@@ -52,7 +52,7 @@ int __init pci_swiotlb_detect(void)
+---
+
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index 1f32b46..f394b3b 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -40,13 +40,13 @@
+ #include <linux/slab.h>
  
- 	/* don't initialize swiotlb if iommu=off (no_iommu=1) */
- #ifdef CONFIG_X86_64
--	if (!no_iommu && max_pfn > MAX_DMA32_PFN)
-+	if (!no_iommu && (max_pfn > MAX_DMA32_PFN || hotplug_possible()))
- 		swiotlb = 1;
- #endif
- 	if (swiotlb_force)
-
-BUT, I don't know how that hotplug_possible function will look like or
-if such an interface already exists in the kernel (my search didn't turn
-up any) ?
-
-IMO, it should be possible to go read the SRAT to see if this system has
-support for hotplug memory and then enable swiotlb if it does.
-
-Sounds right ?
-
-Thanks,
-Alok
-
-> 
-> We can't start swiotlb reliably after a system starts.
-> 
-> See dma32_reserve_boatmen() and dma32_free_bootmem(). What we do is
-> reserving huge memory in DMA32 zone for swiotlb and releasing it if we
-> find that we don't need swiotlb. We can't find enough memory for
-> swiotlb in dma32 after a system starts.
-
+ #include <asm/atomic.h>
+-#ifdef TTM_HAS_AGP
+-#include <asm/agp.h>
+-#endif
+ 
+ #include "ttm/ttm_bo_driver.h"
+ #include "ttm/ttm_page_alloc.h"
+ 
++#ifdef TTM_HAS_AGP
++#include <asm/agp.h>
++#endif
+ 
+ #define NUM_PAGES_TO_ALLOC		(PAGE_SIZE/sizeof(struct page *))
+ #define SMALL_ALLOCATION		16
