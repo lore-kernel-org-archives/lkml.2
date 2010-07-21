@@ -1,36 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761263Ab0GUSkn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 14:40:43 -0400
-Received: from sj-iport-5.cisco.com ([171.68.10.87]:58243 "EHLO
-	sj-iport-5.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757460Ab0GUSkl (ORCPT
+	id S1758824Ab0GUSnY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 14:43:24 -0400
+Received: from mga11.intel.com ([192.55.52.93]:18686 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752774Ab0GUSnW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 14:40:41 -0400
-Authentication-Results: sj-iport-5.cisco.com; dkim=neutral (message not signed) header.i=none
-From: Roland Dreier <rdreier@cisco.com>
-To: Arnd Bergmann <arnd@arndb.de>
-Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Christoph Hellwig <hch@lst.de>, Roland Dreier <rolandd@cisco.com>,
-        Sean Hefty <sean.hefty@intel.com>,
-        Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org
-Subject: Re: [PATCH 04/18] ib/qib: use generic_file_llseek
-References: <1278538820-1392-1-git-send-email-arnd@arndb.de>
-	<1278538820-1392-5-git-send-email-arnd@arndb.de>
-X-Message-Flag: Warning: May contain useful information
-Date: Wed, 21 Jul 2010 11:40:41 -0700
-In-Reply-To: <1278538820-1392-5-git-send-email-arnd@arndb.de> (Arnd Bergmann's
-	message of "Wed, 7 Jul 2010 23:40:06 +0200")
-Message-ID: <ada7hkooeza.fsf@roland-alpha.cisco.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 21 Jul 2010 14:43:22 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,239,1278313200"; 
+   d="scan'208";a="820282322"
+From: "Rose, Gregory V" <gregory.v.rose@intel.com>
+To: Casey Leedom <leedom@chelsio.com>, David Miller <davem@davemloft.net>
+CC: "shemminger@vyatta.com" <shemminger@vyatta.com>,
+        "andy@greyhouse.net" <andy@greyhouse.net>,
+        "harald@redhat.com" <harald@redhat.com>,
+        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
+        "sassmann@redhat.com" <sassmann@redhat.com>,
+        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "gospo@redhat.com" <gospo@redhat.com>,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
+Date: Wed, 21 Jul 2010 11:43:19 -0700
+Subject: RE: [PATCH net-next] sysfs: add entry to indicate network
+ interfaces with random MAC address
+Thread-Topic: [PATCH net-next] sysfs: add entry to indicate network
+ interfaces with random MAC address
+Thread-Index: AcspAtQEu+LergY0Q7ucfWAlvWDxzgAAI/oQ
+Message-ID: <43F901BD926A4E43B106BF17856F0755F184620A@orsmsx508.amr.corp.intel.com>
+References: <20100721150732.GR7497@gospo.rdu.redhat.com>
+ <20100721102816.4bef5ada@nehalam>
+ <20100721.103249.107094774.davem@davemloft.net>
+ <201007211129.48288.leedom@chelsio.com>
+In-Reply-To: <201007211129.48288.leedom@chelsio.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-thanks, applied
--- 
-Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
-http://www.cisco.com/web/about/doing_business/legal/cri/index.html
+>-----Original Message-----
+>From: Casey Leedom [mailto:leedom@chelsio.com]
+>Sent: Wednesday, July 21, 2010 11:30 AM
+>To: David Miller
+>Cc: shemminger@vyatta.com; andy@greyhouse.net; harald@redhat.com;
+>bhutchings@solarflare.com; sassmann@redhat.com; netdev@vger.kernel.org;
+>linux-kernel@vger.kernel.org; gospo@redhat.com; Rose, Gregory V; Duyck,
+>Alexander H
+>Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
+>interfaces with random MAC address
+>
+>| From: David Miller <davem@davemloft.net>
+>| Date: Wednesday, July 21, 2010 10:32 am
+>|
+>| From: Stephen Hemminger <shemminger@vyatta.com>
+>| Date: Wed, 21 Jul 2010 10:28:16 -0700
+>|
+>| > IMHO no local assigned address should be used by udev. The cxgb4
+>driver
+>| > should be using random value.
+>| >
+>| > Does anyone have an example of locally assigned address that has
+>| > persistence so that udev could use it.
+>|
+>| The cxgb4 vf addresses are not random because they are fetched from
+>the
+>| card's NVRAM/EEPROM/firmware/whatever and thus are persistent.
+>|
+>| We definitely want udev to use persistent rules for them.
+>|
+>| This whole issue only exists because of the Intel VF case, where it
+>| lacks persistent addresses but somehow we want to assign persistent
+>| names to it's VF interfaces.
+>
+>  Yes, we _explicitly_ wanted to have persistent MAC Addresses for our
+>PCI-E SR-
+>IOV Virtual Functions for a whole raft of reasons.  The two most
+>important were:
+>
+> 1. Linux' model for persistent device naming today seems to be
+>    oriented around persistent network device addresses.
+>
+> 2. Lots of data centers use MAC addresses for things like DHCP/BOOTP,
+>    security/filtering, etc.
+>
+>Our design goal was to look as much like a normal Ethernet MAC as
+>possible in
+>order to reduce the need for software/behavior changes.
+
+I'm curious, what happens when the VM using the VF migrates to a new machine and has another VF assigned to with a different MAC address?
+
+Intel's view of things is that we don't use persistent MAC addresses in our VFs because the MAC address belongs to the VM and when it migrates it's going to want to use another VF with the same MAC address.  If they're persistent I'm wondering how that can be done.
+
+This discussion has come about because some folks want to use the VF in the Host VMM.  The original design goal for Intel was that VFs would be assigned to VMs and that VMM vendors would want to assign MAC addresses with their own assigned OUI's.
+
+- Greg
+
