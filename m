@@ -1,77 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758340Ab0GUN4M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:56:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18276 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754851Ab0GUN4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:56:09 -0400
-Message-ID: <4C46FC67.4000900@redhat.com>
-Date: Wed, 21 Jul 2010 08:55:51 -0500
-From: Eric Sandeen <sandeen@redhat.com>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1758360Ab0GUN5k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:57:40 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:61997 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750719Ab0GUN5i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 09:57:38 -0400
+Date: Wed, 21 Jul 2010 15:57:35 +0200
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: Hannes Reinecke <hare@suse.de>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+        Tejun Heo <tj@kernel.org>, Jiri Kosina <jkosina@suse.cz>,
+        Vasu Dev <vasu.dev@intel.com>, Nick Cheng <nick.cheng@areca.com.tw>,
+        Mike Christie <michaelc@cs.wisc.edu>,
+        Geert Uytterhoeven <geert@linux-m68k.org>, linux-scsi@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: [PATCH 0/3] Removing dead code (also drivers/scsi/arm/acornsci.c)
+Message-ID: <cover.1279719754.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
-To: Dave Chinner <david@fromorbit.com>
-CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jan Kara <jack@suse.cz>
-Subject: Re: 2.6.35-r5 ext3 corruptions
-References: <20100715105745.GI30737@dastard> <20100719224512.GD32635@dastard> <20100721063222.GW32635@dastard>
-In-Reply-To: <20100721063222.GW32635@dastard>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dave Chinner wrote:
+Hi all!
+       
+        As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-> Ok, so now I know *why* that one filesystem got busted - I built a
-> kernel without CONFIG_EXT3_DEFAULTS_TO_ORDERED set and it got a
-> forced reboot (echo b > proc/sysrq-trigger). That'll teach me for
-> trying to reproduce bugs Andrew is tripping over with his config
-> files.
-> 
-> Quite frankly, data=writeback mode for ext3 is a dangerous,
-> dangerous configuration to run by default. IMO, it shouldn't be the
-> default. Patch below.
+        I've been running a check on the drivers/scsi sourcetree for
+config Items not defined in Kconfig and found  3 such cases. Sourcecode
+blocks depending on these Items are not reachable from a vanilla
+kernel -- dead code. I've seen such dead blocks made on purpose
+e.g. while integrating new features into the kernel but generally
+they're just useless.
 
-I agree, though I might just remove the config option altogether,
-it just obfuscates what's going on, IMHO.
+        Each of the patches in this patchset removes on such dead
+config Item, I'd be glad if you consider applying them. I've been
+doing deeper analysis of such issues before and can do so again but
+I'm not so sure they were fastly usefull.
 
-Still, as far as it goes, you can add:
+        I build the patches against a vanilla kernel in order to
+try if the kernel compiles with this patches
 
-Acked-by: Eric Sandeen <sandeen@redhat.com>
+        Please keep me informed of this patch getting confirmed /
+merged so we can keep track of it.
 
-to the patch.
+Regards
 
--Eric
+        Christian Dietrich
 
-> ext3: default to ordered mode
-> 
-> From: Dave Chinner <dchinner@redhat.com>
-> 
-> data=writeback mode is dangerous and is leads to filesystem
-> corruption, data loss and stale data exposure when systems crash. It
-> should not be the default, especially when all major distros ensure
-> their ext3 filesystems default to ordered mode. Change the default
-> mode to the safer data=ordered mode, because we should be caring
-> far more about avoiding corruption than performance.
-> 
-> Signed-off-by: Dave Chinner <dchinner@redhat.com>
-> ---
->  fs/ext3/Kconfig |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/fs/ext3/Kconfig b/fs/ext3/Kconfig
-> index 522b154..e8c6ba0 100644
-> --- a/fs/ext3/Kconfig
-> +++ b/fs/ext3/Kconfig
-> @@ -31,6 +31,7 @@ config EXT3_FS
->  config EXT3_DEFAULTS_TO_ORDERED
->  	bool "Default to 'data=ordered' in ext3"
->  	depends on EXT3_FS
-> +	default y
->  	help
->  	  The journal mode options for ext3 have different tradeoffs
->  	  between when data is guaranteed to be on disk and
+[0] http://vamos1.informatik.uni-erlangen.de/
+
+Christian Dietrich (3):
+  drivers/scsi: Remove dead CONFIG_WD33C93_PIO
+  drivers/scsi/arcmsr: Remove dead CONFIG_SCSI_ARCMSR_RESET
+  drivers/scsi: Removing dead CONFIG_AIC7XXX_PROC_STATS
+
+ drivers/scsi/aic7xxx/aic7xxx_osm.c |   10 ----
+ drivers/scsi/arcmsr/arcmsr_hba.c   |   80 ------------------------------------
+ drivers/scsi/wd33c93.c             |   60 ---------------------------
+ drivers/scsi/wd33c93.h             |    5 --
+ 4 files changed, 0 insertions(+), 155 deletions(-)
 
