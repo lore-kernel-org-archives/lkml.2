@@ -1,87 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754233Ab0GULcP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 07:32:15 -0400
-Received: from mail001.aei.ca ([206.123.6.130]:58048 "EHLO mail001.aei.ca"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751163Ab0GULcN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 07:32:13 -0400
-From: Ed Tomlinson <edt@aei.ca>
-To: ngupta@vflare.org
-Subject: Re: [PATCH 4/8] Shrink zcache based on memlimit
-Date: Wed, 21 Jul 2010 07:32:02 -0400
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc5-crc+; KDE/4.4.5; x86_64; ; )
-Cc: Minchan Kim <minchan.kim@gmail.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>, Greg KH <greg@kroah.com>,
-        Dan Magenheimer <dan.magenheimer@oracle.com>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        "linux-mm" <linux-mm@kvack.org>,
-        "linux-kernel" <linux-kernel@vger.kernel.org>
-References: <1279283870-18549-1-git-send-email-ngupta@vflare.org> <AANLkTinaX-huEMGP-k4mCSr0USQhJp68AUgOf4FHqr5Q@mail.gmail.com> <4C467D18.4050901@vflare.org>
-In-Reply-To: <4C467D18.4050901@vflare.org>
+	id S1754113Ab0GULgv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 07:36:51 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:55927 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751338Ab0GULgu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 07:36:50 -0400
+Date: Wed, 21 Jul 2010 13:36:47 +0200
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: Alex Elder <aelder@sgi.com>, xfs-masters@oss.sgi.com,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Alexey Dobriyan <adobriyan@gmail.com>,
+        Al Viro <viro@zeniv.linux.org.uk>, xfs@oss.sgi.com,
+        linux-kernel@vger.kernel.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: [PATCH] fs/xfs: Remove dead CONFIG_XFS_DMAPI
+Message-ID: <20100721113646.GA1054@faui49.informatik.uni-erlangen.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007210732.03909.edt@aei.ca>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 21 July 2010 00:52:40 Nitin Gupta wrote:
-> On 07/21/2010 04:33 AM, Minchan Kim wrote:
-> > On Fri, Jul 16, 2010 at 9:37 PM, Nitin Gupta <ngupta@vflare.org> wrote:
-> >> User can change (per-pool) memlimit using sysfs node:
-> >> /sys/kernel/mm/zcache/pool<id>/memlimit
-> >>
-> >> When memlimit is set to a value smaller than current
-> >> number of pages allocated for that pool, excess pages
-> >> are now freed immediately instead of waiting for get/
-> >> flush for these pages.
-> >>
-> >> Currently, victim page selection is essentially random.
-> >> Automatic cache resizing and better page replacement
-> >> policies will be implemented later.
-> > 
-> > Okay. I know this isn't end. I just want to give a concern before you end up.
-> > I don't know how you implement reclaim policy.
-> > In current implementation, you use memlimit for determining when reclaim happen.
-> > But i think we also should follow global reclaim policy of VM.
-> > I means although memlimit doen't meet, we should reclaim zcache if
-> > system has a trouble to reclaim memory.
-> 
-> Yes, we should have a way to do reclaim depending on system memory pressure
-> and also when user explicitly wants so i.e. when memlimit is lowered manually.
-> 
-> > AFAIK, cleancache doesn't give any hint for that. so we should
-> > implement it in zcache itself.
-> 
-> I think cleancache should be kept minimal so yes, all reclaim policies should
-> go in zcache layer only.
-> 
-> > At first glance, we can use shrink_slab or oom_notifier. But both
-> > doesn't give any information of zone although global reclaim do it by
-> > per-zone.
-> > AFAIK, Nick try to implement zone-aware shrink slab. Also if we need
-> > it, we can change oom_notifier with zone-aware oom_notifier. Now it
-> > seems anyone doesn't use oom_notifier so I am not sure it's useful.
-> > 
-> 
-> I don't think we need these notifiers as we can simply create a thread
-> to monitor cache hit rate, system memory pressure etc. and shrink/expand
-> the cache accordingly.
+CONFIG_XFS_DMAPI doesn't exist in Kconfig and is never defined anywhere
+else, therefore removing all references for it from the source
+code. Because XFS_DMAPI is never defined, XFS_DMAPI_STRING is always
+an empty string. So we can remove all references to it.
 
-Nitin,
+Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+---
+ fs/xfs/linux-2.6/xfs_super.h |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
 
-Based on experience gained when adding the shrinker callbacks, I would 
-strongly recommend you use them.  I tried several hacks along the lines of
-what you are proposing before moving settling on the callbacks.  They 
-are effective and make sure that memory is released when its required.
-What would happen with the other methods is that memory would either 
-not be released or would be released when it was not needed.
+diff --git a/fs/xfs/linux-2.6/xfs_super.h b/fs/xfs/linux-2.6/xfs_super.h
+index 519618e..1ef4a4d 100644
+--- a/fs/xfs/linux-2.6/xfs_super.h
++++ b/fs/xfs/linux-2.6/xfs_super.h
+@@ -56,12 +56,6 @@ extern void xfs_qm_exit(void);
+ # define XFS_BIGFS_STRING
+ #endif
+ 
+-#ifdef CONFIG_XFS_DMAPI
+-# define XFS_DMAPI_STRING	"dmapi support, "
+-#else
+-# define XFS_DMAPI_STRING
+-#endif
+-
+ #ifdef DEBUG
+ # define XFS_DBG_STRING		"debug"
+ #else
+@@ -72,7 +66,6 @@ extern void xfs_qm_exit(void);
+ 				XFS_SECURITY_STRING \
+ 				XFS_REALTIME_STRING \
+ 				XFS_BIGFS_STRING \
+-				XFS_DMAPI_STRING \
+ 				XFS_DBG_STRING /* DBG must be last */
+ 
+ struct xfs_inode;
+-- 
+1.7.0.4
 
-Thanks
-Ed Tomlinson.
