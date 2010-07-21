@@ -1,41 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752386Ab0GURMO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 13:12:14 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60576 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750986Ab0GURMN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 13:12:13 -0400
-Message-ID: <4C472A5C.50004@zytor.com>
-Date: Wed, 21 Jul 2010 10:11:56 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/10] x86, xsave: some code cleanups and reworks
-References: <1279651857-24639-1-git-send-email-robert.richter@amd.com> <20100720192717.GC6227@lenovo> <20100720194606.GO26154@erda.amd.com> <20100720200729.GD6227@lenovo> <20100720201740.GE6227@lenovo> <4C472123.1090900@zytor.com> <20100721165211.GD8009@lenovo> <20100721170124.GE8009@lenovo>
-In-Reply-To: <20100721170124.GE8009@lenovo>
-Content-Type: text/plain; charset=UTF-8
+	id S1752851Ab0GURNg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 13:13:36 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:33334 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751707Ab0GURNe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 13:13:34 -0400
+Subject: Re: swiotlb detection should be memory hotplug aware ?
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: "konrad.wilk@oracle.com" <konrad.wilk@oracle.com>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Petr Vandrovec <petr@vmware.com>
+In-Reply-To: <20100721135750Z.fujita.tomonori@lab.ntt.co.jp>
+References: <20100316124556.GA25340@phenom.dumpdata.com>
+	 <1268866113.20507.26.camel@ank32>
+	 <1279664097.21596.43.camel@ank32.eng.vmware.com>
+	 <20100721135750Z.fujita.tomonori@lab.ntt.co.jp>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Wed, 21 Jul 2010 10:13:34 -0700
+Message-Id: <1279732414.10874.6.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2010 10:01 AM, Cyrill Gorcunov wrote:
+
+On Tue, 2010-07-20 at 21:58 -0700, FUJITA Tomonori wrote:
+> On Tue, 20 Jul 2010 15:14:57 -0700
+> Alok Kataria <akataria@vmware.com> wrote:
 > 
-> Peter, also I think such tuning must be done at merge window time only,
-> just to not break other's patch queues.
+> > Reviving a 4 month old thread. 
+> > I am still waiting for any clues on this question below. 
 > 
+> Basically, you want to add hot-plug memory and enable swiotlb, right?
 
-Realistically it should be done right after the merge window for the
-*next* merge window.
+Not really, I am planning to do something like this, 
 
-	-hpa
+@@ -52,7 +52,7 @@ int __init pci_swiotlb_detect(void)
+ 
+ 	/* don't initialize swiotlb if iommu=off (no_iommu=1) */
+ #ifdef CONFIG_X86_64
+-	if (!no_iommu && max_pfn > MAX_DMA32_PFN)
++	if (!no_iommu && (max_pfn > MAX_DMA32_PFN || hotplug_possible()))
+ 		swiotlb = 1;
+ #endif
+ 	if (swiotlb_force)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+BUT, I don't know how that hotplug_possible function will look like or
+if such an interface already exists in the kernel (my search didn't turn
+up any) ?
+
+IMO, it should be possible to go read the SRAT to see if this system has
+support for hotplug memory and then enable swiotlb if it does.
+
+Sounds right ?
+
+Thanks,
+Alok
+
+> 
+> We can't start swiotlb reliably after a system starts.
+> 
+> See dma32_reserve_boatmen() and dma32_free_bootmem(). What we do is
+> reserving huge memory in DMA32 zone for swiotlb and releasing it if we
+> find that we don't need swiotlb. We can't find enough memory for
+> swiotlb in dma32 after a system starts.
 
