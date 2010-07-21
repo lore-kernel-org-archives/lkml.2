@@ -1,51 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759240Ab0GUQcw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 12:32:52 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60425 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758237Ab0GUQcv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 12:32:51 -0400
-Message-ID: <4C472123.1090900@zytor.com>
-Date: Wed, 21 Jul 2010 09:32:35 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1759947Ab0GUQhq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 12:37:46 -0400
+Received: from stargate.chelsio.com ([67.207.112.58]:19341 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750803Ab0GUQho (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 12:37:44 -0400
+From: Casey Leedom <leedom@chelsio.com>
+Organization: Chelsio Communications, Inc.
+To: Andy Gospodarek <andy@greyhouse.net>
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces with random MAC address
+Date: Wed, 21 Jul 2010 09:34:27 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; x86_64; ; )
+Cc: Harald Hoyer <harald@redhat.com>, David Miller <davem@davemloft.net>,
+        shemminger@vyatta.com, bhutchings@solarflare.com, sassmann@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com
+References: <20100720141816.16f0a939@nehalam> <4C469808.5060308@redhat.com> <20100721150732.GR7497@gospo.rdu.redhat.com>
+In-Reply-To: <20100721150732.GR7497@gospo.rdu.redhat.com>
 MIME-Version: 1.0
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-CC: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/10] x86, xsave: some code cleanups and reworks
-References: <1279651857-24639-1-git-send-email-robert.richter@amd.com> <20100720192717.GC6227@lenovo> <20100720194606.GO26154@erda.amd.com> <20100720200729.GD6227@lenovo> <20100720201740.GE6227@lenovo>
-In-Reply-To: <20100720201740.GE6227@lenovo>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007210934.27986.leedom@chelsio.com>
+X-OriginalArrivalTime: 21 Jul 2010 16:34:28.0743 (UTC) FILETIME=[96CD6170:01CB28F2]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2010 01:17 PM, Cyrill Gorcunov wrote:
-> 
-> well, not true, this id is being set in setup_per_cpu_areas()
-> note the snippet
-> 
-> 		if (cpu == boot_cpu_id)
-> 			switch_to_new_gdt(cpu);
-> 
-> but cycle of assignment is done over all possible cpus so
-> smp_processor_id will be = 0 for BP but definitely it's
-> confusing and better to check for BP via explicit cpu == boot_cpu_id
-> I think. Though I might be missing something.
-> 
+| From: Andy Gospodarek <andy@greyhouse.net>
+| Date: Wednesday, July 21, 2010 08:07 am
+| 
+| Agreed.  The subtle difference between a locally assigned address that
+| is persistent and one that is random would be helpful.
 
-I think the style (!smp_processor_id()) is already in use in other
-places, but we should be consistent in style; if you want to introduce a
-new style I certainly agree that (is_boot_cpu()) is pretty clear but it
-should be introduced universally.
+  And just to point out that this case _does_ exist: the igb/igbvf drivers use 
+random_ether_addr() to generate a random, locally assigned MAC address for the 
+PCI-E SR-IOV Virtual Function MAC Addresses while the cxgb4/cxgb4vf drivers use 
+a persistent, non-random locally assigned MAC Addresses.
 
-	-hpa
+  Note that I am neither arguing for nor against the proposal.  I'm just 
+pointing out an existence case for the distinction.  And yes, bit 1 being set in 
+the first octet of a MAC address for locally assigned MAC Addresses is part of 
+the IEEE 802 specification just as bit 0 being set in the same octet indicates 
+that it's a multi-station address.
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Casey
