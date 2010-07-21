@@ -1,74 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762082Ab0GUDGm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 23:06:42 -0400
-Received: from complete.lackof.org ([198.49.126.79]:39674 "EHLO
-	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762049Ab0GUDGl (ORCPT
+	id S1762096Ab0GUDJp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 23:09:45 -0400
+Received: from mga11.intel.com ([192.55.52.93]:28024 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1762072Ab0GUDJo convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 23:06:41 -0400
-Date: Tue, 20 Jul 2010 21:06:29 -0600
-From: dann frazier <dannf@dannf.org>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Rik van Riel <riel@redhat.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Ralf Baechle <ralf@linux-mips.org>
-Subject: Re: ia64 hang/mca running gdb 'make check'
-Message-ID: <20100721030629.GA9987@lackof.org>
-References: <20100720173512.GF26783@ldl.fc.hp.com> <20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com>
+	Tue, 20 Jul 2010 23:09:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,235,1278313200"; 
+   d="scan'208";a="820043388"
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+CC: "Williams, Dan J" <dan.j.williams@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Alan Cox <alan@linux.intel.com>
+Date: Wed, 21 Jul 2010 08:38:09 +0530
+Subject: RE: [PATCH 1/3] DMAENGINE: generic slave channel control
+Thread-Topic: [PATCH 1/3] DMAENGINE: generic slave channel control
+Thread-Index: AcsoUkDkG3wNieAhT8+dpgt4UDGJcQALktDA
+Message-ID: <438BB0150E931F4B9CE701519A44630104A3641362@bgsmsx502.gar.corp.intel.com>
+References: <1277770577-11024-1-git-send-email-linus.walleij@stericsson.com>
+	<AANLkTimYqUZvxaWVvT5FPsW36NTpqLLCqCiSuRAy_ER5@mail.gmail.com>
+	<AANLkTinqKHCYeGTLuTtKikcR2IA8TY0vy2tSznxLay0N@mail.gmail.com>
+	<AANLkTimHBWMYAeFrET2EpeA8KogcUmQldAHM_uhSv-gt@mail.gmail.com>
+	<AANLkTil_2nzwEUS56U48CJpdqkrpnGXAwfcE9bU_Wqhw@mail.gmail.com>
+	<AANLkTilAGPmOuS_LjA3TEq1mIcqLxX-T7P-PI-lBTZi0@mail.gmail.com>
+	<438BB0150E931F4B9CE701519A44630104A3640CF7@bgsmsx502.gar.corp.intel.com>
+ <AANLkTilZ14AEPqhwfvPbmvuBOIeSZPlHa1u4DR2GuoEC@mail.gmail.com>
+In-Reply-To: <AANLkTilZ14AEPqhwfvPbmvuBOIeSZPlHa1u4DR2GuoEC@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 10:51:36AM +0900, KAMEZAWA Hiroyuki wrote:
-> On Tue, 20 Jul 2010 11:35:12 -0600
-> dann frazier <dannf@debian.org> wrote:
+> ? Are you using memcpy() to talk to slaves?
+Yes, I don't have sg support yet, that's something I need to add next.
+
+> I was assuming all slave communication was to use sglists through
+> the .device_prep_slave_sg() call. This is currently the design constraint,
+> memcpy() will by design increase both source and destination address
+> and also always operate on the memory bus.
 > 
-> > Debian's ia64 autobuilders have been experiencing system crashes while
-> > trying to run the gdb test suite:
-> >   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=588574
-> > 
-> > I was able to reproduce this w/ the latest git tree, and bisected it
-> > down to this commit, introduced in 2.6.32:
-> > 
-> >   commit 62eede62dafb4a6633eae7ffbeb34c60dba5e7b1
-> >   Author: Hugh Dickins <hugh.dickins@tiscali.co.uk>
-> >   Date:   Mon Sep 21 17:03:34 2009 -0700
-> > 
-> >     mm: ZERO_PAGE without PTE_SPECIAL
-> > 
-> >     Reinstate anonymous use of ZERO_PAGE to all architectures, not just to
-> >     those which __HAVE_ARCH_PTE_SPECIAL: as suggested by Nick Piggin.
-> > 
-> >     Contrary to how I'd imagined it, there's nothing ugly about this, just a
-> >     zero_pfn test built into one or another block of vm_normal_page().
-> > 
-> >     But the MIPS ZERO_PAGE-of-many-colours case demands is_zero_pfn() and
-> >     my_zero_pfn() inlines.  Reinstate its mremap move_pte() shuffling of
-> >     ZERO_PAGEs we did from 2.6.17 to 2.6.19?  Not unless someone shouts for
-> >     that: it would have to take vm_flags to weed out some cases.
-> > 
-> > fyi, I found this to not be reproducible on SLES11 SP1 (which is
-> > 2.6.32-based). I compared the .configs and found that the relevant
-> > difference is the PAGE_SIZE. It does not fail w/ 64KB pages, but
-> > reliably fails w/ 16KB pages.
-> > 
+> (If you need reconfiguration also for memcpy() I think will be a
+> different issue, I'm only looking at slaves now.)
 > 
-> Sorry, I have no idea...
-> Hmm, what is the address of empty_zero_page[] on your debian(16kb-page) ?
+> With only the slave interface the dma_chan struct can be deferred
+> by the DMA engine into a local struct which has this address configured
+> from the platform, statically.
+> 
+> The runtime configuration API is exactly about being able to reconfigure
+> even the source/destination address at runtime. This is why
+> these are on the interface.
+Okay looking at the sg API, now I can understand why you need the address in
+this structure, I would also need that in future.
+One suggestion since we are giving io address here, how about naming the 
+variable as io_addr, and we can add comment to be used for sg operations as io 
+addr if anyone wants to use memcpy() they can ignore this
 
 
-dannf@krebs:~$ grep empty_zero_page /boot/System.map-2.6.32-5-mckinley 
-a0000001008784c0 d __ksymtab_empty_zero_page
-a000000100882688 d __kcrctab_empty_zero_page
-a000000100884ca4 r __kstrtab_empty_zero_page
-a000000100974000 D empty_zero_page
+Thanks
+Vinod
