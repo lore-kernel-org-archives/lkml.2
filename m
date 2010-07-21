@@ -1,48 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758763Ab0GUSiv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 14:38:51 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57215
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751131Ab0GUSiu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 14:38:50 -0400
-Date: Wed, 21 Jul 2010 11:39:06 -0700 (PDT)
-Message-Id: <20100721.113906.102700682.davem@davemloft.net>
-To: leedom@chelsio.com
-Cc: shemminger@vyatta.com, andy@greyhouse.net, harald@redhat.com,
-        bhutchings@solarflare.com, sassmann@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gospo@redhat.com,
-        gregory.v.rose@intel.com, alexander.h.duyck@intel.com
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
- interfaces with random MAC address
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <201007211129.48288.leedom@chelsio.com>
-References: <20100721102816.4bef5ada@nehalam>
-	<20100721.103249.107094774.davem@davemloft.net>
-	<201007211129.48288.leedom@chelsio.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1758806Ab0GUSjc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 14:39:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21102 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751170Ab0GUSja (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 14:39:30 -0400
+Message-ID: <4C473EDB.6030906@redhat.com>
+Date: Wed, 21 Jul 2010 21:39:23 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 1/6] KVM: MMU: fix forgot reserved bits check in speculative
+ path
+References: <4C3FCFD7.5070005@cn.fujitsu.com> <4C464102.8020205@cn.fujitsu.com>
+In-Reply-To: <4C464102.8020205@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Casey Leedom <leedom@chelsio.com>
-Date: Wed, 21 Jul 2010 11:29:47 -0700
+On 07/21/2010 03:36 AM, Xiao Guangrong wrote:
+>
+> Xiao Guangrong wrote:
+>    
+>> In the speculative path, we should check guest pte's reserved bits just as
+>> the real processor does
+>>
+>>      
+> Ping......?
+>    
 
->   Another option might be to have a new Net Device Operations call to ask the 
-> adapter for a Unique Key.  This could be formed for most devices via a tuple of 
-> the {PCI Vendor ID, PCI Device ID, Adapter Serial Number, Port Number, [and if 
-> applicable] Adapter Function ID}.  Of course this could be a fairly long string 
-> ... :-)
+Sorry.  All looks good.  I think no change is needed to patch 3, if we 
+agree on this I'll apply it as is.
 
-If a unique key were available, it could be used to generate a persistent
-MAC address.
-
-And this sort of means that these drivers could use bits of the
-device's geographic ID the construct persistent MAC addresses, but
-only if done in a MAC namespace that could be guarenteed unique on the
-local system.
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
