@@ -1,86 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752877Ab0GUURy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 16:17:54 -0400
-Received: from kroah.org ([198.145.64.141]:53488 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752231Ab0GUURw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 16:17:52 -0400
-Subject: patch "debugfs: no longer needs to depend on SYSFS" added to gregkh-2.6 tree
-To: randy.dunlap@oracle.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
-        sfr@canb.auug.org.au
-From: <gregkh@suse.de>
-Date: Wed, 21 Jul 2010 13:15:43 -0700
-In-Reply-To: <4C462B93.2050403@oracle.com>
-Message-ID: <12797433434009@site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=ANSI_X3.4-1968
-Content-Transfer-Encoding: 8bit
+	id S1753395Ab0GUUVB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 16:21:01 -0400
+Received: from mailout2.w1.samsung.com ([210.118.77.12]:10656 "EHLO
+	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752319Ab0GUUU5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 16:20:57 -0400
+Date: Wed, 21 Jul 2010 22:22:19 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+In-reply-to: <1279742604.31376.40.camel@c-dwalke-linux.qualcomm.com>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Xiaolin Zhang <xiaolin.zhang@intel.com>,
+        Hiremath Vaibhav <hvaibhav@ti.com>,
+        Robert Fekete <robert.fekete@stericsson.com>,
+        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-msm@vger.kernel.org
+Message-id: <op.vf7mvhvn7p4s8u@pikus>
+Organization: Samsung Electronics
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <cover.1279639238.git.m.nazarewicz@samsung.com>
+ <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
+ <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
+ <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf5o28st7p4s8u@pikus>
+ <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf6zo9vb7p4s8u@pikus>
+ <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf7gt3qy7p4s8u@pikus>
+ <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf7h1yc47p4s8u@pikus>
+ <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf7j13067p4s8u@pikus>
+ <1279741029.31376.33.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf7lipj67p4s8u@pikus>
+ <1279742604.31376.40.camel@c-dwalke-linux.qualcomm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 21 Jul 2010 22:03:24 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
 
-This is a note to let you know that I've just added the patch titled
+> On Wed, 2010-07-21 at 21:53 +0200, Michał Nazarewicz wrote:
+>> On Wed, 21 Jul 2010 21:37:09 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
+>> > What makes you assume that the bootloader would have these strings?
+>> > Do your devices have these strings? Maybe mine don't have them.
+>>
+>> I don't assume.  I only state it as one of the possibilities.
+>>
+>> > Assume the strings are gone and you can't find them, or have no idea
+>> > what they should be. What do you do then?
+>>
+>> Ask Google?
+>
+> Exactly, that's why they need to be in the kernel ..
 
-    debugfs: no longer needs to depend on SYSFS
+Right.....  Please show me a place where I've written that it won't be in
+the kernel? I keep repeating command line is only one of the possibilities.
+I would imagine that in final product defaults from platform would be used
+and bootloader would be left alone.
 
-to my gregkh-2.6 tree which can be found in directory form at:
-    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
- and in git form at:
-    git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/patches.git
+>> I have a better question for you though: assume the "mem" parameter is
+>> lost and you have no idea what it should be?  There are many parameters
+>> passed to kernel by bootloader and you could ask about all of them.
+>
+> That's hardware based tho. Of course you need info on what your hardware
+> is. What your doing isn't based on hardware specifics, it's based on
+> optimizations.
+>
+>> Passing cma configuration via command line is one of the possibilities
+>> -- especially convenient during development -- but I would expect platform
+>> defaults in a final product so you may well not need to worry about it.
+>
+> I honestly don't thing the "development" angle flies either , but if you
+> keep this there's no way it should be enabled for anything but debug.
 
-The filename of this patch is:
-    debugfs-no-longer-needs-to-depend-on-sysfs.patch
+If you are developing the whole platform and optimising the allocators,
+etc. it's very convenient.  If you develop something else then it's not
+needed but then again it's usually the case that if you develop “foo”
+then “bar” is not needed.
 
-The patch will show up in the next release of the linux-next tree
-(usually sometime within the next 24 hours during the week.)
+>> Would you also argue about removing all the other kernel parameters as
+>> well? I bet you don't use most of them.  Still they are there because
+>> removing them would add too much complexity to the code (conditional
+>> compilation, etc.).
+>
+> Your is at a different level of complexity ..
 
-If this patch meets the merge guidelines for a bugfix, it should be
-merged into Linus's tree before the next major kernel release.
-If not, it will be merged into Linus's tree during the next merge window.
+Which most of will remain even if the command line parameters were to
+be removed.  One needs to specify this configuration somehow and no
+matter how you do it it will be complex in one way or another.  In my
+code the complexity is parsing of the strings, in a different approach
+it would be complex in a different way.
 
-Either way, you will probably be copied on the patch when it gets sent
-to Linus for merging so that others can see what is happening in kernel
-development.
+At the same time, the fact that the parameters can be provided via command
+line is has a minimal impact on the code.
 
-If you have any questions about this process, please let me know.
-
-
->From randy.dunlap@oracle.com  Wed Jul 21 13:04:45 2010
-Message-ID: <4C462B93.2050403@oracle.com>
-Date: Tue, 20 Jul 2010 16:04:51 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-	linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: debugfs: no longer needs to depend on SYSFS
-
-From: Randy Dunlap <randy.dunlap@oracle.com>
-
-debugfs no longer uses 'kernel_subsys' (which is gone), and other
-kernel/ksysfs.c code is always built, so DEBUG_FS does not need
-to depend on SYSFS.
-
-Fixes this kconfig warning:
-
-warning: (TREE_RCU_TRACE || AMD_IOMMU_STATS && AMD_IOMMU || MTD_UBI_DEBUG && MTD && SYSFS && MTD_UBI || UBIFS_FS_DEBUG && MISC_FILESYSTEMS && UBIFS_FS || DEBUG_KMEMLEAK && DEBUG_KERNEL && EXPERIMENTAL && !MEMORY_HOTPLUG && (X86 || ARM || PPC || S390 || SPARC64 || SUPERH || MICROBLAZE) && SYSFS || TRACING || X86_PTDUMP && DEBUG_KERNEL || BLK_DEV_IO_TRACE && TRACING_SUPPORT && FTRACE && SYSFS && BLOCK) selects DEBUG_FS which has unmet direct dependencies (SYSFS)
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- lib/Kconfig.debug |    1 -
- 1 file changed, 1 deletion(-)
-
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -76,7 +76,6 @@ config UNUSED_SYMBOLS
- 
- config DEBUG_FS
- 	bool "Debug Filesystem"
--	depends on SYSFS
- 	help
- 	  debugfs is a virtual file system that kernel developers use to put
- 	  debugging files into.  Enable this option to be able to read and
-
+-- 
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
