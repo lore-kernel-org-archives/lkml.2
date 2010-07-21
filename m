@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933250Ab0GUCsp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 22:48:45 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:33007 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758652Ab0GUCsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 22:48:43 -0400
-Message-ID: <4C465FF0.1030407@zytor.com>
-Date: Tue, 20 Jul 2010 19:48:16 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+	id S1762082Ab0GUDGm (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 23:06:42 -0400
+Received: from complete.lackof.org ([198.49.126.79]:39674 "EHLO
+	complete.lackof.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762049Ab0GUDGl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 23:06:41 -0400
+Date: Tue, 20 Jul 2010 21:06:29 -0600
+From: dann frazier <dannf@dannf.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+        Rik van Riel <riel@redhat.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Nick Piggin <npiggin@suse.de>, Mel Gorman <mel@csn.ul.ie>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+Subject: Re: ia64 hang/mca running gdb 'make check'
+Message-ID: <20100721030629.GA9987@lackof.org>
+References: <20100720173512.GF26783@ldl.fc.hp.com> <20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        James Smart <james.smart@emulex.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Brian Gerst <brgerst@gmail.com>
-Subject: Re: [PATCH] BISECTED x86: avoid qword access in memcpy_*io
-References: <4C464BA0.20609@jp.fujitsu.com>
-In-Reply-To: <4C464BA0.20609@jp.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100721105136.9d4440de.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2010 06:21 PM, Hidetoshi Seto wrote:
-> With v2.6.35-rc5, my x86-64 server doesn't boot but reports a
-> Completer Abort on lpfc card.
+On Wed, Jul 21, 2010 at 10:51:36AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Tue, 20 Jul 2010 11:35:12 -0600
+> dann frazier <dannf@debian.org> wrote:
 > 
-> The result of git-bisect is:
->   6175ddf06b6172046a329e3abfd9c901a43efd2e is the first bad commit
->   commit 6175ddf06b6172046a329e3abfd9c901a43efd2e
->   Author: Brian Gerst <brgerst@gmail.com>
->   Date:   Fri Feb 5 09:37:07 2010 -0500
->     x86: Clean up mem*io functions.
+> > Debian's ia64 autobuilders have been experiencing system crashes while
+> > trying to run the gdb test suite:
+> >   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=588574
+> > 
+> > I was able to reproduce this w/ the latest git tree, and bisected it
+> > down to this commit, introduced in 2.6.32:
+> > 
+> >   commit 62eede62dafb4a6633eae7ffbeb34c60dba5e7b1
+> >   Author: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+> >   Date:   Mon Sep 21 17:03:34 2009 -0700
+> > 
+> >     mm: ZERO_PAGE without PTE_SPECIAL
+> > 
+> >     Reinstate anonymous use of ZERO_PAGE to all architectures, not just to
+> >     those which __HAVE_ARCH_PTE_SPECIAL: as suggested by Nick Piggin.
+> > 
+> >     Contrary to how I'd imagined it, there's nothing ugly about this, just a
+> >     zero_pfn test built into one or another block of vm_normal_page().
+> > 
+> >     But the MIPS ZERO_PAGE-of-many-colours case demands is_zero_pfn() and
+> >     my_zero_pfn() inlines.  Reinstate its mremap move_pte() shuffling of
+> >     ZERO_PAGEs we did from 2.6.17 to 2.6.19?  Not unless someone shouts for
+> >     that: it would have to take vm_flags to weed out some cases.
+> > 
+> > fyi, I found this to not be reproducible on SLES11 SP1 (which is
+> > 2.6.32-based). I compared the .configs and found that the relevant
+> > difference is the PAGE_SIZE. It does not fail w/ 64KB pages, but
+> > reliably fails w/ 16KB pages.
+> > 
 > 
-> What I found are:
->  - memcpy for 64bit uses movq if count >= 64 (arch/x86/lib/memcpy_64.S)
->  - memcpy_toio and memcpy_fromio have changed to use this memcpy by
->    the above commit.
->  - my debug shows that lpfc calls memcpy_toio with not-qword-aligned
->    addresses and count >= 64, e.g.:
->      memcpy_toio(0xffffc900118de004, 0xffff88047293d614, 124);
->    and it seems that it comes from:
->    [drivers/scsi/lpfc/lpfc_sli.c]
->     4929   /* First copy mbox command data to HBA SLIM, skip past first
->     4930      word */
->     4931   to_slim = phba->MBslimaddr + sizeof (uint32_t);
->     4932   lpfc_memcpy_to_slim(to_slim, &mb->un.varWords[0],
->     4933               MAILBOX_CMD_SIZE - sizeof (uint32_t));
-> 
-> Still I'm not sure what is wrong in software or hardware, however
-> I suppose that qword access to iomem is not always safe, so it will
-> be OK to back to use __inline_memcpy which uses movsl.
-> 
-> I confirmed that my server (w/ lpfc) boots with 35-rc5 + this patch.
-> 
-> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+> Sorry, I have no idea...
+> Hmm, what is the address of empty_zero_page[] on your debian(16kb-page) ?
 
-A driver should not use the memcpy-like instructions if it isn't set up
-to act as memory (meaning it can handle arbitrary byte enables.)
 
-The function it should be using is called, fairly counterintuitively,
-__iowrite32_copy().  It really should be called memcpy_toio32() or
-something similar.
-
-	-hpa
-
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+dannf@krebs:~$ grep empty_zero_page /boot/System.map-2.6.32-5-mckinley 
+a0000001008784c0 d __ksymtab_empty_zero_page
+a000000100882688 d __kcrctab_empty_zero_page
+a000000100884ca4 r __kstrtab_empty_zero_page
+a000000100974000 D empty_zero_page
