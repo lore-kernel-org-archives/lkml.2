@@ -1,65 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932248Ab0GUOkF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 10:40:05 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:39148 "EHLO cmpxchg.org"
+	id S1758706Ab0GUOy2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 10:54:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41186 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932131Ab0GUOkC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 10:40:02 -0400
-Date: Wed, 21 Jul 2010 16:39:56 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in direct
- reclaim
-Message-ID: <20100721143955.GB10480@cmpxchg.org>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
- <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
- <20100719221420.GA16031@cmpxchg.org>
- <20100720134555.GU13117@csn.ul.ie>
- <20100720220218.GE16031@cmpxchg.org>
- <20100721115250.GX13117@csn.ul.ie>
- <20100721130435.GH16031@cmpxchg.org>
- <20100721133857.GY13117@csn.ul.ie>
- <20100721142819.GA10480@cmpxchg.org>
- <20100721143118.GA13117@csn.ul.ie>
+	id S1750826Ab0GUOy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 10:54:27 -0400
+Message-ID: <4C4709B6.6000207@kernel.org>
+Date: Wed, 21 Jul 2010 16:52:38 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100721143118.GA13117@csn.ul.ie>
+To: David Howells <dhowells@redhat.com>
+CC: torvalds@linux-foundation.org, mingo@elte.hu, linux-kernel@vger.kernel.org,
+        jeff@garzik.org, akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        cl@linux-foundation.org, arjan@linux.intel.com, oleg@redhat.com,
+        axboe@kernel.dk, fweisbec@gmail.com, dwalker@codeaurora.org,
+        stefanr@s5r6.in-berlin.de, florian@mickler.org, andi@firstfloor.org,
+        mst@redhat.com, randy.dunlap@oracle.com
+Subject: Re: [PATCHSET] workqueue: concurrency managed workqueue, take#6
+References: <1277759063-24607-1-git-send-email-tj@kernel.org> <21756.1279718599@redhat.com>
+In-Reply-To: <21756.1279718599@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 21 Jul 2010 14:52:41 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 03:31:19PM +0100, Mel Gorman wrote:
-> On Wed, Jul 21, 2010 at 04:28:44PM +0200, Johannes Weiner wrote:
-> > On Wed, Jul 21, 2010 at 02:38:57PM +0100, Mel Gorman wrote:
-> > > @@ -858,7 +872,7 @@ keep:
-> > >  
-> > >  	free_page_list(&free_pages);
-> > >  
-> > > -	list_splice(&ret_pages, page_list);
-> > 
-> > This will lose all retry pages forever, I think.
-> > 
+On 07/21/2010 03:23 PM, David Howells wrote:
+> Tejun Heo <tj@kernel.org> wrote:
 > 
-> Above this is
+>> B. General documentation of Concurrency Managed Workqueue (cmwq)
+>> ================================================================
 > 
-> while (!list_empty(page_list)) {
-> 	...
-> }
-> 
-> page_list should be empty and keep_locked is putting the pages on ret_pages
-> already so I think it's ok.
+> This should be in Documentation/workqueue.txt or something like that.
 
-But ret_pages is function-local.  Putting them back on the then-empty
-page_list is to give them back to the caller, otherwise they are lost
-in a dead stack slot.
+Yeap, once things settle a bit.  I'll update it and put it under
+documentatino.
+
+Thanks.
+
+-- 
+tejun
