@@ -1,93 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932156Ab0GUNeD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:34:03 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46601 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab0GUNeA convert rfc822-to-8bit (ORCPT
+	id S932195Ab0GUNeL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:34:11 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56808 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932070Ab0GUNeH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:34:00 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 3/7] memcg: nid and zid can be calculated from zone
-Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
-In-Reply-To: <20100716105648.GG13117@csn.ul.ie>
-References: <20100716191418.7372.A69D9226@jp.fujitsu.com> <20100716105648.GG13117@csn.ul.ie>
-Message-Id: <20100721223349.870D.A69D9226@jp.fujitsu.com>
+	Wed, 21 Jul 2010 09:34:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=k8T7Me1ttTeKqVlVwq1pGHw3Ova+ZQo4V/OklyM0HxkvPa675fNu4klwlI9/H6R2Sd
+         nydxdI7yAI+xHaiudHdXeAMkkeDndJg5wPVnF/AsX3+zfV6BxtFDFSFpywSoyvUugEfk
+         xqyh00TvqOEQC3st8xYgxoSdsQj0gR95r9nh4=
+Message-ID: <4C46F75B.7090804@gmail.com>
+Date: Wed, 21 Jul 2010 06:34:19 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 8BIT
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 21 Jul 2010 22:33:56 +0900 (JST)
+To: Thomas Weber <weber@corscience.de>
+CC: trivial@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 82/82]Documentation/networking/s2io.txt update wbe address.
+References: <1279688153-29571-1-git-send-email-justinmattock@gmail.com> <1279688153-29571-7-git-send-email-justinmattock@gmail.com> <4C46B873.3020501@corscience.de>
+In-Reply-To: <4C46B873.3020501@corscience.de>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +static inline int zone_nid(struct zone *zone)
-> > +{
-> > +	return zone->zone_pgdat->node_id;
-> > +}
-> > +
-> 
-> hmm, adding a helper and not converting the existing users of
-> zone->zone_pgdat may be a little confusing particularly as both types of
-> usage would exist in the same file e.g. in mem_cgroup_zone_nr_pages.
-
-I see. here is incrementa patch.
-
-Thanks
-
->From 62cf765251af257c98fc92a58215d101d200e7ef Mon Sep 17 00:00:00 2001
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Date: Tue, 20 Jul 2010 11:30:14 +0900
-Subject: [PATCH] memcg: convert to zone_nid() from bare zone->zone_pgdat->node_id
-
-Now, we have zone_nid(). this patch convert all existing users of
-zone->zone_pgdat.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/memcontrol.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-index 82e191f..3d5b645 100644
---- a/mm/memcontrol.c
-+++ b/mm/memcontrol.c
-@@ -951,7 +951,7 @@ unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
- 				       struct zone *zone,
- 				       enum lru_list lru)
- {
--	int nid = zone->zone_pgdat->node_id;
-+	int nid = zone_nid(zone);
- 	int zid = zone_idx(zone);
- 	struct mem_cgroup_per_zone *mz = mem_cgroup_zoneinfo(memcg, nid, zid);
- 
-@@ -961,7 +961,7 @@ unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
- struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
- 						      struct zone *zone)
- {
--	int nid = zone->zone_pgdat->node_id;
-+	int nid = zone_nid(zone);
- 	int zid = zone_idx(zone);
- 	struct mem_cgroup_per_zone *mz = mem_cgroup_zoneinfo(memcg, nid, zid);
- 
-@@ -1006,7 +1006,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
- 	LIST_HEAD(pc_list);
- 	struct list_head *src;
- 	struct page_cgroup *pc, *tmp;
--	int nid = z->zone_pgdat->node_id;
-+	int nid = zone_nid(z);
- 	int zid = zone_idx(z);
- 	struct mem_cgroup_per_zone *mz;
- 	int lru = LRU_FILE * file + active;
--- 
-1.6.5.2
+On 07/21/2010 02:05 AM, Thomas Weber wrote:
+> Am 21.07.2010 06:55, schrieb Justin P. Mattock:
+>> The patch below updates abroken web address.
+>>
+>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>
+>> ---
+>>   Documentation/networking/s2io.txt |    2 +-
+>>   1 files changed, 1 insertions(+), 1 deletions(-)
+>>
+>> diff --git a/Documentation/networking/s2io.txt b/Documentation/networking/s2io.txt
+>> index c3d6b4d..dea193a 100644
+>> --- a/Documentation/networking/s2io.txt
+>> +++ b/Documentation/networking/s2io.txt
+>> @@ -133,7 +133,7 @@ bring down CPU utilization.
+>>   ** For AMD opteron platforms with 8131 chipset, MMRBC=1 and MOST=1 are
+>>   recommended as safe parameters.
+>>   For more information, please review the AMD8131 errata at
+>> -http://www.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/26310.pdf
+>> +http://www.amd.com
+>>
+>>   6.  Available Downloads
+>>   Neterion "s2io" driver in Red Hat and Suse 2.6-based distributions is kept up
+>
+> Hello Justin,
+>
+> http://vip.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/26310_AMD-8131_HyperTransport_PCI-X_Tunnel_Revision_Guide_rev_3_18.pdf
+>
+> please check the context. But I think this document is it.
+>
+> Thomas
+>
 
 
+I'll have to open this up on my other system to make sure, but as for 
+*.pdf's looks good.. thanks for going though these.
 
+Justin P. Mattock
