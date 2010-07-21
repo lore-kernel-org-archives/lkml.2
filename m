@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758072Ab0GUJc5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 05:32:57 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:52676 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756629Ab0GUJcf (ORCPT
+	id S1755655Ab0GUJcK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 05:32:10 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:25434 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750993Ab0GUJcB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 05:32:35 -0400
+	Wed, 21 Jul 2010 05:32:01 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 05/11] writeback: do not lose wake-ups in bdi threads
-Date: Wed, 21 Jul 2010 12:31:40 +0300
-Message-Id: <1279704706-1267-6-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv2 03/11] writeback: do not lose wake-ups in the forker thread - 1
+Date: Wed, 21 Jul 2010 12:31:38 +0300
+Message-Id: <1279704706-1267-4-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
 References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 21 Jul 2010 09:31:48.0206 (UTC) FILETIME=[8ABE88E0:01CB28B7]
+X-OriginalArrivalTime: 21 Jul 2010 09:31:47.0659 (UTC) FILETIME=[8A6B11B0:01CB28B7]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,55 +24,50 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Currently, bdi threads ('bdi_writeback_thread()') can lose wake-ups. For
-example, if 'bdi_queue_work()' is executed after the bdi thread have had
-finished 'wb_do_writeback()' but before it called
-'schedule_timeout_interruptible()'.
+Currently the forker thread can lose wake-ups which may lead to unnecessary
+delays in processing bdi works. E.g., consider the following scenario.
 
-To fix this issue, we have to check whether we have works to process after we
-have changed the task state to 'TASK_INTERRUPTIBLE'.
+1. 'bdi_forker_thread()' walks the 'bdi_list', finds out there is nothing to
+   do, and is about to finish the loop.
+2. A bdi thread decides to exit because it was inactive for long time.
+3. 'bdi_queue_work()' adds a work to the bdi which just exited, so it wakes up
+   the forker thread.
+4. but 'bdi_forker_thread()' executes 'set_current_state(TASK_INTERRUPTIBLE)'
+   and goes sleep. We lose a wake-up.
 
-This patch also clean-ups handling of the cases when 'dirty_writeback_interval'
-is zero or non-zero.
+Losing the wake-up is not fatal, but this means that the bdi work processing
+will be delayed by up to 5 sec. This race is theoretical, I never hit it, but
+it is worth fixing.
 
-Additionally, this patch also removes unneeded 'list_empty_careful()' call.
+The fix is to execute 'set_current_state(TASK_INTERRUPTIBLE)' _before_ walking
+'bdi_list', not after.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/fs-writeback.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
+ mm/backing-dev.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 5e6b7fc..8cf53ba 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -848,17 +848,18 @@ int bdi_writeback_thread(void *data)
- 				break;
- 		}
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 75fae17..0ea5e4c 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -342,6 +342,7 @@ static int bdi_forker_thread(void *ptr)
+ 			wb_do_writeback(me, 0);
  
--		if (dirty_writeback_interval) {
--			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
--			schedule_timeout_interruptible(wait_jiffies);
--		} else {
--			set_current_state(TASK_INTERRUPTIBLE);
--			if (list_empty_careful(&wb->bdi->work_list) &&
--			    !kthread_should_stop())
--				schedule();
+ 		spin_lock_bh(&bdi_lock);
 +		set_current_state(TASK_INTERRUPTIBLE);
-+		if (!list_empty(&bdi->work_list)) {
- 			__set_current_state(TASK_RUNNING);
-+			continue;
+ 
+ 		/*
+ 		 * Check if any existing bdi's have dirty data without
+@@ -357,8 +358,6 @@ static int bdi_forker_thread(void *ptr)
+ 			bdi_add_default_flusher_thread(bdi);
  		}
  
-+		if (dirty_writeback_interval) {
-+			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
-+			schedule_timeout(wait_jiffies);
-+		} else
-+			schedule();
-+
- 		try_to_freeze();
- 	}
+-		set_current_state(TASK_INTERRUPTIBLE);
+-
+ 		if (list_empty(&bdi_pending_list)) {
+ 			unsigned long wait;
  
 -- 
 1.7.1.1
