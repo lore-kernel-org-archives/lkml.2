@@ -1,103 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762609Ab0GUGca (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 02:32:30 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:51902 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754112Ab0GUGc1 (ORCPT
+	id S1762638Ab0GUGen (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 02:34:43 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38936
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1762569Ab0GUGem (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 02:32:27 -0400
-Date: Wed, 21 Jul 2010 16:32:22 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: linux-ext4@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: 2.6.35-r5 ext3 corruptions
-Message-ID: <20100721063222.GW32635@dastard>
-References: <20100715105745.GI30737@dastard>
- <20100719224512.GD32635@dastard>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100719224512.GD32635@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 21 Jul 2010 02:34:42 -0400
+Date: Tue, 20 Jul 2010 23:34:57 -0700 (PDT)
+Message-Id: <20100720.233457.267367495.davem@davemloft.net>
+To: harald@redhat.com
+Cc: shemminger@vyatta.com, bhutchings@solarflare.com, sassmann@redhat.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
+        leedom@chelsio.com
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
+ interfaces with random MAC address
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4C469313.6010807@redhat.com>
+References: <20100720141816.16f0a939@nehalam>
+	<20100720.142045.32697196.davem@davemloft.net>
+	<4C469313.6010807@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 08:45:12AM +1000, Dave Chinner wrote:
-> On Thu, Jul 15, 2010 at 08:57:45PM +1000, Dave Chinner wrote:
-> > Upgrading my test vms from 2.6.35-rc3 to 2.6.35-rc5 is resulting in
-> > repeated errors on the root drive of a test VM:
-> > 
-> > { 1532.368808] EXT3-fs error (device sda1): ext3_lookup: deleted inode referenced: 211043
-> > [ 1532.370859] Aborting journal on device sda1.
-> > [ 1532.376957] EXT3-fs (sda1): 
-> > [ 1532.376976] EXT3-fs (sda1): error: ext3_journal_start_sb: Detected aborted journal
-> > [ 1532.376980] EXT3-fs (sda1): error: remounting filesystem read-only
-> > [ 1532.420361] error: remounting filesystem read-only
-> > [ 1532.621209] EXT3-fs error (device sda1): ext3_lookup: deleted inode referenced: 211043
-> > 
-> > The filesysetm is a mess when checked on reboot - lots of illegal
-> > references to blocks, multiply linked blocks, etc, but repairs.
-> > Files are lots, truncated, etc, so there is visible filesystem
-> > damage.
-> > 
-> > I did lots of testing on 2.6.35-rc3 and came across no problems;
-> > problems only seemed to start with 2.6.35-rc5, and I've reproduced
-> > the problem on a vanilla 2.6.35-rc4.
-> > 
-> > The problem seems to occur randomly - sometimes during boot or when
-> > idle after boot, sometimes a while after boot. I haven't done any
-> > digging at all for the cause - all I've done so far is confirm that
-> > it is reproducable and it's not my code causing the problem.
+From: Harald Hoyer <harald@redhat.com>
+Date: Wed, 21 Jul 2010 08:26:27 +0200
+
+> On 07/20/2010 11:20 PM, David Miller wrote:
+>> From: Stephen Hemminger<shemminger@vyatta.com>
+>> Date: Tue, 20 Jul 2010 14:18:16 -0700
+>>
+>>> No one mentioned that the first octet of an Ethernet address already
+>>> indicates "software generated" Ethernet address. Per the standard,
+>>> if bit 1 is set it means address is locally assigned.
+>>>
+>>> static inline bool is_locally_assigned_ether(const u8 *addr)
+>>> {
+>>> 	return (addr[0]&  0x2) != 0;
+>>> }
+>>
+>> W00t!
+>>
+>> Indeed, can udev just use that?  :-)
 > 
-> Looks like this problem was isolated to a single VM and root
-> filesystem. I could not reproduce it on anything other than the
-> one filesystem that was failing.
+> It already does:
+> see /lib/udev/rules.d/75-persistent-net-generator.rules
 
-Ok, so now I know *why* that one filesystem got busted - I built a
-kernel without CONFIG_EXT3_DEFAULTS_TO_ORDERED set and it got a
-forced reboot (echo b > proc/sysrq-trigger). That'll teach me for
-trying to reproduce bugs Andrew is tripping over with his config
-files.
-
-Quite frankly, data=writeback mode for ext3 is a dangerous,
-dangerous configuration to run by default. IMO, it shouldn't be the
-default. Patch below.
-
-Cheers,
-
-Dave.
-
--- 
-Dave Chinner
-david@fromorbit.com
-
-ext3: default to ordered mode
-
-From: Dave Chinner <dchinner@redhat.com>
-
-data=writeback mode is dangerous and is leads to filesystem
-corruption, data loss and stale data exposure when systems crash. It
-should not be the default, especially when all major distros ensure
-their ext3 filesystems default to ordered mode. Change the default
-mode to the safer data=ordered mode, because we should be caring
-far more about avoiding corruption than performance.
-
-Signed-off-by: Dave Chinner <dchinner@redhat.com>
----
- fs/ext3/Kconfig |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/fs/ext3/Kconfig b/fs/ext3/Kconfig
-index 522b154..e8c6ba0 100644
---- a/fs/ext3/Kconfig
-+++ b/fs/ext3/Kconfig
-@@ -31,6 +31,7 @@ config EXT3_FS
- config EXT3_DEFAULTS_TO_ORDERED
- 	bool "Default to 'data=ordered' in ext3"
- 	depends on EXT3_FS
-+	default y
- 	help
- 	  The journal mode options for ext3 have different tradeoffs
- 	  between when data is guaranteed to be on disk and
+So... why doesn't this work?
