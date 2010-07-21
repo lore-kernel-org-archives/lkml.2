@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933439Ab0GUE5N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 00:57:13 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62631 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756275Ab0GUE4B (ORCPT
+	id S1762250Ab0GUE5w (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 00:57:52 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:37757 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933381Ab0GUE4r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 00:56:01 -0400
+	Wed, 21 Jul 2010 00:56:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=nCL0Xy4sg1w8xmW65dYHVNLV8nieBOGqC9N80tqTCV+J5tMTpj0FIdpkHh2APmv/uF
-         cPvPTeITvMH9xusnR1Lkz7P007jUWqWKWqeeQEHZWLah9w0lRsu3WGhl+tB5QvoeXEze
-         xadddRNDsb4b877KtYmmOUb7lk+Wym4JGaq/Q=
+        b=pWrKs26gKKsxdcacKXIBtscUETvEsa1iZMhod+LBcqVZRYe1xV6SdLKhddrtaqFdQj
+         SXGh61K6mlv2OJWU7CxTTNX3nOf6HNuod45UCXXH/LGQof8xDzw7W6WVaYc9D6ewfmQP
+         vFTmBItm+QKgDO03RP/FeWfLTB4X2syNnv3us=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 82/82]Documentation/networking/s2io.txt update wbe address.
-Date: Tue, 20 Jul 2010 21:55:45 -0700
-Message-Id: <1279688153-29571-7-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 92/92]Documentation/powerpc/booting-without-of.txt update web address.
+Date: Tue, 20 Jul 2010 21:56:42 -0700
+Message-Id: <1279688215-29628-2-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
-In-Reply-To: <1279688153-29571-1-git-send-email-justinmattock@gmail.com>
-References: <1279688153-29571-1-git-send-email-justinmattock@gmail.com>
+In-Reply-To: <1279688215-29628-1-git-send-email-justinmattock@gmail.com>
+References: <1279688215-29628-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below updates abroken web address.
+The patch below fixes a broken web address.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- Documentation/networking/s2io.txt |    2 +-
+ Documentation/powerpc/booting-without-of.txt |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/networking/s2io.txt b/Documentation/networking/s2io.txt
-index c3d6b4d..dea193a 100644
---- a/Documentation/networking/s2io.txt
-+++ b/Documentation/networking/s2io.txt
-@@ -133,7 +133,7 @@ bring down CPU utilization.
- ** For AMD opteron platforms with 8131 chipset, MMRBC=1 and MOST=1 are 
- recommended as safe parameters.
- For more information, please review the AMD8131 errata at
--http://www.amd.com/us-en/assets/content_type/white_papers_and_tech_docs/26310.pdf
-+http://www.amd.com
+diff --git a/Documentation/powerpc/booting-without-of.txt b/Documentation/powerpc/booting-without-of.txt
+index 46d2210..7882a10 100644
+--- a/Documentation/powerpc/booting-without-of.txt
++++ b/Documentation/powerpc/booting-without-of.txt
+@@ -1048,7 +1048,7 @@ IV - "dtc", the device tree compiler
  
- 6.  Available Downloads
- Neterion "s2io" driver in Red Hat and Suse 2.6-based distributions is kept up 
+ 
+ dtc source code can be found at
+-<http://ozlabs.org/~dgibson/dtc/dtc.tar.gz>
++<http://ozlabs.org/>
+ 
+ WARNING: This version is still in early development stage; the
+ resulting device-tree "blobs" have not yet been validated with the
 -- 
 1.7.1.rc1.21.gf3bd6
 
