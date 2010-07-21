@@ -1,82 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761533Ab0GUAgX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 20:36:23 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:41453 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750894Ab0GUAgV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 20:36:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=bXPaXqNn2kTcBmeCdBxAWoS+Gi8q4I0ofdA9LMabHvjbLY0bcrYyTuVCh3udssDVb7
-         zi3uynLrIudDKZu84alM3pBvnSJHiCVqhzYxnPLr55mfRWmjqziqTOH9pC2ibr1qV+Vk
-         2pP2Y55UztuUJLHeej16oijcMoc4N9GJX6TXI=
+	id S1761600Ab0GUAkY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 20:40:24 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:54227 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750894Ab0GUAkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 20:40:22 -0400
+Message-ID: <4C464102.8020205@cn.fujitsu.com>
+Date: Wed, 21 Jul 2010 08:36:18 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Tue, 20 Jul 2010 17:36:00 -0700
-Message-ID: <AANLkTilYEJMD_s5Iupru24WPXasxI_jE8JVJ35Nf8hrN@mail.gmail.com>
-Subject: udevd / ext4 issue mounting 2.6.35-rc5
-To: linux-ext4@vger.kernel.org
-Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
-        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
-        "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH v2 1/6] KVM: MMU: fix forgot reserved bits check in speculative
+ path
+References: <4C3FCFD7.5070005@cn.fujitsu.com>
+In-Reply-To: <4C3FCFD7.5070005@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have been reluctant to boot to 2.6.35-rc due to the large set of
-regression list and the amount of work I needed to actually get done
-on 2.6.35. Last I checked the regression list it was getting small so
-I gave it a spin today. No luck. I get some bootup error from udevd
-and ext2/ext3/ext4, something like this:
-
-EXT3-fs (sda1): error: couldn't mount because of unsupported optional
-features (240)
-EXT2-fs (sda1): error: couldn't mount because of unsupported optional
-features (240)
-EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)
-VFS: Mounted root (ext4 filesystem) readonly on device 8:1
-Freeing unused kernel memory: 708k freed
-Write protecting the kernel read-only data: 102040k
-Freeing unused kernel memory: 764k freed
-Freeing unused kernel memory: 1796k freed
-udevd: failed to create queue file: No such file or directory
-udevd: error creating queue file
-
-The picture:
-
-http://bombadil.infradead.org/~mcgrof/images/2010/ext4-option-240-fails-2.6.35-rc5.jpg
-
-I then decided to pull Linus' latest but it didn't help either. I
-don't recall seeing this reported on the regression list yet.
-Essentially I cannot move forward after this happens, even on single
-user boot and disabling wireless, which was my main suspect first as
-I'm using wireless-testing.git.
-
-I can certainly bisect but first wanted to see if this was already known.
 
 
-mcgrof@tux ~/wireless-testing (git::sfo-02)$ grep CONFIG_EXT .config
-CONFIG_EXTRA_FIRMWARE=""
-CONFIG_EXT2_FS=y
-CONFIG_EXT2_FS_XATTR=y
-CONFIG_EXT2_FS_POSIX_ACL=y
-CONFIG_EXT2_FS_SECURITY=y
-# CONFIG_EXT2_FS_XIP is not set
-CONFIG_EXT3_FS=y
-# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
-CONFIG_EXT3_FS_XATTR=y
-CONFIG_EXT3_FS_POSIX_ACL=y
-CONFIG_EXT3_FS_SECURITY=y
-CONFIG_EXT4_FS=y
-CONFIG_EXT4_FS_XATTR=y
-CONFIG_EXT4_FS_POSIX_ACL=y
-CONFIG_EXT4_FS_SECURITY=y
-# CONFIG_EXT4_DEBUG is not set
+Xiao Guangrong wrote:
+> In the speculative path, we should check guest pte's reserved bits just as
+> the real processor does
+> 
 
-Let me know if you need more details.
-
-  Luis
+Ping......?
