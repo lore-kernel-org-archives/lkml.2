@@ -1,300 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753504Ab0GUNEs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:04:48 -0400
-Received: from f0.cmpxchg.org ([85.214.51.133]:45429 "EHLO cmpxchg.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751338Ab0GUNEq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:04:46 -0400
-Date: Wed, 21 Jul 2010 15:04:35 +0200
-From: Johannes Weiner <hannes@cmpxchg.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+	id S1753034Ab0GUNIP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:08:15 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57280 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751220Ab0GUNIO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 09:08:14 -0400
+X-Authority-Analysis: v=1.1 cv=Wd4F0Mu8V05kqqt67pyjJbbzQCzSsR+BbLtAgo88TiY= c=1 sm=0 a=plBTy1s6OugA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=xKPyBF7hT55YOOWZU0YA:9 a=bYsOvXTE5Vgu5liA66g7P-L1g4wA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 0/13]  Uprobes Patches:
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in direct
- reclaim
-Message-ID: <20100721130435.GH16031@cmpxchg.org>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
- <1279545090-19169-5-git-send-email-mel@csn.ul.ie>
- <20100719221420.GA16031@cmpxchg.org>
- <20100720134555.GU13117@csn.ul.ie>
- <20100720220218.GE16031@cmpxchg.org>
- <20100721115250.GX13117@csn.ul.ie>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100721115250.GX13117@csn.ul.ie>
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100721024200.GC19375@linux.vnet.ibm.com>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
+	 <20100720041938.GA28533@infradead.org>
+	 <20100720063805.GA19375@linux.vnet.ibm.com>
+	 <20100720210358.GA17631@ghostprotocols.net>
+	 <20100721024200.GC19375@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Wed, 21 Jul 2010 09:08:10 -0400
+Message-ID: <1279717690.4818.31.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 12:52:50PM +0100, Mel Gorman wrote:
-> On Wed, Jul 21, 2010 at 12:02:18AM +0200, Johannes Weiner wrote:
-> > What
-> > I had in mind is the attached patch.  It is not tested and hacked up
-> > rather quickly due to time constraints, sorry, but you should get the
-> > idea.  I hope I did not miss anything fundamental.
-> > 
-> > Note that since only kswapd enters pageout() anymore, everything
-> > depending on PAGEOUT_IO_SYNC in there is moot, since there are no sync
-> > cycles for kswapd.  Just to mitigate the WTF-count on the patch :-)
-> > 
-> 
-> Anon page writeback can enter pageout. See
-> 
-> static inline bool reclaim_can_writeback(struct scan_control *sc,
->                                         struct page *page)
-> {
->         return !page_is_file_cache(page) || current_is_kswapd();
-> }
-> 
-> So the logic still applies.
+On Wed, 2010-07-21 at 08:12 +0530, Srikar Dronamraju wrote:
 
-Yeah, I noticed it only after looking at it again this morning.  My
-bad, it got a bit late when I wrote it.
+> I tried searching for t.456 gcc labels in google. I dont think I found
+> anything interesting. Are we looking at not listing symbols that end
+> with @plt? Can you please list an example t.456 label. Also any pointers to
+> where I can find more information on the same would be very useful.
 
-> > @@ -643,12 +639,14 @@ static noinline_for_stack void free_page
-> >   * shrink_page_list() returns the number of reclaimed pages
-> >   */
-> >  static unsigned long shrink_page_list(struct list_head *page_list,
-> > -					struct scan_control *sc,
-> > -					enum pageout_io sync_writeback)
-> > +				      struct scan_control *sc,
-> > +				      enum pageout_io sync_writeback,
-> > +				      int *dirty_seen)
-> >  {
-> >  	LIST_HEAD(ret_pages);
-> >  	LIST_HEAD(free_pages);
-> >  	int pgactivate = 0;
-> > +	unsigned long nr_dirty = 0;
-> >  	unsigned long nr_reclaimed = 0;
-> >  
-> >  	cond_resched();
-> > @@ -657,7 +655,7 @@ static unsigned long shrink_page_list(st
-> >  		enum page_references references;
-> >  		struct address_space *mapping;
-> >  		struct page *page;
-> > -		int may_enter_fs;
-> > +		int may_pageout;
-> >  
-> >  		cond_resched();
-> >  
-> > @@ -681,10 +679,15 @@ static unsigned long shrink_page_list(st
-> >  		if (page_mapped(page) || PageSwapCache(page))
-> >  			sc->nr_scanned++;
-> >  
-> > -		may_enter_fs = (sc->gfp_mask & __GFP_FS) ||
-> > +		/*
-> > +		 * To prevent stack overflows, only kswapd can enter
-> > +		 * the filesystem.  Swap IO is always fine (for now).
-> > +		 */
-> > +		may_pageout = current_is_kswapd() ||
-> >  			(PageSwapCache(page) && (sc->gfp_mask & __GFP_IO));
-> >  
-> 
-> We lost the __GFP_FS check and it's vaguely possible kswapd could call the
-> allocator with GFP_NOFS. While you check it before wait_on_page_writeback it
-> needs to be checked before calling pageout(). I toyed around with
-> creating a may_pageout that took everything into account but I couldn't
-> convince myself there was no holes or serious change in functionality.
+I'm not sure you'll find anything looking for "t.456" since that is just
+a random label that gcc created for its internal use. But I believe that
+all of these temp labels have a '.' in them. Thus, you can just ignore
+all labels with '.'.
 
-Yeah, I checked balance_pgdat(), saw GFP_KERNEL and went for it.  But
-it's probably better to keep such dependencies out.
+-- Steve
 
-> Ok, is this closer to what you had in mind?
 
-IMHO this is (almost) ready to get merged, so I am including the
-nitpicking comments :-)
-
-> ==== CUT HERE ====
-> [PATCH] vmscan: Do not writeback filesystem pages in direct reclaim
-> 
-> When memory is under enough pressure, a process may enter direct
-> reclaim to free pages in the same manner kswapd does. If a dirty page is
-> encountered during the scan, this page is written to backing storage using
-> mapping->writepage. This can result in very deep call stacks, particularly
-> if the target storage or filesystem are complex. It has already been observed
-> on XFS that the stack overflows but the problem is not XFS-specific.
-> 
-> This patch prevents direct reclaim writing back filesystem pages by checking
-> if current is kswapd or the page is anonymous before writing back.  If the
-> dirty pages cannot be written back, they are placed back on the LRU lists
-> for either background writing by the BDI threads or kswapd. If in direct
-> lumpy reclaim and dirty pages are encountered, the process will stall for
-> the background flusher before trying to reclaim the pages again.
-> 
-> As the call-chain for writing anonymous pages is not expected to be deep
-> and they are not cleaned by flusher threads, anonymous pages are still
-> written back in direct reclaim.
-> 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 6587155..e3a5816 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-
-[...]
-
-Does factoring pageout() still make sense in this patch?  It does not
-introduce a second callsite.
-
-> @@ -639,18 +645,25 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
->  	pagevec_free(&freed_pvec);
->  }
->  
-> +/* Direct lumpy reclaim waits up to 5 seconds for background cleaning */
-> +#define MAX_SWAP_CLEAN_WAIT 50
-
-That's placed a bit randomly now that shrink_page_list() doesn't use
-it anymore.  I moved it just above shrink_inactive_list() but maybe it
-would be better at the file's head?
-
->  /*
->   * shrink_page_list() returns the number of reclaimed pages
->   */
->  static unsigned long shrink_page_list(struct list_head *page_list,
->  					struct scan_control *sc,
-> -					enum pageout_io sync_writeback)
-> +					enum pageout_io sync_writeback,
-> +					unsigned long *nr_still_dirty)
->  {
-> -	LIST_HEAD(ret_pages);
->  	LIST_HEAD(free_pages);
-> -	int pgactivate = 0;
-> +	LIST_HEAD(putback_pages);
-> +	LIST_HEAD(dirty_pages);
-> +	int pgactivate;
-> +	unsigned long nr_dirty = 0;
->  	unsigned long nr_reclaimed = 0;
->  
-> +	pgactivate = 0;
-
-Spurious change?
-
->  	cond_resched();
->  
->  	while (!list_empty(page_list)) {
-> @@ -741,7 +754,18 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			}
->  		}
->  
-> -		if (PageDirty(page)) {
-> +		if (PageDirty(page))  {
-
-Ha!
-
-> +			/*
-> +			 * Only kswapd can writeback filesystem pages to
-> +			 * avoid risk of stack overflow
-> +			 */
-> +			if (page_is_file_cache(page) && !current_is_kswapd()) {
-> +				list_add(&page->lru, &dirty_pages);
-> +				unlock_page(page);
-> +				nr_dirty++;
-> +				goto keep_dirty;
-> +			}
-
-I don't understand why you keep the extra dirty list.  Couldn't this
-just be `goto keep_locked'?
-
->  			if (references == PAGEREF_RECLAIM_CLEAN)
->  				goto keep_locked;
->  			if (!may_enter_fs)
-> @@ -852,13 +876,19 @@ activate_locked:
->  keep_locked:
->  		unlock_page(page);
->  keep:
-> -		list_add(&page->lru, &ret_pages);
-> +		list_add(&page->lru, &putback_pages);
-> +keep_dirty:
->  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
->  	}
->  
->  	free_page_list(&free_pages);
->  
-> -	list_splice(&ret_pages, page_list);
-> +	if (nr_dirty) {
-> +		*nr_still_dirty = nr_dirty;
-
-You either have to set *nr_still_dirty unconditionally or
-(re)initialize the variable in shrink_inactive_list().
-
-> +		list_splice(&dirty_pages, page_list);
-> +	}
-> +	list_splice(&putback_pages, page_list);
-
-When we retry those pages, the dirty ones come last on the list.  Was
-this maybe the intention behind collecting dirties separately?
-
-> @@ -1245,6 +1275,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  	unsigned long nr_active;
->  	unsigned long nr_anon;
->  	unsigned long nr_file;
-> +	unsigned long nr_dirty;
->  
->  	while (unlikely(too_many_isolated(zone, file, sc))) {
->  		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> @@ -1293,26 +1324,34 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  
->  	spin_unlock_irq(&zone->lru_lock);
->  
-> -	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-> +	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC,
-> +								&nr_dirty);
->  
->  	/*
-> -	 * If we are direct reclaiming for contiguous pages and we do
-> +	 * If specific pages are needed such as with direct reclaiming
-> +	 * for contiguous pages or for memory containers and we do
->  	 * not reclaim everything in the list, try again and wait
-> -	 * for IO to complete. This will stall high-order allocations
-> -	 * but that should be acceptable to the caller
-> +	 * for IO to complete. This will stall callers that require
-> +	 * specific pages but it should be acceptable to the caller
->  	 */
-> -	if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
-> -			sc->lumpy_reclaim_mode) {
-> -		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> +	if (sc->may_writepage && !current_is_kswapd() &&
-> +			(sc->lumpy_reclaim_mode || sc->mem_cgroup)) {
-> +		int dirty_retry = MAX_SWAP_CLEAN_WAIT;
->  
-> -		/*
-> -		 * The attempt at page out may have made some
-> -		 * of the pages active, mark them inactive again.
-> -		 */
-> -		nr_active = clear_active_flags(&page_list, NULL);
-> -		count_vm_events(PGDEACTIVATE, nr_active);
-> +		while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
-> +			wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
-
-Yup, minding laptop_mode (together with may_writepage).  Agreed.
-
-> +			congestion_wait(BLK_RW_ASYNC, HZ/10);
->  
-> -		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
-> +			/*
-> +			 * The attempt at page out may have made some
-> +			 * of the pages active, mark them inactive again.
-> +			 */
-> +			nr_active = clear_active_flags(&page_list, NULL);
-> +			count_vm_events(PGDEACTIVATE, nr_active);
-> +	
-> +			nr_reclaimed += shrink_page_list(&page_list, sc,
-> +						PAGEOUT_IO_SYNC, &nr_dirty);
-> +		}
->  	}
->  
->  	local_irq_disable();
-
-Thanks,
-	Hannes
