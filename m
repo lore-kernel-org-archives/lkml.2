@@ -1,54 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751567Ab0GUKkt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 06:40:49 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:56554 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751251Ab0GUKkr (ORCPT
+	id S1751872Ab0GUKuB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 06:50:01 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:46098 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751005Ab0GUKt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 06:40:47 -0400
-Message-ID: <4C46CEA3.7040503@in.ibm.com>
-Date: Wed, 21 Jul 2010 16:10:35 +0530
-From: Sachin Sant <sachinp@in.ibm.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
-MIME-Version: 1.0
-To: linux-s390@vger.kernel.org
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
-        Tejun Heo <tj@kernel.org>, Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [-next July 21] s390 build failure : kernel/workqueue.o
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Jul 2010 06:49:59 -0400
+Subject: RE: [PATCH 4/4] input: dynamically allocate ABS information
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: ext-phil.2.carmody@nokia.com
+Cc: dmitry.torokhov@gmail.com, daniel@caiaq.de, linux-kernel@vger.kernel.org,
+        linux-input@vger.kernel.org
+In-Reply-To: <702744BC498BAE41B3AA631D95EC463058B3CFD798@NOK-EUMSG-01.mgdnok.nokia.com>
+References: <1274289757-2723-1-git-send-email-daniel@caiaq.de>
+	 <1274289757-2723-5-git-send-email-daniel@caiaq.de>
+	 <20100524160805.GO30801@buzzloop.caiaq.de>
+	 <20100524161527.GC3182@core.coreip.homeip.net>
+	 <20100616083903.GU17833@buzzloop.caiaq.de>
+	 <20100721083048.GA21558@core.coreip.homeip.net>
+	 <20100721083150.GB21558@core.coreip.homeip.net>
+	 ,<20100721083216.GC21558@core.coreip.homeip.net>
+	 <702744BC498BAE41B3AA631D95EC463058B3CFD798@NOK-EUMSG-01.mgdnok.nokia.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Jul 2010 13:42:48 +0300
+Message-ID: <1279708968.2306.11.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 21 Jul 2010 10:49:29.0412 (UTC) FILETIME=[650A2040:01CB28C2]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Today's next fails to build on a s390 box with
+On Wed, 2010-07-21 at 11:22 +0200, ext-phil.2.carmody@nokia.com wrote:
+> A tiny tiny nit...
+> 
+> From: Dmitry Torokhov [dmitry.torokhov@gmail.com]
+> ...
+> +void input_alloc_absinfo(struct input_dev *dev)
+> +{
+> +       if (!dev->absinfo)
+> +               dev->absinfo = kcalloc(ABS_CNT, sizeof(struct input_absinfo),
+> +                                       GFP_KERNEL);
+> +
+> +       WARN(!dev->absinfo, "%s(): kzalloc() failed?\n", __func__);
+> 
+> kcalloc failed, not kzalloc.
 
-  CC      kernel/workqueue.o
-kernel/workqueue.c: In function 'init_workqueues':
-kernel/workqueue.c:3525: error: negative width in bit-field '<anonymous>'
-make[1]: *** [kernel/workqueue.o] Error 1
-
-Yesterday's next was good.
-The following patches added/changed the BUILD_BUG_ON() statement.
-
-bdbc5dd7de5d07d6c9d3536e598956165a031d4c
-        workqueue: prepare for WQ_UNBOUND implementation
-7a22ad757ec75186ad43a5b4670fa7423ee8f480
-         workqueue: carry cpu number in work data once execution starts
-
-I have gcc version 4.3.2 installed on the system.
-
-Thanks
--Sachin
+kmalloc and friends already print a warning with a stack dump when they
+fail, unless this is overrided with __GFP_NOWARN, which is not the case
+here. So in usually we do not print messages/warnigns when we fail to
+allocate.
 
 -- 
-
----------------------------------
-Sachin Sant
-IBM Linux Technology Center
-India Systems and Technology Labs
-Bangalore, India
----------------------------------
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
