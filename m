@@ -1,105 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932597Ab0GUAbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 20:31:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39221 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753801Ab0GUAbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 20:31:09 -0400
-Subject: Re: drivers/gpu/drm/radeon/r600_blit.c: fix possible NULL pointer 
- derefernce
-From: Dave Airlie <airlied@redhat.com>
-To: "Alexander Y. Fomichev" <git.user@gmail.com>
-Cc: Alex Deucher <alexdeucher@gmail.com>, Robert Noland <rnoland@2hip.net>,
-        Matt Turner <mattst88@gmail.com>, Jerome Glisse <jglisse@redhat.com>,
-        akpm@linux-foundation.org, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTimNpacSqjgNN-bNdK-vOwep5LEprE_PvaEbjuDj@mail.gmail.com>
-References: <20100720014251.46b91cdd@mad-cat.localdomain>
-	 <AANLkTilKlM9NyGgBom7ncq4cNx1O_GtS1dgsMExwdck3@mail.gmail.com>
-	 <AANLkTikTetZ9vREMFfCSmJa7f9w1cmSFk145SthSFpPu@mail.gmail.com>
-	 <AANLkTim3lGADUIj4QLg6U0ThqxgaKc_UyVLJlcPZd7kS@mail.gmail.com>
-	 <AANLkTimNpacSqjgNN-bNdK-vOwep5LEprE_PvaEbjuDj@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jul 2010 10:30:43 +1000
-Message-ID: <1279672243.337.10.camel@clockmaker-el6>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1761533Ab0GUAgX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 20:36:23 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:41453 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750894Ab0GUAgV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 20:36:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:cc:content-type;
+        b=bXPaXqNn2kTcBmeCdBxAWoS+Gi8q4I0ofdA9LMabHvjbLY0bcrYyTuVCh3udssDVb7
+         zi3uynLrIudDKZu84alM3pBvnSJHiCVqhzYxnPLr55mfRWmjqziqTOH9pC2ibr1qV+Vk
+         2pP2Y55UztuUJLHeej16oijcMoc4N9GJX6TXI=
+MIME-Version: 1.0
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Tue, 20 Jul 2010 17:36:00 -0700
+Message-ID: <AANLkTilYEJMD_s5Iupru24WPXasxI_jE8JVJ35Nf8hrN@mail.gmail.com>
+Subject: udevd / ext4 issue mounting 2.6.35-rc5
+To: linux-ext4@vger.kernel.org
+Cc: "Luis R. Rodriguez" <mcgrof@gmail.com>, linux-kernel@vger.kernel.org,
+        Ubuntu Kernel Team <kernel-team@lists.ubuntu.com>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 01:07 +0400, Alexander Y. Fomichev wrote:
-> On Wed, Jul 21, 2010 at 1:00 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> > On Tue, Jul 20, 2010 at 4:13 PM, Alexander Y. Fomichev
-> > <git.user@gmail.com> wrote:
-> >> On Tue, Jul 20, 2010 at 9:37 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
-> >>> On Mon, Jul 19, 2010 at 5:42 PM, Alexander Y. Fomichev
-> >>> <git.user@gmail.com> wrote:
-> >>>> This patch fix possible NULL pointer dereference when
-> >>>> r600_prepare_blit_copy tries to fill dev_priv->blit_vb->file_priv
-> >>>> without check of dev_priv->blit_vb. dev_priv->blit_vb should be
-> >>>> filled by r600_nomm_get_vb but latest can fail with EAGAIN.
-> >>>> Addresses: https://bugzilla.kernel.org/show_bug.cgi?id=16375
-> >>>>
-> >>>> ---
-> >>>>  drivers/gpu/drm/radeon/r600_blit.c |    2 ++
-> >>>>  1 files changed, 2 insertions(+), 0 deletions(-)
-> >>>>
-> >>>> diff --git a/drivers/gpu/drm/radeon/r600_blit.c b/drivers/gpu/drm/radeon/r600_blit.c
-> >>>> index f4fb88e..0df4a2b 100644
-> >>>> --- a/drivers/gpu/drm/radeon/r600_blit.c
-> >>>> +++ b/drivers/gpu/drm/radeon/r600_blit.c
-> >>>> @@ -541,6 +541,8 @@ r600_prepare_blit_copy(struct drm_device *dev, struct drm_file *file_priv)
-> >>>>        DRM_DEBUG("\n");
-> >>>>
-> >>>>        r600_nomm_get_vb(dev);
-> >>>> +       if (!dev_priv->blit_vb)
-> >>>> +               return;
-> >>>
-> >>> r600_prepare_blit_copy returns an int so something like this would be better:
-> >>> --- a/drivers/gpu/drm/radeon/r600_blit.c
-> >>> +++ b/drivers/gpu/drm/radeon/r600_blit.c
-> >>> @@ -539,8 +539,10 @@ r600_prepare_blit_copy(struct drm_device *dev,
-> >>> struct drm_file *file_priv)
-> >>>  {
-> >>>        drm_radeon_private_t *dev_priv = dev->dev_private;
-> >>>        DRM_DEBUG("\n");
-> >>> +       int ret = r600_nomm_get_vb(dev);
-> >>>
-> >>> -       r600_nomm_get_vb(dev);
-> >>> +       if (ret)
-> >>> +               return ret;
-> >>>
-> >>>        dev_priv->blit_vb->file_priv = file_priv;
-> >>>
-> >>>
-> >>> Alex
-> >>>
-> >>>>
-> >>>>        dev_priv->blit_vb->file_priv = file_priv;
-> >>>>
-> >>>> --
-> >>>> 1.7.1.1
-> >>>>
-> >>>
-> >>
-> >> i haven't any preferneces, the only thing is - it would be logical
-> >> to have every check in common style, so other cases
-> >> (r600_blit_copy, r600_blit_swap) should be fixed, nop?
-> >
-> > Those are void functions so there's nothing to return.
-> 
-> i mean both of them call r600_nomm_get_vb and both of them
-> check if (!dev_priv->blit_vb), not return  value.I mean would be
-> logical to check it the same way everytime r600_nomm_get_vb
-> gets called.
+I have been reluctant to boot to 2.6.35-rc due to the large set of
+regression list and the amount of work I needed to actually get done
+on 2.6.35. Last I checked the regression list it was getting small so
+I gave it a spin today. No luck. I get some bootup error from udevd
+and ext2/ext3/ext4, something like this:
 
-I'm going to go with Alex's patch, as none of the other callsites return
-an error, and your patch doesn't return value from a function which has
-a int return type, causing a warning.
+EXT3-fs (sda1): error: couldn't mount because of unsupported optional
+features (240)
+EXT2-fs (sda1): error: couldn't mount because of unsupported optional
+features (240)
+EXT4-fs (sda1): mounted filesystem with ordered data mode. Opts: (null)
+VFS: Mounted root (ext4 filesystem) readonly on device 8:1
+Freeing unused kernel memory: 708k freed
+Write protecting the kernel read-only data: 102040k
+Freeing unused kernel memory: 764k freed
+Freeing unused kernel memory: 1796k freed
+udevd: failed to create queue file: No such file or directory
+udevd: error creating queue file
 
-Dave.
+The picture:
+
+http://bombadil.infradead.org/~mcgrof/images/2010/ext4-option-240-fails-2.6.35-rc5.jpg
+
+I then decided to pull Linus' latest but it didn't help either. I
+don't recall seeing this reported on the regression list yet.
+Essentially I cannot move forward after this happens, even on single
+user boot and disabling wireless, which was my main suspect first as
+I'm using wireless-testing.git.
+
+I can certainly bisect but first wanted to see if this was already known.
 
 
+mcgrof@tux ~/wireless-testing (git::sfo-02)$ grep CONFIG_EXT .config
+CONFIG_EXTRA_FIRMWARE=""
+CONFIG_EXT2_FS=y
+CONFIG_EXT2_FS_XATTR=y
+CONFIG_EXT2_FS_POSIX_ACL=y
+CONFIG_EXT2_FS_SECURITY=y
+# CONFIG_EXT2_FS_XIP is not set
+CONFIG_EXT3_FS=y
+# CONFIG_EXT3_DEFAULTS_TO_ORDERED is not set
+CONFIG_EXT3_FS_XATTR=y
+CONFIG_EXT3_FS_POSIX_ACL=y
+CONFIG_EXT3_FS_SECURITY=y
+CONFIG_EXT4_FS=y
+CONFIG_EXT4_FS_XATTR=y
+CONFIG_EXT4_FS_POSIX_ACL=y
+CONFIG_EXT4_FS_SECURITY=y
+# CONFIG_EXT4_DEBUG is not set
 
+Let me know if you need more details.
+
+  Luis
