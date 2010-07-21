@@ -1,76 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab0GUUpz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 16:45:55 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:41503 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753124Ab0GUUpw (ORCPT
+	id S1754836Ab0GUUvf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 16:51:35 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34741 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754145Ab0GUUvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 16:45:52 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48204962"
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-From: Daniel Walker <dwalker@codeaurora.org>
-To: =?UTF-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-In-Reply-To: <op.vf7nuzu57p4s8u@pikus>
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
-	 <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
-	 <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-	 <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf5o28st7p4s8u@pikus>
-	 <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf6zo9vb7p4s8u@pikus>
-	 <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7gt3qy7p4s8u@pikus>
-	 <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7h1yc47p4s8u@pikus>
-	 <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7j13067p4s8u@pikus>
-	 <1279741029.31376.33.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7lipj67p4s8u@pikus>
-	 <1279742604.31376.40.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7mvhvn7p4s8u@pikus>
-	 <1279744472.31376.42.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7nuzu57p4s8u@pikus>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jul 2010 13:45:43 -0700
-Message-ID: <1279745143.31376.46.camel@c-dwalke-linux.qualcomm.com>
+	Wed, 21 Jul 2010 16:51:33 -0400
+Date: Wed, 21 Jul 2010 13:51:28 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Joe Perches <joe@perches.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Sergey Kostyliov <rathamahata@gmail.com>
+Subject: Re: [PATCH] MAINTAINERS: Orphan BEFS
+Message-Id: <20100721135128.b4f9604e.akpm@linux-foundation.org>
+In-Reply-To: <1279072577.11873.7.camel@Joe-Laptop.home>
+References: <1279072577.11873.7.camel@Joe-Laptop.home>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 22:43 +0200, Michał Nazarewicz wrote:
-> > On Wed, 2010-07-21 at 22:22 +0200, Michał Nazarewicz wrote:
-> >> Right.....  Please show me a place where I've written that it won't be in
-> >> the kernel? I keep repeating command line is only one of the possibilities.
-> >> I would imagine that in final product defaults from platform would be used
-> >> and bootloader would be left alone.
+On Tue, 13 Jul 2010 18:56:17 -0700
+Joe Perches <joe@perches.com> wrote:
+
+> This old address bounces and Sergey doesn't answer
+> at another email address.
 > 
-> On Wed, 21 Jul 2010 22:34:32 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
-> > It should never be anyplace else.
-> 
-> I disagree.  There are countless “dubug_level” kernel parameters or even
-> some “printk” related parameters.  Those are completely hardware-independent.
-> There are also parameters that are hardware dependent but most users won't
-> care to set them.  That's how the things are: there are some defaults but
-> you can override them by command line parameters.
+> Signed-off-by: Joe Perches <joe@perches.com>
+> ---
+> diff --git a/MAINTAINERS b/MAINTAINERS
+> index 5884812..5b0a601 100644
+> --- a/MAINTAINERS
+> +++ b/MAINTAINERS
+> @@ -1255,8 +1255,7 @@ S:	Maintained
+>  F:	drivers/net/hamradio/baycom*
+>  
+>  BEFS FILE SYSTEM
+> -M:	"Sergey S. Kostyliov" <rathamahata@php4.ru>
+> -S:	Maintained
+> +S:	Orphan
+>  F:	Documentation/filesystems/befs.txt
+>  F:	fs/befs/
+>  
 
-Your not hearing the issues.. IT'S TOO COMPLEX! Please remove it.
-
-Daniel
-
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+What "other email address"?  Did you try the gmail.com address?
