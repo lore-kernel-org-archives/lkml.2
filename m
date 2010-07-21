@@ -1,125 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759060Ab0GUWih (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 18:38:37 -0400
-Received: from hera.kernel.org ([140.211.167.34]:42910 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753020Ab0GUWie (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 18:38:34 -0400
-Date: Wed, 21 Jul 2010 22:38:17 GMT
-From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        robert.richter@amd.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        robert.richter@amd.com, suresh.b.siddha@intel.com, tglx@linutronix.de,
-        hpa@linux.intel.com
-In-Reply-To: <4C476236.1020302@zytor.com>
-References: <4C476236.1020302@zytor.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/xsave] x86, xsave: Make xstate_enable_boot_cpu() __init, protect on CPU 0
-Message-ID: <tip-1cff92d8fdb27684308864d9cdb324bee43b40ab@git.kernel.org>
-Git-Commit-ID: 1cff92d8fdb27684308864d9cdb324bee43b40ab
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 21 Jul 2010 22:38:18 +0000 (UTC)
+	id S1758958Ab0GUWjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 18:39:45 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41680 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753020Ab0GUWjn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 18:39:43 -0400
+Date: Wed, 21 Jul 2010 15:39:33 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Scott Wood <scottwood@freescale.com>
+Cc: Anton Vorontsov <avorontsov@mvista.com>, Peter Tyser <ptyser@xes-inc.com>,
+        linux-kernel@vger.kernel.org, Dave Jiang <djiang@mvista.com>,
+        linuxppc-dev@ozlabs.org, Doug Thompson <dougthompson@xmission.com>
+Subject: Re: [PATCH v2] edac: mpc85xx: Add support for new MPCxxx/Pxxxx EDAC
+ controllers
+Message-Id: <20100721153933.64d02086.akpm@linux-foundation.org>
+In-Reply-To: <20100716151224.21d499a3@schlenkerla.am.freescale.net>
+References: <20100715182507.GA3482@oksana.dev.rtsoft.ru>
+	<20100716151224.21d499a3@schlenkerla.am.freescale.net>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1cff92d8fdb27684308864d9cdb324bee43b40ab
-Gitweb:     http://git.kernel.org/tip/1cff92d8fdb27684308864d9cdb324bee43b40ab
-Author:     H. Peter Anvin <hpa@linux.intel.com>
-AuthorDate: Wed, 21 Jul 2010 14:23:10 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 21 Jul 2010 15:33:54 -0700
+On Fri, 16 Jul 2010 15:12:24 -0500
+Scott Wood <scottwood@freescale.com> wrote:
 
-x86, xsave: Make xstate_enable_boot_cpu() __init, protect on CPU 0
+> On Thu, 15 Jul 2010 22:25:07 +0400
+> Anton Vorontsov <avorontsov@mvista.com> wrote:
+> 
+> > Simply add proper IDs into the device table.
+> > 
+> > Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+> > ---
+> > 
+> > It appears that the driver has two device ID tables. :-)
+> > So, my previous attempt enabled only half of the functionality.
+> > 
+> > Andrew,
+> > 
+> > Can you please replace
+> > 
+> >   edac-mpc85xx-add-support-for-mpc8569-edac-controllers.patch
+> > 
+> > with this patch? It also adds some more IDs for the newer chips.
+> > 
 
-xstate_enable_boot_cpu() is, as the name implies, only used on the
-boot CPU; furthermore, it invokes alloc_bootmem(), which is __init;
-hence it needs to be tagged __init rather than __cpuinit.
+edac-mpc85xx-add-support-for-mpc8569-edac-controllers.patch already got
+itself merged.  I queued this:
 
-Furthermore, it is *not* safe in the long run to rely on CPU 0 only
-coming online during the early boot -- at some point we're going to
-support offlining (and re-onlining) the boot CPU, and at that point we
-must not call xstate_enable_boot_cpu() again.
+--- a/drivers/edac/mpc85xx_edac.c~edac-mpc85xx-add-support-for-new-mpcxxx-pxxxx-edac-controllers
++++ a/drivers/edac/mpc85xx_edac.c
+@@ -646,8 +646,12 @@ static struct of_device_id mpc85xx_l2_er
+ 	{ .compatible = "fsl,mpc8555-l2-cache-controller", },
+ 	{ .compatible = "fsl,mpc8560-l2-cache-controller", },
+ 	{ .compatible = "fsl,mpc8568-l2-cache-controller", },
++	{ .compatible = "fsl,mpc8569-l2-cache-controller", },
+ 	{ .compatible = "fsl,mpc8572-l2-cache-controller", },
++	{ .compatible = "fsl,p1020-l2-cache-controller", },
++	{ .compatible = "fsl,p1021-l2-cache-controller", },
+ 	{ .compatible = "fsl,p2020-l2-cache-controller", },
++	{ .compatible = "fsl,p4080-l2-cache-controller", },
+ 	{},
+ };
+ 
+@@ -1123,7 +1127,10 @@ static struct of_device_id mpc85xx_mc_er
+ 	{ .compatible = "fsl,mpc8569-memory-controller", },
+ 	{ .compatible = "fsl,mpc8572-memory-controller", },
+ 	{ .compatible = "fsl,mpc8349-memory-controller", },
++	{ .compatible = "fsl,p1020-memory-controller", },
++	{ .compatible = "fsl,p1021-memory-controller", },
+ 	{ .compatible = "fsl,p2020-memory-controller", },
++	{ .compatible = "fsl,p4080-memory-controller", },
+ 	{},
+ };
+ 
+_
 
-The code is a fair bit more obscure than one would like, because the
-__ref overrides aren't quite powerful enough.
 
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Robert Richter <robert.richter@amd.com>
-LKML-Reference: <4C476236.1020302@zytor.com>
----
- arch/x86/kernel/xsave.c |   28 +++++++++++++++++-----------
- 1 files changed, 17 insertions(+), 11 deletions(-)
+> > 
+> >  drivers/edac/mpc85xx_edac.c |    8 ++++++++
+> >  1 files changed, 8 insertions(+), 0 deletions(-)
+> > 
+> > diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
+> > index 52ca09b..3820879 100644
+> > --- a/drivers/edac/mpc85xx_edac.c
+> > +++ b/drivers/edac/mpc85xx_edac.c
+> > @@ -646,8 +646,12 @@ static struct of_device_id mpc85xx_l2_err_of_match[] = {
+> >  	{ .compatible = "fsl,mpc8555-l2-cache-controller", },
+> >  	{ .compatible = "fsl,mpc8560-l2-cache-controller", },
+> >  	{ .compatible = "fsl,mpc8568-l2-cache-controller", },
+> > +	{ .compatible = "fsl,mpc8569-l2-cache-controller", },
+> >  	{ .compatible = "fsl,mpc8572-l2-cache-controller", },
+> > +	{ .compatible = "fsl,p1020-l2-cache-controller", },
+> > +	{ .compatible = "fsl,p1021-l2-cache-controller", },
+> >  	{ .compatible = "fsl,p2020-l2-cache-controller", },
+> > +	{ .compatible = "fsl,p4080-l2-cache-controller", },
+> 
+> L2 on the p4080 is quite different from those other chips.  It's part
+> of the core, controlled by SPRs.
 
-diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
-index cfc7901..b2549c3 100644
---- a/arch/x86/kernel/xsave.c
-+++ b/arch/x86/kernel/xsave.c
-@@ -360,10 +360,10 @@ unsigned int sig_xstate_size = sizeof(struct _fpstate);
- /*
-  * Enable the extended processor state save/restore feature
-  */
--static inline void xstate_enable(u64 mask)
-+static inline void xstate_enable(void)
- {
- 	set_in_cr4(X86_CR4_OSXSAVE);
--	xsetbv(XCR_XFEATURE_ENABLED_MASK, mask);
-+	xsetbv(XCR_XFEATURE_ENABLED_MASK, pcntxt_mask);
- }
- 
- /*
-@@ -421,7 +421,7 @@ static void __init setup_xstate_init(void)
- /*
-  * Enable and initialize the xsave feature.
-  */
--static void __cpuinit xstate_enable_boot_cpu(void)
-+static void __init xstate_enable_boot_cpu(void)
- {
- 	unsigned int eax, ebx, ecx, edx;
- 
-@@ -444,7 +444,7 @@ static void __cpuinit xstate_enable_boot_cpu(void)
- 	 */
- 	pcntxt_mask = pcntxt_mask & XCNTXT_MASK;
- 
--	xstate_enable(pcntxt_mask);
-+	xstate_enable();
- 
- 	/*
- 	 * Recompute the context size for enabled features
-@@ -462,16 +462,22 @@ static void __cpuinit xstate_enable_boot_cpu(void)
- 	       pcntxt_mask, xstate_size);
- }
- 
-+/*
-+ * For the very first instance, this calls xstate_enable_boot_cpu();
-+ * for all subsequent instances, this calls xstate_enable().
-+ *
-+ * This is somewhat obfuscated due to the lack of powerful enough
-+ * overrides for the section checks.
-+ */
- void __cpuinit xsave_init(void)
- {
-+	static __refdata void (*next_func)(void) = xstate_enable_boot_cpu;
-+	void (*this_func)(void);
-+
- 	if (!cpu_has_xsave)
- 		return;
- 
--	/*
--	 * Boot processor to setup the FP and extended state context info.
--	 */
--	if (!smp_processor_id())
--		xstate_enable_boot_cpu();
--	else
--		xstate_enable(pcntxt_mask);
-+	this_func = next_func;
-+	next_func = xstate_enable;
-+	this_func();
- }
+erm, was that an ack or a nack?
+
