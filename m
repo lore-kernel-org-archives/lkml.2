@@ -1,161 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751985Ab0GUMyn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 08:54:43 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:32892 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751068Ab0GUMyk (ORCPT
+	id S1752266Ab0GUMyo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 08:54:44 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:45751 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab0GUMyl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 08:54:40 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        Arjan van de Ven <arjan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: kernel/panic.c warn_slowpath_common  printk timestamp weirdness
-From: Valdis.Kletnieks@vt.edu
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1279716868_4552P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
+	Wed, 21 Jul 2010 08:54:41 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Hugh Dickins <hughd@google.com>
+Subject: Re: ia64 hang/mca running gdb 'make check'
+Cc: kosaki.motohiro@jp.fujitsu.com, dann frazier <dannf@dannf.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        linux-ia64@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Rik van Riel <riel@redhat.com>, Nick Piggin <npiggin@suse.de>,
+        Mel Gorman <mel@csn.ul.ie>, Minchan Kim <minchan.kim@gmail.com>,
+        Ralf Baechle <ralf@linux-mips.org>
+In-Reply-To: <alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com>
+References: <20100721030629.GA9987@lackof.org> <alpine.DEB.1.00.1007202106420.12760@tigran.mtv.corp.google.com>
+Message-Id: <20100721215140.86F3.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Date: Wed, 21 Jul 2010 08:54:28 -0400
-Message-ID: <62021.1279716868@localhost>
-X-Mirapoint-Received-SPF: 128.173.34.98 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020209.4C46EE04.02F5,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 21 Jul 2010 21:54:37 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1279716868_4552P
-Content-Type: text/plain; charset=us-ascii
+> On Tue, 20 Jul 2010, dann frazier wrote:
+> > On Wed, Jul 21, 2010 at 10:51:36AM +0900, KAMEZAWA Hiroyuki wrote:
+> > > On Tue, 20 Jul 2010 11:35:12 -0600
+> > > dann frazier <dannf@debian.org> wrote:
+> > > 
+> > > > Debian's ia64 autobuilders have been experiencing system crashes while
+> > > > trying to run the gdb test suite:
+> > > >   http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=588574
+> > > > 
+> > > > I was able to reproduce this w/ the latest git tree, and bisected it
+> > > > down to this commit, introduced in 2.6.32:
+> > > > 
+> > > >   commit 62eede62dafb4a6633eae7ffbeb34c60dba5e7b1
+> > > >   Author: Hugh Dickins <hugh.dickins@tiscali.co.uk>
+> > > >   Date:   Mon Sep 21 17:03:34 2009 -0700
+> > > > 
+> > > >     mm: ZERO_PAGE without PTE_SPECIAL
+> > > > 
+> > > >     Reinstate anonymous use of ZERO_PAGE to all architectures, not just to
+> > > >     those which __HAVE_ARCH_PTE_SPECIAL: as suggested by Nick Piggin.
+> > > > 
+> > > >     Contrary to how I'd imagined it, there's nothing ugly about this, just a
+> > > >     zero_pfn test built into one or another block of vm_normal_page().
+> > > > 
+> > > >     But the MIPS ZERO_PAGE-of-many-colours case demands is_zero_pfn() and
+> > > >     my_zero_pfn() inlines.  Reinstate its mremap move_pte() shuffling of
+> > > >     ZERO_PAGEs we did from 2.6.17 to 2.6.19?  Not unless someone shouts for
+> > > >     that: it would have to take vm_flags to weed out some cases.
+> > > > 
+> > > > fyi, I found this to not be reproducible on SLES11 SP1 (which is
+> > > > 2.6.32-based). I compared the .configs and found that the relevant
+> > > > difference is the PAGE_SIZE. It does not fail w/ 64KB pages, but
+> > > > reliably fails w/ 16KB pages.
+> > > > 
+> > > 
+> > > Sorry, I have no idea...
+> > > Hmm, what is the address of empty_zero_page[] on your debian(16kb-page) ?
+> > 
+> > 
+> > dannf@krebs:~$ grep empty_zero_page /boot/System.map-2.6.32-5-mckinley 
+> > a0000001008784c0 d __ksymtab_empty_zero_page
+> > a000000100882688 d __kcrctab_empty_zero_page
+> > a000000100884ca4 r __kstrtab_empty_zero_page
+> > a000000100974000 D empty_zero_page
+> 
+> Thanks a lot for reporting this, but I too have no idea yet.
+> 
+> It is likely that the bug is not to be found in that 62eede62, but
+> rather in one of the preceding patches to mm/memory.c which 62eede62
+> was extending to ia64 and other architectures without PTE_SPECIAL.
+> 
+> I wonder, from looking at that gdb testsuite log, is it plausible
+> that all these hangs/crashes occurred when writing out a coredump?
+> Is that something you could check for us? or rule out the possibility.
+> 
+> I was rather proud of the get_dump_page() simplification,
+> but perhaps there's something nasty lurking in there.
 
-Seeing this on my Dell Latitude.  The timestamps from the 'cut here' and
-WARNING lines are different even though they're issued by sequential lines in
-panic.c - but then the printk timestamps remain identical even through an
-*entire second* WARN call.  Is somebody blocking clock interrupts and failing
-to re-enable them, or is something different going on here?
+Ug. I did tested some zero page thing at developing 62eede62 on ia64.
+but unforunatelly, I've lost ia64 test environment by physical machine
+crash. and I don't remember I did test which page size ;)
 
-[42836.057704] IN=wlan0 OUT= MAC=ff:ff:ff:ff:ff:ff:94:44:52:1a:8f:57:08:00 SRC=192.168.2.1 DST=192.168.2.255 LEN=37 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=UDP SPT=32769 DPT=10111 LEN=17 
-[42860.244827] IN=wlan0 OUT= MAC=ff:ff:ff:ff:ff:ff:94:44:52:1a:8f:57:08:00 SRC=192.168.2.1 DST=192.168.2.255 LEN=37 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=UDP SPT=32769 DPT=10111 LEN=17 
-[42875.543219] ------------[ cut here ]------------
-[42875.544006] WARNING: at lib/plist.c:57 plist_check_head+0x47/0x114()
-[42875.544006] Hardware name: Latitude E6500                  
-[42875.544006] Modules linked in: ppp_async sunrpc microcode usb_storage [last unloaded: scsi_wait_scan]
-[42875.544006] Pid: 58070, comm: pulseaudio Tainted: G        W   2.6.35-rc5-mmotm0719 #2
-[42875.544006] Call Trace:
-[42875.544006]  [<ffffffff81037335>] warn_slowpath_common+0x80/0x98
-[42875.544006]  [<ffffffff81037362>] warn_slowpath_null+0x15/0x17
-[42875.544006]  [<ffffffff812051df>] plist_check_head+0x47/0x114
-[42875.544006]  [<ffffffff812052c7>] plist_add+0x1b/0xb1
-[42875.544006]  [<ffffffff81057b2e>] update_target+0x94/0xd0
-[42875.544006]  [<ffffffff81057d54>] pm_qos_add_request+0x79/0x7b
-[42875.544006]  [<ffffffff8141d199>] snd_pcm_hw_params+0x25a/0x28a
-[42875.544006]  [<ffffffff8141da29>] snd_pcm_common_ioctl1+0x23b/0x980
-[42875.544006]  [<ffffffff811c63db>] ? inode_has_perm.clone.18+0x92/0xa2
-[42875.544006]  [<ffffffff8141e613>] snd_pcm_playback_ioctl1+0x231/0x246
-[42875.544006]  [<ffffffff810d9178>] ? fd_install+0x36/0xd5
-[42875.544006]  [<ffffffff8141e652>] snd_pcm_playback_ioctl+0x2a/0x2e
-[42875.544006]  [<ffffffff810e91a0>] vfs_ioctl+0x31/0xa2
-[42875.544006]  [<ffffffff810e9b1f>] do_vfs_ioctl+0x496/0x4c9
-[42875.544006]  [<ffffffff810e9ba9>] sys_ioctl+0x57/0x96
-[42875.544006]  [<ffffffff8100272b>] system_call_fastpath+0x16/0x1b
-[42875.544006] ---[ end trace 23d666d936caf587 ]---
-[42875.544006] ------------[ cut here ]------------
-[42875.544006] WARNING: at lib/plist.c:57 plist_check_head+0x47/0x114()
-[42875.544006] Hardware name: Latitude E6500                  
-[42875.544006] Modules linked in: ppp_async sunrpc microcode usb_storage [last unloaded: scsi_wait_scan]
-[42875.544006] Pid: 58070, comm: pulseaudio Tainted: G        W   2.6.35-rc5-mmotm0719 #2
-[42875.544006] Call Trace:
-[42875.544006]  [<ffffffff81037335>] warn_slowpath_common+0x80/0x98
-[42875.544006]  [<ffffffff81037362>] warn_slowpath_null+0x15/0x17
-[42875.544006]  [<ffffffff812051df>] plist_check_head+0x47/0x114
-[42875.544006]  [<ffffffff81205354>] plist_add+0xa8/0xb1
-[42875.544006]  [<ffffffff81057b2e>] update_target+0x94/0xd0
-[42875.544006]  [<ffffffff81057d54>] pm_qos_add_request+0x79/0x7b
-[42875.544006]  [<ffffffff8141d199>] snd_pcm_hw_params+0x25a/0x28a
-[42875.544006]  [<ffffffff8141da29>] snd_pcm_common_ioctl1+0x23b/0x980
-[42875.544006]  [<ffffffff811c63db>] ? inode_has_perm.clone.18+0x92/0xa2
-[42875.544006]  [<ffffffff8141e613>] snd_pcm_playback_ioctl1+0x231/0x246
-[42875.544006]  [<ffffffff810d9178>] ? fd_install+0x36/0xd5
-[42875.544006]  [<ffffffff8141e652>] snd_pcm_playback_ioctl+0x2a/0x2e
-[42875.544006]  [<ffffffff810e91a0>] vfs_ioctl+0x31/0xa2
-[42875.544006]  [<ffffffff810e9b1f>] do_vfs_ioctl+0x496/0x4c9
-[42875.544006]  [<ffffffff810e9ba9>] sys_ioctl+0x57/0x96
-[42875.544006]  [<ffffffff8100272b>] system_call_fastpath+0x16/0x1b
-[42875.544006] ---[ end trace 23d666d936caf588 ]---
-[42882.427310] ------------[ cut here ]------------
-[42882.428016] WARNING: at lib/plist.c:57 plist_check_head+0x47/0x114()
-[42882.428016] Hardware name: Latitude E6500                  
-[42882.428016] Modules linked in: ppp_async sunrpc microcode usb_storage [last unloaded: scsi_wait_scan]
-[42882.428016] Pid: 58070, comm: pulseaudio Tainted: G        W   2.6.35-rc5-mmotm0719 #2
-[42882.428016] Call Trace:
-[42882.428016]  [<ffffffff81037335>] warn_slowpath_common+0x80/0x98
-[42882.428016]  [<ffffffff81037362>] warn_slowpath_null+0x15/0x17
-[42882.428016]  [<ffffffff812051df>] plist_check_head+0x47/0x114
-[42882.428016]  [<ffffffff8120537c>] plist_del+0x1f/0x8b
-[42882.428016]  [<ffffffff81057b21>] update_target+0x87/0xd0
-[42882.428016]  [<ffffffff81057bb6>] pm_qos_remove_request+0x4c/0x5c
-[42882.428016]  [<ffffffff8141dad9>] snd_pcm_common_ioctl1+0x2eb/0x980
-[42882.428016]  [<ffffffff811c63db>] ? inode_has_perm.clone.18+0x92/0xa2
-[42882.428016]  [<ffffffff8141e613>] snd_pcm_playback_ioctl1+0x231/0x246
-[42882.428016]  [<ffffffff8109589d>] ? trace_preempt_on+0x15/0x28
-[42882.428016]  [<ffffffff810c727e>] ? unmap_region+0xbd/0xcc
-[42882.428016]  [<ffffffff8141e652>] snd_pcm_playback_ioctl+0x2a/0x2e
-[42882.428016]  [<ffffffff810e91a0>] vfs_ioctl+0x31/0xa2
-[42882.428016]  [<ffffffff810e9b1f>] do_vfs_ioctl+0x496/0x4c9
-[42882.428016]  [<ffffffff810e9ba9>] sys_ioctl+0x57/0x96
-[42882.428016]  [<ffffffff810c746a>] ? unlink_file_vma+0x2d/0x4d
-[42882.428016]  [<ffffffff8100272b>] system_call_fastpath+0x16/0x1b
-[42882.428016] ---[ end trace 23d666d936caf589 ]---
-[42882.428016] ------------[ cut here ]------------
-[42882.428016] WARNING: at lib/plist.c:57 plist_check_head+0x47/0x114()
-[42882.428016] Hardware name: Latitude E6500                  
-[42882.428016] Modules linked in: ppp_async sunrpc microcode usb_storage [last unloaded: scsi_wait_scan]
-[42882.428016] Pid: 58070, comm: pulseaudio Tainted: G        W   2.6.35-rc5-mmotm0719 #2
-[42882.428016] Call Trace:
-[42882.428016]  [<ffffffff81037335>] warn_slowpath_common+0x80/0x98
-[42882.428016]  [<ffffffff81037362>] warn_slowpath_null+0x15/0x17
-[42882.428016]  [<ffffffff812051df>] plist_check_head+0x47/0x114
-[42882.428016]  [<ffffffff812053df>] plist_del+0x82/0x8b
-[42882.428016]  [<ffffffff81057b21>] update_target+0x87/0xd0
-[42882.428016]  [<ffffffff81057bb6>] pm_qos_remove_request+0x4c/0x5c
-[42882.428016]  [<ffffffff8141dad9>] snd_pcm_common_ioctl1+0x2eb/0x980
-[42882.428016]  [<ffffffff811c63db>] ? inode_has_perm.clone.18+0x92/0xa2
-[42882.428016]  [<ffffffff8141e613>] snd_pcm_playback_ioctl1+0x231/0x246
-[42882.428016]  [<ffffffff8109589d>] ? trace_preempt_on+0x15/0x28
-[42882.428016]  [<ffffffff810c727e>] ? unmap_region+0xbd/0xcc
-[42882.428016]  [<ffffffff8141e652>] snd_pcm_playback_ioctl+0x2a/0x2e
-[42882.428016]  [<ffffffff810e91a0>] vfs_ioctl+0x31/0xa2
-[42882.428016]  [<ffffffff810e9b1f>] do_vfs_ioctl+0x496/0x4c9
-[42882.428016]  [<ffffffff810e9ba9>] sys_ioctl+0x57/0x96
-[42882.428016]  [<ffffffff810c746a>] ? unlink_file_vma+0x2d/0x4d
-[42882.428016]  [<ffffffff8100272b>] system_call_fastpath+0x16/0x1b
-[42882.428016] ---[ end trace 23d666d936caf58a ]---
-[42884.623327] IN=wlan0 OUT= MAC=ff:ff:ff:ff:ff:ff:94:44:52:1a:8f:57:08:00 SRC=192.168.2.1 DST=192.168.2.255 LEN=37 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=UDP SPT=32769 DPT=10111 LEN=17 
-[42914.070946] IN=wlan0 OUT= MAC=ff:ff:ff:ff:ff:ff:94:44:52:1a:8f:57:08:00 SRC=192.168.2.1 DST=192.168.2.255 LEN=37 TOS=0x00 PREC=0x00 TTL=64 ID=0 DF PROTO=UDP SPT=32769 DPT=10111 LEN=17 
+Umm... I also have no idea. sorry.
 
 
---==_Exmh_1279716868_4552P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMRu4DcC3lWbTT17ARAg0lAJ9t912xy1VToZ5ByjMEmsU8WZLWQACg4Cqt
-olfpaBJswPkxwwEGqh6ynfg=
-=dY/v
------END PGP SIGNATURE-----
-
---==_Exmh_1279716868_4552P--
 
