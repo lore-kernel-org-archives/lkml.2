@@ -1,63 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754113Ab0GUPXc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 11:23:32 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41271 "EHLO mx2.suse.de"
+	id S1754037Ab0GUP1c (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 11:27:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33431 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751643Ab0GUPXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 11:23:30 -0400
-Subject: Re: CONFIG_SCSI_G_NCR5380_MEM dead?
-From: James Bottomley <James.Bottomley@suse.de>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-        vamos-dev@i4.informatik.uni-erlangen.de
-In-Reply-To: <201007211512.03147.linux@rainbow-software.org>
-References: <86pqyhhtut.fsf@peer.zerties.org>
-	 <201007211512.03147.linux@rainbow-software.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jul 2010 08:23:22 -0700
-Message-ID: <1279725802.20250.33.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1751643Ab0GUP1b (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 11:27:31 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C470B46.4040604@kernel.org>
+References: <4C470B46.4040604@kernel.org> <7b6bba36-5330-4e27-b7a9-3a4113b6b379@email.android.com> <21485.1279717725@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: dhowells@redhat.com, Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        torvalds@linux-foundation.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, jeff@garzik.org,
+        akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
+Date: Wed, 21 Jul 2010 16:25:44 +0100
+Message-ID: <15189.1279725944@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 15:12 +0200, Ondrej Zary wrote:
-> On Wednesday 21 July 2010, Christian Dietrich wrote:
-> > Hi all!
-> >
-> >         As part of the VAMOS[0] research project at the University of
-> > Erlangen we are looking at multiple integrity errors in linux'
-> > configuration system.
-> >
-> >         I've been running a check on the drivers/scsi sourcetree for
-> > config Items not defined in Kconfig and found such a case. Sourcecode
-> > blocks depending on these Items are not reachable from a vanilla
-> > kernel -- dead code. I've seen such dead blocks made on purpose
-> > e.g. while integrating new features into the kernel but generally
-> > they're just useless.
-> >
-> > I encountered, that the CONFIG_SCSI_G_NCR5380_MEM symbol in
-> > drivers/scsi/g_NCR5380.c isn't defined anywhere. So this codeblocks
-> > seems to be unreachable. But there is a define in g_NCR5380_mmio.c for
-> > SCSI_G_NCR5380_MEM with an include of g_NCR5380.c. So i think this is a
-> > typo-bug and it should be a CONFIG_ define. The code wasn't changed since
-> > linux is in git, so probably no one has used the mmio module, cause
-> > there can't be a difference to the normal pio module. If you think this
-> > ifdefs should be removed, i can send a patch.
-> 
-> I fixed this some time ago but the patches are still not in mainline. You can 
-> find them in -mm tree: http://userweb.kernel.org/~akpm/mmotm/
+Tejun Heo <tj@kernel.org> wrote:
 
-So you made me rather reluctant by reporting that the rewrite didn't
-actually work for you.  I'm rather wary of transforming non-compiled
-code into non-working code in case we lose some clue in the process.
-However, if you can get it working, I'll be delighted to apply it.
+> Each gcwq keeps track of currently running works in a hash table and looks
+> whether the work in question is already executing before starting executing
+> it.  It's a bit complex but as a work_struct may be freed once execution
+> starts, the status needs to be tracked outside.
 
-James
+Thanks, that's what I wanted to know.
 
+I presume this survives an executing work_struct being freed, reallocated and
+requeued before the address of the work_struct is removed from the hash table?
 
+I can see at least one way of doing this: marking the work_struct address in
+the hash when the address becomes pending again so that the process of hash
+removal will cause the work_struct to be requeued automatically.
 
+David
