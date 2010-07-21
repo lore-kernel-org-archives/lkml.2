@@ -1,77 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab0GUOQK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 10:16:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:45514 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624Ab0GUOQJ (ORCPT
+	id S1758350Ab0GUOVV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 10:21:21 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:56630 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755624Ab0GUOVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 10:16:09 -0400
-X-Authority-Analysis: v=1.1 cv=QegmR36pPmYK5pONHUGfVfb2Xn4zU2Kibu9Jhh5Kkp4= c=1 sm=0 a=nF0KFOgYotYA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=RYkCmDwOOEg20aDq3icA:9 a=KPXUkI9Ir-KHgU0_PRkVolIP9_4A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
-From: Steven Rostedt <rostedt@goodmis.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, "Theodore Ts'o" <tytso@mit.edu>,
+	Wed, 21 Jul 2010 10:21:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=KaKyyOrhOr9vnUEyLcpPZdjCmmxsg/f9yw2+GKk1Xupt+aQayTKyBLuv3UYZs5Tmny
+         KjNAX2krv9ZChxhrX4PEg8vJCpK0BXe723dCAxJI/uR8rVUV1XnWe36/UCJKzGnjhnKY
+         oDYSXWI9BxtBF6vtkk36DRFmBkkp+KrU4qSNI=
+Date: Wed, 21 Jul 2010 16:21:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Li Zefan <lizf@cn.fujitsu.com>, "Theodore Ts'o" <tytso@mit.edu>,
         LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>,
         Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-In-Reply-To: <20100721222508.8704.A69D9226@jp.fujitsu.com>
-References: <4C401CE3.7010004@cn.fujitsu.com>
-	 <20100721222508.8704.A69D9226@jp.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 21 Jul 2010 10:16:06 -0400
-Message-ID: <1279721766.4818.39.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
+Message-ID: <20100721142112.GB5764@nowhere>
+References: <4C401CE3.7010004@cn.fujitsu.com> <20100721222508.8704.A69D9226@jp.fujitsu.com> <1279721766.4818.39.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279721766.4818.39.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 22:31 +0900, KOSAKI Motohiro wrote:
-> Hi Steven,
-
->         if (ac)
-> 	        trace_ext4_mb_release_group_pa(ac, pa);
+On Wed, Jul 21, 2010 at 10:16:06AM -0400, Steven Rostedt wrote:
+> On Wed, 2010-07-21 at 22:31 +0900, KOSAKI Motohiro wrote:
+> > Hi Steven,
 > 
-> But, I don't think this is proper fix because we don't want any overhead
-> if the tracepoint is disabled.
+> >         if (ac)
+> > 	        trace_ext4_mb_release_group_pa(ac, pa);
+> > 
+> > But, I don't think this is proper fix because we don't want any overhead
+> > if the tracepoint is disabled.
+> > 
+> > So, How do we check NULL in TP_fast_assign()?
 > 
-> So, How do we check NULL in TP_fast_assign()?
-
-You could do:
-
-	TP_fast_assign(
-		if (ac) {
-	                __entry->dev            = ac->ac_sb->s_dev;
-        	        __entry->ino            = ac->ac_inode->i_ino;
-        	        __entry->pa_pstart      = pa->pa_pstart;
-        	        __entry->pa_len         = pa->pa_len;
-		}
-        ),
-
-But this just makes the __entry null and wastes the ring buffer.
-
-I may be able to add a __discard_entry that may help. Then we could do
-something like this:
-
-	if (ac) {
-                __entry->dev            = ac->ac_sb->s_dev;
-                __entry->ino            = ac->ac_inode->i_ino;
-                __entry->pa_pstart      = pa->pa_pstart;
-                __entry->pa_len         = pa->pa_len;
-	} else
-		__discard_entry;
-
-Does this seem reasonable?
-
-But for now, the wasting the entry seems to be the only choice we have,
-or to do as you suggested and have the "if (ac) trace_...", but I don't
-like that.
-
--- Steve
+> You could do:
+> 
+> 	TP_fast_assign(
+> 		if (ac) {
+> 	                __entry->dev            = ac->ac_sb->s_dev;
+>         	        __entry->ino            = ac->ac_inode->i_ino;
+>         	        __entry->pa_pstart      = pa->pa_pstart;
+>         	        __entry->pa_len         = pa->pa_len;
+> 		}
+>         ),
+> 
+> But this just makes the __entry null and wastes the ring buffer.
+> 
+> I may be able to add a __discard_entry that may help. Then we could do
+> something like this:
+> 
+> 	if (ac) {
+>                 __entry->dev            = ac->ac_sb->s_dev;
+>                 __entry->ino            = ac->ac_inode->i_ino;
+>                 __entry->pa_pstart      = pa->pa_pstart;
+>                 __entry->pa_len         = pa->pa_len;
+> 	} else
+> 		__discard_entry;
+> 
+> Does this seem reasonable?
+> 
+> But for now, the wasting the entry seems to be the only choice we have,
+> or to do as you suggested and have the "if (ac) trace_...", but I don't
+> like that.
+> 
+> -- Steve
 
 
+Is there no already existing branch in ext4 you could reuse in order to
+send the trace only if (ac) ?
 
