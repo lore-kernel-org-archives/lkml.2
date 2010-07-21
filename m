@@ -1,72 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab0GUWPY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 18:15:24 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:64036 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751559Ab0GUWPV (ORCPT
+	id S1758916Ab0GUWSB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 18:18:01 -0400
+Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:40122 "EHLO
+	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758878Ab0GUWR7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 18:15:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:reply-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=ZGFUkuQpdhD2XrRI56BpgjIsZwKK0+qWeU0yYGEVhS9Wxan11qjGU70NuzAUKJxOMH
-         kbLeUshfDJ3bGA4swru2nNYlyaOu+7CPRhmufjZeKIvlWkm+aEZV5cJSuQQrDXCEQfgZ
-         zI/QurSe7rq26PoQCFSe66guWUDnywpVCbU1c=
-Date: Wed, 21 Jul 2010 15:15:16 -0700
-From: mark gross <markgross@thegnar.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@suse.de>,
-        mark gross <markgross@thegnar.org>,
-        "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: linux-next: manual merge of the suspend tree with the wireless
- tree
-Message-ID: <20100721221516.GC2610@gvim.org>
-Reply-To: markgross@thegnar.org
-References: <20100721132006.ff026db8.sfr@canb.auug.org.au>
+	Wed, 21 Jul 2010 18:17:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=to:subject:from
+	:date:message-id:mime-version:content-type; q=dns; s=sasl; b=jSU
+	S8TKpde6/74UJK4elLDYcp2FS7eGfUc1cL5SHs8HlfHsOjJt8cdqYrcgVth6LP3k
+	NrUwvtXu5XIRtZdIYRUVMFirzzuRryIhRFwdcVG2MbdK6ORCsWLcKRSfIIm7a099
+	za7Y4DnZtquy8MXPUilVEu2UrXMffSVvZTE7Lei4=
+To: git@vger.kernel.org
+Subject: [ANNOUNCE] Git 1.7.2
+From: Junio C Hamano <gitster@pobox.com>
+Date: Wed, 21 Jul 2010 15:17:50 -0700
+Message-ID: <7viq48iinl.fsf@alter.siamese.dyndns.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100721132006.ff026db8.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Pobox-Relay-ID: CFB57F4C-9515-11DF-A839-9056EE7EF46B-77302942!a-pb-sasl-quonix.pobox.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 01:20:06PM +1000, Stephen Rothwell wrote:
-> Hi Rafael,
-> 
-> Today's linux-next merge of the suspend tree got a conflict in
-> drivers/net/wireless/ipw2x00/ipw2100.c between commit
-> d267be307a3345ef06889511cad2aa1fecc83db7 ("ipw2100: mark
-> ipw2100_pm_qos_req static") from the wireless tree and commit
-> 82f682514a5df89ffb3890627eebf0897b7a84ec ("pm_qos: Get rid of the
-> allocation in pm_qos_add_request()") from the suspend tree.
-> 
-> I fixed it up (see below) and can carry the fix as necessary.
-> -- 
-> Cheers,
-> Stephen Rothwell                    sfr@canb.auug.org.au
-> 
-> diff --cc drivers/net/wireless/ipw2x00/ipw2100.c
-> index 5bbff4c,7f0d98b..0000000
-> --- a/drivers/net/wireless/ipw2x00/ipw2100.c
-> +++ b/drivers/net/wireless/ipw2x00/ipw2100.c
-> @@@ -174,7 -174,7 +174,7 @@@ that only one external action is invoke
->   #define DRV_DESCRIPTION	"Intel(R) PRO/Wireless 2100 Network Driver"
->   #define DRV_COPYRIGHT	"Copyright(c) 2003-2006 Intel Corporation"
->   
-> - static struct pm_qos_request_list *ipw2100_pm_qos_req;
->  -struct pm_qos_request_list ipw2100_pm_qos_req;
-> ++static struct pm_qos_request_list ipw2100_pm_qos_req
+The latest feature release Git 1.7.2 is available at the usual
+places:
 
-It should be static.  Thanks
---mgross
+  http://www.kernel.org/pub/software/scm/git/
 
->   
->   /* Debugging stuff */
->   #ifdef CONFIG_IPW2100_DEBUG
+  git-1.7.2.tar.{gz,bz2}			(source tarball)
+  git-htmldocs-1.7.2.tar.{gz,bz2}		(preformatted docs)
+  git-manpages-1.7.2.tar.{gz,bz2}		(preformatted docs)
+
+The RPM binary packages for a few architectures are found in:
+
+  RPMS/$arch/git-*-1.7.2-1.fc11.$arch.rpm	(RPM)
+
+We have 500+ non-merge commits from 93 contributors, among which 28 are
+new contributors, since the last release (1.7.1).  Thanks everybody for
+working hard to make git a better system ;-).
+
+
+Git v1.7.2 Release Notes
+========================
+
+Updates since v1.7.1
+--------------------
+
+ * core.eol configuration and text/eol attributes are the new way to control
+   the end of line conventions for files in the working tree.
+
+ * core.autocrlf has been made safer - it will now only handle line
+   endings for new files and files that are LF-only in the
+   repository. To normalize content that has been checked in with
+   CRLF, use the new eol/text attributes.
+
+ * The whitespace rules used in "git apply --whitespace" and "git diff"
+   gained a new member in the family (tab-in-indent) to help projects with
+   policy to indent only with spaces.
+
+ * When working from a subdirectory, by default, git does not look for its
+   metadirectory ".git" across filesystems, primarily to help people who
+   have invocations of git in their custom PS1 prompts, as being outside
+   of a git repository would look for ".git" all the way up to the root
+   directory, and NFS mounts are often slow.  DISCOVERY_ACROSS_FILESYSTEM
+   environment variable can be used to tell git not to stop at a
+   filesystem boundary.
+
+ * Usage help messages generated by parse-options library (i.e. most
+   of the Porcelain commands) are sent to the standard output now.
+
+ * ':/<string>' notation to look for a commit now takes regular expression
+   and it is not anchored at the beginning of the commit log message
+   anymore (this is a backward incompatible change).
+
+ * "git" wrapper learned "-c name=value" option to override configuration
+   variable from the command line.
+
+ * Improved portability for various platforms including older SunOS,
+   HP-UX 10/11, AIX, Tru64, etc. and platforms with Python 2.4.
+
+ * The message from "git am -3" has been improved when conflict
+   resolution ended up making the patch a no-op.
+
+ * "git blame" applies the textconv filter to the contents it works
+   on, when available.
+
+ * "git checkout --orphan newbranch" is similar to "-b newbranch" but
+   prepares to create a root commit that is not connected to any existing
+   commit.
+
+ * "git cherry-pick" learned to pick a range of commits
+   (e.g. "cherry-pick A..B" and "cherry-pick --stdin"), so did "git
+   revert"; these do not support the nicer sequencing control "rebase
+   [-i]" has, though.
+
+ * "git cherry-pick" and "git revert" learned --strategy option to specify
+   the merge strategy to be used when performing three-way merges.
+
+ * "git cvsserver" can be told to use pserver; its password file can be
+   stored outside the repository.
+
+ * The output from the textconv filter used by "git diff" can be cached to
+   speed up their reuse.
+
+ * "git diff --word-diff=<mode>" extends the existing "--color-words"
+   option, making it more useful in color-challenged environments.
+
+ * The regexp to detect function headers used by "git diff" for PHP has
+   been enhanced for visibility modifiers (public, protected, etc.) to
+   better support PHP5.
+
+ * "diff.noprefix" configuration variable can be used to implicitly
+   ask for "diff --no-prefix" behaviour.
+
+ * "git for-each-ref" learned "%(objectname:short)" that gives the object
+   name abbreviated.
+
+ * "git format-patch" learned --signature option and format.signature
+   configuration variable to customize the e-mail signature used in the
+   output.
+
+ * Various options to "git grep" (e.g. --count, --name-only) work better
+   with binary files.
+
+ * "git grep" learned "-Ovi" to open the files with hits in your editor.
+
+ * "git help -w" learned "chrome" and "chromium" browsers.
+
+ * "git log --decorate" shows commit decorations in various colours.
+
+ * "git log --follow <path>" follows across copies (it used to only follow
+   renames).  This may make the processing more expensive.
+
+ * "git log --pretty=format:<template>" specifier learned "% <something>"
+   magic that inserts a space only when %<something> expands to a
+   non-empty string; this is similar to "%+<something>" magic, but is
+   useful in a context to generate a single line output.
+
+ * "git notes prune" learned "-n" (dry-run) and "-v" options, similar to
+   what "git prune" has.
+
+ * "git patch-id" can be fed a mbox without getting confused by the
+   signature line in the format-patch output.
+
+ * "git remote" learned "set-branches" subcommand.
+
+ * "git rev-list A..B" learned --ancestry-path option to further limit
+   the result to the commits that are on the ancestry chain between A and
+   B (i.e. commits that are not descendants of A are excluded).
+
+ * "git show -5" is equivalent to "git show --do-walk 5"; this is similar
+   to the update to make "git show master..next" walk the history,
+   introduced in 1.6.4.
+
+ * "git status [-s] --ignored" can be used to list ignored paths.
+
+ * "git status -s -b" shows the current branch in the output.
+
+ * "git status" learned "--ignore-submodules" option.
+
+ * Various "gitweb" enhancements and clean-ups, including syntax
+   highlighting, "plackup" support for instaweb, .fcgi suffix to run
+   it as FastCGI script, etc.
+
+ * The test harness has been updated to produce TAP-friendly output.
+
+ * Many documentation improvement patches are also included.
+
+
+Fixes since v1.7.1
+------------------
+
+All of the fixes in v1.7.1.X maintenance series are included in this
+release, unless otherwise noted.
+
+ * We didn't URL decode "file:///path/to/repo" correctly when path/to/repo
+   had percent-encoded characters (638794c, 9d2e942, ce83eda, 3c73a1d).
+
+ * "git clone" did not configure remote.origin.url correctly for bare
+   clones (df61c889).
+
+ * "git diff --graph" works better with "--color-words" and other options
+   (81fa024..4297c0a).
+
+ * "git diff" could show ambiguous abbreviation of blob object names on
+   its "index" line (3e5a188).
+
+ * "git reset --hard" started from a wrong directory and a working tree in
+   a nonstandard location is in use got confused (560fb6a1).
+
+ * "git read-tree -m A B" used to switch to branch B while retaining
+   local changes added an incorrect cache-tree information (b1f47514).
