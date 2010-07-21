@@ -1,59 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753165Ab0GUFki (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 01:40:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:38333 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751378Ab0GUFke (ORCPT
+	id S1754340Ab0GUFlg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 01:41:36 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28630 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab0GUFld (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 01:40:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=AtFrPwf5Gc5LzUL7ZQq5OgkRUW8Q4OHZLpQRSUtqcnyrs4C6k3P6+gMUGj0yfj9n5s
-         ebedvBDP9x0ZMmxt/16SIRCOrYC/xBVRD5urclpRVtpLRxmh51/y9duJ4z3XuFGX3fX9
-         8KXxtMCJwJCTQnyAUPAY1tTLDR+F8Uw7iTaJI=
-Message-ID: <4C468821.3000807@gmail.com>
-Date: Wed, 21 Jul 2010 07:39:45 +0200
-From: Thomas Weber <thomas.weber.linux@googlemail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100625 Lightning/1.0b1 Thunderbird/3.0.5
+	Wed, 21 Jul 2010 01:41:33 -0400
+Message-ID: <4C468883.4050207@oracle.com>
+Date: Tue, 20 Jul 2010 22:41:23 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: trivial@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 127/127]Documentation/video4linux/cx88/hauppauge-wintv-cx88-ir.txt
- update web address.
-References: <1279688336-29735-1-git-send-email-justinmattock@gmail.com> <1279688336-29735-7-git-send-email-justinmattock@gmail.com>
-In-Reply-To: <1279688336-29735-7-git-send-email-justinmattock@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: David Miller <davem@davemloft.net>
+CC: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org, buytenh@wantstofly.org
+Subject: Re: [PATCH -next] net: NET_DSA depends on NET_ETHERNET
+References: <20100706103417.8923b697.randy.dunlap@oracle.com>	<20100710.190954.245403400.davem@davemloft.net>	<4C462B44.5010107@oracle.com> <20100720.174530.139530021.davem@davemloft.net>
+In-Reply-To: <20100720.174530.139530021.davem@davemloft.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090201.4C468886.0239:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am 21.07.2010 06:58, schrieb Justin P. Mattock:
-> The patch below removes an unused web address due to me
-> having no idea of it's location. if you know let me know.
+On 07/20/10 17:45, David Miller wrote:
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+> Date: Tue, 20 Jul 2010 16:03:32 -0700
 > 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>
+>> NET_DSA code selects and uses PHYLIB code, but PHYLIB depends on
+>> NET_ETHERNET.  However, "select" does not follow kconfig dependencies,
+>> so explicitly list that requirement here instead.
+>>
+>> Fixes this kconfig warning:
+>>
+>> warning: (NET_DSA && NET && EXPERIMENTAL && !S390 ...) selects PHYLIB which has unmet direct dependencies (!S390 && NET_ETHERNET)
+>>
+>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 > 
-> ---
->  .../video4linux/cx88/hauppauge-wintv-cx88-ir.txt   |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
-> 
-> diff --git a/Documentation/video4linux/cx88/hauppauge-wintv-cx88-ir.txt b/Documentation/video4linux/cx88/hauppauge-wintv-cx88-ir.txt
-> index faccee6..0958907 100644
-> --- a/Documentation/video4linux/cx88/hauppauge-wintv-cx88-ir.txt
-> +++ b/Documentation/video4linux/cx88/hauppauge-wintv-cx88-ir.txt
-> @@ -44,8 +44,6 @@ http://www.atmel.com/dyn/resources/prod_documents/doc2817.pdf
->  This data sheet (google search) seems to have a lovely description of the
->  RC5 basics
->  
-> -http://users.pandora.be/nenya/electronics/rc5/  and more data
-> -
->  http://www.ee.washington.edu/circuit_archive/text/ir_decode.txt
->  and even a reference to how to decode a bi-phase data stream.
->  
+> Randy, this has been fixed in net-2.6 for some time now.
 
-http://www.nenya.be/beor/electronics/rc5.htm
+OK, I did see the commit get merged today.
+
+> And I'm pretty sure I sent a copy of this to you when I
+> checked it in :-)
+
+I missed it somehow.  Thanks.
+
+> --------------------
+> From 336a283b9cbe47748ccd68fd8c5158f67cee644b Mon Sep 17 00:00:00 2001
+> From: David S. Miller <davem@davemloft.net>
+> Date: Mon, 12 Jul 2010 20:03:42 -0700
+> Subject: [PATCH 09/24] dsa: Fix Kconfig dependencies.
+> 
+> Based upon a report by Randy Dunlap.
+> 
+> DSA needs PHYLIB, but PHYLIB needs NET_ETHERNET.  So, in order
+> to select PHYLIB we have to make DSA depend upon NET_ETHERNET.
+> 
+> Signed-off-by: David S. Miller <davem@davemloft.net>
+> ---
+>  net/dsa/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/net/dsa/Kconfig b/net/dsa/Kconfig
+> index c51b554..1120178 100644
+> --- a/net/dsa/Kconfig
+> +++ b/net/dsa/Kconfig
+> @@ -1,7 +1,7 @@
+>  menuconfig NET_DSA
+>  	bool "Distributed Switch Architecture support"
+>  	default n
+> -	depends on EXPERIMENTAL && !S390
+> +	depends on EXPERIMENTAL && NET_ETHERNET && !S390
+>  	select PHYLIB
+>  	---help---
+>  	  This allows you to use hardware switch chips that use
+
+
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
