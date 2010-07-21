@@ -1,46 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762023Ab0GUBpe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 21:45:34 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42841
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1761828Ab0GUBpc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 21:45:32 -0400
-Date: Tue, 20 Jul 2010 18:45:48 -0700 (PDT)
-Message-Id: <20100720.184548.250802682.davem@davemloft.net>
-To: mikpe@it.uu.se
-Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
-        linux-s390@vger.kernel.org, linux-alpha@vger.kernel.org,
-        linux-sh@vger.kernel.org, linuxppc-dev@ozlabs.org
-Subject: Re: [PATCH] math-emu: correct test for downshifting fraction in
- _FP_FROM_INT()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <19524.51858.992299.119315@pilspetsen.it.uu.se>
-References: <19524.51858.992299.119315@pilspetsen.it.uu.se>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+	id S932919Ab0GUBps (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 21:45:48 -0400
+Received: from sh.osrg.net ([192.16.179.4]:54480 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1761828Ab0GUBpn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 21:45:43 -0400
+Date: Wed, 21 Jul 2010 10:44:37 +0900
+To: zpfeffer@codeaurora.org
+Cc: linux@arm.linux.org.uk, fujita.tomonori@lab.ntt.co.jp,
+        ebiederm@xmission.com, linux-arch@vger.kernel.org,
+        dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100720221959.GC12250@codeaurora.org>
+References: <20100715014148.GC2239@codeaurora.org>
+	<20100719082213.GA7421@n2100.arm.linux.org.uk>
+	<20100720221959.GC12250@codeaurora.org>
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100721104356S.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 21 Jul 2010 10:44:40 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mikael Pettersson <mikpe@it.uu.se>
-Date: Mon, 19 Jul 2010 23:58:42 +0200
+On Tue, 20 Jul 2010 15:20:01 -0700
+Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
 
-> The kernel's math-emu code contains a macro _FP_FROM_INT() which is
-> used to convert an integer to a raw normalized floating-point value.
-> It does this basically in three steps:
- ...
-> The fix is simple: the exponent comparison used to determine if the
-> fraction should be downshifted must be "<=" not "<".
+> > I'm not saying that it's reasonable to pass (or even allocate) a 1MB
+> > buffer via the DMA API.
 > 
-> I'm sending a kernel module to test this as a reply to this message.
-> There are also SPARC user-space test cases in the GCC bug entry.
-> 
-> Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
+> But given a bunch of large chunks of memory, is there any API that can
+> manage them (asked this on the other thread as well)?
 
-Applied and I'll make sure this gets into -stable too.
+What is the problem about mapping a 1MB buffer with the DMA API?
 
-Thanks!
+Possibly, an IOMMU can't find space for 1MB but it's not the problem
+of the DMA API.
