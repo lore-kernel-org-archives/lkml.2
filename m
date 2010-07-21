@@ -1,69 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab0GUPqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 11:46:15 -0400
-Received: from mail-ww0-f42.google.com ([74.125.82.42]:59165 "EHLO
-	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754814Ab0GUPqO convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 11:46:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YquDGvZqttuFae0b7JGS0RIjK6LOBfudCxmm7xRVW7RjeigmCGdXilXQMZ4RyHfd+a
-         4jCcM+o7cNuroeDnmqnozatzRbGNFbbFlyqQDLkK/cbwwUXKc57QfSIuqI1QLTk+9HMv
-         35C5kgQOlxRFsMlXvOOGpGlbjLITH3Z1wZkNE=
-MIME-Version: 1.0
-In-Reply-To: <1279658102-20069-5-git-send-email-tj@kernel.org>
-References: <1279658102-20069-1-git-send-email-tj@kernel.org>
-	<1279658102-20069-5-git-send-email-tj@kernel.org>
-Date: Wed, 21 Jul 2010 10:46:11 -0500
-Message-ID: <AANLkTilSR15Cmz-dTyIDvOl-qdYrQ6x84BY7f9LggElW@mail.gmail.com>
-Subject: Re: [PATCH 4/7] cifs: use workqueue instead of slow-work
-From: Steve French <smfrench@gmail.com>
+	id S1758072Ab0GUPrL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 11:47:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:47473 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754266Ab0GUPrE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 11:47:04 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C4712B4.9040706@kernel.org>
+References: <4C4712B4.9040706@kernel.org> <4C470B46.4040604@kernel.org> <7b6bba36-5330-4e27-b7a9-3a4113b6b379@email.android.com> <21485.1279717725@redhat.com> <15189.1279725944@redhat.com>
 To: Tejun Heo <tj@kernel.org>
-Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, sfrench@samba.org,
-        anton@samba.org, swhiteho@redhat.com, airlied@linux.ie,
-        dri-devel@lists.freedesktop.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Cc: dhowells@redhat.com, Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        torvalds@linux-foundation.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, jeff@garzik.org,
+        akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
+Date: Wed, 21 Jul 2010 16:45:25 +0100
+Message-ID: <15482.1279727125@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 3:34 PM, Tejun Heo <tj@kernel.org> wrote:
-> Workqueue can now handle high concurrency.  Use system_nrt_wq
-> instead of slow-work.
->
-> * Updated is_valid_oplock_break() to not call cifs_oplock_break_put()
->  as advised by Steve French.  It might cause deadlock.  Instead,
->  reference is increased after queueing succeeded and
->  cifs_oplock_break() briefly grabs GlobalSMBSeslock before putting
->  the cfile to make sure it doesn't put before the matching get is
->  finished.
->
-> * Anton Blanchard reported that cifs conversion was using now gone
->  system_single_wq.  Use system_nrt_wq which provides non-reentrance
->  guarantee which is enough and much better.
->
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Steve French <sfrench@samba.org>
-> Cc: Anton Blanchard <anton@samba.org>
-> ---
->  fs/cifs/Kconfig    |    1 -
->  fs/cifs/cifsfs.c   |    5 -----
->  fs/cifs/cifsglob.h |    8 +++++---
->  fs/cifs/dir.c      |    2 +-
->  fs/cifs/file.c     |   30 +++++++++++++-----------------
->  fs/cifs/misc.c     |   20 ++++++++++++--------
->  6 files changed, 31 insertions(+), 35 deletions(-)
+Tejun Heo <tj@kernel.org> wrote:
 
-Acked-by: Steve French <sfrench@us.ibm.com>
+> It will unnecessarily stall the execution of the new work if the last
+> work is still running but nothing will be broken correctness-wise.
 
+That's fine.  Better that than risk unexpected reentrance.  You could add a
+function to allow an executing work item to yield the hash entry to indicate
+that the work_item that invoked it has been destroyed, but it's probably not
+worth it, and it has scope for mucking things up horribly if used at the wrong
+time.
 
+I presume also that if a work_item being executed on one work queue is queued
+on another work queue, then there is no non-reentrancy guarantee (which is
+fine; if you don't like that, don't do it).
 
--- 
-Thanks,
-
-Steve
+David
