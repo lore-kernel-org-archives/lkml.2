@@ -1,37 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753472Ab0GUUeD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 16:34:03 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53841 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750906Ab0GUUd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 16:33:58 -0400
-Subject: re: i915 boot regression on Q35 chipset with 2.6.35-rc4
-From: Dave Airlie <airlied@redhat.com>
-To: tim.gardner@canonical.com
-Cc: chris@chris-wilson.co.uk, jbarnes@virtuousgeek.org, eric@anholt.net,
-        Kees Cook <kees@canonical.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <4C46E98A.3010206@mail.tpi.com>
-References: <4C46E98A.3010206@mail.tpi.com>
+	id S1753926Ab0GUUel (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 16:34:41 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:35943 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750906Ab0GUUei (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 16:34:38 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48203896"
+Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+From: Daniel Walker <dwalker@codeaurora.org>
+To: =?UTF-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Xiaolin Zhang <xiaolin.zhang@intel.com>,
+        Hiremath Vaibhav <hvaibhav@ti.com>,
+        Robert Fekete <robert.fekete@stericsson.com>,
+        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-msm@vger.kernel.org
+In-Reply-To: <op.vf7mvhvn7p4s8u@pikus>
+References: <cover.1279639238.git.m.nazarewicz@samsung.com>
+	 <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
+	 <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
+	 <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf5o28st7p4s8u@pikus>
+	 <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf6zo9vb7p4s8u@pikus>
+	 <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7gt3qy7p4s8u@pikus>
+	 <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7h1yc47p4s8u@pikus>
+	 <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7j13067p4s8u@pikus>
+	 <1279741029.31376.33.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7lipj67p4s8u@pikus>
+	 <1279742604.31376.40.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7mvhvn7p4s8u@pikus>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 06:30:05 +1000
-Message-ID: <1279744205.4042.0.camel@t60prh>
+Date: Wed, 21 Jul 2010 13:34:32 -0700
+Message-ID: <1279744472.31376.42.camel@c-dwalke-linux.qualcomm.com>
 Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 14:35 +0200, Tim Gardner wrote:
-> Dave,
+On Wed, 2010-07-21 at 22:22 +0200, Michał Nazarewicz wrote:
+> On Wed, 21 Jul 2010 22:03:24 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
 > 
-> http://lkml.org/lkml/2010/7/9/287
+> > On Wed, 2010-07-21 at 21:53 +0200, Michał Nazarewicz wrote:
+> >> On Wed, 21 Jul 2010 21:37:09 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
+> >> > What makes you assume that the bootloader would have these strings?
+> >> > Do your devices have these strings? Maybe mine don't have them.
+> >>
+> >> I don't assume.  I only state it as one of the possibilities.
+> >>
+> >> > Assume the strings are gone and you can't find them, or have no idea
+> >> > what they should be. What do you do then?
+> >>
+> >> Ask Google?
+> >
+> > Exactly, that's why they need to be in the kernel ..
 > 
-> What's up with this patch? I haven't received any comment, nor has it 
-> appeared in your git repository.
+> Right.....  Please show me a place where I've written that it won't be in
+> the kernel? I keep repeating command line is only one of the possibilities.
+> I would imagine that in final product defaults from platform would be used
+> and bootloader would be left alone.
 
-I don't deal with Intel patches directly, Eric?
+It should never be anyplace else.
 
-Dave.
+Daniel
 
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
