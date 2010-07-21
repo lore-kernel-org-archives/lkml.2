@@ -1,90 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761409Ab0GUTft (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 15:35:49 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3120 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758916Ab0GUTfq convert rfc822-to-8bit (ORCPT
+	id S1761374Ab0GUThT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 15:37:19 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:60477 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758820Ab0GUThQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 15:35:46 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,239,1278313200"; 
-   d="scan'208";a="640508272"
-From: "Rose, Gregory V" <gregory.v.rose@intel.com>
-To: David Miller <davem@davemloft.net>
-CC: "leedom@chelsio.com" <leedom@chelsio.com>,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "andy@greyhouse.net" <andy@greyhouse.net>,
-        "harald@redhat.com" <harald@redhat.com>,
-        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
-        "sassmann@redhat.com" <sassmann@redhat.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gospo@redhat.com" <gospo@redhat.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
-Date: Wed, 21 Jul 2010 12:35:36 -0700
-Subject: RE: [PATCH net-next] sysfs: add entry to indicate network
- interfaces with random MAC address
-Thread-Topic: [PATCH net-next] sysfs: add entry to indicate network
- interfaces with random MAC address
-Thread-Index: AcspC4y5HOzo7y+6TwybzqSVS0/NOwAAECEQ
-Message-ID: <43F901BD926A4E43B106BF17856F0755F1846287@orsmsx508.amr.corp.intel.com>
-References: <20100721.114851.200597269.davem@davemloft.net>
-	<20100721.115023.69942880.davem@davemloft.net>
-	<43F901BD926A4E43B106BF17856F0755F1846247@orsmsx508.amr.corp.intel.com>
- <20100721.123324.237334251.davem@davemloft.net>
-In-Reply-To: <20100721.123324.237334251.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 21 Jul 2010 15:37:16 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48044656"
+Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+From: Daniel Walker <dwalker@codeaurora.org>
+To: =?UTF-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Xiaolin Zhang <xiaolin.zhang@intel.com>,
+        Hiremath Vaibhav <hvaibhav@ti.com>,
+        Robert Fekete <robert.fekete@stericsson.com>,
+        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-msm@vger.kernel.org
+In-Reply-To: <op.vf7j13067p4s8u@pikus>
+References: <cover.1279639238.git.m.nazarewicz@samsung.com>
+	 <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
+	 <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
+	 <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf5o28st7p4s8u@pikus>
+	 <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf6zo9vb7p4s8u@pikus>
+	 <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7gt3qy7p4s8u@pikus>
+	 <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7h1yc47p4s8u@pikus>
+	 <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7j13067p4s8u@pikus>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Jul 2010 12:37:09 -0700
+Message-ID: <1279741029.31376.33.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->-----Original Message-----
->From: David Miller [mailto:davem@davemloft.net]
->Sent: Wednesday, July 21, 2010 12:33 PM
->To: Rose, Gregory V
->Cc: leedom@chelsio.com; shemminger@vyatta.com; andy@greyhouse.net;
->harald@redhat.com; bhutchings@solarflare.com; sassmann@redhat.com;
->netdev@vger.kernel.org; linux-kernel@vger.kernel.org; gospo@redhat.com;
->Duyck, Alexander H
->Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
->interfaces with random MAC address
->
->From: "Rose, Gregory V" <gregory.v.rose@intel.com>
->Date: Wed, 21 Jul 2010 12:02:17 -0700
->
->>>From: David Miller <davem@davemloft.net>
->>>Date: Wed, 21 Jul 2010 11:48:51 -0700 (PDT)
->>>
->>>> You could do things like have the PF controller use the root
->>>filesystem
->>>> ID label to construct the VF's MAC address, or something like that.
->>>
->>>And here I of course mean the root filesystem of the guest the VF will
->>>be given to.
->>
->> I suppose you could do that but then the VM is going to have to be
->> allowed to set its own MAC address.  There is a lot of opposition
->> and concern about allowing VMs to set their own MAC address.
->
->Why would that be necessary?  The host with the PF creating the guest
->has access to the "device" and thus the root filesystem of the guest,
->and thus could pull in the root filesystem "key" and instantiate the
->VF's MAC before booting the guest.
->
->That was the idea, the control node sets up the VF MAC before the guest
->boots or can have access to the VF device.
+On Wed, 2010-07-21 at 21:21 +0200, Michał Nazarewicz wrote:
+> On Wed, 21 Jul 2010 20:58:08 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
+> 
+> > On Wed, 2010-07-21 at 20:38 +0200, Michał Nazarewicz wrote:
+> >> > On Wed, 2010-07-21 at 20:11 +0200, Michał Nazarewicz wrote:
+> >> >> Not really.  This will probably be used mostly on embedded systems
+> >> >> where users don't have much to say as far as hardware included on the
+> >> >> platform is concerned, etc.  Once a phone, tablet, etc. is released
+> >> >> users will have little need for customising those strings.
+> >>
+> >> On Wed, 21 Jul 2010 20:19:08 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
+> >> > You can't assume that user won't want to reflash their own kernel on the
+> >> > device. Your assuming way too much.
+> >>
+> >> If user is clever enough to reflash a phone she will find the strings
+> >> easy especially that they are provided from: (i) bootloader which is
+> >> even less likely to be reflashed and if someone do reflash bootloader
+> >> she is a guru who'd know how to make the strings; or (ii) platform
+> >> defaults which will be available with the rest of the source code
+> >> for the platform.
+> >
+> > Your, again, assuming all sorts of stuff .. On my phone for example it
+> > is very easy to reflash, personally, I think most devices will be like
+> > that in the future. so you don't _need_ to be clever to reflash the
+> > device.
+> 
+> Bottom line is: if you reflash the device you (i) get an image from
+> somewhere and it has the strings in it, (ii) reflash the kernel and
+> parameters are provided by bootloader so they still remain, (iii)
+> use platform default strings which you get with the source codes and
+> include when kernel is built, or (iv) are a guru who knows what to
+> do.
 
-I misunderstood you.  My bad.
+What makes you assume that the bootloader would have these strings?
+Do your devices have these strings? Maybe mine don't have them.
 
-Thank for the further explanation.
+Assume the strings are gone and you can't find them, or have no idea
+what they should be. What do you do then?
 
-- Greg
+> >> > If you assume they do want their own kernel then they would need this
+> >> > string from someplace. If your right and this wouldn't need to change,
+> >> > why bother allowing it to be configured at all ?
+> >>
+> >> Imagine a developer who needs to recompile the kernel and reflash the
+> >> device each time she wants to change the configuration...  Command line
+> >> arguments seems a better option for development.
+> >
+> > So make it a default off debug configuration option ..
+> 
+> I don't really see the point of doing that.  Adding the command line
+> parameters is really a minor cost so there will be no benefits from
+> removing it.
+
+Well, I like my kernel minus bloat so that's a good reason. I don't see
+a good reason to keep the interface in a production situation .. Maybe
+during development , but really I don't see even a developer needing to
+make the kind of changes your suggesting very often.
+
+Daniel
+
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
