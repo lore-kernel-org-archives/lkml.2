@@ -1,73 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758276Ab0GUNzs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:55:48 -0400
-Received: from isilmar-3.linta.de ([188.40.101.200]:41578 "EHLO linta.de"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1756936Ab0GUNzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:55:46 -0400
-Date: Wed, 21 Jul 2010 14:25:28 +0200
-From: Dominik Brodowski <linux@dominikbrodowski.net>
-To: akpm@linux-foundation.org, torvalds@osdl.org
-Cc: kaber@trash.net, linux-pcmcia@lists.infradead.org,
-        linux-kernel@vger.kernel.org
-Subject: [git pull] PCMCIA bugfix for 2.6.35-rc6
-Message-ID: <20100721122528.GA13332@comet.dominikbrodowski.net>
-Mail-Followup-To: akpm@linux-foundation.org, torvalds@osdl.org,
-	kaber@trash.net, linux-pcmcia@lists.infradead.org,
-	linux-kernel@vger.kernel.org
-References: <201007202221.o6KMLg9n021204@imap1.linux-foundation.org>
+	id S1758340Ab0GUN4M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:56:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:18276 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754851Ab0GUN4J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 09:56:09 -0400
+Message-ID: <4C46FC67.4000900@redhat.com>
+Date: Wed, 21 Jul 2010 08:55:51 -0500
+From: Eric Sandeen <sandeen@redhat.com>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201007202221.o6KMLg9n021204@imap1.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dave Chinner <david@fromorbit.com>
+CC: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Jan Kara <jack@suse.cz>
+Subject: Re: 2.6.35-r5 ext3 corruptions
+References: <20100715105745.GI30737@dastard> <20100719224512.GD32635@dastard> <20100721063222.GW32635@dastard>
+In-Reply-To: <20100721063222.GW32635@dastard>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Dave Chinner wrote:
 
-one PCMCIA bugfix slipped through... In order to solve this issue, please
-pull from
+> Ok, so now I know *why* that one filesystem got busted - I built a
+> kernel without CONFIG_EXT3_DEFAULTS_TO_ORDERED set and it got a
+> forced reboot (echo b > proc/sysrq-trigger). That'll teach me for
+> trying to reproduce bugs Andrew is tripping over with his config
+> files.
+> 
+> Quite frankly, data=writeback mode for ext3 is a dangerous,
+> dangerous configuration to run by default. IMO, it shouldn't be the
+> default. Patch below.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
+I agree, though I might just remove the config option altogether,
+it just obfuscates what's going on, IMHO.
 
-The diffstat and list of changes follows; the patch is also attached below.
+Still, as far as it goes, you can add:
 
-Patrick McHardy (1):
-      pcmcia: fix 'driver ... did not release config properly' warning
+Acked-by: Eric Sandeen <sandeen@redhat.com>
 
- drivers/pcmcia/pcmcia_resource.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
+to the patch.
 
----
-From: Patrick McHardy <kaber@trash.net>
+-Eric
 
-Up to 2.6.34 pcmcia_release_irq() reset p_dev->_irq to 0 after releasing
-the irq.  The IRQ is now released in pcmcia_disable_device(), however
-p_dev->_irq is not reset, triggering a warning in pcmcia_device_remove().
+> ext3: default to ordered mode
+> 
+> From: Dave Chinner <dchinner@redhat.com>
+> 
+> data=writeback mode is dangerous and is leads to filesystem
+> corruption, data loss and stale data exposure when systems crash. It
+> should not be the default, especially when all major distros ensure
+> their ext3 filesystems default to ordered mode. Change the default
+> mode to the safer data=ordered mode, because we should be caring
+> far more about avoiding corruption than performance.
+> 
+> Signed-off-by: Dave Chinner <dchinner@redhat.com>
+> ---
+>  fs/ext3/Kconfig |    1 +
+>  1 files changed, 1 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/ext3/Kconfig b/fs/ext3/Kconfig
+> index 522b154..e8c6ba0 100644
+> --- a/fs/ext3/Kconfig
+> +++ b/fs/ext3/Kconfig
+> @@ -31,6 +31,7 @@ config EXT3_FS
+>  config EXT3_DEFAULTS_TO_ORDERED
+>  	bool "Default to 'data=ordered' in ext3"
+>  	depends on EXT3_FS
+> +	default y
+>  	help
+>  	  The journal mode options for ext3 have different tradeoffs
+>  	  between when data is guaranteed to be on disk and
 
-Signed-off-by: Patrick McHardy <kaber@trash.net>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
----
-
- drivers/pcmcia/pcmcia_resource.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
-
-diff -puN drivers/pcmcia/pcmcia_resource.c~pcmcia-fix-driver-did-not-release-config-properly-warning drivers/pcmcia/pcmcia_resource.c
---- a/drivers/pcmcia/pcmcia_resource.c~pcmcia-fix-driver-did-not-release-config-properly-warning
-+++ a/drivers/pcmcia/pcmcia_resource.c
-@@ -857,8 +857,10 @@ void pcmcia_disable_device(struct pcmcia
- {
- 	pcmcia_release_configuration(p_dev);
- 	pcmcia_release_io(p_dev, &p_dev->io);
--	if (p_dev->_irq)
-+	if (p_dev->_irq) {
- 		free_irq(p_dev->irq, p_dev->priv);
-+		p_dev->_irq = 0;
-+	}
- 	if (p_dev->win)
- 		pcmcia_release_window(p_dev, p_dev->win);
- }
