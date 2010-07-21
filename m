@@ -1,83 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758350Ab0GUOVV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 10:21:21 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:56630 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755624Ab0GUOVU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 10:21:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=KaKyyOrhOr9vnUEyLcpPZdjCmmxsg/f9yw2+GKk1Xupt+aQayTKyBLuv3UYZs5Tmny
-         KjNAX2krv9ZChxhrX4PEg8vJCpK0BXe723dCAxJI/uR8rVUV1XnWe36/UCJKzGnjhnKY
-         oDYSXWI9BxtBF6vtkk36DRFmBkkp+KrU4qSNI=
-Date: Wed, 21 Jul 2010 16:21:16 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, "Theodore Ts'o" <tytso@mit.edu>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
-Message-ID: <20100721142112.GB5764@nowhere>
-References: <4C401CE3.7010004@cn.fujitsu.com> <20100721222508.8704.A69D9226@jp.fujitsu.com> <1279721766.4818.39.camel@gandalf.stny.rr.com>
+	id S1758454Ab0GUOXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 10:23:12 -0400
+Received: from mail.tpi.com ([70.99.223.143]:1972 "EHLO mail.tpi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755624Ab0GUOXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 10:23:11 -0400
+Message-ID: <4C47029E.8020803@mail.tpi.com>
+Date: Wed, 21 Jul 2010 16:22:22 +0200
+From: Tim Gardner <tcanonical@tpi.com>
+Reply-To: tim.gardner@canonical.com
+Organization: Canonical, Ltd
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100528 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279721766.4818.39.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Chris Wilson <chris@chris-wilson.co.uk>
+CC: Dave Airlie <airlied@redhat.com>, jbarnes@virtuousgeek.org,
+        eric@anholt.net, Kees Cook <kees@canonical.com>,
+        linux-kernel@vger.kernel.org, Gordon Jin <gordon.jin@intel.com>
+Subject: Re: i915 boot regression on Q35 chipset with 2.6.35-rc4
+References: <4C46E98A.3010206@mail.tpi.com> <8u3s94$g0j0tc@orsmga002.jf.intel.com>
+In-Reply-To: <8u3s94$g0j0tc@orsmga002.jf.intel.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 10:16:06AM -0400, Steven Rostedt wrote:
-> On Wed, 2010-07-21 at 22:31 +0900, KOSAKI Motohiro wrote:
-> > Hi Steven,
-> 
-> >         if (ac)
-> > 	        trace_ext4_mb_release_group_pa(ac, pa);
-> > 
-> > But, I don't think this is proper fix because we don't want any overhead
-> > if the tracepoint is disabled.
-> > 
-> > So, How do we check NULL in TP_fast_assign()?
-> 
-> You could do:
-> 
-> 	TP_fast_assign(
-> 		if (ac) {
-> 	                __entry->dev            = ac->ac_sb->s_dev;
->         	        __entry->ino            = ac->ac_inode->i_ino;
->         	        __entry->pa_pstart      = pa->pa_pstart;
->         	        __entry->pa_len         = pa->pa_len;
-> 		}
->         ),
-> 
-> But this just makes the __entry null and wastes the ring buffer.
-> 
-> I may be able to add a __discard_entry that may help. Then we could do
-> something like this:
-> 
-> 	if (ac) {
->                 __entry->dev            = ac->ac_sb->s_dev;
->                 __entry->ino            = ac->ac_inode->i_ino;
->                 __entry->pa_pstart      = pa->pa_pstart;
->                 __entry->pa_len         = pa->pa_len;
-> 	} else
-> 		__discard_entry;
-> 
-> Does this seem reasonable?
-> 
-> But for now, the wasting the entry seems to be the only choice we have,
-> or to do as you suggested and have the "if (ac) trace_...", but I don't
-> like that.
-> 
-> -- Steve
+On 07/21/2010 03:37 PM, Chris Wilson wrote:
+> On Wed, 21 Jul 2010 14:35:22 +0200, Tim Gardner<tcanonical@tpi.com>  wrote:
+>> What's up with this patch? I haven't received any comment, nor has it
+>> appeared in your git repository.
+>
+> Dave hasn't taken it because it is a regression fix for i915 and the
+> current procedure is for those to go through Eric's tree. Eric has been
+> busy working on a new compiler for GLSL the last few weeks and has been
+> applying patches in batches.
+>
+> The patch I am happy to ack, but since I introduced the regression
+> [https://bugzilla.kernel.org/show_bug.cgi?id=16294], I'd rather have
+> someone more familiar with the intricacies of G33/G35/Q35 review it.
+>
+> For what is worth:
+> Acked-by: Chris Wilson<chris@chris-wilson.co.uk>
+>
 
+The events that reminded me to look up the status of this patch were the 
+i915 regression fixes that recently appeared in 
+git-commits-head@vger.kernel.org from Dave's tree (which appears to be 
+contrary to the current procedure mentioned above).
 
-Is there no already existing branch in ext4 you could reuse in order to
-send the trace only if (ac) ?
-
+rtg
+-- 
+Tim Gardner tim.gardner@canonical.com
