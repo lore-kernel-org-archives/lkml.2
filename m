@@ -1,54 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933493Ab0GUHFs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 03:05:48 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:51194 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933349Ab0GUHFr (ORCPT
+	id S933571Ab0GUHGW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 03:06:22 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:58935 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933349Ab0GUHGR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 03:05:47 -0400
-Date: Wed, 21 Jul 2010 16:05:53 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-To: axboe@kernel.dk, trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org
-Subject: [PATCH] typo fix: Kconfig.debug: FAIL_IO_TIMEOUT: Faul -> Fault
-Message-Id: <20100721160553.26dd6282.yoshikawa.takuya@oss.ntt.co.jp>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 21 Jul 2010 03:06:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=hkDuQX2fqZK8i1r8ZZ9GZduDIFK8Pg/ha1pVmI/ZGBYNfVtSW6DHXV1Cy2z7bH3KB4
+         a0mgRZ7iW9MgFOE4Uwb9jfYcHEyJtmML1fhlKNEQf/R4MrEz8l9iOz9O3i3ByQsrMyiH
+         bZN4feIimsvOnnw4yWd6BAQlfrgJGhwYUfJn8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTinghebEfYzA88GsjIA72yylH8tFNhhfrCM7laf_@mail.gmail.com>
+References: <20100720014251.46b91cdd@mad-cat.localdomain>
+	<AANLkTilKlM9NyGgBom7ncq4cNx1O_GtS1dgsMExwdck3@mail.gmail.com>
+	<AANLkTikTetZ9vREMFfCSmJa7f9w1cmSFk145SthSFpPu@mail.gmail.com>
+	<AANLkTim3lGADUIj4QLg6U0ThqxgaKc_UyVLJlcPZd7kS@mail.gmail.com>
+	<AANLkTimNpacSqjgNN-bNdK-vOwep5LEprE_PvaEbjuDj@mail.gmail.com>
+	<AANLkTinghebEfYzA88GsjIA72yylH8tFNhhfrCM7laf_@mail.gmail.com>
+Date: Wed, 21 Jul 2010 11:06:15 +0400
+Message-ID: <AANLkTimhn6U0nti-A0zComoyptNjU0y8fs_sqtY6IVvH@mail.gmail.com>
+Subject: Re: drivers/gpu/drm/radeon/r600_blit.c: fix possible NULL pointer 
+	derefernce
+From: "Alexander Y. Fomichev" <git.user@gmail.com>
+To: Alex Deucher <alexdeucher@gmail.com>
+Cc: Dave Airlie <airlied@redhat.com>, Robert Noland <rnoland@2hip.net>,
+        Matt Turner <mattst88@gmail.com>, Jerome Glisse <jglisse@redhat.com>,
+        akpm@linux-foundation.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 21, 2010 at 1:29 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> On Tue, Jul 20, 2010 at 5:07 PM, Alexander Y. Fomichev
+> <git.user@gmail.com> wrote:
+>> On Wed, Jul 21, 2010 at 1:00 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>> On Tue, Jul 20, 2010 at 4:13 PM, Alexander Y. Fomichev
+>>> <git.user@gmail.com> wrote:
+>>>> On Tue, Jul 20, 2010 at 9:37 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+>>>>> On Mon, Jul 19, 2010 at 5:42 PM, Alexander Y. Fomichev
+>>>>> <git.user@gmail.com> wrote:
+>>>>>> This patch fix possible NULL pointer dereference when
+>>>>>> r600_prepare_blit_copy tries to fill dev_priv->blit_vb->file_priv
+>>>>>> without check of dev_priv->blit_vb. dev_priv->blit_vb should be
+>>>>>> filled by r600_nomm_get_vb but latest can fail with EAGAIN.
+>>>>>> Addresses: https://bugzilla.kernel.org/show_bug.cgi?id=16375
+>>>>>>
+>>>>>> ---
+>>>>>>  drivers/gpu/drm/radeon/r600_blit.c |    2 ++
+>>>>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+>>>>>>
+>>>>>> diff --git a/drivers/gpu/drm/radeon/r600_blit.c b/drivers/gpu/drm/radeon/r600_blit.c
+>>>>>> index f4fb88e..0df4a2b 100644
+>>>>>> --- a/drivers/gpu/drm/radeon/r600_blit.c
+>>>>>> +++ b/drivers/gpu/drm/radeon/r600_blit.c
+>>>>>> @@ -541,6 +541,8 @@ r600_prepare_blit_copy(struct drm_device *dev, struct drm_file *file_priv)
+>>>>>>        DRM_DEBUG("\n");
+>>>>>>
+>>>>>>        r600_nomm_get_vb(dev);
+>>>>>> +       if (!dev_priv->blit_vb)
+>>>>>> +               return;
+>>>>>
+>>>>> r600_prepare_blit_copy returns an int so something like this would be better:
+>>>>> --- a/drivers/gpu/drm/radeon/r600_blit.c
+>>>>> +++ b/drivers/gpu/drm/radeon/r600_blit.c
+>>>>> @@ -539,8 +539,10 @@ r600_prepare_blit_copy(struct drm_device *dev,
+>>>>> struct drm_file *file_priv)
+>>>>>  {
+>>>>>        drm_radeon_private_t *dev_priv = dev->dev_private;
+>>>>>        DRM_DEBUG("\n");
+>>>>> +       int ret = r600_nomm_get_vb(dev);
+>>>>>
+>>>>> -       r600_nomm_get_vb(dev);
+>>>>> +       if (ret)
+>>>>> +               return ret;
+>>>>>
+>>>>>        dev_priv->blit_vb->file_priv = file_priv;
+>>>>>
+>>>>>
+>>>>> Alex
+>>>>>
+>>>>>>
+>>>>>>        dev_priv->blit_vb->file_priv = file_priv;
+>>>>>>
+>>>>>> --
+>>>>>> 1.7.1.1
+>>>>>>
+>>>>>
+>>>>
+>>>> i haven't any preferneces, the only thing is - it would be logical
+>>>> to have every check in common style, so other cases
+>>>> (r600_blit_copy, r600_blit_swap) should be fixed, nop?
+>>>
+>>> Those are void functions so there's nothing to return.
+>>
+>> i mean both of them call r600_nomm_get_vb and both of them
+>> check if (!dev_priv->blit_vb), not return  value.I mean would be
+>> logical to check it the same way everytime r600_nomm_get_vb
+>> gets called.
+>
+> yeah, either way.  You just need to return an error in r600_prepare_blit_copy.
+uh-huh, i've missed
 
-Is this typo already fixed in anybody's tree?
-I think this is config's description and worth fixing.
+> Alex
+>
+>>
+>>> Alex
+>>>
+>>>>
+>>>> --
+>>>> Best regards.
+>>>>        Alexander Y. Fomichev <git.user@gmail.com>
+>>>>
+>>>
+>>
+>>
+>>
+>> --
+>> Best regards.
+>>        Alexander Y. Fomichev <git.user@gmail.com>
+>>
+>
 
-Thanks,
 
-==
-The last 't' of 'fault' is missing in the description of FAIL_IO_TIMEOUT.
-
-Signed-off-by: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
----
- lib/Kconfig.debug |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index e722e9d..dfdc034 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -937,7 +937,7 @@ config FAIL_MAKE_REQUEST
- 	  Provide fault-injection capability for disk IO.
- 
- config FAIL_IO_TIMEOUT
--	bool "Faul-injection capability for faking disk interrupts"
-+	bool "Fault-injection capability for faking disk interrupts"
- 	depends on FAULT_INJECTION && BLOCK
- 	help
- 	  Provide fault-injection capability on end IO handling. This
 -- 
-1.7.0.4
-
+Best regards.
+       Alexander Y. Fomichev <git.user@gmail.com>
