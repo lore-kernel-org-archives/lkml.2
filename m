@@ -1,74 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758215Ab0GURju (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 13:39:50 -0400
-Received: from a-pb-sasl-quonix.pobox.com ([208.72.237.25]:52687 "EHLO
-	sasl.smtp.pobox.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752235Ab0GURjs (ORCPT
+	id S1758174Ab0GURmz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 13:42:55 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:44601 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752235Ab0GURmx convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 13:39:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws; d=pobox.com; h=subject:from:to
-	:cc:in-reply-to:references:content-type:date:message-id
-	:mime-version:content-transfer-encoding; q=dns; s=sasl; b=TBZXIV
-	ys1b9CTgRSM1ewn4pC7nJOVz1GGbALwOeGIlVFZOobF+gMz2K93YWciLmXKIS22e
-	STIYiX3TamfeatyPpPfOVL833vjX/u81OXeyFAJqoNTJot/OcT96t6tmonTFIqS/
-	WLYRrlwTnNq5ChaB6U+RD9IINOMXwyu9VYqOo=
-Subject: Re: [PATCH] signalfd: fill in ssi_int for posix timers and message
- queues
-From: Nathan Lynch <ntl@pobox.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Davide Libenzi <davidel@xmailserver.org>, stable@kernel.org
-In-Reply-To: <20100720211018.e586c7ce.akpm@linux-foundation.org>
-References: <1278117528.21917.354.camel@localhost>
- <20100720154205.667e95aa.akpm@linux-foundation.org>
- <1279683859.3030.121.camel@localhost>
- <20100720211018.e586c7ce.akpm@linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jul 2010 12:39:37 -0500
-Message-ID: <1279733977.3030.256.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-Pobox-Relay-ID: F2A1994A-94EE-11DF-9DD7-9056EE7EF46B-04752483!a-pb-sasl-quonix.pobox.com
+	Wed, 21 Jul 2010 13:42:53 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=N/YW4XFd4HmbHs8mk/SybCtKCHfPlyg8VU8AybJainzzUXMfCk1pixrUdP06t2C+X2
+         Q9sZewftD1ZM74lD8umVW7/Svs42ynk0YGYA3GfbkhG3u5ZHv3TrjoKFEM1FX/bU+NvR
+         kVVu2LaI6XXhk1muhKlqG9tIPH3v8cvuaM/I0=
+MIME-Version: 1.0
+In-Reply-To: <20100721172721.GD1215@atrey.karlin.mff.cuni.cz>
+References: <871vbax86w.fsf@patl.com>
+	<20100721172721.GD1215@atrey.karlin.mff.cuni.cz>
+Date: Wed, 21 Jul 2010 10:42:51 -0700
+Message-ID: <AANLkTikdCRfgDRLHZ7zr-ZALU8g8LwWc5We-CgbcQ8mF@mail.gmail.com>
+Subject: Re: [PATCH 1/2] JBD2: Allow feature checks before journal recovery
+From: "Patrick J. LoPresti" <lopresti@gmail.com>
+To: Jan Kara <jack@suse.cz>
+Cc: ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-20 at 21:10 -0700, Andrew Morton wrote:
-> On Tue, 20 Jul 2010 22:44:19 -0500 Nathan Lynch <ntl@pobox.com> wrote:
-> 
-> > > So it's not 100% obvious that this change is desirable.  Does the
-> > > functionality which this patch adds justify the introduction of these
-> > > problems?
-> > 
-> > I think the change is desirable in that no user of the interface could
-> > reasonably expect the current behavior with respect to the ssi_int
-> > field, and that it reconciles signalfd's behavior with its design
-> > intentions.  On the other hand, I noticed this discrepancy only because
-> > I was cribbing signalfd's data structures for checkpoint/restart, not
-> > because I am aware of any application that is affected, nor was I able
-> > to find one using Google's code search.  It would be highly speculative
-> > of me to say that no application depends on the current behavior, but it
-> > is difficult to imagine a correctly functioning application that depends
-> > on it.
-> 
-> It's not a matter of a current application depending on current
-> behaviour!  The problem is that an application written in 2018 which
-> depends on the _new_ behaviour will not work on 2.6.34.
+On Wed, Jul 21, 2010 at 10:27 AM, Jan Kara <jack@suse.cz> wrote:
+>> Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
+>>
+>> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+>> index bc2ff59..c5a864f 100644
+>> --- a/fs/jbd2/journal.c
+>> +++ b/fs/jbd2/journal.c
+>> @@ -1365,6 +1365,8 @@ int jbd2_journal_check_used_features (journal_t *journal, unsigned long compat,
+>>
+>>       if (!compat && !ro && !incompat)
+>>               return 1;
+>> +     if (journal_get_superblock(journal))
+>> +             return 0;
+>>       if (journal->j_format_version == 1)
+>>               return 0;
+>
+> This looks OK in principle. It would be even nicer to avoid all the checks
+> journal_get_superblock() when the superblock is actually loaded so that we
+> don't do them each time jbd2_journal_check_used_features is called...
 
-Yes, I misinterpreted your concern, sorry.  But I've never understood
-Linux to make promises with respect to forward compatibility at the
-system call layer.  Bug fixes[1] and features[2] that, like this patch,
-break that compatibility seem to have gone in without raising this
-issue.
+How about this?
 
-Am I mistaken?  Or has there been a change in policy I've missed?
+         if (!compat && !ro && !incompat)
+                return 1;
++        if (journal->j_format_version == 0 &&
+journal_get_superblock(journal) != 0)
++               return 0;
+        if (journal->j_format_version == 1)
+                return 0;
 
+journal_init_common() uses kzalloc() to allocate the journal_t, and
+journal_get_superblock() fills it in, so I believe this is a valid
+test.
 
-[1] "signalfd: fix for incorrect SI_QUEUE user data reporting" (0859ab5)
-
-[2] "hugetlb: add MAP_HUGETLB for mmaping pseudo-anonymous huge page
-regions" (4e52780)
-
-
+ - Pat
