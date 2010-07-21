@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933254Ab0GUCnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 22:43:11 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:57720 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932940Ab0GUCnK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 22:43:10 -0400
-Date: Wed, 21 Jul 2010 08:12:00 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Steven Rostedt <rostedt@goodmis.org>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 0/13]  Uprobes Patches:
-Message-ID: <20100721024200.GC19375@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
- <20100720041938.GA28533@infradead.org>
- <20100720063805.GA19375@linux.vnet.ibm.com>
- <20100720210358.GA17631@ghostprotocols.net>
+	id S933250Ab0GUCsp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 22:48:45 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:33007 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758652Ab0GUCsn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 22:48:43 -0400
+Message-ID: <4C465FF0.1030407@zytor.com>
+Date: Tue, 20 Jul 2010 19:48:16 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100720210358.GA17631@ghostprotocols.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        James Smart <james.smart@emulex.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Brian Gerst <brgerst@gmail.com>
+Subject: Re: [PATCH] BISECTED x86: avoid qword access in memcpy_*io
+References: <4C464BA0.20609@jp.fujitsu.com>
+In-Reply-To: <4C464BA0.20609@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> Em Tue, Jul 20, 2010 at 12:08:05PM +0530, Srikar Dronamraju escreveu:
-> > > A minor note on perf probe -S output:  This seems to include a lot of
-> > > T.456 or similar labels, which from my recollection are gcc internal
-> > > things.  It would be good to filter those out as they aren't quite
-> > > useful and just fill up the list.
-> > 
-> > Okay .. will take a look. Offhand I dont know about the T.456
-> > labels, so I will google and see if its possible for us to identify if
-> > its a t.456 label. However if you know how to identify a t456 label
-> > from normal functions, then it would be great.
+On 07/20/2010 06:21 PM, Hidetoshi Seto wrote:
+> With v2.6.35-rc5, my x86-64 server doesn't boot but reports a
+> Completer Abort on lpfc card.
 > 
-> We may have some hint on the symtab, having access to one of those files
-> to look at its symtab will help.
+> The result of git-bisect is:
+>   6175ddf06b6172046a329e3abfd9c901a43efd2e is the first bad commit
+>   commit 6175ddf06b6172046a329e3abfd9c901a43efd2e
+>   Author: Brian Gerst <brgerst@gmail.com>
+>   Date:   Fri Feb 5 09:37:07 2010 -0500
+>     x86: Clean up mem*io functions.
+> 
+> What I found are:
+>  - memcpy for 64bit uses movq if count >= 64 (arch/x86/lib/memcpy_64.S)
+>  - memcpy_toio and memcpy_fromio have changed to use this memcpy by
+>    the above commit.
+>  - my debug shows that lpfc calls memcpy_toio with not-qword-aligned
+>    addresses and count >= 64, e.g.:
+>      memcpy_toio(0xffffc900118de004, 0xffff88047293d614, 124);
+>    and it seems that it comes from:
+>    [drivers/scsi/lpfc/lpfc_sli.c]
+>     4929   /* First copy mbox command data to HBA SLIM, skip past first
+>     4930      word */
+>     4931   to_slim = phba->MBslimaddr + sizeof (uint32_t);
+>     4932   lpfc_memcpy_to_slim(to_slim, &mb->un.varWords[0],
+>     4933               MAILBOX_CMD_SIZE - sizeof (uint32_t));
+> 
+> Still I'm not sure what is wrong in software or hardware, however
+> I suppose that qword access to iomem is not always safe, so it will
+> be OK to back to use __inline_memcpy which uses movsl.
+> 
+> I confirmed that my server (w/ lpfc) boots with 35-rc5 + this patch.
+> 
+> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
-I tried searching for t.456 gcc labels in google. I dont think I found
-anything interesting. Are we looking at not listing symbols that end
-with @plt? Can you please list an example t.456 label. Also any pointers to
-where I can find more information on the same would be very useful.
+A driver should not use the memcpy-like instructions if it isn't set up
+to act as memory (meaning it can handle arbitrary byte enables.)
 
--Srikar
+The function it should be using is called, fairly counterintuitively,
+__iowrite32_copy().  It really should be called memcpy_toio32() or
+something similar.
+
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
