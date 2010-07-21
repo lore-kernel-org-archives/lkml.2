@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758722Ab0GUPGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 11:06:48 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:42156 "EHLO gir.skynet.ie"
+	id S1753308Ab0GUPHw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 11:07:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58099 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047Ab0GUPGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 11:06:46 -0400
-Date: Wed, 21 Jul 2010 16:06:29 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Johannes Weiner <hannes@cmpxchg.org>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-mm@kvack.org, Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in
-	direct reclaim
-Message-ID: <20100721150629.GB13117@csn.ul.ie>
-References: <1279545090-19169-5-git-send-email-mel@csn.ul.ie> <20100719221420.GA16031@cmpxchg.org> <20100720134555.GU13117@csn.ul.ie> <20100720220218.GE16031@cmpxchg.org> <20100721115250.GX13117@csn.ul.ie> <20100721130435.GH16031@cmpxchg.org> <20100721133857.GY13117@csn.ul.ie> <20100721142819.GA10480@cmpxchg.org> <20100721143118.GA13117@csn.ul.ie> <20100721143955.GB10480@cmpxchg.org>
+	id S1751131Ab0GUPHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 11:07:47 -0400
+Date: Wed, 21 Jul 2010 11:07:32 -0400
+From: Andy Gospodarek <andy@greyhouse.net>
+To: Harald Hoyer <harald@redhat.com>
+Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        bhutchings@solarflare.com, sassmann@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
+        leedom@chelsio.com
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
+	interfaces with random MAC address
+Message-ID: <20100721150732.GR7497@gospo.rdu.redhat.com>
+References: <20100720141816.16f0a939@nehalam> <20100720.142045.32697196.davem@davemloft.net> <4C469313.6010807@redhat.com> <20100720.233457.267367495.davem@davemloft.net> <4C469808.5060308@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100721143955.GB10480@cmpxchg.org>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+In-Reply-To: <4C469808.5060308@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 04:39:56PM +0200, Johannes Weiner wrote:
-> On Wed, Jul 21, 2010 at 03:31:19PM +0100, Mel Gorman wrote:
-> > On Wed, Jul 21, 2010 at 04:28:44PM +0200, Johannes Weiner wrote:
-> > > On Wed, Jul 21, 2010 at 02:38:57PM +0100, Mel Gorman wrote:
-> > > > @@ -858,7 +872,7 @@ keep:
-> > > >  
-> > > >  	free_page_list(&free_pages);
-> > > >  
-> > > > -	list_splice(&ret_pages, page_list);
-> > > 
-> > > This will lose all retry pages forever, I think.
-> > > 
-> > 
-> > Above this is
-> > 
-> > while (!list_empty(page_list)) {
-> > 	...
-> > }
-> > 
-> > page_list should be empty and keep_locked is putting the pages on ret_pages
-> > already so I think it's ok.
-> 
-> But ret_pages is function-local.  Putting them back on the then-empty
-> page_list is to give them back to the caller, otherwise they are lost
-> in a dead stack slot.
-> 
+On Wed, Jul 21, 2010 at 08:47:36AM +0200, Harald Hoyer wrote:
+> On 07/21/2010 08:34 AM, David Miller wrote:
+>> From: Harald Hoyer<harald@redhat.com>
+>> Date: Wed, 21 Jul 2010 08:26:27 +0200
+>>
+>>> On 07/20/2010 11:20 PM, David Miller wrote:
+>>>> From: Stephen Hemminger<shemminger@vyatta.com>
+>>>> Date: Tue, 20 Jul 2010 14:18:16 -0700
+>>>>
+>>>>> No one mentioned that the first octet of an Ethernet address already
+>>>>> indicates "software generated" Ethernet address. Per the standard,
+>>>>> if bit 1 is set it means address is locally assigned.
+>>>>>
+>>>>> static inline bool is_locally_assigned_ether(const u8 *addr)
+>>>>> {
+>>>>> 	return (addr[0]&   0x2) != 0;
+>>>>> }
+>>>>
+>>>> W00t!
+>>>>
+>>>> Indeed, can udev just use that?  :-)
+>>>
+>>> It already does:
+>>> see /lib/udev/rules.d/75-persistent-net-generator.rules
+>>
+>> So... why doesn't this work?
+>
+> It works.. but the information, that the MAC is randomly generated would 
+> be valuable. So, for the non-random locally assigned MAC (with bit 1), we 
+> could easily make persistent rules based on the MAC, instead of 
+> completely ignoring them, like we do currently.
 
-Bah, you're right, it is repaired now. /me slaps self. Thanks
+Agreed.  The subtle difference between a locally assigned address that
+is persistent and one that is random would be helpful.
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
