@@ -1,66 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab0GUS0J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 14:26:09 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:44696 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751845Ab0GUS0H (ORCPT
+	id S1754186Ab0GUSaz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 14:30:55 -0400
+Received: from stargate.chelsio.com ([67.207.112.58]:12757 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751131Ab0GUSax (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 14:26:07 -0400
-Date: Wed, 21 Jul 2010 19:24:58 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Micha?? Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Daniel Walker <dwalker@codeaurora.org>, linux-mm@kvack.org,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-Message-ID: <20100721182457.GE10930@sirena.org.uk>
-References: <cover.1279639238.git.m.nazarewicz@samsung.com> <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com> <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com> <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com> <op.vf5o28st7p4s8u@pikus> <20100721135229.GC10930@sirena.org.uk> <op.vf66mxka7p4s8u@pikus>
+	Wed, 21 Jul 2010 14:30:53 -0400
+From: Casey Leedom <leedom@chelsio.com>
+Organization: Chelsio Communications, Inc.
+To: David Miller <davem@davemloft.net>
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces with random MAC address
+Date: Wed, 21 Jul 2010 11:29:47 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; x86_64; ; )
+Cc: shemminger@vyatta.com, andy@greyhouse.net, harald@redhat.com,
+        bhutchings@solarflare.com, sassmann@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com
+References: <20100721150732.GR7497@gospo.rdu.redhat.com> <20100721102816.4bef5ada@nehalam> <20100721.103249.107094774.davem@davemloft.net>
+In-Reply-To: <20100721.103249.107094774.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <op.vf66mxka7p4s8u@pikus>
-X-Cookie: He who laughs last didn't get the joke.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007211129.48288.leedom@chelsio.com>
+X-OriginalArrivalTime: 21 Jul 2010 18:29:49.0315 (UTC) FILETIME=[B3C8DD30:01CB2902]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 04:31:35PM +0200, Micha?? Nazarewicz wrote:
-> On Wed, 21 Jul 2010 15:52:30 +0200, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
+| From: David Miller <davem@davemloft.net>
+| Date: Wednesday, July 21, 2010 10:32 am
+| 
+| From: Stephen Hemminger <shemminger@vyatta.com>
+| Date: Wed, 21 Jul 2010 10:28:16 -0700
+| 
+| > IMHO no local assigned address should be used by udev. The cxgb4 driver
+| > should be using random value.
+| > 
+| > Does anyone have an example of locally assigned address that has
+| > persistence so that udev could use it.
+| 
+| The cxgb4 vf addresses are not random because they are fetched from the
+| card's NVRAM/EEPROM/firmware/whatever and thus are persistent.
+| 
+| We definitely want udev to use persistent rules for them.
+|
+| This whole issue only exists because of the Intel VF case, where it
+| lacks persistent addresses but somehow we want to assign persistent
+| names to it's VF interfaces.
 
-> > If this does need to be configured per system would having platform data
-> > of some kind in the kernel not be a sensible a place to do it,
+  Yes, we _explicitly_ wanted to have persistent MAC Addresses for our PCI-E SR-
+IOV Virtual Functions for a whole raft of reasons.  The two most important were:
 
-> The current version (and the next version I'm working on) of the code
-> has cma_defaults() call.  It is intended to be called from platform
-> initialisation code to provide defaults.
+ 1. Linux' model for persistent device naming today seems to be
+    oriented around persistent network device addresses.
 
-So the command line is just a way of overriding that?  That makes things
-a lot nicer - normally the device would use the defaults and the command
-line would be used in development.
+ 2. Lots of data centers use MAC addresses for things like DHCP/BOOTP,
+    security/filtering, etc.
 
-> > or even
-> > having a way of configuring this at runtime (after all, the set of
-> > currently active users may vary depending on the current configuration
-> > and keeping everything allocated all the time may be wasteful)?
+Our design goal was to look as much like a normal Ethernet MAC as possible in 
+order to reduce the need for software/behavior changes.
 
-> I am currently working on making the whole thing more dynamic.  I imagine
-> the list of regions would stay pretty much the same after kernel has
-> started (that's because one cannot reliably allocate new big contiguous
-> memory regions) but it will be possible to change the set of rules, etc.
+| One idea I've proposed in other discussions about this is that if the
+| address is not persistent (either via the MAC address bit or the sysfs
+| value we're thinking of providing here) we use the device's geographic
+| location ("device path") as the key for udev stuff.
 
-Yes, I think it will be much easier to be able to grab the regions at
-startup but hopefully the allocation within those regions can be made
-much more dynamic.  This would render most of the configuration syntax
-unneeded.
+  Another option might be to have a new Net Device Operations call to ask the 
+adapter for a Unique Key.  This could be formed for most devices via a tuple of 
+the {PCI Vendor ID, PCI Device ID, Adapter Serial Number, Port Number, [and if 
+applicable] Adapter Function ID}.  Of course this could be a fairly long string 
+... :-)
+
+Casey
