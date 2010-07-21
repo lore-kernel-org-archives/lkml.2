@@ -1,64 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab0GUPHw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 11:07:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58099 "EHLO mx1.redhat.com"
+	id S1752234Ab0GUPNe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 11:13:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38321 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751131Ab0GUPHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 11:07:47 -0400
-Date: Wed, 21 Jul 2010 11:07:32 -0400
-From: Andy Gospodarek <andy@greyhouse.net>
-To: Harald Hoyer <harald@redhat.com>
-Cc: David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        bhutchings@solarflare.com, sassmann@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gospo@redhat.com,
-        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
-        leedom@chelsio.com
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
-	interfaces with random MAC address
-Message-ID: <20100721150732.GR7497@gospo.rdu.redhat.com>
-References: <20100720141816.16f0a939@nehalam> <20100720.142045.32697196.davem@davemloft.net> <4C469313.6010807@redhat.com> <20100720.233457.267367495.davem@davemloft.net> <4C469808.5060308@redhat.com>
+	id S1751567Ab0GUPNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 11:13:32 -0400
+Message-ID: <4C470E69.7020900@kernel.org>
+Date: Wed, 21 Jul 2010 17:12:41 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C469808.5060308@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Christian Dietrich <stettberger@dokucode.de>
+CC: David Howells <dhowells@redhat.com>,
+        Christoph Lameter <cl@linux-foundation.org>, linux-mm@kvack.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: Dead Config in mm/percpu.c
+References: <861vaxjij8.fsf@peer.zerties.org>
+In-Reply-To: <861vaxjij8.fsf@peer.zerties.org>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 21 Jul 2010 15:12:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 08:47:36AM +0200, Harald Hoyer wrote:
-> On 07/21/2010 08:34 AM, David Miller wrote:
->> From: Harald Hoyer<harald@redhat.com>
->> Date: Wed, 21 Jul 2010 08:26:27 +0200
->>
->>> On 07/20/2010 11:20 PM, David Miller wrote:
->>>> From: Stephen Hemminger<shemminger@vyatta.com>
->>>> Date: Tue, 20 Jul 2010 14:18:16 -0700
->>>>
->>>>> No one mentioned that the first octet of an Ethernet address already
->>>>> indicates "software generated" Ethernet address. Per the standard,
->>>>> if bit 1 is set it means address is locally assigned.
->>>>>
->>>>> static inline bool is_locally_assigned_ether(const u8 *addr)
->>>>> {
->>>>> 	return (addr[0]&   0x2) != 0;
->>>>> }
->>>>
->>>> W00t!
->>>>
->>>> Indeed, can udev just use that?  :-)
->>>
->>> It already does:
->>> see /lib/udev/rules.d/75-persistent-net-generator.rules
->>
->> So... why doesn't this work?
->
-> It works.. but the information, that the MAC is randomly generated would 
-> be valuable. So, for the non-random locally assigned MAC (with bit 1), we 
-> could easily make persistent rules based on the MAC, instead of 
-> completely ignoring them, like we do currently.
+On 07/21/2010 11:22 AM, Christian Dietrich wrote:
+> Hi all!
+>        
+>         As part of the VAMOS[0] research project at the University of
+> Erlangen we are looking at multiple integrity errors in linux'
+> configuration system.
+> 
+>         I've been running a check on the mm/ sourcetree for
+> config Items not defined in Kconfig and found 1 such case. Sourcecode
+> blocks depending on these Items are not reachable from a vanilla
+> kernel -- dead code. I've seen such dead blocks made on purpose
+> e.g. while integrating new features into the kernel but generally
+> they're just useless.
+> 
+> We found, that CONFIG_NEED_PER_CPU_KM is a dead symbol, so it isn't defined
+> anywhere. Cause of that the percpu_km.c is never included anywhere. Is
+> this a intended dead symbol, for use in out of tree development, or is
+> this just an error?
 
-Agreed.  The subtle difference between a locally assigned address that
-is persistent and one that is random would be helpful.
+Oh, it's new code waiting to be used.  It's for cases where SMP is
+used w/o MMU.  IIRC, it was blackfin.
 
+Thanks.
+
+-- 
+tejun
