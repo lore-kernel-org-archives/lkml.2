@@ -1,67 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754983Ab0GUMea (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 08:34:30 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:58163 "EHLO
+	id S1755552Ab0GUMfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 08:35:22 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:58220 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753670Ab0GUMe2 (ORCPT
+	by vger.kernel.org with ESMTP id S1751200Ab0GUMfT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 08:34:28 -0400
-Date: Wed, 21 Jul 2010 14:34:24 +0200
+	Wed, 21 Jul 2010 08:35:19 -0400
+Date: Wed, 21 Jul 2010 14:35:17 +0200
 From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-        Tejun Heo <tj@kernel.org>, Julia Lawall <julia@diku.dk>,
-        Liam Girdwood <lrg@slimlogic.co.uk>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Julia Lawall <julia@diku.dk>, Tejun Heo <tj@kernel.org>,
         linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 0/3] Removing dead code
-Message-ID: <cover.1279708102.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: [PATCH 1/3] sound/oss: Remove dead CONFIG_SOFTOSS*
+Message-ID: <73dd840e90ee81c76a765e4aa3ed3b90a88b2e2e.1279708102.git.qy03fugy@stud.informatik.uni-erlangen.de>
+References: <cover.1279708102.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
+In-Reply-To: <cover.1279708102.git.qy03fugy@stud.informatik.uni-erlangen.de>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
-       
-        As part of the VAMOS[0] research project at the University of
-Erlangen we are looking at multiple integrity errors in linux'
-configuration system.
+CONFIG_SOFTOSS* doesn't exist in Kconfig or somewhere
+else, therefore removing all references for it from the source code.
 
-        I've been running a check on the sound/ sourcetree for
-config Items not defined in Kconfig and found 3 such cases. Sourcecode
-blocks depending on these Items are not reachable from a vanilla
-kernel -- dead code. I've seen such dead blocks made on purpose
-e.g. while integrating new features into the kernel but generally
-they're just useless.
+Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+---
+ sound/oss/vidc.c |    3 ---
+ 1 files changed, 0 insertions(+), 3 deletions(-)
 
-        Each of the patches in this patchset removes on such dead
-config Item, I'd be glad if you consider applying them. I've been
-doing deeper analysis of such issues before and can do so again but
-I'm not so sure they were fastly usefull.
-
-        I build the patches against a vanilla kernel in order to
-try if the kernel compiles with this patches
-
-        Please keep me informed of this patch getting confirmed /
-merged so we can keep track of it.
-
-Regards
-
-        Christian Dietrich
-
-[0] http://vamos1.informatik.uni-erlangen.de/
-
-Christian Dietrich (3):
-  sound/oss: Remove dead CONFIG_SOFTOSS*
-  sound/soc/atmel: Remove dead CONFIG_AT32_ENHANCED_PORTMUX
-  sound/isa/gus: Remove dead CONFIG_SND_DEBUG_ROM
-
- sound/isa/gus/interwave.c        |    8 --------
- sound/oss/vidc.c                 |    3 ---
- sound/soc/atmel/playpaq_wm8510.c |    9 ---------
- 3 files changed, 0 insertions(+), 20 deletions(-)
+diff --git a/sound/oss/vidc.c b/sound/oss/vidc.c
+index ac39a53..f0e0caa 100644
+--- a/sound/oss/vidc.c
++++ b/sound/oss/vidc.c
+@@ -491,9 +491,6 @@ static void __init attach_vidc(struct address_info *hw_config)
+ 	vidc_adev = adev;
+ 	vidc_mixer_set(SOUND_MIXER_VOLUME, (85 | 85 << 8));
+ 
+-#if defined(CONFIG_SOUND_SOFTOSS) || defined(CONFIG_SOUND_SOFTOSS_MODULE)
+-	softoss_dev = adev;
+-#endif
+ 	return;
+ 
+ irq_failed:
+-- 
+1.7.0.4
 
