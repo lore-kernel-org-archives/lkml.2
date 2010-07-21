@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932144Ab0GUN01 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:26:27 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:40259 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab0GUN0Z (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:26:25 -0400
-Date: Wed, 21 Jul 2010 09:26:05 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-        Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 0/13]  Uprobes Patches:
-Message-ID: <20100721132605.GA25631@infradead.org>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
- <20100720041938.GA28533@infradead.org>
- <20100720063805.GA19375@linux.vnet.ibm.com>
- <20100720210358.GA17631@ghostprotocols.net>
- <20100721024200.GC19375@linux.vnet.ibm.com>
- <1279717690.4818.31.camel@gandalf.stny.rr.com>
- <20100721132147.GB4290@linux.vnet.ibm.com>
+	id S1757168Ab0GUN2U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:28:20 -0400
+Received: from borg.medozas.de ([188.40.89.202]:58642 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752977Ab0GUN2S (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 09:28:18 -0400
+Date: Wed, 21 Jul 2010 15:28:16 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Simon Horman <horms@verge.net.au>
+cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+        netfilter-devel@vger.kernel.org,
+        Malcolm Turnbull <malcolm@loadbalancer.org>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Julius Volz <julius.volz@gmail.com>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hannes Eder <heder@google.com>
+Subject: Re: [patch v2.6 4/4] libxt_ipvs: user-space lib for netfilter matcher
+ xt_ipvs
+In-Reply-To: <20100721132159.GN6418@verge.net.au>
+Message-ID: <alpine.LSU.2.01.1007211526490.25445@obet.zrqbmnf.qr>
+References: <20100711090342.035149543@vergenet.net> <20100711090500.421568837@vergenet.net> <20100721012146.GC22966@verge.net.au> <alpine.LSU.2.01.1007210834570.10568@obet.zrqbmnf.qr> <20100721132159.GN6418@verge.net.au>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100721132147.GB4290@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 06:51:47PM +0530, Srikar Dronamraju wrote:
-> Thanks a lot for confirming this. I did some digging and was thinking that may
-> be .L<blah><blah> were the ones that Christoph was referring.
 
-Well, for me it's T.<blah><blah>, but these seem to be either the same
-or similar.
+On Wednesday 2010-07-21 15:21, Simon Horman wrote:
+>> On Wednesday 2010-07-21 03:21, Simon Horman wrote:
+>> >> +
+>> >> +#define XT_IPVS_IPVS_PROPERTY	(1 << 0) /* all other options imply this one */
+>> >> +#define XT_IPVS_PROTO		(1 << 1)
+>> >> +#define XT_IPVS_VADDR		(1 << 2)
+>> >> +#define XT_IPVS_VPORT		(1 << 3)
+>> >> +#define XT_IPVS_DIR		(1 << 4)
+>> >> +#define XT_IPVS_METHOD		(1 << 5)
+>> >> +#define XT_IPVS_VPORTCTL	(1 << 6)
+>> >> +#define XT_IPVS_MASK		((1 << 7) - 1)
+>> >> +#define XT_IPVS_ONCE_MASK	(XT_IPVS_MASK & ~XT_IPVS_IPVS_PROPERTY)
+>> 
+>> Can't these just be an enum?
+>
+>More than one option can be used at once - they form a mini bitmap -
+>so no, I don't think we can use an enum.
 
+An enum does not dictate that you cannot combine values of it with itself.
+
+	enum { A = 1 << 0, B = 1 << 0, };
+	unsigned int flags = A | B;
+
+is perfectly fine, which is what other modules do.
