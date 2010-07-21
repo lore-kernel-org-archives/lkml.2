@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752728Ab0GURR1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 13:17:27 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:33352 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750983Ab0GURRZ (ORCPT
+	id S1753320Ab0GURWC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 13:22:02 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:23062
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1750986Ab0GURV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 13:17:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=iOs+ss1h51FIZSX/sZoNEWoJUwdiu+oUO8SvbAF11/WTjXQgS+eRI0qqci0gWZs9bd
-         vzpLU70KewxCoI1BxWS88KS/nJkImHIcYpUQ0EHihV/LZX3tmZkxr1WLkvWZ56K/A/l2
-         eOP7S9+nGlLJgKrDQ/joDGGhw4RkBrpTIaOvk=
-Date: Wed, 21 Jul 2010 21:17:18 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
+	Wed, 21 Jul 2010 13:21:57 -0400
+X-SpamScore: 1
+X-BigFish: VPS1(zzzz1202hzzz32i87h2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-FB-DOMAIN-IP-MATCH: fail
+X-WSS-ID: 0L5X430-02-2Z8-02
+X-M-MSG: 
+From: Robert Richter <robert.richter@amd.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-        Suresh Siddha <suresh.b.siddha@intel.com>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/10] x86, xsave: some code cleanups and reworks
-Message-ID: <20100721171718.GF8009@lenovo>
-References: <1279651857-24639-1-git-send-email-robert.richter@amd.com> <20100720192717.GC6227@lenovo> <20100720194606.GO26154@erda.amd.com> <20100720200729.GD6227@lenovo> <20100720201740.GE6227@lenovo> <4C472123.1090900@zytor.com> <20100721165211.GD8009@lenovo> <20100721170124.GE8009@lenovo> <4C472A5C.50004@zytor.com>
+CC: Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Robert Richter <robert.richter@amd.com>
+Subject: [PATCH 2/7] x86, xsave: introduce xstate enable functions
+Date: Wed, 21 Jul 2010 19:03:53 +0200
+Message-ID: <1279731838-1522-3-git-send-email-robert.richter@amd.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1279731838-1522-1-git-send-email-robert.richter@amd.com>
+References: <1279731838-1522-1-git-send-email-robert.richter@amd.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C472A5C.50004@zytor.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 10:11:56AM -0700, H. Peter Anvin wrote:
-> On 07/21/2010 10:01 AM, Cyrill Gorcunov wrote:
-> > 
-> > Peter, also I think such tuning must be done at merge window time only,
-> > just to not break other's patch queues.
-> > 
-> 
-> Realistically it should be done right after the merge window for the
-> *next* merge window.
-> 
-> 	-hpa
->
+The patch renames xsave_cntxt_init() and __xsave_init() into
+xstate_enable_boot_cpu() and xstate_enable() as this names are more
+meaningful.
 
-ok, which means Robert should use old conventional test at the moment
-instead of introducing is_boot_cpu I suppose.
+It also removes the duplicate xcr setup for the boot cpu.
 
-	-- Cyrill
+Signed-off-by: Robert Richter <robert.richter@amd.com>
+---
+ arch/x86/kernel/xsave.c |   19 ++++++++-----------
+ 1 files changed, 8 insertions(+), 11 deletions(-)
+
+diff --git a/arch/x86/kernel/xsave.c b/arch/x86/kernel/xsave.c
+index 550bf45..2322f58 100644
+--- a/arch/x86/kernel/xsave.c
++++ b/arch/x86/kernel/xsave.c
+@@ -360,15 +360,10 @@ unsigned int sig_xstate_size = sizeof(struct _fpstate);
+ /*
+  * Enable the extended processor state save/restore feature
+  */
+-static void __cpuinit __xsave_init(void)
++static inline void xstate_enable(u64 mask)
+ {
+ 	set_in_cr4(X86_CR4_OSXSAVE);
+-
+-	/*
+-	 * Enable all the features that the HW is capable of
+-	 * and the Linux kernel is aware of.
+-	 */
+-	xsetbv(XCR_XFEATURE_ENABLED_MASK, pcntxt_mask);
++	xsetbv(XCR_XFEATURE_ENABLED_MASK, mask);
+ }
+ 
+ /*
+@@ -426,7 +421,7 @@ static void __init setup_xstate_init(void)
+ /*
+  * Enable and initialize the xsave feature.
+  */
+-static void __cpuinit xsave_cntxt_init(void)
++static void __cpuinit xstate_enable_boot_cpu(void)
+ {
+ 	unsigned int eax, ebx, ecx, edx;
+ 
+@@ -443,7 +438,8 @@ static void __cpuinit xsave_cntxt_init(void)
+ 	 * Support only the state known to OS.
+ 	 */
+ 	pcntxt_mask = pcntxt_mask & XCNTXT_MASK;
+-	__xsave_init();
++
++	xstate_enable(pcntxt_mask);
+ 
+ 	/*
+ 	 * Recompute the context size for enabled features
+@@ -470,6 +466,7 @@ void __cpuinit xsave_init(void)
+ 	 * Boot processor to setup the FP and extended state context info.
+ 	 */
+ 	if (!smp_processor_id())
+-		xsave_cntxt_init();
+-	__xsave_init();
++		xstate_enable_boot_cpu();
++	else
++		xstate_enable(pcntxt_mask);
+ }
+-- 
+1.7.1.1
+
+
