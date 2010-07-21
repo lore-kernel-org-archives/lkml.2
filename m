@@ -1,60 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762075Ab0GUCE6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 22:04:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:40949 "EHLO smtps.tip.net.au"
+	id S933046Ab0GUCFV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 22:05:21 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:37989 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762067Ab0GUCEy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 22:04:54 -0400
-Date: Wed, 21 Jul 2010 12:04:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Herbert Xu <herbert@gondor.hengli.com.au>
-Subject: linux-next: manual merge of the net tree with Linus' tree
-Message-Id: <20100721120448.31e325fd.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__21_Jul_2010_12_04_48_+1000_Bli2YTYNr394HT7F"
+	id S1762067Ab0GUCFS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 22:05:18 -0400
+Message-ID: <4C4655D6.30802@kernel.dk>
+Date: Tue, 20 Jul 2010 20:05:10 -0600
+From: Jens Axboe <axboe@kernel.dk>
+MIME-Version: 1.0
+To: "Stephen M. Cameron" <scameron@beardog.cce.hp.com>
+CC: akpm@linux-foundation.org, mikem@beardog.cce.hp.com,
+        linux-kernel@vger.kernel.org, brace@beardog.cce.hp.com
+Subject: Re: [PATCH 00/26] cciss updates July 19, 2010
+References: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
+In-Reply-To: <20100719184141.7908.26971.stgit@beardog.cce.hp.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Jul_2010_12_04_48_+1000_Bli2YTYNr394HT7F
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 07/19/2010 12:44 PM, Stephen M. Cameron wrote:
+> The following series implements mostly cleanups to the initialization
+> code in cciss along the same lines as what's already been done in hpsa.
+> 
+> There are also a few bug fixes.  The SCSI tape code was not setting the
+> performant mode bits in commands, which caused a hang.  The code to
+> reset controllers via PCI power management methods only works on old
+> controllers, so an alternate method is used for newer controllers.
+> 
+> There are a couple of big patches to make cciss use more consistent
+> variable names (always h for hba, and c for command, rather than a
+> mishmash of various things names) and to generally use dev_warn, etc.
+> instead of printk.
+> 
+> These patches apply to the 'for-2.6.36' branch of Jens Axboe's git
+> tree: http://git.kernel.org/?p=linux/kernel/git/axboe/linux-2.6-block.git;a=summary
+> (there are many changes to cciss in that tree on which these patches depend.)
 
-Hi all,
+I have applied these, but please next time don't duplicate in the
+body what you already put in the subject. We end up with logs like:
 
-Today's linux-next merge of the net tree got a conflict in
-net/bridge/br_device.c between commit
-573201f36fd9c7c6d5218cdcd9948cee700b277d ("bridge: Partially disable
-netpoll support") from Linus' tree and commit
-91d2c34a4eed32876ca333b0ca44f3bc56645805 ("bridge: Fix netpoll support")
-from the net tree.
+    cciss: change printks to dev_warn, etc.
+    
+    cciss: change printks to dev_warn, etc.
+    
+    Signed-off-by: Stephen M. Cameron <scameron@beardog.cce.hp.com>
 
-The net tree commit seems to be a fuller fix, so I used that.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+which is not too pretty.
 
---Signature=_Wed__21_Jul_2010_12_04_48_+1000_Bli2YTYNr394HT7F
-Content-Type: application/pgp-signature
+-- 
+Jens Axboe
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMRlXAAAoJEDMEi1NhKgbsB90IAJEA6zRC7IhRzMFhCYX4h3uB
-NmhdSyqlUXvb40MZHyp6gy9+hoMl82fEkN6Xw0kAckggwbrt2PfcZmR073jObRhw
-7vyKRGqC946GGRHEuKHWGg6wCcAdfWraR3r49tnNYXsAz2niu7rzuwyfZy2NjS69
-r9DMjk6fN5fiSDzmthyPUCxFV0B1vL0Tup292+NLEvefxywqI3VUd0V+IkXoVKNM
-cvFnWkBha1Hsj3Wbi8KYABrbTNGYLsOvAoKpVzmnz8c4f8ozjlnf9WJHH8no3B5P
-C0IHAxhn6pVzw4Y+sCwG7lTOWWeTxd5d2sxRtoA30gWB9N63pL/gFCY5+535Thw=
-=e274
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Jul_2010_12_04_48_+1000_Bli2YTYNr394HT7F--
