@@ -1,63 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755634Ab0GURuV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 13:50:21 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:55651 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751537Ab0GURuS (ORCPT
+	id S1757814Ab0GURue (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 13:50:34 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:49535 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755941Ab0GURuZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 13:50:18 -0400
-Date: Wed, 21 Jul 2010 18:49:52 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Jan Kara <jack@suse.cz>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: linux-next: OOPS at boot time
-Message-ID: <20100721174952.GT31073@ZenIV.linux.org.uk>
-References: <20100720164145.e06242b3.sfr@canb.auug.org.au>
- <20100720033656.0ce6356f.akpm@linux-foundation.org>
- <20100720224525.GO32635@dastard>
- <20100720174424.12a4bf64.akpm@linux-foundation.org>
- <20100721052007.GT32635@dastard>
- <20100721002907.639802cd.akpm@linux-foundation.org>
- <20100721174809.4781c244.sfr@canb.auug.org.au>
- <20100721121116.GD3447@quack.suse.cz>
+	Wed, 21 Jul 2010 13:50:25 -0400
+Date: Wed, 21 Jul 2010 19:50:24 +0200
+From: Jan Kara <jack@suse.cz>
+To: "Patrick J. LoPresti" <lopresti@gmail.com>
+Cc: Jan Kara <jack@suse.cz>, ocfs2-devel@oss.oracle.com,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 1/2] JBD2: Allow feature checks before journal recovery
+Message-ID: <20100721175024.GF1215@atrey.karlin.mff.cuni.cz>
+References: <871vbax86w.fsf@patl.com> <20100721172721.GD1215@atrey.karlin.mff.cuni.cz> <AANLkTikdCRfgDRLHZ7zr-ZALU8g8LwWc5We-CgbcQ8mF@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-2
 Content-Disposition: inline
-In-Reply-To: <20100721121116.GD3447@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikdCRfgDRLHZ7zr-ZALU8g8LwWc5We-CgbcQ8mF@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 02:11:17PM +0200, Jan Kara wrote:
->   Thanks for bisecting this. The patch series indeed seems to uncover
-> some discrepancies.
->   Ext3 has always dirtied inode in it's ->delete_inode method (via quota
-> code). But previously clear_inode() just overwrote the state with I_CLEAR
-> and thus we never saw the BUG_ON. After Al's patches, i_state is set in
-> end_writeback() which happens earlier. In particular it happens before
-> ext3_free_inode() which dirties the inode through quota code while freeing
-> xattrs - they are accounted in i_blocks, so i_blocks are updated during
-> freeing and inode is dirtied.
->   Actually, ext3_mark_inode_dirty() called during each mark_inode_dirty()
-> call writes the inode state to the journal so the dirty flag in the inode
-> state is in fact stale and overwriting it with I_CLEAR never mattered. In
-> this sense, the BUG_ON triggered is a false positive. But I believe this is
-> a separate story.
->   I'm not sure how to really fix this. It seems a bit premature to me to
-> mark inode as I_CLEAR before the filesystem is actually done with it. So
-> maybe the line
->   inode->i_state = I_FREEING | I_CLEAR;
-> should be moved to evict() fuction?
+> On Wed, Jul 21, 2010 at 10:27 AM, Jan Kara <jack@suse.cz> wrote:
+> >> Signed-off-by: Patrick LoPresti <lopresti@gmail.com>
+> >>
+> >> diff --git a/fs/jbd2/journal.c b/fs/jbd2/journal.c
+> >> index bc2ff59..c5a864f 100644
+> >> --- a/fs/jbd2/journal.c
+> >> +++ b/fs/jbd2/journal.c
+> >> @@ -1365,6 +1365,8 @@ int jbd2_journal_check_used_features (journal_t *journal, unsigned long compat,
+> >>
+> >>       if (!compat && !ro && !incompat)
+> >>               return 1;
+> >> +     if (journal_get_superblock(journal))
+> >> +             return 0;
+> >>       if (journal->j_format_version == 1)
+> >>               return 0;
+> >
+> > This looks OK in principle. It would be even nicer to avoid all the checks
+> > journal_get_superblock() when the superblock is actually loaded so that we
+> > don't do them each time jbd2_journal_check_used_features is called...
+> 
+> How about this?
+> 
+>          if (!compat && !ro && !incompat)
+>                 return 1;
+> +        if (journal->j_format_version == 0 &&
+> journal_get_superblock(journal) != 0)
+> +               return 0;
+>         if (journal->j_format_version == 1)
+>                 return 0;
+> 
+> journal_init_common() uses kzalloc() to allocate the journal_t, and
+> journal_get_superblock() fills it in, so I believe this is a valid
+> test.
+  Yes, this looks OK. Just add a comment before the check like
+/* Load journal super block if it isn't loaded yet */
 
-Nope.  I_CLEAR is "no async calls from vfs anymore; it's under complete
-fs control and is about to die now".
-
-In any case, I'll post a dumb replacement for ext3 after I verify it on
-the laptop I have with me.  Should be in an hour or so (the damn thing is
-_slow_).
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SuSE CR Labs
