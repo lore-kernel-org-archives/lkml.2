@@ -1,121 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752778Ab0GUM57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 08:57:59 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61872 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750906Ab0GUM55 (ORCPT
+	id S1751512Ab0GUM7t (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 08:59:49 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:36023 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750756Ab0GUM7s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 08:57:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=BQi0rydrPpOtiQWarysAq5NNjgOruErP32YEsRtxODNSo0f1CG2bWenY9vVL6l9sek
-         YdZYdiLARHQhWkqaFd8pAqNqKZxK8HXU/HYQfseTtzOnlLiyiAbEXOa3UBPJWowqL9HH
-         LO1z9Zrr3HgapAMSp7mD99c1o0HeUhK2ue4hQ=
+	Wed, 21 Jul 2010 08:59:48 -0400
+Date: Wed, 21 Jul 2010 13:59:39 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Valdis.Kletnieks@vt.edu
+Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>,
+        Thomas Gleixner <tglx@linutronix.de>, alsa-devel@alsa-project.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [alsa-devel] mmotm 2010-07-19 - more pm_qos woes - audio this
+	time
+Message-ID: <20100721125939.GB10930@sirena.org.uk>
+References: <201007200007.o6K07Xbg028863@imap1.linux-foundation.org> <62037.1279716892@localhost>
 MIME-Version: 1.0
-Date: Wed, 21 Jul 2010 14:57:54 +0200
-Message-ID: <AANLkTikitTGpiE5Oe_P5a4f2OCOnlB9j_LVm5CQhQIno@mail.gmail.com>
-Subject: Introducing the LCD-Linux project
-From: Mattia Jona-Lasinio <mattia.jona@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Miguel Ojeda Sandonis <miguel.ojeda.sandonis@gmail.com>,
-        Willy Tarreau <w@1wt.eu>, Andrew Morton <akpm@linux-foundation.org>,
-        Linus Walleij <triad@df.lth.se>, linux-arm-kernel@lists.infradead.org,
-        Russell King <linux@arm.linux.org.uk>,
-        Linus Torvalds <torvalds@linux-foundation.org>, ivan.kuten@promwad.com,
-        lcd-linux-users@lists.sourceforge.net,
-        Viktar Palstsiuk <viktar.palstsiuk@promwad.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <62037.1279716892@localhost>
+X-Cookie: He who laughs last didn't get the joke.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, Jul 21, 2010 at 08:54:52AM -0400, Valdis.Kletnieks@vt.edu wrote:
+> On Mon, 19 Jul 2010 16:38:09 PDT, akpm@linux-foundation.org said:
+> > The mm-of-the-moment snapshot 2010-07-19-16-37 has been uploaded to
+> > 
+> >    http://userweb.kernel.org/~akpm/mmotm/
 
-this is to introduce the LCD-Linux project (http://lcd-linux.sourceforge.net/),
-a kernel level implementation of a VT102 terminal emulator, optimized for small
-alphanumeric and graphic displays.
+> I've accumulated about 1,000 of these overnight. Seems to be consistently landing in
+> pairs based on the timestamps.
 
-The possibility to connect to the computer small alphanumeric as well as graphic
-displays, has always attracted some interest. These small devices are connected
-to the computer and can be used to display system diagnostics like network
-usage, RAM or disk usage or even to replace the usual monitor. Possible
-applications can be found in embedded systems or clusters. These displays are
-connected to the computer through serial lines, parallel ports and more recently
-through USB connections. Appropriate programs in userspace gather the desired
-information and output it on the display. However for this to work, the
-userspace program has to implement some sort of display management, to determine
-what must be displayed where. This has two major disadvantages. First. Every
-userspace program willing to drive a display must solve the very same problems
-(display scroll and refresh, for instance), resulting in an overall duplication
-of code. Second. Display controllers usually require quite strict timings for
-proper operation and it is not trivial neither efficient to obtain this in
-userspace, whereas it is straightforward in kernel space through the usual delay
-functions. A solution is therefore to provide a sort of minimal terminal
-emulation in kernel space, that can be accessed through the standard character
-device interface. In this way the problem of the display management is reduced
-to some calls to the usual read/write/seek/ioctl routines. At the same time one
-has the possibility to implement handling of escape sequences, thus opening the
-way to standard applications based on the ncurses library.
-
-LCD-Linux aims to be a complete VT102 terminal emulation in kernel space,
-optimized for small alphanumeric and graphic displays. It consists of two
-distinct pieces of software.
-
-The first piece is the lcd-linux module in itself, implementing a (hopefully)
-complete VT102 terminal with the addition of some custom escape sequences
-specific to the world of small LCD displays. Care has been taken to avoid any
-conflict between standard and custom escape sequences. A major feature of
-lcd-linux is the possibility to define a virtual display geometry larger than
-the physical one, so that one can use a small display as a normal 80x25 monitor
-in an effective way. The layer takes care about display refresh and keeps the
-cursor visible in a smart way. A second feature is the possibility to connect
-more than one display (up to 256 different displays). Each display is assigned a
-different minor number and is addressed individually. The lcd-linux module also
-registers the appropriate major number character device and implements all the
-relevant read/write/seek/ioctl functions allowed on the character device.
-Finally it creates some /proc files for internal inspection, information and
-diagnostics.
-
-The second piece of software is the display driver, implementing all functions
-that are controller specific. Each driver registers itself with the lcd-linux
-layer and behaves like a 'slave' with respect to it. The interface between
-lcd-linux and the display driver is kept as simple as possible and no assumption
-is made by any of the two parts on the implementation of the other part. Ideally
-there will be one module for each controller. At the current stage, the driver
-for the Hitachi HD44780 (and compatibles) controller is fully implemented and
-optimized. Drivers for other controllers can be written in an easy way thanks to
-the standard interface provided by the lcd-linux layer.
-
-The LCD-Linux project has been under development for several years and has now
-reached a stable state. It has been succesfully compiled, tested and used on
-different machines running Linux version 2.2, 2.4 and 2.6. The software can be
-compiled as a module or compiled statically into the kernel. In the latter case,
-the user can pass some parameters at boot time, to configure the display as soon
-as possible during the boot sequence. The project comes with Documentation and
-examples about how to use it.
-
-LCD-Linux is released under the GNU General Public License version 2. The latest
-release is available at the Sourceforge website:
-
-http://lcd-linux.sourceforge.net/
-http://prdownloads.sourceforge.net/lcd-linux/lcd-linux-0.13.9.tar.gz?download
-
-The CVS version still includes some partial support for Linux 2.0 but this
-support is considered obsolete and now abandoned in the official release.
-
-The LCD4Linux (http://ssl.bulix.org/projects/lcd4linux/) project is known to
-support LCD-Linux among the possible connection types.
-
-I would appreciate some comments and feedback on the project. In view of the
-potential applications, future developments and improvements of LCD-Linux, I
-would also like to propose LCD-Linux for inclusion in the Linux kernel mainline.
-
-Thank you for your attention.
-
-With best regards,
-
-Mattia Jona-Lasinio
-
-(LCD-Linux project developer and maintainer)
+This looks like a problem I already reported to James, there's a fix
+from him in -next already (folded into the original patch).  It was a
+generic problem in the PM QoS stuff when CONFIG_DEBUG_PI_LIST was
+selected.  See linux-pm for the discussion.
