@@ -1,110 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762788Ab0GUHqK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 03:46:10 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:57043 "EHLO comal.ext.ti.com"
+	id S1762797Ab0GUHsW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 03:48:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55161 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753113Ab0GUHqH convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 03:46:07 -0400
-From: "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-CC: "stepanm@codeaurora.org" <stepanm@codeaurora.org>,
-        "linux-arch@vger.kernel.org" <linux-arch@vger.kernel.org>,
-        "dwalker@codeaurora.org" <dwalker@codeaurora.org>,
-        "mel@csn.ul.ie" <mel@csn.ul.ie>,
-        "linux-arm-msm@vger.kernel.org" <linux-arm-msm@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "andi@firstfloor.org" <andi@firstfloor.org>,
-        Zach Pfeffer <zpfeffer@codeaurora.org>,
-        Michael Bohan <mbohan@codeaurora.org>, Tim HRM <zt.tmzt@gmail.com>,
-        "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-        "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        "ebiederm@xmission.com" <ebiederm@xmission.com>
-Date: Wed, 21 Jul 2010 13:15:14 +0530
-Subject: RE: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
-	memory management
-Thread-Topic: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
-	memory management
-Thread-Index: AcsopmOPDkQT4/lJRc2q0EsCMFQG9wAAWxkQ
-Message-ID: <EAF47CD23C76F840A9E7FCE10091EFAB02C61C60DD@dbde02.ent.ti.com>
-References: <20100714220536.GE18138@n2100.arm.linux.org.uk>
- <20100715012958.GB2239@codeaurora.org>
- <20100715085535.GC26212@n2100.arm.linux.org.uk>
- <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com>
- <20100716075856.GC16124@n2100.arm.linux.org.uk>
- <4C449183.20000@codeaurora.org>
- <20100719184002.GA21608@n2100.arm.linux.org.uk>
- <bb667e285fd8be82ea8cc9cc25cf335b.squirrel@www.codeaurora.org>
- <20100720222952.GD10553@n2100.arm.linux.org.uk>
- <EAF47CD23C76F840A9E7FCE10091EFAB02C61C5FCA@dbde02.ent.ti.com>
- <20100721072837.GB6009@n2100.arm.linux.org.uk>
-In-Reply-To: <20100721072837.GB6009@n2100.arm.linux.org.uk>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1753113Ab0GUHsV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 03:48:21 -0400
+Date: Wed, 21 Jul 2010 17:48:09 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: linux-next: OOPS at boot time
+Message-Id: <20100721174809.4781c244.sfr@canb.auug.org.au>
+In-Reply-To: <20100721002907.639802cd.akpm@linux-foundation.org>
+References: <20100720164145.e06242b3.sfr@canb.auug.org.au>
+	<20100720033656.0ce6356f.akpm@linux-foundation.org>
+	<20100720224525.GO32635@dastard>
+	<20100720174424.12a4bf64.akpm@linux-foundation.org>
+	<20100721052007.GT32635@dastard>
+	<20100721002907.639802cd.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__21_Jul_2010_17_48_09_+1000_8xF1fgJn6NCZ1u62"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> -----Original Message-----
-> From: Russell King - ARM Linux [mailto:linux@arm.linux.org.uk]
-> Sent: Wednesday, July 21, 2010 12:59 PM
-> To: Shilimkar, Santosh
-> Cc: stepanm@codeaurora.org; linux-arch@vger.kernel.org;
-> dwalker@codeaurora.org; mel@csn.ul.ie; linux-arm-msm@vger.kernel.org;
-> linux-kernel@vger.kernel.org; FUJITA Tomonori; linux-mm@kvack.org;
-> andi@firstfloor.org; Zach Pfeffer; Michael Bohan; Tim HRM; linux-
-> omap@vger.kernel.org; linux-arm-kernel@lists.infradead.org;
-> ebiederm@xmission.com
-> Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
-> memory management
-> 
-> On Wed, Jul 21, 2010 at 11:19:58AM +0530, Shilimkar, Santosh wrote:
-> > > -----Original Message-----
-> > > From: linux-arm-kernel-bounces@lists.infradead.org [mailto:linux-arm-
-> > > kernel-bounces@lists.infradead.org] On Behalf Of Russell King - ARM
-> Linux
-> > > Sent: Wednesday, July 21, 2010 4:00 AM
-> > > To: stepanm@codeaurora.org
-> > > Cc: linux-arch@vger.kernel.org; dwalker@codeaurora.org; mel@csn.ul.ie;
-> > > linux-arm-msm@vger.kernel.org; linux-kernel@vger.kernel.org; FUJITA
-> > > Tomonori; linux-mm@kvack.org; andi@firstfloor.org; Zach Pfeffer;
-> Michael
-> > > Bohan; Tim HRM; linux-omap@vger.kernel.org; linux-arm-
-> > > kernel@lists.infradead.org; ebiederm@xmission.com
-> > > Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and
-> device
-> > > memory management
-> 
-> *************************************************************************
-> > > This is difficult to achieve without remapping kernel memory using L2
-> > > page tables, so we can unmap pages on 4K page granularity.  That's
-> > > going to increase TLB overhead and result in lower system performance
-> > > as there'll be a greater number of MMU misses.
-> *************************************************************************
-> 
-> > > However, one obvious case would be to use highmem-only pages for
-> > > remapping - but you then have to ensure that those pages are never
-> > > kmapped in any way, because those mappings will fall into the same
-> > > unpredictable category that we're already trying to avoid.  This
-> > > may be possible, but you'll have to ensure that most of the system
-> > > RAM is in highmem - which poses other problems (eg, if lowmem gets
-> > > low.)
-> >
-> > Why can't we consider an option of removing the old mappings when
-> > we need to create new ones with different attributes as suggested
-> > by Catalin on similar thread previously. This will avoid the duplicate
-> > mapping with different attributes issue on newer ARMs.
-> 
-> See the first paragraph which I've highlighted above.
+--Signature=_Wed__21_Jul_2010_17_48_09_+1000_8xF1fgJn6NCZ1u62
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+On Wed, 21 Jul 2010 00:29:07 -0700 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
 >
-Sorry about missing that para Russell.
+> On Wed, 21 Jul 2010 15:20:07 +1000 Dave Chinner <david@fromorbit.com> wro=
+te:
+>=20
+> > > and they were dirtied within dquot_free_space().
+> >=20
+> > AFAICT dquot_free_space() is called deep in the guts of
+> > ext3_truncate() via dquot_free_block(), which is called directly
+> > before end_writeback(). That should overwrite any state changes made
+> > inside ext3_truncate. I wonder if iput_final() is racing with
+> > something else here?
+> >=20
+>=20
+> This isn't a race.  I type `make' and the warnings spew out at hundreds
+> per second - every unlink, I'd say.
+
+Bisected to:
+
+commit 8bfe4a06746e5f03c02afe3ceb97b5364c099f63
+Author: Al Viro <viro@zeniv.linux.org.uk>
+Date:   Sun Jun 6 07:08:19 2010 -0400
+
+    convert ext3 to ->evict_inode()
+   =20
+    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__21_Jul_2010_17_48_09_+1000_8xF1fgJn6NCZ1u62
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMRqY5AAoJEDMEi1NhKgbsW2YH/1hgOhJqbL6A5RNibQJEssw0
+xcBx/TAkS9yYg/9Rb1PROUtGtMjbosM9gmFW7gLTBJ2ryhdMs+Hzq6ak/2Hel+id
+93m2iynjiQyGrsDwb/3VaGGXH+JICxz98mjhKvZXvhlSmA2+ho/skhKW33mHg3aQ
+mJlwqCKfx5wv/wMK203WU/HYoZo50VbLS22ioa/xl48CTXJ0YT8GKWVjwU7XsWIL
+XCMFASlWSY7ya6gRLKL2dhUzcGk9/kBfFK7q5qmRM9ruEAclvLZu1Kf9U1eFen9a
+LgsXlVBParWvxmqPbfim77+DFxwuBVfjanH9a6ZcObZJLiGSDAMXPUGiYwtqoPk=
+=r5Wd
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__21_Jul_2010_17_48_09_+1000_8xF1fgJn6NCZ1u62--
