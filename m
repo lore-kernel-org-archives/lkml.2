@@ -1,60 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762199Ab0GUF6P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 01:58:15 -0400
-Received: from mailout-us.gmx.com ([74.208.5.67]:60426 "HELO
-	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753156Ab0GUF6I (ORCPT
+	id S1762237Ab0GUGAR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 02:00:17 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:65228 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751106Ab0GUGAP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 01:58:08 -0400
-X-Authenticated: #61118693
-X-Provags-ID: V01U2FsdGVkX1+8hXs+pTm89dtHvKX7eODVFZzL/31f8v9gZZuSme
-	UQDFzAp2/QQVeE
-Message-ID: <4C468C7A.3070302@gmx.com>
-Date: Wed, 21 Jul 2010 11:28:18 +0530
-From: David John <davidjon@gmx.com>
-Reply-To: davidjon@gmx.com
-User-Agent: Mozilla/5.0 (X11; X; Linux x86_64; rv:1.9.1.9) Gecko/20100430 Thunderbird/3.0.4
+	Wed, 21 Jul 2010 02:00:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=W+Mbhd8kGQVoriiZjVsbnLtmvFcnFeG3aJDnjN/zjzETJHKh8l4ffNxTfX9ekSS9Xi
+         nbfpznUzWIcTEhbYkPJ7vlgMnEcBRPYEGJKUBPQLbi4Ymr8t6UP+kbh+6iDtkZn05qtP
+         rvhE56J0wbiOI3MpH6ST49yfMTspbufM/OHd0=
 MIME-Version: 1.0
-To: Takashi Iwai <tiwai@suse.de>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: Multiple Codec Problem With Intel HD Audio
-References: <4C432E1D.3000703@gmx.com>	<s5hwrsrxdrx.wl%tiwai@suse.de>	<4C4672D4.9030400@gmx.com> <s5hwrspwfog.wl%tiwai@suse.de>
-In-Reply-To: <s5hwrspwfog.wl%tiwai@suse.de>
+In-Reply-To: <1279687982-29413-6-git-send-email-justinmattock@gmail.com>
+References: <1279687982-29413-1-git-send-email-justinmattock@gmail.com> 
+	<1279687982-29413-6-git-send-email-justinmattock@gmail.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 21 Jul 2010 01:59:54 -0400
+Message-ID: <AANLkTikaX6zzR_KXsPj2oQ3Goy1_woGH1vCIQMPmYqB4@mail.gmail.com>
+Subject: Re: [PATCH 36/36]Documentation/hwmon/lm85 update web address.
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: trivial@kernel.org, linux-doc@vger.kernel.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2010 11:16 AM, Takashi Iwai wrote:
-> At Wed, 21 Jul 2010 09:38:52 +0530,
-> David John wrote:
->>
->>> Yes, this looks like the issue.
->>>
->>> A possible fix without much hustle would be to define mode quirks for
->>> both codecs by checking the PCI SSID so that they won't conflict.
->>
->> How would I go about doing this as the dmesg dump had the following:
->>
->>> ALSA sound/pci/hda/patch_realtek.c:1287: realtek: *No valid SSID*,
->>> checking pincfg 0x40000001 for NID 0x1d
->>> ALSA sound/pci/hda/patch_realtek.c:1303: realtek: Enabling init
->>> ASM_ID=0x0001 CODEC_ID=10ec0888
-> 
-> The SSID in the above is the codec SSID.  That can be different from
-> PCI SSID although they are identical in many cases.
-> 
-> Realtek codecs suppose that the codec SSID is set to represent the
-> hardware implementation status so that the driver can initialize
-> based on it.  The message above shows that your machine doesn't
-> provide such SSID (as many vendors don't follow that policy,
-> obviously).
-> 
+On Wed, Jul 21, 2010 at 00:52, Justin P. Mattock wrote:
+>   * Analog Devices ADT7463
+>     Prefix: 'adt7463'
+>     Addresses scanned: I2C 0x2c, 0x2d, 0x2e
+> -    Datasheet: http://www.analog.com/en/prod/0,,766_825_ADT7463,00.html
+> +    http://www.analog.com/en/index.html
 
-Ah, okay.
-
-Thanks,
-David.
+the ADI website says it was sold.  see:
+http://www.onsemi.com/PowerSolutions/product.do?id=ADT7463
+-mike
