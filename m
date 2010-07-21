@@ -1,69 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756311Ab0GUNXM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:23:12 -0400
-Received: from e38.co.us.ibm.com ([32.97.110.159]:58363 "EHLO
-	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab0GUNXK (ORCPT
+	id S932119Ab0GUNX3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:23:29 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41304 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756066Ab0GUNX1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:23:10 -0400
-Date: Wed, 21 Jul 2010 18:51:47 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 0/13]  Uprobes Patches:
-Message-ID: <20100721132147.GB4290@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
- <20100720041938.GA28533@infradead.org>
- <20100720063805.GA19375@linux.vnet.ibm.com>
- <20100720210358.GA17631@ghostprotocols.net>
- <20100721024200.GC19375@linux.vnet.ibm.com>
- <1279717690.4818.31.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1279717690.4818.31.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 21 Jul 2010 09:23:27 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] mfd: Add WM8321 support
+Date: Wed, 21 Jul 2010 14:23:37 +0100
+Message-Id: <1279718617-13453-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt <rostedt@goodmis.org> [2010-07-21 09:08:10]:
+The WM8321 is a PMIC for low power, high performance applications. From a
+software point of view the device is identical to the WM8320, all the
+differences between the two devices are visible only in hardware.
 
-> On Wed, 2010-07-21 at 08:12 +0530, Srikar Dronamraju wrote:
-> 
-> > I tried searching for t.456 gcc labels in google. I dont think I found
-> > anything interesting. Are we looking at not listing symbols that end
-> > with @plt? Can you please list an example t.456 label. Also any pointers to
-> > where I can find more information on the same would be very useful.
-> 
-> I'm not sure you'll find anything looking for "t.456" since that is just
-> a random label that gcc created for its internal use. But I believe that
-> all of these temp labels have a '.' in them. Thus, you can just ignore
-> all labels with '.'.
-> 
-> 
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/mfd/wm831x-core.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
 
-Thanks a lot for confirming this. I did some digging and was thinking that may
-be .L<blah><blah> were the ones that Christoph was referring.
-
---
-Thanks and Regards
-Srikar
+diff --git a/drivers/mfd/wm831x-core.c b/drivers/mfd/wm831x-core.c
+index 1a968f3..cb94e7e 100644
+--- a/drivers/mfd/wm831x-core.c
++++ b/drivers/mfd/wm831x-core.c
+@@ -95,6 +95,7 @@ enum wm831x_parent {
+ 	WM8311 = 0x8311,
+ 	WM8312 = 0x8312,
+ 	WM8320 = 0x8320,
++	WM8321 = 0x8321,
+ };
+ 
+ static int wm831x_reg_locked(struct wm831x *wm831x, unsigned short reg)
+@@ -1533,6 +1534,12 @@ static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 		dev_info(wm831x->dev, "WM8320 revision %c\n", 'A' + rev);
+ 		break;
+ 
++	case WM8321:
++		parent = WM8321;
++		wm831x->num_gpio = 12;
++		dev_info(wm831x->dev, "WM8321 revision %c\n", 'A' + rev);
++		break;
++
+ 	default:
+ 		dev_err(wm831x->dev, "Unknown WM831x device %04x\n", ret);
+ 		ret = -EINVAL;
+@@ -1607,6 +1614,12 @@ static int wm831x_device_init(struct wm831x *wm831x, unsigned long id, int irq)
+ 				      NULL, 0);
+ 		break;
+ 
++	case WM8321:
++		ret = mfd_add_devices(wm831x->dev, -1,
++				      wm8320_devs, ARRAY_SIZE(wm8320_devs),
++				      NULL, 0);
++		break;
++
+ 	default:
+ 		/* If this happens the bus probe function is buggy */
+ 		BUG();
+@@ -1779,6 +1792,7 @@ static const struct i2c_device_id wm831x_i2c_id[] = {
+ 	{ "wm8311", WM8311 },
+ 	{ "wm8312", WM8312 },
+ 	{ "wm8320", WM8320 },
++	{ "wm8321", WM8321 },
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(i2c, wm831x_i2c_id);
+-- 
+1.7.1
 
