@@ -1,43 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762237Ab0GUGAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 02:00:17 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:65228 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab0GUGAP convert rfc822-to-8bit (ORCPT
+	id S1762306Ab0GUGAz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 02:00:55 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:39069 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762120Ab0GUGAu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 02:00:15 -0400
+	Wed, 21 Jul 2010 02:00:50 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=W+Mbhd8kGQVoriiZjVsbnLtmvFcnFeG3aJDnjN/zjzETJHKh8l4ffNxTfX9ekSS9Xi
-         nbfpznUzWIcTEhbYkPJ7vlgMnEcBRPYEGJKUBPQLbi4Ymr8t6UP+kbh+6iDtkZn05qtP
-         rvhE56J0wbiOI3MpH6ST49yfMTspbufM/OHd0=
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=aK4roHEdBLrmmZqVT5m7Vxw9gNI6pd7us+x33cENV3rC4F8dDlRT8RBIpUgQOmCK9Y
+         BrZGujQJ7n+BtK/fpNwr5GiotsLrNa2/I48Re3Hk//i1NB9HB6ZsstMLJgyGGLwKZ2UE
+         lDcF+fsfucnNbMu8GUOqSG3qnM9+LlwnKTP4g=
+Message-ID: <4C468D20.3050406@gmail.com>
+Date: Tue, 20 Jul 2010 23:01:04 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1279687982-29413-6-git-send-email-justinmattock@gmail.com>
-References: <1279687982-29413-1-git-send-email-justinmattock@gmail.com> 
-	<1279687982-29413-6-git-send-email-justinmattock@gmail.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Wed, 21 Jul 2010 01:59:54 -0400
-Message-ID: <AANLkTikaX6zzR_KXsPj2oQ3Goy1_woGH1vCIQMPmYqB4@mail.gmail.com>
-Subject: Re: [PATCH 36/36]Documentation/hwmon/lm85 update web address.
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-doc@vger.kernel.org,
+To: Thomas Weber <thomas.weber.linux@googlemail.com>
+CC: trivial@kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Subject: Re: [PATCH 135/135]Documentation/w1/masters/ds2482 update web address.
+References: <1279688336-29735-1-git-send-email-justinmattock@gmail.com> <1279688336-29735-15-git-send-email-justinmattock@gmail.com> <4C468940.7090003@gmail.com>
+In-Reply-To: <4C468940.7090003@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-15; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 00:52, Justin P. Mattock wrote:
->   * Analog Devices ADT7463
->     Prefix: 'adt7463'
->     Addresses scanned: I2C 0x2c, 0x2d, 0x2e
-> -    Datasheet: http://www.analog.com/en/prod/0,,766_825_ADT7463,00.html
-> +    http://www.analog.com/en/index.html
+On 07/20/2010 10:44 PM, Thomas Weber wrote:
+> Am 21.07.2010 06:58, schrieb Justin P. Mattock:
+>> The patch below removes unused web addresses.
+>> if aybody knows of the where abouts of these let
+>> me know and I'll resend.
+>>
+>> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+>>
+>> ---
+>>   Documentation/w1/masters/ds2482 |    3 +--
+>>   1 files changed, 1 insertions(+), 2 deletions(-)
+>>
+>> diff --git a/Documentation/w1/masters/ds2482 b/Documentation/w1/masters/ds2482
+>> index 299b91c..f561ed6 100644
+>> --- a/Documentation/w1/masters/ds2482
+>> +++ b/Documentation/w1/masters/ds2482
+>> @@ -6,8 +6,7 @@ Supported chips:
+>>       Prefix: 'ds2482'
+>>       Addresses scanned: None
+>>       Datasheets:
+>> -        http://pdfserv.maxim-ic.com/en/ds/DS2482-100-DS2482S-100.pdf
+>> -        http://pdfserv.maxim-ic.com/en/ds/DS2482-800-DS2482S-800.pdf
+>> +        http://pdfserv.maxim-ic.com/
+>>
+>>   Author: Ben Gardner<bgardner@wabtec.com>
+>>
+>
+> http://datasheets.maxim-ic.com/en/ds/DS2482-100.pdf
+> http://datasheets.maxim-ic.com/en/ds/DS2482-800.pdf
+>
 
-the ADI website says it was sold.  see:
-http://www.onsemi.com/PowerSolutions/product.do?id=ADT7463
--mike
+cool thanks..
+
+Justin P. Mattock
