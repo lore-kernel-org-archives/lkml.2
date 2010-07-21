@@ -1,94 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752295Ab0GUUNc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 16:13:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51695 "EHLO mx1.redhat.com"
+	id S1752877Ab0GUURy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 16:17:54 -0400
+Received: from kroah.org ([198.145.64.141]:53488 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751177Ab0GUUNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 16:13:31 -0400
-Date: Wed, 21 Jul 2010 16:13:18 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
-        dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
-Subject: Re: [PATCH 2/3] cfq-iosched: Implement a tunable group_idle
-Message-ID: <20100721201318.GH20458@redhat.com>
-References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
- <1279739181-24482-3-git-send-email-vgoyal@redhat.com>
- <x49bpa0d3nn.fsf@segfault.boston.devel.redhat.com>
+	id S1752231Ab0GUURw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 16:17:52 -0400
+Subject: patch "debugfs: no longer needs to depend on SYSFS" added to gregkh-2.6 tree
+To: randy.dunlap@oracle.com, gregkh@suse.de, linux-kernel@vger.kernel.org,
+        sfr@canb.auug.org.au
+From: <gregkh@suse.de>
+Date: Wed, 21 Jul 2010 13:15:43 -0700
+In-Reply-To: <4C462B93.2050403@oracle.com>
+Message-ID: <12797433434009@site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <x49bpa0d3nn.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset=ANSI_X3.4-1968
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 03:40:44PM -0400, Jeff Moyer wrote:
-> Vivek Goyal <vgoyal@redhat.com> writes:
-> 
-> > o Implement a new tunable group_idle, which allows idling on the group
-> >   instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
-> >   on the individual queues but idle on the group. This way on fast storage
-> >   we can get fairness between groups at the same time overall throughput
-> >   improves.
-> >
-> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
-> > ---
-> [snip]
-> > @@ -1929,13 +1941,21 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
-> >  		return;
-> >  	}
-> >  
-> > +	/* There are other queues in the group, don't do group idle */
-> > +	if (group_idle && cfqq->cfqg->nr_cfqq > 1)
-> > +		return;
-> > +
-> >  	cfq_mark_cfqq_wait_request(cfqq);
-> >  
-> > -	sl = cfqd->cfq_slice_idle;
-> > +	if (group_idle)
-> > +		sl = cfqd->cfq_group_idle;
-> > +	else
-> > +		sl = cfqd->cfq_slice_idle;
-> 
-> What happens when both group_idle and slice_idle are set?
 
-slice_idle prevails. Notice that "group_idle" is a local variable which
-is set to 1 only if we decide not to idle on the cfq queue.
+This is a note to let you know that I've just added the patch titled
+
+    debugfs: no longer needs to depend on SYSFS
+
+to my gregkh-2.6 tree which can be found in directory form at:
+    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
+ and in git form at:
+    git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/patches.git
+
+The filename of this patch is:
+    debugfs-no-longer-needs-to-depend-on-sysfs.patch
+
+The patch will show up in the next release of the linux-next tree
+(usually sometime within the next 24 hours during the week.)
+
+If this patch meets the merge guidelines for a bugfix, it should be
+merged into Linus's tree before the next major kernel release.
+If not, it will be merged into Linus's tree during the next merge window.
+
+Either way, you will probably be copied on the patch when it gets sent
+to Linus for merging so that others can see what is happening in kernel
+development.
+
+If you have any questions about this process, please let me know.
 
 
->  Is that a
-> sane thing to do from a user's perspective?
+>From randy.dunlap@oracle.com  Wed Jul 21 13:04:45 2010
+Message-ID: <4C462B93.2050403@oracle.com>
+Date: Tue, 20 Jul 2010 16:04:51 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+	linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: debugfs: no longer needs to depend on SYSFS
 
-In fact by default both slice_idle=8 and group_idle=8. Just that in this
-mode group_idle never kicks in as slice_idle logic kicks in always before
-group_idle logic gets any chance.
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-> If not, please protect
-> against it in the configuration code.  If so, then explain why we prefer
-> group_idle here, but slice_idle in completed request for the extend_sl:
-> 
+debugfs no longer uses 'kernel_subsys' (which is gone), and other
+kernel/ksysfs.c code is always built, so DEBUG_FS does not need
+to depend on SYSFS.
 
-In both the places we first prefer slice_idle. Just noticed the value of
-"group_idle" in the beginning of arm_time() function and notice in what
-circumstances do we set group_idle=1
+Fixes this kconfig warning:
 
-Thanks
-Vivek
+warning: (TREE_RCU_TRACE || AMD_IOMMU_STATS && AMD_IOMMU || MTD_UBI_DEBUG && MTD && SYSFS && MTD_UBI || UBIFS_FS_DEBUG && MISC_FILESYSTEMS && UBIFS_FS || DEBUG_KMEMLEAK && DEBUG_KERNEL && EXPERIMENTAL && !MEMORY_HOTPLUG && (X86 || ARM || PPC || S390 || SPARC64 || SUPERH || MICROBLAZE) && SYSFS || TRACING || X86_PTDUMP && DEBUG_KERNEL || BLK_DEV_IO_TRACE && TRACING_SUPPORT && FTRACE && SYSFS && BLOCK) selects DEBUG_FS which has unmet direct dependencies (SYSFS)
 
-> > @@ -3425,7 +3458,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
-> >  		 * the queue.
-> >  		 */
-> >  		if (cfq_should_wait_busy(cfqd, cfqq)) {
-> > -			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
-> > +			unsigned long extend_sl = cfqd->cfq_slice_idle;
-> > +			if (!cfqd->cfq_slice_idle)
-> > +				extend_sl = cfqd->cfq_group_idle;
-> > +			cfqq->slice_end = jiffies + extend_sl;
-> 
-> Also, you'll need to add documentation for this new tunable.
-> 
-> Cheers,
-> Jeff
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ lib/Kconfig.debug |    1 -
+ 1 file changed, 1 deletion(-)
+
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -76,7 +76,6 @@ config UNUSED_SYMBOLS
+ 
+ config DEBUG_FS
+ 	bool "Debug Filesystem"
+-	depends on SYSFS
+ 	help
+ 	  debugfs is a virtual file system that kernel developers use to put
+ 	  debugging files into.  Enable this option to be able to read and
+
