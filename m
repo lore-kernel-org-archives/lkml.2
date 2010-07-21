@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752371Ab0GUU1h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 16:27:37 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:33899 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751804Ab0GUU1e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 16:27:34 -0400
-Message-ID: <4C475827.8040605@linux.vnet.ibm.com>
-Date: Wed, 21 Jul 2010 15:27:19 -0500
-From: Brian King <brking@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1752583Ab0GUUdW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 16:33:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8238 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752123Ab0GUUdT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 16:33:19 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
+Subject: Re: [PATCH 1/3] cfq-iosched: Implment IOPS mode
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+	<1279739181-24482-2-git-send-email-vgoyal@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 21 Jul 2010 16:33:04 -0400
+In-Reply-To: <1279739181-24482-2-git-send-email-vgoyal@redhat.com> (Vivek
+	Goyal's message of "Wed, 21 Jul 2010 15:06:19 -0400")
+Message-ID: <x497hkod18f.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-To: Nathan Fontenot <nfont@austin.ibm.com>
-CC: linux-kernel@vger.kernel.org, linux-mm@kvack.org, linuxppc-dev@ozlabs.org,
-        greg@kroah.com, KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Subject: Re: [PATCH 7/8] v3 Define memory_block_size_bytes() for ppc/pseries
-References: <4C451BF5.50304@austin.ibm.com> <4C451F05.9010502@austin.ibm.com>
-In-Reply-To: <4C451F05.9010502@austin.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/19/2010 10:59 PM, Nathan Fontenot wrote:
-> 
-> +static u32 get_memblock_size(void)
-> +{
-> +	struct device_node *np;
-> +	unsigned int memblock_size = 0;
-> +
-> +	np = of_find_node_by_path("/ibm,dynamic-reconfiguration-memory");
-> +	if (np) {
-> +		const unsigned int *size;
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-This needs to be an unsigned long, otherwise I always get zero on my p6.
+> o Implement another CFQ mode where we charge queue/group in terms of number
+>   of requests dispatched instead of measuring the time. Measuring in terms
+>   of time is not possible when we are driving deeper queue depths and there
+>   are requests from multiple cfq queues in the request queue.
+>
+> o This mode currently gets activated if one sets slice_idle=0 and associated
+>   disk supports NCQ. Again the idea is that on an NCQ disk with idling disabled
+>   most of the queues will dispatch 1 or more requests and then cfq queue
+>   expiry happens and we don't have a way to measure time. So start providing
+>   fairness in terms of IOPS.
+>
+> o Currently this primarily is beneficial with cfq group scheduling where one
+>   can disable slice idling so that we don't idle on queue and drive deeper
+>   request queue deptsh (achieving better throughput), at the same time group
+>   idle is enabled so one should get service differentiation among groups.
 
-> +
-> +		size = of_get_property(np, "ibm,lmb-size", NULL);
-> +		memblock_size = size ? *size : 0;
-> +
-> +		of_node_put(np);
+I like that this is more isolated now.  I'm slowly warming up to it.  I
+have one question--just a curiosity, really.  What do you see now for
+the reported sl_used in blktrace when slice_idle is zero and the
+hardware supports command queueing?
 
-
-
--- 
-Brian King
-Linux on Power Virtualization
-IBM Linux Technology Center
-
-
+Cheers,
+Jeff
