@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab0GUJcQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 05:32:16 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:25444 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750786Ab0GUJcD (ORCPT
+	id S1756958Ab0GUJcg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 05:32:36 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:52627 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751433Ab0GUJcZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 05:32:03 -0400
+	Wed, 21 Jul 2010 05:32:25 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 08/11] writeback: move last_active to bdi
-Date: Wed, 21 Jul 2010 12:31:43 +0300
-Message-Id: <1279704706-1267-9-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv2 02/11] writeback: fix possible race when creating bdi threads
+Date: Wed, 21 Jul 2010 12:31:37 +0300
+Message-Id: <1279704706-1267-3-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
 References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 21 Jul 2010 09:31:48.0970 (UTC) FILETIME=[8B331CA0:01CB28B7]
+X-OriginalArrivalTime: 21 Jul 2010 09:31:47.0236 (UTC) FILETIME=[8A2A8640:01CB28B7]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,81 +24,80 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Currently bdi threads use local variable 'last_active' which stores last time
-when the bdi thread did some useful work. Move this local variable to 'struct
-bdi_writeback'. This is just a preparation for the further patches which will
-make the forker thread decide when bdi threads should be killed.
+This patch fixes a very unlikely race condition on the bdi forker thread error
+path: when bdi thread creation fails, 'bdi->wb.task' may contain the error code
+for a short period of time. If at the same time someone submits a work to this
+bdi, we can end up with an oops 'bdi_queue_work()' while executing
+'wake_up_process(wb->task)'.
+
+This patch fixes the issue by introducing a temporary variable 'task' and
+storing the possible error code there, so that 'wb->task' would never take
+erroneous values.
+
+Note, this race is very unlikely and I never hit it, so it is theoretical, but
+nevertheless worth fixing.
+
+This patch also merges 2 comments which were previously separate.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/fs-writeback.c           |    6 +++---
- include/linux/backing-dev.h |   13 +++++++------
- 2 files changed, 10 insertions(+), 9 deletions(-)
+ mm/backing-dev.c |   28 +++++++++++-----------------
+ 1 files changed, 11 insertions(+), 17 deletions(-)
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index eaef5c9..53e1028 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -800,12 +800,12 @@ int bdi_writeback_thread(void *data)
- {
- 	struct bdi_writeback *wb = data;
- 	struct backing_dev_info *bdi = wb->bdi;
--	unsigned long last_active = jiffies;
- 	unsigned long wait_jiffies = -1UL;
- 	long pages_written;
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 0f7b17c..75fae17 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -331,8 +331,8 @@ static int bdi_forker_thread(void *ptr)
+ 	set_user_nice(current, 0);
  
- 	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
- 	set_freezable();
-+	wb->last_active = jiffies;
+ 	for (;;) {
++		struct task_struct *task;
+ 		struct backing_dev_info *bdi, *tmp;
+-		struct bdi_writeback *wb;
  
- 	/*
- 	 * Our parent may run at a different priority, just set us to normal
-@@ -827,7 +827,7 @@ int bdi_writeback_thread(void *data)
- 		trace_writeback_pages_written(pages_written);
+ 		/*
+ 		 * Temporary measure, we want to make sure we don't see
+@@ -383,29 +383,23 @@ static int bdi_forker_thread(void *ptr)
+ 		list_del_init(&bdi->bdi_list);
+ 		spin_unlock_bh(&bdi_lock);
  
- 		if (pages_written)
--			last_active = jiffies;
-+			wb->last_active = jiffies;
- 		else if (wait_jiffies != -1UL) {
- 			unsigned long max_idle;
- 
-@@ -837,7 +837,7 @@ int bdi_writeback_thread(void *data)
- 			 * recreated automatically.
+-		wb = &bdi->wb;
+-		wb->task = kthread_run(bdi_writeback_thread, wb, "flush-%s",
+-					dev_name(bdi->dev));
+-		/*
+-		 * If thread creation fails, then readd the bdi to
+-		 * the pending list and force writeout of the bdi
+-		 * from this forker thread. That will free some memory
+-		 * and we can try again.
+-		 */
+-		if (IS_ERR(wb->task)) {
+-			wb->task = NULL;
+-
++		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
++				   dev_name(bdi->dev));
++		if (IS_ERR(task)) {
+ 			/*
+-			 * Add this 'bdi' to the back, so we get
+-			 * a chance to flush other bdi's to free
+-			 * memory.
++			 * If thread creation fails, then readd the bdi back to
++			 * the list and force writeout of the bdi from this
++			 * forker thread. That will free some memory and we can
++			 * try again. Add it to the tail so we get a chance to
++			 * flush other bdi's to free memory.
  			 */
- 			max_idle = max(5UL * 60 * HZ, wait_jiffies);
--			if (time_after(jiffies, max_idle + last_active))
-+			if (time_after(jiffies, max_idle + wb->last_active))
- 				break;
- 		}
+ 			spin_lock_bh(&bdi_lock);
+ 			list_add_tail(&bdi->bdi_list, &bdi_pending_list);
+ 			spin_unlock_bh(&bdi_lock);
  
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index 95ecb2b..71b6223 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -45,15 +45,16 @@ enum bdi_stat_item {
- #define BDI_STAT_BATCH (8*(1+ilog2(nr_cpu_ids)))
+ 			bdi_flush_io(bdi);
+-		}
++		} else
++			bdi->wb.task = task;
+ 	}
  
- struct bdi_writeback {
--	struct backing_dev_info *bdi;		/* our parent bdi */
-+	struct backing_dev_info *bdi;	/* our parent bdi */
- 	unsigned int nr;
- 
--	unsigned long last_old_flush;		/* last old data flush */
-+	unsigned long last_old_flush;	/* last old data flush */
-+	unsigned long last_active;	/* last time bdi thread was active */
- 
--	struct task_struct	*task;		/* writeback thread */
--	struct list_head	b_dirty;	/* dirty inodes */
--	struct list_head	b_io;		/* parked for writeback */
--	struct list_head	b_more_io;	/* parked for more writeback */
-+	struct task_struct *task;	/* writeback thread */
-+	struct list_head b_dirty;	/* dirty inodes */
-+	struct list_head b_io;		/* parked for writeback */
-+	struct list_head b_more_io;	/* parked for more writeback */
- };
- 
- struct backing_dev_info {
+ 	return 0;
 -- 
 1.7.1.1
 
