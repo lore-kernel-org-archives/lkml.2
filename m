@@ -1,219 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758970Ab0GUTYK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 15:24:10 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:36674 "EHLO df.lth.se"
+	id S1761319Ab0GUTYo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 15:24:44 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:36702 "EHLO df.lth.se"
 	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1758793Ab0GUTYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 15:24:07 -0400
+	id S1758793Ab0GUTYm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 15:24:42 -0400
 From: Linus Walleij <linus.walleij@stericsson.com>
 To: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
 Cc: Vinod Koul <vinod.koul@intel.com>, Alan Cox <alan@linux.intel.com>,
         Linus Walleij <linus.walleij@stericsson.com>
-Subject: [PATCH 2/3] DMAENGINE: add runtime slave config to DMA40 v2
-Date: Wed, 21 Jul 2010 21:22:59 +0200
-Message-Id: <1279740179-22451-1-git-send-email-linus.walleij@stericsson.com>
+Subject: [PATCH 3/3] DMAENGINE: add runtime slave control to COH 901 318 v2
+Date: Wed, 21 Jul 2010 21:23:23 +0200
+Message-Id: <1279740203-22723-1-git-send-email-linus.walleij@stericsson.com>
 X-Mailer: git-send-email 1.6.2.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This extends the DMA engine driver for the DMA40 used in the
-U8500 platform with the generic runtime slave configuration
-interface.
+This extends the DMA engine driver for the COH 901 318 used in the
+U300 platform with the generic runtime slave control command.
 
 Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 ---
- drivers/dma/ste_dma40.c |  140 +++++++++++++++++++++++++++++++++++++++++++++-
- 1 files changed, 136 insertions(+), 4 deletions(-)
+ drivers/dma/coh901318.c |  169 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 169 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
-index c426829..bb3402c 100644
---- a/drivers/dma/ste_dma40.c
-+++ b/drivers/dma/ste_dma40.c
-@@ -205,6 +205,9 @@ struct d40_chan {
- 	struct d40_def_lcsp		 log_def;
- 	struct d40_lcla_elem		 lcla;
- 	struct d40_log_lli_full		*lcpa;
-+	/* Runtime reconfiguration */
-+	dma_addr_t			runtime_addr;
-+	enum dma_data_direction		runtime_direction;
+diff --git a/drivers/dma/coh901318.c b/drivers/dma/coh901318.c
+index a724e6b..557e227 100644
+--- a/drivers/dma/coh901318.c
++++ b/drivers/dma/coh901318.c
+@@ -72,6 +72,9 @@ struct coh901318_chan {
+ 	unsigned long nbr_active_done;
+ 	unsigned long busy;
+ 
++	u32 runtime_addr;
++	u32 runtime_ctrl;
++
+ 	struct coh901318_base *base;
  };
  
- /**
-@@ -1890,7 +1893,10 @@ static int d40_prep_slave_sg_log(struct d40_desc *d40d,
- 			lli_max = 1;
- 
- 	if (direction == DMA_FROM_DEVICE) {
--		dev_addr = d40c->base->plat_data->dev_rx[d40c->dma_cfg.src_dev_type];
-+		if (d40c->runtime_addr)
-+			dev_addr = d40c->runtime_addr;
-+		else
-+			dev_addr = d40c->base->plat_data->dev_rx[d40c->dma_cfg.src_dev_type];
- 		total_size = d40_log_sg_to_dev(&d40c->lcla,
- 					       sgl, sg_len,
- 					       &d40d->lli_log,
-@@ -1902,7 +1908,10 @@ static int d40_prep_slave_sg_log(struct d40_desc *d40d,
- 					       dev_addr, lli_max,
- 					       d40c->base->plat_data->llis_per_log);
- 	} else if (direction == DMA_TO_DEVICE) {
--		dev_addr = d40c->base->plat_data->dev_tx[d40c->dma_cfg.dst_dev_type];
-+		if (d40c->runtime_addr)
-+			dev_addr = d40c->runtime_addr;
-+		else
-+			dev_addr = d40c->base->plat_data->dev_tx[d40c->dma_cfg.dst_dev_type];
- 		total_size = d40_log_sg_to_dev(&d40c->lcla,
- 					       sgl, sg_len,
- 					       &d40d->lli_log,
-@@ -1943,9 +1952,15 @@ static int d40_prep_slave_sg_phy(struct d40_desc *d40d,
- 
- 	if (direction == DMA_FROM_DEVICE) {
- 		dst_dev_addr = 0;
--		src_dev_addr = d40c->base->plat_data->dev_rx[d40c->dma_cfg.src_dev_type];
-+		if (d40c->runtime_addr)
-+			src_dev_addr = d40c->runtime_addr;
-+		else
-+			src_dev_addr = d40c->base->plat_data->dev_rx[d40c->dma_cfg.src_dev_type];
- 	} else if (direction == DMA_TO_DEVICE) {
--		dst_dev_addr = d40c->base->plat_data->dev_tx[d40c->dma_cfg.dst_dev_type];
-+		if (d40c->runtime_addr)
-+			dst_dev_addr = d40c->runtime_addr;
-+		else
-+			dst_dev_addr = d40c->base->plat_data->dev_tx[d40c->dma_cfg.dst_dev_type];
- 		src_dev_addr = 0;
- 	} else
- 		return -EINVAL;
-@@ -2065,6 +2080,117 @@ static void d40_issue_pending(struct dma_chan *chan)
- 	spin_unlock_irqrestore(&d40c->lock, flags);
+@@ -190,6 +193,9 @@ static inline struct coh901318_chan *to_coh901318_chan(struct dma_chan *chan)
+ static inline dma_addr_t
+ cohc_dev_addr(struct coh901318_chan *cohc)
+ {
++	/* Runtime supplied address will take precedence */
++	if (cohc->runtime_addr)
++		return cohc->runtime_addr;
+ 	return cohc->base->platform->chan_conf[cohc->id].dev_addr;
  }
  
-+/* Runtime reconfiguration extension */
-+static void d40_set_runtime_config(struct dma_chan *chan,
-+			       struct dma_slave_config *config)
+@@ -1055,6 +1061,14 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 
+ 	params = cohc_chan_param(cohc);
+ 	config = params->config;
++	/*
++	 * Add runtime-specific control on top, make
++	 * sure the bits you set per peripheral channel are
++	 * cleared in the default config from the platform.
++	 */
++	ctrl_chained |= cohc->runtime_ctrl;
++	ctrl_last |= cohc->runtime_ctrl;
++	ctrl |= cohc->runtime_ctrl;
+ 
+ 	if (direction == DMA_TO_DEVICE) {
+ 		u32 tx_flags = COH901318_CX_CTRL_PRDD_SOURCE |
+@@ -1113,6 +1127,12 @@ coh901318_prep_slave_sg(struct dma_chan *chan, struct scatterlist *sgl,
+ 	if (ret)
+ 		goto err_lli_fill;
+ 
++	/*
++	 * Set the default ctrl for the channel to the one from the lli,
++	 * things may have changed due to odd buffer alignment etc.
++	 */
++	coh901318_set_ctrl(cohc, lli->control);
++
+ 	COH_DBG(coh901318_list_print(cohc, lli));
+ 
+ 	/* Pick a descriptor to handle this transfer */
+@@ -1175,6 +1195,146 @@ coh901318_issue_pending(struct dma_chan *chan)
+ 	spin_unlock_irqrestore(&cohc->lock, flags);
+ }
+ 
++/*
++ * Here we wrap in the runtime dma control interface
++ */
++struct burst_table {
++	int burst_8bit;
++	int burst_16bit;
++	int burst_32bit;
++	u32 reg;
++};
++
++static const struct burst_table burst_sizes[] = {
++	{
++		.burst_8bit = 64,
++		.burst_16bit = 32,
++		.burst_32bit = 16,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_64_BYTES,
++	},
++	{
++		.burst_8bit = 48,
++		.burst_16bit = 24,
++		.burst_32bit = 12,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_48_BYTES,
++	},
++	{
++		.burst_8bit = 32,
++		.burst_16bit = 16,
++		.burst_32bit = 8,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_32_BYTES,
++	},
++	{
++		.burst_8bit = 16,
++		.burst_16bit = 8,
++		.burst_32bit = 4,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_16_BYTES,
++	},
++	{
++		.burst_8bit = 8,
++		.burst_16bit = 4,
++		.burst_32bit = 2,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_8_BYTES,
++	},
++	{
++		.burst_8bit = 4,
++		.burst_16bit = 2,
++		.burst_32bit = 1,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_4_BYTES,
++	},
++	{
++		.burst_8bit = 2,
++		.burst_16bit = 1,
++		.burst_32bit = 0,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_2_BYTES,
++	},
++	{
++		.burst_8bit = 1,
++		.burst_16bit = 0,
++		.burst_32bit = 0,
++		.reg = COH901318_CX_CTRL_BURST_COUNT_1_BYTE,
++	},
++};
++
++static void coh901318_dma_set_runtimeconfig(struct dma_chan *chan,
++			struct dma_slave_config *config)
 +{
-+	struct d40_chan *d40c = container_of(chan, struct d40_chan, chan);
-+	struct stedma40_chan_cfg *cfg = &d40c->dma_cfg;
-+	enum dma_slave_buswidth config_addr_width;
-+	dma_addr_t config_addr;
-+	u32 config_maxburst;
-+	enum stedma40_periph_data_width addr_width;
-+	int psize;
++	struct coh901318_chan *cohc = to_coh901318_chan(chan);
++	dma_addr_t addr;
++	enum dma_slave_buswidth addr_width;
++	u32 maxburst;
++	u32 runtime_ctrl = 0;
++	int i = 0;
 +
++	/* We only support mem to per or per to mem transfers */
 +	if (config->direction == DMA_FROM_DEVICE) {
-+		dma_addr_t dev_addr_rx =
-+			d40c->base->plat_data->dev_rx[cfg->src_dev_type];
-+
-+		config_addr = config->src_addr;
-+		if (dev_addr_rx)
-+			dev_dbg(d40c->base->dev,
-+				"channel has a pre-wired RX address %08x "
-+				"overriding with %08x\n",
-+				dev_addr_rx, config_addr);
-+		if (cfg->dir != STEDMA40_PERIPH_TO_MEM)
-+			dev_dbg(d40c->base->dev,
-+				"channel was not configured for peripheral "
-+				"to memory transfer (%d) overriding\n",
-+				cfg->dir);
-+		cfg->dir = STEDMA40_PERIPH_TO_MEM;
-+
-+		config_addr_width = config->src_addr_width;
-+		config_maxburst = config->src_maxburst;
-+
++		addr = config->src_addr;
++		addr_width = config->src_addr_width;
++		maxburst = config->src_maxburst;
 +	} else if (config->direction == DMA_TO_DEVICE) {
-+		dma_addr_t dev_addr_tx =
-+			d40c->base->plat_data->dev_tx[cfg->dst_dev_type];
-+
-+		config_addr = config->dst_addr;
-+		if (dev_addr_tx)
-+			dev_dbg(d40c->base->dev,
-+				"channel has a pre-wired TX address %08x "
-+				"overriding with %08x\n",
-+				dev_addr_tx, config_addr);
-+		if (cfg->dir != STEDMA40_MEM_TO_PERIPH)
-+			dev_dbg(d40c->base->dev,
-+				"channel was not configured for memory "
-+				"to peripheral transfer (%d) overriding\n",
-+				cfg->dir);
-+		cfg->dir = STEDMA40_MEM_TO_PERIPH;
-+
-+		config_addr_width = config->dst_addr_width;
-+		config_maxburst = config->dst_maxburst;
-+
++		addr = config->dst_addr;
++		addr_width = config->dst_addr_width;
++		maxburst = config->dst_maxburst;
 +	} else {
-+		dev_err(d40c->base->dev,
-+			"unrecognized channel direction %d\n",
-+			config->direction);
++		dev_err(COHC_2_DEV(cohc), "illegal channel mode\n");
 +		return;
 +	}
 +
-+	switch (config_addr_width) {
++	dev_dbg(COHC_2_DEV(cohc), "configure channel for %d byte transfers\n",
++		addr_width);
++	switch (addr_width)  {
 +	case DMA_SLAVE_BUSWIDTH_1_BYTE:
-+		addr_width = STEDMA40_BYTE_WIDTH;
++		runtime_ctrl |=
++			COH901318_CX_CTRL_SRC_BUS_SIZE_8_BITS |
++			COH901318_CX_CTRL_DST_BUS_SIZE_8_BITS;
++
++		while (i < ARRAY_SIZE(burst_sizes)) {
++			if (burst_sizes[i].burst_8bit <= maxburst)
++				break;
++			i++;
++		}
++
 +		break;
 +	case DMA_SLAVE_BUSWIDTH_2_BYTES:
-+		addr_width = STEDMA40_HALFWORD_WIDTH;
++		runtime_ctrl |=
++			COH901318_CX_CTRL_SRC_BUS_SIZE_16_BITS |
++			COH901318_CX_CTRL_DST_BUS_SIZE_16_BITS;
++
++		while (i < ARRAY_SIZE(burst_sizes)) {
++			if (burst_sizes[i].burst_16bit <= maxburst)
++				break;
++			i++;
++		}
++
 +		break;
 +	case DMA_SLAVE_BUSWIDTH_4_BYTES:
-+		addr_width = STEDMA40_WORD_WIDTH;
-+		break;
-+	case DMA_SLAVE_BUSWIDTH_8_BYTES:
-+		addr_width = STEDMA40_DOUBLEWORD_WIDTH;
++		/* Direction doesn't matter here, it's 32/32 bits */
++		runtime_ctrl |=
++			COH901318_CX_CTRL_SRC_BUS_SIZE_32_BITS |
++			COH901318_CX_CTRL_DST_BUS_SIZE_32_BITS;
++
++		while (i < ARRAY_SIZE(burst_sizes)) {
++			if (burst_sizes[i].burst_32bit <= maxburst)
++				break;
++			i++;
++		}
++
 +		break;
 +	default:
-+		dev_err(d40c->base->dev,
-+			"illegal peripheral address width "
-+			"requested (%d)\n",
-+			config->src_addr_width);
++		dev_err(COHC_2_DEV(cohc),
++			"bad runtimeconfig: alien address width\n");
 +		return;
 +	}
 +
-+	if (config_maxburst >= 16)
-+		psize = STEDMA40_PSIZE_LOG_16;
-+	else if (config_maxburst >= 8)
-+		psize = STEDMA40_PSIZE_LOG_8;
-+	else if (config_maxburst >= 4)
-+		psize = STEDMA40_PSIZE_LOG_4;
-+	else
-+		psize = STEDMA40_PSIZE_LOG_1;
++	runtime_ctrl |= burst_sizes[i].reg;
++	dev_dbg(COHC_2_DEV(cohc),
++		"selected burst size %d bytes for address width %d bytes, maxburst %d\n",
++		burst_sizes[i].burst_8bit, addr_width, maxburst);
 +
-+	/* Set up all the endpoint configs */
-+	cfg->src_info.data_width = addr_width;
-+	cfg->src_info.psize = psize;
-+	cfg->src_info.endianess = STEDMA40_LITTLE_ENDIAN;
-+	cfg->src_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL;
-+	cfg->dst_info.data_width = addr_width;
-+	cfg->dst_info.psize = psize;
-+	cfg->dst_info.endianess = STEDMA40_LITTLE_ENDIAN;
-+	cfg->dst_info.flow_ctrl = STEDMA40_NO_FLOW_CTRL;
-+
-+	/* These settings will take precedence later */
-+	d40c->runtime_addr = config_addr;
-+	d40c->runtime_direction = config->direction;
-+	dev_dbg(d40c->base->dev,
-+		"configured channel %s for %s, data width %d, "
-+		"maxburst %d bytes, LE, no flow control\n",
-+		dma_chan_name(chan),
-+		(config->direction == DMA_FROM_DEVICE) ? "RX" : "TX",
-+		config_addr_width,
-+		config_maxburst);
++	cohc->runtime_addr = addr;
++	cohc->runtime_ctrl = runtime_ctrl;
 +}
 +
- static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 		       unsigned long arg)
- {
-@@ -2081,6 +2207,12 @@ static int d40_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
- 		return d40_pause(chan);
- 	case DMA_RESUME:
- 		return d40_resume(chan);
-+	case DMA_SLAVE_CONFIG:
-+		d40_set_runtime_config(chan,
-+			(struct dma_slave_config *) arg);
-+		return 0;
-+	default:
-+		break;
- 	}
+ static int
+ coh901318_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 		  unsigned long arg)
+@@ -1184,6 +1344,14 @@ coh901318_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 	struct coh901318_desc *cohd;
+ 	void __iomem *virtbase = cohc->base->virtbase;
  
- 	/* Other commands are unimplemented */
++	if (cmd == DMA_SLAVE_CONFIG) {
++		struct dma_slave_config *config =
++			(struct dma_slave_config *) arg;
++
++		coh901318_dma_set_runtimeconfig(chan, config);
++		return 0;
++	  }
++
+ 	if (cmd == DMA_PAUSE) {
+ 		coh901318_pause(chan);
+ 		return 0;
+@@ -1240,6 +1408,7 @@ coh901318_control(struct dma_chan *chan, enum dma_ctrl_cmd cmd,
+ 
+ 	return 0;
+ }
++
+ void coh901318_base_init(struct dma_device *dma, const int *pick_chans,
+ 			 struct coh901318_base *base)
+ {
 -- 
 1.7.1.1
 
