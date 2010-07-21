@@ -1,64 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755220Ab0GULwv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 07:52:51 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:35453 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753591Ab0GULwu (ORCPT
+	id S1756394Ab0GULxY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 07:53:24 -0400
+Received: from smarthost02.mail.zen.net.uk ([212.23.3.141]:46146 "EHLO
+	smarthost02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756178Ab0GULxW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 07:52:50 -0400
-Subject: Re: [PATCHv2 11/11] writeback: prevent unnecessary bdi threads
- wakeups
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Dave Chinner <dchinner@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <1279704706-1267-12-git-send-email-dedekind1@gmail.com>
-References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
-	 <1279704706-1267-12-git-send-email-dedekind1@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jul 2010 14:45:41 +0300
-Message-ID: <1279712741.2306.36.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 21 Jul 2010 11:52:16.0317 (UTC) FILETIME=[2A4A36D0:01CB28CB]
-X-Nokia-AV: Clean
+	Wed, 21 Jul 2010 07:53:22 -0400
+From: "Andrew Bird (Sphere Systems)" <ajb@spheresystems.co.uk>
+Organization: Sphere Systems Ltd
+To: linux-kernel@vger.kernel.org
+Subject: Re: Option.c blacklist not functioning as I expected
+Date: Wed, 21 Jul 2010 12:53:17 +0100
+User-Agent: KMail/1.13.3 (Linux/2.6.30.10-105.2.23.fc11.x86_64; KDE/4.4.3; x86_64; ; )
+Cc: ajb@spheresystems.co.uk
+References: <201007211215.42008.ajb@spheresystems.co.uk>
+In-Reply-To: <201007211215.42008.ajb@spheresystems.co.uk>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007211253.18188.ajb@spheresystems.co.uk>
+X-Originating-Smarthost02-IP: [82.71.70.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 12:31 +0300, Artem Bityutskiy wrote:
->  	spin_unlock(&inode_lock);
+On Wednesday 21 July 2010, Andrew Bird (Sphere Systems) wrote:
+> Guys,
+>      I wanted to blacklist a network interface that has class 0xff /
+> subclass 0xff from the Option usb serial driver for a couple of devices.
+> The reason for doing this is I hope to get the usbnet driver running on
+> interface 1. The 'blacklist_info' in option.c looked like the way to go,
+> but it doesn't seem to have the desired effect, I still get interface 1
+> bound. Interfaces 4 and 5 aren't bound but I suspect it's because they are
+> storage and not class 0xff.
+> 
+> Please can anyone show me what I'm missing?
+> 
+> Thanks,
+> 
+> 
+> Andrew
+> 
+> diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
+> index e280ad8..f1ab07e 100644
+> --- a/drivers/usb/serial/option.c
+> +++ b/drivers/usb/serial/option.c
+> @@ -145,6 +145,8 @@ static void option_instat_callback(struct urb *urb);
+>  #define HUAWEI_PRODUCT_E143D                   0x143D
+>  #define HUAWEI_PRODUCT_E143E                   0x143E
+>  #define HUAWEI_PRODUCT_E143F                   0x143F
+> +#define HUAWEI_PRODUCT_K4505                   0x1464
+> +#define HUAWEI_PRODUCT_K3765                   0x1465
+>  #define HUAWEI_PRODUCT_E14AC                   0x14AC
+> 
+>  #define QUANTA_VENDOR_ID                       0x0408
+> @@ -383,6 +385,14 @@ static const struct option_blacklist_info
+> four_g_w14_blacklist = {
+>         .reason = OPTION_BLACKLIST_SENDSETUP
+>  };
+> 
+> +/* ignore net, cdrom, sdcard interfaces */
+> +static const u8 huawei_k3765_k4505_reserved_if[] = { 1, 4, 5};
+> +static const struct option_blacklist_info huawei_k3765_k4505_blacklist = {
+> +       .infolen = ARRAY_SIZE(huawei_k3765_k4505_reserved_if),
+> +       .ifaceinfo = huawei_k3765_k4505_reserved_if,
+> +       .reason = OPTION_BLACKLIST_RESERVED_IF
+> +};
 > +
-> +	if (wakeup_bdi) {
-> +		spin_lock(&bdi->wb_lock);
-> +		if (!bdi->wb.task)
-> +			wake_up_process(default_backing_dev_info.wb.task);
-> +		else
-> +			wake_up_process(bdi->wb.task);
-> +		spin_unlock(&bdi->wb_lock);
-> +	}
->  }
+>  static const struct usb_device_id option_ids[] = {
+>         { USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+>         { USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+> @@ -480,6 +490,12 @@ static const struct usb_device_id option_ids[] = {
+>         { USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID,
+> HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
+>         { USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID,
+> HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
+>         { USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID,
+> HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
+> +       { USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505),
+> +         .driver_info = (kernel_ulong_t)&huawei_k3765_k4505_blacklist
+> +       },
+> +       { USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765),
+> +         .driver_info = (kernel_ulong_t)&huawei_k3765_k4505_blacklist
+> +       },
+>         { USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC) },
+>         { USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_9508) },
+>         { USB_DEVICE(NOVATELWIRELESS_VENDOR_ID,
+> NOVATELWIRELESS_PRODUCT_V640) }, /* Novatel Merlin V640/XV620 */
 
-Dave,
+It seems the original urb setup function that called is_blacklisted() has gone 
+away, here's how it looked
+http://www.spinics.net/lists/linux-usb/msg26392.html
 
-I do not know whether this stuff will end up in upstream, I did not get
-any feed back from Jens so far. But if it will, I'd like to let you know
-that the code quoted above is similar to the 'bdi_queue_work()'
-function. And the purpose is very similar. But you added a
-'trace_writeback_nothread()' call to 'bdi_queue_work()', and I think a
-similar call has to be here.
-
-Can I call 'trace_writeback_nothread()'? I guess not. Should I create
-another trace point? Any hints/instructions?
-
-Note, the patches are against Jens' tree.
-
-Please, see linux-fsdevel or lkml for the full patch and its purposes.
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+To me it looks like urb setup has moved to usb-wwan.c, how should a method to 
+ignore a specific interface be re-added?
