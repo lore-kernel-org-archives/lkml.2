@@ -1,60 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751822Ab0GUQlB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 12:41:01 -0400
-Received: from mga09.intel.com ([134.134.136.24]:14274 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab0GUQk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 12:40:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,239,1278313200"; 
-   d="scan'208";a="537544612"
-From: "Luck, Tony" <tony.luck@intel.com>
-To: "Ben Hutchings" <ben@decadent.org.uk>
-Cc: linux-kernel@vger.kernel.org, "Geert Stappers" <stappers@stappers.nl>,
-        "Dave Airlie" <airlied@redhat.com>
-Subject: [git pull] ia64 changes
-Date: Wed, 21 Jul 2010 09:40:57 -0700
-Message-Id: <4c47231922590620a5@agluck-desktop.sc.intel.com>
+	id S1751679Ab0GUQwW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 12:52:22 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:60299 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750986Ab0GUQwT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 12:52:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BdHS7tMq1IXIkGGdol2A/0ak+JiQyIS6VaawAcLq63qIT8ltvhccWaTktBC3SyX85F
+         dQFOzKHocWlEdrogO4OepwCJYHhSLxeIXrHESUQLs57KgFmOAik4/mdfQ19cf6LzaZQk
+         UcamcvBDNnEYx5gAe8tWzdYJl7cHLxxTmyLAM=
+Date: Wed, 21 Jul 2010 20:52:11 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/10] x86, xsave: some code cleanups and reworks
+Message-ID: <20100721165211.GD8009@lenovo>
+References: <1279651857-24639-1-git-send-email-robert.richter@amd.com> <20100720192717.GC6227@lenovo> <20100720194606.GO26154@erda.amd.com> <20100720200729.GD6227@lenovo> <20100720201740.GE6227@lenovo> <4C472123.1090900@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C472123.1090900@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This commit hit Linus upstream today and broke the ia64 build:
+On Wed, Jul 21, 2010 at 09:32:35AM -0700, H. Peter Anvin wrote:
+> On 07/20/2010 01:17 PM, Cyrill Gorcunov wrote:
+> > 
+> > well, not true, this id is being set in setup_per_cpu_areas()
+> > note the snippet
+> > 
+> > 		if (cpu == boot_cpu_id)
+> > 			switch_to_new_gdt(cpu);
+> > 
+> > but cycle of assignment is done over all possible cpus so
+> > smp_processor_id will be = 0 for BP but definitely it's
+> > confusing and better to check for BP via explicit cpu == boot_cpu_id
+> > I think. Though I might be missing something.
+> > 
+> 
+> I think the style (!smp_processor_id()) is already in use in other
+> places, but we should be consistent in style; if you want to introduce a
+> new style I certainly agree that (is_boot_cpu()) is pretty clear but it
+> should be introduced universally.
+> 
+> 	-hpa
+>
 
-commit 1e8655f87333def92bb8215b423adc65403b08a5
-Author: Ben Hutchings <ben@decadent.org.uk>
-Date:   Sun Jul 18 21:51:42 2010 +0100
+yes, also I bet there will be places with patterns like
 
-    drm/ttm: Fix build on architectures without AGP
-    
-    Make inclusion of <asm/agp.h> conditional on TTM_HAS_AGP.  The use
-    of the functions declared in it is already conditional.
-    
-    Reported-by: Geert Stappers <stappers@stappers.nl>
-    Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
-    Tested-by: Geert Stappers <stappers@stappers.nl>
-    Signed-off-by: Dave Airlie <airlied@redhat.com>
+	cpu = smp_processor_id();
+	if (!cpu)
+	 or
+	if (cpu == 0)
 
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index b1d67dc..1f32b46 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -40,7 +40,9 @@
- #include <linux/slab.h>
- 
- #include <asm/atomic.h>
-+#ifdef TTM_HAS_AGP
- #include <asm/agp.h>
-+#endif
- 
- #include "ttm/ttm_bo_driver.h"
- #include "ttm/ttm_page_alloc.h"
+so every single smp_processor_id and "raw" version as well should be
+checked. I'll take a look as only get ability. If Robert (or anyone)
+will like to beat me on this -- I would be only glad ;)
 
-
-The problem is that TTM_HAS_AGP is defined in "ttm/ttm_bo_driver.h" ... which
-is included *after* you used it to test whether to include <asm/agp.h>
-
-I suspect some re-arrangement is in order :-)
-
--Tony
+	-- Cyrill
