@@ -1,42 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762352Ab0GUFDf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 01:03:35 -0400
-Received: from sh.osrg.net ([192.16.179.4]:38240 "EHLO sh.osrg.net"
+	id S1762381Ab0GUFDt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 01:03:49 -0400
+Received: from claw.goop.org ([74.207.240.146]:34278 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933495Ab0GUFDA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 01:03:00 -0400
-Date: Wed, 21 Jul 2010 13:58:16 +0900
-To: akataria@vmware.com
-Cc: konrad.wilk@oracle.com, fujita.tomonori@lab.ntt.co.jp, ak@linux.intel.com,
-        lenb@kernel.org, x86@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, petr@vmware.com
-Subject: Re: swiotlb detection should be memory hotplug aware ?
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1279664097.21596.43.camel@ank32.eng.vmware.com>
-References: <20100316124556.GA25340@phenom.dumpdata.com>
-	<1268866113.20507.26.camel@ank32>
-	<1279664097.21596.43.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1762365Ab0GUFDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 01:03:37 -0400
+Message-ID: <4C467FA8.9080506@goop.org>
+Date: Tue, 20 Jul 2010 22:03:36 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Jens Axboe <axboe@kernel.dk>
+CC: Xen-devel <xen-devel@lists.xensource.com>,
+        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/16] xen/blkfront: various bugfixes and patches for
+ blkfront
+References: <cover.1279658231.git.jeremy.fitzhardinge@citrix.com> <4C46577F.7050909@kernel.dk>
+In-Reply-To: <4C46577F.7050909@kernel.dk>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100721135750Z.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 21 Jul 2010 13:58:18 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jul 2010 15:14:57 -0700
-Alok Kataria <akataria@vmware.com> wrote:
+On 07/20/2010 07:12 PM, Jens Axboe wrote:
+> On 07/20/2010 02:42 PM, Jeremy Fitzhardinge wrote:
+>   
+>> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+>>
+>> Hi Jens,
+>>
+>> This series has various updates to blkfront, including:
+>>  - support for dynamic device resizing
+>>  - bugfixes for device hotplug
+>>  - various races and bugs fixed
+>>
+>> It can be pulled from:
+>>
+>> git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/blkfront
+>>     
+> They don't apply cleanly to the for-2.6.36 branch, it fails at patch 2:
+>   
 
-> Reviving a 4 month old thread. 
-> I am still waiting for any clues on this question below. 
+OK, I'll check it out.
 
-Basically, you want to add hot-plug memory and enable swiotlb, right?
+Thanks,
+    J
 
-We can't start swiotlb reliably after a system starts.
+> patching file drivers/block/xen-blkfront.c
+> Hunk #1 succeeded at 105 (offset 1 line).
+> Hunk #2 succeeded at 143 (offset 1 line).
+> Hunk #9 FAILED at 1080.
+> Hunk #10 succeeded at 1106 with fuzz 1 (offset 5 lines).
+> 1 out of 10 hunks FAILED -- saving rejects to file drivers/block/xen-blkfront.c.rej
+>
+>   
 
-See dma32_reserve_boatmen() and dma32_free_bootmem(). What we do is
-reserving huge memory in DMA32 zone for swiotlb and releasing it if we
-find that we don't need swiotlb. We can't find enough memory for
-swiotlb in dma32 after a system starts.
