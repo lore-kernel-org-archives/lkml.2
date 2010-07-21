@@ -1,69 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751707Ab0GUEVs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 00:21:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40142 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751026Ab0GUEVo (ORCPT
+	id S1751643Ab0GUEZZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 00:25:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55021
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750904Ab0GUEZX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 00:21:44 -0400
-To: Christof Schmitt <christof.schmitt@de.ibm.com>
-Cc: "Martin K. Petersen" <martin.petersen@oracle.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-scsi@vger.kernel.org,
+	Wed, 21 Jul 2010 00:25:23 -0400
+Date: Tue, 20 Jul 2010 21:25:39 -0700 (PDT)
+Message-Id: <20100720.212539.94888874.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [patch 0/1] Apply segment size and segment boundary to integrity data
-From: "Martin K. Petersen" <martin.petersen@oracle.com>
-Organization: Oracle
-References: <20100715153410.774329000@de.ibm.com>
-	<yq1mxtspwab.fsf@sermon.lab.mkp.net>
-	<20100716083034.GA7474@schmichrtp.ibm.com>
-	<yq1bpa292wy.fsf@sermon.lab.mkp.net>
-	<20100720092850.GA4547@schmichrtp.mainz.de.ibm.com>
-Date: Wed, 21 Jul 2010 00:20:01 -0400
-In-Reply-To: <20100720092850.GA4547@schmichrtp.mainz.de.ibm.com> (Christof
-	Schmitt's message of "Tue, 20 Jul 2010 11:28:50 +0200")
-Message-ID: <yq1y6d579fy.fsf@sermon.lab.mkp.net>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090201.4C4675D2.0055:SCFMA4539814,ss=1,fgs=0
+Subject: [GIT] SPARC
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Christof" == Christof Schmitt <christof.schmitt@de.ibm.com> writes:
 
-Christof> To have a simple approach that covers the case with one
-Christof> integrity data segment per user data segment, we only report
-Christof> half the size for the scatterlist length when running
-Christof> DIX. This guarantees that the other half can be used for
-Christof> integrity data.
+Couple sparc fixes that have piled up over the past few week:
 
-Yup, a few of our partners did something similar.
+1) L1_CACHE_ALIGN macro unnecessary, from FUJITA Tomonori
 
-My concern is the scenario where we submit lots of 512-byte writes that
-get merged into (in your case) 4 KB segments.  Each of those 512-byte
-writes could come with an 8-byte integrity metadata tuple.  And so you'd
-need 8 DI scatterlist elements per data element.
+2) _FP_FROM_INT() math-emu off-by-one bug that hits sparc and
+   other math-emu using platforms.  From Mikael Pettersson.
 
+3) Add missing DWARF register lookup to perf.
 
-Christof> Meaning the integrity data sg list would have more entries
-Christof> than max_segments? I have not seen this during my experiments,
-Christof> but then i likely have not hit every case of a possible
-Christof> request layout.
+4) When console= is explicitly specified for a serial console,
+   don't try to override with firmware provided settings.
 
-dd to the block device is usually a good way to issue long scatterlists.
+5) Use after free in sunsu driver.
 
+6) maybe_change_configuration() perf event code uses wrong %pcr
+   setting, notices by Peter Z.
 
-Christof> Ok, i have to look into that as well. It would be an issue
-Christof> with the approach we are looking at now: If there are
-Christof> max_segments data segments, and more than max_segments
-Christof> integrity data segments, we will overrun the hardware
-Christof> constraint.
+7) Fix build failure in some configs, from Dongdong Deng.
 
-Ok.
+Please pull, thanks a lot!
 
--- 
-Martin K. Petersen	Oracle Linux Engineering
+The following changes since commit e0959371b4aaddb9b986019d5cfef93f9801d0ff:
+
+  Merge branch 'for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client (2010-07-20 16:27:58 -0700)
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
+
+David S. Miller (8):
+      sparc32: Kill none_mask, it's bogus.
+      sunserial: Don't call add_preferred_console() when console= is specified.
+      sunsu: Fix use after free in su_remove().
+      sparc64: Update defconfig.
+      sparc64: Fix maybe_change_configuration() PCR setting.
+      Merge branch 'master' of /home/davem/src/GIT/linux-2.6/
+      MAINTAINERS: Add SBUS driver path to sparc entry.
+      perf: Add DWARF register lookup for sparc
+
+Dongdong Deng (1):
+      sparc64: fix the build error due to smp_kgdb_capture_client()
+
+FUJITA Tomonori (1):
+      sparc: remove homegrown L1_CACHE_ALIGN macro
+
+Joe Perches (1):
+      drivers/sbus: Remove unnecessary casts of private_data
+
+Julia Lawall (1):
+      arch/sparc/kernel: Eliminate what looks like a NULL pointer dereference
+
+Mikael Pettersson (1):
+      math-emu: correct test for downshifting fraction in _FP_FROM_INT()
+
+ MAINTAINERS                             |    1 +
+ arch/sparc/configs/sparc64_defconfig    |   49 ++++++++++++++++++++++---------
+ arch/sparc/include/asm/cache.h          |    1 -
+ arch/sparc/include/asm/pgtable_32.h     |    5 +--
+ arch/sparc/kernel/perf_event.c          |    1 +
+ arch/sparc/kernel/sun4d_irq.c           |    2 +-
+ arch/sparc/kernel/ttable.S              |    2 +-
+ arch/sparc/mm/srmmu.c                   |    2 -
+ arch/sparc/mm/sun4c.c                   |    3 --
+ drivers/sbus/char/openprom.c            |    4 +-
+ drivers/serial/suncore.c                |    4 ++-
+ drivers/serial/sunsu.c                  |   13 ++++++--
+ include/math-emu/op-common.h            |    2 +-
+ tools/perf/arch/sparc/Makefile          |    4 ++
+ tools/perf/arch/sparc/util/dwarf-regs.c |   43 +++++++++++++++++++++++++++
+ 15 files changed, 103 insertions(+), 33 deletions(-)
+ create mode 100644 tools/perf/arch/sparc/Makefile
+ create mode 100644 tools/perf/arch/sparc/util/dwarf-regs.c
