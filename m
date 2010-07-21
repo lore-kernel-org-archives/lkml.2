@@ -1,120 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761097Ab0GURyU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 13:54:20 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:52948 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753482Ab0GURyR (ORCPT
+	id S1760825Ab0GUSEN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 14:04:13 -0400
+Received: from mail3-relais-sop.national.inria.fr ([192.134.164.104]:61681
+	"EHLO mail3-relais-sop.national.inria.fr" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755557Ab0GUSEK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 13:54:17 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48032475"
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-From: Daniel Walker <dwalker@codeaurora.org>
-To: =?UTF-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-In-Reply-To: <op.vf6zo9vb7p4s8u@pikus>
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
-	 <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
-	 <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-	 <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf5o28st7p4s8u@pikus>
-	 <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf6zo9vb7p4s8u@pikus>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jul 2010 10:35:50 -0700
-Message-ID: <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 21 Jul 2010 14:04:10 -0400
+X-IronPort-AV: E=Sophos;i="4.55,239,1278280800"; 
+   d="scan'208";a="54583965"
+From: Tomasz Buchert <tomasz.buchert@inria.fr>
+To: linux-kernel@vger.kernel.org, Daniel Walker <dwalker@codeaurora.org>,
+        Stanislaw Gruszka <sgruszka@redhat.com>,
+        Peter Zijlstra <peterz@infradead.org>
+Cc: Tomasz Buchert <tomasz.buchert@inria.fr>,
+        Lucas Nussbaum <lucas.nussbaum@loria.fr>
+Subject: [PATCH 3/4] posix-cpu-timers: Wider access to the thread clocks
+Date: Wed, 21 Jul 2010 20:03:55 +0200
+Message-Id: <1279735436-8254-4-git-send-email-tomasz.buchert@inria.fr>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1279735436-8254-3-git-send-email-tomasz.buchert@inria.fr>
+References: <1279573348.21763.9.camel@c-dwalke-linux.qualcomm.com>
+ <1279735436-8254-1-git-send-email-tomasz.buchert@inria.fr>
+ <1279735436-8254-2-git-send-email-tomasz.buchert@inria.fr>
+ <1279735436-8254-3-git-send-email-tomasz.buchert@inria.fr>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 14:01 +0200, Michał Nazarewicz wrote:
+Per-thread clocks are so far accessible only within
+the same thread group. This patch makes it possible to get
+this information for any thread of the same user and for
+a user with CAP_SYS_ADMIN capability.
 
-> What you are asking for is:
-> 
-> 	cma=a=100M cma_map=*/*=a
-> 
-> All devices will share the same region so that "if the video driver isn't
-> using the memory" then "something else can use it". (please excuse me quoting
-> you, it was stronger then me ;) ).
+same_thread_group is not used anymore because if the thread is in
+the same thread group as 'current' then they will have the same
+owner anyway.
 
-Ok ..
+Signed-off-by: Tomasz Buchert <tomasz.buchert@inria.fr>
+Signed-off-by: Lucas Nussbaum <lucas.nussbaum@loria.fr>
+---
+ kernel/posix-cpu-timers.c |   34 +++++++++++++++++++++++++++-------
+ 1 files changed, 27 insertions(+), 7 deletions(-)
 
-> Driver has to little information to say whether it really stopped using
-> memory.  Maybe the next call will be to allocate buffers for frames and
-> initialise the chip?  Sure, some “good enough” defaults can be provided
-> (and the framework allows that) but still platform architect might need
-> more power.
-
-I think your talking more about optimization .. You can take that into
-account ..
-
-> > (btw, these strings your creating yikes, talk about confusing ..)
-> 
-> They are not that scary really.  Let's look at cma:
-> 
-> 	a=10M;b=10M
-> 
-> Split it on semicolon:
-> 
-> 	a=10M
-> 	b=10M
-> 
-> and you see that it defines two regions (a and b) 10M each.
-
-I think your assuming a lot .. I've never seen the notation before I
-wouldn't assuming there's regions or whatever ..
-
-> As of cma_map:
-> 
-> 	camera,video=a;jpeg,scaler=b
-> 
-> Again split it on semicolon:
-> 
-> 	camera,video=a
-> 	jpeg,scaler=b
-> 
-> Now, substitute equal sign by "use(s) region(s)":
-> 
-> 	camera,video	use(s) region(s):	a
-> 	jpeg,scaler	use(s) region(s):	b
-> 
-> No black magic here. ;)
-
-It way too complicated .. Users (i.e. not programmers) has to use
-this ..
-
-> >> One of the purposes of the CMA framework is to make it let device
-> >> drivers completely forget about the memory management and enjoy
-> >> a simple API.
-> >
-> > The driver, and it's maintainer, are really the best people to know how
-> > much memory they need and when it's used/unused. You don't really want
-> > to architect them out.
-> 
-> This might be true if there is only one device but even then it's not
-> always the case.  If many devices need physically-contiguous memory
-> there is no way for them to communicate and share memory.  For best
-> performance someone must look at them and say who gets what.
-
-How do you think regular memory allocation work? I mean there's many
-devices that all need different amounts of memory and they get along.
-Yet your saying it's not possible .
-
-Daniel
-
-
+diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
+index 78ad536..04f49ce 100644
+--- a/kernel/posix-cpu-timers.c
++++ b/kernel/posix-cpu-timers.c
+@@ -25,6 +25,26 @@ void update_rlimit_cpu(unsigned long rlim_new)
+ 	spin_unlock_irq(&current->sighand->siglock);
+ }
+ 
++/* RCU lock needed */
++static int thread_clock_allowed(struct task_struct *p)
++{
++	const struct cred *cred, *pcred;
++
++	if (unlikely(capable(CAP_SYS_ADMIN)))
++		return 1;
++	cred = current_cred();
++	pcred = __task_cred(p);
++
++	return (cred->euid == pcred->euid ||
++		cred->euid == pcred->uid);
++}
++
++/* RCU read lock needed */
++static inline int process_clock_allowed(struct task_struct *p)
++{
++	return thread_group_leader(p);
++}
++
+ static int check_task_clock(const clockid_t which_clock)
+ {
+ 	int error = 0;
+@@ -37,7 +57,7 @@ static int check_task_clock(const clockid_t which_clock)
+ 	rcu_read_lock();
+ 	p = find_task_by_vpid(pid);
+ 	if (!p || !(POSIX_CLOCK_PERTHREAD(which_clock) ?
+-		   same_thread_group(p, current) : thread_group_leader(p))) {
++		   thread_clock_allowed(p) : process_clock_allowed(p))) {
+ 		error = -EINVAL;
+ 	}
+ 	rcu_read_unlock();
+@@ -68,9 +88,9 @@ static int get_start_time(clockid_t which_clock, struct timespec *start)
+ 		find_task_by_vpid(POSIX_CLOCK_PID(which_clock));
+ 	if (p && (
+ 		(POSIX_CLOCK_PERTHREAD(which_clock) &&
+-			same_thread_group(p, current)) ||
++			thread_clock_allowed(p)) ||
+ 		(!POSIX_CLOCK_PERTHREAD(which_clock) &&
+-			thread_group_leader(p) && p->sighand))) {
++			process_clock_allowed(p) && p->sighand))) {
+ 		*start = p->start_time;
+ 		return 0;
+ 	}
+@@ -529,13 +549,13 @@ int posix_cpu_clock_get(const clockid_t which_clock, struct timespec *tp)
+ 		p = find_task_by_vpid(pid);
+ 		if (p) {
+ 			if (POSIX_CLOCK_PERTHREAD(which_clock)) {
+-				if (same_thread_group(p, current)) {
++				if (thread_clock_allowed(p)) {
+ 					error = cpu_clock_sample(which_clock,
+ 								 p, &rtn);
+ 				}
+ 			} else {
+ 				read_lock(&tasklist_lock);
+-				if (thread_group_leader(p) && p->sighand) {
++				if (process_clock_allowed(p) && p->sighand) {
+ 					error =
+ 					    cpu_clock_sample_group(which_clock,
+ 							           p, &rtn);
+@@ -575,7 +595,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+ 			p = current;
+ 		} else {
+ 			p = find_task_by_vpid(pid);
+-			if (p && !same_thread_group(p, current))
++			if (p && !thread_clock_allowed(p))
+ 				p = NULL;
+ 		}
+ 	} else {
+@@ -583,7 +603,7 @@ int posix_cpu_timer_create(struct k_itimer *new_timer)
+ 			p = current->group_leader;
+ 		} else {
+ 			p = find_task_by_vpid(pid);
+-			if (p && !thread_group_leader(p))
++			if (p && !process_clock_allowed(p))
+ 				p = NULL;
+ 		}
+ 	}
 -- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+1.6.3.3
 
