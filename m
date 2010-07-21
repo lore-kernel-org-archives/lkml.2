@@ -1,99 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758796Ab0GUSTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 14:19:16 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:26868 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756229Ab0GUSTO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 14:19:14 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48035688"
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-From: Daniel Walker <dwalker@codeaurora.org>
-To: =?UTF-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-In-Reply-To: <op.vf7gt3qy7p4s8u@pikus>
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
-	 <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
-	 <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-	 <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf5o28st7p4s8u@pikus>
-	 <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf6zo9vb7p4s8u@pikus>
-	 <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7gt3qy7p4s8u@pikus>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jul 2010 11:19:08 -0700
-Message-ID: <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
+	id S1761301Ab0GUSUc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 14:20:32 -0400
+Received: from mga03.intel.com ([143.182.124.21]:51088 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756229Ab0GUSUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 14:20:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,239,1278313200"; 
+   d="scan'208";a="302783123"
+Subject: Re: [PATCH 0/7] x86, xsave: some code cleanups and reworks, -v2
+From: Suresh Siddha <suresh.b.siddha@intel.com>
+Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1279731838-1522-1-git-send-email-robert.richter@amd.com>
+References: <1279731838-1522-1-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain
+Organization: Intel Corp
+Date: Wed, 21 Jul 2010 11:19:54 -0700
+Message-Id: <1279736394.2812.7.camel@sbs-t61.sc.intel.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 20:11 +0200, Michał Nazarewicz wrote:
-
-> >> > (btw, these strings your creating yikes, talk about confusing ..)
-> >>
-> >> They are not that scary really.  Let's look at cma:
-> >>
-> >> 	a=10M;b=10M
-> >>
-> >> Split it on semicolon:
-> >>
-> >> 	a=10M
-> >> 	b=10M
-> >>
-> >> and you see that it defines two regions (a and b) 10M each.
-> >
-> > I think your assuming a lot .. I've never seen the notation before I
-> > wouldn't assuming there's regions or whatever ..
+On Wed, 2010-07-21 at 10:03 -0700, Robert Richter wrote:
+> Hans Peter, Suresh, and Cyrill, thanks for your feedback.
 > 
-> That's why there is documentation with grammar included. :)
+> This is version 2 of the patch series.
 > 
-> >> As of cma_map:
-> >>
-> >> 	camera,video=a;jpeg,scaler=b
-> >>
-> >> Again split it on semicolon:
-> >>
-> >> 	camera,video=a
-> >> 	jpeg,scaler=b
-> >>
-> >> Now, substitute equal sign by "use(s) region(s)":
-> >>
-> >> 	camera,video	use(s) region(s):	a
-> >> 	jpeg,scaler	use(s) region(s):	b
-> >>
-> >> No black magic here. ;)
-> >
-> > It way too complicated .. Users (i.e. not programmers) has to use
-> > this ..
+> Patches 2, 4, 7 are unchanged compared to -v1.
 > 
-> Not really.  This will probably be used mostly on embedded systems
-> where users don't have much to say as far as hardware included on the
-> platform is concerned, etc.  Once a phone, tablet, etc. is released
-> users will have little need for customising those strings.
+> Patch 1 folds the initialization code into one patch. fpu_init() is
+> now called before xsave_init(). xsave_init() can later overwrite
+> xstate_size based on xstate features.
+> 
+> Patch 3 replaces all hardcoded XSTATE_CPUID values know. cpuid_level
+> is now taken from boot_cpu_data.
+> 
+> Patches 5 and 6 are new:
+> * add __init attribute to setup_xstate_features()
+> * disable xsave in i387 emulation mode
 
-You can't assume that user won't want to reflash their own kernel on the
-device. Your assuming way too much.
+Apart from the cleanup comments that I had for "[PATCH 6/7] x86, xsave:
+disable xsave in i387 emulation mode", all other patches look good to
+me.
 
-If you assume they do want their own kernel then they would need this
-string from someplace. If your right and this wouldn't need to change,
-why bother allowing it to be configured at all ?
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 
-Daniel
-
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+Thanks.
 
