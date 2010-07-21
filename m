@@ -1,53 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758376Ab0GUAMn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 20:12:43 -0400
-Received: from tex.lwn.net ([70.33.254.29]:37102 "EHLO vena.lwn.net"
+	id S932597Ab0GUAbL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 20:31:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39221 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751250Ab0GUAMm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 20:12:42 -0400
-Date: Tue, 20 Jul 2010 18:12:39 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-Message-ID: <20100720181239.5a1fd090@bike.lwn.net>
-In-Reply-To: <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
-	<d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
-	<adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.5; x86_64-redhat-linux-gnu)
+	id S1753801Ab0GUAbJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 20 Jul 2010 20:31:09 -0400
+Subject: Re: drivers/gpu/drm/radeon/r600_blit.c: fix possible NULL pointer 
+ derefernce
+From: Dave Airlie <airlied@redhat.com>
+To: "Alexander Y. Fomichev" <git.user@gmail.com>
+Cc: Alex Deucher <alexdeucher@gmail.com>, Robert Noland <rnoland@2hip.net>,
+        Matt Turner <mattst88@gmail.com>, Jerome Glisse <jglisse@redhat.com>,
+        akpm@linux-foundation.org, dri-devel@lists.freedesktop.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTimNpacSqjgNN-bNdK-vOwep5LEprE_PvaEbjuDj@mail.gmail.com>
+References: <20100720014251.46b91cdd@mad-cat.localdomain>
+	 <AANLkTilKlM9NyGgBom7ncq4cNx1O_GtS1dgsMExwdck3@mail.gmail.com>
+	 <AANLkTikTetZ9vREMFfCSmJa7f9w1cmSFk145SthSFpPu@mail.gmail.com>
+	 <AANLkTim3lGADUIj4QLg6U0ThqxgaKc_UyVLJlcPZd7kS@mail.gmail.com>
+	 <AANLkTimNpacSqjgNN-bNdK-vOwep5LEprE_PvaEbjuDj@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Jul 2010 10:30:43 +1000
+Message-ID: <1279672243.337.10.camel@clockmaker-el6>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-One other thing occurred to me as I was thinking about this...
+On Wed, 2010-07-21 at 01:07 +0400, Alexander Y. Fomichev wrote:
+> On Wed, Jul 21, 2010 at 1:00 AM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> > On Tue, Jul 20, 2010 at 4:13 PM, Alexander Y. Fomichev
+> > <git.user@gmail.com> wrote:
+> >> On Tue, Jul 20, 2010 at 9:37 PM, Alex Deucher <alexdeucher@gmail.com> wrote:
+> >>> On Mon, Jul 19, 2010 at 5:42 PM, Alexander Y. Fomichev
+> >>> <git.user@gmail.com> wrote:
+> >>>> This patch fix possible NULL pointer dereference when
+> >>>> r600_prepare_blit_copy tries to fill dev_priv->blit_vb->file_priv
+> >>>> without check of dev_priv->blit_vb. dev_priv->blit_vb should be
+> >>>> filled by r600_nomm_get_vb but latest can fail with EAGAIN.
+> >>>> Addresses: https://bugzilla.kernel.org/show_bug.cgi?id=16375
+> >>>>
+> >>>> ---
+> >>>>  drivers/gpu/drm/radeon/r600_blit.c |    2 ++
+> >>>>  1 files changed, 2 insertions(+), 0 deletions(-)
+> >>>>
+> >>>> diff --git a/drivers/gpu/drm/radeon/r600_blit.c b/drivers/gpu/drm/radeon/r600_blit.c
+> >>>> index f4fb88e..0df4a2b 100644
+> >>>> --- a/drivers/gpu/drm/radeon/r600_blit.c
+> >>>> +++ b/drivers/gpu/drm/radeon/r600_blit.c
+> >>>> @@ -541,6 +541,8 @@ r600_prepare_blit_copy(struct drm_device *dev, struct drm_file *file_priv)
+> >>>>        DRM_DEBUG("\n");
+> >>>>
+> >>>>        r600_nomm_get_vb(dev);
+> >>>> +       if (!dev_priv->blit_vb)
+> >>>> +               return;
+> >>>
+> >>> r600_prepare_blit_copy returns an int so something like this would be better:
+> >>> --- a/drivers/gpu/drm/radeon/r600_blit.c
+> >>> +++ b/drivers/gpu/drm/radeon/r600_blit.c
+> >>> @@ -539,8 +539,10 @@ r600_prepare_blit_copy(struct drm_device *dev,
+> >>> struct drm_file *file_priv)
+> >>>  {
+> >>>        drm_radeon_private_t *dev_priv = dev->dev_private;
+> >>>        DRM_DEBUG("\n");
+> >>> +       int ret = r600_nomm_get_vb(dev);
+> >>>
+> >>> -       r600_nomm_get_vb(dev);
+> >>> +       if (ret)
+> >>> +               return ret;
+> >>>
+> >>>        dev_priv->blit_vb->file_priv = file_priv;
+> >>>
+> >>>
+> >>> Alex
+> >>>
+> >>>>
+> >>>>        dev_priv->blit_vb->file_priv = file_priv;
+> >>>>
+> >>>> --
+> >>>> 1.7.1.1
+> >>>>
+> >>>
+> >>
+> >> i haven't any preferneces, the only thing is - it would be logical
+> >> to have every check in common style, so other cases
+> >> (r600_blit_copy, r600_blit_swap) should be fixed, nop?
+> >
+> > Those are void functions so there's nothing to return.
+> 
+> i mean both of them call r600_nomm_get_vb and both of them
+> check if (!dev_priv->blit_vb), not return  value.I mean would be
+> logical to check it the same way everytime r600_nomm_get_vb
+> gets called.
 
-> +    There are four calls provided by the CMA framework to devices.  To
-> +    allocate a chunk of memory cma_alloc() function needs to be used:
-> +
-> +            unsigned long cma_alloc(const struct device *dev,
-> +                                    const char *kind,
-> +                                    unsigned long size,
-> +                                    unsigned long alignment);
+I'm going to go with Alex's patch, as none of the other callsites return
+an error, and your patch doesn't return value from a function which has
+a int return type, causing a warning.
 
-The purpose behind this interface, I believe, is pretty much always
-going to be to allocate memory for DMA buffers.  Given that, might it
-make more sense to integrate the API with the current DMA mapping API?
-Then the allocation function could stop messing around with long values
-and, instead, just hand back a void * kernel-space pointer and a
-dma_addr_t to hand to the device.  That would make life a little easier
-in driverland...
+Dave.
 
-jon
+
+
