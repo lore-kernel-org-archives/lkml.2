@@ -1,62 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753034Ab0GUNIP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:08:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:57280 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751220Ab0GUNIO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:08:14 -0400
-X-Authority-Analysis: v=1.1 cv=Wd4F0Mu8V05kqqt67pyjJbbzQCzSsR+BbLtAgo88TiY= c=1 sm=0 a=plBTy1s6OugA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=xKPyBF7hT55YOOWZU0YA:9 a=bYsOvXTE5Vgu5liA66g7P-L1g4wA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCHv9 2.6.35-rc4-tip 0/13]  Uprobes Patches:
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
-        Christoph Hellwig <hch@infradead.org>,
-        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        Randy Dunlap <rdunlap@xenotime.net>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Naren A Devaiah <naren.devaiah@in.ibm.com>,
-        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+	id S1753854Ab0GUNKZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:10:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20294 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751338Ab0GUNKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 09:10:23 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <7b6bba36-5330-4e27-b7a9-3a4113b6b379@email.android.com>
+References: <7b6bba36-5330-4e27-b7a9-3a4113b6b379@email.android.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: dhowells@redhat.com, Arjan van de Ven <arjan@linux.intel.com>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        "Frank Ch. Eigler" <fche@redhat.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20100721024200.GC19375@linux.vnet.ibm.com>
-References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
-	 <20100720041938.GA28533@infradead.org>
-	 <20100720063805.GA19375@linux.vnet.ibm.com>
-	 <20100720210358.GA17631@ghostprotocols.net>
-	 <20100721024200.GC19375@linux.vnet.ibm.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Wed, 21 Jul 2010 09:08:10 -0400
-Message-ID: <1279717690.4818.31.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+        torvalds@linux-foundation.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, jeff@garzik.org,
+        akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
+Date: Wed, 21 Jul 2010 14:08:45 +0100
+Message-ID: <21485.1279717725@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 08:12 +0530, Srikar Dronamraju wrote:
+Tejun Heo <tj@kernel.org> wrote:
 
-> I tried searching for t.456 gcc labels in google. I dont think I found
-> anything interesting. Are we looking at not listing symbols that end
-> with @plt? Can you please list an example t.456 label. Also any pointers to
-> where I can find more information on the same would be very useful.
+> As all unbound works are served by the same gcwq, non reentrancy is
+> automatically guaranteed.
 
-I'm not sure you'll find anything looking for "t.456" since that is just
-a random label that gcc created for its internal use. But I believe that
-all of these temp labels have a '.' in them. Thus, you can just ignore
-all labels with '.'.
+That doesn't actually explain _how_ it's non-reentrant.  The gcwq includes a
+collection of threads that can execute from it, right?  If so, what mechanism
+prevents two threads from executing the same work item, if that work item
+isn't bound to a CPU?  I've been trying to figure this out from the code, but
+I don't see it offhand.
 
--- Steve
+> > Btw, how does this fare in an RT system, where work items bound to a CPU
+> > can't get executed because their CPU is busy with an RT thread, even
+> > though there are other, idle CPUs?
+> 
+> Sure, there's nothing special about unbound workers.  They're just normal
+> kthreads.
 
+I should've been clearer: As I understand it, normal (unbound) worker items
+are bound to the CPU on which they were queued, and will be executed there
+only (barring CPU removal).  If that's the case, isn't it possible that work
+items can be prevented from getting execution time by an RT thread that's
+hogging a CPU and won't let go?
 
+David
