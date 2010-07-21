@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754790Ab0GURcA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 13:32:00 -0400
-Received: from smtp.eu.citrix.com ([62.200.22.115]:42108 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753294Ab0GURb4 (ORCPT
+	id S1757006Ab0GURcj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 13:32:39 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52588
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755613Ab0GURcd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 13:31:56 -0400
-X-IronPort-AV: E=Sophos;i="4.55,239,1278288000"; 
-   d="scan'208";a="1007013"
-Date: Wed, 21 Jul 2010 18:32:37 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: x86@kernel.org
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "Venkatesh Pallipadi (Venki)" <venki@google.com>
-Subject: [PATCH] x86: Do not try to disable hpet if it hasn't been initialized
- before
-Message-ID: <alpine.DEB.2.00.1007211726240.22235@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 21 Jul 2010 13:32:33 -0400
+Date: Wed, 21 Jul 2010 10:32:49 -0700 (PDT)
+Message-Id: <20100721.103249.107094774.davem@davemloft.net>
+To: shemminger@vyatta.com
+Cc: leedom@chelsio.com, andy@greyhouse.net, harald@redhat.com,
+        bhutchings@solarflare.com, sassmann@redhat.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
+ interfaces with random MAC address
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100721102816.4bef5ada@nehalam>
+References: <20100721150732.GR7497@gospo.rdu.redhat.com>
+	<201007210934.27986.leedom@chelsio.com>
+	<20100721102816.4bef5ada@nehalam>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hpet_disable is called unconditionally on machine reboot if hpet support
-is compiled in the kernel.
-hpet_disable only checks if the machine is hpet capable but doesn't make
-sure that hpet has been initialized.
+From: Stephen Hemminger <shemminger@vyatta.com>
+Date: Wed, 21 Jul 2010 10:28:16 -0700
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Venkatesh Pallipadi <venki@google.com>
----
- arch/x86/kernel/hpet.c |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+> IMHO no local assigned address should be used by udev. The cxgb4 driver
+> should be using random value.
+> 
+> Does anyone have an example of locally assigned address that has persistence
+> so that udev could use it.
 
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index a198b7c..9e90dac 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -964,16 +964,18 @@ fs_initcall(hpet_late_init);
- 
- void hpet_disable(void)
- {
--	if (is_hpet_capable()) {
--		unsigned int cfg = hpet_readl(HPET_CFG);
-+	unsigned int cfg;
- 
--		if (hpet_legacy_int_enabled) {
--			cfg &= ~HPET_CFG_LEGACY;
--			hpet_legacy_int_enabled = 0;
--		}
--		cfg &= ~HPET_CFG_ENABLE;
--		hpet_writel(cfg, HPET_CFG);
-+	if (!is_hpet_capable() || !hpet_address || !hpet_virt_address)
-+		return;
-+
-+	cfg = hpet_readl(HPET_CFG);
-+	if (hpet_legacy_int_enabled) {
-+		cfg &= ~HPET_CFG_LEGACY;
-+		hpet_legacy_int_enabled = 0;
- 	}
-+	cfg &= ~HPET_CFG_ENABLE;
-+	hpet_writel(cfg, HPET_CFG);
- }
- 
- #ifdef CONFIG_HPET_EMULATE_RTC
--- 
-1.7.0.4
+The cxgb4 vf addresses are not random because they are fetched from the
+card's NVRAM/EEPROM/firmware/whatever and thus are persistent.
 
+We definitely want udev to use persistent rules for them.
+
+This whole issue only exists because of the Intel VF case, where it
+lacks persistent addresses but somehow we want to assign persistent
+names to it's VF interfaces.
+
+One idea I've proposed in other discussions about this is that if the
+address is not persistent (either via the MAC address bit or the sysfs
+value we're thinking of providing here) we use the device's geographic
+location ("device path") as the key for udev stuff.
