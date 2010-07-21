@@ -1,96 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761341Ab0GUTUM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 15:20:12 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:8497 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758886Ab0GUTUI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 15:20:08 -0400
-Date: Wed, 21 Jul 2010 21:21:29 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-Message-id: <op.vf7j13067p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
- <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
- <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
- <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
- <op.vf5o28st7p4s8u@pikus>
- <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
- <op.vf6zo9vb7p4s8u@pikus>
- <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
- <op.vf7gt3qy7p4s8u@pikus>
- <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
- <op.vf7h1yc47p4s8u@pikus>
- <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
+	id S1758910Ab0GUTXu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 15:23:50 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:36658 "EHLO df.lth.se"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1758793Ab0GUTXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 15:23:48 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
+Cc: Vinod Koul <vinod.koul@intel.com>, Alan Cox <alan@linux.intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH 1/3] DMAENGINE: generic slave channel control v2
+Date: Wed, 21 Jul 2010 21:22:28 +0200
+Message-Id: <1279740148-22186-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.2.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jul 2010 20:58:08 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
+This adds an interface to the DMAengine to make it possible to
+reconfigure a slave channel at runtime. We add a few foreseen
+config parameters to the passed struct, with a void * pointer
+for custom per-device or per-platform runtime slave data.
 
-> On Wed, 2010-07-21 at 20:38 +0200, Michał Nazarewicz wrote:
->> > On Wed, 2010-07-21 at 20:11 +0200, Michał Nazarewicz wrote:
->> >> Not really.  This will probably be used mostly on embedded systems
->> >> where users don't have much to say as far as hardware included on the
->> >> platform is concerned, etc.  Once a phone, tablet, etc. is released
->> >> users will have little need for customising those strings.
->>
->> On Wed, 21 Jul 2010 20:19:08 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
->> > You can't assume that user won't want to reflash their own kernel on the
->> > device. Your assuming way too much.
->>
->> If user is clever enough to reflash a phone she will find the strings
->> easy especially that they are provided from: (i) bootloader which is
->> even less likely to be reflashed and if someone do reflash bootloader
->> she is a guru who'd know how to make the strings; or (ii) platform
->> defaults which will be available with the rest of the source code
->> for the platform.
->
-> Your, again, assuming all sorts of stuff .. On my phone for example it
-> is very easy to reflash, personally, I think most devices will be like
-> that in the future. so you don't _need_ to be clever to reflash the
-> device.
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+This version was revised after discussion, it splits the control
+arguments in source/destination pairs to prepare for (among other
+things) device to device transfers.
+---
+ include/linux/dmaengine.h |   75 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 75 insertions(+), 0 deletions(-)
 
-Bottom line is: if you reflash the device you (i) get an image from
-somewhere and it has the strings in it, (ii) reflash the kernel and
-parameters are provided by bootloader so they still remain, (iii)
-use platform default strings which you get with the source codes and
-include when kernel is built, or (iv) are a guru who knows what to
-do.
-
->> > If you assume they do want their own kernel then they would need this
->> > string from someplace. If your right and this wouldn't need to change,
->> > why bother allowing it to be configured at all ?
->>
->> Imagine a developer who needs to recompile the kernel and reflash the
->> device each time she wants to change the configuration...  Command line
->> arguments seems a better option for development.
->
-> So make it a default off debug configuration option ..
-
-I don't really see the point of doing that.  Adding the command line
-parameters is really a minor cost so there will be no benefits from
-removing it.
-
+diff --git a/include/linux/dmaengine.h b/include/linux/dmaengine.h
+index 5204f01..406b820 100644
+--- a/include/linux/dmaengine.h
++++ b/include/linux/dmaengine.h
+@@ -114,11 +114,17 @@ enum dma_ctrl_flags {
+  * @DMA_TERMINATE_ALL: terminate all ongoing transfers
+  * @DMA_PAUSE: pause ongoing transfers
+  * @DMA_RESUME: resume paused transfer
++ * @DMA_SLAVE_CONFIG: this command is only implemented by DMA controllers
++ * that need to runtime reconfigure the slave channels (as opposed to passing
++ * configuration data in statically from the platform). An additional
++ * argument of struct dma_slave_config must be passed in with this
++ * command.
+  */
+ enum dma_ctrl_cmd {
+ 	DMA_TERMINATE_ALL,
+ 	DMA_PAUSE,
+ 	DMA_RESUME,
++	DMA_SLAVE_CONFIG,
+ };
+ 
+ /**
+@@ -199,6 +205,75 @@ struct dma_chan_dev {
+ 	atomic_t *idr_ref;
+ };
+ 
++/**
++ * enum dma_slave_buswidth - defines bus with of the DMA slave
++ * device, source or target busses
++ */
++enum dma_slave_buswidth {
++	DMA_SLAVE_BUSWIDTH_UNDEFINED = 0,
++	DMA_SLAVE_BUSWIDTH_1_BYTE = 1,
++	DMA_SLAVE_BUSWIDTH_2_BYTES = 2,
++	DMA_SLAVE_BUSWIDTH_4_BYTES = 4,
++	DMA_SLAVE_BUSWIDTH_8_BYTES = 8,
++};
++
++/**
++ * struct dma_slave_config - dma slave channel runtime config
++ * @direction: whether the data shall go in or out on this slave
++ * channel, right now. DMA_TO_DEVICE and DMA_FROM_DEVICE are
++ * legal values, DMA_BIDIRECTIONAL is not acceptable since we
++ * need to differentiate source and target addresses.
++ * @src_addr: this is the physical address where DMA slave data
++ * should be read (RX), if the source is memory this argument is
++ * ignored.
++ * @dst_addr: this is the physical address where DMA slave data
++ * should be written (TX), if the source is memory this argument
++ * is ignored.
++ * @src_addr_width: this is the width in bytes of the source (RX)
++ * register where DMA data shall be read. If the source
++ * is memory this may be ignored depending on architecture.
++ * Legal values: 1, 2, 4, 8.
++ * @dst_addr_width: same as src_addr_width but for destination
++ * target (TX) mutatis mutandis.
++ * @src_maxburst: the maximum number of words (note: words, as in
++ * units of the src_addr_width member, not bytes) that can be sent
++ * in one burst to the device. Typically something like half the
++ * FIFO depth on I/O peripherals so you don't overflow it. This
++ * may or may not be applicable on memory sources.
++ * @dst_maxburst: same as src_maxburst but for destination target
++ * mutatus mutandis.
++ * @private_config: if you need to pass in specialized configuration
++ * at runtime, apart from the generic things supported in this
++ * struct, you provide it in this pointer and dereference it inside
++ * your dmaengine driver to get the proper configuration bits out.
++ *
++ * This struct is passed in as configuration data to a DMA engine
++ * in order to set up a certain channel for DMA transport at runtime.
++ * The DMA device/engine has to provide support for an additional
++ * command in the channel config interface, DMA_SLAVE_CONFIG
++ * and this struct will then be passed in as an argument to the
++ * DMA engine device_control() function.
++ *
++ * The rationale for adding configuration information to this struct
++ * is as follows: if it is likely that most DMA slave controllers in
++ * the world will support the configuration option, then make it
++ * generic. If not: if it is fixed so that it be sent in static from
++ * the platform data, then prefer to do that. Else, if it is neither
++ * fixed at runtime, nor generic enough (such as bus mastership on
++ * some CPU family and whatnot) then pass it in the private_config
++ * member and dereference it to some per-device struct in your driver.
++ */
++struct dma_slave_config {
++	enum dma_data_direction direction;
++	dma_addr_t src_addr;
++	dma_addr_t dst_addr;
++	enum dma_slave_buswidth src_addr_width;
++	enum dma_slave_buswidth dst_addr_width;
++	u32 src_maxburst;
++	u32 dst_maxburst;
++	void *private_config;
++};
++
+ static inline const char *dma_chan_name(struct dma_chan *chan)
+ {
+ 	return dev_name(&chan->dev->device);
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.7.1.1
+
