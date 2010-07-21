@@ -1,138 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762013Ab0GUBoT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 21:44:19 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:61405 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761828Ab0GUBoP convert rfc822-to-8bit (ORCPT
+	id S1762023Ab0GUBpe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 21:45:34 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42841
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1761828Ab0GUBpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 21:44:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=LfbKJMPDse2sVeOo372fzHNnRiWog3NvVDG7VDyLq1Sj4juxw6ZxtUql+89bSa4qaq
-         Bt5lDEQ6d5qpDn7IAtFrXGy5nxOQsl2AqX8E2F/cVbEwlKCdmDzis7l6TlvryYKaSWzn
-         o5oJqjftP7Xw5ZPJqYeFgLrfAguN7n3jfVHRE=
-MIME-Version: 1.0
-In-Reply-To: <20100721004407.GA14176@codeaurora.org>
-References: <20100713121420.GB4263@codeaurora.org>
-	<20100714104353B.fujita.tomonori@lab.ntt.co.jp>
-	<20100714201149.GA14008@codeaurora.org>
-	<20100714220536.GE18138@n2100.arm.linux.org.uk>
-	<20100715012958.GB2239@codeaurora.org>
-	<20100715085535.GC26212@n2100.arm.linux.org.uk>
-	<AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com>
-	<20100716075856.GC16124@n2100.arm.linux.org.uk>
-	<20100717000108.GB21293@labbmf-linux.quicinc.com>
-	<AANLkTinTQXbsD91JDHiSFrvDoUeHbaGUGSWA-5aT5ZCr@mail.gmail.com>
-	<20100721004407.GA14176@codeaurora.org>
-Date: Tue, 20 Jul 2010 21:44:12 -0400
-Message-ID: <AANLkTinFCo8xTm2QM1kFWbv2xViGWt0bQz72U9YcQjv6@mail.gmail.com>
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device 
-	memory management
-From: Timothy Meade <zt.tmzt@gmail.com>
-To: Zach Pfeffer <zpfeffer@codeaurora.org>
-Cc: Larry Bassel <lbassel@codeaurora.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 20 Jul 2010 21:45:32 -0400
+Date: Tue, 20 Jul 2010 18:45:48 -0700 (PDT)
+Message-Id: <20100720.184548.250802682.davem@davemloft.net>
+To: mikpe@it.uu.se
+Cc: linux-kernel@vger.kernel.org, sparclinux@vger.kernel.org,
+        linux-s390@vger.kernel.org, linux-alpha@vger.kernel.org,
+        linux-sh@vger.kernel.org, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH] math-emu: correct test for downshifting fraction in
+ _FP_FROM_INT()
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <19524.51858.992299.119315@pilspetsen.it.uu.se>
+References: <19524.51858.992299.119315@pilspetsen.it.uu.se>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, Jul 20, 2010 at 8:44 PM, Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
-> On Mon, Jul 19, 2010 at 05:21:35AM -0400, Tim HRM wrote:
->> On Fri, Jul 16, 2010 at 8:01 PM, Larry Bassel <lbassel@codeaurora.org> wrote:
->> > On 16 Jul 10 08:58, Russell King - ARM Linux wrote:
->> >> On Thu, Jul 15, 2010 at 08:48:36PM -0400, Tim HRM wrote:
->> >> > Interesting, since I seem to remember the MSM devices mostly conduct
->> >> > IO through regions of normal RAM, largely accomplished through
->> >> > ioremap() calls.
->> >> >
->> >> > Without more public domain documentation of the MSM chips and AMSS
->> >> > interfaces I wouldn't know how to avoid this, but I can imagine it
->> >> > creates a bit of urgency for Qualcomm developers as they attempt to
->> >> > upstream support for this most interesting SoC.
->> >>
->> >> As the patch has been out for RFC since early April on the linux-arm-kernel
->> >> mailing list (Subject: [RFC] Prohibit ioremap() on kernel managed RAM),
->> >> and no comments have come back from Qualcomm folk.
->> >
->> > We are investigating the impact of this change on us, and I
->> > will send out more detailed comments next week.
->> >
->> >>
->> >> The restriction on creation of multiple V:P mappings with differing
->> >> attributes is also fairly hard to miss in the ARM architecture
->> >> specification when reading the sections about caches.
->> >>
->> >
->> > Larry Bassel
->> >
->> > --
->> > Sent by an employee of the Qualcomm Innovation Center, Inc.
->> > The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
->> >
->>
->> Hi Larry and Qualcomm people.
->> I'm curious what your reason for introducing this new api (or adding
->> to dma) is.  Specifically how this would be used to make the memory
->> mapping of the MSM chip dynamic in contrast to the fixed _PHYS defines
->> in the Android and Codeaurora trees.
->
-> The MSM has many integrated engines that allow offloading a variety of
-> workloads. These engines have always addressed memory using physical
-> addresses, because of this we had to reserve large (10's MB) buffers
-> at boot. These buffers are never freed regardless of whether an engine
-> is actually using them. As you can imagine, needing to reserve memory
-> for all time on a device that doesn't have a lot of memory in the
-> first place is not ideal because that memory could be used for other
-> things, running apps, etc.
->
-> To solve this problem we put IOMMUs in front of a lot of the
-> engines. IOMMUs allow us to map physically discontiguous memory into a
-> virtually contiguous address range. This means that we could ask the
-> OS for 10 MB of pages and map all of these into our IOMMU space and
-> the engine would still see a contiguous range.
->
+From: Mikael Pettersson <mikpe@it.uu.se>
+Date: Mon, 19 Jul 2010 23:58:42 +0200
 
+> The kernel's math-emu code contains a macro _FP_FROM_INT() which is
+> used to convert an integer to a raw normalized floating-point value.
+> It does this basically in three steps:
+ ...
+> The fix is simple: the exponent comparison used to determine if the
+> fraction should be downshifted must be "<=" not "<".
+> 
+> I'm sending a kernel module to test this as a reply to this message.
+> There are also SPARC user-space test cases in the GCC bug entry.
+> 
+> Signed-off-by: Mikael Pettersson <mikpe@it.uu.se>
 
-I see. Much like I suspected, this is used to replace the static
-regime of the earliest Android kernel.  You mention placing IOMMUs in
-front of the A11 engines, you are involved in this architecture as an
-engineer or similar?  Is there a reason a cooperative approach using
-RPC or another mechanism is not used for memory reservation, this is
-something that can be accomplished fully on APPS side?
+Applied and I'll make sure this gets into -stable too.
 
-> In reality, limitations in the hardware meant that we needed to map
-> memory using larger mappings to minimize the number of TLB
-> misses. This, plus the number of IOMMUs and the extreme use cases we
-> needed to design for led us to a generic design.
->
-> This generic design solved our problem and the general mapping
-> problem. We thought other people, who had this same big-buffer
-> interoperation problem would also appreciate a common API that was
-> built with their needs in mind so we pushed our idea up.
->
->>
->> I'm also interested in how this ability to map memory regions as files
->> for devices like KGSL/DRI or PMEM might work and why this is better
->> suited to that purpose than existing methods, where this fits into
->> camera preview and other issues that have been dealt with in these
->> trees in novel ways (from my perspective).
->
-> The file based approach was driven by Android's buffer passing scheme
-> and the need to write userspace drivers for multimedia, etc...
->
->
-So the Android file backed approach is obiviated by GEM and other mechanisms?
-
-Thanks you for you help,
-Timothy Meade
--tmzt #htc-linux (facebook.com/HTCLinux)
+Thanks!
