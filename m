@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753215Ab0GUNBZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:01:25 -0400
-Received: from peer.zerties.org ([188.40.33.175]:51539 "EHLO peer.zerties.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751917Ab0GUNBY convert rfc822-to-8bit (ORCPT
+	id S1753788Ab0GUNBk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:01:40 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49647 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753336Ab0GUNBi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:01:24 -0400
-From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
-To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: CONFIG_SCSI_G_NCR5380_MEM dead?
-Date: Wed, 21 Jul 2010 15:01:14 +0200
-Message-ID: <86pqyhhtut.fsf@peer.zerties.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+	Wed, 21 Jul 2010 09:01:38 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Neil Horman <nhorman@tuxdriver.com>
+Subject: Re: [RFC PATCH v3 1/5] irq: add tracepoint to softirq_raise
+Cc: kosaki.motohiro@jp.fujitsu.com, Koki Sanagi <sanagi.koki@jp.fujitsu.com>,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        davem@davemloft.net, kaneshige.kenji@jp.fujitsu.com,
+        izumi.taku@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+In-Reply-To: <20100721111419.GB21259@hmsreliant.think-freely.org>
+References: <4C469A41.4020807@jp.fujitsu.com> <20100721111419.GB21259@hmsreliant.think-freely.org>
+Message-Id: <20100721215836.86F9.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 21 Jul 2010 22:01:34 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
-       
-        As part of the VAMOS[0] research project at the University of
-Erlangen we are looking at multiple integrity errors in linux'
-configuration system.
+> > >>  #endif /*  _TRACE_IRQ_H */
+> > >> diff --git a/kernel/softirq.c b/kernel/softirq.c
+> > >> index 825e112..6790599 100644
+> > >> --- a/kernel/softirq.c
+> > >> +++ b/kernel/softirq.c
+> > >> @@ -215,9 +215,9 @@ restart:
+> > >>  			int prev_count = preempt_count();
+> > >>  			kstat_incr_softirqs_this_cpu(h - softirq_vec);
+> > >>  
+> > >> -			trace_softirq_entry(h, softirq_vec);
+> > >> +			trace_softirq_entry(h - softirq_vec);
+> > >>  			h->action(h);
+> > >> -			trace_softirq_exit(h, softirq_vec);
+> > >> +			trace_softirq_exit(h - softirq_vec);
+> > > 
+> > > You're loosing information here by reducing the numbers of parameters in this
+> > > tracepoint.  How many other tracepoint scripts rely on having both pointers
+> > > handy?  Why not just do the pointer math inside your tracehook instead?
+> > 
+> > In __raise_softirq_irqoff macro there is no method to refer softirq_vec, so it
+> > can't use softirq DECLARE_EVENT_CLASS as is.
+> > Currently,  there is no script using softirq_entry or softirq_exit.
+> > 
+> That shouldn't matter, just pass in NULL for softirq_vec in
+> __raise_softirq_irqoff as the second argument to the trace function.  You may
+> need to fix up the class definition so that the assignment or printk doesn't try
+> to dereference that pointer when its NULL, but thats easy enough, and it avoids
+> breaking any other perf scripts floating out there.
 
-        I've been running a check on the drivers/scsi sourcetree for
-config Items not defined in Kconfig and found such a case. Sourcecode
-blocks depending on these Items are not reachable from a vanilla
-kernel -- dead code. I've seen such dead blocks made on purpose
-e.g. while integrating new features into the kernel but generally
-they're just useless.
+please see 5 lines above. we already have 'h - softirq_vec' calculation in
+this function. so, Sanagi-san's change don't makes any overhead.
 
-I encountered, that the CONFIG_SCSI_G_NCR5380_MEM symbol in
-drivers/scsi/g_NCR5380.c isn't defined anywhere. So this codeblocks
-seems to be unreachable. But there is a define in g_NCR5380_mmio.c for
-SCSI_G_NCR5380_MEM with an include of g_NCR5380.c. So i think this is a
-typo-bug and it should be a CONFIG_ define. The code wasn't changed since
-linux is in git, so probably no one has used the mmio module, cause
-there can't be a difference to the normal pio module. If you think this
-ifdefs should be removed, i can send a patch.
+So, if the overhead is zero, I'd prefer simplest tracepoint definition :)
 
-Regards
 
-        Christian Dietrich
--- 
-(λ x . x x) (λ x . x x) -- See how beatiful the lambda is
-No documentation is better than bad documentation
--- Das Ausdrucken dieser Mail wird urheberrechtlich verfolgt.
+
