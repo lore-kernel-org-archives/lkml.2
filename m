@@ -1,82 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761943Ab0GUAsm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 20:48:42 -0400
-Received: from mail.bluewatersys.com ([202.124.120.130]:23295 "EHLO
-	hayes.bluewaternz.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1761597Ab0GUAsk (ORCPT
+	id S1761969Ab0GUA6Z (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 20 Jul 2010 20:58:25 -0400
+Received: from p01c12o149.mxlogic.net ([208.65.145.72]:55972 "EHLO
+	p01c12o149.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1761917Ab0GUA6X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 20:48:40 -0400
-Message-ID: <4C464407.5060305@bluewatersys.com>
-Date: Wed, 21 Jul 2010 12:49:11 +1200
-From: Ryan Mallon <ryan@bluewatersys.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Tue, 20 Jul 2010 20:58:23 -0400
+X-MXL-Hash: 4c46462f7d75e20c-69e60abb259afdbad5aa9c248de91e3bf9a00db7
+X-MXL-Hash: 4c4646261f595a39-705fcfdf33ffe2629c86def442efe6613d038322
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Staging: dt3155: Remove copy_to_user for ioctl's DT3155_{STOP|START}
+Date: Tue, 20 Jul 2010 17:57:52 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <gregkh@suse.de>, <ss@aao.gov.au>
 MIME-Version: 1.0
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-CC: "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-        Russell King - ARM Linux <linux@arm.linux.org.uk>,
-        Stephen Rothwell <sfr@canb.auug.org.au>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Takashi Iwai <tiwai@suse.de>, linux-next@vger.kernel.org,
-        linux kernel <linux-kernel@vger.kernel.org>
-Subject: Re: Your patch: ARM: AMBA: Add pclk definition for platforms using
- primecells
-References: <0D753D10438DA54287A00B02708426976374051D65@AUSP01VMBX24.collaborationhost.net>
-In-Reply-To: <0D753D10438DA54287A00B02708426976374051D65@AUSP01VMBX24.collaborationhost.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201007201757.52928.hartleys@visionengravers.com>
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [216.166.12.32]
+X-AnalysisOut: [v=1.0 c=1 a=WxJHxwW4_00A:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
+X-AnalysisOut: [MA:10 a=zbe46bahRtDx8aUBN1lPzQ==:17 a=i00gxMtYAAAA:8 a=WZj]
+X-AnalysisOut: [COqObcBZspbat1VkA:9 a=-LpK7zv8LvNQ7Ctx9pWQun0V6ikA:4 a=QEX]
+X-AnalysisOut: [dDO2ut3YA:10 a=x1WnkoZAwusA:10 a=0kPLrQdw3YYA:10]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2010 11:54 AM, H Hartley Sweeten wrote:
-> Hello Russell,
-> 
-> Your patch added a new clock to the ep93xx platform called "apb_pclk".  This
-> clock was already available as "pclk" on that platform.
-> 
-> Since there are no users of "pclk" in the kernel I have no problems just
-> renaming it to "apb_pclk" and removing the dummy_apb_pclk that you added.
-> 
-> Would you like me to submit the ncessary patch or can you fix it?
+The ioctl's DT3155_STOP and DT3155_START are defined with the macro
+_IO indicating that they have no parameters. They should not be using
+copy_to_user to return data to user space.
 
-The dummy_apb_pclk definition caused a merge conflict in next with the
-ep93xx i2s audio clock code, which Stephen wrote a fixup patch for. Can
-we sort this out all in one big go? Stephen's original message copied below.
-
-~Ryan
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Scott Smedley <ss@aao.gov.au>
 
 ---
 
-> Hi Takashi,
-> 
-> Today's linux-next merge of the sound tree got a conflict in
-> arch/arm/mach-ep93xx/clock.c between commit
-> 5c6649e3c1511b183f12d2e884d2c172fe9001e0 ("ARM: AMBA: Add pclk definition
-> for platforms using primecells") from the arm tree and commit
-> ed67ea82c0d9a163458dc6a69a7a3123db1a8b3b ("EP93xx: Add i2s core support")
-> from the sound tree.
-> 
-> Just overlapping additions.  I fixed it up (see below) and can carry the
-> fix as necessary.
-
----
-diff --cc arch/arm/mach-ep93xx/clock.c
-index d40826a,8031624..0000000
---- a/arch/arm/mach-ep93xx/clock.c
-+++ b/arch/arm/mach-ep93xx/clock.c
-@@@ -43,9 -43,9 +43,11 @@@ static unsigned long get_uart_rate(stru
-
-  static int set_keytchclk_rate(struct clk *clk, unsigned long rate);
-  static int set_div_rate(struct clk *clk, unsigned long rate);
-+ static int set_i2s_sclk_rate(struct clk *clk, unsigned long rate);
-+ static int set_i2s_lrclk_rate(struct clk *clk, unsigned long rate);
-
- +static struct clk dummy_apb_pclk;
- +
-  static struct clk clk_xtali = {
-  	.rate		= EP93XX_EXT_CLK_RATE,
-  };
-
+diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+index fed7e62..5eb1bcd 100644
+--- a/drivers/staging/dt3155/dt3155_drv.c
++++ b/drivers/staging/dt3155/dt3155_drv.c
+@@ -570,8 +570,6 @@ static int dt3155_ioctl(struct inode *inode,
+ 	  return 0;
+ 
+ 	quick_stop(minor);
+-	if (copy_to_user(up, dts, sizeof(*dts)))
+-	    return -EFAULT;
+ 	return 0;
+       }
+     case DT3155_START:
+@@ -593,8 +591,6 @@ static int dt3155_ioctl(struct inode *inode,
+ 	  }
+ 
+ 	dt3155_init_isr(minor);
+-	if (copy_to_user(up, dts, sizeof(*dts)))
+-	    return -EFAULT;
+ 	return 0;
+       }
+     default:
