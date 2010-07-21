@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933701Ab0GUFTJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 01:19:09 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:56078 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762570Ab0GUFS5 (ORCPT
+	id S1762584Ab0GUFTp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 01:19:45 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36648 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754897Ab0GUEwd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 01:18:57 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6049"; a="48126046"
-Message-ID: <5a63b73ff04b72db2930eae4e43e5c5b.squirrel@www.codeaurora.org>
-Date: Tue, 20 Jul 2010 22:18:55 -0700 (PDT)
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU,
-           CPU and device memory management
-From: stepanm@codeaurora.org
-To: "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>
-Cc: zpfeffer@codeaurora.org, linux@arm.linux.org.uk,
-        fujita.tomonori@lab.ntt.co.jp, ebiederm@xmission.com,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-User-Agent: SquirrelMail/1.4.17
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+	Wed, 21 Jul 2010 00:52:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=LwqXjsk9OPjRx7ov4xhESxDXJYrbYhsXhxEZ3ePi8Nsqj3Iw4SNwAIkRTaIX9novyh
+         7RnnwVwheehiRFqFOpPdU+pyhopyJKadQ5YT+bR74fSKxpv3H42QfhILIiBoPbOoRk2C
+         th1ymT0AoiYh0hRkehRptC/7/De8y/BuFUtSs=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 30/30]Documentation/filesystems/befs.txt update web address.
+Date: Tue, 20 Jul 2010 21:52:06 -0700
+Message-Id: <1279687926-29360-15-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
+In-Reply-To: <1279687926-29360-1-git-send-email-justinmattock@gmail.com>
+References: <1279687926-29360-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> What is the problem about mapping a 1MB buffer with the DMA API?
->
-> Possibly, an IOMMU can't find space for 1MB but it's not the problem of
-the DMA API.
+The patch below updates some broken web addresses.
 
-As you have pointed out, one of the issues is that allocation can fail.
-While technically VCMM allocations can fail as well, these allocations can
-be made from one or more memory pools that have been set aside
-specifically to be used by devices. Thus, the kernel's normal allocator
-will not encroach on the large physically-contiguous chunks (of size 1MB
-or even 16MB) that are not easy to get back, and would be forced to deal
-with increasing memory pressure in other ways.
-Additionally, some of the memory pools may have special properties, such
-as being part of on-chip memory with higher performance than regular
-memory, and some devices may have special requirements regarding what type
-or memory they need. The VCMM allocator solves the problem in a generic
-way by being able to deal with multiple memory pools and supporting
-prioritization schemes for which subset of the memory pools is to be used
-for each physical allocation.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+---
+ Documentation/filesystems/befs.txt |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-
-
+diff --git a/Documentation/filesystems/befs.txt b/Documentation/filesystems/befs.txt
+index 67391a1..6e49c36 100644
+--- a/Documentation/filesystems/befs.txt
++++ b/Documentation/filesystems/befs.txt
+@@ -31,7 +31,7 @@ Current maintainer: Sergey S. Kostyliov <rathamahata@php4.ru>
+ 
+ WHAT IS THIS DRIVER?
+ ==================
+-This module implements the native filesystem of BeOS <http://www.be.com/>
++This module implements the native filesystem of BeOS http://www.beincorporated.com/ 
+ for the linux 2.4.1 and later kernels. Currently it is a read-only
+ implementation.
+ 
+@@ -61,7 +61,7 @@ step 2.  Configuration & make kernel
+ 
+ The linux kernel has many compile-time options. Most of them are beyond the
+ scope of this document. I suggest the Kernel-HOWTO document as a good general
+-reference on this topic. <http://www.linux.com/howto/Kernel-HOWTO.html>
++reference on this topic. http://www.linuxdocs.org/HOWTOs/Kernel-HOWTO-4.html 
+ 
+ However, to use the BeFS module, you must enable it at configure time.
+ 
+-- 
+1.7.1.rc1.21.gf3bd6
 
