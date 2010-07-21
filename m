@@ -1,100 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754066Ab0GUNPf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:15:35 -0400
-Received: from smarthost01.mail.zen.net.uk ([212.23.3.140]:36249 "EHLO
-	smarthost01.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751381Ab0GUNPd (ORCPT
+	id S1755065Ab0GUNP4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:15:56 -0400
+Received: from smarthost02.mail.zen.net.uk ([212.23.3.141]:42410 "EHLO
+	smarthost02.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754277Ab0GUNPy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:15:33 -0400
+	Wed, 21 Jul 2010 09:15:54 -0400
 From: Andrew Bird <ajb@spheresystems.co.uk>
 To: linux-kernel@vger.kernel.org
 Cc: ajb@spheresystems.co.uk
-Subject: [PATCH 1/2] USB - Option.c obey reserved interface flag
-Date: Wed, 21 Jul 2010 14:15:28 +0100
-Message-Id: <1279718128-2367-1-git-send-email-ajb@spheresystems.co.uk>
+Subject: [PATCH 2/2] USB - Option.c add Huawei K3765/K4505, ignore net interface
+Date: Wed, 21 Jul 2010 14:15:48 +0100
+Message-Id: <1279718148-2410-1-git-send-email-ajb@spheresystems.co.uk>
 X-Mailer: git-send-email 1.6.2.5
-X-Originating-Smarthost01-IP: [82.71.70.22]
+X-Originating-Smarthost02-IP: [82.71.70.22]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 ---
- drivers/usb/serial/option.c |   43 ++++++++++++++++++++++++++-----------------
- 1 files changed, 26 insertions(+), 17 deletions(-)
+ drivers/usb/serial/option.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
 diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index e280ad8..8a1008c 100644
+index 8a1008c..df26870 100644
 --- a/drivers/usb/serial/option.c
 +++ b/drivers/usb/serial/option.c
-@@ -997,10 +997,29 @@ static void __exit option_exit(void)
- module_init(option_init);
- module_exit(option_exit);
+@@ -145,6 +145,8 @@ static void option_instat_callback(struct urb *urb);
+ #define HUAWEI_PRODUCT_E143D			0x143D
+ #define HUAWEI_PRODUCT_E143E			0x143E
+ #define HUAWEI_PRODUCT_E143F			0x143F
++#define HUAWEI_PRODUCT_K4505			0x1464
++#define HUAWEI_PRODUCT_K3765			0x1465
+ #define HUAWEI_PRODUCT_E14AC			0x14AC
  
-+static enum option_blacklist_reason is_blacklisted(const u8 ifnum,
-+				const struct option_blacklist_info *blacklist)
-+{
-+	const u8  *info;
-+	int i;
-+
-+	if (blacklist) {
-+		info = blacklist->ifaceinfo;
-+
-+		for (i = 0; i < blacklist->infolen; i++) {
-+			if (info[i] == ifnum)
-+				return blacklist->reason;
-+		}
-+	}
-+	return OPTION_BLACKLIST_NONE;
-+}
-+
- static int option_probe(struct usb_serial *serial,
- 			const struct usb_device_id *id)
- {
- 	struct usb_wwan_intf_private *data;
-+	int ifNum = serial->interface->cur_altsetting->desc.bInterfaceNumber;
-+
- 	/* D-Link DWM 652 still exposes CD-Rom emulation interface in modem mode */
- 	if (serial->dev->descriptor.idVendor == DLINK_VENDOR_ID &&
- 		serial->dev->descriptor.idProduct == DLINK_PRODUCT_DWM_652 &&
-@@ -1013,6 +1032,13 @@ static int option_probe(struct usb_serial *serial,
- 		serial->interface->cur_altsetting->desc.bInterfaceClass != 0xff)
- 		return -ENODEV;
+ #define QUANTA_VENDOR_ID			0x0408
+@@ -383,6 +385,13 @@ static const struct option_blacklist_info four_g_w14_blacklist = {
+ 	.reason = OPTION_BLACKLIST_SENDSETUP
+ };
  
-+	/* Don't bind reserved interfaces */
-+	if (is_blacklisted(ifNum, (void *)id->driver_info) ==
-+			OPTION_BLACKLIST_RESERVED_IF) {
-+		dbg("No bind on blacklisted interface #%d\n", ifNum);
-+		return -ENODEV;
-+	}
++static const u8 huawei_k3765_k4505_reserved_if[] = { 1 }; /* net */
++static const struct option_blacklist_info huawei_k3765_k4505_blacklist = {
++	.infolen = ARRAY_SIZE(huawei_k3765_k4505_reserved_if),
++	.ifaceinfo = huawei_k3765_k4505_reserved_if,
++	.reason = OPTION_BLACKLIST_RESERVED_IF
++};
 +
- 	data = serial->private = kzalloc(sizeof(struct usb_wwan_intf_private), GFP_KERNEL);
- 
- 	if (!data)
-@@ -1023,23 +1049,6 @@ static int option_probe(struct usb_serial *serial,
- 	return 0;
- }
- 
--static enum option_blacklist_reason is_blacklisted(const u8 ifnum,
--				const struct option_blacklist_info *blacklist)
--{
--	const u8  *info;
--	int i;
--
--	if (blacklist) {
--		info = blacklist->ifaceinfo;
--
--		for (i = 0; i < blacklist->infolen; i++) {
--			if (info[i] == ifnum)
--				return blacklist->reason;
--		}
--	}
--	return OPTION_BLACKLIST_NONE;
--}
--
- static void option_instat_callback(struct urb *urb)
- {
- 	int err;
+ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
+ 	{ USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
+@@ -480,6 +489,12 @@ static const struct usb_device_id option_ids[] = {
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
+ 	{ USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
++	{ USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505),
++		.driver_info = (kernel_ulong_t)&huawei_k3765_k4505_blacklist
++	},
++	{ USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765),
++		.driver_info = (kernel_ulong_t)&huawei_k3765_k4505_blacklist
++	},
+ 	{ USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC) },
+ 	{ USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_9508) },
+ 	{ USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) }, /* Novatel Merlin V640/XV620 */
 -- 
 1.6.2.5
 
