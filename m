@@ -1,83 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751405Ab0GUQjN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 12:39:13 -0400
-Received: from lo.gmane.org ([80.91.229.12]:39599 "EHLO lo.gmane.org"
+	id S1751822Ab0GUQlB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 12:41:01 -0400
+Received: from mga09.intel.com ([134.134.136.24]:14274 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751068Ab0GUQjJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 12:39:09 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-From: blp@cs.stanford.edu (Ben Pfaff)
-Subject: Re: Introducing the LCD-Linux project
-Date: Wed, 21 Jul 2010 09:38:54 -0700
-Message-ID: <874ofsdc2p.fsf@benpfaff.org>
-References: <AANLkTikitTGpiE5Oe_P5a4f2OCOnlB9j_LVm5CQhQIno@mail.gmail.com>
-Reply-To: blp@cs.stanford.edu
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: 173-164-153-19-sfba.hfc.comcastbusiness.net
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-Cancel-Lock: sha1:eVLnDKMeN9yVVt6Dhsx6Qc1v6Uc=
-Cc: linux-arm-kernel@lists.infradead.org
+	id S1750838Ab0GUQk5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 12:40:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,239,1278313200"; 
+   d="scan'208";a="537544612"
+From: "Luck, Tony" <tony.luck@intel.com>
+To: "Ben Hutchings" <ben@decadent.org.uk>
+Cc: linux-kernel@vger.kernel.org, "Geert Stappers" <stappers@stappers.nl>,
+        "Dave Airlie" <airlied@redhat.com>
+Subject: [git pull] ia64 changes
+Date: Wed, 21 Jul 2010 09:40:57 -0700
+Message-Id: <4c47231922590620a5@agluck-desktop.sc.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mattia Jona-Lasinio <mattia.jona@gmail.com> writes:
+This commit hit Linus upstream today and broke the ia64 build:
 
-> The possibility to connect to the computer small alphanumeric
-> as well as graphic displays, has always attracted some
-> interest. These small devices are connected to the computer and
-> can be used to display system diagnostics like network usage,
-> RAM or disk usage or even to replace the usual
-> monitor. Possible applications can be found in embedded systems
-> or clusters. These displays are connected to the computer
-> through serial lines, parallel ports and more recently through
-> USB connections. Appropriate programs in userspace gather the
-> desired information and output it on the display. However for
-> this to work, the userspace program has to implement some sort
-> of display management, to determine what must be displayed
-> where. This has two major disadvantages. First. Every userspace
-> program willing to drive a display must solve the very same
-> problems (display scroll and refresh, for instance), resulting
-> in an overall duplication of code. Second. Display controllers
-> usually require quite strict timings for proper operation and
-> it is not trivial neither efficient to obtain this in
-> userspace, whereas it is straightforward in kernel space
-> through the usual delay functions. A solution is therefore to
-> provide a sort of minimal terminal emulation in kernel space,
-> that can be accessed through the standard character device
-> interface. In this way the problem of the display management is
-> reduced to some calls to the usual read/write/seek/ioctl
-> routines. At the same time one has the possibility to implement
-> handling of escape sequences, thus opening the way to standard
-> applications based on the ncurses library.
+commit 1e8655f87333def92bb8215b423adc65403b08a5
+Author: Ben Hutchings <ben@decadent.org.uk>
+Date:   Sun Jul 18 21:51:42 2010 +0100
 
-When I wanted to solve the same problem for a small
-serial-connected LCD panel (sold under the name EZIO), I wrote a
-program called "ezio-term" that has the same functionality but
-runs entirely in userspace.  It connects to the serial port and
-speaks the EZIO protocol on the serial port, and it creates a pty
-and acts like an ANSI terminal on that pty.  Thus, it translates
-back and forth between the two protocols.
+    drm/ttm: Fix build on architectures without AGP
+    
+    Make inclusion of <asm/agp.h> conditional on TTM_HAS_AGP.  The use
+    of the functions declared in it is already conditional.
+    
+    Reported-by: Geert Stappers <stappers@stappers.nl>
+    Signed-off-by: Ben Hutchings <ben@decadent.org.uk>
+    Tested-by: Geert Stappers <stappers@stappers.nl>
+    Signed-off-by: Dave Airlie <airlied@redhat.com>
 
-ezio-term also comes with a terminfo description that lets
-programs take advantage of the special features of the LCD panel.
-ezio-term also has the "virtual screen larger than physical
-screen" feature that you mention elsewhere, although it currently
-only implements an extra-wide screen, not an extra-tall one.
+diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+index b1d67dc..1f32b46 100644
+--- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
++++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
+@@ -40,7 +40,9 @@
+ #include <linux/slab.h>
+ 
+ #include <asm/atomic.h>
++#ifdef TTM_HAS_AGP
+ #include <asm/agp.h>
++#endif
+ 
+ #include "ttm/ttm_bo_driver.h"
+ #include "ttm/ttm_page_alloc.h"
 
-ezio-term solves the first problem you mention.  I'm not sure I
-understand how the second one would come about across a serial or
-parallel or USB connection.
 
-ezio-term is distributed as part of Open vSwitch, in the
-directory extras/ezio.  You can clone the Open vSwitch Git
-repository with:
-        git clone git://openvswitch.org/openvswitch
--- 
-"Premature optimization is the root of all evil."
---D. E. Knuth, "Structured Programming with go to Statements"
+The problem is that TTM_HAS_AGP is defined in "ttm/ttm_bo_driver.h" ... which
+is included *after* you used it to test whether to include <asm/agp.h>
 
+I suspect some re-arrangement is in order :-)
+
+-Tony
