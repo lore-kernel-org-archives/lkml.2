@@ -1,72 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755718Ab0GUPda (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 11:33:30 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:63942 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753165Ab0GUPd1 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 11:33:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=BAfxWlIi4ueya+JURtTuiug2ltdmNhVgd83UluzJd7d6QW4ymRp9Af5zkgT1tauxfb
-         VHmU/8ujfEphkmzwyhVsJ3JiYMUudPgHB5WxyamFfur1JrwVP7xz067k8wQ714Am5FAy
-         vuE1tXCBWr/fVulKzchhWtDjq37yjA2pvEykI=
-MIME-Version: 1.0
-In-Reply-To: <1279321888-27335-1-git-send-email-dbaryshkov@gmail.com>
-References: <1279321888-27335-1-git-send-email-dbaryshkov@gmail.com>
-Date: Wed, 21 Jul 2010 19:33:26 +0400
-Message-ID: <AANLkTimr363aK=DTj7Eb1hJiu9d80Z460feU9K920H-w@mail.gmail.com>
-Subject: Re: [PATCH] edac/Kconfig: reenable edac_mpc85xx on MPC85xx
-From: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Doug Thompson <dougthompson@xmission.com>,
-        bluesmoke-devel@lists.sourceforge.net, stable@kernel.org,
-        Andrew Morton <akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S932286Ab0GUPjY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 11:39:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750986Ab0GUPjX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 11:39:23 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <4C4712B4.9040706@kernel.org>
+References: <4C4712B4.9040706@kernel.org> <4C470B46.4040604@kernel.org> <7b6bba36-5330-4e27-b7a9-3a4113b6b379@email.android.com> <21485.1279717725@redhat.com> <15189.1279725944@redhat.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: dhowells@redhat.com, Arjan van de Ven <arjan@linux.intel.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        torvalds@linux-foundation.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org, jeff@garzik.org,
+        akpm@linux-foundation.org, rusty@rustcorp.com.au,
+        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
+        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
+        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
+        Arjan van de Ven <arjan@infradead.org>
+Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
+Date: Wed, 21 Jul 2010 16:38:20 +0100
+Message-ID: <15376.1279726700@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Tejun Heo <tj@kernel.org> wrote:
 
-What about this patch. Is it ok?
+> If I'm correctly understanding what you're saying, the code already
+> does about the same thing.
 
-On Sat, Jul 17, 2010 at 3:11 AM, Dmitry Eremin-Solenikov
-<dbaryshkov@gmail.com> wrote:
-> Somewhere after 2.6.32 MPC85xx got renamed to FSL_BOOKE (to include
-> QorIQ family of chips). However drivers/edac/Kconfig wasn't updated to
-> reflect this change. Fix it now.
->
-> Signed-off-by: Dmitry Eremin-Solenikov <dbaryshkov@gmail.com>
-> Cc: stable@kernel.org
-> ---
->  drivers/edac/Kconfig |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/edac/Kconfig b/drivers/edac/Kconfig
-> index aedef79..2328c95 100644
-> --- a/drivers/edac/Kconfig
-> +++ b/drivers/edac/Kconfig
-> @@ -209,7 +209,7 @@ config EDAC_I5100
->
->  config EDAC_MPC85XX
->        tristate "Freescale MPC83xx / MPC85xx"
-> -       depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || MPC85xx)
-> +       depends on EDAC_MM_EDAC && FSL_SOC && (PPC_83xx || FSL_SOC_BOOKE)
->        help
->          Support for error detection and correction on the Freescale
->          MPC8349, MPC8560, MPC8540, MPC8548
-> --
-> 1.7.1
->
->
+Cool.
 
+Btw, it seems to work for fscache.  Feel free to add my Acked-by to your
+patches.
 
-
--- 
-With best wishes
-Dmitry
+David
