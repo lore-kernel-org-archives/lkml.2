@@ -1,38 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab0GUVK3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 17:10:29 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:60498
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755648Ab0GUVKZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 17:10:25 -0400
-Date: Wed, 21 Jul 2010 14:10:42 -0700 (PDT)
-Message-Id: <20100721.141042.97328944.davem@davemloft.net>
-To: padovan@profusion.mobi
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linville@tuxdriver.com
-Subject: Re: [PATCH 2/2] net: remove last uses of __attribute__((packed))
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1279745998-29694-2-git-send-email-padovan@profusion.mobi>
-References: <1279745998-29694-1-git-send-email-padovan@profusion.mobi>
-	<1279745998-29694-2-git-send-email-padovan@profusion.mobi>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1758729Ab0GUVKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 17:10:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39000 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758710Ab0GUVKb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 17:10:31 -0400
+Message-ID: <4C476236.1020302@zytor.com>
+Date: Wed, 21 Jul 2010 14:10:14 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Robert Richter <robert.richter@amd.com>
+CC: Ingo Molnar <mingo@elte.hu>, Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/7] x86, xsave: introduce xstate enable functions
+References: <1279731838-1522-1-git-send-email-robert.richter@amd.com> <1279731838-1522-3-git-send-email-robert.richter@amd.com>
+In-Reply-To: <1279731838-1522-3-git-send-email-robert.richter@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Gustavo F. Padovan" <padovan@profusion.mobi>
-Date: Wed, 21 Jul 2010 17:59:58 -0300
-
-> Network code uses the __packed macro instead of __attribute__((packed)).
+On 07/21/2010 10:03 AM, Robert Richter wrote:
+> The patch renames xsave_cntxt_init() and __xsave_init() into
+> xstate_enable_boot_cpu() and xstate_enable() as this names are more
+> meaningful.
 > 
-> Signed-off-by: Gustavo F. Padovan <padovan@profusion.mobi>
+> It also removes the duplicate xcr setup for the boot cpu.
+> 
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
 
-Applied.
+> -static void __cpuinit xsave_cntxt_init(void)
+> +static void __cpuinit xstate_enable_boot_cpu(void)
+>  {
+>  	unsigned int eax, ebx, ecx, edx;
+>  
+> @@ -443,7 +438,8 @@ static void __cpuinit xsave_cntxt_init(void)
+>  	 * Support only the state known to OS.
+>  	 */
+>  	pcntxt_mask = pcntxt_mask & XCNTXT_MASK;
+> -	__xsave_init();
+> +
+> +	xstate_enable(pcntxt_mask);
+>  
+>  	/*
+>  	 * Recompute the context size for enabled features
 
-John, this might conflict with a wireless-next commit you made
-recently, just FYI...
+This one should be __init rather than __cpuinit, right?  As written, I get:
+
+
+WARNING: vmlinux.o(.cpuinit.text+0x824): Section mismatch in reference
+from the function xstate_enable_boot_cpu() to the function
+.init.text:__alloc_bootmem()
+The function __cpuinit xstate_enable_boot_cpu() references
+a function __init __alloc_bootmem().
+If __alloc_bootmem is only used by xstate_enable_boot_cpu then
+annotate __alloc_bootmem with a matching annotation.
+
+[No need to resend the patch, but if either Suresh or Robert could ACK
+this change I'd appreciate it.]
+
+
+	-hpa
