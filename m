@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751512Ab0GUM7t (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 08:59:49 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:36023 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750756Ab0GUM7s (ORCPT
+	id S1753215Ab0GUNBZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:01:25 -0400
+Received: from peer.zerties.org ([188.40.33.175]:51539 "EHLO peer.zerties.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751917Ab0GUNBY convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 08:59:48 -0400
-Date: Wed, 21 Jul 2010 13:59:39 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: akpm@linux-foundation.org, Takashi Iwai <tiwai@suse.de>,
-        Thomas Gleixner <tglx@linutronix.de>, alsa-devel@alsa-project.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [alsa-devel] mmotm 2010-07-19 - more pm_qos woes - audio this
-	time
-Message-ID: <20100721125939.GB10930@sirena.org.uk>
-References: <201007200007.o6K07Xbg028863@imap1.linux-foundation.org> <62037.1279716892@localhost>
+	Wed, 21 Jul 2010 09:01:24 -0400
+From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
+Cc: vamos-dev@i4.informatik.uni-erlangen.de
+Subject: CONFIG_SCSI_G_NCR5380_MEM dead?
+Date: Wed, 21 Jul 2010 15:01:14 +0200
+Message-ID: <86pqyhhtut.fsf@peer.zerties.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <62037.1279716892@localhost>
-X-Cookie: He who laughs last didn't get the joke.
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 08:54:52AM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Mon, 19 Jul 2010 16:38:09 PDT, akpm@linux-foundation.org said:
-> > The mm-of-the-moment snapshot 2010-07-19-16-37 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
+Hi all!
+       
+        As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-> I've accumulated about 1,000 of these overnight. Seems to be consistently landing in
-> pairs based on the timestamps.
+        I've been running a check on the drivers/scsi sourcetree for
+config Items not defined in Kconfig and found such a case. Sourcecode
+blocks depending on these Items are not reachable from a vanilla
+kernel -- dead code. I've seen such dead blocks made on purpose
+e.g. while integrating new features into the kernel but generally
+they're just useless.
 
-This looks like a problem I already reported to James, there's a fix
-from him in -next already (folded into the original patch).  It was a
-generic problem in the PM QoS stuff when CONFIG_DEBUG_PI_LIST was
-selected.  See linux-pm for the discussion.
+I encountered, that the CONFIG_SCSI_G_NCR5380_MEM symbol in
+drivers/scsi/g_NCR5380.c isn't defined anywhere. So this codeblocks
+seems to be unreachable. But there is a define in g_NCR5380_mmio.c for
+SCSI_G_NCR5380_MEM with an include of g_NCR5380.c. So i think this is a
+typo-bug and it should be a CONFIG_ define. The code wasn't changed since
+linux is in git, so probably no one has used the mmio module, cause
+there can't be a difference to the normal pio module. If you think this
+ifdefs should be removed, i can send a patch.
+
+Regards
+
+        Christian Dietrich
+-- 
+(λ x . x x) (λ x . x x) -- See how beatiful the lambda is
+No documentation is better than bad documentation
+-- Das Ausdrucken dieser Mail wird urheberrechtlich verfolgt.
