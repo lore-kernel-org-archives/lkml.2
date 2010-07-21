@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933528Ab0GUE67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 00:58:59 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:61571 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1762265Ab0GUE54 (ORCPT
+	id S933550Ab0GUE7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 00:59:11 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39306 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762287Ab0GUE6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 00:57:56 -0400
+	Wed, 21 Jul 2010 00:58:07 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=i8JZ5h1SEEIpH0e+ngr6EqqJVbjSRqkPOlS7Eg3/Mq6nViZv6jHzCpW2MvtF2EUqBP
-         b/XwaD8/uzspyiVjJjeylWurs5Xn2mLRivf1l0sTNaur3VkflegjpRQn74/Xxsy+w0oI
-         cebWZnbs1LcEI6Eii8IJk/62rn2ap+cIWAwok=
+        b=pdZMnkRkFM0oDHuyf1MK3UDUpI8iydfofUcOr+aV/ei5xz8+VP4OXGlRonXw7BaLS8
+         bDNV6lqc5au42kHn5Z9RtEuAyMfZe68MMMiJ4HL6rqOZ9f0VqHrZ1YUZexOuHGZIf+7k
+         P4cnypgoo0qExwx8ChaWuj3635nqlSwnlcTjc=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 108/108]Documentation/serial/moxa-smartio update web address.
-Date: Tue, 20 Jul 2010 21:57:47 -0700
-Message-Id: <1279688279-29683-3-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 113/113]Documentation/sound/alsa/soc/platform.txt update web address.
+Date: Tue, 20 Jul 2010 21:57:52 -0700
+Message-Id: <1279688279-29683-8-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 In-Reply-To: <1279688279-29683-1-git-send-email-justinmattock@gmail.com>
 References: <1279688279-29683-1-git-send-email-justinmattock@gmail.com>
@@ -27,27 +27,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below updates a broken web address.
+The patch below fixes a broken web address.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- Documentation/serial/moxa-smartio |    2 +-
+ Documentation/sound/alsa/soc/platform.txt |    2 +-
  1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/Documentation/serial/moxa-smartio b/Documentation/serial/moxa-smartio
-index 5337e80..d104439 100644
---- a/Documentation/serial/moxa-smartio
-+++ b/Documentation/serial/moxa-smartio
-@@ -76,7 +76,7 @@ Content
-    GNU General Public License in this version. Please refer to GNU General
-    Public License announcement in each source code file for more detail.
+diff --git a/Documentation/sound/alsa/soc/platform.txt b/Documentation/sound/alsa/soc/platform.txt
+index b681d17..06d8359 100644
+--- a/Documentation/sound/alsa/soc/platform.txt
++++ b/Documentation/sound/alsa/soc/platform.txt
+@@ -39,7 +39,7 @@ struct snd_soc_platform {
+ };
  
--   In Moxa's Web sites, you may always find latest driver at http://web.moxa.com.
-+   In Moxa's Web sites, you may always find latest driver at http://www.moxa.com/.
+ Please refer to the ALSA driver documentation for details of audio DMA.
+-http://www.alsa-project.org/~iwai/writing-an-alsa-driver/c436.htm
++http://www.alsa-project.org/~iwai/writing-an-alsa-driver/
  
-    This version of driver can be installed as Loadable Module (Module driver)
-    or built-in into kernel (Static driver). You may refer to following
+ An example DMA driver is soc/pxa/pxa2xx-pcm.c
+ 
 -- 
 1.7.1.rc1.21.gf3bd6
 
