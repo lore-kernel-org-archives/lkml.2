@@ -1,77 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758262Ab0GUNyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:54:44 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:56342 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753405Ab0GUNym (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:54:42 -0400
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network
- interfaces with random MAC address
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stefan Assmann <sassmann@redhat.com>
-Cc: David Miller <davem@davemloft.net>, abadea@ixiacom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
-        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
-        leedom@chelsio.com, harald@redhat.com
-In-Reply-To: <4C46AB60.5060008@redhat.com>
-References: <4C458CB7.3030508@redhat.com>	<4C458F50.4070200@ixiacom.com>
-	 <4C4593DA.9040207@redhat.com>
-	 <20100720.131839.134093789.davem@davemloft.net>
-	 <4C46AB60.5060008@redhat.com>
-Content-Type: text/plain
-Organization: Solarflare Communications
-Date: Wed, 21 Jul 2010 14:54:38 +0100
-Message-Id: <1279720478.2089.3.camel@achroite.uk.solarflarecom.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 (2.26.1-2.fc11) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 21 Jul 2010 13:56:13.0151 (UTC) FILETIME=[7AFD06F0:01CB28DC]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17518.005
-X-TM-AS-Result: No--35.101700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	id S1758276Ab0GUNzs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:55:48 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:41578 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756936Ab0GUNzq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 09:55:46 -0400
+Date: Wed, 21 Jul 2010 14:25:28 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: akpm@linux-foundation.org, torvalds@osdl.org
+Cc: kaber@trash.net, linux-pcmcia@lists.infradead.org,
+        linux-kernel@vger.kernel.org
+Subject: [git pull] PCMCIA bugfix for 2.6.35-rc6
+Message-ID: <20100721122528.GA13332@comet.dominikbrodowski.net>
+Mail-Followup-To: akpm@linux-foundation.org, torvalds@osdl.org,
+	kaber@trash.net, linux-pcmcia@lists.infradead.org,
+	linux-kernel@vger.kernel.org
+References: <201007202221.o6KMLg9n021204@imap1.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201007202221.o6KMLg9n021204@imap1.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 10:10 +0200, Stefan Assmann wrote:
-> On 20.07.2010 22:18, David Miller wrote:
-> > From: Stefan Assmann <sassmann@redhat.com>
-> > Date: Tue, 20 Jul 2010 14:17:30 +0200
-> > 
-> >> On 20.07.2010 13:58, Alex Badea wrote:
-> >>> Hi,
-> >>>
-> >>> On 07/20/2010 02:47 PM, Stefan Assmann wrote:
-> >>>>> What about devices that 'steal' MAC addresses from slave devices?
-> >>>
-> >>> Might I suggest an attribute such as "address_type", which could report
-> >>> "permanent", "random", "stolen", or something else in the future?
-> >>
-> >> In case there's demand for such a multi-purpose attribute I see no
-> >> reason to object. More thoughts on this?
-> > 
-> > I think this is a great idea.
-> > 
-> > Now it makes sense to use a new 'u8' in struct netdevice or similar to
-> > store this, since we'll have more than a boolean here.
-> > 
-> 
-> I put Alex' idea into code for further discussion, keeping the names
-> mentioned here until we agree on the scope of this attribute. When we
-> have settled I'll post a patch with proper patch description.
-[...]
+Linus,
 
-Just a little nitpick: I think it would be clearer to use a more
-specific term like 'address source' or 'address assignment type' rather
-than 'address type'.
+one PCMCIA bugfix slipped through... In order to solve this issue, please
+pull from
 
-Ben.
+  git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6.git urgent
 
--- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+The diffstat and list of changes follows; the patch is also attached below.
 
+Patrick McHardy (1):
+      pcmcia: fix 'driver ... did not release config properly' warning
+
+ drivers/pcmcia/pcmcia_resource.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+---
+From: Patrick McHardy <kaber@trash.net>
+
+Up to 2.6.34 pcmcia_release_irq() reset p_dev->_irq to 0 after releasing
+the irq.  The IRQ is now released in pcmcia_disable_device(), however
+p_dev->_irq is not reset, triggering a warning in pcmcia_device_remove().
+
+Signed-off-by: Patrick McHardy <kaber@trash.net>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
+---
+
+ drivers/pcmcia/pcmcia_resource.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff -puN drivers/pcmcia/pcmcia_resource.c~pcmcia-fix-driver-did-not-release-config-properly-warning drivers/pcmcia/pcmcia_resource.c
+--- a/drivers/pcmcia/pcmcia_resource.c~pcmcia-fix-driver-did-not-release-config-properly-warning
++++ a/drivers/pcmcia/pcmcia_resource.c
+@@ -857,8 +857,10 @@ void pcmcia_disable_device(struct pcmcia
+ {
+ 	pcmcia_release_configuration(p_dev);
+ 	pcmcia_release_io(p_dev, &p_dev->io);
+-	if (p_dev->_irq)
++	if (p_dev->_irq) {
+ 		free_irq(p_dev->irq, p_dev->priv);
++		p_dev->_irq = 0;
++	}
+ 	if (p_dev->win)
+ 		pcmcia_release_window(p_dev, p_dev->win);
+ }
