@@ -1,312 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757341Ab0GUMGZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 08:06:25 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44706 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753395Ab0GUMGX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 08:06:23 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Wed, 21 Jul 2010 21:01:11 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
-        Wu Fengguang <fengguang.wu@intel.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>
-Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in direct
- reclaim
-Message-Id: <20100721210111.06dda351.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100721115250.GX13117@csn.ul.ie>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
-	<1279545090-19169-5-git-send-email-mel@csn.ul.ie>
-	<20100719221420.GA16031@cmpxchg.org>
-	<20100720134555.GU13117@csn.ul.ie>
-	<20100720220218.GE16031@cmpxchg.org>
-	<20100721115250.GX13117@csn.ul.ie>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1755017Ab0GUMLq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 08:11:46 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49501 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750972Ab0GUMLp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 08:11:45 -0400
+Date: Wed, 21 Jul 2010 14:11:17 +0200
+From: Jan Kara <jack@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>, Al Viro <viro@zeniv.linux.org.uk>,
+        linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        Christoph Hellwig <hch@lst.de>, Jens Axboe <axboe@kernel.dk>,
+        Jan Kara <jack@suse.cz>
+Subject: Re: linux-next: OOPS at boot time
+Message-ID: <20100721121116.GD3447@quack.suse.cz>
+References: <20100720164145.e06242b3.sfr@canb.auug.org.au>
+ <20100720033656.0ce6356f.akpm@linux-foundation.org>
+ <20100720224525.GO32635@dastard>
+ <20100720174424.12a4bf64.akpm@linux-foundation.org>
+ <20100721052007.GT32635@dastard>
+ <20100721002907.639802cd.akpm@linux-foundation.org>
+ <20100721174809.4781c244.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100721174809.4781c244.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jul 2010 12:52:50 +0100
-Mel Gorman <mel@csn.ul.ie> wrote:
-
-
-> ==== CUT HERE ====
-> [PATCH] vmscan: Do not writeback filesystem pages in direct reclaim
+On Wed 21-07-10 17:48:09, Stephen Rothwell wrote:
+> On Wed, 21 Jul 2010 00:29:07 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
+> >
+> > On Wed, 21 Jul 2010 15:20:07 +1000 Dave Chinner <david@fromorbit.com> wrote:
+> > 
+> > > > and they were dirtied within dquot_free_space().
+> > > 
+> > > AFAICT dquot_free_space() is called deep in the guts of
+> > > ext3_truncate() via dquot_free_block(), which is called directly
+> > > before end_writeback(). That should overwrite any state changes made
+> > > inside ext3_truncate. I wonder if iput_final() is racing with
+> > > something else here?
+> > > 
+> > 
+> > This isn't a race.  I type `make' and the warnings spew out at hundreds
+> > per second - every unlink, I'd say.
 > 
-> When memory is under enough pressure, a process may enter direct
-> reclaim to free pages in the same manner kswapd does. If a dirty page is
-> encountered during the scan, this page is written to backing storage using
-> mapping->writepage. This can result in very deep call stacks, particularly
-> if the target storage or filesystem are complex. It has already been observed
-> on XFS that the stack overflows but the problem is not XFS-specific.
+> Bisected to:
 > 
-> This patch prevents direct reclaim writing back filesystem pages by checking
-> if current is kswapd or the page is anonymous before writing back.  If the
-> dirty pages cannot be written back, they are placed back on the LRU lists
-> for either background writing by the BDI threads or kswapd. If in direct
-> lumpy reclaim and dirty pages are encountered, the process will stall for
-> the background flusher before trying to reclaim the pages again.
+> commit 8bfe4a06746e5f03c02afe3ceb97b5364c099f63
+> Author: Al Viro <viro@zeniv.linux.org.uk>
+> Date:   Sun Jun 6 07:08:19 2010 -0400
 > 
-> As the call-chain for writing anonymous pages is not expected to be deep
-> and they are not cleaned by flusher threads, anonymous pages are still
-> written back in direct reclaim.
-> 
-> Signed-off-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: Rik van Riel <riel@redhat.com>
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 6587155..e3a5816 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -323,6 +323,51 @@ typedef enum {
->  	PAGE_CLEAN,
->  } pageout_t;
->  
-> +int write_reclaim_page(struct page *page, struct address_space *mapping,
-> +						enum pageout_io sync_writeback)
-> +{
-> +	int res;
-> +	struct writeback_control wbc = {
-> +		.sync_mode = WB_SYNC_NONE,
-> +		.nr_to_write = SWAP_CLUSTER_MAX,
-> +		.range_start = 0,
-> +		.range_end = LLONG_MAX,
-> +		.nonblocking = 1,
-> +		.for_reclaim = 1,
-> +	};
-> +
-> +	if (!clear_page_dirty_for_io(page))
-> +		return PAGE_CLEAN;
-> +
-> +	SetPageReclaim(page);
-> +	res = mapping->a_ops->writepage(page, &wbc);
-> +	if (res < 0)
-> +		handle_write_error(mapping, page, res);
-> +	if (res == AOP_WRITEPAGE_ACTIVATE) {
-> +		ClearPageReclaim(page);
-> +		return PAGE_ACTIVATE;
-> +	}
-> +
-> +	/*
-> +	 * Wait on writeback if requested to. This happens when
-> +	 * direct reclaiming a large contiguous area and the
-> +	 * first attempt to free a range of pages fails.
-> +	 */
-> +	if (PageWriteback(page) && sync_writeback == PAGEOUT_IO_SYNC)
-> +		wait_on_page_writeback(page);
-> +
-> +	if (!PageWriteback(page)) {
-> +		/* synchronous write or broken a_ops? */
-> +		ClearPageReclaim(page);
-> +	}
-> +	trace_mm_vmscan_writepage(page,
-> +		page_is_file_cache(page),
-> +		sync_writeback == PAGEOUT_IO_SYNC);
-> +	inc_zone_page_state(page, NR_VMSCAN_WRITE);
-> +
-> +	return PAGE_SUCCESS;
-> +}
-> +
->  /*
->   * pageout is called by shrink_page_list() for each dirty page.
->   * Calls ->writepage().
-> @@ -367,46 +412,7 @@ static pageout_t pageout(struct page *page, struct address_space *mapping,
->  	if (!may_write_to_queue(mapping->backing_dev_info))
->  		return PAGE_KEEP;
->  
-> -	if (clear_page_dirty_for_io(page)) {
-> -		int res;
-> -		struct writeback_control wbc = {
-> -			.sync_mode = WB_SYNC_NONE,
-> -			.nr_to_write = SWAP_CLUSTER_MAX,
-> -			.range_start = 0,
-> -			.range_end = LLONG_MAX,
-> -			.nonblocking = 1,
-> -			.for_reclaim = 1,
-> -		};
-> -
-> -		SetPageReclaim(page);
-> -		res = mapping->a_ops->writepage(page, &wbc);
-> -		if (res < 0)
-> -			handle_write_error(mapping, page, res);
-> -		if (res == AOP_WRITEPAGE_ACTIVATE) {
-> -			ClearPageReclaim(page);
-> -			return PAGE_ACTIVATE;
-> -		}
-> -
-> -		/*
-> -		 * Wait on writeback if requested to. This happens when
-> -		 * direct reclaiming a large contiguous area and the
-> -		 * first attempt to free a range of pages fails.
-> -		 */
-> -		if (PageWriteback(page) && sync_writeback == PAGEOUT_IO_SYNC)
-> -			wait_on_page_writeback(page);
-> -
-> -		if (!PageWriteback(page)) {
-> -			/* synchronous write or broken a_ops? */
-> -			ClearPageReclaim(page);
-> -		}
-> -		trace_mm_vmscan_writepage(page,
-> -			page_is_file_cache(page),
-> -			sync_writeback == PAGEOUT_IO_SYNC);
-> -		inc_zone_page_state(page, NR_VMSCAN_WRITE);
-> -		return PAGE_SUCCESS;
-> -	}
-> -
-> -	return PAGE_CLEAN;
-> +	return write_reclaim_page(page, mapping, sync_writeback);
->  }
->  
->  /*
-> @@ -639,18 +645,25 @@ static noinline_for_stack void free_page_list(struct list_head *free_pages)
->  	pagevec_free(&freed_pvec);
->  }
->  
-> +/* Direct lumpy reclaim waits up to 5 seconds for background cleaning */
-> +#define MAX_SWAP_CLEAN_WAIT 50
-> +
->  /*
->   * shrink_page_list() returns the number of reclaimed pages
->   */
->  static unsigned long shrink_page_list(struct list_head *page_list,
->  					struct scan_control *sc,
-> -					enum pageout_io sync_writeback)
-> +					enum pageout_io sync_writeback,
-> +					unsigned long *nr_still_dirty)
->  {
-> -	LIST_HEAD(ret_pages);
->  	LIST_HEAD(free_pages);
-> -	int pgactivate = 0;
-> +	LIST_HEAD(putback_pages);
-> +	LIST_HEAD(dirty_pages);
-> +	int pgactivate;
-> +	unsigned long nr_dirty = 0;
->  	unsigned long nr_reclaimed = 0;
->  
-> +	pgactivate = 0;
->  	cond_resched();
->  
->  	while (!list_empty(page_list)) {
-> @@ -741,7 +754,18 @@ static unsigned long shrink_page_list(struct list_head *page_list,
->  			}
->  		}
->  
-> -		if (PageDirty(page)) {
-> +		if (PageDirty(page))  {
-> +			/*
-> +			 * Only kswapd can writeback filesystem pages to
-> +			 * avoid risk of stack overflow
-> +			 */
-> +			if (page_is_file_cache(page) && !current_is_kswapd()) {
-> +				list_add(&page->lru, &dirty_pages);
-> +				unlock_page(page);
-> +				nr_dirty++;
-> +				goto keep_dirty;
-> +			}
-> +
->  			if (references == PAGEREF_RECLAIM_CLEAN)
->  				goto keep_locked;
->  			if (!may_enter_fs)
-> @@ -852,13 +876,19 @@ activate_locked:
->  keep_locked:
->  		unlock_page(page);
->  keep:
-> -		list_add(&page->lru, &ret_pages);
-> +		list_add(&page->lru, &putback_pages);
-> +keep_dirty:
->  		VM_BUG_ON(PageLRU(page) || PageUnevictable(page));
->  	}
->  
->  	free_page_list(&free_pages);
->  
-> -	list_splice(&ret_pages, page_list);
-> +	if (nr_dirty) {
-> +		*nr_still_dirty = nr_dirty;
-> +		list_splice(&dirty_pages, page_list);
-> +	}
-> +	list_splice(&putback_pages, page_list);
-> +
->  	count_vm_events(PGACTIVATE, pgactivate);
->  	return nr_reclaimed;
->  }
-> @@ -1245,6 +1275,7 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  	unsigned long nr_active;
->  	unsigned long nr_anon;
->  	unsigned long nr_file;
-> +	unsigned long nr_dirty;
->  
->  	while (unlikely(too_many_isolated(zone, file, sc))) {
->  		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> @@ -1293,26 +1324,34 @@ shrink_inactive_list(unsigned long nr_to_scan, struct zone *zone,
->  
->  	spin_unlock_irq(&zone->lru_lock);
->  
-> -	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC);
-> +	nr_reclaimed = shrink_page_list(&page_list, sc, PAGEOUT_IO_ASYNC,
-> +								&nr_dirty);
->  
->  	/*
-> -	 * If we are direct reclaiming for contiguous pages and we do
-> +	 * If specific pages are needed such as with direct reclaiming
-> +	 * for contiguous pages or for memory containers and we do
->  	 * not reclaim everything in the list, try again and wait
-> -	 * for IO to complete. This will stall high-order allocations
-> -	 * but that should be acceptable to the caller
-> +	 * for IO to complete. This will stall callers that require
-> +	 * specific pages but it should be acceptable to the caller
->  	 */
-> -	if (nr_reclaimed < nr_taken && !current_is_kswapd() &&
-> -			sc->lumpy_reclaim_mode) {
-> -		congestion_wait(BLK_RW_ASYNC, HZ/10);
-> +	if (sc->may_writepage && !current_is_kswapd() &&
-> +			(sc->lumpy_reclaim_mode || sc->mem_cgroup)) {
-> +		int dirty_retry = MAX_SWAP_CLEAN_WAIT;
+>     convert ext3 to ->evict_inode()
+>     
+>     Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+  Thanks for bisecting this. The patch series indeed seems to uncover
+some discrepancies.
+  Ext3 has always dirtied inode in it's ->delete_inode method (via quota
+code). But previously clear_inode() just overwrote the state with I_CLEAR
+and thus we never saw the BUG_ON. After Al's patches, i_state is set in
+end_writeback() which happens earlier. In particular it happens before
+ext3_free_inode() which dirties the inode through quota code while freeing
+xattrs - they are accounted in i_blocks, so i_blocks are updated during
+freeing and inode is dirtied.
+  Actually, ext3_mark_inode_dirty() called during each mark_inode_dirty()
+call writes the inode state to the journal so the dirty flag in the inode
+state is in fact stale and overwriting it with I_CLEAR never mattered. In
+this sense, the BUG_ON triggered is a false positive. But I believe this is
+a separate story.
+  I'm not sure how to really fix this. It seems a bit premature to me to
+mark inode as I_CLEAR before the filesystem is actually done with it. So
+maybe the line
+  inode->i_state = I_FREEING | I_CLEAR;
+should be moved to evict() fuction?
 
-Hmm, ok. I see what will happen to memcg.
-But, hmm, memcg will have to select to enter this rounine based on
-the result of 1st memory reclaim.
+								Honza
 
->  
-> -		/*
-> -		 * The attempt at page out may have made some
-> -		 * of the pages active, mark them inactive again.
-> -		 */
-> -		nr_active = clear_active_flags(&page_list, NULL);
-> -		count_vm_events(PGDEACTIVATE, nr_active);
-> +		while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
-> +			wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
-> +			congestion_wait(BLK_RW_ASYNC, HZ/10);
->  
-Congestion wait is required ?? Where the congestion happens ?
-I'm sorry you already have some other trick in other patch.
-
-> -		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
-> +			/*
-> +			 * The attempt at page out may have made some
-> +			 * of the pages active, mark them inactive again.
-> +			 */
-> +			nr_active = clear_active_flags(&page_list, NULL);
-> +			count_vm_events(PGDEACTIVATE, nr_active);
-> +	
-> +			nr_reclaimed += shrink_page_list(&page_list, sc,
-> +						PAGEOUT_IO_SYNC, &nr_dirty);
-> +		}
-
-Just a question. This PAGEOUT_IO_SYNC has some meanings ?
-
-Thanks,
--Kame
-
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
