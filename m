@@ -1,20 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758434Ab0GUN5q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:57:46 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:62016 "EHLO
+	id S1758478Ab0GUN5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:57:53 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:62028 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758397Ab0GUN5m (ORCPT
+	by vger.kernel.org with ESMTP id S1758397Ab0GUN5u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:57:42 -0400
-Date: Wed, 21 Jul 2010 15:57:41 +0200
+	Wed, 21 Jul 2010 09:57:50 -0400
+Date: Wed, 21 Jul 2010 15:57:47 +0200
 From: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Geert Uytterhoeven <geert@linux-m68k.org>, linux-scsi@vger.kernel.org,
-        linux-kernel@vger.kernel.org
+        Vasu Dev <vasu.dev@intel.com>, Nick Cheng <nick.cheng@areca.com.tw>,
+        Tejun Heo <tj@kernel.org>, Mike Christie <michaelc@cs.wisc.edu>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
 Cc: vamos-dev@i4.informatik.uni-erlangen.de
-Subject: [PATCH 1/3] drivers/scsi: Remove dead CONFIG_WD33C93_PIO
-Message-ID: <c79f7e0698d11050302082fc57c7fe98d2290aa2.1279719754.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Subject: [PATCH 2/3] drivers/scsi/arcmsr: Remove dead
+ CONFIG_SCSI_ARCMSR_RESET
+Message-ID: <b76b9b20e633f5eea0bad22fb1bc71e7e05e8c66.1279719754.git.qy03fugy@stud.informatik.uni-erlangen.de>
 References: <cover.1279719754.git.qy03fugy@stud.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -25,111 +27,119 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-CONFIG_WD33C93_PIO doesn't exist in Kconfig, therefore all existing
-references to it from the source can be removed.
+CONFIG_SCSI_ARCMSR_RESET doesn't exist in Kconfig, therefore removing
+all references to it from the source.
 
 Signed-off-by: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
 ---
- drivers/scsi/wd33c93.c |   60 ------------------------------------------------
- drivers/scsi/wd33c93.h |    5 ----
- 2 files changed, 0 insertions(+), 65 deletions(-)
+ drivers/scsi/arcmsr/arcmsr_hba.c |   80 --------------------------------------
+ 1 files changed, 0 insertions(+), 80 deletions(-)
 
-diff --git a/drivers/scsi/wd33c93.c b/drivers/scsi/wd33c93.c
-index b701bf2..f62efdf 100644
---- a/drivers/scsi/wd33c93.c
-+++ b/drivers/scsi/wd33c93.c
-@@ -171,65 +171,6 @@ module_param(setup_strings, charp, 0);
+diff --git a/drivers/scsi/arcmsr/arcmsr_hba.c b/drivers/scsi/arcmsr/arcmsr_hba.c
+index ffa5479..fb7866e 100644
+--- a/drivers/scsi/arcmsr/arcmsr_hba.c
++++ b/drivers/scsi/arcmsr/arcmsr_hba.c
+@@ -72,14 +72,6 @@
+ #include <scsi/scsicam.h>
+ #include "arcmsr.h"
  
- static void wd33c93_execute(struct Scsi_Host *instance);
- 
--#ifdef CONFIG_WD33C93_PIO
--static inline uchar
--read_wd33c93(const wd33c93_regs regs, uchar reg_num)
--{
--	uchar data;
--
--	outb(reg_num, regs.SASR);
--	data = inb(regs.SCMD);
--	return data;
--}
--
--static inline unsigned long
--read_wd33c93_count(const wd33c93_regs regs)
--{
--	unsigned long value;
--
--	outb(WD_TRANSFER_COUNT_MSB, regs.SASR);
--	value = inb(regs.SCMD) << 16;
--	value |= inb(regs.SCMD) << 8;
--	value |= inb(regs.SCMD);
--	return value;
--}
--
--static inline uchar
--read_aux_stat(const wd33c93_regs regs)
--{
--	return inb(regs.SASR);
--}
--
--static inline void
--write_wd33c93(const wd33c93_regs regs, uchar reg_num, uchar value)
--{
--      outb(reg_num, regs.SASR);
--      outb(value, regs.SCMD);
--}
--
--static inline void
--write_wd33c93_count(const wd33c93_regs regs, unsigned long value)
--{
--	outb(WD_TRANSFER_COUNT_MSB, regs.SASR);
--	outb((value >> 16) & 0xff, regs.SCMD);
--	outb((value >> 8) & 0xff, regs.SCMD);
--	outb( value & 0xff, regs.SCMD);
--}
--
--#define write_wd33c93_cmd(regs, cmd) \
--	write_wd33c93((regs), WD_COMMAND, (cmd))
--
--static inline void
--write_wd33c93_cdb(const wd33c93_regs regs, uint len, uchar cmnd[])
--{
--	int i;
--
--	outb(WD_CDB_1, regs.SASR);
--	for (i=0; i<len; i++)
--		outb(cmnd[i], regs.SCMD);
--}
--
--#else /* CONFIG_WD33C93_PIO */
- static inline uchar
- read_wd33c93(const wd33c93_regs regs, uchar reg_num)
- {
-@@ -296,7 +237,6 @@ write_wd33c93_cdb(const wd33c93_regs regs, uint len, uchar cmnd[])
- 	for (i = 0; i < len; i++)
- 		*regs.SCMD = cmnd[i];
- }
--#endif /* CONFIG_WD33C93_PIO */
- 
- static inline uchar
- read_1_byte(const wd33c93_regs regs)
-diff --git a/drivers/scsi/wd33c93.h b/drivers/scsi/wd33c93.h
-index 1ed5f3b..3a74fcd 100644
---- a/drivers/scsi/wd33c93.h
-+++ b/drivers/scsi/wd33c93.h
-@@ -190,13 +190,8 @@
- 
-    /* This is what the 3393 chip looks like to us */
- typedef struct {
--#ifdef CONFIG_WD33C93_PIO
--   unsigned int   SASR;
--   unsigned int   SCMD;
--#else
-    volatile unsigned char  *SASR;
-    volatile unsigned char  *SCMD;
+-#ifdef CONFIG_SCSI_ARCMSR_RESET
+-	static int sleeptime = 20;
+-	static int retrycount = 12;
+-	module_param(sleeptime, int, S_IRUGO|S_IWUSR);
+-	MODULE_PARM_DESC(sleeptime, "The waiting period for FW ready while bus reset");
+-	module_param(retrycount, int, S_IRUGO|S_IWUSR);
+-	MODULE_PARM_DESC(retrycount, "The retry count for FW ready while bus reset");
 -#endif
- } wd33c93_regs;
- 
- 
+ MODULE_AUTHOR("Erich Chen <support@areca.com.tw>");
+ MODULE_DESCRIPTION("ARECA (ARC11xx/12xx/13xx/16xx) SATA/SAS RAID Host Bus Adapter");
+ MODULE_LICENSE("Dual BSD/GPL");
+@@ -2446,37 +2438,6 @@ static void arcmsr_hardware_reset(struct AdapterControlBlock *acb)
+ ****************************************************************************
+ ****************************************************************************
+ */
+-#ifdef CONFIG_SCSI_ARCMSR_RESET
+-	int arcmsr_sleep_for_bus_reset(struct scsi_cmnd *cmd)
+-	{
+-			struct Scsi_Host *shost = NULL;
+-			spinlock_t *host_lock = NULL;
+-			int i, isleep;
+-
+-			shost = cmd->device->host;
+-			host_lock = shost->host_lock;
+-
+-			printk(KERN_NOTICE "Host %d bus reset over, sleep %d seconds (busy %d, can queue %d) ...........\n",
+-					shost->host_no, sleeptime, shost->host_busy, shost->can_queue);
+-			isleep = sleeptime / 10;
+-			spin_unlock_irq(host_lock);
+-			if (isleep > 0) {
+-				for (i = 0; i < isleep; i++) {
+-					msleep(10000);
+-					printk(KERN_NOTICE "^%d^\n", i);
+-				}
+-			}
+-
+-			isleep = sleeptime % 10;
+-			if (isleep > 0) {
+-				msleep(isleep * 1000);
+-				printk(KERN_NOTICE "^v^\n");
+-			}
+-			spin_lock_irq(host_lock);
+-			printk(KERN_NOTICE "***** wake up *****\n");
+-			return 0;
+-	}
+-#endif
+ static void arcmsr_iop_init(struct AdapterControlBlock *acb)
+ {
+ 	uint32_t intmask_org;
+@@ -2551,47 +2512,6 @@ static int arcmsr_bus_reset(struct scsi_cmnd *cmd)
+ 			arcmsr_hardware_reset(acb);
+ 			acb->acb_flags |= ACB_F_FIRMWARE_TRAP;
+ 			acb->acb_flags &= ~ACB_F_IOP_INITED;
+-			#ifdef CONFIG_SCSI_ARCMSR_RESET
+-			struct MessageUnit_A __iomem *reg = acb->pmuA;
+-			uint32_t intmask_org, outbound_doorbell;
+-			int retry_count = 0;
+-sleep_again:
+-			arcmsr_sleep_for_bus_reset(cmd);
+-			if ((readl(&reg->outbound_msgaddr1) &
+-			ARCMSR_OUTBOUND_MESG1_FIRMWARE_OK) == 0) {
+-			printk(KERN_NOTICE "arcmsr%d: hardware bus reset and return busy, retry=%d \n",
+-			acb->host->host_no, retry_count);
+-			if (retry_count > retrycount) {
+-				printk(KERN_NOTICE "arcmsr%d: hardware bus reset and return busy, retry aborted \n",
+-				acb->host->host_no);
+-			return SUCCESS;
+-			}
+-			retry_count++;
+-			goto sleep_again;
+-			}
+-			acb->acb_flags &= ~ACB_F_FIRMWARE_TRAP;
+-			acb->acb_flags |= ACB_F_IOP_INITED;
+-			acb->acb_flags &= ~ACB_F_BUS_RESET;
+-			printk(KERN_NOTICE "arcmsr%d: hardware bus reset and reset ok \n",
+-				acb->host->host_no);
+-			/* disable all outbound interrupt */
+-			intmask_org = arcmsr_disable_outbound_ints(acb);
+-			arcmsr_get_firmware_spec(acb, 1);
+-			/*start	background rebuild*/
+-			arcmsr_start_adapter_bgrb(acb);
+-			/* clear Qbuffer if door bell ringed */
+-			outbound_doorbell = readl(&reg->outbound_doorbell);
+-			writel(outbound_doorbell, &reg->outbound_doorbell); /*clear interrupt */
+-			writel(ARCMSR_INBOUND_DRIVER_DATA_READ_OK, &reg->inbound_doorbell);
+-			/* enable outbound Post Queue,outbound doorbell Interrupt */
+-			arcmsr_enable_outbound_ints(acb, intmask_org);
+-			atomic_set(&acb->rq_map_token, 16);
+-			init_timer(&acb->eternal_timer);
+-			acb->eternal_timer.expires = jiffies + msecs_to_jiffies(20*HZ);
+-			acb->eternal_timer.data = (unsigned long) acb;
+-			acb->eternal_timer.function = &arcmsr_request_device_map;
+-			add_timer(&acb->eternal_timer);
+-			#endif
+ 		}
+ 			break;
+ 		case ACB_ADAPTER_TYPE_B: {
 -- 
 1.7.0.4
 
