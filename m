@@ -1,104 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753679Ab0GUUDc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 16:03:32 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:3265 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab0GUUDa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 16:03:30 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48047744"
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-From: Daniel Walker <dwalker@codeaurora.org>
-To: =?UTF-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-In-Reply-To: <op.vf7lipj67p4s8u@pikus>
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
-	 <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
-	 <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-	 <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf5o28st7p4s8u@pikus>
-	 <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf6zo9vb7p4s8u@pikus>
-	 <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7gt3qy7p4s8u@pikus>
-	 <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7h1yc47p4s8u@pikus>
-	 <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7j13067p4s8u@pikus>
-	 <1279741029.31376.33.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7lipj67p4s8u@pikus>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jul 2010 13:03:24 -0700
-Message-ID: <1279742604.31376.40.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1752295Ab0GUUNc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 16:13:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:51695 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751177Ab0GUUNb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 16:13:31 -0400
+Date: Wed, 21 Jul 2010 16:13:18 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
+Subject: Re: [PATCH 2/3] cfq-iosched: Implement a tunable group_idle
+Message-ID: <20100721201318.GH20458@redhat.com>
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+ <1279739181-24482-3-git-send-email-vgoyal@redhat.com>
+ <x49bpa0d3nn.fsf@segfault.boston.devel.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <x49bpa0d3nn.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 21:53 +0200, Michał Nazarewicz wrote:
-> On Wed, 21 Jul 2010 21:37:09 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
-> > What makes you assume that the bootloader would have these strings?
-> > Do your devices have these strings? Maybe mine don't have them.
+On Wed, Jul 21, 2010 at 03:40:44PM -0400, Jeff Moyer wrote:
+> Vivek Goyal <vgoyal@redhat.com> writes:
 > 
-> I don't assume.  I only state it as one of the possibilities.
+> > o Implement a new tunable group_idle, which allows idling on the group
+> >   instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
+> >   on the individual queues but idle on the group. This way on fast storage
+> >   we can get fairness between groups at the same time overall throughput
+> >   improves.
+> >
+> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> > ---
+> [snip]
+> > @@ -1929,13 +1941,21 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+> >  		return;
+> >  	}
+> >  
+> > +	/* There are other queues in the group, don't do group idle */
+> > +	if (group_idle && cfqq->cfqg->nr_cfqq > 1)
+> > +		return;
+> > +
+> >  	cfq_mark_cfqq_wait_request(cfqq);
+> >  
+> > -	sl = cfqd->cfq_slice_idle;
+> > +	if (group_idle)
+> > +		sl = cfqd->cfq_group_idle;
+> > +	else
+> > +		sl = cfqd->cfq_slice_idle;
 > 
-> > Assume the strings are gone and you can't find them, or have no idea
-> > what they should be. What do you do then?
+> What happens when both group_idle and slice_idle are set?
+
+slice_idle prevails. Notice that "group_idle" is a local variable which
+is set to 1 only if we decide not to idle on the cfq queue.
+
+
+>  Is that a
+> sane thing to do from a user's perspective?
+
+In fact by default both slice_idle=8 and group_idle=8. Just that in this
+mode group_idle never kicks in as slice_idle logic kicks in always before
+group_idle logic gets any chance.
+
+> If not, please protect
+> against it in the configuration code.  If so, then explain why we prefer
+> group_idle here, but slice_idle in completed request for the extend_sl:
 > 
-> Ask Google?
 
-Exactly, that's why they need to be in the kernel ..
+In both the places we first prefer slice_idle. Just noticed the value of
+"group_idle" in the beginning of arm_time() function and notice in what
+circumstances do we set group_idle=1
 
-> I have a better question for you though: assume the "mem" parameter is
-> lost and you have no idea what it should be?  There are many parameters
-> passed to kernel by bootloader and you could ask about all of them.
+Thanks
+Vivek
 
-That's hardware based tho. Of course you need info on what your hardware
-is. What your doing isn't based on hardware specifics, it's based on
-optimizations.
-
-> Passing cma configuration via command line is one of the possibilities
-> -- especially convenient during development -- but I would expect platform
-> defaults in a final product so you may well not need to worry about it.
-
-I honestly don't thing the "development" angle flies either , but if you
-keep this there's no way it should be enabled for anything but debug.
-
-> > Well, I like my kernel minus bloat so that's a good reason. I don't see
-> > a good reason to keep the interface in a production situation .. Maybe
-> > during development , but really I don't see even a developer needing to
-> > make the kind of changes your suggesting very often.
+> > @@ -3425,7 +3458,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+> >  		 * the queue.
+> >  		 */
+> >  		if (cfq_should_wait_busy(cfqd, cfqq)) {
+> > -			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
+> > +			unsigned long extend_sl = cfqd->cfq_slice_idle;
+> > +			if (!cfqd->cfq_slice_idle)
+> > +				extend_sl = cfqd->cfq_group_idle;
+> > +			cfqq->slice_end = jiffies + extend_sl;
 > 
-> As I've said, removing the command line parameters would not benefit the
-> kernel that much.  It's like 1% of the code or less.  On the other hand,
-> it would add complexity to the CMA framework which is a good reason not
-> to do that.
-
-If we allowed everyone to add there little tiny bit of bloat where would
-we be?
-
-> Would you also argue about removing all the other kernel parameters as
-> well? I bet you don't use most of them.  Still they are there because
-> removing them would add too much complexity to the code (conditional
-> compilation, etc.).
-
-Your is at a different level of complexity ..
-
-Daniel
-
-
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+> Also, you'll need to add documentation for this new tunable.
+> 
+> Cheers,
+> Jeff
