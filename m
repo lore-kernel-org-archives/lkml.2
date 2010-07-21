@@ -1,110 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761374Ab0GUThT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 15:37:19 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:60477 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758820Ab0GUThQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 15:37:16 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48044656"
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-From: Daniel Walker <dwalker@codeaurora.org>
-To: =?UTF-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-In-Reply-To: <op.vf7j13067p4s8u@pikus>
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
-	 <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
-	 <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-	 <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf5o28st7p4s8u@pikus>
-	 <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf6zo9vb7p4s8u@pikus>
-	 <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7gt3qy7p4s8u@pikus>
-	 <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7h1yc47p4s8u@pikus>
-	 <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
-	 <op.vf7j13067p4s8u@pikus>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 21 Jul 2010 12:37:09 -0700
-Message-ID: <1279741029.31376.33.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S932182Ab0GUTlF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 15:41:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59262 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758869Ab0GUTk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 15:40:59 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
+Subject: Re: [PATCH 2/3] cfq-iosched: Implement a tunable group_idle
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+	<1279739181-24482-3-git-send-email-vgoyal@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 21 Jul 2010 15:40:44 -0400
+In-Reply-To: <1279739181-24482-3-git-send-email-vgoyal@redhat.com> (Vivek
+	Goyal's message of "Wed, 21 Jul 2010 15:06:20 -0400")
+Message-ID: <x49bpa0d3nn.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-07-21 at 21:21 +0200, Michał Nazarewicz wrote:
-> On Wed, 21 Jul 2010 20:58:08 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
-> 
-> > On Wed, 2010-07-21 at 20:38 +0200, Michał Nazarewicz wrote:
-> >> > On Wed, 2010-07-21 at 20:11 +0200, Michał Nazarewicz wrote:
-> >> >> Not really.  This will probably be used mostly on embedded systems
-> >> >> where users don't have much to say as far as hardware included on the
-> >> >> platform is concerned, etc.  Once a phone, tablet, etc. is released
-> >> >> users will have little need for customising those strings.
-> >>
-> >> On Wed, 21 Jul 2010 20:19:08 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
-> >> > You can't assume that user won't want to reflash their own kernel on the
-> >> > device. Your assuming way too much.
-> >>
-> >> If user is clever enough to reflash a phone she will find the strings
-> >> easy especially that they are provided from: (i) bootloader which is
-> >> even less likely to be reflashed and if someone do reflash bootloader
-> >> she is a guru who'd know how to make the strings; or (ii) platform
-> >> defaults which will be available with the rest of the source code
-> >> for the platform.
-> >
-> > Your, again, assuming all sorts of stuff .. On my phone for example it
-> > is very easy to reflash, personally, I think most devices will be like
-> > that in the future. so you don't _need_ to be clever to reflash the
-> > device.
-> 
-> Bottom line is: if you reflash the device you (i) get an image from
-> somewhere and it has the strings in it, (ii) reflash the kernel and
-> parameters are provided by bootloader so they still remain, (iii)
-> use platform default strings which you get with the source codes and
-> include when kernel is built, or (iv) are a guru who knows what to
-> do.
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-What makes you assume that the bootloader would have these strings?
-Do your devices have these strings? Maybe mine don't have them.
+> o Implement a new tunable group_idle, which allows idling on the group
+>   instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
+>   on the individual queues but idle on the group. This way on fast storage
+>   we can get fairness between groups at the same time overall throughput
+>   improves.
+>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+[snip]
+> @@ -1929,13 +1941,21 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+>  		return;
+>  	}
+>  
+> +	/* There are other queues in the group, don't do group idle */
+> +	if (group_idle && cfqq->cfqg->nr_cfqq > 1)
+> +		return;
+> +
+>  	cfq_mark_cfqq_wait_request(cfqq);
+>  
+> -	sl = cfqd->cfq_slice_idle;
+> +	if (group_idle)
+> +		sl = cfqd->cfq_group_idle;
+> +	else
+> +		sl = cfqd->cfq_slice_idle;
 
-Assume the strings are gone and you can't find them, or have no idea
-what they should be. What do you do then?
+What happens when both group_idle and slice_idle are set?  Is that a
+sane thing to do from a user's perspective?  If not, please protect
+against it in the configuration code.  If so, then explain why we prefer
+group_idle here, but slice_idle in completed request for the extend_sl:
 
-> >> > If you assume they do want their own kernel then they would need this
-> >> > string from someplace. If your right and this wouldn't need to change,
-> >> > why bother allowing it to be configured at all ?
-> >>
-> >> Imagine a developer who needs to recompile the kernel and reflash the
-> >> device each time she wants to change the configuration...  Command line
-> >> arguments seems a better option for development.
-> >
-> > So make it a default off debug configuration option ..
-> 
-> I don't really see the point of doing that.  Adding the command line
-> parameters is really a minor cost so there will be no benefits from
-> removing it.
+> @@ -3425,7 +3458,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
+>  		 * the queue.
+>  		 */
+>  		if (cfq_should_wait_busy(cfqd, cfqq)) {
+> -			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
+> +			unsigned long extend_sl = cfqd->cfq_slice_idle;
+> +			if (!cfqd->cfq_slice_idle)
+> +				extend_sl = cfqd->cfq_group_idle;
+> +			cfqq->slice_end = jiffies + extend_sl;
 
-Well, I like my kernel minus bloat so that's a good reason. I don't see
-a good reason to keep the interface in a production situation .. Maybe
-during development , but really I don't see even a developer needing to
-make the kind of changes your suggesting very often.
+Also, you'll need to add documentation for this new tunable.
 
-Daniel
-
--- 
-Sent by an consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
-
+Cheers,
+Jeff
