@@ -1,75 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758044Ab0GUNcI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:32:08 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:51286 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755350Ab0GUNcG (ORCPT
+	id S932156Ab0GUNeD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:34:03 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:46601 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753464Ab0GUNeA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:32:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=pjKgcPJex1/wPwM+C1uQDPQt1di/ICoGoM+tblX0k7Mp4OsppE7K5skKorBPRF4uR5
-         4oQhCqCWbO/l4ZJa0J5hJBEQJXN9qFchVimKwrg7Aklupwr4anWzalEzOBtlvPF1Bf1W
-         r1d4HVm84IKEFDXd8rMn/6ePRg2SjX9esi1/Y=
-Message-ID: <4C46F6E2.1060305@gmail.com>
-Date: Wed, 21 Jul 2010 06:32:18 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
+	Wed, 21 Jul 2010 09:34:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [PATCH 3/7] memcg: nid and zid can be calculated from zone
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+In-Reply-To: <20100716105648.GG13117@csn.ul.ie>
+References: <20100716191418.7372.A69D9226@jp.fujitsu.com> <20100716105648.GG13117@csn.ul.ie>
+Message-Id: <20100721223349.870D.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-To: Thomas Weber <weber@corscience.de>
-CC: trivial@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 85/85]Documentation/networking/README.ipw2100 update web
- address.
-References: <1279688153-29571-1-git-send-email-justinmattock@gmail.com> <1279688153-29571-10-git-send-email-justinmattock@gmail.com> <4C46BADB.9080308@corscience.de>
-In-Reply-To: <4C46BADB.9080308@corscience.de>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 21 Jul 2010 22:33:56 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2010 02:16 AM, Thomas Weber wrote:
-> Am 21.07.2010 06:55, schrieb Justin P. Mattock:
->> The patch below updates a broken web address.
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->>   Documentation/networking/README.ipw2100 |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/Documentation/networking/README.ipw2100 b/Documentation/networking/README.ipw2100
->> index f3fcaa4..306540e 100644
->> --- a/Documentation/networking/README.ipw2100
->> +++ b/Documentation/networking/README.ipw2100
->> @@ -72,7 +72,7 @@ such, if you are interested in deploying or shipping a driver as part of
->>   solution intended to be used for purposes other than development, please
->>   obtain a tested driver from Intel Customer Support at:
->>
->> -http://support.intel.com/support/notebook/sb/CS-006408.htm
->> +http://support.intel.com
->>
->>
->>   1. Introduction
->
-> The best result I could find on Intel website
->
-> http://www.intel.com/support/wireless/sb/CS-006408.htm
->
-> replaces notebook with wireless.
->
-> Thomas
->
+> > +static inline int zone_nid(struct zone *zone)
+> > +{
+> > +	return zone->zone_pgdat->node_id;
+> > +}
+> > +
+> 
+> hmm, adding a helper and not converting the existing users of
+> zone->zone_pgdat may be a little confusing particularly as both types of
+> usage would exist in the same file e.g. in mem_cgroup_zone_nr_pages.
 
-yeah most stuff from intel I ended up just putting to the company site 
-due to me spending about 30/45 min looking for one product that wasn't 
-there or it was there they just changed it to one big page(4xxx)
+I see. here is incrementa patch.
 
-I'll resend this with the update
+Thanks
 
-Justin P. Mattock
+>From 62cf765251af257c98fc92a58215d101d200e7ef Mon Sep 17 00:00:00 2001
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Date: Tue, 20 Jul 2010 11:30:14 +0900
+Subject: [PATCH] memcg: convert to zone_nid() from bare zone->zone_pgdat->node_id
+
+Now, we have zone_nid(). this patch convert all existing users of
+zone->zone_pgdat.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/memcontrol.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/mm/memcontrol.c b/mm/memcontrol.c
+index 82e191f..3d5b645 100644
+--- a/mm/memcontrol.c
++++ b/mm/memcontrol.c
+@@ -951,7 +951,7 @@ unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
+ 				       struct zone *zone,
+ 				       enum lru_list lru)
+ {
+-	int nid = zone->zone_pgdat->node_id;
++	int nid = zone_nid(zone);
+ 	int zid = zone_idx(zone);
+ 	struct mem_cgroup_per_zone *mz = mem_cgroup_zoneinfo(memcg, nid, zid);
+ 
+@@ -961,7 +961,7 @@ unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
+ struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
+ 						      struct zone *zone)
+ {
+-	int nid = zone->zone_pgdat->node_id;
++	int nid = zone_nid(zone);
+ 	int zid = zone_idx(zone);
+ 	struct mem_cgroup_per_zone *mz = mem_cgroup_zoneinfo(memcg, nid, zid);
+ 
+@@ -1006,7 +1006,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
+ 	LIST_HEAD(pc_list);
+ 	struct list_head *src;
+ 	struct page_cgroup *pc, *tmp;
+-	int nid = z->zone_pgdat->node_id;
++	int nid = zone_nid(z);
+ 	int zid = zone_idx(z);
+ 	struct mem_cgroup_per_zone *mz;
+ 	int lru = LRU_FILE * file + active;
+-- 
+1.6.5.2
+
+
 
