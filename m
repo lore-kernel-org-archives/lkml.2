@@ -1,55 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab0GUNWH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:22:07 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:57528 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752953Ab0GUNWF (ORCPT
+	id S1756311Ab0GUNXM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:23:12 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:58363 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752953Ab0GUNXK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:22:05 -0400
-Date: Wed, 21 Jul 2010 22:21:59 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
-        netfilter-devel@vger.kernel.org,
-        Malcolm Turnbull <malcolm@loadbalancer.org>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Julius Volz <julius.volz@gmail.com>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hannes Eder <heder@google.com>
-Subject: Re: [patch v2.6 4/4] libxt_ipvs: user-space lib for netfilter
- matcher xt_ipvs
-Message-ID: <20100721132159.GN6418@verge.net.au>
-References: <20100711090342.035149543@vergenet.net>
- <20100711090500.421568837@vergenet.net>
- <20100721012146.GC22966@verge.net.au>
- <alpine.LSU.2.01.1007210834570.10568@obet.zrqbmnf.qr>
+	Wed, 21 Jul 2010 09:23:10 -0400
+Date: Wed, 21 Jul 2010 18:51:47 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Arnaldo Carvalho de Melo <acme@infradead.org>,
+        Christoph Hellwig <hch@infradead.org>,
+        Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        Randy Dunlap <rdunlap@xenotime.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Naren A Devaiah <naren.devaiah@in.ibm.com>,
+        Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+        Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+        Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        "Frank Ch. Eigler" <fche@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCHv9 2.6.35-rc4-tip 0/13]  Uprobes Patches:
+Message-ID: <20100721132147.GB4290@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100712103214.27491.15142.sendpatchset@localhost6.localdomain6>
+ <20100720041938.GA28533@infradead.org>
+ <20100720063805.GA19375@linux.vnet.ibm.com>
+ <20100720210358.GA17631@ghostprotocols.net>
+ <20100721024200.GC19375@linux.vnet.ibm.com>
+ <1279717690.4818.31.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.01.1007210834570.10568@obet.zrqbmnf.qr>
+In-Reply-To: <1279717690.4818.31.camel@gandalf.stny.rr.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 08:35:19AM +0200, Jan Engelhardt wrote:
-> 
-> On Wednesday 2010-07-21 03:21, Simon Horman wrote:
-> >> +
-> >> +#define XT_IPVS_IPVS_PROPERTY	(1 << 0) /* all other options imply this one */
-> >> +#define XT_IPVS_PROTO		(1 << 1)
-> >> +#define XT_IPVS_VADDR		(1 << 2)
-> >> +#define XT_IPVS_VPORT		(1 << 3)
-> >> +#define XT_IPVS_DIR		(1 << 4)
-> >> +#define XT_IPVS_METHOD		(1 << 5)
-> >> +#define XT_IPVS_VPORTCTL	(1 << 6)
-> >> +#define XT_IPVS_MASK		((1 << 7) - 1)
-> >> +#define XT_IPVS_ONCE_MASK	(XT_IPVS_MASK & ~XT_IPVS_IPVS_PROPERTY)
-> 
-> Can't these just be an enum?
+* Steven Rostedt <rostedt@goodmis.org> [2010-07-21 09:08:10]:
 
-More than one option can be used at once - they form a mini bitmap -
-so no, I don't think we can use an enum.
+> On Wed, 2010-07-21 at 08:12 +0530, Srikar Dronamraju wrote:
+> 
+> > I tried searching for t.456 gcc labels in google. I dont think I found
+> > anything interesting. Are we looking at not listing symbols that end
+> > with @plt? Can you please list an example t.456 label. Also any pointers to
+> > where I can find more information on the same would be very useful.
+> 
+> I'm not sure you'll find anything looking for "t.456" since that is just
+> a random label that gcc created for its internal use. But I believe that
+> all of these temp labels have a '.' in them. Thus, you can just ignore
+> all labels with '.'.
+> 
+> 
+
+Thanks a lot for confirming this. I did some digging and was thinking that may
+be .L<blah><blah> were the ones that Christoph was referring.
+
+--
+Thanks and Regards
+Srikar
 
