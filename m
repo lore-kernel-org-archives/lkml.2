@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756958Ab0GUJcg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 05:32:36 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:52627 "EHLO
+	id S1757450Ab0GUJcl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 05:32:41 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:52682 "EHLO
 	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751433Ab0GUJcZ (ORCPT
+	with ESMTP id S1756759Ab0GUJcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 05:32:25 -0400
+	Wed, 21 Jul 2010 05:32:36 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv2 02/11] writeback: fix possible race when creating bdi threads
-Date: Wed, 21 Jul 2010 12:31:37 +0300
-Message-Id: <1279704706-1267-3-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv2 07/11] writeback: do not remove bdi from bdi_list
+Date: Wed, 21 Jul 2010 12:31:42 +0300
+Message-Id: <1279704706-1267-8-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
 References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 21 Jul 2010 09:31:47.0236 (UTC) FILETIME=[8A2A8640:01CB28B7]
+X-OriginalArrivalTime: 21 Jul 2010 09:31:48.0800 (UTC) FILETIME=[8B192C00:01CB28B7]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,80 +24,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-This patch fixes a very unlikely race condition on the bdi forker thread error
-path: when bdi thread creation fails, 'bdi->wb.task' may contain the error code
-for a short period of time. If at the same time someone submits a work to this
-bdi, we can end up with an oops 'bdi_queue_work()' while executing
-'wake_up_process(wb->task)'.
+The forker thread removes bdis from 'bdi_list' before forking the bdi thread.
+But this is wrong for at least 2 reasons.
 
-This patch fixes the issue by introducing a temporary variable 'task' and
-storing the possible error code there, so that 'wb->task' would never take
-erroneous values.
+Reason #1: if we temporary remove a bdi from the list, we may miss works which
+           would otherwise be given to us.
 
-Note, this race is very unlikely and I never hit it, so it is theoretical, but
-nevertheless worth fixing.
+Reason #2: this is racy; indeed, 'bdi_wb_shutdown()' expects that bdis are
+           always in the 'bdi_list' (see 'bdi_remove_from_list()'), and when
+           it races with the forker thread, it can shut down the bdi thread
+           at the same time as the forker creates it.
 
-This patch also merges 2 comments which were previously separate.
+This patch makes sure the forker thread never removes bdis from 'bdi_list'
+(which was suggested by Christoph Hellwig).
+
+In order to make sure that we do not race with 'bdi_wb_shutdown()', we have to
+hold the 'bdi_lock' while walking the 'bdi_list' and setting the 'BDI_pending'
+flag.
+
+NOTE! The error path is interesting. Currently, when we fail to create a bdi
+thread, we move the bdi to the tail of 'bdi_list'. But if we never remove the
+bdi from the list, we cannot move it to the tail either, because then we can
+mess up the RCU readers which walk the list. And also, we'll have the race
+described above in "Reason #2".
+
+But I not think that adding to the tail is any important so I just do not do
+that.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 ---
- mm/backing-dev.c |   28 +++++++++++-----------------
- 1 files changed, 11 insertions(+), 17 deletions(-)
+ fs/fs-writeback.c |    7 -------
+ mm/backing-dev.c  |   31 ++++++++++---------------------
+ 2 files changed, 10 insertions(+), 28 deletions(-)
 
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index 8cf53ba..eaef5c9 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -804,13 +804,6 @@ int bdi_writeback_thread(void *data)
+ 	unsigned long wait_jiffies = -1UL;
+ 	long pages_written;
+ 
+-	/*
+-	 * Add us to the active bdi_list
+-	 */
+-	spin_lock_bh(&bdi_lock);
+-	list_add_rcu(&bdi->bdi_list, &bdi_list);
+-	spin_unlock_bh(&bdi_lock);
+-
+ 	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
+ 	set_freezable();
+ 
 diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index 0f7b17c..75fae17 100644
+index dbc6681..672c17b 100644
 --- a/mm/backing-dev.c
 +++ b/mm/backing-dev.c
-@@ -331,8 +331,8 @@ static int bdi_forker_thread(void *ptr)
- 	set_user_nice(current, 0);
- 
+@@ -331,7 +331,7 @@ static int bdi_forker_thread(void *ptr)
  	for (;;) {
-+		struct task_struct *task;
- 		struct backing_dev_info *bdi, *tmp;
--		struct bdi_writeback *wb;
+ 		bool fork = false;
+ 		struct task_struct *task;
+-		struct backing_dev_info *bdi, *tmp;
++		struct backing_dev_info *bdi;
  
  		/*
  		 * Temporary measure, we want to make sure we don't see
-@@ -383,29 +383,23 @@ static int bdi_forker_thread(void *ptr)
- 		list_del_init(&bdi->bdi_list);
+@@ -347,7 +347,7 @@ static int bdi_forker_thread(void *ptr)
+ 		 * Check if any existing bdi's have dirty data without
+ 		 * a thread registered. If so, set that up.
+ 		 */
+-		list_for_each_entry_safe(bdi, tmp, &bdi_list, bdi_list) {
++		list_for_each_entry(bdi, &bdi_list, bdi_list) {
+ 			if (!bdi_cap_writeback_dirty(bdi))
+ 				continue;
+ 			if (bdi->wb.task)
+@@ -359,8 +359,13 @@ static int bdi_forker_thread(void *ptr)
+ 			WARN(!test_bit(BDI_registered, &bdi->state),
+ 			     "bdi %p/%s is not registered!\n", bdi, bdi->name);
+ 
+-			list_del_rcu(&bdi->bdi_list);
+ 			fork = true;
++
++			/*
++			 * Set the pending bit - if someone will try to
++			 * unregister this bdi - it'll wait on this bit.
++			 */
++			set_bit(BDI_pending, &bdi->state);
+ 			break;
+ 		}
  		spin_unlock_bh(&bdi_lock);
+@@ -383,29 +388,13 @@ static int bdi_forker_thread(void *ptr)
  
--		wb = &bdi->wb;
--		wb->task = kthread_run(bdi_writeback_thread, wb, "flush-%s",
--					dev_name(bdi->dev));
+ 		__set_current_state(TASK_RUNNING);
+ 
 -		/*
--		 * If thread creation fails, then readd the bdi to
--		 * the pending list and force writeout of the bdi
--		 * from this forker thread. That will free some memory
--		 * and we can try again.
+-		 * Set the pending bit - if someone will try to unregister this
+-		 * bdi - it'll wait on this bit.
 -		 */
--		if (IS_ERR(wb->task)) {
--			wb->task = NULL;
+-		set_bit(BDI_pending, &bdi->state);
 -
-+		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
-+				   dev_name(bdi->dev));
-+		if (IS_ERR(task)) {
+-		/* Make sure no one uses the picked bdi */
+-		synchronize_rcu();
+-
+ 		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
+ 				   dev_name(bdi->dev));
+ 		if (IS_ERR(task)) {
  			/*
--			 * Add this 'bdi' to the back, so we get
--			 * a chance to flush other bdi's to free
--			 * memory.
-+			 * If thread creation fails, then readd the bdi back to
-+			 * the list and force writeout of the bdi from this
-+			 * forker thread. That will free some memory and we can
-+			 * try again. Add it to the tail so we get a chance to
-+			 * flush other bdi's to free memory.
+-			 * If thread creation fails, then readd the bdi back to
+-			 * the list and force writeout of the bdi from this
+-			 * forker thread. That will free some memory and we can
+-			 * try again. Add it to the tail so we get a chance to
+-			 * flush other bdi's to free memory.
++			 * If thread creation fails, force writeout of the bdi
++			 * from the thread.
  			 */
- 			spin_lock_bh(&bdi_lock);
- 			list_add_tail(&bdi->bdi_list, &bdi_pending_list);
- 			spin_unlock_bh(&bdi_lock);
- 
+-			spin_lock_bh(&bdi_lock);
+-			list_add_tail_rcu(&bdi->bdi_list, &bdi_list);
+-			spin_unlock_bh(&bdi_lock);
+-
  			bdi_flush_io(bdi);
--		}
-+		} else
-+			bdi->wb.task = task;
- 	}
- 
- 	return 0;
+ 		} else
+ 			bdi->wb.task = task;
 -- 
 1.7.1.1
 
