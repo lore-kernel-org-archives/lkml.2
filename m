@@ -1,92 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab0GURgu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 13:36:50 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:58626 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753322Ab0GURgs (ORCPT
+	id S1761230Ab0GURha (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 13:37:30 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:39387 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756540Ab0GURh2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 13:36:48 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Arjan van de Ven <arjan@linux.intel.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: kernel/panic.c warn_slowpath_common printk timestamp weirdness
-In-Reply-To: Your message of "Wed, 21 Jul 2010 06:36:41 PDT."
-             <4C46F7E9.3070200@linux.intel.com>
-From: Valdis.Kletnieks@vt.edu
-References: <62021.1279716868@localhost>
-            <4C46F7E9.3070200@linux.intel.com>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1279733737_4583P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Wed, 21 Jul 2010 13:35:37 -0400
-Message-ID: <6895.1279733737@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail-Status: score=10/50, host=dagger.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020207.4C47300A.011A,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=single engine
-X-Junkmail-IWF: false
+	Wed, 21 Jul 2010 13:37:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=rnQQ7IF5IguevLqJhMNLE+0OEqzvIkE8mtFGejddfZky+nMMBZAxL407kdoPVlhGT6
+         vCifm8hU4fczBt5XOjUiICesFeLl0fwA/tnbF3nNMB1srHTwQDUq6Jw7pelmpXzmA80O
+         3z7wJcN9PVkDddsHLfM6AdnQHn1VuXQnE4h0I=
+Date: Wed, 21 Jul 2010 21:37:23 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        Suresh Siddha <suresh.b.siddha@intel.com>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/10] x86, xsave: some code cleanups and reworks
+Message-ID: <20100721173723.GG8009@lenovo>
+References: <20100720192717.GC6227@lenovo> <20100720194606.GO26154@erda.amd.com> <20100720200729.GD6227@lenovo> <20100720201740.GE6227@lenovo> <4C472123.1090900@zytor.com> <20100721165211.GD8009@lenovo> <20100721170124.GE8009@lenovo> <4C472A5C.50004@zytor.com> <20100721171718.GF8009@lenovo> <20100721172428.GS26154@erda.amd.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100721172428.GS26154@erda.amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1279733737_4583P
-Content-Type: text/plain; charset=us-ascii
-
-On Wed, 21 Jul 2010 06:36:41 PDT, Arjan van de Ven said:
-> On 7/21/2010 5:54 AM, Valdis.Kletnieks@vt.edu wrote:
-> > Seeing this on my Dell Latitude.  The timestamps from the 'cut here' and
-> > WARNING lines are different even though they're issued by sequential lines 
-in
-> > panic.c - but then the printk timestamps remain identical even through an
-> > *entire second* WARN call.  Is somebody blocking clock interrupts and faili
-ng
-> > to re-enable them, or is something different going on here?
-> >
-> > [42875.543219] ------------[ cut here ]------------
-> > [42875.544006] WARNING: at lib/plist.c:57 plist_check_head+0x47/0x114()
-> >    
+On Wed, Jul 21, 2010 at 07:24:28PM +0200, Robert Richter wrote:
+> On 21.07.10 13:17:18, Cyrill Gorcunov wrote:
+> > On Wed, Jul 21, 2010 at 10:11:56AM -0700, H. Peter Anvin wrote:
+> > > On 07/21/2010 10:01 AM, Cyrill Gorcunov wrote:
+> > > > 
+> > > > Peter, also I think such tuning must be done at merge window time only,
+> > > > just to not break other's patch queues.
+> > > > 
+> > > 
+> > > Realistically it should be done right after the merge window for the
+> > > *next* merge window.
+> > > 
+> > > 	-hpa
+> > >
+> > 
+> > ok, which means Robert should use old conventional test at the moment
+> > instead of introducing is_boot_cpu I suppose.
 > 
-> > [42875.544006] WARNING: at lib/plist.c:57 plist_check_head+0x47/0x114()
-> > [42875.544006] Hardware name: Latitude E6500
-> >    
+> Yes, I am just using:
 > 
-> > [42882.428016] ------------[ cut here ]------------
-> > [42882.428016] WARNING: at lib/plist.c:57 plist_check_head+0x47/0x114()
-> >    
+> if (!smp_processor_id())
+> 	...
+
+ok, I see
+
 > 
+> Cyrill, if you like, I will leave it up to you to introduce the
+> is_boot_cpu() macro.
+
+ok Robert, I may handle it, notes below
+
 > 
-> Maybe I have not have had coffee yet.. but I don't see the one second 
-> jump in the three cases you mailed...
+> I still have patch 7/7 in my new posting in that removes the
+> boot_cpu_id. If your patch comes soon this will be obsolete as all
+> places will have the macro then.
+> 
 
-I mean the value stays nailed down, even through a second WARN call - it outputs
-two entire WARN tracebacks with the exact same timestamp.  Even if the same
-timestamp gets used for the traceback, I'd expect the next 'cut here' to have a
-new timestamp, and the second WARN trace to have a different timestamp as
-well.
+I guess I can make it in a hour or so (since need to check all possible
+places) but it might break other's queue I fear. That is why hpa noted
+such things should go after merge window.
 
+So I don't know Robert what would be preferred. If Peter pick up your
+patch for now -- I may just keep it somewhere localy to not loose the traces of
+boot_cpu_id and use this patch as helper. I just fear I can forget
+about this promise to introduce is_boot_cpu helper later ;)
 
---==_Exmh_1279733737_4583P
-Content-Type: application/pgp-signature
+Another option could be -- introduce it now and send to trivial@ ML
+so it'll be picked up there and pushed upstream after merge window.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFMRy/pcC3lWbTT17ARAnXPAKCD4Cth2t3kT81WcfTJR7srEMuV7gCfVBnZ
-Q6/ez2NqlGPSadN4p/62Pp0=
-=zn2i
------END PGP SIGNATURE-----
-
---==_Exmh_1279733737_4583P--
-
+> Thanks,
+> 
+> -Robert
+> 
+> -- 
+> Advanced Micro Devices, Inc.
+> Operating System Research Center
+> 
+	-- Cyrill
