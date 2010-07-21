@@ -1,61 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762381Ab0GUFDt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 01:03:49 -0400
-Received: from claw.goop.org ([74.207.240.146]:34278 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762365Ab0GUFDh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 01:03:37 -0400
-Message-ID: <4C467FA8.9080506@goop.org>
-Date: Tue, 20 Jul 2010 22:03:36 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Jens Axboe <axboe@kernel.dk>
-CC: Xen-devel <xen-devel@lists.xensource.com>,
-        Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 00/16] xen/blkfront: various bugfixes and patches for
- blkfront
-References: <cover.1279658231.git.jeremy.fitzhardinge@citrix.com> <4C46577F.7050909@kernel.dk>
-In-Reply-To: <4C46577F.7050909@kernel.dk>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1762391Ab0GUFEM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 01:04:12 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:64318 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933515Ab0GUE6t (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 00:58:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=VnUbbf/uym7emX+xLXYoJSymPKyY4JgOU0xP3J+gaxKjyOwOvVXLGudyyXhe18aq6q
+         vd23GIOmWw6vLaGxGnWNYK1BdraAPtez9ulGEX/TzI4NyJ6B48vD+zPPVuH5M3VcA4Ne
+         iZ6nycdmrXWrWkBhtL5m4tsM2fFIPUTnTDV7o=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH 122/122]Documentation/video4linux/se401.txt update web address.
+Date: Tue, 20 Jul 2010 21:58:39 -0700
+Message-Id: <1279688336-29735-2-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
+In-Reply-To: <1279688336-29735-1-git-send-email-justinmattock@gmail.com>
+References: <1279688336-29735-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2010 07:12 PM, Jens Axboe wrote:
-> On 07/20/2010 02:42 PM, Jeremy Fitzhardinge wrote:
->   
->> From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
->>
->> Hi Jens,
->>
->> This series has various updates to blkfront, including:
->>  - support for dynamic device resizing
->>  - bugfixes for device hotplug
->>  - various races and bugs fixed
->>
->> It can be pulled from:
->>
->> git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git upstream/blkfront
->>     
-> They don't apply cleanly to the for-2.6.36 branch, it fails at patch 2:
->   
+The patch below updates a broken web address.
 
-OK, I'll check it out.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Thanks,
-    J
+---
+ Documentation/video4linux/se401.txt |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> patching file drivers/block/xen-blkfront.c
-> Hunk #1 succeeded at 105 (offset 1 line).
-> Hunk #2 succeeded at 143 (offset 1 line).
-> Hunk #9 FAILED at 1080.
-> Hunk #10 succeeded at 1106 with fuzz 1 (offset 5 lines).
-> 1 out of 10 hunks FAILED -- saving rejects to file drivers/block/xen-blkfront.c.rej
->
->   
+diff --git a/Documentation/video4linux/se401.txt b/Documentation/video4linux/se401.txt
+index 7b9d1c9..bd6526e 100644
+--- a/Documentation/video4linux/se401.txt
++++ b/Documentation/video4linux/se401.txt
+@@ -49,6 +49,6 @@ order to increase the throughput (and thus framerate).
+ HELP:
+ 
+ The latest info on this driver can be found at:
+-http://www.chello.nl/~j.vreeken/se401/
++http://members.chello.nl/~j.vreeken/se401/
+ And questions to me can be send to:
+ pe1rxq@amsat.org
+-- 
+1.7.1.rc1.21.gf3bd6
 
