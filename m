@@ -1,87 +1,256 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab0GULPr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 07:15:47 -0400
-Received: from smarthost03.mail.zen.net.uk ([212.23.3.142]:60494 "EHLO
-	smarthost03.mail.zen.net.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751163Ab0GULPq (ORCPT
+	id S1752933Ab0GULQ6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 07:16:58 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:33190 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751389Ab0GULQ4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 07:15:46 -0400
-From: "Andrew Bird (Sphere Systems)" <ajb@spheresystems.co.uk>
-Organization: Sphere Systems Ltd
-To: linux-kernel@vger.kernel.org
-Subject: Option.c blacklist not functioning as I expected
-Date: Wed, 21 Jul 2010 12:15:40 +0100
-User-Agent: KMail/1.13.3 (Linux/2.6.30.10-105.2.23.fc11.x86_64; KDE/4.4.3; x86_64; ; )
-Cc: ajb@spheresystems.co.uk
+	Wed, 21 Jul 2010 07:16:56 -0400
+Date: Wed, 21 Jul 2010 07:14:19 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: Re: [RFC PATCH v3 1/5] irq: add tracepoint to softirq_raise
+Message-ID: <20100721111419.GB21259@hmsreliant.think-freely.org>
+References: <4C44F12F.5090908@jp.fujitsu.com>
+ <4C44F1AB.6020902@jp.fujitsu.com>
+ <20100720110439.GA1995@hmsreliant.think-freely.org>
+ <4C469A41.4020807@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007211215.42008.ajb@spheresystems.co.uk>
-X-Originating-Smarthost03-IP: [82.71.70.22]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C469A41.4020807@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Guys,
-     I wanted to blacklist a network interface that has class 0xff / subclass 
-0xff from the Option usb serial driver for a couple of devices. The reason for 
-doing this is I hope to get the usbnet driver running on interface 1. The 
-'blacklist_info' in option.c looked like the way to go, but it doesn't seem to 
-have the desired effect, I still get interface 1 bound. Interfaces 4 and 5 
-aren't bound but I suspect it's because they are storage and not class 0xff.
+On Wed, Jul 21, 2010 at 03:57:05PM +0900, Koki Sanagi wrote:
+> (2010/07/20 20:04), Neil Horman wrote:
+> > On Tue, Jul 20, 2010 at 09:45:31AM +0900, Koki Sanagi wrote:
+> >> From: Lai Jiangshan <laijs@cn.fujitsu.com>
+> >>
+> >> Add a tracepoint for tracing when softirq action is raised.
+> >>
+> >> It and the existed tracepoints complete softirq's tracepoints:
+> >> softirq_raise, softirq_entry and softirq_exit.
+> >>
+> >> And when this tracepoint is used in combination with
+> >> the softirq_entry tracepoint we can determine
+> >> the softirq raise latency.
+> >>
+> >> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
+> >> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+> >> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+> >>
+> >> [ factorize softirq events with DECLARE_EVENT_CLASS ]
+> >> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+> >> ---
+> >>  include/linux/interrupt.h  |    8 +++++-
+> >>  include/trace/events/irq.h |   57 ++++++++++++++++++++++++++-----------------
+> >>  kernel/softirq.c           |    4 +-
+> >>  3 files changed, 43 insertions(+), 26 deletions(-)
+> >>
+> >> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
+> >> index c233113..1cb5726 100644
+> >> --- a/include/linux/interrupt.h
+> >> +++ b/include/linux/interrupt.h
+> >> @@ -18,6 +18,7 @@
+> >>  #include <asm/atomic.h>
+> >>  #include <asm/ptrace.h>
+> >>  #include <asm/system.h>
+> >> +#include <trace/events/irq.h>
+> >>  
+> >>  /*
+> >>   * These correspond to the IORESOURCE_IRQ_* defines in
+> >> @@ -402,7 +403,12 @@ asmlinkage void do_softirq(void);
+> >>  asmlinkage void __do_softirq(void);
+> >>  extern void open_softirq(int nr, void (*action)(struct softirq_action *));
+> >>  extern void softirq_init(void);
+> >> -#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
+> >> +static inline void __raise_softirq_irqoff(unsigned int nr)
+> >> +{
+> >> +	trace_softirq_raise(nr);
+> >> +	or_softirq_pending(1UL << nr);
+> >> +}
+> >> +
+> > We already have tracepoints in irq_enter and irq_exit.  If the goal here is to
+> > detect latency during packet processing, cant the delta in time between those
+> > two points be used to determine interrupt handling latency?
+> 
+> Certainly, the time between irq_entry and irq_exit is not directly related to
+> latency during packet processing. But it's indirectly related it.
+> Because softirq_entry isn't passed until irq exits and softirq_entry time is
+> related to packet processing latency. So I show it as a reference.
+> 
+Its not directly related no, but look at it, the amount of processing between
+irq_exit and softirq_entry is minimal.  The information you are trying to
+extract by computing the delta from irq_entry to softirq_entry is almost exactly
+the same as that from irq_entry to irq_exit.  For that matter, since you're
+trying to guage lantency for packet processing, I expect you could get the same
+delta by measuring irq_entry to napi_poll tracepoint time, and save the hassle
+of needing to filter on softirq processing that doesn't relate to packet
+processing.
 
-Please can anyone show me what I'm missing?
+> > 
+> > 
+> >>  extern void raise_softirq_irqoff(unsigned int nr);
+> >>  extern void raise_softirq(unsigned int nr);
+> >>  extern void wakeup_softirqd(void);
+> >> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
+> >> index 0e4cfb6..717744c 100644
+> >> --- a/include/trace/events/irq.h
+> >> +++ b/include/trace/events/irq.h
+> >> @@ -5,7 +5,9 @@
+> >>  #define _TRACE_IRQ_H
+> >>  
+> >>  #include <linux/tracepoint.h>
+> >> -#include <linux/interrupt.h>
+> >> +
+> >> +struct irqaction;
+> >> +struct softirq_action;
+> >>  
+> >>  #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
+> >>  #define show_softirq_name(val)				\
+> >> @@ -84,56 +86,65 @@ TRACE_EVENT(irq_handler_exit,
+> >>  
+> >>  DECLARE_EVENT_CLASS(softirq,
+> >>  
+> >> -	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
+> >> +	TP_PROTO(unsigned int nr),
+> >>  
+> >> -	TP_ARGS(h, vec),
+> >> +	TP_ARGS(nr),
+> >>  
+> >>  	TP_STRUCT__entry(
+> >> -		__field(	int,	vec			)
+> >> +		__field(	unsigned int,	vec	)
+> >>  	),
+> >>  
+> >>  	TP_fast_assign(
+> >> -		__entry->vec = (int)(h - vec);
+> >> +		__entry->vec	= nr;
+> >>  	),
+> >>  
+> >>  	TP_printk("vec=%d [action=%s]", __entry->vec,
+> >> -		  show_softirq_name(__entry->vec))
+> >> +		show_softirq_name(__entry->vec))
+> >> +);
+> >> +
+> >> +/**
+> >> + * softirq_raise - called immediately when a softirq is raised
+> >> + * @nr: softirq vector number
+> >> + *
+> >> + * Tracepoint for tracing when softirq action is raised.
+> >> + * Also, when used in combination with the softirq_entry tracepoint
+> >> + * we can determine the softirq raise latency.
+> >> + */
+> >> +DEFINE_EVENT(softirq, softirq_raise,
+> >> +
+> >> +	TP_PROTO(unsigned int nr),
+> >> +
+> >> +	TP_ARGS(nr)
+> >>  );
+> >>  
+> >>  /**
+> >>   * softirq_entry - called immediately before the softirq handler
+> >> - * @h: pointer to struct softirq_action
+> >> - * @vec: pointer to first struct softirq_action in softirq_vec array
+> >> + * @nr: softirq vector number
+> >>   *
+> >> - * The @h parameter, contains a pointer to the struct softirq_action
+> >> - * which has a pointer to the action handler that is called. By subtracting
+> >> - * the @vec pointer from the @h pointer, we can determine the softirq
+> >> - * number. Also, when used in combination with the softirq_exit tracepoint
+> >> + * Tracepoint for tracing when softirq action starts.
+> >> + * Also, when used in combination with the softirq_exit tracepoint
+> >>   * we can determine the softirq latency.
+> >>   */
+> >>  DEFINE_EVENT(softirq, softirq_entry,
+> >>  
+> >> -	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
+> >> +	TP_PROTO(unsigned int nr),
+> >>  
+> >> -	TP_ARGS(h, vec)
+> >> +	TP_ARGS(nr)
+> >>  );
+> >>  
+> >>  /**
+> >>   * softirq_exit - called immediately after the softirq handler returns
+> >> - * @h: pointer to struct softirq_action
+> >> - * @vec: pointer to first struct softirq_action in softirq_vec array
+> >> + * @nr: softirq vector number
+> >>   *
+> >> - * The @h parameter contains a pointer to the struct softirq_action
+> >> - * that has handled the softirq. By subtracting the @vec pointer from
+> >> - * the @h pointer, we can determine the softirq number. Also, when used in
+> >> - * combination with the softirq_entry tracepoint we can determine the softirq
+> >> - * latency.
+> >> + * Tracepoint for tracing when softirq action ends.
+> >> + * Also, when used in combination with the softirq_entry tracepoint
+> >> + * we can determine the softirq latency.
+> >>   */
+> >>  DEFINE_EVENT(softirq, softirq_exit,
+> >>  
+> >> -	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
+> >> +	TP_PROTO(unsigned int nr),
+> >>  
+> >> -	TP_ARGS(h, vec)
+> >> +	TP_ARGS(nr)
+> >>  );
+> >>  
+> >>  #endif /*  _TRACE_IRQ_H */
+> >> diff --git a/kernel/softirq.c b/kernel/softirq.c
+> >> index 825e112..6790599 100644
+> >> --- a/kernel/softirq.c
+> >> +++ b/kernel/softirq.c
+> >> @@ -215,9 +215,9 @@ restart:
+> >>  			int prev_count = preempt_count();
+> >>  			kstat_incr_softirqs_this_cpu(h - softirq_vec);
+> >>  
+> >> -			trace_softirq_entry(h, softirq_vec);
+> >> +			trace_softirq_entry(h - softirq_vec);
+> >>  			h->action(h);
+> >> -			trace_softirq_exit(h, softirq_vec);
+> >> +			trace_softirq_exit(h - softirq_vec);
+> > 
+> > You're loosing information here by reducing the numbers of parameters in this
+> > tracepoint.  How many other tracepoint scripts rely on having both pointers
+> > handy?  Why not just do the pointer math inside your tracehook instead?
+> 
+> In __raise_softirq_irqoff macro there is no method to refer softirq_vec, so it
+> can't use softirq DECLARE_EVENT_CLASS as is.
+> Currently,  there is no script using softirq_entry or softirq_exit.
+> 
+That shouldn't matter, just pass in NULL for softirq_vec in
+__raise_softirq_irqoff as the second argument to the trace function.  You may
+need to fix up the class definition so that the assignment or printk doesn't try
+to dereference that pointer when its NULL, but thats easy enough, and it avoids
+breaking any other perf scripts floating out there.
+Neil
 
-Thanks,
-
-
-Andrew
-
-diff --git a/drivers/usb/serial/option.c b/drivers/usb/serial/option.c
-index e280ad8..f1ab07e 100644
---- a/drivers/usb/serial/option.c
-+++ b/drivers/usb/serial/option.c
-@@ -145,6 +145,8 @@ static void option_instat_callback(struct urb *urb);
- #define HUAWEI_PRODUCT_E143D                   0x143D
- #define HUAWEI_PRODUCT_E143E                   0x143E
- #define HUAWEI_PRODUCT_E143F                   0x143F
-+#define HUAWEI_PRODUCT_K4505                   0x1464
-+#define HUAWEI_PRODUCT_K3765                   0x1465
- #define HUAWEI_PRODUCT_E14AC                   0x14AC
- 
- #define QUANTA_VENDOR_ID                       0x0408
-@@ -383,6 +385,14 @@ static const struct option_blacklist_info 
-four_g_w14_blacklist = {
-        .reason = OPTION_BLACKLIST_SENDSETUP
- };
- 
-+/* ignore net, cdrom, sdcard interfaces */
-+static const u8 huawei_k3765_k4505_reserved_if[] = { 1, 4, 5};
-+static const struct option_blacklist_info huawei_k3765_k4505_blacklist = {
-+       .infolen = ARRAY_SIZE(huawei_k3765_k4505_reserved_if),
-+       .ifaceinfo = huawei_k3765_k4505_reserved_if,
-+       .reason = OPTION_BLACKLIST_RESERVED_IF
-+};
-+
- static const struct usb_device_id option_ids[] = {
-        { USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_COLT) },
-        { USB_DEVICE(OPTION_VENDOR_ID, OPTION_PRODUCT_RICOLA) },
-@@ -480,6 +490,12 @@ static const struct usb_device_id option_ids[] = {
-        { USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 
-HUAWEI_PRODUCT_E143D, 0xff, 0xff, 0xff) },
-        { USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 
-HUAWEI_PRODUCT_E143E, 0xff, 0xff, 0xff) },
-        { USB_DEVICE_AND_INTERFACE_INFO(HUAWEI_VENDOR_ID, 
-HUAWEI_PRODUCT_E143F, 0xff, 0xff, 0xff) },
-+       { USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K4505),
-+         .driver_info = (kernel_ulong_t)&huawei_k3765_k4505_blacklist
-+       },
-+       { USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_K3765),
-+         .driver_info = (kernel_ulong_t)&huawei_k3765_k4505_blacklist
-+       },
-        { USB_DEVICE(HUAWEI_VENDOR_ID, HUAWEI_PRODUCT_E14AC) },
-        { USB_DEVICE(AMOI_VENDOR_ID, AMOI_PRODUCT_9508) },
-        { USB_DEVICE(NOVATELWIRELESS_VENDOR_ID, NOVATELWIRELESS_PRODUCT_V640) 
-}, /* Novatel Merlin V640/XV620 */
+> Thanks,
+> Koki Sanagi.
+> 
+> > 
+> >>  			if (unlikely(prev_count != preempt_count())) {
+> >>  				printk(KERN_ERR "huh, entered softirq %td %s %p"
+> >>  				       "with preempt_count %08x,"
+> >>
+> >> --
+> >> To unsubscribe from this list: send the line "unsubscribe netdev" in
+> >> the body of a message to majordomo@vger.kernel.org
+> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> >>
+> > 
+> > 
+> 
+> 
+> 
