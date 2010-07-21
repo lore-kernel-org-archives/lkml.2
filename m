@@ -1,67 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757000Ab0GUSei (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 14:34:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33658 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752370Ab0GUSeg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 14:34:36 -0400
-Message-ID: <4C473DB3.7040405@redhat.com>
-Date: Wed, 21 Jul 2010 21:34:27 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 3/6] KVM: MMU: fix page dirty tracking lost while sync
- page
-References: <4C3FCFD7.5070005@cn.fujitsu.com> <4C3FD11D.1060104@cn.fujitsu.com>
-In-Reply-To: <4C3FD11D.1060104@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1758744Ab0GUSgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 14:36:53 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:63680 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751170Ab0GUSgv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 14:36:51 -0400
+MIME-version: 1.0
+Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
+Date: Wed, 21 Jul 2010 20:38:12 +0200
+From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
+Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+In-reply-to: <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
+To: Daniel Walker <dwalker@codeaurora.org>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Xiaolin Zhang <xiaolin.zhang@intel.com>,
+        Hiremath Vaibhav <hvaibhav@ti.com>,
+        Robert Fekete <robert.fekete@stericsson.com>,
+        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-msm@vger.kernel.org
+Message-id: <op.vf7h1yc47p4s8u@pikus>
+Organization: Samsung Electronics
+Content-transfer-encoding: 8BIT
+User-Agent: Opera Mail/10.60 (Linux)
+References: <cover.1279639238.git.m.nazarewicz@samsung.com>
+ <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
+ <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
+ <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf5o28st7p4s8u@pikus>
+ <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf6zo9vb7p4s8u@pikus>
+ <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf7gt3qy7p4s8u@pikus>
+ <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/16/2010 06:25 AM, Xiao Guangrong wrote:
-> In sync-page path, if spte.writable is changed, it will lose page dirty
-> tracking, for example:
->
-> assume spte.writable = 0 in a unsync-page, when it's synced, it map spte
-> to writable(that is spte.writable = 1), later guest write spte.gfn, it means
-> spte.gfn is dirty, then guest changed this mapping to read-only, after it's
-> synced,  spte.writable = 0
->
-> So, when host release the spte, it detect spte.writable = 0 and not mark page
-> dirty
->
->    
+> On Wed, 2010-07-21 at 20:11 +0200, Michał Nazarewicz wrote:
+>> Not really.  This will probably be used mostly on embedded systems
+>> where users don't have much to say as far as hardware included on the
+>> platform is concerned, etc.  Once a phone, tablet, etc. is released
+>> users will have little need for customising those strings.
 
-Subtle, good catch.
+On Wed, 21 Jul 2010 20:19:08 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
+> You can't assume that user won't want to reflash their own kernel on the
+> device. Your assuming way too much.
 
->   set_pte:
-> +	if (is_writable_pte(*sptep)&&  !is_writable_pte(spte))
-> +		kvm_set_pfn_dirty(pfn);
->   	update_spte(sptep, spte);
->    
+If user is clever enough to reflash a phone she will find the strings
+easy especially that they are provided from: (i) bootloader which is
+even less likely to be reflashed and if someone do reflash bootloader
+she is a guru who'd know how to make the strings; or (ii) platform
+defaults which will be available with the rest of the source code
+for the platform.
 
-I think this has to be done after the tlb flush, otherwise we have
+> If you assume they do want their own kernel then they would need this
+> string from someplace. If your right and this wouldn't need to change,
+> why bother allowing it to be configured at all ?
 
-   set_pfn_dirty
-   (some other cpu) write out page, mark as clean
-   (some other vcpu writes through stale tlb entry)
-   update_spte
-   tlb flush
+Imagine a developer who needs to recompile the kernel and reflash the
+device each time she wants to change the configuration...  Command line
+arguments seems a better option for development.
 
-but perhaps mmu notifiers protect us here, if the cleaner wants to write 
-out the page it has to clear the dirty bit in sptes as well, and that 
-will block on mmu_lock.
-
-Later on we can use the dirty bit instead of writeable bit, except on 
-EPT.  But let's start with your fix.
+And the configuration is needed because it is platform-dependent
+so it needs to be set for each platform.
 
 -- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
-
+Best regards,                                        _     _
+| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
+| Computer Science,  Michał "mina86" Nazarewicz       (o o)
++----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
