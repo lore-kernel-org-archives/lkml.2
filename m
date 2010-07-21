@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756578Ab0GUFRe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 01:17:34 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:34369 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755947Ab0GUExQ (ORCPT
+	id S933702Ab0GUFRu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 01:17:50 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39278 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755822Ab0GUExM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 00:53:16 -0400
+	Wed, 21 Jul 2010 00:53:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Od7W53J9gxL9L54xWkXr5BHWlZL+v9iuln/K+shY1VUSAcnKA1baNN1qYz26asgvIK
-         v4TtozCuBdJfsCkRFUuPtDTZAmeq5fnXA2gLKr1P8cWJdCLj4TIxhhhWlkv3hGRSzOAk
-         YZHOxDPD+nKYJ4dJUo9UWtXdYg/zqWYDJxbbc=
+        b=NUvz+JQUHaUDzRCZ4McUUQFlaOkHvhI6yEhhkANbQ7+zEFNCLRivFVACXgp+xMSqde
+         6rNFmfUwf+IHmSJNddhLStr9WVjFUC2+atab0IW6TX291fjVCN4L5q0tM0xyQi5IrlKp
+         TYZK3T3vb4b7cGtY0i5ftGeqmsjakf0HG6mZg=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 39/39]Documentation/hwmon/w83627hf update web address.
-Date: Tue, 20 Jul 2010 21:52:56 -0700
-Message-Id: <1279687982-29413-9-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 38/38]Documentation/hwmon/smsc47m1 update web address.
+Date: Tue, 20 Jul 2010 21:52:55 -0700
+Message-Id: <1279687982-29413-8-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 In-Reply-To: <1279687982-29413-1-git-send-email-justinmattock@gmail.com>
 References: <1279687982-29413-1-git-send-email-justinmattock@gmail.com>
@@ -27,44 +27,35 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below removes broken web addresses that I cant seem to locate
-and adds the correct location to the company.
+The patch below updates the broken web addresses to the company site.
+If anybody knows the locations of these let me know, and Ill
+update and resend.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- Documentation/hwmon/w83627hf |    6 +-----
- 1 files changed, 1 insertions(+), 5 deletions(-)
+ Documentation/hwmon/smsc47m1 |    8 +-------
+ 1 files changed, 1 insertions(+), 7 deletions(-)
 
-diff --git a/Documentation/hwmon/w83627hf b/Documentation/hwmon/w83627hf
-index 44dd2bc..fb145e5 100644
---- a/Documentation/hwmon/w83627hf
-+++ b/Documentation/hwmon/w83627hf
-@@ -5,23 +5,19 @@ Supported chips:
-   * Winbond W83627HF (ISA accesses ONLY)
-     Prefix: 'w83627hf'
-     Addresses scanned: ISA address retrieved from Super I/O registers
--    Datasheet: http://www.winbond.com/PDF/sheet/w83627hf.pdf
-   * Winbond W83627THF
-     Prefix: 'w83627thf'
-     Addresses scanned: ISA address retrieved from Super I/O registers
--    Datasheet: http://www.winbond.com/PDF/sheet/w83627thf.pdf
-   * Winbond W83697HF
-     Prefix: 'w83697hf'
-     Addresses scanned: ISA address retrieved from Super I/O registers
--    Datasheet: http://www.winbond.com/PDF/sheet/697hf.pdf
-   * Winbond W83637HF
-     Prefix: 'w83637hf'
-     Addresses scanned: ISA address retrieved from Super I/O registers
--    Datasheet: http://www.winbond.com/PDF/sheet/w83637hf.pdf
-   * Winbond W83687THF
-     Prefix: 'w83687thf'
-     Addresses scanned: ISA address retrieved from Super I/O registers
--    Datasheet: Provided by Winbond on request
-+    Datasheet: Provided by Winbond on request(http://www.winbond.com/hq/enu)
- 
- Authors:
-         Frodo Looijaard <frodol@dds.nl>,
+diff --git a/Documentation/hwmon/smsc47m1 b/Documentation/hwmon/smsc47m1
+index 42c8431..1b38676 100644
+--- a/Documentation/hwmon/smsc47m1
++++ b/Documentation/hwmon/smsc47m1
+@@ -7,13 +7,7 @@ Supported chips:
+     Addresses scanned: none, address read from Super I/O config space
+     Prefix: 'smsc47m1'
+     Datasheets:
+-        http://www.smsc.com/main/datasheets/47b27x.pdf
+-        http://www.smsc.com/main/datasheets/47m10x.pdf
+-        http://www.smsc.com/main/datasheets/47m112.pdf
+-        http://www.smsc.com/main/tools/discontinued/47m13x.pdf
+-        http://www.smsc.com/main/datasheets/47m14x.pdf
+-        http://www.smsc.com/main/tools/discontinued/47m15x.pdf
+-        http://www.smsc.com/main/datasheets/47m192.pdf
++        http://www.smsc.com/
+   * SMSC LPC47M292
+     Addresses scanned: none, address read from Super I/O config space
+     Prefix: 'smsc47m2'
 -- 
 1.7.1.rc1.21.gf3bd6
 
