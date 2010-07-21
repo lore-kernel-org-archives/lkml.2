@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762213Ab0GUE5l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 00:57:41 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:62631 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933338Ab0GUE4U (ORCPT
+	id S1762241Ab0GUE5q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 00:57:46 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:37757 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933341Ab0GUE4W (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 00:56:20 -0400
+	Wed, 21 Jul 2010 00:56:22 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=OlBcwenL7497dzcCauwiFn96e2trCIn9JayvH40i4Lwllb1w+5HDDHXi9qgDlygqoP
-         rtpRiQNsYrDex72Ix6CUUZqlRoz2F2pqgHHvyeCJlxFbG6SrraEvhvZhTvQOCEhigjjS
-         QeRqsuY0g2DT/N5SPHQ91P6OEWD8Fmt+xDCEw=
+        b=GqsJhWUZ/IGA+gB8uEjuMCp98VBmQjLWLBjxeLM/Rql5S/+vmYWIYBe61NqKCfkn+p
+         Pg8VljzzkQNAwzllLjgs7Agdm4UVfJCxsScNLwGeM03/dE8eR/Mf+LLM2xGk1FtAvlNv
+         OK7UhxZRT9JaKAH5/Iju5P0h8N5ARMo9Ns8Q4=
 From: "Justin P. Mattock" <justinmattock@gmail.com>
 To: trivial@kernel.org
 Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
         "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 88/88]Documentation/networking/ray_cs.txt update web address.
-Date: Tue, 20 Jul 2010 21:55:51 -0700
-Message-Id: <1279688153-29571-13-git-send-email-justinmattock@gmail.com>
+Subject: [PATCH 90/90]Documentation/power/video.txt update web address.
+Date: Tue, 20 Jul 2010 21:55:53 -0700
+Message-Id: <1279688153-29571-15-git-send-email-justinmattock@gmail.com>
 X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 In-Reply-To: <1279688153-29571-1-git-send-email-justinmattock@gmail.com>
 References: <1279688153-29571-1-git-send-email-justinmattock@gmail.com>
@@ -27,29 +27,45 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below updates a broken web address.
+The below patch updates a web address and removes a web address
+in of which I have no idea where its at.
 
 Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
 ---
- Documentation/networking/ray_cs.txt |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ Documentation/power/video.txt |   12 ++++++------
+ 1 files changed, 6 insertions(+), 6 deletions(-)
 
-diff --git a/Documentation/networking/ray_cs.txt b/Documentation/networking/ray_cs.txt
-index 145d27a..c0c1230 100644
---- a/Documentation/networking/ray_cs.txt
-+++ b/Documentation/networking/ray_cs.txt
-@@ -13,8 +13,8 @@ wireless LAN cards.
+diff --git a/Documentation/power/video.txt b/Documentation/power/video.txt
+index 2b35849..3e6272b 100644
+--- a/Documentation/power/video.txt
++++ b/Documentation/power/video.txt
+@@ -67,11 +67,11 @@ There are a few types of systems where video works after S3 resume:
+   POSTing bios works. Ole Rohne has patch to do just that at
+   http://dev.gentoo.org/~marineam/patch-radeonfb-2.6.11-rc2-mm2.
  
- As of kernel 2.3.18, the ray_cs driver is part of the Linux kernel
- source.  My web page for the development of ray_cs is at
--http://world.std.com/~corey/raylink.html and I can be emailed at
--corey@world.std.com
-+http://web.ralinktech.com/ralink/Home/Support/Linux.html 
-+and I can be emailed at corey@world.std.com
+-(8) on some systems, you can use the video_post utility mentioned here:
+-  http://bugzilla.kernel.org/show_bug.cgi?id=3670. Do echo 3 > /sys/power/state
+-  && /usr/sbin/video_post - which will initialize the display in console mode.
+-  If  you are in X, you can switch to a virtual terminal and back to X using
+-  CTRL+ALT+F1 - CTRL+ALT+F7 to get the display working in graphical mode again.
++(8) on some systems, you can use the video_post utility and or 
++  do echo 3 > /sys/power/state  && /usr/sbin/video_post - which will 
++  initialize the display in console mode. If you are in X, you can switch
++  to a virtual terminal and back to X using  CTRL+ALT+F1 - CTRL+ALT+F7 to get
++  the display working in graphical mode again.
  
- The kernel driver is based on ray_cs-1.62.tgz
+ Now, if you pass acpi_sleep=something, and it does not work with your
+ bios, you'll get a hard crash during resume. Be careful. Also it is
+@@ -177,7 +177,7 @@ Mainboard	    Graphics card                 hack (or "how to do it")
+ Asus A7V8X	    nVidia RIVA TNT2 model 64	  s3_bios,s3_mode (4)
  
+ 
+-(*) from http://www.ubuntulinux.org/wiki/HoaryPMResults, not sure
++(*) from https://wiki.ubuntu.com/HoaryPMResults, not sure
+     which options to use. If you know, please tell me.
+ 
+ (***) To be tested with a newer kernel.
 -- 
 1.7.1.rc1.21.gf3bd6
 
