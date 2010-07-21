@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751328Ab0GUELB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 00:11:01 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47654 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750875Ab0GUELA (ORCPT
+	id S1751260Ab0GUETv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 00:19:51 -0400
+Received: from sasa.zarnet.ac.zw ([209.88.89.134]:36395 "EHLO
+	dbase.zarnet.ac.zw" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1750875Ab0GUETu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 00:11:00 -0400
-Date: Tue, 20 Jul 2010 21:10:18 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nathan Lynch <ntl@pobox.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Davide Libenzi <davidel@xmailserver.org>, stable@kernel.org
-Subject: Re: [PATCH] signalfd: fill in ssi_int for posix timers and message
- queues
-Message-Id: <20100720211018.e586c7ce.akpm@linux-foundation.org>
-In-Reply-To: <1279683859.3030.121.camel@localhost>
-References: <1278117528.21917.354.camel@localhost>
-	<20100720154205.667e95aa.akpm@linux-foundation.org>
-	<1279683859.3030.121.camel@localhost>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
+	Wed, 21 Jul 2010 00:19:50 -0400
+X-Greylist: delayed 1877 seconds by postgrey-1.27 at vger.kernel.org; Wed, 21 Jul 2010 00:19:49 EDT
+Message-ID: <19292.41.220.68.3.1279683818.squirrel@charmie.zarnet.ac.zw>
+Date: Wed, 21 Jul 2010 06:43:38 +0300 (EAT)
+Subject: Final =?iso-8859-1?Q?Notification=AE_?=
+From: Western Union Foreign Payment =?iso-8859-1?Q?Office=AE?= 
+	<hardin7710@hotmail.com>
+Reply-To: davidmark.remmitancedept@gmail.com
+User-Agent: SquirrelMail/1.4.8-5.el5.centos.10
+MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
+X-ZARNet-MailScanner-Information: Please contact the ISP for more information
+X-MailScanner-ID: 4D84DB709C1.A281C
+X-ZARNet-MailScanner: Found to be clean
+X-ZARNet-MailScanner-From: hardin7710@hotmail.com
+MailScanner-NULL-Check: 1280288618.49755@c7w7bWxiB2nCn8UjccCt6A
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jul 2010 22:44:19 -0500 Nathan Lynch <ntl@pobox.com> wrote:
+I write to inform you that we have already sent you 5000.00 USD through
+Western Union Nigeria as we have been given the mandate to transfer your
+full compensation payment of  USD800, 000.00 via Western Union by the
+Nigerian Government as compensation to you for being defrauded or scam by
+It's Citizens.
 
-> > So it's not 100% obvious that this change is desirable.  Does the
-> > functionality which this patch adds justify the introduction of these
-> > problems?
-> 
-> I think the change is desirable in that no user of the interface could
-> reasonably expect the current behavior with respect to the ssi_int
-> field, and that it reconciles signalfd's behavior with its design
-> intentions.  On the other hand, I noticed this discrepancy only because
-> I was cribbing signalfd's data structures for checkpoint/restart, not
-> because I am aware of any application that is affected, nor was I able
-> to find one using Google's code search.  It would be highly speculative
-> of me to say that no application depends on the current behavior, but it
-> is difficult to imagine a correctly functioning application that depends
-> on it.
+So, I decided to email you the MTCN and sender name, so you can pick up
+this $5000.00USD to enable us send another $5000.00USD by tomorrow as you
+know we will be sending you only $5000.00USD per day. Please pick up this
+information and run to any Western Union in your country to pick up the
+$5000.00USD and call me back to send you another payment tomorrow.
 
-It's not a matter of a current application depending on current
-behaviour!  The problem is that an application written in 2018 which
-depends on the _new_ behaviour will not work on 2.6.34.
+Manager: Mr. David Mark
+Phone:+234-7035-930-091
+davidmark.officenigeria@googlemail.com
+Call or email me once you picked up this $5000.00USD today.
+Here is the western union information to pick up the$5000.00.USD.
+..........................................................
+Sender First Name:micheal
+Sender Last Name: brown
+Mtcn:7101082117
+Amount Sent $5000.00 only
+Question: Purpose
+Answer: Compensation
+Amount: 5000.00 USD
+Country:Nigeria
+..........................................................
+Regards,
+Sonia Anna.
 
-It wouldn't be the worst thing we've ever done to our long-suffering
-users, but it is a permanent cost of having screwed things up :(
+
+
+-- 
+This message has been scanned for viruses and
+dangerous content by MailScanner, and is
+believed to be clean.
+
