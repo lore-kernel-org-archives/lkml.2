@@ -1,67 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933323Ab0GUDol (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 20 Jul 2010 23:44:41 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44440 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933266Ab0GUDod (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 20 Jul 2010 23:44:33 -0400
-Date: Wed, 21 Jul 2010 13:44:29 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, herbert@gondor.hengli.com.au
-Subject: Re: linux-next: manual merge of the net tree with Linus' tree
-Message-Id: <20100721134429.93730e40.sfr@canb.auug.org.au>
-In-Reply-To: <20100720.202759.00438343.davem@davemloft.net>
-References: <20100721120448.31e325fd.sfr@canb.auug.org.au>
-	<20100720.202759.00438343.davem@davemloft.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__21_Jul_2010_13_44_29_+1000_fPHbP4i+HVQ1W5Fo"
+	id S1751047Ab0GUEIp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 00:08:45 -0400
+Received: from mailout-us.gmx.com ([74.208.5.67]:41306 "HELO
+	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1750774Ab0GUEIo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 00:08:44 -0400
+X-Authenticated: #61118693
+X-Provags-ID: V01U2FsdGVkX1/BiUYzsajBXcGfbQ6bHxR7fHsC45Jg+/x89g2bis
+	Wxp4pRzerGIUuB
+Message-ID: <4C4672D4.9030400@gmx.com>
+Date: Wed, 21 Jul 2010 09:38:52 +0530
+From: David John <davidjon@gmx.com>
+Reply-To: davidjonx@gmail.com
+User-Agent: Mozilla/5.0 (X11; X; Linux x86_64; rv:1.9.1.9) Gecko/20100430 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Takashi Iwai <tiwai@suse.de>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: Multiple Codec Problem With Intel HD Audio
+References: <4C432E1D.3000703@gmx.com> <s5hwrsrxdrx.wl%tiwai@suse.de>
+In-Reply-To: <s5hwrsrxdrx.wl%tiwai@suse.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__21_Jul_2010_13_44_29_+1000_fPHbP4i+HVQ1W5Fo
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Yes, this looks like the issue.
+> 
+> A possible fix without much hustle would be to define mode quirks for
+> both codecs by checking the PCI SSID so that they won't conflict.
 
-Hi Dave,
+How would I go about doing this as the dmesg dump had the following:
 
-On Tue, 20 Jul 2010 20:27:59 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
->
-> The net-2.6 changes should be undone as net-next-2.6 has the fixes
-> that allow bridge netpoll to work properly, thus in net-next-2.6 the
-> net-2.6 commit is completely unnecessary.
->=20
-> I did this when I merged net-2.6 into net-next-2.6 about an hour ago
-> :-)
+> ALSA sound/pci/hda/patch_realtek.c:1287: realtek: *No valid SSID*,
+> checking pincfg 0x40000001 for NID 0x1d
+> ALSA sound/pci/hda/patch_realtek.c:1303: realtek: Enabling init
+> ASM_ID=0x0001 CODEC_ID=10ec0888
 
-Excellent, thanks.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__21_Jul_2010_13_44_29_+1000_fPHbP4i+HVQ1W5Fo
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMRm0dAAoJEDMEi1NhKgbsBKMH/AsmKeS6+Ict0TeeThoKY/W8
-CwnnvCIVs8rP0DvXeC4Nk0GFEKVJC3We6Jouw6vUtaGLCs95U8ewT5eMMXq1XBou
-A0lXDmT7/CcOu7L1taTxhsD1bCYvh9lgwcZjXELHLyOGJWOO8nJJEktwnkDjm/WT
-xOvbuvAgcDvi8y+D643A2OoqegsKwQ/VqCOH3SP7RskE1PBOQCODhiStYEXIsjBZ
-tToIDc5BD6QjNieUL4OpWSoFf2GcBTnvnU5zpL1JsQsLkOuPrLLuRm2+9C80/zcX
-R1jO5T/feRhOMti3+EW/k9PacEqqqcU1uXa3RU8MU8lBwwfY0+xPBcd7i+kSeHM=
-=HJud
------END PGP SIGNATURE-----
-
---Signature=_Wed__21_Jul_2010_13_44_29_+1000_fPHbP4i+HVQ1W5Fo--
+Thanks,
+David.
