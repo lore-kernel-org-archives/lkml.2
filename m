@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932228Ab0GUNly (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:41:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35141 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932171Ab0GUNlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:41:52 -0400
-Message-ID: <4C46F930.1040506@suse.cz>
-Date: Wed, 21 Jul 2010 15:42:08 +0200
-From: Michal Marek <mmarek@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1757019Ab0GUNsV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:48:21 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:4087 "EHLO
+	TX2EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751280Ab0GUNsT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 09:48:19 -0400
+X-SpamScore: -16
+X-BigFish: VPS-16(zz1432N98dN936eMzz1202hzzz32i2a8h43h62h)
+X-Spam-TCS-SCL: 1:0
+X-WSS-ID: 0L5WUC7-02-JEC-02
+X-M-MSG: 
+Date: Wed, 21 Jul 2010 15:48:09 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+        LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/10] x86, xsave: make xsave_cntxt_init() static
+Message-ID: <20100721134809.GQ26154@erda.amd.com>
+References: <1279651857-24639-1-git-send-email-robert.richter@amd.com>
+ <1279651857-24639-6-git-send-email-robert.richter@amd.com>
+ <1279664424.2899.47.camel@sbs-t61.sc.intel.com>
 MIME-Version: 1.0
-To: "Zheng, Jiajia" <jiajia.zheng@intel.com>
-Cc: "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
-Subject: Re: "make rpm" failed with parameter "--scm-only"
-References: <A24AE1FFE7AEC5489F83450EE98351BF1BD77643B1@shsmsx502.ccr.corp.intel.com> <20100715084233.GA5835@sepie.suse.cz> <20100720132851.GA31205@sepie.suse.cz> <A24AE1FFE7AEC5489F83450EE98351BF1BDE3704AC@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <A24AE1FFE7AEC5489F83450EE98351BF1BDE3704AC@shsmsx502.ccr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <1279664424.2899.47.camel@sbs-t61.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.7.2010 03:30, Zheng, Jiajia wrote:
-> Michal Marek wrote:
->> were you able to test the fix? I'd like to send it to Linus.
->>
-> Thank you. This patch works OK. 
+On 20.07.10 18:20:24, Suresh Siddha wrote:
 
-Thanks a lot for testing it.
+> Perhaps we can fold this patch into 
+> [PATCH 06/10] x86, xsave: do not initialize xsave in fpu_init()
+> 
+> and probably do  fpu_init() first followed by xsave_init() so that
+> fpu_init() will set xstate_size based on fpu features and xsave_init()
+> can later overwrite xstate_size based on xstate features.
 
-> But I still saw below warnings. Of course, it was not introduced by your patch because that I saw such warnings before. Could you also take a look if there's some problem with Makefile? 
-> ...
-> + make clean
-> make[2]: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
+Yes, I will do this instead.
 
-I found the explanation in the make info page:
+Lookin at this, I found that xsave is broken for (!HAVE_HWFP). This
+should be the case if config MATH_EMULATION and 'no387' kernel
+parameter are set and xsave exists. xsave will not work because
+x86/math-emu and xsave share the same memory. But this case can be
+treated as corner case. Maybe we should simply disable xsave then.
 
-`warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.'
-     In order for `make' processes to communicate, the parent will pass
-     information to the child.  Since this could result in problems if
-     the child process isn't actually a `make', the parent will only do
-     this if it thinks the child is a `make'.  The parent uses the
-     normal algorithms to determine this (*note How the `MAKE' Variable
-     Works: MAKE Variable.).  If the makefile is constructed such that
-     the parent doesn't know the child is a `make' process, then the
-     child will receive only part of the information necessary. [...]
+-Robert
 
-Which is our case: The parent make only sees the rpmbuild call. The fix
-would probably be to clear all make environment variables before running
-rpmbuild.
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
 
-> + make -j4
-> make[2]: warning: -jN forced in submake: disabling jobserver mode.
-
-Another symptom of the same problem.
-
-
-> I got a RPM package: kernel-2.6.35rc5wl+-6.x86_64.rpm
-
-Great :).
-
-Michal
