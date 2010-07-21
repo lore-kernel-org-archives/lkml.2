@@ -1,67 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab0GUNlK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 09:41:10 -0400
-Received: from kirsty.vergenet.net ([202.4.237.240]:37991 "EHLO
-	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753464Ab0GUNlH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 09:41:07 -0400
-Date: Wed, 21 Jul 2010 22:41:03 +0900
-From: Simon Horman <horms@verge.net.au>
-To: Jan Engelhardt <jengelh@medozas.de>
-Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
-        netfilter-devel@vger.kernel.org,
-        Malcolm Turnbull <malcolm@loadbalancer.org>,
-        Wensong Zhang <wensong@linux-vs.org>,
-        Julius Volz <julius.volz@gmail.com>, Patrick McHardy <kaber@trash.net>,
-        "David S. Miller" <davem@davemloft.net>,
-        Hannes Eder <heder@google.com>
-Subject: Re: [patch v2.6 4/4] libxt_ipvs: user-space lib for netfilter
- matcher xt_ipvs
-Message-ID: <20100721134102.GA21188@verge.net.au>
-References: <20100711090342.035149543@vergenet.net>
- <20100711090500.421568837@vergenet.net>
- <20100721012146.GC22966@verge.net.au>
- <alpine.LSU.2.01.1007210834570.10568@obet.zrqbmnf.qr>
- <20100721132159.GN6418@verge.net.au>
- <alpine.LSU.2.01.1007211526490.25445@obet.zrqbmnf.qr>
+	id S932228Ab0GUNly (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 09:41:54 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:35141 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932171Ab0GUNlw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 09:41:52 -0400
+Message-ID: <4C46F930.1040506@suse.cz>
+Date: Wed, 21 Jul 2010 15:42:08 +0200
+From: Michal Marek <mmarek@suse.cz>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LSU.2.01.1007211526490.25445@obet.zrqbmnf.qr>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: "Zheng, Jiajia" <jiajia.zheng@intel.com>
+Cc: "Guy, Wey-Yi W" <wey-yi.w.guy@intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-kbuild@vger.kernel.org" <linux-kbuild@vger.kernel.org>
+Subject: Re: "make rpm" failed with parameter "--scm-only"
+References: <A24AE1FFE7AEC5489F83450EE98351BF1BD77643B1@shsmsx502.ccr.corp.intel.com> <20100715084233.GA5835@sepie.suse.cz> <20100720132851.GA31205@sepie.suse.cz> <A24AE1FFE7AEC5489F83450EE98351BF1BDE3704AC@shsmsx502.ccr.corp.intel.com>
+In-Reply-To: <A24AE1FFE7AEC5489F83450EE98351BF1BDE3704AC@shsmsx502.ccr.corp.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 03:28:16PM +0200, Jan Engelhardt wrote:
-> 
-> On Wednesday 2010-07-21 15:21, Simon Horman wrote:
-> >> On Wednesday 2010-07-21 03:21, Simon Horman wrote:
-> >> >> +
-> >> >> +#define XT_IPVS_IPVS_PROPERTY	(1 << 0) /* all other options imply this one */
-> >> >> +#define XT_IPVS_PROTO		(1 << 1)
-> >> >> +#define XT_IPVS_VADDR		(1 << 2)
-> >> >> +#define XT_IPVS_VPORT		(1 << 3)
-> >> >> +#define XT_IPVS_DIR		(1 << 4)
-> >> >> +#define XT_IPVS_METHOD		(1 << 5)
-> >> >> +#define XT_IPVS_VPORTCTL	(1 << 6)
-> >> >> +#define XT_IPVS_MASK		((1 << 7) - 1)
-> >> >> +#define XT_IPVS_ONCE_MASK	(XT_IPVS_MASK & ~XT_IPVS_IPVS_PROPERTY)
-> >> 
-> >> Can't these just be an enum?
-> >
-> >More than one option can be used at once - they form a mini bitmap -
-> >so no, I don't think we can use an enum.
-> 
-> An enum does not dictate that you cannot combine values of it with itself.
-> 
-> 	enum { A = 1 << 0, B = 1 << 0, };
-> 	unsigned int flags = A | B;
-> 
-> is perfectly fine, which is what other modules do.
+On 21.7.2010 03:30, Zheng, Jiajia wrote:
+> Michal Marek wrote:
+>> were you able to test the fix? I'd like to send it to Linus.
+>>
+> Thank you. This patch works OK. 
 
-Understood. I'll make it so.
+Thanks a lot for testing it.
 
+> But I still saw below warnings. Of course, it was not introduced by your patch because that I saw such warnings before. Could you also take a look if there's some problem with Makefile? 
+> ...
+> + make clean
+> make[2]: warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.
+
+I found the explanation in the make info page:
+
+`warning: jobserver unavailable: using -j1.  Add `+' to parent make rule.'
+     In order for `make' processes to communicate, the parent will pass
+     information to the child.  Since this could result in problems if
+     the child process isn't actually a `make', the parent will only do
+     this if it thinks the child is a `make'.  The parent uses the
+     normal algorithms to determine this (*note How the `MAKE' Variable
+     Works: MAKE Variable.).  If the makefile is constructed such that
+     the parent doesn't know the child is a `make' process, then the
+     child will receive only part of the information necessary. [...]
+
+Which is our case: The parent make only sees the rpmbuild call. The fix
+would probably be to clear all make environment variables before running
+rpmbuild.
+
+> + make -j4
+> make[2]: warning: -jN forced in submake: disabling jobserver mode.
+
+Another symptom of the same problem.
+
+
+> I got a RPM package: kernel-2.6.35rc5wl+-6.x86_64.rpm
+
+Great :).
+
+Michal
