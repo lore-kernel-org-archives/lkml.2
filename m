@@ -1,82 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752657Ab0GUUDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 16:03:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38460 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751232Ab0GUUDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 16:03:05 -0400
-Date: Wed, 21 Jul 2010 16:55:47 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Stephen Hemminger <shemminger@vyatta.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC] floppy: use single threaded workqueue
-Message-ID: <20100721195547.GA3448@amt.cnet>
-References: <20100609183449.110905403@vyatta.com>
- <alpine.LFD.2.00.1006091144120.4506@i5.linux-foundation.org>
- <20100609115403.75ebb6cb@nehalam>
- <alpine.LFD.2.00.1006091203190.4506@i5.linux-foundation.org>
- <20100611103223.799d3ce0@nehalam>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100611103223.799d3ce0@nehalam>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1753679Ab0GUUDc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 16:03:32 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:3265 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752681Ab0GUUDa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 16:03:30 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48047744"
+Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+From: Daniel Walker <dwalker@codeaurora.org>
+To: =?UTF-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
+Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
+        Pawel Osciak <p.osciak@samsung.com>,
+        Xiaolin Zhang <xiaolin.zhang@intel.com>,
+        Hiremath Vaibhav <hvaibhav@ti.com>,
+        Robert Fekete <robert.fekete@stericsson.com>,
+        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        Kyungmin Park <kyungmin.park@samsung.com>,
+        linux-arm-msm@vger.kernel.org
+In-Reply-To: <op.vf7lipj67p4s8u@pikus>
+References: <cover.1279639238.git.m.nazarewicz@samsung.com>
+	 <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
+	 <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
+	 <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf5o28st7p4s8u@pikus>
+	 <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf6zo9vb7p4s8u@pikus>
+	 <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7gt3qy7p4s8u@pikus>
+	 <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7h1yc47p4s8u@pikus>
+	 <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7j13067p4s8u@pikus>
+	 <1279741029.31376.33.camel@c-dwalke-linux.qualcomm.com>
+	 <op.vf7lipj67p4s8u@pikus>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 21 Jul 2010 13:03:24 -0700
+Message-ID: <1279742604.31376.40.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jun 11, 2010 at 10:32:23AM -0700, Stephen Hemminger wrote:
-> Fix races between timers and bottom half by using delayed work
-> and a single threaded queue.
+On Wed, 2010-07-21 at 21:53 +0200, Michał Nazarewicz wrote:
+> On Wed, 21 Jul 2010 21:37:09 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
+> > What makes you assume that the bootloader would have these strings?
+> > Do your devices have these strings? Maybe mine don't have them.
 > 
-> Still needs more testing.
+> I don't assume.  I only state it as one of the possibilities.
 > 
-> Signed-off-by: Stephen Hemminger <shemminger@vyatta.com>
+> > Assume the strings are gone and you can't find them, or have no idea
+> > what they should be. What do you do then?
 > 
-> ---
->  drivers/block/floppy.c |  172 ++++++++++++++++++++++++++-----------------------
->  1 file changed, 94 insertions(+), 78 deletions(-)
+> Ask Google?
 
-Stephen,
+Exactly, that's why they need to be in the kernel ..
 
-Can confirm this fixes the following oops seen under KVM guests.
+> I have a better question for you though: assume the "mem" parameter is
+> lost and you have no idea what it should be?  There are many parameters
+> passed to kernel by bootloader and you could ask about all of them.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000035
-IP: [<ffffffff812141f0>] setup_rw_floppy+0x229/0x2ca
-PGD 284b8067 PUD 3d79f067 PMD 0
-Oops: 0000 [#1] SMP
-last sysfs file: /sys/devices/pci0000:00/0000:00:03.0/resource
-CPU 1
-Modules linked in: xt_tcpudp iptable_filter ip_tables x_tables
-scsi_wait_scan uhci_hcd ohci_hcd ehci_hcd
+That's hardware based tho. Of course you need info on what your hardware
+is. What your doing isn't based on hardware specifics, it's based on
+optimizations.
 
-Pid: 28, comm: events/1 Not tainted 2.6.35-rc5-35033-g14e84ff #221
-/Bochs RIP: 0010:[<ffffffff812141f0>]  [<ffffffff812141f0>] setup_rw_floppy+0x229/0x2ca
-RSP: 0018:ffff88003e1a1e60  EFLAGS: 00010246
-RAX: 0000000000000000 RBX: 0000000000000009 RCX: 0000000000000000
-RDX: 0000000000000000 RSI: 0000000000000286 RDI: 0000000000000000
-RBP: 00000000000000da R08: 0000000000000000 R09: ffffffff81214bdb
-R10: 0000000000000000 R11: ffffffff817f7660 R12: 0000000000000000
-R13: 0000000000000008 R14: ffffffff81214bdb R15: 0000000000000000
-FS:  0000000000000000(0000) GS:ffff880001a40000(0000)
-knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000035 CR3: 000000003a428000 CR4: 00000000000006e0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process events/1 (pid: 28, threadinfo ffff88003e1a0000, task
-ffff88003e19a8f0)
-Stack:
- 0000000000000000 ffff88003e1a1ef8 ffffffff81692f00 ffff880001a56680
-<0> ffff88003e19a8f0 ffffffff810466f1 0000000000000000 ffff88003e19a8f0
-<0> ffffffff810495ad ffff88003e1a1ea8 ffff88003e1a1ea8 ffff88003e1a1ef8
-Call Trace:
- [<ffffffff810466f1>] ? worker_thread+0x150/0x1f0
- [<ffffffff810495ad>] ? autoremove_wake_function+0x0/0x2e
- [<ffffffff810465a1>] ? worker_thread+0x0/0x1f0
- [<ffffffff810492bf>] ? kthread+0x79/0x81
- [<ffffffff81002be4>] ? kernel_thread_helper+0x4/0x10
+> Passing cma configuration via command line is one of the possibilities
+> -- especially convenient during development -- but I would expect platform
+> defaults in a final product so you may well not need to worry about it.
 
+I honestly don't thing the "development" angle flies either , but if you
+keep this there's no way it should be enabled for anything but debug.
+
+> > Well, I like my kernel minus bloat so that's a good reason. I don't see
+> > a good reason to keep the interface in a production situation .. Maybe
+> > during development , but really I don't see even a developer needing to
+> > make the kind of changes your suggesting very often.
+> 
+> As I've said, removing the command line parameters would not benefit the
+> kernel that much.  It's like 1% of the code or less.  On the other hand,
+> it would add complexity to the CMA framework which is a good reason not
+> to do that.
+
+If we allowed everyone to add there little tiny bit of bloat where would
+we be?
+
+> Would you also argue about removing all the other kernel parameters as
+> well? I bet you don't use most of them.  Still they are there because
+> removing them would add too much complexity to the code (conditional
+> compilation, etc.).
+
+Your is at a different level of complexity ..
+
+Daniel
+
+
+-- 
+Sent by an consultant of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
