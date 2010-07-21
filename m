@@ -1,108 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1761377Ab0GUTeR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 15:34:17 -0400
-Received: from stargate.chelsio.com ([67.207.112.58]:20569 "EHLO
-	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1761348Ab0GUTeO (ORCPT
+	id S1761393Ab0GUTfB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 15:35:01 -0400
+Received: from mail-ew0-f46.google.com ([209.85.215.46]:58585 "EHLO
+	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758985Ab0GUTe5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 15:34:14 -0400
-From: Casey Leedom <leedom@chelsio.com>
-Organization: Chelsio Communications, Inc.
-To: David Miller <davem@davemloft.net>
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces with random MAC address
-Date: Wed, 21 Jul 2010 12:25:49 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; x86_64; ; )
-Cc: shemminger@vyatta.com, andy@greyhouse.net, harald@redhat.com,
-        bhutchings@solarflare.com, sassmann@redhat.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gospo@redhat.com,
-        gregory.v.rose@intel.com, alexander.h.duyck@intel.com
-References: <20100721102816.4bef5ada@nehalam> <201007211129.48288.leedom@chelsio.com> <20100721.113906.102700682.davem@davemloft.net>
-In-Reply-To: <20100721.113906.102700682.davem@davemloft.net>
+	Wed, 21 Jul 2010 15:34:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=TKdeTW8MGEfBpHaYaUcM97VVVeWyVdr7aQMEKCgW82cir1M2zXi2FTfzbjSSbXRLwd
+         oj9jznpH/ItmsgRAcyLxf5a7wUpgmDQWyovb6vB5ADIWk/BEToeDPx5v3HrgHn9qPeAu
+         FwFZiMHz/ErRZZ1B+8rYMnBsFGdwScpzC8TqQ=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007211225.50457.leedom@chelsio.com>
-X-OriginalArrivalTime: 21 Jul 2010 19:25:50.0848 (UTC) FILETIME=[876A1800:01CB290A]
+In-Reply-To: <c79f7e0698d11050302082fc57c7fe98d2290aa2.1279719754.git.qy03fugy@stud.informatik.uni-erlangen.de>
+References: <cover.1279719754.git.qy03fugy@stud.informatik.uni-erlangen.de>
+	<c79f7e0698d11050302082fc57c7fe98d2290aa2.1279719754.git.qy03fugy@stud.informatik.uni-erlangen.de>
+Date: Wed, 21 Jul 2010 21:34:56 +0200
+X-Google-Sender-Auth: CTfpdZ-yfueXsCtIzpfzbDYKriE
+Message-ID: <AANLkTin6URVYEuKgQtQQFZUL04G6tBLFQ1MRfb0QnV9y@mail.gmail.com>
+Subject: Re: [PATCH 1/3] drivers/scsi: Remove dead CONFIG_WD33C93_PIO
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Christian Dietrich <qy03fugy@stud.informatik.uni-erlangen.de>
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        vamos-dev@i4.informatik.uni-erlangen.de,
+        Ralf Baechle <ralf@linux-mips.org>, Osamu Tomita <tomita@cinet.co.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-| From: David Miller <davem@davemloft.net>
-| Date: Wednesday, July 21, 2010 11:39 am
-| 
-| From: Casey Leedom <leedom@chelsio.com>
-| Date: Wed, 21 Jul 2010 11:29:47 -0700
-| 
-| >   Another option might be to have a new Net Device Operations call to ask
-| > the adapter for a Unique Key.  This could be formed for most devices via a
-| > tuple of the {PCI Vendor ID, PCI Device ID, Adapter Serial Number, Port
-| > Number, [and if applicable] Adapter Function ID}.  Of course this could
-| > be a fairly long string ... :-)
-| 
-| If a unique key were available, it could be used to generate a persistent
-| MAC address.
+On Wed, Jul 21, 2010 at 15:57, Christian Dietrich
+<qy03fugy@stud.informatik.uni-erlangen.de> wrote:
+> CONFIG_WD33C93_PIO doesn't exist in Kconfig, therefore all existing
+> references to it from the source can be removed.
 
-  True but ... the Unique Key name space is probably a lot larger (in bits) than 
-the MAC Address name space (~(48-2) bits) ... :-)
+I've just checked full-history-linux. It came from this commit:
 
-| And this sort of means that these drivers could use bits of the
-| device's geographic ID the construct persistent MAC addresses, but
-| only if done in a MAC namespace that could be guarenteed unique on the
-| local system.
+Author: Osamu Tomita <tomita@cinet.co.jp>
+Date:   Wed Mar 26 21:38:14 2003 -0600
 
-  Yep.  That's the problem of trying to construct a Unique Locally Assigned MAC 
-Address from a Unique Name in a larger name space.
+    [PATCH] Complete support for PC-9800 sub-arch (9/9) SCSI
 
-| From: "Rose, Gregory V" <gregory.v.rose@intel.com>
-| Date: Wednesday, July 21, 2010 11:43 am
-| 
-| I'm curious, what happens when the VM using the VF migrates to a new
-| machine and has another VF assigned to with a different MAC address?
+    This is the patch to support NEC PC-9800 subarchitecture
+    against 2.5.65-ac4. (9/9)
 
-  To be honest, I still haven't wrapped my head around how Virtual Machines are 
-ever going to be able to migrate when they have arbitrary PCI Devices "assigned" 
-(KVM Terminology) to them (AKA "PCI Pass Through").  Allowing VMs to directly 
-touch real and arbitrary hardware devices means that some abstraction of "saving 
-the device state" and "restoring the device state" can be successfully 
-negotiated ... which would be hard even if you quiesce the device and you 
-migrate to another Physical Host with identical PCI Hardware which is then 
-"assigned" to the migrated VM.  Hard, hard, hard.
+    SCSI host adapter support.
+     - BIOS parameter change for PC98.
+     - Add pc980155 driver for old PC98.
+     - wd33c93.c update error handler for eh_*.
+     - wd33c93.h register to int for PIO mode.
 
-  This is why most of the Hypervisor systems have used synthetic Pseudo Devices 
-to allow that state of those Virtual Devices to be migrated (including the MAC 
-Addresses which we've been talking about).  I actually think that the Microsoft 
-HyperV approach of Virtual Ingress Queues may be a better solution.  You still 
-need to make the VM-to-Hypervisor transitions but you get to avoid the Free List 
-memory copy costs which are actually the dominant cost in the RX path to VMs 
-using software vNICs.
+But the driver was removed again about on year later:
 
-  But that's straying far from the topic at hand.  The short answer is pretty 
-much what David suggests: the _hardware_ PCI-E SR-IOV Virtual Function provides 
-persistent, non-random MAC Addresses for use by the VF Driver -- if it wants to 
-use them.  A VF Driver running in a VM is capable of specifying arbitrary MAC 
-Addresses for use with the VF and may ignore the hardware MAC Addresses provided 
-by the VF.  This is little different from the current situation with software 
-vNICs which use manufactured MAC Addresses (which are persistent in all of the 
-Hypervisor systems at which I've looked).
+commit 36f51e495878ff38d639fe3109a6cbaba6c4f2be
+Author: Linus Torvalds <torvalds@ppc970.osdl.org>
+Date:   Thu Jun 17 19:33:53 2004 -0700
 
-| From: David Miller <davem@davemloft.net>
-| Date: Wednesday, July 21, 2010 11:48 am
-| 
-| If the VM itself is the "physical entity" of the system, the logical
-| conclusion I come to is that some kind of key should be obtained
-| through the VM to uniquely give the device a persistent MAC.
+    This removes the files orphaned by the earlier PC9800 removal
 
-  Which is, as above, what all Hypervisor systems which I've looked at do.
+Gr{oetje,eeting}s,
 
-| You could do things like have the PF controller use the root filesystem
-| ID label to construct the VF's MAC address, or something like that.
+                        Geert
 
-  It's actually stored in the VM's meta-data.  When a VM migrates from one 
-Physical Host to another all of the VM's transient and persistent state must be 
-available to the new Physical Host.  Xen, for instance, has the concept of a 
-Physical Host Pool where all of the Physical Hosts have common access to shared 
-resources like Network Attached Storage, LAN/VLANs and the shared VM meta-data.
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-Casey
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+                                -- Linus Torvalds
