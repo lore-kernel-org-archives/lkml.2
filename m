@@ -1,53 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756048Ab0GUFWJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 01:22:09 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:36648 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754240Ab0GUEwQ (ORCPT
+	id S1762127Ab0GUFWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 01:22:41 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:37847 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751980Ab0GUFVc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 00:52:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=afKYDxfeYoSX7Drj5lKsTHEbtgLEDs2GHYdExu4/u+RrvbP+9I558y6wKaJed1sH3R
-         GaBDyPl/xtDPwzLkF5lTKjcEazmqB9RJXruDeHjuO+A/2vESg/ulJIo2fso4hXAljXsC
-         Bl7sumv0aUkFVycrjwphc7OQ82PvR0CfmkecQ=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 23/23]Documentation/DocBook/v4l/fdl-appendix.xml update web address.
-Date: Tue, 20 Jul 2010 21:51:59 -0700
-Message-Id: <1279687926-29360-8-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
-In-Reply-To: <1279687926-29360-1-git-send-email-justinmattock@gmail.com>
-References: <1279687926-29360-1-git-send-email-justinmattock@gmail.com>
+	Wed, 21 Jul 2010 01:21:32 -0400
+Date: Wed, 21 Jul 2010 15:21:28 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: [GIT PULL] Shrinker fixes for XFS for 2.6.36-rc6
+Message-ID: <20100721052128.GU32635@dastard>
+References: <20100720004630.GH23223@dastard>
+ <20100720233238.GS32635@dastard>
+ <AANLkTil1kuHOTWRGe0o3j2dmrD9TLJSOqdF2IINp4aDx@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTil1kuHOTWRGe0o3j2dmrD9TLJSOqdF2IINp4aDx@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below updates a broken web address.
+On Tue, Jul 20, 2010 at 04:35:14PM -0700, Linus Torvalds wrote:
+> On Tue, Jul 20, 2010 at 4:32 PM, Dave Chinner <david@fromorbit.com> wrote:
+> >
+> > Ijust rebased the series - the shrinker context patch did not pickup
+> > the new shrinker in the TTM DRM code for radeon. New pull-request output
+> > below.
+> 
+> Not good. I already pulled the earlier version yesterday. So a rebased
+> series is useless.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+OK, I checked your public tree and didn't see it there before I did
+the rebase. I'll send you a delta patch shortly.
 
----
- Documentation/DocBook/v4l/fdl-appendix.xml |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Cheers,
 
-diff --git a/Documentation/DocBook/v4l/fdl-appendix.xml b/Documentation/DocBook/v4l/fdl-appendix.xml
-index b6ce50d..ae22394 100644
---- a/Documentation/DocBook/v4l/fdl-appendix.xml
-+++ b/Documentation/DocBook/v4l/fdl-appendix.xml
-@@ -2,7 +2,7 @@
-      The GNU Free Documentation License 1.1 in DocBook
-      Markup by Eric Baudais <baudais@okstate.edu>
-      Maintained by the GNOME Documentation Project
--     http://developer.gnome.org/projects/gdp
-+     http://live.gnome.org/DocumentationProject
-      Version: 1.0.1
-      Last Modified: Nov 16, 2000
- -->
+Dave.
 -- 
-1.7.1.rc1.21.gf3bd6
-
+Dave Chinner
+david@fromorbit.com
