@@ -1,56 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab0GUEwq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 00:52:46 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:36648 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752046Ab0GUEwB (ORCPT
+	id S933701Ab0GUFTJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 01:19:09 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:56078 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762570Ab0GUFS5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 00:52:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=C2suZJ6tEVqaz/tSY2mg6ftcBmEP5P8nutQQHZBKmtYr7hfr3wi8hdfyNnQOIIcUnq
-         QBmmjQC5Uyh8zPnABmPaLk6kYMbU2U+EenH/72iSOwJGbbid5ZID55oDphticEkFDfkG
-         0LzWfRsYtVZaR6wW1PH+FcnqFLFjwHav/sfzo=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
-        "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH 17/17]Documentation/blockdev/paride.txt update web address.
-Date: Tue, 20 Jul 2010 21:51:53 -0700
-Message-Id: <1279687926-29360-2-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
-In-Reply-To: <1279687926-29360-1-git-send-email-justinmattock@gmail.com>
-References: <1279687926-29360-1-git-send-email-justinmattock@gmail.com>
+	Wed, 21 Jul 2010 01:18:57 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6049"; a="48126046"
+Message-ID: <5a63b73ff04b72db2930eae4e43e5c5b.squirrel@www.codeaurora.org>
+Date: Tue, 20 Jul 2010 22:18:55 -0700 (PDT)
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU,
+           CPU and device memory management
+From: stepanm@codeaurora.org
+To: "FUJITA Tomonori" <fujita.tomonori@lab.ntt.co.jp>
+Cc: zpfeffer@codeaurora.org, linux@arm.linux.org.uk,
+        fujita.tomonori@lab.ntt.co.jp, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+User-Agent: SquirrelMail/1.4.17
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch below removes a web address due to me being unable
-to locate this at all. If anybody knows the location let
-me know and I'll resend.
+> What is the problem about mapping a 1MB buffer with the DMA API?
+>
+> Possibly, an IOMMU can't find space for 1MB but it's not the problem of
+the DMA API.
 
-Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+As you have pointed out, one of the issues is that allocation can fail.
+While technically VCMM allocations can fail as well, these allocations can
+be made from one or more memory pools that have been set aside
+specifically to be used by devices. Thus, the kernel's normal allocator
+will not encroach on the large physically-contiguous chunks (of size 1MB
+or even 16MB) that are not easy to get back, and would be forced to deal
+with increasing memory pressure in other ways.
+Additionally, some of the memory pools may have special properties, such
+as being part of on-chip memory with higher performance than regular
+memory, and some devices may have special requirements regarding what type
+or memory they need. The VCMM allocator solves the problem in a generic
+way by being able to deal with multiple memory pools and supporting
+prioritization schemes for which subset of the memory pools is to be used
+for each physical allocation.
 
----
- Documentation/blockdev/paride.txt |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+Sent by an employee of the Qualcomm Innovation Center, Inc.
+The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
 
-diff --git a/Documentation/blockdev/paride.txt b/Documentation/blockdev/paride.txt
-index e431267..11c4e3f 100644
---- a/Documentation/blockdev/paride.txt
-+++ b/Documentation/blockdev/paride.txt
-@@ -409,9 +409,4 @@ the list manager is a robot that will subscribe you using the reply
- address in your mail headers.  REMOVE any anti-spam gimmicks you may
- have in your mail headers, when sending mail to the list server.
- 
--You might also find some useful information on the linux-parport
--web pages (although they are not always up to date) at
--
--	http://www.torque.net/parport/
--
- 
--- 
-1.7.1.rc1.21.gf3bd6
+
+
 
