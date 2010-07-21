@@ -1,52 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754390Ab0GUPnN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 11:43:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40864 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751083Ab0GUPnM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 11:43:12 -0400
-Message-ID: <4C47154D.8000008@kernel.org>
-Date: Wed, 21 Jul 2010 17:42:05 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1756609Ab0GUPqP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 11:46:15 -0400
+Received: from mail-ww0-f42.google.com ([74.125.82.42]:59165 "EHLO
+	mail-ww0-f42.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab0GUPqO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 11:46:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YquDGvZqttuFae0b7JGS0RIjK6LOBfudCxmm7xRVW7RjeigmCGdXilXQMZ4RyHfd+a
+         4jCcM+o7cNuroeDnmqnozatzRbGNFbbFlyqQDLkK/cbwwUXKc57QfSIuqI1QLTk+9HMv
+         35C5kgQOlxRFsMlXvOOGpGlbjLITH3Z1wZkNE=
 MIME-Version: 1.0
-To: David Howells <dhowells@redhat.com>
-CC: Arjan van de Ven <arjan@linux.intel.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        torvalds@linux-foundation.org, mingo@elte.hu,
-        linux-kernel@vger.kernel.org, jeff@garzik.org,
-        akpm@linux-foundation.org, rusty@rustcorp.com.au,
-        cl@linux-foundation.org, oleg@redhat.com, axboe@kernel.dk,
-        dwalker@codeaurora.org, stefanr@s5r6.in-berlin.de, florian@mickler.org,
-        andi@firstfloor.org, mst@redhat.com, randy.dunlap@oracle.com,
-        Arjan van de Ven <arjan@infradead.org>
-Subject: Re: [PATCHSET] workqueue: implement and use WQ_UNBOUND
-References: <4C4712B4.9040706@kernel.org> <4C470B46.4040604@kernel.org> <7b6bba36-5330-4e27-b7a9-3a4113b6b379@email.android.com> <21485.1279717725@redhat.com> <15189.1279725944@redhat.com> <15376.1279726700@redhat.com>
-In-Reply-To: <15376.1279726700@redhat.com>
-X-Enigmail-Version: 1.1.1
+In-Reply-To: <1279658102-20069-5-git-send-email-tj@kernel.org>
+References: <1279658102-20069-1-git-send-email-tj@kernel.org>
+	<1279658102-20069-5-git-send-email-tj@kernel.org>
+Date: Wed, 21 Jul 2010 10:46:11 -0500
+Message-ID: <AANLkTilSR15Cmz-dTyIDvOl-qdYrQ6x84BY7f9LggElW@mail.gmail.com>
+Subject: Re: [PATCH 4/7] cifs: use workqueue instead of slow-work
+From: Steve French <smfrench@gmail.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: linux-kernel@vger.kernel.org, dhowells@redhat.com, sfrench@samba.org,
+        anton@samba.org, swhiteho@redhat.com, airlied@linux.ie,
+        dri-devel@lists.freedesktop.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 21 Jul 2010 15:42:07 +0000 (UTC)
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Tue, Jul 20, 2010 at 3:34 PM, Tejun Heo <tj@kernel.org> wrote:
+> Workqueue can now handle high concurrency.  Use system_nrt_wq
+> instead of slow-work.
+>
+> * Updated is_valid_oplock_break() to not call cifs_oplock_break_put()
+>  as advised by Steve French.  It might cause deadlock.  Instead,
+>  reference is increased after queueing succeeded and
+>  cifs_oplock_break() briefly grabs GlobalSMBSeslock before putting
+>  the cfile to make sure it doesn't put before the matching get is
+>  finished.
+>
+> * Anton Blanchard reported that cifs conversion was using now gone
+>  system_single_wq.  Use system_nrt_wq which provides non-reentrance
+>  guarantee which is enough and much better.
+>
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Steve French <sfrench@samba.org>
+> Cc: Anton Blanchard <anton@samba.org>
+> ---
+>  fs/cifs/Kconfig    |    1 -
+>  fs/cifs/cifsfs.c   |    5 -----
+>  fs/cifs/cifsglob.h |    8 +++++---
+>  fs/cifs/dir.c      |    2 +-
+>  fs/cifs/file.c     |   30 +++++++++++++-----------------
+>  fs/cifs/misc.c     |   20 ++++++++++++--------
+>  6 files changed, 31 insertions(+), 35 deletions(-)
 
-On 07/21/2010 05:38 PM, David Howells wrote:
-> Tejun Heo <tj@kernel.org> wrote:
-> 
->> If I'm correctly understanding what you're saying, the code already
->> does about the same thing.
-> 
-> Cool.
-> 
-> Btw, it seems to work for fscache.  Feel free to add my Acked-by to your
-> patches.
+Acked-by: Steve French <sfrench@us.ibm.com>
 
-Great, I'll start working on the debugging stuff once things settle
-down a bit.  Thank you.
+
 
 -- 
-tejun
+Thanks,
+
+Steve
