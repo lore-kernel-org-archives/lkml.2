@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762116Ab0GUFy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 01:54:29 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:33616 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751106Ab0GUFy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 01:54:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OE8747BhzMKCmk4/xlEi8G6uu8sLq39PEh+CQ8R5twz2LJbSGDQ0baUHZWN44Hyuvm
-         Me+vu/utJbkkTH2VjJ3TNOG6qmKCs1JMV+ARRwjBPNuLP7M0hJR0KDHmI9CMzZS2mTy2
-         mJg51RUjMxz4JxgqNhw19Z7hsC1qMhp/xyLuc=
-Message-ID: <4C468BA0.6050504@gmail.com>
-Date: Tue, 20 Jul 2010 22:54:40 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100615 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Thomas Weber <thomas.weber.linux@googlemail.com>
-CC: trivial@kernel.org, linux-doc@vger.kernel.org,
+	id S1762152Ab0GUF5L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 01:57:11 -0400
+Received: from ozlabs.org ([203.10.76.45]:52980 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751106Ab0GUF5J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 01:57:09 -0400
+From: Michael Neuling <mikey@neuling.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+cc: trivial@kernel.org, linux-doc@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 134/134]Documentation/w1/masters/omap-hdq update web address.
-References: <1279688336-29735-1-git-send-email-justinmattock@gmail.com> <1279688336-29735-14-git-send-email-justinmattock@gmail.com> <4C4688C3.1050105@gmail.com>
-In-Reply-To: <4C4688C3.1050105@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 7bit
+cc: Jon Loeliger <jdl@jdl.com>, David Gibson <david@gibson.dropbear.id.au>
+Subject: Re: [PATCH 92/92]Documentation/powerpc/booting-without-of.txt update web address.
+In-reply-to: <1279688215-29628-2-git-send-email-justinmattock@gmail.com>
+References: <1279688215-29628-1-git-send-email-justinmattock@gmail.com> <1279688215-29628-2-git-send-email-justinmattock@gmail.com>
+Comments: In-reply-to "Justin P. Mattock" <justinmattock@gmail.com>
+   message dated "Tue, 20 Jul 2010 21:56:42 -0700."
+X-Mailer: MH-E 8.2; nmh 1.3; GNU Emacs 23.1.1
+Date: Wed, 21 Jul 2010 15:57:06 +1000
+Message-ID: <26080.1279691826@neuling.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/20/2010 10:42 PM, Thomas Weber wrote:
-> Am 21.07.2010 06:58, schrieb Justin P. Mattock:
->> The patch below updates a broken web address pointing to
->> the comapny due to not being able to find the original content.
->> if you know let me know.
->>
->> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
->>
->> ---
->>   Documentation/w1/masters/omap-hdq |    2 +-
->>   1 files changed, 1 insertions(+), 1 deletions(-)
->>
->> diff --git a/Documentation/w1/masters/omap-hdq b/Documentation/w1/masters/omap-hdq
->> index ca722e0..fcd228e 100644
->> --- a/Documentation/w1/masters/omap-hdq
->> +++ b/Documentation/w1/masters/omap-hdq
->> @@ -7,7 +7,7 @@ Supported chips:
->>
->>   A useful link about HDQ basics:
->>   ===============================
->> -http://focus.ti.com/lit/an/slua408/slua408.pdf
->> +http://www.ti.com/
->>
->>   Description:
->>   ============
->
-> http://focus.ti.com/lit/an/slua408a/slua408a.pdf
->
 
-slua408a.pdf so the small "a" made this thing work..
-Thanks for sending the address ill resend an updated patch
 
-Justin P. Mattock
+In message <1279688215-29628-2-git-send-email-justinmattock@gmail.com> you wrot
+e:
+> The patch below fixes a broken web address.
+> 
+> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> 
+> ---
+>  Documentation/powerpc/booting-without-of.txt |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/Documentation/powerpc/booting-without-of.txt b/Documentation/pow
+erpc/booting-without-of.txt
+> index 46d2210..7882a10 100644
+> --- a/Documentation/powerpc/booting-without-of.txt
+> +++ b/Documentation/powerpc/booting-without-of.txt
+> @@ -1048,7 +1048,7 @@ IV - "dtc", the device tree compiler
+>  
+>  
+>  dtc source code can be found at
+> -<http://ozlabs.org/~dgibson/dtc/dtc.tar.gz>
+> +<http://ozlabs.org/>
+
+I think this link should really be:
+git clone git://www.jdl.com/software/dtc.git/
+
+Mikey
+
+>  
+>  WARNING: This version is still in early development stage; the
+>  resulting device-tree "blobs" have not yet been validated with the
+> -- 
+> 1.7.1.rc1.21.gf3bd6
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+> 
