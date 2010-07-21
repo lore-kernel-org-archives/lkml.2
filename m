@@ -1,133 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762818Ab0GUIK2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 04:10:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1028 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1762740Ab0GUIKX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 04:10:23 -0400
-Message-ID: <4C46AB60.5060008@redhat.com>
-Date: Wed, 21 Jul 2010 10:10:08 +0200
-From: Stefan Assmann <sassmann@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Thunderbird/3.1
+	id S1762836Ab0GUIa5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 04:30:57 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:62687 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762814Ab0GUIaz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 04:30:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bxNUmtnCgp0SLf/U6qDzSi8NVK/e1n9AK8yO+uqBpUug5Ie/spHmoPJ4tkhC3skDyB
+         lah/uw6HX9Lh+cZmtRty6ynPhXazFmgWD3l52K2AeEIS2RxLTyUMa/DcgRcK166d66ap
+         osDjh+FoupJhqLZhSRnA/JiWJdrmum06wYWzU=
+Date: Wed, 21 Jul 2010 01:30:48 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: [PATCH 4/4] input: dynamically allocate ABS information
+Message-ID: <20100721083048.GA21558@core.coreip.homeip.net>
+References: <1274289757-2723-1-git-send-email-daniel@caiaq.de>
+ <1274289757-2723-5-git-send-email-daniel@caiaq.de>
+ <20100524160805.GO30801@buzzloop.caiaq.de>
+ <20100524161527.GC3182@core.coreip.homeip.net>
+ <20100616083903.GU17833@buzzloop.caiaq.de>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: abadea@ixiacom.com, bhutchings@solarflare.com, netdev@vger.kernel.org,
-        linux-kernel@vger.kernel.org, gospo@redhat.com,
-        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
-        leedom@chelsio.com, harald@redhat.com
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces
- with random MAC address
-References: <4C458CB7.3030508@redhat.com>	<4C458F50.4070200@ixiacom.com>	<4C4593DA.9040207@redhat.com> <20100720.131839.134093789.davem@davemloft.net>
-In-Reply-To: <20100720.131839.134093789.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100616083903.GU17833@buzzloop.caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.07.2010 22:18, David Miller wrote:
-> From: Stefan Assmann <sassmann@redhat.com>
-> Date: Tue, 20 Jul 2010 14:17:30 +0200
+On Wed, Jun 16, 2010 at 10:39:03AM +0200, Daniel Mack wrote:
+> Hi Dmitry,
 > 
->> On 20.07.2010 13:58, Alex Badea wrote:
->>> Hi,
->>>
->>> On 07/20/2010 02:47 PM, Stefan Assmann wrote:
->>>>> What about devices that 'steal' MAC addresses from slave devices?
->>>
->>> Might I suggest an attribute such as "address_type", which could report
->>> "permanent", "random", "stolen", or something else in the future?
->>
->> In case there's demand for such a multi-purpose attribute I see no
->> reason to object. More thoughts on this?
+> On Mon, May 24, 2010 at 09:15:28AM -0700, Dmitry Torokhov wrote:
+> > On Mon, May 24, 2010 at 06:08:05PM +0200, Daniel Mack wrote:
+> > > any feelings about this approach?
+> > > 
+> > 
+> > Still pondering...I applied the very first patch though...
 > 
-> I think this is a great idea.
-> 
-> Now it makes sense to use a new 'u8' in struct netdevice or similar to
-> store this, since we'll have more than a boolean here.
+> Any news about this? I have no problem throwing away the whole patch set
+> and use a different approach, if there is any :)
 > 
 
-I put Alex' idea into code for further discussion, keeping the names
-mentioned here until we agree on the scope of this attribute. When we
-have settled I'll post a patch with proper patch description.
+Daniel,
 
-  Stefan
+The approach is pretty solid, with the exception that I do not think
+we'd save much if we allocate every axis data separately (as I mentioned
+in one of my earlier mails).
+
+Coudl you please take a look at the following patches and let me know if
+you see something wrong.
+
+Thanks!
+
+-- 
+Dmitry
+
+
+Input: add static inline accessors for ABS properties
+
+From: Daniel Mack <daniel@caiaq.de>
+
+In preparation for dynamically allocated ABS axis, introduce a number of
+sttaic inline access helpers. This should make the transition less
+painful.
+
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
 ---
- include/linux/etherdevice.h |   14 ++++++++++++++
- include/linux/netdevice.h   |    6 ++++++
- net/core/net-sysfs.c        |    2 ++
- 3 files changed, 22 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
-index 3d7a668..f15cac8 100644
---- a/include/linux/etherdevice.h
-+++ b/include/linux/etherdevice.h
-@@ -127,6 +127,20 @@ static inline void random_ether_addr(u8 *addr)
+ include/linux/input.h |   30 ++++++++++++++++++++++++++++++
+ 1 files changed, 30 insertions(+), 0 deletions(-)
+
+
+diff --git a/include/linux/input.h b/include/linux/input.h
+index 339d043..4a55311 100644
+--- a/include/linux/input.h
++++ b/include/linux/input.h
+@@ -1469,6 +1469,36 @@ static inline void input_set_abs_params(struct input_dev *dev, int axis, int min
+ 	dev->absbit[BIT_WORD(axis)] |= BIT_MASK(axis);
  }
-
- /**
-+ * dev_hw_addr_random - Create random MAC and set device flag
-+ * @dev: pointer to net_device structure
-+ * @addr: Pointer to a six-byte array containing the Ethernet address
-+ *
-+ * Generate random MAC to be used by a device and set addr_type
-+ * so the state can be read by sysfs and be used by udev.
-+ */
-+static inline void dev_hw_addr_random(struct net_device *dev, u8 *hwaddr)
-+{
-+	dev->addr_type |= NET_ADDR_RANDOM;
-+	random_ether_addr(hwaddr);
+ 
++#define INPUT_GENERATE_ABS_ACCESSORS(_suffix, _item)			\
++static inline int input_abs_get_##_suffix(struct input_dev *dev,	\
++					  unsigned int axis)		\
++{									\
++	return dev->abs##_item[axis];					\
++}									\
++									\
++static inline void input_abs_set_##_suffix(struct input_dev *dev,	\
++					   unsigned int axis, int val)	\
++{									\
++	dev->abs##_item[axis] = val;					\
 +}
 +
-+/**
-  * compare_ether_addr - Compare two Ethernet addresses
-  * @addr1: Pointer to a six-byte array containing the Ethernet address
-  * @addr2: Pointer other six-byte array containing the Ethernet address
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index b626289..2718895 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -66,6 +66,11 @@ struct wireless_dev;
- #define HAVE_FREE_NETDEV		/* free_netdev() */
- #define HAVE_NETDEV_PRIV		/* netdev_priv() */
-
-+/* hardware address types */
-+#define NET_ADDR_PERM		0	/* address is permanent (default) */
-+#define NET_ADDR_RANDOM		1	/* address is generated randomly */
-+#define NET_ADDR_STOLEN		2	/* address is stolen from other device */
++INPUT_GENERATE_ABS_ACCESSORS(min, min)
++INPUT_GENERATE_ABS_ACCESSORS(max, max)
++INPUT_GENERATE_ABS_ACCESSORS(fuzz, fuzz)
++INPUT_GENERATE_ABS_ACCESSORS(flat, flat)
++INPUT_GENERATE_ABS_ACCESSORS(res, res)
 +
- /* Backlog congestion levels */
- #define NET_RX_SUCCESS		0	/* keep 'em coming, baby */
- #define NET_RX_DROP		1	/* packet dropped */
-@@ -920,6 +925,7 @@ struct net_device {
- 	/* Interface address info. */
- 	unsigned char		perm_addr[MAX_ADDR_LEN]; /* permanent hw address */
- 	unsigned char		addr_len;	/* hardware address length	*/
-+	unsigned char		addr_type;	/* hardware address type	*/
- 	unsigned short          dev_id;		/* for shared network cards */
-
- 	spinlock_t		addr_list_lock;
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index d2b5965..052ab14 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -96,6 +96,7 @@ static ssize_t netdev_store(struct device *dev, struct device_attribute *attr,
-
- NETDEVICE_SHOW(dev_id, fmt_hex);
- NETDEVICE_SHOW(addr_len, fmt_dec);
-+NETDEVICE_SHOW(addr_type, fmt_dec);
- NETDEVICE_SHOW(iflink, fmt_dec);
- NETDEVICE_SHOW(ifindex, fmt_dec);
- NETDEVICE_SHOW(features, fmt_long_hex);
-@@ -296,6 +297,7 @@ static ssize_t show_ifalias(struct device *dev,
-
- static struct device_attribute net_class_attributes[] = {
- 	__ATTR(addr_len, S_IRUGO, show_addr_len, NULL),
-+	__ATTR(addr_type, S_IRUGO, show_addr_type, NULL),
- 	__ATTR(dev_id, S_IRUGO, show_dev_id, NULL),
- 	__ATTR(ifalias, S_IRUGO | S_IWUSR, show_ifalias, store_ifalias),
- 	__ATTR(iflink, S_IRUGO, show_iflink, NULL),
--- 
-1.7.1
-
++static inline int input_abs_get_val(struct input_dev *dev, unsigned int axis)
++{
++	return dev->abs[axis];
++}
++
++static inline void input_abs_set_val(struct input_dev *dev,
++				     unsigned int axis, int val)
++{
++	dev->abs[axis] = val;
++}
++
+ int input_get_keycode(struct input_dev *dev,
+ 		      unsigned int scancode, unsigned int *keycode);
+ int input_set_keycode(struct input_dev *dev,
