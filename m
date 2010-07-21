@@ -1,58 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1762695Ab0GUGrv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 02:47:51 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:54183 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753502Ab0GUGrt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 02:47:49 -0400
-Message-ID: <4C469808.5060308@redhat.com>
-Date: Wed, 21 Jul 2010 08:47:36 +0200
-From: Harald Hoyer <harald@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Lightning/1.0b2pre Thunderbird/3.0.4
-MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: shemminger@vyatta.com, bhutchings@solarflare.com, sassmann@redhat.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
-        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
-        leedom@chelsio.com
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces
- with random MAC address
-References: <20100720141816.16f0a939@nehalam>	<20100720.142045.32697196.davem@davemloft.net>	<4C469313.6010807@redhat.com> <20100720.233457.267367495.davem@davemloft.net>
-In-Reply-To: <20100720.233457.267367495.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1762686Ab0GUGw4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 02:52:56 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:37470 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1762617Ab0GUGwv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 02:52:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=KOmJ1gH6bXGJtxzDZMA6a9GXvNppH0luxGPsvIw04SHXfJ/IgfB4TpotwKnrQwmIWi
+         ASZMtk34w7FRWiOLyxWldFTVlCUv+uxMIk8VDBdFrQMdfpF+K08Bw2dnJubEU2RZ+6CB
+         5UHdhYoTjTcr1ha2zAFzi1+hPmc/HFiAnaxpE=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-doc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        "Justin P. Mattock" <justinmattock@gmail.com>,
+        Thomas Weber <thomas.weber.linux@googlemail.com>,
+        Mike Frysinger <vapier.adi@gmail.com>
+Subject: [PATCH 43/43 v2]Documentation/hwmon/adm1026 update web address.
+Date: Tue, 20 Jul 2010 23:53:03 -0700
+Message-Id: <1279695183-465-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/21/2010 08:34 AM, David Miller wrote:
-> From: Harald Hoyer<harald@redhat.com>
-> Date: Wed, 21 Jul 2010 08:26:27 +0200
->
->> On 07/20/2010 11:20 PM, David Miller wrote:
->>> From: Stephen Hemminger<shemminger@vyatta.com>
->>> Date: Tue, 20 Jul 2010 14:18:16 -0700
->>>
->>>> No one mentioned that the first octet of an Ethernet address already
->>>> indicates "software generated" Ethernet address. Per the standard,
->>>> if bit 1 is set it means address is locally assigned.
->>>>
->>>> static inline bool is_locally_assigned_ether(const u8 *addr)
->>>> {
->>>> 	return (addr[0]&   0x2) != 0;
->>>> }
->>>
->>> W00t!
->>>
->>> Indeed, can udev just use that?  :-)
->>
->> It already does:
->> see /lib/udev/rules.d/75-persistent-net-generator.rules
->
-> So... why doesn't this work?
+The patch below updates a broken web address.
 
-It works.. but the information, that the MAC is randomly generated would be 
-valuable. So, for the non-random locally assigned MAC (with bit 1), we could 
-easily make persistent rules based on the MAC, instead of completely ignoring 
-them, like we do currently.
+Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Signed-off-by: Thomas Weber <thomas.weber.linux@googlemail.com>
+Signed-off-by: Mike Frysinger <vapier.adi@gmail.com>
+
+---
+ Documentation/hwmon/adm1026 |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Documentation/hwmon/adm1026 b/Documentation/hwmon/adm1026
+index f4327db..d8fabe0 100644
+--- a/Documentation/hwmon/adm1026
++++ b/Documentation/hwmon/adm1026
+@@ -6,7 +6,7 @@ Supported chips:
+     Prefix: 'adm1026'
+     Addresses scanned: I2C 0x2c, 0x2d, 0x2e
+     Datasheet: Publicly available at the Analog Devices website
+-               http://www.analog.com/en/prod/0,,766_825_ADM1026,00.html
++               http://www.onsemi.com/PowerSolutions/product.do?id=ADM1026
+ 
+ Authors:
+         Philip Pokorny <ppokorny@penguincomputing.com> for Penguin Computing
+-- 
+1.7.1.rc1.21.gf3bd6
+
