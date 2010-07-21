@@ -1,75 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932182Ab0GUTlF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 15:41:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59262 "EHLO mx1.redhat.com"
+	id S1758964Ab0GUToS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 15:44:18 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:48421 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758869Ab0GUTk7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 15:40:59 -0400
-From: Jeff Moyer <jmoyer@redhat.com>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
-        dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
-Subject: Re: [PATCH 2/3] cfq-iosched: Implement a tunable group_idle
-References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
-	<1279739181-24482-3-git-send-email-vgoyal@redhat.com>
-X-PGP-KeyID: 1F78E1B4
-X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
-X-PCLoadLetter: What the f**k does that mean?
-Date: Wed, 21 Jul 2010 15:40:44 -0400
-In-Reply-To: <1279739181-24482-3-git-send-email-vgoyal@redhat.com> (Vivek
-	Goyal's message of "Wed, 21 Jul 2010 15:06:20 -0400")
-Message-ID: <x49bpa0d3nn.fsf@segfault.boston.devel.redhat.com>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
+	id S1751248Ab0GUToR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 15:44:17 -0400
+Date: Wed, 21 Jul 2010 21:44:05 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Steven Rostedt <rostedt@goodmis.org>,
+        Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        Paul Mackerras <paulus@samba.org>
+Subject: Re: [GIT PULL] tracing updates
+Message-ID: <20100721194405.GC24797@elte.hu>
+References: <1279636925-5919-1-git-send-regression-fweisbec@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279636925-5919-1-git-send-regression-fweisbec@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 1.0
+X-ELTE-SpamLevel: s
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=1.0 required=5.9 tests=BAYES_50 autolearn=no SpamAssassin version=3.2.5
+	1.0 BAYES_50               BODY: Bayesian spam probability is 40 to 60%
+	[score: 0.4322]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal <vgoyal@redhat.com> writes:
 
-> o Implement a new tunable group_idle, which allows idling on the group
->   instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
->   on the individual queues but idle on the group. This way on fast storage
->   we can get fairness between groups at the same time overall throughput
->   improves.
->
-> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+* Frederic Weisbecker <fweisbec@gmail.com> wrote:
+
+> Ingo,
+> 
+> Please pull the perf/core branch that can be found at:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+> 	perf/core
+> 
+> Thanks,
+> 	Frederic
 > ---
-[snip]
-> @@ -1929,13 +1941,21 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
->  		return;
->  	}
->  
-> +	/* There are other queues in the group, don't do group idle */
-> +	if (group_idle && cfqq->cfqg->nr_cfqq > 1)
-> +		return;
-> +
->  	cfq_mark_cfqq_wait_request(cfqq);
->  
-> -	sl = cfqd->cfq_slice_idle;
-> +	if (group_idle)
-> +		sl = cfqd->cfq_group_idle;
-> +	else
-> +		sl = cfqd->cfq_slice_idle;
+> 
+> Frederic Weisbecker (2):
+>       tracing: Remove sysprof ftrace plugin
+>       tracing: Remove special traces
+> 
+> Arnd Bergmann (1):
+>       tracing: Use generic_file_llseek for debugfs
+> 
+> 
+>  include/linux/kernel.h        |    5 -
+>  include/linux/sched.h         |   12 --
+>  kernel/trace/Kconfig          |    9 -
+>  kernel/trace/Makefile         |    1 -
+>  kernel/trace/trace.c          |   73 ++-------
+>  kernel/trace/trace.h          |   10 --
+>  kernel/trace/trace_entries.h  |   17 --
+>  kernel/trace/trace_output.c   |   66 --------
+>  kernel/trace/trace_selftest.c |   33 ----
+>  kernel/trace/trace_sysprof.c  |  330 -----------------------------------------
+>  10 files changed, 15 insertions(+), 541 deletions(-)
 
-What happens when both group_idle and slice_idle are set?  Is that a
-sane thing to do from a user's perspective?  If not, please protect
-against it in the configuration code.  If so, then explain why we prefer
-group_idle here, but slice_idle in completed request for the extend_sl:
+Pulled, thanks Frederic!
 
-> @@ -3425,7 +3458,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
->  		 * the queue.
->  		 */
->  		if (cfq_should_wait_busy(cfqd, cfqq)) {
-> -			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
-> +			unsigned long extend_sl = cfqd->cfq_slice_idle;
-> +			if (!cfqd->cfq_slice_idle)
-> +				extend_sl = cfqd->cfq_group_idle;
-> +			cfqq->slice_end = jiffies + extend_sl;
-
-Also, you'll need to add documentation for this new tunable.
-
-Cheers,
-Jeff
+	Ingo
