@@ -1,68 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755763Ab0GUUxe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 16:53:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:37547 "EHLO hera.kernel.org"
+	id S1755048Ab0GUUyS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 16:54:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48826 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754249Ab0GUUx3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 16:53:29 -0400
-Date: Wed, 21 Jul 2010 20:53:02 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, mingo@elte.hu, borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, borislav.petkov@amd.com, mingo@elte.hu
-In-Reply-To: <20100721124705.GA674@aftab>
-References: <20100721124705.GA674@aftab>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mm] x86, tlb: Clean up and correct used type
-Message-ID: <tip-3f8afb77cd8a672f024e4a16763ef177bc16c8f8@git.kernel.org>
-Git-Commit-ID: 3f8afb77cd8a672f024e4a16763ef177bc16c8f8
-X-Mailer: tip-git-log-daemon
+	id S1754678Ab0GUUyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 16:54:17 -0400
+From: Jeff Moyer <jmoyer@redhat.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        dpshah@google.com, guijianfeng@cn.fujitsu.com, czoccolo@gmail.com
+Subject: Re: [PATCH 2/3] cfq-iosched: Implement a tunable group_idle
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+	<1279739181-24482-3-git-send-email-vgoyal@redhat.com>
+	<x49bpa0d3nn.fsf@segfault.boston.devel.redhat.com>
+	<20100721201318.GH20458@redhat.com>
+X-PGP-KeyID: 1F78E1B4
+X-PGP-CertKey: F6FE 280D 8293 F72C 65FD  5A58 1FF8 A7CA 1F78 E1B4
+X-PCLoadLetter: What the f**k does that mean?
+Date: Wed, 21 Jul 2010 16:54:03 -0400
+In-Reply-To: <20100721201318.GH20458@redhat.com> (Vivek Goyal's message of
+	"Wed, 21 Jul 2010 16:13:18 -0400")
+Message-ID: <x49r5iwblp0.fsf@segfault.boston.devel.redhat.com>
+User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 21 Jul 2010 20:53:03 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3f8afb77cd8a672f024e4a16763ef177bc16c8f8
-Gitweb:     http://git.kernel.org/tip/3f8afb77cd8a672f024e4a16763ef177bc16c8f8
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Wed, 21 Jul 2010 14:47:05 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Wed, 21 Jul 2010 21:48:15 +0200
+Vivek Goyal <vgoyal@redhat.com> writes:
 
-x86, tlb: Clean up and correct used type
+> On Wed, Jul 21, 2010 at 03:40:44PM -0400, Jeff Moyer wrote:
+>> Vivek Goyal <vgoyal@redhat.com> writes:
+>> 
+>> > o Implement a new tunable group_idle, which allows idling on the group
+>> >   instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
+>> >   on the individual queues but idle on the group. This way on fast storage
+>> >   we can get fairness between groups at the same time overall throughput
+>> >   improves.
+>> >
+>> > Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+>> > ---
+>> [snip]
+>> > @@ -1929,13 +1941,21 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
+>> >  		return;
+>> >  	}
+>> >  
+>> > +	/* There are other queues in the group, don't do group idle */
+>> > +	if (group_idle && cfqq->cfqg->nr_cfqq > 1)
+>> > +		return;
+>> > +
+>> >  	cfq_mark_cfqq_wait_request(cfqq);
+>> >  
+>> > -	sl = cfqd->cfq_slice_idle;
+>> > +	if (group_idle)
+>> > +		sl = cfqd->cfq_group_idle;
+>> > +	else
+>> > +		sl = cfqd->cfq_slice_idle;
+>> 
+>> What happens when both group_idle and slice_idle are set?
+>
+> slice_idle prevails. Notice that "group_idle" is a local variable which
+> is set to 1 only if we decide not to idle on the cfq queue.
 
-smp_processor_id() returns an int and not an unsigned long.
-Also, since the function is small enough, there's no need for a
-local variable caching its value.
+Ah, silly me.
 
-No functionality change, just cleanup.
-
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <20100721124705.GA674@aftab>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/mm/tlb.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/mm/tlb.c b/arch/x86/mm/tlb.c
-index 426f3a1..c03f14a 100644
---- a/arch/x86/mm/tlb.c
-+++ b/arch/x86/mm/tlb.c
-@@ -278,11 +278,9 @@ void flush_tlb_page(struct vm_area_struct *vma, unsigned long va)
- 
- static void do_flush_tlb_all(void *info)
- {
--	unsigned long cpu = smp_processor_id();
--
- 	__flush_tlb_all();
- 	if (percpu_read(cpu_tlbstate.state) == TLBSTATE_LAZY)
--		leave_mm(cpu);
-+		leave_mm(smp_processor_id());
- }
- 
- void flush_tlb_all(void)
+Cheers,
+Jeff
