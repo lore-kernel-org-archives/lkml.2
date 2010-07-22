@@ -1,24 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759066Ab0GVLLa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:11:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:6908 "EHLO mga02.intel.com"
+	id S1759231Ab0GVLLr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 07:11:47 -0400
+Received: from mga09.intel.com ([134.134.136.24]:29125 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757210Ab0GVLL1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 07:11:27 -0400
+	id S1759217Ab0GVLLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 07:11:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,242,1278313200"; 
-   d="scan'208";a="640711486"
-Subject: [RFC][PATCH v1 00/15] perf: export events in a structured way via
- sysfs
+   d="scan'208";a="537789240"
+Subject: [RFC][PATCH v1 01/15] perf: core, add functions to export events
+ via sysfs
 From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Dave Airlie <airlied@redhat.com>,
-        Reinette Chatre <reinette.chatre@intel.com>,
-        Jens Axboe <jaxboe@fusionio.com>, Avi Kivity <avi@redhat.com>,
-        "James E.J. Bottomley" <James.Bottomley@suse.de>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>
 Cc: Robert Richter <robert.richter@amd.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Johannes Berg <johannes@sipsolutions.net>,
@@ -39,8 +33,8 @@ Cc: Robert Richter <robert.richter@amd.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 19:11:40 +0800
-Message-ID: <1279797100.20942.81.camel@minggr.sh.intel.com>
+Date: Thu, 22 Jul 2010 19:11:59 +0800
+Message-ID: <1279797119.20942.82.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
@@ -48,71 +42,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, all
+perf: core, add functions to export events via sysfs
 
-(CC driver maintainers since many device tracepoint events are exported)
+---
+ include/linux/perf_event.h |   13 +++++
+ kernel/perf_event.c        |  110 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 123 insertions(+), 0 deletions(-)
 
-This patch series is based on the discussion of
-[rfc] Describe events in a structured way via sysfs
-http://lkml.org/lkml/2010/5/21/102
-
-Applied on top of Peter's perf tree, perf-pmu branch.
-
-Hareware/Software/Tracepoint events are exported in a structured way via
-sysfs, like below
-I throw out these patches to see if various events are put under correct
-sysfs point.
-
-Robert Richter and Corey Ashford have some ideas about what event
-attributes should be shown in sysfs, but now let's just show "config"
-and "type" for demo of sysfs structure.
-
-And I'll document the sysfs ABI in later version.
-
-1. Hardware events
-/sys/devices/system/cpu/cpu0...cpuN/events
-|-- L1-dcache-load-misses  ===> event name
-|   |-- config             ===> config value for the event
-|   `-- type               ===> event type
-|-- cycles
-|   |-- config
-|   `-- type
-.....
-
-2. Software events
-/sys/kernel/events
-|-- page-faults
-|   |-- config
-|   `-- type
-|-- context-switches
-|   |-- config
-|   `-- type
-....
-
-3. Tracepoint events
-/sys/devices/pci0000:00/0000:00:02.0/events
-|-- i915_gem_object_create
-|   |-- config
-|   `-- type
-|-- i915_gem_object_bind
-|   |-- config
-|   `-- type
-....
-/sys/devices/system/kvm/kvm0/events
-|-- kvm_entry
-|   |-- config
-|   `-- type
-|-- kvm_hypercall
-|   |-- config
-|   `-- type
-....
-
-Welcome for any comment.
-
-Thanks,
-Lin Ming
-
-
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 0ed315e..5e9f5c6 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1057,6 +1057,9 @@ extern int perf_swevent_get_recursion_context(void);
+ extern void perf_swevent_put_recursion_context(int rctx);
+ extern void perf_event_enable(struct perf_event *event);
+ extern void perf_event_disable(struct perf_event *event);
++
++extern struct kobject *perf_sys_create_events_dir(struct kobject *parent);
++extern int perf_sys_add_event(struct kobject *parent, char *name, u64 config, int type);
+ #else
+ static inline void
+ perf_event_task_sched_in(struct task_struct *task)			{ }
+@@ -1092,6 +1095,16 @@ static inline int  perf_swevent_get_recursion_context(void)		{ return -1; }
+ static inline void perf_swevent_put_recursion_context(int rctx)		{ }
+ static inline void perf_event_enable(struct perf_event *event)		{ }
+ static inline void perf_event_disable(struct perf_event *event)		{ }
++
++static inline int perf_sys_add_event(struct kobject *parent, char *name, u64 config, int type)
++{
++	return 0;
++}
++
++static inline struct kobject *perf_sys_create_events_dir(struct kobject *parent)
++{
++	return NULL;
++}
+ #endif
+ 
+ #define perf_output_put(handle, x) \
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 10945db..26c15a0 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -5888,3 +5888,113 @@ static int __init perf_event_sysfs_init(void)
+ 				  &perfclass_attr_group);
+ }
+ device_initcall(perf_event_sysfs_init);
++
++struct event_kobject {
++	struct kobject *kobj;
++
++	u64 config;
++	int type;
++
++	struct event_kobject *next;
++};
++
++static struct event_kobject *event_kobject_list;
++
++static struct event_kobject *perf_sys_find_event_kobj(struct kobject *kobj)
++{
++	struct event_kobject *event_kobj;
++
++	event_kobj = event_kobject_list;
++
++	while (event_kobj) {
++		if (kobj == event_kobj->kobj)
++			return event_kobj;
++
++		event_kobj = event_kobj->next;
++	}
++
++	return NULL;
++}
++
++#define EVENT_ATTR_RO(_name) \
++	static struct kobj_attribute _name##_attr = __ATTR_RO(_name)
++
++static ssize_t config_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	struct event_kobject *event_kobj;
++
++	event_kobj = perf_sys_find_event_kobj(kobj);
++
++	return sprintf(buf, "%llx\n", event_kobj->config);
++}
++EVENT_ATTR_RO(config);
++
++static ssize_t type_show(struct kobject *kobj,
++	struct kobj_attribute *attr, char *buf)
++{
++	struct event_kobject *event_kobj;
++
++	event_kobj = perf_sys_find_event_kobj(kobj);
++
++	return sprintf(buf, "%d\n", event_kobj->type);
++}
++EVENT_ATTR_RO(type);
++
++static struct attribute *event_attrs[] = {
++	&config_attr.attr,
++	&type_attr.attr,
++	NULL,
++};
++
++static struct attribute_group event_attr_group = {
++	.attrs = event_attrs,
++};
++
++#define EVENTS_DIR "events"
++struct kobject *perf_sys_create_events_dir(struct kobject *parent)
++{
++	if (!parent)
++		return NULL;
++
++	return kobject_create_and_add(EVENTS_DIR, parent);
++}
++
++static DEFINE_SPINLOCK(sys_events_lock);
++
++int perf_sys_add_event(struct kobject *parent, char *name, u64 config, int type)
++{
++	struct event_kobject *event_kobj;
++	struct kobject *kobj;
++	int err;
++
++	if (!name)
++		return -1;
++
++	kobj = kobject_create_and_add(name, parent);
++	if (!kobj)
++		return -ENOMEM;
++	err = sysfs_create_group(kobj, &event_attr_group);
++	if (err) {
++		kobject_put(kobj);
++		return -ENOMEM;
++	}
++
++	event_kobj = kmalloc(sizeof(*event_kobj), GFP_KERNEL);
++	if (!event_kobj) {
++		kobject_put(kobj);
++		return -ENOMEM;
++	}
++
++	spin_lock(&sys_events_lock);
++
++	event_kobj->kobj = kobj;
++	event_kobj->config = config;
++	event_kobj->type = type;
++	event_kobj->next = event_kobject_list;
++	event_kobject_list = event_kobj;
++
++	spin_unlock(&sys_events_lock);
++
++	return 0;
++}
 
 
 
