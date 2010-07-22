@@ -1,25 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755901Ab0GVJ0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 05:26:04 -0400
-Received: from mtagate3.de.ibm.com ([195.212.17.163]:46868 "EHLO
-	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753286Ab0GVJ0A (ORCPT
+	id S1758954Ab0GVJ07 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 05:26:59 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:34244 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618Ab0GVJ05 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 05:26:00 -0400
-Date: Thu, 22 Jul 2010 11:25:57 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Sachin Sant <sachinp@in.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [-next July 21] s390 build failure : kernel/workqueue.o
-Message-ID: <20100722112557.14b65077@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <4C4718D5.1080902@kernel.org>
-References: <4C46CEA3.7040503@in.ibm.com>
-	<4C4718D5.1080902@kernel.org>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	Thu, 22 Jul 2010 05:26:57 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 22 Jul 2010 18:22:04 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in direct
+ reclaim
+Message-Id: <20100722182204.81dddfa9.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100722091930.GD13117@csn.ul.ie>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
+	<1279545090-19169-5-git-send-email-mel@csn.ul.ie>
+	<20100719221420.GA16031@cmpxchg.org>
+	<20100720134555.GU13117@csn.ul.ie>
+	<20100720220218.GE16031@cmpxchg.org>
+	<20100721115250.GX13117@csn.ul.ie>
+	<20100721210111.06dda351.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100721142710.GZ13117@csn.ul.ie>
+	<20100722085734.ff252542.kamezawa.hiroyu@jp.fujitsu.com>
+	<20100722091930.GD13117@csn.ul.ie>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
@@ -27,60 +43,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jul 2010 17:57:09 +0200
-Tejun Heo <tj@kernel.org> wrote:
+On Thu, 22 Jul 2010 10:19:30 +0100
+Mel Gorman <mel@csn.ul.ie> wrote:
 
-> Hello,
+> On Thu, Jul 22, 2010 at 08:57:34AM +0900, KAMEZAWA Hiroyuki wrote:
+> > On Wed, 21 Jul 2010 15:27:10 +0100
+> > Mel Gorman <mel@csn.ul.ie> wrote:
+
+> > 1 tick penalty seems too large. I hope we can have some waitqueue in future.
+> > 
 > 
-> On 07/21/2010 12:40 PM, Sachin Sant wrote:
-> > Today's next fails to build on a s390 box with
-> > 
-> >  CC      kernel/workqueue.o
-> > kernel/workqueue.c: In function 'init_workqueues':
-> > kernel/workqueue.c:3525: error: negative width in bit-field '<anonymous>'
-> > make[1]: *** [kernel/workqueue.o] Error 1
-> > 
-> > Yesterday's next was good.
-> > The following patches added/changed the BUILD_BUG_ON() statement.
-> > 
-> > bdbc5dd7de5d07d6c9d3536e598956165a031d4c
-> >        workqueue: prepare for WQ_UNBOUND implementation
-> > 7a22ad757ec75186ad43a5b4670fa7423ee8f480
-> >         workqueue: carry cpu number in work data once execution starts
-> > 
-> > I have gcc version 4.3.2 installed on the system.
+> congestion_wait() if congestion occurs goes onto a waitqueue that is
+> woken if congestion clears. I didn't measure it this time around but I
+> doubt it waits for HZ/10 much of the time.
 > 
-> Hmmm... that's surprising.  Can you please attach the .config?
+Okay.
 
-The BUILD_BUG_ON line gets expanded to:
+> > > > > -		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
+> > > > > +			/*
+> > > > > +			 * The attempt at page out may have made some
+> > > > > +			 * of the pages active, mark them inactive again.
+> > > > > +			 */
+> > > > > +			nr_active = clear_active_flags(&page_list, NULL);
+> > > > > +			count_vm_events(PGDEACTIVATE, nr_active);
+> > > > > +	
+> > > > > +			nr_reclaimed += shrink_page_list(&page_list, sc,
+> > > > > +						PAGEOUT_IO_SYNC, &nr_dirty);
+> > > > > +		}
+> > > > 
+> > > > Just a question. This PAGEOUT_IO_SYNC has some meanings ?
+> > > > 
+> > > 
+> > > Yes, in pageout it will wait on pages currently being written back to be
+> > > cleaned before trying to reclaim them.
+> > > 
+> > Hmm. IIUC, this routine is called only when !current_is_kswapd() and
+> > pageout is done only whne current_is_kswapd(). So, this seems ....
+> > Wrong ?
+> > 
+> 
+> Both direct reclaim and kswapd can reach shrink_inactive_list
+> 
+> Direct reclaim
+> do_try_to_free_pages
+>   -> shrink_zones
+>     -> shrink_zone
+>       -> shrink_list
+>         -> shrink_inactive list <--- the routine in question
+> 
+> Kswapd
+> balance_pgdat
+>   -> shrink_zone
+>     -> shrink_list
+>       -> shrink_inactive_list
+> 
+> pageout() is still called by direct reclaim if the page is anon so it
+> will synchronously wait on those if PAGEOUT_IO_SYNC is set. 
 
-((void)(sizeof(struct { int:-!!(WORK_CPU_LAST << WORK_STRUCT_FLAG_BITS >= 0x0UL); })));
+Ah, ok. I missed that. Thank you for kindly clarification.
 
-WORK_CPU_LAST is:
-
-enum {
- ..
- WORK_CPU_NONE = 32 + 1,
- WORK_CPU_LAST = WORK_CPU_NONE,
- ..
-};
-
-WORK_STRUCT_FLAG_BITS is:
-
- WORK_STRUCT_COLOR_SHIFT = 2,
- WORK_STRUCT_COLOR_BITS = 4,
- WORK_STRUCT_FLAG_BITS = WORK_STRUCT_COLOR_SHIFT +
-      WORK_STRUCT_COLOR_BITS,
-
-which boils it down to
-
-((void)(sizeof(struct { int:-!!(33 << 6 >= 0x0UL); })));
-
-gcc doesn't like this construct.
-
--- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
+Thanks,
+-Kame
 
