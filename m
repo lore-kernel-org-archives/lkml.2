@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759703Ab0GVSW7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:22:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42891 "EHLO
+	id S1759656Ab0GVSWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:22:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42675 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759637Ab0GVSWp (ORCPT
+	with ESMTP id S1759614Ab0GVSWk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:22:45 -0400
+	Thu, 22 Jul 2010 14:22:40 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,15 +17,15 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 05/31] memblock: Factor the lowest level alloc function
-Date: Thu, 22 Jul 2010 11:20:38 -0700
-Message-Id: <1279822864-17154-6-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 25/31] memblock: Add debugfs files to dump the arrays content
+Date: Thu, 22 Jul 2010 11:20:58 -0700
+Message-Id: <1279822864-17154-26-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
 References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C488C4B.0208,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4C488C35.0235,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,124 +34,75 @@ From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- mm/memblock.c |   59 ++++++++++++++++++++++++++------------------------------
- 1 files changed, 27 insertions(+), 32 deletions(-)
+ mm/memblock.c |   51 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 51 insertions(+), 0 deletions(-)
 
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 83643f3..9b71de0 100644
+index 424ca11..b5eb901 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -294,8 +294,8 @@ static u64 memblock_align_up(u64 addr, u64 size)
- 	return (addr + (size - 1)) & ~(size - 1);
- }
+@@ -16,6 +16,8 @@
+ #include <linux/bitops.h>
+ #include <linux/poison.h>
+ #include <linux/pfn.h>
++#include <linux/debugfs.h>
++#include <linux/seq_file.h>
+ #include <linux/memblock.h>
  
--static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
--					   u64 size, u64 align)
-+static u64 __init memblock_alloc_region(u64 start, u64 end,
-+				   u64 size, u64 align)
- {
- 	u64 base, res_base;
- 	long j;
-@@ -318,6 +318,13 @@ static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
- 	return ~(u64)0;
+ struct memblock memblock;
+@@ -714,3 +716,52 @@ static int __init early_memblock(char *p)
  }
+ early_param("memblock", early_memblock);
  
-+u64 __weak __init memblock_nid_range(u64 start, u64 end, int *nid)
-+{
-+	*nid = 0;
++#ifdef CONFIG_DEBUG_FS
 +
-+	return end;
++static int memblock_debug_show(struct seq_file *m, void *private)
++{
++	struct memblock_type *type = m->private;
++	struct memblock_region *reg;
++	int i;
++
++	for (i = 0; i < type->cnt; i++) {
++		reg = &type->regions[i];
++		seq_printf(m, "%4d: ", i);
++		if (sizeof(phys_addr_t) == 4)
++			seq_printf(m, "0x%08lx..0x%08lx\n",
++				   (unsigned long)reg->base,
++				   (unsigned long)(reg->base + reg->size - 1));
++		else
++			seq_printf(m, "0x%016llx..0x%016llx\n",
++				   (unsigned long long)reg->base,
++				   (unsigned long long)(reg->base + reg->size - 1));
++
++	}
++	return 0;
 +}
 +
- static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
- 				       u64 size, u64 align, int nid)
- {
-@@ -333,8 +340,7 @@ static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
- 
- 		this_end = memblock_nid_range(start, end, &this_nid);
- 		if (this_nid == nid) {
--			u64 ret = memblock_alloc_nid_unreserved(start, this_end,
--							   size, align);
-+			u64 ret = memblock_alloc_region(start, this_end, size, align);
- 			if (ret != ~(u64)0)
- 				return ret;
- 		}
-@@ -351,6 +357,10 @@ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid)
- 
- 	BUG_ON(0 == size);
- 
-+	/* We do a bottom-up search for a region with the right
-+	 * nid since that's easier considering how memblock_nid_range()
-+	 * works
-+	 */
- 	size = memblock_align_up(size, align);
- 
- 	for (i = 0; i < mem->cnt; i++) {
-@@ -383,7 +393,7 @@ u64 __init memblock_alloc_base(u64 size, u64 align, u64 max_addr)
- 
- u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
- {
--	long i, j;
-+	long i;
- 	u64 base = 0;
- 	u64 res_base;
- 
-@@ -396,33 +406,24 @@ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
- 	if (max_addr == MEMBLOCK_ALLOC_ANYWHERE)
- 		max_addr = MEMBLOCK_REAL_LIMIT;
- 
-+	/* Pump up max_addr */
-+	if (max_addr == MEMBLOCK_ALLOC_ANYWHERE)
-+		max_addr = ~(u64)0;
++static int memblock_debug_open(struct inode *inode, struct file *file)
++{
++	return single_open(file, memblock_debug_show, inode->i_private);
++}
 +
-+	/* We do a top-down search, this tends to limit memory
-+	 * fragmentation by keeping early boot allocs near the
-+	 * top of memory
-+	 */
- 	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
- 		u64 memblockbase = memblock.memory.regions[i].base;
- 		u64 memblocksize = memblock.memory.regions[i].size;
- 
- 		if (memblocksize < size)
- 			continue;
--		if (max_addr == MEMBLOCK_ALLOC_ANYWHERE)
--			base = memblock_align_down(memblockbase + memblocksize - size, align);
--		else if (memblockbase < max_addr) {
--			base = min(memblockbase + memblocksize, max_addr);
--			base = memblock_align_down(base - size, align);
--		} else
--			continue;
--
--		while (base && memblockbase <= base) {
--			j = memblock_overlaps_region(&memblock.reserved, base, size);
--			if (j < 0) {
--				/* this area isn't reserved, take it */
--				if (memblock_add_region(&memblock.reserved, base, size) < 0)
--					return 0;
--				return base;
--			}
--			res_base = memblock.reserved.regions[j].base;
--			if (res_base < size)
--				break;
--			base = memblock_align_down(res_base - size, align);
--		}
-+		base = min(memblockbase + memblocksize, max_addr);
-+		res_base = memblock_alloc_region(memblockbase, base, size, align);
-+		if (res_base != ~(u64)0)
-+			return res_base;
- 	}
- 	return 0;
- }
-@@ -502,9 +503,3 @@ int memblock_is_region_reserved(u64 base, u64 size)
- 	return memblock_overlaps_region(&memblock.reserved, base, size);
- }
- 
--u64 __weak memblock_nid_range(u64 start, u64 end, int *nid)
--{
--	*nid = 0;
--
--	return end;
--}
++static const struct file_operations memblock_debug_fops = {
++	.open = memblock_debug_open,
++	.read = seq_read,
++	.llseek = seq_lseek,
++	.release = single_release,
++};
++
++static int __init memblock_init_debugfs(void)
++{
++	struct dentry *root = debugfs_create_dir("memblock", NULL);
++	if (!root)
++		return -ENXIO;
++	debugfs_create_file("memory", S_IRUGO, root, &memblock.memory, &memblock_debug_fops);
++	debugfs_create_file("reserved", S_IRUGO, root, &memblock.reserved, &memblock_debug_fops);
++
++	return 0;
++}
++__initcall(memblock_init_debugfs);
++
++#endif /* CONFIG_DEBUG_FS */
 -- 
 1.6.4.2
 
