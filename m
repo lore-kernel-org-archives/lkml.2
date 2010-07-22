@@ -1,48 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758833Ab0GVKfI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 06:35:08 -0400
-Received: from borg.medozas.de ([188.40.89.202]:55870 "EHLO borg.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754944Ab0GVKfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 06:35:04 -0400
-Date: Thu, 22 Jul 2010 12:35:03 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: David Howells <dhowells@redhat.com>
-cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
- file stats available [ver #6]
-In-Reply-To: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-Message-ID: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+	id S1758929Ab0GVKje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 06:39:34 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:48212 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754464Ab0GVKj2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 06:39:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=IZumza/eX3E1WpxetpxEf9fLRcfyqRDGM+EykJuXYR49o7dhkmemzqeQ6PJpJJN6gB
+         5CVo5gxokSnWFym+sC/rPNJnlQERB6Bo/qjBADmO6IS7RQqR7RYdOamsGNa5gqQK8wmz
+         NeLKasIgnkfHxTvMbRj/MTNWskLrANrD8+jM0=
+Message-ID: <4C481FD5.4070509@gmail.com>
+Date: Thu, 22 Jul 2010 13:39:17 +0300
+From: Boaz Harrosh <openosd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Neil Brown <neilb@suse.de>
+CC: Jiri Slaby <jirislaby@gmail.com>,
+        James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
+        hch@lst.de, jaxboe@fusionio.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org
+Subject: Re: BUG at drivers/scsi/scsi_lib.c:1113
+References: <4C47ED7B.1050709@gmail.com> <20100722173716.66264bef@notabene>
+In-Reply-To: <20100722173716.66264bef@notabene>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 07/22/2010 10:37 AM, Neil Brown wrote:
+> On Thu, 22 Jul 2010 09:04:27 +0200
+> Jiri Slaby <jirislaby@gmail.com> wrote:
+> 
+>> Hello,
+>>
+>> I'm seeing this BUG while booting:
+>>
+>> EXT3-fs (md1): using internal journal
+>> ------------[ cut here ]------------
+>> kernel BUG at /home/l/latest/xxx/drivers/scsi/scsi_lib.c:1113!
+> 
+> You aren't the only one.
+> https://bugzilla.kernel.org/show_bug.cgi?id=16275
+> 
+> 
+>> I bisected it down to:
+>> commit 74450be123b6f3cb480c358a056be398cce6aa6e
+>> Author: Christoph Hellwig <hch@lst.de>
+>> Date:   Fri Jun 18 11:53:43 2010 +0200
+>>
+>>     block: unify flags for struct bio and struct request
+>>
+>>     Remove the current bio flags and reuse the request flags for the
+>> bio, too.
+>>     This allows to more easily trace the type of I/O from the filesystem
+>>     down to the block driver.  There were two flags in the bio that were
+>>     missing in the requests:  BIO_RW_UNPLUG and BIO_RW_AHEAD.  Also I've
+>>     renamed two request flags that had a superflous RW in them.
+>>
+>>     Note that the flags are in bio.h despite having the REQ_ name - as
+>>     blkdev.h includes bio.h that is the only way to go for now.
+>>
+>>     Signed-off-by: Christoph Hellwig <hch@lst.de>
+>>     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
+>>
+>>
+> 
+> Thanks for doing that.
+> 
+> I suspect that problem is that "do_sync" and "do_barriers" in
+> drivers/md/raid1.c are still 'bool' and should now be 'unsigned long'.
+> 
+> I'm not sure how wide '_Bool' is, but I'm guess it isn't wide enough.
+> 
+> Could you please try changing ever 'bool' in that file to 'unsigned long'
+> and see if that fixes it?
+> 
 
-On Thursday 2010-07-15 04:17, David Howells wrote:
-> (6) BSD stat compatibility: Including more fields from the BSD stat such as
->     creation time (st_btime) and inode generation number (st_gen) [Jeremy
->     Allison, Bernd Schubert].
->where st_btime is the file creation time, st_gen is the inode generation
->(i_generation), st_data_version is the data version number (i_version),
->st_inode_flags is the flags from FS_IOC_GETFLAGS plus some extras,
->request_mask and st_result_mask are bitmasks of data desired/provided and
->st_extra_results[] is where as-yet undefined fields are appended.
+Please don't. This is really bad programming, and produces slower
+code. You should do:
 
-Linux already has a creation time field, it's called otime (there is no "b" in
-"creation"), and you will find scattered fragments of that all over the kernel
-(foremost, fs/jfs/, now btrfs, and I also notice sysvipc having something with
-that name).
+diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+index 73cc74f..8bd1ecb 100644
+--- a/drivers/md/raid1.c
++++ b/drivers/md/raid1.c
+@@ -787,7 +787,7 @@ static int make_request(mddev_t *mddev, struct bio * bio)
+ 	struct bio_list bl;
+ 	struct page **behind_pages = NULL;
+ 	const int rw = bio_data_dir(bio);
+-	const bool do_sync = (bio->bi_rw & REQ_SYNC);
++	const bool do_sync = (bio->bi_rw & REQ_SYNC) != 0;
+ 	bool do_barriers;
+ 	mdk_rdev_t *blocked_rdev;
+ 
+Boaz
 
->	struct xstat_time {
->		unsigned long long	tv_sec, tv_nsec;
->	};
-
-If it helps getting rid of the ugly suseconds_t in userspace ;-)
+> Thanks,
+> NeilBrown
