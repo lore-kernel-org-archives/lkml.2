@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759855Ab0GVUp3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 16:45:29 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36600 "EHLO
+	id S1759899Ab0GVUpe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 16:45:34 -0400
+Received: from e33.co.us.ibm.com ([32.97.110.151]:36640 "EHLO
 	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759784Ab0GVUpW (ORCPT
+	with ESMTP id S1759805Ab0GVUpa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 16:45:22 -0400
+	Thu, 22 Jul 2010 16:45:30 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -14,9 +14,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         James Morris <jmorris@namei.org>,
         David Safford <safford@watson.ibm.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v2 07/14] evm: imbed evm_inode_post_setattr
-Date: Thu, 22 Jul 2010 16:44:08 -0400
-Message-Id: <1279831456-2765-8-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v2 09/14] fs: add evm_inode_post_init calls
+Date: Thu, 22 Jul 2010 16:44:10 -0400
+Message-Id: <1279831456-2765-10-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1279831456-2765-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1279831456-2765-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -24,64 +24,187 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Changing the inode's metadata may require the 'security.evm' extended
-attribute to be re-calculated and updated.
+After creating the initial LSM security extended attribute, call
+evm_inode_post_init_security() to create the 'security.evm'
+extended attribute.
+
+(Support for other fs still needed.)
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Acked-by: Serge Hallyn <serue@us.ibm.com>
 ---
- fs/attr.c           |    5 ++++-
- include/linux/evm.h |    6 ++++++
- 2 files changed, 10 insertions(+), 1 deletions(-)
+ fs/ext2/xattr_security.c |   31 ++++++++++++++++++++++++-------
+ fs/ext3/xattr_security.c |   30 +++++++++++++++++++++++-------
+ fs/ext4/xattr_security.c |   30 +++++++++++++++++++++++-------
+ 3 files changed, 70 insertions(+), 21 deletions(-)
 
-diff --git a/fs/attr.c b/fs/attr.c
-index b4fa3b0..9293710 100644
---- a/fs/attr.c
-+++ b/fs/attr.c
-@@ -13,6 +13,7 @@
- #include <linux/fsnotify.h>
- #include <linux/fcntl.h>
+diff --git a/fs/ext2/xattr_security.c b/fs/ext2/xattr_security.c
+index 3004e15..bb460ed 100644
+--- a/fs/ext2/xattr_security.c
++++ b/fs/ext2/xattr_security.c
+@@ -9,6 +9,7 @@
+ #include <linux/fs.h>
+ #include <linux/ext2_fs.h>
  #include <linux/security.h>
 +#include <linux/evm.h>
+ #include "xattr.h"
  
- /* Taken over from the old code... */
- 
-@@ -248,8 +249,10 @@ int notify_change(struct dentry * dentry, struct iattr * attr)
- 	if (ia_valid & ATTR_SIZE)
- 		up_write(&dentry->d_inode->i_alloc_sem);
- 
--	if (!error)
-+	if (!error) {
- 		fsnotify_change(dentry, ia_valid);
-+		evm_inode_post_setattr(dentry, ia_valid);
-+	}
- 
- 	return error;
- }
-diff --git a/include/linux/evm.h b/include/linux/evm.h
-index a730782..33a9247 100644
---- a/include/linux/evm.h
-+++ b/include/linux/evm.h
-@@ -15,6 +15,7 @@ extern enum integrity_status evm_verifyxattr(struct dentry *dentry,
- 					     const char *xattr_name,
- 					     void *xattr_value,
- 					     size_t xattr_value_len);
-+extern void evm_inode_post_setattr(struct dentry *dentry, int ia_valid);
- extern int evm_inode_setxattr(struct dentry *dentry, const char *name,
- 			      const void *value, size_t size);
- extern void evm_inode_post_setxattr(struct dentry *dentry,
-@@ -35,6 +36,11 @@ static inline enum integrity_status evm_verifyxattr(struct dentry *dentry,
- }
- #endif
- 
-+static inline void evm_inode_post_setattr(struct dentry *dentry, int ia_valid)
-+{
-+	return;
-+}
-+
- static inline int evm_inode_setxattr(struct dentry *dentry, const char *name,
- 				     const void *value, size_t size)
+ static size_t
+@@ -50,21 +51,37 @@ int
+ ext2_init_security(struct inode *inode, struct inode *dir)
  {
+ 	int err;
+-	size_t len;
+-	void *value;
+-	char *name;
++	struct xattr lsm_xattr;
++	struct xattr evm_xattr;
+ 
+-	err = security_inode_init_security(inode, dir, &name, &value, &len);
++	err = security_inode_init_security(inode, dir, &lsm_xattr.name,
++					   &lsm_xattr.value,
++					   &lsm_xattr.value_len);
+ 	if (err) {
+ 		if (err == -EOPNOTSUPP)
+ 			return 0;
+ 		return err;
+ 	}
+ 	err = ext2_xattr_set(inode, EXT2_XATTR_INDEX_SECURITY,
+-			     name, value, len, 0);
+-	kfree(name);
+-	kfree(value);
++			     lsm_xattr.name, lsm_xattr.value,
++			     lsm_xattr.value_len, 0);
++	if (err < 0)
++		goto out;
++
++	err = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
++	if (err)
++		goto out;
++	err = ext2_xattr_set(inode, EXT2_XATTR_INDEX_SECURITY,
++			     evm_xattr.name, evm_xattr.value,
++			     evm_xattr.value_len, 0);
++	kfree(evm_xattr.value);
++out:
++	kfree(lsm_xattr.name);
++	kfree(lsm_xattr.value);
++	if (err == -EOPNOTSUPP)
++		return 0;
+ 	return err;
++
+ }
+ 
+ const struct xattr_handler ext2_xattr_security_handler = {
+diff --git a/fs/ext3/xattr_security.c b/fs/ext3/xattr_security.c
+index 03a99bf..6e44368 100644
+--- a/fs/ext3/xattr_security.c
++++ b/fs/ext3/xattr_security.c
+@@ -10,6 +10,7 @@
+ #include <linux/ext3_jbd.h>
+ #include <linux/ext3_fs.h>
+ #include <linux/security.h>
++#include <linux/evm.h>
+ #include "xattr.h"
+ 
+ static size_t
+@@ -52,20 +53,35 @@ int
+ ext3_init_security(handle_t *handle, struct inode *inode, struct inode *dir)
+ {
+ 	int err;
+-	size_t len;
+-	void *value;
+-	char *name;
++	struct xattr lsm_xattr;
++	struct xattr evm_xattr;
+ 
+-	err = security_inode_init_security(inode, dir, &name, &value, &len);
++	err = security_inode_init_security(inode, dir, &lsm_xattr.name,
++					   &lsm_xattr.value,
++					   &lsm_xattr.value_len);
+ 	if (err) {
+ 		if (err == -EOPNOTSUPP)
+ 			return 0;
+ 		return err;
+ 	}
+ 	err = ext3_xattr_set_handle(handle, inode, EXT3_XATTR_INDEX_SECURITY,
+-				    name, value, len, 0);
+-	kfree(name);
+-	kfree(value);
++				    lsm_xattr.name, lsm_xattr.value,
++				    lsm_xattr.value_len, 0);
++	if (err < 0)
++		goto out;
++
++	err = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
++	if (err)
++		goto out;
++	err = ext3_xattr_set_handle(handle, inode, EXT3_XATTR_INDEX_SECURITY,
++				    evm_xattr.name, evm_xattr.value,
++				    evm_xattr.value_len, 0);
++	kfree(evm_xattr.value);
++out:
++	kfree(lsm_xattr.name);
++	kfree(lsm_xattr.value);
++	if (err == -EOPNOTSUPP)
++		return 0;
+ 	return err;
+ }
+ 
+diff --git a/fs/ext4/xattr_security.c b/fs/ext4/xattr_security.c
+index 9b21268..8998fda 100644
+--- a/fs/ext4/xattr_security.c
++++ b/fs/ext4/xattr_security.c
+@@ -8,6 +8,7 @@
+ #include <linux/fs.h>
+ #include <linux/security.h>
+ #include <linux/slab.h>
++#include <linux/evm.h>
+ #include "ext4_jbd2.h"
+ #include "ext4.h"
+ #include "xattr.h"
+@@ -52,20 +53,35 @@ int
+ ext4_init_security(handle_t *handle, struct inode *inode, struct inode *dir)
+ {
+ 	int err;
+-	size_t len;
+-	void *value;
+-	char *name;
++	struct xattr lsm_xattr;
++	struct xattr evm_xattr;
+ 
+-	err = security_inode_init_security(inode, dir, &name, &value, &len);
++	err = security_inode_init_security(inode, dir, &lsm_xattr.name,
++					   &lsm_xattr.value,
++					   &lsm_xattr.value_len);
+ 	if (err) {
+ 		if (err == -EOPNOTSUPP)
+ 			return 0;
+ 		return err;
+ 	}
+ 	err = ext4_xattr_set_handle(handle, inode, EXT4_XATTR_INDEX_SECURITY,
+-				    name, value, len, 0);
+-	kfree(name);
+-	kfree(value);
++				    lsm_xattr.name, lsm_xattr.value,
++				    lsm_xattr.value_len, 0);
++	if (err < 0)
++		goto out;
++
++	err = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
++	if (err)
++		goto out;
++	err = ext4_xattr_set_handle(handle, inode, EXT4_XATTR_INDEX_SECURITY,
++				    evm_xattr.name, evm_xattr.value,
++				    evm_xattr.value_len, 0);
++	kfree(evm_xattr.value);
++out:
++	kfree(lsm_xattr.name);
++	kfree(lsm_xattr.value);
++	if (err == -EOPNOTSUPP)
++		return 0;
+ 	return err;
+ }
+ 
 -- 
 1.7.1.1
 
