@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755840Ab0GVUQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 16:16:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:59922 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752499Ab0GVUQy (ORCPT
+	id S1756386Ab0GVUY4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 16:24:56 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51113 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751275Ab0GVUYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 16:16:54 -0400
-Message-ID: <4C48A667.2000702@petalogix.com>
-Date: Thu, 22 Jul 2010 22:13:27 +0200
-From: Michal Simek <michal.simek@petalogix.com>
-Reply-To: michal.simek@petalogix.com
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-        Sachin Sant <sachinp@in.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH wq#for-next] workqueue: fix how cpu number is stored in
- work->data
-References: <4C46CEA3.7040503@in.ibm.com>	<4C4718D5.1080902@kernel.org> <20100722112557.14b65077@mschwide.boeblingen.de.ibm.com> <4C4838B8.1080400@kernel.org>
-In-Reply-To: <4C4838B8.1080400@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Jul 2010 16:24:54 -0400
+X-Authority-Analysis: v=1.1 cv=NvN00vXXLC/2Fo3NdLZJXFUM7u9qr/FOWvgMjmHRJhk= c=1 sm=0 a=vPnlRXC0CbEA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=fEOsYTyjfvl5NA60lzgA:9 a=Qq1XSag5JfUtD7BOZ8sA:7 a=4pbDeSHJd98uwuSjXyZ1sF6dpJYA:4 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Message-Id: <20100722202411.920807480@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 22 Jul 2010 16:24:11 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 0/7] [GIT PULL] tracing: updates
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Tejun Heo wrote:
-> Once a work starts execution, its data contains the cpu number it was
-> on instead of pointing to cwq.  This is added by commit 7a22ad75
-> (workqueue: carry cpu number in work data once execution starts) to
-> reliably determine the work was last on even if the workqueue itself
-> was destroyed inbetween.
-> 
-> Whether data points to a cwq or contains a cpu number was
-> distinguished by comparing the value against PAGE_OFFSET.  The
-> assumption was that a cpu number should be below PAGE_OFFSET while a
-> pointer to cwq should be above it.  However, on architectures which
-> use separate address spaces for user and kernel spaces, this doesn't
-> hold as PAGE_OFFSET is zero.
-> 
-> Fix it by using an explicit flag, WORK_STRUCT_CWQ, to mark what the
-> data field contains.  If the flag is set, it's pointing to a cwq;
-> otherwise, it contains a cpu number.
-> 
-> Reported on s390 and microblaze during linux-next testing.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Sachin Sant <sachinp@in.ibm.com>
-> Reported-by: Michal Simek <michal.simek@petalogix.com>
-> Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> ---
-> Yeah, that was a stupid assumption by me.  Can you guys please test
-> whether this fixes the problem?
-> 
-> Thanks.
 
-Microblaze is OK.
+Ingo,
 
-Tested-by: Michal Simek <monstr@monstr.eu>
+Please pull the latest tip/perf/core tree, which can be found at:
 
-Thanks,
-Michal
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/core
 
 
--- 
-Michal Simek, Ing. (M.Eng)
-PetaLogix - Linux Solutions for a Reconfigurable World
-w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
+Dan Carpenter (1):
+      trace: strlen() return doesn't account for the NULL
+
+David Daney (1):
+      tracing: Fix $mcount_regex for MIPS in recordmcount.pl
+
+KOSAKI Motohiro (1):
+      tracing: Shrink max latency ringbuffer if unnecessary
+
+Lai Jiangshan (1):
+      tracing: Reduce latency and remove percpu trace_seq
+
+Li Zefan (1):
+      tracing: Allow to disable cmdline recording
+
+Mike Frysinger (1):
+      tracing/documentation: Document dynamic ftracer internals
+
+Richard Kennedy (1):
+      trace: Reorder struct ring_buffer_per_cpu to remove padding on 64bit
+
+----
+ Documentation/trace/ftrace-design.txt |  153 +++++++++++++++++++++++++++++++-
+ include/linux/ftrace.h                |    5 +
+ include/linux/ftrace_event.h          |   12 ++-
+ include/trace/ftrace.h                |   12 +--
+ kernel/trace/ring_buffer.c            |    2 +-
+ kernel/trace/trace.c                  |   46 ++++++++--
+ kernel/trace/trace.h                  |    4 +
+ kernel/trace/trace_events.c           |   30 ++++++-
+ kernel/trace/trace_irqsoff.c          |    3 +
+ kernel/trace/trace_output.c           |    3 -
+ kernel/trace/trace_sched_wakeup.c     |    2 +
+ scripts/recordmcount.pl               |    2 +-
+ 12 files changed, 241 insertions(+), 33 deletions(-)
