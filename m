@@ -1,122 +1,268 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932173Ab0GVNXL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 09:23:11 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:63694 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754891Ab0GVNXJ convert rfc822-to-8bit (ORCPT
+	id S932233Ab0GVNYh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 09:24:37 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37151 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755530Ab0GVNYg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 09:23:09 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Thu, 22 Jul 2010 15:24:26 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <20100722124559.GH4737@rakim.wolfsonmicro.main>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>, linux-mm@kvack.org,
-        Pawel Osciak <p.osciak@samsung.com>,
-        "'Xiaolin Zhang'" <xiaolin.zhang@intel.com>,
-        "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
-        "'Robert Fekete'" <robert.fekete@stericsson.com>,
-        "'Marcus Lorentzon'" <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-Message-id: <op.vf8x60wi7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
- <op.vf5o28st7p4s8u@pikus> <20100721135229.GC10930@sirena.org.uk>
- <op.vf66mxka7p4s8u@pikus> <20100721182457.GE10930@sirena.org.uk>
- <op.vf7h6ysh7p4s8u@pikus> <20100722090602.GF10930@sirena.org.uk>
- <000901cb297f$e28f2b10$a7ad8130$%szyprowski@samsung.com>
- <20100722105203.GD4737@rakim.wolfsonmicro.main> <op.vf8sxqro7p4s8u@pikus>
- <20100722124559.GH4737@rakim.wolfsonmicro.main>
+	Thu, 22 Jul 2010 09:24:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=PWvc/Xo5lQaYnEFqDWq/zso4W1G1mHVVTzwnBxE1ESARNEyMSIVTJ8+xD4oVhSnUnY
+         PmwE0LI8+AlZS4wq90ymW5RsQcqxFuDmhfiEYefKiR7LToeohUPGSgcdJy7iv3NvPYiK
+         cuD5vAT1StLq+23xSWbrjM5xbhduZUSZZGoRU=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org
+Subject: [PATCH] staging: clean up code a bit, use kernel native methods
+Date: Thu, 22 Jul 2010 16:24:02 +0300
+Message-Id: <1279805042-9936-1-git-send-email-andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Jul 22, 2010 at 01:30:52PM +0200, Michał Nazarewicz wrote:
->> The first one, I believe, should be there as to specify the regions
->> that are to be reserved.  Drivers and platform will still be able to
->> add their own regions but I believe that in vest majority of cases,
->> it will be enough to just pass the list of region on a command line.
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: devel@driverdev.osuosl.org
+---
+ drivers/staging/otus/apdbg.c             |   22 -----------------
+ drivers/staging/panel/panel.c            |   19 +++++---------
+ drivers/staging/rtl8192su/r8192S_Efuse.c |   27 ++-------------------
+ drivers/staging/wlags49_h2/wl_util.c     |   37 +-----------------------------
+ drivers/staging/wlags49_h2/wl_util.h     |    2 -
+ drivers/staging/wlan-ng/prism2sta.c      |    6 +---
+ 6 files changed, 13 insertions(+), 100 deletions(-)
 
-On Thu, 22 Jul 2010 14:46:00 +0200, Mark Brown <broonie@opensource.wolfsonmicro.com> wrote:
-> The command line is a real pain for stuff like this since it's not
-> usually committed to revision control so robustly and it's normally more
-> painful to change the bootloader to pass the desired command line in
-> than it is to change either the kernel or userspace (some bootloaders
-> are just completely unconfigurable without reflashing, and if your only
-> recovery mechanism is JTAG that can be a bit of a concern).
-
-That's why command line is only intended as a way to overwrite the
-defaults which are provided by the platform.  In a final product,
-configuration should be specified in platform code and not on
-command line.
-
->> Alternatively, instead of the textual description of platform could
->> provide an array of regions it want reserved.  It would remove like
->> 50 lines of code from CMA core (in the version I have on my drive at
->> least, where part of the syntax was simplified) however it would
->> remove the possibility to easily change the configuration from
->> command line (ie. no need to recompile which is handy when you need
->> to optimise this and test various configurations) and would add more
->> code to the platform initialisation code, ie: instead of:
->>
->> 	cma_defaults("reg1=20M;reg2=20M", NULL);
->
->> one would have to define an array with the regions descriptors.
->> Personally, I don't see much benefits from this.
->
-> I think it'd be vastly more legible, especially if the list of regions
-> gets large.  I had thought the only reason for the text format was to
-> put it onto the command line.
-
-Command line was one of the reasons for using textual interface.  I surely
-wouldn't go with parsing the strings if I could manage without it allowing
-easy platform-level configuration at the same time.
-
->> I agree that parsing it is not nice but thanks to it, all you need to
->> do in the driver is:
->>
->> 	cma_alloc(dev, "a", ...)
->> 	cma_alloc(dev, "b", ...)
->> 	cma_alloc(dev, "f", ...)
->>
->> Without cma_map you'd have to pass names of the region to the driver
->> and make the driver use those.
->
-> I agree that a mapping facility for the names is essential, especially
-> if drivers need to share regions.
->
->> What I'm trying to say is that I'm trying to move complexity out of
->> the drivers into the framework (as I believe that's what frameworks
->> are for).
->
-> It sounds like apart from the way you're passing the configuration in
-> you're doing roughly what I'd suggest.  I'd expect that in a lot of
-> cases the map could be satisfied from the default region so there'd be
-> no need to explicitly set one up.
-
-Platform can specify something like:
-
-	cma_defaults("reg=20M", "*/*=reg");
-
-which would make all the drivers share 20 MiB region by default.  I'm also
-thinking if something like:
-
-	cma_defaults("reg=20M", "*/*=*");
-
-(ie. asterisk instead of list of regions) should be allowed.  It would make
-the default to be that all allocations are performed from all named regions.
-I'll see how much coding is that and maybe add it.
-
+diff --git a/drivers/staging/otus/apdbg.c b/drivers/staging/otus/apdbg.c
+index 32c26e5..09415a6 100644
+--- a/drivers/staging/otus/apdbg.c
++++ b/drivers/staging/otus/apdbg.c
+@@ -90,28 +90,6 @@ struct zdap_ioctl {
+ 
+ #endif
+ 
+-static char hex(char v)
+-{
+-	if (isdigit(v))
+-		return v - '0';
+-	else if (isxdigit(v))
+-		return tolower(v) - 'a' + 10;
+-	else
+-		return 0;
+-}
+-
+-static unsigned char asctohex(char *str)
+-{
+-	unsigned char value;
+-
+-	value = hex(*str) & 0x0f;
+-	value = value << 4;
+-	str++;
+-	value |= hex(*str) & 0x0f;
+-
+-	return value;
+-}
+-
+ char *prgname;
+ 
+ int set_ioctl(int sock, struct ifreq *req)
+diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
+index 8bd7182..3e07e41 100644
+--- a/drivers/staging/panel/panel.c
++++ b/drivers/staging/panel/panel.c
+@@ -48,6 +48,7 @@
+ #include <linux/fcntl.h>
+ #include <linux/init.h>
+ #include <linux/delay.h>
++#include <linux/kernel.h>
+ #include <linux/ctype.h>
+ #include <linux/parport.h>
+ #include <linux/version.h>
+@@ -1179,22 +1180,16 @@ static inline int handle_lcd_special_code(void)
+ 			break;
+ 
+ 		while (*esc) {
++			char *endp;
++
+ 			if (*esc == 'x') {
+ 				esc++;
+-				lcd_addr_x = 0;
+-				while (isdigit(*esc)) {
+-					lcd_addr_x = lcd_addr_x * 10 +
+-						     (*esc - '0');
+-					esc++;
+-				}
++				lcd_addr_x = simple_strtoul(esc, &endp, 10);
++				esc = endp;
+ 			} else if (*esc == 'y') {
+ 				esc++;
+-				lcd_addr_y = 0;
+-				while (isdigit(*esc)) {
+-					lcd_addr_y = lcd_addr_y * 10 +
+-						     (*esc - '0');
+-					esc++;
+-				}
++				lcd_addr_y = simple_strtoul(esc, &endp, 10);
++				esc = endp;
+ 			} else
+ 				break;
+ 		}
+diff --git a/drivers/staging/rtl8192su/r8192S_Efuse.c b/drivers/staging/rtl8192su/r8192S_Efuse.c
+index 1e1d55e..c4bbe40 100644
+--- a/drivers/staging/rtl8192su/r8192S_Efuse.c
++++ b/drivers/staging/rtl8192su/r8192S_Efuse.c
+@@ -30,6 +30,7 @@
+ #include "r8192S_Efuse.h"
+ 
+ #include <linux/types.h>
++#include <linux/ctype.h>
+ 
+ //typedef  int	INT32;
+ //
+@@ -1828,26 +1829,6 @@ EFUSE_ProgramMap(struct net_device* dev, char* pFileName,u8	TableType)
+ 
+ #endif
+ 
+-//
+-//	Description:
+-//		Return TRUE if chTmp is represent for hex digit and
+-//		FALSE otherwise.
+-//
+-//
+-bool IsHexDigit(	char chTmp)
+-{
+-	if( (chTmp >= '0' && chTmp <= '9') ||
+-		(chTmp >= 'a' && chTmp <= 'f') ||
+-		(chTmp >= 'A' && chTmp <= 'F') )
+-	{
+-		return TRUE;
+-	}
+-	else
+-	{
+-		return FALSE;
+-	}
+-}
+-
+ /*-----------------------------------------------------------------------------
+  * Function:	efuse_ParsingMap
+  *
+@@ -1893,10 +1874,8 @@ efuse_ParsingMap(char* szStr,u32* pu4bVal,u32* pu4bMove)
+ 
+ 	// Check if szScan is now pointer to a character for hex digit,
+ 	// if not, it means this is not a valid hex number.
+-	if(!IsHexDigit(*szScan))
+-	{
++	if (!isxdigit(*szScan))
+ 		return FALSE;
+-	}
+ 
+ 	// Parse each digit.
+ 	do
+@@ -1905,7 +1884,7 @@ efuse_ParsingMap(char* szStr,u32* pu4bVal,u32* pu4bMove)
+ 
+ 		szScan++;
+ 		(*pu4bMove)++;
+-	} while(IsHexDigit(*szScan));
++	} while (isxdigit(*szScan));
+ 
+ 	return TRUE;
+ 
+diff --git a/drivers/staging/wlags49_h2/wl_util.c b/drivers/staging/wlags49_h2/wl_util.c
+index bbdb997..ce8ed41 100644
+--- a/drivers/staging/wlags49_h2/wl_util.c
++++ b/drivers/staging/wlags49_h2/wl_util.c
+@@ -259,41 +259,6 @@ int is_valid_key_string( char *s )
+ 
+ 
+ /*******************************************************************************
+- *	hexdigit2int()
+- *******************************************************************************
+- *
+- *  DESCRIPTION:
+- *
+- *      Converts a hexadecimal digit character to an integer
+- *
+- *  PARAMETERS:
+- *
+- *      c   - the hexadecimal digit character
+- *
+- *  RETURNS:
+- *
+- *      the converted integer
+- *
+- ******************************************************************************/
+-int hexdigit2int( char c )
+-{
+-   if( c >= '0' && c <= '9' )
+-       return c - '0';
+-
+-   if( c >= 'A' && c <= 'F' )
+-       return c - 'A' + 10;
+-
+-   if( c >= 'a' && c <= 'f' )
+-       return c - 'a' + 10;
+-
+-   return 0;
+-} // hexdigit2int
+-/*============================================================================*/
+-
+-
+-
+-
+-/*******************************************************************************
+  *	key_string2key()
+  *******************************************************************************
+  *
+@@ -328,7 +293,7 @@ void key_string2key( char *ks, KEY_STRCT *key )
+         p = (char *)key->key;
+ 
+         for( i = 2; i < l; i+=2 ) {
+-           *p++ = ( hexdigit2int( ks[i] ) << 4 ) + hexdigit2int (ks[i+1] );
++			*p++ = (hex_to_bin(ks[i]) << 4) + hex_to_bin(ks[i+1]);
+            n++;
+         }
+ 
+diff --git a/drivers/staging/wlags49_h2/wl_util.h b/drivers/staging/wlags49_h2/wl_util.h
+index 561e85b..ba537a6 100644
+--- a/drivers/staging/wlags49_h2/wl_util.h
++++ b/drivers/staging/wlags49_h2/wl_util.h
+@@ -71,8 +71,6 @@ int is_valid_key_string( char *s );
+ 
+ void key_string2key( char *ks, KEY_STRCT *key );
+ 
+-int hexdigit2int( char c );
+-
+ void wl_hcf_error( struct net_device *dev, int hcfStatus );
+ 
+ void wl_endian_translate_event( ltv_t *pLtv );
+diff --git a/drivers/staging/wlan-ng/prism2sta.c b/drivers/staging/wlan-ng/prism2sta.c
+index 5ec5741..1a502bc 100644
+--- a/drivers/staging/wlan-ng/prism2sta.c
++++ b/drivers/staging/wlan-ng/prism2sta.c
+@@ -83,8 +83,6 @@
+ #include "hfa384x.h"
+ #include "prism2mgmt.h"
+ 
+-#define wlan_hexchar(x) (((x) < 0x0a) ? ('0' + (x)) : ('a' + ((x) - 0x0a)))
+-
+ /* Create a string of printable chars from something that might not be */
+ /* It's recommended that the str be 4*len + 1 bytes long */
+ #define wlan_mkprintstr(buf, buflen, str, strlen) \
+@@ -99,8 +97,8 @@
+ 		} else { \
+ 			(str)[j] = '\\'; \
+ 			(str)[j+1] = 'x'; \
+-			(str)[j+2] = wlan_hexchar(((buf)[i] & 0xf0) >> 4); \
+-			(str)[j+3] = wlan_hexchar(((buf)[i] & 0x0f)); \
++			(str)[j+2] = hex_asc_hi((buf)[i]); \
++			(str)[j+3] = hex_asc_lo((buf)[i]); \
+ 			j += 4; \
+ 		} \
+ 	} \
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+1.7.1.1
+
