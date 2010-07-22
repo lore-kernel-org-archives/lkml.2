@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756887Ab0GVBWw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 21:22:52 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52291 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751775Ab0GVBWv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 21:22:51 -0400
-Message-ID: <4C479C75.9000501@cn.fujitsu.com>
-Date: Thu, 22 Jul 2010 09:18:45 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1757946Ab0GVBYS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 21:24:18 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37533 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755013Ab0GVBYQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 21:24:16 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C479D7F.2070204@jp.fujitsu.com>
+Date: Thu, 22 Jul 2010 10:23:11 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH v2 1/6] KVM: MMU: fix forgot reserved bits check in speculative
- path
-References: <4C3FCFD7.5070005@cn.fujitsu.com> <4C464102.8020205@cn.fujitsu.com> <4C473EDB.6030906@redhat.com>
-In-Reply-To: <4C473EDB.6030906@redhat.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        James Smart <james.smart@emulex.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Brian Gerst <brgerst@gmail.com>
+Subject: Re: [PATCH] BISECTED x86: avoid qword access in memcpy_*io
+References: <4C464BA0.20609@jp.fujitsu.com> <4C465FF0.1030407@zytor.com>
+In-Reply-To: <4C465FF0.1030407@zytor.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-Avi Kivity wrote:
-> On 07/21/2010 03:36 AM, Xiao Guangrong wrote:
+(2010/07/21 11:48), H. Peter Anvin wrote:
+> On 07/20/2010 06:21 PM, Hidetoshi Seto wrote:
+>> With v2.6.35-rc5, my x86-64 server doesn't boot but reports a
+>> Completer Abort on lpfc card.
 >>
->> Xiao Guangrong wrote:
->>   
->>> In the speculative path, we should check guest pte's reserved bits
->>> just as
->>> the real processor does
->>>
->>>      
->> Ping......?
->>    
+>> The result of git-bisect is:
+>>   6175ddf06b6172046a329e3abfd9c901a43efd2e is the first bad commit
+>>   commit 6175ddf06b6172046a329e3abfd9c901a43efd2e
+>>   Author: Brian Gerst <brgerst@gmail.com>
+>>   Date:   Fri Feb 5 09:37:07 2010 -0500
+>>     x86: Clean up mem*io functions.
+>>
+>> What I found are:
+>>  - memcpy for 64bit uses movq if count >= 64 (arch/x86/lib/memcpy_64.S)
+>>  - memcpy_toio and memcpy_fromio have changed to use this memcpy by
+>>    the above commit.
+>>  - my debug shows that lpfc calls memcpy_toio with not-qword-aligned
+>>    addresses and count >= 64, e.g.:
+>>      memcpy_toio(0xffffc900118de004, 0xffff88047293d614, 124);
+>>    and it seems that it comes from:
+>>    [drivers/scsi/lpfc/lpfc_sli.c]
+>>     4929   /* First copy mbox command data to HBA SLIM, skip past first
+>>     4930      word */
+>>     4931   to_slim = phba->MBslimaddr + sizeof (uint32_t);
+>>     4932   lpfc_memcpy_to_slim(to_slim, &mb->un.varWords[0],
+>>     4933               MAILBOX_CMD_SIZE - sizeof (uint32_t));
+>>
+>> Still I'm not sure what is wrong in software or hardware, however
+>> I suppose that qword access to iomem is not always safe, so it will
+>> be OK to back to use __inline_memcpy which uses movsl.
+>>
+>> I confirmed that my server (w/ lpfc) boots with 35-rc5 + this patch.
+>>
+>> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 > 
-> Sorry.  All looks good.  I think no change is needed to patch 3, if we
-> agree on this I'll apply it as is.
+> A driver should not use the memcpy-like instructions if it isn't set up
+> to act as memory (meaning it can handle arbitrary byte enables.)
 
-Yeah, i agree, thanks, Avi.
+So then is this a problem of lpfc driver?
+James, could you agree on that?
+
+> The function it should be using is called, fairly counterintuitively,
+> __iowrite32_copy().  It really should be called memcpy_toio32() or
+> something similar.
+> 
+> 	-hpa
+
+It seems that lpfc already implemented lpfc_memcpy_{to,from}_slim()
+as such memcpy_*io32, but limited use of it to on big endian platforms
+only.  Now lpfc can move to use it always, right?
+
+
+Thanks,
+H.Seto
+
