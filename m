@@ -1,67 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755657Ab0GVRup (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 13:50:45 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:41883 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752566Ab0GVRul convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 13:50:41 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Thu, 22 Jul 2010 19:50:32 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [review patch 3/2] firewire: nosy: note ioctls in ioctl-number.txt
-To: linux-kernel@vger.kernel.org
-cc: linux1394-devel@vger.kernel.org, Kristian Hoegsberg <krh@bitplanet.net>,
-        Randy Dunlap <randy.dunlap@oracle.com>
-In-Reply-To: <4C487F2B.4040405@s5r6.in-berlin.de>
-Message-ID: <tkrat.8da176e6aa2f4ff6@s5r6.in-berlin.de>
-References: <tkrat.72756f504d6c0055@s5r6.in-berlin.de>
- <tkrat.ddc816ab75cce8ac@s5r6.in-berlin.de>
- <20100722090751.682f3b00.randy.dunlap@oracle.com>
- <4C487F2B.4040405@s5r6.in-berlin.de>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=iso-8859-1
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: INLINE
+	id S1753207Ab0GVRw1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 13:52:27 -0400
+Received: from mga01.intel.com ([192.55.52.88]:3277 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751507Ab0GVRw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 13:52:26 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,243,1278313200"; 
+   d="scan'208";a="820670004"
+Date: Thu, 22 Jul 2010 10:52:25 -0700
+From: Fenghua Yu <fenghua.yu@intel.com>
+To: Guenter Roeck <guenter.roeck@ericsson.com>
+Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
+        Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>, "Wan, Huaxu" <huaxu.wan@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 5/5] Package Level Thermal Control and Power Limit Notification: pkgtemp doc
+Message-ID: <20100722175225.GB22450@linux-os.sc.intel.com>
+References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com> <4C485DF1.5050407@linux.intel.com> <20100722162222.GA22450@linux-os.sc.intel.com> <20100722172726.GA4914@ericsson.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722172726.GA4914@ericsson.com>
+User-Agent: Mutt/1.4.1i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-These are the ioctls for the special-purpose misc device /dev/nosy, the
-interface to the IEEE 1394 packet sniffer/ protocol analyzer driver.
-Currently only the numbers 00...02 are in use; let's block a few more
-for unforeseen use cases.
+> > +This driver permits reading package level temperature sensor embedded inside
+> > +Intel CPU package. The sensors can be in core, uncore, memroy controller, or
+> 
+> memroy --> memory
+Will change the typo.
 
-Cc: Randy Dunlap <rdunlap@xenotime.net>
-Cc: Kristian Høgsberg <krh@bitplanet.net>
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
+> > +other componenets in a package. The feature is first implemented in Intel Sandy
+> 
+> componenets --> components
+> 
+Ditto.
 
-As mentioned in patch 1/2, this is up for discussion.  These ioctls have
-been used during nosy's out-of-tree life for several years; but due to
-the nature of this driver and its frontend as special-purpose
-application on special hardware, an incompatible change of these ioctls
-in the process of mainline merge won't be overly hurtful.
+> > +Bridge platform.
+> > +
+> Just for clarification - you mention a number of sensors, but unless
+> I am missing something only the package sensor is implemented. Is that correct ?
+Do you mean "only the core sensor"? I think the Sandy Bridge only implements
+core sensor now. I would think in the future more sensors could be implemented.
+If only core sensors are implemented, there is no need to have the package
+level thermal hw MSRs because OS can get all package level thermal info by
+enumerating all core sensors in a package.
 
- Documentation/ioctl/ioctl-number.txt |    1 +
- 1 file changed, 1 insertion(+)
+> 
+> > +Temperature is measured in degrees Celsius and measurement resolution is
+> > +1 degree C. Valid temperatures are from 0 to TjMax degrees C, because the actual
+> > +value of temperature register is in fact a delta from TjMax.
+> > +
+> From the code, it seems that negative values can be reported. Is it guaranteed 
+> by the chip that (TjMax - MSR_IA32_TEMPERATURE_TARGET) >= 0 ? Otherwise, the
+> minimum temperature would be (TjMax - 127).
+> 
+> > +Temperature known as TjMax is the maximum junction temperature of package.
+> > +Intel defines this temperature as 125C. At this temperature, protection
+> 
+> Your driver bails out at TjMax >= 120, so there is some inconsistency.
+> Also, it seems that this is not a constant, since you are reading
+> MSR_IA32_TEMPERATURE_TARGET to get the value.
+> 
+> Since the CPUs supporting the package sensor presumably also all support
+> reading TjMax, maybe you can reword the above text to reflect this.
+> 
+You are right. I forgot to update this part. I'll reword it.
 
-Index: b/Documentation/ioctl/ioctl-number.txt
-===================================================================
---- a/Documentation/ioctl/ioctl-number.txt
-+++ b/Documentation/ioctl/ioctl-number.txt
-@@ -79,6 +79,7 @@ Code  Seq#(hex)	Include File		Comments
- 0x22	all	scsi/sg.h
- '#'	00-3F	IEEE 1394 Subsystem	Block for the entire subsystem
- '$'	00-0F	linux/perf_counter.h, linux/perf_event.h
-+'&'	00-07	drivers/firewire/nosy-user.h
- '1'	00-1F	<linux/timepps.h>	PPS kit from Ulrich Windl
- 					<ftp://ftp.de.kernel.org/pub/linux/daemons/ntp/PPS/>
- '2'	01-04	linux/i2o.h
+> > +mechanism will perform actions to forcibly cool down the processor. Alarm
+> > +may be raised, if the temperature grows enough (more than TjMax) to trigger
+> > +the Out-Of-Spec bit. Following table summarizes the exported sysfs files:
+> > +
+> > +temp1_input	 - Package temperature (in millidegrees Celsius).
+> > +temp1_crit	 - Maximum junction temperature (in millidegrees Celsius).
+> > +temp1_crit_alarm - Set when Out-of-spec bit is set, never clears.
+> > +		   Correct CPU operation is no longer guaranteed.
+> > +temp1_label	 - Contains string "Pysical package id X", where X is physical
+> 
+> Pysical --> Physical.
+> I would suggest to drop the "id" for consistency. Core sensor names don't
+> include "id" either.
+> 
+> I am not sure if "physical" should be included in the first place.
+> Also, above description suggests that future CPUs might add more sensors.
+> If so, the name should probably reflect the location of the current sensor,
+> ie be something like "Package core X" or "Core package X" or "Package X (core)".
+How about just using "package X" to align with coretemp for now? Currently there
+is no interface to tell which sensor it is.
 
--- 
-Stefan Richter
--=====-==-=- -=== =-==-
-http://arcgraph.de/sr/
+Thanks.
 
+-Fenghua
