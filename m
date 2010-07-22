@@ -1,61 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759290Ab0GVMjY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 08:39:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39776 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753596Ab0GVMjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 08:39:22 -0400
-Message-ID: <4C483BF4.3090006@kernel.org>
-Date: Thu, 22 Jul 2010 14:39:16 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1757230Ab0GVMqG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 08:46:06 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36526 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753345Ab0GVMqD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 08:46:03 -0400
+Date: Thu, 22 Jul 2010 13:46:00 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>, linux-mm@kvack.org,
+        Pawel Osciak <p.osciak@samsung.com>,
+        "'Xiaolin Zhang'" <xiaolin.zhang@intel.com>,
+        "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
+        "'Robert Fekete'" <robert.fekete@stericsson.com>,
+        "'Marcus Lorentzon'" <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+Message-ID: <20100722124559.GH4737@rakim.wolfsonmicro.main>
+References: <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
+ <op.vf5o28st7p4s8u@pikus>
+ <20100721135229.GC10930@sirena.org.uk>
+ <op.vf66mxka7p4s8u@pikus>
+ <20100721182457.GE10930@sirena.org.uk>
+ <op.vf7h6ysh7p4s8u@pikus>
+ <20100722090602.GF10930@sirena.org.uk>
+ <000901cb297f$e28f2b10$a7ad8130$%szyprowski@samsung.com>
+ <20100722105203.GD4737@rakim.wolfsonmicro.main>
+ <op.vf8sxqro7p4s8u@pikus>
 MIME-Version: 1.0
-To: Mark Knecht <markknecht@gmail.com>
-CC: Paul Check <paul@thechecks.ca>,
-        Linux Kernel List <linux-kernel@vger.kernel.org>,
-        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
-Subject: Re: Drives missing at boot
-References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>	<4C2F5ECB.1040505@kernel.org>	<AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>	<4C2F61AB.9030806@kernel.org>	<AANLkTilYOT45q8OUJ-_V61_fnYy9HIk6GAv5ZPiomCaT@mail.gmail.com>	<4C317C04.20500@kernel.org>	<AANLkTilupyieml9yaWO9BUNPmQQ0g2w1HLWj6R9MwDZf@mail.gmail.com>	<4C32CE50.6010501@kernel.org>	<AANLkTikehTO1j6Gd7Y_g32_P6Yg9KB8Z8qwbNJh10aOU@mail.gmail.com>	<4C341598.6040004@kernel.org>	<AANLkTik4zkcIyVxwtX8GA1BsQSZaAeODpPlY3mRVBc-4@mail.gmail.com>	<4C34A1D5.1090202@kernel.org>	<AANLkTilgQSu3qi7qoTtjnV22r-8Sh1hbDAB_nlPImWNt@mail.gmail.com>	<4C34B8BE.5080504@kernel.org>	<AANLkTilDbrA6lLPSOAtA8_4mLNkUZibHweTliqU5jd03@mail.gmail.com>	<4C44BD42.3030904@kernel.org>	<7141c88bc8c27f26c2187252c0594318.squirrel@thechecks.ca>	<4C45AF40.7030800@kernel.org> <AANLkTinxDjPCk46eItZrXziTbf6efqvNNNTbkZDXIbns@mail.gmail.com>
-In-Reply-To: <AANLkTinxDjPCk46eItZrXziTbf6efqvNNNTbkZDXIbns@mail.gmail.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 22 Jul 2010 12:39:18 +0000 (UTC)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <op.vf8sxqro7p4s8u@pikus>
+X-Cookie: Sauron is alive in Argentina!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Thu, Jul 22, 2010 at 01:30:52PM +0200, Michał Nazarewicz wrote:
 
-On 07/21/2010 10:54 PM, Mark Knecht wrote:
->    Looks like I had a failure today. First one in weeks and only the
-> 3rd or 4th boot with this newer patch file. One of the two drives
-> making a RAID0 wasn't found so /dev/md11 (constructed from /dev/sdd
-> and /dev/sde) couldn't be started. I did a cold reboot and the drive
-> was found.
-> 
->    If it matters, and it probably doesn't, the failure came on a boot
-> which had a scheduled fsck to do of /dev/md5 - my main / drive. I
-> don't see how that would make a difference but I figure why leave the
-> info out. That's why the times are so much larger in the dmesg file.
-> (I think)
-> 
->    dmesg attached. I patched the Gentoo kernel if it makes a
-> difference, same as I did with the earlier patch.
-> 
-> mark@c2stable ~ $ uname -a
-> Linux c2stable 2.6.34-gentoo-r2 #1 SMP PREEMPT Sun Jul 18 14:09:48 PDT
-> 2010 x86_64 Intel(R) Core(TM) i7 CPU X 980 @ 3.33GHz GenuineIntel
-> GNU/Linux
-> mark@c2stable ~ $
+> The first one, I believe, should be there as to specify the regions
+> that are to be reserved.  Drivers and platform will still be able to
+> add their own regions but I believe that in vest majority of cases,
+> it will be enough to just pass the list of region on a command line.
 
-Hmmm... that's weird.  Can you please make sure the patch is actually
-applied?  Adding a printk("XXX patch applied!\n") near other changes
-usually is easy enough.  Also, can you please apply resume-dbg-1.patch
-too and reproduce the failure and post log?
+The command line is a real pain for stuff like this since it's not
+usually committed to revision control so robustly and it's normally more
+painful to change the bootloader to pass the desired command line in
+than it is to change either the kernel or userspace (some bootloaders
+are just completely unconfigurable without reflashing, and if your only
+recovery mechanism is JTAG that can be a bit of a concern).
 
-Thanks.
+> Alternatively, instead of the textual description of platform could
+> provide an array of regions it want reserved.  It would remove like
+> 50 lines of code from CMA core (in the version I have on my drive at
+> least, where part of the syntax was simplified) however it would
+> remove the possibility to easily change the configuration from
+> command line (ie. no need to recompile which is handy when you need
+> to optimise this and test various configurations) and would add more
+> code to the platform initialisation code, ie: instead of:
 
--- 
-tejun
+> 	cma_defaults("reg1=20M;reg2=20M", NULL);
+
+> one would have to define an array with the regions descriptors.
+> Personally, I don't see much benefits from this.
+
+I think it'd be vastly more legible, especially if the list of regions
+gets large.  I had thought the only reason for the text format was to
+put it onto the command line.
+
+> I agree that parsing it is not nice but thanks to it, all you need to
+> do in the driver is:
+
+> 	cma_alloc(dev, "a", ...)
+> 	cma_alloc(dev, "b", ...)
+> 	cma_alloc(dev, "f", ...)
+
+> Without cma_map you'd have to pass names of the region to the driver
+> and make the driver use those.
+
+I agree that a mapping facility for the names is essential, especially
+if drivers need to share regions.
+
+> What I'm trying to say is that I'm trying to move complexity out of
+> the drivers into the framework (as I believe that's what frameworks
+> are for).
+
+It sounds like apart from the way you're passing the configuration in
+you're doing roughly what I'd suggest.  I'd expect that in a lot of
+cases the map could be satisfied from the default region so there'd be
+no need to explicitly set one up.
