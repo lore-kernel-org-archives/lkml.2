@@ -1,85 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab0GVBMo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 21:12:44 -0400
-Received: from norkia.v3.sk ([91.210.183.14]:39326 "EHLO norkia.v3.sk"
+	id S1755613Ab0GVBNw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 21:13:52 -0400
+Received: from mga01.intel.com ([192.55.52.88]:39844 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752126Ab0GVBMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 21:12:43 -0400
-From: Lubomir Rintel <lkundrak@v3.sk>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+	id S1753926Ab0GVBNs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 21:13:48 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,240,1278313200"; 
+   d="scan'208";a="588496161"
+Date: Thu, 22 Jul 2010 09:13:42 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Mel Gorman <mel@csn.ul.ie>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        Lubomir Rintel <lkundrak@v3.sk>, Christoph Hellwig <hch@lst.de>
-Subject: [PATCH] V7: Adjust sanity checks for some volumes
-Date: Thu, 22 Jul 2010 03:11:48 +0200
-Message-Id: <1279761108-302-1-git-send-email-lkundrak@v3.sk>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1279621893.18203.12.camel@localhost.localdomain>
-References: <1279621893.18203.12.camel@localhost.localdomain>
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background
+ writeback
+Message-ID: <20100722011342.GB5154@localhost>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
+ <1279545090-19169-8-git-send-email-mel@csn.ul.ie>
+ <20100719142145.GD12510@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=gb2312
+Content-Disposition: inline
+In-Reply-To: <20100719142145.GD12510@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Newly mkfs-ed filesystems from Seventh Edition have last modification
-time set to zero, but are otherwise perfectly valid.
+On Mon, Jul 19, 2010 at 10:21:45PM +0800, Christoph Hellwig wrote:
+> On Mon, Jul 19, 2010 at 02:11:29PM +0100, Mel Gorman wrote:
+> > From: Wu Fengguang <fengguang.wu@intel.com>
+> > 
+> > A background flush work may run for ever. So it's reasonable for it to
+> > mimic the kupdate behavior of syncing old/expired inodes first.
+> > 
+> > This behavior also makes sense from the perspective of page reclaim.
+> > File pages are added to the inactive list and promoted if referenced
+> > after one recycling. If not referenced, it's very easy for pages to be
+> > cleaned from reclaim context which is inefficient in terms of IO. If
+> > background flush is cleaning pages, it's best it cleans old pages to
+> > help minimise IO from reclaim.
+> 
+> Yes, we absolutely do this.  Wu, do you have an improved version of the
+> pending or should we put it in this version for now?
 
-Also, tighten up other sanity checks to filter out most filesystems with
-different bytesex than we're using.
+Sorry for the delay! The code looks a bit hacky, and there is a problem:
+it only decrease expire_interval and never increase/reset it.
+So it's possible when dirty workload first goes light then goes heavy,
+expire_interval may be reduced to 0 and never be able to grow up again.
+In the end we revert to the old behavior of ignoring dirtied_when totally.
 
-Cc: Christoph Hellwig <hch@lst.de>
-Signed-off-by: Lubomir Rintel <lkundrak@v3.sk>
----
- fs/sysv/super.c         |    6 ++++--
- include/linux/sysv_fs.h |   11 +++++++++++
- 2 files changed, 15 insertions(+), 2 deletions(-)
+A more complete solution would be to make use of older_than_this not
+only for the kupdate case, but also for the background and sync cases.
+The policies can be most cleanly carried out in move_expired_inodes().
 
-diff --git a/fs/sysv/super.c b/fs/sysv/super.c
-index bd8d141..ac7b008 100644
---- a/fs/sysv/super.c
-+++ b/fs/sysv/super.c
-@@ -470,7 +470,7 @@ static int v7_fill_super(struct super_block *sb, void *data, int silent)
- 	v7sb = (struct v7_super_block *) bh->b_data;
- 	if (fs16_to_cpu(sbi, v7sb->s_nfree) > V7_NICFREE ||
- 	    fs16_to_cpu(sbi, v7sb->s_ninode) > V7_NICINOD ||
--	    fs32_to_cpu(sbi, v7sb->s_time) == 0)
-+	    fs32_to_cpu(sbi, v7sb->s_fsize) > V7_MAXSIZE)
- 		goto failed;
- 
- 	/* plausibility check on root inode: it is a directory,
-@@ -480,7 +480,9 @@ static int v7_fill_super(struct super_block *sb, void *data, int silent)
- 	v7i = (struct sysv_inode *)(bh2->b_data + 64);
- 	if ((fs16_to_cpu(sbi, v7i->i_mode) & ~0777) != S_IFDIR ||
- 	    (fs32_to_cpu(sbi, v7i->i_size) == 0) ||
--	    (fs32_to_cpu(sbi, v7i->i_size) & 017) != 0)
-+	    (fs32_to_cpu(sbi, v7i->i_size) & 017) ||
-+	    (fs32_to_cpu(sbi, v7i->i_size) > V7_NFILES *
-+	     sizeof (struct sysv_dir_entry)))
- 		goto failed;
- 	brelse(bh2);
- 	bh2 = NULL;
-diff --git a/include/linux/sysv_fs.h b/include/linux/sysv_fs.h
-index 9641130..e47d6d9 100644
---- a/include/linux/sysv_fs.h
-+++ b/include/linux/sysv_fs.h
-@@ -148,6 +148,17 @@ struct v7_super_block {
- 	char    s_fname[6];     /* file system name */
- 	char    s_fpack[6];     /* file system pack name */
- };
-+/* Constants to aid sanity checking */
-+/* This is not a hard limit, nor enforced by v7 kernel. It's actually just
-+ * the limit used by Seventh Edition's ls, though is high enough to assume
-+ * that no reasonable file system would have that much entries in root
-+ * directory. Thus, if we see anything higher, we just probably got the
-+ * endiannes wrong. */
-+#define V7_NFILES	1024
-+/* The disk addresses are three-byte (despite direct block addresses being
-+ * aligned word-wise in inode). If the most significant byte is non-zero,
-+ * something is most likely wrong (not a filesystem, bad bytesex). */
-+#define V7_MAXSIZE	0x00ffffff
- 
- /* Coherent super-block data on disk */
- #define COH_NICINOD	100	/* number of inode cache entries */
--- 
-1.7.1
+- kupdate: older_than_this = jiffies - 30s
+- background: older_than_this = TRY FROM (jiffies - 30s) TO (jiffies),
+                                UNTIL get some inodes to sync
+- sync: older_than_this = start time of sync
 
+I'll post an untested RFC patchset for the kupdate and background
+cases. The sync case will need two more patch series due to other
+problems.
+
+Thanks,
+Fengguang
