@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751526Ab0GVEgS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 00:36:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:18141 "EHLO mx1.redhat.com"
+	id S1752710Ab0GVEpL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 00:45:11 -0400
+Received: from sh.osrg.net ([192.16.179.4]:51332 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751035Ab0GVEgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 00:36:17 -0400
-Message-ID: <4C47CABC.1080801@redhat.com>
-Date: Thu, 22 Jul 2010 07:36:12 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: [RFC][PATCH 9/9] make kvm mmu shrinker more aggressive
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com>	 <20100615135530.4565745D@kernel.beaverton.ibm.com>	 <4C189830.2070300@redhat.com>  <1276701911.6437.16973.camel@nimitz>	 <1276876156.6437.23323.camel@nimitz>  <4C1DCD1A.4010306@redhat.com> <1277224359.9782.21.camel@nimitz>
-In-Reply-To: <1277224359.9782.21.camel@nimitz>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	id S1751368Ab0GVEpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 00:45:05 -0400
+Date: Thu, 22 Jul 2010 13:43:26 +0900
+To: zpfeffer@codeaurora.org
+Cc: fujita.tomonori@lab.ntt.co.jp, linux@arm.linux.org.uk,
+        ebiederm@xmission.com, linux-arch@vger.kernel.org,
+        dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100722043034.GC22559@codeaurora.org>
+References: <20100720221959.GC12250@codeaurora.org>
+	<20100721104356S.fujita.tomonori@lab.ntt.co.jp>
+	<20100722043034.GC22559@codeaurora.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100722134253B.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 22 Jul 2010 13:43:30 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2010 07:32 PM, Dave Hansen wrote:
-> On Sun, 2010-06-20 at 11:11 +0300, Avi Kivity wrote:
->    
->>> That changes a few things.  I bet all the contention we were seeing was
->>> just from nr_to_scan=0 calls and not from actual shrink operations.
->>> Perhaps we should just stop this set after patch 4.
->>>
->>>        
->> At the very least, we should re-measure things.
->>      
-> Sure.  I'll go back to the folks that found this in the first place and
-> see how these patches affect the contention we were seeing.
->    
+On Wed, 21 Jul 2010 21:30:34 -0700
+Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
 
-Dave, how did those tests go?
+> On Wed, Jul 21, 2010 at 10:44:37AM +0900, FUJITA Tomonori wrote:
+> > On Tue, 20 Jul 2010 15:20:01 -0700
+> > Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
+> > 
+> > > > I'm not saying that it's reasonable to pass (or even allocate) a 1MB
+> > > > buffer via the DMA API.
+> > > 
+> > > But given a bunch of large chunks of memory, is there any API that can
+> > > manage them (asked this on the other thread as well)?
+> > 
+> > What is the problem about mapping a 1MB buffer with the DMA API?
+> > 
+> > Possibly, an IOMMU can't find space for 1MB but it's not the problem
+> > of the DMA API.
+> 
+> This goes to the nub of the issue. We need a lot of 1 MB physically
+> contiguous chunks. The system is going to fragment and we'll never get
+> our 12 1 MB chunks that we'll need, since the DMA API allocator uses
+> the system pool it will never succeed. For this reason we reserve a
+> pool of 1 MB chunks (and 16 MB, 64 KB etc...) to satisfy our
+> requests. This same use case is seen on most embedded "media" engines
+> that are getting built today.
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+We don't need a new abstraction to reserve some memory.
 
+If you want pre-allocated memory pool per device (and share them with
+some), the DMA API can for coherent memory (see
+dma_alloc_from_coherent). You can extend the DMA API if necessary.
