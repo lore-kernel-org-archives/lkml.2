@@ -1,68 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754727Ab0GVS4W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:56:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43303 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751685Ab0GVS4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:56:21 -0400
-Date: Thu, 22 Jul 2010 11:53:01 -0700
-From: Greg KH <gregkh@suse.de>
-To: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-Message-ID: <20100722185301.GA528@suse.de>
-References: <20100722182638.GA12712@kroah.com>
- <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
- <20100722183614.GA5443@suse.de>
- <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753450Ab0GVS61 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:58:27 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:56902 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751029Ab0GVS6Y (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:58:24 -0400
+X-Authority-Analysis: v=1.1 cv=nxp4sGnGskpld68D65f6QeagdS7Y+3TTkvBhhEd/T4I= c=1 sm=0 a=gZ05mB2OILcA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=IJv9LcIfAAAA:8 a=meVymXHHAAAA:8 a=E67OxlfP3ZQvvHyW11QA:9 a=0FKE0EH3qmtmMi85ZlmRCJDmzKgA:4 a=PUjeQqilurYA:10 a=K6kUPx8HyhEA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 29/36] kernel/trace: Remove unnecessary casts of
+ private_data
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Joe Perches <joe@perches.com>
+Cc: Jiri Kosina <trivial@kernel.org>, linux-kernel@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Ingo Molnar <mingo@redhat.com>
+In-Reply-To: <9ba657c52c49f10023a45c178e98acf553a68385.1278967121.git.joe@perches.com>
+References: <cover.1278967120.git.joe@perches.com>
+	 <9ba657c52c49f10023a45c178e98acf553a68385.1278967121.git.joe@perches.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 22 Jul 2010 14:58:22 -0400
+Message-ID: <1279825102.3319.15.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 11:44:50AM -0700, Paul Menage wrote:
-> On Thu, Jul 22, 2010 at 11:36 AM, Greg KH <gregkh@suse.de> wrote:
-> >
-> > Really?  I see systems mounting it at /cgroups/ in the filesystem today.
+Late reply due to traveling, but...
+
+On Mon, 2010-07-12 at 13:50 -0700, Joe Perches wrote:
+> Signed-off-by: Joe Perches <joe@perches.com>
+
+Acked-by: Steven Rostedt <rostedt@goodmis.org>
+
+-- Steve
+
+> ---
+>  kernel/trace/ftrace.c |    4 ++--
+>  kernel/trace/trace.c  |    2 +-
+>  2 files changed, 3 insertions(+), 3 deletions(-)
 > 
-> Sure, it *can* be mounted as a single instance, but you then lose
-> flexibility. E.g. at Google we want to have a different hierarchy for
-> the CPU subsystem (with the tree grouped according to
-> latency-sensitive versus batch, etc) and memory (grouped according to
-> what jobs are sharing memory with each other).
-> 
-> > Where are you expecting it to be mounted at?
-> 
-> I have no particular expectation. (At Google we're actually using
-> /dev/cgroup/* but that's just for historical reasons, from
-> /dev/cpuset). Under /sys/fs/cgroup sounds reasonable, but you'd want
-> people to have the ability to manually create subdirs in there for
-> separate mount points.
+> diff --git a/kernel/trace/ftrace.c b/kernel/trace/ftrace.c
+> index 0d88ce9..0691e87 100644
+> --- a/kernel/trace/ftrace.c
+> +++ b/kernel/trace/ftrace.c
+> @@ -1592,7 +1592,7 @@ ftrace_failures_open(struct inode *inode, struct file *file)
+>  
+>  	ret = ftrace_avail_open(inode, file);
+>  	if (!ret) {
+> -		m = (struct seq_file *)file->private_data;
+> +		m = file->private_data;
+>  		iter = (struct ftrace_iterator *)m->private;
+>  		iter->flags = FTRACE_ITER_FAILURES;
+>  	}
+> @@ -2349,7 +2349,7 @@ static void __init set_ftrace_early_filters(void)
+>  static int
+>  ftrace_regex_release(struct inode *inode, struct file *file, int enable)
+>  {
+> -	struct seq_file *m = (struct seq_file *)file->private_data;
+> +	struct seq_file *m = file->private_data;
+>  	struct ftrace_iterator *iter;
+>  	struct trace_parser *parser;
+>  
+> diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+> index 8683dec..10b82a1 100644
+> --- a/kernel/trace/trace.c
+> +++ b/kernel/trace/trace.c
+> @@ -2257,7 +2257,7 @@ int tracing_open_generic(struct inode *inode, struct file *filp)
+>  
+>  static int tracing_release(struct inode *inode, struct file *file)
+>  {
+> -	struct seq_file *m = (struct seq_file *)file->private_data;
+> +	struct seq_file *m = file->private_data;
+>  	struct trace_iterator *iter;
+>  	int cpu;
+>  
 
-Ok, that's great, but it's not where the distros are starting to mount
-it at.  As I learned with debugfs, you need to pick a location for
-people to mount it at, otherwise it ends up all over the place.
 
-If you are using /dev/cgroup/ that's nice, but I don't think that people
-are expecting a whole filesystem under a /dev/ subdirectory.
-
-I didn't realize that cgroupfs had so many different options that would
-enable it to handle multiple mounts in this way.
-
-Hm, Lennart, Kay, any ideas as to where to put it in a "standard" way?
-
-thanks,
-
-greg k-h
