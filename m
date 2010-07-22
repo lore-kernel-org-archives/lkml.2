@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754186Ab0GVIF0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 04:05:26 -0400
-Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:56892 "EHLO
-	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752537Ab0GVIFQ (ORCPT
+	id S1754808Ab0GVIGM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 04:06:12 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59034 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751915Ab0GVIGI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 04:05:16 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAF+XR0x5Lc6U/2dsb2JhbACfdXLAfoU2BA
-Date: Thu, 22 Jul 2010 18:05:11 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Nick Piggin <npiggin@suse.de>, Kristo Tero Tapani <tero.kristo@nokia.com>,
-        Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCHv2 11/11] writeback: prevent unnecessary bdi threads
- wakeups
-Message-ID: <20100722080511.GA9377@amd>
-References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
- <1279704706-1267-12-git-send-email-dedekind1@gmail.com>
- <20100722031922.GA3446@amd>
- <1279781304.3044.12.camel@localhost>
+	Thu, 22 Jul 2010 04:06:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=JEkmBQ5H7QWOXkqtGXTdXWGGHEYj4eyo7tA7b7ZI2XIIqpjytE8zrkhZJw7Z1C7ffK
+         wFQknvPKmjcEwxal92EWdsELur0hJDtjZivi/uKx+PkesmEDRexn/4gxEousJjptktDb
+         yYzFISQYoZ0VPtvFzbRJA1vxRusLVHWJX6fVs=
+Message-ID: <4C47FBEA.2000704@gmail.com>
+Date: Thu, 22 Jul 2010 10:06:02 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279781304.3044.12.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Neil Brown <neilb@suse.de>
+CC: James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
+        hch@lst.de, jaxboe@fusionio.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org
+Subject: Re: BUG at drivers/scsi/scsi_lib.c:1113
+References: <4C47ED7B.1050709@gmail.com> <20100722173716.66264bef@notabene>
+In-Reply-To: <20100722173716.66264bef@notabene>
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 09:48:24AM +0300, Artem Bityutskiy wrote:
-> Hi Nick,
+On 07/22/2010 09:37 AM, Neil Brown wrote:
+> I suspect that problem is that "do_sync" and "do_barriers" in
+> drivers/md/raid1.c are still 'bool' and should now be 'unsigned long'.
 > 
-> On Thu, 2010-07-22 at 13:19 +1000, Nick Piggin wrote:
-> > >  out:
-> > >  	spin_unlock(&inode_lock);
-> > > +
-> > > +	if (wakeup_bdi) {
-> > > +		spin_lock(&bdi->wb_lock);
-> > > +		if (!bdi->wb.task)
-> > > +			wake_up_process(default_backing_dev_info.wb.task);
-> > > +		else
-> > > +			wake_up_process(bdi->wb.task);
-> > > +		spin_unlock(&bdi->wb_lock);
-> > > +	}
-> > >  }
-> > 
-> > We really want to wake up the bdi right away when first dirtying
-> > the inode? I haven't looked at where the state of the bdi code is
-> > now, but isn't it better to have a a delay there?
-> 
-> Yes, I guess we want to wake up the bdi thread after 5 secs (assuming
-> default settings). I could implement a "wake_up_process_delayed"
-> function which would use a timer, but I think it is not necessary to
-> introduce these complications. We can just wake-up the bdi thread, it'll
-> find out there is nothing to do, and will go sleep for 5 secs. I think
-> this is good enough.
-> 
-> IOW, delayed wake-up is not worth the trouble.
+> I'm not sure how wide '_Bool' is, but I'm guess it isn't wide enough.
 
-I can see what you mean, but I think the designs in core code should
-be made as efficient as possible _unless_ there is some complication
-in doing otherwise (not the other way around).
+ANSI says:
+An object declared as type _Bool is large enough to store the values 0
+and 1.
 
-This is producing 2 unrequired context switches, so I really would
-like to see it done properly. Setting up a timer is really pretty
-simple (or if you would care to implement a delayed process wakeup
-API, I think that would be useful -- I'm surprised there isn't one
-already).
+gcc spec doesn't say anything, but:
+$ gcc -S -x c -o - -
+unsigned long x = sizeof(_Bool);
+^D
+...
+x:
+        .quad   1
 
- 
-> > And rather than spreading details of how bdi tasks are managed
-> > would you consider putting this into its own function?
-> 
-> Sure, will do.
-> 
-> > Other than that, I like your patches.
-> 
-> Thanks :-)
-> 
-> >  Out of interest, is 5 seconds
-> > very detremental to power usage? What is a reasonable goal for
-> > wakeups? (eg. 95%+ of possible efficiency)
-> 
-> I cannot tell for sure. In Nokia N900 phone we use OMAP3 and we have
-> dynamic OFF-mode, so we switch off the CPU and peripherals completely
-> when there is nothing to do, and SDRAM stays in low-power auto-refresh
-> mode. Every useless wake-up makes us do a lot of job re-constructing the
-> CPU state. I cannot tell the numbers, but I'm CCing Tero, who is working
-> on OMAP3 PM and makes a lot of battery current measurements, he can
-> provide some numbers.
+I.e. sizeof(_Bool) = 1 byte.
+
+> Could you please try changing ever 'bool' in that file to 'unsigned long'
+> and see if that fixes it?
+
+Will do that.
+
+thanks,
+-- 
+js
