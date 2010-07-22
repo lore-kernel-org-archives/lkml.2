@@ -1,104 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758929Ab0GVKje (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 06:39:34 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:48212 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754464Ab0GVKj2 (ORCPT
+	id S1758962Ab0GVKk3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 06:40:29 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:62960 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755618Ab0GVKk1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 06:39:28 -0400
+	Thu, 22 Jul 2010 06:40:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=IZumza/eX3E1WpxetpxEf9fLRcfyqRDGM+EykJuXYR49o7dhkmemzqeQ6PJpJJN6gB
-         5CVo5gxokSnWFym+sC/rPNJnlQERB6Bo/qjBADmO6IS7RQqR7RYdOamsGNa5gqQK8wmz
-         NeLKasIgnkfHxTvMbRj/MTNWskLrANrD8+jM0=
-Message-ID: <4C481FD5.4070509@gmail.com>
-Date: Thu, 22 Jul 2010 13:39:17 +0300
-From: Boaz Harrosh <openosd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=XSFyBpK8//JRhRSzudIsRjtIzC0E/VhPDZ6frmkEOG2RjlnESLYSqVerg6GaFfuyLx
+         MAq9PBovSgYGVfq8NAlY9inZhtrLCzCTR4yQERxGYAwR8fxUSEZNWGQEUSYYiJWjx4SW
+         RN2fDjVVafCXyYhsh8jY3dY+ZhA3RMfv2Guh0=
 MIME-Version: 1.0
-To: Neil Brown <neilb@suse.de>
-CC: Jiri Slaby <jirislaby@gmail.com>,
-        James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
-        hch@lst.de, jaxboe@fusionio.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org
-Subject: Re: BUG at drivers/scsi/scsi_lib.c:1113
-References: <4C47ED7B.1050709@gmail.com> <20100722173716.66264bef@notabene>
-In-Reply-To: <20100722173716.66264bef@notabene>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1279740148-22186-1-git-send-email-linus.walleij@stericsson.com>
+References: <1279740148-22186-1-git-send-email-linus.walleij@stericsson.com>
+Date: Thu, 22 Jul 2010 12:40:26 +0200
+Message-ID: <AANLkTimmJJcMXxICZHjksp_TjqO_JRx9HwCTJ6UpZQOZ@mail.gmail.com>
+Subject: Re: [PATCH 1/3] DMAENGINE: generic slave channel control v2
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: Vinod Koul <vinod.koul@intel.com>
+Cc: Alan Cox <alan@linux.intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        linux-kernel@vger.kernel.org, Dan Williams <dan.j.williams@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2010 10:37 AM, Neil Brown wrote:
-> On Thu, 22 Jul 2010 09:04:27 +0200
-> Jiri Slaby <jirislaby@gmail.com> wrote:
-> 
->> Hello,
->>
->> I'm seeing this BUG while booting:
->>
->> EXT3-fs (md1): using internal journal
->> ------------[ cut here ]------------
->> kernel BUG at /home/l/latest/xxx/drivers/scsi/scsi_lib.c:1113!
-> 
-> You aren't the only one.
-> https://bugzilla.kernel.org/show_bug.cgi?id=16275
-> 
-> 
->> I bisected it down to:
->> commit 74450be123b6f3cb480c358a056be398cce6aa6e
->> Author: Christoph Hellwig <hch@lst.de>
->> Date:   Fri Jun 18 11:53:43 2010 +0200
->>
->>     block: unify flags for struct bio and struct request
->>
->>     Remove the current bio flags and reuse the request flags for the
->> bio, too.
->>     This allows to more easily trace the type of I/O from the filesystem
->>     down to the block driver.  There were two flags in the bio that were
->>     missing in the requests:  BIO_RW_UNPLUG and BIO_RW_AHEAD.  Also I've
->>     renamed two request flags that had a superflous RW in them.
->>
->>     Note that the flags are in bio.h despite having the REQ_ name - as
->>     blkdev.h includes bio.h that is the only way to go for now.
->>
->>     Signed-off-by: Christoph Hellwig <hch@lst.de>
->>     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
->>
->>
-> 
-> Thanks for doing that.
-> 
-> I suspect that problem is that "do_sync" and "do_barriers" in
-> drivers/md/raid1.c are still 'bool' and should now be 'unsigned long'.
-> 
-> I'm not sure how wide '_Bool' is, but I'm guess it isn't wide enough.
-> 
-> Could you please try changing ever 'bool' in that file to 'unsigned long'
-> and see if that fixes it?
-> 
+2010/7/21 Linus Walleij <linus.walleij@stericsson.com>:
 
-Please don't. This is really bad programming, and produces slower
-code. You should do:
+> This adds an interface to the DMAengine to make it possible to
+> reconfigure a slave channel at runtime. We add a few foreseen
+> config parameters to the passed struct, with a void * pointer
+> for custom per-device or per-platform runtime slave data.
 
-diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
-index 73cc74f..8bd1ecb 100644
---- a/drivers/md/raid1.c
-+++ b/drivers/md/raid1.c
-@@ -787,7 +787,7 @@ static int make_request(mddev_t *mddev, struct bio * bio)
- 	struct bio_list bl;
- 	struct page **behind_pages = NULL;
- 	const int rw = bio_data_dir(bio);
--	const bool do_sync = (bio->bi_rw & REQ_SYNC);
-+	const bool do_sync = (bio->bi_rw & REQ_SYNC) != 0;
- 	bool do_barriers;
- 	mdk_rdev_t *blocked_rdev;
- 
-Boaz
+BTW Vinod, if you're happy with this API, then please ACK it so
+Dan has some indication whether it'll fit the Moorestown too.
 
-> Thanks,
-> NeilBrown
+Yours,
+Linus Walleij
