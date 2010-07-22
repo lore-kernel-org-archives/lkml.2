@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759265Ab0GVLMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:12:31 -0400
-Received: from mga03.intel.com ([143.182.124.21]:58239 "EHLO mga03.intel.com"
+	id S1759274Ab0GVLMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 07:12:48 -0400
+Received: from mga14.intel.com ([143.182.124.37]:2810 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759234Ab0GVLM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 07:12:27 -0400
+	id S1759220Ab0GVLMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 07:12:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,242,1278313200"; 
-   d="scan'208";a="303088919"
-Subject: [RFC][PATCH v1 03/15] perf: export software events via sysfs
+   d="scan'208";a="303089000"
+Subject: [RFC][PATCH v1 04/15] perf: export tracepoint events via sysfs:
+ sched, raw_syscalls etc.
 From: Lin Ming <ming.m.lin@intel.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Robert Richter <robert.richter@amd.com>,
@@ -32,8 +33,8 @@ Cc: Robert Richter <robert.richter@amd.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 19:12:42 +0800
-Message-ID: <1279797162.20942.84.camel@minggr.sh.intel.com>
+Date: Thu, 22 Jul 2010 19:12:58 +0800
+Message-ID: <1279797179.20942.85.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
@@ -41,163 +42,245 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Software events are exported under /sys/kernel/events/, for example
+Below tracepoint events are exported under /sys/kernel/events/.
+sched, raw_syscalls, irq, timer, signal, workqueue, lock and bkl
 
+For example,
 /sys/kernel/events/
-|-- alignment-faults
+|-- hrtimer_cancel
 |   |-- config
 |   `-- type
-|-- context-switches
+|-- hrtimer_expire_entry
 |   |-- config
 |   `-- type
-|-- cpu-clock
+|-- hrtimer_expire_exit
 |   |-- config
 |   `-- type
-|-- cpu-migrations
+|-- hrtimer_init
 |   |-- config
 |   `-- type
-|-- emulation-faults
+|-- hrtimer_start
 |   |-- config
 |   `-- type
-|-- major-faults
+|-- irq_handler_entry
 |   |-- config
 |   `-- type
-|-- minor-faults
+|-- irq_handler_exit
 |   |-- config
 |   `-- type
-|-- page-faults
+|-- itimer_expire
 |   |-- config
 |   `-- type
-....
----
- kernel/perf_event.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 61 insertions(+), 0 deletions(-)
+|-- itimer_state
+|   |-- config
+|   `-- type
+|-- lock_kernel
+|   |-- config
+|   `-- type
+|-- sched_kthread_stop
+|   |-- config
+|   `-- type
+|-- sched_kthread_stop_ret
+|   |-- config
+|   `-- type
+|-- sched_migrate_task
+|   |-- config
+|   `-- type
+|-- sched_process_exit
+|   |-- config
+|   `-- type
+|-- sched_process_fork
+|   |-- config
+|   `-- type
+|-- sched_process_free
+|   |-- config
+|   `-- type
+|-- sched_process_wait
+|   |-- config
+|   `-- type
+|-- sched_stat_iowait
+|   |-- config
+|   `-- type
+|-- sched_stat_runtime
+|   |-- config
+|   `-- type
+|-- sched_stat_sleep
+|   |-- config
+|   `-- type
+|-- sched_stat_wait
+|   |-- config
+|   `-- type
+|-- sched_switch
+|   |-- config
+|   `-- type
+|-- sched_wait_task
+|   |-- config
+|   `-- type
+|-- sched_wakeup
+|   |-- config
+|   `-- type
+|-- sched_wakeup_new
+|   |-- config
+|   `-- type
+|-- signal_deliver
+|   |-- config
+|   `-- type
+|-- signal_generate
+|   |-- config
+|   `-- type
+|-- signal_lose_info
+|   |-- config
+|   `-- type
+|-- signal_overflow_fail
+|   |-- config
+|   `-- type
+|-- softirq_entry
+|   |-- config
+|   `-- type
+|-- softirq_exit
+|   |-- config
+|   `-- type
+|-- sys_enter
+|   |-- config
+|   `-- type
+|-- sys_exit
+|   |-- config
+|   `-- type
+|-- timer_cancel
+|   |-- config
+|   `-- type
+|-- timer_expire_entry
+|   |-- config
+|   `-- type
+|-- timer_expire_exit
+|   |-- config
+|   `-- type
+|-- timer_init
+|   |-- config
+|   `-- type
+|-- timer_start
+|   |-- config
+|   `-- type
+|-- unlock_kernel
+|   |-- config
+|   `-- type
+|-- workqueue_creation
+|   |-- config
+|   `-- type
+|-- workqueue_destruction
+|   |-- config
+|   `-- type
+|-- workqueue_execution
+|   |-- config
+|   `-- type
+`-- workqueue_insertion
+    |-- config
+    `-- type
 
+
+---
+ include/linux/perf_event.h |    4 +++
+ kernel/perf_event.c        |   50 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 54 insertions(+), 0 deletions(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index fb2ec23..c24197d 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -1062,6 +1062,8 @@ extern void perf_event_disable(struct perf_event *event);
+ 
+ extern struct kobject *perf_sys_create_events_dir(struct kobject *parent);
+ extern int perf_sys_add_event(struct kobject *parent, char *name, u64 config, int type);
++extern void perf_sys_add_tp_events(struct kobject *kobj, char *tp_system);
++extern void perf_sys_add_tp(struct kobject *kobj, char *tp_system);
+ extern char *perf_hw_event_name(int id);
+ extern char *perf_hw_cache_event_name(u8 type, u8 op, u8 result);
+ #else
+@@ -1108,6 +1110,8 @@ static inline struct kobject *perf_sys_create_events_dir(struct kobject *parent)
+ {
+ 	return NULL;
+ }
++static inline void perf_sys_add_tp_events(struct kobject *kobj, char *tp_system) { }
++static inline void perf_sys_add_tp(struct kobject *kobj, char *tp_system) { }
+ static inline char *perf_hw_event_name(int id) { return NULL; }
+ static inline char *perf_hw_cache_event_name(u8 type, u8 op, u8 result) { return NULL; }
+ #endif
 diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 1f51ab9..21c359d 100644
+index 21c359d..554311b 100644
 --- a/kernel/perf_event.c
 +++ b/kernel/perf_event.c
-@@ -4383,6 +4383,22 @@ static int perf_swevent_init(struct perf_event *event)
- 	return 0;
- }
- 
-+struct kobject *sys_kernel_events_kobj;
-+static char *perf_sw_event_name(int id);
-+
-+static void perf_swevent_export(void)
-+{
-+	int i;
-+
-+	if (!sys_kernel_events_kobj)
-+		return;
-+
-+	for (i = PERF_COUNT_SW_PAGE_FAULTS; i < PERF_COUNT_SW_MAX; i++) {
-+		perf_sys_add_event(sys_kernel_events_kobj, perf_sw_event_name(i),
-+			i, PERF_TYPE_SOFTWARE);
-+	}
-+}
-+
- static struct pmu perf_swevent = {
- 	.event_init	= perf_swevent_init,
- 	.add		= perf_swevent_add,
-@@ -4390,6 +4406,7 @@ static struct pmu perf_swevent = {
- 	.start		= perf_swevent_start,
- 	.stop		= perf_swevent_stop,
- 	.read		= perf_swevent_read,
-+	.export_events	= perf_swevent_export,
+@@ -5921,6 +5921,26 @@ static struct attribute_group perfclass_attr_group = {
+ 	.name			= "perf_events",
  };
  
- #ifdef CONFIG_EVENT_TRACING
-@@ -4662,6 +4679,16 @@ static int cpu_clock_event_init(struct perf_event *event)
- 	return 0;
- }
- 
-+static void cpu_clock_event_export(void)
++/*
++ * tracepoint events: sched, raw_syscalls, irq, timer, signal,
++ * workqueue, lock and bkl are exported to
++ * /sys/kernel/events/
++ */
++static void perf_sys_add_kernel_events(void)
 +{
 +	if (!sys_kernel_events_kobj)
 +		return;
 +
-+	perf_sys_add_event(sys_kernel_events_kobj,
-+		perf_sw_event_name(PERF_COUNT_SW_CPU_CLOCK),
-+		PERF_COUNT_SW_CPU_CLOCK, PERF_TYPE_SOFTWARE);
++	perf_sys_add_tp_events(sys_kernel_events_kobj, "raw_syscalls");
++	perf_sys_add_tp_events(sys_kernel_events_kobj, "sched");
++	perf_sys_add_tp_events(sys_kernel_events_kobj, "irq");
++	perf_sys_add_tp_events(sys_kernel_events_kobj, "timer");
++	perf_sys_add_tp_events(sys_kernel_events_kobj, "signal");
++	perf_sys_add_tp_events(sys_kernel_events_kobj, "workqueue");
++	perf_sys_add_tp_events(sys_kernel_events_kobj, "lock");
++	perf_sys_add_tp_events(sys_kernel_events_kobj, "bkl");
 +}
 +
- static struct pmu perf_cpu_clock = {
- 	.event_init	= cpu_clock_event_init,
- 	.add		= cpu_clock_event_add,
-@@ -4669,6 +4696,7 @@ static struct pmu perf_cpu_clock = {
- 	.start		= cpu_clock_event_start,
- 	.stop		= cpu_clock_event_stop,
- 	.read		= cpu_clock_event_read,
-+	.export_events	= cpu_clock_event_export,
- };
- 
- /*
-@@ -4737,6 +4765,16 @@ static int task_clock_event_init(struct perf_event *event)
- 	return 0;
- }
- 
-+static void task_clock_event_export(void)
-+{
-+	if (!sys_kernel_events_kobj)
-+		return;
-+
-+	perf_sys_add_event(sys_kernel_events_kobj,
-+		perf_sw_event_name(PERF_COUNT_SW_TASK_CLOCK),
-+		PERF_COUNT_SW_TASK_CLOCK, PERF_TYPE_SOFTWARE);
-+}
-+
- static struct pmu perf_task_clock = {
- 	.event_init	= task_clock_event_init,
- 	.add		= task_clock_event_add,
-@@ -4744,6 +4782,7 @@ static struct pmu perf_task_clock = {
- 	.start		= task_clock_event_start,
- 	.stop		= task_clock_event_stop,
- 	.read		= task_clock_event_read,
-+	.export_events	= task_clock_event_export,
- };
- 
- static LIST_HEAD(pmus);
-@@ -5887,6 +5926,8 @@ static int __init perf_event_sysfs_init(void)
+ static int __init perf_event_sysfs_init(void)
+ {
  	struct pmu *pmu = NULL;
- 	int idx;
+@@ -5928,6 +5948,8 @@ static int __init perf_event_sysfs_init(void)
  
-+	sys_kernel_events_kobj = perf_sys_create_events_dir(kernel_kobj);
+ 	sys_kernel_events_kobj = perf_sys_create_events_dir(kernel_kobj);
+ 
++	perf_sys_add_kernel_events();
 +
  	idx = srcu_read_lock(&pmus_srcu);
  	list_for_each_entry_rcu(pmu, &pmus, entry) {
  		if (pmu->export_events)
-@@ -6033,6 +6074,18 @@ static char *hw_cache_result[] = {
- 	"misses",
- };
- 
-+static char *sw_event_names[] = {
-+	"cpu-clock",
-+	"task-clock",
-+	"page-faults",
-+	"minor-faults",
-+	"major-faults",
-+	"context-switches",
-+	"cpu-migrations",
-+	"alignment-faults",
-+	"emulation-faults",
-+};
-+
- char *perf_hw_event_name(int id)
- {
- 	if (id >= ARRAY_SIZE(hw_event_names))
-@@ -6051,3 +6104,11 @@ char *perf_hw_cache_event_name(u8 cache_type, u8 cache_op, u8 cache_result)
- 
- 	return name;
+@@ -6044,6 +6066,34 @@ int perf_sys_add_event(struct kobject *parent, char *name, u64 config, int type)
+ 	return 0;
  }
+ 
++#define for_each_event(event, start, end)			\
++	for (event = start;					\
++	     (unsigned long)event < (unsigned long)end;		\
++	     event++)
 +
-+static char *perf_sw_event_name(int id)
++extern struct ftrace_event_call __start_ftrace_events[];
++extern struct ftrace_event_call __stop_ftrace_events[];
++
++void perf_sys_add_tp_events(struct kobject *events_kobj, char *tp_system)
 +{
-+	if (id >= ARRAY_SIZE(sw_event_names))
-+		return NULL;
++	struct ftrace_event_call *call;
 +
-+	return sw_event_names[id];
++	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
++		if (call->class->system && !strcmp(call->class->system, tp_system)) {
++			perf_sys_add_event(events_kobj, call->name, call->event.type,
++				PERF_TYPE_TRACEPOINT);
++		}
++	}
 +}
++
++void perf_sys_add_tp(struct kobject *parent, char *tp_system)
++{
++	struct kobject *events_kobj;
++
++	events_kobj = perf_sys_create_events_dir(parent);
++	perf_sys_add_tp_events(events_kobj, tp_system);
++}
++
+ static char *hw_event_names[] = {
+ 	"cycles",
+ 	"instructions",
+
 
 
 
