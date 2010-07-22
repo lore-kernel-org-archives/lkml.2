@@ -1,57 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754747Ab0GVPqp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 11:46:45 -0400
-Received: from borg.medozas.de ([188.40.89.202]:50444 "EHLO borg.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555Ab0GVPql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 11:46:41 -0400
-Date: Thu, 22 Jul 2010 17:46:39 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+	id S1755377Ab0GVPsU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 11:48:20 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56181 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751555Ab0GVPsQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 11:48:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr> 
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> 
+	<30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> 
+	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com> 
+	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 22 Jul 2010 08:47:46 -0700
+Message-ID: <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+To: Volker.Lendecke@sernet.de
+Cc: David Howells <dhowells@redhat.com>, Jan Engelhardt <jengelh@medozas.de>,
         linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
         samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
         viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
         linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
-  file stats available [ver #6]
-In-Reply-To: <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-Message-ID: <alpine.LSU.2.01.1007221740570.12308@obet.zrqbmnf.qr>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>  <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>  <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
- <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Thursday 2010-07-22 17:14, Linus Torvalds wrote:
->>>
->>> It is?  It's called crtime in Ext4.  st_btime, however, would be compatible
->>> with BSD's stat, and Samba would just use it by way of autoconf magic if it
->>> appeared.
->>
->> Samba has the following check:
->> # recent FreeBSD, NetBSD have creation timestamps called birthtime:
->> AC_CHECK_MEMBERS([struct stat.st_birthtimespec.tv_nsec])
->> AC_CHECK_MEMBERS([struct stat.st_birthtime], AC_CHECK_MEMBERS([struct stat.st_birthtimensec]))
->>
->> and the supporting code around that. "birth" might also be
->> where the "b" comes from :-)
+On Thu, Jul 22, 2010 at 8:36 AM, Volker Lendecke
+<Volker.Lendecke@sernet.de> wrote:
 >
->Oh wow. And all of this just convinces me that we should _not_ do any
->of this, since clearly it's all totally useless and people can't even
->agree on a name.
->
->Let's wait five years and see if there is actually any consensus on it
->being needed and used at all, rather than rush into something just
->because "we can".
+> The nice thing about this is also that if this is supposed
+> to be fully usable for Windows clients, the birthtime needs
+> to be changeable. That's what NTFS semantics gives you, thus
+> Windows clients tend to require it.
 
-There just is no way currently to store creation times. Abusing ctimes
-for write-once archives also stops working once you rsync it from one
-place to another. (Which brings me to the side question of why
-the ctime isn't settable through futimesnat.)
+Ok. So it's not really a creation date, exactly the same way ctime
+isn't at all a creation date.
+
+And maybe that actually hints at a better solution: maybe a better
+model is to create a new per-thread flag that says "do ctime updates
+the way windows does them".
+
+So instead of adding another "btime" - which isn't actually what even
+windows does - just admit that the _real_ issue is that Unix and
+Windows semantics are different for the pre-existing "ctime".
+
+The fact is, windows has "access time", "modification time" and
+"creation time" _exactly_ like UNIX. It's just that the ctime has
+slightly different semantics in windows vs unix. So quite frankly,
+it's totally insane to introduce a "birthtime", when that isn't even
+what windows wants, just because people cannot face the actual real
+difference.
+
+Tell me why we shouldn't just do this right?
+
+                Linus
