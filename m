@@ -1,71 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754163Ab0GVELE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 00:11:04 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:37208
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752064Ab0GVELA (ORCPT
+	id S1753599Ab0GVEQG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 00:16:06 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:12080 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750734Ab0GVEQB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 00:11:00 -0400
-Date: Wed, 21 Jul 2010 21:11:16 -0700 (PDT)
-Message-Id: <20100721.211116.98027768.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org, richardcochran@gmail.com,
-        florian@openwrt.org
-Subject: Re: linux-next: build warning after merge of the nettree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100722120639.cc8d56a5.sfr@canb.auug.org.au>
-References: <20100722120639.cc8d56a5.sfr@canb.auug.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Jul 2010 00:16:01 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAKJiR0x5Lc6U/2dsb2JhbACfdHLBVoUyBA
+Date: Thu, 22 Jul 2010 14:15:54 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: David Howells <dhowells@redhat.com>
+Cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] Add a dentry op to handle automounting rather
+ than abusing follow_link
+Message-ID: <20100722041554.GB3446@amd>
+References: <27282.1279058150@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <27282.1279058150@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 22 Jul 2010 12:06:39 +1000
+This hasn't had much comments yet.
 
-> After merging the net tree, today's linux-next build (x86_64 allmodconfig)
-> produced this warning:
+On Tue, Jul 13, 2010 at 10:55:50PM +0100, David Howells wrote:
 > 
-> drivers/net/r6040.c: In function 'r6040_ioctl':
-> drivers/net/r6040.c:513: warning: passing argument 2 of 'phy_mii_ioctl' from incompatible pointer type
-> include/linux/phy.h:522: note: expected 'struct ifreq *' but argument is of type 'struct mii_ioctl_data *'
+> Add a dentry op (d_automount) to handle automounting directories rather than
+> abusing the follow_link() inode operation.
 > 
-> Introduced by commit 28b041139e344ecd0f144d6205b004ae354cfa1e ("net:
-> preserve ifreq parameter when calling generic phy_mii_ioctl()") (which
-> changed the phy_mii_ioctl() API) interacting with commit
-> 3831861b4ad8fd0ad7110048eb3e155628799d2b ("r6040: implement phylib")
-> (which added a use of that function).
+> I've only changed __follow_mount() to handle automount points, but it might be
+> necessary to change follow_mount() too.  The latter is only used from
+> follow_dotdot(), but any automounts on ".." should be pinned whilst we're using
+> a child of it.
+> 
+> AFS is made to use this facility so that it can be tested.  Other filesystems
+> abusing the follow_mount() inode operation will also need to be modified.
 
-Thanks Stephen, should be fixed as follows:
+How about having a .follow_mount op, and using that instead of
+default follow_mount in case mounted is incremented?
 
---------------------
-r6040: Fix args to phy_mii_ioctl().
+Also I would prefer the patch to add this call keep basically the
+same API as follow_mount, so if you are going to change that to
+return an error and do the NOFOLLOW handling in there, then
+could you do that first, as a more trivial patch?
 
-Reported by Stephen Rothwell.
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
----
- drivers/net/r6040.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/net/r6040.c b/drivers/net/r6040.c
-index 7d482a2..142c381 100644
---- a/drivers/net/r6040.c
-+++ b/drivers/net/r6040.c
-@@ -510,7 +510,7 @@ static int r6040_ioctl(struct net_device *dev, struct ifreq *rq, int cmd)
- 	if (!lp->phydev)
- 		return -EINVAL;
- 
--	return phy_mii_ioctl(lp->phydev, if_mii(rq), cmd);
-+	return phy_mii_ioctl(lp->phydev, rq, cmd);
- }
- 
- static int r6040_rx(struct net_device *dev, int limit)
--- 
-1.7.1.1
+Then your addition of the d_op should not touch outside
+*follow_mount.
 
