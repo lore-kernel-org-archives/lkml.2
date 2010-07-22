@@ -1,81 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932343Ab0GVOHb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 10:07:31 -0400
-Received: from exchange.solarflare.com ([216.237.3.220]:10989 "EHLO
-	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759492Ab0GVOH1 (ORCPT
+	id S932416Ab0GVOIE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 10:08:04 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:9969 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759443Ab0GVOH7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 10:07:27 -0400
-Subject: Re: [PATCH net-next] sysfs: add attribute to indicate hw address
- assignment type
-From: Ben Hutchings <bhutchings@solarflare.com>
-To: Stefan Assmann <sassmann@redhat.com>
-Cc: David Miller <davem@davemloft.net>, abadea@ixiacom.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
-        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
-        leedom@chelsio.com, harald@redhat.com
-In-Reply-To: <4C483E8D.4080300@redhat.com>
-References: <4C458CB7.3030508@redhat.com>	<4C458F50.4070200@ixiacom.com>
-	 <4C4593DA.9040207@redhat.com>
-	 <20100720.131839.134093789.davem@davemloft.net>
-	 <4C46AB60.5060008@redhat.com>
-	 <1279720478.2089.3.camel@achroite.uk.solarflarecom.com>
-	 <4C483E8D.4080300@redhat.com>
-Content-Type: text/plain
-Organization: Solarflare Communications
-Date: Thu, 22 Jul 2010 15:07:23 +0100
-Message-Id: <1279807643.2104.1.camel@achroite.uk.solarflarecom.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 (2.26.1-2.fc11) 
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 22 Jul 2010 14:09:02.0204 (UTC) FILETIME=[6FCAF3C0:01CB29A7]
-X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17520.005
-X-TM-AS-Result: No--29.681700-0.000000-31
-X-TM-AS-User-Approved-Sender: Yes
-X-TM-AS-User-Blocked-Sender: No
+	Thu, 22 Jul 2010 10:07:59 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Thu, 22 Jul 2010 16:09:10 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCH] USB: core: Choose configuration with lowest bConfigurationValue
+In-reply-to: <op.vf8lmjow7p4s8u@pikus>
+To: linux-usb@vger.kernel.org
+Cc: Adam Kropelin <akropel1@rochester.rr.com>,
+        Xiaofan Chen <xiaofanc@gmail.com>, linux-kernel@vger.kernel.org
+Message-id: <ed7910dcd6f62c058938f30aceb0fa5cd7c3f385.1279807231.git.m.nazarewicz@samsung.com>
+X-Mailer: git-send-email 1.7.1
+References: <op.vf8lmjow7p4s8u@pikus>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 14:50 +0200, Stefan Assmann wrote:
-> On 21.07.2010 15:54, Ben Hutchings wrote:
-> > On Wed, 2010-07-21 at 10:10 +0200, Stefan Assmann wrote:
-> >> I put Alex' idea into code for further discussion, keeping the names
-> >> mentioned here until we agree on the scope of this attribute. When we
-> >> have settled I'll post a patch with proper patch description.
-> > [...]
-> > 
-> > Just a little nitpick: I think it would be clearer to use a more
-> > specific term like 'address source' or 'address assignment type' rather
-> > than 'address type'.
-> 
-> Here's a proposal for the final patch.
+This patch removes code from usb_choose_configuration()
+responsible for ignoring the first USB device configuration if
+its first interface is RNDIS.  Instead,
+usb_choose_configuration() chooses configuration with lowest
+bConfigurationValue.  Linux' Ethernet gadget uses a lower
+bConfigurationValue for the second configuration which is
+a CDC configuration so this code should choose configuration
+that suits Linux better.
 
-Looks good, but...
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
+---
+Just what I had in mind if anyone interested...  Not that I have any
+strong opinion about it.  Also, not tested.
 
-[...]
->  /**
-> + * dev_hw_addr_random - Create random MAC and set device flag
-> + * @dev: pointer to net_device structure
-> + * @addr: Pointer to a six-byte array containing the Ethernet address
-> + *
-> + * Generate random MAC to be used by a device and set addr_assign_type
-> + * so the state can be read by sysfs and be used by udev.
-> + */
-> +static inline void dev_hw_addr_random(struct net_device *dev, u8 *hwaddr)
-> +{
-> +	dev->addr_assign_type |= NET_ADDR_RANDOM;
-> +	random_ether_addr(hwaddr);
-> +}
-[...]
+ drivers/usb/core/generic.c |   47 +++++++++++++++++++++----------------------
+ 1 files changed, 23 insertions(+), 24 deletions(-)
 
-...why '|=' and not '='?
-
-Ben.
-
+diff --git a/drivers/usb/core/generic.c b/drivers/usb/core/generic.c
+index 9a34ccb..5b411af 100644
+--- a/drivers/usb/core/generic.c
++++ b/drivers/usb/core/generic.c
+@@ -46,6 +46,7 @@ int usb_choose_configuration(struct usb_device *udev)
+ 	int num_configs;
+ 	int insufficient_power = 0;
+ 	struct usb_host_config *c, *best;
++	int best_is_not_class = 1;
+ 
+ 	best = NULL;
+ 	c = udev->config;
+@@ -102,33 +103,31 @@ int usb_choose_configuration(struct usb_device *udev)
+ 			continue;
+ 		}
+ 
+-		/* When the first config's first interface is one of Microsoft's
+-		 * pet nonstandard Ethernet-over-USB protocols, ignore it unless
+-		 * this kernel has enabled the necessary host side driver.
+-		 */
+-		if (i == 0 && desc && (is_rndis(desc) || is_activesync(desc))) {
+-#if !defined(CONFIG_USB_NET_RNDIS_HOST) && !defined(CONFIG_USB_NET_RNDIS_HOST_MODULE)
++		/* From the remaining configs, choose one whose first
++		 * interface is for a non-vendor-specific class and
++		 * has lowest bConfigurationValue.  Reason for the
++		 * former: Linux is more likely to have a class driver
++		 * than a vendor-specific driver.  Reason for the
++		 * latter: Ethernet gadget use lower
++		 * bConfigurationValue for configuration with CDC ECM
++		 * which is preferred by Linux even though it's second
++		 * configuration. */
++		if (udev->descriptor.bDeviceClass !=
++			 USB_CLASS_VENDOR_SPEC &&
++			 (desc && desc->bInterfaceClass !=
++			  USB_CLASS_VENDOR_SPEC)) {
++			if (best_is_not_class ||
++			    c->desc.bConfigurationValue <
++			    best->desc.bConfigurationValue) {
++				best_is_not_class = 0;
++				best = c;
++			}
+ 			continue;
+-#else
+-			best = c;
+-#endif
+-		}
+-
+-		/* From the remaining configs, choose the first one whose
+-		 * first interface is for a non-vendor-specific class.
+-		 * Reason: Linux is more likely to have a class driver
+-		 * than a vendor-specific driver. */
+-		else if (udev->descriptor.bDeviceClass !=
+-						USB_CLASS_VENDOR_SPEC &&
+-				(desc && desc->bInterfaceClass !=
+-						USB_CLASS_VENDOR_SPEC)) {
+-			best = c;
+-			break;
+ 		}
+ 
+ 		/* If all the remaining configs are vendor-specific,
+ 		 * choose the first one. */
+-		else if (!best)
++		if (!best)
+ 			best = c;
+ 	}
+ 
 -- 
-Ben Hutchings, Senior Software Engineer, Solarflare Communications
-Not speaking for my employer; that's the marketing department's job.
-They asked us to note that Solarflare product names are trademarked.
+1.7.1
 
