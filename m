@@ -1,51 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab0GVKda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 06:33:30 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:29141 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755683Ab0GVKd0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 06:33:26 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48116467"
-Message-ID: <4C481E6E.9000804@codeaurora.org>
-Date: Thu, 22 Jul 2010 16:03:18 +0530
-From: Trilok Soni <tsoni@codeaurora.org>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1758833Ab0GVKfI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 06:35:08 -0400
+Received: from borg.medozas.de ([188.40.89.202]:55870 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754944Ab0GVKfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 06:35:04 -0400
+Date: Thu, 22 Jul 2010 12:35:03 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: David Howells <dhowells@redhat.com>
+cc: viro@ZenIV.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-nfs@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
+ file stats available [ver #6]
+In-Reply-To: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+Message-ID: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Kevin McNeely <kev@cypress.com>, David Brown <davidb@codeaurora.org>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Eric Miao <eric.y.miao@gmail.com>,
-        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-        Simtec Linux Team <linux@simtec.co.uk>,
-        Arnaud Patard <arnaud.patard@rtp-net.org>,
-        Antonio Ospite <ospite@studenti.unina.it>,
-        Henrik Rydberg <rydberg@euromail.se>, linux-input@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-        khali@linux-fr.org, linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] i2c: cyttsp i2c touchscreen driver init submit
-References: <kev@cypress.com> <1278968210-6827-1-git-send-email-kev@cypress.com> <4C3C1654.9010204@codeaurora.org> <20100713075544.GA16013@core.coreip.homeip.net> <4C3C2706.4020005@codeaurora.org>
-In-Reply-To: <4C3C2706.4020005@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
 
-On 7/13/2010 2:12 PM, Trilok Soni wrote:
-> On 7/13/2010 1:25 PM, Dmitry Torokhov wrote:
->> On Tue, Jul 13, 2010 at 01:01:32PM +0530, Trilok Soni wrote:
->>> Hi Kevin,
->>>
->>> Thanks for posting this driver.
+On Thursday 2010-07-15 04:17, David Howells wrote:
+> (6) BSD stat compatibility: Including more fields from the BSD stat such as
+>     creation time (st_btime) and inode generation number (st_gen) [Jeremy
+>     Allison, Bernd Schubert].
+>where st_btime is the file creation time, st_gen is the inode generation
+>(i_generation), st_data_version is the data version number (i_version),
+>st_inode_flags is the flags from FS_IOC_GETFLAGS plus some extras,
+>request_mask and st_result_mask are bitmasks of data desired/provided and
+>st_extra_results[] is where as-yet undefined fields are appended.
 
-Are you going to post updated version of this patch, addressing review comments?
+Linux already has a creation time field, it's called otime (there is no "b" in
+"creation"), and you will find scattered fragments of that all over the kernel
+(foremost, fs/jfs/, now btrfs, and I also notice sysvipc having something with
+that name).
 
----Trilok Soni
+>	struct xstat_time {
+>		unsigned long long	tv_sec, tv_nsec;
+>	};
 
--- 
-Sent by a consultant of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+If it helps getting rid of the ugly suseconds_t in userspace ;-)
