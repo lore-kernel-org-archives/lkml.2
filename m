@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756795Ab0GVTMb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 15:12:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34179 "EHLO mx1.suse.de"
+	id S1756822Ab0GVTPg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 15:15:36 -0400
+Received: from kroah.org ([198.145.64.141]:38169 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270Ab0GVTMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 15:12:30 -0400
-Date: Thu, 22 Jul 2010 12:12:00 -0700
-From: Greg KH <gregkh@suse.de>
-To: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
+	id S1754963Ab0GVTPd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 15:15:33 -0400
+Date: Thu, 22 Jul 2010 12:14:57 -0700
+From: Greg KH <greg@kroah.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-Message-ID: <20100722191200.GA5609@suse.de>
-References: <20100722182638.GA12712@kroah.com>
- <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
- <20100722183614.GA5443@suse.de>
- <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
- <20100722185301.GA528@suse.de>
- <AANLkTik07hZot_x0p7xJuY8s4f8pGRd2Mn1+jYfHH2iq@mail.gmail.com>
+        Dan Magenheimer <dan.magenheimer@oracle.com>,
+        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
+        Christoph Hellwig <hch@infradead.org>,
+        Minchan Kim <minchan.kim@gmail.com>,
+        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
+        linux-mm <linux-mm@kvack.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/8] zcache: page cache compression support
+Message-ID: <20100722191457.GA13309@kroah.com>
+References: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik07hZot_x0p7xJuY8s4f8pGRd2Mn1+jYfHH2iq@mail.gmail.com>
+In-Reply-To: <1279283870-18549-1-git-send-email-ngupta@vflare.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 12:07:43PM -0700, Paul Menage wrote:
-> On Thu, Jul 22, 2010 at 11:53 AM, Greg KH <gregkh@suse.de> wrote:
-> >
-> > If you are using /dev/cgroup/ that's nice, but I don't think that people
-> > are expecting a whole filesystem under a /dev/ subdirectory.
-> 
-> Sure - as I said that's just for historical reasons from when we
-> migrated from cpusets which were traditionally mounted at /dev/cpuset,
-> so it involved less change. There's no particular reason to mount it
-> there (although having said that, what about /dev/pts and /dev/shm?).
+On Fri, Jul 16, 2010 at 06:07:42PM +0530, Nitin Gupta wrote:
+> Frequently accessed filesystem data is stored in memory to reduce access to
+> (much) slower backing disks. Under memory pressure, these pages are freed and
+> when needed again, they have to be read from disks again. When combined working
+> set of all running application exceeds amount of physical RAM, we get extereme
+> slowdown as reading a page from disk can take time in order of milliseconds.
 
-Yeah, /dev/pts and /dev/shm are long-time users of the /dev filesystem.
-I don't know if we want to encourage that as a mount point, do you?
+<snip>
 
-What are the different names you are giving to your mount points now for
-cgroupfs so I can get an idea of how it is used currently?
+Given that there were a lot of comments and changes for this series, can
+you resend them with your updates so I can then apply them if they are
+acceptable to everyone?
 
 thanks,
 
