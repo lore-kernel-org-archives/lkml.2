@@ -1,286 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759274Ab0GVLMs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:12:48 -0400
-Received: from mga14.intel.com ([143.182.124.37]:2810 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759220Ab0GVLMo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1759284Ab0GVLMw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 07:12:52 -0400
+Received: from mtagate4.de.ibm.com ([195.212.17.164]:59472 "EHLO
+	mtagate4.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759228Ab0GVLMo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Jul 2010 07:12:44 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,242,1278313200"; 
-   d="scan'208";a="303089000"
-Subject: [RFC][PATCH v1 04/15] perf: export tracepoint events via sysfs:
- sched, raw_syscalls etc.
-From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Robert Richter <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 19:12:58 +0800
-Message-ID: <1279797179.20942.85.camel@minggr.sh.intel.com>
+Date: Thu, 22 Jul 2010 13:12:39 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>,
+        Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
+        Paul Turner <pjt@google.com>,
+        Heiko Carstens <heiko.carstens@de.ibm.com>,
+        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
+Subject: Re: [PATCH 0/4] Finer granularity and task/cgroup irq time
+ accounting
+Message-ID: <20100722131239.208d9501@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <AANLkTiktBNr3pVOHwxX3piwagtkGxHpp5TepBFS3UGhb@mail.gmail.com>
+References: <1279583835-22854-1-git-send-email-venki@google.com>
+	<20100720095546.2f899e04@mschwide.boeblingen.de.ibm.com>
+	<AANLkTiktBNr3pVOHwxX3piwagtkGxHpp5TepBFS3UGhb@mail.gmail.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Below tracepoint events are exported under /sys/kernel/events/.
-sched, raw_syscalls, irq, timer, signal, workqueue, lock and bkl
+On Tue, 20 Jul 2010 09:55:29 -0700
+Venkatesh Pallipadi <venki@google.com> wrote:
 
-For example,
-/sys/kernel/events/
-|-- hrtimer_cancel
-|   |-- config
-|   `-- type
-|-- hrtimer_expire_entry
-|   |-- config
-|   `-- type
-|-- hrtimer_expire_exit
-|   |-- config
-|   `-- type
-|-- hrtimer_init
-|   |-- config
-|   `-- type
-|-- hrtimer_start
-|   |-- config
-|   `-- type
-|-- irq_handler_entry
-|   |-- config
-|   `-- type
-|-- irq_handler_exit
-|   |-- config
-|   `-- type
-|-- itimer_expire
-|   |-- config
-|   `-- type
-|-- itimer_state
-|   |-- config
-|   `-- type
-|-- lock_kernel
-|   |-- config
-|   `-- type
-|-- sched_kthread_stop
-|   |-- config
-|   `-- type
-|-- sched_kthread_stop_ret
-|   |-- config
-|   `-- type
-|-- sched_migrate_task
-|   |-- config
-|   `-- type
-|-- sched_process_exit
-|   |-- config
-|   `-- type
-|-- sched_process_fork
-|   |-- config
-|   `-- type
-|-- sched_process_free
-|   |-- config
-|   `-- type
-|-- sched_process_wait
-|   |-- config
-|   `-- type
-|-- sched_stat_iowait
-|   |-- config
-|   `-- type
-|-- sched_stat_runtime
-|   |-- config
-|   `-- type
-|-- sched_stat_sleep
-|   |-- config
-|   `-- type
-|-- sched_stat_wait
-|   |-- config
-|   `-- type
-|-- sched_switch
-|   |-- config
-|   `-- type
-|-- sched_wait_task
-|   |-- config
-|   `-- type
-|-- sched_wakeup
-|   |-- config
-|   `-- type
-|-- sched_wakeup_new
-|   |-- config
-|   `-- type
-|-- signal_deliver
-|   |-- config
-|   `-- type
-|-- signal_generate
-|   |-- config
-|   `-- type
-|-- signal_lose_info
-|   |-- config
-|   `-- type
-|-- signal_overflow_fail
-|   |-- config
-|   `-- type
-|-- softirq_entry
-|   |-- config
-|   `-- type
-|-- softirq_exit
-|   |-- config
-|   `-- type
-|-- sys_enter
-|   |-- config
-|   `-- type
-|-- sys_exit
-|   |-- config
-|   `-- type
-|-- timer_cancel
-|   |-- config
-|   `-- type
-|-- timer_expire_entry
-|   |-- config
-|   `-- type
-|-- timer_expire_exit
-|   |-- config
-|   `-- type
-|-- timer_init
-|   |-- config
-|   `-- type
-|-- timer_start
-|   |-- config
-|   `-- type
-|-- unlock_kernel
-|   |-- config
-|   `-- type
-|-- workqueue_creation
-|   |-- config
-|   `-- type
-|-- workqueue_destruction
-|   |-- config
-|   `-- type
-|-- workqueue_execution
-|   |-- config
-|   `-- type
-`-- workqueue_insertion
-    |-- config
-    `-- type
+> On Tue, Jul 20, 2010 at 12:55 AM, Martin Schwidefsky
+> <schwidefsky@de.ibm.com> wrote:
+> > On Mon, 19 Jul 2010 16:57:11 -0700
+> > Venkatesh Pallipadi <venki@google.com> wrote:
+> >
+> >> Currently, the softirq and hardirq time reporting is only done at the
+> >> CPU level. There are usecases where reporting this time against task
+> >> or task groups or cgroups will be useful for user/administrator
+> >> in terms of resource planning and utilization charging. Also, as the
+> >> accoounting is already done at the CPU level, reporting the same at
+> >> the task level does not add any significant computational overhead
+> >> other than task level storage (patch 1).
+> >
+> > I never understood why the softirq and hardirq time gets accounted to a
+> > task at all. Why is it that the poor task that is running gets charged
+> > with the cpu time of an interrupt that has nothing to do with the task?
+> > I consider this to be a bug, and now this gets formalized in the
+> > taskstats interface? Imho not a good idea.
+> 
+> Agree that this is a bug. I started by looking at resolving that. But,
+> it was not exactly easy. Ideally we want irq times to be charged to
+> right task as much as possible. With things like network rcv softirq
+> for example, there is a task thats is going to consume the packet
+> eventually that should be charged. If we cant find a suitable match we
+> may have to charge it to some system thread. Things like threaded
+> interrupts will mitigate this problem a bit. But, until we have a good
+> enough solution, this bug will be around with us.
 
+Yes, fixing that behavior will be tough. Just consider a standard page
+cache I/O that gets merged with other I/O. You would need to "split" the
+interrupt time for a block I/O to the process that benefit from it. An
+added twist is that there can be multiple processes that require the
+page. Split the time even more to the different requesters of a page?
+Then the order when the requests come in suddenly gets important. Or
+consider the IP packets in a network buffer, split the interrupt time
+to the recipients?
+The list goes on and on, my guess is that it will be next to impossible
+to do it right. If the current situation is wrong because the ire
+and softorq system time gets misaccounted and the "correct" solution is
+impossible the only thing left to do is to stop accounting irq and
+softirq time to processes.
 
----
- include/linux/perf_event.h |    4 +++
- kernel/perf_event.c        |   50 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 54 insertions(+), 0 deletions(-)
+> > To get fine granular accounting for interrupts you need to do a
+> > sched_clock call on irq entry and another one on irq exit. Isn't that
+> > too expensive on a x86 system? (I do think this is a good idea but
+> > still there is the worry about the overhead).
+> 
+> On x86: Yes. Overhead is a potential problem. Thats the reason I had
+> this inside a CONFIG option. But, I have tested this with few
+> workloads on different systems released in past two years timeframe
+> and I did  not see any measurable overhead. Note that this is used
+> only when sched_clock is based off of TSC and not when it is based on
+> jiffies. The sched_clock overhead I measured on different platforms
+> was in 30-150 cycles range, which probably isn't going to be highly
+> visible in generic workloads.
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index fb2ec23..c24197d 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -1062,6 +1062,8 @@ extern void perf_event_disable(struct perf_event *event);
- 
- extern struct kobject *perf_sys_create_events_dir(struct kobject *parent);
- extern int perf_sys_add_event(struct kobject *parent, char *name, u64 config, int type);
-+extern void perf_sys_add_tp_events(struct kobject *kobj, char *tp_system);
-+extern void perf_sys_add_tp(struct kobject *kobj, char *tp_system);
- extern char *perf_hw_event_name(int id);
- extern char *perf_hw_cache_event_name(u8 type, u8 op, u8 result);
- #else
-@@ -1108,6 +1110,8 @@ static inline struct kobject *perf_sys_create_events_dir(struct kobject *parent)
- {
- 	return NULL;
- }
-+static inline void perf_sys_add_tp_events(struct kobject *kobj, char *tp_system) { }
-+static inline void perf_sys_add_tp(struct kobject *kobj, char *tp_system) { }
- static inline char *perf_hw_event_name(int id) { return NULL; }
- static inline char *perf_hw_cache_event_name(u8 type, u8 op, u8 result) { return NULL; }
- #endif
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 21c359d..554311b 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -5921,6 +5921,26 @@ static struct attribute_group perfclass_attr_group = {
- 	.name			= "perf_events",
- };
- 
-+/*
-+ * tracepoint events: sched, raw_syscalls, irq, timer, signal,
-+ * workqueue, lock and bkl are exported to
-+ * /sys/kernel/events/
-+ */
-+static void perf_sys_add_kernel_events(void)
-+{
-+	if (!sys_kernel_events_kobj)
-+		return;
-+
-+	perf_sys_add_tp_events(sys_kernel_events_kobj, "raw_syscalls");
-+	perf_sys_add_tp_events(sys_kernel_events_kobj, "sched");
-+	perf_sys_add_tp_events(sys_kernel_events_kobj, "irq");
-+	perf_sys_add_tp_events(sys_kernel_events_kobj, "timer");
-+	perf_sys_add_tp_events(sys_kernel_events_kobj, "signal");
-+	perf_sys_add_tp_events(sys_kernel_events_kobj, "workqueue");
-+	perf_sys_add_tp_events(sys_kernel_events_kobj, "lock");
-+	perf_sys_add_tp_events(sys_kernel_events_kobj, "bkl");
-+}
-+
- static int __init perf_event_sysfs_init(void)
- {
- 	struct pmu *pmu = NULL;
-@@ -5928,6 +5948,8 @@ static int __init perf_event_sysfs_init(void)
- 
- 	sys_kernel_events_kobj = perf_sys_create_events_dir(kernel_kobj);
- 
-+	perf_sys_add_kernel_events();
-+
- 	idx = srcu_read_lock(&pmus_srcu);
- 	list_for_each_entry_rcu(pmu, &pmus, entry) {
- 		if (pmu->export_events)
-@@ -6044,6 +6066,34 @@ int perf_sys_add_event(struct kobject *parent, char *name, u64 config, int type)
- 	return 0;
- }
- 
-+#define for_each_event(event, start, end)			\
-+	for (event = start;					\
-+	     (unsigned long)event < (unsigned long)end;		\
-+	     event++)
-+
-+extern struct ftrace_event_call __start_ftrace_events[];
-+extern struct ftrace_event_call __stop_ftrace_events[];
-+
-+void perf_sys_add_tp_events(struct kobject *events_kobj, char *tp_system)
-+{
-+	struct ftrace_event_call *call;
-+
-+	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
-+		if (call->class->system && !strcmp(call->class->system, tp_system)) {
-+			perf_sys_add_event(events_kobj, call->name, call->event.type,
-+				PERF_TYPE_TRACEPOINT);
-+		}
-+	}
-+}
-+
-+void perf_sys_add_tp(struct kobject *parent, char *tp_system)
-+{
-+	struct kobject *events_kobj;
-+
-+	events_kobj = perf_sys_create_events_dir(parent);
-+	perf_sys_add_tp_events(events_kobj, tp_system);
-+}
-+
- static char *hw_event_names[] = {
- 	"cycles",
- 	"instructions",
+That makes sense to me, with a working TSC the overhead should be
+small. But you will need to a performance analysis to prove it.
 
+> Archs like s390/powerpc/ia64 already do this kind of accounting with
+> VIRT_CPU_ACCOUNTING. So, this patch will give them task and cgroup
+> level info free of charge (other than potential bugs with this code
+> change :-)).
 
+Well, the task and cgroup information is there but what does it really
+tell me? As long as the irq & softirq time can be caused by any other
+process I don't see the value of this incorrect data point.
 
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
 
