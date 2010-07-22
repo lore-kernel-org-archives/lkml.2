@@ -1,70 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752555Ab0GVPKk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 11:10:40 -0400
-Received: from mtagate5.de.ibm.com ([195.212.17.165]:39497 "EHLO
-	mtagate5.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab0GVPKc (ORCPT
+	id S1757951Ab0GVPLO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 11:11:14 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:59587 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab0GVPLM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 11:10:32 -0400
-Date: Thu, 22 Jul 2010 17:10:28 +0200
-From: Martin Schwidefsky <schwidefsky@de.ibm.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Sachin Sant <sachinp@in.ibm.com>, linux-s390@vger.kernel.org,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
-Subject: Re: [PATCH wq#for-next] workqueue: fix how cpu number is stored in
- work->data
-Message-ID: <20100722171028.2aa0b8f2@mschwide.boeblingen.de.ibm.com>
-In-Reply-To: <4C4838B8.1080400@kernel.org>
-References: <4C46CEA3.7040503@in.ibm.com>
-	<4C4718D5.1080902@kernel.org>
-	<20100722112557.14b65077@mschwide.boeblingen.de.ibm.com>
-	<4C4838B8.1080400@kernel.org>
-Organization: IBM Corporation
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Jul 2010 11:11:12 -0400
+Date: Thu, 22 Jul 2010 16:11:06 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org
+Subject: Re: [PATCH] eeepc-laptop: fix hotplug_disabled module_param
+	permissions
+Message-ID: <20100722151106.GD25002@srcf.ucam.org>
+References: <1278897325.6563.7.camel@mola>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278897325.6563.7.camel@mola>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010 14:25:28 +0200
-Tejun Heo <tj@kernel.org> wrote:
-
-> Once a work starts execution, its data contains the cpu number it was
-> on instead of pointing to cwq.  This is added by commit 7a22ad75
-> (workqueue: carry cpu number in work data once execution starts) to
-> reliably determine the work was last on even if the workqueue itself
-> was destroyed inbetween.
-> 
-> Whether data points to a cwq or contains a cpu number was
-> distinguished by comparing the value against PAGE_OFFSET.  The
-> assumption was that a cpu number should be below PAGE_OFFSET while a
-> pointer to cwq should be above it.  However, on architectures which
-> use separate address spaces for user and kernel spaces, this doesn't
-> hold as PAGE_OFFSET is zero.
-> 
-> Fix it by using an explicit flag, WORK_STRUCT_CWQ, to mark what the
-> data field contains.  If the flag is set, it's pointing to a cwq;
-> otherwise, it contains a cpu number.
-> 
-> Reported on s390 and microblaze during linux-next testing.
-> 
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Reported-by: Sachin Sant <sachinp@in.ibm.com>
-> Reported-by: Michal Simek <michal.simek@petalogix.com>
-> Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-> ---
-> Yeah, that was a stupid assumption by me.  Can you guys please test
-> whether this fixes the problem?
-
-Compiles and boots for s390. Thanks.
+I think I've got all of your patches merged now, but let me know if I've 
+missed any. They should be in my linux-next branch.
 
 -- 
-blue skies,
-   Martin.
-
-"Reality continues to ruin my life." - Calvin.
-
+Matthew Garrett | mjg59@srcf.ucam.org
