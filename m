@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757250Ab0GVVMF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:12:05 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:36293 "EHLO arroyo.ext.ti.com"
+	id S1757707Ab0GVVMS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:12:18 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:38671 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757025Ab0GVVL7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:11:59 -0400
+	id S1757420Ab0GVVME (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 17:12:04 -0400
 From: Omar Ramirez Luna <omar.ramirez@ti.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
@@ -16,9 +16,9 @@ Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
         Andy Shevchenko <andy.shevchenko@gmail.com>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-omap <linux-omap@vger.kernel.org>
-Subject: [PATCH 1/6] staging: tidspbridge: remove GlobalTypes.h
-Date: Thu, 22 Jul 2010 16:03:45 -0500
-Message-Id: <1279832630-11517-2-git-send-email-omar.ramirez@ti.com>
+Subject: [PATCH 4/6] staging: tidspbridge: remove OPTIONAL
+Date: Thu, 22 Jul 2010 16:03:48 -0500
+Message-Id: <1279832630-11517-5-git-send-email-omar.ramirez@ti.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1279832630-11517-1-git-send-email-omar.ramirez@ti.com>
 References: <1279832630-11517-1-git-send-email-omar.ramirez@ti.com>
@@ -28,424 +28,274 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Menon, Nishanth <nm@ti.com>
 
-Remove custom globaltypes.h header
+OPTIONAL modifier makes no sense in linux kernel
 
 Signed-off-by: Nishanth Menon <nm@ti.com>
 ---
- drivers/staging/tidspbridge/hw/GlobalTypes.h |  291 --------------------------
- drivers/staging/tidspbridge/hw/MMURegAcM.h   |    1 -
- drivers/staging/tidspbridge/hw/hw_defs.h     |    2 -
- drivers/staging/tidspbridge/hw/hw_mmu.c      |   32 ---
- 4 files changed, 0 insertions(+), 326 deletions(-)
- delete mode 100644 drivers/staging/tidspbridge/hw/GlobalTypes.h
+ drivers/staging/tidspbridge/core/chnl_sm.c         |    2 +-
+ .../staging/tidspbridge/include/dspbridge/cod.h    |    2 +-
+ .../tidspbridge/include/dspbridge/dspchnl.h        |    4 ++--
+ .../tidspbridge/include/dspbridge/dspdefs.h        |    4 ++--
+ .../staging/tidspbridge/include/dspbridge/node.h   |   12 ++++++------
+ .../staging/tidspbridge/include/dspbridge/proc.h   |    2 +-
+ drivers/staging/tidspbridge/pmgr/cod.c             |    2 +-
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |   12 ++++++------
+ drivers/staging/tidspbridge/rmgr/nldr.c            |    6 +++---
+ drivers/staging/tidspbridge/rmgr/node.c            |   12 ++++++------
+ drivers/staging/tidspbridge/rmgr/proc.c            |    2 +-
+ 11 files changed, 30 insertions(+), 30 deletions(-)
 
-diff --git a/drivers/staging/tidspbridge/hw/GlobalTypes.h b/drivers/staging/tidspbridge/hw/GlobalTypes.h
-deleted file mode 100644
-index 4d142a1..0000000
---- a/drivers/staging/tidspbridge/hw/GlobalTypes.h
-+++ /dev/null
-@@ -1,291 +0,0 @@
--/*
-- * GlobalTypes.h
-- *
-- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-- *
-- * Global HW definitions
-- *
-- * Copyright (C) 2007 Texas Instruments, Inc.
-- *
-- * This package is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-- * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-- * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-- */
--
--#ifndef _GLOBALTYPES_H
--#define _GLOBALTYPES_H
--
--/*
-- * Definition: RET_CODE_BASE
-- *
-- * DESCRIPTION:  Base value for return code offsets
-- */
--#define RET_CODE_BASE	0
--
--/*
-- * Definition: *BIT_OFFSET
-- *
-- * DESCRIPTION:  offset in bytes from start of 32-bit word.
-- */
--#define LOWER16BIT_OFFSET	  0
--#define UPPER16BIT_OFFSET	  2
--
--#define LOWER8BIT_OFFSET	   0
--#define LOWER_MIDDLE8BIT_OFFSET    1
--#define UPPER_MIDDLE8BIT_OFFSET    2
--#define UPPER8BIT_OFFSET	   3
--
--#define LOWER8BIT_OF16_OFFSET      0
--#define UPPER8BIT_OF16_OFFSET      1
--
--/*
-- * Definition: *BIT_SHIFT
-- *
-- * DESCRIPTION:  offset in bits from start of 32-bit word.
-- */
--#define LOWER16BIT_SHIFT	  0
--#define UPPER16BIT_SHIFT	  16
--
--#define LOWER8BIT_SHIFT	   0
--#define LOWER_MIDDLE8BIT_SHIFT    8
--#define UPPER_MIDDLE8BIT_SHIFT    16
--#define UPPER8BIT_SHIFT	   24
--
--#define LOWER8BIT_OF16_SHIFT      0
--#define UPPER8BIT_OF16_SHIFT      8
--
--/*
-- * Definition: LOWER16BIT_MASK
-- *
-- * DESCRIPTION: 16 bit mask used for inclusion of lower 16 bits i.e. mask out
-- *		the upper 16 bits
-- */
--#define LOWER16BIT_MASK	0x0000FFFF
--
--/*
-- * Definition: LOWER8BIT_MASK
-- *
-- * DESCRIPTION: 8 bit masks used for inclusion of 8 bits i.e. mask out
-- *		the upper 16 bits
-- */
--#define LOWER8BIT_MASK	   0x000000FF
--
--/*
-- * Definition: RETURN32BITS_FROM16LOWER_AND16UPPER(lower16_bits, upper16_bits)
-- *
-- * DESCRIPTION: Returns a 32 bit value given a 16 bit lower value and a 16
-- *		bit upper value
-- */
--#define RETURN32BITS_FROM16LOWER_AND16UPPER(lower16_bits, upper16_bits)\
--    (((((u32)lower16_bits)  & LOWER16BIT_MASK)) | \
--     (((((u32)upper16_bits) & LOWER16BIT_MASK) << UPPER16BIT_SHIFT)))
--
--/*
-- * Definition: RETURN16BITS_FROM8LOWER_AND8UPPER(lower16_bits, upper16_bits)
-- *
-- * DESCRIPTION:  Returns a 16 bit value given a 8 bit lower value and a 8
-- *	       bit upper value
-- */
--#define RETURN16BITS_FROM8LOWER_AND8UPPER(lower8_bits, upper8_bits)\
--    (((((u32)lower8_bits)  & LOWER8BIT_MASK)) | \
--     (((((u32)upper8_bits) & LOWER8BIT_MASK) << UPPER8BIT_OF16_SHIFT)))
--
--/*
-- * Definition: RETURN32BITS_FROM48BIT_VALUES(lower8_bits, lower_middle8_bits,
-- *					lower_upper8_bits, upper8_bits)
-- *
-- * DESCRIPTION:  Returns a 32 bit value given four 8 bit values
-- */
--#define RETURN32BITS_FROM48BIT_VALUES(lower8_bits, lower_middle8_bits,\
--	lower_upper8_bits, upper8_bits)\
--	(((((u32)lower8_bits) & LOWER8BIT_MASK)) | \
--	(((((u32)lower_middle8_bits) & LOWER8BIT_MASK) <<\
--		LOWER_MIDDLE8BIT_SHIFT)) | \
--	(((((u32)lower_upper8_bits) & LOWER8BIT_MASK) <<\
--		UPPER_MIDDLE8BIT_SHIFT)) | \
--	(((((u32)upper8_bits) & LOWER8BIT_MASK) <<\
--		UPPER8BIT_SHIFT)))
--
--/*
-- * Definition: READ_LOWER16BITS_OF32(value32bits)
-- *
-- * DESCRIPTION:  Returns a 16 lower bits of 32bit value
-- */
--#define READ_LOWER16BITS_OF32(value32bits)\
--    ((u16)((u32)(value32bits) & LOWER16BIT_MASK))
--
--/*
-- * Definition: READ_UPPER16BITS_OF32(value32bits)
-- *
-- * DESCRIPTION:  Returns a 16 lower bits of 32bit value
-- */
--#define READ_UPPER16BITS_OF32(value32bits)\
--	(((u16)((u32)(value32bits) >> UPPER16BIT_SHIFT)) &\
--	LOWER16BIT_MASK)
--
--/*
-- * Definition: READ_LOWER8BITS_OF32(value32bits)
-- *
-- * DESCRIPTION:  Returns a 8 lower bits of 32bit value
-- */
--#define READ_LOWER8BITS_OF32(value32bits)\
--    ((u8)((u32)(value32bits) & LOWER8BIT_MASK))
--
--/*
-- * Definition: READ_LOWER_MIDDLE8BITS_OF32(value32bits)
-- *
-- * DESCRIPTION:  Returns a 8 lower middle bits of 32bit value
-- */
--#define READ_LOWER_MIDDLE8BITS_OF32(value32bits)\
--	(((u8)((u32)(value32bits) >> LOWER_MIDDLE8BIT_SHIFT)) &\
--	LOWER8BIT_MASK)
--
--/*
-- * Definition: READ_LOWER_MIDDLE8BITS_OF32(value32bits)
-- *
-- * DESCRIPTION:  Returns a 8 lower middle bits of 32bit value
-- */
--#define READ_UPPER_MIDDLE8BITS_OF32(value32bits)\
--	(((u8)((u32)(value32bits) >> LOWER_MIDDLE8BIT_SHIFT)) &\
--	LOWER8BIT_MASK)
--
--/*
-- * Definition: READ_UPPER8BITS_OF32(value32bits)
-- *
-- * DESCRIPTION:  Returns a 8 upper bits of 32bit value
-- */
--#define READ_UPPER8BITS_OF32(value32bits)\
--    (((u8)((u32)(value32bits) >> UPPER8BIT_SHIFT)) & LOWER8BIT_MASK)
--
--/*
-- * Definition: READ_LOWER8BITS_OF16(value16bits)
-- *
-- * DESCRIPTION:  Returns a 8 lower bits of 16bit value
-- */
--#define READ_LOWER8BITS_OF16(value16bits)\
--    ((u8)((u16)(value16bits) & LOWER8BIT_MASK))
--
--/*
-- * Definition: READ_UPPER8BITS_OF16(value32bits)
-- *
-- * DESCRIPTION:  Returns a 8 upper bits of 16bit value
-- */
--#define READ_UPPER8BITS_OF16(value16bits)\
--    (((u8)((u32)(value16bits) >> UPPER8BIT_SHIFT)) & LOWER8BIT_MASK)
--
--/* UWORD16:  16 bit tpyes */
--
--/* reg_uword8, reg_word8: 8 bit register types */
--typedef volatile unsigned char reg_uword8;
--typedef volatile signed char reg_word8;
--
--/* reg_uword16, reg_word16: 16 bit register types */
--#ifndef OMAPBRIDGE_TYPES
--typedef volatile unsigned short reg_uword16;
--#endif
--typedef volatile short reg_word16;
--
--/* reg_uword32, REG_WORD32: 32 bit register types */
--typedef volatile unsigned long reg_uword32;
--
--/* FLOAT
-- *
-- * Type to be used for floating point calculation. Note that floating point
-- * calculation is very CPU expensive, and you should only  use if you
-- * absolutely need this. */
--
--/* boolean_t:  Boolean Type True, False */
--/* return_code_t:  Return codes to be returned by all library functions */
--enum return_code_label {
--	RET_OK = 0,
--	RET_FAIL = -1,
--	RET_BAD_NULL_PARAM = -2,
--	RET_PARAM_OUT_OF_RANGE = -3,
--	RET_INVALID_ID = -4,
--	RET_EMPTY = -5,
--	RET_FULL = -6,
--	RET_TIMEOUT = -7,
--	RET_INVALID_OPERATION = -8,
--
--	/* Add new error codes at end of above list */
--
--	RET_NUM_RET_CODES	/* this should ALWAYS be LAST entry */
--};
--
--/* MACRO: RD_MEM8, WR_MEM8
-- *
-- * DESCRIPTION:  32 bit memory access macros
-- */
--#define RD_MEM8(addr)	((u8)(*((u8 *)(addr))))
--#define WR_MEM8(addr, data)	(*((u8 *)(addr)) = (u8)(data))
--
--/* MACRO: RD_MEM8_VOLATILE, WR_MEM8_VOLATILE
-- *
-- * DESCRIPTION:  8 bit register access macros
-- */
--#define RD_MEM8_VOLATILE(addr)	((u8)(*((reg_uword8 *)(addr))))
--#define WR_MEM8_VOLATILE(addr, data) (*((reg_uword8 *)(addr)) = (u8)(data))
--
--/*
-- * MACRO: RD_MEM16, WR_MEM16
-- *
-- * DESCRIPTION:  16 bit memory access macros
-- */
--#define RD_MEM16(addr)	((u16)(*((u16 *)(addr))))
--#define WR_MEM16(addr, data)	(*((u16 *)(addr)) = (u16)(data))
--
--/*
-- * MACRO: RD_MEM16_VOLATILE, WR_MEM16_VOLATILE
-- *
-- * DESCRIPTION:  16 bit register access macros
-- */
--#define RD_MEM16_VOLATILE(addr)	((u16)(*((reg_uword16 *)(addr))))
--#define WR_MEM16_VOLATILE(addr, data)	(*((reg_uword16 *)(addr)) =\
--					(u16)(data))
--
--/*
-- * MACRO: RD_MEM32, WR_MEM32
-- *
-- * DESCRIPTION:  32 bit memory access macros
-- */
--#define RD_MEM32(addr)	((u32)(*((u32 *)(addr))))
--#define WR_MEM32(addr, data)	(*((u32 *)(addr)) = (u32)(data))
--
--/*
-- * MACRO: RD_MEM32_VOLATILE, WR_MEM32_VOLATILE
-- *
-- * DESCRIPTION:  32 bit register access macros
-- */
--#define RD_MEM32_VOLATILE(addr)	((u32)(*((reg_uword32 *)(addr))))
--#define WR_MEM32_VOLATILE(addr, data)	(*((reg_uword32 *)(addr)) =\
--					(u32)(data))
--
--/* Not sure if this all belongs here */
--
--#define CHECK_RETURN_VALUE(actual_value, expected_value,\
--	return_code_if_mismatch, spy_code_if_mis_match)
--#define CHECK_RETURN_VALUE_RET(actual_value, expected_value,\
--	return_code_if_mismatch)
--#define CHECK_RETURN_VALUE_RES(actual_value, expected_value,\
--	spy_code_if_mis_match)
--#define CHECK_RETURN_VALUE_RET_VOID(actual_value, expected_value,\
--	spy_code_if_mis_match)
--
--#define CHECK_INPUT_PARAM(actual_value, invalid_value,\
--	return_code_if_mismatch, spy_code_if_mis_match)
--#define CHECK_INPUT_PARAM_NO_SPY(actual_value, invalid_value,\
--	return_code_if_mismatch)
--#define CHECK_INPUT_RANGE(actual_value, min_valid_value, max_valid_value,\
--	return_code_if_mismatch, spy_code_if_mis_match)
--#define CHECK_INPUT_RANGE_NO_SPY(actual_value, min_valid_value,\
--	max_valid_value, return_code_if_mismatch)
--#define CHECK_INPUT_RANGE_MIN0(actual_value, max_valid_value,\
--	return_code_if_mismatch, spy_code_if_mis_match)
--#define CHECK_INPUT_RANGE_NO_SPY_MIN0(actual_value, max_valid_value,\
--	return_code_if_mismatch)
--
--#endif /* _GLOBALTYPES_H */
-diff --git a/drivers/staging/tidspbridge/hw/MMURegAcM.h b/drivers/staging/tidspbridge/hw/MMURegAcM.h
-index 39db036..ab1a16d 100644
---- a/drivers/staging/tidspbridge/hw/MMURegAcM.h
-+++ b/drivers/staging/tidspbridge/hw/MMURegAcM.h
-@@ -17,7 +17,6 @@
- #ifndef _MMU_REG_ACM_H
- #define _MMU_REG_ACM_H
- 
--#include <GlobalTypes.h>
- #include <linux/io.h>
- #include <EasiGlobal.h>
- 
-diff --git a/drivers/staging/tidspbridge/hw/hw_defs.h b/drivers/staging/tidspbridge/hw/hw_defs.h
-index 98f6045..d5266d4 100644
---- a/drivers/staging/tidspbridge/hw/hw_defs.h
-+++ b/drivers/staging/tidspbridge/hw/hw_defs.h
-@@ -19,8 +19,6 @@
- #ifndef _HW_DEFS_H
- #define _HW_DEFS_H
- 
--#include <GlobalTypes.h>
--
- /* Page size */
- #define HW_PAGE_SIZE4KB   0x1000
- #define HW_PAGE_SIZE64KB  0x10000
-diff --git a/drivers/staging/tidspbridge/hw/hw_mmu.c b/drivers/staging/tidspbridge/hw/hw_mmu.c
-index 0dabb09..014f5d5 100644
---- a/drivers/staging/tidspbridge/hw/hw_mmu.c
-+++ b/drivers/staging/tidspbridge/hw/hw_mmu.c
-@@ -16,7 +16,6 @@
-  * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
+diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
+index 01d4a22..7640547 100644
+--- a/drivers/staging/tidspbridge/core/chnl_sm.c
++++ b/drivers/staging/tidspbridge/core/chnl_sm.c
+@@ -91,7 +91,7 @@ static int search_free_channel(struct chnl_mgr *chnl_mgr_obj,
   */
- 
--#include <GlobalTypes.h>
- #include <linux/io.h>
- #include "MMURegAcM.h"
- #include <hw_defs.h>
-@@ -250,10 +249,6 @@ hw_status hw_mmu_fault_addr_read(const void __iomem *base_address, u32 *addr)
+ int bridge_chnl_add_io_req(struct chnl_object *chnl_obj, void *host_buf,
+ 			       u32 byte_size, u32 buf_size,
+-			       OPTIONAL u32 dw_dsp_addr, u32 dw_arg)
++			       u32 dw_dsp_addr, u32 dw_arg)
  {
- 	hw_status status = 0;
+ 	int status = 0;
+ 	struct chnl_object *pchnl = (struct chnl_object *)chnl_obj;
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/cod.h b/drivers/staging/tidspbridge/include/dspbridge/cod.h
+index 6f01c62..f2d205c 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/cod.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/cod.h
+@@ -93,7 +93,7 @@ extern void cod_close(struct cod_libraryobj *lib);
+  */
+ extern int cod_create(OUT struct cod_manager **mgr,
+ 			     char *str_zl_file,
+-			     OPTIONAL const struct cod_attrs *attrs);
++			     const struct cod_attrs *attrs);
  
--	/*Check the input Parameters */
--	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
--			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
--
- 	/* read values from register */
- 	*addr = MMUMMU_FAULT_AD_READ_REGISTER32(base_address);
+ /*
+  *  ======== cod_delete ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h b/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
+index 9f489a5..3f56222 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dspchnl.h
+@@ -35,7 +35,7 @@ extern int bridge_chnl_open(OUT struct chnl_object **chnl,
+ 				   struct chnl_mgr *hchnl_mgr,
+ 				   s8 chnl_mode,
+ 				   u32 ch_id,
+-				   const OPTIONAL struct chnl_attr
++				   const struct chnl_attr
+ 				   *pattrs);
  
-@@ -265,10 +260,6 @@ hw_status hw_mmu_ttb_set(const void __iomem *base_address, u32 ttb_phys_addr)
- 	hw_status status = 0;
- 	u32 load_ttb;
+ extern int bridge_chnl_close(struct chnl_object *chnl_obj);
+@@ -43,7 +43,7 @@ extern int bridge_chnl_close(struct chnl_object *chnl_obj);
+ extern int bridge_chnl_add_io_req(struct chnl_object *chnl_obj,
+ 				      void *host_buf,
+ 				      u32 byte_size, u32 buf_size,
+-				      OPTIONAL u32 dw_dsp_addr, u32 dw_arg);
++				      u32 dw_dsp_addr, u32 dw_arg);
  
--	/*Check the input Parameters */
--	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
--			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
--
- 	load_ttb = ttb_phys_addr & ~0x7FUL;
- 	/* write values to register */
- 	MMUMMU_TTB_WRITE_REGISTER32(base_address, load_ttb);
-@@ -346,14 +337,6 @@ hw_status hw_mmu_tlb_add(const void __iomem *base_address,
- 	enum hw_mmu_page_size_t mmu_pg_size;
+ extern int bridge_chnl_get_ioc(struct chnl_object *chnl_obj,
+ 				   u32 timeout, OUT struct chnl_ioc *chan_ioc);
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
+index ea0ed0a..ea1124c 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/dspdefs.h
+@@ -412,7 +412,7 @@ typedef int(*fxn_chnl_open) (OUT struct chnl_object
+ 				    struct chnl_mgr *hchnl_mgr,
+ 				    s8 chnl_mode,
+ 				    u32 ch_id,
+-				    const OPTIONAL struct
++				    const struct
+ 				    chnl_attr * pattrs);
  
- 	/*Check the input Parameters */
--	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
--			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
--	CHECK_INPUT_RANGE_MIN0(page_sz, MMU_PAGE_MAX, RET_PARAM_OUT_OF_RANGE,
--			       RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
--	CHECK_INPUT_RANGE_MIN0(map_attrs->element_size, MMU_ELEMENTSIZE_MAX,
--			       RET_PARAM_OUT_OF_RANGE, RES_MMU_BASE +
--			       RES_INVALID_INPUT_PARAM);
--
- 	switch (page_sz) {
- 	case HW_PAGE_SIZE4KB:
- 		mmu_pg_size = HW_MMU_SMALL_PAGE;
-@@ -526,10 +509,6 @@ static hw_status mmu_flush_entry(const void __iomem *base_address)
- 	hw_status status = 0;
- 	u32 flush_entry_data = 0x1;
+ /*
+@@ -475,7 +475,7 @@ typedef int(*fxn_chnl_addioreq) (struct chnl_object
+ 					void *host_buf,
+ 					u32 byte_size,
+ 					u32 buf_size,
+-					OPTIONAL u32 dw_dsp_addr, u32 dw_arg);
++					u32 dw_dsp_addr, u32 dw_arg);
  
--	/*Check the input Parameters */
--	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
--			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
--
- 	/* write values to register */
- 	MMUMMU_FLUSH_ENTRY_WRITE_REGISTER32(base_address, flush_entry_data);
+ /*
+  *  ======== bridge_chnl_get_ioc ========
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/node.h b/drivers/staging/tidspbridge/include/dspbridge/node.h
+index 44c0da2..b226c87 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/node.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/node.h
+@@ -57,8 +57,8 @@
+  */
+ extern int node_allocate(struct proc_object *hprocessor,
+ 				const struct dsp_uuid *node_uuid,
+-				OPTIONAL const struct dsp_cbdata
+-				*pargs, OPTIONAL const struct dsp_nodeattrin
++				const struct dsp_cbdata
++				*pargs, const struct dsp_nodeattrin
+ 				*attr_in,
+ 				OUT struct node_object **ph_node,
+ 				struct process_context *pr_ctxt);
+@@ -86,7 +86,7 @@ extern int node_allocate(struct proc_object *hprocessor,
+  *  Ensures:
+  */
+ extern int node_alloc_msg_buf(struct node_object *hnode,
+-				     u32 usize, OPTIONAL struct dsp_bufferattr
++				     u32 usize, struct dsp_bufferattr
+ 				     *pattr, OUT u8 **pbuffer);
  
-@@ -546,10 +525,6 @@ static hw_status mmu_set_cam_entry(const void __iomem *base_address,
- 	hw_status status = 0;
- 	u32 mmu_cam_reg;
+ /*
+@@ -182,8 +182,8 @@ extern int node_connect(struct node_object *node1,
+ 			       u32 stream1,
+ 			       struct node_object *node2,
+ 			       u32 stream2,
+-			       OPTIONAL struct dsp_strmattr *pattrs,
+-			       OPTIONAL struct dsp_cbdata
++			       struct dsp_strmattr *pattrs,
++			       struct dsp_cbdata
+ 			       *conn_param);
  
--	/*Check the input Parameters */
--	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
--			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
--
- 	mmu_cam_reg = (virtual_addr_tag << 12);
- 	mmu_cam_reg = (mmu_cam_reg) | (page_sz) | (valid_bit << 2) |
- 	    (preserved_bit << 3);
-@@ -570,13 +545,6 @@ static hw_status mmu_set_ram_entry(const void __iomem *base_address,
- 	hw_status status = 0;
- 	u32 mmu_ram_reg;
+ /*
+@@ -335,7 +335,7 @@ extern void node_exit(void);
+  */
+ extern int node_free_msg_buf(struct node_object *hnode,
+ 				    u8 *pbuffer,
+-				    OPTIONAL struct dsp_bufferattr
++				    struct dsp_bufferattr
+ 				    *pattr);
  
--	/*Check the input Parameters */
--	CHECK_INPUT_PARAM(base_address, 0, RET_BAD_NULL_PARAM,
--			  RES_MMU_BASE + RES_INVALID_INPUT_PARAM);
--	CHECK_INPUT_RANGE_MIN0(element_size, MMU_ELEMENTSIZE_MAX,
--			       RET_PARAM_OUT_OF_RANGE, RES_MMU_BASE +
--			       RES_INVALID_INPUT_PARAM);
--
- 	mmu_ram_reg = (physical_addr & MMU_ADDR_MASK);
- 	mmu_ram_reg = (mmu_ram_reg) | ((endianism << 9) | (element_size << 7) |
- 				       (mixed_size << 6));
+ /*
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/proc.h b/drivers/staging/tidspbridge/include/dspbridge/proc.h
+index 01e597a..c872f63 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/proc.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/proc.h
+@@ -52,7 +52,7 @@ extern char *iva_img;
+  *      When attr_in is NULL, the default timeout value is 10 seconds.
+  */
+ extern int proc_attach(u32 processor_id,
+-			      OPTIONAL const struct dsp_processorattrin
++			      const struct dsp_processorattrin
+ 			      *attr_in, void **ph_processor,
+ 			      struct process_context *pr_ctxt);
+ 
+diff --git a/drivers/staging/tidspbridge/pmgr/cod.c b/drivers/staging/tidspbridge/pmgr/cod.c
+index a5c5a3a..d25f8ce 100644
+--- a/drivers/staging/tidspbridge/pmgr/cod.c
++++ b/drivers/staging/tidspbridge/pmgr/cod.c
+@@ -217,7 +217,7 @@ void cod_close(struct cod_libraryobj *lib)
+  *
+  */
+ int cod_create(OUT struct cod_manager **mgr, char *str_zl_file,
+-		      OPTIONAL const struct cod_attrs *attrs)
++		      const struct cod_attrs *attrs)
+ {
+ 	struct cod_manager *mgr_new;
+ 	struct dbll_attrs zl_attrs;
+diff --git a/drivers/staging/tidspbridge/rmgr/dbdcd.c b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+index 0281eb2..c89db0e 100644
+--- a/drivers/staging/tidspbridge/rmgr/dbdcd.c
++++ b/drivers/staging/tidspbridge/rmgr/dbdcd.c
+@@ -70,9 +70,9 @@ static char dsp_char2_gpp_char(char *word, s32 dsp_char_size);
+ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
+ 				   struct dsp_uuid *uuid_obj,
+ 				   OUT u16 *num_libs,
+-				   OPTIONAL OUT u16 *num_pers_libs,
+-				   OPTIONAL OUT struct dsp_uuid *dep_lib_uuids,
+-				   OPTIONAL OUT bool *prstnt_dep_libs,
++				   OUT u16 *num_pers_libs,
++				   OUT struct dsp_uuid *dep_lib_uuids,
++				   OUT bool *prstnt_dep_libs,
+ 				   enum nldr_phase phase);
+ 
+ /*
+@@ -1394,9 +1394,9 @@ static char dsp_char2_gpp_char(char *word, s32 dsp_char_size)
+ static int get_dep_lib_info(struct dcd_manager *hdcd_mgr,
+ 				   struct dsp_uuid *uuid_obj,
+ 				   OUT u16 *num_libs,
+-				   OPTIONAL OUT u16 *num_pers_libs,
+-				   OPTIONAL OUT struct dsp_uuid *dep_lib_uuids,
+-				   OPTIONAL OUT bool *prstnt_dep_libs,
++				   OUT u16 *num_pers_libs,
++				   OUT struct dsp_uuid *dep_lib_uuids,
++				   OUT bool *prstnt_dep_libs,
+ 				   enum nldr_phase phase)
+ {
+ 	struct dcd_manager *dcd_mgr_obj = hdcd_mgr;
+diff --git a/drivers/staging/tidspbridge/rmgr/nldr.c b/drivers/staging/tidspbridge/rmgr/nldr.c
+index 1215f63..e35ee7d 100644
+--- a/drivers/staging/tidspbridge/rmgr/nldr.c
++++ b/drivers/staging/tidspbridge/rmgr/nldr.c
+@@ -307,8 +307,8 @@ static int load_ovly(struct nldr_nodeobject *nldr_node_obj,
+ 			    enum nldr_phase phase);
+ static int remote_alloc(void **ref, u16 mem_sect, u32 size,
+ 			       u32 align, u32 *dsp_address,
+-			       OPTIONAL s32 segmnt_id,
+-			       OPTIONAL s32 req, bool reserve);
++			       s32 segmnt_id,
++			       s32 req, bool reserve);
+ static int remote_free(void **ref, u16 space, u32 dsp_address, u32 size,
+ 			      bool reserve);
+ 
+@@ -1630,7 +1630,7 @@ func_end:
+  */
+ static int remote_alloc(void **ref, u16 mem_sect, u32 size,
+ 			       u32 align, u32 *dsp_address,
+-			       OPTIONAL s32 segmnt_id, OPTIONAL s32 req,
++			       s32 segmnt_id, s32 req,
+ 			       bool reserve)
+ {
+ 	struct nldr_nodeobject *hnode = (struct nldr_nodeobject *)ref;
+diff --git a/drivers/staging/tidspbridge/rmgr/node.c b/drivers/staging/tidspbridge/rmgr/node.c
+index bb66959..069ee9e 100644
+--- a/drivers/staging/tidspbridge/rmgr/node.c
++++ b/drivers/staging/tidspbridge/rmgr/node.c
+@@ -292,8 +292,8 @@ enum node_state node_get_state(void *hnode)
+  */
+ int node_allocate(struct proc_object *hprocessor,
+ 			 const struct dsp_uuid *node_uuid,
+-			 OPTIONAL const struct dsp_cbdata *pargs,
+-			 OPTIONAL const struct dsp_nodeattrin *attr_in,
++			 const struct dsp_cbdata *pargs,
++			 const struct dsp_nodeattrin *attr_in,
+ 			 OUT struct node_object **ph_node,
+ 			 struct process_context *pr_ctxt)
+ {
+@@ -685,7 +685,7 @@ func_end:
+  *      Allocates buffer for zero copy messaging.
+  */
+ DBAPI node_alloc_msg_buf(struct node_object *hnode, u32 usize,
+-			 OPTIONAL OUT struct dsp_bufferattr *pattr,
++			 OUT struct dsp_bufferattr *pattr,
+ 			 OUT u8 **pbuffer)
+ {
+ 	struct node_object *pnode = (struct node_object *)hnode;
+@@ -833,8 +833,8 @@ func_end:
+  */
+ int node_connect(struct node_object *node1, u32 stream1,
+ 			struct node_object *node2,
+-			u32 stream2, OPTIONAL struct dsp_strmattr *pattrs,
+-			OPTIONAL struct dsp_cbdata *conn_param)
++			u32 stream2, struct dsp_strmattr *pattrs,
++			struct dsp_cbdata *conn_param)
+ {
+ 	struct node_mgr *hnode_mgr;
+ 	char *pstr_dev_name = NULL;
+@@ -1674,7 +1674,7 @@ void node_exit(void)
+  *      Frees the message buffer.
+  */
+ int node_free_msg_buf(struct node_object *hnode, u8 * pbuffer,
+-			     OPTIONAL struct dsp_bufferattr *pattr)
++			     struct dsp_bufferattr *pattr)
+ {
+ 	struct node_object *pnode = (struct node_object *)hnode;
+ 	int status = 0;
+diff --git a/drivers/staging/tidspbridge/rmgr/proc.c b/drivers/staging/tidspbridge/rmgr/proc.c
+index c1559ee..be137ad 100644
+--- a/drivers/staging/tidspbridge/rmgr/proc.c
++++ b/drivers/staging/tidspbridge/rmgr/proc.c
+@@ -272,7 +272,7 @@ static inline struct page *get_mapping_page(struct dmm_map_object *map_obj,
+  */
+ int
+ proc_attach(u32 processor_id,
+-	    OPTIONAL const struct dsp_processorattrin *attr_in,
++	    const struct dsp_processorattrin *attr_in,
+ 	    void **ph_processor, struct process_context *pr_ctxt)
+ {
+ 	int status = 0;
 -- 
 1.7.1
 
