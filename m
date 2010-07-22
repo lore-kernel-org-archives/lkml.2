@@ -1,118 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759022Ab0GVR2b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 13:28:31 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:51772 "EHLO imr1.ericy.com"
+	id S1759100Ab0GVRdJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 13:33:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45355 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754191Ab0GVR23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 13:28:29 -0400
-Date: Thu, 22 Jul 2010 10:27:26 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Fenghua Yu <fenghua.yu@intel.com>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 5/5] Package Level Thermal Control and Power Limit
- Notification: pkgtemp doc
-Message-ID: <20100722172726.GA4914@ericsson.com>
-References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com>
- <4C485DF1.5050407@linux.intel.com>
- <20100722162222.GA22450@linux-os.sc.intel.com>
+	id S1758828Ab0GVRdE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 13:33:04 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH 2/6] CIFS: Fix a malicious redirect problem in the DNS lookup
+	code
+To: smfrench@gmail.com, jlayton@redhat.com
+Cc: linux-fsdevel@vger.kernel.org, linux-cifs@vger.kernel.org,
+        linux-afs@lists.infradead.org, linux-kernel@vger.kernel.org,
+        David Howells <dhowells@redhat.com>, Steve French <smfrench@gmail.com>
+Date: Thu, 22 Jul 2010 18:32:56 +0100
+Message-ID: <20100722173256.1512.57802.stgit@warthog.procyon.org.uk>
+In-Reply-To: <20100722173251.1512.29858.stgit@warthog.procyon.org.uk>
+References: <20100722173251.1512.29858.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100722162222.GA22450@linux-os.sc.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 12:22:23PM -0400, Fenghua Yu wrote:
-> 
-> Document for package level thermal hwmon driver.
-> 
-> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-> Reviewed-by: Len Brown <len.brown@intel.com>
-> ---
-> 
->  pkgtemp |   36 ++++++++++++++++++++++++++++++++++++
->  1 files changed, 36 insertions(+)
-> 
-> diff --git a/Documentation/hwmon/pkgtemp b/Documentation/hwmon/pkgtemp
-> new file mode 100644
-> index 0000000..a60d286
-> --- /dev/null
-> +++ b/Documentation/hwmon/pkgtemp
-> @@ -0,0 +1,36 @@
-> +Kernel driver pkgtemp
-> +======================
-> +
-> +Supported chips:
-> +  * Intel family
-> +    Prefix: 'pkgtemp'
-> +    CPUID:
-> +    Datasheet: Intel 64 and IA-32 Architectures Software Developer's Manual
-> +               Volume 3A: System Programming Guide
-> +
-> +Author: Fenghua Yu
-> +
-> +Description
-> +-----------
-> +
-> +This driver permits reading package level temperature sensor embedded inside
-> +Intel CPU package. The sensors can be in core, uncore, memroy controller, or
+Fix the security problem in the CIFS filesystem DNS lookup code in which a
+malicious redirect could be installed by a random user by simply adding a
+result record into one of their keyrings with add_key() and then invoking a
+CIFS CFS lookup [CVE-2010-2524].
 
-memroy --> memory
+This is done by creating an internal keyring specifically for the caching of
+DNS lookups.  To enforce the use of this keyring, the module init routine
+creates a set of override credentials with the keyring installed as the thread
+keyring and instructs request_key() to only install lookup result keys in that
+keyring.
 
-> +other componenets in a package. The feature is first implemented in Intel Sandy
+The override is then applied around the call to request_key().
 
-componenets --> components
+This has some additional benefits when a kernel service uses this module to
+request a key:
 
-> +Bridge platform.
-> +
-Just for clarification - you mention a number of sensors, but unless
-I am missing something only the package sensor is implemented. Is that correct ?
+ (1) The result keys are owned by root, not the user that caused the lookup.
 
-> +Temperature is measured in degrees Celsius and measurement resolution is
-> +1 degree C. Valid temperatures are from 0 to TjMax degrees C, because the actual
-> +value of temperature register is in fact a delta from TjMax.
-> +
->From the code, it seems that negative values can be reported. Is it guaranteed 
-by the chip that (TjMax - MSR_IA32_TEMPERATURE_TARGET) >= 0 ? Otherwise, the
-minimum temperature would be (TjMax - 127).
+ (2) The result keys don't pop up in the user's keyrings.
 
-> +Temperature known as TjMax is the maximum junction temperature of package.
-> +Intel defines this temperature as 125C. At this temperature, protection
+ (3) The result keys don't come out of the quota of the user that caused the
+     lookup.
 
-Your driver bails out at TjMax >= 120, so there is some inconsistency.
-Also, it seems that this is not a constant, since you are reading
-MSR_IA32_TEMPERATURE_TARGET to get the value.
+The keyring can be viewed as root by doing cat /proc/keys:
 
-Since the CPUs supporting the package sensor presumably also all support
-reading TjMax, maybe you can reword the above text to reflect this.
+2a0ca6c3 I-----     1 perm 1f030000     0     0 keyring   .dns_resolver: 1/4
 
-> +mechanism will perform actions to forcibly cool down the processor. Alarm
-> +may be raised, if the temperature grows enough (more than TjMax) to trigger
-> +the Out-Of-Spec bit. Following table summarizes the exported sysfs files:
-> +
-> +temp1_input	 - Package temperature (in millidegrees Celsius).
-> +temp1_crit	 - Maximum junction temperature (in millidegrees Celsius).
-> +temp1_crit_alarm - Set when Out-of-spec bit is set, never clears.
-> +		   Correct CPU operation is no longer guaranteed.
-> +temp1_label	 - Contains string "Pysical package id X", where X is physical
+It can then be listed with 'keyctl list' by root.
 
-Pysical --> Physical.
-I would suggest to drop the "id" for consistency. Core sensor names don't
-include "id" either.
+	# keyctl list 0x2a0ca6c3
+	1 key in keyring:
+	726766307: --alswrv     0     0 dns_resolver: foo.bar.com
 
-I am not sure if "physical" should be included in the first place.
-Also, above description suggests that future CPUs might add more sensors.
-If so, the name should probably reflect the location of the current sensor,
-ie be something like "Package core X" or "Core package X" or "Package X (core)".
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-and-Tested-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: Steve French <smfrench@gmail.com>
+---
 
-> +		   package id.
+ fs/cifs/cifsfs.c      |    6 ++--
+ fs/cifs/dns_resolve.c |   69 +++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/cifs/dns_resolve.h |    4 +--
+ 3 files changed, 74 insertions(+), 5 deletions(-)
+
+diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
+index c78d219..8a2cf12 100644
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -935,7 +935,7 @@ init_cifs(void)
+ 		goto out_unregister_filesystem;
+ #endif
+ #ifdef CONFIG_CIFS_DFS_UPCALL
+-	rc = register_key_type(&key_type_dns_resolver);
++	rc = cifs_init_dns_resolver();
+ 	if (rc)
+ 		goto out_unregister_key_type;
+ #endif
+@@ -947,7 +947,7 @@ init_cifs(void)
+ 
+  out_unregister_resolver_key:
+ #ifdef CONFIG_CIFS_DFS_UPCALL
+-	unregister_key_type(&key_type_dns_resolver);
++	cifs_exit_dns_resolver();
+  out_unregister_key_type:
+ #endif
+ #ifdef CONFIG_CIFS_UPCALL
+@@ -976,7 +976,7 @@ exit_cifs(void)
+ 	cifs_fscache_unregister();
+ #ifdef CONFIG_CIFS_DFS_UPCALL
+ 	cifs_dfs_release_automount_timer();
+-	unregister_key_type(&key_type_dns_resolver);
++	cifs_exit_dns_resolver();
+ #endif
+ #ifdef CONFIG_CIFS_UPCALL
+ 	unregister_key_type(&cifs_spnego_key_type);
+diff --git a/fs/cifs/dns_resolve.c b/fs/cifs/dns_resolve.c
+index 22afe38..ff6fa2f 100644
+--- a/fs/cifs/dns_resolve.c
++++ b/fs/cifs/dns_resolve.c
+@@ -24,12 +24,16 @@
+  */
+ 
+ #include <linux/slab.h>
++#include <linux/keyctl.h>
++#include <linux/key-type.h>
+ #include <keys/user-type.h>
+ #include "dns_resolve.h"
+ #include "cifsglob.h"
+ #include "cifsproto.h"
+ #include "cifs_debug.h"
+ 
++static const struct cred *dns_resolver_cache;
++
+ /* Checks if supplied name is IP address
+  * returns:
+  * 		1 - name is IP
+@@ -94,6 +98,7 @@ struct key_type key_type_dns_resolver = {
+ int
+ dns_resolve_server_name_to_ip(const char *unc, char **ip_addr)
+ {
++	const struct cred *saved_cred;
+ 	int rc = -EAGAIN;
+ 	struct key *rkey = ERR_PTR(-EAGAIN);
+ 	char *name;
+@@ -133,8 +138,15 @@ dns_resolve_server_name_to_ip(const char *unc, char **ip_addr)
+ 		goto skip_upcall;
+ 	}
+ 
++	saved_cred = override_creds(dns_resolver_cache);
+ 	rkey = request_key(&key_type_dns_resolver, name, "");
++	revert_creds(saved_cred);
+ 	if (!IS_ERR(rkey)) {
++		if (!(rkey->perm & KEY_USR_VIEW)) {
++			down_read(&rkey->sem);
++			rkey->perm |= KEY_USR_VIEW;
++			up_read(&rkey->sem);
++		}
+ 		len = rkey->type_data.x[0];
+ 		data = rkey->payload.data;
+ 	} else {
+@@ -165,4 +177,61 @@ out:
+ 	return rc;
+ }
+ 
++int __init cifs_init_dns_resolver(void)
++{
++	struct cred *cred;
++	struct key *keyring;
++	int ret;
++
++	printk(KERN_NOTICE "Registering the %s key type\n",
++	       key_type_dns_resolver.name);
++
++	/* create an override credential set with a special thread keyring in
++	 * which DNS requests are cached
++	 *
++	 * this is used to prevent malicious redirections from being installed
++	 * with add_key().
++	 */
++	cred = prepare_kernel_cred(NULL);
++	if (!cred)
++		return -ENOMEM;
++
++	keyring = key_alloc(&key_type_keyring, ".dns_resolver", 0, 0, cred,
++			    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
++			    KEY_USR_VIEW | KEY_USR_READ,
++			    KEY_ALLOC_NOT_IN_QUOTA);
++	if (IS_ERR(keyring)) {
++		ret = PTR_ERR(keyring);
++		goto failed_put_cred;
++	}
++
++	ret = key_instantiate_and_link(keyring, NULL, 0, NULL, NULL);
++	if (ret < 0)
++		goto failed_put_key;
++
++	ret = register_key_type(&key_type_dns_resolver);
++	if (ret < 0)
++		goto failed_put_key;
++
++	/* instruct request_key() to use this special keyring as a cache for
++	 * the results it looks up */
++	cred->thread_keyring = keyring;
++	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
++	dns_resolver_cache = cred;
++	return 0;
++
++failed_put_key:
++	key_put(keyring);
++failed_put_cred:
++	put_cred(cred);
++	return ret;
++}
+ 
++void __exit cifs_exit_dns_resolver(void)
++{
++	key_revoke(dns_resolver_cache->thread_keyring);
++	unregister_key_type(&key_type_dns_resolver);
++	put_cred(dns_resolver_cache);
++	printk(KERN_NOTICE "Unregistered %s key type\n",
++	       key_type_dns_resolver.name);
++}
+diff --git a/fs/cifs/dns_resolve.h b/fs/cifs/dns_resolve.h
+index 966e928..26b9eaa 100644
+--- a/fs/cifs/dns_resolve.h
++++ b/fs/cifs/dns_resolve.h
+@@ -24,8 +24,8 @@
+ #define _DNS_RESOLVE_H
+ 
+ #ifdef __KERNEL__
+-#include <linux/key-type.h>
+-extern struct key_type key_type_dns_resolver;
++extern int __init cifs_init_dns_resolver(void);
++extern void __exit cifs_exit_dns_resolver(void);
+ extern int dns_resolve_server_name_to_ip(const char *unc, char **ip_addr);
+ #endif /* KERNEL */
+ 
 
