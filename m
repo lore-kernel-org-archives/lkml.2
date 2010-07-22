@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757603Ab0GVVRv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:17:51 -0400
-Received: from hera.kernel.org ([140.211.167.34]:34813 "EHLO hera.kernel.org"
+	id S1757916Ab0GVVUR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:20:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:48785 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752244Ab0GVVRt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:17:49 -0400
-Message-ID: <4C48B570.6000600@kernel.org>
-Date: Thu, 22 Jul 2010 23:17:36 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1751507Ab0GVVUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 17:20:12 -0400
+Date: Thu, 22 Jul 2010 14:19:58 -0700
+From: Greg KH <gregkh@suse.de>
+To: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+Message-ID: <20100722211958.GB1297@suse.de>
+References: <20100722182638.GA12712@kroah.com>
+ <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
+ <20100722183614.GA5443@suse.de>
+ <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
+ <20100722185301.GA528@suse.de>
+ <AANLkTik07hZot_x0p7xJuY8s4f8pGRd2Mn1+jYfHH2iq@mail.gmail.com>
+ <20100722191200.GA5609@suse.de>
+ <AANLkTi=8TTeGG3OTbP4zzNAe_rDaNNL8D0Yxp7DixohK@mail.gmail.com>
 MIME-Version: 1.0
-To: Dave Airlie <airlied@redhat.com>
-CC: sfrench@samba.org, linux-kernel@vger.kernel.org,
-        dri-devel@lists.freedesktop.org, dhowells@redhat.com, anton@samba.org,
-        swhiteho@redhat.com
-Subject: Re: [PATCH 6/7] drm: use workqueue instead of slow-work
-References: <1279658102-20069-1-git-send-email-tj@kernel.org>	 <1279658102-20069-7-git-send-email-tj@kernel.org>	 <4C48ADEA.8060009@kernel.org> <1279833098.9197.1.camel@t60prh>
-In-Reply-To: <1279833098.9197.1.camel@t60prh>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 22 Jul 2010 21:17:38 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTi=8TTeGG3OTbP4zzNAe_rDaNNL8D0Yxp7DixohK@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2010 11:11 PM, Dave Airlie wrote:
-> On Thu, 2010-07-22 at 22:45 +0200, Tejun Heo wrote:
->> On 07/20/2010 10:35 PM, Tejun Heo wrote:
->>> Workqueue can now handle high concurrency.  Convert drm_crtc_helper to
->>> use system_nrt_wq instead of slow-work.  The conversion is mostly
->>> straight forward.  One difference is that drm_helper_hpd_irq_event()
->>> no longer blocks and can be called from any context.
->>>
->>> Signed-off-by: Tejun Heo <tj@kernel.org>
->>> Cc: David Airlie <airlied@linux.ie>
->>
->> David, can you please review the change?
+On Thu, Jul 22, 2010 at 12:18:13PM -0700, Paul Menage wrote:
+> On Thu, Jul 22, 2010 at 12:12 PM, Greg KH <gregkh@suse.de> wrote:
+> > I don't know if we want to encourage that as a mount point, do you?
 > 
-> Yes seems fine to me, in as much as I understand the difference between
-> slow-work and workqueue, but if you say one replaces the other correctly
-> now I'm happy for you to carry this patch.
+> No.
+
+Heh.
+
+> > What are the different names you are giving to your mount points now for
+> > cgroupfs so I can get an idea of how it is used currently?
+> >
 > 
-> Acked-by: Dave Airlie <airlied@linux.ie>
+> We don't particularly care about the names of the individual
+> sub-mounts, since it's all programatically controlled. We just specify
+> which subsystems we want grouped together (and a catch-all remainder
+> hierarchy) and the system picks the name of one of the subsystems in
+> the hierarchy to act as a unique mountpoint name (since each subsystem
+> can only be in one hierarchy). So e.g. /dev/cgroup/cpuset, or
+> /dev/cgroup/io
 
-Thank you.  Will push out to #for-next.
+Thanks for the info.  But in the end, I really don't want to see a
+/cgroup/ mountpoint added to people's systems if at all possible.
 
--- 
-tejun
+Any suggestions from your side?
+
+thanks,
+
+greg k-h
