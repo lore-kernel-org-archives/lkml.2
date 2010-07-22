@@ -1,67 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab0GVTLl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 15:11:41 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42004 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755837Ab0GVTLk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 15:11:40 -0400
-Date: Thu, 22 Jul 2010 16:11:32 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org
-Subject: Re: [PATCH v2] Re: perf annotate segfaults when source code has goto
- label that looks like hex number
-Message-ID: <20100722191132.GG17631@ghostprotocols.net>
-References: <20100722072044.GD27177@redhat.com>
- <20100722143345.GC17631@ghostprotocols.net>
- <20100722163851.GA10307@redhat.com>
- <20100722164711.GD17631@ghostprotocols.net>
- <20100722165222.GE17631@ghostprotocols.net>
- <20100722170541.GF17631@ghostprotocols.net>
- <20100722180538.GB10307@redhat.com>
+	id S1756795Ab0GVTMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 15:12:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34179 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751270Ab0GVTMa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 15:12:30 -0400
+Date: Thu, 22 Jul 2010 12:12:00 -0700
+From: Greg KH <gregkh@suse.de>
+To: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+Message-ID: <20100722191200.GA5609@suse.de>
+References: <20100722182638.GA12712@kroah.com>
+ <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
+ <20100722183614.GA5443@suse.de>
+ <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
+ <20100722185301.GA528@suse.de>
+ <AANLkTik07hZot_x0p7xJuY8s4f8pGRd2Mn1+jYfHH2iq@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100722180538.GB10307@redhat.com>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <AANLkTik07hZot_x0p7xJuY8s4f8pGRd2Mn1+jYfHH2iq@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 22, 2010 at 09:05:38PM +0300, Gleb Natapov escreveu:
-> On Thu, Jul 22, 2010 at 02:05:42PM -0300, Arnaldo Carvalho de Melo wrote:
-> > Em Thu, Jul 22, 2010 at 01:52:22PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > Em Thu, Jul 22, 2010 at 01:47:11PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > > It could be a comment of play code, like:
+On Thu, Jul 22, 2010 at 12:07:43PM -0700, Paul Menage wrote:
+> On Thu, Jul 22, 2010 at 11:53 AM, Greg KH <gregkh@suse.de> wrote:
+> >
+> > If you are using /dev/cgroup/ that's nice, but I don't think that people
+> > are expecting a whole filesystem under a /dev/ subdirectory.
+> 
+> Sure - as I said that's just for historical reasons from when we
+> migrated from cpusets which were traditionally mounted at /dev/cpuset,
+> so it involved less change. There's no particular reason to mount it
+> there (although having said that, what about /dev/pts and /dev/shm?).
 
-> > >       while(1) {
-> > >               if (++i == 10000000)
-> > >                       goto add;
-> > >       }
-> > > add:	return 0;
+Yeah, /dev/pts and /dev/shm are long-time users of the /dev filesystem.
+I don't know if we want to encourage that as a mount point, do you?
 
-> > What about this one?
+What are the different names you are giving to your mount points now for
+cgroupfs so I can get an idea of how it is used currently?
 
-> > diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-> > @@ -976,13 +976,15 @@ static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
-> >  	if (line_ip != -1) {
-> >  		u64 start = map__rip_2objdump(self->ms.map, sym->start);
-> >  		offset = line_ip - start;
-> > +		if (offset < 0 || (u64)line_ip > sym->end)
-> > +			offset = -1;
+thanks,
 
-> This part is good idea anyway. Even if label will be interpreted as ip
-> perf at least will not crash. It may miss-report something if check will
-> accidentally succeed though.
-
-Yeah, we can possibly find a label which is a valid hex number and that
-falls inside the address range, but with what we have in objdump this
-seems to be the best we can have, I'll commit this.
-
-- Arnaldo
+greg k-h
