@@ -1,122 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759845Ab0GVVWL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:22:11 -0400
-Received: from vms173013pub.verizon.net ([206.46.173.13]:63954 "EHLO
-	vms173013pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751507Ab0GVVWI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:22:08 -0400
-Date: Thu, 22 Jul 2010 17:21:42 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Yu, Luming" <luming.yu@intel.com>,
-        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "venki@google.com" <venki@google.com>
-Subject: [PATCH] ACPI: skip checking BM_STS if the BIOS doesn't ask for it
-In-reply-to: <alpine.LFD.2.00.1007221153120.3164@localhost.localdomain>
-Message-id: <alpine.LFD.2.00.1007221720270.7970@localhost.localdomain>
-References: <20100427124703.GA16706@jgarrett.org>
- <alpine.LFD.2.00.1004301218280.2489@sony>
- <20100430174447.GA14889@srcf.ucam.org>
- <d7f2dd35a4361e5156079278543769a0@localhost>
- <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain>
- <CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com>
- <20100525124325.GC7876@srcf.ucam.org>
- <alpine.LFD.2.00.1005251114420.4114@localhost.localdomain>
- <20100525185507.GA15997@srcf.ucam.org>
- <alpine.LFD.2.00.1007211729550.409@localhost.localdomain>
- <20100722074750.GA22520@one.firstfloor.org>
- <alpine.LFD.2.00.1007221153120.3164@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1759915Ab0GVVWs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:22:48 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60693 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754134Ab0GVVWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 17:22:44 -0400
+Message-ID: <4C48B664.9000109@kernel.org>
+Date: Thu, 22 Jul 2010 23:21:40 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
+        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
+        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
+        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
+        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with per-vhost
+ kthread
+References: <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C961.9050606@kernel.org> <20100531152221.GB2987@redhat.com> <4C03D983.9010905@kernel.org> <20100531160020.GC3067@redhat.com> <4C04D41B.4050704@kernel.org> <4C06A580.9060300@kernel.org> <20100722155840.GA1743@redhat.com>
+In-Reply-To: <20100722155840.GA1743@redhat.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 22 Jul 2010 21:21:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Len Brown <len.brown@intel.com>
+Hello,
 
-It turns out that there is a bit in the _CST for Intel FFH C3
-that tells the OS if we should be checking BM_STS or not.
+On 07/22/2010 05:58 PM, Michael S. Tsirkin wrote:
+> All the tricky barrier pairing made me uncomfortable.  So I came up with
+> this on top (untested): if we do all operations under the spinlock, we
+> can get by without barriers and atomics.  And since we need the lock for
+> list operations anyway, this should have no paerformance impact.
+> 
+> What do you think?
 
-Linux has been unconditionally checking BM_STS.
-If the chip-set is configured to enable BM_STS,
-it can retard or completely prevent entry into
-deep C-states -- as illustrated by turbostat:
+I've created kthread_worker in wq#for-next tree and already converted
+ivtv to use it.  Once this lands in mainline, I think converting vhost
+to use it would be better choice.  kthread worker code uses basically
+the same logic used in the vhost_workqueue code but is better
+organized and documented.  So, I think it would be better to stick
+with the original implementation, as otherwise we're likely to just
+decrease test coverage without much gain.
 
-http://userweb.kernel.org/~lenb/acpi/utils/pmtools/turbostat/
+  http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=b56c0d8937e665a27d90517ee7a746d0aa05af46;hp=53c5f5ba42c194cb13dd3083ed425f2c5b1ec439
 
-ref: Intel Processor Vendor-Specific ACPI Interface Specification
-table 4 "_CST FFH GAS Field Encoding"
-Bit 1: Set to 1 if OSPM should use Bus Master avoidance for this C-state
+> @@ -151,37 +161,37 @@ static void vhost_vq_reset(struct vhost_dev *dev,
+>  static int vhost_worker(void *data)
+>  {
+>  	struct vhost_dev *dev = data;
+> -	struct vhost_work *work;
+> +	struct vhost_work *work = NULL;
+>  
+> -repeat:
+> -	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+> +	for (;;) {
+> +		set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
+>  
+> -	if (kthread_should_stop()) {
+> -		__set_current_state(TASK_RUNNING);
+> -		return 0;
+> -	}
+> +		if (kthread_should_stop()) {
+> +			__set_current_state(TASK_RUNNING);
+> +			return 0;
+> +		}
+>  
+> -	work = NULL;
+> -	spin_lock_irq(&dev->work_lock);
+> -	if (!list_empty(&dev->work_list)) {
+> -		work = list_first_entry(&dev->work_list,
+> -					struct vhost_work, node);
+> -		list_del_init(&work->node);
+> -	}
+> -	spin_unlock_irq(&dev->work_lock);
+> +		spin_lock_irq(&dev->work_lock);
+> +		if (work) {
+> +			work->done_seq = work->queue_seq;
+> +			if (work->flushing)
+> +				wake_up_all(&work->done);
 
-https://bugzilla.kernel.org/show_bug.cgi?id=15886
+I don't think doing this before executing the function is correct, so
+you'll have to release the lock, execute the function, regrab the lock
+and then do the flush processing.
 
-Signed-off-by: Len Brown <len.brown@intel.com>
----
- arch/x86/kernel/acpi/cstate.c |    9 +++++++++
- drivers/acpi/processor_idle.c |    2 +-
- include/acpi/processor.h      |    3 ++-
- 3 files changed, 12 insertions(+), 2 deletions(-)
+Thanks.
 
-diff --git a/arch/x86/kernel/acpi/cstate.c b/arch/x86/kernel/acpi/cstate.c
-index 2e837f5..fb7a5f0 100644
---- a/arch/x86/kernel/acpi/cstate.c
-+++ b/arch/x86/kernel/acpi/cstate.c
-@@ -145,6 +145,15 @@ int acpi_processor_ffh_cstate_probe(unsigned int cpu,
- 		percpu_entry->states[cx->index].eax = cx->address;
- 		percpu_entry->states[cx->index].ecx = MWAIT_ECX_INTERRUPT_BREAK;
- 	}
-+
-+	/*
-+	 * For _CST FFH on Intel, if GAS.access_size bit 1 is cleared,
-+	 * then we should skip checking BM_STS for this C-state.
-+	 * ref: "Intel Processor Vendor-Specific ACPI Interface Specification"
-+	 */
-+	if ((c->x86_vendor == X86_VENDOR_INTEL) && !(reg->access_size & 0x2))
-+		cx->bm_sts_skip = 1;
-+
- 	return retval;
- }
- EXPORT_SYMBOL_GPL(acpi_processor_ffh_cstate_probe);
-diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
-index b1b3856..b351342 100644
---- a/drivers/acpi/processor_idle.c
-+++ b/drivers/acpi/processor_idle.c
-@@ -947,7 +947,7 @@ static int acpi_idle_enter_bm(struct cpuidle_device *dev,
- 	if (acpi_idle_suspend)
- 		return(acpi_idle_enter_c1(dev, state));
- 
--	if (acpi_idle_bm_check()) {
-+	if (!cx->bm_sts_skip && acpi_idle_bm_check()) {
- 		if (dev->safe_state) {
- 			dev->last_state = dev->safe_state;
- 			return dev->safe_state->enter(dev, dev->safe_state);
-diff --git a/include/acpi/processor.h b/include/acpi/processor.h
-index da565a4..a68ca8a 100644
---- a/include/acpi/processor.h
-+++ b/include/acpi/processor.h
-@@ -48,7 +48,7 @@ struct acpi_power_register {
- 	u8 space_id;
- 	u8 bit_width;
- 	u8 bit_offset;
--	u8 reserved;
-+	u8 access_size;
- 	u64 address;
- } __attribute__ ((packed));
- 
-@@ -63,6 +63,7 @@ struct acpi_processor_cx {
- 	u32 power;
- 	u32 usage;
- 	u64 time;
-+	u8 bm_sts_skip;
- 	char desc[ACPI_CX_DESC_LEN];
- };
- 
 -- 
-1.7.2
-
+tejun
