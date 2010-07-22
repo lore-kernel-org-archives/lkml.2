@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752239Ab0GVFbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 01:31:23 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:40427 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab0GVFbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 01:31:18 -0400
-Date: Thu, 22 Jul 2010 11:01:13 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
-Subject: Re: [PATCH 1/7] memcg: sc.nr_to_reclaim should be initialized
-Message-ID: <20100722053113.GL14369@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100716191006.7369.A69D9226@jp.fujitsu.com>
- <20100716191256.736C.A69D9226@jp.fujitsu.com>
+	id S1753603Ab0GVFeV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 01:34:21 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:39129 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751078Ab0GVFeS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 01:34:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type:content-transfer-encoding;
+        b=oPTZs/7ZRiHCR+ohvEFknQyaZQlJx5riUhE7UHQt6yHGG9IB79kzazmrYDv6UQA9g+
+         HQUcxXVwijJraeXDFNW6Z5rZzguTkoYK+OfTSaJCETQswl2YDorHTd7Hc9y2rdO7PFnb
+         UeBYD3TxajJNB9aNqVyaNlJaCHN0PD7DSmTJ8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100716191256.736C.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+In-Reply-To: <4C431211.6030706@gmail.com>
+References: <4C431211.6030706@gmail.com>
+Date: Thu, 22 Jul 2010 13:34:17 +0800
+Message-ID: <AANLkTil5hsZYCWaMekzPkLfEC0_wxmBWfT3jj0IC5j6f@mail.gmail.com>
+Subject: Re: [PATCH] keypad/nuc900: change keypad driver name from 
+	'nuc900-keypad' to 'nuc900-kpi'
+From: Wan ZongShun <mcuos.com@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+        LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2010-07-16 19:13:31]:
+Dmitry,
 
-> Currently, mem_cgroup_shrink_node_zone() initialize sc.nr_to_reclaim as 0.
-> It mean shrink_zone() only scan 32 pages and immediately return even if
-> it doesn't reclaim any pages.
-> 
-> This patch fixes it.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Can it be applied?
+
+Thanks!
+
+> Hi Dmitry,
+>
+> I ever changed the keypad platform device name from 'nuc900-keypad' to
+> 'nuc900-kpi', but I forget to modify the related keypad driver name,so
+> the keypad driver does not work,I have to send the patch to fix this issue.
+>
+> Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
 > ---
->  mm/vmscan.c |    1 +
->  1 files changed, 1 insertions(+), 0 deletions(-)
-> 
-> diff --git a/mm/vmscan.c b/mm/vmscan.c
-> index 1691ad0..bd1d035 100644
-> --- a/mm/vmscan.c
-> +++ b/mm/vmscan.c
-> @@ -1932,6 +1932,7 @@ unsigned long mem_cgroup_shrink_node_zone(struct mem_cgroup *mem,
->  						struct zone *zone, int nid)
->  {
->  	struct scan_control sc = {
-> +		.nr_to_reclaim = SWAP_CLUSTER_MAX,
->  		.may_writepage = !laptop_mode,
->  		.may_unmap = 1,
->  		.may_swap = !noswap,
+>  drivers/input/keyboard/w90p910_keypad.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/input/keyboard/w90p910_keypad.c b/drivers/input/keyboard/w90p910_keypad.c
+> index 4ef764c..ee2bf6b 100644
+> --- a/drivers/input/keyboard/w90p910_keypad.c
+> +++ b/drivers/input/keyboard/w90p910_keypad.c
+> @@ -258,7 +258,7 @@ static struct platform_driver w90p910_keypad_driver = {
+>        .probe          = w90p910_keypad_probe,
+>        .remove         = __devexit_p(w90p910_keypad_remove),
+>        .driver         = {
+> -               .name   = "nuc900-keypad",
+> +               .name   = "nuc900-kpi",
+>                .owner  = THIS_MODULE,
+>        },
+>  };
+> --
+> 1.6.3.3
+>
 
-Could you please do some additional testing on
-
-1. How far does this push pages (in terms of when limit is hit)?
-2. Did you hit a problem with the current setting or is it a review
-fix?
 
 
 -- 
-	Three Cheers,
-	Balbir
+*linux-arm-kernel mailing list
+mail addr:linux-arm-kernel@lists.infradead.org
+you can subscribe by:
+http://lists.infradead.org/mailman/listinfo/linux-arm-kernel
+
+* linux-arm-NUC900 mailing list
+mail addr:NUC900@googlegroups.com
+main web: https://groups.google.com/group/NUC900
+you can subscribe it by sending me mail:
+mcuos.com@gmail.com
