@@ -1,42 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753761Ab0GVAPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 20:15:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60472 "EHLO mx1.redhat.com"
+	id S1754037Ab0GVASE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 20:18:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:60157 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752042Ab0GVAPG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 20:15:06 -0400
-Date: Thu, 22 Jul 2010 10:13:55 +1000
-From: Dave Chinner <dchinner@redhat.com>
-To: Marc Kleine-Budde <mkl@pengutronix.de>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Trond Myklebust <Trond.Myklebust@netapp.com>,
-        "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [PATCH] SUNRPC auth: add context argument to shrinker callback
-Message-ID: <20100722001355.GB31881@devil>
-References: <1279698095-17287-1-git-send-email-mkl@pengutronix.de>
+	id S1751441Ab0GVAR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 20:17:59 -0400
+Date: Wed, 21 Jul 2010 17:07:37 -0700
+From: Greg KH <gregkh@suse.de>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Michal Simek <monstr@monstr.eu>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        linux-kernel@vger.kernel.org, linuxppc-dev@ozlabs.org,
+        microblaze-uclinux@itee.uq.edu.au, sparclinux@vger.kernel.org,
+        David Miller <davem@davemloft.net>
+Subject: Re: [PATCH 1/5] drivercore/of: Add OF style matching to platform
+ bus
+Message-ID: <20100722000737.GA14249@suse.de>
+References: <20100721232817.7782.23410.stgit@angua>
+ <20100721233954.7782.81154.stgit@angua>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279698095-17287-1-git-send-email-mkl@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100721233954.7782.81154.stgit@angua>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 09:41:35AM +0200, Marc Kleine-Budde wrote:
-> Hello,
+On Wed, Jul 21, 2010 at 05:39:54PM -0600, Grant Likely wrote:
+> As part of the merge between platform bus and of_platform bus, add the
+> ability to do of-style matching to the platform bus.
 > 
-> I found this regression in the current mainline tree.
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+> CC: Greg Kroah-Hartman <gregkh@suse.de>
+> CC: Michal Simek <monstr@monstr.eu>
+> CC: Grant Likely <grant.likely@secretlab.ca>
+> CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+> CC: Stephen Rothwell <sfr@canb.auug.org.au>
+> CC: linux-kernel@vger.kernel.org
+> CC: microblaze-uclinux@itee.uq.edu.au
+> CC: linuxppc-dev@ozlabs.org
+> CC: devicetree-discuss@lists.ozlabs.org
+> ---
+>  drivers/base/platform.c |    5 +++++
+>  1 files changed, 5 insertions(+), 0 deletions(-)
+> 
+> diff --git a/drivers/base/platform.c b/drivers/base/platform.c
+> index 4d99c8b..6a9b3dd 100644
+> --- a/drivers/base/platform.c
+> +++ b/drivers/base/platform.c
+> @@ -12,6 +12,7 @@
+>  
+>  #include <linux/string.h>
+>  #include <linux/platform_device.h>
+> +#include <linux/of_device.h>
+>  #include <linux/module.h>
+>  #include <linux/init.h>
+>  #include <linux/dma-mapping.h>
+> @@ -673,6 +674,10 @@ static int platform_match(struct device *dev, struct device_driver *drv)
+>  	struct platform_device *pdev = to_platform_device(dev);
+>  	struct platform_driver *pdrv = to_platform_driver(drv);
+>  
+> +	/* Attempt an OF style match first */
+> +	if (of_driver_match_device(dev, drv))
+> +		return 1;
+> +
+>  	/* match against the id table first */
 
-The fix is already in Linus' current git tree (commit
-567c7b0edec0200c5c6613f07c3d3b4034fdc836 ("mm: add context argument to
-shrinker callback to remaining shrinkers"). Thanks for catching
-it, anyway.
+I think you need to also change this comment, you can't have two
+"firsts" :)
 
-Cheers,
+If you do that, feel free to add an:
+	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+to the patch.
 
-Dave.
--- 
-Dave Chinner
-dchinner@redhat.com
+thanks,
+
+greg k-h
