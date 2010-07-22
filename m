@@ -1,68 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759402Ab0GVNyM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 09:54:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44307 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab0GVNyI (ORCPT
+	id S1759518Ab0GVN4x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 09:56:53 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:20435 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759439Ab0GVN4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 09:54:08 -0400
-X-Authority-Analysis: v=1.1 cv=NvN00vXXLC/2Fo3NdLZJXFUM7u9qr/FOWvgMjmHRJhk= c=1 sm=0 a=yRs0Bdu_tHsA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=kNsVYhaQj4BY5jO9OqAA:9 a=vuuV3eiUBbbAYRsEzbAOWqQMKx0A:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [RFC][PATCH v1 06/15] perf: export tracepoint events via
- sysfs: iwlwifi and iwlwifi_io
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Johannes Berg <johannes@sipsolutions.net>, Lin Ming <ming.m.lin@intel.com>,
-        Reinette Chatre <reinette.chatre@intel.com>,
-        Robert Richter <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20100722134836.GA6881@elte.hu>
-References: <1279797230.20942.87.camel@minggr.sh.intel.com>
-	 <1279797640.12439.11.camel@jlt3.sipsolutions.net>
-	 <1279805440.3319.2.camel@gandalf.stny.rr.com>
-	 <20100722134836.GA6881@elte.hu>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 22 Jul 2010 09:54:04 -0400
-Message-ID: <1279806844.3319.3.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Jul 2010 09:56:48 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv3 04/14] writeback: do not lose wake-ups in the forker thread - 2
+Date: Thu, 22 Jul 2010 16:56:18 +0300
+Message-Id: <1279806988-14100-5-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1279806988-14100-1-git-send-email-dedekind1@gmail.com>
+References: <1279806988-14100-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 22 Jul 2010 13:56:35.0238 (UTC) FILETIME=[B290FC60:01CB29A5]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 15:48 +0200, Ingo Molnar wrote:
-> * Steven Rostedt <rostedt@goodmis.org> wrote:
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-> Yeah - and the point of this submission is to allow the discussion of how to 
-> achieve these registrations.
-> 
-> Driver authors will want to have some control - for example the place where 
-> the events directory shows up in sysfs within the driver's directory structure 
-> - etc.
-> 
-> But we indeed want to automate it as much as possible.
+Currently, if someone submits jobs for the default bdi, we can lose wake-up
+events. E.g., this can happen if 'bdi_queue_work()' is called when
+'bdi_forker_thread()' is executing code after 'wb_do_writeback(me, 0)', but
+before 'set_current_state(TASK_INTERRUPTIBLE)'.
 
-Perhaps we can create a TRACE_EVENT_PATH() macro, that allows the
-developer to specify the path that the event will be seen in sysfs?
+This situation is unlikely, and the result is not very severe - we'll just
+delay the execution of the work, but this is still not very nice.
 
--- Steve
+This patch fixes the issue by checking whether the default bdi has works before
+the forker thread goes sleep.
 
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+ mm/backing-dev.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index b1dc2d4..72e6eb9 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -358,6 +358,10 @@ static int bdi_forker_thread(void *ptr)
+ 			bdi_add_default_flusher_thread(bdi);
+ 		}
+ 
++		/* Keep working if default bdi still has things to do */
++		if (!list_empty(&me->bdi->work_list))
++			__set_current_state(TASK_RUNNING);
++
+ 		if (list_empty(&bdi_pending_list)) {
+ 			unsigned long wait;
+ 
+-- 
+1.7.1.1
 
