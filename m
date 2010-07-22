@@ -1,390 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab0GVX67 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 19:58:59 -0400
-Received: from kroah.org ([198.145.64.141]:60882 "EHLO coco.kroah.org"
+	id S1755138Ab0GWABW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 20:01:22 -0400
+Received: from mga11.intel.com ([192.55.52.93]:13444 "EHLO mga11.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752847Ab0GVX65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 19:58:57 -0400
-Subject: patch "U6715 8250 serial like driver" added to gregkh-2.6 tree
-To: philippe.langlais@stericsson.com, gregkh@suse.de,
-        linux-kernel@vger.kernel.org, ludovic.barre@stericsson.com
-From: <gregkh@suse.de>
-Date: Thu, 22 Jul 2010 16:57:57 -0700
-In-Reply-To: <1279531660-16317-1-git-send-email-philippe.langlais@stericsson.com>
-Message-ID: <12798430773066@site>
+	id S1754268Ab0GWABV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 20:01:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,245,1278313200"; 
+   d="scan'208";a="588841710"
+From: "Jin, Gordon" <gordon.jin@intel.com>
+To: Chris Wilson <chris@chris-wilson.co.uk>,
+        "tim.gardner@canonical.com" <tim.gardner@canonical.com>,
+        Dave Airlie <airlied@redhat.com>
+CC: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
+        "eric@anholt.net" <eric@anholt.net>, Kees Cook <kees@canonical.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Hao, Xudong" <xudong.hao@intel.com>,
+        "Fang, XunX" <xunx.fang@intel.com>
+Date: Fri, 23 Jul 2010 07:59:20 +0800
+Subject: RE: i915 boot regression on Q35 chipset with 2.6.35-rc4
+Thread-Topic: i915 boot regression on Q35 chipset with 2.6.35-rc4
+Thread-Index: Acso2e52zh72wWQ3TImAR3sFeyivKwApLQYQAB7Et1A=
+Message-ID: <B32E3D5F1713054290B4FF257B89C51A1F1DAA51FD@shsmsx502.ccr.corp.intel.com>
+References: <4C46E98A.3010206@mail.tpi.com>
+ <8u3s94$g0j0tc@orsmga002.jf.intel.com> 
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jin, Gordon wrote on Thursday, July 22, 2010 5:19 PM:
+> Chris Wilson wrote on Wednesday, July 21, 2010 9:37 PM:
+>> On Wed, 21 Jul 2010 14:35:22 +0200, Tim Gardner <tcanonical@tpi.com>
+>> wrote:
+>>> What's up with this patch? I haven't received any comment, nor has
+>>> it appeared in your git repository.
+>> 
+>> Dave hasn't taken it because it is a regression fix for i915 and the
+>> current procedure is for those to go through Eric's tree. Eric has
+>> been busy working on a new compiler for GLSL the last few weeks and
+>> has been applying patches in batches.
+>> 
+>> The patch I am happy to ack, but since I introduced the regression
+>> [https://bugzilla.kernel.org/show_bug.cgi?id=16294], I'd rather have
+>> someone more familiar with the intricacies of G33/G35/Q35 review it.
+>> 
+>> For what is worth:
+>> Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
+> 
+> This patch fixes the bug on our G33 (0x29b2).
+> Tested-by: Xudong Hao <xudong.hao@intel.com>
 
-This is a note to let you know that I've just added the patch titled
+Sorry, the pci id for above G33 is actually 0x29c2.
 
-    U6715 8250 serial like driver
+And we also validated the patch on Q35 (0x29b2):
+Tested-by: Xun Fang <xunx.fang@intel.com>
 
-to my gregkh-2.6 tree which can be found in directory form at:
-    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
- and in git form at:
-    git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/patches.git
-
-The filename of this patch is:
-    u6715-8250-serial-like-driver.patch
-
-The patch will show up in the next release of the linux-next tree
-(usually sometime within the next 24 hours during the week.)
-
-If this patch meets the merge guidelines for a bugfix, it should be
-merged into Linus's tree before the next major kernel release.
-If not, it will be merged into Linus's tree during the next merge window.
-
-Either way, you will probably be copied on the patch when it gets sent
-to Linus for merging so that others can see what is happening in kernel
-development.
-
-If you have any questions about this process, please let me know.
-
-
->From philippe.langlais@stericsson.com  Thu Jul 22 15:53:24 2010
-From: Philippe Langlais <philippe.langlais@stericsson.com>
-To: <linux-kernel@vger.kernel.org>
-Cc: <gregkh@suse.de>, <ludovic.barre@stericsson.com>,
-	Philippe Langlais <philippe.langlais@stericsson.com>
-Subject: U6715 8250 serial like driver
-Date: Mon, 19 Jul 2010 11:27:40 +0200
-Message-ID: <1279531660-16317-1-git-send-email-philippe.langlais@stericsson.com>
-
-UART Features extract from STEricsson U6715 datasheet (arm926 SoC for mobile phone):
-* Fully compatible with industry standard 16C550 and 16C450 from various
-manufacturers
-* RX and TX 64 byte FIFO reduces CPU interrupts
-* Full double buffering
-* Modem control signals include CTS, RTS, (and DSR, DTR on UART1 only)
-* Automatic baud rate selection
-* Manual or automatic RTS/CTS smart hardware flow control
-* Programmable serial characteristics:
-– Baud rate generation (50 to 3.25M baud)
-– 5, 6, 7 or 8-bit characters
-– Even, odd or no-parity bit generation and detection
-– 1, 1.5 or 2 stop bit generation
-* Independent control of transmit, receive, line status, data set interrupts and FIFOs
-* Full status-reporting capabilities
-* Separate DMA signalling for RX and TX
-* Timed interrupt to spread receive interrupt on known duration
-* DMA time-out interrupt to allow detection of end of reception
-* Carkit pulse coding and decoding compliant with USB carkit control interface [40]
-
-This UART IP is auto-detected as a 16550A type
-
-Clock specificities:
- It's parent clock depend on baud rate.
- The UART port can be used before u6xxx clock framework initialization
-
-Signed-off-by: Philippe Langlais <philippe.langlais@stericsson.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/serial/8250.c       |   26 ++++++
- drivers/serial/8250_u6.c    |  179 ++++++++++++++++++++++++++++++++++++++++++++
- drivers/serial/Kconfig      |   19 ++++
- drivers/serial/Makefile     |    1 
- include/linux/serial_8250.h |    8 +
- 5 files changed, 232 insertions(+), 1 deletion(-)
-
---- a/drivers/serial/8250.c
-+++ b/drivers/serial/8250.c
-@@ -199,10 +199,16 @@ static const struct serial8250_config ua
- 	},
- 	[PORT_16550A] = {
- 		.name		= "16550A",
-+#if defined(CONFIG_SERIAL_8250_U6XXX)
-+		.fifo_size	= 64,
-+		.tx_loadsz	= 64,
-+		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
-+#else
- 		.fifo_size	= 16,
- 		.tx_loadsz	= 16,
--		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
- 		.flags		= UART_CAP_FIFO,
-+#endif
-+		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
- 	},
- 	[PORT_CIRRUS] = {
- 		.name		= "Cirrus",
-@@ -2268,6 +2274,13 @@ serial8250_set_termios(struct uart_port
- 	/*
- 	 * Ask the core to calculate the divisor for us.
- 	 */
-+#ifdef CONFIG_SERIAL_8250_CUSTOM_CLOCK
-+	baud = uart_get_baud_rate(port, termios, old, 0,
-+			CONFIG_SERIAL_8250_CUSTOM_MAX_BAUDRATE);
-+	/* Calculate the new uart clock frequency if it is tunable */
-+	port->uartclk = serial8250_get_custom_clock(port, baud);
-+#endif
-+
- 	baud = uart_get_baud_rate(port, termios, old,
- 				  port->uartclk / 16 / 0xffff,
- 				  port->uartclk / 16);
-@@ -2298,6 +2311,13 @@ serial8250_set_termios(struct uart_port
- 		up->mcr &= ~UART_MCR_AFE;
- 		if (termios->c_cflag & CRTSCTS)
- 			up->mcr |= UART_MCR_AFE;
-+#if defined(CONFIG_SERIAL_8250_U6XXX)
-+		/**
-+		 * When AFE is active, let the HW handle the stop/restart TX
-+		 * upon CTS change. It reacts much quicker than the SW driver.
-+		 */
-+		port->flags &= ~ASYNC_CTS_FLOW;
-+#endif
- 	}
- 
- 	/*
-@@ -2383,6 +2403,10 @@ serial8250_set_termios(struct uart_port
- 		serial_outp(up, UART_LCR, cval | UART_LCR_DLAB);/* set DLAB */
- 	}
- 
-+#ifdef CONFIG_SERIAL_8250_CUSTOM_CLOCK
-+	/* set the new uart clock frequency if it is tunable */
-+	serial8250_set_custom_clock(port);
-+#endif
- 	serial_dl_write(up, quot);
- 
- 	/*
---- /dev/null
-+++ b/drivers/serial/8250_u6.c
-@@ -0,0 +1,179 @@
-+/*
-+ * linux/drivers/serial/8250_pnx.c
-+ *
-+ * Copyright (C) ST-Ericsson SA 2010
-+ * Author: Ludovic Barre <ludovic.barre@stericsson.com> for ST-Ericsson.
-+ * License terms:  GNU General Public License (GPL), version 2
-+ */
-+
-+#include <linux/serial_core.h>
-+#include <linux/io.h>
-+#include <linux/clk.h>
-+#include <linux/interrupt.h>
-+#include <linux/irq.h>
-+
-+#include <mach/serial.h>
-+#include <mach/hardware.h>
-+#include <mach/clock.h>
-+
-+/* Register description for FDIV_CTRL */
-+/* UART FDIV_CTRL Register (8 bits) */
-+#define UARTX_FDIV_CTRL_OFFSET         0xC00
-+/* UART FDIV_M Register (16 bits) */
-+#define UARTX_FDIV_M_OFFSET            0xC04
-+/* UART FDIV_N Register (16 bits) */
-+#define UARTX_FDIV_N_OFFSET            0xC08
-+
-+/* Bits definition for register UARTX_FDIV_CTRL */
-+#define UARTX_FDIV_ENABLE_SHIFT  7
-+#define UARTX_FDIV_ENABLE_FIELD  (0xFFFFFFFF - (0x1UL<<UARTX_FDIV_ENABLE_SHIFT))
-+#define UARTX_FDIV_ENABLE_OFF    (0x0UL<<UARTX_FDIV_ENABLE_SHIFT)
-+#define UARTX_FDIV_ENABLE_ON     (0x1UL<<UARTX_FDIV_ENABLE_SHIFT)
-+#define UARTX_FDIV_ENABLE        (0x1UL<<UARTX_FDIV_ENABLE_SHIFT)
-+#define UARTX_CLKSEL_SHIFT       0
-+#define UARTX_CLKSEL_FIELD       (0xFFFFFFFF - (0x3UL<<UARTX_CLKSEL_SHIFT))
-+#define UARTX_CLKSEL_PCLK        (0x0UL<<UARTX_CLKSEL_SHIFT)
-+#define UARTX_CLKSEL_13M         (0x1UL<<UARTX_CLKSEL_SHIFT)
-+#define UARTX_CLKSEL_26M         (0x2UL<<UARTX_CLKSEL_SHIFT)
-+#define UARTX_CLKSEL_3           (0x3UL<<UARTX_CLKSEL_SHIFT)
-+
-+/*
-+ * console and pctools has needed to start before serial_init
-+ * (with cgu interface)
-+ */
-+static int uart_enable_clock(struct uart_port *port)
-+{
-+	u32 v;
-+	v = readl(CGU_GATESC1_REG);
-+
-+	if (port->irq == IRQ_UART1)
-+		v |= CGU_UART1EN_1;
-+	else if (port->irq == IRQ_UART2)
-+		v |= CGU_UART2EN_1;
-+
-+	writel(v, CGU_GATESC1_REG);
-+
-+	return 0;
-+}
-+
-+static int uart_disable_clock(struct uart_port *port)
-+{
-+	u32 v;
-+	v = readl(CGU_GATESC1_REG);
-+
-+	if (port->irq == IRQ_UART1)
-+		v &= ~CGU_UART1EN_0;
-+	else if (port->irq == IRQ_UART2)
-+		v &= ~CGU_UART2EN_0;
-+
-+	writel(v, CGU_GATESC1_REG);
-+
-+	return 0;
-+}
-+
-+unsigned int serial8250_enable_clock(struct uart_port *port)
-+{
-+	struct u6_uart *uart_u6 = port->private_data;
-+
-+	if (!uart_u6)
-+		return uart_enable_clock(port);
-+
-+	if (IS_ERR(uart_u6->uartClk)) {
-+		printk(KERN_WARNING "%s - uart clock failed error:%ld\n",
-+		       __func__, PTR_ERR(uart_u6->uartClk));
-+		return PTR_ERR(uart_u6->uartClk);
-+	}
-+
-+	if (clk_get_usecount(uart_u6->uartClk) == 0)
-+		clk_enable(uart_u6->uartClk);
-+	return 0;
-+}
-+
-+unsigned int serial8250_disable_clock(struct uart_port *port)
-+{
-+	struct u6_uart *uart_u6 = port->private_data;
-+
-+	if (!uart_u6)
-+		return uart_disable_clock(port);
-+
-+	if (IS_ERR(uart_u6->uartClk)) {
-+		printk(KERN_WARNING "%s - uart clk error :%ld\n", __func__,
-+		       PTR_ERR(uart_u6->uartClk));
-+		return PTR_ERR(uart_u6->uartClk);
-+	}
-+	if (clk_get_usecount(uart_u6->uartClk) >= 1)
-+		clk_disable(uart_u6->uartClk);
-+
-+	return 0;
-+}
-+
-+unsigned int serial8250_get_custom_clock(struct uart_port *port,
-+					 unsigned int baud)
-+{
-+	switch (baud) {
-+	case 3250000:
-+		return 52000000;
-+	case 2000000:
-+		return 32000000;
-+	case 1843200:
-+		return 29491200;
-+	case 921600:
-+		return 14745600;
-+	default:
-+		return 7372800;
-+	}
-+}
-+
-+void serial8250_set_custom_clock(struct uart_port *port)
-+{
-+	u32 fdiv_m = 0x5F37;
-+	u32 fdiv_n = 0x3600;
-+	u32 fdiv_ctrl = UARTX_FDIV_ENABLE_ON;
-+	struct u6_uart *uart_u6 = port->private_data;
-+
-+	switch (port->uartclk) {
-+	case 7372800: /* clk=13MHz */
-+		fdiv_ctrl |= UARTX_CLKSEL_13M;
-+		break;
-+	case 14745600: /* clk=26MHz */
-+		fdiv_ctrl |= UARTX_CLKSEL_26M;
-+		break;
-+	case 29491200: /* clk=pclk */
-+		fdiv_ctrl |= UARTX_CLKSEL_PCLK;
-+		break;
-+	case 32000000: /* clk=pclk */
-+		fdiv_n = 0x3A98;
-+		fdiv_ctrl |= UARTX_CLKSEL_PCLK;
-+		break;
-+	case 52000000: /* clk=pclk */
-+		fdiv_n = 0x5F37;
-+		fdiv_ctrl |= UARTX_CLKSEL_PCLK;
-+		break;
-+	}
-+
-+	if (uart_u6 != NULL && !IS_ERR(uart_u6->uartClk)) {
-+		/* if cgu interface is ready and u6_serial_init */
-+		struct clk *parentClk;
-+
-+		if (fdiv_ctrl & UARTX_CLKSEL_26M)
-+			parentClk = clk_get(NULL, "clk26m_ck");
-+		else if (fdiv_ctrl & UARTX_CLKSEL_PCLK)
-+			parentClk = clk_get(NULL, "pclk2_ck");
-+		else
-+			parentClk = clk_get(NULL, "clk13m_ck");
-+
-+		if (!IS_ERR(parentClk)) {
-+			serial8250_disable_clock(port);
-+
-+			if (clk_set_parent(uart_u6->uartClk, parentClk) != 0)
-+				printk(KERN_WARNING "%s: set parent failed\n", __func__);
-+
-+			serial8250_enable_clock(port);
-+			clk_put(parentClk);
-+		}
-+	}
-+
-+	writel(fdiv_m, port->membase + UARTX_FDIV_M_OFFSET);
-+	writel(fdiv_n, port->membase + UARTX_FDIV_N_OFFSET);
-+	writel(fdiv_ctrl, port->membase + UARTX_FDIV_CTRL_OFFSET);
-+}
---- a/drivers/serial/Kconfig
-+++ b/drivers/serial/Kconfig
-@@ -163,6 +163,25 @@ config SERIAL_8250_MANY_PORTS
- 	  say N here to save some memory. You can also say Y if you have an
- 	  "intelligent" multiport card such as Cyclades, Digiboards, etc.
- 
-+config SERIAL_8250_U6XXX
-+	bool
-+	depends on SERIAL_8250_EXTENDED && PLAT_U6XXX
-+	default y
-+
-+config SERIAL_8250_CUSTOM_CLOCK
-+	bool "Support serial ports with tunable input clock frequency"
-+	depends on SERIAL_8250_EXTENDED && SERIAL_8250_U6XXX
-+	default y
-+	help
-+	  Say Y here if your platform has specific registers to change UART clock frequency.
-+
-+config SERIAL_8250_CUSTOM_MAX_BAUDRATE
-+	int "Maximal reachable baudrate"
-+	depends on SERIAL_8250_CUSTOM_CLOCK
-+	default "3250000"
-+	help
-+	  The value of the maximal reachable baudrate when tuning UART clock frequency (default value: 3.25MBds).
-+
- #
- # Multi-port serial cards
- #
---- a/drivers/serial/Makefile
-+++ b/drivers/serial/Makefile
-@@ -28,6 +28,7 @@ obj-$(CONFIG_SERIAL_8250_BOCA) += 8250_b
- obj-$(CONFIG_SERIAL_8250_EXAR_ST16C554) += 8250_exar_st16c554.o
- obj-$(CONFIG_SERIAL_8250_HUB6) += 8250_hub6.o
- obj-$(CONFIG_SERIAL_8250_MCA) += 8250_mca.o
-+obj-$(CONFIG_SERIAL_8250_U6XXX) += 8250_u6.o
- obj-$(CONFIG_SERIAL_AMBA_PL010) += amba-pl010.o
- obj-$(CONFIG_SERIAL_AMBA_PL011) += amba-pl011.o
- obj-$(CONFIG_SERIAL_CLPS711X) += clps711x.o
---- a/include/linux/serial_8250.h
-+++ b/include/linux/serial_8250.h
-@@ -72,4 +72,12 @@ extern int serial8250_find_port(struct u
- extern int serial8250_find_port_for_earlycon(void);
- extern int setup_early_serial8250_console(char *cmdline);
- 
-+#ifdef CONFIG_SERIAL_8250_CUSTOM_CLOCK
-+unsigned int serial8250_enable_clock(struct uart_port *port);
-+unsigned int serial8250_disable_clock(struct uart_port *port);
-+unsigned int serial8250_get_custom_clock(struct uart_port *port,
-+		unsigned int baud);
-+void serial8250_set_custom_clock(struct uart_port *port);
-+#endif
-+
- #endif
-
+-Gordon
