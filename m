@@ -1,112 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759460Ab0GVSG1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:06:27 -0400
-Received: from mail.fem.tu-ilmenau.de ([141.24.101.79]:33580 "EHLO
-	mail.fem.tu-ilmenau.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644Ab0GVSGZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:06:25 -0400
-From: Johannes Hirte <johannes.hirte@fem.tu-ilmenau.de>
-To: miaox@cn.fujitsu.com
-Subject: Re: kernel BUG at fs/btrfs/extent-tree.c:1353
-Date: Thu, 22 Jul 2010 20:07:23 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc3; KDE/4.4.5; i686; ; )
-Cc: Dave Chinner <david@fromorbit.com>, Chris Mason <chris.mason@oracle.com>,
-        linux-kernel@vger.kernel.org, linux-btrfs@vger.kernel.org,
-        zheng.yan@oracle.com, Jens Axboe <axboe@kernel.dk>,
-        linux-fsdevel@vger.kernel.org
-References: <201007081627.24654.johannes.hirte@fem.tu-ilmenau.de> <201007152014.52924.johannes.hirte@fem.tu-ilmenau.de> <4C44066A.3080701@cn.fujitsu.com>
-In-Reply-To: <4C44066A.3080701@cn.fujitsu.com>
+	id S1759513Ab0GVSHO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:07:14 -0400
+Received: from fn.samba.org ([216.83.154.106]:34032 "EHLO lists.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752421Ab0GVSHL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:07:11 -0400
+Date: Thu, 22 Jul 2010 11:07:09 -0700
+From: Jeremy Allison <jra@samba.org>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Jeremy Allison <jra@samba.org>,
+        Trond Myklebust <trond.myklebust@fys.uio.no>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended file stats available [ver #6]
+Message-ID: <20100722180709.GB32008@samba1>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <30448.1279800887@redhat.com>
+ <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+ <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+ <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+ <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+ <20100722162712.GB10352@jeremy-laptop>
+ <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+ <1279817930.3621.14.camel@heimdal.trondhjem.org>
+ <20100722180204.GA32008@samba1>
+ <alpine.LSU.2.01.1007222004430.4215@obet.zrqbmnf.qr>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007222007.24574.johannes.hirte@fem.tu-ilmenau.de>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.01.1007222004430.4215@obet.zrqbmnf.qr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Montag 19 Juli 2010, 10:01:46 schrieb Miao Xie:
-> On Thu, 15 Jul 2010 20:14:51 +0200, Johannes Hirte wrote:
-> > Am Donnerstag 15 Juli 2010, 02:11:04 schrieb Dave Chinner:
-> >> On Wed, Jul 14, 2010 at 05:25:23PM +0200, Johannes Hirte wrote:
-> >>> Am Donnerstag 08 Juli 2010, 16:31:09 schrieb Chris Mason:
-> >>> I'm not sure if btrfs is to blame for this error. After the errors I
-> >>> switched to XFS on this system and got now this error:
-> >>> 
-> >>> ls -l .kde4/share/apps/akregator/data/
-> >>> ls: cannot access .kde4/share/apps/akregator/data/feeds.opml: Structure
-> >>> needs cleaning
-> >>> total 4
-> >>> ?????????? ? ?    ?        ?            ? feeds.opml
+On Thu, Jul 22, 2010 at 08:05:00PM +0200, Jan Engelhardt wrote:
+> 
+> On Thursday 2010-07-22 20:02, Jeremy Allison wrote:
+> >On Thu, Jul 22, 2010 at 12:58:50PM -0400, Trond Myklebust wrote:
 > >> 
-> >> What is the error reported in dmesg when the XFS filesytem shuts down?
-> > 
-> > Nothing. I double checked the logs. There are only the messages when
-> > mounting the filesystem. No other errors are reported than the
-> > inaccessible file and the output from xfs_check.
+> >> That would make it impossible to export the filesystem with NFSv2 and
+> >> v3. They do rely on ctime checking for certain operations (e.g. deciding
+> >> when to invalidate access and acl caches). NFSv4 needs this too if the
+> >> filesystem has no dedicated change attribute.
+> >> 
+> >> Still, I suppose the market for exporting the same filesystem with both
+> >> NFS and Samba is limited...
+> >
+> >Ask NetApp about that :-). They have built a rather large
+> >business on just that fact :-).
 > 
-> Is there anything wrong with your disks or memory?
-> Sometimes the bad memory can break the filesystem. I have met this kind of
-> problem some time ago.
+> What would ZFS do? :p
 
-I don't think that's the case. I've checked the RAM with memtest86+ and got no 
-errors. I got the errors with two different disks, the first one with btrfs the 
-second one now with XFS. Before changing to the second disk, I've run 
-badblocks on it to be sure it has no errors.
-
-> 
-> If there is no problem with your disk and memory, Could you tell us the
-> parameter of mkfs.btrfs and mount?
-
-I'm not sure what parameters I've used for mkbtrfs. It was either none ore '-m 
-single'. mount parameters are only noatime. Some time ago I've played a little 
-with max_inline.
-
-On the actual disk with XFS I got now some more errors on my root-fs. Similar 
-error on one file:
-
-ls: cannot access /var/tmp/portage/app-
-office/krita-2.2.1/work/krita-2.2.1/krita/image/tiles3/tests/dm_consistancy_test/dm_consistancy_test.pr: 
-Invalid argument
-
-xfs_check shows on this fs:
-
-localhost ~ # xfs_check /dev/sda1
-agi unlinked bucket 10 is 7279754 in ag 0 (inode=7279754)
-agi unlinked bucket 11 is 7279755 in ag 0 (inode=7279755)
-dir 91466358 entry dm_consistancy_test.pr bad inode number 1862628266
-dir 91466358 size is 36, should be 35
-agi unlinked bucket 48 is 11677104 in ag 2 (inode=78785968)
-agi unlinked bucket 49 is 11677105 in ag 2 (inode=78785969)
-agi unlinked bucket 50 is 11677106 in ag 2 (inode=78785970)
-agi unlinked bucket 51 is 11677107 in ag 2 (inode=78785971)
-agi unlinked bucket 52 is 11677108 in ag 2 (inode=78785972)
-agi unlinked bucket 53 is 11677109 in ag 2 (inode=78785973)
-agi unlinked bucket 54 is 11677110 in ag 2 (inode=78785974)
-agi unlinked bucket 55 is 11677111 in ag 2 (inode=78785975)
-agi unlinked bucket 58 is 11677114 in ag 2 (inode=78785978)
-agi unlinked bucket 59 is 11677115 in ag 2 (inode=78785979)
-agi unlinked bucket 60 is 11677116 in ag 2 (inode=78785980)
-agi unlinked bucket 61 is 11677117 in ag 2 (inode=78785981)
-allocated inode 7279754 has 0 link count
-allocated inode 7279755 has 0 link count
-disconnected inode 91466360, nlink 1
-allocated inode 78785968 has 0 link count
-allocated inode 78785969 has 0 link count
-allocated inode 78785970 has 0 link count
-allocated inode 78785971 has 0 link count
-allocated inode 78785972 has 0 link count
-allocated inode 78785973 has 0 link count
-allocated inode 78785974 has 0 link count
-allocated inode 78785975 has 0 link count
-allocated inode 78785978 has 0 link count
-allocated inode 78785979 has 0 link count
-allocated inode 78785980 has 0 link count
-allocated inode 78785981 has 0 link count
-
-And again I don't find any related message in dmesg.
-
-regards,
-  Johannes
+Get sued out of existence by software patent trolls who have lost
+the ability to write code, apparently :-).
