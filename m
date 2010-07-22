@@ -1,78 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759110Ab0GVSlJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:41:09 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:41124 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751187Ab0GVSlF (ORCPT
+	id S1756208Ab0GVSo7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:44:59 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:5069 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754963Ab0GVSo4 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:41:05 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=UJqXmQNjWiKr+Cb3HcChC43npNQhtMraIGLdUYhdo3JYPisAFS5z4GDe9lxj27khPp
-         Ci/9WQCheskqzHClQ2PGZEQlSK34KeWWYLEzNlXdjrDeRxZ+0iildpxRaE80RcVZxNq1
-         TsOjwaQdXGoebtfJktLesFM+DBys270tIX/fk=
+	Thu, 22 Jul 2010 14:44:56 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=lLxpAPZTWGQSHufT0/ZwE0LUFAWHuVgWICjvLo30B63CUiWcNYEJm10jIeRb0Mp/1
+	tcY72ZRnacmcn5cmmC1IA==
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
-	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-	<20100722162712.GB10352@jeremy-laptop>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
-	<AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
-Date: Thu, 22 Jul 2010 14:41:01 -0400
-Message-ID: <AANLkTiljnpUGmP-DYW_5CNtRmlL8rK1W2c8ncrin92dC@mail.gmail.com>
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
-	file stats available [ver #6]
-From: Greg Freemyer <greg.freemyer@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
-        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
+In-Reply-To: <20100722183614.GA5443@suse.de>
+References: <20100722182638.GA12712@kroah.com>
+	<AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
+	<20100722183614.GA5443@suse.de>
+Date: Thu, 22 Jul 2010 11:44:50 -0700
+Message-ID: <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
+Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+From: Paul Menage <menage@google.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Li Zefan <lizf@cn.fujitsu.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 1:24 PM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
+On Thu, Jul 22, 2010 at 11:36 AM, Greg KH <gregkh@suse.de> wrote:
+>
+> Really?  I see systems mounting it at /cgroups/ in the filesystem today.
 
-<snip>
+Sure, it *can* be mounted as a single instance, but you then lose
+flexibility. E.g. at Google we want to have a different hierarchy for
+the CPU subsystem (with the tree grouped according to
+latency-sensitive versus batch, etc) and memory (grouped according to
+what jobs are sharing memory with each other).
 
-> and I seriously doubt that Windows people
-> complain a lot about the fact that there you have mtime for metadata
-> changes too.
+> Where are you expecting it to be mounted at?
 
-But Windows doesn't work that way for I'm fairly sure.
+I have no particular expectation. (At Google we're actually using
+/dev/cgroup/* but that's just for historical reasons, from
+/dev/cpuset). Under /sys/fs/cgroup sounds reasonable, but you'd want
+people to have the ability to manually create subdirs in there for
+separate mount points.
 
-Window's mtime is only affected by file content updates.  (I don't
-know about xattr updates).
-
-If you look at the first and fourth rows of the table at:
-
-http://blogs.sans.org/computer-forensics/2010/04/12/windows-7-mft-entry-timestamp-properties/
-
-You see that there are a number of activities that update the "$STD
-Info MFT Entry Modified Field" that don't update the "$STD Info
-Modification Time"
-
-Again, "$STD Info MFT Entry Modified Field" has semantics close to linux ctime.
-
-And "$STD Info  Modification Time" similar to mtime.
-
-I don't know if there are APIs to present MFT Entry Modified to user
-space or if Samba uses that info.  I just know it's part of the
-on-disk NTFS filesystem data.
-
-Greg
+Paul
