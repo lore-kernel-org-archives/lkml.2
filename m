@@ -1,63 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756255Ab0GVPQL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 11:16:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:48444 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751343Ab0GVPQI convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 11:16:08 -0400
-MIME-Version: 1.0
-In-Reply-To: <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr> 
-	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> 
-	<30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-From: Linus Torvalds <torvalds@linux-foundation.org>
-Date: Thu, 22 Jul 2010 08:14:42 -0700
-Message-ID: <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
-	file stats available [ver #6]
-To: Volker.Lendecke@sernet.de
-Cc: David Howells <dhowells@redhat.com>, Jan Engelhardt <jengelh@medozas.de>,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1759466Ab0GVPTl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 11:19:41 -0400
+Received: from mail4.comsite.net ([205.238.176.238]:2340 "EHLO
+	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752143Ab0GVPTj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 11:19:39 -0400
+X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=74.61.84.126;
+From: Milton Miller <miltonm@bga.com>
+Subject: [PATCH] setlocalversion: fix version for untaged nontip mercurial revs
+To: Michal Marek <mmarek@suse.cz>, <gentoo@mgorny.alt.pl>
+Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
+Message-Id: <fix-hg-id-resend1@mdm.bga.com>
+Date: Thu, 22 Jul 2010 10:19:38 -0500
+X-Originating-IP: 74.61.84.126
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 5:17 AM, Volker Lendecke
-<Volker.Lendecke@sernet.de> wrote:
-> On Thu, Jul 22, 2010 at 01:14:47PM +0100, David Howells wrote:
->> Jan Engelhardt <jengelh@medozas.de> wrote:
->>
->> > Linux already has a creation time field, it's called otime (there is no "b"
->> > in "creation"), and you will find scattered fragments of that all over the
->> > kernel (foremost, fs/jfs/, now btrfs, and I also notice sysvipc having
->> > something with that name).
->>
->> It is? †It's called crtime in Ext4. †st_btime, however, would be compatible
->> with BSD's stat, and Samba would just use it by way of autoconf magic if it
->> appeared.
->
-> Samba has the following check:
->
-> # recent FreeBSD, NetBSD have creation timestamps called birthtime:
-> AC_CHECK_MEMBERS([struct stat.st_birthtimespec.tv_nsec])
-> AC_CHECK_MEMBERS([struct stat.st_birthtime], AC_CHECK_MEMBERS([struct stat.st_birthtimensec]))
->
-> and the supporting code around that. "birth" might also be
-> where the "b" comes from :-)
+The manpage for cut says it will return all lines without the delimiter
+unless -s is specified.
 
-Oh wow. And all of this just convinces me that we should _not_ do any
-of this, since clearly it's all totally useless and people can't even
-agree on a name.
+When I backed up my mecurial tree to generate modules, I found that the
+scm part of localversion was turning up blank.
 
-Let's wait five years and see if there is actually any consensus on it
-being needed and used at all, rather than rush into something just
-because "we can".
+Signed-off-by: Milton Miller <miltonm@bga.com>
+Cc: Michal Marek <mmarek@suse.cz>
+Cc: "Micha≈Ç G√≥rny" <gentoo@mgorny.alt.pl>
 
-                       Linus
+---
+This version is against linux next-20100721.  The diff against 35-rc
+would be shifted left one tab stop and have different line numbers, should
+this be sent to stable.
+
+Resend without 8-bit characters (maintainers name) in header
+Added linux-kbuild@vger.kernel.org which get-maintainer did not
+
+diff --git a/scripts/setlocalversion b/scripts/setlocalversion
+index a7b9f76..872312f 100755
+--- a/scripts/setlocalversion
++++ b/scripts/setlocalversion
+@@ -86,7 +86,7 @@ scm_version()
+ 
+ 	# Check for mercurial and a mercurial repo.
+ 	if hgid=`hg id 2>/dev/null`; then
+-		tag=`printf '%s' "$hgid" | cut -d' ' -f2`
++		tag=`printf '%s' "$hgid" | cut -s -d' ' -f2`
+ 
+ 		# Do we have an untagged version?
+ 		if [ -z "$tag" -o "$tag" = tip ]; then
