@@ -1,52 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759466Ab0GVPTl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 11:19:41 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:2340 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752143Ab0GVPTj (ORCPT
+	id S1759504Ab0GVPWJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 11:22:09 -0400
+Received: from senator.holtmann.net ([87.106.208.187]:35647 "EHLO
+	mail.holtmann.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab0GVPWF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 11:19:39 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=74.61.84.126;
-From: Milton Miller <miltonm@bga.com>
-Subject: [PATCH] setlocalversion: fix version for untaged nontip mercurial revs
-To: Michal Marek <mmarek@suse.cz>, <gentoo@mgorny.alt.pl>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Message-Id: <fix-hg-id-resend1@mdm.bga.com>
-Date: Thu, 22 Jul 2010 10:19:38 -0500
-X-Originating-IP: 74.61.84.126
+	Thu, 22 Jul 2010 11:22:05 -0400
+Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw   
+ HIDIOCGFEATURE and HIDIOCSFEATURE
+From: Marcel Holtmann <marcel@holtmann.org>
+To: Jiri Kosina <jkosina@suse.cz>
+Cc: Alan Ott <alan@signal11.us>, David S Miller <davem@davemloft.net>,
+        Michael Poole <mdpoole@troilus.org>,
+        Bastien Nocera <hadess@hadess.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+In-Reply-To: <alpine.LNX.2.00.1007221612450.4741@pobox.suse.cz>
+References: <1276467601-9066-1-git-send-email-alan@signal11.us>
+	 <1278623485.10421.73.camel@localhost.localdomain>
+	 <4C369CDC.9080104@signal11.us>
+	 <1278662497.10421.94.camel@localhost.localdomain>
+	 <4C371DE8.9020002@signal11.us>
+	 <1278680790.10421.106.camel@localhost.localdomain>
+	 <4C372CEE.3070109@signal11.us>
+	 <1278696815.10421.137.camel@localhost.localdomain>
+	 <alpine.LNX.2.00.1007221612450.4741@pobox.suse.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Jul 2010 08:21:55 -0700
+Message-ID: <1279812115.2621.6.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The manpage for cut says it will return all lines without the delimiter
-unless -s is specified.
+Hi Jiri,
 
-When I backed up my mecurial tree to generate modules, I found that the
-scm part of localversion was turning up blank.
+> > > >>> what is usb-hid.ko doing here? I would expect a bunch of code
+> > > >>> duplication with minor difference between USB and Bluetooth.
+> > > >>>        
+> > > >> usbhid doesn't have a lot of code for hidraw. Two functions are involved:
+> > > >>       usbhid_output_raw_report()
+> > > >>           - calls usb_control_msg() with Get_Report
+> > > >>       usbhid_get_raw_report()
+> > > >>           - calls usb_control_msg() with Set_Report
+> > > >>               OR
+> > > >>           - calls usb_interrupt_msg() on the Ouput pipe.
+> > > >>
+> > > >> This is of course easier than bluetooth because usb_control_msg() is
+> > > >> synchronous, even when requesting reports, mostly because of the nature
+> > > >> of USB, where the request and response are part of the same transfer.
+> > > >>
+> > > >> For Bluetooth, it's a bit more complicated since the kernel treats it
+> > > >> more like a networking interface (and indeed it is). My understanding is
+> > > >> that to make a synchronous transfer in bluetooth, one must:
+> > > >>       - send the request packet
+> > > >>       - block (wait_event_*())
+> > > >>       - when the response is received in the input handler, wake_up_*().
+> > > >>
+> > > >> There's not really any code duplication, mostly because initiating
+> > > >> synchronous USB transfers (input and output) is easy (because of the
+> > > >> usb_*_msg() functions), while making synchronous Bluetooth transfers
+> > > >> must be done manually. If there's a nice, convenient, synchronous
+> > > >> function in Bluetooth similar to usb_control_msg() that I've missed,
+> > > >> then let me know, as it would simplify this whole thing.
+> > > >>      
+> > > > there is not and I don't think we ever get one. My question here was
+> > > > more in the direction why HID core is doing these synchronously in the
+> > > > first place. Especially since USB can do everything async as well.
+> > >
+> > > I'm open to suggestions. The way I see it is from a user space 
+> > > perspective. With Get_Feature being on an ioctl(), I don't see any clean 
+> > > way to do it other than synchronously. Other operating systems (I can 
+> > > say for sure Windows, Mac OS X, and FreeBSD) handle Get/Set Feature the 
+> > > same way (synchronously) from user space.
+> > > 
+> > > You seem to be proposing an asynchronous interface. What would that look 
+> > > like from user space?
+> > 
+> > not necessarily from user space, but at least from HID core to HIDP and
+> > usb-hid transports. At least that is what I would expect, Jiri?
+> 
+> Sorry for this taking too long (vacations, conferences, you name it) for 
+> me to respond.
+> 
+> As all the _raw() callbacks are purely intended for userspace interaction 
+> anyway, it's perfectly fine (and in fact desirable) for the low-level 
+> transport drivers to perform these operations synchronously (and that's 
+> what USB implementation does as well).
+> 
+> Marcel, if your opposition to synchronous interface is strong, we'll have 
+> to think about other aproaches, but from my POV, the patch is fine as-is 
+> for Bluetooth.
 
-Signed-off-by: Milton Miller <miltonm@bga.com>
-Cc: Michal Marek <mmarek@suse.cz>
-Cc: "Michał Górny" <gentoo@mgorny.alt.pl>
+that the ioctl() API is synchronous is fine to me, however pushing that
+down to the transport drivers seems wrong to me. I think the HID core
+should be able to handle a fully asynchronous transport driver. I know
+that with the USB subsystem you are little bit spoiled here, but for
+Bluetooth it is not the case. And in the end even using the asynchronous
+USB URB calls would be nice as well.
 
----
-This version is against linux next-20100721.  The diff against 35-rc
-would be shifted left one tab stop and have different line numbers, should
-this be sent to stable.
+So why not make the core actually wait for responses from the transport
+driver. I would make the transport drivers a lot simpler in the long
+run. And I know that most likely besides Bluetooth and USB you won't see
+another, but you never know.
 
-Resend without 8-bit characters (maintainers name) in header
-Added linux-kbuild@vger.kernel.org which get-maintainer did not
+Regards
 
-diff --git a/scripts/setlocalversion b/scripts/setlocalversion
-index a7b9f76..872312f 100755
---- a/scripts/setlocalversion
-+++ b/scripts/setlocalversion
-@@ -86,7 +86,7 @@ scm_version()
- 
- 	# Check for mercurial and a mercurial repo.
- 	if hgid=`hg id 2>/dev/null`; then
--		tag=`printf '%s' "$hgid" | cut -d' ' -f2`
-+		tag=`printf '%s' "$hgid" | cut -s -d' ' -f2`
- 
- 		# Do we have an untagged version?
- 		if [ -z "$tag" -o "$tag" = tip ]; then
+Marcel
+
+
