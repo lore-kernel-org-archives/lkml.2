@@ -1,77 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759069Ab0GVJtj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 05:49:39 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:47442 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751915Ab0GVJtg convert rfc822-to-8bit (ORCPT
+	id S1756151Ab0GVJ4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 05:56:12 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:37585 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753618Ab0GVJ4K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 05:49:36 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Thu, 22 Jul 2010 11:50:58 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <20100722183432U.fujita.tomonori@lab.ntt.co.jp>
-To: m.szyprowski@samsung.com, FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: corbet@lwn.net, linux-mm@kvack.org, p.osciak@samsung.com,
-        xiaolin.zhang@intel.com, hvaibhav@ti.com, robert.fekete@stericsson.com,
-        marcus.xm.lorentzon@stericsson.com, linux-kernel@vger.kernel.org,
-        kyungmin.park@samsung.com
-Message-id: <op.vf8oa80k7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <20100720181239.5a1fd090@bike.lwn.net>
- <20100722143652V.fujita.tomonori@lab.ntt.co.jp>
- <000001cb296f$6eba8fa0$4c2faee0$%szyprowski@samsung.com>
- <20100722183432U.fujita.tomonori@lab.ntt.co.jp>
+	Thu, 22 Jul 2010 05:56:10 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Thu, 22 Jul 2010 11:55:54 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: [review patch 0/2] new driver: Nosy, a low-budget FireWire packet
+ sniffer
+To: linux-kernel@vger.kernel.org
+cc: linux1394-devel@lists.sourceforge.net,
+        Kristian Hoegsberg <krh@bitplanet.net>
+Message-ID: <tkrat.72756f504d6c0055@s5r6.in-berlin.de>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; CHARSET=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010 11:35:07 +0200, FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> You have the feature in the wrong place.
->
-> Your example: a camera driver and a video driver can share 20MB, then
-> they want 20MB exclusively.
->
-> You can reserve 20MB and make them share it. Then you can reserve 20MB
-> for both exclusively.
->
-> You know how the whole system works. Adjust drivers (probably, with
-> module parameters).
+Here is a (not so) new driver proposed for merge into the mainline:
 
-So you are talking about moving complexity from the CMA core to the drivers.
-Ie. instead of configuring regions and mapping via CMA command line
-parameters, the whole configuration is pushed to modules.  We consider that
-suboptimal because it (i) does not reduce complexity -- it just moves it
-somewhere else, (ii) spreads the complexity to many modules instead of
-single core of CMA, and (iii) spreads the configuration to many modules
-instead of keeping it in one place.
+    Nosy - turns a Texas Instruments PCILynx card into an IEEE 1394
+           (FireWire) bus analyzer
 
+This kernel driver is useful to reverse-engineer undocumented
+vendor-specific protocols and as an aid in IEEE 1394 application/
+driver/ firmware development or even hardware development.
 
-> When a video driver needs 20MB to work properly, what's the point of
-> releasing the 20MB for others then trying to get it again later?
+The driver was written by Kristian H¯gsberg several years ago and has
+been maintained outside the mainline.  Perhaps because of its rather
+limited user base, it took so long for a proposal to merge it into the
+mainline.
 
-If you have a video driver that needs 20MiB and a camera that needs 20MiB
-will you reserve 40MiB total? That's 20MiB wasted if on your system those
-two can never work at the same time.  So do you reserve 20MiB and share?
-That won't work if on your system the two can work at the same time.
+The driver requires a TI PCILynx or PCILynx-2 based FireWire controller,
+i.e. a TSB12LV21/ TSB12LV21A/ TSB12LV21B.  My guess is that the current
+PCILynx-2 TSB12LV21B is better tested by Nosy users.  To my knowledge,
+the following cards are based on PCILynx-2 or PCILynx:
+  - IOI IOI-1394TT (PCI card, current)
+  - Unibrain Fireboard 400 PCI Lynx-2 (PCI card, current)
+  - Newer Technology FireWire 2 Go (CardBus card, discontinued product)
+  - Apple Power Mac G3 blue & white (onboard controller, discontinued)
+Regular OHCI-1394 FireWire controllers cannot be used for this purpose
+since OHCI compliant cards do not receive peer-to-peer packets into
+their link layers that are not addressed to them.
 
-With CMA you can configure the kernel for both cases.
+Along with the rather small kernel driver called nosy comes a simple
+userspace frontend, called nosy-dump.  These two communicate via a
+'misc' character device file with a simple ioctl() and read() based
+protocol.  See the file nosy-user.h in patch 1/2 for a description of
+the character device file ABI.
 
-> Even with the above example (two devices never use the memory at the
-> same time), the driver needs memory regularly. What's the point of
-> split the 20MB to small chunks and allocate them to others?
+Since the frontend nosy-dump is rather small regarding code size and is
+tightly bound to nosy regarding the kernel driver's usage scenario, it
+is proposed to maintain nosy-dump in the kernel source tree too.  Patch
+2/2 contains nosy-dump, placed into a new tools/firewire/ directory.
 
-Lost you there...  If something does not make sense on your system you
-don't configure CMA to do that.  That's one of the points of CMA.  What
-does not make sense on your platform may make perfect sense on some
-other system, with some other drivers maybe.
+When I picked up nosy and nosy-dump from Kristian, I did a number of
+modifications to prepare for mainline merge.  I have published the short
+history of these modifications in linux1394-2.6.git now, in a branch
+called 'nosy':
 
+(git clone or pull)
+    git://git.kernel.org/pub/scm/linux/kernel/git/ieee1394/linux1394-2.6.git nosy
+
+(gitweb)
+    http://git.kernel.org/?p=linux/kernel/git/ieee1394/linux1394-2.6.git;a=shortlog;h=refs/heads/nosy
+
+I would prefer to merge this history instead of the two combined diffs
+which I am going to post for review now.  Note, the 'nosy' git branch
+may be rebased if there will be review comments that warrant rewriting
+that branch.
+
+Kristian's original sources are published at
+    git://anongit.freedesktop.org/~krh/nosy
+
+There used to be a web site about nosy:
+    http://web.archive.org/web/20080225222139/http://bitplanet.net/nosy/
+
+Current content of linux1394-2.6.git nosy:
+
+Stefan Richter (21):
+      firewire: new driver: nosy - IEEE 1394 traffic sniffer
+      firewire: nosy: misc cleanups
+      firewire: nosy: convert to unlocked ioctl
+      firewire: nosy: fix list corruption by NOSY_IOC_STOP
+      firewire: nosy: use flagless variants of spinlock accessors
+      firewire: nosy: unroll some simple functions
+      firewire: nosy: fix IRQ handler for card ejection
+      firewire: nosy: handle errors in device probe
+      firewire: nosy: fix device shutdown with active client
+      firewire: nosy: annotate __user pointers and __iomem pointers
+      firewire: nosy: endianess fixes and annotations
+      firewire: nosy: use generic printk macros
+      tools/firewire: add userspace front-end of nosy
+      tools/firewire: nosy-dump: fix it on x86-64
+      tools/firewire: nosy-dump: work around segfault in decode_fcp
+      tools/firewire: nosy-dump: change to kernel coding style
+      tools/firewire: nosy-dump: make some symbols static or const
+      tools/firewire: nosy-dump: break up a deeply nested function
+      tools/firewire: nosy-dump: use linux/firewire-constants.h
+      tools/firewire: nosy-dump: remove unused code
+      tools/firewire: nosy-dump: increment program version
+
+ MAINTAINERS                  |    1 +
+ drivers/firewire/Kconfig     |   24 +
+ drivers/firewire/Makefile    |    1 +
+ drivers/firewire/nosy-user.h |   25 +
+ drivers/firewire/nosy.c      |  720 ++++++++++++++++++++++++
+ drivers/firewire/nosy.h      |  237 ++++++++
+ tools/firewire/Makefile      |   19 +
+ tools/firewire/decode-fcp.c  |  213 +++++++
+ tools/firewire/list.h        |   62 ++
+ tools/firewire/nosy-dump.c   | 1031 ++++++++++++++++++++++++++++++++++
+ tools/firewire/nosy-dump.h   |  173 ++++++
+ 11 files changed, 2506 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/firewire/nosy-user.h
+ create mode 100644 drivers/firewire/nosy.c
+ create mode 100644 drivers/firewire/nosy.h
+ create mode 100644 tools/firewire/Makefile
+ create mode 100644 tools/firewire/decode-fcp.c
+ create mode 100644 tools/firewire/list.h
+ create mode 100644 tools/firewire/nosy-dump.c
+ create mode 100644 tools/firewire/nosy-dump.h
 -- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Micha≈Ç "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Stefan Richter
+-=====-==-=- -=== =-==-
+http://arcgraph.de/sr/
+
