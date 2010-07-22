@@ -1,81 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758748Ab0GVQ1H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 12:27:07 -0400
-Received: from fn.samba.org ([216.83.154.106]:39277 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752210Ab0GVQ1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 12:27:03 -0400
-Date: Thu, 22 Jul 2010 09:27:12 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended file stats available [ver #6]
-Message-ID: <20100722162712.GB10352@jeremy-laptop>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
- <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
- <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
- <30448.1279800887@redhat.com>
- <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
- <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
- <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
- <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+	id S1758812Ab0GVQ21 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 12:28:27 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:46743 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751559Ab0GVQ2W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 12:28:22 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6051"; a="48156856"
+Date: Thu, 22 Jul 2010 09:28:20 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+Message-ID: <20100722162818.GD10255@codeaurora.org>
+References: <20100715014148.GC2239@codeaurora.org>
+ <20100719082213.GA7421@n2100.arm.linux.org.uk>
+ <20100720221959.GC12250@codeaurora.org>
+ <20100721104356S.fujita.tomonori@lab.ntt.co.jp>
+ <20100722043034.GC22559@codeaurora.org>
+ <20100722073917.GC6802@n2100.arm.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+In-Reply-To: <20100722073917.GC6802@n2100.arm.linux.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 08:47:46AM -0700, Linus Torvalds wrote:
-> On Thu, Jul 22, 2010 at 8:36 AM, Volker Lendecke
-> <Volker.Lendecke@sernet.de> wrote:
-> >
-> > The nice thing about this is also that if this is supposed
-> > to be fully usable for Windows clients, the birthtime needs
-> > to be changeable. That's what NTFS semantics gives you, thus
-> > Windows clients tend to require it.
+On Thu, Jul 22, 2010 at 08:39:17AM +0100, Russell King - ARM Linux wrote:
+> On Wed, Jul 21, 2010 at 09:30:34PM -0700, Zach Pfeffer wrote:
+> > This goes to the nub of the issue. We need a lot of 1 MB physically
+> > contiguous chunks. The system is going to fragment and we'll never get
+> > our 12 1 MB chunks that we'll need, since the DMA API allocator uses
+> > the system pool it will never succeed.
 > 
-> Ok. So it's not really a creation date, exactly the same way ctime
-> isn't at all a creation date.
-> 
-> And maybe that actually hints at a better solution: maybe a better
-> model is to create a new per-thread flag that says "do ctime updates
-> the way windows does them".
-> 
-> So instead of adding another "btime" - which isn't actually what even
-> windows does - just admit that the _real_ issue is that Unix and
-> Windows semantics are different for the pre-existing "ctime".
-> 
-> The fact is, windows has "access time", "modification time" and
-> "creation time" _exactly_ like UNIX. It's just that the ctime has
-> slightly different semantics in windows vs unix. So quite frankly,
-> it's totally insane to introduce a "birthtime", when that isn't even
-> what windows wants, just because people cannot face the actual real
-> difference.
-> 
-> Tell me why we shouldn't just do this right?
+> By the "DMA API allocator" I assume you mean the coherent DMA interface,
+> The DMA coherent API and DMA streaming APIs are two separate sub-interfaces
+> of the DMA API and are not dependent on each other.
 
-No, ctime isn't the same as Windows "create time". Windows
-"create time" semantics are that the timestamp is set to
-current time on file creation, but afterwards anyone with
-sufficient access can then modify it (!). Which is different
-from the "birthtime" spec on *BSD, as they can't be modified.
-
-Currently on *BSD we look for our special EA containing any
-modified create times on a file, and return that as "create
-time" if found, if not we return the st_birthtime from the
-stat struct. That works well enough for systems where you
-don't want to allow birthtime to be changed. Having said
-that I'm not sure how they cope with doing restores to
-a filesystem where you would need to set st_birthtime :-).
-
-Jeremy.
+I didn't know that, but yes. As far as I can tell they both allocate
+memory from the VM. We'd need a way to hook in our our own minimized
+mapping allocator.
