@@ -1,75 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758499Ab0GVHhb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 03:37:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59591 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757914Ab0GVHh2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 03:37:28 -0400
-Date: Thu, 22 Jul 2010 17:37:16 +1000
-From: Neil Brown <neilb@suse.de>
-To: Jiri Slaby <jirislaby@gmail.com>
-Cc: James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
-        hch@lst.de, jaxboe@fusionio.com, LKML <linux-kernel@vger.kernel.org>,
-        linux-raid@vger.kernel.org
-Subject: Re: BUG at drivers/scsi/scsi_lib.c:1113
-Message-ID: <20100722173716.66264bef@notabene>
-In-Reply-To: <4C47ED7B.1050709@gmail.com>
-References: <4C47ED7B.1050709@gmail.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758410Ab0GVHkW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 03:40:22 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34550 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab0GVHkV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 03:40:21 -0400
+Date: Thu, 22 Jul 2010 08:39:17 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+	memory management
+Message-ID: <20100722073917.GC6802@n2100.arm.linux.org.uk>
+References: <20100715014148.GC2239@codeaurora.org> <20100719082213.GA7421@n2100.arm.linux.org.uk> <20100720221959.GC12250@codeaurora.org> <20100721104356S.fujita.tomonori@lab.ntt.co.jp> <20100722043034.GC22559@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722043034.GC22559@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010 09:04:27 +0200
-Jiri Slaby <jirislaby@gmail.com> wrote:
+On Wed, Jul 21, 2010 at 09:30:34PM -0700, Zach Pfeffer wrote:
+> This goes to the nub of the issue. We need a lot of 1 MB physically
+> contiguous chunks. The system is going to fragment and we'll never get
+> our 12 1 MB chunks that we'll need, since the DMA API allocator uses
+> the system pool it will never succeed.
 
-> Hello,
-> 
-> I'm seeing this BUG while booting:
-> 
-> EXT3-fs (md1): using internal journal
-> ------------[ cut here ]------------
-> kernel BUG at /home/l/latest/xxx/drivers/scsi/scsi_lib.c:1113!
-
-You aren't the only one.
-https://bugzilla.kernel.org/show_bug.cgi?id=16275
-
-
-> I bisected it down to:
-> commit 74450be123b6f3cb480c358a056be398cce6aa6e
-> Author: Christoph Hellwig <hch@lst.de>
-> Date:   Fri Jun 18 11:53:43 2010 +0200
-> 
->     block: unify flags for struct bio and struct request
-> 
->     Remove the current bio flags and reuse the request flags for the
-> bio, too.
->     This allows to more easily trace the type of I/O from the filesystem
->     down to the block driver.  There were two flags in the bio that were
->     missing in the requests:  BIO_RW_UNPLUG and BIO_RW_AHEAD.  Also I've
->     renamed two request flags that had a superflous RW in them.
-> 
->     Note that the flags are in bio.h despite having the REQ_ name - as
->     blkdev.h includes bio.h that is the only way to go for now.
-> 
->     Signed-off-by: Christoph Hellwig <hch@lst.de>
->     Signed-off-by: Jens Axboe <jaxboe@fusionio.com>
-> 
->
-
-Thanks for doing that.
-
-I suspect that problem is that "do_sync" and "do_barriers" in
-drivers/md/raid1.c are still 'bool' and should now be 'unsigned long'.
-
-I'm not sure how wide '_Bool' is, but I'm guess it isn't wide enough.
-
-Could you please try changing ever 'bool' in that file to 'unsigned long'
-and see if that fixes it?
-
-Thanks,
-NeilBrown
+By the "DMA API allocator" I assume you mean the coherent DMA interface,
+The DMA coherent API and DMA streaming APIs are two separate sub-interfaces
+of the DMA API and are not dependent on each other.
