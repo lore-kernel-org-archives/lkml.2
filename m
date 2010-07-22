@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab0GVFuy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 01:50:54 -0400
-Received: from helcar.apana.org.au ([209.40.204.226]:59911 "EHLO
-	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab0GVFuu (ORCPT
+	id S1755676Ab0GVF4M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 01:56:12 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:39259 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab0GVF4E (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 01:50:50 -0400
-Date: Thu, 22 Jul 2010 13:50:43 +0800
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
-Subject: Re: Crypto Fixes for 2.6.35
-Message-ID: <20100722055043.GA25689@gondor.apana.org.au>
-References: <20090324044932.GA18245@gondor.apana.org.au> <20090613020512.GA21024@gondor.apana.org.au> <20090910141905.GA17948@gondor.apana.org.au> <20091020065442.GA5947@gondor.apana.org.au> <20091230021253.GA17067@gondor.apana.org.au> <20100201195204.GA6953@gondor.apana.org.au> <20100305071043.GA3548@gondor.apana.org.au> <20100427135547.GA4008@gondor.apana.org.au> <20100603100550.GA30681@gondor.apana.org.au> <20100716022648.GA28219@gondor.apana.org.au>
+	Thu, 22 Jul 2010 01:56:04 -0400
+Date: Thu, 22 Jul 2010 01:56:02 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        dpshah@google.com, guijianfeng@cn.fujitsu.com, jmoyer@redhat.com,
+        czoccolo@gmail.com
+Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle
+ tunable V3
+Message-ID: <20100722055602.GA18566@infradead.org>
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100716022648.GA28219@gondor.apana.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus:
+On Wed, Jul 21, 2010 at 03:06:18PM -0400, Vivek Goyal wrote:
+> On high end storage (I got on HP EVA storage array with 12 SATA disks in 
+> RAID 5),
 
-This push fixes a bug in the talito hash driver that causes too
-much data to be copied.
+That's actually quite low end storage for a server these days :)
 
+> So this is not the default mode. This new tunable group_idle, allows one to
+> set slice_idle=0 to disable some of the CFQ features and and use primarily
+> group service differentation feature.
 
-Please pull from
+While this is better than before needing a sysfs tweak to get any
+performance out of any kind of server class hardware still is pretty
+horrible.  And slice_idle=0 is not exactly the most obvious paramter
+I would look for either.    So having some way to automatically disable
+this mode based on hardware characteristics would be really useful,
+and if that's not possible at least make sure it's very obviously
+document and easily found using web searches.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+Btw, what effect does slice_idle=0 with your patches have to single SATA
+disk and single SSD setups?
 
-or
-
-master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
-
-
-Lee Nipper (1):
-      crypto: talitos - fix bug in sg_copy_end_to_buffer
-
- drivers/crypto/talitos.c |    6 +++++-
- 1 files changed, 5 insertions(+), 1 deletions(-)
-
-Thanks,
--- 
-Email: Herbert Xu <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
