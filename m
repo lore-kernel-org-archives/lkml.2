@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759961Ab0GVSqu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:46:50 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62834 "EHLO
+	id S1759865Ab0GVSp4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:45:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62100 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758554Ab0GVSqI (ORCPT
+	with ESMTP id S1759818Ab0GVSpu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:46:08 -0400
+	Thu, 22 Jul 2010 14:45:50 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,88 +15,161 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH -v26 00/16] Use memblock with x86
-Date: Thu, 22 Jul 2010 11:43:45 -0700
-Message-Id: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+        Jan Beulich <jbeulich@novell.com>
+Subject: [PATCH 05/16] x86, memblock: Add get_free_all_memory_range()
+Date: Thu, 22 Jul 2010 11:43:50 -0700
+Message-Id: <1279824241-17582-6-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+In-Reply-To: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
+References: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C4891C3.018B,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4C4891B7.02E1,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-New memblock could be used to replace early_res in x86.
+get_free_all_memory_range is for CONFIG_NO_BOOTMEM=y, and will be called by
+free_all_memory_core_early().
 
-Suggested by: David, Ben, and Thomas
+It will use early_node_map aka active ranges subtract memblock.reserved to
+get all free range, and those ranges will convert to slab pages.
 
--v25: update to mainline with kmemleak fix on nobootmem
-      also rename lmb to memblock alread in mainline
+-v4: increase range size
 
--v26: according to Linus and hpa, seperate the big patchset to small ones.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: Jan Beulich <jbeulich@novell.com>
+---
+ arch/x86/include/asm/memblock.h |    2 +
+ arch/x86/mm/memblock.c          |  102 ++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 103 insertions(+), 1 deletions(-)
 
-this one is x86 related, finally we can remove bootmem code in x86 and early_res code.
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+index e11ddf0..72639ce 100644
+--- a/arch/x86/include/asm/memblock.h
++++ b/arch/x86/include/asm/memblock.h
+@@ -8,5 +8,7 @@ void memblock_x86_to_bootmem(u64 start, u64 end);
+ 
+ void memblock_x86_reserve_range(u64 start, u64 end, char *name);
+ void memblock_x86_free_range(u64 start, u64 end);
++struct range;
++int get_free_all_memory_range(struct range **rangep, int nodeid);
+ 
+ #endif
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+index 80cdcf8..ab4e2dc 100644
+--- a/arch/x86/mm/memblock.c
++++ b/arch/x86/mm/memblock.c
+@@ -86,7 +86,107 @@ u64 __init memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align)
+ 	return MEMBLOCK_ERROR;
+ }
+ 
+-#ifndef CONFIG_NO_BOOTMEM
++static __init struct range *find_range_array(int count)
++{
++	u64 end, size, mem;
++	struct range *range;
++
++	size = sizeof(struct range) * count;
++	end = memblock.current_limit;
++
++	mem = memblock_find_in_range(0, end, size, sizeof(struct range));
++	if (mem == MEMBLOCK_ERROR)
++		panic("can not find more space for range array");
++
++	/*
++	 * This range is tempoaray, so don't reserve it, it will not be
++	 * overlapped because We will not alloccate new buffer before
++	 * We discard this one
++	 */
++	range = __va(mem);
++	memset(range, 0, size);
++
++	return range;
++}
++
++#ifdef CONFIG_NO_BOOTMEM
++static void __init memblock_x86_subtract_reserved(struct range *range, int az)
++{
++	int count;
++	u64 final_start, final_end;
++	struct memblock_region *r;
++
++	/* Take out region array itself at first*/
++	if (memblock.reserved.regions != memblock_reserved_init_regions)
++		memblock_free(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
++
++	count  = memblock.reserved.cnt;
++
++	pr_info("Subtract (%d early reservations)\n", count);
++
++	for_each_memblock(reserved, r) {
++		pr_info("  [%010llx-%010llx]\n", (u64)r->base, (u64)r->base + r->size - 1);
++		final_start = PFN_DOWN(r->base);
++		final_end = PFN_UP(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		subtract_range(range, az, final_start, final_end);
++	}
++	/* Put region array back ? */
++	if (memblock.reserved.regions != memblock_reserved_init_regions)
++		memblock_reserve(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
++}
++
++struct count_data {
++	int nr;
++};
++
++static int __init count_work_fn(unsigned long start_pfn,
++				unsigned long end_pfn, void *datax)
++{
++	struct count_data *data = datax;
++
++	data->nr++;
++
++	return 0;
++}
++
++static int __init count_early_node_map(int nodeid)
++{
++	struct count_data data;
++
++	data.nr = 0;
++	work_with_active_regions(nodeid, count_work_fn, &data);
++
++	return data.nr;
++}
++
++int __init get_free_all_memory_range(struct range **rangep, int nodeid)
++{
++	int count;
++	struct range *range;
++	int nr_range;
++
++	count = (memblock.reserved.cnt + count_early_node_map(nodeid)) * 2;
++
++	range = find_range_array(count);
++	nr_range = 0;
++
++	/*
++	 * Use early_node_map[] and memblock.reserved.region to get range array
++	 * at first
++	 */
++	nr_range = add_from_early_node_map(range, count, nr_range, nodeid);
++#ifdef CONFIG_X86_32
++	subtract_range(range, count, max_low_pfn, -1ULL);
++#endif
++	memblock_x86_subtract_reserved(range, count);
++	nr_range = clean_sort_range(range, count);
++
++	*rangep = range;
++	return nr_range;
++}
++#else
+ void __init memblock_x86_to_bootmem(u64 start, u64 end)
+ {
+ 	int count;
+-- 
+1.6.4.2
 
-Thanks
-
-Yinghai Lu
-
-[PATCH 01/16] x86, memblock: Add memblock_x86_find_in_range_size()
-[PATCH 02/16] bootmem, x86: Add weak version of reserve_bootmem_generic
-[PATCH 03/16] x86, memblock: Add memblock_x86_to_bootmem()
-[PATCH 04/16] x86,memblock: Add memblock_x86_reserve_range/memblock_x86_free_range
-[PATCH 05/16] x86, memblock: Add get_free_all_memory_range()
-[PATCH 06/16] x86, memblock: Add memblock_x86_register_active_regions() and memblock_x86_hole_size()
-[PATCH 07/16] memblock: Add find_memory_core_early()
-[PATCH 08/16] x86, memblock: Add memblock_x86_find_in_range_node()
-[PATCH 09/16] x86, memblock: Add memblock_x86_free_memory_in_range()
-[PATCH 10/16] x86, memblock: Add memblock_x86_memory_in_range()
-[PATCH 11/16] x86, memblock: Use memblock_debug to control debug message print out
-[PATCH 12/16] x86: Use memblock to replace early_res
-[PATCH 13/16] x86: Replace e820_/_early string with memblock_
-[PATCH 14/16] x86: Remove not used early_res code
-[PATCH 15/16] x86, memblock: Use memblock_memory_size()/memblock_free_memory_size() to get correct dma_reserve
-[PATCH 16/16] x86: remove old bootmem code
-
- arch/x86/Kconfig                |   15 +-
- arch/x86/include/asm/e820.h     |   20 +-
- arch/x86/include/asm/efi.h      |    2 +-
- arch/x86/include/asm/memblock.h |   21 ++
- arch/x86/kernel/acpi/sleep.c    |    7 +-
- arch/x86/kernel/apic/numaq_32.c |    3 +-
- arch/x86/kernel/check.c         |   16 +-
- arch/x86/kernel/e820.c          |  192 ++++---------
- arch/x86/kernel/efi.c           |    5 +-
- arch/x86/kernel/head.c          |    3 +-
- arch/x86/kernel/head32.c        |   10 +-
- arch/x86/kernel/head64.c        |    7 +-
- arch/x86/kernel/mpparse.c       |    5 +-
- arch/x86/kernel/setup.c         |   78 +++--
- arch/x86/kernel/setup_percpu.c  |    6 -
- arch/x86/kernel/trampoline.c    |    8 +-
- arch/x86/mm/Makefile            |    2 +
- arch/x86/mm/init.c              |    7 +-
- arch/x86/mm/init_32.c           |   66 +-----
- arch/x86/mm/init_64.c           |   67 +-----
- arch/x86/mm/k8topology_64.c     |    4 +-
- arch/x86/mm/memblock.c          |  359 ++++++++++++++++++++++++
- arch/x86/mm/memtest.c           |    7 +-
- arch/x86/mm/numa_32.c           |   28 +-
- arch/x86/mm/numa_64.c           |   84 ++-----
- arch/x86/mm/srat_32.c           |    3 +-
- arch/x86/mm/srat_64.c           |   11 +-
- arch/x86/xen/mmu.c              |    5 +-
- arch/x86/xen/setup.c            |    3 +-
- include/linux/early_res.h       |   23 --
- include/linux/mm.h              |    2 +
- kernel/Makefile                 |    1 -
- kernel/early_res.c              |  590 ---------------------------------------
- mm/bootmem.c                    |   13 +-
- mm/page_alloc.c                 |   86 ++++---
- mm/sparse-vmemmap.c             |   11 -
- 36 files changed, 651 insertions(+), 1119 deletions(-)
- create mode 100644 arch/x86/include/asm/memblock.h
- create mode 100644 arch/x86/mm/memblock.c
- delete mode 100644 include/linux/early_res.h
- delete mode 100644 kernel/early_res.c
