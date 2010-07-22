@@ -1,62 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755377Ab0GVJTW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 05:19:22 -0400
-Received: from mga03.intel.com ([143.182.124.21]:43304 "EHLO mga03.intel.com"
+	id S1758632Ab0GVJTw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 05:19:52 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:49121 "EHLO gir.skynet.ie"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751926Ab0GVJTV convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 05:19:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,242,1278313200"; 
-   d="scan'208";a="303057163"
-From: "Jin, Gordon" <gordon.jin@intel.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>,
-        "tim.gardner@canonical.com" <tim.gardner@canonical.com>,
-        Dave Airlie <airlied@redhat.com>
-CC: "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "eric@anholt.net" <eric@anholt.net>, Kees Cook <kees@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hao, Xudong" <xudong.hao@intel.com>
-Date: Thu, 22 Jul 2010 17:19:18 +0800
-Subject: RE: i915 boot regression on Q35 chipset with 2.6.35-rc4
-Thread-Topic: i915 boot regression on Q35 chipset with 2.6.35-rc4
-Thread-Index: Acso2e52zh72wWQ3TImAR3sFeyivKwApLQYQ
-Message-ID: <B32E3D5F1713054290B4FF257B89C51A1F1DAA512D@shsmsx502.ccr.corp.intel.com>
-References: <4C46E98A.3010206@mail.tpi.com>
- <8u3s94$g0j0tc@orsmga002.jf.intel.com>
-In-Reply-To: <8u3s94$g0j0tc@orsmga002.jf.intel.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1755603Ab0GVJTr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 05:19:47 -0400
+Date: Thu, 22 Jul 2010 10:19:30 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Christoph Hellwig <hch@infradead.org>,
+        Wu Fengguang <fengguang.wu@intel.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [PATCH 4/8] vmscan: Do not writeback filesystem pages in
+	direct reclaim
+Message-ID: <20100722091930.GD13117@csn.ul.ie>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie> <1279545090-19169-5-git-send-email-mel@csn.ul.ie> <20100719221420.GA16031@cmpxchg.org> <20100720134555.GU13117@csn.ul.ie> <20100720220218.GE16031@cmpxchg.org> <20100721115250.GX13117@csn.ul.ie> <20100721210111.06dda351.kamezawa.hiroyu@jp.fujitsu.com> <20100721142710.GZ13117@csn.ul.ie> <20100722085734.ff252542.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100722085734.ff252542.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Chris Wilson wrote on Wednesday, July 21, 2010 9:37 PM:
-> On Wed, 21 Jul 2010 14:35:22 +0200, Tim Gardner <tcanonical@tpi.com>
-> wrote: 
->> What's up with this patch? I haven't received any comment, nor has it
->> appeared in your git repository.
+On Thu, Jul 22, 2010 at 08:57:34AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Wed, 21 Jul 2010 15:27:10 +0100
+> Mel Gorman <mel@csn.ul.ie> wrote:
 > 
-> Dave hasn't taken it because it is a regression fix for i915 and the
-> current procedure is for those to go through Eric's tree. Eric has
-> been busy working on a new compiler for GLSL the last few weeks and
-> has been applying patches in batches.
+> > On Wed, Jul 21, 2010 at 09:01:11PM +0900, KAMEZAWA Hiroyuki wrote:
+>  
+> > > But, hmm, memcg will have to select to enter this rounine based on
+> > > the result of 1st memory reclaim.
+> > > 
+> > 
+> > It has the option of igoring pages being dirtied but I worry that the
+> > container could be filled with dirty pages waiting for flushers to do
+> > something.
 > 
-> The patch I am happy to ack, but since I introduced the regression
-> [https://bugzilla.kernel.org/show_bug.cgi?id=16294], I'd rather have
-> someone more familiar with the intricacies of G33/G35/Q35 review it.
+> I'll prepare dirty_ratio for memcg. It's not easy but requested by I/O cgroup
+> guys, too...
 > 
-> For what is worth:
-> Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
 
-This patch fixes the bug on our G33 (0x29b2).
-Tested-by: Xudong Hao <xudong.hao@intel.com>
+I can see why it might be difficult. Dirty pages are not being counted
+on a per-container basis. It would require additional infrastructure to
+count it or a lot of scanning.
 
--Gordon
+> 
+> > 
+> > > >  
+> > > > -		/*
+> > > > -		 * The attempt at page out may have made some
+> > > > -		 * of the pages active, mark them inactive again.
+> > > > -		 */
+> > > > -		nr_active = clear_active_flags(&page_list, NULL);
+> > > > -		count_vm_events(PGDEACTIVATE, nr_active);
+> > > > +		while (nr_reclaimed < nr_taken && nr_dirty && dirty_retry--) {
+> > > > +			wakeup_flusher_threads(laptop_mode ? 0 : nr_dirty);
+> > > > +			congestion_wait(BLK_RW_ASYNC, HZ/10);
+> > > >  
+> > >
+> > > Congestion wait is required ?? Where the congestion happens ?
+> > > I'm sorry you already have some other trick in other patch.
+> > > 
+> > 
+> > It's to wait for the IO to occur.
+> > 
+>
+> 1 tick penalty seems too large. I hope we can have some waitqueue in future.
+> 
+
+congestion_wait() if congestion occurs goes onto a waitqueue that is
+woken if congestion clears. I didn't measure it this time around but I
+doubt it waits for HZ/10 much of the time.
+
+> > > > -		nr_reclaimed += shrink_page_list(&page_list, sc, PAGEOUT_IO_SYNC);
+> > > > +			/*
+> > > > +			 * The attempt at page out may have made some
+> > > > +			 * of the pages active, mark them inactive again.
+> > > > +			 */
+> > > > +			nr_active = clear_active_flags(&page_list, NULL);
+> > > > +			count_vm_events(PGDEACTIVATE, nr_active);
+> > > > +	
+> > > > +			nr_reclaimed += shrink_page_list(&page_list, sc,
+> > > > +						PAGEOUT_IO_SYNC, &nr_dirty);
+> > > > +		}
+> > > 
+> > > Just a question. This PAGEOUT_IO_SYNC has some meanings ?
+> > > 
+> > 
+> > Yes, in pageout it will wait on pages currently being written back to be
+> > cleaned before trying to reclaim them.
+> > 
+> Hmm. IIUC, this routine is called only when !current_is_kswapd() and
+> pageout is done only whne current_is_kswapd(). So, this seems ....
+> Wrong ?
+> 
+
+Both direct reclaim and kswapd can reach shrink_inactive_list
+
+Direct reclaim
+do_try_to_free_pages
+  -> shrink_zones
+    -> shrink_zone
+      -> shrink_list
+        -> shrink_inactive list <--- the routine in question
+
+Kswapd
+balance_pgdat
+  -> shrink_zone
+    -> shrink_list
+      -> shrink_inactive_list
+
+pageout() is still called by direct reclaim if the page is anon so it
+will synchronously wait on those if PAGEOUT_IO_SYNC is set. For either
+anon or file pages, if they are being currently written back, they will
+be waited on in shrink_page_list() if PAGEOUT_IO_SYNC.
+
+So it still has meaning. Did I miss something?
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
