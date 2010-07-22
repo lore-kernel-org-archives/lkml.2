@@ -1,67 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759590Ab0GVSH4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:07:56 -0400
-Received: from fn.samba.org ([216.83.154.106]:34053 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752421Ab0GVSHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:07:52 -0400
-Date: Thu, 22 Jul 2010 11:07:51 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Volker Lendecke <Volker.Lendecke@SerNet.DE>
-Cc: Jeremy Allison <jra@samba.org>,
-        Trond Myklebust <trond.myklebust@fys.uio.no>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-Message-ID: <20100722180751.GC32008@samba1>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <30448.1279800887@redhat.com>
- <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
- <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
- <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
- <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
- <20100722162712.GB10352@jeremy-laptop>
- <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
- <1279817930.3621.14.camel@heimdal.trondhjem.org>
- <20100722180204.GA32008@samba1>
- <E1Oc08W-00CZuz-Ns@intern.SerNet.DE>
+	id S1755449Ab0GVSI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:08:58 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:41780 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab0GVSI4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:08:56 -0400
+Date: Thu, 22 Jul 2010 12:08:54 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Filesystem hints to storage
+Message-ID: <20100722180854.GB22009@parisc-linux.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E1Oc08W-00CZuz-Ns@intern.SerNet.DE>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 08:04:41PM +0200, Volker Lendecke wrote:
-> On Thu, Jul 22, 2010 at 11:02:04AM -0700, Jeremy Allison wrote:
-> > On Thu, Jul 22, 2010 at 12:58:50PM -0400, Trond Myklebust wrote:
-> > > 
-> > > That would make it impossible to export the filesystem with NFSv2 and
-> > > v3. They do rely on ctime checking for certain operations (e.g. deciding
-> > > when to invalidate access and acl caches). NFSv4 needs this too if the
-> > > filesystem has no dedicated change attribute.
-> > > 
-> > > Still, I suppose the market for exporting the same filesystem with both
-> > > NFS and Samba is limited...
-> > 
-> > Ask NetApp about that :-). They have built a rather large
-> > business on just that fact :-).
-> 
-> Jeremy, how many hours have you spent getting "posix
-> locking" to the point where it is now? :-)
-> 
-> Volker
-> 
-> P.S: For those not aware, "posix locking = yes" is
-> cross-protocol byte range locking done by smbd to co-operate
-> with local processes and NFS.
 
-The time is counted in years, not hours :-).
+The NVMHCI working group has specified [1] a set of attributes for
+filesystems to pass down to devices which may allow the device to lay
+out its storage more effectively (eg if it's a hybrid MLC/SLC device).
+
+For Enterprise NVMHCI, the working group is looking at refining these
+hints.  Are there any hints that people would like to see added or
+removed from the list in NVMHCI 1.0?
+
+I think there are some hints that are hard for the filesystem to know
+itself, never mind pass down, so it'd be good to remove them to reduce
+the complexity.  Contrariwise, there are some hints I think the filesystem
+could pass down that aren't in the spec today, such as the flags from
+madvise (random access vs sequential access) and whether the access is
+for fs metadata or application data.
+
+[1] http://www.intel.com/standards/nvmhci/index.htm
+Page 35, figure 26
+
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
