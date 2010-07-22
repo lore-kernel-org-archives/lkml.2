@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759236Ab0GVLQ2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:16:28 -0400
-Received: from mga01.intel.com ([192.55.52.88]:65343 "EHLO mga01.intel.com"
+	id S1759304Ab0GVLQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 07:16:46 -0400
+Received: from mga09.intel.com ([134.134.136.24]:53702 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755683Ab0GVLQ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 07:16:26 -0400
+	id S1755683Ab0GVLQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 07:16:44 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,242,1278313200"; 
-   d="scan'208";a="588615388"
-Subject: [RFC][PATCH v1 09/15] perf: export tracepoint events via sysfs: mce
+   d="scan'208";a="537790189"
+Subject: [RFC][PATCH v1 10/15] perf: export tracepoint events via sysfs:
+ module
 From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>,
-        Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-        Huang Ying <ying.huang@intel.com>, Andi Kleen <ak@linux.intel.com>
+To: Ingo Molnar <mingo@elte.hu>
 Cc: Robert Richter <robert.richter@amd.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Johannes Berg <johannes@sipsolutions.net>,
@@ -34,8 +33,8 @@ Cc: Robert Richter <robert.richter@amd.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 19:16:42 +0800
-Message-ID: <1279797402.20942.92.camel@minggr.sh.intel.com>
+Date: Thu, 22 Jul 2010 19:16:59 +0800
+Message-ID: <1279797419.20942.93.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
@@ -43,33 +42,49 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mce tracepoint events are exported like below,
+module tracepoint events are exported like below,
 
-/sys/devices/system/machinecheck/machinecheck0/events/
-`-- mce_record
+/sys/module/events/
+|-- module_free
+|   |-- config
+|   `-- type
+|-- module_get
+|   |-- config
+|   `-- type
+|-- module_load
+|   |-- config
+|   `-- type
+|-- module_put
+|   |-- config
+|   `-- type
+`-- module_request
     |-- config
     `-- type
-/sys/devices/system/machinecheck/machinecheck1/events/
-`-- mce_record
-    |-- config
-    `-- type 
-
 ---
- arch/x86/kernel/cpu/mcheck/mce.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ kernel/params.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
-index 7a6f81e..eb6e127 100644
---- a/arch/x86/kernel/cpu/mcheck/mce.c
-+++ b/arch/x86/kernel/cpu/mcheck/mce.c
-@@ -1971,6 +1971,8 @@ static __cpuinit int mce_create_device(unsigned int cpu)
- 	if (err)
- 		return err;
+diff --git a/kernel/params.c b/kernel/params.c
+index 0b30ecd..be3326c 100644
+--- a/kernel/params.c
++++ b/kernel/params.c
+@@ -24,6 +24,7 @@
+ #include <linux/err.h>
+ #include <linux/slab.h>
+ #include <linux/ctype.h>
++#include <linux/perf_event.h>
  
-+	perf_sys_add_tp(&per_cpu(mce_dev, cpu).kobj, "mce");
+ #if 0
+ #define DEBUGP printk
+@@ -763,6 +764,8 @@ static int __init param_sysfs_init(void)
+ 
+ 	param_sysfs_builtin();
+ 
++	perf_sys_add_tp(&module_kset->kobj, "module");
 +
- 	for (i = 0; mce_attrs[i]; i++) {
- 		err = sysdev_create_file(&per_cpu(mce_dev, cpu), mce_attrs[i]);
- 		if (err)
+ 	return 0;
+ }
+ subsys_initcall(param_sysfs_init);
+
 
 
