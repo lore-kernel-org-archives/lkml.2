@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755206Ab0GVPhQ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 11:37:16 -0400
-Received: from mail.SerNet.de ([193.175.80.2]:46505 "EHLO mail.SerNet.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751865Ab0GVPhN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 11:37:13 -0400
-Date: Thu, 22 Jul 2010 17:36:59 +0200
-Date: Thu, 22 Jul 2010 17:36:59 +0200
-From: Volker Lendecke <Volker.Lendecke@SerNet.DE>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: David Howells <dhowells@redhat.com>, Jan Engelhardt <jengelh@medozas.de>,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended file stats available [ver #6]
-Reply-To: Volker.Lendecke@SerNet.DE
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
- <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
- <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
- <30448.1279800887@redhat.com>
- <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
- <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+	id S1755937Ab0GVPng (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 11:43:36 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:39055 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754747Ab0GVPne (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 11:43:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=VwGlywn7HB/8FVLe2yfIMaU+6FOq0vcX5l6a0NfG7nkpykZ3g6fAr46tLyKw8Lxhxe
+         We5uOGGG3qNwshPmCAhLPjrpWoR7ml+Y9lfsFbG2PdKtnyCOoWtZP8hQvV01ttKTh5nq
+         i/GD4wyWnYj2oyvHBm0AD4AyyaGMiw0wOtw/M=
+Date: Thu, 22 Jul 2010 08:43:28 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Wan ZongShun <mcuos.com@gmail.com>
+Cc: linux-input@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] keypad/nuc900: change keypad driver name from
+ 'nuc900-keypad' to 'nuc900-kpi'
+Message-ID: <20100722154328.GA21971@core.coreip.homeip.net>
+References: <4C431211.6030706@gmail.com>
+ <AANLkTil5hsZYCWaMekzPkLfEC0_wxmBWfT3jj0IC5j6f@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-Message-Id: <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-Organization: SerNet GmbH, Goettingen, Germany
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTil5hsZYCWaMekzPkLfEC0_wxmBWfT3jj0IC5j6f@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 08:14:42AM -0700, Linus Torvalds wrote:
-> > # recent FreeBSD, NetBSD have creation timestamps called birthtime:
-> > AC_CHECK_MEMBERS([struct stat.st_birthtimespec.tv_nsec])
-> > AC_CHECK_MEMBERS([struct stat.st_birthtime], AC_CHECK_MEMBERS([struct stat.st_birthtimensec]))
+Hi Wan,
+
+On Thu, Jul 22, 2010 at 01:34:17PM +0800, Wan ZongShun wrote:
+> Dmitry,
+> 
+> Can it be applied?
+> 
+
+It is applied to my 'for-linus' branch.
+
+Thanks.
+
+> Thanks!
+> 
+> > Hi Dmitry,
 > >
-> > and the supporting code around that. "birth" might also be
-> > where the "b" comes from :-)
+> > I ever changed the keypad platform device name from 'nuc900-keypad' to
+> > 'nuc900-kpi', but I forget to modify the related keypad driver name,so
+> > the keypad driver does not work,I have to send the patch to fix this issue.
+> >
+> > Signed-off-by: Wan ZongShun <mcuos.com@gmail.com>
+> > ---
+> >  drivers/input/keyboard/w90p910_keypad.c |    2 +-
+> >  1 files changed, 1 insertions(+), 1 deletions(-)
+> >
+> > diff --git a/drivers/input/keyboard/w90p910_keypad.c b/drivers/input/keyboard/w90p910_keypad.c
+> > index 4ef764c..ee2bf6b 100644
+> > --- a/drivers/input/keyboard/w90p910_keypad.c
+> > +++ b/drivers/input/keyboard/w90p910_keypad.c
+> > @@ -258,7 +258,7 @@ static struct platform_driver w90p910_keypad_driver = {
+> >        .probe          = w90p910_keypad_probe,
+> >        .remove         = __devexit_p(w90p910_keypad_remove),
+> >        .driver         = {
+> > -               .name   = "nuc900-keypad",
+> > +               .name   = "nuc900-kpi",
+> >                .owner  = THIS_MODULE,
+> >        },
+> >  };
+> > --
+> > 1.6.3.3
+> >
 > 
-> Oh wow. And all of this just convinces me that we should _not_ do any
-> of this, since clearly it's all totally useless and people can't even
-> agree on a name.
 > 
-> Let's wait five years and see if there is actually any consensus on it
-> being needed and used at all, rather than rush into something just
-> because "we can".
-
-The nice thing about this is also that if this is supposed
-to be fully usable for Windows clients, the birthtime needs
-to be changeable. That's what NTFS semantics gives you, thus
-Windows clients tend to require it.
-
-Just as a hint, nothing that Linux should necessarily have
-to be bothered with, this is Samba's duty :-)
-
-Volker
+-- 
+Dmitry
