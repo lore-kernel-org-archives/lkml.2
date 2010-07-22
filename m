@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756732Ab0GVTJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 15:09:29 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:34402 "EHLO
+	id S1756844Ab0GVTJz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 15:09:55 -0400
+Received: from mail.candelatech.com ([208.74.158.172]:34410 "EHLO
 	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab0GVTJ2 (ORCPT
+	with ESMTP id S1752950Ab0GVTJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 15:09:28 -0400
+	Thu, 22 Jul 2010 15:09:51 -0400
 From: Ben Greear <greearb@candelatech.com>
 To: linux-kernel@vger.kernel.org
 Cc: Ben Greear <greearb@candelatech.com>
-Subject: [net 2/2] veth:  Remove redundant timestamp assignment.
-Date: Thu, 22 Jul 2010 12:09:16 -0700
-Message-Id: <1279825756-11568-3-git-send-email-greearb@candelatech.com>
+Subject: [net 1/2] net:  dev_forward_skb should call nf_reset
+Date: Thu, 22 Jul 2010 12:09:15 -0700
+Message-Id: <1279825756-11568-2-git-send-email-greearb@candelatech.com>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1279825756-11568-1-git-send-email-greearb@candelatech.com>
 References: <1279825756-11568-1-git-send-email-greearb@candelatech.com>
@@ -20,31 +20,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The timestamp is already cleared in the dev_forward_skb
-logic.
+With conn-track zones and probably with different network
+namespaces, the netfilter logic needs to be re-calculated
+on packet receive.  If the netfilter logic is not reset,
+it will not be recalculated properly.  This patch adds
+the nf_reset logic to dev_forward_skb.
 
 Signed-off-by: Ben Greear <greearb@candelatech.com>
 ---
-:100644 100644 0cfbb3d... 161ee02... M	drivers/net/veth.c
- drivers/net/veth.c |    5 -----
- 1 files changed, 0 insertions(+), 5 deletions(-)
+:100644 100644 7ac33e5... 22eee4e... M	net/core/dev.c
+ net/core/dev.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/veth.c b/drivers/net/veth.c
-index 0cfbb3d..161ee02 100644
---- a/drivers/net/veth.c
-+++ b/drivers/net/veth.c
-@@ -181,11 +181,6 @@ static netdev_tx_t veth_xmit(struct sk_buff *skb, struct net_device *dev)
- 	if (dev->features & NETIF_F_NO_CSUM)
- 		skb->ip_summed = rcv_priv->ip_summed;
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 7ac33e5..22eee4e 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1482,6 +1482,7 @@ static inline void net_timestamp(struct sk_buff *skb)
+ int dev_forward_skb(struct net_device *dev, struct sk_buff *skb)
+ {
+ 	skb_orphan(skb);
++	nf_reset(skb);
  
--	/* Zero out the time-stamp so that receiving code is forced
--	 * to recalculate it.
--	 */
--	skb->tstamp.tv64 = 0;
--
- 	length = skb->len + ETH_HLEN;
- 	if (dev_forward_skb(rcv, skb) != NET_RX_SUCCESS)
- 		goto rx_drop;
+ 	if (!(dev->flags & IFF_UP) ||
+ 	    (skb->len > (dev->mtu + dev->hard_header_len))) {
 -- 
 1.6.2.5
 
