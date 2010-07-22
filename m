@@ -1,48 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759361Ab0GVSFK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:05:10 -0400
-Received: from borg.medozas.de ([188.40.89.202]:41582 "EHLO borg.medozas.de"
+	id S1759389Ab0GVSGA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:06:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2168 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759219Ab0GVSFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:05:04 -0400
-Date: Thu, 22 Jul 2010 20:05:00 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Jeremy Allison <jra@samba.org>
-cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
-  file stats available [ver #6]
-In-Reply-To: <20100722180204.GA32008@samba1>
-Message-ID: <alpine.LSU.2.01.1007222004430.4215@obet.zrqbmnf.qr>
-References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
- <E1Obxpd-00CRIo-SF@intern.SerNet.DE> <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com> <20100722162712.GB10352@jeremy-laptop> <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com> <1279817930.3621.14.camel@heimdal.trondhjem.org>
- <20100722180204.GA32008@samba1>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+	id S1752421Ab0GVSF6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:05:58 -0400
+Date: Thu, 22 Jul 2010 21:05:38 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org
+Subject: Re: [PATCH v2] Re: perf annotate segfaults when source code has
+ goto label that looks like hex number
+Message-ID: <20100722180538.GB10307@redhat.com>
+References: <20100722072044.GD27177@redhat.com>
+ <20100722143345.GC17631@ghostprotocols.net>
+ <20100722163851.GA10307@redhat.com>
+ <20100722164711.GD17631@ghostprotocols.net>
+ <20100722165222.GE17631@ghostprotocols.net>
+ <20100722170541.GF17631@ghostprotocols.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722170541.GF17631@ghostprotocols.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 22, 2010 at 02:05:42PM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jul 22, 2010 at 01:52:22PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > Em Thu, Jul 22, 2010 at 01:47:11PM -0300, Arnaldo Carvalho de Melo escreveu:
+> > > Em Thu, Jul 22, 2010 at 07:38:51PM +0300, Gleb Natapov escreveu:
+> > > > On Thu, Jul 22, 2010 at 11:33:45AM -0300, Arnaldo Carvalho de Melo wrote:
+> > > > > Can you try the attached patch?
+> > > > > 
+> > > > I can, only later. But if I underhand your patch correctly perf will
+> > > > still crash if there is a comment after the label on the same line.
+> > > 
+> > > Possibly, will try that now.
+> > 
+> > It could be a comment of play code, like:
+> > 
+> > [root@emilia ~]# cat test.c 
+> > int main(int argc, char **argv)
+> > {
+> >       int i;
+> > 
+> >       while(1) {
+> >               i++;
+> >               if (i == 10000000)
+> >                       goto add;
+> >       }
+> > add:	return 0;
+> > }
+> > [root@emilia ~]#
+> > 
+> > back to the drawing board :-\
+> 
+> What about this one?
+> 
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index 699cf81..96e9044 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -976,13 +976,15 @@ static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
+>  		 * Parse hexa addresses followed by ':'
+>  		 */
+>  		line_ip = strtoull(tmp, &tmp2, 16);
+> -		if (*tmp2 != ':' || tmp == tmp2)
+> +		if (*tmp2 != ':' || tmp == tmp2 || tmp2[1] == '\0')
+>  			line_ip = -1;
+>  	}
+>  
+>  	if (line_ip != -1) {
+>  		u64 start = map__rip_2objdump(self->ms.map, sym->start);
+>  		offset = line_ip - start;
+> +		if (offset < 0 || (u64)line_ip > sym->end)
+> +			offset = -1;
+>  	}
+>  
+This part is good idea anyway. Even if label will be interpreted as ip
+perf at least will not crash. It may miss-report something if check will
+accidentally succeed though.
 
-On Thursday 2010-07-22 20:02, Jeremy Allison wrote:
->On Thu, Jul 22, 2010 at 12:58:50PM -0400, Trond Myklebust wrote:
->> 
->> That would make it impossible to export the filesystem with NFSv2 and
->> v3. They do rely on ctime checking for certain operations (e.g. deciding
->> when to invalidate access and acl caches). NFSv4 needs this too if the
->> filesystem has no dedicated change attribute.
->> 
->> Still, I suppose the market for exporting the same filesystem with both
->> NFS and Samba is limited...
->
->Ask NetApp about that :-). They have built a rather large
->business on just that fact :-).
+>  	objdump_line = objdump_line__new(offset, line);
 
-What would ZFS do? :p
+--
+			Gleb.
