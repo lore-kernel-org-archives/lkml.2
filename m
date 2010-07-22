@@ -1,78 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756480Ab0GVMc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 08:32:26 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37277 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753185Ab0GVMcY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 08:32:24 -0400
-From: Ben Hutchings <ben@decadent.org.uk>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: linux-kernel@vger.kernel.org, Geert Stappers <stappers@stappers.nl>,
-        Dave Airlie <airlied@redhat.com>,
-        Stephen Rothwell <sfr@canb.auug.org.au>
-In-Reply-To: <4c472b3b227169b7c1@agluck-desktop.sc.intel.com>
-References: <4c472b3b227169b7c1@agluck-desktop.sc.intel.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-H/os8kns/O0RzPmo9EH7"
-Date: Thu, 22 Jul 2010 13:32:14 +0100
-Message-ID: <1279801934.4883.355.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-Subject: Re: [PATCH] Fix ttm_page_alloc.c build breakage
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
-X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
+	id S1757994Ab0GVMgf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 08:36:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37864 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755530Ab0GVMgd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 08:36:33 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100722041554.GB3446@amd>
+References: <20100722041554.GB3446@amd> <27282.1279058150@redhat.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] Add a dentry op to handle automounting rather than abusing follow_link
+Date: Thu, 22 Jul 2010 13:36:27 +0100
+Message-ID: <30811.1279802187@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Nick Piggin <npiggin@suse.de> wrote:
 
---=-H/os8kns/O0RzPmo9EH7
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+> > AFS is made to use this facility so that it can be tested.  Other
+> > filesystems abusing the follow_mount() inode operation will also need to
+> > be modified.
 
-On Wed, 2010-07-21 at 10:15 -0700, Luck, Tony wrote:
-> The commit 1e8655f87333def92bb8215b423adc65403b08a5
->     drm/ttm: Fix build on architectures without AGP
->=20
-> looks at TTM_HAS_AGP before it has been set in ttm_bo_driver.h
->    =20
-> Move the conditional inclusion of <asm/agp.h> *after* we have included
-> ttm_bo_driver.h
+I meant follow_link() here of course...  Too many followy things:-)
 
-D'oh, yes.
+> How about having a .follow_mount op, and using that instead of
+> default follow_mount in case mounted is incremented?
 
-> Signed-of-by: Tony Luck <tony.luck@intel.com>
-Acked-by: Ben Hutchings <ben@decadent.org.uk>
+But what if d_mounted is not incremented, though?  That's usually the point
+you'd want to call the automount code.  Why would you want to call into the
+filesystem just to skip over possibly mounted dentries?  A dentry may have an
+elevated d_mount on it, but nothing mounted at that {vfsmount,dentry} point I
+suppose, but still jumping into the filesystem just so it can skip an already
+mounted point would seem a waste of time.
 
-Ben.
+> Also I would prefer the patch to add this call
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+Meaning i_op->follow_mount()?
 
---=-H/os8kns/O0RzPmo9EH7
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
+> keep basically the same API as follow_mount, so if you are going to change
+> that to return an error and do the NOFOLLOW handling in there, then could
+> you do that first, as a more trivial patch?
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Ummm...  I'm not sure I follow you.  I changed __follow_mount() not
+follow_mount().  I don't think changing the latter is necessary.
 
-iQIVAwUATEg6Que/yOyVhhEJAQKjEQ//YCtSxevEE9S3ARwj0uAyuC87k0NYLjwd
-q/7wyb3Eskpv0NgOHey3+tghPzvkVlrr2M3oJB6K3BlzvwxJNkVe4ljGnP8oImDR
-bKiczAy3+M+zLJd5r6oa6b8YgM2Ed9XllvsH/vHL5rZ+MrBC97TpPpIZR/4hvoAs
-1ZEI/v8t3X7aW7KL09+s8s0dsfV8ZogTjPydL0Z9UhUf3gw130OhQJMlXMsmmCpd
-ompBDE0n9mrpBVlBL2uwSJbh4dUQc4sNz2rceLtn+wnptoH1qllOiglv7z5oEgDh
-yzBvdHyxjI6jUeW4o7i7lu+2effplPfaw7m01lOsTUFHyrx0bGOQ429AwttEiVuE
-8dnNk9kZXVeVAH+G//xG3Sst9SX6O2b+sIAC192/eO3x/adfUhioAXs255jHhrN2
-MkFv6DM8vdQJVBVyapKGgOU1suvoBLzqnPgZrl+cnVk8cBhzRcXCRJ1SFL4Qo4uw
-jmcCwqTc3gKu/ak/3ygxO0jbOKe3rT3nPII38qdjtCtiqkm2V547rp81AGc6ir8U
-2L26N5zWvcq4qCOnv+7owpae3sNztC9Eqv1gLAk9vx4F/0TEjbilCRnRnPIKmWcD
-mz5lDQjakLQbb6l79//I4wr69QK0Ja4vxIhbq0e7SNRuhCmIQcc7kzOxJCW99P19
-QxiTI9Ey7mI=
-=KUWD
------END PGP SIGNATURE-----
+> Then your addition of the d_op should not touch outside *follow_mount.
 
---=-H/os8kns/O0RzPmo9EH7--
+But calling i_op->follow_mount() would, so what does this gain you?  And why
+not touch the inside of __follow_mount()?
+
+Are you suggesting doing i_op->follow_mount() instead of or as well as
+d_op->d_automount()?  I'm not entirely sure.
+
+David
