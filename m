@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754146Ab0GVT5P (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 15:57:15 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24965 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751598Ab0GVT5M convert rfc822-to-8bit (ORCPT
+	id S1755725Ab0GVT7a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 15:59:30 -0400
+Received: from mail-ww0-f44.google.com ([74.125.82.44]:34887 "EHLO
+	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755091Ab0GVT72 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 15:57:12 -0400
-MIME-Version: 1.0
-Message-ID: <a9978c9a-6d85-477e-9962-395208fb5dd4@default>
-Date: Thu, 22 Jul 2010 12:54:57 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Greg KH <greg@kroah.com>, Nitin Gupta <ngupta@vflare.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-        Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Rik van Riel <riel@redhat.com>, Avi Kivity <avi@redhat.com>,
-        Christoph Hellwig <hch@infradead.org>,
-        Minchan Kim <minchan.kim@gmail.com>,
-        Konrad Wilk <konrad.wilk@oracle.com>, linux-mm <linux-mm@kvack.org>,
+	Thu, 22 Jul 2010 15:59:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:reply-to:to:cc:content-type:date:message-id
+         :mime-version:x-mailer:content-transfer-encoding;
+        b=c5o0jgh7F9YzGUkcuhSTyCitU+UVCWuh3JhaTM2QNIizKt4WkB1FFP5mnZYJ46I5ez
+         lEJcnFvflQieByiqibtXmIMrT6VFYo7S9uYZT386vpt2pWsuGeBC6+WLnIDrODxlj7H9
+         wZCmeBei1Qb/GEuH4trMyHkDlgAaA02Uwx/VU=
+Subject: [PATCH 1/2] Staging: dt3155: Change include to linux header
+From: Joe Eloff <kagen101@gmail.com>
+Reply-To: kagen101@gmail.com
+To: Greg Kroah-Hartman <gregkh@suse.de>,
+        H Hartley Sweeten <hsweeten@visionengravers.com>,
+        Simon Horman <horms@verge.net.au>
+Cc: devel <devel@driverdev.osuosl.org>,
         linux-kernel <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 0/8] zcache: page cache compression support
-References: <1279283870-18549-1-git-send-email-ngupta@vflare.org
- 20100722191457.GA13309@kroah.com>
-In-Reply-To: <20100722191457.GA13309@kroah.com>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 2.0.1.2.1.2  (406224) [OL
- 12.0.6535.5005]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C48A25B.0071:SCFMA4539814,ss=1,fgs=0
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Jul 2010 21:59:10 +0200
+Message-ID: <1279828750.759.2.camel@dermezel>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:greg@kroah.com]
-> Sent: Thursday, July 22, 2010 1:15 PM
-> To: Nitin Gupta
-> Cc: Pekka Enberg; Hugh Dickins; Andrew Morton; Dan Magenheimer; Rik van
-> Riel; Avi Kivity; Christoph Hellwig; Minchan Kim; Konrad Rzeszutek
-> Wilk; linux-mm; linux-kernel
-> Subject: Re: [PATCH 0/8] zcache: page cache compression support
-> 
-> On Fri, Jul 16, 2010 at 06:07:42PM +0530, Nitin Gupta wrote:
-> > Frequently accessed filesystem data is stored in memory to reduce
-> access to
-> > (much) slower backing disks. Under memory pressure, these pages are
-> freed and
-> > when needed again, they have to be read from disks again. When
-> combined working
-> > set of all running application exceeds amount of physical RAM, we get
-> extereme
-> > slowdown as reading a page from disk can take time in order of
-> milliseconds.
-> 
-> <snip>
-> 
-> Given that there were a lot of comments and changes for this series,
-> can
-> you resend them with your updates so I can then apply them if they are
-> acceptable to everyone?
-> 
-> thanks,
-> greg k-h
+>From 434257d406094235c5c5020a68f34e2beb658e51 Mon Sep 17 00:00:00 2001
+From: Joe Eloff <kagen101@gmail.com>
+Date: Thu, 22 Jul 2010 20:26:25 +0200
+Subject: [PATCH 1/2] Staging: dt3155: Change include to linux header
 
-Hi Greg --
+Changed <asm/uaccess.h> to <linux/uaccess.h>
+Signed-off-by: Joe Eloff <kagen101@gmail.com>
+---
+ drivers/staging/dt3155/dt3155_drv.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Nitin's zcache code is dependent on the cleancache series:
-http://lkml.org/lkml/2010/6/21/411 
+diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
+index fed7e62..1d6858c 100644
+--- a/drivers/staging/dt3155/dt3155_drv.c
++++ b/drivers/staging/dt3155/dt3155_drv.c
+@@ -66,7 +66,7 @@ extern void printques(int);
+ #include <linux/smp_lock.h>
+ #include <linux/io.h>
+ 
+-#include <asm/uaccess.h>
++#include <linux/uaccess.h>
+ 
+ #include "dt3155.h"
+ #include "dt3155_drv.h"
+-- 
+1.6.3.3
 
-The cleancache series has not changed since V3 (other than
-fixing a couple of documentation typos) and didn't receive any
-comments other than Christoph's concern that there weren't
-any users... which I think has been since addressed with the
-posting of the Xen tmem driver code and Nitin's zcache.
 
-If you are ready to apply the cleancache series, great!
-If not, please let me know next steps so cleancache isn't
-an impediment for applying the zcache series.
 
-Thanks,
-Dan
