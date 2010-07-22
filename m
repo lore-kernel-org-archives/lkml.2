@@ -1,118 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759093Ab0GVJdb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 05:33:31 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:46462 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755098Ab0GVJd2 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 05:33:28 -0400
-Date: Thu, 22 Jul 2010 11:34:50 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-In-reply-to: <1279746102.31376.47.camel@c-dwalke-linux.qualcomm.com>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: linux-mm@kvack.org, Marek Szyprowski <m.szyprowski@samsung.com>,
-        Pawel Osciak <p.osciak@samsung.com>,
-        Xiaolin Zhang <xiaolin.zhang@intel.com>,
-        Hiremath Vaibhav <hvaibhav@ti.com>,
-        Robert Fekete <robert.fekete@stericsson.com>,
-        Marcus Lorentzon <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        Kyungmin Park <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-Message-id: <op.vf8nkct57p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
- <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
- <op.vf5o28st7p4s8u@pikus>
- <1279654698.26765.31.camel@c-dwalke-linux.qualcomm.com>
- <op.vf6zo9vb7p4s8u@pikus>
- <1279733750.31376.14.camel@c-dwalke-linux.qualcomm.com>
- <op.vf7gt3qy7p4s8u@pikus>
- <1279736348.31376.20.camel@c-dwalke-linux.qualcomm.com>
- <op.vf7h1yc47p4s8u@pikus>
- <1279738688.31376.24.camel@c-dwalke-linux.qualcomm.com>
- <op.vf7j13067p4s8u@pikus>
- <1279741029.31376.33.camel@c-dwalke-linux.qualcomm.com>
- <op.vf7lipj67p4s8u@pikus>
- <1279742604.31376.40.camel@c-dwalke-linux.qualcomm.com>
- <op.vf7mvhvn7p4s8u@pikus>
- <1279744472.31376.42.camel@c-dwalke-linux.qualcomm.com>
- <op.vf7nuzu57p4s8u@pikus>
- <1279745143.31376.46.camel@c-dwalke-linux.qualcomm.com>
- <op.vf7ofuif7p4s8u@pikus>
- <1279746102.31376.47.camel@c-dwalke-linux.qualcomm.com>
+	id S1759100Ab0GVJfb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 05:35:31 -0400
+Received: from sh.osrg.net ([192.16.179.4]:37273 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754668Ab0GVJf3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 05:35:29 -0400
+Date: Thu, 22 Jul 2010 18:35:07 +0900
+To: m.szyprowski@samsung.com
+Cc: fujita.tomonori@lab.ntt.co.jp, corbet@lwn.net, m.nazarewicz@samsung.com,
+        linux-mm@kvack.org, p.osciak@samsung.com, xiaolin.zhang@intel.com,
+        hvaibhav@ti.com, robert.fekete@stericsson.com,
+        marcus.xm.lorentzon@stericsson.com, linux-kernel@vger.kernel.org,
+        kyungmin.park@samsung.com
+Subject: RE: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <000001cb296f$6eba8fa0$4c2faee0$%szyprowski@samsung.com>
+References: <20100720181239.5a1fd090@bike.lwn.net>
+	<20100722143652V.fujita.tomonori@lab.ntt.co.jp>
+	<000001cb296f$6eba8fa0$4c2faee0$%szyprowski@samsung.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100722183432U.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 22 Jul 2010 18:35:08 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 21 Jul 2010 23:01:42 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
+On Thu, 22 Jul 2010 09:28:02 +0200
+Marek Szyprowski <m.szyprowski@samsung.com> wrote:
 
-> On Wed, 2010-07-21 at 22:56 +0200, Michał Nazarewicz wrote:
->> On Wed, 21 Jul 2010 22:45:43 +0200, Daniel Walker <dwalker@codeaurora.org> wrote:
->> > Your not hearing the issues.. IT'S TOO COMPLEX! Please remove it.
->>
->> Remove what exactly?
->
-> Remove the command line option and all related code, or make it all a
-> debug option.
+> > About the framework, it looks too complicated than we actually need
+> > (the command line stuff looks insane).
+> 
+> Well, this command line stuff was designed to provide a way to configure
+> memory allocation for devices with very sophisticated memory requirements.
 
-How convenient... you have stripped the part of my mail where I described
-why this is request have no sense.  I'll quote myself then:
+You have the feature in the wrong place.
 
->> The command line parameter? It's like 50 lines of code, so I don't
->> see any benefits.
+Your example: a camera driver and a video driver can share 20MB, then
+they want 20MB exclusively.
 
-As such, I'm not going to add bunch of #ifdefs just to remove 50 lines
-of code.
+You can reserve 20MB and make them share it. Then you can reserve 20MB
+for both exclusively.
 
->> The possibility to specify the configuration? It would defy the whole
->> purpose of CMA, so I won't do that.
-
-Simply as that.  We work with a platform where whole of the functionality
-provided by CMA is required (many regions, region start address, region
-alignment, device->region mapping).
-
-This means, what I keep repeating and you keep ignoring, that the complexity
-will be there if not as a parsing code then moved to the platform
-initialisation code and drivers code.
-
-One of the purposes of CMA is to hide the complexity inside CMA framework so
-device driver authors and platform maintainers can use a simpler interface.
+You know how the whole system works. Adjust drivers (probably, with
+module parameters).
 
 
-Some time age (like year or two) I've posted some other solution to the
-problem which served our purpose just well and had very little complexity
-in it.  Unfortunately, customising that solution was quite hard (required
-changes to a header file and adding modifying code for reserving space).
+> > Why can't we have something simpler, like using memblock to reserve
+> > contiguous memory at boot and using kinda mempool to share such memory
+> > between devices?
+> 
+> There are a few problems with such simple approach:
+> 
+> 1. It does not provide all required functionality for our multimedia
+> devices. The main problem is the fact that our multimedia devices
+> require particular kind of buffers to be allocated in particular memory
+> bank. Then add 2 more requirements: a proper alignment (for some of them
+> it is even 128Kb) and particular range of addresses requirement (some
+> buffers must be allocated at higher addresses than the firmware).
+> This is very hard to achieve with such simple allocator.
 
-Also, in this old solution, adding or removing regions required device
-drivers to be modified.
+When a video driver needs 20MB to work properly, what's the point of
+releasing the 20MB for others then trying to get it again later?
 
-This was not nice, not nice at all.  True, however, the core wasn't complex.
-
-
-So when you say remove the complicity I say: I have been there, it's ugly.
-
-
-> Arguing with me isn't going to help your cause.
-
-It's you who keep repeating “remove it, it's to complex” without
-hearing my arguments.  I keep trying to show that all of the
-functionality is required and is being used on our development
-platform.
-
-If your hardware does not require that complexity... well, you're one
-lucky man.  Unfortunately, we are not, and we need a complex solution
-to work with complex hardware.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Even with the above example (two devices never use the memory at the
+same time), the driver needs memory regularly. What's the point of
+split the 20MB to small chunks and allocate them to others?
