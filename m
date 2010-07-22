@@ -1,55 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759203Ab0GVAEP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 20:04:15 -0400
-Received: from sh.osrg.net ([192.16.179.4]:43041 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759081Ab0GVAEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 20:04:13 -0400
-Date: Thu, 22 Jul 2010 09:03:57 +0900
-To: akataria@vmware.com
-Cc: konrad.wilk@oracle.com, ak@linux.intel.com, lenb@kernel.org,
-        x86@kernel.org, linux-acpi@vger.kernel.org,
-        linux-kernel@vger.kernel.org, petr@vmware.com
-Subject: Re: swiotlb detection should be memory hotplug aware ?
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100722084413I.fujita.tomonori@lab.ntt.co.jp>
-References: <20100721135750Z.fujita.tomonori@lab.ntt.co.jp>
-	<1279732414.10874.6.camel@ank32.eng.vmware.com>
-	<20100722084413I.fujita.tomonori@lab.ntt.co.jp>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100722090329O.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 22 Jul 2010 09:03:58 +0900 (JST)
+	id S1759208Ab0GVAGc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 20:06:32 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37835 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759144Ab0GVAG1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 20:06:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GtxBOTyj7QEUA6kd51ydvMwCaqZS48V8uVJXy/wxrP3k8ItfUr2+tZCu+7oUDVqn2s
+         rNqm0X2WeNZBiUmz+N/7tnw3ZAHRXHwSV28R5kqQGWe/0rCJ7q1CqQAMXo3yu7Z6pUw6
+         hf7AJ3L7k1eW5pgw8Za66ase9IDG6dn+0qjPs=
+Date: Thu, 22 Jul 2010 02:06:25 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>
+Cc: linux-kernel@vger.kernel.org, John Kacur <jkacur@redhat.com>,
+        Christoph Hellwig <hch@lst.de>
+Subject: Re: [PATCH 03/18] lkdtm: use generic_file_llseek in debugfs
+Message-ID: <20100722000623.GE5801@nowhere>
+References: <1278538820-1392-1-git-send-email-arnd@arndb.de> <1278538820-1392-4-git-send-email-arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1278538820-1392-4-git-send-email-arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010 08:44:42 +0900
-FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-
-> On Wed, 21 Jul 2010 10:13:34 -0700
-> Alok Kataria <akataria@vmware.com> wrote:
+On Wed, Jul 07, 2010 at 11:40:05PM +0200, Arnd Bergmann wrote:
+> When the default llseek behavior gets changed to
+> not allowing seek, all file operations that rely
+> on the current behaviour need to use an explicit
+> .llseek operation.
 > 
-> > > Basically, you want to add hot-plug memory and enable swiotlb, right?
-> > 
-> > Not really, I am planning to do something like this, 
-> > 
-> > @@ -52,7 +52,7 @@ int __init pci_swiotlb_detect(void)
-> >  
-> >  	/* don't initialize swiotlb if iommu=off (no_iommu=1) */
-> >  #ifdef CONFIG_X86_64
-> > -	if (!no_iommu && max_pfn > MAX_DMA32_PFN)
-> > +	if (!no_iommu && (max_pfn > MAX_DMA32_PFN || hotplug_possible()))
-> >  		swiotlb = 1;
+> The files that lkdtm uses in debugfs are regular
+> files and they get read using simple_read_from_buffer,
+> so generic_file_llseek is the right operation.
 > 
-> Always enable swiotlb with memory hotplug enabled? Wasting 64MB on a
-> x86_64 system with 128MB doesn't look to be a good idea. I don't think
-> that there is an easy solution for this issue though.
+> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> ---
 
-btw, you need more work to enable switch on the fly.
 
-You need to change the dma_ops pointer (see get_dma_ops()). It means
-that you need to track outstanding dma operations per device, locking,
-etc.
+
+Applied, thanks.
+
