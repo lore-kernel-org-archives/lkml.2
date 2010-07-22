@@ -1,96 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759915Ab0GVVWs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:22:48 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60693 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754134Ab0GVVWo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:22:44 -0400
-Message-ID: <4C48B664.9000109@kernel.org>
-Date: Thu, 22 Jul 2010 23:21:40 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1757706Ab0GVVZL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:25:11 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33011 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751734Ab0GVVZI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 17:25:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=N/uzydSEkQ8wTlUA7NSzNwZ5MADt+/YXesQ9Y8hFqlt1oMlfWEDKe+rWJl3pytV57+
+         azSDzd0fYasGtC6X9E1+ceOtZQkIuTRJRomS524JThJ8tAQHeV12bmlkhdM0ypw81rJJ
+         G0Hiz8J9wVKBQGeJ96gOg2441SenqNJvieYto=
+Message-ID: <4C48B730.30708@gmail.com>
+Date: Thu, 22 Jul 2010 22:25:04 +0100
+From: Iain <selsinork@gmail.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090302)
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Oleg Nesterov <oleg@redhat.com>, Sridhar Samudrala <sri@us.ibm.com>,
-        netdev <netdev@vger.kernel.org>, lkml <linux-kernel@vger.kernel.org>,
-        "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dmitri Vorobiev <dmitri.vorobiev@movial.com>,
-        Jiri Kosina <jkosina@suse.cz>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH UPDATED 1/3] vhost: replace vhost_workqueue with per-vhost
- kthread
-References: <4BFEE216.2070807@kernel.org> <20100528150830.GB21880@redhat.com> <4BFFE742.2060205@kernel.org> <20100530112925.GB27611@redhat.com> <4C02C961.9050606@kernel.org> <20100531152221.GB2987@redhat.com> <4C03D983.9010905@kernel.org> <20100531160020.GC3067@redhat.com> <4C04D41B.4050704@kernel.org> <4C06A580.9060300@kernel.org> <20100722155840.GA1743@redhat.com>
-In-Reply-To: <20100722155840.GA1743@redhat.com>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
+To: Len Brown <lenb@kernel.org>
+CC: Andi Kleen <andi@firstfloor.org>, Matthew Garrett <mjg59@srcf.ucam.org>,
+        "Yu, Luming" <luming.yu@intel.com>,
+        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "venki@google.com" <venki@google.com>
+Subject: Re: [PATCH] ACPI: make acpi_idle Nehalem-aware
+References: <20100427124703.GA16706@jgarrett.org> <alpine.LFD.2.00.1004301218280.2489@sony> <20100430174447.GA14889@srcf.ucam.org> <d7f2dd35a4361e5156079278543769a0@localhost> <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain> <CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com> <20100525124325.GC7876@srcf.ucam.org> <alpine.LFD.2.00.1005251114420.4114@localhost.localdomain> <20100525185507.GA15997@srcf.ucam.org> <alpine.LFD.2.00.1007211729550.409@localhost.localdomain> <20100722074750.GA22520@one.firstfloor.org> <alpine.LFD.2.00.1007221153120.3164@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1007221153120.3164@localhost.localdomain>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 22 Jul 2010 21:21:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Len Brown wrote:
+> However, we'll still have issues with systems
+> like the HP DL360 G6 which explicity set the
+> flag to ask for BM_STS checking and configure
+> the chipset such that BM_STS is active.
+> That may require a BIOS fix, or we may
+> have to run intel_idle on that box --
+> since intel_idle ignores BM_STS always
+> and instead relies on drivers to use pm_qos
+> to register device latency constraints.
 
-On 07/22/2010 05:58 PM, Michael S. Tsirkin wrote:
-> All the tricky barrier pairing made me uncomfortable.  So I came up with
-> this on top (untested): if we do all operations under the spinlock, we
-> can get by without barriers and atomics.  And since we need the lock for
-> list operations anyway, this should have no paerformance impact.
-> 
-> What do you think?
+I'm curious as to why you see a problem with the DL380G6 as the one I have here happily sits in C6 when idle.
 
-I've created kthread_worker in wq#for-next tree and already converted
-ivtv to use it.  Once this lands in mainline, I think converting vhost
-to use it would be better choice.  kthread worker code uses basically
-the same logic used in the vhost_workqueue code but is better
-organized and documented.  So, I think it would be better to stick
-with the original implementation, as otherwise we're likely to just
-decrease test coverage without much gain.
+your turbostat util shows:
 
-  http://git.kernel.org/?p=linux/kernel/git/tj/wq.git;a=commitdiff;h=b56c0d8937e665a27d90517ee7a746d0aa05af46;hp=53c5f5ba42c194cb13dd3083ed425f2c5b1ec439
+  CPU  GHz  TSC   %c0    %c1    %c3    %c6   %pc3   %pc6
+  avg 1.64 2.27   0.16   0.12   0.00  99.71   0.00  90.15
 
-> @@ -151,37 +161,37 @@ static void vhost_vq_reset(struct vhost_dev *dev,
->  static int vhost_worker(void *data)
->  {
->  	struct vhost_dev *dev = data;
-> -	struct vhost_work *work;
-> +	struct vhost_work *work = NULL;
->  
-> -repeat:
-> -	set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
-> +	for (;;) {
-> +		set_current_state(TASK_INTERRUPTIBLE);	/* mb paired w/ kthread_stop */
->  
-> -	if (kthread_should_stop()) {
-> -		__set_current_state(TASK_RUNNING);
-> -		return 0;
-> -	}
-> +		if (kthread_should_stop()) {
-> +			__set_current_state(TASK_RUNNING);
-> +			return 0;
-> +		}
->  
-> -	work = NULL;
-> -	spin_lock_irq(&dev->work_lock);
-> -	if (!list_empty(&dev->work_list)) {
-> -		work = list_first_entry(&dev->work_list,
-> -					struct vhost_work, node);
-> -		list_del_init(&work->node);
-> -	}
-> -	spin_unlock_irq(&dev->work_lock);
-> +		spin_lock_irq(&dev->work_lock);
-> +		if (work) {
-> +			work->done_seq = work->queue_seq;
-> +			if (work->flushing)
-> +				wake_up_all(&work->done);
+and powertop has results like:
 
-I don't think doing this before executing the function is correct, so
-you'll have to release the lock, execute the function, regrab the lock
-and then do the flush processing.
+Cn                Avg residency       P-states (frequencies)
+C0 (cpu running)        ( 0,1%)       Turbo Mode     0,0%
+polling           0,0ms ( 0,0%)         2,27 Ghz     0,0%
+C1 mwait          0,1ms ( 0,0%)         2,13 Ghz     0,0%
+C2 mwait          1,0ms ( 0,0%)         2,00 Ghz     0,0%
+C3 mwait         90,4ms (99,9%)         1,60 Ghz   100,0%
 
-Thanks.
+this is with v2.6.35-rc5-176-gcd5b8f8 and using acpi_idle. I've deliberately disabled intel_idle to test, however using intel_idle 
+gives almost identical results.
 
--- 
-tejun
+Looking at the bug 15886, the Access Size 0x03 entries you mentioned are all 0x01 on this system. I've also uploaded the acpidump 
+from this DL380G6 to that bug so that you can check I've not just looked in the wrong place.
+
+Did the first acpidump come from a system with the 'HP Power Regulator' setting in the bios set to OS Control mode ?  My system is 
+set this way and it seems to work as expected.
+The other settings for this option appear to be designed to override OS power management controls, for example the description of 
+the 'Static High Performance' option suggests it'll somehow force the CPU to operate in the highest performance mode all of the 
+time: "HP Static High Performance Mode: Processors will run in their maximum power/performance state at all times regardless of the 
+OS power management policy".
+
+If this does turn out to be as simple as a bios setting, should we really be trying to workaround what may be a legitimate decision 
+by the servers admin ?
+
+Iain
