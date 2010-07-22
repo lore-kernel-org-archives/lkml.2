@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752963Ab0GVQG2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 12:06:28 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:59064 "EHLO
+	id S1755026Ab0GVQHN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 12:07:13 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:55347 "EHLO
 	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751758Ab0GVQGY convert rfc822-to-8bit (ORCPT
+	with ESMTP id S1754398Ab0GVQHI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 12:06:24 -0400
+	Thu, 22 Jul 2010 12:07:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=mime-version:in-reply-to:references:date:message-id:subject:from:to
          :cc:content-type:content-transfer-encoding;
-        b=PSCDcdbA73+xZjwpMSPRwjsQyY28AZyNuH70WIXEpRGSuB6cCy31rf+NbFJPICDaQa
-         BBdtb2wo3r5kyPRsD+zX6YEk1gWp0t2DrPEzMsDXxVByg+LVQXN9bcrEyOR8tRPAZjfK
-         2cTGnrbgEc+sBW/YVb0caCaLXrYiZ8W9TRows=
+        b=MhmBCaZ4NHcHpMyVZcx0i2pY785KrA7+PIvcLBhWJClfHOW9S1ssiriOFY5T6ZnoKi
+         HgVBe4s4TVc6Jq0sFaLKN/APw4IV9JqfDwHTCOQ2/VeVlI3zMXEi2xlKDObQTQqy+QVE
+         RpQ8cmmV3Ujs6SsmVgLmmcmFwPQF6nqB+T1PE=
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+In-Reply-To: <AANLkTimsjARdMfnvFRSyy6gakCtVhGRBbyauVTc_Cuwt@mail.gmail.com>
 References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
 	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
 	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
@@ -24,8 +24,9 @@ References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
 	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
 	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
 	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-Date: Thu, 22 Jul 2010 12:06:22 -0400
-Message-ID: <AANLkTimsjARdMfnvFRSyy6gakCtVhGRBbyauVTc_Cuwt@mail.gmail.com>
+	<AANLkTimsjARdMfnvFRSyy6gakCtVhGRBbyauVTc_Cuwt@mail.gmail.com>
+Date: Thu, 22 Jul 2010 12:07:05 -0400
+Message-ID: <AANLkTik8bhdLHlM_vX1qdWzOW23GmiMJSAMyRkEz7QIS@mail.gmail.com>
 Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
 	file stats available [ver #6]
 From: Greg Freemyer <greg.freemyer@gmail.com>
@@ -41,57 +42,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 11:47 AM, Linus Torvalds
-<torvalds@linux-foundation.org> wrote:
-> On Thu, Jul 22, 2010 at 8:36 AM, Volker Lendecke
-> <Volker.Lendecke@sernet.de> wrote:
+On Thu, Jul 22, 2010 at 12:06 PM, Greg Freemyer <greg.freemyer@gmail.com> wrote:
+> On Thu, Jul 22, 2010 at 11:47 AM, Linus Torvalds
+> <torvalds@linux-foundation.org> wrote:
+>> On Thu, Jul 22, 2010 at 8:36 AM, Volker Lendecke
+>> <Volker.Lendecke@sernet.de> wrote:
+>>>
+>>> The nice thing about this is also that if this is supposed
+>>> to be fully usable for Windows clients, the birthtime needs
+>>> to be changeable. That's what NTFS semantics gives you, thus
+>>> Windows clients tend to require it.
 >>
->> The nice thing about this is also that if this is supposed
->> to be fully usable for Windows clients, the birthtime needs
->> to be changeable. That's what NTFS semantics gives you, thus
->> Windows clients tend to require it.
+>> Ok. So it's not really a creation date, exactly the same way ctime
+>> isn't at all a creation date.
+>>
+>> And maybe that actually hints at a better solution: maybe a better
+>> model is to create a new per-thread flag that says "do ctime updates
+>> the way windows does them".
+>>
+>> So instead of adding another "btime" - which isn't actually what even
+>> windows does - just admit that the _real_ issue is that Unix and
+>> Windows semantics are different for the pre-existing "ctime".
+>>
+>> The fact is, windows has "access time", "modification time" and
+>> "creation time" _exactly_ like UNIX. It's just that the ctime has
+>> slightly different semantics in windows vs unix. So quite frankly,
+>> it's totally insane to introduce a "birthtime", when that isn't even
+>> what windows wants, just because people cannot face the actual real
+>> difference.
+>>
+>> Tell me why we shouldn't just do this right?
+>>
+>>                Linus
 >
-> Ok. So it's not really a creation date, exactly the same way ctime
-> isn't at all a creation date.
+> I haven't been keeping up with this thread, but I believe NTFS has a
+> number of timestamps, not just 3.
 >
-> And maybe that actually hints at a better solution: maybe a better
-> model is to create a new per-thread flag that says "do ctime updates
-> the way windows does them".
+> This blog post references 8 in the left hand column.
 >
-> So instead of adding another "btime" - which isn't actually what even
-> windows does - just admit that the _real_ issue is that Unix and
-> Windows semantics are different for the pre-existing "ctime".
+> The 4 standard (most common) ones are:
 >
-> The fact is, windows has "access time", "modification time" and
-> "creation time" _exactly_ like UNIX. It's just that the ctime has
-> slightly different semantics in windows vs unix. So quite frankly,
-> it's totally insane to introduce a "birthtime", when that isn't even
-> what windows wants, just because people cannot face the actual real
-> difference.
+> File last access
+> File last modified
+> File created
+> MFT last modified
 >
-> Tell me why we shouldn't just do this right?
+> My understanding is that "MFT last modified" has semantics very
+> similar to Linux ctime.
 >
->                Linus
+> But there is not a generic equivalent to NTFS created.
+>
+> Thus if trying to have the Linux kernel match NTFS semantics for the
+> benefit of Samba is the goal, it seems a new field should be preferred
+> instead of having linux ctime try to do different jobs.
+>
+> Greg
 
-I haven't been keeping up with this thread, but I believe NTFS has a
-number of timestamps, not just 3.
+I forgot the blog post url:
 
-This blog post references 8 in the left hand column.
-
-The 4 standard (most common) ones are:
-
-File last access
-File last modified
-File created
-MFT last modified
-
-My understanding is that "MFT last modified" has semantics very
-similar to Linux ctime.
-
-But there is not a generic equivalent to NTFS created.
-
-Thus if trying to have the Linux kernel match NTFS semantics for the
-benefit of Samba is the goal, it seems a new field should be preferred
-instead of having linux ctime try to do different jobs.
-
-Greg
+http://blogs.sans.org/computer-forensics/2010/04/12/windows-7-mft-entry-timestamp-properties/
