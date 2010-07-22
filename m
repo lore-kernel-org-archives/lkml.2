@@ -1,69 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759545Ab0GVN5c (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 09:57:32 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:44579 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759488Ab0GVN50 (ORCPT
+	id S1759565Ab0GVN5n (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 09:57:43 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:52149 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932340Ab0GVN5K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 09:57:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=dyIwmMjqkPT6Jv0E07MuBRdm2Kq+JaIlJmvCDsnFpbgkJj/nc+hF3iO+5Xh6YORl90
-         4Yor3UOrIJCeclIPuBkg/TxAQ+SO+cF+/8eVuptUZRwCWVhb3JgkaBmGuC1Ive/s3eLa
-         o7yE/duytXo2c+BDCkO9rP18t9qaS1wWtgmns=
-Message-ID: <4C484E41.50606@gmail.com>
-Date: Thu, 22 Jul 2010 15:57:21 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
-MIME-Version: 1.0
-To: "Jin, Gordon" <gordon.jin@intel.com>
-CC: Chris Wilson <chris@chris-wilson.co.uk>,
-        "tim.gardner@canonical.com" <tim.gardner@canonical.com>,
-        Dave Airlie <airlied@redhat.com>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>,
-        "eric@anholt.net" <eric@anholt.net>, Kees Cook <kees@canonical.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "Hao, Xudong" <xudong.hao@intel.com>
-Subject: Re: i915 boot regression on Q35 chipset with 2.6.35-rc4
-References: <4C46E98A.3010206@mail.tpi.com> <8u3s94$g0j0tc@orsmga002.jf.intel.com> <B32E3D5F1713054290B4FF257B89C51A1F1DAA512D@shsmsx502.ccr.corp.intel.com>
-In-Reply-To: <B32E3D5F1713054290B4FF257B89C51A1F1DAA512D@shsmsx502.ccr.corp.intel.com>
-X-Enigmail-Version: 1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 22 Jul 2010 09:57:10 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv3 13/14] writeback: remove unnecessary init_timer call
+Date: Thu, 22 Jul 2010 16:56:27 +0300
+Message-Id: <1279806988-14100-14-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1279806988-14100-1-git-send-email-dedekind1@gmail.com>
+References: <1279806988-14100-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 22 Jul 2010 13:56:37.0879 (UTC) FILETIME=[B423F870:01CB29A5]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2010 11:19 AM, Jin, Gordon wrote:
-> Chris Wilson wrote on Wednesday, July 21, 2010 9:37 PM:
->> On Wed, 21 Jul 2010 14:35:22 +0200, Tim Gardner <tcanonical@tpi.com>
->> wrote: 
->>> What's up with this patch? I haven't received any comment, nor has it
->>> appeared in your git repository.
->>
->> Dave hasn't taken it because it is a regression fix for i915 and the
->> current procedure is for those to go through Eric's tree. Eric has
->> been busy working on a new compiler for GLSL the last few weeks and
->> has been applying patches in batches.
->>
->> The patch I am happy to ack, but since I introduced the regression
->> [https://bugzilla.kernel.org/show_bug.cgi?id=16294], I'd rather have
->> someone more familiar with the intricacies of G33/G35/Q35 review it.
->>
->> For what is worth:
->> Acked-by: Chris Wilson <chris@chris-wilson.co.uk>
-> 
-> This patch fixes the bug on our G33 (0x29b2).
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-FWIW works for me too.
+The 'setup_timer()' function also calls 'init_timer()', so the extra
+'init_timer()' call is not needed. Indeed, 'setup_timer()' is basically
+'init_timer()' plus callback function and data pointers initialization.
 
-And as this is present as of 35-rc1 upstream, this means almost 2 months
-lag since the break till now. Could you guys sort this up ASAP, please?
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+---
+ mm/backing-dev.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
-thanks,
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index cba2255..90e56ab 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -236,7 +236,6 @@ static int __init default_bdi_init(void)
+ 	sync_supers_tsk = kthread_run(bdi_sync_supers, NULL, "sync_supers");
+ 	BUG_ON(IS_ERR(sync_supers_tsk));
+ 
+-	init_timer(&sync_supers_timer);
+ 	setup_timer(&sync_supers_timer, sync_supers_timer_fn, 0);
+ 	bdi_arm_supers_timer();
+ 
 -- 
-js
+1.7.1.1
+
