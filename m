@@ -1,98 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757230Ab0GVMqG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 08:46:06 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:36526 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753345Ab0GVMqD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 08:46:03 -0400
-Date: Thu, 22 Jul 2010 13:46:00 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
-Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>, linux-mm@kvack.org,
-        Pawel Osciak <p.osciak@samsung.com>,
-        "'Xiaolin Zhang'" <xiaolin.zhang@intel.com>,
-        "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
-        "'Robert Fekete'" <robert.fekete@stericsson.com>,
-        "'Marcus Lorentzon'" <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-Message-ID: <20100722124559.GH4737@rakim.wolfsonmicro.main>
-References: <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
- <op.vf5o28st7p4s8u@pikus>
- <20100721135229.GC10930@sirena.org.uk>
- <op.vf66mxka7p4s8u@pikus>
- <20100721182457.GE10930@sirena.org.uk>
- <op.vf7h6ysh7p4s8u@pikus>
- <20100722090602.GF10930@sirena.org.uk>
- <000901cb297f$e28f2b10$a7ad8130$%szyprowski@samsung.com>
- <20100722105203.GD4737@rakim.wolfsonmicro.main>
- <op.vf8sxqro7p4s8u@pikus>
+	id S1759247Ab0GVMum (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 08:50:42 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43785 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751761Ab0GVMuk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 08:50:40 -0400
+Message-ID: <4C483E8D.4080300@redhat.com>
+Date: Thu, 22 Jul 2010 14:50:21 +0200
+From: Stefan Assmann <sassmann@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <op.vf8sxqro7p4s8u@pikus>
-X-Cookie: Sauron is alive in Argentina!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: David Miller <davem@davemloft.net>, abadea@ixiacom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
+        leedom@chelsio.com, harald@redhat.com
+Subject: [PATCH net-next] sysfs: add attribute to indicate hw address assignment
+ type
+References: <4C458CB7.3030508@redhat.com>	<4C458F50.4070200@ixiacom.com>	 <4C4593DA.9040207@redhat.com>	 <20100720.131839.134093789.davem@davemloft.net>	 <4C46AB60.5060008@redhat.com> <1279720478.2089.3.camel@achroite.uk.solarflarecom.com>
+In-Reply-To: <1279720478.2089.3.camel@achroite.uk.solarflarecom.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 01:30:52PM +0200, Michał Nazarewicz wrote:
+On 21.07.2010 15:54, Ben Hutchings wrote:
+> On Wed, 2010-07-21 at 10:10 +0200, Stefan Assmann wrote:
+>> I put Alex' idea into code for further discussion, keeping the names
+>> mentioned here until we agree on the scope of this attribute. When we
+>> have settled I'll post a patch with proper patch description.
+> [...]
+> 
+> Just a little nitpick: I think it would be clearer to use a more
+> specific term like 'address source' or 'address assignment type' rather
+> than 'address type'.
 
-> The first one, I believe, should be there as to specify the regions
-> that are to be reserved.  Drivers and platform will still be able to
-> add their own regions but I believe that in vest majority of cases,
-> it will be enough to just pass the list of region on a command line.
+Here's a proposal for the final patch.
 
-The command line is a real pain for stuff like this since it's not
-usually committed to revision control so robustly and it's normally more
-painful to change the bootloader to pass the desired command line in
-than it is to change either the kernel or userspace (some bootloaders
-are just completely unconfigurable without reflashing, and if your only
-recovery mechanism is JTAG that can be a bit of a concern).
+  Stefan
 
-> Alternatively, instead of the textual description of platform could
-> provide an array of regions it want reserved.  It would remove like
-> 50 lines of code from CMA core (in the version I have on my drive at
-> least, where part of the syntax was simplified) however it would
-> remove the possibility to easily change the configuration from
-> command line (ie. no need to recompile which is handy when you need
-> to optimise this and test various configurations) and would add more
-> code to the platform initialisation code, ie: instead of:
+From: Stefan Assmann <sassmann@redhat.com>
 
-> 	cma_defaults("reg1=20M;reg2=20M", NULL);
+Add addr_assign_type to struct net_device and expose it via sysfs.
+This new attribute has the purpose of giving user-space the ability to
+distinguish between different assignment types of MAC addresses.
 
-> one would have to define an array with the regions descriptors.
-> Personally, I don't see much benefits from this.
+For example user-space can treat NICs with randomly generated MAC
+addresses differently than NICs that have permanent (locally assigned)
+MAC addresses.
+For the former udev could write a persistent net rule by matching the
+device path instead of the MAC address.
+There's also the case of devices that 'steal' MAC addresses from slave
+devices. In which it is also be beneficial for user-space to be aware
+of the fact.
 
-I think it'd be vastly more legible, especially if the list of regions
-gets large.  I had thought the only reason for the text format was to
-put it onto the command line.
+This patch also introduces a helper function to assist adoption of
+drivers that generate MAC addresses randomly.
 
-> I agree that parsing it is not nice but thanks to it, all you need to
-> do in the driver is:
+Signed-off-by: Stefan Assmann <sassmann@redhat.com>
+---
+ include/linux/etherdevice.h |   14 ++++++++++++++
+ include/linux/netdevice.h   |    6 ++++++
+ net/core/net-sysfs.c        |    2 ++
+ 3 files changed, 22 insertions(+), 0 deletions(-)
 
-> 	cma_alloc(dev, "a", ...)
-> 	cma_alloc(dev, "b", ...)
-> 	cma_alloc(dev, "f", ...)
+diff --git a/include/linux/etherdevice.h b/include/linux/etherdevice.h
+index 3d7a668..848480b 100644
+--- a/include/linux/etherdevice.h
++++ b/include/linux/etherdevice.h
+@@ -127,6 +127,20 @@ static inline void random_ether_addr(u8 *addr)
+ }
 
-> Without cma_map you'd have to pass names of the region to the driver
-> and make the driver use those.
+ /**
++ * dev_hw_addr_random - Create random MAC and set device flag
++ * @dev: pointer to net_device structure
++ * @addr: Pointer to a six-byte array containing the Ethernet address
++ *
++ * Generate random MAC to be used by a device and set addr_assign_type
++ * so the state can be read by sysfs and be used by udev.
++ */
++static inline void dev_hw_addr_random(struct net_device *dev, u8 *hwaddr)
++{
++	dev->addr_assign_type |= NET_ADDR_RANDOM;
++	random_ether_addr(hwaddr);
++}
++
++/**
+  * compare_ether_addr - Compare two Ethernet addresses
+  * @addr1: Pointer to a six-byte array containing the Ethernet address
+  * @addr2: Pointer other six-byte array containing the Ethernet address
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index b626289..1bca617 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -66,6 +66,11 @@ struct wireless_dev;
+ #define HAVE_FREE_NETDEV		/* free_netdev() */
+ #define HAVE_NETDEV_PRIV		/* netdev_priv() */
 
-I agree that a mapping facility for the names is essential, especially
-if drivers need to share regions.
++/* hardware address assignment types */
++#define NET_ADDR_PERM		0	/* address is permanent (default) */
++#define NET_ADDR_RANDOM		1	/* address is generated randomly */
++#define NET_ADDR_STOLEN		2	/* address is stolen from other device */
++
+ /* Backlog congestion levels */
+ #define NET_RX_SUCCESS		0	/* keep 'em coming, baby */
+ #define NET_RX_DROP		1	/* packet dropped */
+@@ -919,6 +924,7 @@ struct net_device {
 
-> What I'm trying to say is that I'm trying to move complexity out of
-> the drivers into the framework (as I believe that's what frameworks
-> are for).
+ 	/* Interface address info. */
+ 	unsigned char		perm_addr[MAX_ADDR_LEN]; /* permanent hw address */
++	unsigned char		addr_assign_type; /* hw address assignment type */
+ 	unsigned char		addr_len;	/* hardware address length	*/
+ 	unsigned short          dev_id;		/* for shared network cards */
 
-It sounds like apart from the way you're passing the configuration in
-you're doing roughly what I'd suggest.  I'd expect that in a lot of
-cases the map could be satisfied from the default region so there'd be
-no need to explicitly set one up.
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index d2b5965..af4dfba 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -95,6 +95,7 @@ static ssize_t netdev_store(struct device *dev, struct device_attribute *attr,
+ }
+
+ NETDEVICE_SHOW(dev_id, fmt_hex);
++NETDEVICE_SHOW(addr_assign_type, fmt_dec);
+ NETDEVICE_SHOW(addr_len, fmt_dec);
+ NETDEVICE_SHOW(iflink, fmt_dec);
+ NETDEVICE_SHOW(ifindex, fmt_dec);
+@@ -295,6 +296,7 @@ static ssize_t show_ifalias(struct device *dev,
+ }
+
+ static struct device_attribute net_class_attributes[] = {
++	__ATTR(addr_assign_type, S_IRUGO, show_addr_assign_type, NULL),
+ 	__ATTR(addr_len, S_IRUGO, show_addr_len, NULL),
+ 	__ATTR(dev_id, S_IRUGO, show_dev_id, NULL),
+ 	__ATTR(ifalias, S_IRUGO | S_IWUSR, show_ifalias, store_ifalias),
+-- 
+1.6.5.2
+
