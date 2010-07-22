@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759734Ab0GVSXf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:23:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42991 "EHLO
+	id S1759754Ab0GVSXl (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:23:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42968 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759651Ab0GVSWr (ORCPT
+	with ESMTP id S1759647Ab0GVSWr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Jul 2010 14:22:47 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -17,438 +17,678 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 08/31] memblock: Remove rmo_size, burry it in arch/powerpc where it belongs
-Date: Thu, 22 Jul 2010 11:20:41 -0700
-Message-Id: <1279822864-17154-9-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 01/31] memblock: Rename memblock_region to memblock_type and memblock_property to memblock_region
+Date: Thu, 22 Jul 2010 11:20:34 -0700
+Message-Id: <1279822864-17154-2-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
 References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C488C3A.0172,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4C488C4E.0125,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-The RMA (RMO is a misnomer) is a concept specific to ppc64 (in fact
-server ppc64 though I hijack it on embedded ppc64 for similar purposes)
-and represents the area of memory that can be accessed in real mode
-(aka with MMU off), or on embedded, from the exception vectors (which
-is bolted in the TLB) which pretty much boils down to the same thing.
-
-We take that out of the generic MEMBLOCK data structure and move it into
-arch/powerpc where it belongs, renaming it to "RMA" while at it.
-
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- arch/powerpc/include/asm/mmu.h  |   12 ++++++++++++
- arch/powerpc/kernel/head_40x.S  |    6 +-----
- arch/powerpc/kernel/paca.c      |    2 +-
- arch/powerpc/kernel/prom.c      |   29 ++++++++---------------------
- arch/powerpc/kernel/rtas.c      |    2 +-
- arch/powerpc/kernel/setup_64.c  |    2 +-
- arch/powerpc/mm/40x_mmu.c       |   14 +++++++++++++-
- arch/powerpc/mm/44x_mmu.c       |   14 ++++++++++++++
- arch/powerpc/mm/fsl_booke_mmu.c |    9 +++++++++
- arch/powerpc/mm/hash_utils_64.c |   22 +++++++++++++++++++++-
- arch/powerpc/mm/init_32.c       |   14 ++++++++++++++
- arch/powerpc/mm/init_64.c       |    1 +
- arch/powerpc/mm/ppc_mmu_32.c    |   15 +++++++++++++++
- arch/powerpc/mm/tlb_nohash.c    |   14 ++++++++++++++
- include/linux/memblock.h        |    1 -
- mm/memblock.c                   |    8 --------
- 16 files changed, 125 insertions(+), 40 deletions(-)
+ arch/microblaze/mm/init.c                |    4 +-
+ arch/powerpc/mm/hash_utils_64.c          |    2 +-
+ arch/powerpc/mm/mem.c                    |   26 +++---
+ arch/powerpc/platforms/embedded6xx/wii.c |    2 +-
+ arch/sparc/mm/init_64.c                  |    6 +-
+ include/linux/memblock.h                 |   24 ++--
+ mm/memblock.c                            |  168 +++++++++++++++---------------
+ 7 files changed, 115 insertions(+), 117 deletions(-)
 
-diff --git a/arch/powerpc/include/asm/mmu.h b/arch/powerpc/include/asm/mmu.h
-index 7ebf42e..bb40a06 100644
---- a/arch/powerpc/include/asm/mmu.h
-+++ b/arch/powerpc/include/asm/mmu.h
-@@ -2,6 +2,8 @@
- #define _ASM_POWERPC_MMU_H_
- #ifdef __KERNEL__
+diff --git a/arch/microblaze/mm/init.c b/arch/microblaze/mm/init.c
+index db59349..afd6494 100644
+--- a/arch/microblaze/mm/init.c
++++ b/arch/microblaze/mm/init.c
+@@ -77,8 +77,8 @@ void __init setup_memory(void)
  
-+#include <linux/types.h>
-+
- #include <asm/asm-compat.h>
- #include <asm/feature-fixups.h>
- 
-@@ -82,6 +84,16 @@ extern unsigned int __start___mmu_ftr_fixup, __stop___mmu_ftr_fixup;
- extern void early_init_mmu(void);
- extern void early_init_mmu_secondary(void);
- 
-+extern void setup_initial_memory_limit(phys_addr_t first_memblock_base,
-+				       phys_addr_t first_memblock_size);
-+
-+#ifdef CONFIG_PPC64
-+/* This is our real memory area size on ppc64 server, on embedded, we
-+ * make it match the size our of bolted TLB area
-+ */
-+extern u64 ppc64_rma_size;
-+#endif /* CONFIG_PPC64 */
-+
- #endif /* !__ASSEMBLY__ */
- 
- /* The kernel use the constants below to index in the page sizes array.
-diff --git a/arch/powerpc/kernel/head_40x.S b/arch/powerpc/kernel/head_40x.S
-index a90625f..8278e8b 100644
---- a/arch/powerpc/kernel/head_40x.S
-+++ b/arch/powerpc/kernel/head_40x.S
-@@ -923,11 +923,7 @@ initial_mmu:
- 	mtspr	SPRN_PID,r0
- 	sync
- 
--	/* Configure and load two entries into TLB slots 62 and 63.
--	 * In case we are pinning TLBs, these are reserved in by the
--	 * other TLB functions.  If not reserving, then it doesn't
--	 * matter where they are loaded.
--	 */
-+	/* Configure and load one entry into TLB slots 63 */
- 	clrrwi	r4,r4,10		/* Mask off the real page number */
- 	ori	r4,r4,(TLB_WR | TLB_EX)	/* Set the write and execute bits */
- 
-diff --git a/arch/powerpc/kernel/paca.c b/arch/powerpc/kernel/paca.c
-index 139a773..b9ffd7d 100644
---- a/arch/powerpc/kernel/paca.c
-+++ b/arch/powerpc/kernel/paca.c
-@@ -117,7 +117,7 @@ void __init allocate_pacas(void)
- 	 * the first segment. On iSeries they must be within the area mapped
- 	 * by the HV, which is HvPagesToMap * HVPAGESIZE bytes.
- 	 */
--	limit = min(0x10000000ULL, memblock.rmo_size);
-+	limit = min(0x10000000ULL, ppc64_rma_size);
- 	if (firmware_has_feature(FW_FEATURE_ISERIES))
- 		limit = min(limit, HvPagesToMap * HVPAGESIZE);
- 
-diff --git a/arch/powerpc/kernel/prom.c b/arch/powerpc/kernel/prom.c
-index f665d1b..f12b193 100644
---- a/arch/powerpc/kernel/prom.c
-+++ b/arch/powerpc/kernel/prom.c
-@@ -66,6 +66,7 @@
- int __initdata iommu_is_off;
- int __initdata iommu_force_on;
- unsigned long tce_alloc_start, tce_alloc_end;
-+u64 ppc64_rma_size;
- #endif
- 
- static int __init early_parse_mem(char *p)
-@@ -492,7 +493,7 @@ static int __init early_init_dt_scan_memory_ppc(unsigned long node,
- 
- void __init early_init_dt_add_memory_arch(u64 base, u64 size)
- {
--#if defined(CONFIG_PPC64)
-+#ifdef CONFIG_PPC64
- 	if (iommu_is_off) {
- 		if (base >= 0x80000000ul)
- 			return;
-@@ -501,9 +502,13 @@ void __init early_init_dt_add_memory_arch(u64 base, u64 size)
- 	}
- #endif
- 
--	memblock_add(base, size);
--
-+	/* First MEMBLOCK added, do some special initializations */
-+	if (memstart_addr == ~(phys_addr_t)0)
-+		setup_initial_memory_limit(base, size);
- 	memstart_addr = min((u64)memstart_addr, base);
-+
-+	/* Add the chunk to the MEMBLOCK list */
-+	memblock_add(base, size);
- }
- 
- u64 __init early_init_dt_alloc_memory_arch(u64 size, u64 align)
-@@ -655,22 +660,6 @@ static void __init phyp_dump_reserve_mem(void)
- static inline void __init phyp_dump_reserve_mem(void) {}
- #endif /* CONFIG_PHYP_DUMP  && CONFIG_PPC_RTAS */
- 
--static void set_boot_memory_limit(void)
--{
--#ifdef CONFIG_PPC32
--	/* 601 can only access 16MB at the moment */
--	if (PVR_VER(mfspr(SPRN_PVR)) == 1)
--		memblock_set_current_limit(0x01000000);
--	/* 8xx can only access 8MB at the moment */
--	else if (PVR_VER(mfspr(SPRN_PVR)) == 0x50)
--		memblock_set_current_limit(0x00800000);
--	else
--		memblock_set_current_limit(0x10000000);
--#else
--	memblock_set_current_limit(memblock.rmo_size);
--#endif
--}
--
- void __init early_init_devtree(void *params)
- {
- 	phys_addr_t limit;
-@@ -734,8 +723,6 @@ void __init early_init_devtree(void *params)
- 
- 	DBG("Phys. mem: %llx\n", memblock_phys_mem_size());
- 
--	set_boot_memory_limit();
--
- 	/* We may need to relocate the flat tree, do it now.
- 	 * FIXME .. and the initrd too? */
- 	move_device_tree();
-diff --git a/arch/powerpc/kernel/rtas.c b/arch/powerpc/kernel/rtas.c
-index d0516db..1662777 100644
---- a/arch/powerpc/kernel/rtas.c
-+++ b/arch/powerpc/kernel/rtas.c
-@@ -934,7 +934,7 @@ void __init rtas_initialize(void)
- 	 */
- #ifdef CONFIG_PPC64
- 	if (machine_is(pseries) && firmware_has_feature(FW_FEATURE_LPAR)) {
--		rtas_region = min(memblock.rmo_size, RTAS_INSTANTIATE_MAX);
-+		rtas_region = min(ppc64_rma_size, RTAS_INSTANTIATE_MAX);
- 		ibm_suspend_me_token = rtas_token("ibm,suspend-me");
- 	}
- #endif
-diff --git a/arch/powerpc/kernel/setup_64.c b/arch/powerpc/kernel/setup_64.c
-index d135f93..4360944 100644
---- a/arch/powerpc/kernel/setup_64.c
-+++ b/arch/powerpc/kernel/setup_64.c
-@@ -487,7 +487,7 @@ static void __init emergency_stack_init(void)
- 	 * bringup, we need to get at them in real mode. This means they
- 	 * must also be within the RMO region.
- 	 */
--	limit = min(slb0_limit(), memblock.rmo_size);
-+	limit = min(slb0_limit(), ppc64_rma_size);
- 
- 	for_each_possible_cpu(i) {
- 		unsigned long sp;
-diff --git a/arch/powerpc/mm/40x_mmu.c b/arch/powerpc/mm/40x_mmu.c
-index 58969b5..5810967 100644
---- a/arch/powerpc/mm/40x_mmu.c
-+++ b/arch/powerpc/mm/40x_mmu.c
-@@ -141,7 +141,19 @@ unsigned long __init mmu_mapin_ram(unsigned long top)
- 	 * coverage with normal-sized pages (or other reasons) do not
- 	 * attempt to allocate outside the allowed range.
- 	 */
--	memblock_set_current_limit(memstart_addr + mapped);
-+	memblock_set_current_limit(mapped);
- 
- 	return mapped;
- }
-+
-+void setup_initial_memory_limit(phys_addr_t first_memblock_base,
-+				phys_addr_t first_memblock_size)
-+{
-+	/* We don't currently support the first MEMBLOCK not mapping 0
-+	 * physical on those processors
-+	 */
-+	BUG_ON(first_memblock_base != 0);
-+
-+	/* 40x can only access 16MB at the moment (see head_40x.S) */
-+	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x00800000));
-+}
-diff --git a/arch/powerpc/mm/44x_mmu.c b/arch/powerpc/mm/44x_mmu.c
-index d8c6efb..024acab 100644
---- a/arch/powerpc/mm/44x_mmu.c
-+++ b/arch/powerpc/mm/44x_mmu.c
-@@ -24,6 +24,8 @@
-  */
- 
- #include <linux/init.h>
-+#include <linux/memblock.h>
-+
- #include <asm/mmu.h>
- #include <asm/system.h>
- #include <asm/page.h>
-@@ -213,6 +215,18 @@ unsigned long __init mmu_mapin_ram(unsigned long top)
- 	return total_lowmem;
- }
- 
-+void setup_initial_memory_limit(phys_addr_t first_memblock_base,
-+				phys_addr_t first_memblock_size)
-+{
-+	/* We don't currently support the first MEMBLOCK not mapping 0
-+	 * physical on those processors
-+	 */
-+	BUG_ON(first_memblock_base != 0);
-+
-+	/* 44x has a 256M TLB entry pinned at boot */
-+	memblock_set_current_limit(min_t(u64, first_memblock_size, PPC_PIN_SIZE));
-+}
-+
- #ifdef CONFIG_SMP
- void __cpuinit mmu_init_secondary(int cpu)
- {
-diff --git a/arch/powerpc/mm/fsl_booke_mmu.c b/arch/powerpc/mm/fsl_booke_mmu.c
-index e525f86..0be8fe2 100644
---- a/arch/powerpc/mm/fsl_booke_mmu.c
-+++ b/arch/powerpc/mm/fsl_booke_mmu.c
-@@ -215,3 +215,12 @@ void __init adjust_total_lowmem(void)
- 
- 	memblock_set_current_limit(memstart_addr + __max_low_memory);
- }
-+
-+void setup_initial_memory_limit(phys_addr_t first_memblock_base,
-+				phys_addr_t first_memblock_size)
-+{
-+	phys_addr_t limit = first_memblock_base + first_memblock_size;
-+
-+	/* 64M mapped initially according to head_fsl_booke.S */
-+	memblock_set_current_limit(min_t(u64, limit, 0x04000000));
-+}
+ 	/* Find main memory where is the kernel */
+ 	for (i = 0; i < memblock.memory.cnt; i++) {
+-		memory_start = (u32) memblock.memory.region[i].base;
+-		memory_end = (u32) memblock.memory.region[i].base
++		memory_start = (u32) memblock.memory.regions[i].base;
++		memory_end = (u32) memblock.memory.regions[i].base
+ 				+ (u32) memblock.memory.region[i].size;
+ 		if ((memory_start <= (u32)_text) &&
+ 					((u32)_text <= memory_end)) {
 diff --git a/arch/powerpc/mm/hash_utils_64.c b/arch/powerpc/mm/hash_utils_64.c
-index 79f9445..327a3cd 100644
+index 98f262d..dbaacb7 100644
 --- a/arch/powerpc/mm/hash_utils_64.c
 +++ b/arch/powerpc/mm/hash_utils_64.c
-@@ -649,7 +649,7 @@ static void __init htab_initialize(void)
- #ifdef CONFIG_DEBUG_PAGEALLOC
- 	linear_map_hash_count = memblock_end_of_DRAM() >> PAGE_SHIFT;
- 	linear_map_hash_slots = __va(memblock_alloc_base(linear_map_hash_count,
--						    1, memblock.rmo_size));
-+						    1, ppc64_rma_size));
- 	memset(linear_map_hash_slots, 0, linear_map_hash_count);
- #endif /* CONFIG_DEBUG_PAGEALLOC */
+@@ -660,7 +660,7 @@ static void __init htab_initialize(void)
  
-@@ -1221,3 +1221,23 @@ void kernel_map_pages(struct page *page, int numpages, int enable)
- 	local_irq_restore(flags);
- }
- #endif /* CONFIG_DEBUG_PAGEALLOC */
-+
-+void setup_initial_memory_limit(phys_addr_t first_memblock_base,
-+				phys_addr_t first_memblock_size)
-+{
-+	/* We don't currently support the first MEMBLOCK not mapping 0
-+	 * physical on those processors
-+	 */
-+	BUG_ON(first_memblock_base != 0);
-+
-+	/* On LPAR systems, the first entry is our RMA region,
-+	 * non-LPAR 64-bit hash MMU systems don't have a limitation
-+	 * on real mode access, but using the first entry works well
-+	 * enough. We also clamp it to 1G to avoid some funky things
-+	 * such as RTAS bugs etc...
-+	 */
-+	ppc64_rma_size = min_t(u64, first_memblock_size, 0x40000000);
-+
-+	/* Finally limit subsequent allocations */
-+	memblock_set_current_limit(ppc64_rma_size);
-+}
-diff --git a/arch/powerpc/mm/init_32.c b/arch/powerpc/mm/init_32.c
-index 59b208b..742da43 100644
---- a/arch/powerpc/mm/init_32.c
-+++ b/arch/powerpc/mm/init_32.c
-@@ -237,3 +237,17 @@ void free_initrd_mem(unsigned long start, unsigned long end)
- }
- #endif
+ 	/* create bolted the linear mapping in the hash table */
+ 	for (i=0; i < memblock.memory.cnt; i++) {
+-		base = (unsigned long)__va(memblock.memory.region[i].base);
++		base = (unsigned long)__va(memblock.memory.regions[i].base);
+ 		size = memblock.memory.region[i].size;
  
-+
-+#ifdef CONFIG_8xx /* No 8xx specific .c file to put that in ... */
-+void setup_initial_memory_limit(phys_addr_t first_memblock_base,
-+				phys_addr_t first_memblock_size)
-+{
-+	/* We don't currently support the first MEMBLOCK not mapping 0
-+	 * physical on those processors
-+	 */
-+	BUG_ON(first_memblock_base != 0);
-+
-+	/* 8xx can only access 8MB at the moment */
-+	memblock_set_current_limit(min_t(u64, first_memblock_size, 0x00800000));
-+}
-+#endif /* CONFIG_8xx */
-diff --git a/arch/powerpc/mm/init_64.c b/arch/powerpc/mm/init_64.c
-index 71f1415..9e081ff 100644
---- a/arch/powerpc/mm/init_64.c
-+++ b/arch/powerpc/mm/init_64.c
-@@ -328,3 +328,4 @@ int __meminit vmemmap_populate(struct page *start_page,
- 	return 0;
- }
- #endif /* CONFIG_SPARSEMEM_VMEMMAP */
-+
-diff --git a/arch/powerpc/mm/ppc_mmu_32.c b/arch/powerpc/mm/ppc_mmu_32.c
-index 7d34e17..11571e1 100644
---- a/arch/powerpc/mm/ppc_mmu_32.c
-+++ b/arch/powerpc/mm/ppc_mmu_32.c
-@@ -271,3 +271,18 @@ void __init MMU_init_hw(void)
+ 		DBG("creating mapping for region: %lx..%lx (prot: %lx)\n",
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 1a84a8d..a33f5c1 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -86,10 +86,10 @@ int page_is_ram(unsigned long pfn)
+ 	for (i=0; i < memblock.memory.cnt; i++) {
+ 		unsigned long base;
  
- 	if ( ppc_md.progress ) ppc_md.progress("hash:done", 0x205);
- }
-+
-+void setup_initial_memory_limit(phys_addr_t first_memblock_base,
-+				phys_addr_t first_memblock_size)
-+{
-+	/* We don't currently support the first MEMBLOCK not mapping 0
-+	 * physical on those processors
-+	 */
-+	BUG_ON(first_memblock_base != 0);
-+
-+	/* 601 can only access 16MB at the moment */
-+	if (PVR_VER(mfspr(SPRN_PVR)) == 1)
-+		memblock_set_current_limit(min_t(u64, first_memblock_size, 0x01000000));
-+	else /* Anything else has 256M mapped */
-+		memblock_set_current_limit(min_t(u64, first_memblock_size, 0x10000000));
-+}
-diff --git a/arch/powerpc/mm/tlb_nohash.c b/arch/powerpc/mm/tlb_nohash.c
-index 7ba32e7..a086ed5 100644
---- a/arch/powerpc/mm/tlb_nohash.c
-+++ b/arch/powerpc/mm/tlb_nohash.c
-@@ -446,4 +446,18 @@ void __cpuinit early_init_mmu_secondary(void)
- 	__early_init_mmu(0);
- }
+-		base = memblock.memory.region[i].base;
++		base = memblock.memory.regions[i].base;
  
-+void setup_initial_memory_limit(phys_addr_t first_memblock_base,
-+				phys_addr_t first_memblock_size)
-+{
-+	/* On Embedded 64-bit, we adjust the RMA size to match
-+	 * the bolted TLB entry. We know for now that only 1G
-+	 * entries are supported though that may eventually
-+	 * change. We crop it to the size of the first MEMBLOCK to
-+	 * avoid going over total available memory just in case...
-+	 */
-+	ppc64_rma_size = min_t(u64, first_memblock_size, 0x40000000);
-+
-+	/* Finally limit subsequent allocations */
-+	memblock_set_current_limit(ppc64_memblock_base + ppc64_rma_size);
-+}
- #endif /* CONFIG_PPC64 */
+ 		if ((paddr >= base) &&
+-			(paddr < (base + memblock.memory.region[i].size))) {
++			(paddr < (base + memblock.memory.regions[i].size))) {
+ 			return 1;
+ 		}
+ 	}
+@@ -149,7 +149,7 @@ int
+ walk_system_ram_range(unsigned long start_pfn, unsigned long nr_pages,
+ 		void *arg, int (*func)(unsigned long, unsigned long, void *))
+ {
+-	struct memblock_property res;
++	struct memblock_region res;
+ 	unsigned long pfn, len;
+ 	u64 end;
+ 	int ret = -1;
+@@ -206,7 +206,7 @@ void __init do_init_bootmem(void)
+ 	/* Add active regions with valid PFNs */
+ 	for (i = 0; i < memblock.memory.cnt; i++) {
+ 		unsigned long start_pfn, end_pfn;
+-		start_pfn = memblock.memory.region[i].base >> PAGE_SHIFT;
++		start_pfn = memblock.memory.regions[i].base >> PAGE_SHIFT;
+ 		end_pfn = start_pfn + memblock_size_pages(&memblock.memory, i);
+ 		add_active_range(0, start_pfn, end_pfn);
+ 	}
+@@ -219,16 +219,16 @@ void __init do_init_bootmem(void)
+ 
+ 	/* reserve the sections we're already using */
+ 	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		unsigned long addr = memblock.reserved.region[i].base +
++		unsigned long addr = memblock.reserved.regions[i].base +
+ 				     memblock_size_bytes(&memblock.reserved, i) - 1;
+ 		if (addr < lowmem_end_addr)
+-			reserve_bootmem(memblock.reserved.region[i].base,
++			reserve_bootmem(memblock.reserved.regions[i].base,
+ 					memblock_size_bytes(&memblock.reserved, i),
+ 					BOOTMEM_DEFAULT);
+-		else if (memblock.reserved.region[i].base < lowmem_end_addr) {
++		else if (memblock.reserved.regions[i].base < lowmem_end_addr) {
+ 			unsigned long adjusted_size = lowmem_end_addr -
+-				      memblock.reserved.region[i].base;
+-			reserve_bootmem(memblock.reserved.region[i].base,
++				      memblock.reserved.regions[i].base;
++			reserve_bootmem(memblock.reserved.regions[i].base,
+ 					adjusted_size, BOOTMEM_DEFAULT);
+ 		}
+ 	}
+@@ -237,7 +237,7 @@ void __init do_init_bootmem(void)
+ 
+ 	/* reserve the sections we're already using */
+ 	for (i = 0; i < memblock.reserved.cnt; i++)
+-		reserve_bootmem(memblock.reserved.region[i].base,
++		reserve_bootmem(memblock.reserved.regions[i].base,
+ 				memblock_size_bytes(&memblock.reserved, i),
+ 				BOOTMEM_DEFAULT);
+ 
+@@ -257,10 +257,10 @@ static int __init mark_nonram_nosave(void)
+ 
+ 	for (i = 0; i < memblock.memory.cnt - 1; i++) {
+ 		memblock_region_max_pfn =
+-			(memblock.memory.region[i].base >> PAGE_SHIFT) +
+-			(memblock.memory.region[i].size >> PAGE_SHIFT);
++			(memblock.memory.regions[i].base >> PAGE_SHIFT) +
++			(memblock.memory.regions[i].size >> PAGE_SHIFT);
+ 		memblock_next_region_start_pfn =
+-			memblock.memory.region[i+1].base >> PAGE_SHIFT;
++			memblock.memory.regions[i+1].base >> PAGE_SHIFT;
+ 
+ 		if (memblock_region_max_pfn < memblock_next_region_start_pfn)
+ 			register_nosave_region(memblock_region_max_pfn,
+diff --git a/arch/powerpc/platforms/embedded6xx/wii.c b/arch/powerpc/platforms/embedded6xx/wii.c
+index 5cdcc7c..8450c29 100644
+--- a/arch/powerpc/platforms/embedded6xx/wii.c
++++ b/arch/powerpc/platforms/embedded6xx/wii.c
+@@ -65,7 +65,7 @@ static int __init page_aligned(unsigned long x)
+ 
+ void __init wii_memory_fixups(void)
+ {
+-	struct memblock_property *p = memblock.memory.region;
++	struct memblock_region *p = memblock.memory.region;
+ 
+ 	/*
+ 	 * This is part of a workaround to allow the use of two
+diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
+index f043451..16d8bee 100644
+--- a/arch/sparc/mm/init_64.c
++++ b/arch/sparc/mm/init_64.c
+@@ -978,7 +978,7 @@ static void __init add_node_ranges(void)
+ 		unsigned long size = memblock_size_bytes(&memblock.memory, i);
+ 		unsigned long start, end;
+ 
+-		start = memblock.memory.region[i].base;
++		start = memblock.memory.regions[i].base;
+ 		end = start + size;
+ 		while (start < end) {
+ 			unsigned long this_end;
+@@ -1299,7 +1299,7 @@ static void __init bootmem_init_nonnuma(void)
+ 		if (!size)
+ 			continue;
+ 
+-		start_pfn = memblock.memory.region[i].base >> PAGE_SHIFT;
++		start_pfn = memblock.memory.regions[i].base >> PAGE_SHIFT;
+ 		end_pfn = start_pfn + memblock_size_pages(&memblock.memory, i);
+ 		add_active_range(0, start_pfn, end_pfn);
+ 	}
+@@ -1339,7 +1339,7 @@ static void __init trim_reserved_in_node(int nid)
+ 	numadbg("  trim_reserved_in_node(%d)\n", nid);
+ 
+ 	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		unsigned long start = memblock.reserved.region[i].base;
++		unsigned long start = memblock.reserved.regions[i].base;
+ 		unsigned long size = memblock_size_bytes(&memblock.reserved, i);
+ 		unsigned long end = start + size;
+ 
 diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index aabdcdd..767c198 100644
+index a59faf2..86e7daf 100644
 --- a/include/linux/memblock.h
 +++ b/include/linux/memblock.h
-@@ -33,7 +33,6 @@ struct memblock_type {
+@@ -18,22 +18,22 @@
+ 
+ #define MAX_MEMBLOCK_REGIONS 128
+ 
+-struct memblock_property {
++struct memblock_region {
+ 	u64 base;
+ 	u64 size;
+ };
+ 
+-struct memblock_region {
++struct memblock_type {
+ 	unsigned long cnt;
+ 	u64 size;
+-	struct memblock_property region[MAX_MEMBLOCK_REGIONS+1];
++	struct memblock_region regions[MAX_MEMBLOCK_REGIONS+1];
+ };
  
  struct memblock {
  	unsigned long debug;
--	u64 rmo_size;
- 	u64 current_limit;
- 	struct memblock_type memory;
- 	struct memblock_type reserved;
+ 	u64 rmo_size;
+-	struct memblock_region memory;
+-	struct memblock_region reserved;
++	struct memblock_type memory;
++	struct memblock_type reserved;
+ };
+ 
+ extern struct memblock memblock;
+@@ -56,27 +56,27 @@ extern u64 memblock_end_of_DRAM(void);
+ extern void __init memblock_enforce_memory_limit(u64 memory_limit);
+ extern int __init memblock_is_reserved(u64 addr);
+ extern int memblock_is_region_reserved(u64 base, u64 size);
+-extern int memblock_find(struct memblock_property *res);
++extern int memblock_find(struct memblock_region *res);
+ 
+ extern void memblock_dump_all(void);
+ 
+ static inline u64
+-memblock_size_bytes(struct memblock_region *type, unsigned long region_nr)
++memblock_size_bytes(struct memblock_type *type, unsigned long region_nr)
+ {
+-	return type->region[region_nr].size;
++	return type->regions[region_nr].size;
+ }
+ static inline u64
+-memblock_size_pages(struct memblock_region *type, unsigned long region_nr)
++memblock_size_pages(struct memblock_type *type, unsigned long region_nr)
+ {
+ 	return memblock_size_bytes(type, region_nr) >> PAGE_SHIFT;
+ }
+ static inline u64
+-memblock_start_pfn(struct memblock_region *type, unsigned long region_nr)
++memblock_start_pfn(struct memblock_type *type, unsigned long region_nr)
+ {
+-	return type->region[region_nr].base >> PAGE_SHIFT;
++	return type->regions[region_nr].base >> PAGE_SHIFT;
+ }
+ static inline u64
+-memblock_end_pfn(struct memblock_region *type, unsigned long region_nr)
++memblock_end_pfn(struct memblock_type *type, unsigned long region_nr)
+ {
+ 	return memblock_start_pfn(type, region_nr) +
+ 	       memblock_size_pages(type, region_nr);
 diff --git a/mm/memblock.c b/mm/memblock.c
-index cdb35ba..43fa162 100644
+index 3024eb3..13d4a57 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -49,7 +49,6 @@ void memblock_dump_all(void)
- 		return;
+@@ -29,7 +29,7 @@ static int __init early_memblock(char *p)
+ }
+ early_param("memblock", early_memblock);
  
- 	pr_info("MEMBLOCK configuration:\n");
--	pr_info(" rmo_size    = 0x%llx\n", (unsigned long long)memblock.rmo_size);
- 	pr_info(" memory.size = 0x%llx\n", (unsigned long long)memblock.memory.size);
+-static void memblock_dump(struct memblock_region *region, char *name)
++static void memblock_dump(struct memblock_type *region, char *name)
+ {
+ 	unsigned long long base, size;
+ 	int i;
+@@ -37,8 +37,8 @@ static void memblock_dump(struct memblock_region *region, char *name)
+ 	pr_info(" %s.cnt  = 0x%lx\n", name, region->cnt);
  
- 	memblock_dump(&memblock.memory, "memory");
-@@ -195,10 +194,6 @@ static long memblock_add_region(struct memblock_type *type, u64 base, u64 size)
+ 	for (i = 0; i < region->cnt; i++) {
+-		base = region->region[i].base;
+-		size = region->region[i].size;
++		base = region->regions[i].base;
++		size = region->regions[i].size;
+ 
+ 		pr_info(" %s[0x%x]\t0x%016llx - 0x%016llx, 0x%llx bytes\n",
+ 		    name, i, base, base + size - 1, size);
+@@ -74,34 +74,34 @@ static long memblock_addrs_adjacent(u64 base1, u64 size1, u64 base2, u64 size2)
+ 	return 0;
+ }
+ 
+-static long memblock_regions_adjacent(struct memblock_region *rgn,
++static long memblock_regions_adjacent(struct memblock_type *type,
+ 		unsigned long r1, unsigned long r2)
+ {
+-	u64 base1 = rgn->region[r1].base;
+-	u64 size1 = rgn->region[r1].size;
+-	u64 base2 = rgn->region[r2].base;
+-	u64 size2 = rgn->region[r2].size;
++	u64 base1 = type->regions[r1].base;
++	u64 size1 = type->regions[r1].size;
++	u64 base2 = type->regions[r2].base;
++	u64 size2 = type->regions[r2].size;
+ 
+ 	return memblock_addrs_adjacent(base1, size1, base2, size2);
+ }
+ 
+-static void memblock_remove_region(struct memblock_region *rgn, unsigned long r)
++static void memblock_remove_region(struct memblock_type *type, unsigned long r)
+ {
+ 	unsigned long i;
+ 
+-	for (i = r; i < rgn->cnt - 1; i++) {
+-		rgn->region[i].base = rgn->region[i + 1].base;
+-		rgn->region[i].size = rgn->region[i + 1].size;
++	for (i = r; i < type->cnt - 1; i++) {
++		type->regions[i].base = type->regions[i + 1].base;
++		type->regions[i].size = type->regions[i + 1].size;
+ 	}
+-	rgn->cnt--;
++	type->cnt--;
+ }
+ 
+ /* Assumption: base addr of region 1 < base addr of region 2 */
+-static void memblock_coalesce_regions(struct memblock_region *rgn,
++static void memblock_coalesce_regions(struct memblock_type *type,
+ 		unsigned long r1, unsigned long r2)
+ {
+-	rgn->region[r1].size += rgn->region[r2].size;
+-	memblock_remove_region(rgn, r2);
++	type->regions[r1].size += type->regions[r2].size;
++	memblock_remove_region(type, r2);
+ }
+ 
+ void __init memblock_init(void)
+@@ -109,13 +109,13 @@ void __init memblock_init(void)
+ 	/* Create a dummy zero size MEMBLOCK which will get coalesced away later.
+ 	 * This simplifies the memblock_add() code below...
+ 	 */
+-	memblock.memory.region[0].base = 0;
+-	memblock.memory.region[0].size = 0;
++	memblock.memory.regions[0].base = 0;
++	memblock.memory.regions[0].size = 0;
+ 	memblock.memory.cnt = 1;
+ 
+ 	/* Ditto. */
+-	memblock.reserved.region[0].base = 0;
+-	memblock.reserved.region[0].size = 0;
++	memblock.reserved.regions[0].base = 0;
++	memblock.reserved.regions[0].size = 0;
+ 	memblock.reserved.cnt = 1;
+ }
+ 
+@@ -126,24 +126,24 @@ void __init memblock_analyze(void)
+ 	memblock.memory.size = 0;
+ 
+ 	for (i = 0; i < memblock.memory.cnt; i++)
+-		memblock.memory.size += memblock.memory.region[i].size;
++		memblock.memory.size += memblock.memory.regions[i].size;
+ }
+ 
+-static long memblock_add_region(struct memblock_region *rgn, u64 base, u64 size)
++static long memblock_add_region(struct memblock_type *type, u64 base, u64 size)
+ {
+ 	unsigned long coalesced = 0;
+ 	long adjacent, i;
+ 
+-	if ((rgn->cnt == 1) && (rgn->region[0].size == 0)) {
+-		rgn->region[0].base = base;
+-		rgn->region[0].size = size;
++	if ((type->cnt == 1) && (type->regions[0].size == 0)) {
++		type->regions[0].base = base;
++		type->regions[0].size = size;
+ 		return 0;
+ 	}
+ 
+ 	/* First try and coalesce this MEMBLOCK with another. */
+-	for (i = 0; i < rgn->cnt; i++) {
+-		u64 rgnbase = rgn->region[i].base;
+-		u64 rgnsize = rgn->region[i].size;
++	for (i = 0; i < type->cnt; i++) {
++		u64 rgnbase = type->regions[i].base;
++		u64 rgnsize = type->regions[i].size;
+ 
+ 		if ((rgnbase == base) && (rgnsize == size))
+ 			/* Already have this region, so we're done */
+@@ -151,61 +151,59 @@ static long memblock_add_region(struct memblock_region *rgn, u64 base, u64 size)
+ 
+ 		adjacent = memblock_addrs_adjacent(base, size, rgnbase, rgnsize);
+ 		if (adjacent > 0) {
+-			rgn->region[i].base -= size;
+-			rgn->region[i].size += size;
++			type->regions[i].base -= size;
++			type->regions[i].size += size;
+ 			coalesced++;
+ 			break;
+ 		} else if (adjacent < 0) {
+-			rgn->region[i].size += size;
++			type->regions[i].size += size;
+ 			coalesced++;
+ 			break;
+ 		}
+ 	}
+ 
+-	if ((i < rgn->cnt - 1) && memblock_regions_adjacent(rgn, i, i+1)) {
+-		memblock_coalesce_regions(rgn, i, i+1);
++	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1)) {
++		memblock_coalesce_regions(type, i, i+1);
+ 		coalesced++;
+ 	}
+ 
+ 	if (coalesced)
+ 		return coalesced;
+-	if (rgn->cnt >= MAX_MEMBLOCK_REGIONS)
++	if (type->cnt >= MAX_MEMBLOCK_REGIONS)
+ 		return -1;
+ 
+ 	/* Couldn't coalesce the MEMBLOCK, so add it to the sorted table. */
+-	for (i = rgn->cnt - 1; i >= 0; i--) {
+-		if (base < rgn->region[i].base) {
+-			rgn->region[i+1].base = rgn->region[i].base;
+-			rgn->region[i+1].size = rgn->region[i].size;
++	for (i = type->cnt - 1; i >= 0; i--) {
++		if (base < type->regions[i].base) {
++			type->regions[i+1].base = type->regions[i].base;
++			type->regions[i+1].size = type->regions[i].size;
+ 		} else {
+-			rgn->region[i+1].base = base;
+-			rgn->region[i+1].size = size;
++			type->regions[i+1].base = base;
++			type->regions[i+1].size = size;
+ 			break;
+ 		}
+ 	}
+ 
+-	if (base < rgn->region[0].base) {
+-		rgn->region[0].base = base;
+-		rgn->region[0].size = size;
++	if (base < type->regions[0].base) {
++		type->regions[0].base = base;
++		type->regions[0].size = size;
+ 	}
+-	rgn->cnt++;
++	type->cnt++;
+ 
+ 	return 0;
+ }
  
  long memblock_add(u64 base, u64 size)
  {
--	/* On pSeries LPAR systems, the first MEMBLOCK is our RMO region. */
--	if (base == 0)
--		memblock.rmo_size = size;
+-	struct memblock_region *_rgn = &memblock.memory;
 -
- 	return memblock_add_region(&memblock.memory, base, size);
+ 	/* On pSeries LPAR systems, the first MEMBLOCK is our RMO region. */
+ 	if (base == 0)
+ 		memblock.rmo_size = size;
+ 
+-	return memblock_add_region(_rgn, base, size);
++	return memblock_add_region(&memblock.memory, base, size);
  
  }
-@@ -459,9 +454,6 @@ void __init memblock_enforce_memory_limit(u64 memory_limit)
+ 
+-static long __memblock_remove(struct memblock_region *rgn, u64 base, u64 size)
++static long __memblock_remove(struct memblock_type *type, u64 base, u64 size)
+ {
+ 	u64 rgnbegin, rgnend;
+ 	u64 end = base + size;
+@@ -214,34 +212,34 @@ static long __memblock_remove(struct memblock_region *rgn, u64 base, u64 size)
+ 	rgnbegin = rgnend = 0; /* supress gcc warnings */
+ 
+ 	/* Find the region where (base, size) belongs to */
+-	for (i=0; i < rgn->cnt; i++) {
+-		rgnbegin = rgn->region[i].base;
+-		rgnend = rgnbegin + rgn->region[i].size;
++	for (i=0; i < type->cnt; i++) {
++		rgnbegin = type->regions[i].base;
++		rgnend = rgnbegin + type->regions[i].size;
+ 
+ 		if ((rgnbegin <= base) && (end <= rgnend))
+ 			break;
+ 	}
+ 
+ 	/* Didn't find the region */
+-	if (i == rgn->cnt)
++	if (i == type->cnt)
+ 		return -1;
+ 
+ 	/* Check to see if we are removing entire region */
+ 	if ((rgnbegin == base) && (rgnend == end)) {
+-		memblock_remove_region(rgn, i);
++		memblock_remove_region(type, i);
+ 		return 0;
+ 	}
+ 
+ 	/* Check to see if region is matching at the front */
+ 	if (rgnbegin == base) {
+-		rgn->region[i].base = end;
+-		rgn->region[i].size -= size;
++		type->regions[i].base = end;
++		type->regions[i].size -= size;
+ 		return 0;
+ 	}
+ 
+ 	/* Check to see if the region is matching at the end */
+ 	if (rgnend == end) {
+-		rgn->region[i].size -= size;
++		type->regions[i].size -= size;
+ 		return 0;
+ 	}
+ 
+@@ -249,8 +247,8 @@ static long __memblock_remove(struct memblock_region *rgn, u64 base, u64 size)
+ 	 * We need to split the entry -  adjust the current one to the
+ 	 * beginging of the hole and add the region after hole.
+ 	 */
+-	rgn->region[i].size = base - rgn->region[i].base;
+-	return memblock_add_region(rgn, end, rgnend - end);
++	type->regions[i].size = base - type->regions[i].base;
++	return memblock_add_region(type, end, rgnend - end);
+ }
+ 
+ long memblock_remove(u64 base, u64 size)
+@@ -265,25 +263,25 @@ long __init memblock_free(u64 base, u64 size)
+ 
+ long __init memblock_reserve(u64 base, u64 size)
+ {
+-	struct memblock_region *_rgn = &memblock.reserved;
++	struct memblock_type *_rgn = &memblock.reserved;
+ 
+ 	BUG_ON(0 == size);
+ 
+ 	return memblock_add_region(_rgn, base, size);
+ }
+ 
+-long memblock_overlaps_region(struct memblock_region *rgn, u64 base, u64 size)
++long memblock_overlaps_region(struct memblock_type *type, u64 base, u64 size)
+ {
+ 	unsigned long i;
+ 
+-	for (i = 0; i < rgn->cnt; i++) {
+-		u64 rgnbase = rgn->region[i].base;
+-		u64 rgnsize = rgn->region[i].size;
++	for (i = 0; i < type->cnt; i++) {
++		u64 rgnbase = type->regions[i].base;
++		u64 rgnsize = type->regions[i].size;
+ 		if (memblock_addrs_overlap(base, size, rgnbase, rgnsize))
+ 			break;
+ 	}
+ 
+-	return (i < rgn->cnt) ? i : -1;
++	return (i < type->cnt) ? i : -1;
+ }
+ 
+ static u64 memblock_align_down(u64 addr, u64 size)
+@@ -311,7 +309,7 @@ static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
+ 				base = ~(u64)0;
+ 			return base;
+ 		}
+-		res_base = memblock.reserved.region[j].base;
++		res_base = memblock.reserved.regions[j].base;
+ 		if (res_base < size)
+ 			break;
+ 		base = memblock_align_down(res_base - size, align);
+@@ -320,7 +318,7 @@ static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
+ 	return ~(u64)0;
+ }
+ 
+-static u64 __init memblock_alloc_nid_region(struct memblock_property *mp,
++static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
+ 				       u64 (*nid_range)(u64, u64, int *),
+ 				       u64 size, u64 align, int nid)
+ {
+@@ -350,7 +348,7 @@ static u64 __init memblock_alloc_nid_region(struct memblock_property *mp,
+ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
+ 			 u64 (*nid_range)(u64 start, u64 end, int *nid))
+ {
+-	struct memblock_region *mem = &memblock.memory;
++	struct memblock_type *mem = &memblock.memory;
+ 	int i;
+ 
+ 	BUG_ON(0 == size);
+@@ -358,7 +356,7 @@ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
+ 	size = memblock_align_up(size, align);
+ 
+ 	for (i = 0; i < mem->cnt; i++) {
+-		u64 ret = memblock_alloc_nid_region(&mem->region[i],
++		u64 ret = memblock_alloc_nid_region(&mem->regions[i],
+ 					       nid_range,
+ 					       size, align, nid);
+ 		if (ret != ~(u64)0)
+@@ -402,8 +400,8 @@ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 		max_addr = MEMBLOCK_REAL_LIMIT;
+ 
+ 	for (i = memblock.memory.cnt - 1; i >= 0; i--) {
+-		u64 memblockbase = memblock.memory.region[i].base;
+-		u64 memblocksize = memblock.memory.region[i].size;
++		u64 memblockbase = memblock.memory.regions[i].base;
++		u64 memblocksize = memblock.memory.regions[i].size;
+ 
+ 		if (memblocksize < size)
+ 			continue;
+@@ -423,7 +421,7 @@ u64 __init __memblock_alloc_base(u64 size, u64 align, u64 max_addr)
+ 					return 0;
+ 				return base;
+ 			}
+-			res_base = memblock.reserved.region[j].base;
++			res_base = memblock.reserved.regions[j].base;
+ 			if (res_base < size)
+ 				break;
+ 			base = memblock_align_down(res_base - size, align);
+@@ -442,7 +440,7 @@ u64 memblock_end_of_DRAM(void)
+ {
+ 	int idx = memblock.memory.cnt - 1;
+ 
+-	return (memblock.memory.region[idx].base + memblock.memory.region[idx].size);
++	return (memblock.memory.regions[idx].base + memblock.memory.regions[idx].size);
+ }
+ 
+ /* You must call memblock_analyze() after this. */
+@@ -450,7 +448,7 @@ void __init memblock_enforce_memory_limit(u64 memory_limit)
+ {
+ 	unsigned long i;
+ 	u64 limit;
+-	struct memblock_property *p;
++	struct memblock_region *p;
+ 
+ 	if (!memory_limit)
+ 		return;
+@@ -458,24 +456,24 @@ void __init memblock_enforce_memory_limit(u64 memory_limit)
+ 	/* Truncate the memblock regions to satisfy the memory limit. */
+ 	limit = memory_limit;
+ 	for (i = 0; i < memblock.memory.cnt; i++) {
+-		if (limit > memblock.memory.region[i].size) {
+-			limit -= memblock.memory.region[i].size;
++		if (limit > memblock.memory.regions[i].size) {
++			limit -= memblock.memory.regions[i].size;
+ 			continue;
+ 		}
+ 
+-		memblock.memory.region[i].size = limit;
++		memblock.memory.regions[i].size = limit;
+ 		memblock.memory.cnt = i + 1;
  		break;
  	}
  
--	if (memblock.memory.regions[0].size < memblock.rmo_size)
--		memblock.rmo_size = memblock.memory.regions[0].size;
--
+-	if (memblock.memory.region[0].size < memblock.rmo_size)
+-		memblock.rmo_size = memblock.memory.region[0].size;
++	if (memblock.memory.regions[0].size < memblock.rmo_size)
++		memblock.rmo_size = memblock.memory.regions[0].size;
+ 
  	memory_limit = memblock_end_of_DRAM();
  
  	/* And truncate any reserves above the limit also. */
+ 	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		p = &memblock.reserved.region[i];
++		p = &memblock.reserved.regions[i];
+ 
+ 		if (p->base > memory_limit)
+ 			p->size = 0;
+@@ -494,9 +492,9 @@ int __init memblock_is_reserved(u64 addr)
+ 	int i;
+ 
+ 	for (i = 0; i < memblock.reserved.cnt; i++) {
+-		u64 upper = memblock.reserved.region[i].base +
+-			memblock.reserved.region[i].size - 1;
+-		if ((addr >= memblock.reserved.region[i].base) && (addr <= upper))
++		u64 upper = memblock.reserved.regions[i].base +
++			memblock.reserved.regions[i].size - 1;
++		if ((addr >= memblock.reserved.regions[i].base) && (addr <= upper))
+ 			return 1;
+ 	}
+ 	return 0;
+@@ -511,7 +509,7 @@ int memblock_is_region_reserved(u64 base, u64 size)
+  * Given a <base, len>, find which memory regions belong to this range.
+  * Adjust the request and return a contiguous chunk.
+  */
+-int memblock_find(struct memblock_property *res)
++int memblock_find(struct memblock_region *res)
+ {
+ 	int i;
+ 	u64 rstart, rend;
+@@ -520,8 +518,8 @@ int memblock_find(struct memblock_property *res)
+ 	rend = rstart + res->size - 1;
+ 
+ 	for (i = 0; i < memblock.memory.cnt; i++) {
+-		u64 start = memblock.memory.region[i].base;
+-		u64 end = start + memblock.memory.region[i].size - 1;
++		u64 start = memblock.memory.regions[i].base;
++		u64 end = start + memblock.memory.regions[i].size - 1;
+ 
+ 		if (start > rend)
+ 			return -1;
 -- 
 1.6.4.2
 
