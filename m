@@ -1,62 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754403Ab0GVQwc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 12:52:32 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38930 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751260Ab0GVQwb (ORCPT
+	id S1752777Ab0GVQ5s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 12:57:48 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54636 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751507Ab0GVQ5q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 12:52:31 -0400
-Date: Thu, 22 Jul 2010 13:52:22 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org
-Subject: Re: [PATCH] Re: perf annotate segfaults when source code has goto
- label that looks like hex number
-Message-ID: <20100722165222.GE17631@ghostprotocols.net>
-References: <20100722072044.GD27177@redhat.com>
- <20100722143345.GC17631@ghostprotocols.net>
- <20100722163851.GA10307@redhat.com>
- <20100722164711.GD17631@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100722164711.GD17631@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 22 Jul 2010 12:57:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=GkX8LM2/Iju4UgVlmqyBHkszinLr+Rgn67fBX/HWFtCQC3YHixg/IsWqLpTTnbzVnb
+         K4KMx3PxDMhaV/W+27yT61VrcteqjBnHLNiCvsfRmK62VXYHIDdiYx6eWI/NlH367VRV
+         +fEVgQ+kz6APlGUPy6BffM3OG0nkC0lkAtDRc=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
+        devel@driverdev.osuosl.org
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
+Subject: [PATCH 0/5] staging: clean up code a bit, use kernel native methods
+Date: Thu, 22 Jul 2010 19:57:06 +0300
+Message-Id: <cover.1279817399.git.andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <20100722151545.GA6696@suse.de>
+References: <20100722151545.GA6696@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 22, 2010 at 01:47:11PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Thu, Jul 22, 2010 at 07:38:51PM +0300, Gleb Natapov escreveu:
-> > On Thu, Jul 22, 2010 at 11:33:45AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > Can you try the attached patch?
-> > > 
-> > I can, only later. But if I underhand your patch correctly perf will
-> > still crash if there is a comment after the label on the same line.
-> 
-> Possibly, will try that now.
+Andy Shevchenko (5):
+  staging: remove unused methods
+  staging: panel: change own pieces of code by strtoul()
+  staging: rtl8192su: don't use own isxdigit() method
+  staging: wlags49_h2: remove custom hex_to_bin() method
+  staging: wlan-ng: remove own bin2hex converter
 
-It could be a comment of play code, like:
+ drivers/staging/otus/apdbg.c             |   22 -----------------
+ drivers/staging/panel/panel.c            |   19 +++++---------
+ drivers/staging/rtl8192su/r8192S_Efuse.c |   27 ++-------------------
+ drivers/staging/wlags49_h2/wl_util.c     |   37 +-----------------------------
+ drivers/staging/wlags49_h2/wl_util.h     |    2 -
+ drivers/staging/wlan-ng/prism2sta.c      |    6 +---
+ 6 files changed, 13 insertions(+), 100 deletions(-)
 
-[root@emilia ~]# cat test.c 
-int main(int argc, char **argv)
-{
-      int i;
-
-      while(1) {
-              i++;
-              if (i == 10000000)
-                      goto add;
-      }
-add:	return 0;
-}
-[root@emilia ~]#
-
-back to the drawing board :-\
-
-- Arnaldo
