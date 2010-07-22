@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759257Ab0GVLMU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:12:20 -0400
-Received: from mga01.intel.com ([192.55.52.88]:11266 "EHLO mga01.intel.com"
+	id S1759265Ab0GVLMb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 07:12:31 -0400
+Received: from mga03.intel.com ([143.182.124.21]:58239 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759003Ab0GVLMG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 07:12:06 -0400
+	id S1759234Ab0GVLM1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 07:12:27 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,242,1278313200"; 
-   d="scan'208";a="588614646"
-Subject: [RFC][PATCH v1 02/15] perf: export generic hardware events via
- sysfs
+   d="scan'208";a="303088919"
+Subject: [RFC][PATCH v1 03/15] perf: export software events via sysfs
 From: Lin Ming <ming.m.lin@intel.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: Robert Richter <robert.richter@amd.com>,
@@ -33,8 +32,8 @@ Cc: Robert Richter <robert.richter@amd.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 19:12:22 +0800
-Message-ID: <1279797142.20942.83.camel@minggr.sh.intel.com>
+Date: Thu, 22 Jul 2010 19:12:42 +0800
+Message-ID: <1279797162.20942.84.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
@@ -42,238 +41,162 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generic hardware events are exported under
-/sys/devices/system/cpu/cpu0...N/events, for example
+Software events are exported under /sys/kernel/events/, for example
 
-/sys/devices/system/cpu/cpu0/events
-|-- L1-dcache-load-misses
+/sys/kernel/events/
+|-- alignment-faults
 |   |-- config
 |   `-- type
-|-- LLC-load-misses
+|-- context-switches
 |   |-- config
 |   `-- type
-|-- branch-misses
+|-- cpu-clock
 |   |-- config
 |   `-- type
-|-- branches
+|-- cpu-migrations
 |   |-- config
 |   `-- type
-|-- bus-cycles
+|-- emulation-faults
 |   |-- config
 |   `-- type
-|-- cache-misses
+|-- major-faults
 |   |-- config
 |   `-- type
-|-- cache-references
+|-- minor-faults
 |   |-- config
 |   `-- type
-|-- cycles
+|-- page-faults
 |   |-- config
 |   `-- type
-|-- dTLB-load-misses
-|   |-- config
-|   `-- type
-|-- dTLB-store-misses
-|   |-- config
-|   `-- type
-|-- iTLB-load-misses
-|   |-- config
-|   `-- type
-|-- iTLB-load-refs
-|   |-- config
-|   `-- type
-`-- instructions
-    |-- config
-    `-- type
-
+....
 ---
- arch/x86/kernel/cpu/perf_event.c |   55 +++++++++++++++++++++++++++++++++++
- include/linux/perf_event.h       |    7 ++++-
- kernel/perf_event.c              |   59 ++++++++++++++++++++++++++++++++++++++
- 3 files changed, 120 insertions(+), 1 deletions(-)
+ kernel/perf_event.c |   61 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 61 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 2712414..2e66c35 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1328,6 +1328,59 @@ static void __init pmu_check_apic(void)
- 	pr_info("no hardware sampling interrupt available.\n");
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index 1f51ab9..21c359d 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -4383,6 +4383,22 @@ static int perf_swevent_init(struct perf_event *event)
+ 	return 0;
  }
  
-+static void export_events(struct kobject *cpu_kobj)
++struct kobject *sys_kernel_events_kobj;
++static char *perf_sw_event_name(int id);
++
++static void perf_swevent_export(void)
 +{
-+	struct kobject *events_kobj;
-+	int type, op, i;
-+	int cache_id;
-+	int err = 0;
++	int i;
 +
-+	if (!cpu_kobj)
++	if (!sys_kernel_events_kobj)
 +		return;
 +
-+	events_kobj = perf_sys_create_events_dir(cpu_kobj);
-+	if (!events_kobj)
-+		return;
-+
-+	for (i = PERF_COUNT_HW_CPU_CYCLES; i < PERF_COUNT_HW_MAX; i++) {
-+		perf_sys_add_event(events_kobj, perf_hw_event_name(i),
-+			i, PERF_TYPE_HARDWARE);
-+	}
-+
-+	for (type = 0; type < PERF_COUNT_HW_CACHE_MAX; type++) {
-+		for (op = 0; op < PERF_COUNT_HW_CACHE_OP_MAX; op++) {
-+			for (i = 0; i < PERF_COUNT_HW_CACHE_RESULT_MAX; i++) {
-+
-+				cache_id = hw_cache_event_ids[type][op][i];
-+				if (cache_id <= 0)
-+					continue;
-+
-+				err = perf_sys_add_event(events_kobj,
-+					perf_hw_cache_event_name(type, op, i),
-+					cache_id, PERF_TYPE_HW_CACHE);
-+				if (err)
-+					break;
-+			}
-+		}
++	for (i = PERF_COUNT_SW_PAGE_FAULTS; i < PERF_COUNT_SW_MAX; i++) {
++		perf_sys_add_event(sys_kernel_events_kobj, perf_sw_event_name(i),
++			i, PERF_TYPE_SOFTWARE);
 +	}
 +}
 +
-+static void x86_pmu_export_events(void)
+ static struct pmu perf_swevent = {
+ 	.event_init	= perf_swevent_init,
+ 	.add		= perf_swevent_add,
+@@ -4390,6 +4406,7 @@ static struct pmu perf_swevent = {
+ 	.start		= perf_swevent_start,
+ 	.stop		= perf_swevent_stop,
+ 	.read		= perf_swevent_read,
++	.export_events	= perf_swevent_export,
+ };
+ 
+ #ifdef CONFIG_EVENT_TRACING
+@@ -4662,6 +4679,16 @@ static int cpu_clock_event_init(struct perf_event *event)
+ 	return 0;
+ }
+ 
++static void cpu_clock_event_export(void)
 +{
-+	struct sys_device *cpu_dev;
-+	int cpu;
++	if (!sys_kernel_events_kobj)
++		return;
 +
-+	/* /sys/devices/system/cpu/cpu0...cpuN/events/ */
-+
-+	for_each_online_cpu(cpu) {
-+		cpu_dev = get_cpu_sysdev(cpu);
-+		if (!cpu_dev)
-+			break;
-+
-+		export_events(&cpu_dev->kobj);
-+	}
++	perf_sys_add_event(sys_kernel_events_kobj,
++		perf_sw_event_name(PERF_COUNT_SW_CPU_CLOCK),
++		PERF_COUNT_SW_CPU_CLOCK, PERF_TYPE_SOFTWARE);
 +}
 +
- void __init init_hw_perf_events(void)
- {
- 	struct event_constraint *c;
-@@ -1600,6 +1653,8 @@ static struct pmu pmu = {
- 	.start_txn	= x86_pmu_start_txn,
- 	.cancel_txn	= x86_pmu_cancel_txn,
- 	.commit_txn	= x86_pmu_commit_txn,
-+
-+	.export_events	= x86_pmu_export_events,
+ static struct pmu perf_cpu_clock = {
+ 	.event_init	= cpu_clock_event_init,
+ 	.add		= cpu_clock_event_add,
+@@ -4669,6 +4696,7 @@ static struct pmu perf_cpu_clock = {
+ 	.start		= cpu_clock_event_start,
+ 	.stop		= cpu_clock_event_stop,
+ 	.read		= cpu_clock_event_read,
++	.export_events	= cpu_clock_event_export,
  };
  
  /*
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 5e9f5c6..fb2ec23 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -630,6 +630,8 @@ struct pmu {
- 	 * for each successfull ->add() during the transaction.
- 	 */
- 	void (*cancel_txn)	(struct pmu *pmu); /* optional */
-+
-+	void (*export_events)	(void);
- };
- 
- /**
-@@ -1060,6 +1062,8 @@ extern void perf_event_disable(struct perf_event *event);
- 
- extern struct kobject *perf_sys_create_events_dir(struct kobject *parent);
- extern int perf_sys_add_event(struct kobject *parent, char *name, u64 config, int type);
-+extern char *perf_hw_event_name(int id);
-+extern char *perf_hw_cache_event_name(u8 type, u8 op, u8 result);
- #else
- static inline void
- perf_event_task_sched_in(struct task_struct *task)			{ }
-@@ -1100,11 +1104,12 @@ static inline int perf_sys_add_event(struct kobject *parent, char *name, u64 con
- {
+@@ -4737,6 +4765,16 @@ static int task_clock_event_init(struct perf_event *event)
  	return 0;
  }
--
- static inline struct kobject *perf_sys_create_events_dir(struct kobject *parent)
- {
- 	return NULL;
- }
-+static inline char *perf_hw_event_name(int id) { return NULL; }
-+static inline char *perf_hw_cache_event_name(u8 type, u8 op, u8 result) { return NULL; }
- #endif
  
- #define perf_output_put(handle, x) \
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index ae95633..1f51ab9 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -5884,6 +5884,16 @@ static struct attribute_group perfclass_attr_group = {
- 
- static int __init perf_event_sysfs_init(void)
- {
-+	struct pmu *pmu = NULL;
-+	int idx;
-+
-+	idx = srcu_read_lock(&pmus_srcu);
-+	list_for_each_entry_rcu(pmu, &pmus, entry) {
-+		if (pmu->export_events)
-+			pmu->export_events();
-+	}
-+	srcu_read_unlock(&pmus_srcu, idx);
-+
- 	return sysfs_create_group(&cpu_sysdev_class.kset.kobj,
- 				  &perfclass_attr_group);
- }
-@@ -5992,3 +6002,52 @@ int perf_sys_add_event(struct kobject *parent, char *name, u64 config, int type)
- 
- 	return 0;
- }
-+
-+static char *hw_event_names[] = {
-+	"cycles",
-+	"instructions",
-+	"cache-references",
-+	"cache-misses",
-+	"branches",
-+	"branch-misses",
-+	"bus-cycles",
-+};
-+
-+static char *hw_cache[] = {
-+	"L1-dcache",
-+	"L1-icache",
-+	"LLC",
-+	"dTLB",
-+	"iTLB",
-+	"branch",
-+};
-+
-+static char *hw_cache_op[] = {
-+	"load",
-+	"store",
-+	"prefetch",
-+};
-+
-+static char *hw_cache_result[] = {
-+	"refs",
-+	"misses",
-+};
-+
-+char *perf_hw_event_name(int id)
++static void task_clock_event_export(void)
 +{
-+	if (id >= ARRAY_SIZE(hw_event_names))
-+		return NULL;
++	if (!sys_kernel_events_kobj)
++		return;
 +
-+	return hw_event_names[id];
++	perf_sys_add_event(sys_kernel_events_kobj,
++		perf_sw_event_name(PERF_COUNT_SW_TASK_CLOCK),
++		PERF_COUNT_SW_TASK_CLOCK, PERF_TYPE_SOFTWARE);
 +}
 +
-+char *perf_hw_cache_event_name(u8 cache_type, u8 cache_op, u8 cache_result)
+ static struct pmu perf_task_clock = {
+ 	.event_init	= task_clock_event_init,
+ 	.add		= task_clock_event_add,
+@@ -4744,6 +4782,7 @@ static struct pmu perf_task_clock = {
+ 	.start		= task_clock_event_start,
+ 	.stop		= task_clock_event_stop,
+ 	.read		= task_clock_event_read,
++	.export_events	= task_clock_event_export,
+ };
+ 
+ static LIST_HEAD(pmus);
+@@ -5887,6 +5926,8 @@ static int __init perf_event_sysfs_init(void)
+ 	struct pmu *pmu = NULL;
+ 	int idx;
+ 
++	sys_kernel_events_kobj = perf_sys_create_events_dir(kernel_kobj);
++
+ 	idx = srcu_read_lock(&pmus_srcu);
+ 	list_for_each_entry_rcu(pmu, &pmus, entry) {
+ 		if (pmu->export_events)
+@@ -6033,6 +6074,18 @@ static char *hw_cache_result[] = {
+ 	"misses",
+ };
+ 
++static char *sw_event_names[] = {
++	"cpu-clock",
++	"task-clock",
++	"page-faults",
++	"minor-faults",
++	"major-faults",
++	"context-switches",
++	"cpu-migrations",
++	"alignment-faults",
++	"emulation-faults",
++};
++
+ char *perf_hw_event_name(int id)
+ {
+ 	if (id >= ARRAY_SIZE(hw_event_names))
+@@ -6051,3 +6104,11 @@ char *perf_hw_cache_event_name(u8 cache_type, u8 cache_op, u8 cache_result)
+ 
+ 	return name;
+ }
++
++static char *perf_sw_event_name(int id)
 +{
-+	static char name[50];
++	if (id >= ARRAY_SIZE(sw_event_names))
++		return NULL;
 +
-+	sprintf(name, "%s-%s-%s", hw_cache[cache_type],
-+		hw_cache_op[cache_op],
-+		hw_cache_result[cache_result]);
-+
-+	return name;
++	return sw_event_names[id];
 +}
 
 
