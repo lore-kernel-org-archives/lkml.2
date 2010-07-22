@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932252Ab0GVN44 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 09:56:56 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:20437 "EHLO
+	id S932360Ab0GVN5L (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 09:57:11 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:20442 "EHLO
 	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759498Ab0GVN4t (ORCPT
+	with ESMTP id S1759514Ab0GVN4x (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 09:56:49 -0400
+	Thu, 22 Jul 2010 09:56:53 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 05/14] writeback: do not lose wake-ups in bdi threads
-Date: Thu, 22 Jul 2010 16:56:19 +0300
-Message-Id: <1279806988-14100-6-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv3 08/14] writeback: move last_active to bdi
+Date: Thu, 22 Jul 2010 16:56:22 +0300
+Message-Id: <1279806988-14100-9-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1279806988-14100-1-git-send-email-dedekind1@gmail.com>
 References: <1279806988-14100-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 22 Jul 2010 13:56:35.0504 (UTC) FILETIME=[B2B99300:01CB29A5]
+X-OriginalArrivalTime: 22 Jul 2010 13:56:36.0575 (UTC) FILETIME=[B35CFEF0:01CB29A5]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,56 +24,81 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Currently, bdi threads ('bdi_writeback_thread()') can lose wake-ups. For
-example, if 'bdi_queue_work()' is executed after the bdi thread have had
-finished 'wb_do_writeback()' but before it called
-'schedule_timeout_interruptible()'.
-
-To fix this issue, we have to check whether we have works to process after we
-have changed the task state to 'TASK_INTERRUPTIBLE'.
-
-This patch also clean-ups handling of the cases when 'dirty_writeback_interval'
-is zero or non-zero.
-
-Additionally, this patch also removes unneeded 'list_empty_careful()' call.
+Currently bdi threads use local variable 'last_active' which stores last time
+when the bdi thread did some useful work. Move this local variable to 'struct
+bdi_writeback'. This is just a preparation for the further patches which will
+make the forker thread decide when bdi threads should be killed.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/fs-writeback.c |   17 +++++++++--------
- 1 files changed, 9 insertions(+), 8 deletions(-)
+ fs/fs-writeback.c           |    6 +++---
+ include/linux/backing-dev.h |   13 +++++++------
+ 2 files changed, 10 insertions(+), 9 deletions(-)
 
 diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index 5e6b7fc..8cf53ba 100644
+index eaef5c9..53e1028 100644
 --- a/fs/fs-writeback.c
 +++ b/fs/fs-writeback.c
-@@ -848,17 +848,18 @@ int bdi_writeback_thread(void *data)
+@@ -800,12 +800,12 @@ int bdi_writeback_thread(void *data)
+ {
+ 	struct bdi_writeback *wb = data;
+ 	struct backing_dev_info *bdi = wb->bdi;
+-	unsigned long last_active = jiffies;
+ 	unsigned long wait_jiffies = -1UL;
+ 	long pages_written;
+ 
+ 	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
+ 	set_freezable();
++	wb->last_active = jiffies;
+ 
+ 	/*
+ 	 * Our parent may run at a different priority, just set us to normal
+@@ -827,7 +827,7 @@ int bdi_writeback_thread(void *data)
+ 		trace_writeback_pages_written(pages_written);
+ 
+ 		if (pages_written)
+-			last_active = jiffies;
++			wb->last_active = jiffies;
+ 		else if (wait_jiffies != -1UL) {
+ 			unsigned long max_idle;
+ 
+@@ -837,7 +837,7 @@ int bdi_writeback_thread(void *data)
+ 			 * recreated automatically.
+ 			 */
+ 			max_idle = max(5UL * 60 * HZ, wait_jiffies);
+-			if (time_after(jiffies, max_idle + last_active))
++			if (time_after(jiffies, max_idle + wb->last_active))
  				break;
  		}
  
--		if (dirty_writeback_interval) {
--			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
--			schedule_timeout_interruptible(wait_jiffies);
--		} else {
--			set_current_state(TASK_INTERRUPTIBLE);
--			if (list_empty_careful(&wb->bdi->work_list) &&
--			    !kthread_should_stop())
--				schedule();
-+		set_current_state(TASK_INTERRUPTIBLE);
-+		if (!list_empty(&bdi->work_list)) {
- 			__set_current_state(TASK_RUNNING);
-+			continue;
- 		}
+diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
+index 95ecb2b..71b6223 100644
+--- a/include/linux/backing-dev.h
++++ b/include/linux/backing-dev.h
+@@ -45,15 +45,16 @@ enum bdi_stat_item {
+ #define BDI_STAT_BATCH (8*(1+ilog2(nr_cpu_ids)))
  
-+		if (dirty_writeback_interval) {
-+			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
-+			schedule_timeout(wait_jiffies);
-+		} else
-+			schedule();
-+
- 		try_to_freeze();
- 	}
+ struct bdi_writeback {
+-	struct backing_dev_info *bdi;		/* our parent bdi */
++	struct backing_dev_info *bdi;	/* our parent bdi */
+ 	unsigned int nr;
  
+-	unsigned long last_old_flush;		/* last old data flush */
++	unsigned long last_old_flush;	/* last old data flush */
++	unsigned long last_active;	/* last time bdi thread was active */
+ 
+-	struct task_struct	*task;		/* writeback thread */
+-	struct list_head	b_dirty;	/* dirty inodes */
+-	struct list_head	b_io;		/* parked for writeback */
+-	struct list_head	b_more_io;	/* parked for more writeback */
++	struct task_struct *task;	/* writeback thread */
++	struct list_head b_dirty;	/* dirty inodes */
++	struct list_head b_io;		/* parked for writeback */
++	struct list_head b_more_io;	/* parked for more writeback */
+ };
+ 
+ struct backing_dev_info {
 -- 
 1.7.1.1
 
