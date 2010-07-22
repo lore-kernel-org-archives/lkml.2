@@ -1,97 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755417Ab0GVFga (ORCPT <rfc822;w@1wt.eu>);
+	id S1755900Ab0GVFgd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 01:36:33 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:59070 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755483Ab0GVFga (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Jul 2010 01:36:30 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:43254 "EHLO e1.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751405Ab0GVFg3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 01:36:29 -0400
-Date: Thu, 22 Jul 2010 11:06:24 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, LKML <linux-kernel@vger.kernel.org>,
-        linux-mm <linux-mm@kvack.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
-Subject: Re: [PATCH 3/7] memcg: nid and zid can be calculated from zone
-Message-ID: <20100722053624.GN14369@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100716191418.7372.A69D9226@jp.fujitsu.com>
- <20100716105648.GG13117@csn.ul.ie>
- <20100721223349.870D.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100721223349.870D.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Subject: Re: [RFC][PATCH 9/9] make kvm mmu shrinker more aggressive
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Karl Rister <kmr@us.ibm.com>
+In-Reply-To: <4C47CABC.1080801@redhat.com>
+References: <20100615135518.BC244431@kernel.beaverton.ibm.com>
+	 <20100615135530.4565745D@kernel.beaverton.ibm.com>
+	 <4C189830.2070300@redhat.com>  <1276701911.6437.16973.camel@nimitz>
+	 <1276876156.6437.23323.camel@nimitz>  <4C1DCD1A.4010306@redhat.com>
+	 <1277224359.9782.21.camel@nimitz>  <4C47CABC.1080801@redhat.com>
+Content-Type: text/plain; charset="ANSI_X3.4-1968"
+Date: Wed, 21 Jul 2010 22:36:27 -0700
+Message-ID: <1279776987.9785.2030.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> [2010-07-21 22:33:56]:
+On Thu, 2010-07-22 at 07:36 +0300, Avi Kivity wrote:
+> On 06/22/2010 07:32 PM, Dave Hansen wrote:
+> > On Sun, 2010-06-20 at 11:11 +0300, Avi Kivity wrote:
+> >>> That changes a few things.  I bet all the contention we were seeing was
+> >>> just from nr_to_scan=0 calls and not from actual shrink operations.
+> >>> Perhaps we should just stop this set after patch 4.
+> >>>        
+> >> At the very least, we should re-measure things.
+> >>      
+> > Sure.  I'll go back to the folks that found this in the first place and
+> > see how these patches affect the contention we were seeing.
+> 
+> Dave, how did those tests go?
 
-> > > +static inline int zone_nid(struct zone *zone)
-> > > +{
-> > > +	return zone->zone_pgdat->node_id;
-> > > +}
-> > > +
-> > 
-> > hmm, adding a helper and not converting the existing users of
-> > zone->zone_pgdat may be a little confusing particularly as both types of
-> > usage would exist in the same file e.g. in mem_cgroup_zone_nr_pages.
-> 
-> I see. here is incrementa patch.
-> 
-> Thanks
-> 
-> From 62cf765251af257c98fc92a58215d101d200e7ef Mon Sep 17 00:00:00 2001
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Date: Tue, 20 Jul 2010 11:30:14 +0900
-> Subject: [PATCH] memcg: convert to zone_nid() from bare zone->zone_pgdat->node_id
-> 
-> Now, we have zone_nid(). this patch convert all existing users of
-> zone->zone_pgdat.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> ---
->  mm/memcontrol.c |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
-> 
-> diff --git a/mm/memcontrol.c b/mm/memcontrol.c
-> index 82e191f..3d5b645 100644
-> --- a/mm/memcontrol.c
-> +++ b/mm/memcontrol.c
-> @@ -951,7 +951,7 @@ unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
->  				       struct zone *zone,
->  				       enum lru_list lru)
->  {
-> -	int nid = zone->zone_pgdat->node_id;
-> +	int nid = zone_nid(zone);
->  	int zid = zone_idx(zone);
->  	struct mem_cgroup_per_zone *mz = mem_cgroup_zoneinfo(memcg, nid, zid);
->  
-> @@ -961,7 +961,7 @@ unsigned long mem_cgroup_zone_nr_pages(struct mem_cgroup *memcg,
->  struct zone_reclaim_stat *mem_cgroup_get_reclaim_stat(struct mem_cgroup *memcg,
->  						      struct zone *zone)
->  {
-> -	int nid = zone->zone_pgdat->node_id;
-> +	int nid = zone_nid(zone);
->  	int zid = zone_idx(zone);
->  	struct mem_cgroup_per_zone *mz = mem_cgroup_zoneinfo(memcg, nid, zid);
->  
-> @@ -1006,7 +1006,7 @@ unsigned long mem_cgroup_isolate_pages(unsigned long nr_to_scan,
->  	LIST_HEAD(pc_list);
->  	struct list_head *src;
->  	struct page_cgroup *pc, *tmp;
-> -	int nid = z->zone_pgdat->node_id;
-> +	int nid = zone_nid(z);
->  	int zid = zone_idx(z);
->  	struct mem_cgroup_per_zone *mz;
->  	int lru = LRU_FILE * file + active;
+Still waiting on the folks that found this in the first place to
+reproduce it and see if the patches help.  I'll go nudge them some more.
 
-Acked-by: Balbir Singh <balbir@linux.vnet.ibm.com>
- 
--- 
-	Three Cheers,
-	Balbir
+-- Dave
+
