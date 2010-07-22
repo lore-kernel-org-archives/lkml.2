@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759472Ab0GVRg2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 13:36:28 -0400
-Received: from borg.medozas.de ([188.40.89.202]:37562 "EHLO borg.medozas.de"
+	id S1758908Ab0GVRj6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 13:39:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35065 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755761Ab0GVRgY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 13:36:24 -0400
-Date: Thu, 22 Jul 2010 19:36:22 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
-        David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
- file stats available [ver #6]
-In-Reply-To: <1279818967.3621.23.camel@heimdal.trondhjem.org>
-Message-ID: <alpine.LSU.2.01.1007221935190.32551@obet.zrqbmnf.qr>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>  <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>  <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>  <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> 
- <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>  <E1Obxpd-00CRIo-SF@intern.SerNet.DE>  <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>  <20100722162712.GB10352@jeremy-laptop>  <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-  <alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr> <1279818967.3621.23.camel@heimdal.trondhjem.org>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+	id S1753707Ab0GVRj5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 13:39:57 -0400
+Date: Thu, 22 Jul 2010 19:39:20 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        kosaki.motohiro@jp.fujitsu.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX][PATCH] Fix false positive BUG_ON in
+ __page_set_anon_rmap
+Message-ID: <20100722173920.GI24928@random.random>
+References: <20100722164118.d500b850.kamezawa.hiroyu@jp.fujitsu.com>
+ <4C4844BC.4090709@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4844BC.4090709@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 22, 2010 at 09:16:44AM -0400, Rik van Riel wrote:
+> On 07/22/2010 03:41 AM, KAMEZAWA Hiroyuki wrote:
+> > Rik, how do you think ?
+> >
+> > ==
+> > From: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+> >
+> > Problem: wrong BUG_ON() in  __page_set_anon_rmap().
+> > Kernel version: mmotm-0719
+> 
+> > Description:
+> >    Even if SwapCache is fully unmapped and mapcount goes down to 0,
+> >    page->mapping is not cleared and will remain on memory until kswapd or some
+> >    finds it. If a thread cause a page fault onto such "unmapped-but-not-discarded"
+> >    swapcache, it will see a swap cache whose mapcount is 0 but page->mapping has a
+> >    valid value.
+> >
+> >    When it's reused at do_swap_page(), __page_set_anon_rmap() is called with
+> >    "exclusive==1" and hits BUG_ON(). But this BUG_ON() is wrong. Nothing bad
+> >    with rmapping a page which has page->mapping isn't 0.
+> 
+> Yes, you are absolutely right.
+> 
 
-On Thursday 2010-07-22 19:16, Trond Myklebust wrote:
->> >But the fact is, th Unix ctime semantics are insane and largely
->> >useless. There's a damn good reason almost nobody uses ctime under
->> >unix.
->> 
->> I beg to differ. ctime is not completely useless. It reflects changes on 
->> the inode for when you don't you change the content. It's like an mtime 
->> for the metadata. It comes useful when you go around in your filesystem 
->> trying to figure out who of your co-admins screwed up the permissions on 
->> /etc/passwd... and if the mtime is the same as that of the last backup, 
->> I can at least have a reasonable assurance that it was /only/ the 
->> metadata that was tampered with. (SHA1 check, yeah yeah, costly on large 
->> files.)
->
->Errr... Only if you eliminate utimes() from your syscall table.
->Otherwise it is trivial to reset the mtime after changing the file
->contents.
+I already noticed the problem when I merged your patch in aa.git
+(before it would only be exclusive=0 in do_swap_page so it wasn't a
+false positive), and I fixed it this way:
 
-Well yes; I had implicitly implied that evil people with malicious intent
-are absent.
+http://git.kernel.org/?p=linux/kernel/git/andrea/aa.git;a=commitdiff;h=2fe4f42f0f17498984b3f86b2339d583004b45de;hp=ffd146080305632406d97c7f6f984a648854d755
 
+So I retained the BUG_ON for the real page_add_anon_rmap. Maybe not
+worth it but you can have a look at my solution if you're interested
+to retain it too.
