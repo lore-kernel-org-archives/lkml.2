@@ -1,63 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757063Ab0GVGx5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 02:53:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:44016 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751883Ab0GVGxz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 02:53:55 -0400
-Message-ID: <4C47EAF3.3080602@redhat.com>
-Date: Thu, 22 Jul 2010 08:53:39 +0200
-From: Stefan Assmann <sassmann@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Thunderbird/3.1
-MIME-Version: 1.0
-To: "Rose, Gregory V" <gregory.v.rose@intel.com>
-CC: Casey Leedom <leedom@chelsio.com>, David Miller <davem@davemloft.net>,
-        "shemminger@vyatta.com" <shemminger@vyatta.com>,
-        "andy@greyhouse.net" <andy@greyhouse.net>,
-        "harald@redhat.com" <harald@redhat.com>,
-        "bhutchings@solarflare.com" <bhutchings@solarflare.com>,
-        "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "gospo@redhat.com" <gospo@redhat.com>,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces
- with random MAC address
-References: <20100721150732.GR7497@gospo.rdu.redhat.com> <20100721102816.4bef5ada@nehalam> <20100721.103249.107094774.davem@davemloft.net> <201007211129.48288.leedom@chelsio.com> <43F901BD926A4E43B106BF17856F0755F184620A@orsmsx508.amr.corp.intel.com>
-In-Reply-To: <43F901BD926A4E43B106BF17856F0755F184620A@orsmsx508.amr.corp.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1757072Ab0GVGz1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 02:55:27 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:47811 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752004Ab0GVGzZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 02:55:25 -0400
+Subject: Re: [PATCHv2 11/11] writeback: prevent unnecessary bdi threads
+ wakeups
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Nick Piggin <npiggin@suse.de>, Kristo Tero Tapani <tero.kristo@nokia.com>
+Cc: Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+In-Reply-To: <20100722031922.GA3446@amd>
+References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
+	 <1279704706-1267-12-git-send-email-dedekind1@gmail.com>
+	 <20100722031922.GA3446@amd>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Jul 2010 09:48:24 +0300
+Message-ID: <1279781304.3044.12.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 22 Jul 2010 06:55:15.0673 (UTC) FILETIME=[D6C57C90:01CB296A]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.07.2010 20:43, Rose, Gregory V wrote:
-> I'm curious, what happens when the VM using the VF migrates to a new machine and has another VF assigned to with a different MAC address?
+Hi Nick,
+
+On Thu, 2010-07-22 at 13:19 +1000, Nick Piggin wrote:
+> >  out:
+> >  	spin_unlock(&inode_lock);
+> > +
+> > +	if (wakeup_bdi) {
+> > +		spin_lock(&bdi->wb_lock);
+> > +		if (!bdi->wb.task)
+> > +			wake_up_process(default_backing_dev_info.wb.task);
+> > +		else
+> > +			wake_up_process(bdi->wb.task);
+> > +		spin_unlock(&bdi->wb_lock);
+> > +	}
+> >  }
 > 
-> Intel's view of things is that we don't use persistent MAC addresses in our VFs because the MAC address belongs to the VM and when it migrates it's going to want to use another VF with the same MAC address.  If they're persistent I'm wondering how that can be done.
-> 
-> This discussion has come about because some folks want to use the VF in the Host VMM.  The original design goal for Intel was that VFs would be assigned to VMs and that VMM vendors would want to assign MAC addresses with their own assigned OUI's.
+> We really want to wake up the bdi right away when first dirtying
+> the inode? I haven't looked at where the state of the bdi code is
+> now, but isn't it better to have a a delay there?
 
-Using the VF in the host is a feature and I'm sure people will think of
-ways to make good use of it. However the actual problem we've seen is a
-more practical one. So to pass-through a VF to a VM the host has to be
-aware that the VF exists. Therefore you usually have to enable the VF in
-the host (i.e. specify the max_vfs parameter). The device will be
-discovered by the system and because of the random MAC address udev
-ignores the new device. With the additional information we provide with
-our solution udev will be able to recognize the device by it's "device
-path" and handle it properly (until you decide to pass it to a VM or
-just be happy with it in the host).
+Yes, I guess we want to wake up the bdi thread after 5 secs (assuming
+default settings). I could implement a "wake_up_process_delayed"
+function which would use a timer, but I think it is not necessary to
+introduce these complications. We can just wake-up the bdi thread, it'll
+find out there is nothing to do, and will go sleep for 5 secs. I think
+this is good enough.
 
-Remember the issue that lead to the proposal of renaming VFs to vfeth?
-That's exactly the problem we try to fix. Additional benefit of an
-"address assignment type" as Ben likes to call it would be the handling
-of MAC address stealing NICs.
+IOW, delayed wake-up is not worth the trouble.
 
-  Stefan
---
-Stefan Assmann         | Red Hat GmbH
-Software Engineer      | Otto-Hahn-Strasse 20, 85609 Dornach
-                       | HR: Amtsgericht Muenchen HRB 153243
-                       | GF: Brendan Lane, Charlie Peters,
-sassmann at redhat.com |     Michael Cunningham, Charles Cachera
+> And rather than spreading details of how bdi tasks are managed
+> would you consider putting this into its own function?
+
+Sure, will do.
+
+> Other than that, I like your patches.
+
+Thanks :-)
+
+>  Out of interest, is 5 seconds
+> very detremental to power usage? What is a reasonable goal for
+> wakeups? (eg. 95%+ of possible efficiency)
+
+I cannot tell for sure. In Nokia N900 phone we use OMAP3 and we have
+dynamic OFF-mode, so we switch off the CPU and peripherals completely
+when there is nothing to do, and SDRAM stays in low-power auto-refresh
+mode. Every useless wake-up makes us do a lot of job re-constructing the
+CPU state. I cannot tell the numbers, but I'm CCing Tero, who is working
+on OMAP3 PM and makes a lot of battery current measurements, he can
+provide some numbers.
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
