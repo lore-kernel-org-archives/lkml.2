@@ -1,100 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757233Ab0GVV17 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:27:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:57771 "EHLO mx1.redhat.com"
+	id S1759902Ab0GVVaG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:30:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9800 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753250Ab0GVV16 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:27:58 -0400
-Date: Thu, 22 Jul 2010 17:26:34 -0400
+	id S1754092Ab0GVV34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 17:29:56 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org,
-        "Daniel P. Berrange" <berrange@redhat.com>,
-        Jan Safranek <jsafrane@redhat.com>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-Message-ID: <20100722212634.GC2688@redhat.com>
-References: <20100722182638.GA12712@kroah.com>
- <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
- <20100722183614.GA5443@suse.de>
- <20100722193741.GA2688@redhat.com>
- <20100722211856.GA1297@suse.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100722211856.GA1297@suse.de>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
+Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
+        jmoyer@redhat.com, czoccolo@gmail.com, vgoyal@redhat.com
+Subject: [PATCH 2/5] cfq-iosched: Implment IOPS mode for group scheduling
+Date: Thu, 22 Jul 2010 17:29:29 -0400
+Message-Id: <1279834172-4227-3-git-send-email-vgoyal@redhat.com>
+In-Reply-To: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
+References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 02:18:56PM -0700, Greg KH wrote:
-> On Thu, Jul 22, 2010 at 03:37:41PM -0400, Vivek Goyal wrote:
-> > On Thu, Jul 22, 2010 at 11:36:15AM -0700, Greg KH wrote:
-> > > On Thu, Jul 22, 2010 at 11:31:07AM -0700, Paul Menage wrote:
-> > > > On Thu, Jul 22, 2010 at 11:26 AM, Greg KH <gregkh@suse.de> wrote:
-> > > > > We really shouldn't be asking userspace to create new root filesystems.
-> > > > > So follow along with all of the other in-kernel filesystems, and provide
-> > > > > a mount point in sysfs.
-> > > > >
-> > > > > For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
-> > > > > that mount point when the cgroup filesystem is registered in the kernel.
-> > > > 
-> > > > But cgroups will typically have multiple mounts, with different
-> > > > resource controllers/options on each mount. That doesn't really fit in
-> > > > with this scheme.
-> > > 
-> > > Really?  I see systems mounting it at /cgroups/ in the filesystem today.
-> > > Where are you expecting it to be mounted at?
-> > > 
-> > 
-> > Greg,
-> > 
-> > [CCing few more folks who might be interested in this dicussion ]
-> > 
-> > We do want to retain facility to mount different controllers at different
-> > mount points. We were discussing the other day that in libvirt we might
-> > want to mount block IO controller and network controller separately as
-> > by default we will not put a new virtual machine in a cgroup of its own
-> > because of the penatly involved.
-> 
-> That's fine, I'm not changing that ability at all.  We just need a
-> "default" mount point for "normal" users.
-> 
-> > For other controllers like cpu, memory etc, libvirt automatically puts
-> > each new virtual machine in a cgroup of own. So this is one use case
-> > where we might want to mount different controllers at different mount
-> > points.
-> > 
-> > For my testing I now always use /cgroup/ and create directories under it
-> > /cgroup/blkio /cgroup/cpu etc and mount controllers on respective
-> > directories.
-> 
-> Lennart and Kay, is this what systemd is doing?  I really don't think we
-> should be adding a root /cgroup/ mount point to the system for something
-> like this.
-> 
-> Maybe /dev/cgroup/ is better to use, as that way users can create
-> sub-mount points easier.  They can't do that in /sys/fs/cgroup/
+o Implement another CFQ mode where we charge group in terms of number
+  of requests dispatched instead of measuring the time. Measuring in terms
+  of time is not possible when we are driving deeper queue depths and there
+  are requests from multiple cfq queues in the request queue.
 
-The only problem with /dev/cgroup seems to be that it seems little
-unintutive. To me, we have devices under /dev/ dir and cgroups are not
-devices.
+o This mode currently gets activated if one sets slice_idle=0 and associated
+  disk supports NCQ. Again the idea is that on an NCQ disk with idling disabled
+  most of the queues will dispatch 1 or more requests and then cfq queue
+  expiry happens and we don't have a way to measure time. So start providing
+  fairness in terms of IOPS.
 
-I think people have floated similar threads in the past on lkml with
-various opinions and everybody had their own choices but nothing was
-conclusive. 
+o Currently IOPS mode works only with cfq group scheduling. CFQ is following
+  different scheduling algorithms for queue and group scheduling. These IOPS
+  stats are used only for group scheduling hence in non-croup mode nothing
+  should change.
 
-Polluting / definitely sounds odd but it does not look that bad once
-we can't find any other good choices.
+o For CFQ group scheduling one can disable slice idling so that we don't idle
+  on queue and drive deeper request queue depths (achieving better throughput),
+  at the same time group idle is enabled so one should get service
+  differentiation among groups.
 
-Thanks
-Vivek
+Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+---
+ block/cfq-iosched.c |   30 ++++++++++++++++++++++++------
+ 1 files changed, 24 insertions(+), 6 deletions(-)
+
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index c5ec2eb..9f82ec6 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -378,6 +378,21 @@ CFQ_CFQQ_FNS(wait_busy);
+ 			&cfqg->service_trees[i][j]: NULL) \
+ 
+ 
++static inline bool iops_mode(struct cfq_data *cfqd)
++{
++	/*
++	 * If we are not idling on queues and it is a NCQ drive, parallel
++	 * execution of requests is on and measuring time is not possible
++	 * in most of the cases until and unless we drive shallower queue
++	 * depths and that becomes a performance bottleneck. In such cases
++	 * switch to start providing fairness in terms of number of IOs.
++	 */
++	if (!cfqd->cfq_slice_idle && cfqd->hw_tag)
++		return true;
++	else
++		return false;
++}
++
+ static inline enum wl_prio_t cfqq_prio(struct cfq_queue *cfqq)
+ {
+ 	if (cfq_class_idle(cfqq))
+@@ -905,7 +920,6 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
+ 			slice_used = cfqq->allocated_slice;
+ 	}
+ 
+-	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
+ 	return slice_used;
+ }
+ 
+@@ -913,19 +927,21 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+ 				struct cfq_queue *cfqq)
+ {
+ 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
+-	unsigned int used_sl, charge_sl;
++	unsigned int used_sl, charge;
+ 	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqd, cfqg)
+ 			- cfqg->service_tree_idle.count;
+ 
+ 	BUG_ON(nr_sync < 0);
+-	used_sl = charge_sl = cfq_cfqq_slice_usage(cfqq);
++	used_sl = charge = cfq_cfqq_slice_usage(cfqq);
+ 
+-	if (!cfq_cfqq_sync(cfqq) && !nr_sync)
+-		charge_sl = cfqq->allocated_slice;
++	if (iops_mode(cfqd))
++		charge = cfqq->slice_dispatch;
++	else if (!cfq_cfqq_sync(cfqq) && !nr_sync)
++		charge = cfqq->allocated_slice;
+ 
+ 	/* Can't update vdisktime while group is on service tree */
+ 	cfq_rb_erase(&cfqg->rb_node, st);
+-	cfqg->vdisktime += cfq_scale_slice(charge_sl, cfqg);
++	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
+ 	__cfq_group_service_tree_add(st, cfqg);
+ 
+ 	/* This group is being expired. Save the context */
+@@ -939,6 +955,8 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
+ 
+ 	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
+ 					st->min_vdisktime);
++	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u",
++			used_sl, cfqq->slice_dispatch, charge, iops_mode(cfqd));
+ 	cfq_blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
+ 	cfq_blkiocg_set_start_empty_time(&cfqg->blkg);
+ }
+-- 
+1.7.1.1
+
