@@ -1,84 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab0GVBYS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 21:24:18 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:37533 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755013Ab0GVBYQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 21:24:16 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C479D7F.2070204@jp.fujitsu.com>
-Date: Thu, 22 Jul 2010 10:23:11 +0900
-From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        James Smart <james.smart@emulex.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Brian Gerst <brgerst@gmail.com>
-Subject: Re: [PATCH] BISECTED x86: avoid qword access in memcpy_*io
-References: <4C464BA0.20609@jp.fujitsu.com> <4C465FF0.1030407@zytor.com>
-In-Reply-To: <4C465FF0.1030407@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1757522Ab0GVB2l (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 21:28:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:34041 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752126Ab0GVB2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 21:28:38 -0400
+Date: Thu, 22 Jul 2010 11:28:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Takashi Iwai <tiwai@suse.de>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Russell King <rmk@arm.linux.org.uk>
+Subject: linux-next: manual merge of the sound tree with the arm tree
+Message-Id: <20100722112831.c6345379.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__22_Jul_2010_11_28_31_+1000_svmBv4vh_QMon2gA"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/07/21 11:48), H. Peter Anvin wrote:
-> On 07/20/2010 06:21 PM, Hidetoshi Seto wrote:
->> With v2.6.35-rc5, my x86-64 server doesn't boot but reports a
->> Completer Abort on lpfc card.
->>
->> The result of git-bisect is:
->>   6175ddf06b6172046a329e3abfd9c901a43efd2e is the first bad commit
->>   commit 6175ddf06b6172046a329e3abfd9c901a43efd2e
->>   Author: Brian Gerst <brgerst@gmail.com>
->>   Date:   Fri Feb 5 09:37:07 2010 -0500
->>     x86: Clean up mem*io functions.
->>
->> What I found are:
->>  - memcpy for 64bit uses movq if count >= 64 (arch/x86/lib/memcpy_64.S)
->>  - memcpy_toio and memcpy_fromio have changed to use this memcpy by
->>    the above commit.
->>  - my debug shows that lpfc calls memcpy_toio with not-qword-aligned
->>    addresses and count >= 64, e.g.:
->>      memcpy_toio(0xffffc900118de004, 0xffff88047293d614, 124);
->>    and it seems that it comes from:
->>    [drivers/scsi/lpfc/lpfc_sli.c]
->>     4929   /* First copy mbox command data to HBA SLIM, skip past first
->>     4930      word */
->>     4931   to_slim = phba->MBslimaddr + sizeof (uint32_t);
->>     4932   lpfc_memcpy_to_slim(to_slim, &mb->un.varWords[0],
->>     4933               MAILBOX_CMD_SIZE - sizeof (uint32_t));
->>
->> Still I'm not sure what is wrong in software or hardware, however
->> I suppose that qword access to iomem is not always safe, so it will
->> be OK to back to use __inline_memcpy which uses movsl.
->>
->> I confirmed that my server (w/ lpfc) boots with 35-rc5 + this patch.
->>
->> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-> 
-> A driver should not use the memcpy-like instructions if it isn't set up
-> to act as memory (meaning it can handle arbitrary byte enables.)
+--Signature=_Thu__22_Jul_2010_11_28_31_+1000_svmBv4vh_QMon2gA
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-So then is this a problem of lpfc driver?
-James, could you agree on that?
+Hi Takashi,
 
-> The function it should be using is called, fairly counterintuitively,
-> __iowrite32_copy().  It really should be called memcpy_toio32() or
-> something similar.
-> 
-> 	-hpa
+Today's linux-next merge of the sound tree got a conflict in
+arch/arm/mach-ep93xx/clock.c between commit
+a99b53f80962ed98f4b598dc22f8c030b5dae55a ("ARM: AMBA: Add pclk support to
+AMBA bus infrastructure") from the arm tree and commit
+ed67ea82c0d9a163458dc6a69a7a3123db1a8b3b ("EP93xx: Add i2s core support")
+from the sound tree.
 
-It seems that lpfc already implemented lpfc_memcpy_{to,from}_slim()
-as such memcpy_*io32, but limited use of it to on big endian platforms
-only.  Now lpfc can move to use it always, right?
+Just context changes.  I fixed it up (it was just a blank line) and can
+carry the fix as necessary.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Thu__22_Jul_2010_11_28_31_+1000_svmBv4vh_QMon2gA
+Content-Type: application/pgp-signature
 
-Thanks,
-H.Seto
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iQEcBAEBAgAGBQJMR56/AAoJEDMEi1NhKgbs6n4H/ipJsj0ushOfuceS+Mcfn8gy
+Ka9mikTy6OZ2K4OV6uarF3jxWrO0H3TYY75AZymHWRt0ypGbMEhpNZmQ3ro29c3Y
+bTkec8iIXOQnizRGBK4flsQNJelZ/IeU3f7wFvvzZ7XRlcWBel3OXl5guvV7Y9zi
+i9PUfWOpJ9w1PFqyAFKs57JDSXSiH4/S3hqJHLeBqu5+gl+bQzogMwqOOEE6gEE+
+yOvR8Q4K1xQlvucYjS0q6zwjpH+9cxw/Kll41pbgGicf4HjAeNVVDopVse4CNJs2
+4/WDVpGY4Pt0jWCyt4bsKwncpaZQKfU1GxYz+IGrr6EykcFJIJTJ5ePcZeuG4cM=
+=JfKN
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__22_Jul_2010_11_28_31_+1000_svmBv4vh_QMon2gA--
