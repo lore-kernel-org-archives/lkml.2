@@ -1,101 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753207Ab0GVRw1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 13:52:27 -0400
-Received: from mga01.intel.com ([192.55.52.88]:3277 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751507Ab0GVRw0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 13:52:26 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,243,1278313200"; 
-   d="scan'208";a="820670004"
-Date: Thu, 22 Jul 2010 10:52:25 -0700
-From: Fenghua Yu <fenghua.yu@intel.com>
-To: Guenter Roeck <guenter.roeck@ericsson.com>
-Cc: "Yu, Fenghua" <fenghua.yu@intel.com>, Ingo Molnar <mingo@redhat.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>, "Wan, Huaxu" <huaxu.wan@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 5/5] Package Level Thermal Control and Power Limit Notification: pkgtemp doc
-Message-ID: <20100722175225.GB22450@linux-os.sc.intel.com>
-References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com> <4C485DF1.5050407@linux.intel.com> <20100722162222.GA22450@linux-os.sc.intel.com> <20100722172726.GA4914@ericsson.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100722172726.GA4914@ericsson.com>
-User-Agent: Mutt/1.4.1i
+	id S1754139Ab0GVRxi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 13:53:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:35247 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753510Ab0GVRxc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 13:53:32 -0400
+MIME-Version: 1.0
+In-Reply-To: <alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr> 
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> 
+	<30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> 
+	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com> 
+	<E1Obxpd-00CRIo-SF@intern.SerNet.DE> <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com> 
+	<20100722162712.GB10352@jeremy-laptop> <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com> 
+	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 22 Jul 2010 10:24:17 -0700
+Message-ID: <AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
+        David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +This driver permits reading package level temperature sensor embedded inside
-> > +Intel CPU package. The sensors can be in core, uncore, memroy controller, or
-> 
-> memroy --> memory
-Will change the typo.
+On Thu, Jul 22, 2010 at 10:03 AM, Jan Engelhardt <jengelh@medozas.de> wrote:
+>
+> I beg to differ. ctime is not completely useless. It reflects changes on
+> the inode for when you don't you change the content.
 
-> > +other componenets in a package. The feature is first implemented in Intel Sandy
-> 
-> componenets --> components
-> 
-Ditto.
+Uh. Yes. Except that why is file metadata really different from file
+data? Most people really don't care. And a lot of people have asked
+for creation dates - and I seriously doubt that Windows people
+complain a lot about the fact that there you have mtime for metadata
+changes too.
 
-> > +Bridge platform.
-> > +
-> Just for clarification - you mention a number of sensors, but unless
-> I am missing something only the package sensor is implemented. Is that correct ?
-Do you mean "only the core sensor"? I think the Sandy Bridge only implements
-core sensor now. I would think in the future more sensors could be implemented.
-If only core sensors are implemented, there is no need to have the package
-level thermal hw MSRs because OS can get all package level thermal info by
-enumerating all core sensors in a package.
+The point being that Unix ctime semantics certainly have well-defined
+semantics, but they are in no way "better" than having a real creation
+time, and are often worse.
 
-> 
-> > +Temperature is measured in degrees Celsius and measurement resolution is
-> > +1 degree C. Valid temperatures are from 0 to TjMax degrees C, because the actual
-> > +value of temperature register is in fact a delta from TjMax.
-> > +
-> From the code, it seems that negative values can be reported. Is it guaranteed 
-> by the chip that (TjMax - MSR_IA32_TEMPERATURE_TARGET) >= 0 ? Otherwise, the
-> minimum temperature would be (TjMax - 127).
-> 
-> > +Temperature known as TjMax is the maximum junction temperature of package.
-> > +Intel defines this temperature as 125C. At this temperature, protection
-> 
-> Your driver bails out at TjMax >= 120, so there is some inconsistency.
-> Also, it seems that this is not a constant, since you are reading
-> MSR_IA32_TEMPERATURE_TARGET to get the value.
-> 
-> Since the CPUs supporting the package sensor presumably also all support
-> reading TjMax, maybe you can reword the above text to reflect this.
-> 
-You are right. I forgot to update this part. I'll reword it.
+Just imagine what you could do as an MIS person if you actually had a
+creation time you could somewhat trust? You talk about seeing somebody
+change the permissions of /etc/passwd, but realistically, absent
+preexisting semantics, who would really ask for that? The only reason
+you mention that as an example of what you can do with ctime is that
+that is indeed pretty much the _only_ thing you can do with ctime, and
+it really isn't that useful.
 
-> > +mechanism will perform actions to forcibly cool down the processor. Alarm
-> > +may be raised, if the temperature grows enough (more than TjMax) to trigger
-> > +the Out-Of-Spec bit. Following table summarizes the exported sysfs files:
-> > +
-> > +temp1_input	 - Package temperature (in millidegrees Celsius).
-> > +temp1_crit	 - Maximum junction temperature (in millidegrees Celsius).
-> > +temp1_crit_alarm - Set when Out-of-spec bit is set, never clears.
-> > +		   Correct CPU operation is no longer guaranteed.
-> > +temp1_label	 - Contains string "Pysical package id X", where X is physical
-> 
-> Pysical --> Physical.
-> I would suggest to drop the "id" for consistency. Core sensor names don't
-> include "id" either.
-> 
-> I am not sure if "physical" should be included in the first place.
-> Also, above description suggests that future CPUs might add more sensors.
-> If so, the name should probably reflect the location of the current sensor,
-> ie be something like "Package core X" or "Core package X" or "Package X (core)".
-How about just using "package X" to align with coretemp for now? Currently there
-is no interface to tell which sensor it is.
+In contrast, with a creation date, you see the difference between
+people overwriting files by writing to them, or overwriting files by
+creating a new one and moving it over the old one. At a guess, that
+would be quite as useful to a sysadmin as ctime is now (my gut feel is
+that it would be more so, but whatever).
 
-Thanks.
+IOW, there really isn't anything magically good about UNIX ctime
+semantics, and in fact they are totally broken in the presence of
+extended attributes (that's file data, but it only changes ctime? WTF
+is up with that? Yes, I know why it happens, and it makes sense within
+the insane unix ctime rules, but no way does it make sense in a bigger
+picture unless you are in total denial and try to claim that xattrs
+are just metadata despite having contents).
 
--Fenghua
+And yes, I am also sure that there are applications that do depend on
+ctime semantics. Trond mentioned NFS serving, and that's unfortunate.
+I bet there are others. That's inevitable when you have 40 years of
+history. So I'm not claiming that re-using ctime is painfree, but for
+somebody that cares about samba a lot, I bet it's a _lot_ better than
+adding a new time that almost nobody actually supports as things stand
+now.
+
+Of people can just use xattrs and do it all entirely in user space. I
+assume that's what samba does now, even outside of birthtime.
+
+                     Linus
