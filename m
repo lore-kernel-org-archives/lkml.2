@@ -1,246 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758214Ab0GVU0M (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 16:26:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:51582 "EHLO
+	id S1758627Ab0GVU0Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 16:26:25 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:51113 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755517Ab0GVUYz (ORCPT
+	with ESMTP id S1755451Ab0GVUYy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 16:24:55 -0400
-X-Authority-Analysis: v=1.1 cv=nxp4sGnGskpld68D65f6QeagdS7Y+3TTkvBhhEd/T4I= c=1 sm=0 a=ybbhsP_MqwIA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=QrFd70mTdKO-YOatBroA:9 a=9NC1xKUsKFtdy1uUFgAA:7 a=FtcidkBDUR-oc_yr7opqb6YvV60A:4 a=jeBq3FmKZ4MA:10 a=AWeKdIrdlVU68RQp:21 a=aNmT37IuhKJoTbDU:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Thu, 22 Jul 2010 16:24:54 -0400
+X-Authority-Analysis: v=1.1 cv=NvN00vXXLC/2Fo3NdLZJXFUM7u9qr/FOWvgMjmHRJhk= c=1 sm=0 a=Dr8TZon67gYA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=rUNqmKR67A3LD9VqaiAA:9 a=NvaZxeYGjLHljsYPpuMA:7 a=zM_u7TtWDGqEatLMtKL6dk0DxG8A:4 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Message-Id: <20100722202453.027894028@goodmis.org>
+Message-Id: <20100722202452.229505481@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 22 Jul 2010 16:24:15 -0400
+Date: Thu, 22 Jul 2010 16:24:12 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
         Frederic Weisbecker <fweisbec@gmail.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: [PATCH 4/7] tracing: Shrink max latency ringbuffer if unnecessary
+        Li Zefan <lizf@cn.fujitsu.com>
+Subject: [PATCH 1/7] tracing: Allow to disable cmdline recording
 References: <20100722202411.920807480@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-Shrink-max-latency-ringbuffer-if-unnecessary.patch
+Content-Disposition: inline; filename=0001-tracing-Allow-to-disable-cmdline-recording.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
-Documentation/trace/ftrace.txt says
+We found that even enabling a single trace event that will rarely be
+triggered can add big overhead to context switch.
 
-  buffer_size_kb:
+(lmbench context switch test)
+ -------------------------------------------------
+ 2p/0K 2p/16K 2p/64K 8p/16K 8p/64K 16p/16K 16p/64K
+ ctxsw  ctxsw  ctxsw ctxsw  ctxsw   ctxsw   ctxsw
+------ ------ ------ ------ ------ ------- -------
+  2.19   2.3   2.21   2.56   2.13     2.54    2.07
+  2.39   2.51  2.35   2.75   2.27     2.81    2.24
 
-        This sets or displays the number of kilobytes each CPU
-        buffer can hold. The tracer buffers are the same size
-        for each CPU. The displayed number is the size of the
-        CPU buffer and not total size of all buffers. The
-        trace buffers are allocated in pages (blocks of memory
-        that the kernel uses for allocation, usually 4 KB in size).
-        If the last page allocated has room for more bytes
-        than requested, the rest of the page will be used,
-        making the actual allocation bigger than requested.
-        ( Note, the size may not be a multiple of the page size
-          due to buffer management overhead. )
+The overhead is 6% ~ 11%.
 
-        This can only be updated when the current_tracer
-        is set to "nop".
+It's because when a trace event is enabled 3 tracepoints (sched_switch,
+sched_wakeup, sched_wakeup_new) will be activated to map pid to cmdname.
 
-But it's incorrect. currently total memory consumption is
-'buffer_size_kb x CPUs x 2'.
+We'd like to avoid this overhead, so add a trace option '(no)record-cmd'
+to allow to disable cmdline recording.
 
-Why two times difference is there? because ftrace implicitly allocate
-the buffer for max latency too.
-
-That makes sad result when admin want to use large buffer. (If admin
-want full logging and makes detail analysis). example, If admin
-have 24 CPUs machine and write 200MB to buffer_size_kb, the system
-consume ~10GB memory (200MB x 24 x 2). umm.. 5GB memory waste is
-usually unacceptable.
-
-Fortunatelly, almost all users don't use max latency feature.
-The max latency buffer can be disabled easily.
-
-This patch shrink buffer size of the max latency buffer if
-unnecessary.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-LKML-Reference: <20100701104554.DA2D.A69D9226@jp.fujitsu.com>
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+LKML-Reference: <4C2D57F4.2050204@cn.fujitsu.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace.c              |   38 +++++++++++++++++++++++++++++++-----
- kernel/trace/trace.h              |    1 +
- kernel/trace/trace_irqsoff.c      |    3 ++
- kernel/trace/trace_sched_wakeup.c |    2 +
- 4 files changed, 38 insertions(+), 6 deletions(-)
+ include/linux/ftrace_event.h |    7 +++++--
+ kernel/trace/trace.c         |    6 +++++-
+ kernel/trace/trace.h         |    3 +++
+ kernel/trace/trace_events.c  |   30 ++++++++++++++++++++++++++++--
+ 4 files changed, 41 insertions(+), 5 deletions(-)
 
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index 01df7ca..2b7b139 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -152,11 +152,13 @@ extern int ftrace_event_reg(struct ftrace_event_call *event,
+ enum {
+ 	TRACE_EVENT_FL_ENABLED_BIT,
+ 	TRACE_EVENT_FL_FILTERED_BIT,
++	TRACE_EVENT_FL_RECORDED_CMD_BIT,
+ };
+ 
+ enum {
+-	TRACE_EVENT_FL_ENABLED	= (1 << TRACE_EVENT_FL_ENABLED_BIT),
+-	TRACE_EVENT_FL_FILTERED	= (1 << TRACE_EVENT_FL_FILTERED_BIT),
++	TRACE_EVENT_FL_ENABLED		= (1 << TRACE_EVENT_FL_ENABLED_BIT),
++	TRACE_EVENT_FL_FILTERED		= (1 << TRACE_EVENT_FL_FILTERED_BIT),
++	TRACE_EVENT_FL_RECORDED_CMD	= (1 << TRACE_EVENT_FL_RECORDED_CMD_BIT),
+ };
+ 
+ struct ftrace_event_call {
+@@ -174,6 +176,7 @@ struct ftrace_event_call {
+ 	 * 32 bit flags:
+ 	 *   bit 1:		enabled
+ 	 *   bit 2:		filter_active
++	 *   bit 3:		enabled cmd record
+ 	 *
+ 	 * Changes to flags must hold the event_mutex.
+ 	 *
 diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index af90429..f7488f4 100644
+index 8683dec..af90429 100644
 --- a/kernel/trace/trace.c
 +++ b/kernel/trace/trace.c
-@@ -660,6 +660,10 @@ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
- 		return;
+@@ -344,7 +344,7 @@ static DECLARE_WAIT_QUEUE_HEAD(trace_wait);
+ /* trace_flags holds trace_options default values */
+ unsigned long trace_flags = TRACE_ITER_PRINT_PARENT | TRACE_ITER_PRINTK |
+ 	TRACE_ITER_ANNOTATE | TRACE_ITER_CONTEXT_INFO | TRACE_ITER_SLEEP_TIME |
+-	TRACE_ITER_GRAPH_TIME;
++	TRACE_ITER_GRAPH_TIME | TRACE_ITER_RECORD_CMD;
  
- 	WARN_ON_ONCE(!irqs_disabled());
-+	if (!current_trace->use_max_tr) {
-+		WARN_ON_ONCE(1);
-+		return;
-+	}
- 	arch_spin_lock(&ftrace_max_lock);
+ static int trace_stop_count;
+ static DEFINE_SPINLOCK(tracing_start_lock);
+@@ -428,6 +428,7 @@ static const char *trace_options[] = {
+ 	"latency-format",
+ 	"sleep-time",
+ 	"graph-time",
++	"record-cmd",
+ 	NULL
+ };
  
- 	tr->buffer = max_tr.buffer;
-@@ -686,6 +690,11 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
- 		return;
- 
- 	WARN_ON_ONCE(!irqs_disabled());
-+	if (!current_trace->use_max_tr) {
-+		WARN_ON_ONCE(1);
-+		return;
-+	}
+@@ -2561,6 +2562,9 @@ static void set_tracer_flags(unsigned int mask, int enabled)
+ 		trace_flags |= mask;
+ 	else
+ 		trace_flags &= ~mask;
 +
- 	arch_spin_lock(&ftrace_max_lock);
- 
- 	ftrace_disable_cpu();
-@@ -2801,6 +2810,9 @@ static int tracing_resize_ring_buffer(unsigned long size)
- 	if (ret < 0)
- 		return ret;
- 
-+	if (!current_trace->use_max_tr)
-+		goto out;
-+
- 	ret = ring_buffer_resize(max_tr.buffer, size);
- 	if (ret < 0) {
- 		int r;
-@@ -2828,11 +2840,14 @@ static int tracing_resize_ring_buffer(unsigned long size)
- 		return ret;
- 	}
- 
-+	max_tr.entries = size;
-+ out:
- 	global_trace.entries = size;
- 
- 	return ret;
++	if (mask == TRACE_ITER_RECORD_CMD)
++		trace_event_enable_cmd_record(enabled);
  }
  
-+
- /**
-  * tracing_update_buffers - used by tracing facility to expand ring buffers
-  *
-@@ -2893,12 +2908,26 @@ static int tracing_set_tracer(const char *buf)
- 	trace_branch_disable();
- 	if (current_trace && current_trace->reset)
- 		current_trace->reset(tr);
--
-+	if (current_trace && current_trace->use_max_tr) {
-+		/*
-+		 * We don't free the ring buffer. instead, resize it because
-+		 * The max_tr ring buffer has some state (e.g. ring->clock) and
-+		 * we want preserve it.
-+		 */
-+		ring_buffer_resize(max_tr.buffer, 1);
-+		max_tr.entries = 1;
-+	}
- 	destroy_trace_option_files(topts);
- 
- 	current_trace = t;
- 
- 	topts = create_trace_option_files(current_trace);
-+	if (current_trace->use_max_tr) {
-+		ret = ring_buffer_resize(max_tr.buffer, global_trace.entries);
-+		if (ret < 0)
-+			goto out;
-+		max_tr.entries = global_trace.entries;
-+	}
- 
- 	if (t->init) {
- 		ret = tracer_init(t, tr);
-@@ -3480,7 +3509,6 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
- 	}
- 
- 	tracing_start();
--	max_tr.entries = global_trace.entries;
- 	mutex_unlock(&trace_types_lock);
- 
- 	return cnt;
-@@ -4578,16 +4606,14 @@ __init static int tracer_alloc_buffers(void)
- 
- 
- #ifdef CONFIG_TRACER_MAX_TRACE
--	max_tr.buffer = ring_buffer_alloc(ring_buf_size,
--					     TRACE_BUFFER_FLAGS);
-+	max_tr.buffer = ring_buffer_alloc(1, TRACE_BUFFER_FLAGS);
- 	if (!max_tr.buffer) {
- 		printk(KERN_ERR "tracer: failed to allocate max ring buffer!\n");
- 		WARN_ON(1);
- 		ring_buffer_free(global_trace.buffer);
- 		goto out_free_cpumask;
- 	}
--	max_tr.entries = ring_buffer_size(max_tr.buffer);
--	WARN_ON(max_tr.entries != global_trace.entries);
-+	max_tr.entries = 1;
- #endif
- 
- 	/* Allocate the first page for all buffers */
+ static ssize_t
 diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 7778f06..cb629b3 100644
+index 84d3f12..7778f06 100644
 --- a/kernel/trace/trace.h
 +++ b/kernel/trace/trace.h
-@@ -276,6 +276,7 @@ struct tracer {
- 	struct tracer		*next;
- 	int			print_max;
- 	struct tracer_flags	*flags;
-+	int			use_max_tr;
+@@ -591,6 +591,7 @@ enum trace_iterator_flags {
+ 	TRACE_ITER_LATENCY_FMT		= 0x20000,
+ 	TRACE_ITER_SLEEP_TIME		= 0x40000,
+ 	TRACE_ITER_GRAPH_TIME		= 0x80000,
++	TRACE_ITER_RECORD_CMD		= 0x100000,
  };
  
+ /*
+@@ -723,6 +724,8 @@ filter_check_discard(struct ftrace_event_call *call, void *rec,
+ 	return 0;
+ }
  
-diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
-index 6fd486e..73a6b06 100644
---- a/kernel/trace/trace_irqsoff.c
-+++ b/kernel/trace/trace_irqsoff.c
-@@ -649,6 +649,7 @@ static struct tracer irqsoff_tracer __read_mostly =
- #endif
- 	.open           = irqsoff_trace_open,
- 	.close          = irqsoff_trace_close,
-+	.use_max_tr	= 1,
- };
- # define register_irqsoff(trace) register_tracer(&trace)
- #else
-@@ -681,6 +682,7 @@ static struct tracer preemptoff_tracer __read_mostly =
- #endif
- 	.open		= irqsoff_trace_open,
- 	.close		= irqsoff_trace_close,
-+	.use_max_tr	= 1,
- };
- # define register_preemptoff(trace) register_tracer(&trace)
- #else
-@@ -715,6 +717,7 @@ static struct tracer preemptirqsoff_tracer __read_mostly =
- #endif
- 	.open		= irqsoff_trace_open,
- 	.close		= irqsoff_trace_close,
-+	.use_max_tr	= 1,
- };
++extern void trace_event_enable_cmd_record(bool enable);
++
+ extern struct mutex event_mutex;
+ extern struct list_head ftrace_events;
  
- # define register_preemptirqsoff(trace) register_tracer(&trace)
-diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
-index c9fd5bd..4086eae 100644
---- a/kernel/trace/trace_sched_wakeup.c
-+++ b/kernel/trace/trace_sched_wakeup.c
-@@ -382,6 +382,7 @@ static struct tracer wakeup_tracer __read_mostly =
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
-+	.use_max_tr	= 1,
- };
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index e8e6043..09b4fa6 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -170,6 +170,26 @@ int ftrace_event_reg(struct ftrace_event_call *call, enum trace_reg type)
+ }
+ EXPORT_SYMBOL_GPL(ftrace_event_reg);
  
- static struct tracer wakeup_rt_tracer __read_mostly =
-@@ -396,6 +397,7 @@ static struct tracer wakeup_rt_tracer __read_mostly =
- #ifdef CONFIG_FTRACE_SELFTEST
- 	.selftest    = trace_selftest_startup_wakeup,
- #endif
-+	.use_max_tr	= 1,
- };
- 
- __init static int init_wakeup_tracer(void)
++void trace_event_enable_cmd_record(bool enable)
++{
++	struct ftrace_event_call *call;
++
++	mutex_lock(&event_mutex);
++	list_for_each_entry(call, &ftrace_events, list) {
++		if (!(call->flags & TRACE_EVENT_FL_ENABLED))
++			continue;
++
++		if (enable) {
++			tracing_start_cmdline_record();
++			call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
++		} else {
++			tracing_stop_cmdline_record();
++			call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
++		}
++	}
++	mutex_unlock(&event_mutex);
++}
++
+ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+ 					int enable)
+ {
+@@ -179,13 +199,19 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
+ 	case 0:
+ 		if (call->flags & TRACE_EVENT_FL_ENABLED) {
+ 			call->flags &= ~TRACE_EVENT_FL_ENABLED;
+-			tracing_stop_cmdline_record();
++			if (call->flags & TRACE_EVENT_FL_RECORDED_CMD) {
++				tracing_stop_cmdline_record();
++				call->flags &= ~TRACE_EVENT_FL_RECORDED_CMD;
++			}
+ 			call->class->reg(call, TRACE_REG_UNREGISTER);
+ 		}
+ 		break;
+ 	case 1:
+ 		if (!(call->flags & TRACE_EVENT_FL_ENABLED)) {
+-			tracing_start_cmdline_record();
++			if (trace_flags & TRACE_ITER_RECORD_CMD) {
++				tracing_start_cmdline_record();
++				call->flags |= TRACE_EVENT_FL_RECORDED_CMD;
++			}
+ 			ret = call->class->reg(call, TRACE_REG_REGISTER);
+ 			if (ret) {
+ 				tracing_stop_cmdline_record();
 -- 
 1.7.1
 
