@@ -1,88 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758949Ab0GVKwL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 06:52:11 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:41055 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755177Ab0GVKwH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 06:52:07 -0400
-Date: Thu, 22 Jul 2010 11:52:03 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Marek Szyprowski <m.szyprowski@samsung.com>
-Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>,
-        "'Daniel Walker'" <dwalker@codeaurora.org>, linux-mm@kvack.org,
-        Pawel Osciak <p.osciak@samsung.com>,
-        "'Xiaolin Zhang'" <xiaolin.zhang@intel.com>,
-        "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
-        "'Robert Fekete'" <robert.fekete@stericsson.com>,
-        "'Marcus Lorentzon'" <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
-        linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-Message-ID: <20100722105203.GD4737@rakim.wolfsonmicro.main>
-References: <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
- <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
- <1279649724.26765.23.camel@c-dwalke-linux.qualcomm.com>
- <op.vf5o28st7p4s8u@pikus>
- <20100721135229.GC10930@sirena.org.uk>
- <op.vf66mxka7p4s8u@pikus>
- <20100721182457.GE10930@sirena.org.uk>
- <op.vf7h6ysh7p4s8u@pikus>
- <20100722090602.GF10930@sirena.org.uk>
- <000901cb297f$e28f2b10$a7ad8130$%szyprowski@samsung.com>
+	id S1759038Ab0GVKwk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 06:52:40 -0400
+Received: from borg.medozas.de ([188.40.89.202]:51809 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755177Ab0GVKwh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 06:52:37 -0400
+Date: Thu, 22 Jul 2010 12:52:36 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Christoph Hellwig <hch@infradead.org>
+cc: David Howells <dhowells@redhat.com>, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org,
+        drepper@redhat.com, torvalds@linux-foundation.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
+ file stats available [ver #6]
+In-Reply-To: <20100718084824.GA27794@infradead.org>
+Message-ID: <alpine.LSU.2.01.1007221248050.9353@obet.zrqbmnf.qr>
+References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> <20100718084824.GA27794@infradead.org>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <000901cb297f$e28f2b10$a7ad8130$%szyprowski@samsung.com>
-X-Cookie: Sauron is alive in Argentina!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 11:25:48AM +0200, Marek Szyprowski wrote:
+On Sunday 2010-07-18 10:48, Christoph Hellwig wrote:
 
-> The driver may specify memory requirements (like memory address range or
-> alignment), but it cannot provide enough information to avoid or reduce
-> memory fragmentation. More than one memory region can be perfectly used
-> to reduce memory fragmentation IF common usage patterns are known. In
-> embedded world usually not all integrated device are being used at the
-> same time. This way some memory regions can be shared by 2 or more devices. 
+>Adding Uli to the Cc list to make sure this system call is useful
+>for glibc / can be exported by it.  Otherwise it's rather pointless
+>to add it.
+>
+>>  (6) BSD stat compatibility: Including more fields from the BSD stat such as
+>>      creation time (st_btime) and inode generation number (st_gen) [Jeremy
+>>      Allison, Bernd Schubert]
+>
+>How is this different from (1) and (4)?
 
-I do have some passing familiarity with the area, typically a lot of the
-features of a SoC won't get used at all at runtime on any given system.
+(4), the inode generation number, need not be related to time.
 
-> Just assume that gfx accelerator allocates memory is rather small chunks,
-> but keeps it while relevant surface is being displayed or processed by
-> application. It is not surprising that GUI (accelerated by the hardware
-> engine) is used almost all the time on a mobile device. This usage pattern
-> would produce a lot of fragmentation in the memory pool that is used by gfx
-> accelerator. Then we want to run a camera capture device to take a 8Mpix
+>>  (8) Allow the filesystem to indicate what it can/cannot provide: A filesystem
+>>      can now say it doesn't support a standard stat feature if that isn't
+>>      available.
+>
+>What for?
 
-I'd expect that the devices would be able to reserve blocks of memory to
-play with separately to the actual allocations (ie, allocate regions
-like those on the command line) and things like the GPU would make use
-of that.  I think you're already doing part of this?
-
-> photo. This require a large contiguous buffer. If we try to allocate it from
-> common pool it might happen that it is not possible (because of the
-> fragmentation).
-
-Sure, but none of this is saying to me that it's specifically important
-to supply a static configuration via this textual configuration language
-on the command line - half the problem is that you're trying to write
-the configuration down in a format which is fairly tightly constrained
-by needing to be there.  If the configuration is more dynamic there's a
-lot more flexibility to either allow the system to figure things out
-dynamically (which will hopefully work a lot of the time, for example in
-your use case only the GPU really needs memory reserving).
-
-Remember also that if you can configure this at runtime (as you say
-you're working towards) then even if you have a fairly static
-configuration you can inject it into the kernel from the application
-layer rather than having to either hard code it in the image or bodge it
-in via the command line.  This keeps the resource allocation joined up
-with the application layer (which is after all what determines the
-resource usage).
+Given xstat.otime=0, how would you determine whether the file is really 
+tagged with a date of 1970, or whether it's just the fs which didnot 
+store this kind of information.
