@@ -1,104 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752350Ab0GVO5r (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 10:57:47 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:38811 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752086Ab0GVO5n (ORCPT
+	id S1752829Ab0GVPAN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 11:00:13 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:39953 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751745Ab0GVPAK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 10:57:43 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAFf5R0x5Lc6U/2dsb2JhbACfcXLBaoU2BA
-Date: Fri, 23 Jul 2010 00:57:38 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: David Howells <dhowells@redhat.com>
-Cc: Nick Piggin <npiggin@suse.de>, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH] Add a dentry op to handle automounting rather
- than abusing follow_link
-Message-ID: <20100722145738.GA5752@amd>
-References: <20100722041554.GB3446@amd>
- <27282.1279058150@redhat.com>
- <30811.1279802187@redhat.com>
+	Thu, 22 Jul 2010 11:00:10 -0400
+Date: Thu, 22 Jul 2010 10:57:21 -0400
+From: Neil Horman <nhorman@tuxdriver.com>
+To: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: Re: [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
+Message-ID: <20100722145721.GA20182@hmsreliant.think-freely.org>
+References: <4C44F12F.5090908@jp.fujitsu.com>
+ <4C44F286.1050907@jp.fujitsu.com>
+ <20100720115044.GD1995@hmsreliant.think-freely.org>
+ <4C469BA1.7050900@jp.fujitsu.com>
+ <20100721105645.GA21259@hmsreliant.think-freely.org>
+ <4C4803B3.1020808@jp.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <30811.1279802187@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4C4803B3.1020808@jp.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Spam-Score: -2.9 (--)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 01:36:27PM +0100, David Howells wrote:
-> Nick Piggin <npiggin@suse.de> wrote:
+On Thu, Jul 22, 2010 at 05:39:15PM +0900, Koki Sanagi wrote:
+> (2010/07/21 19:56), Neil Horman wrote:
+> > On Wed, Jul 21, 2010 at 04:02:57PM +0900, Koki Sanagi wrote:
+> >> (2010/07/20 20:50), Neil Horman wrote:
+> >>> On Tue, Jul 20, 2010 at 09:49:10AM +0900, Koki Sanagi wrote:
+> >>>> [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
+> >>>> This patch adds tracepoint to consume_skb, dev_kfree_skb_irq and
+> >>>> skb_free_datagram_locked. Combinating with tracepoint on dev_hard_start_xmit,
+> >>>> we can check how long it takes to free transmited packets. And using it, we can
+> >>>> calculate how many packets driver had at that time. It is useful when a drop of
+> >>>> transmited packet is a problem.
+> >>>>
+> >>>>           <idle>-0     [001] 241409.218333: consume_skb: skbaddr=dd6b2fb8
+> >>>>           <idle>-0     [001] 241409.490555: dev_kfree_skb_irq: skbaddr=f5e29840
+> >>>>
+> >>>>         udp-recv-302   [001] 515031.206008: skb_free_datagram_locked: skbaddr=f5b1d900
+> >>>>
+> >>>>
+> >>>> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+> >>>> ---
+> >>>>  include/trace/events/skb.h |   42 ++++++++++++++++++++++++++++++++++++++++++
+> >>>>  net/core/datagram.c        |    1 +
+> >>>>  net/core/dev.c             |    2 ++
+> >>>>  net/core/skbuff.c          |    1 +
+> >>>>  4 files changed, 46 insertions(+), 0 deletions(-)
+> >>>>
+> >>>> diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
+> >>>> index 4b2be6d..84c9041 100644
+> >>>> --- a/include/trace/events/skb.h
+> >>>> +++ b/include/trace/events/skb.h
+> >>>> @@ -35,6 +35,48 @@ TRACE_EVENT(kfree_skb,
+> >>>>  		__entry->skbaddr, __entry->protocol, __entry->location)
+> >>>>  );
+> >>>>  
+> >>>> +DECLARE_EVENT_CLASS(free_skb,
+> >>>> +
+> >>>> +	TP_PROTO(struct sk_buff *skb),
+> >>>> +
+> >>>> +	TP_ARGS(skb),
+> >>>> +
+> >>>> +	TP_STRUCT__entry(
+> >>>> +		__field(	void *,	skbaddr	)
+> >>>> +	),
+> >>>> +
+> >>>> +	TP_fast_assign(
+> >>>> +		__entry->skbaddr = skb;
+> >>>> +	),
+> >>>> +
+> >>>> +	TP_printk("skbaddr=%p", __entry->skbaddr)
+> >>>> +
+> >>>> +);
+> >>>> +
+> >>>> +DEFINE_EVENT(free_skb, consume_skb,
+> >>>> +
+> >>>> +	TP_PROTO(struct sk_buff *skb),
+> >>>> +
+> >>>> +	TP_ARGS(skb)
+> >>>> +
+> >>>> +);
+> >>>> +
+> >>>> +DEFINE_EVENT(free_skb, dev_kfree_skb_irq,
+> >>>> +
+> >>>> +	TP_PROTO(struct sk_buff *skb),
+> >>>> +
+> >>>> +	TP_ARGS(skb)
+> >>>> +
+> >>>> +);
+> >>>> +
+> >>>> +DEFINE_EVENT(free_skb, skb_free_datagram_locked,
+> >>>> +
+> >>>> +	TP_PROTO(struct sk_buff *skb),
+> >>>> +
+> >>>> +	TP_ARGS(skb)
+> >>>> +
+> >>>> +);
+> >>>> +
+> >>>
+> >>> Why create these last two tracepoints at all?  dev_kfree_skb_irq will eventually
+> >>> pass through kfree_skb anyway, getting picked up by the tracepoint there, the
+> >>> while the latter won't (since it uses __kfree_skb instead), I think that could
+> >>> be fixed up by add a call to trace_kfree_skb there directly, saving you two
+> >>> tracepoints.
+> >>>
+> >>> Neil
+> >>>
+> >> I think dev_kfree_skb_irq isn't chased by trace_kfree_skb or trace_consume_skb
+> >> completely. Because net_tx_action frees skb by __kfree_skb. So it is better to
+> >> add trace_kfree_skb before it. skb_free_datagram_locked is same.
+> >>
+> > It isn't, you're right, but that was the point I made above.  Those missed areas
+> > could be easily handled by adding calls to trace_kfree_skb which already exists,
+> > to the missed areas.  Then you don't need to create those new tracepoints.  The
+> > way your doing this, if someone wants to trace all skb frees in debugfs, they
+> > would have to enable three tracepoints, not just one.  Not that thats the point
+> > of your patch, but its something to consider, and it simplifies your code.
+> > Neil
+> > 
 > 
-> > > AFS is made to use this facility so that it can be tested.  Other
-> > > filesystems abusing the follow_mount() inode operation will also need to
-> > > be modified.
+> O.K. I've re-made a patch to use trace_kfree_skb instead of
+> trace_dev_kfree_skb_irq and trace_skb_free_datagram_locked.
+> But I've got a problem.
+> I should use not __builtin_return_address, but macro or function which returns
+> current address. But I don't know any macro like that. Do you know any solution ?
 > 
-> I meant follow_link() here of course...  Too many followy things:-)
+Since the trace call is the first thing in the function, why not just pass in
+skb_free_datagram_locked as the pointer.  That should work out properly
+Neil
+
 > 
-> > How about having a .follow_mount op, and using that instead of
-> > default follow_mount in case mounted is incremented?
-> 
-> But what if d_mounted is not incremented, though?
-
-Nothing?
-
-
->  That's usually the point
-> you'd want to call the automount code.
-
-I think you have it the wrong way around. If you wanted to call
-the automount code, you would have incremented d_mounted.
-
-
->  Why would you want to call into the
-> filesystem just to skip over possibly mounted dentries?  A dentry may have an
-> elevated d_mount on it, but nothing mounted at that {vfsmount,dentry} point I
-> suppose, but still jumping into the filesystem just so it can skip an already
-> mounted point would seem a waste of time.
-
-Those that don't care wouldn't set ->follow_mount though.
-Following a mount is a fairly heavy operation already, it
-does take a global lock (before vfs scalability patches,
-anyway).
-
-I like the flexibility of doing one's own ->follow_mount,
-although Al might object to allowing filesystems to follow
-mounts in ways that are not published to the core
-namespace structures.
-
- 
-> > Also I would prefer the patch to add this call
-> 
-> Meaning i_op->follow_mount()?
-
-Either one, just make the follow_mount/__follow_mount API
-changes in one patch, and add the callback in another.
-
- 
-> > keep basically the same API as follow_mount, so if you are going to change
-> > that to return an error and do the NOFOLLOW handling in there, then could
-> > you do that first, as a more trivial patch?
-> 
-> Ummm...  I'm not sure I follow you.  I changed __follow_mount() not
-> follow_mount().  I don't think changing the latter is necessary.
-
-I meant __follow_mount.
-
- 
-> > Then your addition of the d_op should not touch outside *follow_mount.
-> 
-> But calling i_op->follow_mount() would, so what does this gain you?  And why
-> not touch the inside of __follow_mount()?
-> 
-> Are you suggesting doing i_op->follow_mount() instead of or as well as
-> d_op->d_automount()?  I'm not entirely sure.
-
-Two suggestions. Firstly a d_op->d_follow_mount() (does following
-a mount even make sense at the inode level?)
-
-Secondly, just simply to split the patch so you change the
-__follow_mount API in namespace first.
-
