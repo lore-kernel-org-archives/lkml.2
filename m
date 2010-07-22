@@ -1,49 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753308Ab0GVSbX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:31:23 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:13574 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750776Ab0GVSbV convert rfc822-to-8bit (ORCPT
+	id S1755213Ab0GVSdH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:33:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51794 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750776Ab0GVSdB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:31:21 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=QGL9Spmp+8e+cw2B1Szq1uZCQB8dfp/QOjWaI/s3ZqNhRQq9xHUCEZ4ojK6IOhnia
-	vf/d1sOD+/HiZV8zgqbPA==
-MIME-Version: 1.0
-In-Reply-To: <20100722182638.GA12712@kroah.com>
-References: <20100722182638.GA12712@kroah.com>
-Date: Thu, 22 Jul 2010 11:31:07 -0700
-Message-ID: <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-From: Paul Menage <menage@google.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
+	Thu, 22 Jul 2010 14:33:01 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 12/31] memblock: Move memblock arrays to static storage in memblock.c and make their size a variable
+Date: Thu, 22 Jul 2010 11:20:45 -0700
+Message-Id: <1279822864-17154-13-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C488C52.01A2,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 11:26 AM, Greg KH <gregkh@suse.de> wrote:
-> We really shouldn't be asking userspace to create new root filesystems.
-> So follow along with all of the other in-kernel filesystems, and provide
-> a mount point in sysfs.
->
-> For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
-> that mount point when the cgroup filesystem is registered in the kernel.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-But cgroups will typically have multiple mounts, with different
-resource controllers/options on each mount. That doesn't really fit in
-with this scheme.
+This is in preparation for having resizable arrays.
 
-Paul
+Note that we still allocate one more than needed, this is unchanged from
+the previous implementation.
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ include/linux/memblock.h |    7 ++++---
+ mm/memblock.c            |   10 +++++++++-
+ 2 files changed, 13 insertions(+), 4 deletions(-)
+
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index e849d31..b839053 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -18,7 +18,7 @@
+ 
+ #include <asm/memblock.h>
+ 
+-#define MAX_MEMBLOCK_REGIONS 128
++#define INIT_MEMBLOCK_REGIONS 128
+ 
+ struct memblock_region {
+ 	phys_addr_t base;
+@@ -26,8 +26,9 @@ struct memblock_region {
+ };
+ 
+ struct memblock_type {
+-	unsigned long cnt;
+-	struct memblock_region regions[MAX_MEMBLOCK_REGIONS+1];
++	unsigned long cnt;	/* number of regions */
++	unsigned long max;	/* size of the allocated array */
++	struct memblock_region *regions;
+ };
+ 
+ struct memblock {
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 78c2394..e1c5ce3 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -18,6 +18,8 @@
+ struct memblock memblock;
+ 
+ static int memblock_debug;
++static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
++static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+ 
+ static int __init early_memblock(char *p)
+ {
+@@ -104,6 +106,12 @@ static void memblock_coalesce_regions(struct memblock_type *type,
+ 
+ void __init memblock_init(void)
+ {
++	/* Hookup the initial arrays */
++	memblock.memory.regions	= memblock_memory_init_regions;
++	memblock.memory.max		= INIT_MEMBLOCK_REGIONS;
++	memblock.reserved.regions	= memblock_reserved_init_regions;
++	memblock.reserved.max	= INIT_MEMBLOCK_REGIONS;
++
+ 	/* Create a dummy zero size MEMBLOCK which will get coalesced away later.
+ 	 * This simplifies the memblock_add() code below...
+ 	 */
+@@ -169,7 +177,7 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
+ 
+ 	if (coalesced)
+ 		return coalesced;
+-	if (type->cnt >= MAX_MEMBLOCK_REGIONS)
++	if (type->cnt >= type->max)
+ 		return -1;
+ 
+ 	/* Couldn't coalesce the MEMBLOCK, so add it to the sorted table. */
+-- 
+1.6.4.2
+
