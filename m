@@ -1,77 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab0GVFk1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 01:40:27 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55593 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab0GVFk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 01:40:26 -0400
-Message-ID: <4C47DAE4.1030707@cn.fujitsu.com>
-Date: Thu, 22 Jul 2010 13:45:08 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1755016Ab0GVFmy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 01:42:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38225 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751390Ab0GVFmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 01:42:53 -0400
+Message-ID: <4C47DA56.3010201@redhat.com>
+Date: Thu, 22 Jul 2010 08:42:46 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
-References: <4C401CE3.7010004@cn.fujitsu.com>	 <20100721222508.8704.A69D9226@jp.fujitsu.com> <1279721766.4818.39.camel@gandalf.stny.rr.com>
-In-Reply-To: <1279721766.4818.39.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset=ISO-8859-15
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
+        Karl Rister <kmr@us.ibm.com>
+Subject: Re: [RFC][PATCH 9/9] make kvm mmu shrinker more aggressive
+References: <20100615135518.BC244431@kernel.beaverton.ibm.com>	 <20100615135530.4565745D@kernel.beaverton.ibm.com>	 <4C189830.2070300@redhat.com>  <1276701911.6437.16973.camel@nimitz>	 <1276876156.6437.23323.camel@nimitz>  <4C1DCD1A.4010306@redhat.com>	 <1277224359.9782.21.camel@nimitz>  <4C47CABC.1080801@redhat.com> <1279776987.9785.2030.camel@nimitz>
+In-Reply-To: <1279776987.9785.2030.camel@nimitz>
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> On Wed, 2010-07-21 at 22:31 +0900, KOSAKI Motohiro wrote:
->> Hi Steven,
-> 
->>         if (ac)
->> 	        trace_ext4_mb_release_group_pa(ac, pa);
->>
->> But, I don't think this is proper fix because we don't want any overhead
->> if the tracepoint is disabled.
->>
->> So, How do we check NULL in TP_fast_assign()?
-> 
-> You could do:
-> 
-> 	TP_fast_assign(
-> 		if (ac) {
-> 	                __entry->dev            = ac->ac_sb->s_dev;
->         	        __entry->ino            = ac->ac_inode->i_ino;
->         	        __entry->pa_pstart      = pa->pa_pstart;
->         	        __entry->pa_len         = pa->pa_len;
-> 		}
+On 07/22/2010 08:36 AM, Dave Hansen wrote:
+>
+>> Dave, how did those tests go?
+>>      
+> Still waiting on the folks that found this in the first place to
+> reproduce it and see if the patches help.  I'll go nudge them some more.
+>    
 
-This leaves __entry->dev etc as arbitrary value, since the entry returned
-by the ring buffer is not zeroed, so I think better add an else branch to
-zero those values.
+The merge window is coming up soon, and I'd like these patches to go in.
 
->         ),
-> 
-> But this just makes the __entry null and wastes the ring buffer.
-> 
-> I may be able to add a __discard_entry that may help. Then we could do
-> something like this:
-> 
-> 	if (ac) {
->                 __entry->dev            = ac->ac_sb->s_dev;
->                 __entry->ino            = ac->ac_inode->i_ino;
->                 __entry->pa_pstart      = pa->pa_pstart;
->                 __entry->pa_len         = pa->pa_len;
-> 	} else
-> 		__discard_entry;
-> 
-> Does this seem reasonable?
-> 
-> But for now, the wasting the entry seems to be the only choice we have,
-> or to do as you suggested and have the "if (ac) trace_...", but I don't
-> like that.
-> 
+-- 
+I have a truly marvellous patch that fixes the bug which this
+signature is too narrow to contain.
 
-As I was (and still am) not sure what is the best fix, I decided
-to send out a bug report instead of a patch..
