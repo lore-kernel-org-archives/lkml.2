@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756844Ab0GVTJz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 15:09:55 -0400
-Received: from mail.candelatech.com ([208.74.158.172]:34410 "EHLO
-	ns3.lanforge.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752950Ab0GVTJv (ORCPT
+	id S1756184Ab0GVTLE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 15:11:04 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:42842 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751270Ab0GVTLA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 15:09:51 -0400
-From: Ben Greear <greearb@candelatech.com>
-To: linux-kernel@vger.kernel.org
-Cc: Ben Greear <greearb@candelatech.com>
-Subject: [net 1/2] net:  dev_forward_skb should call nf_reset
-Date: Thu, 22 Jul 2010 12:09:15 -0700
-Message-Id: <1279825756-11568-2-git-send-email-greearb@candelatech.com>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1279825756-11568-1-git-send-email-greearb@candelatech.com>
-References: <1279825756-11568-1-git-send-email-greearb@candelatech.com>
+	Thu, 22 Jul 2010 15:11:00 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100721195547.GA3448@amt.cnet>
+References: <20100609183449.110905403@vyatta.com> <alpine.LFD.2.00.1006091144120.4506@i5.linux-foundation.org> 
+	<20100609115403.75ebb6cb@nehalam> <alpine.LFD.2.00.1006091203190.4506@i5.linux-foundation.org> 
+	<20100611103223.799d3ce0@nehalam> <20100721195547.GA3448@amt.cnet>
+From: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Thu, 22 Jul 2010 12:09:44 -0700
+Message-ID: <AANLkTinffggNzVWn0sZ78wF3nwbEehoEuiVdxUP8MoE4@mail.gmail.com>
+Subject: Re: [RFC] floppy: use single threaded workqueue
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Stephen Hemminger <shemminger@vyatta.com>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With conn-track zones and probably with different network
-namespaces, the netfilter logic needs to be re-calculated
-on packet receive.  If the netfilter logic is not reset,
-it will not be recalculated properly.  This patch adds
-the nf_reset logic to dev_forward_skb.
+On Wed, Jul 21, 2010 at 12:55 PM, Marcelo Tosatti <mtosatti@redhat.com> wrote:
+>
+> Can confirm this fixes the following oops seen under KVM guests.
+>
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000035
 
-Signed-off-by: Ben Greear <greearb@candelatech.com>
----
-:100644 100644 7ac33e5... 22eee4e... M	net/core/dev.c
- net/core/dev.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+Hmm. That does make me want to merge it early, but at the same time I
+suspect it has gotten almost no testing on real hardware. So despite
+looking "obvious" and fixing one bug, I'm a bit nervous and I suspect
+that the prudent thing to do is still to take it early in the 2.3.36
+merge window, and just mark it for stable.
 
-diff --git a/net/core/dev.c b/net/core/dev.c
-index 7ac33e5..22eee4e 100644
---- a/net/core/dev.c
-+++ b/net/core/dev.c
-@@ -1482,6 +1482,7 @@ static inline void net_timestamp(struct sk_buff *skb)
- int dev_forward_skb(struct net_device *dev, struct sk_buff *skb)
- {
- 	skb_orphan(skb);
-+	nf_reset(skb);
- 
- 	if (!(dev->flags & IFF_UP) ||
- 	    (skb->len > (dev->mtu + dev->hard_header_len))) {
--- 
-1.6.2.5
+Is anybody a big floppy user (on _real_ hardware, preferably with more
+than a couple machines) and could test it? I do feel kind of stupid
+for not taking it, but I don't have the hardware or the interest in
+really installing any in my current machines, and even if it looks
+fine and fixes some issue, I just don't feel safe enough without some
+more confirmation... As far as I know, the floppy oops thing has
+_only_ been seen on KVM (likely due to timing that just doesn't happen
+on real hardware), and while the KVM floppy emulation is probably
+fairly good, it also clearly isn't equivalent to hardware.
 
+                               Linus
