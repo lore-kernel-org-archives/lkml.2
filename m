@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757665Ab0GVM0k (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 08:26:40 -0400
-Received: from p01c11o147.mxlogic.net ([208.65.144.70]:54257 "EHLO
-	p01c11o147.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754186Ab0GVM0i convert rfc822-to-8bit (ORCPT
+	id S1756480Ab0GVMc0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 08:32:26 -0400
+Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37277 "EHLO
+	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753185Ab0GVMcY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 08:26:38 -0400
-X-Greylist: delayed 450 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jul 2010 08:26:38 EDT
-X-MXL-Hash: 4c4838fe1f697e1a-bbd9b51e8fe1291ea1156dc60fbce7fe4c3cf381
-X-MXL-Hash: 4c48373c209faef6-660ab4c966cef6ab8d0490578b840f48513716d3
-From: Andy Chittenden <andyc@bluearc.com>
-To: "Linux Kernel Mailing List (linux-kernel@vger.kernel.org)" 
-	<linux-kernel@vger.kernel.org>
-Date: Thu, 22 Jul 2010 13:19:02 +0100
-Subject: nfs client hang
-Thread-Topic: nfs client hang
-Thread-Index: AcspmBJWFkc0Kk81ShScwTGIcgxdig==
-Message-ID: <ABFC24E4C13D81489F7F624E14891C860310E10D51@uk-ex-mbx1.terastack.bluearc.com>
-Accept-Language: en-US, en-GB
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-x-cr-hashedpuzzle: vIY= AETA AMX7 BGGr BefI Bpcc CxA6 DSCY D4pn F8fm GIcH
- Iobj I8ki JUIn KFTf
- KP/+;1;bABpAG4AdQB4AC0AawBlAHIAbgBlAGwAQAB2AGcAZQByAC4AawBlAHIAbgBlAGwALgBvAHIAZwA=;Sosha1_v1;7;{796940BE-8EA9-4FDA-87C8-32B18EC8694B};YQBuAGQAeQBjAEAAYgBsAHUAZQBhAHIAYwAuAGMAbwBtAA==;Thu,
- 22 Jul 2010 12:19:02 GMT;bgBmAHMAIABjAGwAaQBlAG4AdAAgAGgAYQBuAGcA
-x-cr-puzzleid: {796940BE-8EA9-4FDA-87C8-32B18EC8694B}
-acceptlanguage: en-US, en-GB
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
-X-MAIL-FROM: <andyc@bluearc.com>
-X-SOURCE-IP: [213.121.168.131]
-X-AnalysisOut: [v=1.0 c=1 a=VphdPIyG4kEA:10 a=kj9zAlcOel0A:10 a=sIqM7rbIUs]
-X-AnalysisOut: [2FIam8obyq6w==:17 a=xNf9USuDAAAA:8 a=E5qr9jTlAAAA:8 a=d1pB]
-X-AnalysisOut: [CrdQi-3Y1-MhxaAA:9 a=YbkQyj9Ez6gjwZGbtQAA:7 a=Dx6wz8KPykXg]
-X-AnalysisOut: [Ty8RnVc7y-dR50EA:4 a=CjuIK1q_8ugA:10 a=CqgoUNhENt8A:10]
+	Thu, 22 Jul 2010 08:32:24 -0400
+From: Ben Hutchings <ben@decadent.org.uk>
+To: "Luck, Tony" <tony.luck@intel.com>
+Cc: linux-kernel@vger.kernel.org, Geert Stappers <stappers@stappers.nl>,
+        Dave Airlie <airlied@redhat.com>,
+        Stephen Rothwell <sfr@canb.auug.org.au>
+In-Reply-To: <4c472b3b227169b7c1@agluck-desktop.sc.intel.com>
+References: <4c472b3b227169b7c1@agluck-desktop.sc.intel.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-H/os8kns/O0RzPmo9EH7"
+Date: Thu, 22 Jul 2010 13:32:14 +0100
+Message-ID: <1279801934.4883.355.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
+X-SA-Exim-Connect-IP: 192.168.4.185
+X-SA-Exim-Mail-From: ben@decadent.org.uk
+Subject: Re: [PATCH] Fix ttm_page_alloc.c build breakage
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:14:11 +0000)
+X-SA-Exim-Scanned: Yes (on shadbolt.decadent.org.uk)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We're encountering a bug similar to http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=578152 but that claims to be fixed in the version we're running:
 
-# dpkg --status linux-image-2.6.32-5-amd64 | grep Version:
-Version: 2.6.32-17
+--=-H/os8kns/O0RzPmo9EH7
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-If I do this in 4 different xterm windows having cd to the same NFS mounted directory:
+On Wed, 2010-07-21 at 10:15 -0700, Luck, Tony wrote:
+> The commit 1e8655f87333def92bb8215b423adc65403b08a5
+>     drm/ttm: Fix build on architectures without AGP
+>=20
+> looks at TTM_HAS_AGP before it has been set in ttm_bo_driver.h
+>    =20
+> Move the conditional inclusion of <asm/agp.h> *after* we have included
+> ttm_bo_driver.h
 
-xterm1: rm -rf *
-xterm2: while true; do     let iter+=1;     echo $iter;     dd if=/dev/zero of=$$ bs=1M count=1000; done
-xterm3: while true; do     let iter+=1;     echo $iter;     dd if=/dev/zero of=$$ bs=1M count=1000; done
-xterm4: while true; do     let iter+=1;     echo $iter;     dd if=/dev/zero of=$$ bs=1M count=1000; done
+D'oh, yes.
 
-then it normally hangs before the 3rd iteration starts. The directory contains loads of information (eg 5 linux source trees).
+> Signed-of-by: Tony Luck <tony.luck@intel.com>
+Acked-by: Ben Hutchings <ben@decadent.org.uk>
 
-When it gets into this hang state, here's the packets from the client to server:
+Ben.
 
-4	42.909478	172.18.0.39	10.1.6.102	TCP	1013 > nfs [SYN] Seq=0 Win=5840 Len=0 MSS=1460 TSV=108490 TSER=0 WS=0
-5	42.909577	10.1.6.102	172.18.0.39	TCP	nfs > 1013 [SYN, ACK] Seq=0 Ack=1 Win=64240 Len=0 MSS=1460
-6	42.909610	172.18.0.39	10.1.6.102	TCP	1013 > nfs [ACK] Seq=1 Ack=1 Win=5840 Len=0
-7	42.909672	172.18.0.39	10.1.6.102	TCP	1013 > nfs [FIN, ACK] Seq=1 Ack=1 Win=5840 Len=0
-8	42.909767	10.1.6.102	172.18.0.39	TCP	nfs > 1013 [ACK] Seq=1 Ack=2 Win=64240 Len=0
-9	43.660083	10.1.6.102	172.18.0.39	TCP	nfs > 1013 [FIN, ACK] Seq=1 Ack=2 Win=64240 Len=0
-10	43.660100	172.18.0.39	10.1.6.102	TCP	1013 > nfs [ACK] Seq=2 Ack=2 Win=5840 Len=0
+--=20
+Ben Hutchings
+Once a job is fouled up, anything done to improve it makes it worse.
 
-and then repeats after a while.
+--=-H/os8kns/O0RzPmo9EH7
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-IE the client starts a connection and then closes it again without sending data.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-FWIW I've found it easier to reproduce this problem if Ethernet flow control is off but it still happens with it on as well. This happens with different types of Ethernet hardware too. The rm -rf isn't necessary either but makes the problem easier to reproduce (for me anyway).
+iQIVAwUATEg6Que/yOyVhhEJAQKjEQ//YCtSxevEE9S3ARwj0uAyuC87k0NYLjwd
+q/7wyb3Eskpv0NgOHey3+tghPzvkVlrr2M3oJB6K3BlzvwxJNkVe4ljGnP8oImDR
+bKiczAy3+M+zLJd5r6oa6b8YgM2Ed9XllvsH/vHL5rZ+MrBC97TpPpIZR/4hvoAs
+1ZEI/v8t3X7aW7KL09+s8s0dsfV8ZogTjPydL0Z9UhUf3gw130OhQJMlXMsmmCpd
+ompBDE0n9mrpBVlBL2uwSJbh4dUQc4sNz2rceLtn+wnptoH1qllOiglv7z5oEgDh
+yzBvdHyxjI6jUeW4o7i7lu+2effplPfaw7m01lOsTUFHyrx0bGOQ429AwttEiVuE
+8dnNk9kZXVeVAH+G//xG3Sst9SX6O2b+sIAC192/eO3x/adfUhioAXs255jHhrN2
+MkFv6DM8vdQJVBVyapKGgOU1suvoBLzqnPgZrl+cnVk8cBhzRcXCRJ1SFL4Qo4uw
+jmcCwqTc3gKu/ak/3ygxO0jbOKe3rT3nPII38qdjtCtiqkm2V547rp81AGc6ir8U
+2L26N5zWvcq4qCOnv+7owpae3sNztC9Eqv1gLAk9vx4F/0TEjbilCRnRnPIKmWcD
+mz5lDQjakLQbb6l79//I4wr69QK0Ja4vxIhbq0e7SNRuhCmIQcc7kzOxJCW99P19
+QxiTI9Ey7mI=
+=KUWD
+-----END PGP SIGNATURE-----
 
-The mount options are:
-
-# mount | grep u15
-sweet.dev.bluearc.com:/u15 on /u/u15 type nfs (rw,noatime,nodiratime,hard,intr,rsize=32768,wsize=32768,proto=tcp,hard,intr,rsize=32768,wsize=32768,sloppy,addr=10.1.6.102)
-
-I've generated a 2.6.34.1 kernel and that also has the same problem.
-
-So, why would the linux NFS client get into this "non-transmitting data" state? NB 2.6.26 doesn't exhibit this problem.
-
--- 
-Andy, BlueArc Engineering
-
-
+--=-H/os8kns/O0RzPmo9EH7--
