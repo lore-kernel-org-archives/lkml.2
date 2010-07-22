@@ -1,62 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759783Ab0GVVim (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:38:42 -0400
-Received: from xenotime.net ([72.52.115.56]:33764 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1752988Ab0GVVij (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:38:39 -0400
-Date: Thu, 22 Jul 2010 14:38:36 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: trivial@kernel.org, linux-doc@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 35/35]Documentation/HOWTO update web address.
-Message-Id: <20100722143836.ecbed9c7.rdunlap@xenotime.net>
-In-Reply-To: <1279687982-29413-5-git-send-email-justinmattock@gmail.com>
-References: <1279687982-29413-1-git-send-email-justinmattock@gmail.com>
-	<1279687982-29413-5-git-send-email-justinmattock@gmail.com>
-Organization: YPO4
+	id S1759937Ab0GVVip (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:38:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:28419 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755401Ab0GVVil (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 17:38:41 -0400
+Date: Thu, 22 Jul 2010 14:36:59 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, nauman@google.com,
+        dpshah@google.com, guijianfeng@cn.fujitsu.com, jmoyer@redhat.com,
+        czoccolo@gmail.com
+Subject: Re: [PATCH 5/5] cfq-iosched: Documentation update
+Message-Id: <20100722143659.39d55b0a.randy.dunlap@oracle.com>
+In-Reply-To: <1279834172-4227-6-git-send-email-vgoyal@redhat.com>
+References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
+	<1279834172-4227-6-git-send-email-vgoyal@redhat.com>
+Organization: Oracle Linux Eng.
 X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090205.4C48BA4B.01F7:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jul 2010 21:52:52 -0700 Justin P. Mattock wrote:
+On Thu, 22 Jul 2010 17:29:32 -0400 Vivek Goyal wrote:
 
-> The patch below updates some borken web addresses.
-> 
-> Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
-> 
+> o Documentation update for group_idle tunable and Group IOPS mode.
 > ---
->  Documentation/HOWTO |    6 +++---
->  1 files changed, 3 insertions(+), 3 deletions(-)
+>  Documentation/block/cfq-iosched.txt        |   44 ++++++++++++++++++++++++++++
+>  Documentation/cgroups/blkio-controller.txt |   28 +++++++++++++++++
+>  2 files changed, 72 insertions(+), 0 deletions(-)
+>  create mode 100644 Documentation/block/cfq-iosched.txt
 > 
-> diff --git a/Documentation/HOWTO b/Documentation/HOWTO
-> index 40ada93..365bda9 100644
-> --- a/Documentation/HOWTO
-> +++ b/Documentation/HOWTO
-> @@ -187,7 +187,7 @@ apply a patch.
->  If you do not know where you want to start, but you want to look for
->  some task to start doing to join into the kernel development community,
->  go to the Linux Kernel Janitor's project:
-> -	http://janitor.kernelnewbies.org/
-> +	http://kernelnewbies.org/KernelJanitors	
->  It is a great place to start.  It describes a list of relatively simple
->  problems that need to be cleaned up and fixed within the Linux kernel
->  source tree.  Working with the developers in charge of this project, you
-> @@ -315,7 +315,7 @@ process is tracked with the tool patchwork.  Patchwork offers a web
->  interface which shows patch postings, any comments on a patch or
->  revisions to it, and maintainers can mark patches as under review,
->  accepted, or rejected.  Most of these patchwork sites are listed at
-> -http://patchwork.kernel.org/ or http://patchwork.ozlabs.org/.
-> +http://patchwork.kernel.org/.
+> diff --git a/Documentation/block/cfq-iosched.txt b/Documentation/block/cfq-iosched.txt
+> new file mode 100644
+> index 0000000..6cc2151
+> --- /dev/null
+> +++ b/Documentation/block/cfq-iosched.txt
+> @@ -0,0 +1,44 @@
+> +CFQ ioscheduler tunables
+> +========================
+> +
+> +slice_idle
+> +----------
+> +This specifies how long CFQ should idle for next request on certain cfq queues
+> +(for sequential workloads) and service trees (for random workloads) before
+> +queue is expired and CFQ selects next queue to dispatch from.
+> +
+> +By default slice_idle is a non zero value. That means by default we idle on
 
+                              non-zero
 
-No need to drop patchwork.ozlabs.org -- it works.
+> +queues/service trees. This can be very helpful on highly seeky media like
+> +single spindle SATA/SAS disks where we can cut down on overall number of
+> +seeks and see improved throughput.
+> +
+> +Setting slice_idle to 0 will remove all the idling on queues/service tree
+> +level and one should see an overall improved throughput on faster storage
+> +devices like multiple SATA/SAS disks in hardware RAID configuration. The down
+> +side is that isolation provided from WRITES also goes down and notion of
+> +ioprio becomes weaker.
+> +
+> +So depending on storage and workload, it might be a useful to set slice_idle=0.
+
+                                            might be useful
+
+> +In general I think for SATA/SAS disks and software RAID of SATA/SAS disks
+> +keeping slice_idle enabled should be useful. For any configurations where
+> +there are multiple spindles behind single LUN (Host based hardware RAID
+> +controller or for storage arrays), setting slice_idle=0 might end up in better
+> +throughput and acceptable latencies.
+> +
+> +CFQ IOPS Mode for group scheduling
+> +==================================
+> +Basic CFQ design is to provide prio based time slices. Higher prio process
+> +gets bigger time slice and lower prio process gets smaller time slice.
+
+s/prio/priority/ multiple places.
+
+> +Measuring time becomes harder if storage is fast and supports NCQ and it would
+> +be better to dispatch multiple requests from multiple cfq queues in request
+> +queue at a time. In such scenario, it is not possible to measure time consumed
+> +by single queue accurately.
+> +
+> +What is possible though to measure number of requests dispatched from a single
+
+                    though is to measure (?)
+
+> +queue and also allow dispatch from multiple cfqq at the same time. This
+
+                   what is cfqq?               ^^^^
+
+> +effectively becomes the fairness in terms of IOPS (IO operations per second).
+> +
+> +If one sets slice_idle=0 and if storage supports NCQ, CFQ internally switches
+> +to IOPS mode and starts providing fairness in terms of number of requests
+> +dispatched. Note that this mode switching takes effect only for group
+> +scheduling. For non cgroup users nothing should change.
+
+                   non-cgroup
+
+> diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
+> index 48e0b21..6919d62 100644
+> --- a/Documentation/cgroups/blkio-controller.txt
+> +++ b/Documentation/cgroups/blkio-controller.txt
+> @@ -217,6 +217,7 @@ Details of cgroup files
+>  CFQ sysfs tunable
+>  =================
+>  /sys/block/<disk>/queue/iosched/group_isolation
+> +-----------------------------------------------
+>  
+>  If group_isolation=1, it provides stronger isolation between groups at the
+>  expense of throughput. By default group_isolation is 0. In general that
+> @@ -243,6 +244,33 @@ By default one should run with group_isolation=0. If that is not sufficient
+>  and one wants stronger isolation between groups, then set group_isolation=1
+>  but this will come at cost of reduced throughput.
+>  
+> +/sys/block/<disk>/queue/iosched/slice_idle
+> +------------------------------------------
+> +On a faster hardware CFQ can be slow, especially with sequential workload.
+> +This happens because CFQ idles on a single queue and single queue might not
+> +drive deeper request queue depths to keep the storage busy. In such scenarios
+> +one can try setting slice_idle=0 and that would switch CFQ to IOPS
+> +(IO operations per second) mode on NCQ supporting hardware.
+> +
+> +That means CFQ will not idle between cfq queues of a cfq group and hence be
+> +able to driver higher queue depth and achieve better throughput. That also
+> +means that cfq provides fairness among groups in terms of IOPS and not in
+> +terms of disk time.
+> +
+> +/sys/block/<disk>/queue/iosched/group_idle
+> +------------------------------------------
+> +If one disables idling on individual cfq queues and cfq service trees by
+> +setting slice_idle=0, group_idle kicks in. That means CFQ will still idle
+> +on the group in an attempt to provide fairness among groups.
+> +
+> +By default group_idle is same as slice_idle and does not do anything if
+> +slice_idle is enabled.
+> +
+> +One can experience an overall throughput drop if you have created multiple
+> +groups and put applications in that group which are not driving enough
+> +IO to keep disk busy. In that case set group_idle=0, and CFQ will not idle
+> +on individual groups and throughput should improve.
+> +
+>  What works
+>  ==========
+>  - Currently only sync IO queues are support. All the buffered writes are
+> -- 
+
 
 ---
 ~Randy
