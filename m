@@ -1,107 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755494Ab0GVGJf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 02:09:35 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:56669 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab0GVGJc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 02:09:32 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Thu, 22 Jul 2010 15:04:45 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH 1/2][memcg] moving memcg's node info array to
- virtually contiguous array
-Message-Id: <20100722150445.19a4a701.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100722144356.b9681621.nishimura@mxp.nes.nec.co.jp>
-References: <20100721195831.6aa8dca5.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100722144356.b9681621.nishimura@mxp.nes.nec.co.jp>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756111Ab0GVGOK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 02:14:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42745 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751883Ab0GVGOG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 02:14:06 -0400
+Date: Thu, 22 Jul 2010 02:13:55 -0400
+From: Amerigo Wang <amwang@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: nhorman@redhat.com, akpm@linux-foundation.org,
+        Amerigo Wang <amwang@redhat.com>, ebiederm@xmission.com
+Message-Id: <20100722061810.5659.87609.sendpatchset@localhost.localdomain>
+Subject: [Patch] kexec: increase max of kexec segments and use dynamic allocation
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010 14:43:56 +0900
-Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
 
-> On Wed, 21 Jul 2010 19:58:31 +0900
-> KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> 
-> > These are just a _toy_ level patches yet. My final purpose is to use indexed array
-> > for mem_cgroup itself, it has IDs.
-> > 
-> > Background:
-> >   memory cgroup uses struct page_cgroup for tracking all used pages. It's defined as
-> > ==
-> > struct page_cgroup {
-> >         unsigned long flags;
-> >         struct mem_cgroup *mem_cgroup;
-> >         struct page *page;
-> >         struct list_head lru;           /* per cgroup LRU list */
-> > };
-> > ==
-> >   and this increase the cost of per-page-objects dramatically. Now, we have
-> >   troubles on this object.
-> >   1.  Recently, a blkio-tracking guy wants to add "blockio-cgroup" information
-> >       to page_cgroup. But our concern is extra 8bytes per page.
-> >   2.  At tracking dirty page status etc...we need some trick for safe access
-> >       to page_cgroup and memcgroup's information. For example, a small seqlock.
-> > 
-> > Now, each memory cgroup has its own ID (0-65535). So, if we can replace
-> > 8byte of pointer "pc->mem_cgroup" with an ID, which is 2 bytes, we may able
-> > to have another room. (Moreover, I think we can reduce the number of IDs...)
-> > 
-> > This patch is a trial for implement a virually-indexed on-demand array and
-> > an example of usage. Any commetns are welcome.
-> > 
+Currently KEXEC_SEGMENT_MAX is only 16 which is too small for machine with
+many memory ranges. Increase this hard limit to 1024 which is reasonably large,
+and change ->segment from a static array to a dynamically allocated memory.
 
-Hi,
-> So, your purpose is to:
-> 
-> - make the size of mem_croup small(by [2/2])
-It's just an example to test virt-array. I don't convice it can
-save memory or make something fast. and I found a bug in free routine.)
+Cc: nhorman@redhat.com
+Cc: ebiederm@xmission.com
+Signed-off-by: WANG Cong <amwang@redhat.com>
 
-
-> - manage all the mem_cgroup in virt-array indexed by its ID(it would be faster
->   than using css_lookup)
-yes.
-
-> - replace pc->mem_cgroup by its ID and make the size of page_cgroup small
-> 
-yes.
-
-Final style I'm thinking is
-	struct page_cgroup {
-		unsigned long flags;
-		spinlock_t	lock;  # for lock_page_cgroup()
-		unsigned short memcg;
-		unsigned short blkio;
-		struct page *page;
-		struct list_head list;
-	};
-This will be benefical in 64bit. About 32bit, I may have to merge some fields.
-Or I may have to add some "version" field for updating memcg's statistics
-without locks. memcg field may be able to be moved onto high-bits of "flags"
-because it's stable value unless it's not under move_charge. 
-(IIUC, at move_charge, memcg is off-LRU and there are no race with AcctLRU bit
- v.s. pc->mem_cgroup field. With other flags, lock_page_cgroup() works enough.)
-
-Anyway, race with move_charge() will be the last enemy for us to track 
-dirty pages etc...at least, this kind of "make room" job is required, I feel.
-
-There are many things to be considered, but I'm a bit in hurry. I'd like to do
-some preparation before Mel at el rewrites memory-reclaim+writeback complelety.
-
-
-Thanks,
--Kame
-
+---
+diff --git a/arch/powerpc/kernel/machine_kexec_64.c b/arch/powerpc/kernel/machine_kexec_64.c
+index ed31a29..f115585 100644
+--- a/arch/powerpc/kernel/machine_kexec_64.c
++++ b/arch/powerpc/kernel/machine_kexec_64.c
+@@ -131,10 +131,7 @@ static void copy_segments(unsigned long ind)
+ void kexec_copy_flush(struct kimage *image)
+ {
+ 	long i, nr_segments = image->nr_segments;
+-	struct  kexec_segment ranges[KEXEC_SEGMENT_MAX];
+-
+-	/* save the ranges on the stack to efficiently flush the icache */
+-	memcpy(ranges, image->segment, sizeof(ranges));
++	struct  kexec_segment range;
+ 
+ 	/*
+ 	 * After this call we may not use anything allocated in dynamic
+@@ -148,9 +145,11 @@ void kexec_copy_flush(struct kimage *image)
+ 	 * we need to clear the icache for all dest pages sometime,
+ 	 * including ones that were in place on the original copy
+ 	 */
+-	for (i = 0; i < nr_segments; i++)
+-		flush_icache_range((unsigned long)__va(ranges[i].mem),
+-			(unsigned long)__va(ranges[i].mem + ranges[i].memsz));
++	for (i = 0; i < nr_segments; i++) {
++		memcpy(&range, &image->segment[i], sizeof(range));
++		flush_icache_range((unsigned long)__va(range.mem),
++			(unsigned long)__va(range.mem + range.memsz));
++	}
+ }
+ 
+ #ifdef CONFIG_SMP
+diff --git a/include/linux/kexec.h b/include/linux/kexec.h
+index 03e8e8d..26b70ff 100644
+--- a/include/linux/kexec.h
++++ b/include/linux/kexec.h
+@@ -57,7 +57,7 @@ typedef unsigned long kimage_entry_t;
+ #define IND_DONE         0x4
+ #define IND_SOURCE       0x8
+ 
+-#define KEXEC_SEGMENT_MAX 16
++#define KEXEC_SEGMENT_MAX 1024
+ struct kexec_segment {
+ 	void __user *buf;
+ 	size_t bufsz;
+@@ -86,7 +86,7 @@ struct kimage {
+ 	struct page *swap_page;
+ 
+ 	unsigned long nr_segments;
+-	struct kexec_segment segment[KEXEC_SEGMENT_MAX];
++	struct kexec_segment *segment;
+ 
+ 	struct list_head control_pages;
+ 	struct list_head dest_pages;
+diff --git a/kernel/kexec.c b/kernel/kexec.c
+index 131b170..3f97309 100644
+--- a/kernel/kexec.c
++++ b/kernel/kexec.c
+@@ -131,6 +131,11 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
+ 	if (!image)
+ 		goto out;
+ 
++	image->segment = kzalloc(nr_segments * sizeof(struct kexec_segment),
++				 GFP_KERNEL);
++	if (!image->segment)
++		goto out;
++
+ 	image->head = 0;
+ 	image->entry = &image->head;
+ 	image->last_entry = &image->head;
+@@ -216,8 +221,10 @@ static int do_kimage_alloc(struct kimage **rimage, unsigned long entry,
+ out:
+ 	if (result == 0)
+ 		*rimage = image;
+-	else
++	else if (image) {
++		kfree(image->segment);
+ 		kfree(image);
++	}
+ 
+ 	return result;
+ 
+@@ -261,8 +268,10 @@ static int kimage_normal_alloc(struct kimage **rimage, unsigned long entry,
+  out:
+ 	if (result == 0)
+ 		*rimage = image;
+-	else
++	else if (image) {
++		kfree(image->segment);
+ 		kfree(image);
++	}
+ 
+ 	return result;
+ }
+@@ -330,8 +339,10 @@ static int kimage_crash_alloc(struct kimage **rimage, unsigned long entry,
+ out:
+ 	if (result == 0)
+ 		*rimage = image;
+-	else
++	else if (image) {
++		kfree(image->segment);
+ 		kfree(image);
++	}
+ 
+ 	return result;
+ }
+@@ -656,6 +667,7 @@ static void kimage_free(struct kimage *image)
+ 
+ 	/* Free the kexec control pages... */
+ 	kimage_free_page_list(&image->control_pages);
++	kfree(image->segment);
+ 	kfree(image);
+ }
+ 
