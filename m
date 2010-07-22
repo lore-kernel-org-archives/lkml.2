@@ -1,87 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759308Ab0GVMj0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 08:39:26 -0400
-Received: from va3ehsobe005.messaging.microsoft.com ([216.32.180.31]:18556
-	"EHLO VA3EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752765Ab0GVMjW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1759290Ab0GVMjY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 08:39:24 -0400
+Received: from hera.kernel.org ([140.211.167.34]:39776 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753596Ab0GVMjW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 22 Jul 2010 08:39:22 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz1432N98dN936eM179dNzz1202hzzz32i2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L5YLO1-02-382-02
-X-M-MSG: 
-Date: Thu, 22 Jul 2010 14:36:03 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 6/7] x86, xsave: disable xsave in i387 emulation mode
-Message-ID: <20100722123603.GU26154@erda.amd.com>
-References: <1279731838-1522-1-git-send-email-robert.richter@amd.com>
- <1279731838-1522-7-git-send-email-robert.richter@amd.com>
- <1279736162.2812.3.camel@sbs-t61.sc.intel.com>
+Message-ID: <4C483BF4.3090006@kernel.org>
+Date: Thu, 22 Jul 2010 14:39:16 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <1279736162.2812.3.camel@sbs-t61.sc.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+To: Mark Knecht <markknecht@gmail.com>
+CC: Paul Check <paul@thechecks.ca>,
+        Linux Kernel List <linux-kernel@vger.kernel.org>,
+        "linux-ide@vger.kernel.org" <linux-ide@vger.kernel.org>
+Subject: Re: Drives missing at boot
+References: <AANLkTimVkG9TFgyOTTnrztBjqT4JoOzFaP268vWLAAm9@mail.gmail.com>	<4C2F5ECB.1040505@kernel.org>	<AANLkTinBn35687znO2_IxI3s1opkXrG2HpCRgsejNbMq@mail.gmail.com>	<4C2F61AB.9030806@kernel.org>	<AANLkTilYOT45q8OUJ-_V61_fnYy9HIk6GAv5ZPiomCaT@mail.gmail.com>	<4C317C04.20500@kernel.org>	<AANLkTilupyieml9yaWO9BUNPmQQ0g2w1HLWj6R9MwDZf@mail.gmail.com>	<4C32CE50.6010501@kernel.org>	<AANLkTikehTO1j6Gd7Y_g32_P6Yg9KB8Z8qwbNJh10aOU@mail.gmail.com>	<4C341598.6040004@kernel.org>	<AANLkTik4zkcIyVxwtX8GA1BsQSZaAeODpPlY3mRVBc-4@mail.gmail.com>	<4C34A1D5.1090202@kernel.org>	<AANLkTilgQSu3qi7qoTtjnV22r-8Sh1hbDAB_nlPImWNt@mail.gmail.com>	<4C34B8BE.5080504@kernel.org>	<AANLkTilDbrA6lLPSOAtA8_4mLNkUZibHweTliqU5jd03@mail.gmail.com>	<4C44BD42.3030904@kernel.org>	<7141c88bc8c27f26c2187252c0594318.squirrel@thechecks.ca>	<4C45AF40.7030800@kernel.org> <AANLkTinxDjPCk46eItZrXziTbf6efqvNNNTbkZDXIbns@mail.gmail.com>
+In-Reply-To: <AANLkTinxDjPCk46eItZrXziTbf6efqvNNNTbkZDXIbns@mail.gmail.com>
+X-Enigmail-Version: 1.1.1
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 22 Jul 2010 12:39:18 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 21.07.10 14:16:02, Suresh Siddha wrote:
+Hello,
 
-> I think it is cleaner to clear these cpu capabilities in the function
-> which handles no387 boot parameter.
+On 07/21/2010 10:54 PM, Mark Knecht wrote:
+>    Looks like I had a failure today. First one in weeks and only the
+> 3rd or 4th boot with this newer patch file. One of the two drives
+> making a RAID0 wasn't found so /dev/md11 (constructed from /dev/sdd
+> and /dev/sde) couldn't be started. I did a cold reboot and the drive
+> was found.
+> 
+>    If it matters, and it probably doesn't, the failure came on a boot
+> which had a scheduled fsck to do of /dev/md5 - my main / drive. I
+> don't see how that would make a difference but I figure why leave the
+> info out. That's why the times are so much larger in the dmesg file.
+> (I think)
+> 
+>    dmesg attached. I patched the Gentoo kernel if it makes a
+> difference, same as I did with the earlier patch.
+> 
+> mark@c2stable ~ $ uname -a
+> Linux c2stable 2.6.34-gentoo-r2 #1 SMP PREEMPT Sun Jul 18 14:09:48 PDT
+> 2010 x86_64 Intel(R) Core(TM) i7 CPU X 980 @ 3.33GHz GenuineIntel
+> GNU/Linux
+> mark@c2stable ~ $
 
-This does not cover all (of course weird but potentially existing)
-cases. Disabling xsave in the no387 setup would only work if an fpu
-exists. The implementation below disables it if the soft fpu is actual
-used. An artificial condition that would break your approach would be
-no fpu but xsave. There is no hardware like this but maybe virtual
-machines configurations.
+Hmmm... that's weird.  Can you please make sure the patch is actually
+applied?  Adding a printk("XXX patch applied!\n") near other changes
+usually is easy enough.  Also, can you please apply resume-dbg-1.patch
+too and reproduce the failure and post log?
 
-So I think it does not hurt to deactivate xsave directly when enabling
-soft fpu. The only drawback here is if fpu and xsave initialization
-order changes. Hmm...
-
--Robert
-
-> 
-> Otherwise Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
-> 
-> thanks.
-> 
-> > 
-> > Signed-off-by: Robert Richter <robert.richter@amd.com>
-> > ---
-> >  arch/x86/kernel/i387.c |    6 ++++++
-> >  1 files changed, 6 insertions(+), 0 deletions(-)
-> > 
-> > diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-> > index e73c54e..ff81143 100644
-> > --- a/arch/x86/kernel/i387.c
-> > +++ b/arch/x86/kernel/i387.c
-> > @@ -67,6 +67,12 @@ static void __cpuinit init_thread_xstate(void)
-> >  	 */
-> >  
-> >  	if (!HAVE_HWFP) {
-> > +		/*
-> > +		 * Disable xsave as we do not support it if i387
-> > +		 * emulation is enabled.
-> > +		 */
-> > +		setup_clear_cpu_cap(X86_FEATURE_XSAVE);
-> > +		setup_clear_cpu_cap(X86_FEATURE_XSAVEOPT);
-> >  		xstate_size = sizeof(struct i387_soft_struct);
-> >  		return;
-> >  	}
-> 
-> 
+Thanks.
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+tejun
