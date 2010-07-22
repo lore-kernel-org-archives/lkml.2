@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755016Ab0GVFmy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 01:42:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38225 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab0GVFmx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 01:42:53 -0400
-Message-ID: <4C47DA56.3010201@redhat.com>
-Date: Thu, 22 Jul 2010 08:42:46 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Dave Hansen <dave@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org,
-        Karl Rister <kmr@us.ibm.com>
-Subject: Re: [RFC][PATCH 9/9] make kvm mmu shrinker more aggressive
-References: <20100615135518.BC244431@kernel.beaverton.ibm.com>	 <20100615135530.4565745D@kernel.beaverton.ibm.com>	 <4C189830.2070300@redhat.com>  <1276701911.6437.16973.camel@nimitz>	 <1276876156.6437.23323.camel@nimitz>  <4C1DCD1A.4010306@redhat.com>	 <1277224359.9782.21.camel@nimitz>  <4C47CABC.1080801@redhat.com> <1279776987.9785.2030.camel@nimitz>
-In-Reply-To: <1279776987.9785.2030.camel@nimitz>
-Content-Type: text/plain; charset=us-ascii; format=flowed
+	id S1754958Ab0GVFsN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 01:48:13 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:47956 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab0GVFsJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 01:48:09 -0400
+Date: Thu, 22 Jul 2010 14:43:56 +0900
+From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
+Subject: Re: [RFC][PATCH 1/2][memcg] moving memcg's node info array to
+ virtually contiguous array
+Message-Id: <20100722144356.b9681621.nishimura@mxp.nes.nec.co.jp>
+In-Reply-To: <20100721195831.6aa8dca5.kamezawa.hiroyu@jp.fujitsu.com>
+References: <20100721195831.6aa8dca5.kamezawa.hiroyu@jp.fujitsu.com>
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2010 08:36 AM, Dave Hansen wrote:
->
->> Dave, how did those tests go?
->>      
-> Still waiting on the folks that found this in the first place to
-> reproduce it and see if the patches help.  I'll go nudge them some more.
->    
+On Wed, 21 Jul 2010 19:58:31 +0900
+KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
 
-The merge window is coming up soon, and I'd like these patches to go in.
+> These are just a _toy_ level patches yet. My final purpose is to use indexed array
+> for mem_cgroup itself, it has IDs.
+> 
+> Background:
+>   memory cgroup uses struct page_cgroup for tracking all used pages. It's defined as
+> ==
+> struct page_cgroup {
+>         unsigned long flags;
+>         struct mem_cgroup *mem_cgroup;
+>         struct page *page;
+>         struct list_head lru;           /* per cgroup LRU list */
+> };
+> ==
+>   and this increase the cost of per-page-objects dramatically. Now, we have
+>   troubles on this object.
+>   1.  Recently, a blkio-tracking guy wants to add "blockio-cgroup" information
+>       to page_cgroup. But our concern is extra 8bytes per page.
+>   2.  At tracking dirty page status etc...we need some trick for safe access
+>       to page_cgroup and memcgroup's information. For example, a small seqlock.
+> 
+> Now, each memory cgroup has its own ID (0-65535). So, if we can replace
+> 8byte of pointer "pc->mem_cgroup" with an ID, which is 2 bytes, we may able
+> to have another room. (Moreover, I think we can reduce the number of IDs...)
+> 
+> This patch is a trial for implement a virually-indexed on-demand array and
+> an example of usage. Any commetns are welcome.
+> 
+So, your purpose is to:
 
--- 
-I have a truly marvellous patch that fixes the bug which this
-signature is too narrow to contain.
+- make the size of mem_croup small(by [2/2])
+- manage all the mem_cgroup in virt-array indexed by its ID(it would be faster
+  than using css_lookup)
+- replace pc->mem_cgroup by its ID and make the size of page_cgroup small
 
+right?
+
+Thanks,
+Daisuke Nishimura.
