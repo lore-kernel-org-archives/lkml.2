@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756242Ab0GVPco (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 11:32:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:35808 "EHLO mx2.suse.de"
+	id S1759506Ab0GVPdX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 11:33:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13713 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752169Ab0GVPcm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 11:32:42 -0400
-Date: Thu, 22 Jul 2010 08:15:45 -0700
-From: Greg KH <gregkh@suse.de>
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org
-Subject: Re: [PATCH] staging: clean up code a bit, use kernel native methods
-Message-ID: <20100722151545.GA6696@suse.de>
-References: <1279805042-9936-1-git-send-email-andy.shevchenko@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279805042-9936-1-git-send-email-andy.shevchenko@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754762Ab0GVPdV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 11:33:21 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100722145738.GA5752@amd>
+References: <20100722145738.GA5752@amd> <20100722041554.GB3446@amd> <27282.1279058150@redhat.com> <30811.1279802187@redhat.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC][PATCH] Add a dentry op to handle automounting rather than abusing follow_link
+Date: Thu, 22 Jul 2010 16:33:13 +0100
+Message-ID: <20204.1279812793@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 04:24:02PM +0300, Andy Shevchenko wrote:
-> Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: devel@driverdev.osuosl.org
-> ---
->  drivers/staging/otus/apdbg.c             |   22 -----------------
->  drivers/staging/panel/panel.c            |   19 +++++---------
->  drivers/staging/rtl8192su/r8192S_Efuse.c |   27 ++-------------------
->  drivers/staging/wlags49_h2/wl_util.c     |   37 +-----------------------------
->  drivers/staging/wlags49_h2/wl_util.h     |    2 -
->  drivers/staging/wlan-ng/prism2sta.c      |    6 +---
+Nick Piggin <npiggin@suse.de> wrote:
 
-Can you break this up into 5 different patches, one per driver, and use
-a better description of exactly what you did in each driver?
+> I think you have it the wrong way around. If you wanted to call the
+> automount code, you would have incremented d_mounted.
 
-thanks,
+Why?  d_mounted indicates how many things are mounted on a dentry, doesn't it?
+Before the automounter is invoked there isn't anything mounted there.
 
-greg k-h
+> Those that don't care wouldn't set ->follow_mount though.  Following a mount
+> is a fairly heavy operation already, it does take a global lock (before vfs
+> scalability patches, anyway).
+
+I wonder if we could do it with a lock on vfsmount instead and use mnt_mounts
+to find it.
+
+> I like the flexibility of doing one's own ->follow_mount, although Al might
+> object to allowing filesystems to follow mounts in ways that are not
+> published to the core namespace structures.
+
+But why would you want to delegate mountpoint traversal to the filesystem?
+
+David
