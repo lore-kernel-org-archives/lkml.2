@@ -1,72 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759410Ab0GVNeg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 09:34:36 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:50347 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759370Ab0GVNec (ORCPT
+	id S1759416Ab0GVNlC (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 09:41:02 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:44522 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757995Ab0GVNlA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 09:34:32 -0400
-Subject: Re: [PATCHv2 11/11] writeback: prevent unnecessary bdi threads
- wakeups
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Dave Chinner <david@fromorbit.com>, Dave Chinner <dchinner@redhat.com>,
-        linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <20100722090023.GA7692@infradead.org>
-References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
-	 <1279704706-1267-12-git-send-email-dedekind1@gmail.com>
-	 <1279712741.2306.36.camel@localhost> <20100722004155.GZ32635@dastard>
-	 <20100722090023.GA7692@infradead.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 16:27:00 +0300
-Message-ID: <1279805220.3044.56.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+	Thu, 22 Jul 2010 09:41:00 -0400
+Date: Thu, 22 Jul 2010 14:40:56 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: =?utf-8?Q?Micha=C5=82?= Nazarewicz <m.nazarewicz@samsung.com>
+Cc: Marek Szyprowski <m.szyprowski@samsung.com>,
+        "'Daniel Walker'" <dwalker@codeaurora.org>, linux-mm@kvack.org,
+        Pawel Osciak <p.osciak@samsung.com>,
+        "'Xiaolin Zhang'" <xiaolin.zhang@intel.com>,
+        "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
+        "'Robert Fekete'" <robert.fekete@stericsson.com>,
+        "'Marcus Lorentzon'" <marcus.xm.lorentzon@stericsson.com>,
+        linux-kernel@vger.kernel.org,
+        "'Kyungmin Park'" <kyungmin.park@samsung.com>,
+        linux-arm-msm@vger.kernel.org
+Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
+Message-ID: <20100722134056.GJ4737@rakim.wolfsonmicro.main>
+References: <20100721135229.GC10930@sirena.org.uk>
+ <op.vf66mxka7p4s8u@pikus>
+ <20100721182457.GE10930@sirena.org.uk>
+ <op.vf7h6ysh7p4s8u@pikus>
+ <20100722090602.GF10930@sirena.org.uk>
+ <000901cb297f$e28f2b10$a7ad8130$%szyprowski@samsung.com>
+ <20100722105203.GD4737@rakim.wolfsonmicro.main>
+ <op.vf8sxqro7p4s8u@pikus>
+ <20100722124559.GH4737@rakim.wolfsonmicro.main>
+ <op.vf8x60wi7p4s8u@pikus>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 22 Jul 2010 13:33:49.0233 (UTC) FILETIME=[845D2A10:01CB29A2]
-X-Nokia-AV: Clean
+In-Reply-To: <op.vf8x60wi7p4s8u@pikus>
+X-Cookie: Sauron is alive in Argentina!
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 05:00 -0400, Christoph Hellwig wrote:
-> On Thu, Jul 22, 2010 at 10:41:55AM +1000, Dave Chinner wrote:
-> > 	if (wakeup_bdi) {
-> > 		trace_writeback_wakeup(bdi)
-> > 		spin_lock(&bdi->wb_lock);
-> > 		if (!bdi->wb.task) {{
-> > 			trace_writeback_wakeup_nothread(bdi);
-> > 			wake_up_process(default_backing_dev_info.wb.task);
-> > 		} else
-> > 			wake_up_process(bdi->wb.task);
-> > 		spin_unlock(&bdi->wb_lock);
-> 
-> That gives us duplicate traces for the first case, what about:
-> 
-> 	 if (wakeup_bdi) {
-> 	 	spin_lock(&bdi->wb_lock);
-> 		if (bdi->wb.task) {
-> 			trace_writeback_wake_thread(bdi);
-> 			wake_up_process(bdi->wb.task);
-> 		} else {
-> 			trace_writeback_wake_forker_thread(bdi);
-> 			wake_up_process(default_backing_dev_info.wb.task);
-> 		}
-> 		spin_unlock(&bdi->wb_lock);
-> 	}
+On Thu, Jul 22, 2010 at 03:24:26PM +0200, Michał Nazarewicz wrote:
 
-But Dave's version is what we have in 'bdi_queue_work()' as well. I it
-is OK - first trace point is triggered every time the bdi thread is
-_wanted_ to be woken up.
+> That's why command line is only intended as a way to overwrite the
+> defaults which are provided by the platform.  In a final product,
+> configuration should be specified in platform code and not on
+> command line.
 
-Then if it does not exist, we need to do something special to wake it up
-(ask the forker thread which to create it). This is a different event
-and we use a different trace point.
+Yeah, agreed though I'm not convinced we can't do it via userspace
+(initrd would give us a chance to do stuff early) or just kernel
+rebuilds.
 
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
+> >It sounds like apart from the way you're passing the configuration in
+> >you're doing roughly what I'd suggest.  I'd expect that in a lot of
+> >cases the map could be satisfied from the default region so there'd be
+> >no need to explicitly set one up.
 
+> Platform can specify something like:
+
+> 	cma_defaults("reg=20M", "*/*=reg");
+
+> which would make all the drivers share 20 MiB region by default.  I'm also
+> thinking if something like:
+
+Yes, exactly - probably you can even have a default region backed by
+normal vmalloc() RAM which would at least be able to take a stab at
+working by default.
