@@ -1,82 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756888Ab0GVWAz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 18:00:55 -0400
-Received: from mga02.intel.com ([134.134.136.20]:65065 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755660Ab0GVWAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 18:00:54 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,245,1278313200"; 
-   d="scan'208";a="537957413"
-Message-ID: <4C48BF90.3050100@intel.com>
-Date: Thu, 22 Jul 2010 15:00:48 -0700
-From: Dan Williams <dan.j.williams@intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+	id S1756934Ab0GVWBs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 18:01:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57645 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab0GVWBq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 18:01:46 -0400
+Message-ID: <4C48BF7E.80002@kernel.org>
+Date: Thu, 22 Jul 2010 15:00:30 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-To: Chris Li <lkml@chrisli.org>
-CC: David Woodhouse <dwmw2@infradead.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
-References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	<1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>	<1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>	<1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>	<AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>	<AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>	<1278324973.16975.68.camel@localhost>	<AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>	<1278463901.20082.34.camel@dwillia2-linux>	<1278474039.31393.8.camel@localhost>	<4C34BDCD.9080607@intel.com>	<AANLkTild7PCKygpPAJRo2G237CY8wJyveM9_Glx8qmoK@mail.gmail.com>	<4C379462.1020704@intel.com>	<1278720554.9522.18.camel@localhost>	<4C3E9F6E.1030508@intel.com>	<1279318325.27733.21.camel@macbook.infradead.org>	<AANLkTik80zwMaRYglVt2V3AuXiN90mgovIB3i67teVOL@mail.gmail.com>	<4C479BB1.8020102@intel.com> <AANLkTilmz73V7cc2UiGNUgU9cANzX8u5QP232DcbxGxR@mail.gmail.com>
-In-Reply-To: <AANLkTilmz73V7cc2UiGNUgU9cANzX8u5QP232DcbxGxR@mail.gmail.com>
-Content-Type: text/plain; charset=windows-1252; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+Subject: Re: [PATCH -v26 00/31] generic changes for memblock
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org> <1279834556.1970.20.camel@pasglop>
+In-Reply-To: <1279834556.1970.20.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C48BF90.01A0,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 7/22/2010 2:39 PM, Chris Li wrote:
-> On Wed, Jul 21, 2010 at 6:15 PM, Dan Williams<dan.j.williams@intel.com>  wrote:
+On 07/22/2010 02:35 PM, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-07-22 at 11:20 -0700, Yinghai Lu wrote:
+>> New memblock could be used to replace early_res in x86.
 >>
->> Here is v5 with the aforementioned change.
->
-> One warning.
->
-> CC      drivers/pci/intel-iommu.o
-> drivers/pci/intel-iommu.c: In function ‘quirk_ioat_snb_local_iommu’:
-> drivers/pci/intel-iommu.c:3037: warning: unused variable ‘i’
+>> Suggested by: David, Ben, and Thomas
+>>
+>> -v25: update to mainline with kmemleak fix on nobootmem
+>>       also rename lmb to memblock alread in mainline
+>>
+>> -v26: according to Linus and hpa, seperate the big patchset to small ones.
+>>
+>> This one is rebase of Ben's changeset to current mainline/tip
+>>
+>> Last 6 are needed for x86 memblock transistion, but change mm/memblock.c
+> 
+> Are there any change from my original series other than an automated
+> rebase ? If yes, let me know as I do plan to do that rebase myself, I
+> just haven't got to it yet.
+> 
+>>
+>> [PATCH 01/31] memblock: Rename memblock_region to memblock_type and memblock_property to memblock_region
+>> [PATCH 02/31] memblock: No reason to include asm/memblock.h late
+>> [PATCH 03/31] memblock: Introduce for_each_memblock() and new accessors, and use it
+>> [PATCH 04/31] memblock: Remove nid_range argument, arch provides memblock_nid_range() instead
+>> [PATCH 05/31] memblock: Factor the lowest level alloc function
+>> [PATCH 06/31] memblock: Expose MEMBLOCK_ALLOC_ANYWHERE
+>> [PATCH 07/31] memblock: Introduce default allocation limit and use it to replace explicit ones
+>> [PATCH 08/31] memblock: Remove rmo_size, burry it in arch/powerpc where it belongs
+>> [PATCH 09/31] memblock: Change u64 to phys_addr_t
+>> [PATCH 10/31] memblock: Remove unused memblock.debug struct member
+>> [PATCH 11/31] memblock: Remove memblock_type.size and add memblock.memory_size instead
+>> [PATCH 12/31] memblock: Move memblock arrays to static storage in memblock.c and make their size a variable
+>> [PATCH 13/31] memblock: Add debug markers at the end of the array
+>> [PATCH 14/31] memblock: Make memblock_find_region() out of memblock_alloc_region()
+>> [PATCH 15/31] memblock: Define MEMBLOCK_ERROR internally instead of using ~(phys_addr_t)0
+>> [PATCH 16/31] memblock: Move memblock_init() to the bottom of the file
+>> [PATCH 17/31] memblock: split memblock_find_base() out of __memblock_alloc_base()
 
-Oops, I'll clean that up.
+i folded the patch that make make memblock_find_base() to return MEMBLOCK_ERROR into patch 17
+and following one or two patches need to change too accordingly.
 
-> The dmesg looks good.
->
-[..]
-> dca service started, version 1.12.1
-> ioatdma: Intel(R) QuickData Technology Driver 4.00
-> ioatdma 0000:00:0f.0: can't derive routing for PCI INT A
-> ioatdma 0000:00:0f.0: PCI INT A: no GSI
-> ------------[ cut here ]------------
-> WARNING: at drivers/pci/intel-iommu.c:3056
-> quirk_ioat_snb_local_iommu+0xae/0xc7()
-> Hardware name: MacPro3,1
-> BIOS assigned incorrect VT-d unit for Intel(R) QuickData Technology device
-[..]
-> ---[ end trace c7f418b83f8ca665 ]---
-> Disabling lock debugging due to kernel taint
-> ioatdma 0000:00:0f.0: setting latency timer to 64
->    alloc irq_desc for 57 on node -1
->    alloc kstat_irqs on node -1
-> ioatdma 0000:00:0f.0: irq 57 for MSI/MSI-X
->    alloc irq_desc for 58 on node -1
->    alloc kstat_irqs on node -1
-> ioatdma 0000:00:0f.0: irq 58 for MSI/MSI-X
->    alloc irq_desc for 59 on node -1
->    alloc kstat_irqs on node -1
-> ioatdma 0000:00:0f.0: irq 59 for MSI/MSI-X
->    alloc irq_desc for 60 on node -1
->    alloc kstat_irqs on node -1
-> ioatdma 0000:00:0f.0: irq 60 for MSI/MSI-X
->
+>> [PATCH 18/31] memblock: Move functions around into a more sensible order
+>> [PATCH 19/31] memblock: Add array resizing support
+>> [PATCH 20/31] memblock: Add arch function to control coalescing of memblock memory regions
+>> [PATCH 21/31] memblock: Add "start" argument to memblock_find_base()
+>> [PATCH 22/31] memblock: NUMA allocate can now use early_pfn_map
+>> [PATCH 23/31] memblock: Separate memblock_alloc_nid() and memblock_alloc_try_nid()
+>> [PATCH 24/31] memblock: Make memblock_alloc_try_nid() fallback to MEMBLOCK_ALLOC_ANYWHERE
+>> [PATCH 25/31] memblock: Add debugfs files to dump the arrays content
 
-Nice, and the driver was able to load normally.  Thanks for the all the 
-testing!
 
-David, I'll take this through my tree as a regression fix (since 2.6.32) 
-if you have no objections.  Now that we are not hitting a driver load 
-failure I think I'll add a WARN() to this init-fail path.  I doubt we 
-would have flushed out this problem had the driver been discretely 
-handling init failures since day one.
 
-Regards,
-Dan
+>> [PATCH 26/31] memblock: Prepare x86 to use memblock to replace early_res
+>> [PATCH 27/31] memblock: Print new doubled array location info
+>> [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
+>> [PATCH 29/31] memblock: Prepare to include linux/memblock.h in core file
+>> [PATCH 30/31] memblock: Add ARCH_DISCARD_MEMBLOCK to put memblock code to .init
+>> [PATCH 31/31] memblock: Add memblock_find_in_range()
+
+please check if you can those 6 into your new branch.
+
+Thanks
+
+Yinghai
