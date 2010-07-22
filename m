@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759700Ab0GVSZx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:25:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45716 "EHLO
+	id S1759750Ab0GVS0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:26:10 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:45656 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759784Ab0GVSYr (ORCPT
+	with ESMTP id S1759817Ab0GVSYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:24:47 -0400
+	Thu, 22 Jul 2010 14:24:35 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -17,52 +17,89 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 24/31] memblock: Make memblock_alloc_try_nid() fallback to MEMBLOCK_ALLOC_ANYWHERE
-Date: Thu, 22 Jul 2010 11:20:57 -0700
-Message-Id: <1279822864-17154-25-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 20/31] memblock: Add arch function to control coalescing of memblock memory regions
+Date: Thu, 22 Jul 2010 11:20:53 -0700
+Message-Id: <1279822864-17154-21-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
 References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090209.4C488C58.0189,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090207.4C488C4A.0266,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-memblock_alloc_nid() used to fallback to allocating anywhere by using
-memblock_alloc() as a fallback.
-
-However, some of my previous patches limit memblock_alloc() to the region
-covered by MEMBLOCK_ALLOC_ACCESSIBLE which is not quite what we want
-for memblock_alloc_try_nid().
-
-So we fix it by explicitely using MEMBLOCK_ALLOC_ANYWHERE.
-
-Not that so far only sparc uses memblock_alloc_nid() and it hasn't been updated
-to clamp the accessible zone yet. Thus the temporary "breakage" should have
-no effect.
+Some archs such as ARM want to avoid coalescing accross things such
+as the lowmem/highmem boundary or similar. This provides the option
+to control it via an arch callback for which a weak default is provided
+which always allows coalescing.
 
 Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 ---
- mm/memblock.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/memblock.h |    2 ++
+ mm/memblock.c            |   19 ++++++++++++++++++-
+ 2 files changed, 20 insertions(+), 1 deletions(-)
 
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index b839053..15da7d9 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -70,6 +70,8 @@ extern void memblock_dump_all(void);
+ 
+ /* Provided by the architecture */
+ extern phys_addr_t memblock_nid_range(phys_addr_t start, phys_addr_t end, int *nid);
++extern int memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
++				   phys_addr_t addr2, phys_addr_t size2);
+ 
+ /**
+  * memblock_set_current_limit - Set the current allocation limit to allow
 diff --git a/mm/memblock.c b/mm/memblock.c
-index c3c499e..424ca11 100644
+index 8197f37..f793d9f 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -546,7 +546,7 @@ phys_addr_t __init memblock_alloc_try_nid(phys_addr_t size, phys_addr_t align, i
- 
- 	if (res)
- 		return res;
--	return memblock_alloc(size, align);
-+	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ANYWHERE);
+@@ -241,6 +241,12 @@ static int memblock_double_array(struct memblock_type *type)
+ 	return 0;
  }
  
++extern int __weak memblock_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
++					  phys_addr_t addr2, phys_addr_t size2)
++{
++	return 1;
++}
++
+ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+ {
+ 	unsigned long coalesced = 0;
+@@ -262,6 +268,10 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
+ 			return 0;
  
+ 		adjacent = memblock_addrs_adjacent(base, size, rgnbase, rgnsize);
++		/* Check if arch allows coalescing */
++		if (adjacent != 0 && type == &memblock.memory &&
++		    !memblock_memory_can_coalesce(base, size, rgnbase, rgnsize))
++			break;
+ 		if (adjacent > 0) {
+ 			type->regions[i].base -= size;
+ 			type->regions[i].size += size;
+@@ -274,7 +284,14 @@ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, ph
+ 		}
+ 	}
+ 
+-	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1)) {
++	/* If we plugged a hole, we may want to also coalesce with the
++	 * next region
++	 */
++	if ((i < type->cnt - 1) && memblock_regions_adjacent(type, i, i+1) &&
++	    ((type != &memblock.memory || memblock_memory_can_coalesce(type->regions[i].base,
++							     type->regions[i].size,
++							     type->regions[i+1].base,
++							     type->regions[i+1].size)))) {
+ 		memblock_coalesce_regions(type, i, i+1);
+ 		coalesced++;
+ 	}
 -- 
 1.6.4.2
 
