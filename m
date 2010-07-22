@@ -1,84 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab0GVSV0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:21:26 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:46829 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751772Ab0GVSVZ (ORCPT
+	id S1756327Ab0GVSWA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:22:00 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:51396 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755134Ab0GVSV5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:21:25 -0400
-Message-ID: <4C488C0C.5080409@oracle.com>
-Date: Thu, 22 Jul 2010 11:21:00 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Thu, 22 Jul 2010 14:21:57 -0400
+Message-ID: <4C488C41.60002@panasas.com>
+Date: Thu, 22 Jul 2010 21:21:53 +0300
+From: Benny Halevy <bhalevy@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: tanaka <tanaka_hideo@yahoo.co.jp>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: Please teach me X86 I/O port 0x61
-References: <20100722175727.43642.qmail@web100105.mail.kks.yahoo.co.jp>
-In-Reply-To: <20100722175727.43642.qmail@web100105.mail.kks.yahoo.co.jp>
-Content-Type: text/plain; charset=ISO-2022-JP
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
+ 	file stats available [ver #6]
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr> 	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> 	<30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> 	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com> 	<E1Obxpd-00CRIo-SF@intern.SerNet.DE> <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com> 	<20100722162712.GB10352@jeremy-laptop> <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com> 	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr> <AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
+In-Reply-To: <AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C488C22.01B2:SCFMA4539814,ss=1,fgs=0
+X-OriginalArrivalTime: 22 Jul 2010 18:21:55.0912 (UTC) FILETIME=[C4070C80:01CB29CA]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/10 10:57, tanaka wrote:
-> Good evening. Dear all.
+On Jul. 22, 2010, 20:24 +0300, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+> On Thu, Jul 22, 2010 at 10:03 AM, Jan Engelhardt <jengelh@medozas.de> wrote:
+>>
+>> I beg to differ. ctime is not completely useless. It reflects changes on
+>> the inode for when you don't you change the content.
 > 
-> I appreciate your responses.
-> We use AMD CPU machine.
+> Uh. Yes. Except that why is file metadata really different from file
+> data? Most people really don't care. And a lot of people have asked
+> for creation dates - and I seriously doubt that Windows people
+> complain a lot about the fact that there you have mtime for metadata
+> changes too.
 > 
-> For example,
-> http://www.sun.com/servers/entry/x4100/arch-wp.pdf
+> The point being that Unix ctime semantics certainly have well-defined
+> semantics, but they are in no way "better" than having a real creation
+> time, and are often worse.
+
+Yeah, having create time would be important.
+That said, having a non user-settable modify timestamp is crucial
+for quickly determining whether a file has changed.
+
+Benny
+
 > 
-> In Figure 1-1 block diagram (page 10) ,
-> which device is mapped 0x61 address in ?
-
-I can't tell from that block diagram.  I tried to see if 0x61 is part of
-the AMD-8111 chipset, but it seems that they have removed all downloads
-from that web page
-(http://www.amd.com/us/products/embedded/chipsets/Pages/other-embedded-chipset-products.aspx,
-last 3 links are bad).
-
-I would expect 0x61 to be part of the 8111 or possibly 8132 chipset.
-
-
-> --- Randy Dunlap <randy.dunlap@oracle.com> wrote:
+> Just imagine what you could do as an MIS person if you actually had a
+> creation time you could somewhat trust? You talk about seeing somebody
+> change the permissions of /etc/passwd, but realistically, absent
+> preexisting semantics, who would really ask for that? The only reason
+> you mention that as an example of what you can do with ctime is that
+> that is indeed pretty much the _only_ thing you can do with ctime, and
+> it really isn't that useful.
 > 
->> On Fri, 16 Jul 2010 00:00:36 +0900 (JST) tanaka wrote:
->>
->>> Dear all.
->>>
->>> I investigate about  NMI kernel messages.
->>> Linux kernel read 0x61 address using inb(61h).
->>>
->>> I search a amd opteron cpu following manuals.
->>> but I do not find  explanation of 0x61 address.
->>>
->>>
->>
-> http://support.amd.com/us/psearch/Pages/psearch.aspx?type=2.1&product=2.1.4&contentType=Tech+Doc+Processor&ostype=&keywords=&items=20
->>>
->>> Could you teach me a 0x61 address of X86 arch >
->>
->> Hi,
->>
->> IO port 0x61 (NMI Status & Control register) is not CPU-specific on
->> x86.
->> It's more of a platform thing.
->>
->> Intel describes it in ICH (chipset) specs, e.g., ICH7 spec,
->> section 10.7.1.  Please try that and see if it answers your
->> questions.
->>
->> ---
-
-
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+> In contrast, with a creation date, you see the difference between
+> people overwriting files by writing to them, or overwriting files by
+> creating a new one and moving it over the old one. At a guess, that
+> would be quite as useful to a sysadmin as ctime is now (my gut feel is
+> that it would be more so, but whatever).
+> 
+> IOW, there really isn't anything magically good about UNIX ctime
+> semantics, and in fact they are totally broken in the presence of
+> extended attributes (that's file data, but it only changes ctime? WTF
+> is up with that? Yes, I know why it happens, and it makes sense within
+> the insane unix ctime rules, but no way does it make sense in a bigger
+> picture unless you are in total denial and try to claim that xattrs
+> are just metadata despite having contents).
+> 
+> And yes, I am also sure that there are applications that do depend on
+> ctime semantics. Trond mentioned NFS serving, and that's unfortunate.
+> I bet there are others. That's inevitable when you have 40 years of
+> history. So I'm not claiming that re-using ctime is painfree, but for
+> somebody that cares about samba a lot, I bet it's a _lot_ better than
+> adding a new time that almost nobody actually supports as things stand
+> now.
+> 
+> Of people can just use xattrs and do it all entirely in user space. I
+> assume that's what samba does now, even outside of birthtime.
+> 
+>                      Linus
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
