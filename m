@@ -1,89 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752695Ab0GVV4N (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:56:13 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49612 "EHLO ogre.sisk.pl"
+	id S1756023Ab0GVWA1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 18:00:27 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:49621 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751166Ab0GVV4L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:56:11 -0400
+	id S1754099Ab0GVWAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 18:00:23 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Lin Ming <ming.m.lin@intel.com>
-Subject: Re: [RFC][PATCH v1 11/15] perf: export tracepoint events via sysfs: power
-Date: Thu, 22 Jul 2010 23:53:48 +0200
+To: Valdis.Kletnieks@vt.edu
+Subject: Re: [PATCH] Re: mmotm 2010-07-19 - e1000e vs. pm_qos_update_request issues
+Date: Thu, 22 Jul 2010 23:58:42 +0200
 User-Agent: KMail/1.13.5 (Linux/2.6.35-rc5-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
+Cc: Florian Mickler <florian@mickler.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        mark gross <markgross@thegnar.org>, e1000-devel@lists.sourceforge.net,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+        James Bottomley <James.Bottomley@hansenpartnership.com>,
         Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-References: <1279797433.20942.94.camel@minggr.sh.intel.com>
-In-Reply-To: <1279797433.20942.94.camel@minggr.sh.intel.com>
+        "David S. Miller" <davem@davemloft.net>
+References: <201007200007.o6K07Xbg028863@imap1.linux-foundation.org> <20100721091200.40c43158@schatten.dmk.lab> <4222.1279771503@localhost>
+In-Reply-To: <4222.1279771503@localhost>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
-  charset="utf-8"
+  charset="iso-8859-2"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007222353.48942.rjw@sisk.pl>
+Message-Id: <201007222358.43222.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 22, 2010, Lin Ming wrote:
-> power tracepoint events are exported like below,
+On Thursday, July 22, 2010, Valdis.Kletnieks@vt.edu wrote:
+> On Wed, 21 Jul 2010 09:12:00 +0200, Florian Mickler said:
 > 
-> /sys/power/events/
-> |-- power_end
-> |   |-- config
-> |   `-- type
-> |-- power_frequency
-> |   |-- config
-> |   `-- type
-> `-- power_start
->     |-- config
->     `-- type
-
-Any details?
-
-> ---
->  kernel/power/main.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
+> > Attached patch moves the registering from e1000_up to e1000_open and
+> > the unregistering from e1000_down to e1000_close. 
+> > It is only compile-tested as I don't have the hardware.
 > 
-> diff --git a/kernel/power/main.c b/kernel/power/main.c
-> index b58800b..6749374 100644
-> --- a/kernel/power/main.c
-> +++ b/kernel/power/main.c
-> @@ -12,6 +12,7 @@
->  #include <linux/string.h>
->  #include <linux/resume-trace.h>
->  #include <linux/workqueue.h>
-> +#include <linux/perf_event.h>
->  
->  #include "power.h"
->  
-> @@ -269,6 +270,9 @@ static int __init pm_init(void)
->  	power_kobj = kobject_create_and_add("power", NULL);
->  	if (!power_kobj)
->  		return -ENOMEM;
-> +
-> +	perf_sys_add_tp(power_kobj, "power");
-> +
+> My laptop has the hardware, so I tested it - system does indeed boot
+> without whinging about this issue.  Feel free to stick in a:
+> 
+> Tested-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+> 
+> Thanks for the fast fix. :)
 
-Why isn't it done in drivers/base/power/sysfs.c ?
+I'm going to add the patch to the suspend-2.6 tree.  Any objections?
 
->  	return sysfs_create_group(power_kobj, &attr_group);
->  }
+> > From 693c71b911ff0845c872261d5704a1d40960722d Mon Sep 17 00:00:00 2001
+> > From: Florian Mickler <florian@mickler.org>
+> > Date: Wed, 21 Jul 2010 08:44:21 +0200
+> > Subject: [PATCH] e1000e: register pm_qos request on hardware activation
+> > 
+> > The pm_qos_add_request call has to register the pm_qos request with the pm_qos
+> > susbsystem before first use of the pm_qos request via
+> > pm_qos_update_request.
+> > 
+> > As pm_qos changed to use plists there is no benefit in registering and
+> > unregistering the pm_qos request on ifup/ifdown and thus we move the
+> > registering into e1000_open and the unregistering in e1000_close.
 
 Rafael
