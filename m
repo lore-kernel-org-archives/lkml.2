@@ -1,50 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756216Ab0GVBbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 21:31:00 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:60933 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751599Ab0GVBa6 (ORCPT
+	id S1756672Ab0GVBiY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 21:38:24 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:39839 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab0GVBiW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 21:30:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=T1y8HNY47+NmBge6aWsOFpRUyYKoGpZRaR67XMQhmWL4FVV131NxlL/viiEf6A969A
-         dXs3pUWKx9slJToxt3GcnrNie3Mt0SOiTGf/g/Aitjo7wszfF8++Ewe8zOIfH/HAANC3
-         fOAZPUCBtZ2LFWbZ+LqwiVYH48//LUsuRptr8=
-From: ehames@gmail.com
-To: greg@kroah.com
-Cc: linux-kernel@vger.kernel.org, ehames@gmail.com
-Subject: [PATCH 1/2] Staging: wlan-ng: fix style in p80211netdev.c
-Date: Wed, 21 Jul 2010 22:31:55 -0300
-Message-Id: <4c479f51.19eb640a.387a.6ce2@mx.google.com>
-X-Mailer: git-send-email 1.6.3.3
+	Wed, 21 Jul 2010 21:38:22 -0400
+Date: Thu, 22 Jul 2010 10:38:17 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+        netfilter-devel@vger.kernel.org,
+        Malcolm Turnbull <malcolm@loadbalancer.org>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Julius Volz <julius.volz@gmail.com>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hannes Eder <heder@google.com>
+Subject: Re: [patch v2.6 4/4] libxt_ipvs: user-space lib for netfilter
+ matcher xt_ipvs
+Message-ID: <20100722013817.GB15008@verge.net.au>
+References: <20100711090342.035149543@vergenet.net>
+ <20100711090500.421568837@vergenet.net>
+ <20100721012146.GC22966@verge.net.au>
+ <alpine.LSU.2.01.1007210834570.10568@obet.zrqbmnf.qr>
+ <20100721132159.GN6418@verge.net.au>
+ <alpine.LSU.2.01.1007211526490.25445@obet.zrqbmnf.qr>
+ <20100721134102.GA21188@verge.net.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100721134102.GA21188@verge.net.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Edgardo Hames <ehames@gmail.com>
+On Wed, Jul 21, 2010 at 10:41:03PM +0900, Simon Horman wrote:
+> On Wed, Jul 21, 2010 at 03:28:16PM +0200, Jan Engelhardt wrote:
+> > 
+> > On Wednesday 2010-07-21 15:21, Simon Horman wrote:
+> > >> On Wednesday 2010-07-21 03:21, Simon Horman wrote:
+> > >> >> +
+> > >> >> +#define XT_IPVS_IPVS_PROPERTY	(1 << 0) /* all other options imply this one */
+> > >> >> +#define XT_IPVS_PROTO		(1 << 1)
+> > >> >> +#define XT_IPVS_VADDR		(1 << 2)
+> > >> >> +#define XT_IPVS_VPORT		(1 << 3)
+> > >> >> +#define XT_IPVS_DIR		(1 << 4)
+> > >> >> +#define XT_IPVS_METHOD		(1 << 5)
+> > >> >> +#define XT_IPVS_VPORTCTL	(1 << 6)
+> > >> >> +#define XT_IPVS_MASK		((1 << 7) - 1)
+> > >> >> +#define XT_IPVS_ONCE_MASK	(XT_IPVS_MASK & ~XT_IPVS_IPVS_PROPERTY)
+> > >> 
+> > >> Can't these just be an enum?
+> > >
+> > >More than one option can be used at once - they form a mini bitmap -
+> > >so no, I don't think we can use an enum.
+> > 
+> > An enum does not dictate that you cannot combine values of it with itself.
+> > 
+> > 	enum { A = 1 << 0, B = 1 << 0, };
+> > 	unsigned int flags = A | B;
+> > 
+> > is perfectly fine, which is what other modules do.
+> 
+> Understood. I'll make it so.
 
-Signed-off-by: Edgardo Hames <ehames@gmail.com>
----
- drivers/staging/wlan-ng/p80211netdev.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+Hi Jan,
 
-diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
-index 31308b4..ead8a35 100644
---- a/drivers/staging/wlan-ng/p80211netdev.c
-+++ b/drivers/staging/wlan-ng/p80211netdev.c
-@@ -819,7 +819,8 @@ int wlan_unsetup(wlandevice_t *wlandev)
- 
- 	if (wlandev->netdev) {
- 		wdev = netdev_priv(wlandev->netdev);
--		if(wdev->wiphy) wlan_free_wiphy(wdev->wiphy);
-+		if (wdev->wiphy)
-+			wlan_free_wiphy(wdev->wiphy);
- 		free_netdev(wlandev->netdev);
- 		wlandev->netdev = NULL;
- 	}
--- 
-1.6.3.3
+I must confess that I'm not familiar with using enum in this way.
+Can I confirm that you are suggesting the following?
+
+enum {
+	XT_IPVS_IPVS_PROPERTY =	1 << 0, /* all other options imply this one */
+	XT_IPVS_PROTO =		1 << 1,
+	XT_IPVS_VADDR =		1 << 2,
+	XT_IPVS_VPORT =		1 << 3,
+	XT_IPVS_DIR =		1 << 4,
+	XT_IPVS_METHOD =	1 << 5,
+	XT_IPVS_VPORTCTL =	1 << 6,
+	XT_IPVS_MASK =		(1 << 7) - 1,
+	XT_IPVS_ONCE_MASK =	(XT_IPVS_MASK & ~XT_IPVS_IPVS_PROPERTY)
+};
 
