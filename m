@@ -1,85 +1,142 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754883Ab0GVAmV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 20:42:21 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:34120 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753395Ab0GVAmU (ORCPT
+	id S1751260Ab0GVAxe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 20:53:34 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:8317 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750719Ab0GVAxc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 20:42:20 -0400
-Date: Thu, 22 Jul 2010 10:41:55 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Dave Chinner <dchinner@redhat.com>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, Jens Axboe <axboe@kernel.dk>
-Subject: Re: [PATCHv2 11/11] writeback: prevent unnecessary bdi threads
- wakeups
-Message-ID: <20100722004155.GZ32635@dastard>
-References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
- <1279704706-1267-12-git-send-email-dedekind1@gmail.com>
- <1279712741.2306.36.camel@localhost>
+	Wed, 21 Jul 2010 20:53:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=uXljJWZ3pV4gNkGJzJyo/KwXVMgEFqTJncmBojzdz3Db3rrN6CM5YiEZi1RHv/YJO
+	lr6CrdZYzqYdEZSVfJ5aQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279712741.2306.36.camel@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <alpine.LFD.2.00.1007211729550.409@localhost.localdomain>
+References: <alpine.LFD.2.00.1002051238280.4050@localhost.localdomain>
+	<20100426194002.586fbaa5@fido5>
+	<20100427124703.GA16706@jgarrett.org>
+	<alpine.LFD.2.00.1004301218280.2489@sony>
+	<20100430174447.GA14889@srcf.ucam.org>
+	<d7f2dd35a4361e5156079278543769a0@localhost>
+	<alpine.LFD.2.00.1005250125590.20648@localhost.localdomain>
+	<CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com>
+	<20100525124325.GC7876@srcf.ucam.org>
+	<alpine.LFD.2.00.1005251114420.4114@localhost.localdomain>
+	<20100525185507.GA15997@srcf.ucam.org>
+	<alpine.LFD.2.00.1007211729550.409@localhost.localdomain>
+Date: Wed, 21 Jul 2010 17:53:25 -0700
+Message-ID: <AANLkTik0RhHqT611oYbnyLfPQwgv0ExBLHK0mVruqbh3@mail.gmail.com>
+Subject: Re: [PATCH] ACPI: make acpi_idle Nehalem-aware
+From: Venkatesh Pallipadi <venki@google.com>
+To: Len Brown <lenb@kernel.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, "Yu, Luming" <luming.yu@intel.com>,
+        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
+        Andi Kleen <andi@firstfloor.org>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 02:45:41PM +0300, Artem Bityutskiy wrote:
-> On Wed, 2010-07-21 at 12:31 +0300, Artem Bityutskiy wrote:
-> >  	spin_unlock(&inode_lock);
-> > +
-> > +	if (wakeup_bdi) {
-> > +		spin_lock(&bdi->wb_lock);
-> > +		if (!bdi->wb.task)
-> > +			wake_up_process(default_backing_dev_info.wb.task);
-> > +		else
-> > +			wake_up_process(bdi->wb.task);
-> > +		spin_unlock(&bdi->wb_lock);
-> > +	}
-> >  }
-> 
-> Dave,
-> 
-> I do not know whether this stuff will end up in upstream, I did not get
-> any feed back from Jens so far. But if it will, I'd like to let you know
-> that the code quoted above is similar to the 'bdi_queue_work()'
-> function. And the purpose is very similar. But you added a
-> 'trace_writeback_nothread()' call to 'bdi_queue_work()', and I think a
-> similar call has to be here.
+On Wed, Jul 21, 2010 at 2:31 PM, Len Brown <lenb@kernel.org> wrote:
+> From: Len Brown <len.brown@intel.com>
+>
+> The BIOS exports deep C-states on modern Intel processors
+> as "C3-type" to satisfy various legacy Operating Systems.
+>
+> However, the hardware actually supports C2-type, and does
+> not require the extra costs of C3-type.
+>
+> One of the costs is to check the BM_STS (Bus Master Status)
+> bit before entering C3, and instead choose a shallower C-state
+> if there was "recent bus master activity".
+>
+> We have found a number of systems in the field that erroneously
+> set BM_STS and prevent entry into deep C-states.
+> Re-define BIOS presented C3-type states as C2-type states
+> on modern processors to avoid this issue.
+>
+> If a device in the system really does want to prevent use
+> of a deep C-state, its Linux driver should register its
+> constraints via pm_qos_add_request().
+>
+> https://bugzilla.kernel.org/show_bug.cgi?id=15886
+>
 
-Yes, that seems like a sane thing to do ;)
+Agree with the intent. But, I think its cleaner to keep all arch model
+checks in arch/x86/kernel/acpi/cstate.c.
 
-> Can I call 'trace_writeback_nothread()'? I guess not. Should I create
-> another trace point? Any hints/instructions?
+Thanks,
+Venki
 
-The bdi_queue_work() tracepoints expect a work structure to be
-passed in, so you can't use them (or that class of event) if you
-don't have a struct wb_writeback_work.
-
-For __mark_inode_dirty(), I'd add two new tracepoints like:
-
-DEFINE_WRITEBACK_EVENT(writeback_wakeup);
-DEFINE_WRITEBACK_EVENT(writeback_wakeup_nothread);
-
-and place them as:
-
-	if (wakeup_bdi) {
-		trace_writeback_wakeup(bdi)
-		spin_lock(&bdi->wb_lock);
-		if (!bdi->wb.task) {{
-			trace_writeback_wakeup_nothread(bdi);
-			wake_up_process(default_backing_dev_info.wb.task);
-		} else
-			wake_up_process(bdi->wb.task);
-		spin_unlock(&bdi->wb_lock);
-	}
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+> Signed-off-by: Len Brown <len.brown@intel.com>
+> ---
+>  drivers/acpi/processor_idle.c |   38 ++++++++++++++++++++++++++++++++++++++
+>  1 files changed, 38 insertions(+), 0 deletions(-)
+>
+> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+> index b1b3856..14d1a0c 100644
+> --- a/drivers/acpi/processor_idle.c
+> +++ b/drivers/acpi/processor_idle.c
+> @@ -607,6 +607,38 @@ static void acpi_processor_power_verify_c3(struct acpi_processor *pr,
+>        return;
+>  }
+>
+> +/*
+> + * Modern Intel processors support only ACPI C2-type C-states.
+> + * But the BIOS tends to report its deepest C-state as C3-type
+> + * to satisfy various old operating systems.  We can skip
+> + * C3 OS overhead by treating the deep-states as C2-type.
+> + * Also, we can avoid checking BM_STS, which on some systems
+> + * erroneously prevents entry into C3-type states.
+> + */
+> +static int acpi_c3type_is_really_c2type(void) {
+> +
+> +       if (boot_cpu_data.x86_vendor != X86_VENDOR_INTEL)
+> +               return 0;
+> +
+> +       if (boot_cpu_data.x86 != 6)
+> +               return 0;
+> +
+> +       switch(boot_cpu_data.x86_model) {
+> +       case 0x1A:      /* Core i7, Xeon 5500 series */
+> +       case 0x1E:      /* Core i7 and i5 Processor */
+> +       case 0x1F:      /* Core i7 and i5 Processor */
+> +       case 0x2E:      /* NHM-EX Xeon */
+> +       case 0x2F:      /* WSM-EX Xeon */
+> +       case 0x25:      /* WSM */
+> +       case 0x2C:      /* WSM */
+> +       case 0x2A:      /* SNB */
+> +       case 0x2D:      /* SNB Xeon */
+> +               return 1;
+> +       default:
+> +               return 0;
+> +       }
+> +}
+> +
+>  static int acpi_processor_power_verify(struct acpi_processor *pr)
+>  {
+>        unsigned int i;
+> @@ -617,6 +649,12 @@ static int acpi_processor_power_verify(struct acpi_processor *pr)
+>        for (i = 1; i < ACPI_PROCESSOR_MAX_POWER && i <= max_cstate; i++) {
+>                struct acpi_processor_cx *cx = &pr->power.states[i];
+>
+> +               if ((cx->type == ACPI_STATE_C3)
+> +                       && acpi_c3type_is_really_c2type()) {
+> +                               ACPI_DEBUG_PRINT((ACPI_DB_INFO, "Redefining C3-type to C2\n"));
+> +                               cx->type = ACPI_STATE_C2;
+> +               }
+> +
+>                switch (cx->type) {
+>                case ACPI_STATE_C1:
+>                        cx->valid = 1;
+> --
+> 1.7.2.rc3.43.g24e7a
+>
+>
+>
