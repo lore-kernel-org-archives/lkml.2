@@ -1,60 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759910Ab0GVS21 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:28:27 -0400
-Received: from outmail148094.authsmtp.co.uk ([62.13.148.94]:61770 "EHLO
-	outmail148094.authsmtp.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759600Ab0GVS2O (ORCPT
+	id S1759922Ab0GVS2o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:28:44 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42194 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755134Ab0GVSW1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:28:14 -0400
-X-Greylist: delayed 958 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jul 2010 14:28:13 EDT
-From: Ben Pfaff <blp@cs.stanford.edu>
-To: Mattia Jona-Lasinio <mattia.jona@gmail.com>
-Subject: Re: Introducing the LCD-Linux project
-References: <AANLkTil5Gz4i6iGZcaAcU0hg_ynNP1UR7bLwv_VQU6Wm@mail.gmail.com>
-CC: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.arm.linux.org.uk
-Reply-To: Ben Pfaff <blp@cs.stanford.edu>
-Date: Thu, 22 Jul 2010 11:12:02 -0700
-In-Reply-To: <AANLkTil5Gz4i6iGZcaAcU0hg_ynNP1UR7bLwv_VQU6Wm@mail.gmail.com>
-	(Mattia Jona-Lasinio's message of "Thu, 22 Jul 2010 13:00:34 +0200")
-Message-ID: <87aapjbd3h.fsf@benpfaff.org>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-Server-Quench: a253c512-95bc-11df-80b9-0022640b883e
-X-AuthReport-Spam: If SPAM / abuse - report it at: http://www.authsmtp.com/abuse
-X-AuthRoute: OCdwYQ8QAVZfSBwy AC4CFCFJRwtjIQdD FxoeKRdbOF4EFV8Q JBwAaXhONBpGHQgB E2cCUVVWWl10F2Jy aBRQawFDY09NQQRj T0pMQFdNFUs3B2F4 dR1tDxlwfgBEfTB4 ZE5mECFZWUcpcEd/ X0dRRz4bZGY0Pn0X UBJRagNUcgFMeh8X Ylh8AT1vNG8XHyQk BQg/IjswOzoXNCRY CiUmARc2QEAWDnYk XRcAED4zdQAO
-X-Authentic-SMTP: 61633331373532.1015:706/Kp
-X-AuthFastPath: 0 (Was 255)
-X-AuthVirus-Status: No virus detected - but ensure you scan with your own anti-virus system.
+	Thu, 22 Jul 2010 14:22:27 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 26/31] memblock: Prepare x86 to use memblock to replace early_res
+Date: Thu, 22 Jul 2010 11:20:59 -0700
+Message-Id: <1279822864-17154-27-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C488C3B.01E6,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mattia Jona-Lasinio <mattia.jona@gmail.com> writes:
-> Ben Pfaff <blp@cs.stanford.edu> writes:
->> When I wanted to solve the same problem for a small
->> serial-connected LCD panel (sold under the name EZIO), I wrote a
->> program called "ezio-term" that has the same functionality but
->> runs entirely in userspace.  It connects to the serial port and
->> speaks the EZIO protocol on the serial port, and it creates a pty
->> and acts like an ANSI terminal on that pty.  Thus, it translates
->> back and forth between the two protocols.
->
-> This is indeed a possibility. However, in my opinion, it always suffers
-> the same problems: if you change the display, you have to rewrite everything
-> from scratch since the protocol for a different display will be different.
+1. expose memblock_debug
+2. expose memblock_reserved_init_regions
 
-It should not be necessary to rewrite everything, only to write
-additional code to interface to the particular device.  This code
-has to be written in any case, whether it is in userspace or the
-kernel.
+-v2: drop memblock_add_region() and MEMBLOCK_ERROR export
+-v3: seperate wrong return of memblock_fin_base to another patch
+-v4: expose memblock_can_resize to handle x86 EFI that could have more than
+      128 entries
+-v5: add memblock_dbg, so we can spare some if (memblock_debug) suggested by Ingo.
 
-> I downloaded your program and I'm going through it.
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ include/linux/memblock.h |    6 ++++++
+ mm/memblock.c            |    5 +++--
+ 2 files changed, 9 insertions(+), 2 deletions(-)
 
-I'm not pushing ezio-term as a general solution, by the way.  It
-is clearly very specific to EZIO3 devices.  I'm just pointing out
-that its approach is a reasonable alternative.
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 08a12cf..70bc467 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -39,6 +39,12 @@ struct memblock {
+ };
+ 
+ extern struct memblock memblock;
++extern int memblock_debug;
++extern int memblock_can_resize;
++extern struct memblock_region memblock_reserved_init_regions[];
++
++#define memblock_dbg(fmt, ...) \
++	if (memblock_debug) printk(KERN_INFO pr_fmt(fmt), ##__VA_ARGS__)
+ 
+ extern void __init memblock_init(void);
+ extern void __init memblock_analyze(void);
+diff --git a/mm/memblock.c b/mm/memblock.c
+index b5eb901..c16d4c6 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -22,9 +22,10 @@
+ 
+ struct memblock memblock;
+ 
+-static int memblock_debug, memblock_can_resize;
++int memblock_debug;
++int memblock_can_resize;
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+-static struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
++struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+ 
+ #define MEMBLOCK_ERROR	(~(phys_addr_t)0)
+ 
 -- 
-Ben Pfaff 
-http://benpfaff.org
+1.6.4.2
+
