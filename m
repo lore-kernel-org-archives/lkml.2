@@ -1,71 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759874Ab0GVS0s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:26:48 -0400
-Received: from kroah.org ([198.145.64.141]:51709 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759865Ab0GVS0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:26:42 -0400
-Date: Thu, 22 Jul 2010 11:26:38 -0700
-From: Greg KH <gregkh@suse.de>
-To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>
-Cc: Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
+	id S1754128Ab0GVS0f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:26:35 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:42707 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759436Ab0GVSWl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:22:41 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
         Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-Message-ID: <20100722182638.GA12712@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 17/31] memblock: split memblock_find_base() out of __memblock_alloc_base()
+Date: Thu, 22 Jul 2010 11:20:50 -0700
+Message-Id: <1279822864-17154-18-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C488C45.01BF,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We really shouldn't be asking userspace to create new root filesystems.
-So follow along with all of the other in-kernel filesystems, and provide
-a mount point in sysfs.
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
-that mount point when the cgroup filesystem is registered in the kernel.
+This will be used by the array resize code and might prove useful
+to some arch code as well at which point it can be made non-static.
 
-Cc: Paul Menage <menage@google.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Lennart Poettering <lennart@poettering.net>
-Cc: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Also add comment as to why aligning size is important
 
---- a/kernel/cgroup.c
-+++ b/kernel/cgroup.c
-@@ -1623,6 +1623,8 @@ static struct file_system_type cgroup_fs_type = {
- 	.kill_sb = cgroup_kill_sb,
- };
+[ Yinghai Lu ]: it should return MEMBLOCK_ERROR when it fail to find a range
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ mm/memblock.c |   58 +++++++++++++++++++++++++++++++++++++-------------------
+ 1 files changed, 38 insertions(+), 20 deletions(-)
+
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 1283893..17403e6 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -345,12 +345,15 @@ phys_addr_t __init memblock_alloc_nid(phys_addr_t size, phys_addr_t align, int n
  
-+static struct kobject *cgroup_kobj;
+ 	BUG_ON(0 == size);
+ 
++	/* We align the size to limit fragmentation. Without this, a lot of
++	 * small allocs quickly eat up the whole reserve array on sparc
++	 */
++	size = memblock_align_up(size, align);
 +
- static inline struct cgroup *__d_cgrp(struct dentry *dentry)
+ 	/* We do a bottom-up search for a region with the right
+ 	 * nid since that's easier considering how memblock_nid_range()
+ 	 * works
+ 	 */
+-	size = memblock_align_up(size, align);
+-
+ 	for (i = 0; i < mem->cnt; i++) {
+ 		phys_addr_t ret = memblock_alloc_nid_region(&mem->regions[i],
+ 					       size, align, nid);
+@@ -366,20 +369,7 @@ phys_addr_t __init memblock_alloc(phys_addr_t size, phys_addr_t align)
+ 	return memblock_alloc_base(size, align, MEMBLOCK_ALLOC_ACCESSIBLE);
+ }
+ 
+-phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
+-{
+-	phys_addr_t alloc;
+-
+-	alloc = __memblock_alloc_base(size, align, max_addr);
+-
+-	if (alloc == 0)
+-		panic("ERROR: Failed to allocate 0x%llx bytes below 0x%llx.\n",
+-		      (unsigned long long) size, (unsigned long long) max_addr);
+-
+-	return alloc;
+-}
+-
+-phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
++static phys_addr_t __init memblock_find_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
  {
- 	return dentry->d_fsdata;
-@@ -3871,9 +3873,18 @@ int __init cgroup_init(void)
- 	hhead = css_set_hash(init_css_set.subsys);
- 	hlist_add_head(&init_css_set.hlist, hhead);
- 	BUG_ON(!init_root_id(&rootnode));
-+
-+	cgroup_kobj = kobject_create_and_add("cgroup", fs_kobj);
-+	if (!cgroup_kobj) {
-+		err = -ENOMEM;
-+		goto out;
-+	}
-+
- 	err = register_filesystem(&cgroup_fs_type);
--	if (err < 0)
-+	if (err < 0) {
-+		kobject_put(cgroup_kobj);
- 		goto out;
-+	}
+ 	long i;
+ 	phys_addr_t base = 0;
+@@ -387,8 +377,6 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
  
- 	proc_create("cgroups", 0, NULL, &proc_cgroupstats_operations);
+ 	BUG_ON(0 == size);
  
+-	size = memblock_align_up(size, align);
+-
+ 	/* Pump up max_addr */
+ 	if (max_addr == MEMBLOCK_ALLOC_ACCESSIBLE)
+ 		max_addr = memblock.current_limit;
+@@ -405,13 +393,43 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
+ 			continue;
+ 		base = min(memblockbase + memblocksize, max_addr);
+ 		res_base = memblock_find_region(memblockbase, base, size, align);
+-		if (res_base != MEMBLOCK_ERROR &&
+-		    memblock_add_region(&memblock.reserved, res_base, size) >= 0)
++		if (res_base != MEMBLOCK_ERROR)
+ 			return res_base;
+ 	}
++	return MEMBLOCK_ERROR;
++}
++
++phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
++{	
++	phys_addr_t found;
++
++	/* We align the size to limit fragmentation. Without this, a lot of
++	 * small allocs quickly eat up the whole reserve array on sparc
++	 */
++	size = memblock_align_up(size, align);
++
++	found = memblock_find_base(size, align, max_addr);
++	if (found != MEMBLOCK_ERROR &&
++	    memblock_add_region(&memblock.reserved, found, size) >= 0)
++		return found;
++
+ 	return 0;
+ }
+ 
++phys_addr_t __init memblock_alloc_base(phys_addr_t size, phys_addr_t align, phys_addr_t max_addr)
++{
++	phys_addr_t alloc;
++
++	alloc = __memblock_alloc_base(size, align, max_addr);
++
++	if (alloc == 0)
++		panic("ERROR: Failed to allocate 0x%llx bytes below 0x%llx.\n",
++		      (unsigned long long) size, (unsigned long long) max_addr);
++
++	return alloc;
++}
++
++
+ /* You must call memblock_analyze() before this. */
+ phys_addr_t __init memblock_phys_mem_size(void)
+ {
+-- 
+1.6.4.2
+
