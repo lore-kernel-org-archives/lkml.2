@@ -1,120 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759902Ab0GVVaG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:30:06 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9800 "EHLO mx1.redhat.com"
+	id S1759968Ab0GVVaK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:30:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14283 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754092Ab0GVV34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:29:56 -0400
+	id S1758929Ab0GVV36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 17:29:58 -0400
 From: Vivek Goyal <vgoyal@redhat.com>
 To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
 Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
         jmoyer@redhat.com, czoccolo@gmail.com, vgoyal@redhat.com
-Subject: [PATCH 2/5] cfq-iosched: Implment IOPS mode for group scheduling
-Date: Thu, 22 Jul 2010 17:29:29 -0400
-Message-Id: <1279834172-4227-3-git-send-email-vgoyal@redhat.com>
+Subject: [PATCH 5/5] cfq-iosched: Documentation update
+Date: Thu, 22 Jul 2010 17:29:32 -0400
+Message-Id: <1279834172-4227-6-git-send-email-vgoyal@redhat.com>
 In-Reply-To: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
 References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o Implement another CFQ mode where we charge group in terms of number
-  of requests dispatched instead of measuring the time. Measuring in terms
-  of time is not possible when we are driving deeper queue depths and there
-  are requests from multiple cfq queues in the request queue.
-
-o This mode currently gets activated if one sets slice_idle=0 and associated
-  disk supports NCQ. Again the idea is that on an NCQ disk with idling disabled
-  most of the queues will dispatch 1 or more requests and then cfq queue
-  expiry happens and we don't have a way to measure time. So start providing
-  fairness in terms of IOPS.
-
-o Currently IOPS mode works only with cfq group scheduling. CFQ is following
-  different scheduling algorithms for queue and group scheduling. These IOPS
-  stats are used only for group scheduling hence in non-croup mode nothing
-  should change.
-
-o For CFQ group scheduling one can disable slice idling so that we don't idle
-  on queue and drive deeper request queue depths (achieving better throughput),
-  at the same time group idle is enabled so one should get service
-  differentiation among groups.
-
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+o Documentation update for group_idle tunable and Group IOPS mode.
 ---
- block/cfq-iosched.c |   30 ++++++++++++++++++++++++------
- 1 files changed, 24 insertions(+), 6 deletions(-)
+ Documentation/block/cfq-iosched.txt        |   44 ++++++++++++++++++++++++++++
+ Documentation/cgroups/blkio-controller.txt |   28 +++++++++++++++++
+ 2 files changed, 72 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/block/cfq-iosched.txt
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index c5ec2eb..9f82ec6 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -378,6 +378,21 @@ CFQ_CFQQ_FNS(wait_busy);
- 			&cfqg->service_trees[i][j]: NULL) \
- 
- 
-+static inline bool iops_mode(struct cfq_data *cfqd)
-+{
-+	/*
-+	 * If we are not idling on queues and it is a NCQ drive, parallel
-+	 * execution of requests is on and measuring time is not possible
-+	 * in most of the cases until and unless we drive shallower queue
-+	 * depths and that becomes a performance bottleneck. In such cases
-+	 * switch to start providing fairness in terms of number of IOs.
-+	 */
-+	if (!cfqd->cfq_slice_idle && cfqd->hw_tag)
-+		return true;
-+	else
-+		return false;
-+}
+diff --git a/Documentation/block/cfq-iosched.txt b/Documentation/block/cfq-iosched.txt
+new file mode 100644
+index 0000000..6cc2151
+--- /dev/null
++++ b/Documentation/block/cfq-iosched.txt
+@@ -0,0 +1,44 @@
++CFQ ioscheduler tunables
++========================
 +
- static inline enum wl_prio_t cfqq_prio(struct cfq_queue *cfqq)
- {
- 	if (cfq_class_idle(cfqq))
-@@ -905,7 +920,6 @@ static inline unsigned int cfq_cfqq_slice_usage(struct cfq_queue *cfqq)
- 			slice_used = cfqq->allocated_slice;
- 	}
++slice_idle
++----------
++This specifies how long CFQ should idle for next request on certain cfq queues
++(for sequential workloads) and service trees (for random workloads) before
++queue is expired and CFQ selects next queue to dispatch from.
++
++By default slice_idle is a non zero value. That means by default we idle on
++queues/service trees. This can be very helpful on highly seeky media like
++single spindle SATA/SAS disks where we can cut down on overall number of
++seeks and see improved throughput.
++
++Setting slice_idle to 0 will remove all the idling on queues/service tree
++level and one should see an overall improved throughput on faster storage
++devices like multiple SATA/SAS disks in hardware RAID configuration. The down
++side is that isolation provided from WRITES also goes down and notion of
++ioprio becomes weaker.
++
++So depending on storage and workload, it might be a useful to set slice_idle=0.
++In general I think for SATA/SAS disks and software RAID of SATA/SAS disks
++keeping slice_idle enabled should be useful. For any configurations where
++there are multiple spindles behind single LUN (Host based hardware RAID
++controller or for storage arrays), setting slice_idle=0 might end up in better
++throughput and acceptable latencies.
++
++CFQ IOPS Mode for group scheduling
++==================================
++Basic CFQ design is to provide prio based time slices. Higher prio process
++gets bigger time slice and lower prio process gets smaller time slice.
++Measuring time becomes harder if storage is fast and supports NCQ and it would
++be better to dispatch multiple requests from multiple cfq queues in request
++queue at a time. In such scenario, it is not possible to measure time consumed
++by single queue accurately.
++
++What is possible though to measure number of requests dispatched from a single
++queue and also allow dispatch from multiple cfqq at the same time. This
++effectively becomes the fairness in terms of IOPS (IO operations per second).
++
++If one sets slice_idle=0 and if storage supports NCQ, CFQ internally switches
++to IOPS mode and starts providing fairness in terms of number of requests
++dispatched. Note that this mode switching takes effect only for group
++scheduling. For non cgroup users nothing should change.
+diff --git a/Documentation/cgroups/blkio-controller.txt b/Documentation/cgroups/blkio-controller.txt
+index 48e0b21..6919d62 100644
+--- a/Documentation/cgroups/blkio-controller.txt
++++ b/Documentation/cgroups/blkio-controller.txt
+@@ -217,6 +217,7 @@ Details of cgroup files
+ CFQ sysfs tunable
+ =================
+ /sys/block/<disk>/queue/iosched/group_isolation
++-----------------------------------------------
  
--	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u", slice_used);
- 	return slice_used;
- }
+ If group_isolation=1, it provides stronger isolation between groups at the
+ expense of throughput. By default group_isolation is 0. In general that
+@@ -243,6 +244,33 @@ By default one should run with group_isolation=0. If that is not sufficient
+ and one wants stronger isolation between groups, then set group_isolation=1
+ but this will come at cost of reduced throughput.
  
-@@ -913,19 +927,21 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 				struct cfq_queue *cfqq)
- {
- 	struct cfq_rb_root *st = &cfqd->grp_service_tree;
--	unsigned int used_sl, charge_sl;
-+	unsigned int used_sl, charge;
- 	int nr_sync = cfqg->nr_cfqq - cfqg_busy_async_queues(cfqd, cfqg)
- 			- cfqg->service_tree_idle.count;
- 
- 	BUG_ON(nr_sync < 0);
--	used_sl = charge_sl = cfq_cfqq_slice_usage(cfqq);
-+	used_sl = charge = cfq_cfqq_slice_usage(cfqq);
- 
--	if (!cfq_cfqq_sync(cfqq) && !nr_sync)
--		charge_sl = cfqq->allocated_slice;
-+	if (iops_mode(cfqd))
-+		charge = cfqq->slice_dispatch;
-+	else if (!cfq_cfqq_sync(cfqq) && !nr_sync)
-+		charge = cfqq->allocated_slice;
- 
- 	/* Can't update vdisktime while group is on service tree */
- 	cfq_rb_erase(&cfqg->rb_node, st);
--	cfqg->vdisktime += cfq_scale_slice(charge_sl, cfqg);
-+	cfqg->vdisktime += cfq_scale_slice(charge, cfqg);
- 	__cfq_group_service_tree_add(st, cfqg);
- 
- 	/* This group is being expired. Save the context */
-@@ -939,6 +955,8 @@ static void cfq_group_served(struct cfq_data *cfqd, struct cfq_group *cfqg,
- 
- 	cfq_log_cfqg(cfqd, cfqg, "served: vt=%llu min_vt=%llu", cfqg->vdisktime,
- 					st->min_vdisktime);
-+	cfq_log_cfqq(cfqq->cfqd, cfqq, "sl_used=%u disp=%u charge=%u iops=%u",
-+			used_sl, cfqq->slice_dispatch, charge, iops_mode(cfqd));
- 	cfq_blkiocg_update_timeslice_used(&cfqg->blkg, used_sl);
- 	cfq_blkiocg_set_start_empty_time(&cfqg->blkg);
- }
++/sys/block/<disk>/queue/iosched/slice_idle
++------------------------------------------
++On a faster hardware CFQ can be slow, especially with sequential workload.
++This happens because CFQ idles on a single queue and single queue might not
++drive deeper request queue depths to keep the storage busy. In such scenarios
++one can try setting slice_idle=0 and that would switch CFQ to IOPS
++(IO operations per second) mode on NCQ supporting hardware.
++
++That means CFQ will not idle between cfq queues of a cfq group and hence be
++able to driver higher queue depth and achieve better throughput. That also
++means that cfq provides fairness among groups in terms of IOPS and not in
++terms of disk time.
++
++/sys/block/<disk>/queue/iosched/group_idle
++------------------------------------------
++If one disables idling on individual cfq queues and cfq service trees by
++setting slice_idle=0, group_idle kicks in. That means CFQ will still idle
++on the group in an attempt to provide fairness among groups.
++
++By default group_idle is same as slice_idle and does not do anything if
++slice_idle is enabled.
++
++One can experience an overall throughput drop if you have created multiple
++groups and put applications in that group which are not driving enough
++IO to keep disk busy. In that case set group_idle=0, and CFQ will not idle
++on individual groups and throughput should improve.
++
+ What works
+ ==========
+ - Currently only sync IO queues are support. All the buffered writes are
 -- 
 1.7.1.1
 
