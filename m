@@ -1,41 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab0GVRy2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 13:54:28 -0400
-Received: from kroah.org ([198.145.64.141]:44562 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751635Ab0GVRyZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 13:54:25 -0400
-Date: Thu, 22 Jul 2010 10:52:36 -0700
-From: Greg KH <greg@kroah.com>
-To: Nishanth Menon <nm@ti.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-        Omar Ramirez Luna <omar.ramirez@ti.com>,
-        Ohad Ben-Cohen <ohad@wizery.com>,
-        Ameya Palande <ameya.palande@nokia.com>,
-        Fernando Guzman Lugo <fernando.lugo@ti.com>,
-        Felipe Contreras <felipe.contreras@gmail.com>,
-        Andy Shevchenko <andy.shevchenko@gmail.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        linux-omap <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 06/11] staging: tidspbridge: remove GlobalTypes.h
-Message-ID: <20100722175236.GA26792@kroah.com>
-References: <1278975369-7687-1-git-send-email-nm@ti.com>
- <1278975369-7687-7-git-send-email-nm@ti.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1278975369-7687-7-git-send-email-nm@ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752683Ab0GVR4f (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 13:56:35 -0400
+Received: from mailgw01.dd24.net ([193.46.215.41]:33787 "EHLO
+	mailgw01.dd24.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751462Ab0GVR4d (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 13:56:33 -0400
+Subject: determine the required firmwares for static drivers from .config
+ file
+From: Christoph Anton Mitterer <calestyo@scientia.net>
+To: linux-kernel@vger.kernel.org
+Content-Type: multipart/signed; micalg="sha1"; protocol="application/x-pkcs7-signature"; boundary="=-AyhWOVAYK3x1mLEyOmvf"
+Date: Thu, 22 Jul 2010 19:56:27 +0200
+Message-ID: <1279821387.8703.3.camel@fermat.scientia.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 05:56:04PM -0500, Nishanth Menon wrote:
-> Remove custom globaltypes.h header
 
-This patch doesn't apply :(
+--=-AyhWOVAYK3x1mLEyOmvf
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-thanks,
+Hi.
 
-greg k-h
+Just wondered whether it's possible, or someone has already written a
+tool, that allows to determine the required firmware (pathnames) for all
+statically compiled drivers from a kernel configuration.
+
+Would be interesting to have this in order to automatically add them to
+e.g. initramfs images.
+
+Of course it's pretty easy to do this when one has modules (at least for
+those using MODULE_FIRMWARE) ;)
+
+
+Thanks,
+Chris.
+
+--=-AyhWOVAYK3x1mLEyOmvf
+Content-Type: application/x-pkcs7-signature; name="smime.p7s"
+Content-Disposition: attachment; filename="smime.p7s"
+Content-Transfer-Encoding: base64
+
+MIAGCSqGSIb3DQEHAqCAMIACAQExCzAJBgUrDgMCGgUAMIAGCSqGSIb3DQEHAQAAoIITMDCCBggw
+ggPwoAMCAQICAQEwDQYJKoZIhvcNAQEEBQAweTEQMA4GA1UEChMHUm9vdCBDQTEeMBwGA1UECxMV
+aHR0cDovL3d3dy5jYWNlcnQub3JnMSIwIAYDVQQDExlDQSBDZXJ0IFNpZ25pbmcgQXV0aG9yaXR5
+MSEwHwYJKoZIhvcNAQkBFhJzdXBwb3J0QGNhY2VydC5vcmcwHhcNMDUxMDE0MDczNjU1WhcNMzMw
+MzI4MDczNjU1WjBUMRQwEgYDVQQKEwtDQWNlcnQgSW5jLjEeMBwGA1UECxMVaHR0cDovL3d3dy5D
+QWNlcnQub3JnMRwwGgYDVQQDExNDQWNlcnQgQ2xhc3MgMyBSb290MIICIjANBgkqhkiG9w0BAQEF
+AAOCAg8AMIICCgKCAgEAq0k1EUh80iZ+U5TPQ6ndKNdCKovzh3gZWHwPntqJfeH763KQDXShlmSr
+n6AkmXPa4lV2xxd79QSsRrjDvn9kjRBsJPNhnMDykPpR5vVpAWPDD1biSkLP4kSMJSioxXkJfUa5
+ivPp8zQpCEXkHJ/LlAQcgagUs5hlxEPsToKNCdG9qluNktDs3pDFfwrC4+vmMVpedD6XM1nowwM9
+YDO/99FvR8TN7mKDUm4uCJqk2RUYkaaFkkewrkjrbbch7IUaaHI1q//wEF3A9JSnatU7kn5MkAV+
+k8Esi6SOYnQVcW4LcQPqrxU4mtTSBXJvjPkr61pyJfk5RuNyGz4Ew2QnIhAqik9YpwOtvrQuE+1d
+qkjX1X3UKntc+kYEUOTMDkJbjO3b8s/8lpPg2xE2VGI0OI8MYJs7l1Y4rfPSW4ugW+pOlrh819Wg
+hnBA05Ept6I8rfWMu88akorkNHvA2Gxf6QrCw6cgmlrfLF1SXLpH1ZvvJChwOCAv1X8pwLJBA2iS
+zOCczJdLRe86EAqrcDqYlXCtNbHqhSukHIAhMamuYHqAJkgAuAHAk2NVIpE8Vuev2zol848xVOom
+i4FZ+aHRUxHFe50D9nQR4G2xLD8shpGZcZqmd4s0YNEUtCysna+MENOfxGr4bxP8c1n3ZkJ0Horj
++NzSb5icy0eYlUAF++kCAwEAAaOBvzCBvDAPBgNVHRMBAf8EBTADAQH/MF0GCCsGAQUFBwEBBFEw
+TzAjBggrBgEFBQcwAYYXaHR0cDovL29jc3AuQ0FjZXJ0Lm9yZy8wKAYIKwYBBQUHMAKGHGh0dHA6
+Ly93d3cuQ0FjZXJ0Lm9yZy9jYS5jcnQwSgYDVR0gBEMwQTA/BggrBgEEAYGQSjAzMDEGCCsGAQUF
+BwIBFiVodHRwOi8vd3d3LkNBY2VydC5vcmcvaW5kZXgucGhwP2lkPTEwMA0GCSqGSIb3DQEBBAUA
+A4ICAQB/CIih2hpQSdqJ+6EIcvOK9x7EOrR5WyAwsUXewl3TZWnxwl1UVDyFX7l7QpHCmf0bUZur
+RqWhEFOebYisc24sM6bw9J7gdcE+iEWp4WZD/lZa0XpBePdA2ko68QtbpbsWBubC55O5hU2XT7Ee
+OEOA75sNjO+4p2AAh1d9HkQcyyPvmzyZna+1KRxFeRaWTSdt8Rxsw8JVZLO8FOLzpB8eMvwnFQXP
+3S6uPoJhe/AhEBj2ROpTOfnc0Jog4Ma74LtaT8SZyAe9tb2i2y5iDUI0Qbz/i4r1USKqiDAA4rDU
+vL5lutUDV3mb6NzITfhQ7ZGlUiiirPs2WD7plCuRUIcb1l7WjMz3DxAMUk7QFmHl5QpsvxfHckZX
+nJj1bGBjem9euU4vyLm5u2qFvJgN7fk+l4Q0lK4Ar6Hl55JuTr3z4tkUi1zS6wFsoBelLRDrnHpK
+vb3uzv3tIkCrcDiI9QqHasKrBWDJSAXaU8HeRHdqs/M8PO2AvKY4SikkX/5ZO5slelZjAGS5XaRi
+fVc2T62D7x+SU6COd1fd5WERPSMAkEw8+qNgkwSjrzX2DmqPT0pgp4UFbEahj/THduOhWVf3cbLE
+bhRcbW1BZt8bk7HUAMPuy888PSGAqV9jZfzd4F+k9CvwhXFB1Gcl+xqxl67WmYITQdJupRuZJ4Dn
+C6moADCCBo4wggR2oAMCAQICAlzbMA0GCSqGSIb3DQEBBQUAMFQxFDASBgNVBAoTC0NBY2VydCBJ
+bmMuMR4wHAYDVQQLExVodHRwOi8vd3d3LkNBY2VydC5vcmcxHDAaBgNVBAMTE0NBY2VydCBDbGFz
+cyAzIFJvb3QwHhcNMDgwODAxMjM0NDQ0WhcNMTAwODAxMjM0NDQ0WjCCAR0xITAfBgNVBAMTGENo
+cmlzdG9waCBBbnRvbiBNaXR0ZXJlcjEkMCIGCSqGSIb3DQEJARYVY2FsZXN0eW9Ac2NpZW50aWEu
+bmV0MTEwLwYJKoZIhvcNAQkBFiJtYWlsQGNocmlzdG9waC5hbnRvbi5taXR0ZXJlci5uYW1lMS8w
+LQYJKoZIhvcNAQkBFiBjaHJpc3RvcGguYW50b24ubWl0dGVyZXJAY2Vybi5jaDE+MDwGCSqGSIb3
+DQEJARYvY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQHBoeXNpay51bmktbXVlbmNoZW4uZGUxLjAs
+BgkqhkiG9w0BCQEWH2NocmlzdG9waC5hbnRvbi5taXR0ZXJlckBsbXUuZGUwggEiMA0GCSqGSIb3
+DQEBAQUAA4IBDwAwggEKAoIBAQC7A1roITOxNF3dtFhc82fYpgqEVlvI8+TUKO4V/L7U8B8oGIYm
+aGEcaSbAJ2c53lpWcbPAg99O//5HDcK7DbMnhiYmZfe40PP+XYzqHkw7sFrC/sKN1H6WMZogFiKA
+y41oFrCaijrSyGS87B/x1/867kpPFfu4v+E05vVDb/fIlYEEw8JsoPSdO9UfficTWV9nG8qT8y51
+PuNz9ZneQmyGw7vLRZL8MQO+o+JAjnN8LH+qyUxgJILBypnj80fARdfjOC3218+PfiIE0sSh3sfN
+02EJ92qfWP8VOxEjXYzY5cRiFiAGhE1FiyE9XXR49tX34Y/O9aUmbsefTt/FWLhlAgMBAAGjggGd
+MIIBmTAMBgNVHRMBAf8EAjAAMFYGCWCGSAGG+EIBDQRJFkdUbyBnZXQgeW91ciBvd24gY2VydGlm
+aWNhdGUgZm9yIEZSRUUgaGVhZCBvdmVyIHRvIGh0dHA6Ly93d3cuQ0FjZXJ0Lm9yZzBABgNVHSUE
+OTA3BggrBgEFBQcDBAYIKwYBBQUHAwIGCisGAQQBgjcKAwQGCisGAQQBgjcKAwMGCWCGSAGG+EIE
+ATAyBggrBgEFBQcBAQQmMCQwIgYIKwYBBQUHMAGGFmh0dHA6Ly9vY3NwLmNhY2VydC5vcmcwgboG
+A1UdEQSBsjCBr4EVY2FsZXN0eW9Ac2NpZW50aWEubmV0gSJtYWlsQGNocmlzdG9waC5hbnRvbi5t
+aXR0ZXJlci5uYW1lgSBjaHJpc3RvcGguYW50b24ubWl0dGVyZXJAY2Vybi5jaIEvY2hyaXN0b3Bo
+LmFudG9uLm1pdHRlcmVyQHBoeXNpay51bmktbXVlbmNoZW4uZGWBH2NocmlzdG9waC5hbnRvbi5t
+aXR0ZXJlckBsbXUuZGUwDQYJKoZIhvcNAQEFBQADggIBAARRYxdpmDRiXtidMkg3B2ANyR2CCFSf
+1GJXmBFVu7EBiRAtRbyUIHtsXSOoDzrP8g5uLJaT0/zyGlDBHBT7oEDU2L7otjKxSd/2KLuvBPbQ
+Q/gmiNaa47NicFp1O7aQvbnqI7m+73TKU2vCuwrYv4MCWRWLkIjYbxocdD60FwGC/2EKzO46W3wB
+t7xdNoWNbHgaH6LB8ROqmNUxW0uhTFgS8RuznSBbQ4ciaPfTZD85DfJq6jJ/KAtasyeZo7AGJQH4
+vz6vG9Gx3FzjFABoCtI7x1mCjrcuzqbhoANHVfJVQMFZX4+uWVTpwjGO1gio2jhQtZvfcBK1n5O+
+xTD5Bep4KmcTMDrV/XKTWm3qi91TuJkX1376zq7VAMGzqqj2mKCieOhv/n/76ASMsCYWKEBog8up
+QORg55vAYaumeJz7e3/Fphx3n0jDvatBvYS/wUqrbbkFdw8P5NbKBAa5m2YNcp7Dt8SMnmzAPADJ
+3t9TgQxO1HCbpoy1+rA6dvP7InaAdIP0exqncHUMwcbypBDBNqUNxezeN0dSQ26QnqfOGQKhYzrl
+KfyXvAN5Pt4A6RilA7yrOZlYUb3FiYieKfIfdqbAjBP4vfGiQKRdmJPb6QsIdwdk0sPCl5Sm73XS
+SbMrKRyEmbSiGJ7/q8tWG7HP4vgiR2b1fepob8egqYbRMIIGjjCCBHagAwIBAgICXNswDQYJKoZI
+hvcNAQEFBQAwVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6Ly93d3cuQ0Fj
+ZXJ0Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdDAeFw0wODA4MDEyMzQ0NDRaFw0x
+MDA4MDEyMzQ0NDRaMIIBHTEhMB8GA1UEAxMYQ2hyaXN0b3BoIEFudG9uIE1pdHRlcmVyMSQwIgYJ
+KoZIhvcNAQkBFhVjYWxlc3R5b0BzY2llbnRpYS5uZXQxMTAvBgkqhkiG9w0BCQEWIm1haWxAY2hy
+aXN0b3BoLmFudG9uLm1pdHRlcmVyLm5hbWUxLzAtBgkqhkiG9w0BCQEWIGNocmlzdG9waC5hbnRv
+bi5taXR0ZXJlckBjZXJuLmNoMT4wPAYJKoZIhvcNAQkBFi9jaHJpc3RvcGguYW50b24ubWl0dGVy
+ZXJAcGh5c2lrLnVuaS1tdWVuY2hlbi5kZTEuMCwGCSqGSIb3DQEJARYfY2hyaXN0b3BoLmFudG9u
+Lm1pdHRlcmVyQGxtdS5kZTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEBALsDWughM7E0
+Xd20WFzzZ9imCoRWW8jz5NQo7hX8vtTwHygYhiZoYRxpJsAnZzneWlZxs8CD307//kcNwrsNsyeG
+JiZl97jQ8/5djOoeTDuwWsL+wo3UfpYxmiAWIoDLjWgWsJqKOtLIZLzsH/HX/zruSk8V+7i/4TTm
+9UNv98iVgQTDwmyg9J071R9+JxNZX2cbypPzLnU+43P1md5CbIbDu8tFkvwxA76j4kCOc3wsf6rJ
+TGAkgsHKmePzR8BF1+M4LfbXz49+IgTSxKHex83TYQn3ap9Y/xU7ESNdjNjlxGIWIAaETUWLIT1d
+dHj21ffhj871pSZux59O38VYuGUCAwEAAaOCAZ0wggGZMAwGA1UdEwEB/wQCMAAwVgYJYIZIAYb4
+QgENBEkWR1RvIGdldCB5b3VyIG93biBjZXJ0aWZpY2F0ZSBmb3IgRlJFRSBoZWFkIG92ZXIgdG8g
+aHR0cDovL3d3dy5DQWNlcnQub3JnMEAGA1UdJQQ5MDcGCCsGAQUFBwMEBggrBgEFBQcDAgYKKwYB
+BAGCNwoDBAYKKwYBBAGCNwoDAwYJYIZIAYb4QgQBMDIGCCsGAQUFBwEBBCYwJDAiBggrBgEFBQcw
+AYYWaHR0cDovL29jc3AuY2FjZXJ0Lm9yZzCBugYDVR0RBIGyMIGvgRVjYWxlc3R5b0BzY2llbnRp
+YS5uZXSBIm1haWxAY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyLm5hbWWBIGNocmlzdG9waC5hbnRv
+bi5taXR0ZXJlckBjZXJuLmNogS9jaHJpc3RvcGguYW50b24ubWl0dGVyZXJAcGh5c2lrLnVuaS1t
+dWVuY2hlbi5kZYEfY2hyaXN0b3BoLmFudG9uLm1pdHRlcmVyQGxtdS5kZTANBgkqhkiG9w0BAQUF
+AAOCAgEABFFjF2mYNGJe2J0ySDcHYA3JHYIIVJ/UYleYEVW7sQGJEC1FvJQge2xdI6gPOs/yDm4s
+lpPT/PIaUMEcFPugQNTYvui2MrFJ3/You68E9tBD+CaI1prjs2JwWnU7tpC9ueojub7vdMpTa8K7
+Cti/gwJZFYuQiNhvGhx0PrQXAYL/YQrM7jpbfAG3vF02hY1seBofosHxE6qY1TFbS6FMWBLxG7Od
+IFtDhyJo99NkPzkN8mrqMn8oC1qzJ5mjsAYlAfi/Pq8b0bHcXOMUAGgK0jvHWYKOty7OpuGgA0dV
+8lVAwVlfj65ZVOnCMY7WCKjaOFC1m99wErWfk77FMPkF6ngqZxMwOtX9cpNabeqL3VO4mRfXfvrO
+rtUAwbOqqPaYoKJ46G/+f/voBIywJhYoQGiDy6lA5GDnm8Bhq6Z4nPt7f8WmHHefSMO9q0G9hL/B
+SqttuQV3Dw/k1soEBrmbZg1ynsO3xIyebMA8AMne31OBDE7UcJumjLX6sDp28/sidoB0g/R7Gqdw
+dQzBxvKkEME2pQ3F7N43R1JDbpCep84ZAqFjOuUp/Je8A3k+3gDpGKUDvKs5mVhRvcWJiJ4p8h92
+psCME/i98aJApF2Yk9vpCwh3B2TSw8KXlKbvddJJsyspHISZtKIYnv+ry1Ybsc/i+CJHZvV96mhv
+x6CphtExggK6MIICtgIBATBaMFQxFDASBgNVBAoTC0NBY2VydCBJbmMuMR4wHAYDVQQLExVodHRw
+Oi8vd3d3LkNBY2VydC5vcmcxHDAaBgNVBAMTE0NBY2VydCBDbGFzcyAzIFJvb3QCAlzbMAkGBSsO
+AwIaBQCgggE1MBgGCSqGSIb3DQEJAzELBgkqhkiG9w0BBwEwHAYJKoZIhvcNAQkFMQ8XDTEwMDcy
+MjE3NTYyNFowIwYJKoZIhvcNAQkEMRYEFBz1GVTVjWb3GHBzDEEwSh+fKGuHMGkGCSsGAQQBgjcQ
+BDFcMFowVDEUMBIGA1UEChMLQ0FjZXJ0IEluYy4xHjAcBgNVBAsTFWh0dHA6Ly93d3cuQ0FjZXJ0
+Lm9yZzEcMBoGA1UEAxMTQ0FjZXJ0IENsYXNzIDMgUm9vdAICXNswawYLKoZIhvcNAQkQAgsxXKBa
+MFQxFDASBgNVBAoTC0NBY2VydCBJbmMuMR4wHAYDVQQLExVodHRwOi8vd3d3LkNBY2VydC5vcmcx
+HDAaBgNVBAMTE0NBY2VydCBDbGFzcyAzIFJvb3QCAlzbMA0GCSqGSIb3DQEBAQUABIIBAKn8fAfk
+di9Y1ELoclqYoaKrvHmCwVPpiuLErodbv0tsQxu673nI8RvYABBqi6sPYqXYGCsGI5STUrtcVPvQ
+Tr1VCS9e8i0xQOAaQ0FFnFES9dnS8iF3UmHrDTccU29MrgdkirqzwO6Q/rXWf0eiWzXLO8v6trKr
+kCFBMgE+NeLQJ2xjcU6FaVhRj1JkuBLTWFDHvudrOTAHTDBJSTCXnyI1yXpSkKVIlXhDa50cpWJB
+LxlYitt0+IzkwSoaduWJ3CbjR7MKcEo5W0Gozq6vaROXIZh7Mpke29AzpFrlULQRk2+Q177gpEy/
+cNidn5MlUuIYtewJPegcdQIUYjtZPaQAAAAAAAA=
+
+
+--=-AyhWOVAYK3x1mLEyOmvf--
+
