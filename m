@@ -1,61 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756023Ab0GVWA1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 18:00:27 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:49621 "EHLO ogre.sisk.pl"
+	id S1756888Ab0GVWAz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 18:00:55 -0400
+Received: from mga02.intel.com ([134.134.136.20]:65065 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754099Ab0GVWAX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 18:00:23 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Valdis.Kletnieks@vt.edu
-Subject: Re: [PATCH] Re: mmotm 2010-07-19 - e1000e vs. pm_qos_update_request issues
-Date: Thu, 22 Jul 2010 23:58:42 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc5-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Florian Mickler <florian@mickler.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        mark gross <markgross@thegnar.org>, e1000-devel@lists.sourceforge.net,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-        James Bottomley <James.Bottomley@hansenpartnership.com>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        "David S. Miller" <davem@davemloft.net>
-References: <201007200007.o6K07Xbg028863@imap1.linux-foundation.org> <20100721091200.40c43158@schatten.dmk.lab> <4222.1279771503@localhost>
-In-Reply-To: <4222.1279771503@localhost>
+	id S1755660Ab0GVWAy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 18:00:54 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,245,1278313200"; 
+   d="scan'208";a="537957413"
+Message-ID: <4C48BF90.3050100@intel.com>
+Date: Thu, 22 Jul 2010 15:00:48 -0700
+From: Dan Williams <dan.j.williams@intel.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-2"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007222358.43222.rjw@sisk.pl>
+To: Chris Li <lkml@chrisli.org>
+CC: David Woodhouse <dwmw2@infradead.org>,
+        linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: BUG in drivers/dma/ioat/dma_v2.c:314
+References: <AANLkTinMqI7hmBYt4eN2oTLZt9_FkoNDHb-9ZF3Z7vls@mail.gmail.com>	<1277965264.18854.16.camel@localhost>	<4C2C3B07.7050200@intel.com>	<1277968336.4945.3.camel@localhost>	<4C2C4319.6090906@intel.com>	<1277972137.12558.2.camel@localhost>	<4C2CCE67.6070600@intel.com>	<AANLkTimeNp4mMI-6IEl-zlv1DcFF5SyAD4k5O3ZLuCwM@mail.gmail.com>	<AANLkTimNPP00pJewLtlk0SJQYjGUCyBWoxzGbTYltGsM@mail.gmail.com>	<1278324973.16975.68.camel@localhost>	<AANLkTimToKAxKLyONyk7KP4WXCS_FpjRjr1yWB3GCaQk@mail.gmail.com>	<1278463901.20082.34.camel@dwillia2-linux>	<1278474039.31393.8.camel@localhost>	<4C34BDCD.9080607@intel.com>	<AANLkTild7PCKygpPAJRo2G237CY8wJyveM9_Glx8qmoK@mail.gmail.com>	<4C379462.1020704@intel.com>	<1278720554.9522.18.camel@localhost>	<4C3E9F6E.1030508@intel.com>	<1279318325.27733.21.camel@macbook.infradead.org>	<AANLkTik80zwMaRYglVt2V3AuXiN90mgovIB3i67teVOL@mail.gmail.com>	<4C479BB1.8020102@intel.com> <AANLkTilmz73V7cc2UiGNUgU9cANzX8u5QP232DcbxGxR@mail.gmail.com>
+In-Reply-To: <AANLkTilmz73V7cc2UiGNUgU9cANzX8u5QP232DcbxGxR@mail.gmail.com>
+Content-Type: text/plain; charset=windows-1252; format=flowed
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday, July 22, 2010, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 21 Jul 2010 09:12:00 +0200, Florian Mickler said:
-> 
-> > Attached patch moves the registering from e1000_up to e1000_open and
-> > the unregistering from e1000_down to e1000_close. 
-> > It is only compile-tested as I don't have the hardware.
-> 
-> My laptop has the hardware, so I tested it - system does indeed boot
-> without whinging about this issue.  Feel free to stick in a:
-> 
-> Tested-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-> 
-> Thanks for the fast fix. :)
+On 7/22/2010 2:39 PM, Chris Li wrote:
+> On Wed, Jul 21, 2010 at 6:15 PM, Dan Williams<dan.j.williams@intel.com>  wrote:
+>>
+>> Here is v5 with the aforementioned change.
+>
+> One warning.
+>
+> CC      drivers/pci/intel-iommu.o
+> drivers/pci/intel-iommu.c: In function ‘quirk_ioat_snb_local_iommu’:
+> drivers/pci/intel-iommu.c:3037: warning: unused variable ‘i’
 
-I'm going to add the patch to the suspend-2.6 tree.  Any objections?
+Oops, I'll clean that up.
 
-> > From 693c71b911ff0845c872261d5704a1d40960722d Mon Sep 17 00:00:00 2001
-> > From: Florian Mickler <florian@mickler.org>
-> > Date: Wed, 21 Jul 2010 08:44:21 +0200
-> > Subject: [PATCH] e1000e: register pm_qos request on hardware activation
-> > 
-> > The pm_qos_add_request call has to register the pm_qos request with the pm_qos
-> > susbsystem before first use of the pm_qos request via
-> > pm_qos_update_request.
-> > 
-> > As pm_qos changed to use plists there is no benefit in registering and
-> > unregistering the pm_qos request on ifup/ifdown and thus we move the
-> > registering into e1000_open and the unregistering in e1000_close.
+> The dmesg looks good.
+>
+[..]
+> dca service started, version 1.12.1
+> ioatdma: Intel(R) QuickData Technology Driver 4.00
+> ioatdma 0000:00:0f.0: can't derive routing for PCI INT A
+> ioatdma 0000:00:0f.0: PCI INT A: no GSI
+> ------------[ cut here ]------------
+> WARNING: at drivers/pci/intel-iommu.c:3056
+> quirk_ioat_snb_local_iommu+0xae/0xc7()
+> Hardware name: MacPro3,1
+> BIOS assigned incorrect VT-d unit for Intel(R) QuickData Technology device
+[..]
+> ---[ end trace c7f418b83f8ca665 ]---
+> Disabling lock debugging due to kernel taint
+> ioatdma 0000:00:0f.0: setting latency timer to 64
+>    alloc irq_desc for 57 on node -1
+>    alloc kstat_irqs on node -1
+> ioatdma 0000:00:0f.0: irq 57 for MSI/MSI-X
+>    alloc irq_desc for 58 on node -1
+>    alloc kstat_irqs on node -1
+> ioatdma 0000:00:0f.0: irq 58 for MSI/MSI-X
+>    alloc irq_desc for 59 on node -1
+>    alloc kstat_irqs on node -1
+> ioatdma 0000:00:0f.0: irq 59 for MSI/MSI-X
+>    alloc irq_desc for 60 on node -1
+>    alloc kstat_irqs on node -1
+> ioatdma 0000:00:0f.0: irq 60 for MSI/MSI-X
+>
 
-Rafael
+Nice, and the driver was able to load normally.  Thanks for the all the 
+testing!
+
+David, I'll take this through my tree as a regression fix (since 2.6.32) 
+if you have no objections.  Now that we are not hitting a driver load 
+failure I think I'll add a WARN() to this init-fail path.  I doubt we 
+would have flushed out this problem had the driver been discretely 
+handling init failures since day one.
+
+Regards,
+Dan
