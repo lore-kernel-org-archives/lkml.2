@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759265Ab0GVSCK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:02:10 -0400
-Received: from fn.samba.org ([216.83.154.106]:43064 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752421Ab0GVSCH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:02:07 -0400
-Date: Thu, 22 Jul 2010 11:02:04 -0700
-From: Jeremy Allison <jra@samba.org>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
-        David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-Message-ID: <20100722180204.GA32008@samba1>
-Reply-To: Jeremy Allison <jra@samba.org>
-References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
- <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
- <30448.1279800887@redhat.com>
- <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
- <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
- <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
- <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
- <20100722162712.GB10352@jeremy-laptop>
- <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
- <1279817930.3621.14.camel@heimdal.trondhjem.org>
+	id S1755797Ab0GVSEs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:04:48 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:41951 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751585Ab0GVSEn convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:04:43 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Date: Thu, 22 Jul 2010 20:04:27 +0200 (CEST)
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Subject: Re: [review patch 3/2] firewire: nosy: note ioctls in
+ ioctl-number.txt
+To: linux-kernel@vger.kernel.org
+cc: linux1394-devel@lists.sf.net, Kristian Hoegsberg <krh@bitplanet.net>,
+        Randy Dunlap <randy.dunlap@oracle.com>
+In-Reply-To: <tkrat.8da176e6aa2f4ff6@s5r6.in-berlin.de>
+Message-ID: <tkrat.96bc086a04f44e77@s5r6.in-berlin.de>
+References: <tkrat.72756f504d6c0055@s5r6.in-berlin.de>
+ <tkrat.ddc816ab75cce8ac@s5r6.in-berlin.de>
+ <20100722090751.682f3b00.randy.dunlap@oracle.com>
+ <4C487F2B.4040405@s5r6.in-berlin.de>
+ <tkrat.8da176e6aa2f4ff6@s5r6.in-berlin.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279817930.3621.14.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; CHARSET=iso-8859-1
+Content-Transfer-Encoding: 8BIT
+Content-Disposition: INLINE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 12:58:50PM -0400, Trond Myklebust wrote:
+On 22 Jul, Stefan Richter wrote:
+> These are the ioctls for the special-purpose misc device /dev/nosy, the
+> interface to the IEEE 1394 packet sniffer/ protocol analyzer driver.
+> Currently only the numbers 00...02 are in use; let's block a few more
+> for unforeseen use cases.
 > 
-> That would make it impossible to export the filesystem with NFSv2 and
-> v3. They do rely on ctime checking for certain operations (e.g. deciding
-> when to invalidate access and acl caches). NFSv4 needs this too if the
-> filesystem has no dedicated change attribute.
+> Cc: Randy Dunlap <rdunlap@xenotime.net>
+> Cc: Kristian Høgsberg <krh@bitplanet.net>
+> Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
+> ---
 > 
-> Still, I suppose the market for exporting the same filesystem with both
-> NFS and Samba is limited...
+> As mentioned in patch 1/2, this is up for discussion.  These ioctls have
+> been used during nosy's out-of-tree life for several years; but due to
+> the nature of this driver and its frontend as special-purpose
+> application on special hardware, an incompatible change of these ioctls
+> in the process of mainline merge won't be overly hurtful.
+> 
+>  Documentation/ioctl/ioctl-number.txt |    1 +
+>  1 file changed, 1 insertion(+)
+> 
+> Index: b/Documentation/ioctl/ioctl-number.txt
+> ===================================================================
+> --- a/Documentation/ioctl/ioctl-number.txt
+> +++ b/Documentation/ioctl/ioctl-number.txt
+> @@ -79,6 +79,7 @@ Code  Seq#(hex)	Include File		Comments
+>  0x22	all	scsi/sg.h
+>  '#'	00-3F	IEEE 1394 Subsystem	Block for the entire subsystem
+>  '$'	00-0F	linux/perf_counter.h, linux/perf_event.h
+> +'&'	00-07	drivers/firewire/nosy-user.h
+>  '1'	00-1F	<linux/timepps.h>	PPS kit from Ulrich Windl
+>  					<ftp://ftp.de.kernel.org/pub/linux/daemons/ntp/PPS/>
+>  '2'	01-04	linux/i2o.h
+> 
 
-Ask NetApp about that :-). They have built a rather large
-business on just that fact :-).
+(Sorry, I mistyped the mailinglist address in that posting...)
+-- 
+Stefan Richter
+-=====-==-=- -=== =-==-
+http://arcgraph.de/sr/
 
-Jeremy.
