@@ -1,93 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757082Ab0GVVCe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:02:34 -0400
-Received: from mailrelay006.isp.belgacom.be ([195.238.6.172]:46400 "EHLO
-	mailrelay006.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755601Ab0GVVCb (ORCPT
+	id S1756004Ab0GVVFR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:05:17 -0400
+Received: from mail3.caviumnetworks.com ([12.108.191.235]:10343 "EHLO
+	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752115Ab0GVVFN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:02:31 -0400
-X-Belgacom-Dynamic: yes
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAAJOSExQydL7/2dsb2JhbACfc3LDDQ2FKQQ
-Date: Thu, 22 Jul 2010 23:02:29 +0200
-From: Wim Van Sebroeck <wim@iguana.be>
-To: H Hartley Sweeten <hartleys@visionengravers.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-        Linux Watchdog Mailing List <linux-watchdog@vger.kernel.org>,
-        "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>
-Subject: Re: [PATCH] wdt_pci.c: move ids to pci_ids.h
-Message-ID: <20100722210229.GO11857@infomag.iguana.be>
-References: <0D753D10438DA54287A00B0270842697636F3238B3@AUSP01VMBX24.collaborationhost.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <0D753D10438DA54287A00B0270842697636F3238B3@AUSP01VMBX24.collaborationhost.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Thu, 22 Jul 2010 17:05:13 -0400
+From: David Daney <ddaney@caviumnetworks.com>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
+Subject: [PATCH] trace-cmd: Don't SIGSEGV when event field format cannot be parsed (v2).
+Date: Thu, 22 Jul 2010 14:05:05 -0700
+Message-Id: <1279832705-14219-1-git-send-email-ddaney@caviumnetworks.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1279829325.3319.27.camel@gandalf.stny.rr.com>
+References: <1279829325.3319.27.camel@gandalf.stny.rr.com>
+X-OriginalArrivalTime: 22 Jul 2010 21:05:13.0223 (UTC) FILETIME=[93AE1170:01CB29E1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi H Hartley,
+>From the MIPS kernel we get things like:
 
-Patch added to linux-2.6-watchdog-next .
+print fmt: "page=%p pfn=%lu order=%d migratetype=%d", REC->page, ({ struct page *__pg = (REC->page); int __sec = page_to_section(__pg); (unsigned long)(__pg - __section_mem_map_addr(__nr_to_section(__sec))); }), REC->order, REC->migratetype
 
-Kind regards,
-Wim.
+This cannot be parsed, leading to a NULL struct event_format* being
+passed to pevent_get_common_field_val, which produces a SIGSEGV.  It
+would be good to get a parsable format from the kernel, but to
+remediate the problem for legacy kernels, we can just return an error
+indicator in this case.  This allows some output from trace-cmd
+report, although perhaps with some missing data.  But this is better
+than crashing.
 
-> Move the VENDOR/DEVICE ids to pci_ids.h.
-> 
-> Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
-> Cc: Wim Van Sebroeck <wim@iguana.be>
-> Cc: Jesse Barnes <jbarnes@virtuousgeek.org>
-> 
-> ---
-> 
-> diff --git a/drivers/watchdog/wdt_pci.c b/drivers/watchdog/wdt_pci.c
-> index 7b22e3c..6130c88 100644
-> --- a/drivers/watchdog/wdt_pci.c
-> +++ b/drivers/watchdog/wdt_pci.c
-> @@ -60,19 +60,6 @@
->  
->  #define PFX "wdt_pci: "
->  
-> -/*
-> - * Until Access I/O gets their application for a PCI vendor ID approved,
-> - * I don't think that it's appropriate to move these constants into the
-> - * regular pci_ids.h file. -- JPN 2000/01/18
-> - */
-> -
-> -#ifndef PCI_VENDOR_ID_ACCESSIO
-> -#define PCI_VENDOR_ID_ACCESSIO 0x494f
-> -#endif
-> -#ifndef PCI_DEVICE_ID_WDG_CSM
-> -#define PCI_DEVICE_ID_WDG_CSM 0x22c0
-> -#endif
-> -
->  /* We can only use 1 card due to the /dev/watchdog restriction */
->  static int dev_count;
->  
-> @@ -743,7 +730,7 @@ static void __devexit wdtpci_remove_one(struct pci_dev *pdev)
->  static struct pci_device_id wdtpci_pci_tbl[] = {
->  	{
->  		.vendor	   = PCI_VENDOR_ID_ACCESSIO,
-> -		.device	   = PCI_DEVICE_ID_WDG_CSM,
-> +		.device	   = PCI_DEVICE_ID_ACCESSIO_WDG_CSM,
->  		.subvendor = PCI_ANY_ID,
->  		.subdevice = PCI_ANY_ID,
->  	},
-> diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
-> index 9f688d2..e4551f0 100644
-> --- a/include/linux/pci_ids.h
-> +++ b/include/linux/pci_ids.h
-> @@ -2367,6 +2367,9 @@
->  #define PCI_VENDOR_ID_AKS		0x416c
->  #define PCI_DEVICE_ID_AKS_ALADDINCARD	0x0100
->  
-> +#define PCI_VENDOR_ID_ACCESSIO		0x494f
-> +#define PCI_DEVICE_ID_ACCESSIO_WDG_CSM	0x22c0
-> +
->  #define PCI_VENDOR_ID_S3		0x5333
->  #define PCI_DEVICE_ID_S3_TRIO		0x8811
->  #define PCI_DEVICE_ID_S3_868		0x8880
+(v2): Do the check in all pevent_get_*
+
+Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+---
+ parse-events.c |    9 +++++++++
+ 1 files changed, 9 insertions(+), 0 deletions(-)
+
+diff --git a/parse-events.c b/parse-events.c
+index 1e854e2..595ba90 100644
+--- a/parse-events.c
++++ b/parse-events.c
+@@ -4464,6 +4464,9 @@ int pevent_get_field_val(struct trace_seq *s, struct event_format *event,
+ {
+ 	struct format_field *field;
+ 
++	if (!event)
++		return -1;
++
+ 	field = pevent_find_field(event, name);
+ 
+ 	return get_field_val(s, field, name, record, val, err);
+@@ -4486,6 +4489,9 @@ int pevent_get_common_field_val(struct trace_seq *s, struct event_format *event,
+ {
+ 	struct format_field *field;
+ 
++	if (!event)
++		return -1;
++
+ 	field = pevent_find_common_field(event, name);
+ 
+ 	return get_field_val(s, field, name, record, val, err);
+@@ -4508,6 +4514,9 @@ int pevent_get_any_field_val(struct trace_seq *s, struct event_format *event,
+ {
+ 	struct format_field *field;
+ 
++	if (!event)
++		return -1;
++
+ 	field = pevent_find_any_field(event, name);
+ 
+ 	return get_field_val(s, field, name, record, val, err);
+-- 
+1.7.1.1
+
