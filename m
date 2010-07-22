@@ -1,75 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759842Ab0GVS0b (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:26:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42716 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759618Ab0GVSWl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:22:41 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
+	id S1759874Ab0GVS0s (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:26:48 -0400
+Received: from kroah.org ([198.145.64.141]:51709 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759865Ab0GVS0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:26:42 -0400
+Date: Thu, 22 Jul 2010 11:26:38 -0700
+From: Greg KH <gregkh@suse.de>
+To: Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>
+Cc: Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
         Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 27/31] memblock: Print new doubled array location info
-Date: Thu, 22 Jul 2010 11:21:00 -0700
-Message-Id: <1279822864-17154-28-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090207.4C488C36.02E1,ss=1,fgs=0
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+Message-ID: <20100722182638.GA12712@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-so will have more idea where it is,  use memblock_debug to controll it
+We really shouldn't be asking userspace to create new root filesystems.
+So follow along with all of the other in-kernel filesystems, and provide
+a mount point in sysfs.
 
--v2: use memblock_dbg instead of " if (memblock_debug) "
+For cgroupfs, this should be in /sys/fs/cgroup/  This change provides
+that mount point when the cgroup filesystem is registered in the kernel.
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- mm/memblock.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+Cc: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Lennart Poettering <lennart@poettering.net>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-diff --git a/mm/memblock.c b/mm/memblock.c
-index c16d4c6..796ef8c 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -192,8 +192,6 @@ static int memblock_double_array(struct memblock_type *type)
- 	if (!memblock_can_resize)
- 		return -1;
+--- a/kernel/cgroup.c
++++ b/kernel/cgroup.c
+@@ -1623,6 +1623,8 @@ static struct file_system_type cgroup_fs_type = {
+ 	.kill_sb = cgroup_kill_sb,
+ };
  
--	pr_debug("memblock: %s array full, doubling...", memblock_type_name(type));
--
- 	/* Calculate new doubled size */
- 	old_size = type->max * sizeof(struct memblock_region);
- 	new_size = old_size << 1;
-@@ -221,6 +219,9 @@ static int memblock_double_array(struct memblock_type *type)
- 	}
- 	new_array = __va(addr);
- 
-+	memblock_dbg("memblock: %s array is doubled to %ld at [%#010llx-%#010llx]",
-+		 memblock_type_name(type), type->max * 2, (u64)addr, (u64)addr + new_size - 1);
++static struct kobject *cgroup_kobj;
 +
- 	/* Found space, we now need to move the array over before
- 	 * we add the reserved region since it may be our reserved
- 	 * array itself that is full.
-@@ -646,7 +647,7 @@ static void memblock_dump(struct memblock_type *region, char *name)
- 		base = region->regions[i].base;
- 		size = region->regions[i].size;
+ static inline struct cgroup *__d_cgrp(struct dentry *dentry)
+ {
+ 	return dentry->d_fsdata;
+@@ -3871,9 +3873,18 @@ int __init cgroup_init(void)
+ 	hhead = css_set_hash(init_css_set.subsys);
+ 	hlist_add_head(&init_css_set.hlist, hhead);
+ 	BUG_ON(!init_root_id(&rootnode));
++
++	cgroup_kobj = kobject_create_and_add("cgroup", fs_kobj);
++	if (!cgroup_kobj) {
++		err = -ENOMEM;
++		goto out;
++	}
++
+ 	err = register_filesystem(&cgroup_fs_type);
+-	if (err < 0)
++	if (err < 0) {
++		kobject_put(cgroup_kobj);
+ 		goto out;
++	}
  
--		pr_info(" %s[0x%x]\t0x%016llx - 0x%016llx, 0x%llx bytes\n",
-+		pr_info(" %s[%#x]\t[%#016llx-%#016llx], %#llx bytes\n",
- 		    name, i, base, base + size - 1, size);
- 	}
- }
--- 
-1.6.4.2
-
+ 	proc_create("cgroups", 0, NULL, &proc_cgroupstats_operations);
+ 
