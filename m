@@ -1,105 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756055Ab0GVJWI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 05:22:08 -0400
-Received: from mga02.intel.com ([134.134.136.20]:12382 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754037Ab0GVJWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 05:22:02 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,242,1278313200"; 
-   d="scan'208";a="640689764"
-Date: Thu, 22 Jul 2010 17:21:55 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background
- writeback
-Message-ID: <20100722092155.GA28425@localhost>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
- <1279545090-19169-8-git-send-email-mel@csn.ul.ie>
- <20100719142145.GD12510@infradead.org>
- <20100719144046.GR13117@csn.ul.ie>
- <20100722085210.GA26714@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100722085210.GA26714@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755901Ab0GVJ0E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 05:26:04 -0400
+Received: from mtagate3.de.ibm.com ([195.212.17.163]:46868 "EHLO
+	mtagate3.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753286Ab0GVJ0A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 05:26:00 -0400
+Date: Thu, 22 Jul 2010 11:25:57 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Tejun Heo <tj@kernel.org>
+Cc: Sachin Sant <sachinp@in.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [-next July 21] s390 build failure : kernel/workqueue.o
+Message-ID: <20100722112557.14b65077@mschwide.boeblingen.de.ibm.com>
+In-Reply-To: <4C4718D5.1080902@kernel.org>
+References: <4C46CEA3.7040503@in.ibm.com>
+	<4C4718D5.1080902@kernel.org>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> I guess this new patch is more problem oriented and acceptable:
+On Wed, 21 Jul 2010 17:57:09 +0200
+Tejun Heo <tj@kernel.org> wrote:
+
+> Hello,
 > 
-> --- linux-next.orig/mm/vmscan.c	2010-07-22 16:36:58.000000000 +0800
-> +++ linux-next/mm/vmscan.c	2010-07-22 16:39:57.000000000 +0800
-> @@ -1217,7 +1217,8 @@ static unsigned long shrink_inactive_lis
->  			count_vm_events(PGDEACTIVATE, nr_active);
->  
->  			nr_freed += shrink_page_list(&page_list, sc,
-> -							PAGEOUT_IO_SYNC);
-> +					priority < DEF_PRIORITY / 3 ?
-> +					PAGEOUT_IO_SYNC : PAGEOUT_IO_ASYNC);
->  		}
->  
->  		nr_reclaimed += nr_freed;
+> On 07/21/2010 12:40 PM, Sachin Sant wrote:
+> > Today's next fails to build on a s390 box with
+> > 
+> >  CC      kernel/workqueue.o
+> > kernel/workqueue.c: In function 'init_workqueues':
+> > kernel/workqueue.c:3525: error: negative width in bit-field '<anonymous>'
+> > make[1]: *** [kernel/workqueue.o] Error 1
+> > 
+> > Yesterday's next was good.
+> > The following patches added/changed the BUILD_BUG_ON() statement.
+> > 
+> > bdbc5dd7de5d07d6c9d3536e598956165a031d4c
+> >        workqueue: prepare for WQ_UNBOUND implementation
+> > 7a22ad757ec75186ad43a5b4670fa7423ee8f480
+> >         workqueue: carry cpu number in work data once execution starts
+> > 
+> > I have gcc version 4.3.2 installed on the system.
+> 
+> Hmmm... that's surprising.  Can you please attach the .config?
 
-This one looks better:
----
-vmscan: raise the bar to PAGEOUT_IO_SYNC stalls
+The BUILD_BUG_ON line gets expanded to:
 
-Fix "system goes totally unresponsive with many dirty/writeback pages"
-problem:
+((void)(sizeof(struct { int:-!!(WORK_CPU_LAST << WORK_STRUCT_FLAG_BITS >= 0x0UL); })));
 
-	http://lkml.org/lkml/2010/4/4/86
+WORK_CPU_LAST is:
 
-The root cause is, wait_on_page_writeback() is called too early in the
-direct reclaim path, which blocks many random/unrelated processes when
-some slow (USB stick) writeback is on the way.
+enum {
+ ..
+ WORK_CPU_NONE = 32 + 1,
+ WORK_CPU_LAST = WORK_CPU_NONE,
+ ..
+};
 
-A simple dd can easily create a big range of dirty pages in the LRU
-list. Therefore priority can easily go below (DEF_PRIORITY - 2) in a
-typical desktop, which triggers the lumpy reclaim mode and hence
-wait_on_page_writeback().
+WORK_STRUCT_FLAG_BITS is:
 
-In Andreas' case, 512MB/1024 = 512KB, this is way too low comparing to
-the 22MB writeback and 190MB dirty pages. There can easily be a
-continuous range of 512KB dirty/writeback pages in the LRU, which will
-trigger the wait logic.
+ WORK_STRUCT_COLOR_SHIFT = 2,
+ WORK_STRUCT_COLOR_BITS = 4,
+ WORK_STRUCT_FLAG_BITS = WORK_STRUCT_COLOR_SHIFT +
+      WORK_STRUCT_COLOR_BITS,
 
-To make it worse, when there are 50MB writeback pages and USB 1.1 is
-writing them in 1MB/s, wait_on_page_writeback() may stuck for up to 50
-seconds.
+which boils it down to
 
-So only enter sync write&wait when priority goes below DEF_PRIORITY/3,
-or 6.25% LRU. As the default dirty throttle ratio is 20%, sync write&wait
-will hardly be triggered by pure dirty pages.
+((void)(sizeof(struct { int:-!!(33 << 6 >= 0x0UL); })));
 
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/vmscan.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+gcc doesn't like this construct.
 
---- linux-next.orig/mm/vmscan.c	2010-07-22 16:36:58.000000000 +0800
-+++ linux-next/mm/vmscan.c	2010-07-22 17:03:47.000000000 +0800
-@@ -1206,7 +1206,7 @@ static unsigned long shrink_inactive_lis
- 		 * but that should be acceptable to the caller
- 		 */
- 		if (nr_freed < nr_taken && !current_is_kswapd() &&
--		    sc->lumpy_reclaim_mode) {
-+		    sc->lumpy_reclaim_mode && priority < DEF_PRIORITY / 3) {
- 			congestion_wait(BLK_RW_ASYNC, HZ/10);
- 
- 			/*
+-- 
+blue skies,
+   Martin.
+
+"Reality continues to ruin my life." - Calvin.
+
