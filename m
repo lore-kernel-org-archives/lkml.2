@@ -1,61 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab0GVB2l (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 21:28:41 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:34041 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752126Ab0GVB2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 21:28:38 -0400
-Date: Thu, 22 Jul 2010 11:28:31 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Takashi Iwai <tiwai@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Russell King <rmk@arm.linux.org.uk>
-Subject: linux-next: manual merge of the sound tree with the arm tree
-Message-Id: <20100722112831.c6345379.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__22_Jul_2010_11_28_31_+1000_svmBv4vh_QMon2gA"
+	id S1756216Ab0GVBbA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 21:31:00 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:60933 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751599Ab0GVBa6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 21:30:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=T1y8HNY47+NmBge6aWsOFpRUyYKoGpZRaR67XMQhmWL4FVV131NxlL/viiEf6A969A
+         dXs3pUWKx9slJToxt3GcnrNie3Mt0SOiTGf/g/Aitjo7wszfF8++Ewe8zOIfH/HAANC3
+         fOAZPUCBtZ2LFWbZ+LqwiVYH48//LUsuRptr8=
+From: ehames@gmail.com
+To: greg@kroah.com
+Cc: linux-kernel@vger.kernel.org, ehames@gmail.com
+Subject: [PATCH 1/2] Staging: wlan-ng: fix style in p80211netdev.c
+Date: Wed, 21 Jul 2010 22:31:55 -0300
+Message-Id: <4c479f51.19eb640a.387a.6ce2@mx.google.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__22_Jul_2010_11_28_31_+1000_svmBv4vh_QMon2gA
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Edgardo Hames <ehames@gmail.com>
 
-Hi Takashi,
+Signed-off-by: Edgardo Hames <ehames@gmail.com>
+---
+ drivers/staging/wlan-ng/p80211netdev.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-Today's linux-next merge of the sound tree got a conflict in
-arch/arm/mach-ep93xx/clock.c between commit
-a99b53f80962ed98f4b598dc22f8c030b5dae55a ("ARM: AMBA: Add pclk support to
-AMBA bus infrastructure") from the arm tree and commit
-ed67ea82c0d9a163458dc6a69a7a3123db1a8b3b ("EP93xx: Add i2s core support")
-from the sound tree.
+diff --git a/drivers/staging/wlan-ng/p80211netdev.c b/drivers/staging/wlan-ng/p80211netdev.c
+index 31308b4..ead8a35 100644
+--- a/drivers/staging/wlan-ng/p80211netdev.c
++++ b/drivers/staging/wlan-ng/p80211netdev.c
+@@ -819,7 +819,8 @@ int wlan_unsetup(wlandevice_t *wlandev)
+ 
+ 	if (wlandev->netdev) {
+ 		wdev = netdev_priv(wlandev->netdev);
+-		if(wdev->wiphy) wlan_free_wiphy(wdev->wiphy);
++		if (wdev->wiphy)
++			wlan_free_wiphy(wdev->wiphy);
+ 		free_netdev(wlandev->netdev);
+ 		wlandev->netdev = NULL;
+ 	}
+-- 
+1.6.3.3
 
-Just context changes.  I fixed it up (it was just a blank line) and can
-carry the fix as necessary.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__22_Jul_2010_11_28_31_+1000_svmBv4vh_QMon2gA
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMR56/AAoJEDMEi1NhKgbs6n4H/ipJsj0ushOfuceS+Mcfn8gy
-Ka9mikTy6OZ2K4OV6uarF3jxWrO0H3TYY75AZymHWRt0ypGbMEhpNZmQ3ro29c3Y
-bTkec8iIXOQnizRGBK4flsQNJelZ/IeU3f7wFvvzZ7XRlcWBel3OXl5guvV7Y9zi
-i9PUfWOpJ9w1PFqyAFKs57JDSXSiH4/S3hqJHLeBqu5+gl+bQzogMwqOOEE6gEE+
-yOvR8Q4K1xQlvucYjS0q6zwjpH+9cxw/Kll41pbgGicf4HjAeNVVDopVse4CNJs2
-4/WDVpGY4Pt0jWCyt4bsKwncpaZQKfU1GxYz+IGrr6EykcFJIJTJ5ePcZeuG4cM=
-=JfKN
------END PGP SIGNATURE-----
-
---Signature=_Thu__22_Jul_2010_11_28_31_+1000_svmBv4vh_QMon2gA--
