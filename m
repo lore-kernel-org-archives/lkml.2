@@ -1,246 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756179Ab0GVOqj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 10:46:39 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:35111 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752350Ab0GVOqg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 10:46:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=C5YLf5m5X24dbpNREiWnvHT/hnogYk4r+PsgsgsxqllF24fIXLBda2O4pjtDxiIsLL
-         g00BmMmZgjnZtRALlzSjAAbg+egAaNNBIMq5p6exKksvMfnGCaidoV3JAIMVjU4CoOf7
-         HelLt+PgsiYFSAwGeP1aL7L1sYfnwwOnxMIU4=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        Denis Karpov <ext-denis.2.karpov@nokia.com>,
-        Adrian Hunter <adrian.hunter@nokia.com>,
-        Alan Stern <stern@rowland.harvard.edu>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
-Subject: [PATCHv5] usb: gadget: storage: optional SCSI WRITE FUA bit
-Date: Thu, 22 Jul 2010 17:53:56 +0300
-Message-Id: <1279810436-15678-1-git-send-email-ext-andriy.shevchenko@nokia.com>
-X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <Pine.LNX.4.44L0.1007221007210.1725-100000@iolanthe.rowland.org>
-References: <Pine.LNX.4.44L0.1007221007210.1725-100000@iolanthe.rowland.org>
+	id S1759480Ab0GVOsE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 10:48:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:28991 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753392Ab0GVOr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 10:47:59 -0400
+Message-ID: <4C485A0C.7020500@redhat.com>
+Date: Thu, 22 Jul 2010 16:47:40 +0200
+From: Stefan Assmann <sassmann@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Thunderbird/3.1
+MIME-Version: 1.0
+To: Ben Hutchings <bhutchings@solarflare.com>
+CC: David Miller <davem@davemloft.net>, abadea@ixiacom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
+        leedom@chelsio.com, harald@redhat.com
+Subject: Re: [PATCH net-next] sysfs: add attribute to indicate hw address
+ assignment type
+References: <4C458CB7.3030508@redhat.com>	<4C458F50.4070200@ixiacom.com>	 <4C4593DA.9040207@redhat.com>	 <20100720.131839.134093789.davem@davemloft.net>	 <4C46AB60.5060008@redhat.com>	 <1279720478.2089.3.camel@achroite.uk.solarflarecom.com>	 <4C483E8D.4080300@redhat.com> <1279807643.2104.1.camel@achroite.uk.solarflarecom.com>
+In-Reply-To: <1279807643.2104.1.camel@achroite.uk.solarflarecom.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-MS Windows mounts removable storage in "Removal optimized mode" by
-default. All the writes to the media are synchronous which is achieved
-by setting FUA (Force Unit Access) bit in SCSI WRITE(10,12) commands.
-This prevents I/O requests aggregation in block layer dramatically
-decreasing performance.
+On 22.07.2010 16:07, Ben Hutchings wrote:
+> On Thu, 2010-07-22 at 14:50 +0200, Stefan Assmann wrote:
+>> On 21.07.2010 15:54, Ben Hutchings wrote:
+>>> On Wed, 2010-07-21 at 10:10 +0200, Stefan Assmann wrote:
+>>>> I put Alex' idea into code for further discussion, keeping the names
+>>>> mentioned here until we agree on the scope of this attribute. When we
+>>>> have settled I'll post a patch with proper patch description.
+>>> [...]
+>>>
+>>> Just a little nitpick: I think it would be clearer to use a more
+>>> specific term like 'address source' or 'address assignment type' rather
+>>> than 'address type'.
+>>
+>> Here's a proposal for the final patch.
+> 
+> Looks good, but...
+> 
+> [...]
+>>  /**
+>> + * dev_hw_addr_random - Create random MAC and set device flag
+>> + * @dev: pointer to net_device structure
+>> + * @addr: Pointer to a six-byte array containing the Ethernet address
+>> + *
+>> + * Generate random MAC to be used by a device and set addr_assign_type
+>> + * so the state can be read by sysfs and be used by udev.
+>> + */
+>> +static inline void dev_hw_addr_random(struct net_device *dev, u8 *hwaddr)
+>> +{
+>> +	dev->addr_assign_type |= NET_ADDR_RANDOM;
+>> +	random_ether_addr(hwaddr);
+>> +}
+> [...]
+> 
+> ...why '|=' and not '='?
 
-This patch brings an option to accept or ignore mentioned bit
- a) via specifying module parameter "nofua", or
- b) through sysfs entry
-	/sys/devices/platform/_UDC_/gadget/gadget-lunX/nofua
-	(_UDC_ is the name of the USB Device Controller driver)
+The intention is to use addr_assign_type as a bit field.
 
-Patch is based on the work that was done by Denis Karpov for Maemo 5
-platform.
+Okay it it might not make too much sense to 'steal' a random MAC
+address but in case we add more types later it might get useful.
 
-Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-Cc: Denis Karpov <ext-denis.2.karpov@nokia.com>
-Cc: Adrian Hunter <adrian.hunter@nokia.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>
-Cc: David Brownell <dbrownell@users.sourceforge.net>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-usb@vger.kernel.org
----
- .../testing/sysfs-devices-platform-_UDC_-gadget    |   12 +++++++
- drivers/usb/gadget/file_storage.c                  |   31 +++++++++++++++----
- drivers/usb/gadget/storage_common.c                |   28 ++++++++++++++++++
- 3 files changed, 64 insertions(+), 7 deletions(-)
-
-diff --git a/Documentation/ABI/testing/sysfs-devices-platform-_UDC_-gadget b/Documentation/ABI/testing/sysfs-devices-platform-_UDC_-gadget
-index 3403402..d548eaa 100644
---- a/Documentation/ABI/testing/sysfs-devices-platform-_UDC_-gadget
-+++ b/Documentation/ABI/testing/sysfs-devices-platform-_UDC_-gadget
-@@ -7,3 +7,15 @@ Description:
- 		0 -> resumed
- 
- 		(_UDC_ is the name of the USB Device Controller driver)
-+
-+What:           /sys/devices/platform/_UDC_/gadget/gadget-lunX/nofua
-+Date:           July 2010
-+Contact:        Andy Shevchenko <andy.shevchenko@gmail.com>
-+Description:
-+		Show or set the reaction on the FUA (Force Unit Access) bit in
-+		the SCSI WRITE(10,12) commands when a gadget in USB Mass
-+		Storage mode.
-+
-+		Possible values are:
-+			1 -> ignore the FUA flag
-+			0 -> obey the FUA flag
-diff --git a/drivers/usb/gadget/file_storage.c b/drivers/usb/gadget/file_storage.c
-index b49d86e..20bd39e 100644
---- a/drivers/usb/gadget/file_storage.c
-+++ b/drivers/usb/gadget/file_storage.c
-@@ -93,6 +93,8 @@
-  *	removable		Default false, boolean for removable media
-  *	luns=N			Default N = number of filenames, number of
-  *					LUNs to support
-+ *	nofua=b[,b...]		Default false, booleans for ignore FUA flag
-+ *					in SCSI WRITE(10,12) commands
-  *	stall			Default determined according to the type of
-  *					USB device controller (usually true),
-  *					boolean to permit the driver to halt
-@@ -111,12 +113,12 @@
-  *					PAGE_CACHE_SIZE)
-  *
-  * If CONFIG_USB_FILE_STORAGE_TEST is not set, only the "file", "ro",
-- * "removable", "luns", "stall", and "cdrom" options are available; default
-- * values are used for everything else.
-+ * "removable", "luns", "nofua", "stall", and "cdrom" options are available;
-+ * default values are used for everything else.
-  *
-  * The pathnames of the backing files and the ro settings are available in
-- * the attribute files "file" and "ro" in the lun<n> subdirectory of the
-- * gadget's sysfs directory.  If the "removable" option is set, writing to
-+ * the attribute files "file", "nofua", and "ro" in the lun<n> subdirectory of
-+ * the gadget's sysfs directory.  If the "removable" option is set, writing to
-  * these files will simulate ejecting/loading the medium (writing an empty
-  * line means eject) and adjusting a write-enable tab.  Changes to the ro
-  * setting are not allowed when the medium is loaded or if CD-ROM emulation
-@@ -301,8 +303,10 @@ MODULE_LICENSE("Dual BSD/GPL");
- static struct {
- 	char		*file[FSG_MAX_LUNS];
- 	int		ro[FSG_MAX_LUNS];
-+	int		nofua[FSG_MAX_LUNS];
- 	unsigned int	num_filenames;
- 	unsigned int	num_ros;
-+	unsigned int	num_nofuas;
- 	unsigned int	nluns;
- 
- 	int		removable;
-@@ -341,6 +345,10 @@ MODULE_PARM_DESC(file, "names of backing files or devices");
- module_param_array_named(ro, mod_data.ro, bool, &mod_data.num_ros, S_IRUGO);
- MODULE_PARM_DESC(ro, "true to force read-only");
- 
-+module_param_array_named(nofua, mod_data.nofua, bool, &mod_data.num_nofuas,
-+		S_IRUGO);
-+MODULE_PARM_DESC(nofua, "true to ignore SCSI WRITE(10,12) FUA bit");
-+
- module_param_named(luns, mod_data.nluns, uint, S_IRUGO);
- MODULE_PARM_DESC(luns, "number of LUNs");
- 
-@@ -1272,7 +1280,8 @@ static int do_write(struct fsg_dev *fsg)
- 			curlun->sense_data = SS_INVALID_FIELD_IN_CDB;
- 			return -EINVAL;
- 		}
--		if (fsg->cmnd[1] & 0x08) {	// FUA
-+		/* FUA */
-+		if (!curlun->nofua && (fsg->cmnd[1] & 0x08)) {
- 			spin_lock(&curlun->filp->f_lock);
- 			curlun->filp->f_flags |= O_DSYNC;
- 			spin_unlock(&curlun->filp->f_lock);
-@@ -3126,6 +3135,7 @@ static int fsg_main_thread(void *fsg_)
- 
- /* The write permissions and store_xxx pointers are set in fsg_bind() */
- static DEVICE_ATTR(ro, 0444, fsg_show_ro, NULL);
-+static DEVICE_ATTR(nofua, 0644, fsg_show_nofua, NULL);
- static DEVICE_ATTR(file, 0444, fsg_show_file, NULL);
- 
- 
-@@ -3305,6 +3315,10 @@ static int __init fsg_bind(struct usb_gadget *gadget)
- 		}
- 	}
- 
-+	/* Only for removable media? */
-+	dev_attr_nofua.attr.mode = 0644;
-+	dev_attr_nofua.store = fsg_store_nofua;
-+
- 	/* Find out how many LUNs there should be */
- 	i = mod_data.nluns;
- 	if (i == 0)
-@@ -3330,6 +3344,7 @@ static int __init fsg_bind(struct usb_gadget *gadget)
- 		curlun->ro = mod_data.cdrom || mod_data.ro[i];
- 		curlun->initially_ro = curlun->ro;
- 		curlun->removable = mod_data.removable;
-+		curlun->nofua = mod_data.nofua[i];
- 		curlun->dev.release = lun_release;
- 		curlun->dev.parent = &gadget->dev;
- 		curlun->dev.driver = &fsg_driver.driver;
-@@ -3344,6 +3359,8 @@ static int __init fsg_bind(struct usb_gadget *gadget)
- 		if ((rc = device_create_file(&curlun->dev,
- 					&dev_attr_ro)) != 0 ||
- 				(rc = device_create_file(&curlun->dev,
-+					&dev_attr_nofua)) != 0 ||
-+				(rc = device_create_file(&curlun->dev,
- 					&dev_attr_file)) != 0) {
- 			device_unregister(&curlun->dev);
- 			goto out;
-@@ -3478,8 +3495,8 @@ static int __init fsg_bind(struct usb_gadget *gadget)
- 				if (IS_ERR(p))
- 					p = NULL;
- 			}
--			LINFO(curlun, "ro=%d, file: %s\n",
--					curlun->ro, (p ? p : "(error)"));
-+			LINFO(curlun, "ro=%d, nofua=%d, file: %s\n",
-+			      curlun->ro, curlun->nofua, (p ? p : "(error)"));
- 		}
- 	}
- 	kfree(pathbuf);
-diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-index 7123929..d631b27 100644
---- a/drivers/usb/gadget/storage_common.c
-+++ b/drivers/usb/gadget/storage_common.c
-@@ -269,6 +269,7 @@ struct fsg_lun {
- 	unsigned int	prevent_medium_removal:1;
- 	unsigned int	registered:1;
- 	unsigned int	info_valid:1;
-+	unsigned int	nofua:1;
- 
- 	u32		sense_data;
- 	u32		sense_data_info;
-@@ -689,6 +690,14 @@ static ssize_t fsg_show_ro(struct device *dev, struct device_attribute *attr,
- 				  : curlun->initially_ro);
- }
- 
-+static ssize_t fsg_show_nofua(struct device *dev, struct device_attribute *attr,
-+			      char *buf)
-+{
-+	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
-+
-+	return sprintf(buf, "%u\n", curlun->nofua);
-+}
-+
- static ssize_t fsg_show_file(struct device *dev, struct device_attribute *attr,
- 			     char *buf)
- {
-@@ -743,6 +752,25 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
- 	return rc;
- }
- 
-+static ssize_t fsg_store_nofua(struct device *dev,
-+			       struct device_attribute *attr,
-+			       const char *buf, size_t count)
-+{
-+	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
-+	unsigned long	nofua;
-+
-+	if (strict_strtoul(buf, 2, &nofua))
-+		return -EINVAL;
-+
-+	/* Sync data when switching from async mode to sync */
-+	if (!nofua && curlun->nofua)
-+		fsg_lun_fsync_sub(curlun);
-+
-+	curlun->nofua = nofua;
-+
-+	return count;
-+}
-+
- static ssize_t fsg_store_file(struct device *dev, struct device_attribute *attr,
- 			      const char *buf, size_t count)
- {
--- 
-1.6.3.3
-
+  Stefan
+--
+Stefan Assmann         | Red Hat GmbH
+Software Engineer      | Otto-Hahn-Strasse 20, 85609 Dornach
+                       | HR: Amtsgericht Muenchen HRB 153243
+                       | GF: Brendan Lane, Charlie Peters,
+sassmann at redhat.com |     Michael Cunningham, Charles Cachera
