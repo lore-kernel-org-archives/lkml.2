@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759228Ab0GVLNK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:13:10 -0400
-Received: from mga02.intel.com ([134.134.136.20]:21557 "EHLO mga02.intel.com"
+	id S1759249Ab0GVLNi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 07:13:38 -0400
+Received: from mga02.intel.com ([134.134.136.20]:12712 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759288Ab0GVLND (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 07:13:03 -0400
+	id S1758097Ab0GVLNf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 07:13:35 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.55,242,1278313200"; 
-   d="scan'208";a="537789536"
-Subject: [RFC][PATCH v1 05/15] perf: export tracepoint events via sysfs:
- i915
+   d="scan'208";a="640711709"
+Subject: [RFC][PATCH v1 06/15] perf: export tracepoint events via sysfs:
+ iwlwifi and iwlwifi_io
 From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Dave Airlie <airlied@redhat.com>
+To: Ingo Molnar <mingo@elte.hu>, Reinette Chatre <reinette.chatre@intel.com>
 Cc: Robert Richter <robert.richter@amd.com>,
         Corey Ashford <cjashfor@linux.vnet.ibm.com>,
         Johannes Berg <johannes@sipsolutions.net>,
@@ -33,8 +33,8 @@ Cc: Robert Richter <robert.richter@amd.com>,
         Thomas Gleixner <tglx@linutronix.de>,
         Steven Rostedt <rostedt@goodmis.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 19:13:18 +0800
-Message-ID: <1279797198.20942.86.camel@minggr.sh.intel.com>
+Date: Thu, 22 Jul 2010 19:13:50 +0800
+Message-ID: <1279797230.20942.87.camel@minggr.sh.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.30.2 
 Content-Transfer-Encoding: 7bit
@@ -42,53 +42,70 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-i915 tracepoint events are exported like below,
+iwlwifi and iwlwifi_io tracepoint events are exported like below,
 
-/sys/devices/pci0000:00/0000:00:02.0/drm/card0/events
-|-- i915_gem_object_bind
+/sys/devices/pci0000:00/0000:00:1c.1/0000:03:00.0/net/wlan0/events/
+|-- iwlwifi_dev_hcmd
 |   |-- config
 |   |-- type
-|-- i915_gem_object_change_domain
+|-- iwlwifi_dev_rx
 |   |-- config
 |   |-- type
 ....
 ....
+|-- iwlwifi_dev_ioread32
+|   |-- config
+|   |-- type
+|-- iwlwifi_dev_iowrite32
+|   |-- config
+|   |-- type
+|-- iwlwifi_dev_iowrite8
+|   |-- config
+|   |-- type
 ---
- drivers/gpu/drm/i915/i915_drv.c |   13 ++++++++++++-
- 1 files changed, 12 insertions(+), 1 deletions(-)
+ drivers/net/wireless/iwlwifi/iwl3945-base.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index 423dc90..185b502 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -28,6 +28,7 @@
-  */
- 
- #include <linux/device.h>
+diff --git a/drivers/net/wireless/iwlwifi/iwl3945-base.c b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+index a27872d..cbcc2bb 100644
+--- a/drivers/net/wireless/iwlwifi/iwl3945-base.c
++++ b/drivers/net/wireless/iwlwifi/iwl3945-base.c
+@@ -41,6 +41,7 @@
+ #include <linux/firmware.h>
+ #include <linux/etherdevice.h>
+ #include <linux/if_arp.h>
 +#include <linux/perf_event.h>
- #include "drmP.h"
- #include "drm.h"
- #include "i915_drm.h"
-@@ -413,7 +414,17 @@ int i965_reset(struct drm_device *dev, u8 flags)
- static int __devinit
- i915_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
- {
--	return drm_get_dev(pdev, ent, &driver);
-+	struct drm_device *drm_dev;
-+	int ret;
-+
-+	ret = drm_get_dev(pdev, ent, &driver);
-+
-+	if (!ret) {
-+		drm_dev = pci_get_drvdata(pdev);
-+		perf_sys_add_tp(&drm_dev->primary->kdev.kobj, "i915");
-+	}
-+
-+	return ret;
+ 
+ #include <net/ieee80211_radiotap.h>
+ #include <net/mac80211.h>
+@@ -3989,6 +3990,18 @@ static int iwl3945_setup_mac(struct iwl_priv *priv)
+ 	return 0;
  }
  
- static void
-
++static void iwl_sys_add_tp(struct kobject *kobj)
++{
++	struct kobject *events_kobj;
++
++	events_kobj = perf_sys_create_events_dir(kobj);
++	if (!events_kobj)
++		return;
++
++	perf_sys_add_tp_events(events_kobj, "iwlwifi");
++	perf_sys_add_tp_events(events_kobj, "iwlwifi_io");
++}
++
+ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *ent)
+ {
+ 	int err = 0;
+@@ -4148,6 +4161,8 @@ static int iwl3945_pci_probe(struct pci_dev *pdev, const struct pci_device_id *e
+ 		goto out_release_irq;
+ 	}
+ 
++	iwl_sys_add_tp(&pdev->dev.kobj);
++
+ 	iwl_set_rxon_channel(priv,
+ 			     &priv->bands[IEEE80211_BAND_2GHZ].channels[5]);
+ 	iwl3945_setup_deferred_work(priv);
 
 
 
