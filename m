@@ -1,51 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755997Ab0GVVx6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:53:58 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:57625 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751448Ab0GVVxz (ORCPT
+	id S1756826Ab0GVVye (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:54:34 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:38946 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754487Ab0GVVyd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:53:55 -0400
+	Thu, 22 Jul 2010 17:54:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=DaPMR+YJ7Ow7W7eYsX5kaYJ6es0b9GBrl1r5iRgRmHUAXXWcAluXbY/SZ2VKHk9maY
-         VE3NN8g/UJpBEMDwTYkWXuEafFQNMbupQ3P5tcLm1Fo/mmk9WNrzQb06PeTny1hg2Wg8
-         EnxxcgrXRU3x98PHpXtZ2d+p+d7Bau8r4eQ40=
-Message-ID: <4C48BDF0.9050508@gmail.com>
-Date: Thu, 22 Jul 2010 22:53:52 +0100
-From: Iain <selsinork@gmail.com>
-User-Agent: Thunderbird 2.0.0.21 (X11/20090302)
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=MOQaARhS/UhHcJMYfx5lEMV104TfhOqbBbJRP3EyhAG4AQjm21xONAbjm/uXbZWtNT
+         uXf2tRw5R2N9uBj5SM97JgKopvmaxR/t5WT1cpuasfs0LdK8/XRihDFLIlheDwCOwbfs
+         mXri8tUDB+8r8jU9Ig4aZOheMysKAoV21OTFs=
 MIME-Version: 1.0
-To: Iain <selsinork@gmail.com>
-CC: Len Brown <lenb@kernel.org>, Andi Kleen <andi@firstfloor.org>,
-        Matthew Garrett <mjg59@srcf.ucam.org>,
-        "Yu, Luming" <luming.yu@intel.com>,
-        Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "venki@google.com" <venki@google.com>
-Subject: Re: [PATCH] ACPI: make acpi_idle Nehalem-aware
-References: <20100427124703.GA16706@jgarrett.org> <alpine.LFD.2.00.1004301218280.2489@sony> <20100430174447.GA14889@srcf.ucam.org> <d7f2dd35a4361e5156079278543769a0@localhost> <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain> <CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com> <20100525124325.GC7876@srcf.ucam.org> <alpine.LFD.2.00.1005251114420.4114@localhost.localdomain> <20100525185507.GA15997@srcf.ucam.org> <alpine.LFD.2.00.1007211729550.409@localhost.localdomain> <20100722074750.GA22520@one.firstfloor.org> <alpine.LFD.2.00.1007221153120.3164@localhost.localdomain> <4C48B730.30708@gmail.com>
-In-Reply-To: <4C48B730.30708@gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <438BB0150E931F4B9CE701519A44630104A3914683@bgsmsx502.gar.corp.intel.com>
+References: <1279740148-22186-1-git-send-email-linus.walleij@stericsson.com>
+	<AANLkTimmJJcMXxICZHjksp_TjqO_JRx9HwCTJ6UpZQOZ@mail.gmail.com>
+	<438BB0150E931F4B9CE701519A44630104A3914683@bgsmsx502.gar.corp.intel.com>
+Date: Thu, 22 Jul 2010 23:54:31 +0200
+Message-ID: <AANLkTinIiBSADC0JIKSd2J55d5Lj0epc9o4WKXF8rsek@mail.gmail.com>
+Subject: Re: [PATCH 1/3] DMAENGINE: generic slave channel control v2
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: "Koul, Vinod" <vinod.koul@intel.com>
+Cc: Alan Cox <alan@linux.intel.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Iain wrote:
-> Len Brown wrote:
->> However, we'll still have issues with systems
->> like the HP DL360 G6 which explicity set the
-> 
-> I'm curious as to why you see a problem with the DL380G6 as the one I have here happily sits in C6 when idle.
+2010/7/22 Koul, Vinod <vinod.koul@intel.com>:
 
-Please ignore me, apologies for the noise.
+> Shouldn't this patch remove the private member in dma_chan structure
 
-Just noticed the problem system was a DL360 and mine is a DL380. Long day spent working with both 360's and 380's - I don't seem to 
-be able to tell them apart anymore..
+I don't think so.
 
-Iain
+> Currently chan->private is used for sending slave or similar channel specific
+> information. Now if we want to add struct dma_slave_config, then IMHO it
+> would make sense to remove private variable and replace with dma_slave_config
+> struture. That way we can reuse this struture there as well and if someone wants
+> to add more stuff he can use the private_config.
+
+That member is described like this:
+@private: private data for certain client-channel associations
+
+chan->private is supposed to only be used inside the dmaengine
+drivers themselves AFAICT.
+
+Some drivers (like the txx9dmac.c) use this to hold the state of the
+slave, whereas the void *private in the runtime config is supposed
+to contain some custom configuration struct which is created
+outside of the dmaengine framework and can be discarded
+after use (if you so wish), so that's vastly different.
+
+You could however argue (but this is another discussion altogether)
+that using chan->private to hold any states is superfluous since
+you could just have  your struct dma_channel as a member of
+your custom channel struct and use container_of to dereference
+it (as we do in the coh901318 and ste_dma40 drivers) and then
+stockpile any other struct members or substructs into your custom
+struct but that's another issue, which would require major refactoring
+of these drivers.
+
+Yours,
+Linus Walleij
