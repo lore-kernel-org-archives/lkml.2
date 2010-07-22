@@ -1,68 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759531Ab0GVOK0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 10:10:26 -0400
-Received: from nox2.protox.org ([95.130.11.66]:55201 "EHLO protox.org"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1759443Ab0GVOKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 10:10:24 -0400
-Message-ID: <4C485145.6020101@freedesktop.org>
-Date: Thu, 22 Jul 2010 10:10:13 -0400
-From: Jerome Glisse <glisse@freedesktop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.4) Gecko/20100628 Red Hat/3.1-1.el6 Thunderbird/3.1
+	id S1759528Ab0GVONa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 10:13:30 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:49106 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1759400Ab0GVON0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 10:13:26 -0400
+Date: Thu, 22 Jul 2010 10:13:26 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Andy Shevchenko <andy.shevchenko@gmail.com>
+cc: linux-kernel@vger.kernel.org,
+        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
+        Denis Karpov <ext-denis.2.karpov@nokia.com>,
+        Adrian Hunter <adrian.hunter@nokia.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>
+Subject: Re: [PATCHv4 2/2] usb: gadget: storage: optional SCSI WRITE FUA bit
+In-Reply-To: <1279789128-11399-2-git-send-email-ext-andriy.shevchenko@nokia.com>
+Message-ID: <Pine.LNX.4.44L0.1007221007210.1725-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Dan Carpenter <error27@gmail.com>, suokkos@gmail.com,
-        dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-Subject: Re: questions about ttm_page_alloc.c
-References: <20100712223905.GH5658@bicker> <4C3BA165.5020008@freedesktop.org> <20100722115628.GG17585@bicker>
-In-Reply-To: <20100722115628.GG17585@bicker>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2010 07:56 AM, Dan Carpenter wrote:
-> On Mon, Jul 12, 2010 at 07:12:37PM -0400, Jerome Glisse wrote:
->> On 07/12/2010 06:39 PM, Dan Carpenter wrote:
->>>      327                  pages_to_free[freed_pages++] = p;
->>>      328                  /* We can only remove NUM_PAGES_TO_ALLOC at a time. */
->>>      329                  if (freed_pages>= NUM_PAGES_TO_ALLOC) {
->>>      330                          /* remove range of pages from the pool */
->>>      331                          __list_del(p->lru.prev,&pool->list);
->>>
->>> 	Why do we use p->lru.prev here when we use&p->lru in other
->>> 	places?
->>>
->>>      332
->>>      333                          ttm_pool_update_free_locked(pool, freed_pages);
->>>      334                          /**
->>>      335                           * Because changing page caching is costly
->>>      336                           * we unlock the pool to prevent stalling.
->>>
->
-> Thanks for answering about the wb vs uncached, but I'm still confused why we use
-> &p->lru in most places and p->lru.prev in this place.
->
-> regards,
-> dan carpenter
->
+On Thu, 22 Jul 2010, Andy Shevchenko wrote:
 
-This is because it use __list_del to remove a whole part of the list.
+> MS Windows mounts removable storage in "Removal optimized mode" by
+> default. All the writes to the media are synchronous which is achieved
+> by setting FUA (Force Unit Access) bit in SCSI WRITE(10,12) commands.
+> This prevents I/O requests aggregation in block layer dramatically
+> decreasing performance.
+> 
+> This patch brings an option to accept or ignore mentioned bit
+>  a) via specifying module parameter "nofua", or
+>  b) through sysfs entry
+> 	/sys/devices/platform/musb_hdrc/gadget/gadget-lun-X/nofua
+> 
+> Patch is based on the work that was done by Denis Karpov for Maemo 5
+> platform.
+> 
+> Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
+> Cc: Denis Karpov <ext-denis.2.karpov@nokia.com>
+> Cc: Adrian Hunter <adrian.hunter@nokia.com>
+> Cc: Alan Stern <stern@rowland.harvard.edu>
+> Cc: David Brownell <dbrownell@users.sourceforge.net>
+> Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> Cc: linux-usb@vger.kernel.org
+> ---
+>  .../sysfs-devices-platform-musb_hdrc-gadget        |   12 +++++++
+>  drivers/usb/gadget/file_storage.c                  |   31 +++++++++++++++----
+>  drivers/usb/gadget/storage_common.c                |   28 ++++++++++++++++++
+>  3 files changed, 64 insertions(+), 7 deletions(-)
+>  create mode 100644 Documentation/ABI/testing/sysfs-devices-platform-musb_hdrc-gadget
+> 
+> diff --git a/Documentation/ABI/testing/sysfs-devices-platform-musb_hdrc-gadget b/Documentation/ABI/testing/sysfs-devices-platform-musb_hdrc-gadget
+> new file mode 100644
+> index 0000000..192d3f3
+> --- /dev/null
+> +++ b/Documentation/ABI/testing/sysfs-devices-platform-musb_hdrc-gadget
+> @@ -0,0 +1,12 @@
+> +What:           /sys/devices/platform/musb_hdrc/gadget/gadget-lun-X/nofua
 
-/*
-  * Delete a list entry by making the prev/next entries
-  * point to each other.
-  *
-  * This is only for internal list manipulation where we know
-  * the prev/next entries already!
-  */
-static inline void __list_del(struct list_head * prev, struct list_head * next)
-{
-»·······next->prev = prev;
-»·······prev->next = next;
-}
+The name of the new file and the path given here shouldn't mention
+musb_hdrc.  That's what _you_ see because that's the device controller
+driver you use, but other people will see something different.  As a
+simple test, you might try using dummy_hcd instead and see what the
+name turns out to be.
 
-Cheers,
-Jerome
+Just put "..." instead of "musb_hdrc", or something like that.
+
+> +Date:           July 2010
+> +Contact:        Andy Shevchenko <andy.shevchenko@gmail.com>
+> +Description:
+> +		Show or set the reaction on the FUA (Force Unit Access) bit in
+> +		the SCSI WRITE(10,12) commands when a gadget in USB Mass
+> +		Storage mode.
+> +
+> +		Possible values are:
+> +			1 -> ignore FUA flag
+> +			0 -> follow on it
+
+Change this to "obey the FUA flag".
+
+The rest is okay.  Subject to these changes:
+
+Acked-by: Alan Stern <stern@rowland.harvard.edu>
+
