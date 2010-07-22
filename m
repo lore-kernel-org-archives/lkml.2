@@ -1,66 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759610Ab0GVTT7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 15:19:59 -0400
-Received: from Mycroft.westnet.com ([216.187.52.7]:35990 "EHLO
-	mycroft.westnet.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753523Ab0GVTTz (ORCPT
+	id S1755975Ab0GVTXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 15:23:39 -0400
+Received: from cronus.persephoneslair.org ([216.254.15.24]:45140 "EHLO
+	cronus.persephoneslair.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750776Ab0GVTXh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 15:19:55 -0400
-MIME-Version: 1.0
+	Thu, 22 Jul 2010 15:23:37 -0400
+X-Greylist: delayed 658 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jul 2010 15:23:37 EDT
+Date: Thu, 22 Jul 2010 12:12:35 -0700
+From: Andrea Shepard <andrea@persephoneslair.org>
+To: davem@davemloft.net
+Cc: linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: [PATCH] Fix corruption of skb csum field in pskb_expand_head() of net/core/skbuff.c
+Message-ID: <20100722191234.GA832@cronus.persephoneslair.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-ID: <19528.39283.469638.12844@stoffel.org>
-Date: Thu, 22 Jul 2010 15:18:11 -0400
-From: "John Stoffel" <john@stoffel.org>
-To: Jeremy Allison <jra@samba.org>
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
- file stats available [ver #6]
-In-Reply-To: <20100722180204.GA32008@samba1>
-References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-	<20100722162712.GB10352@jeremy-laptop>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	<1279817930.3621.14.camel@heimdal.trondhjem.org>
-	<20100722180204.GA32008@samba1>
-X-Mailer: VM 8.0.9 under Emacs 22.3.1 (i486-pc-linux-gnu)
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.3i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->>>>> "Jeremy" == Jeremy Allison <jra@samba.org> writes:
+Make pskb_expand_head() check ip_summed to make sure csum_start is really
+csum_start and not csum before adjusting it.
 
-Jeremy> On Thu, Jul 22, 2010 at 12:58:50PM -0400, Trond Myklebust wrote:
->> 
->> That would make it impossible to export the filesystem with NFSv2 and
->> v3. They do rely on ctime checking for certain operations (e.g. deciding
->> when to invalidate access and acl caches). NFSv4 needs this too if the
->> filesystem has no dedicated change attribute.
->> 
->> Still, I suppose the market for exporting the same filesystem with both
->> NFS and Samba is limited...
+This fixes a bug I encountered using a Sun Quad-Fast Ethernet card and VLANs.
+On my configuration, the sunhme driver produces skbs with differing amounts
+of headroom on receive depending on the packet size.  See line 2030 of
+drivers/net/sunhme.c; packets smaller than RX_COPY_THRESHOLD have 52 bytes
+of headroom but packets larger than that cutoff have only 20 bytes.
 
-Jeremy> Ask NetApp about that :-). They have built a rather large
-Jeremy> business on just that fact :-).
+When these packets reach the VLAN driver, vlan_check_reorder_header()
+calls skb_cow(), which, if the packet has less than NET_SKB_PAD (== 32) bytes
+of headroom, uses pskb_expand_head() to make more.
 
-And it does work, as long as you also go with either unix or windows
-semantics for the security and permissions bits.  If you try to use
-the mixed-mode, you're in for a world of hurt.
+Then, pskb_expand_head() needs to adjust a lot of offsets into the skb,
+including csum_start.  Since csum_start is a union with csum, if the packet
+has a valid csum value this will corrupt it, which was the effect I observed.
+The sunhme hardware computes receive checksums, so the skbs would be created
+by the driver with ip_summed == CHECKSUM_COMPLETE and a valid csum field, and
+then pskb_expand_head() would corrupt the csum field, leading to an "hw csum
+error" message later on, for example in icmp_rcv() for pings larger than the
+sunhme RX_COPY_THRESHOLD.
 
-Oh yeah, Netapp still uses dump/restore for it's backups.  :]  Though
-whether it's still dependent on the optimization of ctime being used
-to know whether to just dump the inode only or not, I can't say.
+On the basis of the comment at the beginning of include/linux/skbuff.h,
+I believe that the csum_start skb field is only meaningful if ip_csummed is
+CSUM_PARTIAL, so this patch makes pskb_expand_head() adjust it only in that
+case to avoid corrupting a valid csum value.
 
-John
+Please see my more in-depth disucssion of tracking down this bug for
+more details if you like:
+
+http://puellavulnerata.livejournal.com/112186.html
+http://puellavulnerata.livejournal.com/112567.html
+http://puellavulnerata.livejournal.com/112891.html
+http://puellavulnerata.livejournal.com/113096.html
+http://puellavulnerata.livejournal.com/113591.html
+
+I am not subscribed to this list, so please CC me on replies.
+
+Signed-off-by: Andrea Shepard <andrea@persephoneslair.org>
+
+diff -Nau linux-2.6.34.1/net/core/skbuff.c linux-2.6.34.1-skb-csum/net/core/skbuff.c
+--- linux-2.6.34.1/net/core/skbuff.c    2010-07-05 11:24:10.000000000 -0700
++++ linux-2.6.34.1-skb-csum/net/core/skbuff.c   2010-07-21 18:42:33.000000000 -0700
+@@ -854,7 +854,9 @@
+        skb->network_header   += off;
+        if (skb_mac_header_was_set(skb))
+                skb->mac_header += off;
+-       skb->csum_start       += nhead;
++       /* Only adjust this if it actually is csum_start rather than csum */
++       if (skb->ip_summed == CHECKSUM_PARTIAL)
++               skb->csum_start += nhead;
+        skb->cloned   = 0;
+        skb->hdr_len  = 0;
+        skb->nohdr    = 0;
+
+-- 
+Andrea Shepard
