@@ -1,132 +1,255 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab0GVX43 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 19:56:29 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52610 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752244Ab0GVX42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 19:56:28 -0400
-Message-ID: <4C48DA16.4010403@cn.fujitsu.com>
-Date: Fri, 23 Jul 2010 07:53:58 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
-MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
-        dpshah@google.com, jmoyer@redhat.com, czoccolo@gmail.com
-Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle tunable
- V3
-References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com> <4C47EE50.4020903@cn.fujitsu.com> <20100722144931.GD28684@redhat.com>
-In-Reply-To: <20100722144931.GD28684@redhat.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1756143Ab0GVX4i (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 19:56:38 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:62177 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755808Ab0GVX4f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 19:56:35 -0400
+Subject: Re: [PATCH] add a arch specific delay calibration hook.
+From: Alok Kataria <akataria@vmware.com>
+Reply-To: akataria@vmware.com
+To: Ingo Molnar <mingo@elte.hu>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+        the arch/x86 maintainers <x86@kernel.org>,
+        LKML <linux-kernel@vger.kernel.org>, Dan Hecht <dhecht@vmware.com>
+In-Reply-To: <1279599679.18204.17.camel@ank32.eng.vmware.com>
+References: <1279586465.1339.21.camel@ank32.eng.vmware.com>
+	 <1279599679.18204.17.camel@ank32.eng.vmware.com>
+Content-Type: text/plain
+Organization: VMware INC.
+Date: Thu, 22 Jul 2010 16:56:35 -0700
+Message-Id: <1279842995.7045.4.camel@ank32.eng.vmware.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Thu, Jul 22, 2010 at 03:08:00PM +0800, Gui Jianfeng wrote:
->> Vivek Goyal wrote:
->>> Hi,
->>>
->>> This is V3 of the group_idle and CFQ IOPS mode implementation patchset. Since V2
->>> I have cleaned up the code a bit to clarify the confusion lingering around in
->>> what cases do we charge time slice and in what cases do we charge number of
->>> requests.
->>>
->>> What's the problem
->>> ------------------
->>> On high end storage (I got on HP EVA storage array with 12 SATA disks in 
->>> RAID 5), CFQ's model of dispatching requests from a single queue at a
->>> time (sequential readers/write sync writers etc), becomes a bottleneck.
->>> Often we don't drive enough request queue depth to keep all the disks busy
->>> and suffer a lot in terms of overall throughput.
->>>
->>> All these problems primarily originate from two things. Idling on per
->>> cfq queue and quantum (dispatching limited number of requests from a
->>> single queue) and till then not allowing dispatch from other queues. Once
->>> you set the slice_idle=0 and quantum to higher value, most of the CFQ's
->>> problem on higher end storage disappear.
->>>
->>> This problem also becomes visible in IO controller where one creates
->>> multiple groups and gets the fairness but overall throughput is less. In
->>> the following table, I am running increasing number of sequential readers
->>> (1,2,4,8) in 8 groups of weight 100 to 800.
->>>
->>> Kernel=2.6.35-rc5-iops+
->>> GROUPMODE=1          NRGRP=8
->>> DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4
->>> Workload=bsr      iosched=cfq     Filesz=512M bs=4K
->>> group_isolation=1 slice_idle=8    group_idle=8    quantum=8
->>> =========================================================================
->>> AVERAGE[bsr]    [bw in KB/s]
->>> -------
->>> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  cgrp5  cgrp6  cgrp7  cgrp8  total
->>> ---     --- --  ---------------------------------------------------------------
->>> bsr     3   1   6186   12752  16568  23068  28608  35785  42322  48409  213701
->>> bsr     3   2   5396   10902  16959  23471  25099  30643  37168  42820  192461
->>> bsr     3   4   4655   9463   14042  20537  24074  28499  34679  37895  173847
->>> bsr     3   8   4418   8783   12625  19015  21933  26354  29830  36290  159249
->>>
->>> Notice that overall throughput is just around 160MB/s with 8 sequential reader
->>> in each group.
->>>
->>> With this patch set, I have set slice_idle=0 and re-ran same test.
->>>
->>> Kernel=2.6.35-rc5-iops+
->>> GROUPMODE=1          NRGRP=8
->>> DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4
->>> Workload=bsr      iosched=cfq     Filesz=512M bs=4K
->>> group_isolation=1 slice_idle=0    group_idle=8    quantum=8
->>> =========================================================================
->>> AVERAGE[bsr]    [bw in KB/s]
->>> -------
->>> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  cgrp5  cgrp6  cgrp7  cgrp8  total
->>> ---     --- --  ---------------------------------------------------------------
->>> bsr     3   1   6523   12399  18116  24752  30481  36144  42185  48894  219496
->>> bsr     3   2   10072  20078  29614  38378  46354  52513  58315  64833  320159
->>> bsr     3   4   11045  22340  33013  44330  52663  58254  63883  70990  356520
->>> bsr     3   8   12362  25860  37920  47486  61415  47292  45581  70828  348747
->>>
->>> Notice how overall throughput has shot upto 348MB/s while retaining the ability
->>> to do the IO control.
->>>
->>> So this is not the default mode. This new tunable group_idle, allows one to
->>> set slice_idle=0 to disable some of the CFQ features and and use primarily
->>> group service differentation feature.
->>>
->>> If you have thoughts on other ways of solving the problem, I am all ears
->>> to it.
->> Hi Vivek
->>
->> Would you attach your fio job config file?
->>
-> 
-> Hi Gui,
-> 
-> I have written a fio based test script, "iostest", to be able to
-> do cgroup and other IO scheduler testing more smoothly and I am using
-> that. I am attaching the compressed script with the mail. Try using it
-> and if it works for you and you find it useful, I can think of hosting a
-> git tree somewhere.
-> 
-> I used following following command lines to test above.
-> 
-> # iostest <block-device> -G -w bsr -m 8 -c --nrgrp 8 --total
-> 
-> With slice idle disabled.
-> 
-> # iostest <block-device> -G -w bsr -m 8 -c --nrgrp 8 --total -I 0
+Ingo/HPA/others,
 
-That's cool! Very helpful, I'll try it.
+Just want to make sure that this doesn't fell through the cracks.
+Please let me know if you have any comments on this patch.
 
 Thanks,
-Gui
+Alok
 
+On Mon, 2010-07-19 at 21:21 -0700, Alok Kataria wrote:
+> On Mon, 2010-07-19 at 17:41 -0700, Alok Kataria wrote:
+> > Hi, 
+> > 
+> > This patch adds a hook for architectures to specify their own delay calibration
+> > routine. VMware platform uses it to calculate the lpj value from the tsc_khz &
+> > HZ value for all the processors.
+> > 
+> > Please note that this is a partial revert of -
+> > 	commit 3da757daf86e498872855f0b5e101f763ba79499
+> > 	x86: use cpu_khz for loops_per_jiffy calculation
+> > 
+> > where I added the lpj_fine variable to generic code, so that we can do this
+> > lpj calibration trick just for the BP. It was considered wrong to apply this
+> > trick for the AP's since on physical systems we can have cases where the AP
+> > is brought up at a lower freq than the maximum possible for power reasons.
+> > On VMware's platform we have VCPU's always running at the same
+> > clockspeed as the TSC frequency so we can extend this for all cpus.
+> > 
+> > Please note that, though the original approach of doing this for just the BP
+> > was safe to get around the "IO-APIC + timer doesn't work" on VMware, we still
+> > need the AP's to have the correct lpj values for the timeouts to work correctly
+> > on our platform for all vcpus.
+> > 
+> > Please consider this for the x86 tree, applies on the tip.
 > 
-> Thanks
-> Vivek
+> I assumed that this lpj_fine thing was relevant only for VMware, but
+> this might be useful for native or other virtualized platforms too. So
+> as not to regress from the existing behavior, I have reworked this patch
+> so that we use this hook for x86 platform too. And when on VMware we
+> replace it with the VMware specific routine.
+> 
+> Please take a look and consider this patch instead of the first one.
+> 
+> Thanks,
+> Alok
+> 
+> --
+> 
+> We use the lpj_fine value to setup loops_per_jiffy just for the BP,
+> since on physical systems we can have cases where the AP is brought up
+> at a lower frequency than the maximum possible, for power reasons.
+> Though, on VMware's platform we have all the VCPU's always running at
+> the same clockspeed as the TSC frequency, so we can use the lpj_fine
+> value for all cpus.
+> 
+> This patch adds a hook for architectures to specify their own delay
+> calibration routine, x86 defines this by returning the lpj_fine value
+> for BP and zero for all others. When on VMware we override this with our
+> routine which always returns lpj_fine irrespective of which CPU you
+> running on.
+> 
+> Patch applies on x86-tip tree.
+> 
+> Signed-off-by: Alok N Kataria <akataria@vmware.com>
+> 
+> Index: linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/kernel/cpu/vmware.c	2010-07-19 19:57:36.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c	2010-07-19 20:34:36.000000000 -0700
+> @@ -23,6 +23,7 @@
+>  
+>  #include <linux/dmi.h>
+>  #include <linux/module.h>
+> +#include <linux/delay.h>
+>  #include <asm/div64.h>
+>  #include <asm/x86_init.h>
+>  #include <asm/hypervisor.h>
+> @@ -65,15 +66,27 @@ static unsigned long vmware_get_tsc_khz(
+>  	return tsc_hz;
+>  }
+>  
+> +/*
+> + * We can skip the delay calibration and assign it a value calculated based on
+> + * the timer frequency. On VMware's platform all the cpu's run at the same
+> + * frequency as the timer frequency, so use this value for all the processors.
+> + */
+> +static unsigned long vmware_calibrate_delay(void)
+> +{
+> +	BUG_ON(!lpj_fine);
+> +	return lpj_fine;
+> +}
+> +
+>  static void __init vmware_platform_setup(void)
+>  {
+>  	uint32_t eax, ebx, ecx, edx;
+>  
+>  	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
+>  
+> -	if (ebx != UINT_MAX)
+> +	if (ebx != UINT_MAX) {
+>  		x86_platform.calibrate_tsc = vmware_get_tsc_khz;
+> -	else
+> +		arch_calibrate_delay = vmware_calibrate_delay;
+> +	} else
+>  		printk(KERN_WARNING
+>  		       "Failed to get TSC freq from the hypervisor\n");
+>  }
+> Index: linux-x86-tree.git/include/linux/delay.h
+> ===================================================================
+> --- linux-x86-tree.git.orig/include/linux/delay.h	2010-07-19 19:57:36.000000000 -0700
+> +++ linux-x86-tree.git/include/linux/delay.h	2010-07-19 19:58:48.000000000 -0700
+> @@ -41,7 +41,7 @@ static inline void ndelay(unsigned long 
+>  #define ndelay(x) ndelay(x)
+>  #endif
+>  
+> -extern unsigned long lpj_fine;
+> +extern unsigned long (*arch_calibrate_delay)(void);
+>  void calibrate_delay(void);
+>  void msleep(unsigned int msecs);
+>  unsigned long msleep_interruptible(unsigned int msecs);
+> Index: linux-x86-tree.git/init/calibrate.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/init/calibrate.c	2010-07-19 19:57:36.000000000 -0700
+> +++ linux-x86-tree.git/init/calibrate.c	2010-07-19 20:25:36.000000000 -0700
+> @@ -10,8 +10,9 @@
+>  #include <linux/timex.h>
+>  #include <linux/smp.h>
+>  
+> -unsigned long lpj_fine;
+>  unsigned long preset_lpj;
+> +unsigned long (*arch_calibrate_delay)(void);
+> +
+>  static int __init lpj_setup(char *str)
+>  {
+>  	preset_lpj = simple_strtoul(str,NULL,0);
+> @@ -112,16 +113,12 @@ static unsigned long __cpuinit calibrate
+>   * This is the number of bits of precision for the loops_per_jiffy.  Each
+>   * bit takes on average 1.5/HZ seconds.  This (like the original) is a little
+>   * better than 1%
+> - * For the boot cpu we can skip the delay calibration and assign it a value
+> - * calculated based on the timer frequency.
+> - * For the rest of the CPUs we cannot assume that the timer frequency is same as
+> - * the cpu frequency, hence do the calibration for those.
+>   */
+>  #define LPS_PREC 8
+>  
+>  void __cpuinit calibrate_delay(void)
+>  {
+> -	unsigned long ticks, loopbit;
+> +	unsigned long ticks, loopbit, lpj;
+>  	int lps_precision = LPS_PREC;
+>  	static bool printed;
+>  
+> @@ -130,10 +127,11 @@ void __cpuinit calibrate_delay(void)
+>  		if (!printed)
+>  			pr_info("Calibrating delay loop (skipped) "
+>  				"preset value.. ");
+> -	} else if ((!printed) && lpj_fine) {
+> -		loops_per_jiffy = lpj_fine;
+> -		pr_info("Calibrating delay loop (skipped), "
+> -			"value calculated using timer frequency.. ");
+> +	} else if (arch_calibrate_delay && (lpj = arch_calibrate_delay())) {
+> +		loops_per_jiffy = lpj;
+> +		if (!printed)
+> +			pr_info("Calibrating delay using arch specific "
+> +				"calibration routine.. ");
+>  	} else if ((loops_per_jiffy = calibrate_delay_direct()) != 0) {
+>  		if (!printed)
+>  			pr_info("Calibrating delay using timer "
+> Index: linux-x86-tree.git/arch/x86/include/asm/tsc.h
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/include/asm/tsc.h	2010-07-19 16:37:33.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/include/asm/tsc.h	2010-07-19 19:58:48.000000000 -0700
+> @@ -16,6 +16,7 @@ typedef unsigned long long cycles_t;
+>  
+>  extern unsigned int cpu_khz;
+>  extern unsigned int tsc_khz;
+> +extern unsigned long lpj_fine;
+>  
+>  extern void disable_TSC(void);
+>  
+> Index: linux-x86-tree.git/arch/x86/kernel/tsc.c
+> ===================================================================
+> --- linux-x86-tree.git.orig/arch/x86/kernel/tsc.c	2010-07-19 19:57:36.000000000 -0700
+> +++ linux-x86-tree.git/arch/x86/kernel/tsc.c	2010-07-19 21:16:05.000000000 -0700
+> @@ -26,6 +26,8 @@ EXPORT_SYMBOL(cpu_khz);
+>  unsigned int __read_mostly tsc_khz;
+>  EXPORT_SYMBOL(tsc_khz);
+>  
+> +unsigned long __read_mostly lpj_fine;
+> +
+>  /*
+>   * TSC can be unstable due to cpufreq or due to unsynced TSCs
+>   */
+> @@ -911,6 +913,20 @@ static unsigned long __init calibrate_cp
+>  static inline unsigned long calibrate_cpu(void) { return cpu_khz; }
+>  #endif
+>  
+> +/*
+> + * For the boot cpu we can skip the delay calibration and assign it a value
+> + * calculated based on the timer frequency.
+> + * For the rest of the CPUs we cannot assume that the timer frequency is same as
+> + * the cpu frequency, hence do the calibration for those.
+> + */
+> +unsigned long x86_calibrate_delay(void)
+> +{
+> +	if (!smp_processor_id())
+> +		return lpj_fine;
+> +	else
+> +		return 0;
+> +}
+> +
+>  void __init tsc_init(void)
+>  {
+>  	u64 lpj;
+> @@ -955,6 +971,8 @@ void __init tsc_init(void)
+>  	lpj = ((u64)tsc_khz * 1000);
+>  	do_div(lpj, HZ);
+>  	lpj_fine = lpj;
+> +	if (!arch_calibrate_delay)
+> +		arch_calibrate_delay = x86_calibrate_delay;
+>  
+>  	use_tsc_delay();
+>  	/* Check and install the TSC clocksource */
+> 
 
--- 
-Regards
-Gui Jianfeng
