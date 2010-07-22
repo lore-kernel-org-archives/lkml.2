@@ -1,59 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759341Ab0GVNF1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 09:05:27 -0400
-Received: from borg.medozas.de ([188.40.89.202]:43426 "EHLO borg.medozas.de"
+	id S1759358Ab0GVNGh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 09:06:37 -0400
+Received: from mail.us.es ([193.147.175.20]:38773 "EHLO mail.us.es"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753596Ab0GVNFY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 09:05:24 -0400
-Date: Thu, 22 Jul 2010 15:05:22 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: Volker Lendecke <Volker.Lendecke@SerNet.DE>
-cc: David Howells <dhowells@redhat.com>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@ZenIV.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
- file stats available [ver #6]
-In-Reply-To: <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-Message-ID: <alpine.LSU.2.01.1007221457120.25261@obet.zrqbmnf.qr>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk> <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+	id S1759336Ab0GVNGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 09:06:30 -0400
+From: <aperea1@us.es>
+Reply-To: feodor-vassilyev@w.cn
+Message-ID: <f637958189b1.4c47dc98@us.es>
+Date: Thu, 22 Jul 2010 05:52:24 -0700
+X-Mailer: Sun Java(tm) System Messenger Express 6.2-7.05 (built Sep  5
+ 2006)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Language: es
+Subject: Dear Friend
+X-Accept-Language: es
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 2010-07-22 14:17, Volker Lendecke wrote:
->On Thu, Jul 22, 2010 at 01:14:47PM +0100, David Howells wrote:
->> Jan Engelhardt <jengelh@medozas.de> wrote:
->> 
->> > Linux already has a creation time field, it's called otime (there is no "b"
->> > in "creation"), and you will find scattered fragments of that all over the
->> > kernel (foremost, fs/jfs/, now btrfs, and I also notice sysvipc having
->> > something with that name).
->> 
->> It is?  It's called crtime in Ext4.  st_btime, however, would be compatible
->> with BSD's stat, and Samba would just use it by way of autoconf magic if it
->> appeared.
 
-Of course you can find remnants of btime in Linux's BSD-style task 
-accounting, but Linux always looked more like SysV than BSD, speaking 
-for otime. And if you are using autoconf, the cost of using otime over 
-btime seems the same.
 
->Samba has the following check:
->
-># recent FreeBSD, NetBSD have creation timestamps called birthtime:             
->AC_CHECK_MEMBERS([struct stat.st_birthtimespec.tv_nsec])
->AC_CHECK_MEMBERS([struct stat.st_birthtime], AC_CHECK_MEMBERS([struct stat.st_birthtimensec]))
->
->and the supporting code around that. "birth" might also be
->where the "b" comes from :-)
+I am Feodor Vassilyev and I represent Mr. Mikhail Khordokovsky in Russia. I have a very confidential brief from this top (oligarch) to ask for your partnership in re-profiling funds.
 
-Well, in all reference to the Matrix movie, files aren't born. Except 
-for Directory Default ACLs and possibly security labels, they usually 
-don't inherit either :)  And on a CS level, it's more like copy than 
-inherit, because if the parent changes, the file does not (with the 
-potential exception of security relabeling, bla).
+If you are interested, please do respond back to me and I will provide further details and instructions. 
+Email: feodor-vassilyev@w.cn
+Regards,
+Feodor Vassilyev
