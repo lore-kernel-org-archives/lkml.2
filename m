@@ -1,88 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665Ab0GVQ0E (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 12:26:04 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:62980 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757748Ab0GVQZz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 12:25:55 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6051"; a="48156333"
-Date: Thu, 22 Jul 2010 09:25:53 -0700
-From: Zach Pfeffer <zpfeffer@codeaurora.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
-        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
- memory management
-Message-ID: <20100722162551.GC10255@codeaurora.org>
-References: <20100713121420.GB4263@codeaurora.org>
- <20100714104353B.fujita.tomonori@lab.ntt.co.jp>
- <20100714201149.GA14008@codeaurora.org>
- <20100714220536.GE18138@n2100.arm.linux.org.uk>
- <20100715012958.GB2239@codeaurora.org>
- <20100715085535.GC26212@n2100.arm.linux.org.uk>
- <20100719065233.GD11054@codeaurora.org>
- <m1mxtndifi.fsf@fess.ebiederm.org>
- <20100722042528.GB22559@codeaurora.org>
- <20100722073455.GB6802@n2100.arm.linux.org.uk>
+	id S1758748Ab0GVQ1H (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 12:27:07 -0400
+Received: from fn.samba.org ([216.83.154.106]:39277 "EHLO lists.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752210Ab0GVQ1D (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 12:27:03 -0400
+Date: Thu, 22 Jul 2010 09:27:12 -0700
+From: Jeremy Allison <jra@samba.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended file stats available [ver #6]
+Message-ID: <20100722162712.GB10352@jeremy-laptop>
+Reply-To: Jeremy Allison <jra@samba.org>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+ <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+ <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+ <30448.1279800887@redhat.com>
+ <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+ <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+ <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+ <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100722073455.GB6802@n2100.arm.linux.org.uk>
+In-Reply-To: <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 08:34:55AM +0100, Russell King - ARM Linux wrote:
-> On Wed, Jul 21, 2010 at 09:25:28PM -0700, Zach Pfeffer wrote:
-> > Yes it is a problem, as Russell has brought up, but there's something
-> > I probably haven't communicated well. I'll use the following example:
-> > 
-> > There are 3 devices: A CPU, a decoder and a video output device. All 3
-> > devices need to map the same 12 MB buffer at the same time.
+On Thu, Jul 22, 2010 at 08:47:46AM -0700, Linus Torvalds wrote:
+> On Thu, Jul 22, 2010 at 8:36 AM, Volker Lendecke
+> <Volker.Lendecke@sernet.de> wrote:
+> >
+> > The nice thing about this is also that if this is supposed
+> > to be fully usable for Windows clients, the birthtime needs
+> > to be changeable. That's what NTFS semantics gives you, thus
+> > Windows clients tend to require it.
 > 
-> Why do you need the same buffer mapped by the CPU?
+> Ok. So it's not really a creation date, exactly the same way ctime
+> isn't at all a creation date.
 > 
-> Let's take your example of a video decoder and video output device.
-> Surely the CPU doesn't want to be writing to the same memory region
-> used for the output picture as the decoder is writing to.  So what's
-> the point of mapping that memory into the CPU's address space?
+> And maybe that actually hints at a better solution: maybe a better
+> model is to create a new per-thread flag that says "do ctime updates
+> the way windows does them".
+> 
+> So instead of adding another "btime" - which isn't actually what even
+> windows does - just admit that the _real_ issue is that Unix and
+> Windows semantics are different for the pre-existing "ctime".
+> 
+> The fact is, windows has "access time", "modification time" and
+> "creation time" _exactly_ like UNIX. It's just that the ctime has
+> slightly different semantics in windows vs unix. So quite frankly,
+> it's totally insane to introduce a "birthtime", when that isn't even
+> what windows wants, just because people cannot face the actual real
+> difference.
+> 
+> Tell me why we shouldn't just do this right?
 
-It may, especially if you're doing some software post processing. Also
-by mapping all the buffers its extremly fast to "pass the buffers"
-around in this senario - the buffer passing becomes a simple signal.
+No, ctime isn't the same as Windows "create time". Windows
+"create time" semantics are that the timestamp is set to
+current time on file creation, but afterwards anyone with
+sufficient access can then modify it (!). Which is different
+from the "birthtime" spec on *BSD, as they can't be modified.
 
-> 
-> Surely the video output device doesn't need to see the input data to
-> the decoder either?
+Currently on *BSD we look for our special EA containing any
+modified create times on a file, and return that as "create
+time" if found, if not we return the st_birthtime from the
+stat struct. That works well enough for systems where you
+don't want to allow birthtime to be changed. Having said
+that I'm not sure how they cope with doing restores to
+a filesystem where you would need to set st_birthtime :-).
 
-No, but other devices may (like the CPU).
-
-> 
-> Surely, all you need is:
-> 
-> 1. a mapping for the CPU for a chunk of memory to pass data to the
->    decoder.
-> 2. a mapping for the decoder to see the chunk of memory to receive data
->    from the CPU.
-> 3. a mapping for the decoder to see a chunk of memory used for the output
->    video buffer.
-> 4. a mapping for the output device to see the video buffer.
-> 
-> So I don't see why everything needs to be mapped by everything else.
-
-That's fair, but we do share buffers and we do have many, very large
-mappings, and we do need to pull these from a separate pools because
-they need to exhibit a particular allocation profile. I agree with you
-that things should work like you've listed, but with Qualcomm's ARM
-multimedia engines we're seeing some different usage scenarios. Its
-the giant buffers, needing to use our own buffer allocator, the need
-to share and the need to swap out virtual IOMMU space (which we
-haven't talked about much) which make the DMA API seem like a
-mismatch. (we haven't even talked about graphics usage ;) ).
+Jeremy.
