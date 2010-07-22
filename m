@@ -1,38 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758666Ab0GVSjL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:39:11 -0400
-Received: from mailfe07.swip.net ([212.247.154.193]:49936 "EHLO swip.net"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751483Ab0GVSjE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:39:04 -0400
-X-Cloudmark-Score: 0.000000 []
-X-Cloudmark-Analysis: v=1.1 cv=AloUlVQQLuutPgH7MSFGD/V8MYI3aUCj623mET0KTys= c=1 sm=1 a=Dyoqhi_TatcA:10 a=rXZKsSmlCtAA:10 a=Cfj4BQAnxiAA:10 a=xynvraPcnQgA:10 a=D2gmJ13US7F3oVcTgR3ddA==:17 a=Zo5euW2OAAAA:8 a=x8gZsiBLxUmQkuduZIkA:9 a=8es-s3ndk-00fe0Akgx0-R5QcmcA:4 a=Ft8UYL4EG9YA:10 a=9eCwGWfDHQ4A:10 a=bXhR8xSivDBGus-G:21 a=2mbA1rP0E8eMizCA:21 a=D2gmJ13US7F3oVcTgR3ddA==:117
-Reply-To: <claimsgroup414@hotmail.co.uk>
-From: "COCA COLA" <info@aol.com>
-Subject: E-MAIL WINNER
-Date: Fri, 23 Jul 2010 00:08:58 +0530
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset="Windows-1251"
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2600.0000
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2600.0000
-Message-ID: <auto-000000602256@mailfe07.swip.net>
-To: unlisted-recipients:; (no To-header on input)
+	id S1759208Ab0GVSj1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:39:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:49303 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758716Ab0GVSjZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:39:25 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org,
+        Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: [PATCH 11/31] memblock: Remove memblock_type.size and add memblock.memory_size instead
+Date: Thu, 22 Jul 2010 11:20:44 -0700
+Message-Id: <1279822864-17154-12-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090206.4C488C50.0075,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Your Email Id has won 1,000,000.00 GBP in the COCA COLA Online Promo 2010. send your 
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 
-Names.
-Address.
-Tel.
-Age.
-Occupation:
+Right now, both the "memory" and "reserved" memblock_type structures have
+a "size" member. It's unused in the later case, and represent the
+calculated memory size in the later case.
 
-to our claims department:  claimsgroup414@hotmail.co.uk
-+447017038047
+This moves it out to the main memblock structure instead
+
+Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+---
+ arch/powerpc/mm/mem.c    |    2 +-
+ include/linux/memblock.h |    2 +-
+ mm/memblock.c            |    8 ++++----
+ 3 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
+index 52df542..f661f6c 100644
+--- a/arch/powerpc/mm/mem.c
++++ b/arch/powerpc/mm/mem.c
+@@ -301,7 +301,7 @@ void __init mem_init(void)
+ 		swiotlb_init(1);
+ #endif
+ 
+-	num_physpages = memblock.memory.size >> PAGE_SHIFT;
++	num_physpages = memblock_phys_mem_size() >> PAGE_SHIFT;
+ 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
+ 
+ #ifdef CONFIG_NEED_MULTIPLE_NODES
+diff --git a/include/linux/memblock.h b/include/linux/memblock.h
+index 5abb06b..e849d31 100644
+--- a/include/linux/memblock.h
++++ b/include/linux/memblock.h
+@@ -27,12 +27,12 @@ struct memblock_region {
+ 
+ struct memblock_type {
+ 	unsigned long cnt;
+-	phys_addr_t size;
+ 	struct memblock_region regions[MAX_MEMBLOCK_REGIONS+1];
+ };
+ 
+ struct memblock {
+ 	phys_addr_t current_limit;
++	phys_addr_t memory_size;	/* Updated by memblock_analyze() */
+ 	struct memblock_type memory;
+ 	struct memblock_type reserved;
+ };
+diff --git a/mm/memblock.c b/mm/memblock.c
+index 0c0f787..78c2394 100644
+--- a/mm/memblock.c
++++ b/mm/memblock.c
+@@ -49,7 +49,7 @@ void memblock_dump_all(void)
+ 		return;
+ 
+ 	pr_info("MEMBLOCK configuration:\n");
+-	pr_info(" memory.size = 0x%llx\n", (unsigned long long)memblock.memory.size);
++	pr_info(" memory size = 0x%llx\n", (unsigned long long)memblock.memory_size);
+ 
+ 	memblock_dump(&memblock.memory, "memory");
+ 	memblock_dump(&memblock.reserved, "reserved");
+@@ -123,10 +123,10 @@ void __init memblock_analyze(void)
+ {
+ 	int i;
+ 
+-	memblock.memory.size = 0;
++	memblock.memory_size = 0;
+ 
+ 	for (i = 0; i < memblock.memory.cnt; i++)
+-		memblock.memory.size += memblock.memory.regions[i].size;
++		memblock.memory_size += memblock.memory.regions[i].size;
+ }
+ 
+ static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
+@@ -423,7 +423,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
+ /* You must call memblock_analyze() before this. */
+ phys_addr_t __init memblock_phys_mem_size(void)
+ {
+-	return memblock.memory.size;
++	return memblock.memory_size;
+ }
+ 
+ phys_addr_t memblock_end_of_DRAM(void)
+-- 
+1.6.4.2
+
