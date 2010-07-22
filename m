@@ -1,90 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758710Ab0GVCeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 22:34:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58809 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755453Ab0GVCeR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 22:34:17 -0400
-X-User-Agent: K-9 Mail for Android
-References: <4C464BA0.20609@jp.fujitsu.com> <4C465FF0.1030407@zytor.com> <4C479D7F.2070204@jp.fujitsu.com>
-In-Reply-To: <4C479D7F.2070204@jp.fujitsu.com>
+	id S1754908Ab0GVDOh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 23:14:37 -0400
+Received: from hqemgate04.nvidia.com ([216.228.121.35]:13061 "EHLO
+	hqemgate04.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab0GVDOf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 23:14:35 -0400
+X-PGP-Universal: processed;
+	by hqnvupgp04.nvidia.com on Wed, 21 Jul 2010 20:14:31 -0700
+From: Wei Ni <wni@nvidia.com>
+To: "'Takashi Iwai'" <tiwai@suse.de>
+CC: Wu Fengguang <fengguang.wu@intel.com>,
+        "'Pavel Hofman'" <pavel.hofman@insite.cz>,
+        "'alsa-devel'" <alsa-devel@alsa-project.org>,
+        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
+        "'akpm'" <akpm@linux-foundation.org>
+Date: Thu, 22 Jul 2010 11:14:26 +0800
+Subject: RE: Support MCP89 hdmi audio
+Thread-Topic: Support MCP89 hdmi audio
+Thread-Index: Acso07nMflWDO5UDTmCfLvbdwLjmOgAeCMgw
+Message-ID: <6B4D417B830BC44B8026029FD256F7F1C29D065C72@HKMAIL01.nvidia.com>
+References: <6B4D417B830BC44B8026029FD256F7F1C29D065C70@HKMAIL01.nvidia.com>
+ <s5hr5ix2dzb.wl%tiwai@suse.de>
+In-Reply-To: <s5hr5ix2dzb.wl%tiwai@suse.de>
+Accept-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
 MIME-Version: 1.0
-Content-Type: text/plain;
- charset=utf-8
-Content-Transfer-Encoding: 8bit
-Subject: Re: [PATCH] BISECTED x86: avoid qword access in memcpy_*io
-From: "H. Peter Anvin" <hpa@zytor.com>
-Date: Wed, 21 Jul 2010 19:33:37 -0700
-To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
-CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
-        James Smart <james.smart@emulex.com>,
-        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-        x86@kernel.org, Brian Gerst <brgerst@gmail.com>
-Message-ID: <915ec5f6-72d6-4e89-9ebd-0f71c73042ff@email.android.com>
+Content-Language: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, that would make sense.
+it's great, I will try it.
 
-"Hidetoshi Seto" <seto.hidetoshi@jp.fujitsu.com> wrote:
+Thanks
+Wei.
 
->(2010/07/21 11:48), H. Peter Anvin wrote:
->> On 07/20/2010 06:21 PM, Hidetoshi Seto wrote:
->>> With v2.6.35-rc5, my x86-64 server doesn't boot but reports a
->>> Completer Abort on lpfc card.
->>>
->>> The result of git-bisect is:
->>>   6175ddf06b6172046a329e3abfd9c901a43efd2e is the first bad commit
->>>   commit 6175ddf06b6172046a329e3abfd9c901a43efd2e
->>>   Author: Brian Gerst <brgerst@gmail.com>
->>>   Date:   Fri Feb 5 09:37:07 2010 -0500
->>>     x86: Clean up mem*io functions.
->>>
->>> What I found are:
->>>  - memcpy for 64bit uses movq if count >= 64 (arch/x86/lib/memcpy_64.S)
->>>  - memcpy_toio and memcpy_fromio have changed to use this memcpy by
->>>    the above commit.
->>>  - my debug shows that lpfc calls memcpy_toio with not-qword-aligned
->>>    addresses and count >= 64, e.g.:
->>>      memcpy_toio(0xffffc900118de004, 0xffff88047293d614, 124);
->>>    and it seems that it comes from:
->>>    [drivers/scsi/lpfc/lpfc_sli.c]
->>>     4929   /* First copy mbox command data to HBA SLIM, skip past first
->>>     4930      word */
->>>     4931   to_slim = phba->MBslimaddr + sizeof (uint32_t);
->>>     4932   lpfc_memcpy_to_slim(to_slim, &mb->un.varWords[0],
->>>     4933               MAILBOX_CMD_SIZE - sizeof (uint32_t));
->>>
->>> Still I'm not sure what is wrong in software or hardware, however
->>> I suppose that qword access to iomem is not always safe, so it will
->>> be OK to back to use __inline_memcpy which uses movsl.
->>>
->>> I confirmed that my server (w/ lpfc) boots with 35-rc5 + this patch.
->>>
->>> Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
->> 
->> A driver should not use the memcpy-like instructions if it isn't set up
->> to act as memory (meaning it can handle arbitrary byte enables.)
->
->So then is this a problem of lpfc driver?
->James, could you agree on that?
->
->> The function it should be using is called, fairly counterintuitively,
->> __iowrite32_copy().  It really should be called memcpy_toio32() or
->> something similar.
->> 
->> 	-hpa
->
->It seems that lpfc already implemented lpfc_memcpy_{to,from}_slim()
->as such memcpy_*io32, but limited use of it to on big endian platforms
->only.  Now lpfc can move to use it always, right?
->
->
->Thanks,
->H.Seto
->
+-----Original Message-----
+From: Takashi Iwai [mailto:tiwai@suse.de] 
+Sent: Wednesday, July 21, 2010 8:53 PM
+To: Wei Ni
+Cc: Wu Fengguang; 'Pavel Hofman'; 'alsa-devel'; 'linux-kernel'; 'akpm'
+Subject: Re: Support MCP89 hdmi audio
 
--- 
-Sent from my mobile phone.  Please pardon any lack of formatting.
+At Wed, 21 Jul 2010 19:45:09 +0800,
+Wei Ni wrote:
+> 
+> Hi, all
+> I'm an Nvidia engineer, I maintain the nvidia linux hdmi audio driver.
+> 
+> An end-user report a problem with his TV attached to an MCP89.
+> ALSA won't send audio to it, because
+> PD=0:
+> HDMI hot plug event: Pin=5 Presence_Detect=1 ELD_Valid=0
+> HDMI hot plug event: Pin=5 Presence_Detect=0 ELD_Valid=1
+> 
+> As you know, in linux driver patch_hdmi.c, it use (pind && eldv)
+> in unsolicited events. So the driver can't detect the monitor.
+> 
+> >From the HAD specification
+> (http://download.intel.com/standards/hdaudio/pdf/HDA036.pdf):
+> 
+> Original text for Unsolicited Response PD bit:
+> 
+> Presence Detect: When this bit is set, sense measurement has
+> changed on the pin widget and software can use the pin sense
+> control verb to determine the current pin sense data state.
+> For analog pin widgets, this UR means that Presence Detect or
+> Impedance has changed on the pin widget.
+> For digital pin widgets, including HDMI pin widgets, this means
+> that presence detect (and optionally ELD valid bit) has
+> **changed**. [my emphasis]
+> 
+> Updated text for Unsolicted Response PD bit:
+> 
+> Presence Detect: This bit reflects the **present** [my
+> emphasis] state of the Pin Sense Presence Detect bit when the
+> unsolicited response is triggered. Software can optionally use
+> the pin sense control verb to determine the latest pin sense
+> data state. This bit implementation is only required for
+> digital display pin widget. Non digital display pin widget is
+> optional to implement this bit.
+> 
+> For our MCP89, the values indicates the change of status of PD, not the actual value of PD,
+> which follows older description of UR for PD bit.
+> 
+> So could we add a workaround for MCP89? We could use Pin Sense to determine again in
+> unsolicited events. If it return 0xc0000000, it means PD=1 and ELVD=1.
+> Or do you have any suggestions?
+
+Yes.  The patch below does similar thing.
+Could you give it a try?
+
+
+thanks,
+
+Takashi
+
+---
+diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
+index 86067ee..2fc5396 100644
+--- a/sound/pci/hda/patch_hdmi.c
++++ b/sound/pci/hda/patch_hdmi.c
+@@ -52,6 +52,10 @@ struct hdmi_spec {
+ 	 */
+ 	struct hda_multi_out multiout;
+ 	unsigned int codec_type;
++
++	/* misc flags */
++	/* PD bit indicates only the update, not the current state */
++	unsigned int old_pin_detect:1;
+ };
+ 
+ 
+@@ -616,6 +620,9 @@ static void hdmi_setup_audio_infoframe(struct hda_codec *codec, hda_nid_t nid,
+  * Unsolicited events
+  */
+ 
++static void hdmi_present_sense(struct hda_codec *codec, hda_nid_t pin_nid,
++			       struct hdmi_eld *eld);
++
+ static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
+ {
+ 	struct hdmi_spec *spec = codec->spec;
+@@ -632,6 +639,12 @@ static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
+ 	if (index < 0)
+ 		return;
+ 
++	if (spec->old_pin_detect) {
++		if (pind)
++			hdmi_present_sense(codec, tag, &spec->sink_eld[index]);
++		pind = spec->sink_eld[index].monitor_present;
++	}
++
+ 	spec->sink_eld[index].monitor_present = pind;
+ 	spec->sink_eld[index].eld_valid = eldv;
+ 
+diff --git a/sound/pci/hda/patch_nvhdmi.c b/sound/pci/hda/patch_nvhdmi.c
+index 3c10c0b..b0652ac 100644
+--- a/sound/pci/hda/patch_nvhdmi.c
++++ b/sound/pci/hda/patch_nvhdmi.c
+@@ -478,6 +478,7 @@ static int patch_nvhdmi_8ch_89(struct hda_codec *codec)
+ 
+ 	codec->spec = spec;
+ 	spec->codec_type = HDA_CODEC_NVIDIA_MCP89;
++	spec->old_pin_detect = 1;
+ 
+ 	if (hdmi_parse_codec(codec) < 0) {
+ 		codec->spec = NULL;
+@@ -508,6 +509,7 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
+ 	spec->multiout.max_channels = 8;
+ 	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
+ 	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
++	spec->old_pin_detect = 1;
+ 
+ 	codec->patch_ops = nvhdmi_patch_ops_8ch_7x;
+ 
+@@ -528,6 +530,7 @@ static int patch_nvhdmi_2ch(struct hda_codec *codec)
+ 	spec->multiout.max_channels = 2;
+ 	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
+ 	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
++	spec->old_pin_detect = 1;
+ 
+ 	codec->patch_ops = nvhdmi_patch_ops_2ch;
+ 
+-----------------------------------------------------------------------------------
+This email message is for the sole use of the intended recipient(s) and may contain
+confidential information.  Any unauthorized review, use, disclosure or distribution
+is prohibited.  If you are not the intended recipient, please contact the sender by
+reply email and destroy all copies of the original message.
+-----------------------------------------------------------------------------------
