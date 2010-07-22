@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755738Ab0GVD6V (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 23:58:21 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57619 "EHLO smtps.tip.net.au"
+	id S1752068Ab0GVEAT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 00:00:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57783 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752209Ab0GVD6T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 23:58:19 -0400
-Date: Thu, 22 Jul 2010 13:58:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Linus <torvalds@linux-foundation.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Ben Hutchings <ben@decadent.org.uk>, Dave Airlie <airlied@redhat.com>,
-        Geert Stappers <stappers@stappers.nl>
-Subject: linux-next: build failure after merge of the final tree (Linus'
- tree related)
-Message-Id: <20100722135815.de838491.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1750760Ab0GVEAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 00:00:16 -0400
+Message-ID: <4C47C234.7040400@zytor.com>
+Date: Wed, 21 Jul 2010 20:59:48 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+CC: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org,
+        James Smart <james.smart@emulex.com>,
+        Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        x86@kernel.org, Brian Gerst <brgerst@gmail.com>
+Subject: Re: [PATCH] BISECTED x86: avoid qword access in memcpy_*io
+References: <4C464BA0.20609@jp.fujitsu.com> <4C465FF0.1030407@zytor.com> <4C479D7F.2070204@jp.fujitsu.com>
+In-Reply-To: <4C479D7F.2070204@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On 07/21/2010 06:23 PM, Hidetoshi Seto wrote:
+> 
+> It seems that lpfc already implemented lpfc_memcpy_{to,from}_slim()
+> as such memcpy_*io32, but limited use of it to on big endian platforms
+> only.  Now lpfc can move to use it always, right?
+> 
 
-After merging the final tree, today's linux-next build (powerpc
-allyesconfig) failed like this:
+What it probably should do is instead of open-coding this stuff use
+__iowrite32_copy and we probably should have a version without double
+underscores which byteswaps on bigendian.
 
-drivers/gpu/drm/ttm/ttm_page_alloc.c: In function 'set_pages_a
-rray_wb':
-drivers/gpu/drm/ttm/ttm_page_alloc.c:227: error: implicit declaration of function 'unmap_page_from_agp'
-drivers/gpu/drm/ttm/ttm_page_alloc.c: In function 'set_pages_array_wc':
-drivers/gpu/drm/ttm/ttm_page_alloc.c:238: error: implicit declaration of function 'map_page_into_agp'
+Personally I would not object to seeing a patch renaming
+__iowrite32_copy() to memcpy_toio32()... especially since it doesn't
+have the "memory or I/O space" property of iowrite and friends.
 
-Presumably caused by commit 1e8655f87333def92bb8215b423adc65403b08a5
-("drm/ttm: Fix build on architectures without AGP") as unmap_page_from_agp()
-is declared in asm/agp.h.
-
-I have applied the following patch for today:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Thu, 22 Jul 2010 13:53:55 +1000
-Subject: [PATCH] drm/ttm: really fix build on architectures without AGP
-
-After commit 1e8655f87333def92bb8215b423adc65403b08a5
-("drm/ttm: Fix build on architectures without AGP") was merged, linux-next
-got this build failure for a powerpc allyesconfig build:
-
-drivers/gpu/drm/ttm/ttm_page_alloc.c: In function 'set_pages_a
-rray_wb':
-drivers/gpu/drm/ttm/ttm_page_alloc.c:227: error: implicit declaration of function 'unmap_page_from_agp'
-drivers/gpu/drm/ttm/ttm_page_alloc.c: In function 'set_pages_array_wc':
-drivers/gpu/drm/ttm/ttm_page_alloc.c:238: error: implicit declaration of function 'map_page_into_agp'
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- drivers/gpu/drm/ttm/ttm_page_alloc.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpu/drm/ttm/ttm_page_alloc.c b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-index d233c65..590f0c2 100644
---- a/drivers/gpu/drm/ttm/ttm_page_alloc.c
-+++ b/drivers/gpu/drm/ttm/ttm_page_alloc.c
-@@ -40,12 +40,12 @@
- #include <linux/slab.h>
- 
- #include <asm/atomic.h>
--#ifdef TTM_HAS_AGP
--#include <asm/agp.h>
--#endif
- 
- #include "ttm/ttm_bo_driver.h"
- #include "ttm/ttm_page_alloc.h"
-+#ifdef TTM_HAS_AGP
-+#include <asm/agp.h>
-+#endif
- 
- 
- #define NUM_PAGES_TO_ALLOC		(PAGE_SIZE/sizeof(struct page *))
--- 
-1.7.1
+	-hpa
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
