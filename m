@@ -1,85 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758421Ab0GVQWe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 12:22:34 -0400
-Received: from mga11.intel.com ([192.55.52.93]:25657 "EHLO mga11.intel.com"
+	id S1756248Ab0GVQZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 12:25:28 -0400
+Received: from borg.medozas.de ([188.40.89.202]:42890 "EHLO borg.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758288Ab0GVQWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 12:22:24 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,243,1278313200"; 
-   d="scan'208";a="588696160"
-Date: Thu, 22 Jul 2010 09:22:23 -0700
-From: Fenghua Yu <fenghua.yu@intel.com>
-To: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>,
-        Guenter Roeck <guenter.roeck@ericsson.com>,
-        Huaxu Wan <huaxu.wan@intel.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, lm-sensors@lm-sensors.org
-Subject: [PATCH 5/5] Package Level Thermal Control and Power Limit Notification: pkgtemp doc
-Message-ID: <20100722162222.GA22450@linux-os.sc.intel.com>
-References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com> <4C485DF1.5050407@linux.intel.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C485DF1.5050407@linux.intel.com>
-User-Agent: Mutt/1.4.1i
+	id S1751448Ab0GVQZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 12:25:26 -0400
+Date: Thu, 22 Jul 2010 18:25:25 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended
+  file stats available [ver #6]
+In-Reply-To: <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+Message-ID: <alpine.LSU.2.01.1007221818460.21589@obet.zrqbmnf.qr>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>  <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>  <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE> 
+ <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>  <E1Obxpd-00CRIo-SF@intern.SerNet.DE> <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Document for package level thermal hwmon driver.
+On Thursday 2010-07-22 17:47, Linus Torvalds wrote:
+>On Thu, Jul 22, 2010 at 8:36 AM, Volker Lendecke
+><Volker.Lendecke@sernet.de> wrote:
+>>
+>> The nice thing about this is also that if this is supposed
+>> to be fully usable for Windows clients, the birthtime needs
+>> to be changeable. That's what NTFS semantics gives you, thus
+>> Windows clients tend to require it.
+>
+>Ok. So it's not really a creation date, exactly the same way ctime
+>isn't at all a creation date. [...]
+>Tell me why we shouldn't just do this right?
 
-Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
-Reviewed-by: Len Brown <len.brown@intel.com>
----
+Nobody said the c in ctime stands for creation. It stands for
+change (you probably knew that).
 
- pkgtemp |   36 ++++++++++++++++++++++++++++++++++++
- 1 files changed, 36 insertions(+)
+$ touch this
+$ stat this
+  File: `this'
+  Size: 0               Blocks: 0          IO Block: 4096   regular empty file
+Device: fh/15d  Inode: 106777647   Links: 1
+Access: (0644/-rw-r--r--)  Uid: (25121/ jengelh)   Gid: (  100/   users)
+Access: 2010-07-22 18:18:52.665480058 +0200
+Modify: 2010-07-22 18:18:52.665480058 +0200
+Change: 2010-07-22 18:18:52.665480058 +0200
 
-diff --git a/Documentation/hwmon/pkgtemp b/Documentation/hwmon/pkgtemp
-new file mode 100644
-index 0000000..a60d286
---- /dev/null
-+++ b/Documentation/hwmon/pkgtemp
-@@ -0,0 +1,36 @@
-+Kernel driver pkgtemp
-+======================
-+
-+Supported chips:
-+  * Intel family
-+    Prefix: 'pkgtemp'
-+    CPUID:
-+    Datasheet: Intel 64 and IA-32 Architectures Software Developer's Manual
-+               Volume 3A: System Programming Guide
-+
-+Author: Fenghua Yu
-+
-+Description
-+-----------
-+
-+This driver permits reading package level temperature sensor embedded inside
-+Intel CPU package. The sensors can be in core, uncore, memroy controller, or
-+other componenets in a package. The feature is first implemented in Intel Sandy
-+Bridge platform.
-+
-+Temperature is measured in degrees Celsius and measurement resolution is
-+1 degree C. Valid temperatures are from 0 to TjMax degrees C, because the actual
-+value of temperature register is in fact a delta from TjMax.
-+
-+Temperature known as TjMax is the maximum junction temperature of package.
-+Intel defines this temperature as 125C. At this temperature, protection
-+mechanism will perform actions to forcibly cool down the processor. Alarm
-+may be raised, if the temperature grows enough (more than TjMax) to trigger
-+the Out-Of-Spec bit. Following table summarizes the exported sysfs files:
-+
-+temp1_input	 - Package temperature (in millidegrees Celsius).
-+temp1_crit	 - Maximum junction temperature (in millidegrees Celsius).
-+temp1_crit_alarm - Set when Out-of-spec bit is set, never clears.
-+		   Correct CPU operation is no longer guaranteed.
-+temp1_label	 - Contains string "Pysical package id X", where X is physical
-+		   package id.
+# Only change inode, not content
+$ chmod 600 this
+$ stat this
+  File: `this'
+  Size: 0               Blocks: 0          IO Block: 4096   regular empty file
+Device: fh/15d  Inode: 106777647   Links: 1
+Access: (0600/-rw-------)  Uid: (25121/ jengelh)   Gid: (  100/   users)
+Access: 2010-07-22 18:18:52.665480058 +0200
+Modify: 2010-07-22 18:18:52.665480058 +0200
+Change: 2010-07-22 18:18:58.533436339 +0200
+
+
+(Solaris exhibits the very same kind of behavior.)
