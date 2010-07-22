@@ -1,98 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754432Ab0GVLwJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:52:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40485 "EHLO hera.kernel.org"
+	id S1755052Ab0GVLx7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 07:53:59 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65515 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752403Ab0GVLwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 07:52:04 -0400
-Date: Thu, 22 Jul 2010 11:51:39 GMT
-From: tip-bot for Sam Ravnborg <sam@ravnborg.org>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        zeev.tarantov@gmail.com, sam@ravnborg.org, fweisbec@gmail.com,
-        rostedt@goodmis.org, tglx@linutronix.de
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        fweisbec@gmail.com, zeev.tarantov@gmail.com, rostedt@goodmis.org,
-        sam@ravnborg.org, tglx@linutronix.de
-In-Reply-To: <20100710063459.GA14596@merkur.ravnborg.org>
-References: <20100710063459.GA14596@merkur.ravnborg.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/urgent] tracing: Properly align linker defined symbols
-Message-ID: <tip-07fca0e57fca925032526349f4370f97ed580cc9@git.kernel.org>
-Git-Commit-ID: 07fca0e57fca925032526349f4370f97ed580cc9
-X-Mailer: tip-git-log-daemon
+	id S1753058Ab0GVLx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 07:53:56 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] CIFS: Fix a malicious redirect problem in the DNS lookup code
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, security@kernel.org, pmatouse@redhat.com,
+        eugene@redhat.com, linux-cifs@vger.kernel.org,
+        samba-technical@lists.samba.org, David Howells <dhowells@redhat.com>,
+        Steve French <smfrench@gmail.com>
+Date: Thu, 22 Jul 2010 12:53:18 +0100
+Message-ID: <20100722115318.28766.33578.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 22 Jul 2010 11:51:40 +0000 (UTC)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  07fca0e57fca925032526349f4370f97ed580cc9
-Gitweb:     http://git.kernel.org/tip/07fca0e57fca925032526349f4370f97ed580cc9
-Author:     Sam Ravnborg <sam@ravnborg.org>
-AuthorDate: Sat, 10 Jul 2010 08:35:00 +0200
-Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 20 Jul 2010 19:02:52 -0400
+Fix the security problem in the CIFS filesystem DNS lookup code in which a
+malicious redirect could be installed by a random user by simply adding a
+result record into one of their keyrings with add_key() and then invoking a
+CIFS CFS lookup [CVE-2010-2524].
 
-tracing: Properly align linker defined symbols
+This is done by creating an internal keyring specifically for the caching of
+DNS lookups.  To enforce the use of this keyring, the module init routine
+creates a set of override credentials with the keyring installed as the thread
+keyring and instructs request_key() to only install lookup result keys in that
+keyring.
 
-We define a number of symbols in the linker scipt like this:
+The override is then applied around the call to request_key().
 
-    __start_syscalls_metadata = .;
-    *(__syscalls_metadata)
+This has some additional benefits when a kernel service uses this module to
+request a key:
 
-But we do not know the alignment of "." when we assign
-the __start_syscalls_metadata symbol.
-gcc started to uses bigger alignment for structs (32 bytes),
-so we saw situations where the linker due to alignment
-constraints increased the value of "." after the symbol assignment.
+ (1) The result keys are owned by root, not the user that caused the lookup.
 
-This resulted in boot fails.
+ (2) The result keys don't pop up in the user's keyrings.
 
-Fix this by forcing a 32 byte alignment of "." before the
-assignment.
+ (3) The result keys don't come out of the quota of the user that caused the
+     lookup.
 
-This patch introduces the forced alignment for
-ftrace_events and syscalls_metadata.
-It may be required in more places.
+The keyring can be viewed as root by doing cat /proc/keys:
 
-Reported-by: Zeev Tarantov <zeev.tarantov@gmail.com>
-Signed-off-by: Sam Ravnborg <sam@ravnborg.org>
-LKML-Reference: <20100710063459.GA14596@merkur.ravnborg.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+2a0ca6c3 I-----     1 perm 1f030000     0     0 keyring   .dns_resolver: 1/4
+
+It can then be listed with 'keyctl list' by root.
+
+	# keyctl list 0x2a0ca6c3
+	1 key in keyring:
+	726766307: --alswrv     0     0 dns_resolver: foo.bar.com
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+Reviewed-and-Tested-by: Jeff Layton <jlayton@redhat.com>
+Acked-by: Steve French <smfrench@gmail.com>
 ---
- include/asm-generic/vmlinux.lds.h |   10 ++++++++++
- 1 files changed, 10 insertions(+), 0 deletions(-)
 
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 48c5299..4b5902a 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -63,6 +63,12 @@
- /* Align . to a 8 byte boundary equals to maximum function alignment. */
- #define ALIGN_FUNCTION()  . = ALIGN(8)
+ fs/cifs/cifsfs.c      |    6 ++--
+ fs/cifs/dns_resolve.c |   69 +++++++++++++++++++++++++++++++++++++++++++++++++
+ fs/cifs/dns_resolve.h |    4 +--
+ 3 files changed, 74 insertions(+), 5 deletions(-)
+
+diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
+index 484e52b..2cb1a70 100644
+--- a/fs/cifs/cifsfs.c
++++ b/fs/cifs/cifsfs.c
+@@ -923,7 +923,7 @@ init_cifs(void)
+ 		goto out_unregister_filesystem;
+ #endif
+ #ifdef CONFIG_CIFS_DFS_UPCALL
+-	rc = register_key_type(&key_type_dns_resolver);
++	rc = cifs_init_dns_resolver();
+ 	if (rc)
+ 		goto out_unregister_key_type;
+ #endif
+@@ -935,7 +935,7 @@ init_cifs(void)
  
-+/*
-+ * Align to a 32 byte boundary equal to the
-+ * alignment gcc 4.5 uses for a struct
-+ */
-+#define STRUCT_ALIGN() . = ALIGN(32)
+  out_unregister_resolver_key:
+ #ifdef CONFIG_CIFS_DFS_UPCALL
+-	unregister_key_type(&key_type_dns_resolver);
++	cifs_exit_dns_resolver();
+  out_unregister_key_type:
+ #endif
+ #ifdef CONFIG_CIFS_UPCALL
+@@ -961,7 +961,7 @@ exit_cifs(void)
+ 	cifs_proc_clean();
+ #ifdef CONFIG_CIFS_DFS_UPCALL
+ 	cifs_dfs_release_automount_timer();
+-	unregister_key_type(&key_type_dns_resolver);
++	cifs_exit_dns_resolver();
+ #endif
+ #ifdef CONFIG_CIFS_UPCALL
+ 	unregister_key_type(&cifs_spnego_key_type);
+diff --git a/fs/cifs/dns_resolve.c b/fs/cifs/dns_resolve.c
+index 4db2c5e..49315cb 100644
+--- a/fs/cifs/dns_resolve.c
++++ b/fs/cifs/dns_resolve.c
+@@ -24,12 +24,16 @@
+  */
+ 
+ #include <linux/slab.h>
++#include <linux/keyctl.h>
++#include <linux/key-type.h>
+ #include <keys/user-type.h>
+ #include "dns_resolve.h"
+ #include "cifsglob.h"
+ #include "cifsproto.h"
+ #include "cifs_debug.h"
+ 
++static const struct cred *dns_resolver_cache;
 +
- /* The actual configuration determine if the init/exit sections
-  * are handled as text/data or they can be discarded (which
-  * often happens at runtime)
-@@ -166,7 +172,11 @@
- 	LIKELY_PROFILE()		       				\
- 	BRANCH_PROFILE()						\
- 	TRACE_PRINTKS()							\
-+									\
-+	STRUCT_ALIGN();							\
- 	FTRACE_EVENTS()							\
-+									\
-+	STRUCT_ALIGN();							\
- 	TRACE_SYSCALLS()
+ /* Checks if supplied name is IP address
+  * returns:
+  * 		1 - name is IP
+@@ -94,6 +98,7 @@ struct key_type key_type_dns_resolver = {
+ int
+ dns_resolve_server_name_to_ip(const char *unc, char **ip_addr)
+ {
++	const struct cred *saved_cred;
+ 	int rc = -EAGAIN;
+ 	struct key *rkey = ERR_PTR(-EAGAIN);
+ 	char *name;
+@@ -133,8 +138,15 @@ dns_resolve_server_name_to_ip(const char *unc, char **ip_addr)
+ 		goto skip_upcall;
+ 	}
  
- /*
++	saved_cred = override_creds(dns_resolver_cache);
+ 	rkey = request_key(&key_type_dns_resolver, name, "");
++	revert_creds(saved_cred);
+ 	if (!IS_ERR(rkey)) {
++		if (!(rkey->perm & KEY_USR_VIEW)) {
++			down_read(&rkey->sem);
++			rkey->perm |= KEY_USR_VIEW;
++			up_read(&rkey->sem);
++		}
+ 		len = rkey->type_data.x[0];
+ 		data = rkey->payload.data;
+ 	} else {
+@@ -165,4 +177,61 @@ out:
+ 	return rc;
+ }
+ 
++int __init cifs_init_dns_resolver(void)
++{
++	struct cred *cred;
++	struct key *keyring;
++	int ret;
++
++	printk(KERN_NOTICE "Registering the %s key type\n",
++	       key_type_dns_resolver.name);
++
++	/* create an override credential set with a special thread keyring in
++	 * which DNS requests are cached
++	 *
++	 * this is used to prevent malicious redirections from being installed
++	 * with add_key().
++	 */
++	cred = prepare_kernel_cred(NULL);
++	if (!cred)
++		return -ENOMEM;
++
++	keyring = key_alloc(&key_type_keyring, ".dns_resolver", 0, 0, cred,
++			    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
++			    KEY_USR_VIEW | KEY_USR_READ,
++			    KEY_ALLOC_NOT_IN_QUOTA);
++	if (IS_ERR(keyring)) {
++		ret = PTR_ERR(keyring);
++		goto failed_put_cred;
++	}
++
++	ret = key_instantiate_and_link(keyring, NULL, 0, NULL, NULL);
++	if (ret < 0)
++		goto failed_put_key;
++
++	ret = register_key_type(&key_type_dns_resolver);
++	if (ret < 0)
++		goto failed_put_key;
++
++	/* instruct request_key() to use this special keyring as a cache for
++	 * the results it looks up */
++	cred->thread_keyring = keyring;
++	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
++	dns_resolver_cache = cred;
++	return 0;
++
++failed_put_key:
++	key_put(keyring);
++failed_put_cred:
++	put_cred(cred);
++	return ret;
++}
+ 
++void __exit cifs_exit_dns_resolver(void)
++{
++	key_revoke(dns_resolver_cache->thread_keyring);
++	unregister_key_type(&key_type_dns_resolver);
++	put_cred(dns_resolver_cache);
++	printk(KERN_NOTICE "Unregistered %s key type\n",
++	       key_type_dns_resolver.name);
++}
+diff --git a/fs/cifs/dns_resolve.h b/fs/cifs/dns_resolve.h
+index 966e928..26b9eaa 100644
+--- a/fs/cifs/dns_resolve.h
++++ b/fs/cifs/dns_resolve.h
+@@ -24,8 +24,8 @@
+ #define _DNS_RESOLVE_H
+ 
+ #ifdef __KERNEL__
+-#include <linux/key-type.h>
+-extern struct key_type key_type_dns_resolver;
++extern int __init cifs_init_dns_resolver(void);
++extern void __exit cifs_exit_dns_resolver(void);
+ extern int dns_resolve_server_name_to_ip(const char *unc, char **ip_addr);
+ #endif /* KERNEL */
+ 
+
