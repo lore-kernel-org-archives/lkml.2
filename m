@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759188Ab0GVADW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 20:03:22 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:55122 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759120Ab0GVADU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 20:03:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ncwY/b2oBZ45LA0j3Tf2xAmKYcTnwHS5WIdJtb5lqGGCF5EY+d5Q/Jad3VBVCKV2AT
-         VIlDVMRCDuFeUt7KxomxRLqReQyzZAcf7rPesyFpdUZYVLN9maeHMEXfgPI1Qq1a2wmc
-         xhuWI4norJMbTkySTjas2MsxU+AeYUwwvIoqc=
-MIME-Version: 1.0
-In-Reply-To: <20100721174457.GE1215@atrey.karlin.mff.cuni.cz>
-References: <201007122229025316610@gmail.com>
-	<20100721174457.GE1215@atrey.karlin.mff.cuni.cz>
-Date: Thu, 22 Jul 2010 08:03:18 +0800
-Message-ID: <AANLkTikXSOHrIw0SVJMYqsQy1aG5sCXkvvOFU4XLDNGv@mail.gmail.com>
-Subject: Re: [PATCH] check name_len before down_read xattr_sem and sb_read in 
-	ext2_xattr_get
-From: shenghui <crosslonelyover@gmail.com>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        kernel-janitors <kernel-janitors@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759203Ab0GVAEP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 20:04:15 -0400
+Received: from sh.osrg.net ([192.16.179.4]:43041 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759081Ab0GVAEN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 20:04:13 -0400
+Date: Thu, 22 Jul 2010 09:03:57 +0900
+To: akataria@vmware.com
+Cc: konrad.wilk@oracle.com, ak@linux.intel.com, lenb@kernel.org,
+        x86@kernel.org, linux-acpi@vger.kernel.org,
+        linux-kernel@vger.kernel.org, petr@vmware.com
+Subject: Re: swiotlb detection should be memory hotplug aware ?
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100722084413I.fujita.tomonori@lab.ntt.co.jp>
+References: <20100721135750Z.fujita.tomonori@lab.ntt.co.jp>
+	<1279732414.10874.6.camel@ank32.eng.vmware.com>
+	<20100722084413I.fujita.tomonori@lab.ntt.co.jp>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100722090329O.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 22 Jul 2010 09:03:58 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/22 Jan Kara <jack@suse.cz>:
->> Hi,
->>        I walked through ext2_xattr_get, and felt that we can
->> do some optimization on it. For name_len check, it's done
->> after down xattr_sem and sb_read, both of which are time
->> consuming operation compared with strlen:
->>          down_read(&EXT2_I(inode)->xattr_sem);
->>  ...
->>          bh = sb_bread(inode->i_sb, EXT2_I(inode)->i_file_acl);
->>  ...
->>          /* find named attribute */
->>          name_len = strlen(name);
->>
->>          error = -ERANGE;
->>          if (name_len > 255)
->>                  goto cleanup;
->>
->>        Most of the case, you'll get one valid block, but if the
->> name len > 255, then the xattr_sem down and sb_bread operation
->> can be seen as a waste of time. So I think we'd better do
->> name len check as early as possible.
->>        Following is my patch, and it's against 2.6.35-rc4.
->> Please check it.
->>
->> Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
->> ---
->>  fs/ext2/xattr.c |   12 +++++++-----
->>  1 files changed, 7 insertions(+), 5 deletions(-)
->>
->> diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
->> index 7c39157..0b94d61 100644
->> --- a/fs/ext2/xattr.c
->> +++ b/fs/ext2/xattr.c
->> @@ -161,6 +161,13 @@ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
->>
->>       if (name == NULL)
->>               return -EINVAL;
->> +
->> +     /* find named attribute */
->> +     name_len = strlen(name);
->> +     error = -ERANGE;
->> +     if (name_len > 255)
->> +             goto cleanup;
->  But you cannot go to cleanup here because you don't hold xattr_sem...
->
+On Thu, 22 Jul 2010 08:44:42 +0900
+FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
 
-Sorry, I'm a little confused by your words.
-The patch just checks name_len, and it
-doesn't need xattr_sem.
+> On Wed, 21 Jul 2010 10:13:34 -0700
+> Alok Kataria <akataria@vmware.com> wrote:
+> 
+> > > Basically, you want to add hot-plug memory and enable swiotlb, right?
+> > 
+> > Not really, I am planning to do something like this, 
+> > 
+> > @@ -52,7 +52,7 @@ int __init pci_swiotlb_detect(void)
+> >  
+> >  	/* don't initialize swiotlb if iommu=off (no_iommu=1) */
+> >  #ifdef CONFIG_X86_64
+> > -	if (!no_iommu && max_pfn > MAX_DMA32_PFN)
+> > +	if (!no_iommu && (max_pfn > MAX_DMA32_PFN || hotplug_possible()))
+> >  		swiotlb = 1;
+> 
+> Always enable swiotlb with memory hotplug enabled? Wasting 64MB on a
+> x86_64 system with 128MB doesn't look to be a good idea. I don't think
+> that there is an easy solution for this issue though.
 
+btw, you need more work to enable switch on the fly.
 
-
--- 
-
-
-Thanks and Best Regards,
-shenghui
+You need to change the dma_ops pointer (see get_dma_ops()). It means
+that you need to track outstanding dma operations per device, locking,
+etc.
