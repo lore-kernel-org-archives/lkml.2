@@ -1,53 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759548Ab0GVOOg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 10:14:36 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49115 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759439Ab0GVOOe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 10:14:34 -0400
-Date: Thu, 22 Jul 2010 10:14:32 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-cc: linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        David Brownell <david-b@pacbell.net>, Greg KH <greg@kroah.com>,
-        <linux-kernel@vger.kernel.org>, Yann Cantin <yann.cantin@laposte.net>
-Subject: Re: [PATCHv4 5/5] USB: gadget: file_storage: serial parameter even
- if not test mode
-In-Reply-To: <709d887b2249e9651060729eb62b29a1d3edc256.1279794290.git.m.nazarewicz@samsung.com>
-Message-ID: <Pine.LNX.4.44L0.1007221014090.1725-100000@iolanthe.rowland.org>
+	id S1759568Ab0GVOPF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 10:15:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33221 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753519Ab0GVOPA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 10:15:00 -0400
+Date: Thu, 22 Jul 2010 16:14:57 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Marcel Holtmann <marcel@holtmann.org>
+Cc: Alan Ott <alan@signal11.us>, David S Miller <davem@davemloft.net>,
+        Michael Poole <mdpoole@troilus.org>,
+        Bastien Nocera <hadess@hadess.net>,
+        Eric Dumazet <eric.dumazet@gmail.com>, linux-bluetooth@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH 1/1] Bluetooth: hidp: Add support for hidraw    HIDIOCGFEATURE
+    and HIDIOCSFEATURE
+In-Reply-To: <1278696815.10421.137.camel@localhost.localdomain>
+Message-ID: <alpine.LNX.2.00.1007221612450.4741@pobox.suse.cz>
+References: <1276467601-9066-1-git-send-email-alan@signal11.us>  <1278623485.10421.73.camel@localhost.localdomain>  <4C369CDC.9080104@signal11.us>  <1278662497.10421.94.camel@localhost.localdomain>  <4C371DE8.9020002@signal11.us>  <1278680790.10421.106.camel@localhost.localdomain>
+  <4C372CEE.3070109@signal11.us> <1278696815.10421.137.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010, Michal Nazarewicz wrote:
+On Fri, 9 Jul 2010, Marcel Holtmann wrote:
 
-> Moved the serial parameter handling code out of "#ifdef
-> CONFIG_USB_FILE_STORAGE_TEST".
+> > >>> what is usb-hid.ko doing here? I would expect a bunch of code
+> > >>> duplication with minor difference between USB and Bluetooth.
+> > >>>        
+> > >> usbhid doesn't have a lot of code for hidraw. Two functions are involved:
+> > >>       usbhid_output_raw_report()
+> > >>           - calls usb_control_msg() with Get_Report
+> > >>       usbhid_get_raw_report()
+> > >>           - calls usb_control_msg() with Set_Report
+> > >>               OR
+> > >>           - calls usb_interrupt_msg() on the Ouput pipe.
+> > >>
+> > >> This is of course easier than bluetooth because usb_control_msg() is
+> > >> synchronous, even when requesting reports, mostly because of the nature
+> > >> of USB, where the request and response are part of the same transfer.
+> > >>
+> > >> For Bluetooth, it's a bit more complicated since the kernel treats it
+> > >> more like a networking interface (and indeed it is). My understanding is
+> > >> that to make a synchronous transfer in bluetooth, one must:
+> > >>       - send the request packet
+> > >>       - block (wait_event_*())
+> > >>       - when the response is received in the input handler, wake_up_*().
+> > >>
+> > >> There's not really any code duplication, mostly because initiating
+> > >> synchronous USB transfers (input and output) is easy (because of the
+> > >> usb_*_msg() functions), while making synchronous Bluetooth transfers
+> > >> must be done manually. If there's a nice, convenient, synchronous
+> > >> function in Bluetooth similar to usb_control_msg() that I've missed,
+> > >> then let me know, as it would simplify this whole thing.
+> > >>      
+> > > there is not and I don't think we ever get one. My question here was
+> > > more in the direction why HID core is doing these synchronously in the
+> > > first place. Especially since USB can do everything async as well.
+> >
+> > I'm open to suggestions. The way I see it is from a user space 
+> > perspective. With Get_Feature being on an ioctl(), I don't see any clean 
+> > way to do it other than synchronously. Other operating systems (I can 
+> > say for sure Windows, Mac OS X, and FreeBSD) handle Get/Set Feature the 
+> > same way (synchronously) from user space.
+> > 
+> > You seem to be proposing an asynchronous interface. What would that look 
+> > like from user space?
 > 
-> This modifies Yann Cantin's commit "USB: Add a serial number
-> parameter to g_file_storage" module as per Alan Stern's request.
-> 
-> Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: Yann Cantin <yann.cantin@laposte.net>
-> ---
-> Alan Stern wrote:
-> > I have only one objection to this [Yann Cantin's] patch: The new
-> > parameter's name should be "serial", not "serial_parm".
-> 
-> Alan Stern wrote:
-> > The serial number parameter is important enough that it should be
-> > available even on builds without CONFIG_USB_FILE_STORAGE_TEST.
-> 
->  drivers/usb/gadget/file_storage.c |   20 +++++++++++---------
->  1 files changed, 11 insertions(+), 9 deletions(-)
+> not necessarily from user space, but at least from HID core to HIDP and
+> usb-hid transports. At least that is what I would expect, Jiri?
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Sorry for this taking too long (vacations, conferences, you name it) for 
+me to respond.
 
+As all the _raw() callbacks are purely intended for userspace interaction 
+anyway, it's perfectly fine (and in fact desirable) for the low-level 
+transport drivers to perform these operations synchronously (and that's 
+what USB implementation does as well).
+
+Marcel, if your opposition to synchronous interface is strong, we'll have 
+to think about other aproaches, but from my POV, the patch is fine as-is 
+for Bluetooth.
+
+Thanks,
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
