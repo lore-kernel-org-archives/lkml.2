@@ -1,93 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758872Ab0GVIwW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 04:52:22 -0400
-Received: from mga14.intel.com ([143.182.124.37]:13394 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753049Ab0GVIwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 04:52:18 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,242,1278313200"; 
-   d="scan'208";a="303049521"
-Date: Thu, 22 Jul 2010 16:52:10 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Christoph Hellwig <hch@infradead.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
-        "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        Dave Chinner <david@fromorbit.com>,
-        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
-        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Andrea Arcangeli <aarcange@redhat.com>,
-        Minchan Kim <minchan.kim@gmail.com>
-Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background
- writeback
-Message-ID: <20100722085210.GA26714@localhost>
-References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
- <1279545090-19169-8-git-send-email-mel@csn.ul.ie>
- <20100719142145.GD12510@infradead.org>
- <20100719144046.GR13117@csn.ul.ie>
+	id S1759097Ab0GVI7j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 04:59:39 -0400
+Received: from ipmail04.adl6.internode.on.net ([150.101.137.141]:27422 "EHLO
+	ipmail04.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759069Ab0GVI7i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 04:59:38 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAG+lR0x5Lc6U/2dsb2JhbACfdXLAZIU2BA
+Date: Thu, 22 Jul 2010 18:59:32 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: Nick Piggin <npiggin@suse.de>, Kristo Tero Tapani <tero.kristo@nokia.com>,
+        Jens Axboe <axboe@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCHv2 11/11] writeback: prevent unnecessary bdi threads
+ wakeups
+Message-ID: <20100722085932.GA1254@amd>
+References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
+ <1279704706-1267-12-git-send-email-dedekind1@gmail.com>
+ <20100722031922.GA3446@amd>
+ <1279781304.3044.12.camel@localhost>
+ <20100722080511.GA9377@amd>
+ <1279785739.3044.33.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100719144046.GR13117@csn.ul.ie>
+In-Reply-To: <1279785739.3044.33.camel@localhost>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Some insight on how the other writeback changes that are being floated
-> around might affect the number of dirty pages reclaim encounters would also
-> be helpful.
+On Thu, Jul 22, 2010 at 11:02:19AM +0300, Artem Bityutskiy wrote:
+> On Thu, 2010-07-22 at 18:05 +1000, Nick Piggin wrote:
+> > I can see what you mean, but I think the designs in core code should
+> > be made as efficient as possible _unless_ there is some complication
+> > in doing otherwise (not the other way around).
+> > 
+> > This is producing 2 unrequired context switches, so I really would
+> > like to see it done properly. Setting up a timer is really pretty
+> > simple (or if you would care to implement a delayed process wakeup
+> > API, I think that would be useful -- I'm surprised there isn't one
+> > already).
+> 
+> OK, NP, I'll work on this.
 
-Here is an interesting related problem about the wait_on_page_writeback() call
-inside shrink_page_list():
+Thanks.
 
-        http://lkml.org/lkml/2010/4/4/86
-
-The problem is, wait_on_page_writeback() is called too early in the
-direct reclaim path, which blocks many random/unrelated processes when
-some slow (USB stick) writeback is on the way.
-
-A simple dd can easily create a big range of dirty pages in the LRU
-list. Therefore priority can easily go below (DEF_PRIORITY - 2) in a
-typical desktop, which triggers the lumpy reclaim mode and hence
-wait_on_page_writeback().
-
-I proposed this patch at the time, which was confirmed to solve the problem:
-
---- linux-next.orig/mm/vmscan.c	2010-06-24 14:32:03.000000000 +0800
-+++ linux-next/mm/vmscan.c	2010-07-22 16:12:34.000000000 +0800
-@@ -1650,7 +1650,7 @@ static void set_lumpy_reclaim_mode(int p
- 	 */
- 	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
- 		sc->lumpy_reclaim_mode = 1;
--	else if (sc->order && priority < DEF_PRIORITY - 2)
-+	else if (sc->order && priority < DEF_PRIORITY / 2)
- 		sc->lumpy_reclaim_mode = 1;
- 	else
- 		sc->lumpy_reclaim_mode = 0;
-
-
-However KOSAKI and Minchan raised concerns about raising the bar.
-I guess this new patch is more problem oriented and acceptable:
-
---- linux-next.orig/mm/vmscan.c	2010-07-22 16:36:58.000000000 +0800
-+++ linux-next/mm/vmscan.c	2010-07-22 16:39:57.000000000 +0800
-@@ -1217,7 +1217,8 @@ static unsigned long shrink_inactive_lis
- 			count_vm_events(PGDEACTIVATE, nr_active);
  
- 			nr_freed += shrink_page_list(&page_list, sc,
--							PAGEOUT_IO_SYNC);
-+					priority < DEF_PRIORITY / 3 ?
-+					PAGEOUT_IO_SYNC : PAGEOUT_IO_ASYNC);
- 		}
- 
- 		nr_reclaimed += nr_freed;
+> The only problem I see is that it will involve more maintainers and
+> trees (I guess Ingo?), and make it even more difficult for me to reach
+> upstream :-) But let's try and see!
 
-Thanks,
-Fengguang
+I wouldn't worry about that. It's so simple that if you end up coding
+the helper function to do a timer delayed wakeup, just send it to Jens
+in your series, cc Ingo on it if you'd like.
+
