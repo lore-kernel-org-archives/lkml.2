@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759470Ab0GVN4o (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 09:56:44 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:37116 "EHLO
+	id S1759486Ab0GVN4q (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 09:56:46 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:37124 "EHLO
 	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753519Ab0GVN4i (ORCPT
+	with ESMTP id S1759439Ab0GVN4m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 09:56:38 -0400
+	Thu, 22 Jul 2010 09:56:42 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
 Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCHv3 01/14] writeback: harmonize writeback threads naming
-Date: Thu, 22 Jul 2010 16:56:15 +0300
-Message-Id: <1279806988-14100-2-git-send-email-dedekind1@gmail.com>
+Subject: [PATCHv3 10/14] writeback: move bdi threads exiting logic to the forker thread
+Date: Thu, 22 Jul 2010 16:56:24 +0300
+Message-Id: <1279806988-14100-11-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1279806988-14100-1-git-send-email-dedekind1@gmail.com>
 References: <1279806988-14100-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 22 Jul 2010 13:56:34.0363 (UTC) FILETIME=[B20B78B0:01CB29A5]
+X-OriginalArrivalTime: 22 Jul 2010 13:56:37.0168 (UTC) FILETIME=[B3B77B00:01CB29A5]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,160 +24,226 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-The write-back code mixes words "thread" and "task" for the same things. This
-is not a big deal, but still an inconsistency.
+Currently, bdi threads can decide to exit if there were no useful activities
+for 5 minutes. However, this causes nasty races: we can easily oops in the
+'bdi_queue_work()' if the bdi thread decides to exit while we are waking it up.
 
-hch: a convention I tend to use and I've seen in various places
-is to always use _task for the storage of the task_struct pointer,
-and thread everywhere else.  This especially helps with having
-foo_thread for the actual thread and foo_task for a global
-variable keeping the task_struct pointer
+And even if we do not oops, but the bdi tread exits immediately after we wake
+it up, we'd lose the wake-up event and have an unnecessary delay (up to 5 secs)
+in the bdi work processing.
 
-This patch renames:
-* 'bdi_add_default_flusher_task()' -> 'bdi_add_default_flusher_thread()'
-* 'bdi_forker_task()'              -> 'bdi_forker_thread()'
+This patch makes the forker thread to be the central place which not only
+creates bdi threads, but also kills them if they were inactive long enough.
+This better design-wise.
 
-because bdi threads are 'bdi_writeback_thread()', so these names are more
-consistent.
-
-This patch also amends commentaries and makes them refer the forker and bdi
-threads as "thread", not "task".
-
-Also, while on it, make 'bdi_add_default_flusher_thread()' declaration use
-'static void' instead of 'void static' and make checkpatch.pl happy.
+Another reason why this change was done is to prepare for the further changes
+which will prevent the bdi threads from waking up every 5 sec and wasting
+power. Indeed, when the task does not wake up periodically anymore, it won't be
+able to exit either.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 Reviewed-by: Christoph Hellwig <hch@lst.de>
 ---
- fs/fs-writeback.c           |    2 +-
- include/linux/backing-dev.h |    2 +-
- mm/backing-dev.c            |   26 +++++++++++++-------------
- 3 files changed, 15 insertions(+), 15 deletions(-)
+ fs/fs-writeback.c |   47 ++++++++++-----------------------------
+ mm/backing-dev.c  |   62 +++++++++++++++++++++++++++++++++++++++-------------
+ 2 files changed, 58 insertions(+), 51 deletions(-)
 
 diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index bf10cbf..5e6b7fc 100644
+index 53e1028..b834715 100644
 --- a/fs/fs-writeback.c
 +++ b/fs/fs-writeback.c
-@@ -840,7 +840,7 @@ int bdi_writeback_thread(void *data)
+@@ -78,21 +78,17 @@ static void bdi_queue_work(struct backing_dev_info *bdi,
  
- 			/*
- 			 * Longest period of inactivity that we tolerate. If we
--			 * see dirty data again later, the task will get
-+			 * see dirty data again later, the thread will get
- 			 * recreated automatically.
- 			 */
- 			max_idle = max(5UL * 60 * HZ, wait_jiffies);
-diff --git a/include/linux/backing-dev.h b/include/linux/backing-dev.h
-index e536f3a..f0936f5 100644
---- a/include/linux/backing-dev.h
-+++ b/include/linux/backing-dev.h
-@@ -50,7 +50,7 @@ struct bdi_writeback {
- 
- 	unsigned long last_old_flush;		/* last old data flush */
- 
--	struct task_struct	*task;		/* writeback task */
-+	struct task_struct	*task;		/* writeback thread */
- 	struct list_head	b_dirty;	/* dirty inodes */
- 	struct list_head	b_io;		/* parked for writeback */
- 	struct list_head	b_more_io;	/* parked for more writeback */
-diff --git a/mm/backing-dev.c b/mm/backing-dev.c
-index ac78a33..4e9ed2a 100644
---- a/mm/backing-dev.c
-+++ b/mm/backing-dev.c
-@@ -50,7 +50,7 @@ static struct timer_list sync_supers_timer;
- static int bdi_sync_supers(void *);
- static void sync_supers_timer_fn(unsigned long);
- 
--static void bdi_add_default_flusher_task(struct backing_dev_info *bdi);
-+static void bdi_add_default_flusher_thread(struct backing_dev_info *bdi);
- 
- #ifdef CONFIG_DEBUG_FS
- #include <linux/debugfs.h>
-@@ -279,10 +279,10 @@ static void bdi_flush_io(struct backing_dev_info *bdi)
+ 	spin_lock(&bdi->wb_lock);
+ 	list_add_tail(&work->list, &bdi->work_list);
+-	spin_unlock(&bdi->wb_lock);
+-
+-	/*
+-	 * If the default thread isn't there, make sure we add it. When
+-	 * it gets created and wakes up, we'll run this work.
+-	 */
+-	if (unlikely(!bdi->wb.task)) {
++	if (bdi->wb.task) {
++		wake_up_process(bdi->wb.task);
++	} else {
++		/*
++		 * The bdi thread isn't there, wake up the forker thread which
++		 * will create and run it.
++		 */
+ 		trace_writeback_nothread(bdi, work);
+ 		wake_up_process(default_backing_dev_info.wb.task);
+-	} else {
+-		struct bdi_writeback *wb = &bdi->wb;
+-
+-		if (wb->task)
+-			wake_up_process(wb->task);
+ 	}
++	spin_unlock(&bdi->wb_lock);
  }
  
- /*
-- * kupdated() used to do this. We cannot do it from the bdi_forker_task()
-+ * kupdated() used to do this. We cannot do it from the bdi_forker_thread()
-  * or we risk deadlocking on ->s_umount. The longer term solution would be
-  * to implement sync_supers_bdi() or similar and simply do it from the
-- * bdi writeback tasks individually.
-+ * bdi writeback thread individually.
-  */
- static int bdi_sync_supers(void *unused)
+ static void
+@@ -800,7 +796,6 @@ int bdi_writeback_thread(void *data)
  {
-@@ -318,7 +318,7 @@ static void sync_supers_timer_fn(unsigned long unused)
+ 	struct bdi_writeback *wb = data;
+ 	struct backing_dev_info *bdi = wb->bdi;
+-	unsigned long wait_jiffies = -1UL;
+ 	long pages_written;
+ 
+ 	current->flags |= PF_FLUSHER | PF_SWAPWRITE;
+@@ -828,18 +823,6 @@ int bdi_writeback_thread(void *data)
+ 
+ 		if (pages_written)
+ 			wb->last_active = jiffies;
+-		else if (wait_jiffies != -1UL) {
+-			unsigned long max_idle;
+-
+-			/*
+-			 * Longest period of inactivity that we tolerate. If we
+-			 * see dirty data again later, the thread will get
+-			 * recreated automatically.
+-			 */
+-			max_idle = max(5UL * 60 * HZ, wait_jiffies);
+-			if (time_after(jiffies, max_idle + wb->last_active))
+-				break;
+-		}
+ 
+ 		set_current_state(TASK_INTERRUPTIBLE);
+ 		if (!list_empty(&bdi->work_list)) {
+@@ -847,21 +830,15 @@ int bdi_writeback_thread(void *data)
+ 			continue;
+ 		}
+ 
+-		if (dirty_writeback_interval) {
+-			wait_jiffies = msecs_to_jiffies(dirty_writeback_interval * 10);
+-			schedule_timeout(wait_jiffies);
+-		} else
++		if (dirty_writeback_interval)
++			schedule_timeout(msecs_to_jiffies(dirty_writeback_interval * 10));
++		else
+ 			schedule();
+ 
+ 		try_to_freeze();
+ 	}
+ 
+-	wb->task = NULL;
+-
+-	/*
+-	 * Flush any work that raced with us exiting. No new work
+-	 * will be added, since this bdi isn't discoverable anymore.
+-	 */
++	/* Flush any work that raced with us exiting */
+ 	if (!list_empty(&bdi->work_list))
+ 		wb_do_writeback(wb, 1);
+ 
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index b788b8e..8609701 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -316,6 +316,18 @@ static void sync_supers_timer_fn(unsigned long unused)
  	bdi_arm_supers_timer();
  }
  
--static int bdi_forker_task(void *ptr)
-+static int bdi_forker_thread(void *ptr)
++/*
++ * Calculate the longest interval (jiffies) bdi threads are allowed to be
++ * inactive.
++ */
++static unsigned long bdi_longest_inactive(void)
++{
++	unsigned long interval;
++
++	interval = msecs_to_jiffies(dirty_writeback_interval * 10);
++	return max(5UL * 60 * HZ, interval);
++}
++
+ static int bdi_forker_thread(void *ptr)
  {
  	struct bdi_writeback *me = ptr;
+@@ -329,8 +341,8 @@ static int bdi_forker_thread(void *ptr)
+ 	set_user_nice(current, 0);
  
-@@ -354,7 +354,7 @@ static int bdi_forker_task(void *ptr)
- 			    !bdi_has_dirty_io(bdi))
- 				continue;
+ 	for (;;) {
+-		bool fork = false;
+-		struct task_struct *task;
++		bool fork = false, kill = false;
++		struct task_struct *task = NULL;
+ 		struct backing_dev_info *bdi;
  
--			bdi_add_default_flusher_task(bdi);
-+			bdi_add_default_flusher_thread(bdi);
- 		}
- 
+ 		/*
+@@ -343,10 +355,6 @@ static int bdi_forker_thread(void *ptr)
+ 		spin_lock_bh(&bdi_lock);
  		set_current_state(TASK_INTERRUPTIBLE);
-@@ -376,7 +376,7 @@ static int bdi_forker_task(void *ptr)
  
- 		/*
- 		 * This is our real job - check for pending entries in
--		 * bdi_pending_list, and create the tasks that got added
-+		 * bdi_pending_list, and create the threads that got added
- 		 */
- 		bdi = list_entry(bdi_pending_list.next, struct backing_dev_info,
- 				 bdi_list);
-@@ -387,7 +387,7 @@ static int bdi_forker_task(void *ptr)
- 		wb->task = kthread_run(bdi_writeback_thread, wb, "flush-%s",
- 					dev_name(bdi->dev));
- 		/*
--		 * If task creation fails, then readd the bdi to
-+		 * If thread creation fails, then readd the bdi to
- 		 * the pending list and force writeout of the bdi
- 		 * from this forker thread. That will free some memory
- 		 * and we can try again.
-@@ -430,10 +430,10 @@ static void bdi_add_to_pending(struct rcu_head *head)
- }
+-		/*
+-		 * Check if any existing bdi's have dirty data without
+-		 * a thread registered. If so, set that up.
+-		 */
+ 		list_for_each_entry(bdi, &bdi_list, bdi_list) {
+ 			bool have_dirty_io;
  
- /*
-- * Add the default flusher task that gets created for any bdi
-+ * Add the default flusher thread that gets created for any bdi
-  * that has dirty data pending writeout
-  */
--void static bdi_add_default_flusher_task(struct backing_dev_info *bdi)
-+static void bdi_add_default_flusher_thread(struct backing_dev_info *bdi)
- {
- 	if (!bdi_cap_writeback_dirty(bdi))
- 		return;
-@@ -445,10 +445,10 @@ void static bdi_add_default_flusher_task(struct backing_dev_info *bdi)
+@@ -373,6 +381,25 @@ static int bdi_forker_thread(void *ptr)
+ 				fork = true;
+ 				break;
+ 			}
++
++			spin_lock(&bdi->wb_lock);
++			/*
++			 * If there is no work to do and the bdi thread was
++			 * inactive long enough - kill it. The wb_lock is taken
++			 * to make sure no-one adds more work to this bdi and
++			 * wakes the bdi thread up.
++			 */
++			if (bdi->wb.task && !have_dirty_io &&
++			    time_after(jiffies, bdi->wb.last_active +
++						bdi_longest_inactive())) {
++				task = bdi->wb.task;
++				bdi->wb.task = NULL;
++				spin_unlock(&bdi->wb_lock);
++				set_bit(BDI_pending, &bdi->state);
++				kill = true;
++				break;
++			}
++			spin_unlock(&bdi->wb_lock);
+ 		}
+ 		spin_unlock_bh(&bdi_lock);
+ 
+@@ -380,7 +407,7 @@ static int bdi_forker_thread(void *ptr)
+ 		if (!list_empty(&me->bdi->work_list))
+ 			__set_current_state(TASK_RUNNING);
+ 
+-		if (!fork) {
++		if (!fork && !kill) {
+ 			unsigned long wait;
+ 
+ 			wait = msecs_to_jiffies(dirty_writeback_interval * 10);
+@@ -394,16 +421,19 @@ static int bdi_forker_thread(void *ptr)
+ 
+ 		__set_current_state(TASK_RUNNING);
+ 
+-		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
+-				   dev_name(bdi->dev));
+-		if (IS_ERR(task)) {
+-			/*
+-			 * If thread creation fails, force writeout of the bdi
+-			 * from the thread.
+-			 */
+-			bdi_flush_io(bdi);
++		if (fork) {
++			task = kthread_run(bdi_writeback_thread, &bdi->wb,
++					   "flush-%s", dev_name(bdi->dev));
++			if (IS_ERR(task)) {
++				/*
++				 * If thread creation fails, force writeout of
++				 * the bdi from the thread.
++				 */
++				bdi_flush_io(bdi);
++			} else
++				bdi->wb.task = task;
+ 		} else
+-			bdi->wb.task = task;
++			kthread_stop(task);
  	}
  
- 	/*
--	 * Check with the helper whether to proceed adding a task. Will only
-+	 * Check with the helper whether to proceed adding a thread. Will only
- 	 * abort if we two or more simultanous calls to
--	 * bdi_add_default_flusher_task() occured, further additions will block
--	 * waiting for previous additions to finish.
-+	 * bdi_add_default_flusher_thread() occured, further additions will
-+	 * block waiting for previous additions to finish.
- 	 */
- 	if (!test_and_set_bit(BDI_pending, &bdi->state)) {
- 		list_del_rcu(&bdi->bdi_list);
-@@ -506,7 +506,7 @@ int bdi_register(struct backing_dev_info *bdi, struct device *parent,
- 	if (bdi_cap_flush_forker(bdi)) {
- 		struct bdi_writeback *wb = &bdi->wb;
- 
--		wb->task = kthread_run(bdi_forker_task, wb, "bdi-%s",
-+		wb->task = kthread_run(bdi_forker_thread, wb, "bdi-%s",
- 						dev_name(dev));
- 		if (IS_ERR(wb->task)) {
- 			wb->task = NULL;
+ 	return 0;
 -- 
 1.7.1.1
 
