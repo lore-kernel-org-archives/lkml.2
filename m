@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758108Ab0GVQ6Q (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 12:58:16 -0400
+	id S1758537Ab0GVQ6T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 12:58:19 -0400
 Received: from mail-fx0-f46.google.com ([209.85.161.46]:55840 "EHLO
 	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753603Ab0GVQ5x (ORCPT
+	with ESMTP id S1751260Ab0GVQ5r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 12:57:53 -0400
+	Thu, 22 Jul 2010 12:57:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=Px3bNo/ojNSfXmiNiUbBYKN/EsUAyfBZkpORFMksJ+WwZYNEibZU49RvRbW6solH9K
-         5OxtMIU3qxtFsE09eXWyaip1GmYO3Km/tPALCPFVG7Hg3pJJC14dT67svxTZyac5OLyW
-         pa9oxayI0C21OIBOoKRqdNnyQZka4DLJkHL4E=
+        b=QkVmr2YWuk8jajH3i8WGXtTkol3FEE7zd5Ai3Rm4F2na+fBcNWCaWpikYq/PacIinK
+         2afVUCH2o3sx8DXDU55kVk3WIKepZJDmQ1f/hCg0bjhOIpuoTqVB3KfPUnzz3xFiKLiY
+         C4Eaf8yAkr2SXNiG/RAMOd4QSXu56hcDP8dk8=
 From: Andy Shevchenko <andy.shevchenko@gmail.com>
 To: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
         devel@driverdev.osuosl.org
 Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: [PATCH 3/5] staging: rtl8192su: don't use own isxdigit() method
-Date: Thu, 22 Jul 2010 19:57:09 +0300
-Message-Id: <86c5a78d51a8d52774ad97ae2cac09d9d1ed0793.1279817399.git.andy.shevchenko@gmail.com>
+Subject: [PATCH 1/5] staging: remove unused methods
+Date: Thu, 22 Jul 2010 19:57:07 +0300
+Message-Id: <425abf06a3fceaab7d00ea5d4d5b28e5db4f2002.1279817399.git.andy.shevchenko@gmail.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <20100722151545.GA6696@suse.de>
 References: <20100722151545.GA6696@suse.de>
@@ -29,71 +29,53 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
----
- drivers/staging/rtl8192su/r8192S_Efuse.c |   27 +++------------------------
- 1 files changed, 3 insertions(+), 24 deletions(-)
+This is rebased version of the patch [1] which was mysteriously not
+pushed anywhere but acked.
 
-diff --git a/drivers/staging/rtl8192su/r8192S_Efuse.c b/drivers/staging/rtl8192su/r8192S_Efuse.c
-index 1e1d55e..c4bbe40 100644
---- a/drivers/staging/rtl8192su/r8192S_Efuse.c
-+++ b/drivers/staging/rtl8192su/r8192S_Efuse.c
-@@ -30,6 +30,7 @@
- #include "r8192S_Efuse.h"
- 
- #include <linux/types.h>
-+#include <linux/ctype.h>
- 
- //typedef  int	INT32;
- //
-@@ -1828,26 +1829,6 @@ EFUSE_ProgramMap(struct net_device* dev, char* pFileName,u8	TableType)
+Here are two methods to convert hex value to binary format. These
+certain methods aren't used anywhere in kernel.
+
+[1] http://lkml.org/lkml/2010/2/18/267
+
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/staging/otus/apdbg.c |   22 ----------------------
+ 1 files changed, 0 insertions(+), 22 deletions(-)
+
+diff --git a/drivers/staging/otus/apdbg.c b/drivers/staging/otus/apdbg.c
+index 32c26e5..09415a6 100644
+--- a/drivers/staging/otus/apdbg.c
++++ b/drivers/staging/otus/apdbg.c
+@@ -90,28 +90,6 @@ struct zdap_ioctl {
  
  #endif
  
--//
--//	Description:
--//		Return TRUE if chTmp is represent for hex digit and
--//		FALSE otherwise.
--//
--//
--bool IsHexDigit(	char chTmp)
+-static char hex(char v)
 -{
--	if( (chTmp >= '0' && chTmp <= '9') ||
--		(chTmp >= 'a' && chTmp <= 'f') ||
--		(chTmp >= 'A' && chTmp <= 'F') )
--	{
--		return TRUE;
--	}
+-	if (isdigit(v))
+-		return v - '0';
+-	else if (isxdigit(v))
+-		return tolower(v) - 'a' + 10;
 -	else
--	{
--		return FALSE;
--	}
+-		return 0;
 -}
 -
- /*-----------------------------------------------------------------------------
-  * Function:	efuse_ParsingMap
-  *
-@@ -1893,10 +1874,8 @@ efuse_ParsingMap(char* szStr,u32* pu4bVal,u32* pu4bMove)
+-static unsigned char asctohex(char *str)
+-{
+-	unsigned char value;
+-
+-	value = hex(*str) & 0x0f;
+-	value = value << 4;
+-	str++;
+-	value |= hex(*str) & 0x0f;
+-
+-	return value;
+-}
+-
+ char *prgname;
  
- 	// Check if szScan is now pointer to a character for hex digit,
- 	// if not, it means this is not a valid hex number.
--	if(!IsHexDigit(*szScan))
--	{
-+	if (!isxdigit(*szScan))
- 		return FALSE;
--	}
- 
- 	// Parse each digit.
- 	do
-@@ -1905,7 +1884,7 @@ efuse_ParsingMap(char* szStr,u32* pu4bVal,u32* pu4bMove)
- 
- 		szScan++;
- 		(*pu4bMove)++;
--	} while(IsHexDigit(*szScan));
-+	} while (isxdigit(*szScan));
- 
- 	return TRUE;
- 
+ int set_ioctl(int sock, struct ifreq *req)
 -- 
 1.7.1.1
 
