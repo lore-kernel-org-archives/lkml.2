@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754450Ab0GVFiO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 01:38:14 -0400
-Received: from sh.osrg.net ([192.16.179.4]:33827 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751390Ab0GVFiL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 01:38:11 -0400
-Date: Thu, 22 Jul 2010 14:37:49 +0900
-To: corbet@lwn.net
-Cc: m.nazarewicz@samsung.com, linux-mm@kvack.org, m.szyprowski@samsung.com,
-        p.osciak@samsung.com, xiaolin.zhang@intel.com, hvaibhav@ti.com,
-        robert.fekete@stericsson.com, marcus.xm.lorentzon@stericsson.com,
-        linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
-Subject: Re: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100720181239.5a1fd090@bike.lwn.net>
-References: <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
-	<adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
-	<20100720181239.5a1fd090@bike.lwn.net>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755108Ab0GVFk1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 01:40:27 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55593 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751390Ab0GVFk0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 01:40:26 -0400
+Message-ID: <4C47DAE4.1030707@cn.fujitsu.com>
+Date: Thu, 22 Jul 2010 13:45:08 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Steven Rostedt <rostedt@goodmis.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
+        linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
+References: <4C401CE3.7010004@cn.fujitsu.com>	 <20100721222508.8704.A69D9226@jp.fujitsu.com> <1279721766.4818.39.camel@gandalf.stny.rr.com>
+In-Reply-To: <1279721766.4818.39.camel@gandalf.stny.rr.com>
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100722143652V.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 22 Jul 2010 14:37:51 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 20 Jul 2010 18:12:39 -0600
-Jonathan Corbet <corbet@lwn.net> wrote:
-
-> One other thing occurred to me as I was thinking about this...
+Steven Rostedt wrote:
+> On Wed, 2010-07-21 at 22:31 +0900, KOSAKI Motohiro wrote:
+>> Hi Steven,
 > 
-> > +    There are four calls provided by the CMA framework to devices.  To
-> > +    allocate a chunk of memory cma_alloc() function needs to be used:
-> > +
-> > +            unsigned long cma_alloc(const struct device *dev,
-> > +                                    const char *kind,
-> > +                                    unsigned long size,
-> > +                                    unsigned long alignment);
+>>         if (ac)
+>> 	        trace_ext4_mb_release_group_pa(ac, pa);
+>>
+>> But, I don't think this is proper fix because we don't want any overhead
+>> if the tracepoint is disabled.
+>>
+>> So, How do we check NULL in TP_fast_assign()?
 > 
-> The purpose behind this interface, I believe, is pretty much always
-> going to be to allocate memory for DMA buffers.  Given that, might it
-> make more sense to integrate the API with the current DMA mapping
-> API?
+> You could do:
+> 
+> 	TP_fast_assign(
+> 		if (ac) {
+> 	                __entry->dev            = ac->ac_sb->s_dev;
+>         	        __entry->ino            = ac->ac_inode->i_ino;
+>         	        __entry->pa_pstart      = pa->pa_pstart;
+>         	        __entry->pa_len         = pa->pa_len;
+> 		}
 
-IMO, having separate APIs for allocating memory and doing DMA mapping
-is much better. The DMA API covers the latter well. We could extend
-the current API to allocate memory or create new one similar to the
-current. 
+This leaves __entry->dev etc as arbitrary value, since the entry returned
+by the ring buffer is not zeroed, so I think better add an else branch to
+zero those values.
 
-I don't see any benefit of a new abstraction that does both magically.
+>         ),
+> 
+> But this just makes the __entry null and wastes the ring buffer.
+> 
+> I may be able to add a __discard_entry that may help. Then we could do
+> something like this:
+> 
+> 	if (ac) {
+>                 __entry->dev            = ac->ac_sb->s_dev;
+>                 __entry->ino            = ac->ac_inode->i_ino;
+>                 __entry->pa_pstart      = pa->pa_pstart;
+>                 __entry->pa_len         = pa->pa_len;
+> 	} else
+> 		__discard_entry;
+> 
+> Does this seem reasonable?
+> 
+> But for now, the wasting the entry seems to be the only choice we have,
+> or to do as you suggested and have the "if (ac) trace_...", but I don't
+> like that.
+> 
 
-
-About the framework, it looks too complicated than we actually need
-(the command line stuff looks insane).
-
-Why can't we have something simpler, like using memblock to reserve
-contiguous memory at boot and using kinda mempool to share such memory
-between devices?
+As I was (and still am) not sure what is the best fix, I decided
+to send out a bug report instead of a patch..
