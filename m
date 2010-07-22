@@ -1,213 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760011Ab0GVVau (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:30:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:31670 "EHLO mx1.redhat.com"
+	id S1756672Ab0GVVhg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:37:36 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55274 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758388Ab0GVV36 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:29:58 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux-kernel@vger.kernel.org, jaxboe@fusionio.com
-Cc: nauman@google.com, dpshah@google.com, guijianfeng@cn.fujitsu.com,
-        jmoyer@redhat.com, czoccolo@gmail.com, vgoyal@redhat.com
-Subject: [PATCH 3/5] cfq-iosched: Implement a tunable group_idle
-Date: Thu, 22 Jul 2010 17:29:30 -0400
-Message-Id: <1279834172-4227-4-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
-References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
+	id S1752967Ab0GVVhc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 17:37:32 -0400
+Subject: Re: [PATCH -v26 00/31] generic changes for memblock
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@zytor.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        David Miller <davem@davemloft.net>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+        linux-arch@vger.kernel.org
+In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Jul 2010 07:35:56 +1000
+Message-ID: <1279834556.1970.20.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o Implement a new tunable group_idle, which allows idling on the group
-  instead of a cfq queue. Hence one can set slice_idle = 0 and not idle
-  on the individual queues but idle on the group. This way on fast storage
-  we can get fairness between groups at the same time overall throughput
-  improves.
+On Thu, 2010-07-22 at 11:20 -0700, Yinghai Lu wrote:
+> New memblock could be used to replace early_res in x86.
+> 
+> Suggested by: David, Ben, and Thomas
+> 
+> -v25: update to mainline with kmemleak fix on nobootmem
+>       also rename lmb to memblock alread in mainline
+> 
+> -v26: according to Linus and hpa, seperate the big patchset to small ones.
+> 
+> This one is rebase of Ben's changeset to current mainline/tip
+> 
+> Last 6 are needed for x86 memblock transistion, but change mm/memblock.c
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/cfq-iosched.c |   57 ++++++++++++++++++++++++++++++++++++++++++++------
- 1 files changed, 50 insertions(+), 7 deletions(-)
+Are there any change from my original series other than an automated
+rebase ? If yes, let me know as I do plan to do that rebase myself, I
+just haven't got to it yet.
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 9f82ec6..e172fa1 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -30,6 +30,7 @@ static const int cfq_slice_sync = HZ / 10;
- static int cfq_slice_async = HZ / 25;
- static const int cfq_slice_async_rq = 2;
- static int cfq_slice_idle = HZ / 125;
-+static int cfq_group_idle = HZ / 125;
- static const int cfq_target_latency = HZ * 3/10; /* 300 ms */
- static const int cfq_hist_divisor = 4;
- 
-@@ -198,6 +199,8 @@ struct cfq_group {
- 	struct hlist_node cfqd_node;
- 	atomic_t ref;
- #endif
-+	/* number of requests that are on the dispatch list or inside driver */
-+	int dispatched;
- };
- 
- /*
-@@ -271,6 +274,7 @@ struct cfq_data {
- 	unsigned int cfq_slice[2];
- 	unsigned int cfq_slice_async_rq;
- 	unsigned int cfq_slice_idle;
-+	unsigned int cfq_group_idle;
- 	unsigned int cfq_latency;
- 	unsigned int cfq_group_isolation;
- 
-@@ -1883,7 +1887,7 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
- {
- 	struct cfq_queue *cfqq = cfqd->active_queue;
- 	struct cfq_io_context *cic;
--	unsigned long sl;
-+	unsigned long sl, group_idle = 0;
- 
- 	/*
- 	 * SSD device without seek penalty, disable idling. But only do so
-@@ -1899,8 +1903,13 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
- 	/*
- 	 * idle is disabled, either manually or by past process history
- 	 */
--	if (!cfq_should_idle(cfqd, cfqq))
--		return;
-+	if (!cfq_should_idle(cfqd, cfqq)) {
-+		/* no queue idling. Check for group idling */
-+		if (cfqd->cfq_group_idle)
-+			group_idle = cfqd->cfq_group_idle;
-+		else
-+			return;
-+	}
- 
- 	/*
- 	 * still active requests from this queue, don't idle
-@@ -1927,13 +1936,21 @@ static void cfq_arm_slice_timer(struct cfq_data *cfqd)
- 		return;
- 	}
- 
-+	/* There are other queues in the group, don't do group idle */
-+	if (group_idle && cfqq->cfqg->nr_cfqq > 1)
-+		return;
-+
- 	cfq_mark_cfqq_wait_request(cfqq);
- 
--	sl = cfqd->cfq_slice_idle;
-+	if (group_idle)
-+		sl = cfqd->cfq_group_idle;
-+	else
-+		sl = cfqd->cfq_slice_idle;
- 
- 	mod_timer(&cfqd->idle_slice_timer, jiffies + sl);
- 	cfq_blkiocg_update_set_idle_time_stats(&cfqq->cfqg->blkg);
--	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu", sl);
-+	cfq_log_cfqq(cfqd, cfqq, "arm_idle: %lu group_idle: %d", sl,
-+			group_idle ? 1 : 0);
- }
- 
- /*
-@@ -1949,6 +1966,7 @@ static void cfq_dispatch_insert(struct request_queue *q, struct request *rq)
- 	cfqq->next_rq = cfq_find_next_rq(cfqd, cfqq, rq);
- 	cfq_remove_request(rq);
- 	cfqq->dispatched++;
-+	(RQ_CFQG(rq))->dispatched++;
- 	elv_dispatch_sort(q, rq);
- 
- 	cfqd->rq_in_flight[cfq_cfqq_sync(cfqq)]++;
-@@ -2218,7 +2236,7 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
- 			cfqq = NULL;
- 			goto keep_queue;
- 		} else
--			goto expire;
-+			goto check_group_idle;
- 	}
- 
- 	/*
-@@ -2252,6 +2270,17 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
- 		goto keep_queue;
- 	}
- 
-+	/*
-+	 * If group idle is enabled and there are requests dispatched from
-+	 * this group, wait for requests to complete.
-+	 */
-+check_group_idle:
-+	if (cfqd->cfq_group_idle && cfqq->cfqg->nr_cfqq == 1
-+	    && cfqq->cfqg->dispatched) {
-+		cfqq = NULL;
-+		goto keep_queue;
-+	}
-+
- expire:
- 	cfq_slice_expired(cfqd, 0);
- new_queue:
-@@ -3394,6 +3423,7 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
- 	WARN_ON(!cfqq->dispatched);
- 	cfqd->rq_in_driver--;
- 	cfqq->dispatched--;
-+	(RQ_CFQG(rq))->dispatched--;
- 	cfq_blkiocg_update_completion_stats(&cfqq->cfqg->blkg,
- 			rq_start_time_ns(rq), rq_io_start_time_ns(rq),
- 			rq_data_dir(rq), rq_is_sync(rq));
-@@ -3423,7 +3453,10 @@ static void cfq_completed_request(struct request_queue *q, struct request *rq)
- 		 * the queue.
- 		 */
- 		if (cfq_should_wait_busy(cfqd, cfqq)) {
--			cfqq->slice_end = jiffies + cfqd->cfq_slice_idle;
-+			unsigned long extend_sl = cfqd->cfq_slice_idle;
-+			if (!cfqd->cfq_slice_idle)
-+				extend_sl = cfqd->cfq_group_idle;
-+			cfqq->slice_end = jiffies + extend_sl;
- 			cfq_mark_cfqq_wait_busy(cfqq);
- 			cfq_log_cfqq(cfqd, cfqq, "will busy wait");
- 		}
-@@ -3868,6 +3901,7 @@ static void *cfq_init_queue(struct request_queue *q)
- 	cfqd->cfq_slice[1] = cfq_slice_sync;
- 	cfqd->cfq_slice_async_rq = cfq_slice_async_rq;
- 	cfqd->cfq_slice_idle = cfq_slice_idle;
-+	cfqd->cfq_group_idle = cfq_group_idle;
- 	cfqd->cfq_latency = 1;
- 	cfqd->cfq_group_isolation = 0;
- 	cfqd->hw_tag = -1;
-@@ -3940,6 +3974,7 @@ SHOW_FUNCTION(cfq_fifo_expire_async_show, cfqd->cfq_fifo_expire[0], 1);
- SHOW_FUNCTION(cfq_back_seek_max_show, cfqd->cfq_back_max, 0);
- SHOW_FUNCTION(cfq_back_seek_penalty_show, cfqd->cfq_back_penalty, 0);
- SHOW_FUNCTION(cfq_slice_idle_show, cfqd->cfq_slice_idle, 1);
-+SHOW_FUNCTION(cfq_group_idle_show, cfqd->cfq_group_idle, 1);
- SHOW_FUNCTION(cfq_slice_sync_show, cfqd->cfq_slice[1], 1);
- SHOW_FUNCTION(cfq_slice_async_show, cfqd->cfq_slice[0], 1);
- SHOW_FUNCTION(cfq_slice_async_rq_show, cfqd->cfq_slice_async_rq, 0);
-@@ -3972,6 +4007,7 @@ STORE_FUNCTION(cfq_back_seek_max_store, &cfqd->cfq_back_max, 0, UINT_MAX, 0);
- STORE_FUNCTION(cfq_back_seek_penalty_store, &cfqd->cfq_back_penalty, 1,
- 		UINT_MAX, 0);
- STORE_FUNCTION(cfq_slice_idle_store, &cfqd->cfq_slice_idle, 0, UINT_MAX, 1);
-+STORE_FUNCTION(cfq_group_idle_store, &cfqd->cfq_group_idle, 0, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_sync_store, &cfqd->cfq_slice[1], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_store, &cfqd->cfq_slice[0], 1, UINT_MAX, 1);
- STORE_FUNCTION(cfq_slice_async_rq_store, &cfqd->cfq_slice_async_rq, 1,
-@@ -3993,6 +4029,7 @@ static struct elv_fs_entry cfq_attrs[] = {
- 	CFQ_ATTR(slice_async),
- 	CFQ_ATTR(slice_async_rq),
- 	CFQ_ATTR(slice_idle),
-+	CFQ_ATTR(group_idle),
- 	CFQ_ATTR(low_latency),
- 	CFQ_ATTR(group_isolation),
- 	__ATTR_NULL
-@@ -4046,6 +4083,12 @@ static int __init cfq_init(void)
- 	if (!cfq_slice_idle)
- 		cfq_slice_idle = 1;
- 
-+#ifdef CONFIG_CFQ_GROUP_IOSCHED
-+	if (!cfq_group_idle)
-+		cfq_group_idle = 1;
-+#else
-+		cfq_group_idle = 0;
-+#endif
- 	if (cfq_slab_setup())
- 		return -ENOMEM;
- 
--- 
-1.7.1.1
+Ben.
+
+
+> Thanks
+> 
+> Yinghai Lu
+> 
+> [PATCH 01/31] memblock: Rename memblock_region to memblock_type and memblock_property to memblock_region
+> [PATCH 02/31] memblock: No reason to include asm/memblock.h late
+> [PATCH 03/31] memblock: Introduce for_each_memblock() and new accessors, and use it
+> [PATCH 04/31] memblock: Remove nid_range argument, arch provides memblock_nid_range() instead
+> [PATCH 05/31] memblock: Factor the lowest level alloc function
+> [PATCH 06/31] memblock: Expose MEMBLOCK_ALLOC_ANYWHERE
+> [PATCH 07/31] memblock: Introduce default allocation limit and use it to replace explicit ones
+> [PATCH 08/31] memblock: Remove rmo_size, burry it in arch/powerpc where it belongs
+> [PATCH 09/31] memblock: Change u64 to phys_addr_t
+> [PATCH 10/31] memblock: Remove unused memblock.debug struct member
+> [PATCH 11/31] memblock: Remove memblock_type.size and add memblock.memory_size instead
+> [PATCH 12/31] memblock: Move memblock arrays to static storage in memblock.c and make their size a variable
+> [PATCH 13/31] memblock: Add debug markers at the end of the array
+> [PATCH 14/31] memblock: Make memblock_find_region() out of memblock_alloc_region()
+> [PATCH 15/31] memblock: Define MEMBLOCK_ERROR internally instead of using ~(phys_addr_t)0
+> [PATCH 16/31] memblock: Move memblock_init() to the bottom of the file
+> [PATCH 17/31] memblock: split memblock_find_base() out of __memblock_alloc_base()
+> [PATCH 18/31] memblock: Move functions around into a more sensible order
+> [PATCH 19/31] memblock: Add array resizing support
+> [PATCH 20/31] memblock: Add arch function to control coalescing of memblock memory regions
+> [PATCH 21/31] memblock: Add "start" argument to memblock_find_base()
+> [PATCH 22/31] memblock: NUMA allocate can now use early_pfn_map
+> [PATCH 23/31] memblock: Separate memblock_alloc_nid() and memblock_alloc_try_nid()
+> [PATCH 24/31] memblock: Make memblock_alloc_try_nid() fallback to MEMBLOCK_ALLOC_ANYWHERE
+> [PATCH 25/31] memblock: Add debugfs files to dump the arrays content
+> [PATCH 26/31] memblock: Prepare x86 to use memblock to replace early_res
+> [PATCH 27/31] memblock: Print new doubled array location info
+> [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
+> [PATCH 29/31] memblock: Prepare to include linux/memblock.h in core file
+> [PATCH 30/31] memblock: Add ARCH_DISCARD_MEMBLOCK to put memblock code to .init
+> [PATCH 31/31] memblock: Add memblock_find_in_range()
+> 
+>  arch/microblaze/include/asm/memblock.h   |    3 -
+>  arch/microblaze/mm/init.c                |   18 +-
+>  arch/powerpc/include/asm/memblock.h      |    7 -
+>  arch/powerpc/include/asm/mmu.h           |   12 +
+>  arch/powerpc/kernel/head_40x.S           |    6 +-
+>  arch/powerpc/kernel/paca.c               |    2 +-
+>  arch/powerpc/kernel/prom.c               |   15 +-
+>  arch/powerpc/kernel/rtas.c               |    2 +-
+>  arch/powerpc/kernel/setup_32.c           |    2 +-
+>  arch/powerpc/kernel/setup_64.c           |    2 +-
+>  arch/powerpc/mm/40x_mmu.c                |   17 +-
+>  arch/powerpc/mm/44x_mmu.c                |   14 +
+>  arch/powerpc/mm/fsl_booke_mmu.c          |   12 +-
+>  arch/powerpc/mm/hash_utils_64.c          |   35 ++-
+>  arch/powerpc/mm/init_32.c                |   43 +-
+>  arch/powerpc/mm/init_64.c                |    1 +
+>  arch/powerpc/mm/mem.c                    |   94 ++---
+>  arch/powerpc/mm/numa.c                   |   17 +-
+>  arch/powerpc/mm/ppc_mmu_32.c             |   18 +-
+>  arch/powerpc/mm/tlb_nohash.c             |   16 +
+>  arch/powerpc/platforms/embedded6xx/wii.c |    2 +-
+>  arch/sh/include/asm/memblock.h           |    2 -
+>  arch/sh/mm/init.c                        |   16 +-
+>  arch/sparc/include/asm/memblock.h        |    2 -
+>  arch/sparc/mm/init_64.c                  |   46 +--
+>  include/linux/memblock.h                 |  162 +++++--
+>  mm/memblock.c                            |  764 +++++++++++++++++++-----------
+>  27 files changed, 846 insertions(+), 484 deletions(-)
+
 
