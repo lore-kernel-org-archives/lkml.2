@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758988Ab0GVLAh (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:00:37 -0400
-Received: from mail-yx0-f174.google.com ([209.85.213.174]:49857 "EHLO
-	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753032Ab0GVLAg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 07:00:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=gSswQxVRLcD8CY7i3s0ehL09uIUixn8YlA2N2ZDPc9HHsVl29y+iRAK5jbu0R2w2zR
-         hD8vVnvX4MCzZUsOp3A2sMsgcWKfdsD3eQq/cwLqix3KnwYzmb/BEEj/Q1Dl99c5hZn+
-         inCrBFvgtRkEhCTykB8x4b28sdz/Im1I5CIYU=
+	id S1759076Ab0GVLCN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 07:02:13 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:33695 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758097Ab0GVLCK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 07:02:10 -0400
+Date: Thu, 22 Jul 2010 12:01:54 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Nishimura Daisuke <d-nishimura@mtf.biglobe.ne.jp>
+Subject: Re: [PATCH 3/7] memcg: nid and zid can be calculated from zone
+Message-ID: <20100722110154.GG13117@csn.ul.ie>
+References: <20100716191418.7372.A69D9226@jp.fujitsu.com> <20100716105648.GG13117@csn.ul.ie> <20100721223349.870D.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Date: Thu, 22 Jul 2010 13:00:34 +0200
-Message-ID: <AANLkTil5Gz4i6iGZcaAcU0hg_ynNP1UR7bLwv_VQU6Wm@mail.gmail.com>
-Subject: Re: Introducing the LCD-Linux project
-From: Mattia Jona-Lasinio <mattia.jona@gmail.com>
-To: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100721223349.870D.A69D9226@jp.fujitsu.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ben Pfaff <blp@cs.stanford.edu> writes:
+On Wed, Jul 21, 2010 at 10:33:56PM +0900, KOSAKI Motohiro wrote:
+> > > +static inline int zone_nid(struct zone *zone)
+> > > +{
+> > > +	return zone->zone_pgdat->node_id;
+> > > +}
+> > > +
+> > 
+> > hmm, adding a helper and not converting the existing users of
+> > zone->zone_pgdat may be a little confusing particularly as both types of
+> > usage would exist in the same file e.g. in mem_cgroup_zone_nr_pages.
+> 
+> I see. here is incrementa patch.
+> 
 
-> When I wanted to solve the same problem for a small
-> serial-connected LCD panel (sold under the name EZIO), I wrote a
-> program called "ezio-term" that has the same functionality but
-> runs entirely in userspace.  It connects to the serial port and
-> speaks the EZIO protocol on the serial port, and it creates a pty
-> and acts like an ANSI terminal on that pty.  Thus, it translates
-> back and forth between the two protocols.
+Looks grand. Thanks
+
+> From 62cf765251af257c98fc92a58215d101d200e7ef Mon Sep 17 00:00:00 2001
+> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> Date: Tue, 20 Jul 2010 11:30:14 +0900
+> Subject: [PATCH] memcg: convert to zone_nid() from bare zone->zone_pgdat->node_id
+> 
+> Now, we have zone_nid(). this patch convert all existing users of
+> zone->zone_pgdat.
+> 
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 >
-> ezio-term also comes with a terminfo description that lets
-> programs take advantage of the special features of the LCD panel.
-> ezio-term also has the "virtual screen larger than physical
-> screen" feature that you mention elsewhere, although it currently
-> only implements an extra-wide screen, not an extra-tall one.
+> <SNIP>
 
-This is indeed a possibility. However, in my opinion, it always suffers
-the same problems: if you change the display, you have to rewrite everything
-from scratch since the protocol for a different display will be different.
-The big problem is that there is no standard protocol or connection type for
-these small devices; nothing comparable with the VGA standard, for example.
-The idea is therefore to write a minimal terminal emulation for a general
-abstract display so that the general question about WHAT has to be done
-is solved once for all, pushing the question about HOW to do it in a very small
-piece of code.
-
-> ezio-term solves the first problem you mention.  I'm not sure I
-> understand how the second one would come about across a serial or
-> parallel or USB connection.
-
-Hmmmm, you are probably right about serial and USB (which is in any case serial)
-connections. But for parallel port connections the situation is
-different, since you
-speak directly with the display controller, so all timing issues are
-up to you. For
-instance the hd44780 needs timings in the microsecond range. How would you
-obtain this in userspace without doing something like real time scheduling?
-Of course you can also increase timing but the display refresh will be obviously
-worse. In embedded systems these devices can be connected to GPIO lines. The
-access is through memory mapped ports. In some sense this is similar to a
-parallel port connection but still you are concerned with timing issues.
-
-I downloaded your program and I'm going through it.
-
-Regards,
-
-Mattia
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
