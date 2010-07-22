@@ -1,119 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752393Ab0GVIBg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 04:01:36 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:49339 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751123Ab0GVIBe (ORCPT
+	id S1753573Ab0GVIBy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 04:01:54 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:61800 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752971Ab0GVIBw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 04:01:34 -0400
-Date: Thu, 22 Jul 2010 16:54:25 +0900
-From: Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-Cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
-        "balbir@linux.vnet.ibm.com" <balbir@linux.vnet.ibm.com>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>
-Subject: Re: [RFC][PATCH 1/2][memcg] moving memcg's node info array to
- virtually contiguous array
-Message-Id: <20100722165425.a472cd88.nishimura@mxp.nes.nec.co.jp>
-In-Reply-To: <20100722150445.19a4a701.kamezawa.hiroyu@jp.fujitsu.com>
-References: <20100721195831.6aa8dca5.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100722144356.b9681621.nishimura@mxp.nes.nec.co.jp>
-	<20100722150445.19a4a701.kamezawa.hiroyu@jp.fujitsu.com>
-X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 22 Jul 2010 04:01:52 -0400
+Subject: Re: [PATCHv6 0/9] kill unnecessary SB sync wake-ups + cleanups
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+In-Reply-To: <1278332107-11443-1-git-send-email-dedekind1@gmail.com>
+References: <1278332107-11443-1-git-send-email-dedekind1@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Jul 2010 10:54:40 +0300
+Message-ID: <1279785280.3044.30.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 22 Jul 2010 08:01:25.0110 (UTC) FILETIME=[14BD8160:01CB2974]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010 15:04:45 +0900
-KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
+On Mon, 2010-07-05 at 15:14 +0300, Artem Bityutskiy wrote:
+> here is v6 of my SB sync wakups killing patches, v5 may be found:
+> http://marc.info/?l=linux-fsdevel&m=127583599911620&w=2
+> 
+> This is more of a reminder re-send, I did not get any feed-back for
+> v5. Not much changes since v5:
+> 
+> 1. Drop patches which fix race conditions for s_dirty changes WRT actual
+>    write-back - these things are independent and I am planning to go through
+>    that separately.
+> 2. Add "Acked-by" to the btrfs patch.
+> 3. Fold all per-fs patches which introduce SB accessors into one big patch.
 
-> On Thu, 22 Jul 2010 14:43:56 +0900
-> Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp> wrote:
-> 
-> > On Wed, 21 Jul 2010 19:58:31 +0900
-> > KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com> wrote:
-> > 
-> > > These are just a _toy_ level patches yet. My final purpose is to use indexed array
-> > > for mem_cgroup itself, it has IDs.
-> > > 
-> > > Background:
-> > >   memory cgroup uses struct page_cgroup for tracking all used pages. It's defined as
-> > > ==
-> > > struct page_cgroup {
-> > >         unsigned long flags;
-> > >         struct mem_cgroup *mem_cgroup;
-> > >         struct page *page;
-> > >         struct list_head lru;           /* per cgroup LRU list */
-> > > };
-> > > ==
-> > >   and this increase the cost of per-page-objects dramatically. Now, we have
-> > >   troubles on this object.
-> > >   1.  Recently, a blkio-tracking guy wants to add "blockio-cgroup" information
-> > >       to page_cgroup. But our concern is extra 8bytes per page.
-> > >   2.  At tracking dirty page status etc...we need some trick for safe access
-> > >       to page_cgroup and memcgroup's information. For example, a small seqlock.
-> > > 
-> > > Now, each memory cgroup has its own ID (0-65535). So, if we can replace
-> > > 8byte of pointer "pc->mem_cgroup" with an ID, which is 2 bytes, we may able
-> > > to have another room. (Moreover, I think we can reduce the number of IDs...)
-> > > 
-> > > This patch is a trial for implement a virually-indexed on-demand array and
-> > > an example of usage. Any commetns are welcome.
-> > > 
-> 
-> Hi,
-> > So, your purpose is to:
-> > 
-> > - make the size of mem_croup small(by [2/2])
-> It's just an example to test virt-array. I don't convice it can
-> save memory or make something fast. and I found a bug in free routine.)
-> 
-> 
-> > - manage all the mem_cgroup in virt-array indexed by its ID(it would be faster
-> >   than using css_lookup)
-> yes.
-> 
-> > - replace pc->mem_cgroup by its ID and make the size of page_cgroup small
-> > 
-> yes.
-> 
-> Final style I'm thinking is
-> 	struct page_cgroup {
-> 		unsigned long flags;
-> 		spinlock_t	lock;  # for lock_page_cgroup()
-> 		unsigned short memcg;
-> 		unsigned short blkio;
-> 		struct page *page;
-> 		struct list_head list;
-> 	};
-> This will be benefical in 64bit. About 32bit, I may have to merge some fields.
-> Or I may have to add some "version" field for updating memcg's statistics
-> without locks. memcg field may be able to be moved onto high-bits of "flags"
-> because it's stable value unless it's not under move_charge. 
-> (IIUC, at move_charge, memcg is off-LRU and there are no race with AcctLRU bit
->  v.s. pc->mem_cgroup field. With other flags, lock_page_cgroup() works enough.)
-> 
-> Anyway, race with move_charge() will be the last enemy for us to track 
-> dirty pages etc...at least, this kind of "make room" job is required, I feel.
-> 
-> There are many things to be considered, but I'm a bit in hurry. I'd like to do
-> some preparation before Mel at el rewrites memory-reclaim+writeback complelety.
-> 
-Thank you for clarifying your thought.
+Hi Al,
 
-I have one comment for this patch.
-> +static int idx_used(const struct virt_array *v, int idx)
-> +{
-> +	return test_bit(idx, v->map);
-> +}
-> +
-Who set the bit ?
-Shouldn't we set it at alloc_varray_item() ?
+you "unofficially" told me that you want to get rid of '->write_super()'
+and 'sync_supers()' should not exist. And FSes which really need
+'->write_super()' should implement that themselves.
 
-Thanks,
-Daisuke Nishimura.
+I will try to work on this, but a bit later, after my holidays. But
+could you please:
+
+1. confirm that you want to kill '->write_super()' and '->s_dirt'
+   "officially", so that I could refer to this when sending patches
+
+2. pick up patches 1-6 from this series, this would make my life easier
+   a bit.
+
+I'm not sure then what do do with:
+
+commit 140236b4b1c749c9b795ea3d11558a0eb5a3a080
+Author: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Date:   Thu Jun 10 13:56:33 2010 +0300
+
+    VFS: introduce s_dirty accessors
+
+which Linus merged, but which is now not needed, since you now want me
+to kill '->write_super()' completely. Will you take care of this please?
+
+Thanks!
+
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
+
