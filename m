@@ -1,87 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759489Ab0GVOHV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 10:07:21 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:33478 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1759370Ab0GVOHR (ORCPT
+	id S932343Ab0GVOHb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 10:07:31 -0400
+Received: from exchange.solarflare.com ([216.237.3.220]:10989 "EHLO
+	exchange.solarflare.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759492Ab0GVOH1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 10:07:17 -0400
-Date: Thu, 22 Jul 2010 10:07:14 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Andy Shevchenko <andy.shevchenko@gmail.com>
-cc: linux-kernel@vger.kernel.org,
-        Andy Shevchenko <ext-andriy.shevchenko@nokia.com>,
-        David Brownell <dbrownell@users.sourceforge.net>,
-        Greg Kroah-Hartman <gregkh@suse.de>, <linux-usb@vger.kernel.org>
-Subject: Re: [PATCHv4 1/2] usb: gadget: storage: strict coversion of 'ro'
- parameter
-In-Reply-To: <1279789128-11399-1-git-send-email-ext-andriy.shevchenko@nokia.com>
-Message-ID: <Pine.LNX.4.44L0.1007221002510.1725-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 22 Jul 2010 10:07:27 -0400
+Subject: Re: [PATCH net-next] sysfs: add attribute to indicate hw address
+ assignment type
+From: Ben Hutchings <bhutchings@solarflare.com>
+To: Stefan Assmann <sassmann@redhat.com>
+Cc: David Miller <davem@davemloft.net>, abadea@ixiacom.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
+        gregory.v.rose@intel.com, alexander.h.duyck@intel.com,
+        leedom@chelsio.com, harald@redhat.com
+In-Reply-To: <4C483E8D.4080300@redhat.com>
+References: <4C458CB7.3030508@redhat.com>	<4C458F50.4070200@ixiacom.com>
+	 <4C4593DA.9040207@redhat.com>
+	 <20100720.131839.134093789.davem@davemloft.net>
+	 <4C46AB60.5060008@redhat.com>
+	 <1279720478.2089.3.camel@achroite.uk.solarflarecom.com>
+	 <4C483E8D.4080300@redhat.com>
+Content-Type: text/plain
+Organization: Solarflare Communications
+Date: Thu, 22 Jul 2010 15:07:23 +0100
+Message-Id: <1279807643.2104.1.camel@achroite.uk.solarflarecom.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 (2.26.1-2.fc11) 
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 22 Jul 2010 14:09:02.0204 (UTC) FILETIME=[6FCAF3C0:01CB29A7]
+X-TM-AS-Product-Ver: SMEX-8.0.0.1181-6.000.1038-17520.005
+X-TM-AS-Result: No--29.681700-0.000000-31
+X-TM-AS-User-Approved-Sender: Yes
+X-TM-AS-User-Blocked-Sender: No
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 22 Jul 2010, Andy Shevchenko wrote:
-
-> Bring a strict way to get the 'ro' parameter from the user.
+On Thu, 2010-07-22 at 14:50 +0200, Stefan Assmann wrote:
+> On 21.07.2010 15:54, Ben Hutchings wrote:
+> > On Wed, 2010-07-21 at 10:10 +0200, Stefan Assmann wrote:
+> >> I put Alex' idea into code for further discussion, keeping the names
+> >> mentioned here until we agree on the scope of this attribute. When we
+> >> have settled I'll post a patch with proper patch description.
+> > [...]
+> > 
+> > Just a little nitpick: I think it would be clearer to use a more
+> > specific term like 'address source' or 'address assignment type' rather
+> > than 'address type'.
 > 
-> The patch followed by this one adds another boolean parameter. To be consistent
-> Michał Nazarewicz proposed to use simple_strtol() in both cases (correspondend
-> discussion in LKML [1]). Due to simple_strtol() doesn't return error in a good
-> way and we have a boolean parameter the strict_strtoul() is used.
-> 
-> [1] http://lkml.org/lkml/2010/7/14/169
-> 
-> Signed-off-by: Andy Shevchenko <ext-andriy.shevchenko@nokia.com>
-> Cc: Alan Stern <stern@rowland.harvard.edu>
-> Cc: David Brownell <dbrownell@users.sourceforge.net>
-> Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> Cc: linux-usb@vger.kernel.org
-> ---
->  drivers/usb/gadget/storage_common.c |    8 ++++----
->  1 files changed, 4 insertions(+), 4 deletions(-)
-> 
-> diff --git a/drivers/usb/gadget/storage_common.c b/drivers/usb/gadget/storage_common.c
-> index 04c462f..7123929 100644
-> --- a/drivers/usb/gadget/storage_common.c
-> +++ b/drivers/usb/gadget/storage_common.c
-> @@ -723,9 +723,9 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
->  	ssize_t		rc = count;
->  	struct fsg_lun	*curlun = fsg_lun_from_dev(dev);
->  	struct rw_semaphore	*filesem = dev_get_drvdata(dev);
-> -	int		i;
-> +	unsigned long	ro;
->  
-> -	if (sscanf(buf, "%d", &i) != 1)
-> +	if (strict_strtoul(buf, 2, &ro))
->  		return -EINVAL;
->  
->  	/* Allow the write-enable status to change only while the backing file
-> @@ -735,8 +735,8 @@ static ssize_t fsg_store_ro(struct device *dev, struct device_attribute *attr,
->  		LDBG(curlun, "read-only status change prevented\n");
->  		rc = -EBUSY;
->  	} else {
-> -		curlun->ro = !!i;
-> -		curlun->initially_ro = !!i;
-> +		curlun->ro = ro;
-> +		curlun->initially_ro = ro;
->  		LDBG(curlun, "read-only status set to %d\n", curlun->ro);
->  	}
->  	up_read(filesem);
+> Here's a proposal for the final patch.
 
-Acked-by: Alan Stern <stern@rowland.harvard.edu>
+Looks good, but...
 
-Strictly speaking, this changes the behavior when a non-binary value is
-specified.  For example, if somebody were to write "10" then the old
-code would set the value to True and the new code would set the value
-to False -- and neither would reject it as they probably should.  
-That's okay; people who write ambiguous or invalid values deserve what
-they get.
+[...]
+>  /**
+> + * dev_hw_addr_random - Create random MAC and set device flag
+> + * @dev: pointer to net_device structure
+> + * @addr: Pointer to a six-byte array containing the Ethernet address
+> + *
+> + * Generate random MAC to be used by a device and set addr_assign_type
+> + * so the state can be read by sysfs and be used by udev.
+> + */
+> +static inline void dev_hw_addr_random(struct net_device *dev, u8 *hwaddr)
+> +{
+> +	dev->addr_assign_type |= NET_ADDR_RANDOM;
+> +	random_ether_addr(hwaddr);
+> +}
+[...]
 
-Alan Stern
+...why '|=' and not '='?
+
+Ben.
+
+-- 
+Ben Hutchings, Senior Software Engineer, Solarflare Communications
+Not speaking for my employer; that's the marketing department's job.
+They asked us to note that Solarflare product names are trademarked.
 
