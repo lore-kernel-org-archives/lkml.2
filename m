@@ -1,347 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754042Ab0GVEG3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 00:06:29 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52737 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753558Ab0GVEGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 00:06:25 -0400
-Date: Thu, 22 Jul 2010 14:06:14 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for July 22
-Message-Id: <20100722140614.d8b145c0.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__22_Jul_2010_14_06_14_+1000_W+scRjss8lQgzcE."
+	id S1754403Ab0GVEG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 00:06:58 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:21089 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752858Ab0GVEGz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 00:06:55 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6050"; a="48089606"
+Date: Wed, 21 Jul 2010 21:06:40 -0700
+From: Zach Pfeffer <zpfeffer@codeaurora.org>
+To: Timothy Meade <zt.tmzt@gmail.com>
+Cc: Larry Bassel <lbassel@codeaurora.org>,
+        Russell King - ARM Linux <linux@arm.linux.org.uk>,
+        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, ebiederm@xmission.com,
+        linux-arch@vger.kernel.org, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, andi@firstfloor.org, linux-omap@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 1/3 v3] mm: iommu: An API to unify IOMMU, CPU and device
+ memory management
+Message-ID: <20100722040637.GA22559@codeaurora.org>
+References: <20100714201149.GA14008@codeaurora.org>
+ <20100714220536.GE18138@n2100.arm.linux.org.uk>
+ <20100715012958.GB2239@codeaurora.org>
+ <20100715085535.GC26212@n2100.arm.linux.org.uk>
+ <AANLkTinVZeaZxt_lWKhjKa0dqhu3_j3BRNySO-2LvMdw@mail.gmail.com>
+ <20100716075856.GC16124@n2100.arm.linux.org.uk>
+ <20100717000108.GB21293@labbmf-linux.quicinc.com>
+ <AANLkTinTQXbsD91JDHiSFrvDoUeHbaGUGSWA-5aT5ZCr@mail.gmail.com>
+ <20100721004407.GA14176@codeaurora.org>
+ <AANLkTinFCo8xTm2QM1kFWbv2xViGWt0bQz72U9YcQjv6@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinFCo8xTm2QM1kFWbv2xViGWt0bQz72U9YcQjv6@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__22_Jul_2010_14_06_14_+1000_W+scRjss8lQgzcE.
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, Jul 20, 2010 at 09:44:12PM -0400, Timothy Meade wrote:
+> On Tue, Jul 20, 2010 at 8:44 PM, Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
+> > On Mon, Jul 19, 2010 at 05:21:35AM -0400, Tim HRM wrote:
+> >> On Fri, Jul 16, 2010 at 8:01 PM, Larry Bassel <lbassel@codeaurora.org> wrote:
+> >> > On 16 Jul 10 08:58, Russell King - ARM Linux wrote:
+> >> >> On Thu, Jul 15, 2010 at 08:48:36PM -0400, Tim HRM wrote:
+> >> >> > Interesting, since I seem to remember the MSM devices mostly conduct
+> >> >> > IO through regions of normal RAM, largely accomplished through
+> >> >> > ioremap() calls.
+> >> >> >
+> >> >> > Without more public domain documentation of the MSM chips and AMSS
+> >> >> > interfaces I wouldn't know how to avoid this, but I can imagine it
+> >> >> > creates a bit of urgency for Qualcomm developers as they attempt to
+> >> >> > upstream support for this most interesting SoC.
+> >> >>
+> >> >> As the patch has been out for RFC since early April on the linux-arm-kernel
+> >> >> mailing list (Subject: [RFC] Prohibit ioremap() on kernel managed RAM),
+> >> >> and no comments have come back from Qualcomm folk.
+> >> >
+> >> > We are investigating the impact of this change on us, and I
+> >> > will send out more detailed comments next week.
+> >> >
+> >> >>
+> >> >> The restriction on creation of multiple V:P mappings with differing
+> >> >> attributes is also fairly hard to miss in the ARM architecture
+> >> >> specification when reading the sections about caches.
+> >> >>
+> >> >
+> >> > Larry Bassel
+> >> >
+> >> > --
+> >> > Sent by an employee of the Qualcomm Innovation Center, Inc.
+> >> > The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+> >> >
+> >>
+> >> Hi Larry and Qualcomm people.
+> >> I'm curious what your reason for introducing this new api (or adding
+> >> to dma) is. ?Specifically how this would be used to make the memory
+> >> mapping of the MSM chip dynamic in contrast to the fixed _PHYS defines
+> >> in the Android and Codeaurora trees.
+> >
+> > The MSM has many integrated engines that allow offloading a variety of
+> > workloads. These engines have always addressed memory using physical
+> > addresses, because of this we had to reserve large (10's MB) buffers
+> > at boot. These buffers are never freed regardless of whether an engine
+> > is actually using them. As you can imagine, needing to reserve memory
+> > for all time on a device that doesn't have a lot of memory in the
+> > first place is not ideal because that memory could be used for other
+> > things, running apps, etc.
+> >
+> > To solve this problem we put IOMMUs in front of a lot of the
+> > engines. IOMMUs allow us to map physically discontiguous memory into a
+> > virtually contiguous address range. This means that we could ask the
+> > OS for 10 MB of pages and map all of these into our IOMMU space and
+> > the engine would still see a contiguous range.
+> >
+> 
+> 
+> I see. Much like I suspected, this is used to replace the static
+> regime of the earliest Android kernel.  You mention placing IOMMUs in
+> front of the A11 engines, you are involved in this architecture as an
+> engineer or similar?  
 
-Hi all,
+I'm involved to the extent of designing and implementing VCM and,
+finding it useful for this class of problems, trying push it upstream.
 
-Changes since 20100721:
+> Is there a reason a cooperative approach using
+> RPC or another mechanism is not used for memory reservation, this is
+> something that can be accomplished fully on APPS side?
 
-Linus' tree gained a build failure for which I applied a patch.
+It can be accomplished a few ways. At this point we let the
+application processor manage the buffers. Other cooperative approaches
+have been talked about. As you can see in the short, but voluminous
+cannon of MSM Linux support there is a degree of RPC used to
+communicate with other nodes in the system. As time progresses the
+cannon of code shows this usage going down.
 
-The vfs tree still lost its build failure.
+> 
+> > In reality, limitations in the hardware meant that we needed to map
+> > memory using larger mappings to minimize the number of TLB
+> > misses. This, plus the number of IOMMUs and the extreme use cases we
+> > needed to design for led us to a generic design.
+> >
+> > This generic design solved our problem and the general mapping
+> > problem. We thought other people, who had this same big-buffer
+> > interoperation problem would also appreciate a common API that was
+> > built with their needs in mind so we pushed our idea up.
+> >
+> >>
+> >> I'm also interested in how this ability to map memory regions as files
+> >> for devices like KGSL/DRI or PMEM might work and why this is better
+> >> suited to that purpose than existing methods, where this fits into
+> >> camera preview and other issues that have been dealt with in these
+> >> trees in novel ways (from my perspective).
+> >
+> > The file based approach was driven by Android's buffer passing scheme
+> > and the need to write userspace drivers for multimedia, etc...
+> >
+> >
+> So the Android file backed approach is obiviated by GEM and other mechanisms?
 
-The net tree lost its conflicts.
+Aye.
 
-The sound tree gained a conflict against the arm tree.
-
-The input tree gained a conflict against the s5p tree.
-
-The block tree gained a conflict against the scsi tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 166 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/rc-fixes
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-3430sdp.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-3630sdp.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-am3517evm.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-cm-t35.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-devkit8000.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-igep0020.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-ldp.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3beagle=
-.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3evm.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3pandor=
-a.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-omap3touchb=
-ook.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-overo.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-zoom2.c
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/board-zoom3.c
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging s5p/for-next
-Merging tegra/for-next
-CONFLICT (content): Merge conflict in arch/arm/Kconfig
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-CONFLICT (content): Merge conflict in arch/microblaze/mm/init.c
-Merging mips/mips-for-linux-next
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-CONFLICT (content): Merge conflict in arch/arm/configs/ap4evb_defconfig
-CONFLICT (content): Merge conflict in arch/arm/configs/g3evm_defconfig
-CONFLICT (content): Merge conflict in arch/arm/configs/g4evm_defconfig
-Merging sparc/master
-Merging tile/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-CONFLICT (content): Merge conflict in fs/logfs/logfs.h
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Merging omfs/for-next
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-CONFLICT (content): Merge conflict in fs/nilfs2/super.c
-CONFLICT (content): Merge conflict in fs/xfs/linux-2.6/xfs_super.c
-Applying: v9fs: fixup for inode_setattr being removed
-Applying: xfs: update tracing for clear_inode to evit_inode transition
-Applying: cifs: fix for clear_inode -> evict_inode API change
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Merging idle-test/idle-test
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging swiotlb/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-Merging wireless/master
-CONFLICT (content): Merge conflict in drivers/net/wireless/iwlwifi/iwl-comm=
-ands.h
-Merging mtd/master
-Merging crypto/master
-Merging sound/for-next
-CONFLICT (content): Merge conflict in Documentation/kernel-parameters.txt
-CONFLICT (content): Merge conflict in arch/arm/mach-ep93xx/clock.c
-Merging cpufreq/next
-Merging quilt/rr
-CONFLICT (content): Merge conflict in arch/um/drivers/hostaudio_kern.c
-Merging input/next
-CONFLICT (add/add): Merge conflict in arch/arm/plat-samsung/include/plat/ke=
-ypad.h
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in drivers/block/virtio_blk.c
-CONFLICT (content): Merge conflict in drivers/scsi/scsi_error.c
-Merging quilt/device-mapper
-CONFLICT (content): Merge conflict in drivers/md/dm.c
-Applying: device-mapper: fix for bio API change
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-Merging mfd/for-next
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-CONFLICT (content): Merge conflict in drivers/net/wireless/ipw2x00/ipw2100.c
-Merging bluetooth/master
-Merging fsnotify/for-next
-CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
-or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
-eft in tree.
-$ git rm -f fs/notify/inotify/inotify.c
-Applying: fsnotify: update gfp/slab.h includes
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging catalin/for-next
-Merging alacrity/linux-next
-Merging i7core_edac/linux_next
-CONFLICT (content): Merge conflict in MAINTAINERS
-Merging devicetree/next-devicetree
-CONFLICT (content): Merge conflict in arch/sparc/kernel/prom_64.c
-Merging spi/next-spi
-Merging limits/writable_limits
-CONFLICT (content): Merge conflict in arch/x86/ia32/ia32entry.S
-CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_32.h
-CONFLICT (content): Merge conflict in arch/x86/include/asm/unistd_64.h
-CONFLICT (content): Merge conflict in arch/x86/kernel/syscall_table_32.S
-CONFLICT (content): Merge conflict in include/asm-generic/unistd.h
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in Makefile
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-CONFLICT (content): Merge conflict in include/linux/workqueue.h
-CONFLICT (content): Merge conflict in kernel/trace/Kconfig
-CONFLICT (content): Merge conflict in kernel/workqueue.c
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging drivers-x86/linux-next
-Merging hwpoison/hwpoison
-CONFLICT (content): Merge conflict in mm/memory-failure.c
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-Merging quilt/driver-core
-Merging quilt/tty
-CONFLICT (content): Merge conflict in include/linux/serial_core.h
-Merging quilt/usb
-CONFLICT (content): Merge conflict in drivers/media/video/uvc/uvcvideo.h
-CONFLICT (content): Merge conflict in include/linux/usb/video.h
-Merging staging-next/staging-next
-CONFLICT (content): Merge conflict in drivers/staging/batman-adv/bat_sysfs.c
-CONFLICT (delete/modify): drivers/staging/batman-adv/device.c deleted in st=
-aging-next/staging-next and modified in HEAD. Version HEAD of drivers/stagi=
-ng/batman-adv/device.c left in tree.
-CONFLICT (delete/modify): drivers/staging/cx25821/cx25821-audups11.c delete=
-d in HEAD and modified in staging-next/staging-next. Version staging-next/s=
-taging-next of drivers/staging/cx25821/cx25821-audups11.c left in tree.
-$ git rm -f drivers/staging/cx25821/cx25821-audups11.c
-$ git rm -f drivers/staging/batman-adv/device.c
-Merging slabh/slabh
-Merging scsi-post-merge/master
-Applying: drm/ttm: really fix build on architectures without AGP
-
---Signature=_Thu__22_Jul_2010_14_06_14_+1000_W+scRjss8lQgzcE.
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMR8O2AAoJEDMEi1NhKgbs/4sH/R4iPMoNjnCw+ZNt1WMTHWmS
-P9hrEE99ugJ+v/UmMFHM3XEXZgYsoWM/lBHwY/uIWDdYKZE6Awwitq6rQrZY0nPD
-7Bs48YRQ8yIjLhiy2Oq3BjXgXpONSVeEIXMLBpk/qLZK3PJScxMVTOf3q6KAF7G+
-DZyaDCwVd3SkUmnQ5hpXjQvOE07V41Vl/WWtznom6zkC1YHqRuGmZueHExdZdPLv
-jSD3DcS0MrgkgPQIYk9kaqk9cLDopEs9iMi2MdQhp7eg7smk9RSp87DhGKwARGC9
-PSZGLFd2CWoiQFqFI7efTNmVucbesl9wSsaC8dzGT6hV4ZareDaNGqBlyCNRYyE=
-=2uj6
------END PGP SIGNATURE-----
-
---Signature=_Thu__22_Jul_2010_14_06_14_+1000_W+scRjss8lQgzcE.--
+> 
+> Thanks you for you help,
+> Timothy Meade
+> -tmzt #htc-linux (facebook.com/HTCLinux)
