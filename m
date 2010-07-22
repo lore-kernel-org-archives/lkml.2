@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756208Ab0GVSo7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:44:59 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:5069 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754963Ab0GVSo4 convert rfc822-to-8bit (ORCPT
+	id S1759563Ab0GVSpQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:45:16 -0400
+Received: from mail-yx0-f174.google.com ([209.85.213.174]:54970 "EHLO
+	mail-yx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756634Ab0GVSpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:44:56 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=lLxpAPZTWGQSHufT0/ZwE0LUFAWHuVgWICjvLo30B63CUiWcNYEJm10jIeRb0Mp/1
-	tcY72ZRnacmcn5cmmC1IA==
+	Thu, 22 Jul 2010 14:45:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=HOLl1cc0/S5JwUbhKjZ+otkZkIvoMeBB+D9A7Hfr9zApjqDxpFqJ8V8P1gLSShS96K
+         LErUlp4nYqs2YlPJ8LLRNm+jve6w4hGYF4E9ScujJbakGVV3yZb/0vRjTWB4Er4DCzWL
+         FnERKpgqsvbKy5P9EVMpKNYCi3x8xopQveCPA=
 MIME-Version: 1.0
-In-Reply-To: <20100722183614.GA5443@suse.de>
-References: <20100722182638.GA12712@kroah.com>
-	<AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
-	<20100722183614.GA5443@suse.de>
-Date: Thu, 22 Jul 2010 11:44:50 -0700
-Message-ID: <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
-Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
-From: Paul Menage <menage@google.com>
-To: Greg KH <gregkh@suse.de>
-Cc: Li Zefan <lizf@cn.fujitsu.com>,
-        Lennart Poettering <lennart@poettering.net>,
-        Kay Sievers <kay.sievers@vrfy.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
-        linux-kernel@vger.kernel.org
+In-Reply-To: <4C488C41.60002@panasas.com>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+	<20100722162712.GB10352@jeremy-laptop>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
+	<AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
+	<4C488C41.60002@panasas.com>
+Date: Thu, 22 Jul 2010 14:45:07 -0400
+Message-ID: <AANLkTilU5QLBzOgwpmYRP5aZglOMta2iMCaNk62tiUIB@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+From: Greg Freemyer <greg.freemyer@gmail.com>
+To: Benny Halevy <bhalevy@panasas.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 11:36 AM, Greg KH <gregkh@suse.de> wrote:
+On Thu, Jul 22, 2010 at 2:21 PM, Benny Halevy <bhalevy@panasas.com> wrote:
+> On Jul. 22, 2010, 20:24 +0300, Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>> On Thu, Jul 22, 2010 at 10:03 AM, Jan Engelhardt <jengelh@medozas.de> wrote:
+>>>
+>>> I beg to differ. ctime is not completely useless. It reflects changes on
+>>> the inode for when you don't you change the content.
+>>
+>> Uh. Yes. Except that why is file metadata really different from file
+>> data? Most people really don't care. And a lot of people have asked
+>> for creation dates - and I seriously doubt that Windows people
+>> complain a lot about the fact that there you have mtime for metadata
+>> changes too.
+>>
+>> The point being that Unix ctime semantics certainly have well-defined
+>> semantics, but they are in no way "better" than having a real creation
+>> time, and are often worse.
 >
-> Really?  I see systems mounting it at /cgroups/ in the filesystem today.
+> Yeah, having create time would be important.
+> That said, having a non user-settable modify timestamp is crucial
+> for quickly determining whether a file has changed.
 
-Sure, it *can* be mounted as a single instance, but you then lose
-flexibility. E.g. at Google we want to have a different hierarchy for
-the CPU subsystem (with the tree grouped according to
-latency-sensitive versus batch, etc) and memory (grouped according to
-what jobs are sharing memory with each other).
+How would "cp --archive" and a host of backup/restore tools work
+without user-settable modify timestamps?
 
-> Where are you expecting it to be mounted at?
+Or are you proposing another timestamp?  I do computer forensics, I
+like timestamps, but enough is enough.
 
-I have no particular expectation. (At Google we're actually using
-/dev/cgroup/* but that's just for historical reasons, from
-/dev/cpuset). Under /sys/fs/cgroup sounds reasonable, but you'd want
-people to have the ability to manually create subdirs in there for
-separate mount points.
-
-Paul
+Greg
