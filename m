@@ -1,64 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756160Ab0GVQMR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 12:12:17 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59792 "EHLO mx1.redhat.com"
+	id S1754885Ab0GVQNg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 12:13:36 -0400
+Received: from mga01.intel.com ([192.55.52.88]:56098 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751005Ab0GVQMO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 12:12:14 -0400
-Date: Thu, 22 Jul 2010 12:11:49 -0400
-From: Ulrich Drepper <drepper@redhat.com>
-Message-Id: <201007221611.o6MGBnmW029378@hs20-bc2-1.build.redhat.com>
-To: a.p.zijlstra@chello.nl, acme@redhat.com, davem@davemloft.net,
-        imunsie@au.ibm.com, linux-kernel@vger.kernel.org, mhiramat@redhat.com,
-        mingo@elte.hu, paulus@samba.org
-Subject: Small perf optimization
+	id S1750838Ab0GVQNf convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 12:13:35 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,243,1278313200"; 
+   d="scan'208";a="588693520"
+From: "Koul, Vinod" <vinod.koul@intel.com>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+CC: Alan Cox <alan@linux.intel.com>,
+        Linus Walleij <linus.walleij@stericsson.com>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "Williams, Dan J" <dan.j.williams@intel.com>
+Date: Thu, 22 Jul 2010 21:43:28 +0530
+Subject: RE: [PATCH 1/3] DMAENGINE: generic slave channel control v2
+Thread-Topic: [PATCH 1/3] DMAENGINE: generic slave channel control v2
+Thread-Index: Acspilg1i5AEec1fRGKm87RyPSAOswALSfqg
+Message-ID: <438BB0150E931F4B9CE701519A44630104A3914683@bgsmsx502.gar.corp.intel.com>
+References: <1279740148-22186-1-git-send-email-linus.walleij@stericsson.com>
+ <AANLkTimmJJcMXxICZHjksp_TjqO_JRx9HwCTJ6UpZQOZ@mail.gmail.com>
+In-Reply-To: <AANLkTimmJJcMXxICZHjksp_TjqO_JRx9HwCTJ6UpZQOZ@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Before this bad practice of using arrays of string pointers to constant
-strings further spreads let's fix it.  With this change not only is the
-entire data associated with the arrays read-only, it also replaces a
-memory lookup with a trivial arithmetic operation.  The result is
-a smaller and faster binary.
+> 2010/7/22 Linus Walleij <linus.walleij@stericsson.com>:
+> 
+> > This adds an interface to the DMAengine to make it possible to
+> > reconfigure a slave channel at runtime. We add a few foreseen
+> > config parameters to the passed struct, with a void * pointer
+> > for custom per-device or per-platform runtime slave data.
+> 
+> BTW Vinod, if you're happy with this API, then please ACK it so
+> Dan has some indication whether it'll fit the Moorestown too.
 
+Shouldn't this patch remove the private member in dma_chan structure
 
-Signed-off-by: Ulrich Drepper <drepper@redhat.com>
+Currently chan->private is used for sending slave or similar channel specific 
+information. Now if we want to add struct dma_slave_config, then IMHO it 
+would make sense to remove private variable and replace with dma_slave_config 
+struture. That way we can reuse this struture there as well and if someone wants
+to add more stuff he can use the private_config.
 
+Dan, what do you think about this?
 
-diff --git a/tools/perf/arch/sparc/util/dwarf-regs.c b/tools/perf/arch/sparc/util/dwarf-regs.c
-index 0ab8848..17f193e 100644
---- a/tools/perf/arch/sparc/util/dwarf-regs.c
-+++ b/tools/perf/arch/sparc/util/dwarf-regs.c
-@@ -14,7 +14,7 @@
- 
- #define SPARC_MAX_REGS	96
- 
--const char *sparc_regs_table[SPARC_MAX_REGS] = {
-+static const char sparc_regs_table[SPARC_MAX_REGS][5] = {
- 	"%g0", "%g1", "%g2", "%g3", "%g4", "%g5", "%g6", "%g7",
- 	"%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%sp", "%o7",
- 	"%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7",
-diff --git a/tools/perf/arch/x86/util/dwarf-regs.c b/tools/perf/arch/x86/util/dwarf-regs.c
-index a794d30..fe5ef0f 100644
---- a/tools/perf/arch/x86/util/dwarf-regs.c
-+++ b/tools/perf/arch/x86/util/dwarf-regs.c
-@@ -28,7 +28,7 @@
-  */
- 
- #define X86_32_MAX_REGS 8
--const char *x86_32_regs_table[X86_32_MAX_REGS] = {
-+static const char x86_32_regs_table[X86_32_MAX_REGS][7] = {
- 	"%ax",
- 	"%cx",
- 	"%dx",
-@@ -40,7 +40,7 @@ const char *x86_32_regs_table[X86_32_MAX_REGS] = {
- };
- 
- #define X86_64_MAX_REGS 16
--const char *x86_64_regs_table[X86_64_MAX_REGS] = {
-+static const char x86_64_regs_table[X86_64_MAX_REGS][5] = {
- 	"%ax",
- 	"%dx",
- 	"%cx",
+Thanks
+-Vinod
