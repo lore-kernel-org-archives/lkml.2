@@ -1,49 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759069Ab0GVRWN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 13:22:13 -0400
-Received: from magus.merit.edu ([198.108.1.13]:39310 "EHLO magus.merit.edu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754943Ab0GVRWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 13:22:09 -0400
-X-Greylist: delayed 583 seconds by postgrey-1.27 at vger.kernel.org; Thu, 22 Jul 2010 13:22:09 EDT
-Date: Thu, 22 Jul 2010 13:12:24 -0400
-From: Jim Rees <rees@umich.edu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
-        David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended file stats available [ver #6]
-Message-ID: <20100722171224.GA8630@merit.edu>
-References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
- <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
- <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
- <30448.1279800887@redhat.com>
- <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
- <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
- <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
- <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
- <20100722162712.GB10352@jeremy-laptop>
- <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	id S1759254Ab0GVRWr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 13:22:47 -0400
+Received: from wolverine01.qualcomm.com ([199.106.114.254]:54657 "EHLO
+	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754943Ab0GVRWn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 13:22:43 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6051"; a="48303553"
+Message-ID: <4C487E62.9080106@codeaurora.org>
+Date: Thu, 22 Jul 2010 10:22:42 -0700
+From: Greg Bean <gbean@codeaurora.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.8) Gecko/20100227 Thunderbird/3.0.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: akpm@linux-foundation.org, david-b@pacbell.net, khali@linux-fr.org,
+        linux-i2c@vger.kernel.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] gpio: sx150x: Add Semtech I2C sx150x gpio expander
+ driver.
+References: <1279818771-9428-1-git-send-email-gbean@codeaurora.org> <20100722101753.c73604eb.randy.dunlap@oracle.com>
+In-Reply-To: <20100722101753.c73604eb.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds wrote:
+ >> +	bool "Semtech SX150x I2C GPIO expander"
+ >> +	depends on I2C=y
+ >> +	default n
+ >> +	help
+ >> +	  Say yes here to provide support for Semtech SX150-series I2C
+ >> +	  GPIO expanders. Compatible models include:
+ >
+ > Just curious, not complaining, but why does this driver (and some others)
+ > need to be built-in instead of having the option of being built as a
+ > loadable module?
 
-  I personally think that Unix ctime is insane. There is no real reason
-  why "write()" should change mtime, but "chmod" changes ctime. It was
-  just a random decision way back when...
+It's that way because it requires unexported symbols from genirq and 
+I2C.  If this driver is allowed to be a module, it can't find the 
+unexported genirq symbols, and if I2C is allowed to be a module, then a 
+bunch of i2c_smbus stuff can't be resolved...
 
-I believe it was done that way so "dump" could backup just the inode and not
-the data if only the inode had changed.  Full history here:
-
-http://blog.plover.com/Unix/ctime.html
+-- 
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
