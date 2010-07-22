@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759577Ab0GVSqE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:46:04 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62081 "EHLO
+	id S1759601Ab0GVSpT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:45:19 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:60160 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759809Ab0GVSpt (ORCPT
+	with ESMTP id S1758407Ab0GVSpL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:45:49 -0400
+	Thu, 22 Jul 2010 14:45:11 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,113 +16,79 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 02/16] bootmem, x86: Add weak version of reserve_bootmem_generic
-Date: Thu, 22 Jul 2010 11:43:47 -0700
-Message-Id: <1279824241-17582-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 04/16] x86,memblock: Add memblock_x86_reserve_range/memblock_x86_free_range
+Date: Thu, 22 Jul 2010 11:43:49 -0700
+Message-Id: <1279824241-17582-5-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
 References: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090205.4C4891BC.002E,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090204.4C489188.0187,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will be used memblock_x86_to_bootmem converting
+they are wrappers for core versions.
+they are taking start/end/name instead of base/size.
+will make x86 conversion more easy
 
-It is an wrapper for reserve_bootmem, and x86 64bit is using special one.
+could add more debug print out
 
-Also clean up that version for x86_64. We don't need to take care of numa
-path for that, bootmem can handle it how
+-v2: change get_max_mapped() to memblock.default_alloc_limit according to Michael
+      Ellerman and Ben
+     change to memblock_x86_reserve_range and memblock_x86_free_range according to Michael Ellerman
+-v3: call check_and_double after reserve/free, so could avoid to use
+      find_memblock_area. Suggested by Michael Ellerman
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_32.c |    6 ------
- arch/x86/mm/init_64.c |   20 ++------------------
- mm/bootmem.c          |    6 ++++++
- 3 files changed, 8 insertions(+), 24 deletions(-)
+ arch/x86/include/asm/memblock.h |    3 +++
+ arch/x86/mm/memblock.c          |   22 ++++++++++++++++++++++
+ 2 files changed, 25 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index bca7909..90e0545 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -1069,9 +1069,3 @@ void mark_rodata_ro(void)
+diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
+index 69cf853..e11ddf0 100644
+--- a/arch/x86/include/asm/memblock.h
++++ b/arch/x86/include/asm/memblock.h
+@@ -6,4 +6,7 @@
+ u64 memblock_x86_find_in_range_size(u64 start, u64 *sizep, u64 align);
+ void memblock_x86_to_bootmem(u64 start, u64 end);
+ 
++void memblock_x86_reserve_range(u64 start, u64 end, char *name);
++void memblock_x86_free_range(u64 start, u64 end);
++
  #endif
+diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
+index 7986a12..80cdcf8 100644
+--- a/arch/x86/mm/memblock.c
++++ b/arch/x86/mm/memblock.c
+@@ -116,3 +116,25 @@ void __init memblock_x86_to_bootmem(u64 start, u64 end)
+ 		memblock_reserve(__pa(memblock.reserved.regions), sizeof(struct memblock_region) * memblock.reserved.max);
  }
  #endif
--
--int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
--				   int flags)
--{
--	return reserve_bootmem(phys, len, flags);
--}
-diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
-index ee41bba..634fa08 100644
---- a/arch/x86/mm/init_64.c
-+++ b/arch/x86/mm/init_64.c
-@@ -799,13 +799,10 @@ void mark_rodata_ro(void)
- 
- #endif
- 
-+#ifndef CONFIG_NO_BOOTMEM
- int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 				   int flags)
- {
--#ifdef CONFIG_NUMA
--	int nid, next_nid;
--	int ret;
--#endif
- 	unsigned long pfn = phys >> PAGE_SHIFT;
- 
- 	if (pfn >= max_pfn) {
-@@ -821,21 +818,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 		return -EFAULT;
- 	}
- 
--	/* Should check here against the e820 map to avoid double free */
--#ifdef CONFIG_NUMA
--	nid = phys_to_nid(phys);
--	next_nid = phys_to_nid(phys + len - 1);
--	if (nid == next_nid)
--		ret = reserve_bootmem_node(NODE_DATA(nid), phys, len, flags);
--	else
--		ret = reserve_bootmem(phys, len, flags);
--
--	if (ret != 0)
--		return ret;
--
--#else
- 	reserve_bootmem(phys, len, flags);
--#endif
- 
- 	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
- 		dma_reserve += len / PAGE_SIZE;
-@@ -844,6 +827,7 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
- 
- 	return 0;
- }
-+#endif
- 
- int kern_addr_valid(unsigned long addr)
- {
-diff --git a/mm/bootmem.c b/mm/bootmem.c
-index 142c84a..bde170d 100644
---- a/mm/bootmem.c
-+++ b/mm/bootmem.c
-@@ -526,6 +526,12 @@ int __init reserve_bootmem(unsigned long addr, unsigned long size,
- }
- 
- #ifndef CONFIG_NO_BOOTMEM
-+int __weak __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
-+				   int flags)
++
++void __init memblock_x86_reserve_range(u64 start, u64 end, char *name)
 +{
-+	return reserve_bootmem(phys, len, flags);
++	if (start == end)
++		return;
++
++	if (WARN_ONCE(start > end, "memblock_x86_reserve_range: wrong range [%#llx, %#llx]\n", start, end))
++		return;
++
++	memblock_reserve(start, end - start);
 +}
 +
- static unsigned long __init align_idx(struct bootmem_data *bdata,
- 				      unsigned long idx, unsigned long step)
- {
++void __init memblock_x86_free_range(u64 start, u64 end)
++{
++	if (start == end)
++		return;
++
++	if (WARN_ONCE(start > end, "memblock_x86_free_range: wrong range [%#llx, %#llx]\n", start, end))
++		return;
++
++	memblock_free(start, end - start);
++}
 -- 
 1.6.4.2
 
