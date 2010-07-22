@@ -1,89 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752008Ab0GVAyr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 21 Jul 2010 20:54:47 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:40177 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750719Ab0GVAyp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 21 Jul 2010 20:54:45 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=wRoZNIzZJuaZ8l3fF0kDftAjp2MMQDbmHUuPrFh1/t6jlzGgbgTFvGioNPDOCq2eSs
-         DObTWFIf9fcPkjG7uAIeTo10yfyf7PzMr9jZ07o+vBL9GNaIlokaUGz1uucW7HNVTeqM
-         F6GrazXXNSvuP/W5Gh+tXrf3qF7rYodmnvywA=
-Message-ID: <4C4796CE.6080306@gmail.com>
-Date: Thu, 22 Jul 2010 08:54:38 +0800
-From: Wang Sheng-Hui <crosslonelyover@gmail.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1751872Ab0GVA6Q (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 21 Jul 2010 20:58:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:8372 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750719Ab0GVA6N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 21 Jul 2010 20:58:13 -0400
 MIME-Version: 1.0
-To: Eric Sandeen <sandeen@redhat.com>, agruen@suse.de, hch@infradead.org,
-        linux-ext4 <linux-ext4@vger.kernel.org>, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-        kernel-janitors <kernel-janitors@vger.kernel.org>
-Subject: re: [PATCH] fix return value for mb_cache_shrink_fn when nr_to_scan
- > 0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+Cc: Alexander Viro <aviro@redhat.com>
+CC: Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>
+CC: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: auditsyscall: fix fastpath return value after reschedule
+X-Fcc: ~/Mail/linus
+X-Shopping-List: (1) Amber pencils
+   (2) Meretricious casino suicides
+   (3) Diabetic lenient soft-serve
+   (4) Reminiscent tape
+Message-Id: <20100722005758.7AD8E400B8@magilla.sf.frob.com>
+Date: Wed, 21 Jul 2010 17:57:58 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, missed that. Regerated and passed checkpatch.pl check. 
-Please check it.
+The following changes since commit cd5b8f8755a89a57fc8c408d284b8b613f090345:
 
+  Merge branch 'urgent' of git://git.kernel.org/pub/scm/linux/kernel/git/brodo/pcmcia-2.6 (2010-07-21 09:31:15 -0700)
 
-Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/frob/linux-2.6-roland.git x86/auditsyscall
+
+Roland McGrath (1):
+      x86: auditsyscall: fix fastpath return value after reschedule
+
+ arch/x86/kernel/entry_64.S |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+Thanks,
+Roland
 ---
- fs/mbcache.c |   23 ++++++++++++-----------
- 1 files changed, 12 insertions(+), 11 deletions(-)
+In the CONFIG_AUDITSYSCALL fast-path for x86 64-bit system calls,
+we can pass a bad return value and/or error indication for the
+system call to audit_syscall_exit().  This happens when
+TIF_NEED_RESCHED was set as the system call returned, so we went
+out to schedule() and came back to the exit-audit fast-path.  The
+fix is to reload the user return value register from the pt_regs
+before using it for audit_syscall_exit().
 
-diff --git a/fs/mbcache.c b/fs/mbcache.c
-index ec88ff3..603170e 100644
---- a/fs/mbcache.c
-+++ b/fs/mbcache.c
-@@ -201,21 +201,14 @@ mb_cache_shrink_fn(int nr_to_scan, gfp_t gfp_mask)
- {
- 	LIST_HEAD(free_list);
- 	struct list_head *l, *ltmp;
-+	struct mb_cache *cache;
- 	int count = 0;
- 
--	spin_lock(&mb_cache_spinlock);
--	list_for_each(l, &mb_cache_list) {
--		struct mb_cache *cache =
--			list_entry(l, struct mb_cache, c_cache_list);
--		mb_debug("cache %s (%d)", cache->c_name,
--			  atomic_read(&cache->c_entry_count));
--		count += atomic_read(&cache->c_entry_count);
--	}
- 	mb_debug("trying to free %d entries", nr_to_scan);
--	if (nr_to_scan == 0) {
--		spin_unlock(&mb_cache_spinlock);
-+	if (nr_to_scan == 0)
- 		goto out;
--	}
-+
-+	spin_lock(&mb_cache_spinlock);
- 	while (nr_to_scan-- && !list_empty(&mb_cache_lru_list)) {
- 		struct mb_cache_entry *ce =
- 			list_entry(mb_cache_lru_list.next,
-@@ -229,6 +222,14 @@ mb_cache_shrink_fn(int nr_to_scan, gfp_t gfp_mask)
- 						   e_lru_list), gfp_mask);
- 	}
- out:
-+	spin_lock(&mb_cache_spinlock);
-+	list_for_each_entry(cache, &mb_cache_list, c_cache_list) {
-+		mb_debug("cache %s (%d)", cache->c_name,
-+			  atomic_read(&cache->c_entry_count));
-+		count += atomic_read(&cache->c_entry_count);
-+	}
-+	spin_unlock(&mb_cache_spinlock);
-+
- 	return (count / 100) * sysctl_vfs_cache_pressure;
- }
- 
+Both the 32-bit kernel's fast path and the 64-bit kernel's 32-bit
+system call fast paths work slightly differently, so that they
+always leave the fast path entirely to reschedule and don't return
+there, so they don't have the analogous bugs.
+
+Reported-by: Alexander Viro <aviro@redhat.com>
+Signed-off-by: Roland McGrath <roland@redhat.com>
+---
+ arch/x86/kernel/entry_64.S |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/kernel/entry_64.S b/arch/x86/kernel/entry_64.S
+index 0697ff1..4db7c4d 100644
+--- a/arch/x86/kernel/entry_64.S
++++ b/arch/x86/kernel/entry_64.S
+@@ -571,8 +571,8 @@ auditsys:
+ 	 * masked off.
+ 	 */
+ sysret_audit:
+-	movq %rax,%rsi		/* second arg, syscall return value */
+-	cmpq $0,%rax		/* is it < 0? */
++	movq RAX-ARGOFFSET(%rsp),%rsi	/* second arg, syscall return value */
++	cmpq $0,%rsi		/* is it < 0? */
+ 	setl %al		/* 1 if so, 0 if not */
+ 	movzbl %al,%edi		/* zero-extend that into %edi */
+ 	inc %edi /* first arg, 0->1(AUDITSC_SUCCESS), 1->2(AUDITSC_FAILURE) */
 -- 
-1.6.3.3
+1.7.1.1
