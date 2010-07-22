@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755504Ab0GWAES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 20:04:18 -0400
-Received: from sous-sol.org ([216.99.217.87]:60469 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751820Ab0GWAEQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 20:04:16 -0400
-Date: Thu, 22 Jul 2010 17:03:48 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Andrew Morton <akpm@linux-foundataion.org>,
-        Al Viro <viro@ZenIV.linux.org.uk>,
-        "Serge E. Hallyn" <serge.hallyn@canonical.com>,
-        Christoph Hellwig <hch@infradead.org>
-Cc: "Daniel P. Berrange" <berrange@redhat.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH] blkdev: cgroup whitelist permission fix
-Message-ID: <20100723000348.GD24905@sequoia.sous-sol.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1756363Ab0GWAEi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 20:04:38 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:48460 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756194Ab0GWAEg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 20:04:36 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Fri, 23 Jul 2010 08:59:44 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Greg Thelen <gthelen@google.com>
+Cc: Vivek Goyal <vgoyal@redhat.com>, Nauman Rafique <nauman@google.com>,
+        Munehiro Ikeda <m-ikeda@ds.jp.nec.com>, linux-kernel@vger.kernel.org,
+        Ryo Tsuruta <ryov@valinux.co.jp>, taka@valinux.co.jp,
+        Andrea Righi <righi.andrea@gmail.com>,
+        Gui Jianfeng <guijianfeng@cn.fujitsu.com>, akpm@linux-foundation.org,
+        balbir@linux.vnet.ibm.com
+Subject: Re: [RFC][PATCH 00/11] blkiocg async support
+Message-Id: <20100723085944.9fb9cb8b.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <AANLkTin9TCziHU-AX42aVWpaFDX5=4NwojGxFSFnRFAq@mail.gmail.com>
+References: <4C369009.80503@ds.jp.nec.com>
+	<20100709134546.GC3672@redhat.com>
+	<4C37BC1A.20102@ds.jp.nec.com>
+	<AANLkTikECHfrksrk3QnD3X07pmgXdpo5-fv7hDLm2Zxw@mail.gmail.com>
+	<20100710132417.GA2752@redhat.com>
+	<20100712092004.3b27e13e.kamezawa.hiroyu@jp.fujitsu.com>
+	<AANLkTin9TCziHU-AX42aVWpaFDX5=4NwojGxFSFnRFAq@mail.gmail.com>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.3 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The cgroup device whitelist code gets confused when trying to grant
-permission to a disk partition that is not currently open.  Part of
-blkdev_open() includes __blkdev_get() on the whole disk.  This simply
-avoids the cgroup check for the whole disk case when opening a
-partition.  This bug describes the details.  
+On Thu, 22 Jul 2010 12:28:50 -0700
+Greg Thelen <gthelen@google.com> wrote:
 
-https://bugzilla.redhat.com/show_bug.cgi?id=589662
+> > I've just waited for dirty-ratio patches because I know someone is working on.
+> > But, hmm, I'll consider to start work by myself.
+> 
+> I have some patches that I have to address the dirty-ratios.  I will post them.
+> 
 
-Basically, the only ways to reliably allow a cgroup access to a partition
-on a block device when using the whitelist are to 1) also give it access
-to the whole block device or 2) make sure the partition is already open
-in a different context.
+please wait until my proposal to implement a light-weight lock-less update_stat()
+I'll handle FILE_MAPPED in it and add a generic interface for updating statistics
+in mem_cgroup via page_cgroup.
+(I'll post it today if I can, IOW, I'm lucky.)
 
-Seems valid for 2.6.35 and -stable to me, as it's currently broken and
-causes libvirt's container support to fail.
+If not, we have to discuss the same thing again in a hell.
 
-Acked-by: Serge E. Hallyn <serue@us.ibm.com>
-Tested-by: Serge E. Hallyn <serue@us.ibm.com>
-Cc: stable@kernel.org
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
----
- fs/block_dev.c |   10 ++++++----
- 1 files changed, 6 insertions(+), 4 deletions(-)
+Thanks,
+-Kame
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 7346c96..09b107e 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -1315,10 +1315,12 @@ static int __blkdev_get(struct block_device *bdev, fmode_t mode, int for_part)
- 	/*
- 	 * hooks: /n/, see "layering violations".
- 	 */
--	ret = devcgroup_inode_permission(bdev->bd_inode, perm);
--	if (ret != 0) {
--		bdput(bdev);
--		return ret;
-+	if (!for_part) {
-+		ret = devcgroup_inode_permission(bdev->bd_inode, perm);
-+		if (ret != 0) {
-+			bdput(bdev);
-+			return ret;
-+		}
- 	}
- 
- 	lock_kernel();
