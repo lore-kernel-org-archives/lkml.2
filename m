@@ -1,799 +1,1211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760096Ab0GVWbT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 18:31:19 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:38066 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759985Ab0GVWaU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 18:30:20 -0400
-Subject: [PATCH 3/4] sparc: remove references to of_device and to_of_device
-To: sfr@canb.auug.org.au, monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, benh@kernel.crashing.org,
-        sparclinux@vger.kernel.org, davem@davemloft.net
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 22 Jul 2010 16:30:16 -0600
-Message-ID: <20100722223016.21557.40832.stgit@angua>
-In-Reply-To: <20100722222600.21557.34167.stgit@angua>
-References: <20100722222600.21557.34167.stgit@angua>
-User-Agent: StGit/0.15
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1760058Ab0GVWdf (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 18:33:35 -0400
+Received: from mail.perches.com ([173.55.12.10]:2051 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758972Ab0GVWdd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 18:33:33 -0400
+From: Joe Perches <joe@perches.com>
+To: Ron Mercer <ron.mercer@qlogic.com>
+Cc: linux-driver@qlogic.com, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH net-next] drivers/net/qla3xxx.c: Update logging message style
+Date: Thu, 22 Jul 2010 15:33:31 -0700
+Message-Id: <4057a685dc2c277e9e3137c4f0e01eeb389971a4.1279837596.git.joe@perches.com>
+X-Mailer: git-send-email 1.7.2
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-of_device is just a #define alias to platform_device.  This patch
-replaces all references to it with platform_device.
+Use pr_<level>
+Use netdev_<level>
+Use netif_<level>
+Remove #define PFX
+Improve a couple of loops to avoid deep indentation.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Compile tested only
+
+$ size drivers/net/qla3xxx.o.*
+   text    data     bss     dec     hex filename
+  51603     212   13864   65679   1008f drivers/net/qla3xxx.o.old
+  50413     212   13864   64489    fbe9 drivers/net/qla3xxx.o.new
+
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
- arch/sparc/include/asm/prom.h        |    2 +-
- arch/sparc/kernel/apc.c              |    4 ++--
- arch/sparc/kernel/auxio_64.c         |    3 ++-
- arch/sparc/kernel/central.c          |    4 ++--
- arch/sparc/kernel/chmc.c             |   12 ++++++------
- arch/sparc/kernel/ioport.c           |    2 +-
- arch/sparc/kernel/of_device_32.c     |   14 +++++++-------
- arch/sparc/kernel/of_device_64.c     |   16 ++++++++--------
- arch/sparc/kernel/of_device_common.c |   14 +++++++-------
- arch/sparc/kernel/pci.c              |    4 ++--
- arch/sparc/kernel/pci_fire.c         |    4 ++--
- arch/sparc/kernel/pci_impl.h         |    2 +-
- arch/sparc/kernel/pci_psycho.c       |    6 +++---
- arch/sparc/kernel/pci_sabre.c        |    6 +++---
- arch/sparc/kernel/pci_schizo.c       |   10 +++++-----
- arch/sparc/kernel/pci_sun4v.c        |    4 ++--
- arch/sparc/kernel/pmc.c              |    2 +-
- arch/sparc/kernel/power.c            |    2 +-
- arch/sparc/kernel/prom_irqtrans.c    |    2 +-
- arch/sparc/kernel/psycho_common.c    |    2 +-
- arch/sparc/kernel/psycho_common.h    |    2 +-
- arch/sparc/kernel/sbus.c             |   16 ++++++++--------
- arch/sparc/kernel/time_32.c          |    2 +-
- arch/sparc/kernel/time_64.c          |    6 +++---
- arch/sparc/mm/io-unit.c              |    4 ++--
- arch/sparc/mm/iommu.c                |    4 ++--
- 26 files changed, 75 insertions(+), 74 deletions(-)
+ drivers/net/qla3xxx.c |  524 +++++++++++++++++++------------------------------
+ 1 files changed, 200 insertions(+), 324 deletions(-)
 
-diff --git a/arch/sparc/include/asm/prom.h b/arch/sparc/include/asm/prom.h
-index d35df5a..c82a7da 100644
---- a/arch/sparc/include/asm/prom.h
-+++ b/arch/sparc/include/asm/prom.h
-@@ -57,7 +57,7 @@ extern void of_iounmap(struct resource *res, void __iomem *base, unsigned long s
- 
- /* These routines are here to provide compatibility with how powerpc
-  * handles IRQ mapping for OF device nodes.  We precompute and permanently
-- * register them in the of_device objects, whereas powerpc computes them
-+ * register them in the platform_device objects, whereas powerpc computes them
-  * on request.
+diff --git a/drivers/net/qla3xxx.c b/drivers/net/qla3xxx.c
+index 54ebb65..74debf1 100644
+--- a/drivers/net/qla3xxx.c
++++ b/drivers/net/qla3xxx.c
+@@ -5,6 +5,8 @@
+  * See LICENSE.qla3xxx for copyright and licensing details.
   */
- static inline void irq_dispose_mapping(unsigned int virq)
-diff --git a/arch/sparc/kernel/apc.c b/arch/sparc/kernel/apc.c
-index c471251..2c0046e 100644
---- a/arch/sparc/kernel/apc.c
-+++ b/arch/sparc/kernel/apc.c
-@@ -68,7 +68,7 @@ static void apc_swift_idle(void)
- #endif
- } 
  
--static inline void apc_free(struct of_device *op)
-+static inline void apc_free(struct platform_device *op)
++#define pr_fmt(fmt) KBUILD_MODNAME ": " fmt
++
+ #include <linux/kernel.h>
+ #include <linux/init.h>
+ #include <linux/types.h>
+@@ -39,11 +41,13 @@
+ #define DRV_NAME  	"qla3xxx"
+ #define DRV_STRING 	"QLogic ISP3XXX Network Driver"
+ #define DRV_VERSION	"v2.03.00-k5"
+-#define PFX		DRV_NAME " "
+ 
+ static const char ql3xxx_driver_name[] = DRV_NAME;
+ static const char ql3xxx_driver_version[] = DRV_VERSION;
+ 
++#define TIMED_OUT_MSG							\
++"Timed out waiting for management port to get free before issuing command\n"
++
+ MODULE_AUTHOR("QLogic Corporation");
+ MODULE_DESCRIPTION("QLogic ISP3XXX Network Driver " DRV_VERSION " ");
+ MODULE_LICENSE("GPL");
+@@ -139,27 +143,22 @@ static int ql_wait_for_drvr_lock(struct ql3_adapter *qdev)
  {
- 	of_iounmap(&op->resource[0], regs, resource_size(&op->resource[0]));
- }
-@@ -136,7 +136,7 @@ static const struct file_operations apc_fops = {
+ 	int i = 0;
  
- static struct miscdevice apc_miscdev = { APC_MINOR, APC_DEVNAME, &apc_fops };
- 
--static int __devinit apc_probe(struct of_device *op,
-+static int __devinit apc_probe(struct platform_device *op,
- 			       const struct of_device_id *match)
- {
- 	int err;
-diff --git a/arch/sparc/kernel/auxio_64.c b/arch/sparc/kernel/auxio_64.c
-index 46ba58a..3efd3c5 100644
---- a/arch/sparc/kernel/auxio_64.c
-+++ b/arch/sparc/kernel/auxio_64.c
-@@ -102,7 +102,8 @@ static struct of_device_id __initdata auxio_match[] = {
- 
- MODULE_DEVICE_TABLE(of, auxio_match);
- 
--static int __devinit auxio_probe(struct of_device *dev, const struct of_device_id *match)
-+static int __devinit auxio_probe(struct platform_device *dev,
-+				 const struct of_device_id *match)
- {
- 	struct device_node *dp = dev->dev.of_node;
- 	unsigned long size;
-diff --git a/arch/sparc/kernel/central.c b/arch/sparc/kernel/central.c
-index b6080c3..cfa2624 100644
---- a/arch/sparc/kernel/central.c
-+++ b/arch/sparc/kernel/central.c
-@@ -59,7 +59,7 @@ static int __devinit clock_board_calc_nslots(struct clock_board *p)
+-	while (1) {
+-		if (!ql_sem_lock(qdev,
+-				 QL_DRVR_SEM_MASK,
+-				 (QL_RESOURCE_BITS_BASE_CODE | (qdev->mac_index)
+-				  * 2) << 1)) {
+-			if (i < 10) {
+-				ssleep(1);
+-				i++;
+-			} else {
+-				printk(KERN_ERR PFX "%s: Timed out waiting for "
+-				       "driver lock...\n",
+-				       qdev->ndev->name);
+-				return 0;
+-			}
+-		} else {
+-			printk(KERN_DEBUG PFX
+-			       "%s: driver lock acquired.\n",
+-			       qdev->ndev->name);
++	while (i < 10) {
++		if (i)
++			ssleep(1);
++
++		if (ql_sem_lock(qdev,
++				QL_DRVR_SEM_MASK,
++				(QL_RESOURCE_BITS_BASE_CODE | (qdev->mac_index)
++				 * 2) << 1)) {
++			netdev_printk(KERN_DEBUG, qdev->ndev,
++				      "driver lock acquired\n");
+ 			return 1;
+ 		}
  	}
++
++	netdev_err(qdev->ndev, "Timed out waiting for driver lock...\n");
++	return 0;
  }
  
--static int __devinit clock_board_probe(struct of_device *op,
-+static int __devinit clock_board_probe(struct platform_device *op,
- 				       const struct of_device_id *match)
- {
- 	struct clock_board *p = kzalloc(sizeof(*p), GFP_KERNEL);
-@@ -157,7 +157,7 @@ static struct of_platform_driver clock_board_driver = {
- 	},
- };
+ static void ql_set_register_page(struct ql3_adapter *qdev, u32 page)
+@@ -308,8 +307,7 @@ static void ql_release_to_lrg_buf_free_list(struct ql3_adapter *qdev,
+ 		lrg_buf_cb->skb = netdev_alloc_skb(qdev->ndev,
+ 						   qdev->lrg_buffer_len);
+ 		if (unlikely(!lrg_buf_cb->skb)) {
+-			printk(KERN_ERR PFX "%s: failed netdev_alloc_skb().\n",
+-			       qdev->ndev->name);
++			netdev_err(qdev->ndev, "failed netdev_alloc_skb()\n");
+ 			qdev->lrg_buf_skb_check++;
+ 		} else {
+ 			/*
+@@ -324,8 +322,9 @@ static void ql_release_to_lrg_buf_free_list(struct ql3_adapter *qdev,
+ 					     PCI_DMA_FROMDEVICE);
+ 			err = pci_dma_mapping_error(qdev->pdev, map);
+ 			if(err) {
+-				printk(KERN_ERR "%s: PCI mapping failed with error: %d\n",
+-				       qdev->ndev->name, err);
++				netdev_err(qdev->ndev,
++					   "PCI mapping failed with error: %d\n",
++					   err);
+ 				dev_kfree_skb(lrg_buf_cb->skb);
+ 				lrg_buf_cb->skb = NULL;
  
--static int __devinit fhc_probe(struct of_device *op,
-+static int __devinit fhc_probe(struct platform_device *op,
- 			       const struct of_device_id *match)
- {
- 	struct fhc *p = kzalloc(sizeof(*p), GFP_KERNEL);
-diff --git a/arch/sparc/kernel/chmc.c b/arch/sparc/kernel/chmc.c
-index 04bb7df..08c466e 100644
---- a/arch/sparc/kernel/chmc.c
-+++ b/arch/sparc/kernel/chmc.c
-@@ -392,7 +392,7 @@ static void __devinit jbusmc_construct_dimm_groups(struct jbusmc *p,
+@@ -556,8 +555,7 @@ static int ql_get_nvram_params(struct ql3_adapter *qdev)
+ 	if(ql_sem_spinlock(qdev, QL_NVRAM_SEM_MASK,
+ 			(QL_RESOURCE_BITS_BASE_CODE | (qdev->mac_index) *
+ 			 2) << 10)) {
+-		printk(KERN_ERR PFX"%s: Failed ql_sem_spinlock().\n",
+-			__func__);
++		pr_err("%s: Failed ql_sem_spinlock()\n", __func__);
+ 		spin_unlock_irqrestore(&qdev->hw_lock, hw_flags);
+ 		return -1;
  	}
- }
+@@ -570,8 +568,8 @@ static int ql_get_nvram_params(struct ql3_adapter *qdev)
+ 	ql_sem_unlock(qdev, QL_NVRAM_SEM_MASK);
  
--static int __devinit jbusmc_probe(struct of_device *op,
-+static int __devinit jbusmc_probe(struct platform_device *op,
- 				  const struct of_device_id *match)
- {
- 	const struct linux_prom64_registers *mem_regs;
-@@ -690,7 +690,7 @@ static void chmc_fetch_decode_regs(struct chmc *p)
- 				      chmc_read_mcreg(p, CHMCTRL_DECODE4));
- }
- 
--static int __devinit chmc_probe(struct of_device *op,
-+static int __devinit chmc_probe(struct platform_device *op,
- 				const struct of_device_id *match)
- {
- 	struct device_node *dp = op->dev.of_node;
-@@ -765,7 +765,7 @@ out_free:
- 	goto out;
- }
- 
--static int __devinit us3mc_probe(struct of_device *op,
-+static int __devinit us3mc_probe(struct platform_device *op,
- 				const struct of_device_id *match)
- {
- 	if (mc_type == MC_TYPE_SAFARI)
-@@ -775,21 +775,21 @@ static int __devinit us3mc_probe(struct of_device *op,
- 	return -ENODEV;
- }
- 
--static void __devexit chmc_destroy(struct of_device *op, struct chmc *p)
-+static void __devexit chmc_destroy(struct platform_device *op, struct chmc *p)
- {
- 	list_del(&p->list);
- 	of_iounmap(&op->resource[0], p->regs, 0x48);
- 	kfree(p);
- }
- 
--static void __devexit jbusmc_destroy(struct of_device *op, struct jbusmc *p)
-+static void __devexit jbusmc_destroy(struct platform_device *op, struct jbusmc *p)
- {
- 	mc_list_del(&p->list);
- 	of_iounmap(&op->resource[0], p->regs, JBUSMC_REGS_SIZE);
- 	kfree(p);
- }
- 
--static int __devexit us3mc_remove(struct of_device *op)
-+static int __devexit us3mc_remove(struct platform_device *op)
- {
- 	void *p = dev_get_drvdata(&op->dev);
- 
-diff --git a/arch/sparc/kernel/ioport.c b/arch/sparc/kernel/ioport.c
-index 703e4aa..41f7e4e 100644
---- a/arch/sparc/kernel/ioport.c
-+++ b/arch/sparc/kernel/ioport.c
-@@ -253,7 +253,7 @@ EXPORT_SYMBOL(sbus_set_sbus64);
- static void *sbus_alloc_coherent(struct device *dev, size_t len,
- 				 dma_addr_t *dma_addrp, gfp_t gfp)
- {
--	struct of_device *op = to_of_device(dev);
-+	struct platform_device *op = to_platform_device(dev);
- 	unsigned long len_total = (len + PAGE_SIZE-1) & PAGE_MASK;
- 	unsigned long va;
- 	struct resource *res;
-diff --git a/arch/sparc/kernel/of_device_32.c b/arch/sparc/kernel/of_device_32.c
-index 75fc9d5..2d055a1 100644
---- a/arch/sparc/kernel/of_device_32.c
-+++ b/arch/sparc/kernel/of_device_32.c
-@@ -241,10 +241,10 @@ static int __init use_1to1_mapping(struct device_node *pp)
- 
- static int of_resource_verbose;
- 
--static void __init build_device_resources(struct of_device *op,
-+static void __init build_device_resources(struct platform_device *op,
- 					  struct device *parent)
- {
--	struct of_device *p_op;
-+	struct platform_device *p_op;
- 	struct of_bus *bus;
- 	int na, ns;
- 	int index, num_reg;
-@@ -253,7 +253,7 @@ static void __init build_device_resources(struct of_device *op,
- 	if (!parent)
- 		return;
- 
--	p_op = to_of_device(parent);
-+	p_op = to_platform_device(parent);
- 	bus = of_match_bus(p_op->dev.of_node);
- 	bus->count_cells(op->dev.of_node, &na, &ns);
- 
-@@ -335,10 +335,10 @@ static void __init build_device_resources(struct of_device *op,
+ 	if (checksum != 0) {
+-		printk(KERN_ERR PFX "%s: checksum should be zero, is %x!!\n",
+-		       qdev->ndev->name, checksum);
++		netdev_err(qdev->ndev, "checksum should be zero, is %x!!\n",
++			   checksum);
+ 		spin_unlock_irqrestore(&qdev->hw_lock, hw_flags);
+ 		return -1;
  	}
+@@ -668,11 +666,7 @@ static int ql_mii_write_reg_ex(struct ql3_adapter *qdev,
+ 	scanWasEnabled = ql_mii_disable_scan_mode(qdev);
+ 
+ 	if (ql_wait_for_mii_ready(qdev)) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_WARNING PFX
+-			       "%s Timed out waiting for management port to "
+-			       "get free before issuing command.\n",
+-			       qdev->ndev->name);
++		netif_warn(qdev, link, qdev->ndev, TIMED_OUT_MSG);
+ 		return -1;
+ 	}
+ 
+@@ -683,11 +677,7 @@ static int ql_mii_write_reg_ex(struct ql3_adapter *qdev,
+ 
+ 	/* Wait for write to complete 9/10/04 SJP */
+ 	if (ql_wait_for_mii_ready(qdev)) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_WARNING PFX
+-			       "%s: Timed out waiting for management port to "
+-			       "get free before issuing command.\n",
+-			       qdev->ndev->name);
++		netif_warn(qdev, link, qdev->ndev, TIMED_OUT_MSG);
+ 		return -1;
+ 	}
+ 
+@@ -708,11 +698,7 @@ static int ql_mii_read_reg_ex(struct ql3_adapter *qdev, u16 regAddr,
+ 	scanWasEnabled = ql_mii_disable_scan_mode(qdev);
+ 
+ 	if (ql_wait_for_mii_ready(qdev)) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_WARNING PFX
+-			       "%s: Timed out waiting for management port to "
+-			       "get free before issuing command.\n",
+-			       qdev->ndev->name);
++		netif_warn(qdev, link, qdev->ndev, TIMED_OUT_MSG);
+ 		return -1;
+ 	}
+ 
+@@ -727,11 +713,7 @@ static int ql_mii_read_reg_ex(struct ql3_adapter *qdev, u16 regAddr,
+ 
+ 	/* Wait for the read to complete */
+ 	if (ql_wait_for_mii_ready(qdev)) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_WARNING PFX
+-			       "%s: Timed out waiting for management port to "
+-			       "get free after issuing command.\n",
+-			       qdev->ndev->name);
++		netif_warn(qdev, link, qdev->ndev, TIMED_OUT_MSG);
+ 		return -1;
+ 	}
+ 
+@@ -752,11 +734,7 @@ static int ql_mii_write_reg(struct ql3_adapter *qdev, u16 regAddr, u16 value)
+ 	ql_mii_disable_scan_mode(qdev);
+ 
+ 	if (ql_wait_for_mii_ready(qdev)) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_WARNING PFX
+-			       "%s: Timed out waiting for management port to "
+-			       "get free before issuing command.\n",
+-			       qdev->ndev->name);
++		netif_warn(qdev, link, qdev->ndev, TIMED_OUT_MSG);
+ 		return -1;
+ 	}
+ 
+@@ -767,11 +745,7 @@ static int ql_mii_write_reg(struct ql3_adapter *qdev, u16 regAddr, u16 value)
+ 
+ 	/* Wait for write to complete. */
+ 	if (ql_wait_for_mii_ready(qdev)) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_WARNING PFX
+-			       "%s: Timed out waiting for management port to "
+-			       "get free before issuing command.\n",
+-			       qdev->ndev->name);
++		netif_warn(qdev, link, qdev->ndev, TIMED_OUT_MSG);
+ 		return -1;
+ 	}
+ 
+@@ -789,11 +763,7 @@ static int ql_mii_read_reg(struct ql3_adapter *qdev, u16 regAddr, u16 *value)
+ 	ql_mii_disable_scan_mode(qdev);
+ 
+ 	if (ql_wait_for_mii_ready(qdev)) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_WARNING PFX
+-			       "%s: Timed out waiting for management port to "
+-			       "get free before issuing command.\n",
+-			       qdev->ndev->name);
++		netif_warn(qdev, link, qdev->ndev, TIMED_OUT_MSG);
+ 		return -1;
+ 	}
+ 
+@@ -808,11 +778,7 @@ static int ql_mii_read_reg(struct ql3_adapter *qdev, u16 regAddr, u16 *value)
+ 
+ 	/* Wait for the read to complete */
+ 	if (ql_wait_for_mii_ready(qdev)) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_WARNING PFX
+-			       "%s: Timed out waiting for management port to "
+-			       "get free before issuing command.\n",
+-			       qdev->ndev->name);
++		netif_warn(qdev, link, qdev->ndev, TIMED_OUT_MSG);
+ 		return -1;
+ 	}
+ 
+@@ -898,7 +864,7 @@ static int ql_is_petbi_neg_pause(struct ql3_adapter *qdev)
+ 
+ static void phyAgereSpecificInit(struct ql3_adapter *qdev, u32 miiAddr)
+ {
+-	printk(KERN_INFO "%s: enabling Agere specific PHY\n", qdev->ndev->name);
++	netdev_info(qdev->ndev, "enabling Agere specific PHY\n");
+ 	/* power down device bit 11 = 1 */
+ 	ql_mii_write_reg_ex(qdev, 0x00, 0x1940, miiAddr);
+ 	/* enable diagnostic mode bit 2 = 1 */
+@@ -952,12 +918,12 @@ static PHY_DEVICE_et getPhyType (struct ql3_adapter *qdev,
+ 
+ 	/* Scan table for this PHY */
+ 	for(i = 0; i < MAX_PHY_DEV_TYPES; i++) {
+-		if ((oui == PHY_DEVICES[i].phyIdOUI) && (model == PHY_DEVICES[i].phyIdModel))
+-		{
++		if ((oui == PHY_DEVICES[i].phyIdOUI) &&
++		    (model == PHY_DEVICES[i].phyIdModel)) {
+ 			result = PHY_DEVICES[i].phyDevice;
+ 
+-			printk(KERN_INFO "%s: Phy: %s\n",
+-				qdev->ndev->name, PHY_DEVICES[i].name);
++			netdev_info(qdev->ndev, "Phy: %s\n",
++				    PHY_DEVICES[i].name);
+ 
+ 		        break;
+ 		}
+@@ -1041,15 +1007,13 @@ static int PHY_Setup(struct ql3_adapter *qdev)
+ 	/*  Determine the PHY we are using by reading the ID's */
+ 	err = ql_mii_read_reg(qdev, PHY_ID_0_REG, &reg1);
+ 	if(err != 0) {
+-		printk(KERN_ERR "%s: Could not read from reg PHY_ID_0_REG\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "Could not read from reg PHY_ID_0_REG\n");
+                 return err;
+ 	}
+ 
+ 	err = ql_mii_read_reg(qdev, PHY_ID_1_REG, &reg2);
+ 	if(err != 0) {
+-		printk(KERN_ERR "%s: Could not read from reg PHY_ID_0_REG\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "Could not read from reg PHY_ID_1_REG\n");
+                 return err;
+ 	}
+ 
+@@ -1066,15 +1030,14 @@ static int PHY_Setup(struct ql3_adapter *qdev)
+ 
+ 		err =ql_mii_read_reg_ex(qdev, PHY_ID_0_REG, &reg1, miiAddr);
+ 		if(err != 0) {
+-			printk(KERN_ERR "%s: Could not read from reg PHY_ID_0_REG after Agere detected\n",
+-		       	       qdev->ndev->name);
++			netdev_err(qdev->ndev,
++				   "Could not read from reg PHY_ID_0_REG after Agere detected\n");
+ 			return err;
+ 		}
+ 
+ 		err = ql_mii_read_reg_ex(qdev, PHY_ID_1_REG, &reg2, miiAddr);
+ 		if(err != 0) {
+-			printk(KERN_ERR "%s: Could not read from reg PHY_ID_0_REG after Agere detected\n",
+-			       qdev->ndev->name);
++			netdev_err(qdev->ndev, "Could not read from reg PHY_ID_1_REG after Agere detected\n");
+         	        return err;
+ 		}
+ 
+@@ -1090,7 +1053,7 @@ static int PHY_Setup(struct ql3_adapter *qdev)
+ 		/* need this here so address gets changed */
+ 		phyAgereSpecificInit(qdev, miiAddr);
+ 	} else if (qdev->phyType == PHY_TYPE_UNKNOWN) {
+-		printk(KERN_ERR "%s: PHY is unknown\n", qdev->ndev->name);
++		netdev_err(qdev->ndev, "PHY is unknown\n");
+ 		return -EIO;
+ 	}
+ 
+@@ -1250,18 +1213,11 @@ static int ql_is_auto_neg_complete(struct ql3_adapter *qdev)
+ 
+ 	temp = ql_read_page0_reg(qdev, &port_regs->portStatus);
+ 	if (temp & bitToCheck) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_INFO PFX
+-			       "%s: Auto-Negotiate complete.\n",
+-			       qdev->ndev->name);
++		netif_info(qdev, link, qdev->ndev, "Auto-Negotiate complete\n");
+ 		return 1;
+-	} else {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_WARNING PFX
+-			       "%s: Auto-Negotiate incomplete.\n",
+-			       qdev->ndev->name);
+-		return 0;
+ 	}
++	netif_info(qdev, link, qdev->ndev, "Auto-Negotiate incomplete\n");
++	return 0;
  }
  
--static struct of_device * __init scan_one_device(struct device_node *dp,
-+static struct platform_device * __init scan_one_device(struct device_node *dp,
- 						 struct device *parent)
- {
--	struct of_device *op = kzalloc(sizeof(*op), GFP_KERNEL);
-+	struct platform_device *op = kzalloc(sizeof(*op), GFP_KERNEL);
- 	const struct linux_prom_irqs *intr;
- 	struct dev_archdata *sd;
- 	int len, i;
-@@ -443,7 +443,7 @@ build_resources:
- static void __init scan_tree(struct device_node *dp, struct device *parent)
- {
- 	while (dp) {
--		struct of_device *op = scan_one_device(dp, parent);
-+		struct platform_device *op = scan_one_device(dp, parent);
+ /*
+@@ -1387,16 +1343,13 @@ static int ql_this_adapter_controls_port(struct ql3_adapter *qdev)
  
- 		if (op)
- 			scan_tree(dp->child, &op->dev);
-@@ -455,7 +455,7 @@ static void __init scan_tree(struct device_node *dp, struct device *parent)
- static int __init scan_of_devices(void)
- {
- 	struct device_node *root = of_find_node_by_path("/");
--	struct of_device *parent;
-+	struct platform_device *parent;
- 
- 	parent = scan_one_device(root, NULL);
- 	if (!parent)
-diff --git a/arch/sparc/kernel/of_device_64.c b/arch/sparc/kernel/of_device_64.c
-index 9743d1d..63cd4e5 100644
---- a/arch/sparc/kernel/of_device_64.c
-+++ b/arch/sparc/kernel/of_device_64.c
-@@ -310,10 +310,10 @@ static int __init use_1to1_mapping(struct device_node *pp)
- 
- static int of_resource_verbose;
- 
--static void __init build_device_resources(struct of_device *op,
-+static void __init build_device_resources(struct platform_device *op,
- 					  struct device *parent)
- {
--	struct of_device *p_op;
-+	struct platform_device *p_op;
- 	struct of_bus *bus;
- 	int na, ns;
- 	int index, num_reg;
-@@ -322,7 +322,7 @@ static void __init build_device_resources(struct of_device *op,
- 	if (!parent)
- 		return;
- 
--	p_op = to_of_device(parent);
-+	p_op = to_platform_device(parent);
- 	bus = of_match_bus(p_op->dev.of_node);
- 	bus->count_cells(op->dev.of_node, &na, &ns);
- 
-@@ -528,7 +528,7 @@ static unsigned int __init pci_irq_swizzle(struct device_node *dp,
- 
- static int of_irq_verbose;
- 
--static unsigned int __init build_one_device_irq(struct of_device *op,
-+static unsigned int __init build_one_device_irq(struct platform_device *op,
- 						struct device *parent,
- 						unsigned int irq)
- {
-@@ -630,10 +630,10 @@ out:
- 	return irq;
- }
- 
--static struct of_device * __init scan_one_device(struct device_node *dp,
-+static struct platform_device * __init scan_one_device(struct device_node *dp,
- 						 struct device *parent)
- {
--	struct of_device *op = kzalloc(sizeof(*op), GFP_KERNEL);
-+	struct platform_device *op = kzalloc(sizeof(*op), GFP_KERNEL);
- 	const unsigned int *irq;
- 	struct dev_archdata *sd;
- 	int len, i;
-@@ -686,7 +686,7 @@ static struct of_device * __init scan_one_device(struct device_node *dp,
- static void __init scan_tree(struct device_node *dp, struct device *parent)
- {
- 	while (dp) {
--		struct of_device *op = scan_one_device(dp, parent);
-+		struct platform_device *op = scan_one_device(dp, parent);
- 
- 		if (op)
- 			scan_tree(dp->child, &op->dev);
-@@ -698,7 +698,7 @@ static void __init scan_tree(struct device_node *dp, struct device *parent)
- static int __init scan_of_devices(void)
- {
- 	struct device_node *root = of_find_node_by_path("/");
--	struct of_device *parent;
-+	struct platform_device *parent;
- 
- 	parent = scan_one_device(root, NULL);
- 	if (!parent)
-diff --git a/arch/sparc/kernel/of_device_common.c b/arch/sparc/kernel/of_device_common.c
-index 2a5c639..e80729b 100644
---- a/arch/sparc/kernel/of_device_common.c
-+++ b/arch/sparc/kernel/of_device_common.c
-@@ -13,19 +13,19 @@
- 
- static int node_match(struct device *dev, void *data)
- {
--	struct of_device *op = to_of_device(dev);
-+	struct platform_device *op = to_platform_device(dev);
- 	struct device_node *dp = data;
- 
- 	return (op->dev.of_node == dp);
- }
- 
--struct of_device *of_find_device_by_node(struct device_node *dp)
-+struct platform_device *of_find_device_by_node(struct device_node *dp)
- {
- 	struct device *dev = bus_find_device(&platform_bus_type, NULL,
- 					     dp, node_match);
- 
- 	if (dev)
--		return to_of_device(dev);
-+		return to_platform_device(dev);
- 
- 	return NULL;
- }
-@@ -33,7 +33,7 @@ EXPORT_SYMBOL(of_find_device_by_node);
- 
- unsigned int irq_of_parse_and_map(struct device_node *node, int index)
- {
--	struct of_device *op = of_find_device_by_node(node);
-+	struct platform_device *op = of_find_device_by_node(node);
- 
- 	if (!op || index >= op->archdata.num_irqs)
+ 	temp = ql_read_page0_reg(qdev, &port_regs->portStatus);
+ 	if (temp & bitToCheck) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_DEBUG PFX
+-			       "%s: is not link master.\n", qdev->ndev->name);
++		netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
++			     "not link master\n");
  		return 0;
-@@ -43,16 +43,16 @@ unsigned int irq_of_parse_and_map(struct device_node *node, int index)
- EXPORT_SYMBOL(irq_of_parse_and_map);
- 
- /* Take the archdata values for IOMMU, STC, and HOSTDATA found in
-- * BUS and propagate to all child of_device objects.
-+ * BUS and propagate to all child platform_device objects.
-  */
--void of_propagate_archdata(struct of_device *bus)
-+void of_propagate_archdata(struct platform_device *bus)
- {
- 	struct dev_archdata *bus_sd = &bus->dev.archdata;
- 	struct device_node *bus_dp = bus->dev.of_node;
- 	struct device_node *dp;
- 
- 	for (dp = bus_dp->child; dp; dp = dp->sibling) {
--		struct of_device *op = of_find_device_by_node(dp);
-+		struct platform_device *op = of_find_device_by_node(dp);
- 
- 		op->dev.archdata.iommu = bus_sd->iommu;
- 		op->dev.archdata.stc = bus_sd->stc;
-diff --git a/arch/sparc/kernel/pci.c b/arch/sparc/kernel/pci.c
-index 1523290..4137579 100644
---- a/arch/sparc/kernel/pci.c
-+++ b/arch/sparc/kernel/pci.c
-@@ -198,7 +198,7 @@ static unsigned long pci_parse_of_flags(u32 addr0)
-  * into physical address resources, we only have to figure out the register
-  * mapping.
-  */
--static void pci_parse_of_addrs(struct of_device *op,
-+static void pci_parse_of_addrs(struct platform_device *op,
- 			       struct device_node *node,
- 			       struct pci_dev *dev)
- {
-@@ -248,7 +248,7 @@ static struct pci_dev *of_create_pci_dev(struct pci_pbm_info *pbm,
- {
- 	struct dev_archdata *sd;
- 	struct pci_slot *slot;
--	struct of_device *op;
-+	struct platform_device *op;
- 	struct pci_dev *dev;
- 	const char *type;
- 	u32 class;
-diff --git a/arch/sparc/kernel/pci_fire.c b/arch/sparc/kernel/pci_fire.c
-index 885f10b..efb896d 100644
---- a/arch/sparc/kernel/pci_fire.c
-+++ b/arch/sparc/kernel/pci_fire.c
-@@ -410,7 +410,7 @@ static void pci_fire_hw_init(struct pci_pbm_info *pbm)
+-	} else {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_DEBUG PFX
+-			       "%s: is link master.\n", qdev->ndev->name);
+-		return 1;
+ 	}
++
++	netif_printk(qdev, link, KERN_DEBUG, qdev->ndev, "link master\n");
++	return 1;
  }
  
- static int __devinit pci_fire_pbm_init(struct pci_pbm_info *pbm,
--				       struct of_device *op, u32 portid)
-+				       struct platform_device *op, u32 portid)
+ static void ql_phy_reset_ex(struct ql3_adapter *qdev)
+@@ -1518,8 +1471,7 @@ static int ql_port_start(struct ql3_adapter *qdev)
+ 	if(ql_sem_spinlock(qdev, QL_PHY_GIO_SEM_MASK,
+ 		(QL_RESOURCE_BITS_BASE_CODE | (qdev->mac_index) *
+ 			 2) << 7)) {
+-		printk(KERN_ERR "%s: Could not get hw lock for GIO\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "Could not get hw lock for GIO\n");
+ 		return -1;
+ 	}
+ 
+@@ -1545,11 +1497,8 @@ static int ql_finish_auto_neg(struct ql3_adapter *qdev)
+ 	if (!ql_auto_neg_error(qdev)) {
+ 		if (test_bit(QL_LINK_MASTER,&qdev->flags)) {
+ 			/* configure the MAC */
+-			if (netif_msg_link(qdev))
+-				printk(KERN_DEBUG PFX
+-				       "%s: Configuring link.\n",
+-				       qdev->ndev->
+-				       name);
++			netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
++				     "Configuring link\n");
+ 			ql_mac_cfg_soft_reset(qdev, 1);
+ 			ql_mac_cfg_gig(qdev,
+ 				       (ql_get_link_speed
+@@ -1564,34 +1513,24 @@ static int ql_finish_auto_neg(struct ql3_adapter *qdev)
+ 			ql_mac_cfg_soft_reset(qdev, 0);
+ 
+ 			/* enable the MAC */
+-			if (netif_msg_link(qdev))
+-				printk(KERN_DEBUG PFX
+-				       "%s: Enabling mac.\n",
+-				       qdev->ndev->
+-					       name);
++			netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
++				     "Enabling mac\n");
+ 			ql_mac_enable(qdev, 1);
+ 		}
+ 
+ 		qdev->port_link_state = LS_UP;
+ 		netif_start_queue(qdev->ndev);
+ 		netif_carrier_on(qdev->ndev);
+-		if (netif_msg_link(qdev))
+-			printk(KERN_INFO PFX
+-			       "%s: Link is up at %d Mbps, %s duplex.\n",
+-			       qdev->ndev->name,
+-			       ql_get_link_speed(qdev),
+-			       ql_is_link_full_dup(qdev)
+-			       ? "full" : "half");
++		netif_info(qdev, link, qdev->ndev,
++			   "Link is up at %d Mbps, %s duplex\n",
++			   ql_get_link_speed(qdev),
++			   ql_is_link_full_dup(qdev) ? "full" : "half");
+ 
+ 	} else {	/* Remote error detected */
+ 
+ 		if (test_bit(QL_LINK_MASTER,&qdev->flags)) {
+-			if (netif_msg_link(qdev))
+-				printk(KERN_DEBUG PFX
+-				       "%s: Remote error detected. "
+-				       "Calling ql_port_start().\n",
+-				       qdev->ndev->
+-				       name);
++			netif_printk(qdev, link, KERN_DEBUG, qdev->ndev,
++				     "Remote error detected. Calling ql_port_start()\n");
+ 			/*
+ 			 * ql_port_start() is shared code and needs
+ 			 * to lock the PHY on it's own.
+@@ -1620,15 +1559,13 @@ static void ql_link_state_machine_work(struct work_struct *work)
+ 	curr_link_state = ql_get_link_state(qdev);
+ 
+ 	if (test_bit(QL_RESET_ACTIVE,&qdev->flags)) {
+-		if (netif_msg_link(qdev))
+-			printk(KERN_INFO PFX
+-			       "%s: Reset in progress, skip processing link "
+-			       "state.\n", qdev->ndev->name);
++		netif_info(qdev, link, qdev->ndev,
++			   "Reset in progress, skip processing link state\n");
+ 
+ 		spin_unlock_irqrestore(&qdev->hw_lock, hw_flags);
+ 
+ 		/* Restart timer on 2 second interval. */
+-		mod_timer(&qdev->adapter_timer, jiffies + HZ * 1);\
++		mod_timer(&qdev->adapter_timer, jiffies + HZ * 1);
+ 
+ 		return;
+ 	}
+@@ -1643,9 +1580,7 @@ static void ql_link_state_machine_work(struct work_struct *work)
+ 
+ 	case LS_DOWN:
+ 		if (curr_link_state == LS_UP) {
+-			if (netif_msg_link(qdev))
+-				printk(KERN_INFO PFX "%s: Link is up.\n",
+-				       qdev->ndev->name);
++			netif_info(qdev, link, qdev->ndev, "Link is up\n");
+ 			if (ql_is_auto_neg_complete(qdev))
+ 				ql_finish_auto_neg(qdev);
+ 
+@@ -1662,9 +1597,7 @@ static void ql_link_state_machine_work(struct work_struct *work)
+ 		 * back up
+ 		 */
+ 		if (curr_link_state == LS_DOWN) {
+-			if (netif_msg_link(qdev))
+-				printk(KERN_INFO PFX "%s: Link is down.\n",
+-				       qdev->ndev->name);
++			netif_info(qdev, link, qdev->ndev, "Link is down\n");
+ 			qdev->port_link_state = LS_DOWN;
+ 		}
+ 		if (ql_link_down_detect(qdev))
+@@ -1888,9 +1821,8 @@ static int ql_populate_free_queue(struct ql3_adapter *qdev)
+ 			lrg_buf_cb->skb = netdev_alloc_skb(qdev->ndev,
+ 							   qdev->lrg_buffer_len);
+ 			if (unlikely(!lrg_buf_cb->skb)) {
+-				printk(KERN_DEBUG PFX
+-				       "%s: Failed netdev_alloc_skb().\n",
+-				       qdev->ndev->name);
++				netdev_printk(KERN_DEBUG, qdev->ndev,
++					      "Failed netdev_alloc_skb()\n");
+ 				break;
+ 			} else {
+ 				/*
+@@ -1906,8 +1838,9 @@ static int ql_populate_free_queue(struct ql3_adapter *qdev)
+ 
+ 				err = pci_dma_mapping_error(qdev->pdev, map);
+ 				if(err) {
+-					printk(KERN_ERR "%s: PCI mapping failed with error: %d\n",
+-					       qdev->ndev->name, err);
++					netdev_err(qdev->ndev,
++						   "PCI mapping failed with error: %d\n",
++						   err);
+ 					dev_kfree_skb(lrg_buf_cb->skb);
+ 					lrg_buf_cb->skb = NULL;
+ 					break;
+@@ -2012,14 +1945,16 @@ static void ql_process_mac_tx_intr(struct ql3_adapter *qdev,
+ 	int retval = 0;
+ 
+ 	if(mac_rsp->flags & OB_MAC_IOCB_RSP_S) {
+-		printk(KERN_WARNING "Frame short but, frame was padded and sent.\n");
++		netdev_warn(qdev->ndev,
++			    "Frame too short but it was padded and sent\n");
+ 	}
+ 
+ 	tx_cb = &qdev->tx_buf[mac_rsp->transaction_id];
+ 
+ 	/*  Check the transmit response flags for any errors */
+ 	if(mac_rsp->flags & OB_MAC_IOCB_RSP_S) {
+-		printk(KERN_ERR "Frame too short to be legal, frame not sent.\n");
++		netdev_err(qdev->ndev,
++			   "Frame too short to be legal, frame not sent\n");
+ 
+ 		qdev->ndev->stats.tx_errors++;
+ 		retval = -EIO;
+@@ -2027,7 +1962,8 @@ static void ql_process_mac_tx_intr(struct ql3_adapter *qdev,
+ 	}
+ 
+ 	if(tx_cb->seg_count == 0) {
+-		printk(KERN_ERR "tx_cb->seg_count == 0: %d\n", mac_rsp->transaction_id);
++		netdev_err(qdev->ndev, "tx_cb->seg_count == 0: %d\n",
++			   mac_rsp->transaction_id);
+ 
+ 		qdev->ndev->stats.tx_errors++;
+ 		retval = -EIO;
+@@ -2177,12 +2113,11 @@ static void ql_process_macip_rx_intr(struct ql3_adapter *qdev,
+ 		if (checksum &
+ 			(IB_IP_IOCB_RSP_3032_ICE |
+ 			 IB_IP_IOCB_RSP_3032_CE)) {
+-			printk(KERN_ERR
+-			       "%s: Bad checksum for this %s packet, checksum = %x.\n",
+-			       __func__,
+-			       ((checksum &
+-				IB_IP_IOCB_RSP_3032_TCP) ? "TCP" :
+-				"UDP"),checksum);
++			netdev_err(ndev,
++				   "%s: Bad checksum for this %s packet, checksum = %x\n",
++				   __func__,
++				   ((checksum & IB_IP_IOCB_RSP_3032_TCP) ?
++				    "TCP" : "UDP"), checksum);
+ 		} else if ((checksum & IB_IP_IOCB_RSP_3032_TCP) ||
+ 				(checksum & IB_IP_IOCB_RSP_3032_UDP &&
+ 				!(checksum & IB_IP_IOCB_RSP_3032_NUC))) {
+@@ -2245,18 +2180,15 @@ static int ql_tx_rx_clean(struct ql3_adapter *qdev,
+ 		default:
+ 			{
+ 				u32 *tmp = (u32 *) net_rsp;
+-				printk(KERN_ERR PFX
+-				       "%s: Hit default case, not "
+-				       "handled!\n"
+-				       "	dropping the packet, opcode = "
+-				       "%x.\n",
+-				       ndev->name, net_rsp->opcode);
+-				printk(KERN_ERR PFX
+-				       "0x%08lx 0x%08lx 0x%08lx 0x%08lx\n",
+-				       (unsigned long int)tmp[0],
+-				       (unsigned long int)tmp[1],
+-				       (unsigned long int)tmp[2],
+-				       (unsigned long int)tmp[3]);
++				netdev_err(ndev,
++					   "Hit default case, not handled!\n"
++					   "	dropping the packet, opcode = %x\n"
++					   "0x%08lx 0x%08lx 0x%08lx 0x%08lx\n",
++					   net_rsp->opcode,
++					   (unsigned long int)tmp[0],
++					   (unsigned long int)tmp[1],
++					   (unsigned long int)tmp[2],
++					   (unsigned long int)tmp[3]);
+ 			}
+ 		}
+ 
+@@ -2328,18 +2260,18 @@ static irqreturn_t ql3xxx_isr(int irq, void *dev_id)
+ 			var =
+ 			    ql_read_page0_reg_l(qdev,
+ 					      &port_regs->PortFatalErrStatus);
+-			printk(KERN_WARNING PFX
+-			       "%s: Resetting chip. PortFatalErrStatus "
+-			       "register = 0x%x\n", ndev->name, var);
++			netdev_warn(ndev,
++				    "Resetting chip. PortFatalErrStatus register = 0x%x\n",
++				    var);
+ 			set_bit(QL_RESET_START,&qdev->flags) ;
+ 		} else {
+ 			/*
+ 			 * Soft Reset Requested.
+ 			 */
+ 			set_bit(QL_RESET_PER_SCSI,&qdev->flags) ;
+-			printk(KERN_ERR PFX
+-			       "%s: Another function issued a reset to the "
+-			       "chip. ISR value = %x.\n", ndev->name, value);
++			netdev_err(ndev,
++				   "Another function issued a reset to the chip. ISR value = %x\n",
++				   value);
+ 		}
+ 		queue_delayed_work(qdev->workqueue, &qdev->reset_work, 0);
+ 		spin_unlock(&qdev->adapter_lock);
+@@ -2438,8 +2370,8 @@ static int ql_send_map(struct ql3_adapter *qdev,
+ 
+ 	err = pci_dma_mapping_error(qdev->pdev, map);
+ 	if(err) {
+-		printk(KERN_ERR "%s: PCI mapping failed with error: %d\n",
+-		       qdev->ndev->name, err);
++		netdev_err(qdev->ndev, "PCI mapping failed with error: %d\n",
++			   err);
+ 
+ 		return NETDEV_TX_BUSY;
+ 	}
+@@ -2472,8 +2404,9 @@ static int ql_send_map(struct ql3_adapter *qdev,
+ 				err = pci_dma_mapping_error(qdev->pdev, map);
+ 				if(err) {
+ 
+-					printk(KERN_ERR "%s: PCI mapping outbound address list with error: %d\n",
+-					       qdev->ndev->name, err);
++					netdev_err(qdev->ndev,
++						   "PCI mapping outbound address list with error: %d\n",
++						   err);
+ 					goto map_error;
+ 				}
+ 
+@@ -2498,8 +2431,9 @@ static int ql_send_map(struct ql3_adapter *qdev,
+ 
+ 			err = pci_dma_mapping_error(qdev->pdev, map);
+ 			if(err) {
+-				printk(KERN_ERR "%s: PCI mapping frags failed with error: %d\n",
+-				       qdev->ndev->name, err);
++				netdev_err(qdev->ndev,
++					   "PCI mapping frags failed with error: %d\n",
++					   err);
+ 				goto map_error;
+ 			}
+ 
+@@ -2582,7 +2516,7 @@ static netdev_tx_t ql3xxx_send(struct sk_buff *skb,
+ 	tx_cb = &qdev->tx_buf[qdev->req_producer_index] ;
+ 	if((tx_cb->seg_count = ql_get_seg_count(qdev,
+ 						(skb_shinfo(skb)->nr_frags))) == -1) {
+-		printk(KERN_ERR PFX"%s: invalid segment count!\n",__func__);
++		netdev_err(ndev, "%s: invalid segment count!\n", __func__);
+ 		return NETDEV_TX_OK;
+ 	}
+ 
+@@ -2599,7 +2533,7 @@ static netdev_tx_t ql3xxx_send(struct sk_buff *skb,
+ 		ql_hw_csum_setup(skb, mac_iocb_ptr);
+ 
+ 	if(ql_send_map(qdev,mac_iocb_ptr,tx_cb,skb) != NETDEV_TX_OK) {
+-		printk(KERN_ERR PFX"%s: Could not map the segments!\n",__func__);
++		netdev_err(ndev, "%s: Could not map the segments!\n", __func__);
+ 		return NETDEV_TX_BUSY;
+ 	}
+ 
+@@ -2612,9 +2546,9 @@ static netdev_tx_t ql3xxx_send(struct sk_buff *skb,
+ 			    &port_regs->CommonRegs.reqQProducerIndex,
+ 			    qdev->req_producer_index);
+ 
+-	if (netif_msg_tx_queued(qdev))
+-		printk(KERN_DEBUG PFX "%s: tx queued, slot %d, len %d\n",
+-		       ndev->name, qdev->req_producer_index, skb->len);
++	netif_printk(qdev, tx_queued, KERN_DEBUG, ndev,
++		     "tx queued, slot %d, len %d\n",
++		     qdev->req_producer_index, skb->len);
+ 
+ 	atomic_dec(&qdev->tx_count);
+ 	return NETDEV_TX_OK;
+@@ -2632,8 +2566,7 @@ static int ql_alloc_net_req_rsp_queues(struct ql3_adapter *qdev)
+ 
+ 	if ((qdev->req_q_virt_addr == NULL) ||
+ 	    LS_64BITS(qdev->req_q_phy_addr) & (qdev->req_q_size - 1)) {
+-		printk(KERN_ERR PFX "%s: reqQ failed.\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "reqQ failed\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -2646,9 +2579,7 @@ static int ql_alloc_net_req_rsp_queues(struct ql3_adapter *qdev)
+ 
+ 	if ((qdev->rsp_q_virt_addr == NULL) ||
+ 	    LS_64BITS(qdev->rsp_q_phy_addr) & (qdev->rsp_q_size - 1)) {
+-		printk(KERN_ERR PFX
+-		       "%s: rspQ allocation failed\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "rspQ allocation failed\n");
+ 		pci_free_consistent(qdev->pdev, (size_t) qdev->req_q_size,
+ 				    qdev->req_q_virt_addr,
+ 				    qdev->req_q_phy_addr);
+@@ -2663,8 +2594,7 @@ static int ql_alloc_net_req_rsp_queues(struct ql3_adapter *qdev)
+ static void ql_free_net_req_rsp_queues(struct ql3_adapter *qdev)
  {
- 	const struct linux_prom64_registers *regs;
- 	struct device_node *dp = op->dev.of_node;
-@@ -455,7 +455,7 @@ static int __devinit pci_fire_pbm_init(struct pci_pbm_info *pbm,
- 	return 0;
+ 	if (!test_bit(QL_ALLOC_REQ_RSP_Q_DONE,&qdev->flags)) {
+-		printk(KERN_INFO PFX
+-		       "%s: Already done.\n", qdev->ndev->name);
++		netdev_info(qdev->ndev, "Already done\n");
+ 		return;
+ 	}
+ 
+@@ -2695,8 +2625,7 @@ static int ql_alloc_buffer_queues(struct ql3_adapter *qdev)
+ 
+ 	qdev->lrg_buf = kmalloc(qdev->num_large_buffers * sizeof(struct ql_rcv_buf_cb),GFP_KERNEL);
+ 	if (qdev->lrg_buf == NULL) {
+-		printk(KERN_ERR PFX
+-		       "%s: qdev->lrg_buf alloc failed.\n", qdev->ndev->name);
++		netdev_err(qdev->ndev, "qdev->lrg_buf alloc failed\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -2706,8 +2635,7 @@ static int ql_alloc_buffer_queues(struct ql3_adapter *qdev)
+ 				 &qdev->lrg_buf_q_alloc_phy_addr);
+ 
+ 	if (qdev->lrg_buf_q_alloc_virt_addr == NULL) {
+-		printk(KERN_ERR PFX
+-		       "%s: lBufQ failed\n", qdev->ndev->name);
++		netdev_err(qdev->ndev, "lBufQ failed\n");
+ 		return -ENOMEM;
+ 	}
+ 	qdev->lrg_buf_q_virt_addr = qdev->lrg_buf_q_alloc_virt_addr;
+@@ -2727,9 +2655,7 @@ static int ql_alloc_buffer_queues(struct ql3_adapter *qdev)
+ 				 &qdev->small_buf_q_alloc_phy_addr);
+ 
+ 	if (qdev->small_buf_q_alloc_virt_addr == NULL) {
+-		printk(KERN_ERR PFX
+-		       "%s: Small Buffer Queue allocation failed.\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "Small Buffer Queue allocation failed\n");
+ 		pci_free_consistent(qdev->pdev, qdev->lrg_buf_q_alloc_size,
+ 				    qdev->lrg_buf_q_alloc_virt_addr,
+ 				    qdev->lrg_buf_q_alloc_phy_addr);
+@@ -2745,8 +2671,7 @@ static int ql_alloc_buffer_queues(struct ql3_adapter *qdev)
+ static void ql_free_buffer_queues(struct ql3_adapter *qdev)
+ {
+ 	if (!test_bit(QL_ALLOC_BUFQS_DONE,&qdev->flags)) {
+-		printk(KERN_INFO PFX
+-		       "%s: Already done.\n", qdev->ndev->name);
++		netdev_info(qdev->ndev, "Already done\n");
+ 		return;
+ 	}
+ 	if(qdev->lrg_buf) kfree(qdev->lrg_buf);
+@@ -2783,9 +2708,7 @@ static int ql_alloc_small_buffers(struct ql3_adapter *qdev)
+ 				 &qdev->small_buf_phy_addr);
+ 
+ 	if (qdev->small_buf_virt_addr == NULL) {
+-		printk(KERN_ERR PFX
+-		       "%s: Failed to get small buffer memory.\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "Failed to get small buffer memory\n");
+ 		return -ENOMEM;
+ 	}
+ 
+@@ -2811,8 +2734,7 @@ static int ql_alloc_small_buffers(struct ql3_adapter *qdev)
+ static void ql_free_small_buffers(struct ql3_adapter *qdev)
+ {
+ 	if (!test_bit(QL_ALLOC_SMALL_BUF_DONE,&qdev->flags)) {
+-		printk(KERN_INFO PFX
+-		       "%s: Already done.\n", qdev->ndev->name);
++		netdev_info(qdev->ndev, "Already done\n");
+ 		return;
+ 	}
+ 	if (qdev->small_buf_virt_addr != NULL) {
+@@ -2874,11 +2796,9 @@ static int ql_alloc_large_buffers(struct ql3_adapter *qdev)
+ 				       qdev->lrg_buffer_len);
+ 		if (unlikely(!skb)) {
+ 			/* Better luck next round */
+-			printk(KERN_ERR PFX
+-			       "%s: large buff alloc failed, "
+-			       "for %d bytes at index %d.\n",
+-			       qdev->ndev->name,
+-			       qdev->lrg_buffer_len * 2, i);
++			netdev_err(qdev->ndev,
++				   "large buff alloc failed for %d bytes at index %d\n",
++				   qdev->lrg_buffer_len * 2, i);
+ 			ql_free_large_buffers(qdev);
+ 			return -ENOMEM;
+ 		} else {
+@@ -2900,8 +2820,9 @@ static int ql_alloc_large_buffers(struct ql3_adapter *qdev)
+ 
+ 			err = pci_dma_mapping_error(qdev->pdev, map);
+ 			if(err) {
+-				printk(KERN_ERR "%s: PCI mapping failed with error: %d\n",
+-				       qdev->ndev->name, err);
++				netdev_err(qdev->ndev,
++					   "PCI mapping failed with error: %d\n",
++					   err);
+ 				ql_free_large_buffers(qdev);
+ 				return -ENOMEM;
+ 			}
+@@ -2968,9 +2889,8 @@ static int ql_alloc_mem_resources(struct ql3_adapter *qdev)
+ 		qdev->num_lbufq_entries = JUMBO_NUM_LBUFQ_ENTRIES;
+ 		qdev->lrg_buffer_len = JUMBO_MTU_SIZE;
+ 	} else {
+-		printk(KERN_ERR PFX
+-		       "%s: Invalid mtu size.  Only 1500 and 9000 are accepted.\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "Invalid mtu size: %d.  Only %d and %d are accepted.\n",
++			   qdev->ndev->mtu, NORMAL_MTU_SIZE, JUMBO_MTU_SIZE);
+ 		return -ENOMEM;
+ 	}
+ 	qdev->num_large_buffers = qdev->num_lbufq_entries * QL_ADDR_ELE_PER_BUFQ_ENTRY;
+@@ -3001,34 +2921,27 @@ static int ql_alloc_mem_resources(struct ql3_adapter *qdev)
+ 		qdev->rsp_producer_index_phy_addr_low =
+ 		    qdev->req_consumer_index_phy_addr_low + 8;
+ 	} else {
+-		printk(KERN_ERR PFX
+-		       "%s: shadowReg Alloc failed.\n", qdev->ndev->name);
++		netdev_err(qdev->ndev, "shadowReg Alloc failed\n");
+ 		return -ENOMEM;
+ 	}
+ 
+ 	if (ql_alloc_net_req_rsp_queues(qdev) != 0) {
+-		printk(KERN_ERR PFX
+-		       "%s: ql_alloc_net_req_rsp_queues failed.\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "ql_alloc_net_req_rsp_queues failed\n");
+ 		goto err_req_rsp;
+ 	}
+ 
+ 	if (ql_alloc_buffer_queues(qdev) != 0) {
+-		printk(KERN_ERR PFX
+-		       "%s: ql_alloc_buffer_queues failed.\n",
+-		       qdev->ndev->name);
++		netdev_err(qdev->ndev, "ql_alloc_buffer_queues failed\n");
+ 		goto err_buffer_queues;
+ 	}
+ 
+ 	if (ql_alloc_small_buffers(qdev) != 0) {
+-		printk(KERN_ERR PFX
+-		       "%s: ql_alloc_small_buffers failed\n", qdev->ndev->name);
++		netdev_err(qdev->ndev, "ql_alloc_small_buffers failed\n");
+ 		goto err_small_buffers;
+ 	}
+ 
+ 	if (ql_alloc_large_buffers(qdev) != 0) {
+-		printk(KERN_ERR PFX
+-		       "%s: ql_alloc_large_buffers failed\n", qdev->ndev->name);
++		netdev_err(qdev->ndev, "ql_alloc_large_buffers failed\n");
+ 		goto err_small_buffers;
+ 	}
+ 
+@@ -3353,8 +3266,7 @@ static int ql_adapter_initialize(struct ql3_adapter *qdev)
+ 	} while (--delay);
+ 
+ 	if (delay == 0) {
+-		printk(KERN_ERR PFX
+-		       "%s: Hw Initialization timeout.\n", qdev->ndev->name);
++		netdev_err(qdev->ndev, "Hw Initialization timeout\n");
+ 		status = -1;
+ 		goto out;
+ 	}
+@@ -3396,17 +3308,14 @@ static int ql_adapter_reset(struct ql3_adapter *qdev)
+ 	/*
+ 	 * Issue soft reset to chip.
+ 	 */
+-	printk(KERN_DEBUG PFX
+-	       "%s: Issue soft reset to chip.\n",
+-	       qdev->ndev->name);
++	netdev_printk(KERN_DEBUG, qdev->ndev, "Issue soft reset to chip\n");
+ 	ql_write_common_reg(qdev,
+ 			    &port_regs->CommonRegs.ispControlStatus,
+ 			    ((ISP_CONTROL_SR << 16) | ISP_CONTROL_SR));
+ 
+ 	/* Wait 3 seconds for reset to complete. */
+-	printk(KERN_DEBUG PFX
+-	       "%s: Wait 10 milliseconds for reset to complete.\n",
+-	       qdev->ndev->name);
++	netdev_printk(KERN_DEBUG, qdev->ndev,
++		      "Wait 10 milliseconds for reset to complete\n");
+ 
+ 	/* Wait until the firmware tells us the Soft Reset is done */
+ 	max_wait_time = 5;
+@@ -3427,8 +3336,8 @@ static int ql_adapter_reset(struct ql3_adapter *qdev)
+ 	value =
+ 	    ql_read_common_reg(qdev, &port_regs->CommonRegs.ispControlStatus);
+ 	if (value & ISP_CONTROL_RI) {
+-		printk(KERN_DEBUG PFX
+-		       "ql_adapter_reset: clearing RI after reset.\n");
++		netdev_printk(KERN_DEBUG, qdev->ndev,
++			      "clearing RI after reset\n");
+ 		ql_write_common_reg(qdev,
+ 				    &port_regs->CommonRegs.
+ 				    ispControlStatus,
+@@ -3503,9 +3412,9 @@ static void ql_set_mac_info(struct ql3_adapter *qdev)
+ 	case ISP_CONTROL_FN0_SCSI:
+ 	case ISP_CONTROL_FN1_SCSI:
+ 	default:
+-		printk(KERN_DEBUG PFX
+-		       "%s: Invalid function number, ispControlStatus = 0x%x\n",
+-		       qdev->ndev->name,value);
++		netdev_printk(KERN_DEBUG, qdev->ndev,
++			      "Invalid function number, ispControlStatus = 0x%x\n",
++			      value);
+ 		break;
+ 	}
+ 	qdev->numPorts = qdev->nvram_data.version_and_numPorts >> 8;
+@@ -3516,32 +3425,26 @@ static void ql_display_dev_info(struct net_device *ndev)
+ 	struct ql3_adapter *qdev = (struct ql3_adapter *)netdev_priv(ndev);
+ 	struct pci_dev *pdev = qdev->pdev;
+ 
+-	printk(KERN_INFO PFX
+-	       "\n%s Adapter %d RevisionID %d found %s on PCI slot %d.\n",
+-	       DRV_NAME, qdev->index, qdev->chip_rev_id,
+-	       (qdev->device_id == QL3032_DEVICE_ID) ? "QLA3032" : "QLA3022",
+-	       qdev->pci_slot);
+-	printk(KERN_INFO PFX
+-	       "%s Interface.\n",
+-	       test_bit(QL_LINK_OPTICAL,&qdev->flags) ? "OPTICAL" : "COPPER");
++	netdev_info(ndev,
++		    "%s Adapter %d RevisionID %d found %s on PCI slot %d\n",
++		    DRV_NAME, qdev->index, qdev->chip_rev_id,
++		    (qdev->device_id == QL3032_DEVICE_ID) ? "QLA3032" : "QLA3022",
++		    qdev->pci_slot);
++	netdev_info(ndev, "%s Interface\n",
++		test_bit(QL_LINK_OPTICAL, &qdev->flags) ? "OPTICAL" : "COPPER");
+ 
+ 	/*
+ 	 * Print PCI bus width/type.
+ 	 */
+-	printk(KERN_INFO PFX
+-	       "Bus interface is %s %s.\n",
+-	       ((qdev->pci_width == 64) ? "64-bit" : "32-bit"),
+-	       ((qdev->pci_x) ? "PCI-X" : "PCI"));
++	netdev_info(ndev, "Bus interface is %s %s\n",
++		    ((qdev->pci_width == 64) ? "64-bit" : "32-bit"),
++		    ((qdev->pci_x) ? "PCI-X" : "PCI"));
+ 
+-	printk(KERN_INFO PFX
+-	       "mem  IO base address adjusted = 0x%p\n",
+-	       qdev->mem_map_registers);
+-	printk(KERN_INFO PFX "Interrupt number = %d\n", pdev->irq);
++	netdev_info(ndev, "mem  IO base address adjusted = 0x%p\n",
++		    qdev->mem_map_registers);
++	netdev_info(ndev, "Interrupt number = %d\n", pdev->irq);
+ 
+-	if (netif_msg_probe(qdev))
+-		printk(KERN_INFO PFX
+-		       "%s: MAC address %pM\n",
+-		       ndev->name, ndev->dev_addr);
++	netif_info(qdev, probe, ndev, "MAC address %pM\n", ndev->dev_addr);
  }
  
--static int __devinit fire_probe(struct of_device *op,
-+static int __devinit fire_probe(struct platform_device *op,
- 				const struct of_device_id *match)
+ static int ql_adapter_down(struct ql3_adapter *qdev, int do_reset)
+@@ -3560,8 +3463,7 @@ static int ql_adapter_down(struct ql3_adapter *qdev, int do_reset)
+ 	free_irq(qdev->pdev->irq, ndev);
+ 
+ 	if (qdev->msi && test_bit(QL_MSI_ENABLED,&qdev->flags)) {
+-		printk(KERN_INFO PFX
+-		       "%s: calling pci_disable_msi().\n", qdev->ndev->name);
++		netdev_info(qdev->ndev, "calling pci_disable_msi()\n");
+ 		clear_bit(QL_MSI_ENABLED,&qdev->flags);
+ 		pci_disable_msi(qdev->pdev);
+ 	}
+@@ -3577,16 +3479,14 @@ static int ql_adapter_down(struct ql3_adapter *qdev, int do_reset)
+ 		spin_lock_irqsave(&qdev->hw_lock, hw_flags);
+ 		if (ql_wait_for_drvr_lock(qdev)) {
+ 			if ((soft_reset = ql_adapter_reset(qdev))) {
+-				printk(KERN_ERR PFX
+-				       "%s: ql_adapter_reset(%d) FAILED!\n",
+-				       ndev->name, qdev->index);
++				netdev_err(ndev, "ql_adapter_reset(%d) FAILED!\n",
++					   qdev->index);
+ 			}
+-			printk(KERN_ERR PFX
+-				"%s: Releaseing driver lock via chip reset.\n",ndev->name);
++			netdev_err(ndev,
++				   "Releasing driver lock via chip reset\n");
+ 		} else {
+-			printk(KERN_ERR PFX
+-			       "%s: Could not acquire driver lock to do "
+-			       "reset!\n", ndev->name);
++			netdev_err(ndev,
++				   "Could not acquire driver lock to do reset!\n");
+ 			retval = -1;
+ 		}
+ 		spin_unlock_irqrestore(&qdev->hw_lock, hw_flags);
+@@ -3603,20 +3503,17 @@ static int ql_adapter_up(struct ql3_adapter *qdev)
+ 	unsigned long hw_flags;
+ 
+ 	if (ql_alloc_mem_resources(qdev)) {
+-		printk(KERN_ERR PFX
+-		       "%s Unable to  allocate buffers.\n", ndev->name);
++		netdev_err(ndev, "Unable to  allocate buffers\n");
+ 		return -ENOMEM;
+ 	}
+ 
+ 	if (qdev->msi) {
+ 		if (pci_enable_msi(qdev->pdev)) {
+-			printk(KERN_ERR PFX
+-			       "%s: User requested MSI, but MSI failed to "
+-			       "initialize.  Continuing without MSI.\n",
+-			       qdev->ndev->name);
++			netdev_err(ndev,
++				   "User requested MSI, but MSI failed to initialize.  Continuing without MSI.\n");
+ 			qdev->msi = 0;
+ 		} else {
+-			printk(KERN_INFO PFX "%s: MSI Enabled...\n", qdev->ndev->name);
++			netdev_info(ndev, "MSI Enabled...\n");
+ 			set_bit(QL_MSI_ENABLED,&qdev->flags);
+ 			irq_flags &= ~IRQF_SHARED;
+ 		}
+@@ -3625,9 +3522,9 @@ static int ql_adapter_up(struct ql3_adapter *qdev)
+ 	if ((err = request_irq(qdev->pdev->irq,
+ 			       ql3xxx_isr,
+ 			       irq_flags, ndev->name, ndev))) {
+-		printk(KERN_ERR PFX
+-		       "%s: Failed to reserve interrupt %d already in use.\n",
+-		       ndev->name, qdev->pdev->irq);
++		netdev_err(ndev,
++			   "Failed to reserve interrupt %d already in use\n",
++			   qdev->pdev->irq);
+ 		goto err_irq;
+ 	}
+ 
+@@ -3635,18 +3532,13 @@ static int ql_adapter_up(struct ql3_adapter *qdev)
+ 
+ 	if ((err = ql_wait_for_drvr_lock(qdev))) {
+ 		if ((err = ql_adapter_initialize(qdev))) {
+-			printk(KERN_ERR PFX
+-			       "%s: Unable to initialize adapter.\n",
+-			       ndev->name);
++			netdev_err(ndev, "Unable to initialize adapter\n");
+ 			goto err_init;
+ 		}
+-		printk(KERN_ERR PFX
+-				"%s: Releaseing driver lock.\n",ndev->name);
++		netdev_err(ndev, "Releasing driver lock\n");
+ 		ql_sem_unlock(qdev, QL_DRVR_SEM_MASK);
+ 	} else {
+-		printk(KERN_ERR PFX
+-		       "%s: Could not acquire driver lock.\n",
+-		       ndev->name);
++		netdev_err(ndev, "Could not acquire driver lock\n");
+ 		goto err_lock;
+ 	}
+ 
+@@ -3667,9 +3559,7 @@ err_lock:
+ 	free_irq(qdev->pdev->irq, ndev);
+ err_irq:
+ 	if (qdev->msi && test_bit(QL_MSI_ENABLED,&qdev->flags)) {
+-		printk(KERN_INFO PFX
+-		       "%s: calling pci_disable_msi().\n",
+-		       qdev->ndev->name);
++		netdev_info(ndev, "calling pci_disable_msi()\n");
+ 		clear_bit(QL_MSI_ENABLED,&qdev->flags);
+ 		pci_disable_msi(qdev->pdev);
+ 	}
+@@ -3679,9 +3569,8 @@ err_irq:
+ static int ql_cycle_adapter(struct ql3_adapter *qdev, int reset)
  {
- 	struct device_node *dp = op->dev.of_node;
-diff --git a/arch/sparc/kernel/pci_impl.h b/arch/sparc/kernel/pci_impl.h
-index 0318682..e20ed5f 100644
---- a/arch/sparc/kernel/pci_impl.h
-+++ b/arch/sparc/kernel/pci_impl.h
-@@ -91,7 +91,7 @@ struct pci_pbm_info {
- 	char				*name;
- 
- 	/* OBP specific information. */
--	struct of_device		*op;
-+	struct platform_device		*op;
- 	u64				ino_bitmap;
- 
- 	/* PBM I/O and Memory space resources. */
-diff --git a/arch/sparc/kernel/pci_psycho.c b/arch/sparc/kernel/pci_psycho.c
-index 71550a7..22eab7c 100644
---- a/arch/sparc/kernel/pci_psycho.c
-+++ b/arch/sparc/kernel/pci_psycho.c
-@@ -285,7 +285,7 @@ static irqreturn_t psycho_ce_intr(int irq, void *dev_id)
- #define  PSYCHO_ECCCTRL_CE	 0x2000000000000000UL /* Enable CE INterrupts */
- static void psycho_register_error_handlers(struct pci_pbm_info *pbm)
+ 	if( ql_adapter_down(qdev,reset) || ql_adapter_up(qdev)) {
+-		printk(KERN_ERR PFX
+-				"%s: Driver up/down cycle failed, "
+-				"closing device\n",qdev->ndev->name);
++		netdev_err(qdev->ndev,
++			   "Driver up/down cycle failed, closing device\n");
+ 		rtnl_lock();
+ 		dev_close(qdev->ndev);
+ 		rtnl_unlock();
+@@ -3750,7 +3639,7 @@ static void ql3xxx_tx_timeout(struct net_device *ndev)
  {
--	struct of_device *op = of_find_device_by_node(pbm->op->dev.of_node);
-+	struct platform_device *op = of_find_device_by_node(pbm->op->dev.of_node);
- 	unsigned long base = pbm->controller_regs;
- 	u64 tmp;
- 	int err;
-@@ -483,7 +483,7 @@ static void psycho_pbm_strbuf_init(struct pci_pbm_info *pbm,
- #define PSYCHO_MEMSPACE_SIZE	0x07fffffffUL
+ 	struct ql3_adapter *qdev = (struct ql3_adapter *)netdev_priv(ndev);
  
- static void __devinit psycho_pbm_init(struct pci_pbm_info *pbm,
--				      struct of_device *op, int is_pbm_a)
-+				      struct platform_device *op, int is_pbm_a)
- {
- 	psycho_pbm_init_common(pbm, op, "PSYCHO", PBM_CHIP_TYPE_PSYCHO);
- 	psycho_pbm_strbuf_init(pbm, is_pbm_a);
-@@ -503,7 +503,7 @@ static struct pci_pbm_info * __devinit psycho_find_sibling(u32 upa_portid)
+-	printk(KERN_ERR PFX "%s: Resetting...\n", ndev->name);
++	netdev_err(ndev, "Resetting...\n");
+ 	/*
+ 	 * Stop the queues, we've got a problem.
+ 	 */
+@@ -3783,9 +3672,8 @@ static void ql_reset_work(struct work_struct *work)
+ 			int j;
+ 			tx_cb = &qdev->tx_buf[i];
+ 			if (tx_cb->skb) {
+-				printk(KERN_DEBUG PFX
+-				       "%s: Freeing lost SKB.\n",
+-				       qdev->ndev->name);
++				netdev_printk(KERN_DEBUG, ndev,
++					      "Freeing lost SKB\n");
+ 				pci_unmap_single(qdev->pdev,
+ 					 dma_unmap_addr(&tx_cb->map[0], mapaddr),
+ 					 dma_unmap_len(&tx_cb->map[0], maplen),
+@@ -3801,8 +3689,7 @@ static void ql_reset_work(struct work_struct *work)
+ 			}
+ 		}
  
- #define PSYCHO_CONFIGSPACE	0x001000000UL
+-		printk(KERN_ERR PFX
+-		       "%s: Clearing NRI after reset.\n", qdev->ndev->name);
++		netdev_err(ndev, "Clearing NRI after reset\n");
+ 		spin_lock_irqsave(&qdev->hw_lock, hw_flags);
+ 		ql_write_common_reg(qdev,
+ 				    &port_regs->CommonRegs.
+@@ -3818,16 +3705,14 @@ static void ql_reset_work(struct work_struct *work)
  
--static int __devinit psycho_probe(struct of_device *op,
-+static int __devinit psycho_probe(struct platform_device *op,
- 				  const struct of_device_id *match)
- {
- 	const struct linux_prom64_registers *pr_regs;
-diff --git a/arch/sparc/kernel/pci_sabre.c b/arch/sparc/kernel/pci_sabre.c
-index 2d7bf30..5c3f5ec 100644
---- a/arch/sparc/kernel/pci_sabre.c
-+++ b/arch/sparc/kernel/pci_sabre.c
-@@ -311,7 +311,7 @@ static irqreturn_t sabre_ce_intr(int irq, void *dev_id)
- static void sabre_register_error_handlers(struct pci_pbm_info *pbm)
- {
- 	struct device_node *dp = pbm->op->dev.of_node;
--	struct of_device *op;
-+	struct platform_device *op;
- 	unsigned long base = pbm->controller_regs;
- 	u64 tmp;
- 	int err;
-@@ -443,7 +443,7 @@ static void __devinit sabre_scan_bus(struct pci_pbm_info *pbm,
- }
+ 						   ispControlStatus);
+ 			if ((value & ISP_CONTROL_SR) == 0) {
+-				printk(KERN_DEBUG PFX
+-				       "%s: reset completed.\n",
+-				       qdev->ndev->name);
++				netdev_printk(KERN_DEBUG, ndev,
++					      "reset completed\n");
+ 				break;
+ 			}
  
- static void __devinit sabre_pbm_init(struct pci_pbm_info *pbm,
--				     struct of_device *op)
-+				     struct platform_device *op)
- {
- 	psycho_pbm_init_common(pbm, op, "SABRE", PBM_CHIP_TYPE_SABRE);
- 	pbm->pci_afsr = pbm->controller_regs + SABRE_PIOAFSR;
-@@ -452,7 +452,7 @@ static void __devinit sabre_pbm_init(struct pci_pbm_info *pbm,
- 	sabre_scan_bus(pbm, &op->dev);
- }
+ 			if (value & ISP_CONTROL_RI) {
+-				printk(KERN_DEBUG PFX
+-				       "%s: clearing NRI after reset.\n",
+-				       qdev->ndev->name);
++				netdev_printk(KERN_DEBUG, ndev,
++					      "clearing NRI after reset\n");
+ 				ql_write_common_reg(qdev,
+ 						    &port_regs->
+ 						    CommonRegs.
+@@ -3848,11 +3733,9 @@ static void ql_reset_work(struct work_struct *work)
+ 			 * Set the reset flags and clear the board again.
+ 			 * Nothing else to do...
+ 			 */
+-			printk(KERN_ERR PFX
+-			       "%s: Timed out waiting for reset to "
+-			       "complete.\n", ndev->name);
+-			printk(KERN_ERR PFX
+-			       "%s: Do a reset.\n", ndev->name);
++			netdev_err(ndev,
++				   "Timed out waiting for reset to complete\n");
++			netdev_err(ndev, "Do a reset\n");
+ 			clear_bit(QL_RESET_PER_SCSI,&qdev->flags);
+ 			clear_bit(QL_RESET_START,&qdev->flags);
+ 			ql_cycle_adapter(qdev,QL_DO_RESET);
+@@ -3920,15 +3803,13 @@ static int __devinit ql3xxx_probe(struct pci_dev *pdev,
  
--static int __devinit sabre_probe(struct of_device *op,
-+static int __devinit sabre_probe(struct platform_device *op,
- 				 const struct of_device_id *match)
- {
- 	const struct linux_prom64_registers *pr_regs;
-diff --git a/arch/sparc/kernel/pci_schizo.c b/arch/sparc/kernel/pci_schizo.c
-index 04f29c4..445a47a 100644
---- a/arch/sparc/kernel/pci_schizo.c
-+++ b/arch/sparc/kernel/pci_schizo.c
-@@ -844,7 +844,7 @@ static int pbm_routes_this_ino(struct pci_pbm_info *pbm, u32 ino)
-  */
- static void tomatillo_register_error_handlers(struct pci_pbm_info *pbm)
- {
--	struct of_device *op = of_find_device_by_node(pbm->op->dev.of_node);
-+	struct platform_device *op = of_find_device_by_node(pbm->op->dev.of_node);
- 	u64 tmp, err_mask, err_no_mask;
- 	int err;
+ 	err = pci_enable_device(pdev);
+ 	if (err) {
+-		printk(KERN_ERR PFX "%s cannot enable PCI device\n",
+-		       pci_name(pdev));
++		pr_err("%s cannot enable PCI device\n", pci_name(pdev));
+ 		goto err_out;
+ 	}
  
-@@ -939,7 +939,7 @@ static void tomatillo_register_error_handlers(struct pci_pbm_info *pbm)
+ 	err = pci_request_regions(pdev, DRV_NAME);
+ 	if (err) {
+-		printk(KERN_ERR PFX "%s cannot obtain PCI resources\n",
+-		       pci_name(pdev));
++		pr_err("%s cannot obtain PCI resources\n", pci_name(pdev));
+ 		goto err_out_disable_pdev;
+ 	}
  
- static void schizo_register_error_handlers(struct pci_pbm_info *pbm)
- {
--	struct of_device *op = of_find_device_by_node(pbm->op->dev.of_node);
-+	struct platform_device *op = of_find_device_by_node(pbm->op->dev.of_node);
- 	u64 tmp, err_mask, err_no_mask;
- 	int err;
+@@ -3943,15 +3824,13 @@ static int __devinit ql3xxx_probe(struct pci_dev *pdev,
+ 	}
  
-@@ -1307,7 +1307,7 @@ static void schizo_pbm_hw_init(struct pci_pbm_info *pbm)
- }
+ 	if (err) {
+-		printk(KERN_ERR PFX "%s no usable DMA configuration\n",
+-		       pci_name(pdev));
++		pr_err("%s no usable DMA configuration\n", pci_name(pdev));
+ 		goto err_out_free_regions;
+ 	}
  
- static int __devinit schizo_pbm_init(struct pci_pbm_info *pbm,
--				     struct of_device *op, u32 portid,
-+				     struct platform_device *op, u32 portid,
- 				     int chip_type)
- {
- 	const struct linux_prom64_registers *regs;
-@@ -1413,7 +1413,7 @@ static struct pci_pbm_info * __devinit schizo_find_sibling(u32 portid,
- 	return NULL;
- }
+ 	ndev = alloc_etherdev(sizeof(struct ql3_adapter));
+ 	if (!ndev) {
+-		printk(KERN_ERR PFX "%s could not alloc etherdev\n",
+-		       pci_name(pdev));
++		pr_err("%s could not alloc etherdev\n", pci_name(pdev));
+ 		err = -ENOMEM;
+ 		goto err_out_free_regions;
+ 	}
+@@ -3978,8 +3857,7 @@ static int __devinit ql3xxx_probe(struct pci_dev *pdev,
  
--static int __devinit __schizo_init(struct of_device *op, unsigned long chip_type)
-+static int __devinit __schizo_init(struct platform_device *op, unsigned long chip_type)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	struct pci_pbm_info *pbm;
-@@ -1460,7 +1460,7 @@ out_err:
- 	return err;
- }
+ 	qdev->mem_map_registers = pci_ioremap_bar(pdev, 1);
+ 	if (!qdev->mem_map_registers) {
+-		printk(KERN_ERR PFX "%s: cannot map device registers\n",
+-		       pci_name(pdev));
++		pr_err("%s: cannot map device registers\n", pci_name(pdev));
+ 		err = -EIO;
+ 		goto err_out_free_ndev;
+ 	}
+@@ -3998,9 +3876,8 @@ static int __devinit ql3xxx_probe(struct pci_dev *pdev,
  
--static int __devinit schizo_probe(struct of_device *op,
-+static int __devinit schizo_probe(struct platform_device *op,
- 				  const struct of_device_id *match)
- {
- 	return __schizo_init(op, (unsigned long) match->data);
-diff --git a/arch/sparc/kernel/pci_sun4v.c b/arch/sparc/kernel/pci_sun4v.c
-index 18ee8b6..743344a 100644
---- a/arch/sparc/kernel/pci_sun4v.c
-+++ b/arch/sparc/kernel/pci_sun4v.c
-@@ -879,7 +879,7 @@ static void pci_sun4v_msi_init(struct pci_pbm_info *pbm)
- #endif /* !(CONFIG_PCI_MSI) */
+ 	/* make sure the EEPROM is good */
+ 	if (ql_get_nvram_params(qdev)) {
+-		printk(KERN_ALERT PFX
+-		       "ql3xxx_probe: Adapter #%d, Invalid NVRAM parameters.\n",
+-		       qdev->index);
++		pr_alert("%s: Adapter #%d, Invalid NVRAM parameters\n",
++			 __func__, qdev->index);
+ 		err = -EIO;
+ 		goto err_out_iounmap;
+ 	}
+@@ -4032,8 +3909,7 @@ static int __devinit ql3xxx_probe(struct pci_dev *pdev,
  
- static int __devinit pci_sun4v_pbm_init(struct pci_pbm_info *pbm,
--					struct of_device *op, u32 devhandle)
-+					struct platform_device *op, u32 devhandle)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	int err;
-@@ -918,7 +918,7 @@ static int __devinit pci_sun4v_pbm_init(struct pci_pbm_info *pbm,
- 	return 0;
- }
+ 	err = register_netdev(ndev);
+ 	if (err) {
+-		printk(KERN_ERR PFX "%s: cannot register net device\n",
+-		       pci_name(pdev));
++		pr_err("%s: cannot register net device\n", pci_name(pdev));
+ 		goto err_out_iounmap;
+ 	}
  
--static int __devinit pci_sun4v_probe(struct of_device *op,
-+static int __devinit pci_sun4v_probe(struct platform_device *op,
- 				     const struct of_device_id *match)
- {
- 	const struct linux_prom64_registers *regs;
-diff --git a/arch/sparc/kernel/pmc.c b/arch/sparc/kernel/pmc.c
-index a4c73ed..94536a8 100644
---- a/arch/sparc/kernel/pmc.c
-+++ b/arch/sparc/kernel/pmc.c
-@@ -51,7 +51,7 @@ static void pmc_swift_idle(void)
- #endif
- }
+@@ -4052,10 +3928,10 @@ static int __devinit ql3xxx_probe(struct pci_dev *pdev,
+ 	qdev->adapter_timer.expires = jiffies + HZ * 2;	/* two second delay */
+ 	qdev->adapter_timer.data = (unsigned long)qdev;
  
--static int __devinit pmc_probe(struct of_device *op,
-+static int __devinit pmc_probe(struct platform_device *op,
- 			       const struct of_device_id *match)
- {
- 	regs = of_ioremap(&op->resource[0], 0,
-diff --git a/arch/sparc/kernel/power.c b/arch/sparc/kernel/power.c
-index abc194e..2c59f4d 100644
---- a/arch/sparc/kernel/power.c
-+++ b/arch/sparc/kernel/power.c
-@@ -33,7 +33,7 @@ static int __devinit has_button_interrupt(unsigned int irq, struct device_node *
- 	return 1;
- }
+-	if(!cards_found) {
+-		printk(KERN_ALERT PFX "%s\n", DRV_STRING);
+-		printk(KERN_ALERT PFX "Driver name: %s, Version: %s.\n",
+-	    	   DRV_NAME, DRV_VERSION);
++	if (!cards_found) {
++		pr_alert("%s\n", DRV_STRING);
++		pr_alert("Driver name: %s, Version: %s\n",
++			 DRV_NAME, DRV_VERSION);
+ 	}
+ 	ql_display_dev_info(ndev);
  
--static int __devinit power_probe(struct of_device *op, const struct of_device_id *match)
-+static int __devinit power_probe(struct platform_device *op, const struct of_device_id *match)
- {
- 	struct resource *res = &op->resource[0];
- 	unsigned int irq = op->archdata.irqs[0];
-diff --git a/arch/sparc/kernel/prom_irqtrans.c b/arch/sparc/kernel/prom_irqtrans.c
-index 5702ad4..ce65114 100644
---- a/arch/sparc/kernel/prom_irqtrans.c
-+++ b/arch/sparc/kernel/prom_irqtrans.c
-@@ -719,7 +719,7 @@ static unsigned int central_build_irq(struct device_node *dp,
- 				      void *_data)
- {
- 	struct device_node *central_dp = _data;
--	struct of_device *central_op = of_find_device_by_node(central_dp);
-+	struct platform_device *central_op = of_find_device_by_node(central_dp);
- 	struct resource *res;
- 	unsigned long imap, iclr;
- 	u32 tmp;
-diff --git a/arch/sparc/kernel/psycho_common.c b/arch/sparc/kernel/psycho_common.c
-index 3f34ac8..fe2af66 100644
---- a/arch/sparc/kernel/psycho_common.c
-+++ b/arch/sparc/kernel/psycho_common.c
-@@ -447,7 +447,7 @@ int psycho_iommu_init(struct pci_pbm_info *pbm, int tsbsize,
- 
- }
- 
--void psycho_pbm_init_common(struct pci_pbm_info *pbm, struct of_device *op,
-+void psycho_pbm_init_common(struct pci_pbm_info *pbm, struct platform_device *op,
- 			    const char *chip_name, int chip_type)
- {
- 	struct device_node *dp = op->dev.of_node;
-diff --git a/arch/sparc/kernel/psycho_common.h b/arch/sparc/kernel/psycho_common.h
-index 092c278..590b4ed 100644
---- a/arch/sparc/kernel/psycho_common.h
-+++ b/arch/sparc/kernel/psycho_common.h
-@@ -42,7 +42,7 @@ extern int psycho_iommu_init(struct pci_pbm_info *pbm, int tsbsize,
- 			     unsigned long write_complete_offset);
- 
- extern void psycho_pbm_init_common(struct pci_pbm_info *pbm,
--				   struct of_device *op,
-+				   struct platform_device *op,
- 				   const char *chip_name, int chip_type);
- 
- #endif /* _PSYCHO_COMMON_H */
-diff --git a/arch/sparc/kernel/sbus.c b/arch/sparc/kernel/sbus.c
-index cfeaf04..2ca32d1 100644
---- a/arch/sparc/kernel/sbus.c
-+++ b/arch/sparc/kernel/sbus.c
-@@ -57,7 +57,7 @@
- void sbus_set_sbus64(struct device *dev, int bursts)
- {
- 	struct iommu *iommu = dev->archdata.iommu;
--	struct of_device *op = to_of_device(dev);
-+	struct platform_device *op = to_platform_device(dev);
- 	const struct linux_prom_registers *regs;
- 	unsigned long cfg_reg;
- 	int slot;
-@@ -204,7 +204,7 @@ static unsigned long sysio_imap_to_iclr(unsigned long imap)
- 	return imap + diff;
- }
- 
--static unsigned int sbus_build_irq(struct of_device *op, unsigned int ino)
-+static unsigned int sbus_build_irq(struct platform_device *op, unsigned int ino)
- {
- 	struct iommu *iommu = op->dev.archdata.iommu;
- 	unsigned long reg_base = iommu->write_complete_reg - 0x2000UL;
-@@ -267,7 +267,7 @@ static unsigned int sbus_build_irq(struct of_device *op, unsigned int ino)
- #define  SYSIO_UEAFSR_RESV2 0x0000001fffffffffUL /* Reserved                  */
- static irqreturn_t sysio_ue_handler(int irq, void *dev_id)
- {
--	struct of_device *op = dev_id;
-+	struct platform_device *op = dev_id;
- 	struct iommu *iommu = op->dev.archdata.iommu;
- 	unsigned long reg_base = iommu->write_complete_reg - 0x2000UL;
- 	unsigned long afsr_reg, afar_reg;
-@@ -341,7 +341,7 @@ static irqreturn_t sysio_ue_handler(int irq, void *dev_id)
- #define  SYSIO_CEAFSR_RESV2 0x0000001fffffffffUL /* Reserved                  */
- static irqreturn_t sysio_ce_handler(int irq, void *dev_id)
- {
--	struct of_device *op = dev_id;
-+	struct platform_device *op = dev_id;
- 	struct iommu *iommu = op->dev.archdata.iommu;
- 	unsigned long reg_base = iommu->write_complete_reg - 0x2000UL;
- 	unsigned long afsr_reg, afar_reg;
-@@ -420,7 +420,7 @@ static irqreturn_t sysio_ce_handler(int irq, void *dev_id)
- #define  SYSIO_SBAFSR_RESV3 0x0000001fffffffffUL /* Reserved                  */
- static irqreturn_t sysio_sbus_error_handler(int irq, void *dev_id)
- {
--	struct of_device *op = dev_id;
-+	struct platform_device *op = dev_id;
- 	struct iommu *iommu = op->dev.archdata.iommu;
- 	unsigned long afsr_reg, afar_reg, reg_base;
- 	unsigned long afsr, afar, error_bits;
-@@ -488,7 +488,7 @@ static irqreturn_t sysio_sbus_error_handler(int irq, void *dev_id)
- #define SYSIO_CE_INO		0x35
- #define SYSIO_SBUSERR_INO	0x36
- 
--static void __init sysio_register_error_handlers(struct of_device *op)
-+static void __init sysio_register_error_handlers(struct platform_device *op)
- {
- 	struct iommu *iommu = op->dev.archdata.iommu;
- 	unsigned long reg_base = iommu->write_complete_reg - 0x2000UL;
-@@ -534,7 +534,7 @@ static void __init sysio_register_error_handlers(struct of_device *op)
- }
- 
- /* Boot time initialization. */
--static void __init sbus_iommu_init(struct of_device *op)
-+static void __init sbus_iommu_init(struct platform_device *op)
- {
- 	const struct linux_prom64_registers *pr;
- 	struct device_node *dp = op->dev.of_node;
-@@ -663,7 +663,7 @@ static int __init sbus_init(void)
- 	struct device_node *dp;
- 
- 	for_each_node_by_name(dp, "sbus") {
--		struct of_device *op = of_find_device_by_node(dp);
-+		struct platform_device *op = of_find_device_by_node(dp);
- 
- 		sbus_iommu_init(op);
- 		of_propagate_archdata(op);
-diff --git a/arch/sparc/kernel/time_32.c b/arch/sparc/kernel/time_32.c
-index 5dc2021..9c743b1 100644
---- a/arch/sparc/kernel/time_32.c
-+++ b/arch/sparc/kernel/time_32.c
-@@ -142,7 +142,7 @@ static struct platform_device m48t59_rtc = {
- 	},
- };
- 
--static int __devinit clock_probe(struct of_device *op, const struct of_device_id *match)
-+static int __devinit clock_probe(struct platform_device *op, const struct of_device_id *match)
- {
- 	struct device_node *dp = op->dev.of_node;
- 	const char *model = of_get_property(dp, "model", NULL);
-diff --git a/arch/sparc/kernel/time_64.c b/arch/sparc/kernel/time_64.c
-index 2423b33..3bc9c99 100644
---- a/arch/sparc/kernel/time_64.c
-+++ b/arch/sparc/kernel/time_64.c
-@@ -419,7 +419,7 @@ static struct platform_device rtc_cmos_device = {
- 	.num_resources	= 1,
- };
- 
--static int __devinit rtc_probe(struct of_device *op, const struct of_device_id *match)
-+static int __devinit rtc_probe(struct platform_device *op, const struct of_device_id *match)
- {
- 	struct resource *r;
- 
-@@ -477,7 +477,7 @@ static struct platform_device rtc_bq4802_device = {
- 	.num_resources	= 1,
- };
- 
--static int __devinit bq4802_probe(struct of_device *op, const struct of_device_id *match)
-+static int __devinit bq4802_probe(struct platform_device *op, const struct of_device_id *match)
- {
- 
- 	printk(KERN_INFO "%s: BQ4802 regs at 0x%llx\n",
-@@ -534,7 +534,7 @@ static struct platform_device m48t59_rtc = {
- 	},
- };
- 
--static int __devinit mostek_probe(struct of_device *op, const struct of_device_id *match)
-+static int __devinit mostek_probe(struct platform_device *op, const struct of_device_id *match)
- {
- 	struct device_node *dp = op->dev.of_node;
- 
-diff --git a/arch/sparc/mm/io-unit.c b/arch/sparc/mm/io-unit.c
-index 005e758..fc58c3e 100644
---- a/arch/sparc/mm/io-unit.c
-+++ b/arch/sparc/mm/io-unit.c
-@@ -35,7 +35,7 @@
- #define IOPERM        (IOUPTE_CACHE | IOUPTE_WRITE | IOUPTE_VALID)
- #define MKIOPTE(phys) __iopte((((phys)>>4) & IOUPTE_PAGE) | IOPERM)
- 
--static void __init iounit_iommu_init(struct of_device *op)
-+static void __init iounit_iommu_init(struct platform_device *op)
- {
- 	struct iounit_struct *iounit;
- 	iopte_t *xpt, *xptend;
-@@ -74,7 +74,7 @@ static int __init iounit_init(void)
- 	struct device_node *dp;
- 
- 	for_each_node_by_name(dp, "sbi") {
--		struct of_device *op = of_find_device_by_node(dp);
-+		struct platform_device *op = of_find_device_by_node(dp);
- 
- 		iounit_iommu_init(op);
- 		of_propagate_archdata(op);
-diff --git a/arch/sparc/mm/iommu.c b/arch/sparc/mm/iommu.c
-index b2e6e73..7385806 100644
---- a/arch/sparc/mm/iommu.c
-+++ b/arch/sparc/mm/iommu.c
-@@ -56,7 +56,7 @@ static pgprot_t dvma_prot;		/* Consistent mapping pte flags */
- #define IOPERM        (IOPTE_CACHE | IOPTE_WRITE | IOPTE_VALID)
- #define MKIOPTE(pfn, perm) (((((pfn)<<8) & IOPTE_PAGE) | (perm)) & ~IOPTE_WAZ)
- 
--static void __init sbus_iommu_init(struct of_device *op)
-+static void __init sbus_iommu_init(struct platform_device *op)
- {
- 	struct iommu_struct *iommu;
- 	unsigned int impl, vers;
-@@ -132,7 +132,7 @@ static int __init iommu_init(void)
- 	struct device_node *dp;
- 
- 	for_each_node_by_name(dp, "iommu") {
--		struct of_device *op = of_find_device_by_node(dp);
-+		struct platform_device *op = of_find_device_by_node(dp);
- 
- 		sbus_iommu_init(op);
- 		of_propagate_archdata(op);
+-- 
+1.7.2
 
