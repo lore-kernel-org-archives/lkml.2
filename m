@@ -1,83 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755671Ab0GVQ6H (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 12:58:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:54636 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751766Ab0GVQ5r (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 12:57:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=HWFaEXU2tMpQxQtTUp7tQZ8fFA0tLzQvwfRmaCI8Y4/OwbwZ2amYfzAxubDfaN0ZiO
-         cKt01dvRcnXFh/FpXIIKuiPXQahEeACzbIS83Ob9FTSWO7p745EIfdZyQ6akaDkEJx8f
-         QN/3rARo+ySTv9sFW0RU+Zq8uS/HPXn7Ddgeg=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        devel@driverdev.osuosl.org
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
-Subject: [PATCH 2/5] staging: panel: change own pieces of code by strtoul()
-Date: Thu, 22 Jul 2010 19:57:08 +0300
-Message-Id: <1c9daf151cb12e4267a74236791eeda9b600c240.1279817399.git.andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <20100722151545.GA6696@suse.de>
-References: <20100722151545.GA6696@suse.de>
-In-Reply-To: <cover.1279817399.git.andy.shevchenko@gmail.com>
-References: <cover.1279817399.git.andy.shevchenko@gmail.com>
+	id S1759097Ab0GVQ72 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 12:59:28 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:49941 "EHLO mail-out1.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758310Ab0GVQ7W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 12:59:22 -0400
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jeremy Allison <jra@samba.org>, Volker.Lendecke@sernet.de,
+        David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+In-Reply-To: <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	 <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	 <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	 <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	 <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+	 <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+	 <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+	 <20100722162712.GB10352@jeremy-laptop>
+	 <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Jul 2010 12:58:50 -0400
+Message-ID: <1279817930.3621.14.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 12 msgs/h 1 sum rcpts/h 13 sum msgs/h 1 total rcpts 645 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: B75C99ED25F15AE964EF808A2B4CC1E78D940BFB
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 274 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We have nice method simple_strtoul() to convert string to numbers which
-could be used here.
+On Thu, 2010-07-22 at 09:40 -0700, Linus Torvalds wrote:
+> On Thu, Jul 22, 2010 at 9:27 AM, Jeremy Allison <jra@samba.org> wrote:
+> > On Thu, Jul 22, 2010 at 08:47:46AM -0700, Linus Torvalds wrote:
+> >> Tell me why we shouldn't just do this right?
+> >
+> > No, ctime isn't the same as Windows "create time".
+> 
+> Umm. What kind of reading problems do you guys have?
+> 
+> I know effin well that ctime isn't the same as Windows create time.
+> THAT WAS MY POINT.
+> 
+> But the fact is, th Unix ctime semantics are insane and largely
+> useless. There's a damn good reason almost nobody uses ctime under
+> unix.
+> 
+> So what I'm suggesting is that we have a flag - either per-process or
+> per-mount - that just says "use windows semantics for ctime".
+> 
+> And yes, I'm very aware that the "c" in ctime doesn't stand for
+> "create". But anybody who points that out is - once more - totally
+> missing the point. My point is that we have three timestamps, and
+> windows wants three timestamps (somebody claims that NTFS has four
+> timestamps, but the Windows file time access functions certainly only
+> shows three times, so any potential extra on-disk times have no
+> relevance because they are invisible to pretty much everybody). We can
+> have unix semantics for mtime/atime/ctime, or we can have windows
+> semantics for those three values.
+> 
+> So let's say that we introduce a mount flag that says
+> "ctime=winctime", which basically just sets a flag that instead of
+> changing ctime on chmod/chown/etc, it just changes mtime instead (or,
+> as mentioned, we could make it a process flag instead).
+> 
+> Let's face it, Unix semantics are not sacred.  Especially not
+> something like ctime, which is pretty damn useless. If you're a samba
+> server, why not just say "let's do ctime the way windows does creation
+> times", and let it be at that?
+> 
+> I personally think that Unix ctime is insane. There is no real reason
+> why "write()" should change mtime, but "chmod" changes ctime. It was
+> just a random decision way back when, and it's clearly not what samba
+> wants, and it's equally clearly not what even most _unix_ people want
+> (just google for "ctime" and "creation time", and watch the confusion
+> - exactly because unix semantics are simply _random_ and odd semantics
+> in this area)
+> 
+> I would not be at all surprised if it turns out that people might want
+> to really turn ctime into creation time (with the mount flag or
+> whatever) even if they are _not_ running samba.
+> 
+> An added issue is that most filesystems simply don't have more than
+> three times (and some obviously have not even that, but that's true in
+> Windows too). So re-using ctime actually means that this scheme would
+> work a whole lot better than some crazy xstat() interface that doesn't
+> support common filesystems anyway.
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
----
- drivers/staging/panel/panel.c |   19 +++++++------------
- 1 files changed, 7 insertions(+), 12 deletions(-)
+That would make it impossible to export the filesystem with NFSv2 and
+v3. They do rely on ctime checking for certain operations (e.g. deciding
+when to invalidate access and acl caches). NFSv4 needs this too if the
+filesystem has no dedicated change attribute.
 
-diff --git a/drivers/staging/panel/panel.c b/drivers/staging/panel/panel.c
-index 8bd7182..3e07e41 100644
---- a/drivers/staging/panel/panel.c
-+++ b/drivers/staging/panel/panel.c
-@@ -48,6 +48,7 @@
- #include <linux/fcntl.h>
- #include <linux/init.h>
- #include <linux/delay.h>
-+#include <linux/kernel.h>
- #include <linux/ctype.h>
- #include <linux/parport.h>
- #include <linux/version.h>
-@@ -1179,22 +1180,16 @@ static inline int handle_lcd_special_code(void)
- 			break;
- 
- 		while (*esc) {
-+			char *endp;
-+
- 			if (*esc == 'x') {
- 				esc++;
--				lcd_addr_x = 0;
--				while (isdigit(*esc)) {
--					lcd_addr_x = lcd_addr_x * 10 +
--						     (*esc - '0');
--					esc++;
--				}
-+				lcd_addr_x = simple_strtoul(esc, &endp, 10);
-+				esc = endp;
- 			} else if (*esc == 'y') {
- 				esc++;
--				lcd_addr_y = 0;
--				while (isdigit(*esc)) {
--					lcd_addr_y = lcd_addr_y * 10 +
--						     (*esc - '0');
--					esc++;
--				}
-+				lcd_addr_y = simple_strtoul(esc, &endp, 10);
-+				esc = endp;
- 			} else
- 				break;
- 		}
--- 
-1.7.1.1
+Still, I suppose the market for exporting the same filesystem with both
+NFS and Samba is limited...
+
+Cheers
+  Trond
 
