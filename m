@@ -1,88 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759234Ab0GVR0X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 13:26:23 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:41679 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754191Ab0GVR0T (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 13:26:19 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C487F2B.4040405@s5r6.in-berlin.de>
-Date: Thu, 22 Jul 2010 19:26:03 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	id S1759022Ab0GVR2b (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 13:28:31 -0400
+Received: from imr1.ericy.com ([198.24.6.9]:51772 "EHLO imr1.ericy.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754191Ab0GVR23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 13:28:29 -0400
+Date: Thu, 22 Jul 2010 10:27:26 -0700
+From: Guenter Roeck <guenter.roeck@ericsson.com>
+To: Fenghua Yu <fenghua.yu@intel.com>
+CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+        "H. Peter Anvin" <hpa@linux.intel.com>,
+        "Brown, Len" <len.brown@intel.com>,
+        Chen Gong <gong.chen@linux.intel.com>,
+        Jean Delvare <khali@linux-fr.org>, Huaxu Wan <huaxu.wan@intel.com>,
+        lkml <linux-kernel@vger.kernel.org>,
+        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
+Subject: Re: [PATCH 5/5] Package Level Thermal Control and Power Limit
+ Notification: pkgtemp doc
+Message-ID: <20100722172726.GA4914@ericsson.com>
+References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com>
+ <4C485DF1.5050407@linux.intel.com>
+ <20100722162222.GA22450@linux-os.sc.intel.com>
 MIME-Version: 1.0
-To: Randy Dunlap <randy.dunlap@oracle.com>
-CC: linux-kernel@vger.kernel.org, Kristian Hoegsberg <krh@bitplanet.net>,
-        linux1394-devel@lists.sourceforge.net
-Subject: Re: [review patch 1/2] firewire: new driver: nosy - IEEE 1394 traffic
- sniffer
-References: <tkrat.72756f504d6c0055@s5r6.in-berlin.de>	<tkrat.ddc816ab75cce8ac@s5r6.in-berlin.de> <20100722090751.682f3b00.randy.dunlap@oracle.com>
-In-Reply-To: <20100722090751.682f3b00.randy.dunlap@oracle.com>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100722162222.GA22450@linux-os.sc.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy Dunlap wrote:
-> On Thu, 22 Jul 2010 11:56:38 +0200 (CEST) Stefan Richter wrote:
->> --- a/drivers/firewire/Kconfig
->> +++ b/drivers/firewire/Kconfig
->> @@ -66,4 +66,27 @@ config FIREWIRE_NET
->>  
->>  source "drivers/ieee1394/Kconfig"
->>  
->> +config FIREWIRE_NOSY
->> +	tristate "Nosy - a FireWire traffic sniffer for PCILynx cards"
->> +	depends on PCI
+On Thu, Jul 22, 2010 at 12:22:23PM -0400, Fenghua Yu wrote:
 > 
-> Just curious:  why not depends on IEEE1394_PCILYNX ?
-
-This is a stand-alone driver that interacts neither with the old nor
-with the new FireWire kernel subsystem.  It contains only the minimum of
-DMA programming that is required to get PCILynx' snoop mode (a catch-all
-reception DMA) up and running.
-
-IEEE1394_PCILYNX alias pcilynx on the other hand is a bigger card driver
-which implements several transmit and receive DMA modes as required by a
-low-level driver of the ieee1394 stack.¹
-
-Thus, nosy does not use code from or share code with anything in
-drivers/ieee1394/.
-
-¹) except for isochronous transmission and reception; this was initially
-also provided by pcilynx but became outdated early on in the history of
-the ieee1394 stack when video1394 was added; and except for physical DMA
-that the sbp2 driver requires
-
-If you have a PCILynx card, you can bind either pcilynx or nosy to it.
-(As the kernel's build system works, I think nosy is going to be bound
-before pcilynx if both are present.)  However, nosy the bus analyzer
-provides better value than pcilynx the ieee1394 lowlevel driver that
-lacks 3/4 of the functionality that ohci1394 offers.
-
->> --- /dev/null
->> +++ b/drivers/firewire/nosy-user.h
->> @@ -0,0 +1,25 @@
->> +#ifndef __nosy_user_h
->> +#define __nosy_user_h
->> +
->> +#include <linux/ioctl.h>
->> +#include <linux/types.h>
->> +
->> +#define NOSY_IOC_GET_STATS _IOR('&', 0, struct nosy_stats)
->> +#define NOSY_IOC_START     _IO('&', 1)
->> +#define NOSY_IOC_STOP      _IO('&', 2)
->> +#define NOSY_IOC_FILTER    _IOW('&', 2, __u32)
+> Document for package level thermal hwmon driver.
 > 
-> Please add '&' to Documentation/ioctl/ioctl-number.txt.
+> Signed-off-by: Fenghua Yu <fenghua.yu@intel.com>
+> Reviewed-by: Len Brown <len.brown@intel.com>
+> ---
+> 
+>  pkgtemp |   36 ++++++++++++++++++++++++++++++++++++
+>  1 files changed, 36 insertions(+)
+> 
+> diff --git a/Documentation/hwmon/pkgtemp b/Documentation/hwmon/pkgtemp
+> new file mode 100644
+> index 0000000..a60d286
+> --- /dev/null
+> +++ b/Documentation/hwmon/pkgtemp
+> @@ -0,0 +1,36 @@
+> +Kernel driver pkgtemp
+> +======================
+> +
+> +Supported chips:
+> +  * Intel family
+> +    Prefix: 'pkgtemp'
+> +    CPUID:
+> +    Datasheet: Intel 64 and IA-32 Architectures Software Developer's Manual
+> +               Volume 3A: System Programming Guide
+> +
+> +Author: Fenghua Yu
+> +
+> +Description
+> +-----------
+> +
+> +This driver permits reading package level temperature sensor embedded inside
+> +Intel CPU package. The sensors can be in core, uncore, memroy controller, or
 
-Right, I will send a follow-up patch which does this if there are no
-fundamental objections to this ioctl allocation.
--- 
-Stefan Richter
--=====-==-=- -=== =-==-
-http://arcgraph.de/sr/
+memroy --> memory
+
+> +other componenets in a package. The feature is first implemented in Intel Sandy
+
+componenets --> components
+
+> +Bridge platform.
+> +
+Just for clarification - you mention a number of sensors, but unless
+I am missing something only the package sensor is implemented. Is that correct ?
+
+> +Temperature is measured in degrees Celsius and measurement resolution is
+> +1 degree C. Valid temperatures are from 0 to TjMax degrees C, because the actual
+> +value of temperature register is in fact a delta from TjMax.
+> +
+>From the code, it seems that negative values can be reported. Is it guaranteed 
+by the chip that (TjMax - MSR_IA32_TEMPERATURE_TARGET) >= 0 ? Otherwise, the
+minimum temperature would be (TjMax - 127).
+
+> +Temperature known as TjMax is the maximum junction temperature of package.
+> +Intel defines this temperature as 125C. At this temperature, protection
+
+Your driver bails out at TjMax >= 120, so there is some inconsistency.
+Also, it seems that this is not a constant, since you are reading
+MSR_IA32_TEMPERATURE_TARGET to get the value.
+
+Since the CPUs supporting the package sensor presumably also all support
+reading TjMax, maybe you can reword the above text to reflect this.
+
+> +mechanism will perform actions to forcibly cool down the processor. Alarm
+> +may be raised, if the temperature grows enough (more than TjMax) to trigger
+> +the Out-Of-Spec bit. Following table summarizes the exported sysfs files:
+> +
+> +temp1_input	 - Package temperature (in millidegrees Celsius).
+> +temp1_crit	 - Maximum junction temperature (in millidegrees Celsius).
+> +temp1_crit_alarm - Set when Out-of-spec bit is set, never clears.
+> +		   Correct CPU operation is no longer guaranteed.
+> +temp1_label	 - Contains string "Pysical package id X", where X is physical
+
+Pysical --> Physical.
+I would suggest to drop the "id" for consistency. Core sensor names don't
+include "id" either.
+
+I am not sure if "physical" should be included in the first place.
+Also, above description suggests that future CPUs might add more sensors.
+If so, the name should probably reflect the location of the current sensor,
+ie be something like "Package core X" or "Core package X" or "Package X (core)".
+
+> +		   package id.
+
