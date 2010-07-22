@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759557Ab0GVSWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:22:32 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:42100 "EHLO
+	id S1759742Ab0GVS2R (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:28:17 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38195 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752681Ab0GVSWY (ORCPT
+	with ESMTP id S1753450Ab0GVS2K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:22:24 -0400
+	Thu, 22 Jul 2010 14:28:10 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,166 +15,55 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Benjamin Herrenschmidt <benh@kernel.crashing.org>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 04/31] memblock: Remove nid_range argument, arch provides memblock_nid_range() instead
-Date: Thu, 22 Jul 2010 11:20:37 -0700
-Message-Id: <1279822864-17154-5-git-send-email-yinghai@kernel.org>
+        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 28/31] memblock: Export MEMBLOCK_ERROR again
+Date: Thu, 22 Jul 2010 11:21:01 -0700
+Message-Id: <1279822864-17154-29-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
 References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt354.oracle.com [141.146.40.154]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090202.4C488C39.020C,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090204.4C488C51.00ED,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+will used by x86 memblock_x86_find_in_range_node and nobootmem replacement
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+-v2: use 0 instead -1ULL, Suggested by Linus, so we don't need cast them later to unsigned long
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/sparc/mm/init_64.c  |   16 ++++++----------
- include/linux/memblock.h |    7 +++++--
- mm/memblock.c            |   13 ++++++++-----
- 3 files changed, 19 insertions(+), 17 deletions(-)
+ include/linux/memblock.h |    1 +
+ mm/memblock.c            |    2 --
+ 2 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/sparc/mm/init_64.c b/arch/sparc/mm/init_64.c
-index dd68025..0883113 100644
---- a/arch/sparc/mm/init_64.c
-+++ b/arch/sparc/mm/init_64.c
-@@ -785,8 +785,7 @@ static int find_node(unsigned long addr)
- 	return -1;
- }
- 
--static unsigned long long nid_range(unsigned long long start,
--				    unsigned long long end, int *nid)
-+u64 memblock_nid_range(u64 start, u64 end, int *nid)
- {
- 	*nid = find_node(start);
- 	start += PAGE_SIZE;
-@@ -804,8 +803,7 @@ static unsigned long long nid_range(unsigned long long start,
- 	return start;
- }
- #else
--static unsigned long long nid_range(unsigned long long start,
--				    unsigned long long end, int *nid)
-+u64 memblock_nid_range(u64 start, u64 end, int *nid)
- {
- 	*nid = 0;
- 	return end;
-@@ -822,8 +820,7 @@ static void __init allocate_node_data(int nid)
- 	struct pglist_data *p;
- 
- #ifdef CONFIG_NEED_MULTIPLE_NODES
--	paddr = memblock_alloc_nid(sizeof(struct pglist_data),
--			      SMP_CACHE_BYTES, nid, nid_range);
-+	paddr = memblock_alloc_nid(sizeof(struct pglist_data), SMP_CACHE_BYTES, nid);
- 	if (!paddr) {
- 		prom_printf("Cannot allocate pglist_data for nid[%d]\n", nid);
- 		prom_halt();
-@@ -843,8 +840,7 @@ static void __init allocate_node_data(int nid)
- 	if (p->node_spanned_pages) {
- 		num_pages = bootmem_bootmap_pages(p->node_spanned_pages);
- 
--		paddr = memblock_alloc_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid,
--				      nid_range);
-+		paddr = memblock_alloc_nid(num_pages << PAGE_SHIFT, PAGE_SIZE, nid);
- 		if (!paddr) {
- 			prom_printf("Cannot allocate bootmap for nid[%d]\n",
- 				  nid);
-@@ -984,7 +980,7 @@ static void __init add_node_ranges(void)
- 			unsigned long this_end;
- 			int nid;
- 
--			this_end = nid_range(start, end, &nid);
-+			this_end = memblock_nid_range(start, end, &nid);
- 
- 			numadbg("Adding active range nid[%d] "
- 				"start[%lx] end[%lx]\n",
-@@ -1317,7 +1313,7 @@ static void __init reserve_range_in_node(int nid, unsigned long start,
- 		unsigned long this_end;
- 		int n;
- 
--		this_end = nid_range(start, end, &n);
-+		this_end = memblock_nid_range(start, end, &n);
- 		if (n == nid) {
- 			numadbg("      MATCH reserving range [%lx:%lx]\n",
- 				start, this_end);
 diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index d948857..3e4a52f 100644
+index 70bc467..89749c4 100644
 --- a/include/linux/memblock.h
 +++ b/include/linux/memblock.h
-@@ -46,8 +46,7 @@ extern long memblock_add(u64 base, u64 size);
- extern long memblock_remove(u64 base, u64 size);
- extern long __init memblock_free(u64 base, u64 size);
- extern long __init memblock_reserve(u64 base, u64 size);
--extern u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
--				u64 (*nid_range)(u64, u64, int *));
-+extern u64 __init memblock_alloc_nid(u64 size, u64 align, int nid);
- extern u64 __init memblock_alloc(u64 size, u64 align);
- extern u64 __init memblock_alloc_base(u64 size,
- 		u64, u64 max_addr);
-@@ -61,6 +60,10 @@ extern int memblock_is_region_reserved(u64 base, u64 size);
+@@ -19,6 +19,7 @@
+ #include <asm/memblock.h>
  
- extern void memblock_dump_all(void);
+ #define INIT_MEMBLOCK_REGIONS 128
++#define MEMBLOCK_ERROR		0
  
-+/* Provided by the architecture */
-+extern u64 memblock_nid_range(u64 start, u64 end, int *nid);
-+
-+
- /*
-  * pfn conversion functions
-  *
+ struct memblock_region {
+ 	phys_addr_t base;
 diff --git a/mm/memblock.c b/mm/memblock.c
-index 5df1400..83643f3 100644
+index 796ef8c..3d0a754 100644
 --- a/mm/memblock.c
 +++ b/mm/memblock.c
-@@ -319,7 +319,6 @@ static u64 __init memblock_alloc_nid_unreserved(u64 start, u64 end,
- }
+@@ -27,8 +27,6 @@ int memblock_can_resize;
+ static struct memblock_region memblock_memory_init_regions[INIT_MEMBLOCK_REGIONS + 1];
+ struct memblock_region memblock_reserved_init_regions[INIT_MEMBLOCK_REGIONS + 1];
  
- static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
--				       u64 (*nid_range)(u64, u64, int *),
- 				       u64 size, u64 align, int nid)
+-#define MEMBLOCK_ERROR	(~(phys_addr_t)0)
+-
+ /* inline so we don't get a warning when pr_debug is compiled out */
+ static inline const char *memblock_type_name(struct memblock_type *type)
  {
- 	u64 start, end;
-@@ -332,7 +331,7 @@ static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
- 		u64 this_end;
- 		int this_nid;
- 
--		this_end = nid_range(start, end, &this_nid);
-+		this_end = memblock_nid_range(start, end, &this_nid);
- 		if (this_nid == nid) {
- 			u64 ret = memblock_alloc_nid_unreserved(start, this_end,
- 							   size, align);
-@@ -345,8 +344,7 @@ static u64 __init memblock_alloc_nid_region(struct memblock_region *mp,
- 	return ~(u64)0;
- }
- 
--u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
--			 u64 (*nid_range)(u64 start, u64 end, int *nid))
-+u64 __init memblock_alloc_nid(u64 size, u64 align, int nid)
- {
- 	struct memblock_type *mem = &memblock.memory;
- 	int i;
-@@ -357,7 +355,6 @@ u64 __init memblock_alloc_nid(u64 size, u64 align, int nid,
- 
- 	for (i = 0; i < mem->cnt; i++) {
- 		u64 ret = memblock_alloc_nid_region(&mem->regions[i],
--					       nid_range,
- 					       size, align, nid);
- 		if (ret != ~(u64)0)
- 			return ret;
-@@ -505,3 +502,9 @@ int memblock_is_region_reserved(u64 base, u64 size)
- 	return memblock_overlaps_region(&memblock.reserved, base, size);
- }
- 
-+u64 __weak memblock_nid_range(u64 start, u64 end, int *nid)
-+{
-+	*nid = 0;
-+
-+	return end;
-+}
 -- 
 1.6.4.2
 
