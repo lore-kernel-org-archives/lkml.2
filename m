@@ -1,110 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834Ab0GVHK2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 03:10:28 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:52919 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751270Ab0GVHKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 03:10:25 -0400
-Message-ID: <4C47EE50.4020903@cn.fujitsu.com>
-Date: Thu, 22 Jul 2010 15:08:00 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1757489Ab0GVHVB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 03:21:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24758 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752537Ab0GVHU6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 03:20:58 -0400
+Date: Thu, 22 Jul 2010 10:20:44 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, peterz@infradead.org, paulus@samba.org
+Subject: perf annotate segfaults when source code has goto label that looks
+ like hex number
+Message-ID: <20100722072044.GD27177@redhat.com>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
-        dpshah@google.com, jmoyer@redhat.com, czoccolo@gmail.com
-Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle tunable
- V3
-References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
-In-Reply-To: <1279739181-24482-1-git-send-email-vgoyal@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> Hi,
-> 
-> This is V3 of the group_idle and CFQ IOPS mode implementation patchset. Since V2
-> I have cleaned up the code a bit to clarify the confusion lingering around in
-> what cases do we charge time slice and in what cases do we charge number of
-> requests.
-> 
-> What's the problem
-> ------------------
-> On high end storage (I got on HP EVA storage array with 12 SATA disks in 
-> RAID 5), CFQ's model of dispatching requests from a single queue at a
-> time (sequential readers/write sync writers etc), becomes a bottleneck.
-> Often we don't drive enough request queue depth to keep all the disks busy
-> and suffer a lot in terms of overall throughput.
-> 
-> All these problems primarily originate from two things. Idling on per
-> cfq queue and quantum (dispatching limited number of requests from a
-> single queue) and till then not allowing dispatch from other queues. Once
-> you set the slice_idle=0 and quantum to higher value, most of the CFQ's
-> problem on higher end storage disappear.
-> 
-> This problem also becomes visible in IO controller where one creates
-> multiple groups and gets the fairness but overall throughput is less. In
-> the following table, I am running increasing number of sequential readers
-> (1,2,4,8) in 8 groups of weight 100 to 800.
-> 
-> Kernel=2.6.35-rc5-iops+
-> GROUPMODE=1          NRGRP=8
-> DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4
-> Workload=bsr      iosched=cfq     Filesz=512M bs=4K
-> group_isolation=1 slice_idle=8    group_idle=8    quantum=8
-> =========================================================================
-> AVERAGE[bsr]    [bw in KB/s]
-> -------
-> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  cgrp5  cgrp6  cgrp7  cgrp8  total
-> ---     --- --  ---------------------------------------------------------------
-> bsr     3   1   6186   12752  16568  23068  28608  35785  42322  48409  213701
-> bsr     3   2   5396   10902  16959  23471  25099  30643  37168  42820  192461
-> bsr     3   4   4655   9463   14042  20537  24074  28499  34679  37895  173847
-> bsr     3   8   4418   8783   12625  19015  21933  26354  29830  36290  159249
-> 
-> Notice that overall throughput is just around 160MB/s with 8 sequential reader
-> in each group.
-> 
-> With this patch set, I have set slice_idle=0 and re-ran same test.
-> 
-> Kernel=2.6.35-rc5-iops+
-> GROUPMODE=1          NRGRP=8
-> DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4
-> Workload=bsr      iosched=cfq     Filesz=512M bs=4K
-> group_isolation=1 slice_idle=0    group_idle=8    quantum=8
-> =========================================================================
-> AVERAGE[bsr]    [bw in KB/s]
-> -------
-> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  cgrp5  cgrp6  cgrp7  cgrp8  total
-> ---     --- --  ---------------------------------------------------------------
-> bsr     3   1   6523   12399  18116  24752  30481  36144  42185  48894  219496
-> bsr     3   2   10072  20078  29614  38378  46354  52513  58315  64833  320159
-> bsr     3   4   11045  22340  33013  44330  52663  58254  63883  70990  356520
-> bsr     3   8   12362  25860  37920  47486  61415  47292  45581  70828  348747
-> 
-> Notice how overall throughput has shot upto 348MB/s while retaining the ability
-> to do the IO control.
-> 
-> So this is not the default mode. This new tunable group_idle, allows one to
-> set slice_idle=0 to disable some of the CFQ features and and use primarily
-> group service differentation feature.
-> 
-> If you have thoughts on other ways of solving the problem, I am all ears
-> to it.
+The script below demonstrate this. The problem is in
+hist_entry__parse_objdump_line():
 
-Hi Vivek
+        if (*tmp) {
+                /*
+                 * Parse hexa addresses followed by ':'
+                 */
+                line_ip = strtoull(tmp, &tmp2, 16);
+                if (*tmp2 != ':' || tmp == tmp2)
+                        line_ip = -1;
+        }
+ 
+strtoull() returns valid number when it gets line with label and following
+test passes too. I can't think of a way to unambiguously distinguish between
+label and valid rip. May be running objdump with --prefix-addresses will
+help, but it may make other thing unambiguous.
 
-Would you attach your fio job config file?
+=== script ===
+cat > test.c << EOF
+int main(int argc, char **argv)
+{
+	int i;
 
-Thanks
-Gui
+	while(1) {
+		i++;
+		if (i == 10000000)
+			goto add;
+	}
+add:
+	return 0;
+}
+EOF
 
-> 
-> Thanks
-> Vivek
-> 
-> 
+gcc -g test.c
+perf record ./a.out
+perf annotate
+--
+			Gleb.
