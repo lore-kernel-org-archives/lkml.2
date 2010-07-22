@@ -1,196 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757563Ab0GVGUv (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 02:20:51 -0400
-Received: from mga02.intel.com ([134.134.136.20]:4212 "EHLO mga02.intel.com"
+	id S1753523Ab0GVGZH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 02:25:07 -0400
+Received: from borg.medozas.de ([188.40.89.202]:49938 "EHLO borg.medozas.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756871Ab0GVGT2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 02:19:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,241,1278313200"; 
-   d="scan'208";a="537731181"
-Message-Id: <20100722061822.630779474@intel.com>
-User-Agent: quilt/0.48-1
-Date: Thu, 22 Jul 2010 13:09:30 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Dave Chinner <david@fromorbit.com>, Jan Kara <jack@suse.cz>,
-        Wu Fengguang <fengguang.wu@intel.com>
-CC: Christoph Hellwig <hch@infradead.org>
-CC: Mel Gorman <mel@csn.ul.ie>
-CC: Chris Mason <chris.mason@oracle.com>
-CC: Jens Axboe <jens.axboe@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>
-CC: linux-fsdevel@vger.kernel.org
-CC: linux-mm@kvack.org
-Subject: [PATCH 2/6] writeback: the kupdate expire timestamp should be a moving target
-References: <20100722050928.653312535@intel.com>
-Content-Disposition: inline; filename=writeback-remove-older_than_this.patch
+	id S1750799Ab0GVGZE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 02:25:04 -0400
+Date: Thu, 22 Jul 2010 08:25:01 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Simon Horman <horms@verge.net.au>
+cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+        netfilter-devel@vger.kernel.org,
+        Malcolm Turnbull <malcolm@loadbalancer.org>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Julius Volz <julius.volz@gmail.com>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hannes Eder <heder@google.com>
+Subject: Re: [patch v2.6 4/4] libxt_ipvs: user-space lib for netfilter matcher
+ xt_ipvs
+In-Reply-To: <20100722013817.GB15008@verge.net.au>
+Message-ID: <alpine.LSU.2.01.1007220823340.4980@obet.zrqbmnf.qr>
+References: <20100711090342.035149543@vergenet.net> <20100711090500.421568837@vergenet.net> <20100721012146.GC22966@verge.net.au> <alpine.LSU.2.01.1007210834570.10568@obet.zrqbmnf.qr> <20100721132159.GN6418@verge.net.au> <alpine.LSU.2.01.1007211526490.25445@obet.zrqbmnf.qr>
+ <20100721134102.GA21188@verge.net.au> <20100722013817.GB15008@verge.net.au>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dynamicly compute the dirty expire timestamp at queue_io() time.
-Also remove writeback_control.older_than_this which is no longer used.
 
-writeback_control.older_than_this used to be determined at entrance to
-the kupdate writeback work. This _static_ timestamp may go stale if the
-kupdate work runs on and on. The flusher may then stuck with some old
-busy inodes, never considering newly expired inodes thereafter.
+On Thursday 2010-07-22 03:38, Simon Horman wrote:
+>
+>I must confess that I'm not familiar with using enum in this way.
+>Can I confirm that you are suggesting the following?
+>
+>enum {
+>	XT_IPVS_IPVS_PROPERTY =	1 << 0, /* all other options imply this one */
+>	XT_IPVS_PROTO =		1 << 1,
+>	XT_IPVS_VADDR =		1 << 2,
+>	XT_IPVS_VPORT =		1 << 3,
+>	XT_IPVS_DIR =		1 << 4,
+>	XT_IPVS_METHOD =	1 << 5,
+>	XT_IPVS_VPORTCTL =	1 << 6,
+>	XT_IPVS_MASK =		(1 << 7) - 1,
+>	XT_IPVS_ONCE_MASK =	(XT_IPVS_MASK & ~XT_IPVS_IPVS_PROPERTY)
+>};
 
-This has two possible problems:
-
-- It is unfair for a large dirty inode to delay (for a long time) the
-  writeback of small dirty inodes.
-
-- As time goes by, the large and busy dirty inode may contain only
-  _freshly_ dirtied pages. Ignoring newly expired dirty inodes risks
-  delaying the expired dirty pages to the end of LRU lists, triggering
-  the very bad pageout(). Neverthless this patch merely addresses part
-  of the problem.
-
-CC: Jan Kara <jack@suse.cz>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
- fs/fs-writeback.c                |   24 +++++++++---------------
- include/linux/writeback.h        |    2 --
- include/trace/events/writeback.h |    6 +-----
- mm/backing-dev.c                 |    1 -
- mm/page-writeback.c              |    1 -
- 5 files changed, 10 insertions(+), 24 deletions(-)
-
---- linux-next.orig/fs/fs-writeback.c	2010-07-21 22:20:01.000000000 +0800
-+++ linux-next/fs/fs-writeback.c	2010-07-22 11:23:27.000000000 +0800
-@@ -216,16 +216,23 @@ static void move_expired_inodes(struct l
- 				struct list_head *dispatch_queue,
- 				struct writeback_control *wbc)
- {
-+	unsigned long expire_interval = 0;
-+	unsigned long older_than_this;
- 	LIST_HEAD(tmp);
- 	struct list_head *pos, *node;
- 	struct super_block *sb = NULL;
- 	struct inode *inode;
- 	int do_sb_sort = 0;
- 
-+	if (wbc->for_kupdate) {
-+		expire_interval = msecs_to_jiffies(dirty_expire_interval * 10);
-+		older_than_this = jiffies - expire_interval;
-+	}
-+
- 	while (!list_empty(delaying_queue)) {
- 		inode = list_entry(delaying_queue->prev, struct inode, i_list);
--		if (wbc->older_than_this &&
--		    inode_dirtied_after(inode, *wbc->older_than_this))
-+		if (expire_interval &&
-+		    inode_dirtied_after(inode, older_than_this))
- 			break;
- 		if (sb && sb != inode->i_sb)
- 			do_sb_sort = 1;
-@@ -583,29 +590,19 @@ static inline bool over_bground_thresh(v
-  * Try to run once per dirty_writeback_interval.  But if a writeback event
-  * takes longer than a dirty_writeback_interval interval, then leave a
-  * one-second gap.
-- *
-- * older_than_this takes precedence over nr_to_write.  So we'll only write back
-- * all dirty pages if they are all attached to "old" mappings.
-  */
- static long wb_writeback(struct bdi_writeback *wb,
- 			 struct wb_writeback_work *work)
- {
- 	struct writeback_control wbc = {
- 		.sync_mode		= work->sync_mode,
--		.older_than_this	= NULL,
- 		.for_kupdate		= work->for_kupdate,
- 		.for_background		= work->for_background,
- 		.range_cyclic		= work->range_cyclic,
- 	};
--	unsigned long oldest_jif;
- 	long wrote = 0;
- 	struct inode *inode;
- 
--	if (wbc.for_kupdate) {
--		wbc.older_than_this = &oldest_jif;
--		oldest_jif = jiffies -
--				msecs_to_jiffies(dirty_expire_interval * 10);
--	}
- 	if (!wbc.range_cyclic) {
- 		wbc.range_start = 0;
- 		wbc.range_end = LLONG_MAX;
-@@ -998,9 +995,6 @@ EXPORT_SYMBOL(__mark_inode_dirty);
-  * Write out a superblock's list of dirty inodes.  A wait will be performed
-  * upon no inodes, all inodes or the final one, depending upon sync_mode.
-  *
-- * If older_than_this is non-NULL, then only write out inodes which
-- * had their first dirtying at a time earlier than *older_than_this.
-- *
-  * If `bdi' is non-zero then we're being asked to writeback a specific queue.
-  * This function assumes that the blockdev superblock's inodes are backed by
-  * a variety of queues, so all inodes are searched.  For other superblocks,
---- linux-next.orig/include/linux/writeback.h	2010-07-21 22:20:02.000000000 +0800
-+++ linux-next/include/linux/writeback.h	2010-07-22 11:23:27.000000000 +0800
-@@ -28,8 +28,6 @@ enum writeback_sync_modes {
-  */
- struct writeback_control {
- 	enum writeback_sync_modes sync_mode;
--	unsigned long *older_than_this;	/* If !NULL, only write back inodes
--					   older than this */
- 	unsigned long wb_start;         /* Time writeback_inodes_wb was
- 					   called. This is needed to avoid
- 					   extra jobs and livelock */
---- linux-next.orig/include/trace/events/writeback.h	2010-07-21 22:20:02.000000000 +0800
-+++ linux-next/include/trace/events/writeback.h	2010-07-22 11:23:27.000000000 +0800
-@@ -100,7 +100,6 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__field(int, for_reclaim)
- 		__field(int, range_cyclic)
- 		__field(int, more_io)
--		__field(unsigned long, older_than_this)
- 		__field(long, range_start)
- 		__field(long, range_end)
- 	),
-@@ -115,14 +114,12 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__entry->for_reclaim	= wbc->for_reclaim;
- 		__entry->range_cyclic	= wbc->range_cyclic;
- 		__entry->more_io	= wbc->more_io;
--		__entry->older_than_this = wbc->older_than_this ?
--						*wbc->older_than_this : 0;
- 		__entry->range_start	= (long)wbc->range_start;
- 		__entry->range_end	= (long)wbc->range_end;
- 	),
- 
- 	TP_printk("bdi %s: towrt=%ld skip=%ld mode=%d kupd=%d "
--		"bgrd=%d reclm=%d cyclic=%d more=%d older=0x%lx "
-+		"bgrd=%d reclm=%d cyclic=%d more=%d "
- 		"start=0x%lx end=0x%lx",
- 		__entry->name,
- 		__entry->nr_to_write,
-@@ -133,7 +130,6 @@ DECLARE_EVENT_CLASS(wbc_class,
- 		__entry->for_reclaim,
- 		__entry->range_cyclic,
- 		__entry->more_io,
--		__entry->older_than_this,
- 		__entry->range_start,
- 		__entry->range_end)
- )
---- linux-next.orig/mm/page-writeback.c	2010-07-21 22:20:02.000000000 +0800
-+++ linux-next/mm/page-writeback.c	2010-07-21 22:20:03.000000000 +0800
-@@ -482,7 +482,6 @@ static void balance_dirty_pages(struct a
- 	for (;;) {
- 		struct writeback_control wbc = {
- 			.sync_mode	= WB_SYNC_NONE,
--			.older_than_this = NULL,
- 			.nr_to_write	= write_chunk,
- 			.range_cyclic	= 1,
- 		};
---- linux-next.orig/mm/backing-dev.c	2010-07-22 11:23:34.000000000 +0800
-+++ linux-next/mm/backing-dev.c	2010-07-22 11:23:39.000000000 +0800
-@@ -271,7 +271,6 @@ static void bdi_flush_io(struct backing_
- {
- 	struct writeback_control wbc = {
- 		.sync_mode		= WB_SYNC_NONE,
--		.older_than_this	= NULL,
- 		.range_cyclic		= 1,
- 		.nr_to_write		= 1024,
- 	};
-
-
+Yes; You may drop the () in ONCE_MASK though.
