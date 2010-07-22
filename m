@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754589Ab0GVUIs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 16:08:48 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:55887 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751753Ab0GVUIq (ORCPT
+	id S1755840Ab0GVUQ5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 16:16:57 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:59922 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752499Ab0GVUQy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 16:08:46 -0400
-X-Authority-Analysis: v=1.1 cv=0ETVU5ClxBlG/P3Ky9ZuhqraSVIot/cIDNO6awFX9oc= c=1 sm=0 a=G2SHEswpWIAA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=enOvQawGAAAA:8 a=zIT8YLJ741Ot2pXwb2QA:9 a=LivhYNbawXdkvDJ_j7JCW-FBFxwA:4 a=PUjeQqilurYA:10 a=bkT6KWdcy0IA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] trace-cmd: Don't SIGSEGV when event field format
- cannot be parsed.
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1279046692-11941-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1279046692-11941-1-git-send-email-ddaney@caviumnetworks.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Thu, 22 Jul 2010 16:08:45 -0400
-Message-ID: <1279829325.3319.27.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 22 Jul 2010 16:16:54 -0400
+Message-ID: <4C48A667.2000702@petalogix.com>
+Date: Thu, 22 Jul 2010 22:13:27 +0200
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+        Sachin Sant <sachinp@in.ibm.com>, linux-s390@vger.kernel.org,
+        linux-kernel <linux-kernel@vger.kernel.org>,
+        "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>
+Subject: Re: [PATCH wq#for-next] workqueue: fix how cpu number is stored in
+ work->data
+References: <4C46CEA3.7040503@in.ibm.com>	<4C4718D5.1080902@kernel.org> <20100722112557.14b65077@mschwide.boeblingen.de.ibm.com> <4C4838B8.1080400@kernel.org>
+In-Reply-To: <4C4838B8.1080400@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-07-13 at 11:44 -0700, David Daney wrote:
-> >From the MIPS kernel we get things like:
+Tejun Heo wrote:
+> Once a work starts execution, its data contains the cpu number it was
+> on instead of pointing to cwq.  This is added by commit 7a22ad75
+> (workqueue: carry cpu number in work data once execution starts) to
+> reliably determine the work was last on even if the workqueue itself
+> was destroyed inbetween.
 > 
-> print fmt: "page=%p pfn=%lu order=%d migratetype=%d", REC->page, ({ struct page *__pg = (REC->page); int __sec = page_to_section(__pg); (unsigned long)(__pg - __section_mem_map_addr(__nr_to_section(__sec))); }), REC->order, REC->migratetype
+> Whether data points to a cwq or contains a cpu number was
+> distinguished by comparing the value against PAGE_OFFSET.  The
+> assumption was that a cpu number should be below PAGE_OFFSET while a
+> pointer to cwq should be above it.  However, on architectures which
+> use separate address spaces for user and kernel spaces, this doesn't
+> hold as PAGE_OFFSET is zero.
 > 
-> This cannot be parsed, leading to a NULL struct event_format* being
-> passed to pevent_get_common_field_val, which produces a SIGSEGV.  It
-> would be good to get a parsable format from the kernel, but to
-> remediate the problem for legacy kernels, we can just return an error
-> indicator in this case.  This allows some output from trace-cmd
-> report, although perhaps with some missing data.  But this is better
-> than crashing.
+> Fix it by using an explicit flag, WORK_STRUCT_CWQ, to mark what the
+> data field contains.  If the flag is set, it's pointing to a cwq;
+> otherwise, it contains a cpu number.
 > 
-> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+> Reported on s390 and microblaze during linux-next testing.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Reported-by: Sachin Sant <sachinp@in.ibm.com>
+> Reported-by: Michal Simek <michal.simek@petalogix.com>
+> Reported-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 > ---
->  parse-events.c |    3 +++
->  1 files changed, 3 insertions(+), 0 deletions(-)
+> Yeah, that was a stupid assumption by me.  Can you guys please test
+> whether this fixes the problem?
 > 
-> diff --git a/parse-events.c b/parse-events.c
-> index 9d5a3fa..16fff12 100644
-> --- a/parse-events.c
-> +++ b/parse-events.c
-> @@ -4481,6 +4481,9 @@ int pevent_get_common_field_val(struct trace_seq *s, struct event_format *event,
->  {
+> Thanks.
 
-To be consistent, probably all the pevent_get_*field* should test for
-null event.
+Microblaze is OK.
 
-Did you want to resend a patch that does that?
+Tested-by: Michal Simek <monstr@monstr.eu>
 
--- Steve
-
->  	struct format_field *field;
->  
-> +	if (!event)
-> +		return -1;
-> +
->  	field = pevent_find_common_field(event, name);
->  
->  	return get_field_val(s, field, name, record, val, err);
+Thanks,
+Michal
 
 
+-- 
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
