@@ -1,255 +1,390 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756143Ab0GVX4i (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 19:56:38 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:62177 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755808Ab0GVX4f (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 19:56:35 -0400
-Subject: Re: [PATCH] add a arch specific delay calibration hook.
-From: Alok Kataria <akataria@vmware.com>
-Reply-To: akataria@vmware.com
-To: Ingo Molnar <mingo@elte.hu>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-        the arch/x86 maintainers <x86@kernel.org>,
-        LKML <linux-kernel@vger.kernel.org>, Dan Hecht <dhecht@vmware.com>
-In-Reply-To: <1279599679.18204.17.camel@ank32.eng.vmware.com>
-References: <1279586465.1339.21.camel@ank32.eng.vmware.com>
-	 <1279599679.18204.17.camel@ank32.eng.vmware.com>
-Content-Type: text/plain
-Organization: VMware INC.
-Date: Thu, 22 Jul 2010 16:56:35 -0700
-Message-Id: <1279842995.7045.4.camel@ank32.eng.vmware.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.12.3 (2.12.3-8.el5_2.3) 
-Content-Transfer-Encoding: 7bit
+	id S1755386Ab0GVX67 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 19:58:59 -0400
+Received: from kroah.org ([198.145.64.141]:60882 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752847Ab0GVX65 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 19:58:57 -0400
+Subject: patch "U6715 8250 serial like driver" added to gregkh-2.6 tree
+To: philippe.langlais@stericsson.com, gregkh@suse.de,
+        linux-kernel@vger.kernel.org, ludovic.barre@stericsson.com
+From: <gregkh@suse.de>
+Date: Thu, 22 Jul 2010 16:57:57 -0700
+In-Reply-To: <1279531660-16317-1-git-send-email-philippe.langlais@stericsson.com>
+Message-ID: <12798430773066@site>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo/HPA/others,
 
-Just want to make sure that this doesn't fell through the cracks.
-Please let me know if you have any comments on this patch.
+This is a note to let you know that I've just added the patch titled
 
-Thanks,
-Alok
+    U6715 8250 serial like driver
 
-On Mon, 2010-07-19 at 21:21 -0700, Alok Kataria wrote:
-> On Mon, 2010-07-19 at 17:41 -0700, Alok Kataria wrote:
-> > Hi, 
-> > 
-> > This patch adds a hook for architectures to specify their own delay calibration
-> > routine. VMware platform uses it to calculate the lpj value from the tsc_khz &
-> > HZ value for all the processors.
-> > 
-> > Please note that this is a partial revert of -
-> > 	commit 3da757daf86e498872855f0b5e101f763ba79499
-> > 	x86: use cpu_khz for loops_per_jiffy calculation
-> > 
-> > where I added the lpj_fine variable to generic code, so that we can do this
-> > lpj calibration trick just for the BP. It was considered wrong to apply this
-> > trick for the AP's since on physical systems we can have cases where the AP
-> > is brought up at a lower freq than the maximum possible for power reasons.
-> > On VMware's platform we have VCPU's always running at the same
-> > clockspeed as the TSC frequency so we can extend this for all cpus.
-> > 
-> > Please note that, though the original approach of doing this for just the BP
-> > was safe to get around the "IO-APIC + timer doesn't work" on VMware, we still
-> > need the AP's to have the correct lpj values for the timeouts to work correctly
-> > on our platform for all vcpus.
-> > 
-> > Please consider this for the x86 tree, applies on the tip.
-> 
-> I assumed that this lpj_fine thing was relevant only for VMware, but
-> this might be useful for native or other virtualized platforms too. So
-> as not to regress from the existing behavior, I have reworked this patch
-> so that we use this hook for x86 platform too. And when on VMware we
-> replace it with the VMware specific routine.
-> 
-> Please take a look and consider this patch instead of the first one.
-> 
-> Thanks,
-> Alok
-> 
-> --
-> 
-> We use the lpj_fine value to setup loops_per_jiffy just for the BP,
-> since on physical systems we can have cases where the AP is brought up
-> at a lower frequency than the maximum possible, for power reasons.
-> Though, on VMware's platform we have all the VCPU's always running at
-> the same clockspeed as the TSC frequency, so we can use the lpj_fine
-> value for all cpus.
-> 
-> This patch adds a hook for architectures to specify their own delay
-> calibration routine, x86 defines this by returning the lpj_fine value
-> for BP and zero for all others. When on VMware we override this with our
-> routine which always returns lpj_fine irrespective of which CPU you
-> running on.
-> 
-> Patch applies on x86-tip tree.
-> 
-> Signed-off-by: Alok N Kataria <akataria@vmware.com>
-> 
-> Index: linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c
-> ===================================================================
-> --- linux-x86-tree.git.orig/arch/x86/kernel/cpu/vmware.c	2010-07-19 19:57:36.000000000 -0700
-> +++ linux-x86-tree.git/arch/x86/kernel/cpu/vmware.c	2010-07-19 20:34:36.000000000 -0700
-> @@ -23,6 +23,7 @@
->  
->  #include <linux/dmi.h>
->  #include <linux/module.h>
-> +#include <linux/delay.h>
->  #include <asm/div64.h>
->  #include <asm/x86_init.h>
->  #include <asm/hypervisor.h>
-> @@ -65,15 +66,27 @@ static unsigned long vmware_get_tsc_khz(
->  	return tsc_hz;
->  }
->  
-> +/*
-> + * We can skip the delay calibration and assign it a value calculated based on
-> + * the timer frequency. On VMware's platform all the cpu's run at the same
-> + * frequency as the timer frequency, so use this value for all the processors.
-> + */
-> +static unsigned long vmware_calibrate_delay(void)
-> +{
-> +	BUG_ON(!lpj_fine);
-> +	return lpj_fine;
-> +}
-> +
->  static void __init vmware_platform_setup(void)
->  {
->  	uint32_t eax, ebx, ecx, edx;
->  
->  	VMWARE_PORT(GETHZ, eax, ebx, ecx, edx);
->  
-> -	if (ebx != UINT_MAX)
-> +	if (ebx != UINT_MAX) {
->  		x86_platform.calibrate_tsc = vmware_get_tsc_khz;
-> -	else
-> +		arch_calibrate_delay = vmware_calibrate_delay;
-> +	} else
->  		printk(KERN_WARNING
->  		       "Failed to get TSC freq from the hypervisor\n");
->  }
-> Index: linux-x86-tree.git/include/linux/delay.h
-> ===================================================================
-> --- linux-x86-tree.git.orig/include/linux/delay.h	2010-07-19 19:57:36.000000000 -0700
-> +++ linux-x86-tree.git/include/linux/delay.h	2010-07-19 19:58:48.000000000 -0700
-> @@ -41,7 +41,7 @@ static inline void ndelay(unsigned long 
->  #define ndelay(x) ndelay(x)
->  #endif
->  
-> -extern unsigned long lpj_fine;
-> +extern unsigned long (*arch_calibrate_delay)(void);
->  void calibrate_delay(void);
->  void msleep(unsigned int msecs);
->  unsigned long msleep_interruptible(unsigned int msecs);
-> Index: linux-x86-tree.git/init/calibrate.c
-> ===================================================================
-> --- linux-x86-tree.git.orig/init/calibrate.c	2010-07-19 19:57:36.000000000 -0700
-> +++ linux-x86-tree.git/init/calibrate.c	2010-07-19 20:25:36.000000000 -0700
-> @@ -10,8 +10,9 @@
->  #include <linux/timex.h>
->  #include <linux/smp.h>
->  
-> -unsigned long lpj_fine;
->  unsigned long preset_lpj;
-> +unsigned long (*arch_calibrate_delay)(void);
-> +
->  static int __init lpj_setup(char *str)
->  {
->  	preset_lpj = simple_strtoul(str,NULL,0);
-> @@ -112,16 +113,12 @@ static unsigned long __cpuinit calibrate
->   * This is the number of bits of precision for the loops_per_jiffy.  Each
->   * bit takes on average 1.5/HZ seconds.  This (like the original) is a little
->   * better than 1%
-> - * For the boot cpu we can skip the delay calibration and assign it a value
-> - * calculated based on the timer frequency.
-> - * For the rest of the CPUs we cannot assume that the timer frequency is same as
-> - * the cpu frequency, hence do the calibration for those.
->   */
->  #define LPS_PREC 8
->  
->  void __cpuinit calibrate_delay(void)
->  {
-> -	unsigned long ticks, loopbit;
-> +	unsigned long ticks, loopbit, lpj;
->  	int lps_precision = LPS_PREC;
->  	static bool printed;
->  
-> @@ -130,10 +127,11 @@ void __cpuinit calibrate_delay(void)
->  		if (!printed)
->  			pr_info("Calibrating delay loop (skipped) "
->  				"preset value.. ");
-> -	} else if ((!printed) && lpj_fine) {
-> -		loops_per_jiffy = lpj_fine;
-> -		pr_info("Calibrating delay loop (skipped), "
-> -			"value calculated using timer frequency.. ");
-> +	} else if (arch_calibrate_delay && (lpj = arch_calibrate_delay())) {
-> +		loops_per_jiffy = lpj;
-> +		if (!printed)
-> +			pr_info("Calibrating delay using arch specific "
-> +				"calibration routine.. ");
->  	} else if ((loops_per_jiffy = calibrate_delay_direct()) != 0) {
->  		if (!printed)
->  			pr_info("Calibrating delay using timer "
-> Index: linux-x86-tree.git/arch/x86/include/asm/tsc.h
-> ===================================================================
-> --- linux-x86-tree.git.orig/arch/x86/include/asm/tsc.h	2010-07-19 16:37:33.000000000 -0700
-> +++ linux-x86-tree.git/arch/x86/include/asm/tsc.h	2010-07-19 19:58:48.000000000 -0700
-> @@ -16,6 +16,7 @@ typedef unsigned long long cycles_t;
->  
->  extern unsigned int cpu_khz;
->  extern unsigned int tsc_khz;
-> +extern unsigned long lpj_fine;
->  
->  extern void disable_TSC(void);
->  
-> Index: linux-x86-tree.git/arch/x86/kernel/tsc.c
-> ===================================================================
-> --- linux-x86-tree.git.orig/arch/x86/kernel/tsc.c	2010-07-19 19:57:36.000000000 -0700
-> +++ linux-x86-tree.git/arch/x86/kernel/tsc.c	2010-07-19 21:16:05.000000000 -0700
-> @@ -26,6 +26,8 @@ EXPORT_SYMBOL(cpu_khz);
->  unsigned int __read_mostly tsc_khz;
->  EXPORT_SYMBOL(tsc_khz);
->  
-> +unsigned long __read_mostly lpj_fine;
-> +
->  /*
->   * TSC can be unstable due to cpufreq or due to unsynced TSCs
->   */
-> @@ -911,6 +913,20 @@ static unsigned long __init calibrate_cp
->  static inline unsigned long calibrate_cpu(void) { return cpu_khz; }
->  #endif
->  
-> +/*
-> + * For the boot cpu we can skip the delay calibration and assign it a value
-> + * calculated based on the timer frequency.
-> + * For the rest of the CPUs we cannot assume that the timer frequency is same as
-> + * the cpu frequency, hence do the calibration for those.
-> + */
-> +unsigned long x86_calibrate_delay(void)
-> +{
-> +	if (!smp_processor_id())
-> +		return lpj_fine;
-> +	else
-> +		return 0;
-> +}
-> +
->  void __init tsc_init(void)
->  {
->  	u64 lpj;
-> @@ -955,6 +971,8 @@ void __init tsc_init(void)
->  	lpj = ((u64)tsc_khz * 1000);
->  	do_div(lpj, HZ);
->  	lpj_fine = lpj;
-> +	if (!arch_calibrate_delay)
-> +		arch_calibrate_delay = x86_calibrate_delay;
->  
->  	use_tsc_delay();
->  	/* Check and install the TSC clocksource */
-> 
+to my gregkh-2.6 tree which can be found in directory form at:
+    http://www.kernel.org/pub/linux/kernel/people/gregkh/gregkh-2.6/patches/
+ and in git form at:
+    git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/patches.git
+
+The filename of this patch is:
+    u6715-8250-serial-like-driver.patch
+
+The patch will show up in the next release of the linux-next tree
+(usually sometime within the next 24 hours during the week.)
+
+If this patch meets the merge guidelines for a bugfix, it should be
+merged into Linus's tree before the next major kernel release.
+If not, it will be merged into Linus's tree during the next merge window.
+
+Either way, you will probably be copied on the patch when it gets sent
+to Linus for merging so that others can see what is happening in kernel
+development.
+
+If you have any questions about this process, please let me know.
+
+
+>From philippe.langlais@stericsson.com  Thu Jul 22 15:53:24 2010
+From: Philippe Langlais <philippe.langlais@stericsson.com>
+To: <linux-kernel@vger.kernel.org>
+Cc: <gregkh@suse.de>, <ludovic.barre@stericsson.com>,
+	Philippe Langlais <philippe.langlais@stericsson.com>
+Subject: U6715 8250 serial like driver
+Date: Mon, 19 Jul 2010 11:27:40 +0200
+Message-ID: <1279531660-16317-1-git-send-email-philippe.langlais@stericsson.com>
+
+UART Features extract from STEricsson U6715 datasheet (arm926 SoC for mobile phone):
+* Fully compatible with industry standard 16C550 and 16C450 from various
+manufacturers
+* RX and TX 64 byte FIFO reduces CPU interrupts
+* Full double buffering
+* Modem control signals include CTS, RTS, (and DSR, DTR on UART1 only)
+* Automatic baud rate selection
+* Manual or automatic RTS/CTS smart hardware flow control
+* Programmable serial characteristics:
+– Baud rate generation (50 to 3.25M baud)
+– 5, 6, 7 or 8-bit characters
+– Even, odd or no-parity bit generation and detection
+– 1, 1.5 or 2 stop bit generation
+* Independent control of transmit, receive, line status, data set interrupts and FIFOs
+* Full status-reporting capabilities
+* Separate DMA signalling for RX and TX
+* Timed interrupt to spread receive interrupt on known duration
+* DMA time-out interrupt to allow detection of end of reception
+* Carkit pulse coding and decoding compliant with USB carkit control interface [40]
+
+This UART IP is auto-detected as a 16550A type
+
+Clock specificities:
+ It's parent clock depend on baud rate.
+ The UART port can be used before u6xxx clock framework initialization
+
+Signed-off-by: Philippe Langlais <philippe.langlais@stericsson.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ drivers/serial/8250.c       |   26 ++++++
+ drivers/serial/8250_u6.c    |  179 ++++++++++++++++++++++++++++++++++++++++++++
+ drivers/serial/Kconfig      |   19 ++++
+ drivers/serial/Makefile     |    1 
+ include/linux/serial_8250.h |    8 +
+ 5 files changed, 232 insertions(+), 1 deletion(-)
+
+--- a/drivers/serial/8250.c
++++ b/drivers/serial/8250.c
+@@ -199,10 +199,16 @@ static const struct serial8250_config ua
+ 	},
+ 	[PORT_16550A] = {
+ 		.name		= "16550A",
++#if defined(CONFIG_SERIAL_8250_U6XXX)
++		.fifo_size	= 64,
++		.tx_loadsz	= 64,
++		.flags		= UART_CAP_FIFO | UART_CAP_AFE,
++#else
+ 		.fifo_size	= 16,
+ 		.tx_loadsz	= 16,
+-		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+ 		.flags		= UART_CAP_FIFO,
++#endif
++		.fcr		= UART_FCR_ENABLE_FIFO | UART_FCR_R_TRIG_10,
+ 	},
+ 	[PORT_CIRRUS] = {
+ 		.name		= "Cirrus",
+@@ -2268,6 +2274,13 @@ serial8250_set_termios(struct uart_port
+ 	/*
+ 	 * Ask the core to calculate the divisor for us.
+ 	 */
++#ifdef CONFIG_SERIAL_8250_CUSTOM_CLOCK
++	baud = uart_get_baud_rate(port, termios, old, 0,
++			CONFIG_SERIAL_8250_CUSTOM_MAX_BAUDRATE);
++	/* Calculate the new uart clock frequency if it is tunable */
++	port->uartclk = serial8250_get_custom_clock(port, baud);
++#endif
++
+ 	baud = uart_get_baud_rate(port, termios, old,
+ 				  port->uartclk / 16 / 0xffff,
+ 				  port->uartclk / 16);
+@@ -2298,6 +2311,13 @@ serial8250_set_termios(struct uart_port
+ 		up->mcr &= ~UART_MCR_AFE;
+ 		if (termios->c_cflag & CRTSCTS)
+ 			up->mcr |= UART_MCR_AFE;
++#if defined(CONFIG_SERIAL_8250_U6XXX)
++		/**
++		 * When AFE is active, let the HW handle the stop/restart TX
++		 * upon CTS change. It reacts much quicker than the SW driver.
++		 */
++		port->flags &= ~ASYNC_CTS_FLOW;
++#endif
+ 	}
+ 
+ 	/*
+@@ -2383,6 +2403,10 @@ serial8250_set_termios(struct uart_port
+ 		serial_outp(up, UART_LCR, cval | UART_LCR_DLAB);/* set DLAB */
+ 	}
+ 
++#ifdef CONFIG_SERIAL_8250_CUSTOM_CLOCK
++	/* set the new uart clock frequency if it is tunable */
++	serial8250_set_custom_clock(port);
++#endif
+ 	serial_dl_write(up, quot);
+ 
+ 	/*
+--- /dev/null
++++ b/drivers/serial/8250_u6.c
+@@ -0,0 +1,179 @@
++/*
++ * linux/drivers/serial/8250_pnx.c
++ *
++ * Copyright (C) ST-Ericsson SA 2010
++ * Author: Ludovic Barre <ludovic.barre@stericsson.com> for ST-Ericsson.
++ * License terms:  GNU General Public License (GPL), version 2
++ */
++
++#include <linux/serial_core.h>
++#include <linux/io.h>
++#include <linux/clk.h>
++#include <linux/interrupt.h>
++#include <linux/irq.h>
++
++#include <mach/serial.h>
++#include <mach/hardware.h>
++#include <mach/clock.h>
++
++/* Register description for FDIV_CTRL */
++/* UART FDIV_CTRL Register (8 bits) */
++#define UARTX_FDIV_CTRL_OFFSET         0xC00
++/* UART FDIV_M Register (16 bits) */
++#define UARTX_FDIV_M_OFFSET            0xC04
++/* UART FDIV_N Register (16 bits) */
++#define UARTX_FDIV_N_OFFSET            0xC08
++
++/* Bits definition for register UARTX_FDIV_CTRL */
++#define UARTX_FDIV_ENABLE_SHIFT  7
++#define UARTX_FDIV_ENABLE_FIELD  (0xFFFFFFFF - (0x1UL<<UARTX_FDIV_ENABLE_SHIFT))
++#define UARTX_FDIV_ENABLE_OFF    (0x0UL<<UARTX_FDIV_ENABLE_SHIFT)
++#define UARTX_FDIV_ENABLE_ON     (0x1UL<<UARTX_FDIV_ENABLE_SHIFT)
++#define UARTX_FDIV_ENABLE        (0x1UL<<UARTX_FDIV_ENABLE_SHIFT)
++#define UARTX_CLKSEL_SHIFT       0
++#define UARTX_CLKSEL_FIELD       (0xFFFFFFFF - (0x3UL<<UARTX_CLKSEL_SHIFT))
++#define UARTX_CLKSEL_PCLK        (0x0UL<<UARTX_CLKSEL_SHIFT)
++#define UARTX_CLKSEL_13M         (0x1UL<<UARTX_CLKSEL_SHIFT)
++#define UARTX_CLKSEL_26M         (0x2UL<<UARTX_CLKSEL_SHIFT)
++#define UARTX_CLKSEL_3           (0x3UL<<UARTX_CLKSEL_SHIFT)
++
++/*
++ * console and pctools has needed to start before serial_init
++ * (with cgu interface)
++ */
++static int uart_enable_clock(struct uart_port *port)
++{
++	u32 v;
++	v = readl(CGU_GATESC1_REG);
++
++	if (port->irq == IRQ_UART1)
++		v |= CGU_UART1EN_1;
++	else if (port->irq == IRQ_UART2)
++		v |= CGU_UART2EN_1;
++
++	writel(v, CGU_GATESC1_REG);
++
++	return 0;
++}
++
++static int uart_disable_clock(struct uart_port *port)
++{
++	u32 v;
++	v = readl(CGU_GATESC1_REG);
++
++	if (port->irq == IRQ_UART1)
++		v &= ~CGU_UART1EN_0;
++	else if (port->irq == IRQ_UART2)
++		v &= ~CGU_UART2EN_0;
++
++	writel(v, CGU_GATESC1_REG);
++
++	return 0;
++}
++
++unsigned int serial8250_enable_clock(struct uart_port *port)
++{
++	struct u6_uart *uart_u6 = port->private_data;
++
++	if (!uart_u6)
++		return uart_enable_clock(port);
++
++	if (IS_ERR(uart_u6->uartClk)) {
++		printk(KERN_WARNING "%s - uart clock failed error:%ld\n",
++		       __func__, PTR_ERR(uart_u6->uartClk));
++		return PTR_ERR(uart_u6->uartClk);
++	}
++
++	if (clk_get_usecount(uart_u6->uartClk) == 0)
++		clk_enable(uart_u6->uartClk);
++	return 0;
++}
++
++unsigned int serial8250_disable_clock(struct uart_port *port)
++{
++	struct u6_uart *uart_u6 = port->private_data;
++
++	if (!uart_u6)
++		return uart_disable_clock(port);
++
++	if (IS_ERR(uart_u6->uartClk)) {
++		printk(KERN_WARNING "%s - uart clk error :%ld\n", __func__,
++		       PTR_ERR(uart_u6->uartClk));
++		return PTR_ERR(uart_u6->uartClk);
++	}
++	if (clk_get_usecount(uart_u6->uartClk) >= 1)
++		clk_disable(uart_u6->uartClk);
++
++	return 0;
++}
++
++unsigned int serial8250_get_custom_clock(struct uart_port *port,
++					 unsigned int baud)
++{
++	switch (baud) {
++	case 3250000:
++		return 52000000;
++	case 2000000:
++		return 32000000;
++	case 1843200:
++		return 29491200;
++	case 921600:
++		return 14745600;
++	default:
++		return 7372800;
++	}
++}
++
++void serial8250_set_custom_clock(struct uart_port *port)
++{
++	u32 fdiv_m = 0x5F37;
++	u32 fdiv_n = 0x3600;
++	u32 fdiv_ctrl = UARTX_FDIV_ENABLE_ON;
++	struct u6_uart *uart_u6 = port->private_data;
++
++	switch (port->uartclk) {
++	case 7372800: /* clk=13MHz */
++		fdiv_ctrl |= UARTX_CLKSEL_13M;
++		break;
++	case 14745600: /* clk=26MHz */
++		fdiv_ctrl |= UARTX_CLKSEL_26M;
++		break;
++	case 29491200: /* clk=pclk */
++		fdiv_ctrl |= UARTX_CLKSEL_PCLK;
++		break;
++	case 32000000: /* clk=pclk */
++		fdiv_n = 0x3A98;
++		fdiv_ctrl |= UARTX_CLKSEL_PCLK;
++		break;
++	case 52000000: /* clk=pclk */
++		fdiv_n = 0x5F37;
++		fdiv_ctrl |= UARTX_CLKSEL_PCLK;
++		break;
++	}
++
++	if (uart_u6 != NULL && !IS_ERR(uart_u6->uartClk)) {
++		/* if cgu interface is ready and u6_serial_init */
++		struct clk *parentClk;
++
++		if (fdiv_ctrl & UARTX_CLKSEL_26M)
++			parentClk = clk_get(NULL, "clk26m_ck");
++		else if (fdiv_ctrl & UARTX_CLKSEL_PCLK)
++			parentClk = clk_get(NULL, "pclk2_ck");
++		else
++			parentClk = clk_get(NULL, "clk13m_ck");
++
++		if (!IS_ERR(parentClk)) {
++			serial8250_disable_clock(port);
++
++			if (clk_set_parent(uart_u6->uartClk, parentClk) != 0)
++				printk(KERN_WARNING "%s: set parent failed\n", __func__);
++
++			serial8250_enable_clock(port);
++			clk_put(parentClk);
++		}
++	}
++
++	writel(fdiv_m, port->membase + UARTX_FDIV_M_OFFSET);
++	writel(fdiv_n, port->membase + UARTX_FDIV_N_OFFSET);
++	writel(fdiv_ctrl, port->membase + UARTX_FDIV_CTRL_OFFSET);
++}
+--- a/drivers/serial/Kconfig
++++ b/drivers/serial/Kconfig
+@@ -163,6 +163,25 @@ config SERIAL_8250_MANY_PORTS
+ 	  say N here to save some memory. You can also say Y if you have an
+ 	  "intelligent" multiport card such as Cyclades, Digiboards, etc.
+ 
++config SERIAL_8250_U6XXX
++	bool
++	depends on SERIAL_8250_EXTENDED && PLAT_U6XXX
++	default y
++
++config SERIAL_8250_CUSTOM_CLOCK
++	bool "Support serial ports with tunable input clock frequency"
++	depends on SERIAL_8250_EXTENDED && SERIAL_8250_U6XXX
++	default y
++	help
++	  Say Y here if your platform has specific registers to change UART clock frequency.
++
++config SERIAL_8250_CUSTOM_MAX_BAUDRATE
++	int "Maximal reachable baudrate"
++	depends on SERIAL_8250_CUSTOM_CLOCK
++	default "3250000"
++	help
++	  The value of the maximal reachable baudrate when tuning UART clock frequency (default value: 3.25MBds).
++
+ #
+ # Multi-port serial cards
+ #
+--- a/drivers/serial/Makefile
++++ b/drivers/serial/Makefile
+@@ -28,6 +28,7 @@ obj-$(CONFIG_SERIAL_8250_BOCA) += 8250_b
+ obj-$(CONFIG_SERIAL_8250_EXAR_ST16C554) += 8250_exar_st16c554.o
+ obj-$(CONFIG_SERIAL_8250_HUB6) += 8250_hub6.o
+ obj-$(CONFIG_SERIAL_8250_MCA) += 8250_mca.o
++obj-$(CONFIG_SERIAL_8250_U6XXX) += 8250_u6.o
+ obj-$(CONFIG_SERIAL_AMBA_PL010) += amba-pl010.o
+ obj-$(CONFIG_SERIAL_AMBA_PL011) += amba-pl011.o
+ obj-$(CONFIG_SERIAL_CLPS711X) += clps711x.o
+--- a/include/linux/serial_8250.h
++++ b/include/linux/serial_8250.h
+@@ -72,4 +72,12 @@ extern int serial8250_find_port(struct u
+ extern int serial8250_find_port_for_earlycon(void);
+ extern int setup_early_serial8250_console(char *cmdline);
+ 
++#ifdef CONFIG_SERIAL_8250_CUSTOM_CLOCK
++unsigned int serial8250_enable_clock(struct uart_port *port);
++unsigned int serial8250_disable_clock(struct uart_port *port);
++unsigned int serial8250_get_custom_clock(struct uart_port *port,
++		unsigned int baud);
++void serial8250_set_custom_clock(struct uart_port *port);
++#endif
++
+ #endif
 
