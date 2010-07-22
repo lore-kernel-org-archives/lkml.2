@@ -1,86 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab0GVRFz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 13:05:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:55396 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754762Ab0GVRFx (ORCPT
+	id S1757016Ab0GVRIJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 13:08:09 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:43695 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751260Ab0GVRID (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 13:05:53 -0400
-Date: Thu, 22 Jul 2010 14:05:42 -0300
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Gleb Natapov <gleb@redhat.com>
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
-        paulus@samba.org
-Subject: [PATCH v2] Re: perf annotate segfaults when source code has goto
- label that looks like hex number
-Message-ID: <20100722170541.GF17631@ghostprotocols.net>
-References: <20100722072044.GD27177@redhat.com>
- <20100722143345.GC17631@ghostprotocols.net>
- <20100722163851.GA10307@redhat.com>
- <20100722164711.GD17631@ghostprotocols.net>
- <20100722165222.GE17631@ghostprotocols.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100722165222.GE17631@ghostprotocols.net>
-X-Url: http://acmel.wordpress.com
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Thu, 22 Jul 2010 13:08:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=azTxmHx2FTMUAR8NOZ4NQ8mlzZuY0YTWb/bvQBblA7mlhRFGqXixq13uDUWXy7Acaf
+         tbUSqZi/1lQraRt5Yi9s5b8vUWLO38IXO/UNH3+3lCViwXgXsYD+DYXFBMlw6sqLBTcz
+         ztegJiWEFripky5/e5YC4QdRJ8bVvbKoL0vPk=
+From: Chihau Chau <chihau@gmail.com>
+To: gregkh@suse.de
+Cc: mithlesh@linsyssoft.com, reodge@gmail.com, andrea.gelmini@gelma.net,
+        penberg@cs.helsinki.fi, devel@driverdev.osuosl.org,
+        linux-kernel@vger.kernel.org, Chihau Chau <chihau@gmail.com>
+Subject: [PATCH] Staging: comedi: drivers: Code style issues
+Date: Thu, 22 Jul 2010 13:07:53 -0400
+Message-Id: <1279818473-18212-1-git-send-email-chihau@gmail.com>
+X-Mailer: git-send-email 1.5.6.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em Thu, Jul 22, 2010 at 01:52:22PM -0300, Arnaldo Carvalho de Melo escreveu:
-> Em Thu, Jul 22, 2010 at 01:47:11PM -0300, Arnaldo Carvalho de Melo escreveu:
-> > Em Thu, Jul 22, 2010 at 07:38:51PM +0300, Gleb Natapov escreveu:
-> > > On Thu, Jul 22, 2010 at 11:33:45AM -0300, Arnaldo Carvalho de Melo wrote:
-> > > > Can you try the attached patch?
-> > > > 
-> > > I can, only later. But if I underhand your patch correctly perf will
-> > > still crash if there is a comment after the label on the same line.
-> > 
-> > Possibly, will try that now.
-> 
-> It could be a comment of play code, like:
-> 
-> [root@emilia ~]# cat test.c 
-> int main(int argc, char **argv)
-> {
->       int i;
-> 
->       while(1) {
->               i++;
->               if (i == 10000000)
->                       goto add;
->       }
-> add:	return 0;
-> }
-> [root@emilia ~]#
-> 
-> back to the drawing board :-\
+From: Chihau Chau <chihau@gmail.com>
 
-What about this one?
+This fix some lines over 80 characters.
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 699cf81..96e9044 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -976,13 +976,15 @@ static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
- 		 * Parse hexa addresses followed by ':'
- 		 */
- 		line_ip = strtoull(tmp, &tmp2, 16);
--		if (*tmp2 != ':' || tmp == tmp2)
-+		if (*tmp2 != ':' || tmp == tmp2 || tmp2[1] == '\0')
- 			line_ip = -1;
- 	}
+Signed-off-by: Chihau Chau <chihau@gmail.com>
+---
+ drivers/staging/comedi/drivers.c |   17 ++++++++---------
+ 1 files changed, 8 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index 4a29ed7..50c8295 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -117,8 +117,8 @@ int comedi_device_attach(struct comedi_device *dev, struct comedi_devconfig *it)
  
- 	if (line_ip != -1) {
- 		u64 start = map__rip_2objdump(self->ms.map, sym->start);
- 		offset = line_ip - start;
-+		if (offset < 0 || (u64)line_ip > sym->end)
-+			offset = -1;
+ 	for (driv = comedi_drivers; driv; driv = driv->next) {
+ 		if (!try_module_get(driv->module)) {
+-			printk
+-			    (KERN_INFO "comedi: failed to increment module count, skipping\n");
++			printk(KERN_INFO "comedi: failed to increment module "
++				"count, skipping\n");
+ 			continue;
+ 		}
+ 		if (driv->num_names) {
+@@ -205,9 +205,8 @@ int comedi_driver_unregister(struct comedi_driver *driver)
+ 		mutex_lock(&dev->mutex);
+ 		if (dev->attached && dev->driver == driver) {
+ 			if (dev->use_count)
+-				printk
+-				    (KERN_WARNING "BUG! detaching device with use_count=%d\n",
+-				     dev->use_count);
++				printk(KERN_WARNING "BUG! detaching device with"
++					" use_count=%d\n", dev->use_count);
+ 			comedi_device_detach(dev);
+ 		}
+ 		mutex_unlock(&dev->mutex);
+@@ -646,8 +645,8 @@ unsigned comedi_buf_write_free(struct comedi_async *async, unsigned int nbytes)
+ {
+ 	if ((int)(async->buf_write_count + nbytes -
+ 		  async->buf_write_alloc_count) > 0) {
+-		printk
+-		    (KERN_INFO "comedi: attempted to write-free more bytes than have been write-allocated.\n");
++		printk(KERN_INFO "comedi: attempted to write-free more bytes "
++			"than have been write-allocated.\n");
+ 		nbytes = async->buf_write_alloc_count - async->buf_write_count;
  	}
- 
- 	objdump_line = objdump_line__new(offset, line);
+ 	async->buf_write_count += nbytes;
+@@ -683,8 +682,8 @@ unsigned comedi_buf_read_free(struct comedi_async *async, unsigned int nbytes)
+ 	smp_mb();
+ 	if ((int)(async->buf_read_count + nbytes -
+ 		  async->buf_read_alloc_count) > 0) {
+-		printk(KERN_INFO
+-		       "comedi: attempted to read-free more bytes than have been read-allocated.\n");
++		printk(KERN_INFO "comedi: attempted to read-free more bytes "
++			"than have been read-allocated.\n");
+ 		nbytes = async->buf_read_alloc_count - async->buf_read_count;
+ 	}
+ 	async->buf_read_count += nbytes;
+-- 
+1.5.6.3
+
