@@ -1,77 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756345Ab0GVS7t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:59:49 -0400
-Received: from mail-out1.uio.no ([129.240.10.57]:52165 "EHLO mail-out1.uio.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750799Ab0GVS7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:59:47 -0400
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended  file stats available [ver #6]
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Volker.Lendecke@SerNet.DE
-Cc: Jeremy Allison <jra@samba.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>,
-        David Howells <dhowells@redhat.com>,
-        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
-        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-In-Reply-To: <E1Oc08W-00CZuz-Ns@intern.SerNet.DE>
-References: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	 <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	 <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-	 <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-	 <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-	 <20100722162712.GB10352@jeremy-laptop>
-	 <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	 <1279817930.3621.14.camel@heimdal.trondhjem.org>
-	 <20100722180204.GA32008@samba1>  <E1Oc08W-00CZuz-Ns@intern.SerNet.DE>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 14:59:20 -0400
-Message-ID: <1279825160.3621.71.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 12 msgs/h 1 sum rcpts/h 21 sum msgs/h 2 total rcpts 670 max rcpts/h 20 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: 6F9B0CABCC3B529CE1126B953B1A1F3B6973D6AB
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 277 max/h 6 blacklist 0 greylist 0 ratelimit 0
+	id S1756750Ab0GVTBL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 15:01:11 -0400
+Received: from ipmail06.adl6.internode.on.net ([150.101.137.145]:18882 "EHLO
+	ipmail06.adl6.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751685Ab0GVTBG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 15:01:06 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAIYySEx5Lc6U/2dsb2JhbACfcnLDAIU2BA
+Date: Fri, 23 Jul 2010 05:01:00 +1000
+From: Nick Piggin <npiggin@kernel.dk>
+To: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org
+Cc: Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>
+Subject: VFS scalability git tree
+Message-ID: <20100722190100.GA22269@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 20:04 +0200, Volker Lendecke wrote:
-> On Thu, Jul 22, 2010 at 11:02:04AM -0700, Jeremy Allison wrote:
-> > On Thu, Jul 22, 2010 at 12:58:50PM -0400, Trond Myklebust wrote:
-> > > 
-> > > That would make it impossible to export the filesystem with NFSv2 and
-> > > v3. They do rely on ctime checking for certain operations (e.g. deciding
-> > > when to invalidate access and acl caches). NFSv4 needs this too if the
-> > > filesystem has no dedicated change attribute.
-> > > 
-> > > Still, I suppose the market for exporting the same filesystem with both
-> > > NFS and Samba is limited...
-> > 
-> > Ask NetApp about that :-). They have built a rather large
-> > business on just that fact :-).
-> 
-> Jeremy, how many hours have you spent getting "posix
-> locking" to the point where it is now? :-)
-> 
-> Volker
-> 
-> P.S: For those not aware, "posix locking = yes" is
-> cross-protocol byte range locking done by smbd to co-operate
-> with local processes and NFS.
+I'm pleased to announce I have a git tree up of my vfs scalability work.
 
-I said "limited", not "non-existent".
+git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
+http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git
 
-The fact remains that most of us would be hard pressed to name an
-application that requires you to share the same dataset to both
-Windows/CIFS and posix NFS clients. Everything from ACL models through
-caseless vs case-aware filesystems and Windows vs posix locking
-semantics tends to discourage mixing the two environments.
+Branch vfs-scale-working
 
-   Trond
+The really interesting new item is the store-free path walk, (43fe2b)
+which I've re-introduced. It has had a complete redesign, it has much
+better performance and scalability in more cases, and is actually sane
+code now.
+
+What this does is to allow parallel name lookups to walk down common
+elements without any cacheline bouncing between them.  It can walk
+across many interesting cases such as mount points, back up '..', and
+negative dentries of most filesystems. It does so without requiring any
+atomic operations or any stores at all to hared data.  This also makes
+it very fast in serial performance (path walking is nearly twice as fast
+on my Opteron).
+
+In cases where it cannot continue the RCU walk (eg. dentry does not
+exist), then it can in most cases take a reference on the farthest
+element it has reached so far, and then continue on with a regular
+refcount-based path walk. My first attempt at this simply dropped
+everything and re-did the full refcount based walk.
+
+I've also been working on stress testing, bug fixing, cutting down
+'XXX'es, and improving changelogs and comments.
+
+Most filesystems are untested (it's too large a job to do comprehensive
+stress tests on everything), but none have known issues (except nilfs2).
+Ext2/3, nfs, nfsd, and ram based filesystems seem to work well,
+ext4/btrfs/xfs/autofs4 have had light testing.
+
+I've never had filesystem corruption when testing these patches (only
+lockups or other bugs). But standard disclaimer: they may eat your data.
+
+Summary of a few numbers I've run. google's socket teardown workload
+runs 3-4x faster on my 2 socket Opteron. Single thread git diff runs 20%
+on same machine. 32 node Altix runs dbench on ramfs 150x faster (100MB/s
+up to 15GB/s).
+
+At this point, I would be very interested in reviewing, correctness
+testing on different configurations, and of course benchmarking.
+
+Thanks,
+Nick
 
