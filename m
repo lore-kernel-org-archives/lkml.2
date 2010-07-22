@@ -1,125 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758819Ab0GVHvO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 03:51:14 -0400
-Received: from mailout1.samsung.com ([203.254.224.24]:41433 "EHLO
-	mailout1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758749Ab0GVHvK (ORCPT
+	id S1758825Ab0GVHwm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 03:52:42 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:39143 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758749Ab0GVHwk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 03:51:10 -0400
-From: Marek Szyprowski <m.szyprowski@samsung.com>
-To: "'Zach Pfeffer'" <zpfeffer@codeaurora.org>,
-        Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-mm@kvack.org, Pawel Osciak <p.osciak@samsung.com>,
-        "'Xiaolin Zhang'" <xiaolin.zhang@intel.com>,
-        "'Hiremath Vaibhav'" <hvaibhav@ti.com>,
-        "'Robert Fekete'" <robert.fekete@stericsson.com>,
-        "'Marcus Lorentzon'" <marcus.xm.lorentzon@stericsson.com>,
-        linux-kernel@vger.kernel.org,
-        "'Kyungmin Park'" <kyungmin.park@samsung.com>
-References: <cover.1279639238.git.m.nazarewicz@samsung.com>
- <d6d104950c1391eaf3614d56615617cee5722fb4.1279639238.git.m.nazarewicz@samsung.com>
- <adceebd371e8a66a2c153f429b38068eca99e99f.1279639238.git.m.nazarewicz@samsung.com>
- <20100722045435.GD22559@codeaurora.org>
-In-reply-to: <20100722045435.GD22559@codeaurora.org>
-Subject: RE: [PATCH 2/4] mm: cma: Contiguous Memory Allocator added
-Date: Thu, 22 Jul 2010 09:49:33 +0200
-Message-id: <000401cb2972$704016d0$50c04470$%szyprowski@samsung.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=us-ascii
-Content-transfer-encoding: 7bit
-X-Mailer: Microsoft Office Outlook 12.0
-Thread-index: AcspWglMRQB0ed9JTEKEX/RVNpBuzAAFxpFQ
-Content-language: pl
+	Thu, 22 Jul 2010 03:52:40 -0400
+Date: Thu, 22 Jul 2010 08:51:51 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Zach Pfeffer <zpfeffer@codeaurora.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>, alan@lxorguk.ukuu.org.uk,
+        randy.dunlap@oracle.com, dwalker@codeaurora.org, mel@csn.ul.ie,
+        linux-arm-msm@vger.kernel.org, joro@8bytes.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org, andi@firstfloor.org,
+        linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org
+Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
+Message-ID: <20100722075151.GD6802@n2100.arm.linux.org.uk>
+References: <20100713094244.7eb84f1b@lxorguk.ukuu.org.uk> <20100713174519D.fujita.tomonori@lab.ntt.co.jp> <20100713090223.GB20590@n2100.arm.linux.org.uk> <20100714105922D.fujita.tomonori@lab.ntt.co.jp> <20100722035026.GB14176@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722035026.GB14176@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-
-On Thursday, July 22, 2010 6:55 AM Zach Pfeffer wrote:
-
-> On Tue, Jul 20, 2010 at 05:51:25PM +0200, Michal Nazarewicz wrote:
-> > The Contiguous Memory Allocator framework is a set of APIs for
-> > allocating physically contiguous chunks of memory.
-> >
-> > Various chips require contiguous blocks of memory to operate.  Those
-> > chips include devices such as cameras, hardware video decoders and
-> > encoders, etc.
-> >
-> > The code is highly modular and customisable to suit the needs of
-> > various users.  Set of regions reserved for CMA can be configured on
-> > run-time and it is easy to add custom allocator algorithms if one
-> > has such need.
-> >
-> > Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
-> > Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
-> > Reviewed-by: Pawel Osciak <p.osciak@samsung.com>
-> > ---
-> >  Documentation/cma.txt               |  435 +++++++++++++++++++
-> >  Documentation/kernel-parameters.txt |    7 +
-> >  include/linux/cma-int.h             |  183 ++++++++
-> >  include/linux/cma.h                 |   92 ++++
-> >  mm/Kconfig                          |   41 ++
-> >  mm/Makefile                         |    3 +
-> >  mm/cma-allocators.h                 |   42 ++
-> >  mm/cma-best-fit.c                   |  360 ++++++++++++++++
-> >  mm/cma.c                            |  778
-> +++++++++++++++++++++++++++++++++++
-> >  9 files changed, 1941 insertions(+), 0 deletions(-)
-> >  create mode 100644 Documentation/cma.txt
-> >  create mode 100644 include/linux/cma-int.h
-> >  create mode 100644 include/linux/cma.h
-> >  create mode 100644 mm/cma-allocators.h
-> >  create mode 100644 mm/cma-best-fit.c
-> >  create mode 100644 mm/cma.c
-> >
-> > diff --git a/Documentation/cma.txt b/Documentation/cma.txt
-> > new file mode 100644
-> > index 0000000..7edc20a
-> > --- /dev/null
-> > +++ b/Documentation/cma.txt
-> > @@ -0,0 +1,435 @@
-> > +                                                             -*- org -*-
-> > +
-> > +* Contiguous Memory Allocator
-> > +
-> > +   The Contiguous Memory Allocator (CMA) is a framework, which allows
-> > +   setting up a machine-specific configuration for physically-contiguous
-> > +   memory management. Memory for devices is then allocated according
-> > +   to that configuration.
-> > +
-> > +   The main role of the framework is not to allocate memory, but to
-> > +   parse and manage memory configurations, as well as to act as an
-> > +   in-between between device drivers and pluggable allocators. It is
-> > +   thus not tied to any memory allocation method or strategy.
-> > +
+On Wed, Jul 21, 2010 at 08:50:26PM -0700, Zach Pfeffer wrote:
+> On Wed, Jul 14, 2010 at 10:59:43AM +0900, FUJITA Tomonori wrote:
+> > On Tue, 13 Jul 2010 10:02:23 +0100
+> > 
+> > Zach Pfeffer said this new VCM infrastructure can be useful for
+> > video4linux. However, I don't think we need 3,000-lines another
+> > abstraction layer to solve video4linux's issue nicely.
 > 
-> This topic seems very hot lately. I recently sent out a few RFCs that
-> implement something called a Virtual Contiguous Memory Manager that
-> does what this patch does, and works for IOMMU and works for CPU
-> mappings. It also does multihomed memory targeting (use physical set 1
-> memory for A allocations and use physical memory set 2 for B
-> allocations). Check out:
-> 
-> mm: iommu: An API to unify IOMMU, CPU and device memory management
-> mm: iommu: A physical allocator for the VCMM
-> mm: iommu: The Virtual Contiguous Memory Manager
-> 
-> It unifies IOMMU and physical mappings by creating a one-to-one
-> software IOMMU for all devices that map memory physically.
-> 
-> It looks like you've got some good ideas though. Perhaps we can
-> leverage each other's work.
+> Its only 3000 lines because I haven't converted the code to use
+> function pointers.
 
-We are aware of your patches. However our CMA solves the problem that is
-a bit orthogonal to the setting up iommu. When you have IOMMU you don't really
-need to care about memory fragmentation. In CMA approach we had to care
-about it.
+I don't understand - you've made this claim a couple of times.  I
+can't see how converting the code to use function pointers (presumably
+to eliminate those switch statements) would reduce the number of lines
+of code.
 
-Best regards
---
-Marek Szyprowski
-Samsung Poland R&D Center
+Please explain (or show via new patches) how does converting this to
+function pointers significantly reduce the number of lines of code.
 
+We might then be able to put just _one_ of these issues to bed.
 
+> Getting back to the point. There is no API that can handle large
+> buffer allocation and sharing with low-level attribute control for
+> virtual address spaces outside the CPU.
+
+I think we've dealt with the attribute issue to death now.  Shall we
+repeat it again?
+
+> The DMA API et al. take a CPU centric view of virtual space
+> management, sharing has to be explicitly written and external virtual
+> space management is left up to device driver writers.
+
+I think I've also shown that not to be the case with example code.
+
+The code behind the DMA API can be changed on a per-device basis
+(currently on ARM we haven't supported that because no one's asked
+for it yet) so that it can support multiple IOMMUs even of multiple
+different types.
