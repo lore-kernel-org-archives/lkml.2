@@ -1,116 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759208Ab0GVSj1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:39:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:49303 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758716Ab0GVSjZ (ORCPT
+	id S1759110Ab0GVSlJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:41:09 -0400
+Received: from mail-gx0-f174.google.com ([209.85.161.174]:41124 "EHLO
+	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751187Ab0GVSlF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:39:25 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@zytor.com>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        David Miller <davem@davemloft.net>,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-        Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-        linux-arch@vger.kernel.org,
-        Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [PATCH 11/31] memblock: Remove memblock_type.size and add memblock.memory_size instead
-Date: Thu, 22 Jul 2010 11:20:44 -0700
-Message-Id: <1279822864-17154-12-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-References: <1279822864-17154-1-git-send-email-yinghai@kernel.org>
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090206.4C488C50.0075,ss=1,fgs=0
+	Thu, 22 Jul 2010 14:41:05 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=UJqXmQNjWiKr+Cb3HcChC43npNQhtMraIGLdUYhdo3JYPisAFS5z4GDe9lxj27khPp
+         Ci/9WQCheskqzHClQ2PGZEQlSK34KeWWYLEzNlXdjrDeRxZ+0iildpxRaE80RcVZxNq1
+         TsOjwaQdXGoebtfJktLesFM+DBys270tIX/fk=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+	<20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+	<20100722162712.GB10352@jeremy-laptop>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<alpine.LSU.2.01.1007221859180.27496@obet.zrqbmnf.qr>
+	<AANLkTilmVdyVdO4EmVtTYi_cvMmPqNEPEnzUkJdk1XyR@mail.gmail.com>
+Date: Thu, 22 Jul 2010 14:41:01 -0400
+Message-ID: <AANLkTiljnpUGmP-DYW_5CNtRmlL8rK1W2c8ncrin92dC@mail.gmail.com>
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended 
+	file stats available [ver #6]
+From: Greg Freemyer <greg.freemyer@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jan Engelhardt <jengelh@medozas.de>, Jeremy Allison <jra@samba.org>,
+        Volker.Lendecke@sernet.de, David Howells <dhowells@redhat.com>,
+        linux-cifs@vger.kernel.org, linux-nfs@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+On Thu, Jul 22, 2010 at 1:24 PM, Linus Torvalds
+<torvalds@linux-foundation.org> wrote:
 
-Right now, both the "memory" and "reserved" memblock_type structures have
-a "size" member. It's unused in the later case, and represent the
-calculated memory size in the later case.
+<snip>
 
-This moves it out to the main memblock structure instead
+> and I seriously doubt that Windows people
+> complain a lot about the fact that there you have mtime for metadata
+> changes too.
 
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
----
- arch/powerpc/mm/mem.c    |    2 +-
- include/linux/memblock.h |    2 +-
- mm/memblock.c            |    8 ++++----
- 3 files changed, 6 insertions(+), 6 deletions(-)
+But Windows doesn't work that way for I'm fairly sure.
 
-diff --git a/arch/powerpc/mm/mem.c b/arch/powerpc/mm/mem.c
-index 52df542..f661f6c 100644
---- a/arch/powerpc/mm/mem.c
-+++ b/arch/powerpc/mm/mem.c
-@@ -301,7 +301,7 @@ void __init mem_init(void)
- 		swiotlb_init(1);
- #endif
- 
--	num_physpages = memblock.memory.size >> PAGE_SHIFT;
-+	num_physpages = memblock_phys_mem_size() >> PAGE_SHIFT;
- 	high_memory = (void *) __va(max_low_pfn * PAGE_SIZE);
- 
- #ifdef CONFIG_NEED_MULTIPLE_NODES
-diff --git a/include/linux/memblock.h b/include/linux/memblock.h
-index 5abb06b..e849d31 100644
---- a/include/linux/memblock.h
-+++ b/include/linux/memblock.h
-@@ -27,12 +27,12 @@ struct memblock_region {
- 
- struct memblock_type {
- 	unsigned long cnt;
--	phys_addr_t size;
- 	struct memblock_region regions[MAX_MEMBLOCK_REGIONS+1];
- };
- 
- struct memblock {
- 	phys_addr_t current_limit;
-+	phys_addr_t memory_size;	/* Updated by memblock_analyze() */
- 	struct memblock_type memory;
- 	struct memblock_type reserved;
- };
-diff --git a/mm/memblock.c b/mm/memblock.c
-index 0c0f787..78c2394 100644
---- a/mm/memblock.c
-+++ b/mm/memblock.c
-@@ -49,7 +49,7 @@ void memblock_dump_all(void)
- 		return;
- 
- 	pr_info("MEMBLOCK configuration:\n");
--	pr_info(" memory.size = 0x%llx\n", (unsigned long long)memblock.memory.size);
-+	pr_info(" memory size = 0x%llx\n", (unsigned long long)memblock.memory_size);
- 
- 	memblock_dump(&memblock.memory, "memory");
- 	memblock_dump(&memblock.reserved, "reserved");
-@@ -123,10 +123,10 @@ void __init memblock_analyze(void)
- {
- 	int i;
- 
--	memblock.memory.size = 0;
-+	memblock.memory_size = 0;
- 
- 	for (i = 0; i < memblock.memory.cnt; i++)
--		memblock.memory.size += memblock.memory.regions[i].size;
-+		memblock.memory_size += memblock.memory.regions[i].size;
- }
- 
- static long memblock_add_region(struct memblock_type *type, phys_addr_t base, phys_addr_t size)
-@@ -423,7 +423,7 @@ phys_addr_t __init __memblock_alloc_base(phys_addr_t size, phys_addr_t align, ph
- /* You must call memblock_analyze() before this. */
- phys_addr_t __init memblock_phys_mem_size(void)
- {
--	return memblock.memory.size;
-+	return memblock.memory_size;
- }
- 
- phys_addr_t memblock_end_of_DRAM(void)
--- 
-1.6.4.2
+Window's mtime is only affected by file content updates.  (I don't
+know about xattr updates).
 
+If you look at the first and fourth rows of the table at:
+
+http://blogs.sans.org/computer-forensics/2010/04/12/windows-7-mft-entry-timestamp-properties/
+
+You see that there are a number of activities that update the "$STD
+Info MFT Entry Modified Field" that don't update the "$STD Info
+Modification Time"
+
+Again, "$STD Info MFT Entry Modified Field" has semantics close to linux ctime.
+
+And "$STD Info  Modification Time" similar to mtime.
+
+I don't know if there are APIs to present MFT Entry Modified to user
+space or if Samba uses that info.  I just know it's part of the
+on-disk NTFS filesystem data.
+
+Greg
