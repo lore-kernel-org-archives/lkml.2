@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759899Ab0GVUpe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 16:45:34 -0400
-Received: from e33.co.us.ibm.com ([32.97.110.151]:36640 "EHLO
-	e33.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759805Ab0GVUpa (ORCPT
+	id S1759947Ab0GVUp5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 16:45:57 -0400
+Received: from e38.co.us.ibm.com ([32.97.110.159]:33839 "EHLO
+	e38.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759921Ab0GVUpq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 16:45:30 -0400
+	Thu, 22 Jul 2010 16:45:46 -0400
 From: Mimi Zohar <zohar@linux.vnet.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
@@ -14,9 +14,9 @@ Cc: Mimi Zohar <zohar@linux.vnet.ibm.com>,
         James Morris <jmorris@namei.org>,
         David Safford <safford@watson.ibm.com>,
         Dave Hansen <dave@linux.vnet.ibm.com>, Mimi Zohar <zohar@us.ibm.com>
-Subject: [PATCH v2 09/14] fs: add evm_inode_post_init calls
-Date: Thu, 22 Jul 2010 16:44:10 -0400
-Message-Id: <1279831456-2765-10-git-send-email-zohar@linux.vnet.ibm.com>
+Subject: [PATCH v2 11/14] ima: appraise default rules
+Date: Thu, 22 Jul 2010 16:44:12 -0400
+Message-Id: <1279831456-2765-12-git-send-email-zohar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.1
 In-Reply-To: <1279831456-2765-1-git-send-email-zohar@linux.vnet.ibm.com>
 References: <1279831456-2765-1-git-send-email-zohar@linux.vnet.ibm.com>
@@ -24,186 +24,194 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-After creating the initial LSM security extended attribute, call
-evm_inode_post_init_security() to create the 'security.evm'
-extended attribute.
-
-(Support for other fs still needed.)
+Unlike the IMA measurement policy, the appraise policy can not be
+dependent on runtime process information, such as the task uid,
+as the 'security.ima' xattr is written on file close and must
+be updated each time the file changes, regardless of the current
+task uid. The appraise default policy appraises all files owned
+by root.
 
 Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
 Acked-by: Serge Hallyn <serue@us.ibm.com>
 ---
- fs/ext2/xattr_security.c |   31 ++++++++++++++++++++++++-------
- fs/ext3/xattr_security.c |   30 +++++++++++++++++++++++-------
- fs/ext4/xattr_security.c |   30 +++++++++++++++++++++++-------
- 3 files changed, 70 insertions(+), 21 deletions(-)
+ security/integrity/ima/ima.h          |    2 +
+ security/integrity/ima/ima_appraise.c |   14 +++++++-
+ security/integrity/ima/ima_policy.c   |   61 +++++++++++++++++++++++++++++++-
+ 3 files changed, 74 insertions(+), 3 deletions(-)
 
-diff --git a/fs/ext2/xattr_security.c b/fs/ext2/xattr_security.c
-index 3004e15..bb460ed 100644
---- a/fs/ext2/xattr_security.c
-+++ b/fs/ext2/xattr_security.c
-@@ -9,6 +9,7 @@
- #include <linux/fs.h>
- #include <linux/ext2_fs.h>
- #include <linux/security.h>
-+#include <linux/evm.h>
- #include "xattr.h"
+diff --git a/security/integrity/ima/ima.h b/security/integrity/ima/ima.h
+index 854353d..72e2607 100644
+--- a/security/integrity/ima/ima.h
++++ b/security/integrity/ima/ima.h
+@@ -122,6 +122,8 @@ void iint_rcu_free(struct rcu_head *rcu);
+ enum ima_hooks { FILE_CHECK = 1, FILE_MMAP, BPRM_CHECK, POST_SETATTR };
  
- static size_t
-@@ -50,21 +51,37 @@ int
- ext2_init_security(struct inode *inode, struct inode *dir)
+ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask);
++int ima_match_appraise_policy(struct inode *inode, enum ima_hooks func,
++			      int mask);
+ void ima_init_policy(void);
+ void ima_update_policy(void);
+ ssize_t ima_parse_add_rule(char *);
+diff --git a/security/integrity/ima/ima_appraise.c b/security/integrity/ima/ima_appraise.c
+index 423a5a4..fb402fa 100644
+--- a/security/integrity/ima/ima_appraise.c
++++ b/security/integrity/ima/ima_appraise.c
+@@ -28,7 +28,19 @@ __setup("ima_appraise=", default_appraise_setup);
+ int ima_must_appraise(struct integrity_iint_cache *iint, struct inode *inode,
+ 		      enum ima_hooks func, int mask)
  {
- 	int err;
--	size_t len;
--	void *value;
--	char *name;
-+	struct xattr lsm_xattr;
-+	struct xattr evm_xattr;
- 
--	err = security_inode_init_security(inode, dir, &name, &value, &len);
-+	err = security_inode_init_security(inode, dir, &lsm_xattr.name,
-+					   &lsm_xattr.value,
-+					   &lsm_xattr.value_len);
- 	if (err) {
- 		if (err == -EOPNOTSUPP)
- 			return 0;
- 		return err;
- 	}
- 	err = ext2_xattr_set(inode, EXT2_XATTR_INDEX_SECURITY,
--			     name, value, len, 0);
--	kfree(name);
--	kfree(value);
-+			     lsm_xattr.name, lsm_xattr.value,
-+			     lsm_xattr.value_len, 0);
-+	if (err < 0)
-+		goto out;
+-	return 0;
++	int must_appraise, rc = 0;
 +
-+	err = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
-+	if (err)
-+		goto out;
-+	err = ext2_xattr_set(inode, EXT2_XATTR_INDEX_SECURITY,
-+			     evm_xattr.name, evm_xattr.value,
-+			     evm_xattr.value_len, 0);
-+	kfree(evm_xattr.value);
-+out:
-+	kfree(lsm_xattr.name);
-+	kfree(lsm_xattr.value);
-+	if (err == -EOPNOTSUPP)
++	if (!ima_appraise || !inode->i_op->getxattr)
 +		return 0;
- 	return err;
++	else if (iint->flags & IMA_APPRAISED)
++		return 0;
 +
++	must_appraise = ima_match_appraise_policy(inode, func, mask);
++	if (must_appraise) {
++		iint->flags |= IMA_APPRAISE;
++		rc = 1;
++	}
++	return rc;
  }
  
- const struct xattr_handler ext2_xattr_security_handler = {
-diff --git a/fs/ext3/xattr_security.c b/fs/ext3/xattr_security.c
-index 03a99bf..6e44368 100644
---- a/fs/ext3/xattr_security.c
-+++ b/fs/ext3/xattr_security.c
-@@ -10,6 +10,7 @@
- #include <linux/ext3_jbd.h>
- #include <linux/ext3_fs.h>
- #include <linux/security.h>
-+#include <linux/evm.h>
- #include "xattr.h"
+ static void ima_fix_xattr(struct dentry *dentry,
+diff --git a/security/integrity/ima/ima_policy.c b/security/integrity/ima/ima_policy.c
+index aef8c0a..7fd84af 100644
+--- a/security/integrity/ima/ima_policy.c
++++ b/security/integrity/ima/ima_policy.c
+@@ -24,8 +24,11 @@
+ #define IMA_MASK 	0x0002
+ #define IMA_FSMAGIC	0x0004
+ #define IMA_UID		0x0008
++#define IMA_OWNER	0x0010
  
- static size_t
-@@ -52,20 +53,35 @@ int
- ext3_init_security(handle_t *handle, struct inode *inode, struct inode *dir)
- {
- 	int err;
--	size_t len;
--	void *value;
--	char *name;
-+	struct xattr lsm_xattr;
-+	struct xattr evm_xattr;
+-enum ima_action { UNKNOWN = -1, DONT_MEASURE = 0, MEASURE };
++enum ima_action { UNKNOWN = -1,
++		  DONT_MEASURE = 0, MEASURE,
++		  DONT_APPRAISE, APPRAISE};
  
--	err = security_inode_init_security(inode, dir, &name, &value, &len);
-+	err = security_inode_init_security(inode, dir, &lsm_xattr.name,
-+					   &lsm_xattr.value,
-+					   &lsm_xattr.value_len);
- 	if (err) {
- 		if (err == -EOPNOTSUPP)
- 			return 0;
- 		return err;
- 	}
- 	err = ext3_xattr_set_handle(handle, inode, EXT3_XATTR_INDEX_SECURITY,
--				    name, value, len, 0);
--	kfree(name);
--	kfree(value);
-+				    lsm_xattr.name, lsm_xattr.value,
-+				    lsm_xattr.value_len, 0);
-+	if (err < 0)
-+		goto out;
-+
-+	err = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
-+	if (err)
-+		goto out;
-+	err = ext3_xattr_set_handle(handle, inode, EXT3_XATTR_INDEX_SECURITY,
-+				    evm_xattr.name, evm_xattr.value,
-+				    evm_xattr.value_len, 0);
-+	kfree(evm_xattr.value);
-+out:
-+	kfree(lsm_xattr.name);
-+	kfree(lsm_xattr.value);
-+	if (err == -EOPNOTSUPP)
-+		return 0;
- 	return err;
+ #define MAX_LSM_RULES 6
+ enum lsm_rule_types { LSM_OBJ_USER, LSM_OBJ_ROLE, LSM_OBJ_TYPE,
+@@ -40,6 +43,7 @@ struct ima_measure_rule_entry {
+ 	int mask;
+ 	unsigned long fsmagic;
+ 	uid_t uid;
++	uid_t owner;
+ 	struct {
+ 		void *rule;	/* LSM file metadata specific */
+ 		int type;	/* audit type */
+@@ -48,7 +52,7 @@ struct ima_measure_rule_entry {
+ 
+ /*
+  * Without LSM specific knowledge, the default policy can only be
+- * written in terms of .action, .func, .mask, .fsmagic, and .uid
++ * written in terms of .action, .func, .mask, .fsmagic, .uid, and .owner
+  */
+ 
+ /*
+@@ -70,6 +74,13 @@ static struct ima_measure_rule_entry default_rules[] = {
+ 	 .flags = IMA_FUNC | IMA_MASK},
+ 	{.action = MEASURE,.func = FILE_CHECK,.mask = MAY_READ,.uid = 0,
+ 	 .flags = IMA_FUNC | IMA_MASK | IMA_UID},
++	{.action = DONT_APPRAISE,.fsmagic = PROC_SUPER_MAGIC,.flags = IMA_FSMAGIC},
++	{.action = DONT_APPRAISE,.fsmagic = SYSFS_MAGIC,.flags = IMA_FSMAGIC},
++	{.action = DONT_APPRAISE,.fsmagic = DEBUGFS_MAGIC,.flags = IMA_FSMAGIC},
++	{.action = DONT_APPRAISE,.fsmagic = TMPFS_MAGIC,.flags = IMA_FSMAGIC},
++	{.action = DONT_APPRAISE,.fsmagic = SECURITYFS_MAGIC,.flags = IMA_FSMAGIC},
++	{.action = DONT_APPRAISE,.fsmagic = SELINUX_MAGIC,.flags = IMA_FSMAGIC},
++	{.action = APPRAISE,.owner = 0,.flags = IMA_OWNER},
+ };
+ 
+ static LIST_HEAD(measure_default_rules);
+@@ -110,6 +121,8 @@ static bool ima_match_rules(struct ima_measure_rule_entry *rule,
+ 		return false;
+ 	if ((rule->flags & IMA_UID) && rule->uid != tsk->cred->uid)
+ 		return false;
++	if ((rule->flags & IMA_OWNER) && rule->owner != inode->i_uid)
++		return false;
+ 	for (i = 0; i < MAX_LSM_RULES; i++) {
+ 		int rc = 0;
+ 		u32 osid, sid;
+@@ -166,6 +179,9 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask)
+ 	list_for_each_entry(entry, ima_measure, list) {
+ 		bool rc;
+ 
++		if ((entry->action == APPRAISE) ||
++		    (entry->action == DONT_APPRAISE))
++			continue;
+ 		rc = ima_match_rules(entry, inode, func, mask);
+ 		if (rc)
+ 			return entry->action;
+@@ -173,6 +189,28 @@ int ima_match_policy(struct inode *inode, enum ima_hooks func, int mask)
+ 	return 0;
  }
  
-diff --git a/fs/ext4/xattr_security.c b/fs/ext4/xattr_security.c
-index 9b21268..8998fda 100644
---- a/fs/ext4/xattr_security.c
-+++ b/fs/ext4/xattr_security.c
-@@ -8,6 +8,7 @@
- #include <linux/fs.h>
- #include <linux/security.h>
- #include <linux/slab.h>
-+#include <linux/evm.h>
- #include "ext4_jbd2.h"
- #include "ext4.h"
- #include "xattr.h"
-@@ -52,20 +53,35 @@ int
- ext4_init_security(handle_t *handle, struct inode *inode, struct inode *dir)
- {
- 	int err;
--	size_t len;
--	void *value;
--	char *name;
-+	struct xattr lsm_xattr;
-+	struct xattr evm_xattr;
- 
--	err = security_inode_init_security(inode, dir, &name, &value, &len);
-+	err = security_inode_init_security(inode, dir, &lsm_xattr.name,
-+					   &lsm_xattr.value,
-+					   &lsm_xattr.value_len);
- 	if (err) {
- 		if (err == -EOPNOTSUPP)
- 			return 0;
- 		return err;
- 	}
- 	err = ext4_xattr_set_handle(handle, inode, EXT4_XATTR_INDEX_SECURITY,
--				    name, value, len, 0);
--	kfree(name);
--	kfree(value);
-+				    lsm_xattr.name, lsm_xattr.value,
-+				    lsm_xattr.value_len, 0);
-+	if (err < 0)
-+		goto out;
++int ima_match_appraise_policy(struct inode *inode, enum ima_hooks func,
++			      int mask)
++{
++	struct ima_measure_rule_entry *entry;
 +
-+	err = evm_inode_post_init_security(inode, &lsm_xattr, &evm_xattr);
-+	if (err)
-+		goto out;
-+	err = ext4_xattr_set_handle(handle, inode, EXT4_XATTR_INDEX_SECURITY,
-+				    evm_xattr.name, evm_xattr.value,
-+				    evm_xattr.value_len, 0);
-+	kfree(evm_xattr.value);
-+out:
-+	kfree(lsm_xattr.name);
-+	kfree(lsm_xattr.value);
-+	if (err == -EOPNOTSUPP)
-+		return 0;
- 	return err;
- }
++	list_for_each_entry(entry, ima_measure, list) {
++		bool rc;
++
++		if ((entry->action == MEASURE) ||
++		    (entry->action == DONT_MEASURE))
++			continue;
++		rc = ima_match_rules(entry, inode, func, mask);
++		if (rc) {
++			if (entry->action == DONT_APPRAISE)
++				return 0;
++			if (entry->action == APPRAISE)
++				return 1;
++		}
++	}
++	return 0;
++}
++
+ /**
+  * ima_init_policy - initialize the default measure rules.
+  *
+@@ -220,6 +258,7 @@ void ima_update_policy(void)
+ enum {
+ 	Opt_err = -1,
+ 	Opt_measure = 1, Opt_dont_measure,
++	Opt_appraise, Opt_dont_appraise,
+ 	Opt_obj_user, Opt_obj_role, Opt_obj_type,
+ 	Opt_subj_user, Opt_subj_role, Opt_subj_type,
+ 	Opt_func, Opt_mask, Opt_fsmagic, Opt_uid
+@@ -228,6 +267,8 @@ enum {
+ static match_table_t policy_tokens = {
+ 	{Opt_measure, "measure"},
+ 	{Opt_dont_measure, "dont_measure"},
++	{Opt_appraise, "appraise"},
++	{Opt_dont_appraise, "dont_appraise"},
+ 	{Opt_obj_user, "obj_user=%s"},
+ 	{Opt_obj_role, "obj_role=%s"},
+ 	{Opt_obj_type, "obj_type=%s"},
+@@ -300,6 +341,22 @@ static int ima_parse_rule(char *rule, struct ima_measure_rule_entry *entry)
+ 
+ 			entry->action = DONT_MEASURE;
+ 			break;
++		case Opt_appraise:
++			ima_log_string(ab, "%s ", "appraise");
++
++			if (entry->action != UNKNOWN)
++				result = -EINVAL;
++
++			entry->action = APPRAISE;
++			break;
++		case Opt_dont_appraise:
++			ima_log_string(ab, "%s ", "dont_appraise");
++
++			if (entry->action != UNKNOWN)
++				result = -EINVAL;
++
++			entry->action = DONT_APPRAISE;
++			break;
+ 		case Opt_func:
+ 			ima_log_string(ab, "func", args[0].from);
  
 -- 
 1.7.1.1
