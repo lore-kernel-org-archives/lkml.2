@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755842Ab0GVL5A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:57:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:45232 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942Ab0GVL47 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 07:56:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:references
-         :mime-version:content-type:content-disposition:in-reply-to
-         :user-agent;
-        b=EdidxJDvtY24EGg43dAAZrax30AtQ08JBQpfTQOKNyJ/nB5w3uNNyITLnibbxUx2Yd
-         eoNgwgMfO1NRt7qKlkJvM86NPgT15Rrdi0tX3jjULX5sHEnlHAlvCNxEtF5FfvAxYxnX
-         1UoPNx2y2xDhf/16xaXNe5FEBDFc5zZy/mskQ=
-Date: Thu, 22 Jul 2010 13:56:28 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Jerome Glisse <glisse@freedesktop.org>
-Cc: suokkos@gmail.com, dri-devel@lists.freedesktop.org,
-        linux-kernel@vger.kernel.org
-Subject: Re: questions about ttm_page_alloc.c
-Message-ID: <20100722115628.GG17585@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Jerome Glisse <glisse@freedesktop.org>, suokkos@gmail.com,
-	dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org
-References: <20100712223905.GH5658@bicker> <4C3BA165.5020008@freedesktop.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4C3BA165.5020008@freedesktop.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1755309Ab0GVMGG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 08:06:06 -0400
+Received: from sand.ocn.ne.jp ([122.28.30.136]:54514 "EHLO smtp.sand.ocn.ne.jp"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753345Ab0GVMGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 08:06:01 -0400
+From: Jon Povey <jon.povey@racelogic.co.uk>
+To: dbrownell@users.sourceforge.net
+Cc: linux-kernel@vger.kernel.org, Jon Povey <jon.povey@racelogic.co.uk>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        Andi Kleen <ak@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH] gpio: Fix spurious printk when freeing a gpio
+Date: Thu, 22 Jul 2010 21:05:26 +0900
+Message-Id: <1279800327-32643-1-git-send-email-jon.povey@racelogic.co.uk>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, Jul 12, 2010 at 07:12:37PM -0400, Jerome Glisse wrote:
-> On 07/12/2010 06:39 PM, Dan Carpenter wrote:
->>     327                  pages_to_free[freed_pages++] = p;
->>     328                  /* We can only remove NUM_PAGES_TO_ALLOC at a time. */
->>     329                  if (freed_pages>= NUM_PAGES_TO_ALLOC) {
->>     330                          /* remove range of pages from the pool */
->>     331                          __list_del(p->lru.prev,&pool->list);
->>
->> 	Why do we use p->lru.prev here when we use &p->lru in other
->> 	places?
->>
->>     332
->>     333                          ttm_pool_update_free_locked(pool, freed_pages);
->>     334                          /**
->>     335                           * Because changing page caching is costly
->>     336                           * we unlock the pool to prevent stalling.
->>
+When freeing a gpio that has not been exported, gpio_unexport() prints a
+debug message when it should just fall through silently.
 
-Thanks for answering about the wb vs uncached, but I'm still confused why we use
-&p->lru in most places and p->lru.prev in this place.
+Example spurious message:
 
-regards,
-dan carpenter
+	gpio_unexport: gpio0 status -22
+
+Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
+---
+ drivers/gpio/gpiolib.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index eb0c3fe..e38687d 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -893,10 +893,12 @@ EXPORT_SYMBOL_GPL(gpio_sysfs_set_active_low);
+ void gpio_unexport(unsigned gpio)
+ {
+ 	struct gpio_desc	*desc;
+-	int			status = -EINVAL;
++	int			status = 0;
+ 
+-	if (!gpio_is_valid(gpio))
++	if (!gpio_is_valid(gpio)) {
++		status = -EINVAL;
+ 		goto done;
++	}
+ 
+ 	mutex_lock(&sysfs_lock);
+ 
+@@ -911,7 +913,6 @@ void gpio_unexport(unsigned gpio)
+ 			clear_bit(FLAG_EXPORT, &desc->flags);
+ 			put_device(dev);
+ 			device_unregister(dev);
+-			status = 0;
+ 		} else
+ 			status = -ENODEV;
+ 	}
+-- 
+1.6.3.3
 
