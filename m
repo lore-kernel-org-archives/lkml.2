@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759339Ab0GVNQc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 09:16:32 -0400
-Received: from va3ehsobe006.messaging.microsoft.com ([216.32.180.16]:27889
-	"EHLO VA3EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753345Ab0GVNQb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 09:16:31 -0400
-X-SpamScore: -24
-X-BigFish: VPS-24(zz1432N98dN936eM9371Pzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-WSS-ID: 0L5YNJ7-02-5SF-02
-X-M-MSG: 
-Date: Thu, 22 Jul 2010 15:16:21 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Suresh Siddha <suresh.b.siddha@intel.com>, Ingo Molnar <mingo@elte.hu>,
-        LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/7] x86, xsave: introduce xstate enable functions
-Message-ID: <20100722131621.GY26154@erda.amd.com>
-References: <1279731838-1522-1-git-send-email-robert.richter@amd.com>
- <1279731838-1522-3-git-send-email-robert.richter@amd.com>
- <4C476236.1020302@zytor.com>
- <1279747225.2812.37.camel@sbs-t61.sc.intel.com>
- <4C476C5B.8020604@zytor.com>
- <20100722121522.GT26154@erda.amd.com>
- <4C48385C.9040309@zytor.com>
+	id S932134Ab0GVNRA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 09:17:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:13297 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753345Ab0GVNQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 09:16:57 -0400
+Message-ID: <4C4844BC.4090709@redhat.com>
+Date: Thu, 22 Jul 2010 09:16:44 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <4C48385C.9040309@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        kosaki.motohiro@jp.fujitsu.com,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Andrea Arcangeli <aarcange@redhat.com>
+Subject: Re: [BUGFIX][PATCH] Fix false positive BUG_ON in __page_set_anon_rmap
+References: <20100722164118.d500b850.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100722164118.d500b850.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.07.10 08:23:56, H. Peter Anvin wrote:
-> On 07/22/2010 05:15 AM, Robert Richter wrote:
-> > 
-> > Just wondering why you are using this_func()? Instead, you could
-> > simply do:
-> > 
-> > 	next_func();
-> > 	next_func = xstate_enable;
-> > 
-> > Do you see races when bringing up multiple cpus in parallel?
-> > 
-> 
-> It allows the compiler to turn it into a tailcall if frame pointers are
-> disabled.
+On 07/22/2010 03:41 AM, KAMEZAWA Hiroyuki wrote:
+> Rik, how do you think ?
+>
+> ==
+> From: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
+>
+> Problem: wrong BUG_ON() in  __page_set_anon_rmap().
+> Kernel version: mmotm-0719
 
-Yes, that makes sense.
+> Description:
+>    Even if SwapCache is fully unmapped and mapcount goes down to 0,
+>    page->mapping is not cleared and will remain on memory until kswapd or some
+>    finds it. If a thread cause a page fault onto such "unmapped-but-not-discarded"
+>    swapcache, it will see a swap cache whose mapcount is 0 but page->mapping has a
+>    valid value.
+>
+>    When it's reused at do_swap_page(), __page_set_anon_rmap() is called with
+>    "exclusive==1" and hits BUG_ON(). But this BUG_ON() is wrong. Nothing bad
+>    with rmapping a page which has page->mapping isn't 0.
 
-Thanks.
+Yes, you are absolutely right.
 
--Robert
+Acked-by: Rik van Riel <riel@redhat.com>
+
+> Index: mmotm-2.6.35-0719/mm/rmap.c
+> ===================================================================
+> --- mmotm-2.6.35-0719.orig/mm/rmap.c
+> +++ mmotm-2.6.35-0719/mm/rmap.c
+> @@ -783,8 +783,16 @@ static void __page_set_anon_rmap(struct
+>   		if (PageAnon(page))
+>   			return;
+>   		anon_vma = anon_vma->root;
+> -	} else
+> -		BUG_ON(PageAnon(page));
+> +	} else {
+> +		/*
+> + 		 * In this case, swapped-out-but-not-discarded swap-cache
+> + 		 * is remapped. So, no need to update page->mapping here.
+> + 		 * We convice anon_vma poitned by page->mapping is not obsolete
+> + 		 * because vma->anon_vma is necessary to be a family of it.
+> + 		 */
+> +		if (PageAnon(page))
+> +			return;
+> +	}
+>
+>   	anon_vma = (void *) anon_vma + PAGE_MAPPING_ANON;
+>   	page->mapping = (struct address_space *) anon_vma;
+>
+
 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-
+All rights reversed
