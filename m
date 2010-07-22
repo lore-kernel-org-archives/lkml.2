@@ -1,277 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756672Ab0GVIls (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 04:41:48 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53586 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753658Ab0GVIlp (ORCPT
+	id S1755518Ab0GVIuL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 04:50:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:53901 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753812Ab0GVIuJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 04:41:45 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Message-ID: <4C480441.10407@jp.fujitsu.com>
-Date: Thu, 22 Jul 2010 17:41:37 +0900
-From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
+	Thu, 22 Jul 2010 04:50:09 -0400
+Date: Thu, 22 Jul 2010 09:50:07 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Artem Bityutskiy <dedekind1@gmail.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCHv6 0/9] kill unnecessary SB sync wake-ups + cleanups
+Message-ID: <20100722085007.GC903@ZenIV.linux.org.uk>
+References: <1278332107-11443-1-git-send-email-dedekind1@gmail.com>
+ <1279785280.3044.30.camel@localhost>
 MIME-Version: 1.0
-To: Neil Horman <nhorman@tuxdriver.com>
-CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
-        kosaki.motohiro@jp.fujitsu.com, laijs@cn.fujitsu.com,
-        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
-        eric.dumazet@gmail.com, fweisbec@gmail.com,
-        mathieu.desnoyers@polymtl.ca
-Subject: Re: [RFC PATCH v3 1/5] irq: add tracepoint to softirq_raise
-References: <4C44F12F.5090908@jp.fujitsu.com> <4C44F1AB.6020902@jp.fujitsu.com> <20100720110439.GA1995@hmsreliant.think-freely.org> <4C469A41.4020807@jp.fujitsu.com> <20100721111419.GB21259@hmsreliant.think-freely.org>
-In-Reply-To: <20100721111419.GB21259@hmsreliant.think-freely.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279785280.3044.30.camel@localhost>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(2010/07/21 20:14), Neil Horman wrote:
-> On Wed, Jul 21, 2010 at 03:57:05PM +0900, Koki Sanagi wrote:
->> (2010/07/20 20:04), Neil Horman wrote:
->>> On Tue, Jul 20, 2010 at 09:45:31AM +0900, Koki Sanagi wrote:
->>>> From: Lai Jiangshan <laijs@cn.fujitsu.com>
->>>>
->>>> Add a tracepoint for tracing when softirq action is raised.
->>>>
->>>> It and the existed tracepoints complete softirq's tracepoints:
->>>> softirq_raise, softirq_entry and softirq_exit.
->>>>
->>>> And when this tracepoint is used in combination with
->>>> the softirq_entry tracepoint we can determine
->>>> the softirq raise latency.
->>>>
->>>> Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
->>>> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
->>>> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
->>>>
->>>> [ factorize softirq events with DECLARE_EVENT_CLASS ]
->>>> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
->>>> ---
->>>>  include/linux/interrupt.h  |    8 +++++-
->>>>  include/trace/events/irq.h |   57 ++++++++++++++++++++++++++-----------------
->>>>  kernel/softirq.c           |    4 +-
->>>>  3 files changed, 43 insertions(+), 26 deletions(-)
->>>>
->>>> diff --git a/include/linux/interrupt.h b/include/linux/interrupt.h
->>>> index c233113..1cb5726 100644
->>>> --- a/include/linux/interrupt.h
->>>> +++ b/include/linux/interrupt.h
->>>> @@ -18,6 +18,7 @@
->>>>  #include <asm/atomic.h>
->>>>  #include <asm/ptrace.h>
->>>>  #include <asm/system.h>
->>>> +#include <trace/events/irq.h>
->>>>  
->>>>  /*
->>>>   * These correspond to the IORESOURCE_IRQ_* defines in
->>>> @@ -402,7 +403,12 @@ asmlinkage void do_softirq(void);
->>>>  asmlinkage void __do_softirq(void);
->>>>  extern void open_softirq(int nr, void (*action)(struct softirq_action *));
->>>>  extern void softirq_init(void);
->>>> -#define __raise_softirq_irqoff(nr) do { or_softirq_pending(1UL << (nr)); } while (0)
->>>> +static inline void __raise_softirq_irqoff(unsigned int nr)
->>>> +{
->>>> +	trace_softirq_raise(nr);
->>>> +	or_softirq_pending(1UL << nr);
->>>> +}
->>>> +
->>> We already have tracepoints in irq_enter and irq_exit.  If the goal here is to
->>> detect latency during packet processing, cant the delta in time between those
->>> two points be used to determine interrupt handling latency?
->>
->> Certainly, the time between irq_entry and irq_exit is not directly related to
->> latency during packet processing. But it's indirectly related it.
->> Because softirq_entry isn't passed until irq exits and softirq_entry time is
->> related to packet processing latency. So I show it as a reference.
->>
-> Its not directly related no, but look at it, the amount of processing between
-> irq_exit and softirq_entry is minimal.  The information you are trying to
-> extract by computing the delta from irq_entry to softirq_entry is almost exactly
-> the same as that from irq_entry to irq_exit.  For that matter, since you're
-> trying to guage lantency for packet processing, I expect you could get the same
-> delta by measuring irq_entry to napi_poll tracepoint time, and save the hassle
-> of needing to filter on softirq processing that doesn't relate to packet
-> processing.
-
-Yeah, to determine interrput latency, we need either one irq_exit or
-softirq_entry, not both.
-And I think softirq_entry should be left because there is a possibility that
-softirq isn't triggered immidiately after irq_exit.
-softirq_exit isn't needed because it is not related to packet processing.
-softirq_raise is needed because it connects irq_entry and softirq_entry but
-there is no need to show it. Currently, my idea is like the following.
-
-irq_entry(+0.000000msec,irq=77:eth3)
-    |
-softirq_entry(+0.003562msec)
-    |
-    |---netif_receive_skb(+0.006279msec,len=100)
-    |            |
-    |   skb_copy_datagram_iovec(+0.038778msec, 2285:sshd)
-    |
-napi_poll_exit(+0.017160msec, eth3)
-
+On Thu, Jul 22, 2010 at 10:54:40AM +0300, Artem Bityutskiy wrote:
+> On Mon, 2010-07-05 at 15:14 +0300, Artem Bityutskiy wrote:
+> > here is v6 of my SB sync wakups killing patches, v5 may be found:
+> > http://marc.info/?l=linux-fsdevel&m=127583599911620&w=2
+> > 
+> > This is more of a reminder re-send, I did not get any feed-back for
+> > v5. Not much changes since v5:
+> > 
+> > 1. Drop patches which fix race conditions for s_dirty changes WRT actual
+> >    write-back - these things are independent and I am planning to go through
+> >    that separately.
+> > 2. Add "Acked-by" to the btrfs patch.
+> > 3. Fold all per-fs patches which introduce SB accessors into one big patch.
 > 
->>>
->>>
->>>>  extern void raise_softirq_irqoff(unsigned int nr);
->>>>  extern void raise_softirq(unsigned int nr);
->>>>  extern void wakeup_softirqd(void);
->>>> diff --git a/include/trace/events/irq.h b/include/trace/events/irq.h
->>>> index 0e4cfb6..717744c 100644
->>>> --- a/include/trace/events/irq.h
->>>> +++ b/include/trace/events/irq.h
->>>> @@ -5,7 +5,9 @@
->>>>  #define _TRACE_IRQ_H
->>>>  
->>>>  #include <linux/tracepoint.h>
->>>> -#include <linux/interrupt.h>
->>>> +
->>>> +struct irqaction;
->>>> +struct softirq_action;
->>>>  
->>>>  #define softirq_name(sirq) { sirq##_SOFTIRQ, #sirq }
->>>>  #define show_softirq_name(val)				\
->>>> @@ -84,56 +86,65 @@ TRACE_EVENT(irq_handler_exit,
->>>>  
->>>>  DECLARE_EVENT_CLASS(softirq,
->>>>  
->>>> -	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
->>>> +	TP_PROTO(unsigned int nr),
->>>>  
->>>> -	TP_ARGS(h, vec),
->>>> +	TP_ARGS(nr),
->>>>  
->>>>  	TP_STRUCT__entry(
->>>> -		__field(	int,	vec			)
->>>> +		__field(	unsigned int,	vec	)
->>>>  	),
->>>>  
->>>>  	TP_fast_assign(
->>>> -		__entry->vec = (int)(h - vec);
->>>> +		__entry->vec	= nr;
->>>>  	),
->>>>  
->>>>  	TP_printk("vec=%d [action=%s]", __entry->vec,
->>>> -		  show_softirq_name(__entry->vec))
->>>> +		show_softirq_name(__entry->vec))
->>>> +);
->>>> +
->>>> +/**
->>>> + * softirq_raise - called immediately when a softirq is raised
->>>> + * @nr: softirq vector number
->>>> + *
->>>> + * Tracepoint for tracing when softirq action is raised.
->>>> + * Also, when used in combination with the softirq_entry tracepoint
->>>> + * we can determine the softirq raise latency.
->>>> + */
->>>> +DEFINE_EVENT(softirq, softirq_raise,
->>>> +
->>>> +	TP_PROTO(unsigned int nr),
->>>> +
->>>> +	TP_ARGS(nr)
->>>>  );
->>>>  
->>>>  /**
->>>>   * softirq_entry - called immediately before the softirq handler
->>>> - * @h: pointer to struct softirq_action
->>>> - * @vec: pointer to first struct softirq_action in softirq_vec array
->>>> + * @nr: softirq vector number
->>>>   *
->>>> - * The @h parameter, contains a pointer to the struct softirq_action
->>>> - * which has a pointer to the action handler that is called. By subtracting
->>>> - * the @vec pointer from the @h pointer, we can determine the softirq
->>>> - * number. Also, when used in combination with the softirq_exit tracepoint
->>>> + * Tracepoint for tracing when softirq action starts.
->>>> + * Also, when used in combination with the softirq_exit tracepoint
->>>>   * we can determine the softirq latency.
->>>>   */
->>>>  DEFINE_EVENT(softirq, softirq_entry,
->>>>  
->>>> -	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
->>>> +	TP_PROTO(unsigned int nr),
->>>>  
->>>> -	TP_ARGS(h, vec)
->>>> +	TP_ARGS(nr)
->>>>  );
->>>>  
->>>>  /**
->>>>   * softirq_exit - called immediately after the softirq handler returns
->>>> - * @h: pointer to struct softirq_action
->>>> - * @vec: pointer to first struct softirq_action in softirq_vec array
->>>> + * @nr: softirq vector number
->>>>   *
->>>> - * The @h parameter contains a pointer to the struct softirq_action
->>>> - * that has handled the softirq. By subtracting the @vec pointer from
->>>> - * the @h pointer, we can determine the softirq number. Also, when used in
->>>> - * combination with the softirq_entry tracepoint we can determine the softirq
->>>> - * latency.
->>>> + * Tracepoint for tracing when softirq action ends.
->>>> + * Also, when used in combination with the softirq_entry tracepoint
->>>> + * we can determine the softirq latency.
->>>>   */
->>>>  DEFINE_EVENT(softirq, softirq_exit,
->>>>  
->>>> -	TP_PROTO(struct softirq_action *h, struct softirq_action *vec),
->>>> +	TP_PROTO(unsigned int nr),
->>>>  
->>>> -	TP_ARGS(h, vec)
->>>> +	TP_ARGS(nr)
->>>>  );
->>>>  
->>>>  #endif /*  _TRACE_IRQ_H */
->>>> diff --git a/kernel/softirq.c b/kernel/softirq.c
->>>> index 825e112..6790599 100644
->>>> --- a/kernel/softirq.c
->>>> +++ b/kernel/softirq.c
->>>> @@ -215,9 +215,9 @@ restart:
->>>>  			int prev_count = preempt_count();
->>>>  			kstat_incr_softirqs_this_cpu(h - softirq_vec);
->>>>  
->>>> -			trace_softirq_entry(h, softirq_vec);
->>>> +			trace_softirq_entry(h - softirq_vec);
->>>>  			h->action(h);
->>>> -			trace_softirq_exit(h, softirq_vec);
->>>> +			trace_softirq_exit(h - softirq_vec);
->>>
->>> You're loosing information here by reducing the numbers of parameters in this
->>> tracepoint.  How many other tracepoint scripts rely on having both pointers
->>> handy?  Why not just do the pointer math inside your tracehook instead?
->>
->> In __raise_softirq_irqoff macro there is no method to refer softirq_vec, so it
->> can't use softirq DECLARE_EVENT_CLASS as is.
->> Currently,  there is no script using softirq_entry or softirq_exit.
->>
-> That shouldn't matter, just pass in NULL for softirq_vec in
-> __raise_softirq_irqoff as the second argument to the trace function.  You may
-> need to fix up the class definition so that the assignment or printk doesn't try
-> to dereference that pointer when its NULL, but thats easy enough, and it avoids
-> breaking any other perf scripts floating out there.
-> Neil
+> Hi Al,
 > 
->> Thanks,
->> Koki Sanagi.
->>
->>>
->>>>  			if (unlikely(prev_count != preempt_count())) {
->>>>  				printk(KERN_ERR "huh, entered softirq %td %s %p"
->>>>  				       "with preempt_count %08x,"
->>>>
->>>> --
->>>> To unsubscribe from this list: send the line "unsubscribe netdev" in
->>>> the body of a message to majordomo@vger.kernel.org
->>>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->>>>
->>>
->>>
->>
->>
->>
+> you "unofficially" told me that you want to get rid of '->write_super()'
+> and 'sync_supers()' should not exist. And FSes which really need
+> '->write_super()' should implement that themselves.
 > 
+> I will try to work on this, but a bit later, after my holidays. But
+> could you please:
 > 
+> 1. confirm that you want to kill '->write_super()' and '->s_dirt'
+>    "officially", so that I could refer to this when sending patches
 
+ACK.
 
+> 2. pick up patches 1-6 from this series, this would make my life easier
+>    a bit.
+> 
+> I'm not sure then what do do with:
+
+Will be in for-next tonight.
+ 
+> commit 140236b4b1c749c9b795ea3d11558a0eb5a3a080
+> Author: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> Date:   Thu Jun 10 13:56:33 2010 +0300
+> 
+>     VFS: introduce s_dirty accessors
+> 
+> which Linus merged, but which is now not needed, since you now want me
+> to kill '->write_super()' completely. Will you take care of this please?
+
+Once that stuff is done, we'll be able to get rid of those just fine..
+
+FWIW, I'm tempted to add affs_dirty_sb()/affs_clean_sb()/affs_is_clean() and
+corresponding helpers for other filesystems in the series and fold conversions
+to those into your 1--6; you'll need insertion points for your "schedule
+some work" logics whether it's done on per-fs-type basis or globally...
