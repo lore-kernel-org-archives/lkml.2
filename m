@@ -1,226 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab0GVLx7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 07:53:59 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:65515 "EHLO mx1.redhat.com"
+	id S1755404Ab0GVL4J (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 07:56:09 -0400
+Received: from cantor.suse.de ([195.135.220.2]:44982 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753058Ab0GVLx4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 07:53:56 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] CIFS: Fix a malicious redirect problem in the DNS lookup code
-To: torvalds@osdl.org, akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, security@kernel.org, pmatouse@redhat.com,
-        eugene@redhat.com, linux-cifs@vger.kernel.org,
-        samba-technical@lists.samba.org, David Howells <dhowells@redhat.com>,
-        Steve French <smfrench@gmail.com>
-Date: Thu, 22 Jul 2010 12:53:18 +0100
-Message-ID: <20100722115318.28766.33578.stgit@warthog.procyon.org.uk>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+	id S1752942Ab0GVL4G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 07:56:06 -0400
+Date: Thu, 22 Jul 2010 21:55:55 +1000
+From: Neil Brown <neilb@suse.de>
+To: Boaz Harrosh <bharrosh@panasas.com>
+Cc: Christoph Hellwig <hch@infradead.org>, Jiri Slaby <jirislaby@gmail.com>,
+        James Bottomley <James.Bottomley@suse.de>, linux-scsi@vger.kernel.org,
+        hch@lst.de, jaxboe@fusionio.com, LKML <linux-kernel@vger.kernel.org>,
+        linux-raid@vger.kernel.org
+Subject: Re: [PATCH] md: bitwise operations might not fit in a "bool"
+Message-ID: <20100722215555.7ab2b1ee@notabene>
+In-Reply-To: <4C482F35.6000004@panasas.com>
+References: <4C47ED7B.1050709@gmail.com>
+	<20100722173716.66264bef@notabene>
+	<4C481FD5.4070509@gmail.com>
+	<4C482F35.6000004@panasas.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the security problem in the CIFS filesystem DNS lookup code in which a
-malicious redirect could be installed by a random user by simply adding a
-result record into one of their keyrings with add_key() and then invoking a
-CIFS CFS lookup [CVE-2010-2524].
+On Thu, 22 Jul 2010 14:44:53 +0300
+Boaz Harrosh <bharrosh@panasas.com> wrote:
 
-This is done by creating an internal keyring specifically for the caching of
-DNS lookups.  To enforce the use of this keyring, the module init routine
-creates a set of override credentials with the keyring installed as the thread
-keyring and instructs request_key() to only install lookup result keys in that
-keyring.
+> 
+> when taking a resolute of a bit-wise AND as true false. Better / faster
+> to make it a boolean operation.
+> 
+> This fixes a bug and a crash because the flags field did not fit into
+> the bool operands.
 
-The override is then applied around the call to request_key().
+No, that won't work.
+Read the rest of the code and see where 'do_sync' and 'do_barriers' are used.
 
-This has some additional benefits when a kernel service uses this module to
-request a key:
+NeilBrown
 
- (1) The result keys are owned by root, not the user that caused the lookup.
-
- (2) The result keys don't pop up in the user's keyrings.
-
- (3) The result keys don't come out of the quota of the user that caused the
-     lookup.
-
-The keyring can be viewed as root by doing cat /proc/keys:
-
-2a0ca6c3 I-----     1 perm 1f030000     0     0 keyring   .dns_resolver: 1/4
-
-It can then be listed with 'keyctl list' by root.
-
-	# keyctl list 0x2a0ca6c3
-	1 key in keyring:
-	726766307: --alswrv     0     0 dns_resolver: foo.bar.com
-
-Signed-off-by: David Howells <dhowells@redhat.com>
-Reviewed-and-Tested-by: Jeff Layton <jlayton@redhat.com>
-Acked-by: Steve French <smfrench@gmail.com>
----
-
- fs/cifs/cifsfs.c      |    6 ++--
- fs/cifs/dns_resolve.c |   69 +++++++++++++++++++++++++++++++++++++++++++++++++
- fs/cifs/dns_resolve.h |    4 +--
- 3 files changed, 74 insertions(+), 5 deletions(-)
-
-diff --git a/fs/cifs/cifsfs.c b/fs/cifs/cifsfs.c
-index 484e52b..2cb1a70 100644
---- a/fs/cifs/cifsfs.c
-+++ b/fs/cifs/cifsfs.c
-@@ -923,7 +923,7 @@ init_cifs(void)
- 		goto out_unregister_filesystem;
- #endif
- #ifdef CONFIG_CIFS_DFS_UPCALL
--	rc = register_key_type(&key_type_dns_resolver);
-+	rc = cifs_init_dns_resolver();
- 	if (rc)
- 		goto out_unregister_key_type;
- #endif
-@@ -935,7 +935,7 @@ init_cifs(void)
- 
-  out_unregister_resolver_key:
- #ifdef CONFIG_CIFS_DFS_UPCALL
--	unregister_key_type(&key_type_dns_resolver);
-+	cifs_exit_dns_resolver();
-  out_unregister_key_type:
- #endif
- #ifdef CONFIG_CIFS_UPCALL
-@@ -961,7 +961,7 @@ exit_cifs(void)
- 	cifs_proc_clean();
- #ifdef CONFIG_CIFS_DFS_UPCALL
- 	cifs_dfs_release_automount_timer();
--	unregister_key_type(&key_type_dns_resolver);
-+	cifs_exit_dns_resolver();
- #endif
- #ifdef CONFIG_CIFS_UPCALL
- 	unregister_key_type(&cifs_spnego_key_type);
-diff --git a/fs/cifs/dns_resolve.c b/fs/cifs/dns_resolve.c
-index 4db2c5e..49315cb 100644
---- a/fs/cifs/dns_resolve.c
-+++ b/fs/cifs/dns_resolve.c
-@@ -24,12 +24,16 @@
-  */
- 
- #include <linux/slab.h>
-+#include <linux/keyctl.h>
-+#include <linux/key-type.h>
- #include <keys/user-type.h>
- #include "dns_resolve.h"
- #include "cifsglob.h"
- #include "cifsproto.h"
- #include "cifs_debug.h"
- 
-+static const struct cred *dns_resolver_cache;
-+
- /* Checks if supplied name is IP address
-  * returns:
-  * 		1 - name is IP
-@@ -94,6 +98,7 @@ struct key_type key_type_dns_resolver = {
- int
- dns_resolve_server_name_to_ip(const char *unc, char **ip_addr)
- {
-+	const struct cred *saved_cred;
- 	int rc = -EAGAIN;
- 	struct key *rkey = ERR_PTR(-EAGAIN);
- 	char *name;
-@@ -133,8 +138,15 @@ dns_resolve_server_name_to_ip(const char *unc, char **ip_addr)
- 		goto skip_upcall;
- 	}
- 
-+	saved_cred = override_creds(dns_resolver_cache);
- 	rkey = request_key(&key_type_dns_resolver, name, "");
-+	revert_creds(saved_cred);
- 	if (!IS_ERR(rkey)) {
-+		if (!(rkey->perm & KEY_USR_VIEW)) {
-+			down_read(&rkey->sem);
-+			rkey->perm |= KEY_USR_VIEW;
-+			up_read(&rkey->sem);
-+		}
- 		len = rkey->type_data.x[0];
- 		data = rkey->payload.data;
- 	} else {
-@@ -165,4 +177,61 @@ out:
- 	return rc;
- }
- 
-+int __init cifs_init_dns_resolver(void)
-+{
-+	struct cred *cred;
-+	struct key *keyring;
-+	int ret;
-+
-+	printk(KERN_NOTICE "Registering the %s key type\n",
-+	       key_type_dns_resolver.name);
-+
-+	/* create an override credential set with a special thread keyring in
-+	 * which DNS requests are cached
-+	 *
-+	 * this is used to prevent malicious redirections from being installed
-+	 * with add_key().
-+	 */
-+	cred = prepare_kernel_cred(NULL);
-+	if (!cred)
-+		return -ENOMEM;
-+
-+	keyring = key_alloc(&key_type_keyring, ".dns_resolver", 0, 0, cred,
-+			    (KEY_POS_ALL & ~KEY_POS_SETATTR) |
-+			    KEY_USR_VIEW | KEY_USR_READ,
-+			    KEY_ALLOC_NOT_IN_QUOTA);
-+	if (IS_ERR(keyring)) {
-+		ret = PTR_ERR(keyring);
-+		goto failed_put_cred;
-+	}
-+
-+	ret = key_instantiate_and_link(keyring, NULL, 0, NULL, NULL);
-+	if (ret < 0)
-+		goto failed_put_key;
-+
-+	ret = register_key_type(&key_type_dns_resolver);
-+	if (ret < 0)
-+		goto failed_put_key;
-+
-+	/* instruct request_key() to use this special keyring as a cache for
-+	 * the results it looks up */
-+	cred->thread_keyring = keyring;
-+	cred->jit_keyring = KEY_REQKEY_DEFL_THREAD_KEYRING;
-+	dns_resolver_cache = cred;
-+	return 0;
-+
-+failed_put_key:
-+	key_put(keyring);
-+failed_put_cred:
-+	put_cred(cred);
-+	return ret;
-+}
- 
-+void __exit cifs_exit_dns_resolver(void)
-+{
-+	key_revoke(dns_resolver_cache->thread_keyring);
-+	unregister_key_type(&key_type_dns_resolver);
-+	put_cred(dns_resolver_cache);
-+	printk(KERN_NOTICE "Unregistered %s key type\n",
-+	       key_type_dns_resolver.name);
-+}
-diff --git a/fs/cifs/dns_resolve.h b/fs/cifs/dns_resolve.h
-index 966e928..26b9eaa 100644
---- a/fs/cifs/dns_resolve.h
-+++ b/fs/cifs/dns_resolve.h
-@@ -24,8 +24,8 @@
- #define _DNS_RESOLVE_H
- 
- #ifdef __KERNEL__
--#include <linux/key-type.h>
--extern struct key_type key_type_dns_resolver;
-+extern int __init cifs_init_dns_resolver(void);
-+extern void __exit cifs_exit_dns_resolver(void);
- extern int dns_resolve_server_name_to_ip(const char *unc, char **ip_addr);
- #endif /* KERNEL */
- 
+> 
+> Signed-off-by: Boaz Harrosh <bharrosh@panasas.com>
+> ---
+> git diff --stat -p -M drivers/md/raid1.c
+>  drivers/md/raid1.c |   11 +++++++----
+>  1 files changed, 7 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/md/raid1.c b/drivers/md/raid1.c
+> index 73cc74f..67a9159 100644
+> --- a/drivers/md/raid1.c
+> +++ b/drivers/md/raid1.c
+> @@ -787,7 +787,7 @@ static int make_request(mddev_t *mddev, struct bio * bio)
+>  	struct bio_list bl;
+>  	struct page **behind_pages = NULL;
+>  	const int rw = bio_data_dir(bio);
+> -	const bool do_sync = (bio->bi_rw & REQ_SYNC);
+> +	const bool do_sync = (bio->bi_rw & REQ_SYNC) != 0;
+>  	bool do_barriers;
+>  	mdk_rdev_t *blocked_rdev;
+>  
+> @@ -959,7 +959,7 @@ static int make_request(mddev_t *mddev, struct bio * bio)
+>  	atomic_set(&r1_bio->remaining, 0);
+>  	atomic_set(&r1_bio->behind_remaining, 0);
+>  
+> -	do_barriers = bio->bi_rw & REQ_HARDBARRIER;
+> +	do_barriers = (bio->bi_rw & REQ_HARDBARRIER) != 0;
+>  	if (do_barriers)
+>  		set_bit(R1BIO_Barrier, &r1_bio->state);
+>  
+> @@ -1640,7 +1640,8 @@ static void raid1d(mddev_t *mddev)
+>  			 * We already have a nr_pending reference on these rdevs.
+>  			 */
+>  			int i;
+> -			const bool do_sync = (r1_bio->master_bio->bi_rw & REQ_SYNC);
+> +			const bool do_sync =
+> +				(r1_bio->master_bio->bi_rw & REQ_SYNC) != 0;
+>  			clear_bit(R1BIO_BarrierRetry, &r1_bio->state);
+>  			clear_bit(R1BIO_Barrier, &r1_bio->state);
+>  			for (i=0; i < conf->raid_disks; i++)
+> @@ -1696,7 +1697,9 @@ static void raid1d(mddev_t *mddev)
+>  				       (unsigned long long)r1_bio->sector);
+>  				raid_end_bio_io(r1_bio);
+>  			} else {
+> -				const bool do_sync = r1_bio->master_bio->bi_rw & REQ_SYNC;
+> +				const bool do_sync =
+> +					(r1_bio->master_bio->bi_rw & REQ_SYNC)
+> +					!= 0;
+>  				r1_bio->bios[r1_bio->read_disk] =
+>  					mddev->ro ? IO_BLOCKED : NULL;
+>  				r1_bio->read_disk = disk;
 
