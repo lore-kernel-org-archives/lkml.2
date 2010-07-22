@@ -1,136 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756009Ab0GVS7X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:59:23 -0400
-Received: from imr1.ericy.com ([198.24.6.9]:47248 "EHLO imr1.ericy.com"
+	id S1756345Ab0GVS7t (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:59:49 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:52165 "EHLO mail-out1.uio.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751029Ab0GVS7V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:59:21 -0400
-Date: Thu, 22 Jul 2010 11:58:14 -0700
-From: Guenter Roeck <guenter.roeck@ericsson.com>
-To: Fenghua Yu <fenghua.yu@intel.com>
-CC: Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-        "H. Peter Anvin" <hpa@linux.intel.com>,
-        "Brown, Len" <len.brown@intel.com>,
-        Chen Gong <gong.chen@linux.intel.com>,
-        Jean Delvare <khali@linux-fr.org>, "Wan, Huaxu" <huaxu.wan@intel.com>,
-        lkml <linux-kernel@vger.kernel.org>,
-        "lm-sensors@lm-sensors.org" <lm-sensors@lm-sensors.org>
-Subject: Re: [PATCH 5/5] Package Level Thermal Control and Power Limit
- Notification: pkgtemp doc
-Message-ID: <20100722185814.GA5235@ericsson.com>
-References: <94E56C79ECC49A4B87113985F1FEBA8D03F8AE2A4B@bgsmsx502.gar.corp.intel.com>
- <4C485DF1.5050407@linux.intel.com>
- <20100722162222.GA22450@linux-os.sc.intel.com>
- <20100722172726.GA4914@ericsson.com>
- <20100722175225.GB22450@linux-os.sc.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100722175225.GB22450@linux-os.sc.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1750799Ab0GVS7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:59:47 -0400
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended  file stats available [ver #6]
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Volker.Lendecke@SerNet.DE
+Cc: Jeremy Allison <jra@samba.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        David Howells <dhowells@redhat.com>,
+        Jan Engelhardt <jengelh@medozas.de>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, samba-technical@lists.samba.org,
+        linux-kernel@vger.kernel.org, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+In-Reply-To: <E1Oc08W-00CZuz-Ns@intern.SerNet.DE>
+References: <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	 <30448.1279800887@redhat.com> <E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	 <AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+	 <E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+	 <AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+	 <20100722162712.GB10352@jeremy-laptop>
+	 <AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	 <1279817930.3621.14.camel@heimdal.trondhjem.org>
+	 <20100722180204.GA32008@samba1>  <E1Oc08W-00CZuz-Ns@intern.SerNet.DE>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 22 Jul 2010 14:59:20 -0400
+Message-ID: <1279825160.3621.71.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 12 msgs/h 1 sum rcpts/h 21 sum msgs/h 2 total rcpts 670 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 6F9B0CABCC3B529CE1126B953B1A1F3B6973D6AB
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 277 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 01:52:25PM -0400, Fenghua Yu wrote:
-> > > +This driver permits reading package level temperature sensor embedded inside
-> > > +Intel CPU package. The sensors can be in core, uncore, memroy controller, or
+On Thu, 2010-07-22 at 20:04 +0200, Volker Lendecke wrote:
+> On Thu, Jul 22, 2010 at 11:02:04AM -0700, Jeremy Allison wrote:
+> > On Thu, Jul 22, 2010 at 12:58:50PM -0400, Trond Myklebust wrote:
+> > > 
+> > > That would make it impossible to export the filesystem with NFSv2 and
+> > > v3. They do rely on ctime checking for certain operations (e.g. deciding
+> > > when to invalidate access and acl caches). NFSv4 needs this too if the
+> > > filesystem has no dedicated change attribute.
+> > > 
+> > > Still, I suppose the market for exporting the same filesystem with both
+> > > NFS and Samba is limited...
 > > 
-> > memroy --> memory
-> Will change the typo.
+> > Ask NetApp about that :-). They have built a rather large
+> > business on just that fact :-).
 > 
-> > > +other componenets in a package. The feature is first implemented in Intel Sandy
-> > 
-> > componenets --> components
-> > 
-> Ditto.
+> Jeremy, how many hours have you spent getting "posix
+> locking" to the point where it is now? :-)
 > 
-> > > +Bridge platform.
-> > > +
-> > Just for clarification - you mention a number of sensors, but unless
-> > I am missing something only the package sensor is implemented. Is that correct ?
-> Do you mean "only the core sensor"? I think the Sandy Bridge only implements
-> core sensor now. I would think in the future more sensors could be implemented.
-> If only core sensors are implemented, there is no need to have the package
-> level thermal hw MSRs because OS can get all package level thermal info by
-> enumerating all core sensors in a package.
+> Volker
 > 
-Now you lost me. I understand there are the per-core sensors, read through coretemp,
-plus one package level sensor. Do you associate this existing package level sensor
-with any of the locations mentioned above (core, uncore, memory, other), or is
-that unknown ? If it is unknown, you might want to mention it.
+> P.S: For those not aware, "posix locking = yes" is
+> cross-protocol byte range locking done by smbd to co-operate
+> with local processes and NFS.
 
-> > 
-> > > +Temperature is measured in degrees Celsius and measurement resolution is
-> > > +1 degree C. Valid temperatures are from 0 to TjMax degrees C, because the actual
-> > > +value of temperature register is in fact a delta from TjMax.
-> > > +
-> > From the code, it seems that negative values can be reported. Is it guaranteed 
-> > by the chip that (TjMax - MSR_IA32_TEMPERATURE_TARGET) >= 0 ? Otherwise, the
-> > minimum temperature would be (TjMax - 127).
-> > 
-> > > +Temperature known as TjMax is the maximum junction temperature of package.
-> > > +Intel defines this temperature as 125C. At this temperature, protection
-> > 
-> > Your driver bails out at TjMax >= 120, so there is some inconsistency.
-> > Also, it seems that this is not a constant, since you are reading
-> > MSR_IA32_TEMPERATURE_TARGET to get the value.
-> > 
-> > Since the CPUs supporting the package sensor presumably also all support
-> > reading TjMax, maybe you can reword the above text to reflect this.
-> > 
-> You are right. I forgot to update this part. I'll reword it.
-> 
-> > > +mechanism will perform actions to forcibly cool down the processor. Alarm
-> > > +may be raised, if the temperature grows enough (more than TjMax) to trigger
-> > > +the Out-Of-Spec bit. Following table summarizes the exported sysfs files:
-> > > +
-> > > +temp1_input	 - Package temperature (in millidegrees Celsius).
-> > > +temp1_crit	 - Maximum junction temperature (in millidegrees Celsius).
-> > > +temp1_crit_alarm - Set when Out-of-spec bit is set, never clears.
-> > > +		   Correct CPU operation is no longer guaranteed.
-> > > +temp1_label	 - Contains string "Pysical package id X", where X is physical
-> > 
-> > Pysical --> Physical.
-> > I would suggest to drop the "id" for consistency. Core sensor names don't
-> > include "id" either.
-> > 
-> > I am not sure if "physical" should be included in the first place.
-> > Also, above description suggests that future CPUs might add more sensors.
-> > If so, the name should probably reflect the location of the current sensor,
-> > ie be something like "Package core X" or "Core package X" or "Package X (core)".
-> How about just using "package X" to align with coretemp for now? Currently there
-> is no interface to tell which sensor it is.
-> 
-Fine with me. Maybe wait for feedback from others.
+I said "limited", not "non-existent".
 
-You use the argument that there may be other package level sensors in the future.
-Are there any plans for this, or is this just a theory ?
+The fact remains that most of us would be hard pressed to name an
+application that requires you to share the same dataset to both
+Windows/CIFS and posix NFS clients. Everything from ACL models through
+caseless vs case-aware filesystems and Windows vs posix locking
+semantics tends to discourage mixing the two environments.
 
-Next question is how to handle future sensor types. One hwmon instance per sensor,
-additional sensors in this driver, or even a new driver ?
-
-We had was a separate discussion if the coretemp driver should be redesigned
-to one instance per CPU. The package sensor would fit into that model,
-since you would have
-
-coretemp-isa-0000
-Core0
-Core1
-...
-CoreN
-Package
-
-coretemp-isa-0001
-Core0
-Core1
-...
-CoreM
-Package
-
-I personally would prefer that approach. It would avoid ambiguity associating Package X
-with specific cores, and it would also easily expand to additional non-core future sensors.
-
-Guenter
+   Trond
 
