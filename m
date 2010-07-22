@@ -1,50 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab0GVG5V (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 02:57:21 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:48106 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751270Ab0GVG5U (ORCPT
+	id S1757561Ab0GVG6E (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 02:58:04 -0400
+Received: from kirsty.vergenet.net ([202.4.237.240]:42726 "EHLO
+	kirsty.vergenet.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753185Ab0GVG6A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 02:57:20 -0400
-Subject: Re: [PATCHv2 11/11] writeback: prevent unnecessary bdi threads
- wakeups
-From: Artem Bityutskiy <dedekind1@gmail.com>
-Reply-To: dedekind1@gmail.com
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Jens Axboe <axboe@kernel.dk>
-In-Reply-To: <20100722004155.GZ32635@dastard>
-References: <1279704706-1267-1-git-send-email-dedekind1@gmail.com>
-	 <1279704706-1267-12-git-send-email-dedekind1@gmail.com>
-	 <1279712741.2306.36.camel@localhost>  <20100722004155.GZ32635@dastard>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 09:50:11 +0300
-Message-ID: <1279781411.3044.13.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 (2.30.2-1.fc13) 
-Content-Transfer-Encoding: 8bit
-X-OriginalArrivalTime: 22 Jul 2010 06:56:57.0046 (UTC) FILETIME=[1331C760:01CB296B]
-X-Nokia-AV: Clean
+	Thu, 22 Jul 2010 02:58:00 -0400
+Date: Thu, 22 Jul 2010 15:57:55 +0900
+From: Simon Horman <horms@verge.net.au>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: lvs-devel@vger.kernel.org, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org, netfilter@vger.kernel.org,
+        netfilter-devel@vger.kernel.org,
+        Malcolm Turnbull <malcolm@loadbalancer.org>,
+        Wensong Zhang <wensong@linux-vs.org>,
+        Julius Volz <julius.volz@gmail.com>, Patrick McHardy <kaber@trash.net>,
+        "David S. Miller" <davem@davemloft.net>,
+        Hannes Eder <heder@google.com>
+Subject: Re: [patch v2.6 4/4] libxt_ipvs: user-space lib for netfilter
+ matcher xt_ipvs
+Message-ID: <20100722065751.GA17499@verge.net.au>
+References: <20100711090342.035149543@vergenet.net>
+ <20100711090500.421568837@vergenet.net>
+ <20100721012146.GC22966@verge.net.au>
+ <alpine.LSU.2.01.1007210834570.10568@obet.zrqbmnf.qr>
+ <20100721132159.GN6418@verge.net.au>
+ <alpine.LSU.2.01.1007211526490.25445@obet.zrqbmnf.qr>
+ <20100721134102.GA21188@verge.net.au>
+ <20100722013817.GB15008@verge.net.au>
+ <alpine.LSU.2.01.1007220823340.4980@obet.zrqbmnf.qr>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LSU.2.01.1007220823340.4980@obet.zrqbmnf.qr>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 10:41 +1000, Dave Chinner wrote:
-> 	if (wakeup_bdi) {
-> 		trace_writeback_wakeup(bdi)
-> 		spin_lock(&bdi->wb_lock);
-> 		if (!bdi->wb.task) {{
-> 			trace_writeback_wakeup_nothread(bdi);
-> 			wake_up_process(default_backing_dev_info.wb.task);
-> 		} else
-> 			wake_up_process(bdi->wb.task);
-> 		spin_unlock(&bdi->wb_lock);
-> 	}
+On Thu, Jul 22, 2010 at 08:25:01AM +0200, Jan Engelhardt wrote:
+> 
+> On Thursday 2010-07-22 03:38, Simon Horman wrote:
+> >
+> >I must confess that I'm not familiar with using enum in this way.
+> >Can I confirm that you are suggesting the following?
+> >
+> >enum {
+> >	XT_IPVS_IPVS_PROPERTY =	1 << 0, /* all other options imply this one */
+> >	XT_IPVS_PROTO =		1 << 1,
+> >	XT_IPVS_VADDR =		1 << 2,
+> >	XT_IPVS_VPORT =		1 << 3,
+> >	XT_IPVS_DIR =		1 << 4,
+> >	XT_IPVS_METHOD =	1 << 5,
+> >	XT_IPVS_VPORTCTL =	1 << 6,
+> >	XT_IPVS_MASK =		(1 << 7) - 1,
+> >	XT_IPVS_ONCE_MASK =	(XT_IPVS_MASK & ~XT_IPVS_IPVS_PROPERTY)
+> >};
+> 
+> Yes; You may drop the () in ONCE_MASK though.
 
-OK, I'll take a look at this and will try to add this to v3, thanks.
-
--- 
-Best Regards,
-Artem Bityutskiy (Артём Битюцкий)
-
+Thanks; and yes, silliness on my part.
