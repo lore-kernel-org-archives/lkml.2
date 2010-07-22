@@ -1,46 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756303Ab0GVFuG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 01:50:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:49317 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752004Ab0GVFuD (ORCPT
+	id S1756220Ab0GVFuy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 01:50:54 -0400
+Received: from helcar.apana.org.au ([209.40.204.226]:59911 "EHLO
+	fornost.hengli.com.au" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751390Ab0GVFuu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 01:50:03 -0400
-Date: Thu, 22 Jul 2010 01:49:57 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
-        "Theodore Ts'o" <tytso@mit.edu>, LKML <linux-kernel@vger.kernel.org>,
-        linux-ext4@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
-Message-ID: <20100722054957.GA11670@infradead.org>
-References: <4C401CE3.7010004@cn.fujitsu.com>
- <20100721222508.8704.A69D9226@jp.fujitsu.com>
+	Thu, 22 Jul 2010 01:50:50 -0400
+Date: Thu, 22 Jul 2010 13:50:43 +0800
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Linux Crypto Mailing List <linux-crypto@vger.kernel.org>
+Subject: Re: Crypto Fixes for 2.6.35
+Message-ID: <20100722055043.GA25689@gondor.apana.org.au>
+References: <20090324044932.GA18245@gondor.apana.org.au> <20090613020512.GA21024@gondor.apana.org.au> <20090910141905.GA17948@gondor.apana.org.au> <20091020065442.GA5947@gondor.apana.org.au> <20091230021253.GA17067@gondor.apana.org.au> <20100201195204.GA6953@gondor.apana.org.au> <20100305071043.GA3548@gondor.apana.org.au> <20100427135547.GA4008@gondor.apana.org.au> <20100603100550.GA30681@gondor.apana.org.au> <20100716022648.GA28219@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100721222508.8704.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <20100716022648.GA28219@gondor.apana.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, Jul 21, 2010 at 10:31:20PM +0900, KOSAKI Motohiro wrote:
-> But, I don't think this is proper fix because we don't want any overhead
-> if the tracepoint is disabled.
-> 
-> So, How do we check NULL in TP_fast_assign()?
+Hi Linus:
 
-I think ext4 is simply using an incorrectly typed tracepoint here.
-If you want it to be useful in any way it needs a sb paramter and
-an optional inode paramter, not the allocation context.
+This push fixes a bug in the talito hash driver that causes too
+much data to be copied.
 
-Also the whole ext4_mb_release_group_pa function seems to be a bit
-misdesigned.  The code using ac is a totally separate block at the
-end of the function and does work that's unrelated to the rest
-of the function.  Just making it a separate helper can calling it
-only from those places that have the allocation context would make
-the code more clear.
+
+Please pull from
+
+git://git.kernel.org/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+or
+
+master.kernel.org:/pub/scm/linux/kernel/git/herbert/crypto-2.6.git
+
+
+Lee Nipper (1):
+      crypto: talitos - fix bug in sg_copy_end_to_buffer
+
+ drivers/crypto/talitos.c |    6 +++++-
+ 1 files changed, 5 insertions(+), 1 deletions(-)
+
+Thanks,
+-- 
+Email: Herbert Xu <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
