@@ -1,63 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755725Ab0GVT7a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 15:59:30 -0400
-Received: from mail-ww0-f44.google.com ([74.125.82.44]:34887 "EHLO
-	mail-ww0-f44.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755091Ab0GVT72 (ORCPT
+	id S1756197Ab0GVUAb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 16:00:31 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50042 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754573Ab0GVUA3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 15:59:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:content-type:date:message-id
-         :mime-version:x-mailer:content-transfer-encoding;
-        b=c5o0jgh7F9YzGUkcuhSTyCitU+UVCWuh3JhaTM2QNIizKt4WkB1FFP5mnZYJ46I5ez
-         lEJcnFvflQieByiqibtXmIMrT6VFYo7S9uYZT386vpt2pWsuGeBC6+WLnIDrODxlj7H9
-         wZCmeBei1Qb/GEuH4trMyHkDlgAaA02Uwx/VU=
-Subject: [PATCH 1/2] Staging: dt3155: Change include to linux header
-From: Joe Eloff <kagen101@gmail.com>
-Reply-To: kagen101@gmail.com
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-        H Hartley Sweeten <hsweeten@visionengravers.com>,
-        Simon Horman <horms@verge.net.au>
-Cc: devel <devel@driverdev.osuosl.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 21:59:10 +0200
-Message-ID: <1279828750.759.2.camel@dermezel>
+	Thu, 22 Jul 2010 16:00:29 -0400
+X-Authority-Analysis: v=1.1 cv=0ETVU5ClxBlG/P3Ky9ZuhqraSVIot/cIDNO6awFX9oc= c=1 sm=0 a=T_j1L3QSKLIA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=8Il30ee_kaXwIMsGqCIA:9 a=nLFx0UzW-Hpcr1Aa770oPy2WK80A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH] trace: funcgraph tracer - adding funcgraph-irq option
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Jiri Olsa <jolsa@redhat.com>
+Cc: fweisbec@gmail.com, linux-kernel@vger.kernel.org
+In-Reply-To: <1278951670-8133-1-git-send-email-jolsa@redhat.com>
+References: <1278951670-8133-1-git-send-email-jolsa@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 22 Jul 2010 16:00:21 -0400
+Message-ID: <1279828821.3319.23.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 434257d406094235c5c5020a68f34e2beb658e51 Mon Sep 17 00:00:00 2001
-From: Joe Eloff <kagen101@gmail.com>
-Date: Thu, 22 Jul 2010 20:26:25 +0200
-Subject: [PATCH 1/2] Staging: dt3155: Change include to linux header
+On Mon, 2010-07-12 at 18:21 +0200, Jiri Olsa wrote:
 
-Changed <asm/uaccess.h> to <linux/uaccess.h>
-Signed-off-by: Joe Eloff <kagen101@gmail.com>
----
- drivers/staging/dt3155/dt3155_drv.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> +/*
+> + * Entry check for irq code
+> + *
+> + * returns 1 if
+> + *  - we are inside irq code
+> + *  - we just extered irq code
+> + *
+> + * retunns 0 if
+> + *  - funcgraph-interrupts option is set
+> + *  - we are not inside irq code
+> + */
+> +static int
+> +check_irq_entry(struct trace_iterator *iter, u32 flags, unsigned long addr)
+> +{
+> +	struct fgraph_data *data = iter->private;
+> +	int cpu = iter->cpu;
+> +	unsigned long *irq_entry_addr;
+> +
+> +	if (flags & TRACE_GRAPH_PRINT_IRQS)
+> +		return 0;
+> +
+> +	/*
+> +	 * We are inside the irq code
+> +	 */
+> +	irq_entry_addr = &(per_cpu_ptr(data->cpu_data, cpu)->irq_entry_addr);
+> +	if (*irq_entry_addr)
+> +		return 1;
+> +
+> +	if ((addr < (unsigned long)__irqentry_text_start) ||
+> +	    (addr >= (unsigned long)__irqentry_text_end))
+> +		return 0;
+> +
+> +	/*
+> +	 * We are entering irq code.
+> +	 */
+> +	*irq_entry_addr = addr;
+> +	return 1;
+> +}
+> +
+> +/*
+> + * Return check for irq code
+> + *
+> + * returns 1 if
+> + *  - we are inside irq code
+> + *  - we just left irq code
+> + *
+> + * returns 0 if
+> + *  - funcgraph-interrupts option is set
+> + *  - we are not inside irq code
+> + */
+> +static int
+> +check_irq_return(struct trace_iterator *iter, u32 flags, unsigned long addr)
+> +{
+> +	struct fgraph_data *data = iter->private;
+> +	int cpu = iter->cpu;
+> +	unsigned long *irq_entry_addr;
+> +
+> +	if (flags & TRACE_GRAPH_PRINT_IRQS)
+> +		return 0;
+> +
+> +	/*
+> +	 * We are not inside the irq code.
+> +	 */
+> +	irq_entry_addr = &(per_cpu_ptr(data->cpu_data, cpu)->irq_entry_addr);
+> +	if (!(*irq_entry_addr))
+> +		return 0;
+> +
+> +	/*
+> +	 * We are inside the irq code, and this is not the entry.
+> +	 */
+> +	if (*irq_entry_addr != addr)
+> +		return 1;
+> +
+> +	/*
+> +	 * We are inside the irq code, and this is returning entry.
+> +	 * Let's not trace it and clear the entry address, since
+> +	 * we are out of irq code.
+> +	 */
+> +	*irq_entry_addr = 0;
+> +	return 1;
+> +}
+> +
+>  static enum print_line_t
+>  print_graph_entry(struct ftrace_graph_ent_entry *field, struct trace_seq *s,
+>  			struct trace_iterator *iter, u32 flags)
+> @@ -857,6 +943,9 @@ print_graph_entry(struct ftrace_graph_ent_entry *field, struct trace_seq *s,
+>  	static enum print_line_t ret;
+>  	int cpu = iter->cpu;
+>  
+> +	if (check_irq_entry(iter, flags, call->func))
+> +		return TRACE_TYPE_HANDLED;
+> +
+>  	if (print_graph_prologue(iter, s, TRACE_GRAPH_ENT, call->func, flags))
+>  		return TRACE_TYPE_PARTIAL_LINE;
+>  
+> @@ -894,6 +983,9 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
+>  	int ret;
+>  	int i;
+>  
+> +	if (check_irq_return(iter, flags, trace->func))
+> +		return TRACE_TYPE_HANDLED;
 
-diff --git a/drivers/staging/dt3155/dt3155_drv.c b/drivers/staging/dt3155/dt3155_drv.c
-index fed7e62..1d6858c 100644
---- a/drivers/staging/dt3155/dt3155_drv.c
-+++ b/drivers/staging/dt3155/dt3155_drv.c
-@@ -66,7 +66,7 @@ extern void printques(int);
- #include <linux/smp_lock.h>
- #include <linux/io.h>
- 
--#include <asm/uaccess.h>
-+#include <linux/uaccess.h>
- 
- #include "dt3155.h"
- #include "dt3155_drv.h"
--- 
-1.6.3.3
+What happens if we lose the return event? That is, due to buffer
+overruns, the return of the trace is lost. Then we lose out on all
+events until another event of the same IRQ happens and its return is not
+lost.
 
+You should save the depth instead of the function. When you are in a
+interrupt, record the depth. Then when the depth is less than or equal
+to the recorded depth you can restart printing. This may still suffer
+from missed returns, but it would not have as much of a consequence when
+it happens.
+
+-- Steve
+
+> +
+>  	if (data) {
+>  		struct fgraph_cpu_data *cpu_data;
+>  		int cpu = iter->cpu;
 
 
