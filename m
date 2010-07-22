@@ -1,79 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab0GVVFR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:05:17 -0400
-Received: from mail3.caviumnetworks.com ([12.108.191.235]:10343 "EHLO
-	mail3.caviumnetworks.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752115Ab0GVVFN (ORCPT
+	id S1757286Ab0GVVGF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:06:05 -0400
+Received: from wolverine02.qualcomm.com ([199.106.114.251]:18453 "EHLO
+	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757025Ab0GVVGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:05:13 -0400
-From: David Daney <ddaney@caviumnetworks.com>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, David Daney <ddaney@caviumnetworks.com>
-Subject: [PATCH] trace-cmd: Don't SIGSEGV when event field format cannot be parsed (v2).
-Date: Thu, 22 Jul 2010 14:05:05 -0700
-Message-Id: <1279832705-14219-1-git-send-email-ddaney@caviumnetworks.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <1279829325.3319.27.camel@gandalf.stny.rr.com>
-References: <1279829325.3319.27.camel@gandalf.stny.rr.com>
-X-OriginalArrivalTime: 22 Jul 2010 21:05:13.0223 (UTC) FILETIME=[93AE1170:01CB29E1]
+	Thu, 22 Jul 2010 17:06:03 -0400
+X-IronPort-AV: E=McAfee;i="5400,1158,6051"; a="48200666"
+From: Gregory Bean <gbean@codeaurora.org>
+To: akpm@linux-foundation.org
+Cc: linux-arm-msm@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+        linux-kernel@vger.kernel.org, Gregory Bean <gbean@codeaurora.org>,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>,
+        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+Subject: [PATCH] gpio: remove spurious gpio_unexport debug error.
+Date: Thu, 22 Jul 2010 14:05:58 -0700
+Message-Id: <1279832758-25442-1-git-send-email-gbean@codeaurora.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From the MIPS kernel we get things like:
+Make gpio_unexport generate success instead of an -EINVAL
+if asked to unexport a line which is not exported, because
+the only result of that condition is a pr_debug
+which complains of what is really a harmless no-op:
+when an unexported gpio is unexported again, nothing happens.
+That's not a failure, just a trivial border case.
+Since gpio_free calls gpio_unexport unconditionally
+and exported gpio lines are uncommon, most calls to
+gpio_free with debug flags enabled generate -EINVAL
+warnings in the log, causing unnecessary stress.
 
-print fmt: "page=%p pfn=%lu order=%d migratetype=%d", REC->page, ({ struct page *__pg = (REC->page); int __sec = page_to_section(__pg); (unsigned long)(__pg - __section_mem_map_addr(__nr_to_section(__sec))); }), REC->order, REC->migratetype
-
-This cannot be parsed, leading to a NULL struct event_format* being
-passed to pevent_get_common_field_val, which produces a SIGSEGV.  It
-would be good to get a parsable format from the kernel, but to
-remediate the problem for legacy kernels, we can just return an error
-indicator in this case.  This allows some output from trace-cmd
-report, although perhaps with some missing data.  But this is better
-than crashing.
-
-(v2): Do the check in all pevent_get_*
-
-Signed-off-by: David Daney <ddaney@caviumnetworks.com>
+Signed-off-by: Gregory Bean <gbean@codeaurora.org>
 ---
- parse-events.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
+ drivers/gpio/gpiolib.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/parse-events.c b/parse-events.c
-index 1e854e2..595ba90 100644
---- a/parse-events.c
-+++ b/parse-events.c
-@@ -4464,6 +4464,9 @@ int pevent_get_field_val(struct trace_seq *s, struct event_format *event,
- {
- 	struct format_field *field;
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index 3ca3654..b718aea 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -914,7 +914,8 @@ void gpio_unexport(unsigned gpio)
+ 			status = 0;
+ 		} else
+ 			status = -ENODEV;
+-	}
++	} else
++		status = 0;
  
-+	if (!event)
-+		return -1;
-+
- 	field = pevent_find_field(event, name);
- 
- 	return get_field_val(s, field, name, record, val, err);
-@@ -4486,6 +4489,9 @@ int pevent_get_common_field_val(struct trace_seq *s, struct event_format *event,
- {
- 	struct format_field *field;
- 
-+	if (!event)
-+		return -1;
-+
- 	field = pevent_find_common_field(event, name);
- 
- 	return get_field_val(s, field, name, record, val, err);
-@@ -4508,6 +4514,9 @@ int pevent_get_any_field_val(struct trace_seq *s, struct event_format *event,
- {
- 	struct format_field *field;
- 
-+	if (!event)
-+		return -1;
-+
- 	field = pevent_find_any_field(event, name);
- 
- 	return get_field_val(s, field, name, record, val, err);
+ 	mutex_unlock(&sysfs_lock);
+ done:
 -- 
-1.7.1.1
+1.7.0.4
 
+--
+Employee of Qualcomm Innovation Center, Inc.
+Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
