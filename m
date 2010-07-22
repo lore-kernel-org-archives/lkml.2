@@ -1,52 +1,220 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754991Ab0GVIiu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 04:38:50 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:54976 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754072Ab0GVIis (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 04:38:48 -0400
-Date: Thu, 22 Jul 2010 09:38:32 +0100 (IST)
-From: Dave Airlie <airlied@linux.ie>
-X-X-Sender: airlied@skynet.skynet.ie
-To: torvalds@linux-foundation.org
-cc: dri-devel@lists.sf.net, linux-kernel@vger.kernel.org
-Subject: [git pull] drm fixes - some more
-Message-ID: <alpine.DEB.2.00.1007220936490.23551@skynet.skynet.ie>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1755634Ab0GVIje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 04:39:34 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:53477 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751941Ab0GVIjb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 04:39:31 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4C4803B3.1020808@jp.fujitsu.com>
+Date: Thu, 22 Jul 2010 17:39:15 +0900
+From: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.5) Gecko/20091204 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Neil Horman <nhorman@tuxdriver.com>
+CC: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+        kaneshige.kenji@jp.fujitsu.com, izumi.taku@jp.fujitsu.com,
+        kosaki.motohiro@jp.fujitsu.com, laijs@cn.fujitsu.com,
+        scott.a.mcmillan@intel.com, rostedt@goodmis.org,
+        eric.dumazet@gmail.com, fweisbec@gmail.com,
+        mathieu.desnoyers@polymtl.ca
+Subject: Re: [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
+References: <4C44F12F.5090908@jp.fujitsu.com> <4C44F286.1050907@jp.fujitsu.com> <20100720115044.GD1995@hmsreliant.think-freely.org> <4C469BA1.7050900@jp.fujitsu.com> <20100721105645.GA21259@hmsreliant.think-freely.org>
+In-Reply-To: <20100721105645.GA21259@hmsreliant.think-freely.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+(2010/07/21 19:56), Neil Horman wrote:
+> On Wed, Jul 21, 2010 at 04:02:57PM +0900, Koki Sanagi wrote:
+>> (2010/07/20 20:50), Neil Horman wrote:
+>>> On Tue, Jul 20, 2010 at 09:49:10AM +0900, Koki Sanagi wrote:
+>>>> [RFC PATCH v3 4/5] skb: add tracepoints to freeing skb
+>>>> This patch adds tracepoint to consume_skb, dev_kfree_skb_irq and
+>>>> skb_free_datagram_locked. Combinating with tracepoint on dev_hard_start_xmit,
+>>>> we can check how long it takes to free transmited packets. And using it, we can
+>>>> calculate how many packets driver had at that time. It is useful when a drop of
+>>>> transmited packet is a problem.
+>>>>
+>>>>           <idle>-0     [001] 241409.218333: consume_skb: skbaddr=dd6b2fb8
+>>>>           <idle>-0     [001] 241409.490555: dev_kfree_skb_irq: skbaddr=f5e29840
+>>>>
+>>>>         udp-recv-302   [001] 515031.206008: skb_free_datagram_locked: skbaddr=f5b1d900
+>>>>
+>>>>
+>>>> Signed-off-by: Koki Sanagi <sanagi.koki@jp.fujitsu.com>
+>>>> ---
+>>>>  include/trace/events/skb.h |   42 ++++++++++++++++++++++++++++++++++++++++++
+>>>>  net/core/datagram.c        |    1 +
+>>>>  net/core/dev.c             |    2 ++
+>>>>  net/core/skbuff.c          |    1 +
+>>>>  4 files changed, 46 insertions(+), 0 deletions(-)
+>>>>
+>>>> diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
+>>>> index 4b2be6d..84c9041 100644
+>>>> --- a/include/trace/events/skb.h
+>>>> +++ b/include/trace/events/skb.h
+>>>> @@ -35,6 +35,48 @@ TRACE_EVENT(kfree_skb,
+>>>>  		__entry->skbaddr, __entry->protocol, __entry->location)
+>>>>  );
+>>>>  
+>>>> +DECLARE_EVENT_CLASS(free_skb,
+>>>> +
+>>>> +	TP_PROTO(struct sk_buff *skb),
+>>>> +
+>>>> +	TP_ARGS(skb),
+>>>> +
+>>>> +	TP_STRUCT__entry(
+>>>> +		__field(	void *,	skbaddr	)
+>>>> +	),
+>>>> +
+>>>> +	TP_fast_assign(
+>>>> +		__entry->skbaddr = skb;
+>>>> +	),
+>>>> +
+>>>> +	TP_printk("skbaddr=%p", __entry->skbaddr)
+>>>> +
+>>>> +);
+>>>> +
+>>>> +DEFINE_EVENT(free_skb, consume_skb,
+>>>> +
+>>>> +	TP_PROTO(struct sk_buff *skb),
+>>>> +
+>>>> +	TP_ARGS(skb)
+>>>> +
+>>>> +);
+>>>> +
+>>>> +DEFINE_EVENT(free_skb, dev_kfree_skb_irq,
+>>>> +
+>>>> +	TP_PROTO(struct sk_buff *skb),
+>>>> +
+>>>> +	TP_ARGS(skb)
+>>>> +
+>>>> +);
+>>>> +
+>>>> +DEFINE_EVENT(free_skb, skb_free_datagram_locked,
+>>>> +
+>>>> +	TP_PROTO(struct sk_buff *skb),
+>>>> +
+>>>> +	TP_ARGS(skb)
+>>>> +
+>>>> +);
+>>>> +
+>>>
+>>> Why create these last two tracepoints at all?  dev_kfree_skb_irq will eventually
+>>> pass through kfree_skb anyway, getting picked up by the tracepoint there, the
+>>> while the latter won't (since it uses __kfree_skb instead), I think that could
+>>> be fixed up by add a call to trace_kfree_skb there directly, saving you two
+>>> tracepoints.
+>>>
+>>> Neil
+>>>
+>> I think dev_kfree_skb_irq isn't chased by trace_kfree_skb or trace_consume_skb
+>> completely. Because net_tx_action frees skb by __kfree_skb. So it is better to
+>> add trace_kfree_skb before it. skb_free_datagram_locked is same.
+>>
+> It isn't, you're right, but that was the point I made above.  Those missed areas
+> could be easily handled by adding calls to trace_kfree_skb which already exists,
+> to the missed areas.  Then you don't need to create those new tracepoints.  The
+> way your doing this, if someone wants to trace all skb frees in debugfs, they
+> would have to enable three tracepoints, not just one.  Not that thats the point
+> of your patch, but its something to consider, and it simplifies your code.
+> Neil
+> 
 
-Looks like I didn't build on IA64 (who knew), fix from Tony and a few more 
-radeon fixes one for a regression since the output probing.
+O.K. I've re-made a patch to use trace_kfree_skb instead of
+trace_dev_kfree_skb_irq and trace_skb_free_datagram_locked.
+But I've got a problem.
+I should use not __builtin_return_address, but macro or function which returns
+current address. But I don't know any macro like that. Do you know any solution ?
 
-The following changes since commit c42750b0261274107ae85c894c088e618a3e38b9:
+Koki Sanagi.
+---
+ include/trace/events/skb.h |   17 +++++++++++++++++
+ net/core/datagram.c        |    1 +
+ net/core/dev.c             |    2 ++
+ net/core/skbuff.c          |    1 +
+ 4 files changed, 21 insertions(+), 0 deletions(-)
 
-  drm/r600: fix possible NULL pointer derefernce (2010-07-21 10:29:32 +1000)
+diff --git a/include/trace/events/skb.h b/include/trace/events/skb.h
+index 4b2be6d..75ce9d5 100644
+--- a/include/trace/events/skb.h
++++ b/include/trace/events/skb.h
+@@ -35,6 +35,23 @@ TRACE_EVENT(kfree_skb,
+ 		__entry->skbaddr, __entry->protocol, __entry->location)
+ );
+ 
++TRACE_EVENT(consume_skb,
++
++	TP_PROTO(struct sk_buff *skb),
++
++	TP_ARGS(skb),
++
++	TP_STRUCT__entry(
++		__field(	void *,	skbaddr	)
++	),
++
++	TP_fast_assign(
++		__entry->skbaddr = skb;
++	),
++
++	TP_printk("skbaddr=%p", __entry->skbaddr)
++);
++
+ TRACE_EVENT(skb_copy_datagram_iovec,
+ 
+ 	TP_PROTO(const struct sk_buff *skb, int len),
+diff --git a/net/core/datagram.c b/net/core/datagram.c
+index 251997a..96dab4f 100644
+--- a/net/core/datagram.c
++++ b/net/core/datagram.c
+@@ -243,6 +243,7 @@ void skb_free_datagram_locked(struct sock *sk, struct sk_buff *skb)
+ 	unlock_sock_fast(sk, slow);
+ 
+ 	/* skb is now orphaned, can be freed outside of locked section */
++	trace_kfree_skb(skb, __builtin_return_address(0));
+ 	__kfree_skb(skb);
+ }
+ EXPORT_SYMBOL(skb_free_datagram_locked);
+diff --git a/net/core/dev.c b/net/core/dev.c
+index e6a911f..faded6f 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -131,6 +131,7 @@
+ #include <linux/random.h>
+ #include <trace/events/napi.h>
+ #include <trace/events/net.h>
++#include <trace/events/skb.h>
+ #include <linux/pci.h>
+ 
+ #include "net-sysfs.h"
+@@ -2577,6 +2578,7 @@ static void net_tx_action(struct softirq_action *h)
+ 			clist = clist->next;
+ 
+ 			WARN_ON(atomic_read(&skb->users));
++			trace_kfree_skb(skb, __builtin_return_address(0));
+ 			__kfree_skb(skb);
+ 		}
+ 	}
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 76d33ca..ce0bc36 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -466,6 +466,7 @@ void consume_skb(struct sk_buff *skb)
+ 		smp_rmb();
+ 	else if (likely(!atomic_dec_and_test(&skb->users)))
+ 		return;
++	trace_consume_skb(skb);
+ 	__kfree_skb(skb);
+ }
+ EXPORT_SYMBOL(consume_skb);
 
-are available in the git repository at:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/airlied/drm-2.6.git drm-fixes
 
-Alex Deucher (3):
-      drm/radeon/kms: fix legacy LVDS dpms sequence
-      drm/radeon/kms: fix RADEON_INFO_CRTC_FROM_ID info ioctl
-      drm/radeon/kms: add quirk to make HP DV5000 laptop resume
 
-Dave Airlie (1):
-      drm/radeon/kms: drop taking lock around crtc lookup.
+ 
 
-Tony Luck (1):
-      Fix ttm_page_alloc.c build breakage
 
- drivers/gpu/drm/radeon/evergreen_cs.c           |    2 --
- drivers/gpu/drm/radeon/r100.c                   |    2 --
- drivers/gpu/drm/radeon/r600_cs.c                |    3 +--
- drivers/gpu/drm/radeon/radeon_combios.c         |    8 ++++++++
- drivers/gpu/drm/radeon/radeon_kms.c             |    3 ++-
- drivers/gpu/drm/radeon/radeon_legacy_encoders.c |    1 +
- drivers/gpu/drm/ttm/ttm_page_alloc.c            |    6 +++---
- 7 files changed, 15 insertions(+), 10 deletions(-)
