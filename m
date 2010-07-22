@@ -1,12 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758018Ab0GVVMW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 17:12:22 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:60968 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757487Ab0GVVMF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 17:12:05 -0400
+	id S1759649Ab0GVVNh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 17:13:37 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:36304 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757242Ab0GVVMB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 17:12:01 -0400
 From: Omar Ramirez Luna <omar.ramirez@ti.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
@@ -17,127 +16,99 @@ Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
         Andy Shevchenko <andy.shevchenko@gmail.com>,
         linux-kernel@vger.kernel.org, devel@driverdev.osuosl.org,
         linux-omap <linux-omap@vger.kernel.org>
-Subject: [PATCH 6/6] staging: tidspbridge: remove dbdefs.h
-Date: Thu, 22 Jul 2010 16:03:50 -0500
-Message-Id: <1279832630-11517-7-git-send-email-omar.ramirez@ti.com>
+Subject: [PATCH v2 0/6] staging: tidspbridge: header cleanup series
+Date: Thu, 22 Jul 2010 16:03:44 -0500
+Message-Id: <1279832630-11517-1-git-send-email-omar.ramirez@ti.com>
 X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1279832630-11517-1-git-send-email-omar.ramirez@ti.com>
-References: <1279832630-11517-1-git-send-email-omar.ramirez@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Menon, Nishanth <nm@ti.com>
+Rebased version of the patches that couldn't be applied.
 
-Remove yet another custom definition header
+Original set:
+[1] http://marc.info/?l=linux-kernel&m=127897548706686&w=2
+[2] http://marc.info/?l=linux-kernel&m=127982129204138&w=2
 
-Signed-off-by: Nishanth Menon <nm@ti.com>
----
+Fixed unexpected change while replacing IN modifier
+[3] http://marc.info/?l=linux-kernel&m=127972475532227&w=2
+
+Menon, Nishanth (6):
+  staging: tidspbridge: remove GlobalTypes.h
+  staging: tidspbridge: replace CONST with c standard const
+  staging: tidspbridge: remove IN modifier
+  staging: tidspbridge: remove OPTIONAL
+  staging: tidspbridge: remove OUT define
+  staging: tidspbridge: remove dbdefs.h
+
+ drivers/staging/tidspbridge/core/_tiomap_pwr.h     |   14 +-
+ drivers/staging/tidspbridge/core/chnl_sm.c         |   20 +-
+ drivers/staging/tidspbridge/core/dsp-clock.c       |    4 +-
+ drivers/staging/tidspbridge/core/io_sm.c           |   26 +-
+ drivers/staging/tidspbridge/core/msg_sm.c          |    6 +-
+ drivers/staging/tidspbridge/core/tiomap3430.c      |   28 +-
+ drivers/staging/tidspbridge/core/tiomap3430_pwr.c  |   14 +-
+ drivers/staging/tidspbridge/core/tiomap_io.c       |    6 +-
+ drivers/staging/tidspbridge/core/tiomap_io.h       |   14 +-
+ drivers/staging/tidspbridge/dynload/cload.c        |    2 +-
+ .../tidspbridge/dynload/tramp_table_c6000.c        |    2 +-
+ drivers/staging/tidspbridge/gen/uuidutil.c         |    6 +-
+ drivers/staging/tidspbridge/hw/GlobalTypes.h       |  291 --------------------
+ drivers/staging/tidspbridge/hw/MMURegAcM.h         |    1 -
+ drivers/staging/tidspbridge/hw/hw_defs.h           |    2 -
+ drivers/staging/tidspbridge/hw/hw_mmu.c            |   32 ---
+ .../staging/tidspbridge/include/dspbridge/cfg.h    |   28 +-
+ .../staging/tidspbridge/include/dspbridge/chnl.h   |    4 +-
+ .../staging/tidspbridge/include/dspbridge/clk.h    |    4 +-
+ .../staging/tidspbridge/include/dspbridge/cmm.h    |   14 +-
+ .../staging/tidspbridge/include/dspbridge/cod.h    |   20 +-
+ .../staging/tidspbridge/include/dspbridge/dbdcd.h  |   74 +++---
+ .../tidspbridge/include/dspbridge/dbdcddef.h       |    6 +-
  .../staging/tidspbridge/include/dspbridge/dbdefs.h |    1 -
- .../staging/tidspbridge/include/dspbridge/dbtype.h |   69 --------------------
+ .../staging/tidspbridge/include/dspbridge/dbtype.h |   69 -----
+ .../staging/tidspbridge/include/dspbridge/dev.h    |   46 ++--
+ .../staging/tidspbridge/include/dspbridge/disp.h   |    8 +-
+ .../staging/tidspbridge/include/dspbridge/dmm.h    |    6 +-
+ .../staging/tidspbridge/include/dspbridge/drv.h    |   12 +-
+ .../tidspbridge/include/dspbridge/dspapi-ioctl.h   |    2 +-
+ .../tidspbridge/include/dspbridge/dspchnl.h        |   16 +-
+ .../tidspbridge/include/dspbridge/dspdefs.h        |   44 ++--
+ .../staging/tidspbridge/include/dspbridge/dspdrv.h |    2 +-
+ .../staging/tidspbridge/include/dspbridge/dspio.h  |    8 +-
+ .../staging/tidspbridge/include/dspbridge/dspmsg.h |    6 +-
  .../tidspbridge/include/dspbridge/host_os.h        |    1 -
- 3 files changed, 0 insertions(+), 71 deletions(-)
+ drivers/staging/tidspbridge/include/dspbridge/io.h |    4 +-
+ .../staging/tidspbridge/include/dspbridge/io_sm.h  |   10 +-
+ .../staging/tidspbridge/include/dspbridge/mgr.h    |   16 +-
+ .../staging/tidspbridge/include/dspbridge/msg.h    |    2 +-
+ .../staging/tidspbridge/include/dspbridge/nldr.h   |   12 +-
+ .../tidspbridge/include/dspbridge/nldrdefs.h       |   10 +-
+ .../staging/tidspbridge/include/dspbridge/node.h   |   40 ++--
+ .../tidspbridge/include/dspbridge/nodepriv.h       |    2 +-
+ .../staging/tidspbridge/include/dspbridge/proc.h   |   18 +-
+ .../staging/tidspbridge/include/dspbridge/pwr.h    |    8 +-
+ .../staging/tidspbridge/include/dspbridge/strm.h   |   22 +-
+ .../tidspbridge/include/dspbridge/uuidutil.h       |    6 +-
+ drivers/staging/tidspbridge/pmgr/chnl.c            |    4 +-
+ drivers/staging/tidspbridge/pmgr/cmm.c             |   14 +-
+ drivers/staging/tidspbridge/pmgr/cod.c             |   18 +-
+ drivers/staging/tidspbridge/pmgr/dev.c             |   36 ++--
+ drivers/staging/tidspbridge/pmgr/dmm.c             |    6 +-
+ drivers/staging/tidspbridge/pmgr/dspapi.c          |    4 +-
+ drivers/staging/tidspbridge/pmgr/io.c              |    4 +-
+ drivers/staging/tidspbridge/pmgr/msg.c             |    2 +-
+ drivers/staging/tidspbridge/rmgr/dbdcd.c           |   94 ++++----
+ drivers/staging/tidspbridge/rmgr/disp.c            |   10 +-
+ drivers/staging/tidspbridge/rmgr/drv.c             |    6 +-
+ drivers/staging/tidspbridge/rmgr/dspdrv.c          |    2 +-
+ drivers/staging/tidspbridge/rmgr/mgr.c             |   14 +-
+ drivers/staging/tidspbridge/rmgr/nldr.c            |   22 +-
+ drivers/staging/tidspbridge/rmgr/node.c            |   44 ++--
+ drivers/staging/tidspbridge/rmgr/proc.c            |   18 +-
+ drivers/staging/tidspbridge/rmgr/pwr.c             |    8 +-
+ drivers/staging/tidspbridge/rmgr/strm.c            |   18 +-
+ drivers/staging/tidspbridge/services/cfg.c         |    8 +-
+ 67 files changed, 462 insertions(+), 859 deletions(-)
+ delete mode 100644 drivers/staging/tidspbridge/hw/GlobalTypes.h
  delete mode 100644 drivers/staging/tidspbridge/include/dspbridge/dbtype.h
-
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-index a815b67..8f84735 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/dbdefs.h
-@@ -21,7 +21,6 @@
- 
- #include <linux/types.h>
- 
--#include <dspbridge/dbtype.h>	/* GPP side type definitions */
- #include <dspbridge/rms_sh.h>	/* Types shared between GPP and DSP */
- 
- #define PG_SIZE4K 4096
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/dbtype.h b/drivers/staging/tidspbridge/include/dspbridge/dbtype.h
-deleted file mode 100644
-index ca5eaf8..0000000
---- a/drivers/staging/tidspbridge/include/dspbridge/dbtype.h
-+++ /dev/null
-@@ -1,69 +0,0 @@
--/*
-- * dbtype.h
-- *
-- * DSP-BIOS Bridge driver support functions for TI OMAP processors.
-- *
-- * This header defines data types for DSP/BIOS Bridge APIs and device
-- * driver modules. It also defines the Hungarian prefix to use for each
-- * base type.
-- *
-- * Copyright (C) 2008 Texas Instruments, Inc.
-- *
-- * This package is free software; you can redistribute it and/or modify
-- * it under the terms of the GNU General Public License version 2 as
-- * published by the Free Software Foundation.
-- *
-- * THIS PACKAGE IS PROVIDED ``AS IS'' AND WITHOUT ANY EXPRESS OR
-- * IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
-- * WARRANTIES OF MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
-- */
--
--#ifndef DBTYPE_
--#define DBTYPE_
--
--/*===========================================================================*/
--/*  Argument specification syntax */
--/*===========================================================================*/
--
--#ifndef IN
--#define IN			/* Following parameter is for input. */
--#endif
--
--#ifndef OUT
--#define OUT			/* Following parameter is for output. */
--#endif
--
--#ifndef OPTIONAL
--#define OPTIONAL	/* Function may optionally use previous parameter. */
--#endif
--
--#ifndef CONST
--#define CONST   const
--#endif
--
--/*===========================================================================*/
--/*  NULL character   (normally used for string termination) */
--/*===========================================================================*/
--
--#ifndef NULL_CHAR
--#define NULL_CHAR    '\0'	/* Null character. */
--#endif
--
--/*===========================================================================*/
--/*  Basic Type definitions (with Prefixes for Hungarian notation) */
--/*===========================================================================*/
--
--#ifndef OMAPBRIDGE_TYPES
--#define OMAPBRIDGE_TYPES
--typedef volatile unsigned short reg_uword16;
--#endif
--
--#define TEXT(x) x
--
--#define DLLIMPORT
--#define DLLEXPORT
--
--/* Define DSPAPIDLL correctly in dspapi.h */
--#define _DSPSYSDLL32_
--
--#endif /* DBTYPE_ */
-diff --git a/drivers/staging/tidspbridge/include/dspbridge/host_os.h b/drivers/staging/tidspbridge/include/dspbridge/host_os.h
-index a91c136..6b4feb4 100644
---- a/drivers/staging/tidspbridge/include/dspbridge/host_os.h
-+++ b/drivers/staging/tidspbridge/include/dspbridge/host_os.h
-@@ -42,7 +42,6 @@
- #include <linux/vmalloc.h>
- #include <linux/ioport.h>
- #include <linux/platform_device.h>
--#include <dspbridge/dbtype.h>
- #include <plat/clock.h>
- #include <linux/clk.h>
- #include <plat/mailbox.h>
--- 
-1.7.1
 
