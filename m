@@ -1,64 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0GVMGG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 08:06:06 -0400
-Received: from sand.ocn.ne.jp ([122.28.30.136]:54514 "EHLO smtp.sand.ocn.ne.jp"
+	id S1755564Ab0GVMPL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 08:15:11 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24704 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753345Ab0GVMGB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 08:06:01 -0400
-From: Jon Povey <jon.povey@racelogic.co.uk>
-To: dbrownell@users.sourceforge.net
-Cc: linux-kernel@vger.kernel.org, Jon Povey <jon.povey@racelogic.co.uk>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Jani Nikula <ext-jani.1.nikula@nokia.com>,
-        Andi Kleen <ak@linux.intel.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH] gpio: Fix spurious printk when freeing a gpio
-Date: Thu, 22 Jul 2010 21:05:26 +0900
-Message-Id: <1279800327-32643-1-git-send-email-jon.povey@racelogic.co.uk>
-X-Mailer: git-send-email 1.6.3.3
+	id S1753603Ab0GVMPD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 08:15:03 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr>
+References: <alpine.LSU.2.01.1007221228260.6115@obet.zrqbmnf.qr> <20100715021709.5544.64506.stgit@warthog.procyon.org.uk> <20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+To: Jan Engelhardt <jengelh@medozas.de>
+Cc: dhowells@redhat.com, viro@ZenIV.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-nfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        samba-technical@lists.samba.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make extended file stats available [ver #6]
+Date: Thu, 22 Jul 2010 13:14:47 +0100
+Message-ID: <30448.1279800887@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-When freeing a gpio that has not been exported, gpio_unexport() prints a
-debug message when it should just fall through silently.
+Jan Engelhardt <jengelh@medozas.de> wrote:
 
-Example spurious message:
+> Linux already has a creation time field, it's called otime (there is no "b"
+> in "creation"), and you will find scattered fragments of that all over the
+> kernel (foremost, fs/jfs/, now btrfs, and I also notice sysvipc having
+> something with that name).
 
-	gpio_unexport: gpio0 status -22
+It is?  It's called crtime in Ext4.  st_btime, however, would be compatible
+with BSD's stat, and Samba would just use it by way of autoconf magic if it
+appeared.
 
-Signed-off-by: Jon Povey <jon.povey@racelogic.co.uk>
----
- drivers/gpio/gpiolib.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index eb0c3fe..e38687d 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -893,10 +893,12 @@ EXPORT_SYMBOL_GPL(gpio_sysfs_set_active_low);
- void gpio_unexport(unsigned gpio)
- {
- 	struct gpio_desc	*desc;
--	int			status = -EINVAL;
-+	int			status = 0;
- 
--	if (!gpio_is_valid(gpio))
-+	if (!gpio_is_valid(gpio)) {
-+		status = -EINVAL;
- 		goto done;
-+	}
- 
- 	mutex_lock(&sysfs_lock);
- 
-@@ -911,7 +913,6 @@ void gpio_unexport(unsigned gpio)
- 			clear_bit(FLAG_EXPORT, &desc->flags);
- 			put_device(dev);
- 			device_unregister(dev);
--			status = 0;
- 		} else
- 			status = -ENODEV;
- 	}
--- 
-1.6.3.3
-
+David
