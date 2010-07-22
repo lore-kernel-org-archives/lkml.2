@@ -1,52 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755347Ab0GVXzR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 19:55:17 -0400
-Received: from kroah.org ([198.145.64.141]:54209 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753527Ab0GVXzP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 19:55:15 -0400
-Date: Thu, 22 Jul 2010 16:46:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        David Brownell <david-b@pacbell.net>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>,
-        stable <stable@kernel.org>
-Subject: Re: [PATCHv4 1/5] USB: gadget: composite: Better string override
- handling
-Message-ID: <20100722234630.GA1352@kroah.com>
-References: <e2d14d0a730dde4b716c0e086761ef65ba9afda8.1278619472.git.m.nazarewicz@samsung.com>
- <89baa7d196b5e1d8427c90a78f2aa0cda4331d7a.1279794289.git.m.nazarewicz@samsung.com>
+	id S1755669Ab0GVX43 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 19:56:29 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52610 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752244Ab0GVX42 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 19:56:28 -0400
+Message-ID: <4C48DA16.4010403@cn.fujitsu.com>
+Date: Fri, 23 Jul 2010 07:53:58 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <89baa7d196b5e1d8427c90a78f2aa0cda4331d7a.1279794289.git.m.nazarewicz@samsung.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: linux-kernel@vger.kernel.org, axboe@kernel.dk, nauman@google.com,
+        dpshah@google.com, jmoyer@redhat.com, czoccolo@gmail.com
+Subject: Re: [RFC PATCH] cfq-iosced: Implement IOPS mode and group_idle tunable
+ V3
+References: <1279739181-24482-1-git-send-email-vgoyal@redhat.com> <4C47EE50.4020903@cn.fujitsu.com> <20100722144931.GD28684@redhat.com>
+In-Reply-To: <20100722144931.GD28684@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 02:16:33PM +0200, Michal Nazarewicz wrote:
-> The iManufatcurer, iProduct and iSerialNumber composite module
-> parameters are only used when the gadget driver registers
-> strings for manufacturer, product and serial number.  If the
-> gadget never bothered to set corresponding fields in USB
-> device descriptors those module parameters are ignored.
+Vivek Goyal wrote:
+> On Thu, Jul 22, 2010 at 03:08:00PM +0800, Gui Jianfeng wrote:
+>> Vivek Goyal wrote:
+>>> Hi,
+>>>
+>>> This is V3 of the group_idle and CFQ IOPS mode implementation patchset. Since V2
+>>> I have cleaned up the code a bit to clarify the confusion lingering around in
+>>> what cases do we charge time slice and in what cases do we charge number of
+>>> requests.
+>>>
+>>> What's the problem
+>>> ------------------
+>>> On high end storage (I got on HP EVA storage array with 12 SATA disks in 
+>>> RAID 5), CFQ's model of dispatching requests from a single queue at a
+>>> time (sequential readers/write sync writers etc), becomes a bottleneck.
+>>> Often we don't drive enough request queue depth to keep all the disks busy
+>>> and suffer a lot in terms of overall throughput.
+>>>
+>>> All these problems primarily originate from two things. Idling on per
+>>> cfq queue and quantum (dispatching limited number of requests from a
+>>> single queue) and till then not allowing dispatch from other queues. Once
+>>> you set the slice_idle=0 and quantum to higher value, most of the CFQ's
+>>> problem on higher end storage disappear.
+>>>
+>>> This problem also becomes visible in IO controller where one creates
+>>> multiple groups and gets the fairness but overall throughput is less. In
+>>> the following table, I am running increasing number of sequential readers
+>>> (1,2,4,8) in 8 groups of weight 100 to 800.
+>>>
+>>> Kernel=2.6.35-rc5-iops+
+>>> GROUPMODE=1          NRGRP=8
+>>> DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4
+>>> Workload=bsr      iosched=cfq     Filesz=512M bs=4K
+>>> group_isolation=1 slice_idle=8    group_idle=8    quantum=8
+>>> =========================================================================
+>>> AVERAGE[bsr]    [bw in KB/s]
+>>> -------
+>>> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  cgrp5  cgrp6  cgrp7  cgrp8  total
+>>> ---     --- --  ---------------------------------------------------------------
+>>> bsr     3   1   6186   12752  16568  23068  28608  35785  42322  48409  213701
+>>> bsr     3   2   5396   10902  16959  23471  25099  30643  37168  42820  192461
+>>> bsr     3   4   4655   9463   14042  20537  24074  28499  34679  37895  173847
+>>> bsr     3   8   4418   8783   12625  19015  21933  26354  29830  36290  159249
+>>>
+>>> Notice that overall throughput is just around 160MB/s with 8 sequential reader
+>>> in each group.
+>>>
+>>> With this patch set, I have set slice_idle=0 and re-ran same test.
+>>>
+>>> Kernel=2.6.35-rc5-iops+
+>>> GROUPMODE=1          NRGRP=8
+>>> DIR=/mnt/iostestmnt/fio        DEV=/dev/dm-4
+>>> Workload=bsr      iosched=cfq     Filesz=512M bs=4K
+>>> group_isolation=1 slice_idle=0    group_idle=8    quantum=8
+>>> =========================================================================
+>>> AVERAGE[bsr]    [bw in KB/s]
+>>> -------
+>>> job     Set NR  cgrp1  cgrp2  cgrp3  cgrp4  cgrp5  cgrp6  cgrp7  cgrp8  total
+>>> ---     --- --  ---------------------------------------------------------------
+>>> bsr     3   1   6523   12399  18116  24752  30481  36144  42185  48894  219496
+>>> bsr     3   2   10072  20078  29614  38378  46354  52513  58315  64833  320159
+>>> bsr     3   4   11045  22340  33013  44330  52663  58254  63883  70990  356520
+>>> bsr     3   8   12362  25860  37920  47486  61415  47292  45581  70828  348747
+>>>
+>>> Notice how overall throughput has shot upto 348MB/s while retaining the ability
+>>> to do the IO control.
+>>>
+>>> So this is not the default mode. This new tunable group_idle, allows one to
+>>> set slice_idle=0 to disable some of the CFQ features and and use primarily
+>>> group service differentation feature.
+>>>
+>>> If you have thoughts on other ways of solving the problem, I am all ears
+>>> to it.
+>> Hi Vivek
+>>
+>> Would you attach your fio job config file?
+>>
 > 
-> This patch makes the parameters even if the strings ID have
-> not been assigned.  It also changes the way IDs are
-> overridden -- what IDs are overridden is now saved in
-> usb_composite_dev structure -- which makes it unnecessary to
-> modify the string tables the way previous code did.
+> Hi Gui,
+> 
+> I have written a fio based test script, "iostest", to be able to
+> do cgroup and other IO scheduler testing more smoothly and I am using
+> that. I am attaching the compressed script with the mail. Try using it
+> and if it works for you and you find it useful, I can think of hosting a
+> git tree somewhere.
+> 
+> I used following following command lines to test above.
+> 
+> # iostest <block-device> -G -w bsr -m 8 -c --nrgrp 8 --total
+> 
+> With slice idle disabled.
+> 
+> # iostest <block-device> -G -w bsr -m 8 -c --nrgrp 8 --total -I 0
 
-David, do these look better?
+That's cool! Very helpful, I'll try it.
 
-And they are not -stable material, no matter what, sorry, so you can
-stop copying stable@kernel.org on them.
+Thanks,
+Gui
 
-thanks,
+> 
+> Thanks
+> Vivek
 
-greg k-h
+-- 
+Regards
+Gui Jianfeng
