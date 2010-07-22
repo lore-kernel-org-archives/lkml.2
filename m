@@ -1,55 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754398Ab0GVQdt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 12:33:49 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:20903 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751572Ab0GVQdq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 12:33:46 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6051"; a="48298847"
-Date: Thu, 22 Jul 2010 09:33:40 -0700
-From: Zach Pfeffer <zpfeffer@codeaurora.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux@arm.linux.org.uk, alan@lxorguk.ukuu.org.uk, randy.dunlap@oracle.com,
-        dwalker@codeaurora.org, mel@csn.ul.ie, linux-arm-msm@vger.kernel.org,
-        joro@8bytes.org, linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        andi@firstfloor.org, linux-omap@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [RFC 3/3] mm: iommu: The Virtual Contiguous Memory Manager
-Message-ID: <20100722163338.GE10255@codeaurora.org>
-References: <20100713090223.GB20590@n2100.arm.linux.org.uk>
- <20100714105922D.fujita.tomonori@lab.ntt.co.jp>
- <20100722035026.GB14176@codeaurora.org>
- <20100722134708I.fujita.tomonori@lab.ntt.co.jp>
+	id S1755681Ab0GVQjM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 12:39:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:58473 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750838Ab0GVQjG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 12:39:06 -0400
+Date: Thu, 22 Jul 2010 19:38:51 +0300
+From: Gleb Natapov <gleb@redhat.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+        paulus@samba.org
+Subject: Re: [PATCH] Re: perf annotate segfaults when source code has goto
+ label that looks like hex number
+Message-ID: <20100722163851.GA10307@redhat.com>
+References: <20100722072044.GD27177@redhat.com>
+ <20100722143345.GC17631@ghostprotocols.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100722134708I.fujita.tomonori@lab.ntt.co.jp>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100722143345.GC17631@ghostprotocols.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 01:47:36PM +0900, FUJITA Tomonori wrote:
-> On Wed, 21 Jul 2010 20:50:26 -0700
-> Zach Pfeffer <zpfeffer@codeaurora.org> wrote:
+On Thu, Jul 22, 2010 at 11:33:45AM -0300, Arnaldo Carvalho de Melo wrote:
+> Em Thu, Jul 22, 2010 at 10:20:44AM +0300, Gleb Natapov escreveu:
+> > strtoull() returns valid number when it gets line with label and following
+> > test passes too. I can't think of a way to unambiguously distinguish between
+> > label and valid rip. May be running objdump with --prefix-addresses will
+> > help, but it may make other thing unambiguous.
 > 
-> > On Wed, Jul 14, 2010 at 10:59:43AM +0900, FUJITA Tomonori wrote:
-> > > On Tue, 13 Jul 2010 10:02:23 +0100
-> > > 
-> > > Zach Pfeffer said this new VCM infrastructure can be useful for
-> > > video4linux. However, I don't think we need 3,000-lines another
-> > > abstraction layer to solve video4linux's issue nicely.
-> > 
-> > Its only 3000 lines because I haven't converted the code to use
-> > function pointers.
+> [root@emilia ~]# objdump --start-address=0x0000000000400474 --stop-address=0x0000000000400496 -dS ./a.out | grep -P ':\t'
+>   400474:	55                   	push   %rbp
+>   400475:	48 89 e5             	mov    %rsp,%rbp
+>   400478:	89 7d ec             	mov    %edi,-0x14(%rbp)
+>   40047b:	48 89 75 e0          	mov    %rsi,-0x20(%rbp)
+>   40047f:	eb 01                	jmp    400482 <main+0xe>
+>   400481:	90                   	nop
+>   400482:	83 45 fc 01          	addl   $0x1,-0x4(%rbp)
+>   400486:	81 7d fc 80 96 98 00 	cmpl   $0x989680,-0x4(%rbp)
+>   40048d:	75 f2                	jne    400481 <main+0xd>
+>   40048f:	90                   	nop
+>   400490:	b8 00 00 00 00       	mov    $0x0,%eax
+>   400495:	c9                   	leaveq 
+> [root@emilia ~]# objdump --start-address=0x0000000000400474
+> --stop-address=0x0000000000400496 -dS ./a.out | grep ':$'
+> Disassembly of section .text:
+> 0000000000400474 <main>:
+> add:
+> [root@emilia ~]#
 > 
-> The main point is adding a new abstraction that don't provide the huge
-> benefit.
+> Can you try the attached patch?
+> 
+I can, only later. But if I underhand your patch correctly perf will
+still crash if there is a comment after the label on the same line.
 
-I disagree. In its current form the API may not be appropriate for
-inclusion into the kernel, but it provides a common framework for
-handling a class of problems that have been solved many times in the
-kernel: large buffer management, IOMMU interoperation and fine grained
-mapping control.
+> With it we get:
+> 
+> 
+> [root@emilia ~]# perf annotate
+> 
+> ------------------------------------------------
+>  Percent |	Source code & Disassembly of a.out
+> ------------------------------------------------
+>          :
+>          :
+>          :
+>          :	Disassembly of section .text:
+>          :
+>          :	0000000000400474 <main>:
+>          :	int main(int argc, char **argv)
+>          :	{
+>     0.00 :	  400474:       55                      push   %rbp
+>     0.00 :	  400475:       48 89 e5                mov    %rsp,%rbp
+>     0.00 :	  400478:       89 7d ec                mov    %edi,-0x14(%rbp)
+>     0.00 :	  40047b:       48 89 75 e0             mov    %rsi,-0x20(%rbp)
+>     0.00 :	  40047f:       eb 01                   jmp    400482 <main+0xe>
+>          :
+>          :	      while(1) {
+>          :	              i++;
+>          :	              if (i == 10000000)
+>          :	                      goto add;
+>          :	      }
+>    21.05 :	  400481:       90                      nop
+>          :	int main(int argc, char **argv)
+>          :	{
+>          :	      int i;
+>          :
+>          :	      while(1) {
+>          :	              i++;
+>     0.00 :	  400482:       83 45 fc 01             addl   $0x1,-0x4(%rbp)
+>          :	              if (i == 10000000)
+>    15.79 :	  400486:       81 7d fc 80 96 98 00    cmpl   $0x989680,-0x4(%rbp)
+>    63.16 :	  40048d:       75 f2                   jne    400481 <main+0xd>
+>          :	                      goto add;
+>     0.00 :	  40048f:       90                      nop
+>          :	      }
+>          :	add:
+>          :	      return 0;
+>     0.00 :	  400490:       b8 00 00 00 00          mov    $0x0,%eax
+>          :	}
+>     0.00 :	  400495:       c9                      leaveq 
+
+> diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+> index 699cf81..e3486d5 100644
+> --- a/tools/perf/util/hist.c
+> +++ b/tools/perf/util/hist.c
+> @@ -976,7 +976,7 @@ static int hist_entry__parse_objdump_line(struct hist_entry *self, FILE *file,
+>  		 * Parse hexa addresses followed by ':'
+>  		 */
+>  		line_ip = strtoull(tmp, &tmp2, 16);
+> -		if (*tmp2 != ':' || tmp == tmp2)
+> +		if (*tmp2 != ':' || tmp == tmp2 || tmp2[1] == '\0')
+>  			line_ip = -1;
+>  	}
+>  
+
+
+--
+			Gleb.
