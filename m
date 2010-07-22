@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759680Ab0GVSrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:47:21 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:62454 "EHLO
+	id S1759973Ab0GVSr1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:47:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:62414 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759871Ab0GVSp5 (ORCPT
+	with ESMTP id S1759862Ab0GVSp4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:45:57 -0400
+	Thu, 22 Jul 2010 14:45:56 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,67 +16,119 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
         Linus Torvalds <torvalds@linux-foundation.org>
 Cc: Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
         linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 08/16] x86, memblock: Add memblock_x86_find_in_range_node()
-Date: Thu, 22 Jul 2010 11:43:53 -0700
-Message-Id: <1279824241-17582-9-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 06/16] x86, memblock: Add memblock_x86_register_active_regions() and memblock_x86_hole_size()
+Date: Thu, 22 Jul 2010 11:43:51 -0700
+Message-Id: <1279824241-17582-7-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
 References: <1279824241-17582-1-git-send-email-yinghai@kernel.org>
 X-Source-IP: acsmt355.oracle.com [141.146.40.155]
 X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090203.4C4891B4.0084,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090202.4C4891B6.002D,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It can be used to find NODE_DATA for numa.
+memblock_x86_register_active_regions() will be used to fill early_node_map,
+the result will be memblock.memory.region AND numa data
 
-Need to make sure early_node_map[] is filled before it is called, otherwise
-it will fallback to memblock_find_in_range(), with node range.
+memblock_x86_hole_size will be used to find hole size on memblock.memory.region
+with specified range.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/memblock.h |    1 +
- arch/x86/mm/memblock.c          |   15 +++++++++++++++
- 2 files changed, 16 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/memblock.h |    4 ++
+ arch/x86/mm/memblock.c          |   67 +++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 71 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/include/asm/memblock.h b/arch/x86/include/asm/memblock.h
-index 16af28d..3a86b10 100644
+index 72639ce..16af28d 100644
 --- a/arch/x86/include/asm/memblock.h
 +++ b/arch/x86/include/asm/memblock.h
-@@ -14,5 +14,6 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
- void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
- 					 unsigned long last_pfn);
- u64 memblock_x86_hole_size(u64 start, u64 end);
-+u64 memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align);
+@@ -11,4 +11,8 @@ void memblock_x86_free_range(u64 start, u64 end);
+ struct range;
+ int get_free_all_memory_range(struct range **rangep, int nodeid);
  
++void memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
++					 unsigned long last_pfn);
++u64 memblock_x86_hole_size(u64 start, u64 end);
++
  #endif
 diff --git a/arch/x86/mm/memblock.c b/arch/x86/mm/memblock.c
-index bceb885..a3dece6 100644
+index ab4e2dc..bceb885 100644
 --- a/arch/x86/mm/memblock.c
 +++ b/arch/x86/mm/memblock.c
-@@ -240,6 +240,21 @@ void __init memblock_x86_free_range(u64 start, u64 end)
- }
+@@ -238,3 +238,70 @@ void __init memblock_x86_free_range(u64 start, u64 end)
  
- /*
-+ * Need to call this function after memblock_x86_register_active_regions,
-+ * so early_node_map[] is filled already.
-+ */
-+u64 __init memblock_x86_find_in_range_node(int nid, u64 start, u64 end, u64 size, u64 align)
-+{
-+	u64 addr;
-+	addr = find_memory_core_early(nid, size, align, start, end);
-+	if (addr != MEMBLOCK_ERROR)
-+		return addr;
+ 	memblock_free(start, end - start);
+ }
 +
-+	/* Fallback, should already have start end within node range */
-+	return memblock_find_in_range(start, end, size, align);
++/*
++ * Finds an active region in the address range from start_pfn to last_pfn and
++ * returns its range in ei_startpfn and ei_endpfn for the memblock entry.
++ */
++static int __init memblock_x86_find_active_region(const struct memblock_region *ei,
++				  unsigned long start_pfn,
++				  unsigned long last_pfn,
++				  unsigned long *ei_startpfn,
++				  unsigned long *ei_endpfn)
++{
++	u64 align = PAGE_SIZE;
++
++	*ei_startpfn = round_up(ei->base, align) >> PAGE_SHIFT;
++	*ei_endpfn = round_down(ei->base + ei->size, align) >> PAGE_SHIFT;
++
++	/* Skip map entries smaller than a page */
++	if (*ei_startpfn >= *ei_endpfn)
++		return 0;
++
++	/* Skip if map is outside the node */
++	if (*ei_endpfn <= start_pfn || *ei_startpfn >= last_pfn)
++		return 0;
++
++	/* Check for overlaps */
++	if (*ei_startpfn < start_pfn)
++		*ei_startpfn = start_pfn;
++	if (*ei_endpfn > last_pfn)
++		*ei_endpfn = last_pfn;
++
++	return 1;
++}
++
++/* Walk the memblock.memory map and register active regions within a node */
++void __init memblock_x86_register_active_regions(int nid, unsigned long start_pfn,
++					 unsigned long last_pfn)
++{
++	unsigned long ei_startpfn;
++	unsigned long ei_endpfn;
++	struct memblock_region *r;
++
++	for_each_memblock(memory, r)
++		if (memblock_x86_find_active_region(r, start_pfn, last_pfn,
++					   &ei_startpfn, &ei_endpfn))
++			add_active_range(nid, ei_startpfn, ei_endpfn);
 +}
 +
 +/*
-  * Finds an active region in the address range from start_pfn to last_pfn and
-  * returns its range in ei_startpfn and ei_endpfn for the memblock entry.
-  */
++ * Find the hole size (in bytes) in the memory range.
++ * @start: starting address of the memory range to scan
++ * @end: ending address of the memory range to scan
++ */
++u64 __init memblock_x86_hole_size(u64 start, u64 end)
++{
++	unsigned long start_pfn = start >> PAGE_SHIFT;
++	unsigned long last_pfn = end >> PAGE_SHIFT;
++	unsigned long ei_startpfn, ei_endpfn, ram = 0;
++	struct memblock_region *r;
++
++	for_each_memblock(memory, r)
++		if (memblock_x86_find_active_region(r, start_pfn, last_pfn,
++					   &ei_startpfn, &ei_endpfn))
++			ram += ei_endpfn - ei_startpfn;
++
++	return end - start - ((u64)ram << PAGE_SHIFT);
++}
++
 -- 
 1.6.4.2
 
