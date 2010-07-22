@@ -1,41 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752947Ab0GVSvd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 14:51:33 -0400
-Received: from mail.perches.com ([173.55.12.10]:2034 "EHLO mail.perches.com"
+	id S1754727Ab0GVS4W (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 14:56:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43303 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751003Ab0GVSvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 14:51:31 -0400
-Subject: Re: [PATCH 09/11] staging: comedi: formatting of pointers in
- printk()
-From: Joe Perches <joe@perches.com>
-To: Greg KH <greg@kroah.com>
-Cc: Jiri Slaby <jirislaby@gmail.com>, Kulikov Vasiliy <segooon@gmail.com>,
-        kernel-janitors@vger.kernel.org, devel@driverdev.osuosl.org,
-        Javier Martinez Canillas <martinez.javier@gmail.com>,
-        Jiri Kosina <jkosina@suse.cz>, Greg Kroah-Hartman <gregkh@suse.de>,
-        linux-kernel@vger.kernel.org,
-        Dominik Brodowski <linux@dominikbrodowski.net>,
-        Alexander Kurz <linux@kbdbabel.org>
-In-Reply-To: <20100722184557.GC32116@kroah.com>
-References: <1279176172-5609-1-git-send-email-segooon@gmail.com>
-	 <4C3EAEC5.8080908@gmail.com>  <20100722184557.GC32116@kroah.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 22 Jul 2010 11:51:27 -0700
-Message-ID: <1279824687.1909.55.camel@Joe-Laptop.home>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+	id S1751685Ab0GVS4V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 14:56:21 -0400
+Date: Thu, 22 Jul 2010 11:53:01 -0700
+From: Greg KH <gregkh@suse.de>
+To: Paul Menage <menage@google.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+Message-ID: <20100722185301.GA528@suse.de>
+References: <20100722182638.GA12712@kroah.com>
+ <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
+ <20100722183614.GA5443@suse.de>
+ <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimbcuzH6_bBhYX0U6vqftYgRwE0ZTmcbaRNzXef@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 11:45 -0700, Greg KH wrote:
-> On Thu, Jul 15, 2010 at 08:46:29AM +0200, Jiri Slaby wrote:
-> > On 07/15/2010 08:42 AM, Kulikov Vasiliy wrote:
-> > The name and parameters suggest to remove the function completely. (And
-> > use print_hex_dump_bytes instead.)
-> I agree, Kulikov, can you make that chagne instead?
+On Thu, Jul 22, 2010 at 11:44:50AM -0700, Paul Menage wrote:
+> On Thu, Jul 22, 2010 at 11:36 AM, Greg KH <gregkh@suse.de> wrote:
+> >
+> > Really?  I see systems mounting it at /cgroups/ in the filesystem today.
+> 
+> Sure, it *can* be mounted as a single instance, but you then lose
+> flexibility. E.g. at Google we want to have a different hierarchy for
+> the CPU subsystem (with the tree grouped according to
+> latency-sensitive versus batch, etc) and memory (grouped according to
+> what jobs are sharing memory with each other).
+> 
+> > Where are you expecting it to be mounted at?
+> 
+> I have no particular expectation. (At Google we're actually using
+> /dev/cgroup/* but that's just for historical reasons, from
+> /dev/cpuset). Under /sys/fs/cgroup sounds reasonable, but you'd want
+> people to have the ability to manually create subdirs in there for
+> separate mount points.
 
-The function isn't used at all and should simply be removed.
+Ok, that's great, but it's not where the distros are starting to mount
+it at.  As I learned with debugfs, you need to pick a location for
+people to mount it at, otherwise it ends up all over the place.
 
+If you are using /dev/cgroup/ that's nice, but I don't think that people
+are expecting a whole filesystem under a /dev/ subdirectory.
+
+I didn't realize that cgroupfs had so many different options that would
+enable it to handle multiple mounts in this way.
+
+Hm, Lennart, Kay, any ideas as to where to put it in a "standard" way?
+
+thanks,
+
+greg k-h
