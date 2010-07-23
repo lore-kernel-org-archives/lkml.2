@@ -1,27 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756670Ab0GWRdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 13:33:24 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:33266 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1755508Ab0GWRdW (ORCPT
+	id S1756796Ab0GWRg7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 13:36:59 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:59230 "HELO
+	cpoproxy2-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755962Ab0GWRg5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 13:33:22 -0400
+	Fri, 23 Jul 2010 13:36:57 -0400
 DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
 	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=lhDTtrT+Uz8Bz6gcJ1v4kha4osl8WRtm0VKXN9FoNqWn6xN5WZRAZZKwcXJqLzzRJMHh7dktXb46Gm+sQd9mULKBRV8AR81Gur3apwrPvMmpd6WkueUQ7sMGX0EIg0nX;
-Date: Fri, 23 Jul 2010 10:33:36 -0700
+	b=Pn85G3uj0iy5PHfqSxtx8pHyONxXCpGuL14+ioeMw4pSlJtTYauWw4IwrRRomF9I2kFRL/r3tYMWnRlydI427cESzGCv+fCU8PWP7q12URgcphCKVAgQ0d7ZZkSrANDi;
+Date: Fri, 23 Jul 2010 10:37:12 -0700
 From: Jesse Barnes <jbarnes@virtuousgeek.org>
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
         Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Tino Keitel" <tino.keitel+xorg@tikei.de>
-Subject: Re: [Bug #16207] Suspend and VT switch hangs since 2.6.34
-Message-ID: <20100723103336.539a3d61@virtuousgeek.org>
-In-Reply-To: <PRbv8sgxY6G.A.j1F.aVYSMB@chimera>
+        Maciej Rutecki <maciej.rutecki@gmail.com>, "" <lists@clanduggan.org>
+Subject: Re: [Bug #16388] i915 drm BUG: unable to handle kernel paging
+ request at a5e89046
+Message-ID: <20100723103712.5b99e8ce@virtuousgeek.org>
+In-Reply-To: <PRbv8sgxY6G.A.tAF.rUYSMB@chimera>
 References: <wQMMFC59mnE.A.v-E.iUYSMB@chimera>
-	<PRbv8sgxY6G.A.j1F.aVYSMB@chimera>
+	<PRbv8sgxY6G.A.tAF.rUYSMB@chimera>
 X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -31,7 +31,7 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jul 2010 14:15:52 +0200 (CEST)
+On Fri, 23 Jul 2010 14:15:55 +0200 (CEST)
 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
 
 > This message has been generated automatically as a part of a report
@@ -42,26 +42,18 @@ On Fri, 23 Jul 2010 14:15:52 +0200 (CEST)
 > be listed and let the tracking team know (either way).
 > 
 > 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16207
-> Subject		: Suspend and VT switch hangs since 2.6.34
-> Submitter	: Tino Keitel <tino.keitel+xorg@tikei.de>
-> Date		: 2010-06-09 17:53 (45 days old)
-> Message-ID	: <20100609175356.GA17332@x61.home>
-> References	: http://marc.info/?l=linux-kernel&m=127610606214060&w=2
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16388
+> Subject		: i915 drm BUG: unable to handle kernel paging request at a5e89046
+> Submitter	:  <lists@clanduggan.org>
+> Date		: 2010-07-14 16:59 (10 days old)
 
-I think this may actually be an X server bug.  2.6.34 introduced some
-new features that X drivers take advantage of, but there was some
-bugginess in the X server's handling of client block and unblock,
-leading to hangs at VT switch time.
+Looks like some potential memory corruption?  At resume we try to get
+connector info but panic due to a bad pointer, maybe in one of the
+lists.  Can you gdb your drm_kms_helper module and do "list
+*drm_mode_getconnector+0x295" to see what line this is?
 
-This could be related to some upstream bugs in the X server
-(bugs.freedesktop.org):
-28998
-28365
-27035
-
-Can you check those out and see if they're relevant?  27035 and 28998 in
-particular fixed VT switch problems for me.
+Also, what chipset do you have?  Maybe I can reproduce it here with
+your kernel config.
 
 -- 
 Jesse Barnes, Intel Open Source Technology Center
