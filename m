@@ -1,203 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758253Ab0GWVTg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 17:19:36 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:42459 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752269Ab0GWVTf (ORCPT
+	id S1757484Ab0GWV37 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 17:29:59 -0400
+Received: from smtp.microsoft.com ([131.107.115.212]:49953 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753679Ab0GWV36 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 17:19:35 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4C4A074D.4050305@s5r6.in-berlin.de>
-Date: Fri, 23 Jul 2010 23:19:09 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
+	Fri, 23 Jul 2010 17:29:58 -0400
+X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jul 2010 17:29:58 EDT
+From: Haiyang Zhang <haiyangz@microsoft.com>
+To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+        "'gregkh@suse.de'" <gregkh@suse.de>
+CC: Hank Janssen <hjanssen@microsoft.com>, vrataj2 <vrataj2@comcast.net>
+Subject: [PATCH 1/1] staging: hv: Fix Kconfig dependency of hv_blkvsc
+Thread-Topic: [PATCH 1/1] staging: hv: Fix Kconfig dependency of hv_blkvsc
+Thread-Index: AQHLKq15Vl5fW7LuK0mqs0e7x0lj/w==
+Date: Fri, 23 Jul 2010 21:24:42 +0000
+Message-ID: <1FB5E1D5CA062146B38059374562DF7280E610A2@TK5EX14MBXC126.redmond.corp.microsoft.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: yes
+X-MS-TNEF-Correlator: 
+x-originating-ip: [157.54.123.12]
+Content-Type: multipart/mixed;
+	boundary="_002_1FB5E1D5CA062146B38059374562DF7280E610A2TK5EX14MBXC126r_"
 MIME-Version: 1.0
-To: Martin Mokrejs <mmokrejs@ribosome.natur.cuni.cz>
-CC: Jay Fenlason <fenlason@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-        linux1394-devel@lists.sourceforge.net
-Subject: Re: 2.6.35-rc6 to 2.6.32.16: JuJu firewire issues
-References: <4C49A291.20001@ribosome.natur.cuni.cz> <20100723180807.GA32319@redhat.com> <4C49E1A2.7050606@ribosome.natur.cuni.cz>
-In-Reply-To: <4C49E1A2.7050606@ribosome.natur.cuni.cz>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Martin Mokrejs wrote at LKML:
-> Hi Jay,
-> Jay Fenlason wrote:
->> On Fri, Jul 23, 2010 at 04:09:21PM +0200, Martin Mokrejs wrote:
->>> Hi,
->>>   I bought a external harddrive with firewire and USB interfaces (IcyBOX IB-250StUE-B).
->>> If I connect it to a desktop computer A I get kernel crash during boot (see
->>> both attached dmesg-*.txt files).
+--_002_1FB5E1D5CA062146B38059374562DF7280E610A2TK5EX14MBXC126r_
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: quoted-printable
 
-The crash which you reported is in sbp2 (of the old ieee1394 stack alias
-linux1394, not in firewire-sbp2 (of the new firewire stack alias juju).
+From: Haiyang Zhang <haiyangz@microsoft.com>
 
->>>   Further, a laptop computer B is connected to A via firewire as well through
->>> firewire-net module. I do not understand why but on computer B I see in dmesg
->>> complains from firewire_sbp about the external drive physically connected to
->>> computer A! Is that a bug or feature? Nevertheless, the host B cannot really
->>> talk to the drive (see below snippet from 2.6.34.1 kernel on the laptop below
->>> in the body of this email).
+Subject: staging: hv: Fix Kconfig dependency of hv_blkvsc
+LBDAF is not available nor necessary on 64BIT kernel. This patch
+fixed the dependency for hv_blkvsc module on 64BIT kernel.
+Thanks vrataj2 [vrataj2@comcast.net] for reporting this problem.
 
-I comment on this further below.
+Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
+Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
 
->>>   Sorry for mixing the two issue into a single email. Maybe this is because
->>> of similar underlying issues? The desktop has 2 firewire ports and the laptop
->>> also 2 ports. While taking into account that both have firewire_net inserted
->>> into the running kernel and on both machines I see only firewire0 interface
->>> and not additional firewire1 interface I wonder whether the kernels realizes
->>> there are two physical ports on each computer and maybe it mixes together
->>> some data or takes an action on the wrong port. You may think of my yesterdays
->>> email as of yet another kernel crash and bug in JuJu firewire stack under subject
->>> "2.6.31.14: firewire_net issue in generic_sync_sb_inodes".
+---
+ drivers/staging/hv/Kconfig |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-I missed that thread, and amost missed this one.  You could have Cc'd
-linux1394-devel.  Chances to get help on specific driver issues on LKML
-are slim.
+diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
+index 97480f5..7455c80 100644
+--- a/drivers/staging/hv/Kconfig
++++ b/drivers/staging/hv/Kconfig
+@@ -17,7 +17,7 @@ config HYPERV_STORAGE
+=20
+ config HYPERV_BLOCK
+ 	tristate "Microsoft Hyper-V virtual block driver"
+-	depends on BLOCK && SCSI && LBDAF
++	depends on BLOCK && SCSI && (LBDAF || 64BIT)
+ 	default HYPERV
+ 	help
+ 	  Select this option to enable the Hyper-V virtual block driver.
+--=20
+1.6.3.2
 
-The crashlog from "2.6.31.14: firewire_net issue in
-generic_sync_sb_inodes" does not point to firewire-net directly.  But
-perhaps firewire-net corrupted some memory before that crash.
 
-There was a bugfix for firewire-net in 2.6.33.  But I believe that fix
-is only necessary on SMP/ multicore machines; your notebook seems to be
-a singlecore machine.
+--_002_1FB5E1D5CA062146B38059374562DF7280E610A2TK5EX14MBXC126r_
+Content-Type: application/octet-stream;
+	name="0723-Fix-Kconfig-dependency-of-hv_blkvsc.patch"
+Content-Description: 0723-Fix-Kconfig-dependency-of-hv_blkvsc.patch
+Content-Disposition: attachment;
+	filename="0723-Fix-Kconfig-dependency-of-hv_blkvsc.patch"; size=992;
+	creation-date="Fri, 23 Jul 2010 18:17:04 GMT";
+	modification-date="Fri, 23 Jul 2010 21:22:18 GMT"
+Content-Transfer-Encoding: base64
 
->> I think you are confused about how firewire works.  Firewire is a bus,
->> not a point-to-point technology.  Any device on a firewire bus may
->> talk to any other device on the same bus, whether the are directly
->> physically connected or not.  Otherwise you would not be able to
->> daisy-chain disks, cameras, audio devices, etc.  The only way you can
->> have multiple firewire busses on a device is to have multiple firewire
->> controllers.  (You can do this by putting two firewire PCI cards in a
->> computer, or by putting a FirWire CardBus card in a laptop with an
->> on-board firewire controller, but I don't know of any machines that
->> ship with multiple firewire busses.)  Each controller can have any
->> number (*up to 63, with 1-3 being the most comment) of ports on it.
->>
->> From what you've said above, each of your computers has a single
->> firewire controller in it (lspci will tell you for sure).  One of the
->> computers has two ports on its controller, and the other has three.
->> (This in not uncommon on many firewire based systems because the
->> commonly used PHY chips support up to three ports.)
+RnJvbTogSGFpeWFuZyBaaGFuZyA8aGFpeWFuZ3pAbWljcm9zb2Z0LmNvbT4NCg0KU3ViamVjdDog
+c3RhZ2luZzogaHY6IEZpeCBLY29uZmlnIGRlcGVuZGVuY3kgb2YgaHZfYmxrdnNjDQpMQkRBRiBp
+cyBub3QgYXZhaWxhYmxlIG5vciBuZWNlc3Nhcnkgb24gNjRCSVQga2VybmVsLiBUaGlzIHBhdGNo
+DQpmaXhlZCB0aGUgZGVwZW5kZW5jeSBmb3IgaHZfYmxrdnNjIG1vZHVsZSBvbiA2NEJJVCBrZXJu
+ZWwuDQpUaGFua3MgdnJhdGFqMiBbdnJhdGFqMkBjb21jYXN0Lm5ldF0gZm9yIHJlcG9ydGluZyB0
+aGlzIHByb2JsZW0uDQoNClNpZ25lZC1vZmYtYnk6IEhhaXlhbmcgWmhhbmcgPGhhaXlhbmd6QG1p
+Y3Jvc29mdC5jb20+DQpTaWduZWQtb2ZmLWJ5OiBIYW5rIEphbnNzZW4gPGhqYW5zc2VuQG1pY3Jv
+c29mdC5jb20+DQoNCi0tLQ0KIGRyaXZlcnMvc3RhZ2luZy9odi9LY29uZmlnIHwgICAgMiArLQ0K
+IDEgZmlsZXMgY2hhbmdlZCwgMSBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9ucygtKQ0KDQpkaWZm
+IC0tZ2l0IGEvZHJpdmVycy9zdGFnaW5nL2h2L0tjb25maWcgYi9kcml2ZXJzL3N0YWdpbmcvaHYv
+S2NvbmZpZw0KaW5kZXggOTc0ODBmNS4uNzQ1NWM4MCAxMDA2NDQNCi0tLSBhL2RyaXZlcnMvc3Rh
+Z2luZy9odi9LY29uZmlnDQorKysgYi9kcml2ZXJzL3N0YWdpbmcvaHYvS2NvbmZpZw0KQEAgLTE3
+LDcgKzE3LDcgQEAgY29uZmlnIEhZUEVSVl9TVE9SQUdFDQogDQogY29uZmlnIEhZUEVSVl9CTE9D
+Sw0KIAl0cmlzdGF0ZSAiTWljcm9zb2Z0IEh5cGVyLVYgdmlydHVhbCBibG9jayBkcml2ZXIiDQot
+CWRlcGVuZHMgb24gQkxPQ0sgJiYgU0NTSSAmJiBMQkRBRg0KKwlkZXBlbmRzIG9uIEJMT0NLICYm
+IFNDU0kgJiYgKExCREFGIHx8IDY0QklUKQ0KIAlkZWZhdWx0IEhZUEVSVg0KIAloZWxwDQogCSAg
+U2VsZWN0IHRoaXMgb3B0aW9uIHRvIGVuYWJsZSB0aGUgSHlwZXItViB2aXJ0dWFsIGJsb2NrIGRy
+aXZlci4NCi0tIA0KMS42LjMuMg0KDQo=
 
-Absolutely; FireWire devices (including PCs/ laptops) almost always only
-have a single FireWire link-layer interface, even if they have multiple
-FireWire physical interfaces.  A FireWire device with several ports
-repeats all traffic between these ports.  (Except in case of speed
-capability differences of different bus segments.)
-
-Furthermore, unlike the host-centric USB, FireWire is a peer-to-peer bus
-or network.  All nodes that are present on one bus see each other and
-can communicate with each other regardless of the particular topology.
-
->> Hard disks (and things that emulate them) generally allow only a
->> single host to control them at a time.  (Ignoring for the moment
->> specialized "multi-initiator" capable hardware used for shared storage
->> in clustering applications.)  This is because if two machines mount
->> the same (non clustering-aware) filesystem at the same time, they will
->> write over each others changes to the filesystem and eventually trash
->> the filesystem's data structures beyond repair.  So when you have
->> created a single bus with two computers and a single hard disk on it,
->> it's unsurprising that only one of the computers can successfully talk
->> to it.
->>
->> I see in your dmesg that your 2.6.32.16-default computer is using the
->> old ieee1394 stack, and not the the firewire stack, so it should not
->> have loaded firewire-net.  It should have loaded eth1394 instead.
-
-On Gentoo Linux and many other distributions, eth1394 is blacklisted
-(i.e. never automatically loaded).  This is because distributors don't
-like it when eth1394 messes up the "eth%d" networking interface namespace.
-
-firewire-net on the other hand is not blacklisted (but also won't
-intermix with the names of Ethernet interfaces).  Hence, if a Linux PC
-which has firewire-net installed is plugged into a bus with an
-IPv4-over-1394 capable node present, firewire-net will be auto-loaded
-regardless whether the FireWire controller is driven by ohci1394 or
-firewire-ohci at that time.
-
-If ohci1394 is at the helm at that moment, firewire-net will of course
-do nothing but take up space.
-
->> I'm troubled by the traceback in nodemgr, but since the old stack is
->> unmaintained and buggy, your first step should be to completely
->> eliminate iee1394, ohci1394, sbp2 and eth1394 from it and replace them
->> with firewire-core, firewire-ohci, firewire-sbp2, and firewire-net on
->> it.  Nobody is going to bother to debug the old stack at this point.
-
-Exactly.  ieee1394, sbp2, ohci1394 etc. are planed to be deleted in
-2.6.37(rc-1) which will apparently be in less than 3 months.
-
-While a crash bug is something pretty severe, there are simply no
-resources to chase them anymore.
-
->> You should then either blacklist firewire-sbp2 on the computer that
->> you do not want to use the external disk from, or tell firewire-sbp2
->> not to try to attach to it (I believe Stefan Richter wrote directions
->> on how to do that a year or two ago.  Check the linux1394-devel
->> archives).
-
-Did I?  Right now I would say, just blacklist firewire-sbp2 (and sbp2)
-on the machine that is not supposed to log into the disk.
-
->> Otherwise both machines will race to connect to it, one of
->> them will win, and the other will get errors.
->>
->> 			-- JF
-
-(Which is harmless except for the fact that which of the two initiators
-wins the login might not be the one that you wanted.)
-
->   thank you for you thorough explanation. Let me just briefly re-phrase what
-> I have. The topology is as of now:
-> 
->            A                                                B
-> 
->         VT6306                                           R5C552
->          |   |                                            |   |
->          |   ------------- firewire-net+sbp2---------------   |
->          |                                                    --- unused port
->          |
->          ------ external drive enclosure (2 FW ports, 1USB port, one PWR port)
-> 
-> 
->   In other words, I did not plugin two firewire cables into the two sockets on the
-> external drive enclosure, each coming from a different computer. I am not that
-> desperate user. ;) I suspect you thought I have the external drive in between
-> both computers. No, I don't.
-> 
->   Computer A (desktop) has VT6306 Fire II IEEE 1394 chip, 3 ports, one connected
-> to the external hard drive, another to computer B (laptop) used for the TCP IP
-> networking.
-
-For IPv4 over 1394 as well as for SBP-2 it does not matter whether the
-physical order is disk--A--B or A--disk--B or A--B--disk.
-
->   Computer B has Ricoh Co Ltd R5C552 IEEE 1394 chip. I should blacklist firewire_sbp
-> driver so that the laptop does not try to access the external hard drive.
-> 
->   Yes, I have realized that the old firewire modules take precedence over the new
-> JuJu stuff. I used only the JuJu driver but after experiencing problems I decided
-> to compile as modules also the old drivers. I will repoduce this with the JuJu
-> drivers alone once again. (I have given that up meanwhile and I use the USB port
-> to transfer the data now - but will re-try and re-post.)
-
-Older dual 1394a + USB 2.0 IcyBoxes were based on the infamous Prolific
-PL3507 chip.  That one's FireWire part is extremely unreliable under any OS.
-
-Some PL3507 based disks could be made to work /somewhat/ better by
-installing the latest firmware from Prolific on it.  Have a look at
-https://ieee1394.wiki.kernel.org/index.php/Firmware_Downloads .
-Prolific's FireWire firmware updater utility works via USB 2.0 and
-unsurprisingly only runs on Windows.
--- 
-Stefan Richter
--=====-==-=- -=== =-===
-http://arcgraph.de/sr/
+--_002_1FB5E1D5CA062146B38059374562DF7280E610A2TK5EX14MBXC126r_--
