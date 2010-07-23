@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760398Ab0GWQm7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 12:42:59 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40119 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753580Ab0GWQm6 (ORCPT
+	id S1760726Ab0GWQn0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 12:43:26 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:47248 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759583Ab0GWQnY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 12:42:58 -0400
-Date: Fri, 23 Jul 2010 17:42:18 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Stepan Moskovchenko <stepanm@codeaurora.org>
-Cc: dwalker@codeaurora.org, linux-kernel@vger.kernel.org,
-        linux-arm-kernel@lists.infradead.org
-Subject: Re: [PATCH RFC] arm: msm: Add QSD8x60 System MMU support.
-Message-ID: <20100723164218.GC750@n2100.arm.linux.org.uk>
-References: <1279833694-1214-1-git-send-email-stepanm@codeaurora.org>
+	Fri, 23 Jul 2010 12:43:24 -0400
+Message-ID: <4C49C66A.3000002@kernel.org>
+Date: Fri, 23 Jul 2010 09:42:18 -0700
+From: Yinghai Lu <yinghai@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279833694-1214-1-git-send-email-stepanm@codeaurora.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Don Zickus <dzickus@redhat.com>
+CC: fweisbec@gmail.com, peterz@infradead.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] x86: perf swallows all NMIs when registered with a user
+References: <20100722215136.GA23517@redhat.com> <4C48CD0D.5020201@kernel.org> <20100723125505.GQ7330@redhat.com>
+In-Reply-To: <20100723125505.GQ7330@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C49C698.0037,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 02:21:34PM -0700, Stepan Moskovchenko wrote:
-> Add support for the System MMUs found on the 8x60 and 8x72
-> families of Qualcomm MSMs. These SMMUs allow virtualization
-> of the address space used by most of the multimedia cores
-> on these chips.
+On 07/23/2010 05:55 AM, Don Zickus wrote:
+> On Thu, Jul 22, 2010 at 03:58:21PM -0700, Yinghai Lu wrote:
+>> cool, with your patch and following patch i can use nmi button now with CONFIG_LOCKUP_DETECTOR defined
+>>
+>> [PATCH] x86,nmi: move unknown_nmi_panic to traps.c
+>>
+>> So we use it even LOCKUP_DETECTOR is defined.
+>>
+>> need Don's patch...
+> 
+> Thanks for the feedback Yinghai!
+>>
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> 
+> With regards to your patch, I am still a little uncomfortable with it, as
+> it seems to be redundant with what is used in unknown_nmi_error() and the
+> panic_on_unrecovered_nmi flag.  I agree that keeping the familiar flag
+> 'unknown_nmi_panic' is needed.  But I was still wondering if wrapping it
+> around 'panic_on_unrecovered_nmi' would be simpler and less code.
 
-There's lots of "return -1;" statements in this patch - it's obscene
-that this is used to indicate "some error occurred" in kernel space
-rather than a real errno value - even when an existing function
-(eg, request_irq) gave you an error code already.
+how about the one in sysctl?
 
-The problem comes when someone - or you - uses your code, assuming that
-you do return errno values, just like the rest of the kernel.  I've seen
-cases where this happened all the way through to userspace.  When "-1"
-is interpreted as an errno value, it means "Operation not permitted"
-which almost is never what you meant - and as kernel functions return
-negative errno values, this is exactly how it gets interpreted.
+Thanks
 
-Please note this for the future - and please review patches on this
-point internally first.
-
-Thanks.
+Yinghai
