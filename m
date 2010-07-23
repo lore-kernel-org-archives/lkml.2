@@ -1,129 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754965Ab0GWKEm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 06:04:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57650 "EHLO mx1.suse.de"
+	id S1754966Ab0GWKIW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 06:08:22 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:39877 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753435Ab0GWKEk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 06:04:40 -0400
-Date: Fri, 23 Jul 2010 12:04:08 +0200
-From: Jan Kara <jack@suse.cz>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Jan Kara <jack@suse.cz>, Stephen Rothwell <sfr@canb.auug.org.au>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Dave Chinner <david@fromorbit.com>, linux-next@vger.kernel.org,
-        LKML <linux-kernel@vger.kernel.org>, Christoph Hellwig <hch@lst.de>,
-        Jens Axboe <axboe@kernel.dk>
-Subject: Re: linux-next: OOPS at boot time
-Message-ID: <20100723100408.GB3305@quack.suse.cz>
-References: <20100720164145.e06242b3.sfr@canb.auug.org.au>
- <20100720033656.0ce6356f.akpm@linux-foundation.org>
- <20100720224525.GO32635@dastard>
- <20100720174424.12a4bf64.akpm@linux-foundation.org>
- <20100721052007.GT32635@dastard>
- <20100721002907.639802cd.akpm@linux-foundation.org>
- <20100721174809.4781c244.sfr@canb.auug.org.au>
- <20100721121116.GD3447@quack.suse.cz>
- <20100721214016.GA903@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100721214016.GA903@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753435Ab0GWKIU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 06:08:20 -0400
+From: florian@mickler.org
+To: pm list <linux-pm@lists.linux-foundation.org>
+Cc: Florian Mickler <florian@mickler.org>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        James Bottomley <James.Bottomley@suse.de>,
+        linux-kernel@vger.kernel.org, mark gross <markgross@thegnar.org>,
+        "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: [PATCH 1/2] pm_qos: make update_request callable from interrupt context
+Date: Fri, 23 Jul 2010 12:06:58 +0200
+Message-Id: <1279879619-19996-1-git-send-email-florian@mickler.org>
+X-Mailer: git-send-email 1.7.1.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Al,
+In order to allow drivers to use pm_qos_update_request from interrupt
+context we check for interrupt context via in_interrupt() and call
+the notifiers via schedule_work() if need be.
 
-On Wed 21-07-10 22:40:16, Al Viro wrote:
-> On Wed, Jul 21, 2010 at 02:11:17PM +0200, Jan Kara wrote:
-> >   Thanks for bisecting this. The patch series indeed seems to uncover
-> > some discrepancies.
-> >   Ext3 has always dirtied inode in it's ->delete_inode method (via quota
-> > code). But previously clear_inode() just overwrote the state with I_CLEAR
-> > and thus we never saw the BUG_ON. After Al's patches, i_state is set in
-> > end_writeback() which happens earlier. In particular it happens before
-> > ext3_free_inode() which dirties the inode through quota code while freeing
-> > xattrs - they are accounted in i_blocks, so i_blocks are updated during
-> > freeing and inode is dirtied.
-> >   Actually, ext3_mark_inode_dirty() called during each mark_inode_dirty()
-> > call writes the inode state to the journal so the dirty flag in the inode
-> > state is in fact stale and overwriting it with I_CLEAR never mattered. In
-> > this sense, the BUG_ON triggered is a false positive. But I believe this is
-> > a separate story.
-> 
-> Could you please explain why the hell does ext2_xattr_delete_inode() call the
-> dirtying variant of dquot_free_block()?  Note that the inode is well beyond
-> the point where writeback would consider touching it; this mark_inode_dirty()
-> will do nothing useful whatsoever at that place.
-  Yes, I'm aware that dirtying inode does nothing useful at that point.
-But OTOH it does no harm so why not call the standard variant of quota
-function? But I have no strong opinion on this particular callsite so
-using dquot_free_block_nodirty() at that place is OK with me.
+There is the following semantic difference between update_request call
+sites that are in interrupt context and process context:
+If the notification-work is already scheduled then schedule_work might be a
+noop. In order to avoid buffering of all intermediary constraint-values we
+query the current value at notification time. This means that for constraints
+updated from interrupt-context the listeners might only see the last value.
+
+This also adds some WARN's to check for invalid class-descriptors as
+input params of exported functions and substitutes the pointer-array
+pm_qos_array with an array of structs (pm_qos_objects).
+The latter is needed to get at the array-index of a pm_qos_object-pointer.
+
+Also adding new qos-classes should be easier now, as one needs to only
+extend the pm_qos_classes enum in the header and initialize the pm_qos_object
+in the implementation file.
+
+Signed-off-by: Florian Mickler <florian@mickler.org>
+---
+ include/linux/pm_qos_params.h |   12 ++-
+ kernel/pm_qos_params.c        |  202 ++++++++++++++++++++++++++---------------
+ 2 files changed, 135 insertions(+), 79 deletions(-)
+
+diff --git a/include/linux/pm_qos_params.h b/include/linux/pm_qos_params.h
+index 77cbddb..fdd8a78 100644
+--- a/include/linux/pm_qos_params.h
++++ b/include/linux/pm_qos_params.h
+@@ -8,12 +8,14 @@
+ #include <linux/notifier.h>
+ #include <linux/miscdevice.h>
  
-> Anyway, I've dealt with ext3 and ext2 (both b0rken with quota) and AFAICS
-> the rest of quota-supporting filesystems had been OK.  Changes:
-> 
-> ext3_evict_inode() hd end_writeback() shifted downstream (needed anyway)
-  I like this.
-
-> ext2 switched to nodirty variant of dquot_free_block()
-  But I don't like this - see comments in the patch. I'd be much more happy
-if ext2 did the same thing as ext3 - pulled ext2_xattr_delete_inode()
-call out of ext2_free_inode called end_writeback() after it.
-
-> ext2_xattr_delete_inode() doesn't try to dirty inode anymore (always
-> had been pointless).
-  As I wrote above I don't care about this very much.
-
-> It's in for-next, should propagate to git.kernel.org in a few.
-> 
-> Diff against the buggy version follows, feel free to try.
-> diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
-> index e8766a3..c6c684b 100644
-> --- a/fs/ext2/balloc.c
-> +++ b/fs/ext2/balloc.c
-> @@ -571,7 +571,7 @@ do_more:
->  error_return:
->  	brelse(bitmap_bh);
->  	release_blocks(sb, freed);
-> -	dquot_free_block(inode, freed);
-> +	dquot_free_block_nodirty(inode, freed);
->  }
-The above call in ext2_free_blocks() modifies the inode and
-ext2_free_blocks is enough "black-box" function that it should do the right
-thing and dirty the inode if it modified it.
+-#define PM_QOS_RESERVED 0
+-#define PM_QOS_CPU_DMA_LATENCY 1
+-#define PM_QOS_NETWORK_LATENCY 2
+-#define PM_QOS_NETWORK_THROUGHPUT 3
++enum pm_qos_classes {
++	PM_QOS_RESERVED = 0,
++	PM_QOS_CPU_DMA_LATENCY,
++	PM_QOS_NETWORK_LATENCY,
++	PM_QOS_NETWORK_THROUGHPUT,
++	PM_QOS_NUM_CLASSES
++};
  
->  /**
-> @@ -1418,7 +1418,8 @@ allocated:
->  
->  	*errp = 0;
->  	brelse(bitmap_bh);
-> -	dquot_free_block(inode, *count-num);
-> +	dquot_free_block_nodirty(inode, *count-num);
-> +	mark_inode_dirty(inode);
->  	*count = num;
->  	return ret_block;
->  
-> @@ -1428,8 +1429,10 @@ out:
->  	/*
->  	 * Undo the block allocation
->  	 */
-> -	if (!performed_allocation)
-> -		dquot_free_block(inode, *count);
-> +	if (!performed_allocation) {
-> +		dquot_free_block_nodirty(inode, *count);
-> +		mark_inode_dirty(inode);
-> +	}
->  	brelse(bitmap_bh);
->  	return 0;
->  }
-  Sorry, but the above two changes look stupid... Why call _nodirty variant
-and dirty the inode immediately after that? It happens in two other places
-in your patch as well...
-
-								Honza
+-#define PM_QOS_NUM_CLASSES 4
+ #define PM_QOS_DEFAULT_VALUE -1
+ 
+ struct pm_qos_request_list {
+diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+index 996a4de..640c367 100644
+--- a/kernel/pm_qos_params.c
++++ b/kernel/pm_qos_params.c
+@@ -29,19 +29,20 @@
+ 
+ /*#define DEBUG*/
+ 
++#include <linux/platform_device.h>
+ #include <linux/pm_qos_params.h>
+-#include <linux/sched.h>
++#include <linux/miscdevice.h>
++#include <linux/workqueue.h>
+ #include <linux/spinlock.h>
+-#include <linux/slab.h>
+-#include <linux/time.h>
+-#include <linux/fs.h>
++#include <linux/hardirq.h>
++#include <linux/uaccess.h>
+ #include <linux/device.h>
+-#include <linux/miscdevice.h>
+ #include <linux/string.h>
+-#include <linux/platform_device.h>
++#include <linux/sched.h>
+ #include <linux/init.h>
+-
+-#include <linux/uaccess.h>
++#include <linux/slab.h>
++#include <linux/time.h>
++#include <linux/fs.h>
+ 
+ /*
+  * locking rule: all changes to requests or notifiers lists
+@@ -55,50 +56,65 @@ enum pm_qos_type {
+ 
+ struct pm_qos_object {
+ 	struct plist_head requests;
+-	struct blocking_notifier_head *notifiers;
++	struct blocking_notifier_head notifiers;
+ 	struct miscdevice pm_qos_power_miscdev;
++	struct work_struct notify;
+ 	char *name;
+ 	s32 default_value;
+ 	enum pm_qos_type type;
+ };
+ 
+ static DEFINE_SPINLOCK(pm_qos_lock);
+-
+-static struct pm_qos_object null_pm_qos;
+-static BLOCKING_NOTIFIER_HEAD(cpu_dma_lat_notifier);
+-static struct pm_qos_object cpu_dma_pm_qos = {
+-	.requests = PLIST_HEAD_INIT(cpu_dma_pm_qos.requests, pm_qos_lock),
+-	.notifiers = &cpu_dma_lat_notifier,
+-	.name = "cpu_dma_latency",
+-	.default_value = 2000 * USEC_PER_SEC,
+-	.type = PM_QOS_MIN,
+-};
+-
+-static BLOCKING_NOTIFIER_HEAD(network_lat_notifier);
+-static struct pm_qos_object network_lat_pm_qos = {
+-	.requests = PLIST_HEAD_INIT(network_lat_pm_qos.requests, pm_qos_lock),
+-	.notifiers = &network_lat_notifier,
+-	.name = "network_latency",
+-	.default_value = 2000 * USEC_PER_SEC,
+-	.type = PM_QOS_MIN
+-};
+-
+-
+-static BLOCKING_NOTIFIER_HEAD(network_throughput_notifier);
+-static struct pm_qos_object network_throughput_pm_qos = {
+-	.requests = PLIST_HEAD_INIT(network_throughput_pm_qos.requests, pm_qos_lock),
+-	.notifiers = &network_throughput_notifier,
+-	.name = "network_throughput",
+-	.default_value = 0,
+-	.type = PM_QOS_MAX,
+-};
+-
+-
+-static struct pm_qos_object *pm_qos_array[] = {
+-	&null_pm_qos,
+-	&cpu_dma_pm_qos,
+-	&network_lat_pm_qos,
+-	&network_throughput_pm_qos
++static void update_notify(struct work_struct *work);
++
++/* see pm_qos_classes enum in the header */
++static struct pm_qos_object pm_qos_objects[] = {
++	{}, /* PM_QOS_RESERVED */
++	{
++		.requests = PLIST_HEAD_INIT(
++			pm_qos_objects[PM_QOS_CPU_DMA_LATENCY].requests,
++			pm_qos_lock),
++		.notifiers = BLOCKING_NOTIFIER_INIT(
++			pm_qos_objects[PM_QOS_CPU_DMA_LATENCY].notifiers),
++		.notify = __WORK_INITIALIZER(
++			pm_qos_objects[PM_QOS_CPU_DMA_LATENCY].notify,
++			update_notify),
++		.name = "cpu_dma_latency",
++		.default_value = 2000 * USEC_PER_SEC,
++		.type = PM_QOS_MIN,
++	}, /* PM_QOS_CPU_DMA_LATENCY */
++	{
++		.requests = PLIST_HEAD_INIT(
++			pm_qos_objects[PM_QOS_NETWORK_LATENCY].requests,
++			pm_qos_lock
++			),
++		.notifiers = BLOCKING_NOTIFIER_INIT(
++			pm_qos_objects[PM_QOS_NETWORK_LATENCY].notifiers
++			),
++		.notify = __WORK_INITIALIZER(
++			pm_qos_objects[PM_QOS_NETWORK_LATENCY].notify,
++			update_notify
++			),
++		.name = "network_latency",
++		.default_value = 2000 * USEC_PER_SEC,
++		.type = PM_QOS_MIN
++	}, /* PM_QOS_NETWORK_LATENCY */
++	{
++		.requests = PLIST_HEAD_INIT(
++			pm_qos_objects[PM_QOS_NETWORK_THROUGHPUT].requests,
++			pm_qos_lock
++			),
++		.notifiers = BLOCKING_NOTIFIER_INIT(
++			pm_qos_objects[PM_QOS_NETWORK_THROUGHPUT].notifiers
++			),
++		.notify = __WORK_INITIALIZER(
++			pm_qos_objects[PM_QOS_NETWORK_THROUGHPUT].notify,
++			update_notify
++			),
++		.name = "network_throughput",
++		.default_value = 0,
++		.type = PM_QOS_MAX,
++	}, /* PM_QOS_NETWORK_THROUGHPUT */
+ };
+ 
+ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+@@ -131,6 +147,30 @@ static inline int pm_qos_get_value(struct pm_qos_object *o)
+ 	}
+ }
+ 
++static void call_notifiers(struct pm_qos_object *o, unsigned long val)
++{
++
++	if (in_interrupt())
++		schedule_work(&o->notify);
++	else
++		blocking_notifier_call_chain(&o->notifiers, val,
++				NULL);
++
++
++}
++
++/* This is the work function that gets scheduled
++ * in call_notifiers if necessary. */
++static void update_notify(struct work_struct *work)
++{
++	struct pm_qos_object *obj =
++		container_of(work, struct pm_qos_object, notify);
++
++	int extreme_value = pm_qos_request(obj - pm_qos_objects);
++	blocking_notifier_call_chain(&obj->notifiers,
++			(unsigned long) extreme_value, NULL);
++}
++
+ static void update_target(struct pm_qos_object *o, struct plist_node *node,
+ 			  int del, int value)
+ {
+@@ -158,9 +198,7 @@ static void update_target(struct pm_qos_object *o, struct plist_node *node,
+ 	spin_unlock_irqrestore(&pm_qos_lock, flags);
+ 
+ 	if (prev_value != curr_value)
+-		blocking_notifier_call_chain(o->notifiers,
+-					     (unsigned long)curr_value,
+-					     NULL);
++		call_notifiers(o, (unsigned long) curr_value);
+ }
+ 
+ static int register_pm_qos_misc(struct pm_qos_object *qos)
+@@ -179,12 +217,17 @@ static int find_pm_qos_object_by_minor(int minor)
+ 	for (pm_qos_class = 0;
+ 		pm_qos_class < PM_QOS_NUM_CLASSES; pm_qos_class++) {
+ 		if (minor ==
+-			pm_qos_array[pm_qos_class]->pm_qos_power_miscdev.minor)
++			pm_qos_objects[pm_qos_class].pm_qos_power_miscdev.minor)
+ 			return pm_qos_class;
+ 	}
+ 	return -1;
+ }
+ 
++int pm_qos_valid_class(int pm_qos_class)
++{
++	return pm_qos_class > 0 && pm_qos_class < PM_QOS_NUM_CLASSES;
++}
++
+ /**
+  * pm_qos_request - returns current system wide qos expectation
+  * @pm_qos_class: identification of which qos value is requested
+@@ -196,8 +239,13 @@ int pm_qos_request(int pm_qos_class)
+ 	unsigned long flags;
+ 	int value;
+ 
++	if (!pm_qos_valid_class(pm_qos_class)) {
++		WARN(1, KERN_ERR "pm_qos_request() called for unknown qos class\n");
++		return -EINVAL;
++	}
++
+ 	spin_lock_irqsave(&pm_qos_lock, flags);
+-	value = pm_qos_get_value(pm_qos_array[pm_qos_class]);
++	value = pm_qos_get_value(&pm_qos_objects[pm_qos_class]);
+ 	spin_unlock_irqrestore(&pm_qos_lock, flags);
+ 
+ 	return value;
+@@ -206,7 +254,7 @@ EXPORT_SYMBOL_GPL(pm_qos_request);
+ 
+ int pm_qos_request_active(struct pm_qos_request_list *req)
+ {
+-	return req->pm_qos_class != 0;
++	return  req && pm_qos_valid_class(req->pm_qos_class);
+ }
+ EXPORT_SYMBOL_GPL(pm_qos_request_active);
+ 
+@@ -224,9 +272,16 @@ EXPORT_SYMBOL_GPL(pm_qos_request_active);
+ void pm_qos_add_request(struct pm_qos_request_list *dep,
+ 			int pm_qos_class, s32 value)
+ {
+-	struct pm_qos_object *o =  pm_qos_array[pm_qos_class];
++	struct pm_qos_object *o;
+ 	int new_value;
+ 
++	if (!pm_qos_valid_class(pm_qos_class)) {
++		WARN(1, KERN_ERR "pm_qos_add_request() called for unknown qos class\n");
++		return;
++	}
++
++	o =  &pm_qos_objects[pm_qos_class];
++
+ 	if (pm_qos_request_active(dep)) {
+ 		WARN(1, KERN_ERR "pm_qos_add_request() called for already added request\n");
+ 		return;
+@@ -261,11 +316,11 @@ void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
+ 		return;
+ 
+ 	if (!pm_qos_request_active(pm_qos_req)) {
+-		WARN(1, KERN_ERR "pm_qos_update_request() called for unknown object\n");
++		WARN(1, KERN_ERR "pm_qos_update_request() called for unknown request object\n");
+ 		return;
+ 	}
+ 
+-	o = pm_qos_array[pm_qos_req->pm_qos_class];
++	o = &pm_qos_objects[pm_qos_req->pm_qos_class];
+ 
+ 	if (new_value == PM_QOS_DEFAULT_VALUE)
+ 		temp = o->default_value;
+@@ -298,7 +353,7 @@ void pm_qos_remove_request(struct pm_qos_request_list *pm_qos_req)
+ 		return;
+ 	}
+ 
+-	o = pm_qos_array[pm_qos_req->pm_qos_class];
++	o = &pm_qos_objects[pm_qos_req->pm_qos_class];
+ 	update_target(o, &pm_qos_req->list, 1, PM_QOS_DEFAULT_VALUE);
+ 	memset(pm_qos_req, 0, sizeof(*pm_qos_req));
+ }
+@@ -309,15 +364,18 @@ EXPORT_SYMBOL_GPL(pm_qos_remove_request);
+  * @pm_qos_class: identifies which qos target changes should be notified.
+  * @notifier: notifier block managed by caller.
+  *
+- * will register the notifier into a notification chain that gets called
++ * Will register the notifier into a notification chain that gets called
+  * upon changes to the pm_qos_class target value.
+  */
+ int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier)
+ {
+ 	int retval;
+-
++	if (!pm_qos_valid_class(pm_qos_class)) {
++		WARN(1, KERN_ERR "pm_qos_add_notifier called for unknown qos class\n");
++		return -EINVAL;
++	}
+ 	retval = blocking_notifier_chain_register(
+-			pm_qos_array[pm_qos_class]->notifiers, notifier);
++			&pm_qos_objects[pm_qos_class].notifiers, notifier);
+ 
+ 	return retval;
+ }
+@@ -328,15 +386,19 @@ EXPORT_SYMBOL_GPL(pm_qos_add_notifier);
+  * @pm_qos_class: identifies which qos target changes are notified.
+  * @notifier: notifier block to be removed.
+  *
+- * will remove the notifier from the notification chain that gets called
++ * Will remove the notifier from the notification chain that gets called
+  * upon changes to the pm_qos_class target value.
+  */
+ int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier)
+ {
+ 	int retval;
++	if (!pm_qos_valid_class(pm_qos_class)) {
++		WARN(1, KERN_ERR "pm_qos_remove_notifier called for unknown qos class\n");
++		return -EINVAL;
++	}
+ 
+ 	retval = blocking_notifier_chain_unregister(
+-			pm_qos_array[pm_qos_class]->notifiers, notifier);
++			&pm_qos_objects[pm_qos_class].notifiers, notifier);
+ 
+ 	return retval;
+ }
+@@ -404,21 +466,13 @@ static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+ static int __init pm_qos_power_init(void)
+ {
+ 	int ret = 0;
++	int qos_class;
+ 
+-	ret = register_pm_qos_misc(&cpu_dma_pm_qos);
+-	if (ret < 0) {
+-		printk(KERN_ERR "pm_qos_param: cpu_dma_latency setup failed\n");
+-		return ret;
+-	}
+-	ret = register_pm_qos_misc(&network_lat_pm_qos);
+-	if (ret < 0) {
+-		printk(KERN_ERR "pm_qos_param: network_latency setup failed\n");
+-		return ret;
+-	}
+-	ret = register_pm_qos_misc(&network_throughput_pm_qos);
+-	if (ret < 0)
+-		printk(KERN_ERR
+-			"pm_qos_param: network_throughput setup failed\n");
++	for (qos_class = 1; qos_class < PM_QOS_NUM_CLASSES; qos_class++)
++		if (register_pm_qos_misc(&pm_qos_objects[qos_class])) {
++			printk(KERN_ERR "pm_qos_param: setup failed for %s\n", pm_qos_objects[qos_class].name);
++			ret |= 1;
++		}
+ 
+ 	return ret;
+ }
 -- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+1.7.1.1
+
