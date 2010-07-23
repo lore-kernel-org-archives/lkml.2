@@ -1,37 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760425Ab0GWQJd (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 12:09:33 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:1366 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757748Ab0GWQJb (ORCPT
+	id S1760596Ab0GWQLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 12:11:22 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:40482 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759778Ab0GWQLU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 12:09:31 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAPFYSUx5Lc6U/2dsb2JhbACfaHLCAYU2BA
-Date: Sat, 24 Jul 2010 02:09:25 +1000
-From: Nick Piggin <npiggin@kernel.dk>
-To: Dave Chinner <david@fromorbit.com>
-Cc: npiggin@kernel.dk, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org, fmayhar@google.com,
-        johnstul@us.ibm.com
-Subject: Re: [PATCH 0/2] vfs scalability tree fixes
-Message-ID: <20100723160925.GA6316@amd>
-References: <20100723111310.GI32635@dastard>
- <1279893842-4246-1-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279893842-4246-1-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 23 Jul 2010 12:11:20 -0400
+Date: Fri, 23 Jul 2010 09:08:31 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, tj@kernel.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for July 23 (fscache)
+Message-Id: <20100723090831.6af4a288.randy.dunlap@oracle.com>
+In-Reply-To: <20100723164931.7bf2160f.sfr@canb.auug.org.au>
+References: <20100723164931.7bf2160f.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090209.4C49BEF6.0158:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, Jul 24, 2010 at 12:04:00AM +1000, Dave Chinner wrote:
-> Nick,
-> 
-> Here's the fixes I applied to your tree to make the XFS inode cache
-> shrinker build and scan sanely.
+On Fri, 23 Jul 2010 16:49:31 +1000 Stephen Rothwell wrote:
 
-Thanks for these Dave
+> Hi all,
+> 
+> Changes since 20100722:
+
+
+when CONFIG_SYSCTL is not enabled:
+
+fs/fscache/main.c:189: error: 'fscache_sysctl_header' undeclared (first use in this function)
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
