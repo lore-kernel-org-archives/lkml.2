@@ -1,56 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759568Ab0GWPFB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:05:01 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55996 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756238Ab0GWPE6 (ORCPT
+	id S1760364Ab0GWPGO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:06:14 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:52445 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760261Ab0GWPGD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:04:58 -0400
-Message-ID: <4C49AFAE.1070300@vflare.org>
-Date: Fri, 23 Jul 2010 20:35:18 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Christoph Hellwig <hch@infradead.org>, akpm@linux-foundation.org,
-        Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-        Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@suse.de, Dave Mccracken <dave.mccracken@oracle.com>,
-        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH V3 0/8] Cleancache: overview
-References: <20100621231809.GA11111@ca-server1.us.oracle.com4C49468B.40307@vflare.org> <840b32ff-a303-468e-9d4e-30fc92f629f8@default 20100723140440.GA12423@infradead.org> <364c83bd-ccb2-48cc-920d-ffcf9ca7df19@default>
-In-Reply-To: <364c83bd-ccb2-48cc-920d-ffcf9ca7df19@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Jul 2010 11:06:03 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Jens Axboe <axboe@kernel.dk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCHv4 02/14] writeback: fix possible race when creating bdi threads
+Date: Fri, 23 Jul 2010 18:05:42 +0300
+Message-Id: <1279897554-1526-3-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <1279897554-1526-1-git-send-email-dedekind1@gmail.com>
+References: <1279897554-1526-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 23 Jul 2010 15:05:48.0816 (UTC) FILETIME=[88B47100:01CB2A78]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2010 08:14 PM, Dan Magenheimer wrote:
->> From: Christoph Hellwig [mailto:hch@infradead.org]
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
+This patch fixes a very unlikely race condition on the bdi forker thread error
+path: when bdi thread creation fails, 'bdi->wb.task' may contain the error code
+for a short period of time. If at the same time someone submits a work to this
+bdi, we can end up with an oops 'bdi_queue_work()' while executing
+'wake_up_process(wb->task)'.
 
->> Also making the ops vector global is just a bad idea.
->> There is nothing making this sort of caching inherently global.
-> 
-> I'm not sure I understand your point, but two very different
-> users of cleancache have been provided, and more will be
-> discussed at the MM summit next month.
-> 
-> Do you have a suggestion on how to avoid a global ops
-> vector while still serving the needs of both existing
-> users?
+This patch fixes the issue by introducing a temporary variable 'task' and
+storing the possible error code there, so that 'wb->task' would never take
+erroneous values.
 
-Maybe introduce cleancache_register(struct cleancache_ops *ops)?
-This will allow making cleancache_ops non-global. No value add
-but maybe that's cleaner?
+Note, this race is very unlikely and I never hit it, so it is theoretical, but
+nevertheless worth fixing.
 
-Thanks,
-Nitin
+This patch also merges 2 comments which were previously separate.
+
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Reviewed-by: Christoph Hellwig <hch@lst.de>
+---
+ mm/backing-dev.c |   28 +++++++++++-----------------
+ 1 files changed, 11 insertions(+), 17 deletions(-)
+
+diff --git a/mm/backing-dev.c b/mm/backing-dev.c
+index 4e9ed2a..327e36d 100644
+--- a/mm/backing-dev.c
++++ b/mm/backing-dev.c
+@@ -331,8 +331,8 @@ static int bdi_forker_thread(void *ptr)
+ 	set_user_nice(current, 0);
+ 
+ 	for (;;) {
++		struct task_struct *task;
+ 		struct backing_dev_info *bdi, *tmp;
+-		struct bdi_writeback *wb;
+ 
+ 		/*
+ 		 * Temporary measure, we want to make sure we don't see
+@@ -383,29 +383,23 @@ static int bdi_forker_thread(void *ptr)
+ 		list_del_init(&bdi->bdi_list);
+ 		spin_unlock_bh(&bdi_lock);
+ 
+-		wb = &bdi->wb;
+-		wb->task = kthread_run(bdi_writeback_thread, wb, "flush-%s",
+-					dev_name(bdi->dev));
+-		/*
+-		 * If thread creation fails, then readd the bdi to
+-		 * the pending list and force writeout of the bdi
+-		 * from this forker thread. That will free some memory
+-		 * and we can try again.
+-		 */
+-		if (IS_ERR(wb->task)) {
+-			wb->task = NULL;
+-
++		task = kthread_run(bdi_writeback_thread, &bdi->wb, "flush-%s",
++				   dev_name(bdi->dev));
++		if (IS_ERR(task)) {
+ 			/*
+-			 * Add this 'bdi' to the back, so we get
+-			 * a chance to flush other bdi's to free
+-			 * memory.
++			 * If thread creation fails, then readd the bdi back to
++			 * the list and force writeout of the bdi from this
++			 * forker thread. That will free some memory and we can
++			 * try again. Add it to the tail so we get a chance to
++			 * flush other bdi's to free memory.
+ 			 */
+ 			spin_lock_bh(&bdi_lock);
+ 			list_add_tail(&bdi->bdi_list, &bdi_pending_list);
+ 			spin_unlock_bh(&bdi_lock);
+ 
+ 			bdi_flush_io(bdi);
+-		}
++		} else
++			bdi->wb.task = task;
+ 	}
+ 
+ 	return 0;
+-- 
+1.7.1.1
+
