@@ -1,113 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752275Ab0GWE4V (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 00:56:21 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41417 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751934Ab0GWE4U convert rfc822-to-8bit (ORCPT
+	id S1752443Ab0GWE6U (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 00:58:20 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:38658 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752076Ab0GWE6T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 00:56:20 -0400
+	Fri, 23 Jul 2010 00:58:19 -0400
+Date: Fri, 23 Jul 2010 06:58:07 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Gregory Bean <gbean@codeaurora.org>
+Cc: akpm@linux-foundation.org, linux-arm-msm@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+        Jani Nikula <ext-jani.1.nikula@nokia.com>,
+        David Brownell <dbrownell@users.sourceforge.net>,
+        Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH] gpio: remove spurious gpio_unexport debug error.
+Message-ID: <20100723045807.GA14875@pengutronix.de>
+References: <1279832758-25442-1-git-send-email-gbean@codeaurora.org>
 MIME-Version: 1.0
-X-Originating-IP: [192.163.20.232]
-In-Reply-To: <20100722125348.e4cd696f.randy.dunlap@oracle.com>
-References: <1279794727-7669-1-git-send-email-pavan_savoy@ti.com>
-	<20100722125348.e4cd696f.randy.dunlap@oracle.com>
-Date: Fri, 23 Jul 2010 10:26:18 +0530
-Message-ID: <AANLkTil64PBJ4FNNSftkXvy6ZjhoDc96rTH0csqAfU34@mail.gmail.com>
-Subject: Re: [PATCH 0/3] drivers:staging:ti-st: patches
-From: Pavan Savoy <pavan_savoy@sify.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: gregkh@suse.de, alan@lxorguk.ukuu.org.uk, linux-kernel@vger.kernel.org,
-        devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1279832758-25442-1-git-send-email-gbean@codeaurora.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Randy,
+Hello,
 
-On Fri, Jul 23, 2010 at 1:23 AM, Randy Dunlap <randy.dunlap@oracle.com> wrote:
-> On Thu, 22 Jul 2010 05:32:04 -0500 pavan_savoy@ti.com wrote:
->
->> From: Pavan Savoy <pavan_savoy@ti.com>
->>
->> The following patches cleanup bit of a mess and also adds functionality to protocol drivers.
->> with the 3rd patch now providing context to even the protocol drivers, the single device limit
->> or support for multiple devices would be easier to implement.
->>
->> These patches depend on the previously submitted
->> 0001-drivers-staging-ti-st-make-use-of-linux-err-codes.patch
->> commit d39d49b393d94f4137cee4f64526a4695352f183
->>
->> Pavan Savoy (3):
->>   drivers:staging:ti-st: smarten, reduce logs
->>   drivers:staging:ti-st: cleanup code comments
->>   drivers:staging:ti-st: give proto drivers context
->>
->>  drivers/staging/ti-st/bt_drv.c  |   23 +++++---
->>  drivers/staging/ti-st/st.h      |   52 +++++++++--------
->>  drivers/staging/ti-st/st_core.c |  118 +++++++++++++++++++--------------------
->>  drivers/staging/ti-st/st_core.h |   74 +++++++++++++++++--------
->>  drivers/staging/ti-st/st_kim.c  |   73 ++++++++++++++----------
->>  drivers/staging/ti-st/st_kim.h  |   77 ++++++++++++++++---------
->>  drivers/staging/ti-st/st_ll.c   |    4 +-
->>  drivers/staging/ti-st/st_ll.h   |    9 +++-
->>  8 files changed, 255 insertions(+), 175 deletions(-)
->
-> Hi,
->
-> I have reported this error a few times.  Where is the patch for it??
->
-> ERROR: "st_get_plat_device" [drivers/staging/ti-st/st_drv.ko] undefined!
+On Thu, Jul 22, 2010 at 02:05:58PM -0700, Gregory Bean wrote:
+> Make gpio_unexport generate success instead of an -EINVAL
+> if asked to unexport a line which is not exported, because
+> the only result of that condition is a pr_debug
+> which complains of what is really a harmless no-op:
+> when an unexported gpio is unexported again, nothing happens.
+> That's not a failure, just a trivial border case.
+> Since gpio_free calls gpio_unexport unconditionally
+> and exported gpio lines are uncommon, most calls to
+> gpio_free with debug flags enabled generate -EINVAL
+> warnings in the log, causing unnecessary stress.
+I noticed that a few days ago, too.  Just didn't come around to fix it
+myself.
+ 
+> Signed-off-by: Gregory Bean <gbean@codeaurora.org>
+Acked-by: Uwe Kleine-K�nig <u.kleine-koenig@pengutronix.de>
 
+Thanks
+Uwe
 
-Yes, on one of the earlier patch sets, I had mentioned that the ST
-driver being a platform device, needs definition in any of the
-arch/XX/mach-XX/board-XX.c or devices.c or somewhere...
-
-and hence it is in that board-XX.c file that the symbol
-st_get_plat_device needs to be exported, the reason for that being,
-
-ST driver being both a TTY ldisc driver and platform driver, in TTY
-contexts it would need to refer to platform driver's data. So it does
-a st_get_plat_device which returns the platform device structure, and
-then does a dev_getdrvdata from it.
-
-here's a snippet of code ...
-/*
- * ST related functions related functions
- */
-#include <linux/platform_device.h>
-
-long gpios[] = { 55, -1, -1 };
-static struct platform_device ti_st_device = {
-        .name           = "kim",
-        .id             = -1,
-        .dev.platform_data      = &gpios,
-};
-
-struct platform_device *st_get_plat_device(void)
-{
-        return &ti_st_device;
-}
-EXPORT_SYMBOL(st_get_plat_device);
-
-static __init int add_ti_st_device(void)
-{
-        platform_device_register(&ti_st_device);
-        dev_info(&ti_st_device.dev,"registered platform TI ST device\n");
-
-        return 0;
-}
-device_initcall(add_ti_st_device);
-
-
-We have that in our local trees in arch/arm/mach-omap2/board-sdp4430.c
-
->
-> thanks,
-> ---
-> ~Randy
-> *** Remember to use Documentation/SubmitChecklist when testing your code ***
->
+-- 
+Pengutronix e.K.                           | Uwe Kleine-K�nig            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
