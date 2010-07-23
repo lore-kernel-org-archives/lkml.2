@@ -1,87 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756184Ab0GWKzW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 06:55:22 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:55665 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752628Ab0GWKzT (ORCPT
+	id S1756659Ab0GWK4F (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 06:56:05 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:54698 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755410Ab0GWK4D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 06:55:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:date:message-id:subject;
-        b=imx8BkXN4vgS3EEEYhP7LgRtN5baxN+brUGpPVJp91MIPb8njxPjUepSOZF5GQY80v
-         L1EOii1aMwu6NOwMEHKnLIqjeX8XULV2sx8OwgBMzYfAhIw7VraO0avbqIusDyfzfYIu
-         DR7ad/rZJF//UIlh4sSNPVU1gGdkel+YEODac=
-From: Magnus Damm <magnus.damm@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Magnus Damm <magnus.damm@gmail.com>, gregkh@suse.de
-Date: Fri, 23 Jul 2010 19:56:18 +0900
-Message-Id: <20100723105618.11690.75431.sendpatchset@t400s>
-Subject: [PATCH] Driver core: Add BUS_NOTIFY_BIND_DRIVER
+	Fri, 23 Jul 2010 06:56:03 -0400
+Date: Fri, 23 Jul 2010 20:55:58 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: linux-ext4@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35-r5 ext3 corruptions
+Message-ID: <20100723105558.GB7362@dastard>
+References: <20100715105745.GI30737@dastard>
+ <20100719224512.GD32635@dastard>
+ <20100721063222.GW32635@dastard>
+ <20100723104313.GA6431@atrey.karlin.mff.cuni.cz>
+ <20100723105326.GB6431@atrey.karlin.mff.cuni.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100723105326.GB6431@atrey.karlin.mff.cuni.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Magnus Damm <damm@opensource.se>
+On Fri, Jul 23, 2010 at 12:53:26PM +0200, Jan Kara wrote:
+>   I've taken the change just updating the changelog to:
+> ext3: default to ordered mode
+>     
+> data=writeback mode is dangerous as it leads to higher data loss and stale data
+> exposure when systems crash. It should not be the default, especially when all
+> major distros ensure their ext3 filesystems default to ordered mode. Change the
+> default mode to the safer data=ordered mode, because we should be caring far
+> more about avoiding stale data exposure than performance.
+> 
+>   Do you agree Dave?
 
-Add BUS_NOTIFY_BIND_DRIVER as a bus notifier event.
+Fine by me ;)
 
-For driver binding/unbinding we with this in
-place have the following bus notifier events:
- - BUS_NOTIFY_BIND_DRIVER - before ->probe()
- - BUS_NOTIFY_BOUND_DRIVER - after ->probe()
- - BUS_NOTIFY_UNBIND_DRIVER - before ->remove()
- - BUS_NOTIFY_UNBOUND_DRIVER - after ->remove()
+Cheers,
 
-The event BUS_NOTIFY_BIND_DRIVER allows bus code
-to be notified that ->probe() is about to be called.
-
-Useful for bus code that needs to setup hardware before
-the driver gets to run. With this in place platform
-drivers can be loaded and unloaded as modules and the
-new BIND event allows bus code to control for instance
-device clocks that must be enabled before the driver
-can be executed.
-
-Without this patch there is no way for the bus code to
-get notified that a modular driver is about to be probed.
-
-Signed-off-by: Magnus Damm <damm@opensource.se>
----
-
- drivers/base/dd.c      |    4 ++++
- include/linux/device.h |    8 +++++---
- 2 files changed, 9 insertions(+), 3 deletions(-)
-
---- 0003/drivers/base/dd.c
-+++ work/drivers/base/dd.c	2010-07-23 19:13:14.000000000 +0900
-@@ -51,6 +51,10 @@ static int driver_sysfs_add(struct devic
- {
- 	int ret;
- 
-+	if (dev->bus)
-+		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
-+					     BUS_NOTIFY_BIND_DRIVER, dev);
-+
- 	ret = sysfs_create_link(&dev->driver->p->kobj, &dev->kobj,
- 			  kobject_name(&dev->kobj));
- 	if (ret == 0) {
---- 0001/include/linux/device.h
-+++ work/include/linux/device.h	2010-07-23 19:13:52.000000000 +0900
-@@ -110,10 +110,12 @@ extern int bus_unregister_notifier(struc
-  */
- #define BUS_NOTIFY_ADD_DEVICE		0x00000001 /* device added */
- #define BUS_NOTIFY_DEL_DEVICE		0x00000002 /* device removed */
--#define BUS_NOTIFY_BOUND_DRIVER		0x00000003 /* driver bound to device */
--#define BUS_NOTIFY_UNBIND_DRIVER	0x00000004 /* driver about to be
-+#define BUS_NOTIFY_BIND_DRIVER		0x00000003 /* driver about to be
-+						      bound */
-+#define BUS_NOTIFY_BOUND_DRIVER		0x00000004 /* driver bound to device */
-+#define BUS_NOTIFY_UNBIND_DRIVER	0x00000005 /* driver about to be
- 						      unbound */
--#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000005 /* driver is unbound
-+#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000006 /* driver is unbound
- 						      from the device */
- 
- extern struct kset *bus_get_kset(struct bus_type *bus);
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
