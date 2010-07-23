@@ -1,56 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751708Ab0GWGLb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 02:11:31 -0400
-Received: from mail-pz0-f46.google.com ([209.85.210.46]:58010 "EHLO
-	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751266Ab0GWGL3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 02:11:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=oJyb4tK0B0GE9KPXTux7dPT913XkLUnDDmzqiOURYfh787emCUuzP/WeF+x9zq0JXB
-         NV/4aFi+bNUGtM7k9K4/vh3RdcBvlSpBYzNELO4e1iM+JGudJPrzIi7Qf0oexCliN+80
-         Jvam5ov8pKQflhpZv1fes+vMMJSeacIjh5CX4=
-From: Michael Jensen <emjay1988@gmail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-        Michael Jensen <emjay1988@gmail.com>
-Subject: [PATCH] Staging: comedi: comedidev: Fixed a macro definition code style issue
-Date: Fri, 23 Jul 2010 16:11:07 +1000
-Message-Id: <1279865467-16522-1-git-send-email-emjay1988@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1751507Ab0GWGSl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 02:18:41 -0400
+Received: from ozlabs.org ([203.10.76.45]:34030 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751155Ab0GWGSj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 02:18:39 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH] virtio: fix oops on OOM
+Date: Fri, 23 Jul 2010 15:48:37 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; i686; ; )
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+        "Michael S. Tsirkin" <mst@redhat.com>,
+        Chris Mason <chris.mason@oracle.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007231548.38037.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixed a code style issue.
+From: "Michael S. Tsirkin" <mst@redhat.com>
 
-Signed-off-by: Michael Jensen <emjay1988@gmail.com>
+virtio ring was changed to return an error code on OOM,
+but one caller was missed and still checks for vq->vring.num.
+The fix is just to check for <0 error code.
+
+Long term it might make sense to change goto add_head to
+just return an error on oom instead, but let's apply
+a minimal fix for 2.6.35.
+
+Reported-by: Chris Mason <chris.mason@oracle.com>
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+Tested-by: Chris Mason <chris.mason@oracle.com>
 ---
- drivers/staging/comedi/comedidev.h |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
-index 4eb2b77..a46e859 100644
---- a/drivers/staging/comedi/comedidev.h
-+++ b/drivers/staging/comedi/comedidev.h
-@@ -61,10 +61,11 @@
- 	module_init(x ## _init_module);					\
- 	module_exit(x ## _cleanup_module);
+diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
+index dd35b34..bffec32 100644
+--- a/drivers/virtio/virtio_ring.c
++++ b/drivers/virtio/virtio_ring.c
+@@ -164,7 +164,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
+ 			  gfp_t gfp)
+ {
+ 	struct vring_virtqueue *vq = to_vvq(_vq);
+-	unsigned int i, avail, head, uninitialized_var(prev);
++	unsigned int i, avail, uninitialized_var(prev);
++	int head;
  
--#define COMEDI_MODULE_MACROS						\
--	MODULE_AUTHOR("Comedi http://www.comedi.org");		\
-+#define COMEDI_MODULE_MACROS		do {				\
-+	MODULE_AUTHOR("Comedi http://www.comedi.org");			\
- 	MODULE_DESCRIPTION("Comedi low-level driver");			\
--	MODULE_LICENSE("GPL");
-+	MODULE_LICENSE("GPL");						\
-+} while (0)
+ 	START_USE(vq);
  
- #define COMEDI_INITCLEANUP(x)						\
- 	COMEDI_MODULE_MACROS		\
--- 
-1.7.0.4
-
+@@ -174,8 +175,8 @@ int virtqueue_add_buf_gfp(struct virtqueue *_vq,
+ 	 * buffers, then go indirect. FIXME: tune this threshold */
+ 	if (vq->indirect && (out + in) > 1 && vq->num_free) {
+ 		head = vring_add_indirect(vq, sg, out, in, gfp);
+-		if (head != vq->vring.num)
++		if (likely(head >= 0))
+ 			goto add_head;
+ 	}
+ 
+ 	BUG_ON(out + in > vq->vring.num);
