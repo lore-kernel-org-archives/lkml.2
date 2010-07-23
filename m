@@ -1,117 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932181Ab0GWPLW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:11:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42636 "EHLO mx1.redhat.com"
+	id S1760655Ab0GWPLU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:11:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9873 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759985Ab0GWPLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:11:17 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-In-Reply-To: <20100722175913.5552.3905.stgit@warthog.procyon.org.uk>
-References: <20100722175913.5552.3905.stgit@warthog.procyon.org.uk> <20100722175847.5552.11520.stgit@warthog.procyon.org.uk>
-To: viro@ZenIV.linux.org.uk
-Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org,
-        linux-afs@lists.infradead.org, linux-nfs@vger.kernel.org,
-        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 6/6] Add an AT_NO_AUTOMOUNT flag to suppress terminal automount [ver #2]
-Date: Fri, 23 Jul 2010 16:11:05 +0100
-Message-ID: <17789.1279897865@redhat.com>
-From: David Howells <dhowells@redhat.com>
+	id S1759466Ab0GWPLQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 11:11:16 -0400
+Subject: Re: [PATCH v2] pci: Allow read/write access to sysfs I/O port
+ resources
+From: Alex Williamson <alex.williamson@redhat.com>
+To: linux-pci@vger.kernel.org, Jesse Barnes <jbarnes@virtuousgeek.org>
+Cc: linux-kernel@vger.kernel.org, chrisw@redhat.com, ddutile@redhat.com,
+        bjorn.helgaas@hp.com, eike-kernel@sf-tec.de
+In-Reply-To: <20100719154321.11535.39055.stgit@localhost6.localdomain6>
+References: <20100719031148.13524.25354.stgit@localhost6.localdomain6>
+	 <20100719154321.11535.39055.stgit@localhost6.localdomain6>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 23 Jul 2010 09:10:27 -0600
+Message-ID: <1279897827.4601.89.camel@x201>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-07-19 at 09:45 -0600, Alex Williamson wrote:
+> PCI sysfs resource files currently only allow mmap'ing.  On x86 this
+> works fine for memory backed BARs, but doesn't work at all for I/O
+> port backed BARs.  Add read/write to I/O port PCI sysfs resource
+> files to allow userspace access to these device regions.
+> 
+> Signed-off-by: Alex Williamson <alex.williamson@redhat.com>
+> ---
 
-This is an update required because the first patch in the series was also
-altered in the same area.
+Any thoughts on this for -next?  Thanks,
 
-David
----
-From: David Howells <dhowells@redhat.com>
-Subject: [PATCH] Add an AT_NO_AUTOMOUNT flag to suppress terminal automount
+Alex
 
-Add an AT_NO_AUTOMOUNT flag to suppress terminal automounting of directories
-with follow_link semantics.  This can be used by fstatat() users to permit the
-gathering of attributes on an automount point and also prevent
-mass-automounting of a directory of automount points by ls.
+>  v2: hopefully better commit log, remove unneeded cast, use bool
+> 
+>  Documentation/filesystems/sysfs-pci.txt |    7 ++-
+>  drivers/pci/pci-sysfs.c                 |   68 +++++++++++++++++++++++++++++++
+>  2 files changed, 73 insertions(+), 2 deletions(-)
+> 
+> diff --git a/Documentation/filesystems/sysfs-pci.txt b/Documentation/filesystems/sysfs-pci.txt
+> index 85354b3..74eaac2 100644
+> --- a/Documentation/filesystems/sysfs-pci.txt
+> +++ b/Documentation/filesystems/sysfs-pci.txt
+> @@ -39,7 +39,7 @@ files, each with their own function.
+>         local_cpus	   nearby CPU mask (cpumask, ro)
+>         remove		   remove device from kernel's list (ascii, wo)
+>         resource		   PCI resource host addresses (ascii, ro)
+> -       resource0..N	   PCI resource N, if present (binary, mmap)
+> +       resource0..N	   PCI resource N, if present (binary, mmap, rw[1])
+>         resource0_wc..N_wc  PCI WC map resource N, if prefetchable (binary, mmap)
+>         rom		   PCI ROM resource, if present (binary, ro)
+>         subsystem_device	   PCI subsystem device (ascii, ro)
+> @@ -54,13 +54,16 @@ files, each with their own function.
+>    binary - file contains binary data
+>    cpumask - file contains a cpumask type
+>  
+> +[1] rw for RESOURCE_IO (I/O port) regions only
+> +
+>  The read only files are informational, writes to them will be ignored, with
+>  the exception of the 'rom' file.  Writable files can be used to perform
+>  actions on the device (e.g. changing config space, detaching a device).
+>  mmapable files are available via an mmap of the file at offset 0 and can be
+>  used to do actual device programming from userspace.  Note that some platforms
+>  don't support mmapping of certain resources, so be sure to check the return
+> -value from any attempted mmap.
+> +value from any attempted mmap.  The most notable of these are I/O port
+> +resources, which also provide read/write access.
+>  
+>  The 'enable' file provides a counter that indicates how many times the device 
+>  has been enabled.  If the 'enable' file currently returns '4', and a '1' is
+> diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
+> index 5935b85..f7692dc 100644
+> --- a/drivers/pci/pci-sysfs.c
+> +++ b/drivers/pci/pci-sysfs.c
+> @@ -778,6 +778,70 @@ pci_mmap_resource_wc(struct file *filp, struct kobject *kobj,
+>  	return pci_mmap_resource(kobj, attr, vma, 1);
+>  }
+>  
+> +static ssize_t
+> +pci_resource_io(struct file *filp, struct kobject *kobj,
+> +		struct bin_attribute *attr, char *buf,
+> +		loff_t off, size_t count, bool write)
+> +{
+> +	struct pci_dev *pdev = to_pci_dev(container_of(kobj,
+> +						       struct device, kobj));
+> +	struct resource *res = attr->private;
+> +	unsigned long port = off;
+> +	int i;
+> +
+> +	for (i = 0; i < PCI_ROM_RESOURCE; i++)
+> +		if (res == &pdev->resource[i])
+> +			break;
+> +	if (i >= PCI_ROM_RESOURCE)
+> +		return -ENODEV;
+> +
+> +	port += pci_resource_start(pdev, i);
+> +
+> +	if (port > pci_resource_end(pdev, i))
+> +		return 0;
+> +
+> +	if (port + count - 1 > pci_resource_end(pdev, i))
+> +		return -EINVAL;
+> +
+> +	switch (count) {
+> +	case 1:
+> +		if (write)
+> +			outb(*(u8 *)buf, port);
+> +		else
+> +			*(u8 *)buf = inb(port);
+> +		return 1;
+> +	case 2:
+> +		if (write)
+> +			outw(*(u16 *)buf, port);
+> +		else
+> +			*(u16 *)buf = inw(port);
+> +		return 2;
+> +	case 4:
+> +		if (write)
+> +			outl(*(u32 *)buf, port);
+> +		else
+> +			*(u32 *)buf = inl(port);
+> +		return 4;
+> +	}
+> +	return -EINVAL;
+> +}
+> +
+> +static ssize_t
+> +pci_read_resource_io(struct file *filp, struct kobject *kobj,
+> +		     struct bin_attribute *attr, char *buf,
+> +		     loff_t off, size_t count)
+> +{
+> +	return pci_resource_io(filp, kobj, attr, buf, off, count, false);
+> +}
+> +
+> +static ssize_t
+> +pci_write_resource_io(struct file *filp, struct kobject *kobj,
+> +		      struct bin_attribute *attr, char *buf,
+> +		      loff_t off, size_t count)
+> +{
+> +	return pci_resource_io(filp, kobj, attr, buf, off, count, true);
+> +}
+> +
+>  /**
+>   * pci_remove_resource_files - cleanup resource files
+>   * @pdev: dev to cleanup
+> @@ -828,6 +892,10 @@ static int pci_create_attr(struct pci_dev *pdev, int num, int write_combine)
+>  			sprintf(res_attr_name, "resource%d", num);
+>  			res_attr->mmap = pci_mmap_resource_uc;
+>  		}
+> +		if (pci_resource_flags(pdev, num) & IORESOURCE_IO) {
+> +			res_attr->read = pci_read_resource_io;
+> +			res_attr->write = pci_write_resource_io;
+> +		}
+>  		res_attr->attr.name = res_attr_name;
+>  		res_attr->attr.mode = S_IRUSR | S_IWUSR;
+>  		res_attr->size = pci_resource_len(pdev, num);
+> 
 
-Signed-off-by: David Howells <dhowells@redhat.com>
----
-
- fs/namei.c            |    6 ++++++
- fs/stat.c             |    4 +++-
- include/linux/fcntl.h |    1 +
- include/linux/namei.h |    2 ++
- 4 files changed, 12 insertions(+), 1 deletions(-)
 
 
-diff --git a/fs/namei.c b/fs/namei.c
-index f2910b7..c154112 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -629,6 +629,12 @@ static int follow_automount(struct path *path, unsigned flags, int res)
- 	if (!path->dentry->d_op || !path->dentry->d_op->d_automount)
- 		return -EREMOTE;
- 
-+	/* We don't want to mount if someone supplied AT_NO_AUTOMOUNT
-+	 * and this is the terminal part of the path.
-+	 */
-+	if ((flags & LOOKUP_NO_AUTOMOUNT) && !(flags & LOOKUP_CONTINUE))
-+		return -EXDEV; /* we actually want to stop here */
-+
- 	/* We want to mount if someone is trying to open/create a file of any
- 	 * type under the mountpoint, wants to traverse through the mountpoint
- 	 * or wants to open the mounted directory.
-diff --git a/fs/stat.c b/fs/stat.c
-index c4ecd52..bae6fa2 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -74,11 +74,13 @@ int vfs_fstatat(int dfd, char __user *filename, struct kstat *stat, int flag)
- 	int error = -EINVAL;
- 	int lookup_flags = 0;
- 
--	if ((flag & ~AT_SYMLINK_NOFOLLOW) != 0)
-+	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT)) != 0)
- 		goto out;
- 
- 	if (!(flag & AT_SYMLINK_NOFOLLOW))
- 		lookup_flags |= LOOKUP_FOLLOW;
-+	if (flag & AT_NO_AUTOMOUNT)
-+		lookup_flags |= LOOKUP_NO_AUTOMOUNT;
- 
- 	error = user_path_at(dfd, filename, lookup_flags, &path);
- 	if (error)
-diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
-index afc00af..a562fa5 100644
---- a/include/linux/fcntl.h
-+++ b/include/linux/fcntl.h
-@@ -45,6 +45,7 @@
- #define AT_REMOVEDIR		0x200   /* Remove directory instead of
-                                            unlinking file.  */
- #define AT_SYMLINK_FOLLOW	0x400   /* Follow symbolic links.  */
-+#define AT_NO_AUTOMOUNT		0x800	/* Suppress terminal automount traversal */
- 
- #ifdef __KERNEL__
- 
-diff --git a/include/linux/namei.h b/include/linux/namei.h
-index 05b441d..1e1febf 100644
---- a/include/linux/namei.h
-+++ b/include/linux/namei.h
-@@ -43,12 +43,14 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
-  *  - internal "there are more path components" flag
-  *  - locked when lookup done with dcache_lock held
-  *  - dentry cache is untrusted; force a real lookup
-+ *  - suppress terminal automount
-  */
- #define LOOKUP_FOLLOW		 1
- #define LOOKUP_DIRECTORY	 2
- #define LOOKUP_CONTINUE		 4
- #define LOOKUP_PARENT		16
- #define LOOKUP_REVAL		64
-+#define LOOKUP_NO_AUTOMOUNT	128
- /*
-  * Intent data
-  */
