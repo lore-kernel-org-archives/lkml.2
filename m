@@ -1,143 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab0GWAV3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 20:21:29 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:45153 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756551Ab0GWAV0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 20:21:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:reply-to:date:message-id:subject:from:to:cc
-         :content-type;
-        b=YdU8eUDn256OcbjfJs/HSm6ynQEnLYhYLJOUGPRCy6cP6Rv8x4AlKZ8Uk4EGqbFc6A
-         iCLCv/ObesjGVKk1aTRukohcWXlRp3QI4N+a6AxBXUmzmbPRr9EEM0v9Lhy9utJPQXE6
-         L0aIDi9oNTi2+dFsNYaV0YwJur9rat5rOJRrc=
-MIME-Version: 1.0
-Reply-To: trapdoor6@gmail.com
-Date: Fri, 23 Jul 2010 01:21:24 +0100
-Message-ID: <AANLkTin1vGdodjhqbckGpVtfScslb7d0KX0h4wPa54Yh@mail.gmail.com>
-Subject: 2.6.35-rc[1-5] + Radeon-kms: 3D graphic performance
-From: trapDoor <trapdoor6@gmail.com>
-To: Alex Deucher <alexdeucher@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, trapDoor <trapdoor6@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756827Ab0GWAWM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 20:22:12 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44545 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756463Ab0GWAWJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 20:22:09 -0400
+Date: Fri, 23 Jul 2010 10:22:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: ppc-dev <linuxppc-dev@lists.ozlabs.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+        Ben Hutchings <bhutchings@solarflare.com>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+Subject: linux-next: OOPS at bot time
+Message-Id: <20100723102202.871a3131.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__23_Jul_2010_10_22_02_+1000_Ng6==zwgoL4i4RRU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Alex,
-This is with regard to thread 'Blank (disconnected) screen during boot
-with latest 2.6.35-rcX kernels'.
+--Signature=_Fri__23_Jul_2010_10_22_02_+1000_Ng6==zwgoL4i4RRU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-You asked me in your last e-mail if I could do a bisect to find out
-what caused a regression I mentioned about - in 3D graphic performance
-in kernels 2.6.35-rc + radeoon-kms. I started the bisect but
-unfortunately I haven't finished due to some problems I came across
-and I'm not sure if I can continue it. I'm pointing below how the
-bisect went and - if you'd like to take a look - at the last point I
-explained why I stopped.
+Hi all,
 
-I did notice some pattern during this unfinished bisect though. And I
-think it may narrow down the regression to its source.
+My Power7 boot test paniced like this: (next-20100722)
 
+%GQLogic Fibre Channel HBA Driver: 8.03.03-k0
+qla2xxx 0002:01:00.2: enabling device (0144 -> 0146)
+qla2xxx 0002:01:00.2: Found an ISP8001, irq 35, iobase 0xd000080080014000
+------------[ cut here ]------------
+kernel BUG at drivers/pci/msi.c:205!
+Oops: Exception in kernel mode, sig: 5 [#1]
+SMP NR_CPUS=3D128 NUMA pSeries
+last sysfs file: /sys/devices/virtual/tty/ptyz8/uevent
+Modules linked in: qla2xxx(+)
+NIP: c0000000002fcd54 LR: c000000000048d9c CTR: 0000000000000001
+REGS: c00000000278aff0 TRAP: 0700   Not tainted  (2.6.35-rc5-autokern1-next=
+-20100721)
+MSR: 8000000000029032 <EE,ME,CE,IR,DR>  CR: 28422488  XER: 20000008
+TASK =3D c000000002008000[2226] 'modprobe' THREAD: c000000002788000 CPU: 12
+GPR00: 0000000000000001 c00000000278b270 c0000000009a36d0 c0000000009b8900=
+=20
+GPR04: c00000000278b2e8 ffffffffffffffff 0000000000000000 0000000000020000=
+=20
+GPR08: 00000000000033e7 c00000000a38b280 0000000000000000 0000000000000000=
+=20
+GPR12: 0000000088422488 c00000000f331800 00000fff921750a0 0000000000000000=
+=20
+GPR16: 0000000010033110 00000000100334b8 0000000000000000 0000000000000000=
+=20
+GPR20: d000080080018000 0000000000022225 c0000000009f7bb4 0000000000010200=
+=20
+GPR24: 000000002000020d 0000000000000025 c00000000278b2e0 c00000000278b2e8=
+=20
+GPR28: 0000000000000001 c00000000d0ac5f8 c000000000af8f00 c00000000a38b280=
+=20
+NIP [c0000000002fcd54] .read_msi_msg_desc+0x24/0x3c
+LR [c000000000048d9c] .rtas_setup_msi_irqs+0x1d8/0x254
+Call Trace:
+[c00000000278b270] [c000000000048d9c] .rtas_setup_msi_irqs+0x1d8/0x254 (unr=
+eliable)
+[c00000000278b360] [c00000000002a9cc] .arch_setup_msi_irqs+0x34/0x4c
+[c00000000278b3e0] [c0000000002fd3fc] .pci_enable_msix+0x49c/0x4ac
+[c00000000278b4c0] [d0000000001a5e30] .qla2x00_request_irqs+0x158/0x5b4 [ql=
+a2xxx]
+[c00000000278b580] [d0000000001cb41c] .qla2x00_probe_one+0xeac/0x63b0 [qla2=
+xxx]
+[c00000000278b6f0] [c0000000002f5c4c] .local_pci_probe+0x34/0x48
+[c00000000278b760] [c0000000002f6078] .pci_device_probe+0xe8/0x130
+[c00000000278b810] [c00000000036e648] .driver_probe_device+0xdc/0x1a4
+[c00000000278b8a0] [c00000000036e7a4] .__driver_attach+0x94/0xd8
+[c00000000278b930] [c00000000036dabc] .bus_for_each_dev+0x7c/0xe0
+[c00000000278b9e0] [c00000000036e410] .driver_attach+0x28/0x40
+[c00000000278ba60] [c00000000036d134] .bus_add_driver+0x144/0x310
+[c00000000278bb10] [c00000000036ec28] .driver_register+0xd8/0x198
+[c00000000278bbb0] [c0000000002f63d0] .__pci_register_driver+0x60/0x10c
+[c00000000278bc50] [d0000000001ca520] .qla2x00_module_init+0x150/0x1a0 [qla=
+2xxx]
+[c00000000278bce0] [c00000000000947c] .do_one_initcall+0x80/0x1a8
+[c00000000278bd90] [c0000000000a4364] .SyS_init_module+0xd8/0x244
+[c00000000278be30] [c00000000000852c] syscall_exit+0x0/0x40
+Instruction dump:
+ebe1fff8 7c0803a6 4e800020 e9230028 81490030 80090034 81690038 7d400378=20
+7c005b78 7c000034 5400d97e 78000020 <0b000000> 81690038 e8090030 91640008=20
+---[ end trace f67a78811ed47c60 ]---
+%Gudevd-work[1379]: '/sbin/modprobe -b pci:v00001077d00008001sv00001077sd00=
+00017Fbc0Csc04i00' unexpected exit with status 0x0005
 
+That line number is this:
 
-------
-1. boot from 2.6.35-rc5-git4:
-git-clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
-linus-git
-cd linux-git
-git bisect start
+	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
+		 entry->msg.data));
 
-# marking kernel 2.6.35-rc1 as bad
-git bisect bad 67a3e12b05e055c0415c556a315a3d3eb637e29e
+in read_msi_msg_desc().  That BUG_ON was added by commit
+2ca1af9aa3285c6a5f103ed31ad09f7399fc65d7 ("PCI: MSI: Remove unsafe and
+unnecessary hardware access") from the pci tree.
 
-# marking kernel 2.6.34 as good
-git bisect good e40152ee1e1c7a63f4777791863215e3faa37a86
-Bisecting: 4139 revisions left to test after this (roughly 12 steps)
-[f8965467f366fd18f01feafb5db10512d7b4422c] Merge
-git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-------
-2. boot from 2.6.34-04401-gf896546 [f8965467f366fd18f01feafb5db10512d7b4422c]
-git bisect good
-Bisecting: 1978 revisions left to test after this (roughly 11 steps)
-[d79df0b1eda0099a22cbcece01ce5e7d222450de] Merge
-git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
+--Signature=_Fri__23_Jul_2010_10_22_02_+1000_Ng6==zwgoL4i4RRU
+Content-Type: application/pgp-signature
 
-------
-3. boot from 2.6.34-06562-gd79df0b [d79df0b1eda0099a22cbcece01ce5e7d222450de]
-git bisect bad
-Bisecting: 1102 revisions left to test after this (roughly 10 steps)
-[ac3ee84c604502240122c47b52f0542ec8774f15] Merge branch
-'dbg-early-merge' of
-git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-------
-4. boot from 2.6.34-05459-gac3ee84 [ac3ee84c604502240122c47b52f0542ec8774f15]
-git bisect good
-Bisecting: 551 revisions left to test after this (roughly 9 steps)
-[7a6cb0d5497418599d2125b670926b75e673861c] Staging: Use kcalloc or kzalloc
+iQEcBAEBAgAGBQJMSOCqAAoJEDMEi1NhKgbskVkH/2d5cz/G+OoYpHB2zL2wdma5
+1lZeCKVukrHBt5Sf03bSNBa374GI6GtwW2kArMUfHO1msPHrH0mPuo8I368+Ra6J
+XZ8YvpVWQf/PNyknvLeimPiQRARBM24mMY0/Gip7ak6PdQ7gRd1FNXSnkmPfs2gv
+63g5RRswmn09MRl/0e/NTjI2WZuwso3xLeGXlurORGKdl1FS5fCzX9vS6fk9JFL9
+Rb51YKenB8aZ8bWrsDWtZNROPycwzrbbe5adifxCmqn1kNnWdJPe/jwte+huuWb7
+wjs/npsAnUd4N8oLZZS3E+DV7RG5FOH17zXL9Iyf/JXW53wFDQZxi7XT2dPXGCQ=
+=GbAz
+-----END PGP SIGNATURE-----
 
-------
-5. boot from 2.6.34-rc6-00551-g7a6cb0d
-[7a6cb0d5497418599d2125b670926b75e673861c]
-git bisect good
-Bisecting: 239 revisions left to test after this (roughly 8 steps)
-[79c4581262e225a7c96d88b632b05ab3b5e9a52c] Merge branch 'next' of
-git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc
-
-------
-6. boot from 2.6.34-05771-g79c4581 [79c4581262e225a7c96d88b632b05ab3b5e9a52c]
-git bisect bad
-Bisecting: 155 revisions left to test after this (roughly 7 steps)
-[5876dd249e8e47c730cac090bf6edd88e5f04327] radeon: Unmap vram pages
-when reclocking
-
-------
-7. boot from 2.6.34-rc5-00156-g5876dd2
-[5876dd249e8e47c730cac090bf6edd88e5f04327]
-At this point I get stuck as I'm unable to perform the tests:
-
--- Gnome fails to start, system freezes right after logging in
-
--- KDE starts but it's almost unusable - very poor 2D performance and
-3D seems to not work at all:
-desktop lost support for transparency/translucency
-glxgears: just a black window appears with no gears; in the output
-console it shows this:
-XIO:  fatal IO error 11 (Resource temporarily unavailable) on X server ":0.0"
-      after 36 requests (36 known processed) with 0 events remaining.
-Armagetron Advanced obviously doesn't work either - as above, just a
-black window comes up
-
--- under minimal X environment (xterm) glxgears and Armagetron
-Advanced behave the same way as above
-
-Now I don't know if I can/how to continue this bisect. Clearly
-2.6.34-rc5-00156-g5876dd2 is affected in the area I was testing. But
-differently and to the degree where I'm actually unable to test what I
-was testing. Also these issues may be not related to the original
-regression. They may be caused by different commit(s).
-
-To sum up: I can't specify whether kernel 2.6.34-rc5-00156-g5876dd2 is
-good or bad, in order to continue this bisect.
-
-Maybe I should start another bisect to solve the problem caused by
-this kernel, revert/apply appropriate patch(es) and then continue with
-the original bisect ? And then, with the next kernel, I may be able to
-carry on or I may be not and have to repeat what I did as a result of
-the 2nd bisect. Or I may bump into some other problems and have to
-start 3rd bisect ... I imagine that people can get into such traps but
-there must be some ways to solve it quicker and not get into endless
-bisect loop. Of course I'm not saying all this to show that I'm
-getting discouraged. Not at all - the more I learn about git the more
-I like it. It's magic, some people say - and I think they may be
-right.
-
-
--- 
-Regards
-trapDoor
+--Signature=_Fri__23_Jul_2010_10_22_02_+1000_Ng6==zwgoL4i4RRU--
