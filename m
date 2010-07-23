@@ -1,152 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760919Ab0GWPb7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:31:59 -0400
-Received: from mail.gmx.net ([213.165.64.20]:59117 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1760208Ab0GWP3e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:29:34 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX188osUc6/E8RpoZTDbHLealmWjyi8NOaIlKbmsPJ7
-	y9EXjfxrLaAGdE
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-        Joseph Chan <JosephChan@via.com.tw>
-Subject: [PATCH 02/11] viafb: remove duplicated scaling code
-Date: Fri, 23 Jul 2010 15:39:17 +0000
-Message-Id: <1279899566-4359-3-git-send-email-FlorianSchandinat@gmx.de>
-X-Mailer: git-send-email 1.6.3.2
-In-Reply-To: <1279899566-4359-1-git-send-email-FlorianSchandinat@gmx.de>
-References: <1279899566-4359-1-git-send-email-FlorianSchandinat@gmx.de>
-X-Y-GMX-Trusted: 0
+	id S1760628Ab0GWPfg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:35:36 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:55506 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756565Ab0GWPfe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 11:35:34 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAN9RSUx5Lc6U/2dsb2JhbACfaHLBf4U2BA
+Date: Sat, 24 Jul 2010 01:35:28 +1000
+From: Nick Piggin <npiggin@kernel.dk>
+To: Nick Piggin <npiggin@kernel.dk>, Michael Neuling <mikey@neuling.org>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, Frank Mayhar <fmayhar@google.com>,
+        John Stultz <johnstul@us.ibm.com>
+Subject: Re: VFS scalability git tree
+Message-ID: <20100723153528.GA4514@amd>
+References: <20100722190100.GA22269@amd>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722190100.GA22269@amd>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-viafb: remove duplicated scaling code
+On Fri, Jul 23, 2010 at 05:01:00AM +1000, Nick Piggin wrote:
+> I'm pleased to announce I have a git tree up of my vfs scalability work.
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
+> http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git
 
-The code for P4M900 does the same as for all newer IGPs so there is no
-reason to duplicate it. Just reducing the code to maintain.
+> Summary of a few numbers I've run. google's socket teardown workload
+> runs 3-4x faster on my 2 socket Opteron. Single thread git diff runs 20%
+> on same machine. 32 node Altix runs dbench on ramfs 150x faster (100MB/s
+> up to 15GB/s).
 
-Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-Cc: Joseph Chan <JosephChan@via.com.tw>
----
- drivers/video/via/lcd.c |   75 +---------------------------------------------
- 1 files changed, 2 insertions(+), 73 deletions(-)
+Following post just contains some preliminary benchmark numbers on a
+POWER7. Boring if you're not interested in this stuff.
 
-diff --git a/drivers/video/via/lcd.c b/drivers/video/via/lcd.c
-index 2ab0f15..438a106 100644
---- a/drivers/video/via/lcd.c
-+++ b/drivers/video/via/lcd.c
-@@ -75,8 +75,6 @@ static void check_diport_of_integrated_lvds(
- static struct display_timing lcd_centering_timging(struct display_timing
- 					    mode_crt_reg,
- 					   struct display_timing panel_crt_reg);
--static void viafb_load_scaling_factor_for_p4m900(int set_hres,
--	int set_vres, int panel_hres, int panel_vres);
- 
- static int check_lvds_chip(int device_id_subaddr, int device_id)
- {
-@@ -437,11 +435,6 @@ static void load_lcd_scaling(int set_hres, int set_vres, int panel_hres,
- 
- 	/* LCD Scaling Enable */
- 	viafb_write_reg_mask(CR79, VIACR, 0x07, BIT0 + BIT1 + BIT2);
--	if (UNICHROME_P4M900 == viaparinfo->chip_info->gfx_chip_name) {
--		viafb_load_scaling_factor_for_p4m900(set_hres, set_vres,
--					       panel_hres, panel_vres);
--		return;
--	}
- 
- 	/* Check if expansion for horizontal */
- 	if (set_hres != panel_hres) {
-@@ -464,6 +457,7 @@ static void load_lcd_scaling(int set_hres, int set_vres, int panel_hres,
- 		case UNICHROME_CX700:
- 		case UNICHROME_K8M890:
- 		case UNICHROME_P4M890:
-+		case UNICHROME_P4M900:
- 			reg_value =
- 			    K800_LCD_HOR_SCF_FORMULA(set_hres, panel_hres);
- 			/* Horizontal scaling enabled */
-@@ -503,6 +497,7 @@ static void load_lcd_scaling(int set_hres, int set_vres, int panel_hres,
- 		case UNICHROME_CX700:
- 		case UNICHROME_K8M890:
- 		case UNICHROME_P4M890:
-+		case UNICHROME_P4M900:
- 			reg_value =
- 			    K800_LCD_VER_SCF_FORMULA(set_vres, panel_vres);
- 			/* Vertical scaling enabled */
-@@ -1139,69 +1134,3 @@ bool viafb_lcd_get_mobile_state(bool *mobile)
- 		return false;
- 	}
- }
--
--static void viafb_load_scaling_factor_for_p4m900(int set_hres,
--	int set_vres, int panel_hres, int panel_vres)
--{
--	int h_scaling_factor;
--	int v_scaling_factor;
--	u8 cra2 = 0;
--	u8 cr77 = 0;
--	u8 cr78 = 0;
--	u8 cr79 = 0;
--	u8 cr9f = 0;
--	/* Check if expansion for horizontal */
--	if (set_hres < panel_hres) {
--		/* Load Horizontal Scaling Factor */
--
--		/* For VIA_K8M800 or later chipsets. */
--		h_scaling_factor =
--		    K800_LCD_HOR_SCF_FORMULA(set_hres, panel_hres);
--		/* HSCaleFactor[1:0] at CR9F[1:0] */
--		cr9f = h_scaling_factor & 0x0003;
--		/* HSCaleFactor[9:2] at CR77[7:0] */
--		cr77 = (h_scaling_factor & 0x03FC) >> 2;
--		/* HSCaleFactor[11:10] at CR79[5:4] */
--		cr79 = (h_scaling_factor & 0x0C00) >> 10;
--		cr79 <<= 4;
--
--		/* Horizontal scaling enabled */
--		cra2 = 0xC0;
--
--		DEBUG_MSG(KERN_INFO "Horizontal Scaling value = %d\n",
--			  h_scaling_factor);
--	} else {
--		/* Horizontal scaling disabled */
--		cra2 = 0x00;
--	}
--
--	/* Check if expansion for vertical */
--	if (set_vres < panel_vres) {
--		/* Load Vertical Scaling Factor */
--
--		/* For VIA_K8M800 or later chipsets. */
--		v_scaling_factor =
--		    K800_LCD_VER_SCF_FORMULA(set_vres, panel_vres);
--
--		/* Vertical scaling enabled */
--		cra2 |= 0x08;
--		/* VSCaleFactor[0] at CR79[3] */
--		cr79 |= ((v_scaling_factor & 0x0001) << 3);
--		/* VSCaleFactor[8:1] at CR78[7:0] */
--		cr78 |= (v_scaling_factor & 0x01FE) >> 1;
--		/* VSCaleFactor[10:9] at CR79[7:6] */
--		cr79 |= ((v_scaling_factor & 0x0600) >> 9) << 6;
--
--		DEBUG_MSG(KERN_INFO "Vertical Scaling value = %d\n",
--			  v_scaling_factor);
--	} else {
--		/* Vertical scaling disabled */
--		cra2 |= 0x00;
--	}
--
--	viafb_write_reg_mask(CRA2, VIACR, cra2, BIT3 + BIT6 + BIT7);
--	viafb_write_reg_mask(CR77, VIACR, cr77, 0xFF);
--	viafb_write_reg_mask(CR78, VIACR, cr78, 0xFF);
--	viafb_write_reg_mask(CR79, VIACR, cr79, 0xF8);
--	viafb_write_reg_mask(CR9F, VIACR, cr9f, BIT0 + BIT1);
--}
--- 
-1.6.3.2
+IBM and Mikey kindly allowed me to do some test runs on a big POWER7
+system today.  Very is the only word I'm authorized to describe how big
+is big. We tested the vfs-scale-working and master branches from my git
+tree as of today.  I'll stick with relative numbers to be safe. All
+tests were run on ramfs.
+
+
+First and very important is single threaded performance of basic code.
+POWER7 is obviously vastly different from a Barcelona or Nehalem. and
+store-free path walk uses a lot of seqlocks, which are cheap on x86, a
+little more epensive on others.
+
+Test case	time difference, vanilla to vfs-scale (negative is better)
+stat()		-10.8% +/- 0.3%
+close(open())	  4.3% +/- 0.3%
+unlink(creat())	 36.8% +/- 0.3%
+
+stat is significantly faster which is really good.
+
+open/close is a bit slower which we didn't get time to analyse. There
+are one or two seqlock checks which might be avoided, which could make
+up the difference. It's not horrible, but I hope to get POWER7
+open/close more competitive (on x86 open/close is even a bit faster).
+
+Note this is a worst case for rcu-path-walk: lookup of "./file", because
+it has to take refcount on the final element. With more elements, rcu
+walk should gain the advantage.
+
+creat/unlink is showing the big RCU penalty. However I have penciled
+out a working design with Linus of how to do SLAB_DESTROY_BY_RCU.
+However it makes the store-free path walking and some inode RCU list
+walking a little bit trickier, so I prefer not to dump too much on
+at once. There is something that can be done if regressions show up.
+I don't anticipate many regressions outside microbenchmarks, and this
+is about the absolute worst case.
+
+
+On to parallel tests. Firstly, the google socket workload.
+Running with "NR_THREADS" children, vfs-scale patches do this:
+
+root@p7ih06:~/google# time ./google --files_per_cpu 10000 > /dev/null
+real	0m4.976s
+user	8m38.925s
+sys	6m45.236s
+
+root@p7ih06:~/google# time ./google --files_per_cpu 20000 > /dev/null
+real	0m7.816s
+user	11m21.034s
+sys	14m38.258s
+
+root@p7ih06:~/google# time ./google --files_per_cpu 40000 > /dev/null
+real	0m11.358s
+user	11m37.955s
+sys	28m44.911s
+
+Reducing to NR_THREADS/4 children allows vanilla to complete:
+
+root@p7ih06:~/google# time ./google  --files_per_cpu 10000
+real    1m23.118s
+user    3m31.820s
+sys     81m10.405s
+
+I was actually surprised it did that well.
+
+
+Dbench was an interesting one. We didn't manage to stretch the box's
+legs, unfortunately!  dbench with 1 proc gave about 500MB/s, 64 procs 
+gave 21GB/s, 128 and throughput dropped dramatically. Turns out that
+weird things start happening with rename seqlock versus d_lookup, and
+d_move contention (dbench does a sprinkle of renaming). That can be
+improved I think, but noth worth bothering with for the time being.
+
+It's not really worth testing vanilla at high dbench parallelism.
+
+
+Parallel git diff workload looked OK. It seemed to be scaling fine
+in the vfs, but it hit a bottlneck in powerpc's tlb invalidation, so
+numbers may not be so interesting.
+
+
+Lastly, some parallel syscall microbenchmarks:
+
+procs		vanilla		vfs-scale
+open-close, seperate-cwd
+1		384557.70	355923.82	op/s/proc
+NR_CORES	    86.63	164054.64	op/s/proc
+NR_THREADS	    18.68 (ouch!)
+
+open-close, same-cwd
+1		381074.32	339161.25
+NR_CORES	   104.16	107653.05
+
+creat-unlink, seperate-cwd
+1		145891.05	104301.06
+NR_CORES	    29.81	 10061.66
+
+creat-unlink, same-cwd
+1		129681.27	104301.06
+NR_CORES	    12.68	   181.24
+
+So we can see the single thread performance regressions here, but
+the vanilla case really chokes at high CPU counts.
 
