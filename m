@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756577Ab0GWBMt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 21:12:49 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:45420 "EHLO arroyo.ext.ti.com"
+	id S1756963Ab0GWBMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 21:12:54 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:32909 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752240Ab0GWBMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 21:12:47 -0400
+	id S1756855Ab0GWBMu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 21:12:50 -0400
 From: Armando Uribe <x0095078@ti.com>
 To: Greg Kroah-Hartman <gregkh@suse.de>
 Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
@@ -14,195 +14,204 @@ Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
         Rene Sapiens <rene.sapiens@ti.com>,
         Felipe Contreras <felipe.contreras@gmail.com>,
         Armando Uribe <x0095078@ti.com>
-Subject: [PATCH 2/9] staging: tidspbridge: Remove redundant macros in io_sm.c
-Date: Thu, 22 Jul 2010 20:25:27 -0500
-Message-Id: <1279848334-4043-3-git-send-email-x0095078@ti.com>
+Subject: [PATCH 1/9] staging: tidspbridge: Remove Redundant wrappers
+Date: Thu, 22 Jul 2010 20:25:26 -0500
+Message-Id: <1279848334-4043-2-git-send-email-x0095078@ti.com>
 X-Mailer: git-send-email 1.6.3.3
-In-Reply-To: <1279848334-4043-2-git-send-email-x0095078@ti.com>
+In-Reply-To: <1279848334-4043-1-git-send-email-x0095078@ti.com>
 References: <1279848334-4043-1-git-send-email-x0095078@ti.com>
- <1279848334-4043-2-git-send-email-x0095078@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch removes 4 redundant macros used to perform
-read/write operations in shared memory region from io_sm.c.
+This patch removes redundant wrappers from io_sm.c file
 
 Signed-off-by: Armando Uribe <x0095078@ti.com>
 ---
- drivers/staging/tidspbridge/core/io_sm.c           |   77 ++++++++------------
- .../staging/tidspbridge/include/dspbridge/io_sm.h  |    5 --
- 2 files changed, 30 insertions(+), 52 deletions(-)
+ drivers/staging/tidspbridge/core/chnl_sm.c         |    2 +-
+ drivers/staging/tidspbridge/core/io_sm.c           |   98 +++----------------
+ .../staging/tidspbridge/include/dspbridge/io_sm.h  |    2 -
+ 3 files changed, 17 insertions(+), 85 deletions(-)
 
+diff --git a/drivers/staging/tidspbridge/core/chnl_sm.c b/drivers/staging/tidspbridge/core/chnl_sm.c
+index 6074bff..69c4784 100644
+--- a/drivers/staging/tidspbridge/core/chnl_sm.c
++++ b/drivers/staging/tidspbridge/core/chnl_sm.c
+@@ -230,7 +230,7 @@ func_cont:
+ 	omap_mbox_enable_irq(dev_ctxt->mbox, IRQ_RX);
+ 	spin_unlock_bh(&chnl_mgr_obj->chnl_mgr_lock);
+ 	if (mb_val != 0)
+-		io_intr_dsp2(chnl_mgr_obj->hio_mgr, mb_val);
++		sm_interrupt_dsp(dev_ctxt, mb_val);
+ 
+ 	/* Schedule a DPC, to do the actual data transfer */
+ 	if (sched_dpc)
 diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
-index b115cb3..03960bd 100644
+index ba2e6bd..b115cb3 100644
 --- a/drivers/staging/tidspbridge/core/io_sm.c
 +++ b/drivers/staging/tidspbridge/core/io_sm.c
-@@ -1094,15 +1094,12 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 	chnl_mgr_obj = pio_mgr->hchnl_mgr;
+@@ -132,10 +132,6 @@ struct io_mgr {
+ };
  
- 	/* Attempt to perform input */
--	if (!IO_GET_VALUE(pio_mgr->hbridge_context, struct shm, sm, input_full))
-+	if (!sm->input_full)
- 		goto func_end;
+ /* Function Prototypes */
+-static void io_dispatch_chnl(struct io_mgr *pio_mgr,
+-				struct chnl_object *pchnl, u8 io_mode);
+-static void io_dispatch_msg(struct io_mgr *pio_mgr,
+-			    struct msg_mgr *hmsg_mgr);
+ static void io_dispatch_pm(struct io_mgr *pio_mgr);
+ static void notify_chnl_complete(struct chnl_object *pchnl,
+ 				 struct chnl_irp *chnl_packet_obj);
+@@ -147,10 +143,6 @@ static void input_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr);
+ static void output_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr);
+ static u32 find_ready_output(struct chnl_mgr *chnl_mgr_obj,
+ 			     struct chnl_object *pchnl, u32 mask);
+-static u32 read_data(struct bridge_dev_context *dev_ctxt, void *dest,
+-		     void *src, u32 usize);
+-static u32 write_data(struct bridge_dev_context *dev_ctxt, void *dest,
+-		      void *src, u32 usize);
  
--	bytes =
--	    IO_GET_VALUE(pio_mgr->hbridge_context, struct shm, sm,
--			 input_size) * chnl_mgr_obj->word_size;
--	chnl_id = IO_GET_VALUE(pio_mgr->hbridge_context, struct shm,
--							sm, input_id);
--	dw_arg = IO_GET_LONG(pio_mgr->hbridge_context, struct shm, sm, arg);
-+	bytes = sm->input_size * chnl_mgr_obj->word_size;
-+	chnl_id = sm->input_id;
-+	dw_arg = sm->arg;
- 	if (chnl_id >= CHNL_MAXCHANNELS) {
- 		/* Shouldn't be here: would indicate corrupted shm. */
- 		DBC_ASSERT(chnl_id);
-@@ -1185,8 +1182,7 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 	}
- 	if (clear_chnl) {
- 		/* Indicate to the DSP we have read the input */
--		IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm,
--							input_full, 0);
-+		sm->input_full = 0;
- 		sm_interrupt_dsp(pio_mgr->hbridge_context, MBX_PCPY_CLASS);
- 	}
- 	if (notify_client) {
-@@ -1215,12 +1211,8 @@ static void input_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
+ /* Bus Addr (cached kernel) */
+ static int register_shm_segs(struct io_mgr *hio_mgr,
+@@ -834,42 +826,6 @@ func_end:
+ 	return;
+ }
  
- 	msg_ctr_obj = pio_mgr->msg_input_ctrl;
- 	/* Get the number of input messages to be read */
--	input_empty =
--	    IO_GET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl, msg_ctr_obj,
--			 buf_empty);
--	num_msgs =
--	    IO_GET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl, msg_ctr_obj,
--			 size);
-+	input_empty = msg_ctr_obj->buf_empty;
-+	num_msgs = msg_ctr_obj->size;
- 	if (input_empty)
- 		goto func_end;
+-/*
+- *  ======== io_dispatch_chnl ========
+- *      Proc-copy chanl dispatch.
+- */
+-static void io_dispatch_chnl(struct io_mgr *pio_mgr,
+-				struct chnl_object *pchnl, u8 io_mode)
+-{
+-	if (!pio_mgr)
+-		goto func_end;
+-
+-	/* See if there is any data available for transfer */
+-	if (io_mode != IO_SERVICE)
+-		goto func_end;
+-
+-	/* Any channel will do for this mode */
+-	input_chnl(pio_mgr, pchnl, io_mode);
+-	output_chnl(pio_mgr, pchnl, io_mode);
+-func_end:
+-	return;
+-}
+-
+-/*
+- *  ======== io_dispatch_msg ========
+- *      Performs I/O dispatch on message queues.
+- */
+-static void io_dispatch_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
+-{
+-	if (!pio_mgr)
+-		goto func_end;
+-
+-	/* We are performing both input and output processing. */
+-	input_msg(pio_mgr, hmsg_mgr);
+-	output_msg(pio_mgr, hmsg_mgr);
+-func_end:
+-	return;
+-}
  
-@@ -1310,10 +1302,8 @@ static void input_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
- 	/* Set the post SWI flag */
- 	if (num_msgs > 0) {
- 		/* Tell the DSP we've read the messages */
--		IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
--			     msg_ctr_obj, buf_empty, true);
--		IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
--			     msg_ctr_obj, post_swi, true);
-+		msg_ctr_obj->buf_empty = true;
-+		msg_ctr_obj->post_swi = true;
- 		sm_interrupt_dsp(pio_mgr->hbridge_context, MBX_PCPY_CLASS);
- 	}
- func_end:
-@@ -1375,15 +1365,14 @@ static void output_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 	chnl_mgr_obj = pio_mgr->hchnl_mgr;
- 	sm = pio_mgr->shared_mem;
- 	/* Attempt to perform output */
--	if (IO_GET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_full))
-+	if (sm->output_full)
- 		goto func_end;
+ /*
+  *  ======== io_dispatch_pm ========
+@@ -956,10 +912,17 @@ void io_dpc(unsigned long ref_data)
+ 						  pio_mgr->intr_val);
+ 			}
+ 		}
+-		io_dispatch_chnl(pio_mgr, NULL, IO_SERVICE);
++		/* Proc-copy chanel dispatch */
++		input_chnl(pio_mgr, NULL, IO_SERVICE);
++		output_chnl(pio_mgr, NULL, IO_SERVICE);
++
+ #ifdef CHNL_MESSAGES
+-		if (msg_mgr_obj)
+-			io_dispatch_msg(pio_mgr, msg_mgr_obj);
++		if (msg_mgr_obj) {
++			/* Perform I/O dispatch on message queues */
++			input_msg(pio_mgr, msg_mgr_obj);
++			output_msg(pio_mgr, msg_mgr_obj);
++		}
++
+ #endif
+ #ifdef CONFIG_TIDSPBRIDGE_DEBUG
+ 		if (pio_mgr->intr_val & MBX_DBG_SYSPRINTF) {
+@@ -1162,10 +1125,8 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
+ 				 * buffer.
+ 				 */
+ 				bytes = min(bytes, chnl_packet_obj->byte_size);
+-				/* Transfer buffer from DSP side */
+-				bytes = read_data(pio_mgr->hbridge_context,
+-						  chnl_packet_obj->host_sys_buf,
+-						  pio_mgr->input, bytes);
++				memcpy(chnl_packet_obj->host_sys_buf,
++						pio_mgr->input, bytes);
+ 				pchnl->bytes_moved += bytes;
+ 				chnl_packet_obj->byte_size = bytes;
+ 				chnl_packet_obj->dw_arg = dw_arg;
+@@ -1448,10 +1409,10 @@ static void output_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
+ 		chnl_mgr_obj->dw_output_mask &= ~(1 << chnl_id);
  
- 	if (pchnl && !((pchnl->dw_state & ~CHNL_STATEEOS) == CHNL_STATEREADY))
- 		goto func_end;
- 
- 	/* Look to see if both a PC and DSP output channel are ready */
--	dw_dsp_f_mask = IO_GET_VALUE(pio_mgr->hbridge_context, struct shm, sm,
--				     dsp_free_mask);
-+	dw_dsp_f_mask = sm->dsp_free_mask;
- 	chnl_id =
- 	    find_ready_output(chnl_mgr_obj, pchnl,
- 			      (chnl_mgr_obj->dw_output_mask & dw_dsp_f_mask));
-@@ -1415,23 +1404,19 @@ static void output_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
- 					chnl_packet_obj->byte_size);
+ 	/* Transfer buffer to DSP side */
+-	chnl_packet_obj->byte_size =
+-	    write_data(pio_mgr->hbridge_context, pio_mgr->output,
+-		       chnl_packet_obj->host_sys_buf, min(pio_mgr->usm_buf_size,
+-						  chnl_packet_obj->byte_size));
++	chnl_packet_obj->byte_size = min(pio_mgr->usm_buf_size,
++					chnl_packet_obj->byte_size);
++	memcpy(pio_mgr->output,	chnl_packet_obj->host_sys_buf,
++					chnl_packet_obj->byte_size);
  	pchnl->bytes_moved += chnl_packet_obj->byte_size;
  	/* Write all 32 bits of arg */
--	IO_SET_LONG(pio_mgr->hbridge_context, struct shm, sm, arg,
--		    chnl_packet_obj->dw_arg);
-+	sm->arg = chnl_packet_obj->dw_arg;
- #if _CHNL_WORDSIZE == 2
--	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_id,
--		     (u16) chnl_id);
--	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_size,
--		     (u16) (chnl_packet_obj->byte_size +
--			    (chnl_mgr_obj->word_size -
--			     1)) / (u16) chnl_mgr_obj->word_size);
-+	/* Access can be different SM access word size (e.g. 16/32 bit words) */
-+	sm->output_id = (u16) chnl_id;
-+	sm->output_size = (u16) (chnl_packet_obj->byte_size +
-+				chnl_mgr_obj->word_size - 1) /
-+				(u16) chnl_mgr_obj->word_size;
- #else
--	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_id,
--								chnl_id);
--	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_size,
--		     (chnl_packet_obj->byte_size +
--		      (chnl_mgr_obj->word_size - 1)) / chnl_mgr_obj->word_size);
-+	sm->output_id = chnl_id;
-+	sm->output_size = (chnl_packet_obj->byte_size +
-+			chnl_mgr_obj->word_size - 1) / chnl_mgr_obj->word_size;
- #endif
--	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_full, 1);
-+	sm->output_full =  1;
- 	/* Indicate to the DSP we have written the output */
- 	sm_interrupt_dsp(pio_mgr->hbridge_context, MBX_PCPY_CLASS);
- 	/* Notify client with IO completion record (keep EOS) */
-@@ -1463,9 +1448,7 @@ static void output_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
- 	msg_ctr_obj = pio_mgr->msg_output_ctrl;
+ 	IO_SET_LONG(pio_mgr->hbridge_context, struct shm, sm, arg,
+@@ -1697,34 +1658,7 @@ func_end:
+ 	return status;
+ }
  
- 	/* Check if output has been cleared */
--	output_empty =
--	    IO_GET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl, msg_ctr_obj,
--			 buf_empty);
-+	output_empty = msg_ctr_obj->buf_empty;
- 	if (output_empty) {
- 		num_msgs = (hmsg_mgr->msgs_pending > hmsg_mgr->max_msgs) ?
- 		    hmsg_mgr->max_msgs : hmsg_mgr->msgs_pending;
-@@ -1512,17 +1495,17 @@ static void output_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
- 		if (num_msgs > 0) {
- 			hmsg_mgr->msgs_pending -= num_msgs;
- #if _CHNL_WORDSIZE == 2
--			IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
--				     msg_ctr_obj, size, (u16) num_msgs);
-+			/*
-+			 * Access can be different SM access word size
-+			 * (e.g. 16/32 bit words)
-+			 */
-+			msg_ctr_obj->size = (u16) num_msgs;
- #else
--			IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
--				     msg_ctr_obj, size, num_msgs);
-+			msg_ctr_obj->size = num_msgs;
- #endif
--			IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
--				     msg_ctr_obj, buf_empty, false);
-+			msg_ctr_obj->buf_empty = false;
- 			/* Set the post SWI flag */
--			IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
--				     msg_ctr_obj, post_swi, true);
-+			msg_ctr_obj->post_swi = true;
- 			/* Tell the DSP we have written the output. */
- 			sm_interrupt_dsp(pio_mgr->hbridge_context,
- 						MBX_PCPY_CLASS);
+-/*
+- *  ======== read_data ========
+- *      Copies buffers from the shared memory to the host buffer.
+- */
+-static u32 read_data(struct bridge_dev_context *dev_ctxt, void *dest,
+-		     void *src, u32 usize)
+-{
+-	memcpy(dest, src, usize);
+-	return usize;
+-}
+-
+-/*
+- *  ======== write_data ========
+- *      Copies buffers from the host side buffer to the shared memory.
+- */
+-static u32 write_data(struct bridge_dev_context *dev_ctxt, void *dest,
+-		      void *src, u32 usize)
+-{
+-	memcpy(dest, src, usize);
+-	return usize;
+-}
+-
+ /* ZCPY IO routines. */
+-void io_intr_dsp2(struct io_mgr *pio_mgr, u16 mb_val)
+-{
+-	sm_interrupt_dsp(pio_mgr->hbridge_context, mb_val);
+-}
+-
+ /*
+  *  ======== IO_SHMcontrol ========
+  *      Sets the requested shm setting.
 diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-index 8b51c37..f1c44f8 100644
+index e9a6c19..8b51c37 100644
 --- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
 +++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
-@@ -33,13 +33,8 @@
- #define DSP_FIELD_ADDR(type, field, base, wordsize) \
-     ((((s32)&(((type *)0)->field)) / wordsize) + (u32)base)
+@@ -287,8 +287,6 @@ extern void io_or_set_value(struct bridge_dev_context *dev_ctxt,
+ extern void io_and_set_value(struct bridge_dev_context *dev_ctxt,
+ 			     u32 dsp_addr, u32 value);
  
--/* Access can be different SM access word size (e.g. 16/32 bit words) */
--#define IO_SET_VALUE(context, type, base, field, value) (base->field = value)
--#define IO_GET_VALUE(context, type, base, field)	(base->field)
- #define IO_OR_VALUE(context, type, base, field, value)  (base->field |= value)
- #define IO_AND_VALUE(context, type, base, field, value) (base->field &= value)
--#define IO_SET_LONG(context, type, base, field, value)  (base->field = value)
--#define IO_GET_LONG(context, type, base, field)         (base->field)
+-extern void io_intr_dsp2(struct io_mgr *pio_mgr, u16 mb_val);
+-
+ extern void io_sm_init(void);
  
- #ifdef CONFIG_TIDSPBRIDGE_DVFS
- /* The maximum number of OPPs that are supported */
+ #ifdef CONFIG_TIDSPBRIDGE_BACKTRACE
 -- 
 1.6.3.3
 
