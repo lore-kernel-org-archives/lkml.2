@@ -1,68 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760859Ab0GWUBa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 16:01:30 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43153 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756256Ab0GWT7J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 15:59:09 -0400
-From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: linux-arm-kernel@lists.infradead.org
-Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
-        =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-        Tomi Valkeinen <tomi.valkeinen@nokia.com>, linux-omap@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH 06/11] ARM: omap: move omapfb_reserve_sdram() to .init.text
-Date: Fri, 23 Jul 2010 21:58:29 +0200
-Message-Id: <1279915120-4373-6-git-send-email-u.kleine-koenig@pengutronix.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
-References: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
+	id S1760908Ab0GWUB5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 16:01:57 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53749 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1760534Ab0GWUBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 16:01:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: [Bug #16201] SIOCGIWFREQ ioctl fails to get frequency info
+Date: Fri, 23 Jul 2010 22:00:43 +0200
+User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-rjw+; KDE/4.4.4; x86_64; ; )
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>, nuh <nuh@mailinator.net>
+References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera> <tneGvaw1wLL.A.maC._4XSMB@chimera> <20100723143831.GB2426@tuxdriver.com>
+In-Reply-To: <20100723143831.GB2426@tuxdriver.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007232200.43440.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-omapfb_reserve_sdram() is only called by omap1_map_common_io() and
-_omap2_map_common_io() that both live in .init.text.  So this is save
-for omapfb_reserve_sdram(), too.
+On Friday, July 23, 2010, John W. Linville wrote:
+> On Fri, Jul 23, 2010 at 01:47:29PM +0200, Rafael J. Wysocki wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> > 
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.34.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> > 
+> > 
+> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16201
+> > Subject		: SIOCGIWFREQ ioctl fails to get frequency info
+> > Submitter	: nuh <nuh@mailinator.net>
+> > Date		: 2010-06-14 10:45 (40 days old)
+> 
+> No response for the submitter, no reproducer -- I think it should be closed.
 
-Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
----
- arch/arm/plat-omap/fb.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/arm/plat-omap/fb.c b/arch/arm/plat-omap/fb.c
-index e8a390d..4df210f 100644
---- a/arch/arm/plat-omap/fb.c
-+++ b/arch/arm/plat-omap/fb.c
-@@ -359,7 +359,7 @@ static int __init omap_init_fb(void)
- 
- arch_initcall(omap_init_fb);
- 
--void omapfb_reserve_sdram(void) {}
-+void __init omapfb_reserve_sdram(void) {}
- unsigned long omapfb_reserve_sram(unsigned long sram_pstart,
- 				  unsigned long sram_vstart,
- 				  unsigned long sram_size,
-@@ -375,7 +375,7 @@ void omapfb_set_platform_data(struct omapfb_platform_data *data)
- {
- }
- 
--void omapfb_reserve_sdram(void) {}
-+void __init omapfb_reserve_sdram(void) {}
- unsigned long omapfb_reserve_sram(unsigned long sram_pstart,
- 				  unsigned long sram_vstart,
- 				  unsigned long sram_size,
--- 
-1.7.1
-
+OK
