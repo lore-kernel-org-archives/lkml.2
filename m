@@ -1,115 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752616Ab0GWB76 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 21:59:58 -0400
-Received: from mga03.intel.com ([143.182.124.21]:61927 "EHLO mga03.intel.com"
+	id S1753969Ab0GWCFn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 22:05:43 -0400
+Received: from ozlabs.org ([203.10.76.45]:52764 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866Ab0GWB75 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 21:59:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,245,1278313200"; 
-   d="scan'208";a="303404227"
-Subject: Re: Fwd: [RFC][PATCH v1 11/15] perf: export tracepoint events via
- sysfs: 	power
-From: Lin Ming <ming.m.lin@intel.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Ingo Molnar <mingo@elte.hu>, Robert Richter <robert.richter@amd.com>,
-        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-        Johannes Berg <johannes@sipsolutions.net>,
-        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
-        Frederic Weisbecker <fweisbec@gmail.com>,
-        Paul Mundt <lethal@linux-sh.org>,
-        "eranian@gmail.com" <eranian@gmail.com>,
-        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-        "arjan@linux.intel.com" <arjan@linux.intel.com>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-        Paul Mackerras <paulus@samba.org>,
-        "David S. Miller" <davem@davemloft.net>,
-        Russell King <rmk+kernel@arm.linux.org.uk>,
-        Arnaldo Carvalho de Melo <acme@redhat.com>,
-        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-        lkml <linux-kernel@vger.kernel.org>,
-        Thomas Gleixner <tglx@linutronix.de>,
-        Steven Rostedt <rostedt@goodmis.org>
-In-Reply-To: <AANLkTincVAsbxJk0IR4mkdP1kIuefQiSxy--_0Xeskbc@mail.gmail.com>
-References: <1279797433.20942.94.camel@minggr.sh.intel.com>
-	 <201007222353.48942.rjw@sisk.pl>
-	 <AANLkTincVAsbxJk0IR4mkdP1kIuefQiSxy--_0Xeskbc@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Jul 2010 10:00:06 +0800
-Message-ID: <1279850406.24607.29.camel@minggr.sh.intel.com>
+	id S1750866Ab0GWCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 22:05:42 -0400
+Subject: Re: linux-next: OOPS at bot time
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Ben Hutchings <bhutchings@solarflare.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
+        LKML <linux-kernel@vger.kernel.org>,
+        Jesse Barnes <jbarnes@virtuousgeek.org>
+In-Reply-To: <1279847985.4883.391.camel@localhost>
+References: <20100723102202.871a3131.sfr@canb.auug.org.au>
+	 <1279847985.4883.391.camel@localhost>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-2jwhBwbFMozNiZtbZlTX"
+Date: Fri, 23 Jul 2010 12:05:40 +1000
+Message-ID: <1279850740.6381.19.camel@concordia>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.2 
-Content-Transfer-Encoding: 7bit
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Date: Fri, Jul 23, 2010 at 5:53 AM
-> Subject: Re: [RFC][PATCH v1 11/15] perf: export tracepoint events via
-> sysfs: power
-> 
-> 
-> On Thursday, July 22, 2010, Lin Ming wrote:
-> > power tracepoint events are exported like below,
-> >
-> > /sys/power/events/
-> > |-- power_end
-> > |   |-- config
-> > |   `-- type
-> > |-- power_frequency
-> > |   |-- config
-> > |   `-- type
-> > `-- power_start
-> >     |-- config
-> >     `-- type
-> 
-> Any details?
+--=-2jwhBwbFMozNiZtbZlTX
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Sorry that I didn't include you in the patch description.
+On Fri, 2010-07-23 at 02:19 +0100, Ben Hutchings wrote:
+> On Fri, 2010-07-23 at 10:22 +1000, Stephen Rothwell wrote:
+> > Hi all,
+> >=20
+> > My Power7 boot test paniced like this: (next-20100722)
+> >=20
+> > %GQLogic Fibre Channel HBA Driver: 8.03.03-k0
+> > qla2xxx 0002:01:00.2: enabling device (0144 -> 0146)
+> > qla2xxx 0002:01:00.2: Found an ISP8001, irq 35, iobase 0xd0000800800140=
+00
+> > ------------[ cut here ]------------
+> > kernel BUG at drivers/pci/msi.c:205!
+> [...]
+> > Call Trace:
+> > [c00000000278b270] [c000000000048d9c] .rtas_setup_msi_irqs+0x1d8/0x254 =
+(unreliable)
+> > [c00000000278b360] [c00000000002a9cc] .arch_setup_msi_irqs+0x34/0x4c
+> > [c00000000278b3e0] [c0000000002fd3fc] .pci_enable_msix+0x49c/0x4ac
+> [...]
+> > That line number is this:
+> >=20
+> > 	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
+> > 		 entry->msg.data));
+> >=20
+> > in read_msi_msg_desc().  That BUG_ON was added by commit
+> > 2ca1af9aa3285c6a5f103ed31ad09f7399fc65d7 ("PCI: MSI: Remove unsafe and
+> > unnecessary hardware access") from the pci tree.
+>=20
+> I wanted to assert that read_msi_msg_desc() is only used to update
+> MSI/MSI-X descriptors that have already been generated by Linux.  It
+> looks like you found an exception.
+>
+> We could make read_msi_msg() fall back to reading from the hardware, but
+> I think that what the pSeries code is trying to do - save an MSI message
+> generated by firmware - is different from what the other callers want.
+> Instead we could add:
+>=20
+> void save_msi_msg(unsigned int irq)
+> {
+> 	struct irq_desc *desc =3D irq_to_desc(irq);
+> 	struct msi_desc *entry =3D get_irq_desc_msi(desc);
+> 	struct msi_msg *msg =3D &entry->msg;
+>=20
+> 	/* ...followed by the old implementation of read_msi_msg_desc() */
+> }
+>=20
+> Possibly conditional on something like CONFIG_ARCH_NEEDS_SAVE_MSI_MSG.
 
-[RFC][PATCH v1 00/15] perf: export events in a structured way via sysfs
-http://lkml.org/lkml/2010/7/22/141
+Maybe.
 
-> 
-> > ---
-> >  kernel/power/main.c |    4 ++++
-> >  1 files changed, 4 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/kernel/power/main.c b/kernel/power/main.c
-> > index b58800b..6749374 100644
-> > --- a/kernel/power/main.c
-> > +++ b/kernel/power/main.c
-> > @@ -12,6 +12,7 @@
-> >  #include <linux/string.h>
-> >  #include <linux/resume-trace.h>
-> >  #include <linux/workqueue.h>
-> > +#include <linux/perf_event.h>
-> >
-> >  #include "power.h"
-> >
-> > @@ -269,6 +270,9 @@ static int __init pm_init(void)
-> >       power_kobj = kobject_create_and_add("power", NULL);
-> >       if (!power_kobj)
-> >               return -ENOMEM;
-> > +
-> > +     perf_sys_add_tp(power_kobj, "power");
-> > +
-> 
-> Why isn't it done in drivers/base/power/sysfs.c ?
+But then you end up with read_msi_msg(), which doesn't actually read
+anything, which I think is confusing. I'd rather read_msi_msg() read the
+message, from the device, and we have another routine which returns the
+previously saved msg from the msi_desc.
 
-The sysfs thing in drivers/base/power/sysfs.c is per device.
-But the power tracepoint events are not per device, right?
+cheers
 
-Lin Ming
+--=-2jwhBwbFMozNiZtbZlTX
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
 
-> 
-> >       return sysfs_create_group(power_kobj, &attr_group);
-> >  }
-> 
-> Rafael
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEABECAAYFAkxI+PEACgkQdSjSd0sB4dJZBwCfYn60t5zXzoyyHNimeOZ36zx7
+uqIAn0MgXgdUi7R1W2kux1Ur+hoBWn8Y
+=qTcF
+-----END PGP SIGNATURE-----
+
+--=-2jwhBwbFMozNiZtbZlTX--
 
