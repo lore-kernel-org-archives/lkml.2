@@ -1,121 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758661Ab0GWCMp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 22:12:45 -0400
-Received: from mail.windriver.com ([147.11.1.11]:57695 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752813Ab0GWCMf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 22:12:35 -0400
-From: Dongdong Deng <dongdong.deng@windriver.com>
-To: jason.wessel@windriver.com, fweisbec@gmail.com, will.deacon@arm.com,
-        lethal@linux-sh.org, mahesh@linux.vnet.ibm.com,
-        prasad@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org
-Cc: mingo@elte.hu, kgdb-bugreport@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: [RFC PATCH] hw-breakpoints, kgdb, x86: add a flag to pass DIE_DEBUG notification
-Date: Fri, 23 Jul 2010 10:16:01 +0800
-Message-Id: <1279851361-32604-1-git-send-email-dongdong.deng@windriver.com>
-X-Mailer: git-send-email 1.6.0.4
-X-OriginalArrivalTime: 23 Jul 2010 02:11:42.0944 (UTC) FILETIME=[64CECE00:01CB2A0C]
+	id S1759322Ab0GWCNG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 22:13:06 -0400
+Received: from fn.samba.org ([216.83.154.106]:52926 "EHLO lists.samba.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750866Ab0GWCNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 22:13:01 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19528.64159.999224.437890@samba.org>
+Date: Fri, 23 Jul 2010 12:12:47 +1000
+To: "Ted Ts'o" <tytso@mit.edu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+        Jeremy Allison <jra@samba.org>, linux-cifs@vger.kernel.org,
+        linux-nfs@vger.kernel.org, Volker.Lendecke@sernet.de,
+        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
+        Jan Engelhardt <jengelh@medozas.de>,
+        David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
+ extended file stats available [ver #6]
+In-Reply-To: <20100723012130.GD16373@thunk.org>
+References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
+	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
+	<30448.1279800887@redhat.com>
+	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
+	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
+	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
+	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
+	<20100722162712.GB10352@jeremy-laptop>
+	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
+	<19528.60019.28495.655512@samba.org>
+	<20100723012130.GD16373@thunk.org>
+X-Mailer: VM 8.0.13 under 23.1.1 (x86_64-pc-linux-gnu)
+Reply-To: tridge@samba.org
+From: tridge@samba.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The hw_breakpoint subsystem consumes all the hardware
-breakpoint exceptions since it hooks the notify_die
-handlers first, this means that kgdb doesn't get the
-opportunity to handle hw breakpoint exceptions generated
-by kgdb itself.
+Hi Ted,
 
-This patch adds an extend flag to perf_event_attr for
-hw_breakpoint_handler() to decide to pass or stop the
-DIE_DEBUG notification.
+ > Does it literally mean "file creation time" in terms of when the OS
+ > created the file, or does it mean "file" in the sense of
+ > application contents.  For example, if an application edits the
+ > file and saves it out using "write file to foo.new; sync; rename
+ > foo to foo.bak; rename foo.new to foo", should the creation time
+ > for the newly written file "foo" be the time when the editor saved
+ > out the file (i.e., when "foo.new" was created), or copied from the
+ > original file "foo"'s creation time.
 
-As KGDB set that flag, hw_breakpoint_handler() will pass
-the DIE_DEBUG notification, thus kgdb have the chance
-to take DIE_DEBUG notification.
+In Windows this is can be controlled by applications, but it also is
+done at the filesystem level in NTFS using a technique that Microsoft
+call "File System Tunneling". If you create a file with the same name
+within a short time (default 15s and settable in the registry) of when
+the file previously existed then it will get the same CreationTime as
+the previous file.
 
-Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
-Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
----
- arch/x86/kernel/hw_breakpoint.c |   14 ++++++++++++++
- arch/x86/kernel/kgdb.c          |    2 ++
- include/linux/perf_event.h      |    9 +++++++++
- 3 files changed, 25 insertions(+), 0 deletions(-)
+For details see http://support.microsoft.com/kb/172190
 
-diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
-index a8f1b80..b38f786 100644
---- a/arch/x86/kernel/hw_breakpoint.c
-+++ b/arch/x86/kernel/hw_breakpoint.c
-@@ -406,6 +406,8 @@ EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
-  * ii) When there are more bits than trap<n> set in DR6 register (such
-  * as BD, BS or BT) indicating that more than one debug condition is
-  * met and requires some more action in do_debug().
-+ * iii) The source of hw breakpoint event want to handle the event
-+ * by itself, currently just KGDB have this notion.
-  *
-  * NOTIFY_STOP returned for all other cases
-  *
-@@ -464,6 +466,18 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
- 			break;
- 		}
- 
-+		if (bp->attr.flag == SKIP_HWBP_EVENT_PERF_FLAG) {
-+			/*
-+			 * when attr.flag is set to SKIP_HWBP_EVENT_PERF_FLAG
-+			 * it indicates currently hw breakpoint event
-+			 * source want to handle this event by itself.
-+			 * thus return NOTIFY_DONE here.
-+			 */
-+			rc = NOTIFY_DONE;
-+			rcu_read_unlock();
-+			break;
-+		}
-+
- 		perf_bp_event(bp, args->regs);
- 
- 		rcu_read_unlock();
-diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
-index 4f4af75..bc3321f 100644
---- a/arch/x86/kernel/kgdb.c
-+++ b/arch/x86/kernel/kgdb.c
-@@ -641,6 +641,8 @@ void kgdb_arch_late(void)
- 	attr.bp_len = HW_BREAKPOINT_LEN_1;
- 	attr.bp_type = HW_BREAKPOINT_W;
- 	attr.disabled = 1;
-+	/* set kgdb's special requires flag to perf_event */
-+	attr.flag = SKIP_HWBP_EVENT_PERF_FLAG;
- 	for (i = 0; i < 4; i++) {
- 		if (breakinfo[i].pev)
- 			continue;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 5d0266d..fcefb09 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -160,6 +160,11 @@ enum perf_event_read_format {
- 
- #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
- 
-+enum perf_event_attr_flag {
-+	NOSET_PERF_FLAG               = 0,
-+	SKIP_HWBP_EVENT_PERF_FLAG     = 1,
-+};
-+
- /*
-  * Hardware event_id to monitor via a performance monitoring event:
-  */
-@@ -225,6 +230,10 @@ struct perf_event_attr {
- 	__u32			bp_type;
- 	__u64			bp_addr;
- 	__u64			bp_len;
-+	/*
-+	 * Ext flag, currently just kgdb used it.
-+	 */
-+	enum perf_event_attr_flag	flag;
- };
- 
- /*
--- 
-1.6.0.4
+Some applications also do this regardless of the registry setting for
+MaximumTunnelEntryAgeInSeconds. They use the ability to set the
+CreationTime to get the same behaviour.
 
+Cheers, Tridge
