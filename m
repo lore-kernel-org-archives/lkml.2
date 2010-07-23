@@ -1,61 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758528Ab0GWPm1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:42:27 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:29332 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756008Ab0GWPmY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:42:24 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAGNVSUx5Lc6U/2dsb2JhbACfaHLBfYU2BA
-Date: Sat, 24 Jul 2010 01:42:20 +1000
-From: Nick Piggin <npiggin@kernel.dk>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-        Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>
-Subject: Re: VFS scalability git tree
-Message-ID: <20100723154220.GA5773@amd>
-References: <20100722190100.GA22269@amd>
- <20100723111746.GA5169@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100723111746.GA5169@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1760272Ab0GWPpB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:45:01 -0400
+Received: from mail.gmx.net ([213.165.64.20]:35871 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1756517Ab0GWPpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 11:45:00 -0400
+X-Authenticated: #10250065
+X-Provags-ID: V01U2FsdGVkX1+PwFs17MuPjNA+CFfTt2gr5xHZli5HN4Yblwxxrd
+	6YBR/g0T9Nx0vZ
+From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+To: linux-fbdev@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org,
+        Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
+        Joseph Chan <JosephChan@via.com.tw>
+Subject: [PATCH 10/11] viafb: probe cleanups
+Date: Fri, 23 Jul 2010 15:54:50 +0000
+Message-Id: <1279900490-4488-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Mailer: git-send-email 1.6.3.2
+In-Reply-To: <1279899566-4359-1-git-send-email-FlorianSchandinat@gmx.de>
+References: <1279899566-4359-1-git-send-email-FlorianSchandinat@gmx.de>
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 07:17:46AM -0400, Christoph Hellwig wrote:
-> I might sound like a broken record, but if you want to make forward
-> progress with this split it into smaller series.
+viafb: probe cleanups
 
-No I appreciate the advice. I put this tree up for people to fetch
-without posting patches all the time. I think it is important to
-test and to see the big picture when reviewing the patches, but you
-are right about how to actually submit patches on the ML.
+Removal of strange special cases that must not exist as well as a
+useless check.
 
+Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
+Cc: Joseph Chan <JosephChan@via.com.tw>
+---
+ drivers/video/via/viafbdev.c |   27 +++------------------------
+ 1 files changed, 3 insertions(+), 24 deletions(-)
 
-> What would be useful for example would be one series each to split
-> the global inode_lock and dcache_lock, without introducing all the
-> fancy new locking primitives, per-bucket locks and lru schemes for
-> a start.
-
-I've kept the series fairly well structured like that. Basically it
-is in these parts:
-
-1. files lock
-2. vfsmount lock
-3. mnt refcount
-4a. put several new global spinlocks around different parts of dcache
-4b. remove dcache_lock after the above protect everything
-4c. start doing fine grained locking of hash, inode alias, lru, etc etc
-5a, 5b, 5c. same for inodes
-6. some further optimisations and cleanups
-7. store-free path walking
-
-This kind of sequence. I will again try to submit a first couple of
-things to Al soon.
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index 1128d51..0f56eb2 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -1525,10 +1525,6 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
+ 	parse_lcd_port();
+ 	parse_dvi_port();
+ 
+-	/* for dual-fb must viafb_SAMM_ON=1 and viafb_dual_fb=1 */
+-	if (!viafb_SAMM_ON)
+-		viafb_dual_fb = 0;
+-
+ 	viafb_init_chip_info(vdev->chip_type);
+ 	/*
+ 	 * The framebuffer will have been successfully mapped by
+@@ -1572,30 +1568,13 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
+ 		parse_mode(viafb_mode1, &viafb_second_xres,
+ 			&viafb_second_yres);
+ 
+-		if (0 == viafb_second_virtual_xres) {
+-			switch (viafb_second_xres) {
+-			case 1400:
+-				viafb_second_virtual_xres = 1408;
+-				break;
+-			default:
+-				viafb_second_virtual_xres = viafb_second_xres;
+-				break;
+-			}
+-		}
+-		if (0 == viafb_second_virtual_yres)
+-			viafb_second_virtual_yres = viafb_second_yres;
++		viafb_second_virtual_xres = viafb_second_xres;
++		viafb_second_virtual_yres = viafb_second_yres;
+ 	}
+ 
+ 	default_var.xres = default_xres;
+ 	default_var.yres = default_yres;
+-	switch (default_xres) {
+-	case 1400:
+-		default_var.xres_virtual = 1408;
+-		break;
+-	default:
+-		default_var.xres_virtual = default_xres;
+-		break;
+-	}
++	default_var.xres_virtual = default_xres;
+ 	default_var.yres_virtual = default_yres;
+ 	default_var.bits_per_pixel = viafb_bpp;
+ 	default_var.pixclock =
+-- 
+1.6.3.2
 
