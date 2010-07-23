@@ -1,146 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760628Ab0GWPfg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:35:36 -0400
-Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:55506 "EHLO
-	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1756565Ab0GWPfe (ORCPT
+	id S1760664Ab0GWPhg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:37:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58834 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1756473Ab0GWPhf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:35:34 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAN9RSUx5Lc6U/2dsb2JhbACfaHLBf4U2BA
-Date: Sat, 24 Jul 2010 01:35:28 +1000
-From: Nick Piggin <npiggin@kernel.dk>
-To: Nick Piggin <npiggin@kernel.dk>, Michael Neuling <mikey@neuling.org>
-Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-mm@kvack.org, Frank Mayhar <fmayhar@google.com>,
-        John Stultz <johnstul@us.ibm.com>
-Subject: Re: VFS scalability git tree
-Message-ID: <20100723153528.GA4514@amd>
-References: <20100722190100.GA22269@amd>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100722190100.GA22269@amd>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 23 Jul 2010 11:37:35 -0400
+Date: Fri, 23 Jul 2010 08:37:06 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Helmut Schaa <helmut.schaa@googlemail.com>
+Cc: Rajiv Andrade <srajiv@linux.vnet.ibm.com>,
+        tpmdd-devel@lists.sourceforge.net,
+        Debora Velarde <debora@linux.vnet.ibm.com>,
+        David Safford <safford@watson.ibm.com>, jmorris@namei.org,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] tpm_tis: Fix subsequent suspend failures
+Message-Id: <20100723083706.627a4361.akpm@linux-foundation.org>
+In-Reply-To: <201007231407.51605.helmut.schaa@googlemail.com>
+References: <201006091227.15729.helmut.schaa@googlemail.com>
+	<5204AD54-F4BF-49A8-9168-3FCA112AAA2B@linux.vnet.ibm.com>
+	<20100623130700.a032c373.akpm@linux-foundation.org>
+	<201007231407.51605.helmut.schaa@googlemail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 05:01:00AM +1000, Nick Piggin wrote:
-> I'm pleased to announce I have a git tree up of my vfs scalability work.
+On Fri, 23 Jul 2010 14:07:51 +0200 Helmut Schaa <helmut.schaa@googlemail.com> wrote:
+
+> Hi,
 > 
-> git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
-> http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git
+> Am Mittwoch 23 Juni 2010 schrieb Andrew Morton:
+> > On Wed, 23 Jun 2010 16:55:54 -0300
+> > Rajiv Andrade <srajiv@linux.vnet.ibm.com> wrote:
+> > 
+> > > > (top-posting repaired.  Please don't do that).
+> > > > 
+> > > > This wasn't a very good way to send a patch.  I edited the diff,
+> > > > reconstructed the patch and then assembled a decent-looking changelog. 
+> > > > I also changed your acked-by to the required signed-off-by, because you
+> > > > were on the patch's delivery path.
+> > > > 
+> > > > Pretty please: next time, prepare a proper mergeable patch with the
+> > > > correct attributions and signoffs?  Thanks.
+> > > 
+> > > Sure, sorry. I was just not certain if I could just resent Helmut's patch to LKML without messing with his authorship.
+> > 
+> > You can.  Put his "From:" line right at the top of the changelog and
+> > everyone's patch-receiving tools will honour that.  If the From: at the
+> > top of the changelog is absent, the tools will fall back to using the
+> > From: line in the mail headers.
+> 
+> This patch still didn't make it into mainline and it fixes a regression.
+> Rajiv, do you plan to resubmit the patch or did you expect it to go through
+> Andrew's tree?
 
-> Summary of a few numbers I've run. google's socket teardown workload
-> runs 3-4x faster on my 2 socket Opteron. Single thread git diff runs 20%
-> on same machine. 32 node Altix runs dbench on ramfs 150x faster (100MB/s
-> up to 15GB/s).
-
-Following post just contains some preliminary benchmark numbers on a
-POWER7. Boring if you're not interested in this stuff.
-
-IBM and Mikey kindly allowed me to do some test runs on a big POWER7
-system today.  Very is the only word I'm authorized to describe how big
-is big. We tested the vfs-scale-working and master branches from my git
-tree as of today.  I'll stick with relative numbers to be safe. All
-tests were run on ramfs.
-
-
-First and very important is single threaded performance of basic code.
-POWER7 is obviously vastly different from a Barcelona or Nehalem. and
-store-free path walk uses a lot of seqlocks, which are cheap on x86, a
-little more epensive on others.
-
-Test case	time difference, vanilla to vfs-scale (negative is better)
-stat()		-10.8% +/- 0.3%
-close(open())	  4.3% +/- 0.3%
-unlink(creat())	 36.8% +/- 0.3%
-
-stat is significantly faster which is really good.
-
-open/close is a bit slower which we didn't get time to analyse. There
-are one or two seqlock checks which might be avoided, which could make
-up the difference. It's not horrible, but I hope to get POWER7
-open/close more competitive (on x86 open/close is even a bit faster).
-
-Note this is a worst case for rcu-path-walk: lookup of "./file", because
-it has to take refcount on the final element. With more elements, rcu
-walk should gain the advantage.
-
-creat/unlink is showing the big RCU penalty. However I have penciled
-out a working design with Linus of how to do SLAB_DESTROY_BY_RCU.
-However it makes the store-free path walking and some inode RCU list
-walking a little bit trickier, so I prefer not to dump too much on
-at once. There is something that can be done if regressions show up.
-I don't anticipate many regressions outside microbenchmarks, and this
-is about the absolute worst case.
-
-
-On to parallel tests. Firstly, the google socket workload.
-Running with "NR_THREADS" children, vfs-scale patches do this:
-
-root@p7ih06:~/google# time ./google --files_per_cpu 10000 > /dev/null
-real	0m4.976s
-user	8m38.925s
-sys	6m45.236s
-
-root@p7ih06:~/google# time ./google --files_per_cpu 20000 > /dev/null
-real	0m7.816s
-user	11m21.034s
-sys	14m38.258s
-
-root@p7ih06:~/google# time ./google --files_per_cpu 40000 > /dev/null
-real	0m11.358s
-user	11m37.955s
-sys	28m44.911s
-
-Reducing to NR_THREADS/4 children allows vanilla to complete:
-
-root@p7ih06:~/google# time ./google  --files_per_cpu 10000
-real    1m23.118s
-user    3m31.820s
-sys     81m10.405s
-
-I was actually surprised it did that well.
-
-
-Dbench was an interesting one. We didn't manage to stretch the box's
-legs, unfortunately!  dbench with 1 proc gave about 500MB/s, 64 procs 
-gave 21GB/s, 128 and throughput dropped dramatically. Turns out that
-weird things start happening with rename seqlock versus d_lookup, and
-d_move contention (dbench does a sprinkle of renaming). That can be
-improved I think, but noth worth bothering with for the time being.
-
-It's not really worth testing vanilla at high dbench parallelism.
-
-
-Parallel git diff workload looked OK. It seemed to be scaling fine
-in the vfs, but it hit a bottlneck in powerpc's tlb invalidation, so
-numbers may not be so interesting.
-
-
-Lastly, some parallel syscall microbenchmarks:
-
-procs		vanilla		vfs-scale
-open-close, seperate-cwd
-1		384557.70	355923.82	op/s/proc
-NR_CORES	    86.63	164054.64	op/s/proc
-NR_THREADS	    18.68 (ouch!)
-
-open-close, same-cwd
-1		381074.32	339161.25
-NR_CORES	   104.16	107653.05
-
-creat-unlink, seperate-cwd
-1		145891.05	104301.06
-NR_CORES	    29.81	 10061.66
-
-creat-unlink, same-cwd
-1		129681.27	104301.06
-NR_CORES	    12.68	   181.24
-
-So we can see the single thread performance regressions here, but
-the vanilla case really chokes at high CPU counts.
-
+The patch is presently parked in James's linux-next tree.
