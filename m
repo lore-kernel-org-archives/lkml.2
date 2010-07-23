@@ -1,112 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753578Ab0GWHgZ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 03:36:25 -0400
-Received: from mail-gx0-f174.google.com ([209.85.161.174]:55630 "EHLO
-	mail-gx0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751122Ab0GWHgX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 03:36:23 -0400
-Message-ID: <4C49468B.40307@vflare.org>
-Date: Fri, 23 Jul 2010 13:06:43 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100624 Fedora/3.1-1.fc13 Lightning/1.0b2 Thunderbird/3.1
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: chris.mason@oracle.com, viro@zeniv.linux.org.uk, akpm@linux-foundation.org,
-        adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-        joel.becker@oracle.com, matthew@wil.cx, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        linux-mm@kvack.org, jeremy@goop.org, JBeulich@novell.com,
-        kurt.hackel@oracle.com, npiggin@suse.de, dave.mccracken@oracle.com,
-        riel@redhat.com, avi@redhat.com, konrad.wilk@oracle.com
-Subject: Re: [PATCH V3 0/8] Cleancache: overview
-References: <20100621231809.GA11111@ca-server1.us.oracle.com>
-In-Reply-To: <20100621231809.GA11111@ca-server1.us.oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1753899Ab0GWHiT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 03:38:19 -0400
+Received: from [61.177.137.56] ([61.177.137.56]:28964 "HELO mail.semico.com.cn"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with SMTP
+	id S1752827Ab0GWHiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 03:38:18 -0400
+Message-ID: <006401cb2a3a$2cf95a80$3701a8c0@wxintech.com>
+From: "zhanglx" <zhanglx@semico.com.cn>
+To: "zhanglx" <zhanglx@semico.com.cn>, <linux-kernel@vger.kernel.org>
+Subject: Re: Question about net subsystem
+Date: Fri, 23 Jul 2010 15:39:25 +0800
+X-Priority: 3
+X-MSMail-Priority: Normal
+X-Mailer: Microsoft Outlook Express 6.00.2900.3138
+X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3198
+X-RFC2646: Format=Flowed; Original
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 06/22/2010 04:48 AM, Dan Magenheimer wrote:
-> [PATCH V3 0/8] Cleancache: overview
-> 
-<snip>
-> 
->  Documentation/ABI/testing/sysfs-kernel-mm-cleancache |   11 +
->  Documentation/vm/cleancache.txt                      |  194 +++++++++++++++++++
->  fs/btrfs/extent_io.c                                 |    9 
->  fs/btrfs/super.c                                     |    2 
->  fs/buffer.c                                          |    5 
->  fs/ext3/super.c                                      |    2 
->  fs/ext4/super.c                                      |    2 
->  fs/mpage.c                                           |    7 
->  fs/ocfs2/super.c                                     |    3 
->  fs/super.c                                           |    7 
->  include/linux/cleancache.h                           |   88 ++++++++
->  include/linux/fs.h                                   |    5 
->  mm/Kconfig                                           |   22 ++
->  mm/Makefile                                          |    1 
->  mm/cleancache.c                                      |  169 ++++++++++++++++
->  mm/filemap.c                                         |   11 +
->  mm/truncate.c                                        |   10 
->  17 files changed, 548 insertions(+)
-> 
-> (following is a copy of Documentation/vm/cleancache.txt)
-> 
-> MOTIVATION
-> 
-> Cleancache can be thought of as a page-granularity victim cache for clean
-> pages that the kernel's pageframe replacement algorithm (PFRA) would like
-> to keep around, but can't since there isn't enough memory.  So when the
-> PFRA "evicts" a page, it first attempts to put it into a synchronous
-> concurrency-safe page-oriented "pseudo-RAM" device (such as Xen's Transcendent
-> Memory, aka "tmem", or in-kernel compressed memory, aka "zmem", or other
-> RAM-like devices) which is not directly accessible or addressable by the
-> kernel and is of unknown and possibly time-varying size.  And when a
-> cleancache-enabled filesystem wishes to access a page in a file on disk,
-> it first checks cleancache to see if it already contains it; if it does,
-> the page is copied into the kernel and a disk access is avoided.
-> 
+There is a doc of LinuxIPNetworking on kernelnewbies.org. It describes 
+networking in detail.
+
+thanks,
+zhanglx
+----- Original Message ----- 
+From: "zhanglx" <zhanglx@semico.com.cn>
+To: "zhanglx" <zhanglx@semico.com.cn>; <linux-kernel@vger.kernel.org>
+Sent: Thursday, July 22, 2010 9:21 AM
+Subject: Question about net subsystem
 
 
-Since zcache is now one of its use cases, I think the major objection that
-remains against cleancache is its intrusiveness -- in particular, need to
-change individual filesystems (even though one liners). Changes below should
-help avoid these per-fs changes and make it more self contained. I haven't
-tested these changes myself, so there might be missed cases or other mysterious
-problems:
+> hello,
+>
+> I have some questions about net subsystem.
+>
+> Does the kernel code store the IP address of local machine, in which 
+> variable?
+>
+> If there are two net cards, then there will be two IP and MAC address, how 
+> will the kernel store them? When there are two net cards, which card will 
+> the PC use to connect to net.
+>
+> Does the webbrowser such as Firefox also use the series of functions( 
+> sock(), connect(), send(),receive()...) to connect to internet?
+>
+> Thanks,
+> zhanglx 
 
-1. Cleancache requires filesystem specific changes primarily to make a call to
-cleancache init and store (per-fs instance) pool_id. I think we can get rid of
-these by directly passing 'struct super_block' pointer which is also
-sufficient to identify FS instance a page belongs to. This should then be used
-as a 'handle' by cleancache_ops provider to find corresponding memory pool or
-create a new pool when a new handle is encountered.
 
-This leaves out case of ocfs2 for which cleancache needs 'uuid' to decide if a
-shared pool should be created. IMHO, this case (and cleancache.init_shared_fs)
-should be removed from cleancache_ops since it is applicable only for Xen's
-cleancache_ops provider.
-
-2. I think change in btrfs can be avoided by moving cleancache_get_page()
-from do_mpage_reapage() to filemap_fault() and this should work for all
-filesystems. See:
-
-handle_pte_fault() -> do_(non)linear_fault() -> __do_fault()
-						-> vma->vm_ops->fault()
-
-which is defined as filemap_fault() for all filesystems. If some future
-filesystem uses its own custom function (why?) then it will have to arrange for
-call to cleancache_get_page(), if it wants this feature.
-
-With above changes, cleancache will be fairly self-contained:
- - cleancache_put_page() when page is removed from page-cache
- - cleacacache_get_page() when PF occurs (and after page-cache is searched)
- - cleancache_flush_*() on truncate_*()
-
-Thanks,
-Nitin
