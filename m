@@ -1,43 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752026Ab0GWGFO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 02:05:14 -0400
-Received: from claw.goop.org ([74.207.240.146]:34272 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751300Ab0GWGFL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 02:05:11 -0400
-Message-ID: <4C493116.1040107@goop.org>
-Date: Thu, 22 Jul 2010 23:05:10 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the xen tree
-References: <20100723140107.2883b2d3.sfr@canb.auug.org.au>
-In-Reply-To: <20100723140107.2883b2d3.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1751708Ab0GWGLb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 02:11:31 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:58010 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751266Ab0GWGL3 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 02:11:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=oJyb4tK0B0GE9KPXTux7dPT913XkLUnDDmzqiOURYfh787emCUuzP/WeF+x9zq0JXB
+         NV/4aFi+bNUGtM7k9K4/vh3RdcBvlSpBYzNELO4e1iM+JGudJPrzIi7Qf0oexCliN+80
+         Jvam5ov8pKQflhpZv1fes+vMMJSeacIjh5CX4=
+From: Michael Jensen <emjay1988@gmail.com>
+To: gregkh@suse.de
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+        Michael Jensen <emjay1988@gmail.com>
+Subject: [PATCH] Staging: comedi: comedidev: Fixed a macro definition code style issue
+Date: Fri, 23 Jul 2010 16:11:07 +1000
+Message-Id: <1279865467-16522-1-git-send-email-emjay1988@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2010 09:01 PM, Stephen Rothwell wrote:
-> arch/x86/xen/enlighten.c:71: error: __pcpu_scope_xen_vcpu causes a section type conflict
-> arch/x86/xen/enlighten.c:72: error: __pcpu_scope_xen_vcpu_info causes a section type conflict
-> arch/x86/xen/enlighten.c:71: error: __pcpu_unique_xen_vcpu causes a section type conflict
-> arch/x86/xen/enlighten.c:72: error: __pcpu_unique_xen_vcpu_info causes a section type conflict
-> arch/x86/xen/enlighten.c:558: error: __pcpu_unique_idt_desc causes a section type conflict
-> arch/x86/xen/enlighten.c:760: error: __pcpu_unique_xen_cr0_value causes a section type conflict
->
-> Not sure what has caused this.  I have dropped the xen tree for today.
->
-> gcc version 4.4.4 binutils version 2.20.1.
->   
+Fixed a code style issue.
 
-I've updated upstream/xen with the patch I just posted to fix this problem.
+Signed-off-by: Michael Jensen <emjay1988@gmail.com>
+---
+ drivers/staging/comedi/comedidev.h |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
-Thanks,
-    J
+diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+index 4eb2b77..a46e859 100644
+--- a/drivers/staging/comedi/comedidev.h
++++ b/drivers/staging/comedi/comedidev.h
+@@ -61,10 +61,11 @@
+ 	module_init(x ## _init_module);					\
+ 	module_exit(x ## _cleanup_module);
+ 
+-#define COMEDI_MODULE_MACROS						\
+-	MODULE_AUTHOR("Comedi http://www.comedi.org");		\
++#define COMEDI_MODULE_MACROS		do {				\
++	MODULE_AUTHOR("Comedi http://www.comedi.org");			\
+ 	MODULE_DESCRIPTION("Comedi low-level driver");			\
+-	MODULE_LICENSE("GPL");
++	MODULE_LICENSE("GPL");						\
++} while (0)
+ 
+ #define COMEDI_INITCLEANUP(x)						\
+ 	COMEDI_MODULE_MACROS		\
+-- 
+1.7.0.4
 
