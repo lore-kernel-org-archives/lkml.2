@@ -1,163 +1,254 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759464Ab0GWMKm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 08:10:42 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43030 "EHLO hera.kernel.org"
+	id S1759486Ab0GWMLG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 08:11:06 -0400
+Received: from hera.kernel.org ([140.211.167.34]:43042 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757569Ab0GWMKj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 08:10:39 -0400
-Date: Fri, 23 Jul 2010 12:10:23 GMT
-From: tip-bot for Lai Jiangshan <laijs@cn.fujitsu.com>
+	id S1753586Ab0GWMLB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 08:11:01 -0400
+Date: Fri, 23 Jul 2010 12:10:42 GMT
+From: tip-bot for KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        rostedt@goodmis.org, tglx@linutronix.de, laijs@cn.fujitsu.com
+        rostedt@goodmis.org, tglx@linutronix.de,
+        kosaki.motohiro@jp.fujitsu.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        rostedt@goodmis.org, tglx@linutronix.de, laijs@cn.fujitsu.com
-In-Reply-To: <4C078350.7090106@cn.fujitsu.com>
-References: <4C078350.7090106@cn.fujitsu.com>
+        rostedt@goodmis.org, tglx@linutronix.de,
+        kosaki.motohiro@jp.fujitsu.com
+In-Reply-To: <20100701104554.DA2D.A69D9226@jp.fujitsu.com>
+References: <20100701104554.DA2D.A69D9226@jp.fujitsu.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] tracing: Reduce latency and remove percpu trace_seq
-Message-ID: <tip-bc289ae98b75d93228d24f521ef02a076e506e94@git.kernel.org>
-Git-Commit-ID: bc289ae98b75d93228d24f521ef02a076e506e94
+Subject: [tip:perf/core] tracing: Shrink max latency ringbuffer if unnecessary
+Message-ID: <tip-ef710e100c1068d3dd5774d2b34c5485219e06ce@git.kernel.org>
+Git-Commit-ID: ef710e100c1068d3dd5774d2b34c5485219e06ce
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 12:10:23 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 12:10:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  bc289ae98b75d93228d24f521ef02a076e506e94
-Gitweb:     http://git.kernel.org/tip/bc289ae98b75d93228d24f521ef02a076e506e94
-Author:     Lai Jiangshan <laijs@cn.fujitsu.com>
-AuthorDate: Thu, 3 Jun 2010 18:26:24 +0800
+Commit-ID:  ef710e100c1068d3dd5774d2b34c5485219e06ce
+Gitweb:     http://git.kernel.org/tip/ef710e100c1068d3dd5774d2b34c5485219e06ce
+Author:     KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+AuthorDate: Thu, 1 Jul 2010 14:34:35 +0900
 Committer:  Steven Rostedt <rostedt@goodmis.org>
-CommitDate: Tue, 20 Jul 2010 22:05:34 -0400
+CommitDate: Wed, 21 Jul 2010 10:20:17 -0400
 
-tracing: Reduce latency and remove percpu trace_seq
+tracing: Shrink max latency ringbuffer if unnecessary
 
-__print_flags() and __print_symbolic() use percpu trace_seq:
+Documentation/trace/ftrace.txt says
 
-1) Its memory is allocated at compile time, it wastes memory if we don't use tracing.
-2) It is percpu data and it wastes more memory for multi-cpus system.
-3) It disables preemption when it executes its core routine
-   "trace_seq_printf(s, "%s: ", #call);" and introduces latency.
+  buffer_size_kb:
 
-So we move this trace_seq to struct trace_iterator.
+        This sets or displays the number of kilobytes each CPU
+        buffer can hold. The tracer buffers are the same size
+        for each CPU. The displayed number is the size of the
+        CPU buffer and not total size of all buffers. The
+        trace buffers are allocated in pages (blocks of memory
+        that the kernel uses for allocation, usually 4 KB in size).
+        If the last page allocated has room for more bytes
+        than requested, the rest of the page will be used,
+        making the actual allocation bigger than requested.
+        ( Note, the size may not be a multiple of the page size
+          due to buffer management overhead. )
 
-Signed-off-by: Lai Jiangshan <laijs@cn.fujitsu.com>
-LKML-Reference: <4C078350.7090106@cn.fujitsu.com>
+        This can only be updated when the current_tracer
+        is set to "nop".
+
+But it's incorrect. currently total memory consumption is
+'buffer_size_kb x CPUs x 2'.
+
+Why two times difference is there? because ftrace implicitly allocate
+the buffer for max latency too.
+
+That makes sad result when admin want to use large buffer. (If admin
+want full logging and makes detail analysis). example, If admin
+have 24 CPUs machine and write 200MB to buffer_size_kb, the system
+consume ~10GB memory (200MB x 24 x 2). umm.. 5GB memory waste is
+usually unacceptable.
+
+Fortunatelly, almost all users don't use max latency feature.
+The max latency buffer can be disabled easily.
+
+This patch shrink buffer size of the max latency buffer if
+unnecessary.
+
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+LKML-Reference: <20100701104554.DA2D.A69D9226@jp.fujitsu.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h |    5 +++--
- include/trace/ftrace.h       |   12 +++---------
- kernel/trace/trace_output.c  |    3 ---
- 3 files changed, 6 insertions(+), 14 deletions(-)
+ kernel/trace/trace.c              |   38 +++++++++++++++++++++++++++++++-----
+ kernel/trace/trace.h              |    1 +
+ kernel/trace/trace_irqsoff.c      |    3 ++
+ kernel/trace/trace_sched_wakeup.c |    2 +
+ 4 files changed, 38 insertions(+), 6 deletions(-)
 
-diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 2b7b139..02b8b24 100644
---- a/include/linux/ftrace_event.h
-+++ b/include/linux/ftrace_event.h
-@@ -11,8 +11,6 @@ struct trace_array;
- struct tracer;
- struct dentry;
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index af90429..f7488f4 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -660,6 +660,10 @@ update_max_tr(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ 		return;
  
--DECLARE_PER_CPU(struct trace_seq, ftrace_event_seq);
--
- struct trace_print_flags {
- 	unsigned long		mask;
- 	const char		*name;
-@@ -58,6 +56,9 @@ struct trace_iterator {
- 	struct ring_buffer_iter	*buffer_iter[NR_CPUS];
- 	unsigned long		iter_flags;
+ 	WARN_ON_ONCE(!irqs_disabled());
++	if (!current_trace->use_max_tr) {
++		WARN_ON_ONCE(1);
++		return;
++	}
+ 	arch_spin_lock(&ftrace_max_lock);
  
-+	/* trace_seq for __print_flags() and __print_symbolic() etc. */
-+	struct trace_seq	tmp_seq;
+ 	tr->buffer = max_tr.buffer;
+@@ -686,6 +690,11 @@ update_max_tr_single(struct trace_array *tr, struct task_struct *tsk, int cpu)
+ 		return;
+ 
+ 	WARN_ON_ONCE(!irqs_disabled());
++	if (!current_trace->use_max_tr) {
++		WARN_ON_ONCE(1);
++		return;
++	}
 +
- 	/* The below is zeroed out in pipe_read */
- 	struct trace_seq	seq;
- 	struct trace_entry	*ent;
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 55c1fd1..fb783d9 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -145,7 +145,7 @@
-  *	struct trace_seq *s = &iter->seq;
-  *	struct ftrace_raw_<call> *field; <-- defined in stage 1
-  *	struct trace_entry *entry;
-- *	struct trace_seq *p;
-+ *	struct trace_seq *p = &iter->tmp_seq;
-  *	int ret;
-  *
-  *	entry = iter->ent;
-@@ -157,12 +157,10 @@
-  *
-  *	field = (typeof(field))entry;
-  *
-- *	p = &get_cpu_var(ftrace_event_seq);
-  *	trace_seq_init(p);
-  *	ret = trace_seq_printf(s, "%s: ", <call>);
-  *	if (ret)
-  *		ret = trace_seq_printf(s, <TP_printk> "\n");
-- *	put_cpu();
-  *	if (!ret)
-  *		return TRACE_TYPE_PARTIAL_LINE;
-  *
-@@ -216,7 +214,7 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 	struct trace_seq *s = &iter->seq;				\
- 	struct ftrace_raw_##call *field;				\
- 	struct trace_entry *entry;					\
--	struct trace_seq *p;						\
-+	struct trace_seq *p = &iter->tmp_seq;				\
- 	int ret;							\
- 									\
- 	event = container_of(trace_event, struct ftrace_event_call,	\
-@@ -231,12 +229,10 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 									\
- 	field = (typeof(field))entry;					\
- 									\
--	p = &get_cpu_var(ftrace_event_seq);				\
- 	trace_seq_init(p);						\
- 	ret = trace_seq_printf(s, "%s: ", event->name);			\
- 	if (ret)							\
- 		ret = trace_seq_printf(s, print);			\
--	put_cpu();							\
- 	if (!ret)							\
- 		return TRACE_TYPE_PARTIAL_LINE;				\
- 									\
-@@ -255,7 +251,7 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 	struct trace_seq *s = &iter->seq;				\
- 	struct ftrace_raw_##template *field;				\
- 	struct trace_entry *entry;					\
--	struct trace_seq *p;						\
-+	struct trace_seq *p = &iter->tmp_seq;				\
- 	int ret;							\
- 									\
- 	entry = iter->ent;						\
-@@ -267,12 +263,10 @@ ftrace_raw_output_##call(struct trace_iterator *iter, int flags,	\
- 									\
- 	field = (typeof(field))entry;					\
- 									\
--	p = &get_cpu_var(ftrace_event_seq);				\
- 	trace_seq_init(p);						\
- 	ret = trace_seq_printf(s, "%s: ", #call);			\
- 	if (ret)							\
- 		ret = trace_seq_printf(s, print);			\
--	put_cpu();							\
- 	if (!ret)							\
- 		return TRACE_TYPE_PARTIAL_LINE;				\
- 									\
-diff --git a/kernel/trace/trace_output.c b/kernel/trace/trace_output.c
-index 57c1b45..1ba64d3 100644
---- a/kernel/trace/trace_output.c
-+++ b/kernel/trace/trace_output.c
-@@ -16,9 +16,6 @@
+ 	arch_spin_lock(&ftrace_max_lock);
  
- DECLARE_RWSEM(trace_event_mutex);
+ 	ftrace_disable_cpu();
+@@ -2801,6 +2810,9 @@ static int tracing_resize_ring_buffer(unsigned long size)
+ 	if (ret < 0)
+ 		return ret;
  
--DEFINE_PER_CPU(struct trace_seq, ftrace_event_seq);
--EXPORT_PER_CPU_SYMBOL(ftrace_event_seq);
++	if (!current_trace->use_max_tr)
++		goto out;
++
+ 	ret = ring_buffer_resize(max_tr.buffer, size);
+ 	if (ret < 0) {
+ 		int r;
+@@ -2828,11 +2840,14 @@ static int tracing_resize_ring_buffer(unsigned long size)
+ 		return ret;
+ 	}
+ 
++	max_tr.entries = size;
++ out:
+ 	global_trace.entries = size;
+ 
+ 	return ret;
+ }
+ 
++
+ /**
+  * tracing_update_buffers - used by tracing facility to expand ring buffers
+  *
+@@ -2893,12 +2908,26 @@ static int tracing_set_tracer(const char *buf)
+ 	trace_branch_disable();
+ 	if (current_trace && current_trace->reset)
+ 		current_trace->reset(tr);
 -
- static struct hlist_head event_hash[EVENT_HASHSIZE] __read_mostly;
++	if (current_trace && current_trace->use_max_tr) {
++		/*
++		 * We don't free the ring buffer. instead, resize it because
++		 * The max_tr ring buffer has some state (e.g. ring->clock) and
++		 * we want preserve it.
++		 */
++		ring_buffer_resize(max_tr.buffer, 1);
++		max_tr.entries = 1;
++	}
+ 	destroy_trace_option_files(topts);
  
- static int next_event_type = __TRACE_LAST_TYPE + 1;
+ 	current_trace = t;
+ 
+ 	topts = create_trace_option_files(current_trace);
++	if (current_trace->use_max_tr) {
++		ret = ring_buffer_resize(max_tr.buffer, global_trace.entries);
++		if (ret < 0)
++			goto out;
++		max_tr.entries = global_trace.entries;
++	}
+ 
+ 	if (t->init) {
+ 		ret = tracer_init(t, tr);
+@@ -3480,7 +3509,6 @@ tracing_entries_write(struct file *filp, const char __user *ubuf,
+ 	}
+ 
+ 	tracing_start();
+-	max_tr.entries = global_trace.entries;
+ 	mutex_unlock(&trace_types_lock);
+ 
+ 	return cnt;
+@@ -4578,16 +4606,14 @@ __init static int tracer_alloc_buffers(void)
+ 
+ 
+ #ifdef CONFIG_TRACER_MAX_TRACE
+-	max_tr.buffer = ring_buffer_alloc(ring_buf_size,
+-					     TRACE_BUFFER_FLAGS);
++	max_tr.buffer = ring_buffer_alloc(1, TRACE_BUFFER_FLAGS);
+ 	if (!max_tr.buffer) {
+ 		printk(KERN_ERR "tracer: failed to allocate max ring buffer!\n");
+ 		WARN_ON(1);
+ 		ring_buffer_free(global_trace.buffer);
+ 		goto out_free_cpumask;
+ 	}
+-	max_tr.entries = ring_buffer_size(max_tr.buffer);
+-	WARN_ON(max_tr.entries != global_trace.entries);
++	max_tr.entries = 1;
+ #endif
+ 
+ 	/* Allocate the first page for all buffers */
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 7778f06..cb629b3 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -276,6 +276,7 @@ struct tracer {
+ 	struct tracer		*next;
+ 	int			print_max;
+ 	struct tracer_flags	*flags;
++	int			use_max_tr;
+ };
+ 
+ 
+diff --git a/kernel/trace/trace_irqsoff.c b/kernel/trace/trace_irqsoff.c
+index 6fd486e..73a6b06 100644
+--- a/kernel/trace/trace_irqsoff.c
++++ b/kernel/trace/trace_irqsoff.c
+@@ -649,6 +649,7 @@ static struct tracer irqsoff_tracer __read_mostly =
+ #endif
+ 	.open           = irqsoff_trace_open,
+ 	.close          = irqsoff_trace_close,
++	.use_max_tr	= 1,
+ };
+ # define register_irqsoff(trace) register_tracer(&trace)
+ #else
+@@ -681,6 +682,7 @@ static struct tracer preemptoff_tracer __read_mostly =
+ #endif
+ 	.open		= irqsoff_trace_open,
+ 	.close		= irqsoff_trace_close,
++	.use_max_tr	= 1,
+ };
+ # define register_preemptoff(trace) register_tracer(&trace)
+ #else
+@@ -715,6 +717,7 @@ static struct tracer preemptirqsoff_tracer __read_mostly =
+ #endif
+ 	.open		= irqsoff_trace_open,
+ 	.close		= irqsoff_trace_close,
++	.use_max_tr	= 1,
+ };
+ 
+ # define register_preemptirqsoff(trace) register_tracer(&trace)
+diff --git a/kernel/trace/trace_sched_wakeup.c b/kernel/trace/trace_sched_wakeup.c
+index c9fd5bd..4086eae 100644
+--- a/kernel/trace/trace_sched_wakeup.c
++++ b/kernel/trace/trace_sched_wakeup.c
+@@ -382,6 +382,7 @@ static struct tracer wakeup_tracer __read_mostly =
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
++	.use_max_tr	= 1,
+ };
+ 
+ static struct tracer wakeup_rt_tracer __read_mostly =
+@@ -396,6 +397,7 @@ static struct tracer wakeup_rt_tracer __read_mostly =
+ #ifdef CONFIG_FTRACE_SELFTEST
+ 	.selftest    = trace_selftest_startup_wakeup,
+ #endif
++	.use_max_tr	= 1,
+ };
+ 
+ __init static int init_wakeup_tracer(void)
