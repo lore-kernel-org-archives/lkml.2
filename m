@@ -1,66 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757790Ab0GWTS5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 15:18:57 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:35771 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757097Ab0GWTS4 (ORCPT
+	id S1757859Ab0GWTUb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 15:20:31 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33691 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751224Ab0GWTU3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 15:18:56 -0400
+	Fri, 23 Jul 2010 15:20:29 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=TopwmBv0Z05iMWHh72oVP6EHfGgQbLZWvEQ8m/ZBpfiPJYu3ZtmMxExye+9tXVW4Dl
-         KTy+cGdhZci+aGLQLP252yziLIl99uXmkl/pfWr7ac7iSSAWWW1Ei9EVeses8AimAayt
-         dHcfUGaYm07E6YPWjuDBb3HfDOXqF4x+TtsSQ=
-Message-ID: <4C49EB1B.1030700@gmail.com>
-Date: Fri, 23 Jul 2010 21:18:51 +0200
-From: Jiri Slaby <jirislaby@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=qjUaKdYihk7Asy5XCAcxJH6JHDfb+2yGqSgfMoWj+gXe6Ssj7Yjt9QuxM//nhYiZrt
+         UnEVFZR7ayfxJq0kHE9ZqWESayVQaQVtzQdcVUUWBuVRtbP+uMXqPyzXGxsUL/xSOTYS
+         S6Z6hIQfOt7qBs3Tt/T1ODdQ0PWokqDgJslFQ=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: caiqian@redhat.com
+Subject: Re: 2.6.35-rc5 panic at __br_deliver+0x64/0xe0 with kvm bridge networking
+Date: Fri, 23 Jul 2010 21:20:22 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.35-rc6; KDE/4.4.4; i686; ; )
+Cc: "linux-kernel" <linux-kernel@vger.kernel.org>,
+        Dave Anderson <anderson@redhat.com>, Avi Kivity <avi@redhat.com>
+References: <198123598.1050221279855515402.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <198123598.1050221279855515402.JavaMail.root@zmail06.collab.prod.int.phx2.redhat.com>
 MIME-Version: 1.0
-To: Kulikov Vasiliy <segooon@gmail.com>
-CC: kernel-janitors@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] char: mxser: remove unnesesary NULL check
-References: <1279902893-27006-1-git-send-email-segooon@gmail.com>
-In-Reply-To: <1279902893-27006-1-git-send-email-segooon@gmail.com>
-X-Enigmail-Version: 1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201007232120.23206.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2010 06:34 PM, Kulikov Vasiliy wrote:
-> mxser_transmit_chars(tty, port) is called only from mxser_interrupt().
-> NULL check is performed in mxser_interrupt() so it is redundant here.
+On piątek, 23 lipca 2010 o 05:25:15 caiqian@redhat.com wrote:
+> I met consistently host panic when operated under kvm guest with bridge
+> networking. I got a vmcore (unfortunately, the crash utility had some
+> problems to analyse it fully), and full panic log is attached.
 > 
-> Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
 
-Acked-by: Jiri Slaby <jirislaby@gmail.com>
-
-> ---
->  drivers/char/mxser.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
-> index d2692d4..3fc89da 100644
-> --- a/drivers/char/mxser.c
-> +++ b/drivers/char/mxser.c
-> @@ -2193,7 +2193,7 @@ static void mxser_transmit_chars(struct tty_struct *tty, struct mxser_port *port
->  	port->mon_data.up_txcnt += (cnt - port->xmit_cnt);
->  	port->icount.tx += (cnt - port->xmit_cnt);
->  
-> -	if (port->xmit_cnt < WAKEUP_CHARS && tty)
-> +	if (port->xmit_cnt < WAKEUP_CHARS)
->  		tty_wakeup(tty);
->  
->  	if (port->xmit_cnt <= 0) {
-
+I created a Bugzilla entry at 
+https://bugzilla.kernel.org/show_bug.cgi?id=16448
+for your bug report, please add your address to the CC list in there, thanks!
 
 -- 
-js
+Maciej Rutecki
+http://www.maciek.unixy.pl
