@@ -1,99 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758665Ab0GWNTt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 09:19:49 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:52671 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759123Ab0GWNSu (ORCPT
+	id S1760111Ab0GWNUx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 09:20:53 -0400
+Received: from mail.windriver.com ([147.11.1.11]:60150 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab0GWNUq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 09:18:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=HKgakRA+sO66gzU9gOdjfidgQrxi+umYv9pY+lNJsgLcKy+KHp1/6FHIeMxUz1k9XJ
-         fJ6LN6uCWd9IwN2+/vyDJLTzKT4sM3kTkJetSxC/WWwhPmyDxNyVhF0ftXRQNH1s1Cob
-         ZQhVdndzSR/HgxHDsCQNeBVhhviMe9vra1G44=
-From: Andy Shevchenko <andy.shevchenko@gmail.com>
-To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+	Fri, 23 Jul 2010 09:20:46 -0400
+Message-ID: <4C4996FA.2010301@windriver.com>
+Date: Fri, 23 Jul 2010 08:19:54 -0500
+From: Jason Wessel <jason.wessel@windriver.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: "Deng, Dongdong" <dongdong.deng@windriver.com>, will.deacon@arm.com,
+        lethal@linux-sh.org, mahesh@linux.vnet.ibm.com,
+        prasad@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org,
+        mingo@elte.hu, kgdb-bugreport@lists.sourceforge.net,
         linux-kernel@vger.kernel.org
-Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
-        Corey Thomas <coreythomas@charter.net>,
-        "John W. Linville" <linville@tuxdriver.com>,
-        linux-wireless@vger.kernel.org
-Subject: [PATCH 4/5] wireless: use newly introduced hex_to_bin()
-Date: Fri, 23 Jul 2010 16:18:09 +0300
-Message-Id: <9d7821ff7791c30772667681c0eab829e6e93e59.1279890832.git.andy.shevchenko@gmail.com>
-X-Mailer: git-send-email 1.7.1.1
-In-Reply-To: <cover.1279890832.git.andy.shevchenko@gmail.com>
-References: <cover.1279890832.git.andy.shevchenko@gmail.com>
-In-Reply-To: <cover.1279890832.git.andy.shevchenko@gmail.com>
-References: <cover.1279890832.git.andy.shevchenko@gmail.com>
+Subject: Re: [RFC PATCH] hw-breakpoints, kgdb, x86: add a flag to passDIE_DEBUG
+ notification
+References: <1279851361-32604-1-git-send-email-dongdong.deng@windriver.com> <20100723130430.GA5255@nowhere>
+In-Reply-To: <20100723130430.GA5255@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 Jul 2010 13:19:56.0469 (UTC) FILETIME=[BE693650:01CB2A69]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
-Cc: Corey Thomas <coreythomas@charter.net>
-Cc: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-wireless@vger.kernel.org
----
- drivers/net/wireless/ray_cs.c |   23 ++---------------------
- 1 files changed, 2 insertions(+), 21 deletions(-)
+On 07/23/2010 08:04 AM, Frederic Weisbecker wrote:
+> On Fri, Jul 23, 2010 at 10:16:01AM +0800, Dongdong Deng wrote:
+>   
+>> The hw_breakpoint subsystem consumes all the hardware
+>> breakpoint exceptions since it hooks the notify_die
+>> handlers first, this means that kgdb doesn't get the
+>> opportunity to handle hw breakpoint exceptions generated
+>> by kgdb itself.
+>>
+>> This patch adds an extend flag to perf_event_attr for
+>> hw_breakpoint_handler() to decide to pass or stop the
+>> DIE_DEBUG notification.
+>>
+>> As KGDB set that flag, hw_breakpoint_handler() will pass
+>> the DIE_DEBUG notification, thus kgdb have the chance
+>> to take DIE_DEBUG notification.
+>>
+>> Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+>> Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+>> ---
+>>  arch/x86/kernel/hw_breakpoint.c |   14 ++++++++++++++
+>>  arch/x86/kernel/kgdb.c          |    2 ++
+>>  include/linux/perf_event.h      |    9 +++++++++
+>>  3 files changed, 25 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+>> index a8f1b80..b38f786 100644
+>> --- a/arch/x86/kernel/hw_breakpoint.c
+>> +++ b/arch/x86/kernel/hw_breakpoint.c
+>> @@ -406,6 +406,8 @@ EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
+>>   * ii) When there are more bits than trap<n> set in DR6 register (such
+>>   * as BD, BS or BT) indicating that more than one debug condition is
+>>   * met and requires some more action in do_debug().
+>> + * iii) The source of hw breakpoint event want to handle the event
+>> + * by itself, currently just KGDB have this notion.
+>>   *
+>>   * NOTIFY_STOP returned for all other cases
+>>   *
+>> @@ -464,6 +466,18 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
+>>  			break;
+>>  		}
+>>  
+>> +		if (bp->attr.flag == SKIP_HWBP_EVENT_PERF_FLAG) {
+>> +			/*
+>> +			 * when attr.flag is set to SKIP_HWBP_EVENT_PERF_FLAG
+>> +			 * it indicates currently hw breakpoint event
+>> +			 * source want to handle this event by itself.
+>> +			 * thus return NOTIFY_DONE here.
+>> +			 */
+>> +			rc = NOTIFY_DONE;
+>> +			rcu_read_unlock();
+>> +			break;
+>> +		}
+>> +
+>>     
+>
+>
+>
+> No. We really shouldn't make a user ABI change (adding attr.flag) just
+> to solve an in-kernel-only problem.
+>
+> And moreover we probably don't need flags at all. Why not just turning kgdb handler
+> into a higher priority?
+>
+> I don't even remember why kgdb has its own handler instead of using the
+> struct perf_event:overflow_handler. May be that's because of the early breakpoints.
+>
+>   
 
-diff --git a/drivers/net/wireless/ray_cs.c b/drivers/net/wireless/ray_cs.c
-index abff893..9c38fc3 100644
---- a/drivers/net/wireless/ray_cs.c
-+++ b/drivers/net/wireless/ray_cs.c
-@@ -97,7 +97,6 @@ static iw_stats *ray_get_wireless_stats(struct net_device *dev);
- static const struct iw_handler_def ray_handler_def;
- 
- /***** Prototypes for raylink functions **************************************/
--static int asc_to_int(char a);
- static void authenticate(ray_dev_t *local);
- static int build_auth_frame(ray_dev_t *local, UCHAR *dest, int auth_type);
- static void authenticate_timeout(u_long);
-@@ -1717,24 +1716,6 @@ static void authenticate_timeout(u_long data)
- }
- 
- /*===========================================================================*/
--static int asc_to_int(char a)
--{
--	if (a < '0')
--		return -1;
--	if (a <= '9')
--		return (a - '0');
--	if (a < 'A')
--		return -1;
--	if (a <= 'F')
--		return (10 + a - 'A');
--	if (a < 'a')
--		return -1;
--	if (a <= 'f')
--		return (10 + a - 'a');
--	return -1;
--}
--
--/*===========================================================================*/
- static int parse_addr(char *in_str, UCHAR *out)
- {
- 	int len;
-@@ -1754,14 +1735,14 @@ static int parse_addr(char *in_str, UCHAR *out)
- 	i = 5;
- 
- 	while (j > 0) {
--		if ((k = asc_to_int(in_str[j--])) != -1)
-+		if ((k = hex_to_bin(in_str[j--])) != -1)
- 			out[i] = k;
- 		else
- 			return 0;
- 
- 		if (j == 0)
- 			break;
--		if ((k = asc_to_int(in_str[j--])) != -1)
-+		if ((k = hex_to_bin(in_str[j--])) != -1)
- 			out[i] += k << 4;
- 		else
- 			return 0;
--- 
-1.7.1.1
 
+The patch may or may not be the right way to solve the problem.   It is
+worth noting that early breakpoints are handled separately with a direct
+writes to the debug registers so this API does not apply.
+
+This patch effectively causes the events to get passed to the normal
+handlers.
+
+The source of the original problem (which was merged in 2.6.35) is
+commit: 018cbffe6819f6f8db20a0a3acd9bab9bfd667e4 -     Merge commit
+'v2.6.33' into perf/core
+
+Specifically this line right here:
+@@@ -502,6 -486,8 +486,6 @@@ static int __kprobes hw_breakpoint_hand
+          rcu_read_lock();
+ 
+          bp = per_cpu(bp_per_reg[i], cpu);
+ -        if (bp)
+ -            rc = NOTIFY_DONE;
+
+Because the NOTIFY_DONE is never set, a default value of NOTIFY_STOP is
+passed at the end and kgdb never gets to see the break point even that
+was never intended for the perf handler in the first place.
+
+It is not as easy of course to just revert this patch because it changed
+other logic.
+
+Jason.
