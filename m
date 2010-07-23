@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757484Ab0GWV37 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 17:29:59 -0400
-Received: from smtp.microsoft.com ([131.107.115.212]:49953 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753679Ab0GWV36 (ORCPT
+	id S1757029Ab0GWVmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 17:42:33 -0400
+Received: from einhorn.in-berlin.de ([192.109.42.8]:42607 "EHLO
+	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756033Ab0GWVmc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 17:29:58 -0400
-X-Greylist: delayed 310 seconds by postgrey-1.27 at vger.kernel.org; Fri, 23 Jul 2010 17:29:58 EDT
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-        "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-        "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-        "'gregkh@suse.de'" <gregkh@suse.de>
-CC: Hank Janssen <hjanssen@microsoft.com>, vrataj2 <vrataj2@comcast.net>
-Subject: [PATCH 1/1] staging: hv: Fix Kconfig dependency of hv_blkvsc
-Thread-Topic: [PATCH 1/1] staging: hv: Fix Kconfig dependency of hv_blkvsc
-Thread-Index: AQHLKq15Vl5fW7LuK0mqs0e7x0lj/w==
-Date: Fri, 23 Jul 2010 21:24:42 +0000
-Message-ID: <1FB5E1D5CA062146B38059374562DF7280E610A2@TK5EX14MBXC126.redmond.corp.microsoft.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: yes
-X-MS-TNEF-Correlator: 
-x-originating-ip: [157.54.123.12]
-Content-Type: multipart/mixed;
-	boundary="_002_1FB5E1D5CA062146B38059374562DF7280E610A2TK5EX14MBXC126r_"
+	Fri, 23 Jul 2010 17:42:32 -0400
+X-Envelope-From: stefanr@s5r6.in-berlin.de
+Message-ID: <4C4A0CAF.9060308@s5r6.in-berlin.de>
+Date: Fri, 23 Jul 2010 23:42:07 +0200
+From: Stefan Richter <stefanr@s5r6.in-berlin.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100627 SeaMonkey/1.1.18
 MIME-Version: 1.0
+To: Martin Mokrejs <mmokrejs@ribosome.natur.cuni.cz>
+CC: Jay Fenlason <fenlason@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+        linux1394-devel@lists.sourceforge.net
+Subject: Re: 2.6.35-rc6 to 2.6.32.16: JuJu firewire issues
+References: <4C49A291.20001@ribosome.natur.cuni.cz> <20100723180807.GA32319@redhat.com> <4C49E1A2.7050606@ribosome.natur.cuni.cz> <20100723192646.GB32319@redhat.com> <4C49F955.1040308@ribosome.natur.cuni.cz>
+In-Reply-To: <4C49F955.1040308@ribosome.natur.cuni.cz>
+X-Enigmail-Version: 0.96.0
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---_002_1FB5E1D5CA062146B38059374562DF7280E610A2TK5EX14MBXC126r_
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: quoted-printable
+Martin Mokrejs wrote at LKML:
+> Hi Jay,
+>   I removed the old firewire modules from kernel .config and recompiled&reinstalled
+> the kernel file and modules on compiuter A, and disabled the firewire_sbp2 on host B.
+>   I have power problems with the drive when on firewire, though. It seems the desktop
+> PC (ASUS P5K WS 1.0004) is not able to feed the WD 1.0TB 2.5 5200rpm" drive.
 
-From: Haiyang Zhang <haiyangz@microsoft.com>
+Although it should, unless if the ASUS motherboard is miswired.  A
+standards compliant bus power provider must be able to supply at least
+1.5 A.  Most PCs wire their FireWir ports up to 12 Volts, which gives
+you at least 18 Watts.  You can driver several of these WD drives off that.
 
-Subject: staging: hv: Fix Kconfig dependency of hv_blkvsc
-LBDAF is not available nor necessary on 64BIT kernel. This patch
-fixed the dependency for hv_blkvsc module on 64BIT kernel.
-Thanks vrataj2 [vrataj2@comcast.net] for reporting this problem.
+> I tried
+> the firewire ports on the front of the box as well those from the motherboard.
 
-Signed-off-by: Haiyang Zhang <haiyangz@microsoft.com>
-Signed-off-by: Hank Janssen <hjanssen@microsoft.com>
+Front panel connectors may be unreliable.  Often the connections from
+mortherboard to front panel are cheap and outside the IEEE 1394
+electrical specification.
 
----
- drivers/staging/hv/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> Even,
+> plugged in the USB power "jack", no luck. If I use the USB port + USB power it works
+> fine. I just unplugged the device after not being able to even run "fdisk /dev/sdh".
+>   At the moment I have screwed superblock on the filesystem and will have to re-start
+> from scratch. The attached dmesg talks about "Device offlined - not ready after error
+> recovery" but I hope this is a temporary issue, and I just disconnected the device
+> at the very end.
+>   BTW, some driver is not ACPI compliant according to dmesg.
+> 
+>   The chip in the external IcyBox IB-250StUE-B is JMicron JMB 353 doing the USB+FireWire+SATA
+> work for the 2.5" WD drive.
+> Martin
 
-diff --git a/drivers/staging/hv/Kconfig b/drivers/staging/hv/Kconfig
-index 97480f5..7455c80 100644
---- a/drivers/staging/hv/Kconfig
-+++ b/drivers/staging/hv/Kconfig
-@@ -17,7 +17,7 @@ config HYPERV_STORAGE
-=20
- config HYPERV_BLOCK
- 	tristate "Microsoft Hyper-V virtual block driver"
--	depends on BLOCK && SCSI && LBDAF
-+	depends on BLOCK && SCSI && (LBDAF || 64BIT)
- 	default HYPERV
- 	help
- 	  Select this option to enable the Hyper-V virtual block driver.
---=20
-1.6.3.2
+Oh, I haven't heard of that chip before.  So far I was only aware of
+PCIe--FireWire chips from JMicron.  PCIe--FireWire chips are of course
+entirely different beasts than SATA--FireWire chips, but those other
+FireWire offerings from JMicron do not inspire confidence.
 
-
---_002_1FB5E1D5CA062146B38059374562DF7280E610A2TK5EX14MBXC126r_
-Content-Type: application/octet-stream;
-	name="0723-Fix-Kconfig-dependency-of-hv_blkvsc.patch"
-Content-Description: 0723-Fix-Kconfig-dependency-of-hv_blkvsc.patch
-Content-Disposition: attachment;
-	filename="0723-Fix-Kconfig-dependency-of-hv_blkvsc.patch"; size=992;
-	creation-date="Fri, 23 Jul 2010 18:17:04 GMT";
-	modification-date="Fri, 23 Jul 2010 21:22:18 GMT"
-Content-Transfer-Encoding: base64
-
-RnJvbTogSGFpeWFuZyBaaGFuZyA8aGFpeWFuZ3pAbWljcm9zb2Z0LmNvbT4NCg0KU3ViamVjdDog
-c3RhZ2luZzogaHY6IEZpeCBLY29uZmlnIGRlcGVuZGVuY3kgb2YgaHZfYmxrdnNjDQpMQkRBRiBp
-cyBub3QgYXZhaWxhYmxlIG5vciBuZWNlc3Nhcnkgb24gNjRCSVQga2VybmVsLiBUaGlzIHBhdGNo
-DQpmaXhlZCB0aGUgZGVwZW5kZW5jeSBmb3IgaHZfYmxrdnNjIG1vZHVsZSBvbiA2NEJJVCBrZXJu
-ZWwuDQpUaGFua3MgdnJhdGFqMiBbdnJhdGFqMkBjb21jYXN0Lm5ldF0gZm9yIHJlcG9ydGluZyB0
-aGlzIHByb2JsZW0uDQoNClNpZ25lZC1vZmYtYnk6IEhhaXlhbmcgWmhhbmcgPGhhaXlhbmd6QG1p
-Y3Jvc29mdC5jb20+DQpTaWduZWQtb2ZmLWJ5OiBIYW5rIEphbnNzZW4gPGhqYW5zc2VuQG1pY3Jv
-c29mdC5jb20+DQoNCi0tLQ0KIGRyaXZlcnMvc3RhZ2luZy9odi9LY29uZmlnIHwgICAgMiArLQ0K
-IDEgZmlsZXMgY2hhbmdlZCwgMSBpbnNlcnRpb25zKCspLCAxIGRlbGV0aW9ucygtKQ0KDQpkaWZm
-IC0tZ2l0IGEvZHJpdmVycy9zdGFnaW5nL2h2L0tjb25maWcgYi9kcml2ZXJzL3N0YWdpbmcvaHYv
-S2NvbmZpZw0KaW5kZXggOTc0ODBmNS4uNzQ1NWM4MCAxMDA2NDQNCi0tLSBhL2RyaXZlcnMvc3Rh
-Z2luZy9odi9LY29uZmlnDQorKysgYi9kcml2ZXJzL3N0YWdpbmcvaHYvS2NvbmZpZw0KQEAgLTE3
-LDcgKzE3LDcgQEAgY29uZmlnIEhZUEVSVl9TVE9SQUdFDQogDQogY29uZmlnIEhZUEVSVl9CTE9D
-Sw0KIAl0cmlzdGF0ZSAiTWljcm9zb2Z0IEh5cGVyLVYgdmlydHVhbCBibG9jayBkcml2ZXIiDQot
-CWRlcGVuZHMgb24gQkxPQ0sgJiYgU0NTSSAmJiBMQkRBRg0KKwlkZXBlbmRzIG9uIEJMT0NLICYm
-IFNDU0kgJiYgKExCREFGIHx8IDY0QklUKQ0KIAlkZWZhdWx0IEhZUEVSVg0KIAloZWxwDQogCSAg
-U2VsZWN0IHRoaXMgb3B0aW9uIHRvIGVuYWJsZSB0aGUgSHlwZXItViB2aXJ0dWFsIGJsb2NrIGRy
-aXZlci4NCi0tIA0KMS42LjMuMg0KDQo=
-
---_002_1FB5E1D5CA062146B38059374562DF7280E610A2TK5EX14MBXC126r_--
+Your dmesg shows multiple bus resets and one of the three nodes
+disappearing from the bus from time to time.  This points to a probelm
+at the physical layer (i.e. highly unreliable hardware) which
+fundamentally cannot be solved by software.
+-- 
+Stefan Richter
+-=====-==-=- -=== =-===
+http://arcgraph.de/sr/
