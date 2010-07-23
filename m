@@ -1,50 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753538Ab0GWLpg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 07:45:36 -0400
-Received: from hera.kernel.org ([140.211.167.34]:43411 "EHLO hera.kernel.org"
+	id S1753925Ab0GWLpp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 07:45:45 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51568 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752725Ab0GWLpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 07:45:34 -0400
-Message-ID: <4C4980CC.7070909@kernel.org>
-Date: Fri, 23 Jul 2010 13:45:16 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.2.4) Gecko/20100608 Thunderbird/3.1
+	id S1753590Ab0GWLpo convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 07:45:44 -0400
+Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        "David Hill" <hilld@binarystorm.net>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        "H. Peter Anvin" <hpa@zytor.com>
+References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
+In-Reply-To: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        David Howells <dhowells@redhat.com>, Steve French <smfrench@gmail.com>,
-        linux-cifs@vger.kernel.org
-Subject: Re: linux-next: manual merge of the workqueues tree with the Linus'
- tree
-References: <20100723144600.dd4da992.sfr@canb.auug.org.au>	<4C497CD5.5010908@kernel.org>	<20100723213148.3d2193a3.sfr@canb.auug.org.au>	<4C497E5F.80301@kernel.org> <20100723214233.7cb7de8d.sfr@canb.auug.org.au>
-In-Reply-To: <20100723214233.7cb7de8d.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.1.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 11:45:17 +0000 (UTC)
+Content-Disposition: inline
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-ID: <tneGvaw1wLL.A.zlC.h5XSMB@chimera>
+Subject: [Bug #16173] After uncompressing the kernel, at boot time, the server hangs.
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Date: Fri, 23 Jul 2010 13:42:35 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+This message has been generated automatically as a part of a summary report
+of recent regressions.
 
-On 07/23/2010 01:42 PM, Stephen Rothwell wrote:
-> On Fri, 23 Jul 2010 13:34:55 +0200 Tejun Heo <tj@kernel.org> wrote:
->>
->> I was thinking about sending pull request w/ a note describing how to
->> resolve the conflict.  Would pulling in master before requesting pull
->> be better?
-> 
-> Either would work.  Linus is fine with doing merge fixups and, after all,
-> I figured it out. :-)
-> 
-> A description always helps, of course.
+The following bug entry is on the current list of known regressions
+from 2.6.34.  Please verify if it still should be listed and let the tracking team
+know (either way).
 
-Yeah, sorry about causng headaches in linux-next.  I'll test merge w/
-mainline and let you know non-trivial conflicts for future commits.
 
-Thank you.
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16173
+Subject		: After uncompressing the kernel, at boot time, the server hangs.
+Submitter	: David Hill <hilld@binarystorm.net>
+Date		: 2010-06-09 23:25 (45 days old)
+First-Bad-Commit: http://git.kernel.org/linus/cf7500c0ea133d66f8449d86392d83f840102632
+Handled-By	: Eric W. Biederman <ebiederm@xmission.com>
 
--- 
-tejun
+
