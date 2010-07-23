@@ -1,60 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759626Ab0GWNTG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 09:19:06 -0400
-Received: from smtp.outflux.net ([198.145.64.163]:41977 "EHLO smtp.outflux.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759536Ab0GWNTB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 09:19:01 -0400
-Date: Fri, 23 Jul 2010 06:18:25 -0700
-From: Kees Cook <kees.cook@canonical.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        Chris Wilson <"email addresshidden"@ogre.sisk.pl>,
-        Tim Gardner <tim.gardner@canonical.com>
-Subject: Re: [Bug #16294] [Q35 bisected] hang at init of i915 driver
-Message-ID: <20100723131825.GT3948@outflux.net>
-References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
- <tneGvaw1wLL.A.9fB.v3XSMB@chimera>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <tneGvaw1wLL.A.9fB.v3XSMB@chimera>
-Organization: Canonical
-X-HELO: www.outflux.net
+	id S1759756Ab0GWNTJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 09:19:09 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54478 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759205Ab0GWNSv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 09:18:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=v8bQScLLiZCvTNtiGaTFWfHDws/gfZHntKtHfFLHoQ1N6i8ksBa0HvqL4n62ZDxTD7
+         xOxBjSMvxKABNWc4Bli6r/4BX8KMYq+R8N+JFCWXuRbq7up8i09N81maMJBxdF6/qOPs
+         65evfq7z3ZU8IW5InvyrdBBSrcKSXVKa5HGeQ=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>
+Subject: [PATCH 5/5] net: core: don't use own hex_to_bin() method
+Date: Fri, 23 Jul 2010 16:18:10 +0300
+Message-Id: <2519848e90eac1857ff7a8399e118980dd0bfbd0.1279890832.git.andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <cover.1279890832.git.andy.shevchenko@gmail.com>
+References: <cover.1279890832.git.andy.shevchenko@gmail.com>
+In-Reply-To: <cover.1279890832.git.andy.shevchenko@gmail.com>
+References: <cover.1279890832.git.andy.shevchenko@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rafael,
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+---
+ net/core/pktgen.c |   36 ++++++++++++------------------------
+ 1 files changed, 12 insertions(+), 24 deletions(-)
 
-On Fri, Jul 23, 2010 at 01:47:30PM +0200, Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
-> 
-> The following bug entry is on the current list of known regressions
-> from 2.6.34.  Please verify if it still should be listed and let the tracking team
-> know (either way).
-
-The regression still exists[1] in the mainline kernel -- the confirmed fix
-mentioned below has not been committed.
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16294
-> Subject		: [Q35 bisected] hang at init of i915 driver
-> Submitter	: Kees Cook <kees@outflux.net>
-> Date		: 2010-06-25 18:20 (29 days old)
-> First-Bad-Commit: http://git.kernel.org/linus/f1befe71fa7a79ab733011b045639d8d809924ad
-> Handled-By	: Tim Gardner <tim.gardner@canonical.com>
-> Patch		: https://patchwork.kernel.org/patch/111130/
-
-Thanks,
-
--Kees
-
-[1] http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=history;f=drivers/char/agp/intel-gtt.c;h=HEAD
-
+diff --git a/net/core/pktgen.c b/net/core/pktgen.c
+index 24a19de..10a1ea7 100644
+--- a/net/core/pktgen.c
++++ b/net/core/pktgen.c
+@@ -1434,18 +1434,12 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		i += len;
+ 
+ 		for (*m = 0; *v && m < pkt_dev->dst_mac + 6; v++) {
+-			if (*v >= '0' && *v <= '9') {
+-				*m *= 16;
+-				*m += *v - '0';
+-			}
+-			if (*v >= 'A' && *v <= 'F') {
+-				*m *= 16;
+-				*m += *v - 'A' + 10;
+-			}
+-			if (*v >= 'a' && *v <= 'f') {
+-				*m *= 16;
+-				*m += *v - 'a' + 10;
+-			}
++			int value;
++
++			value = hex_to_bin(*v);
++			if (value >= 0)
++				*m = *m * 16 + value;
++
+ 			if (*v == ':') {
+ 				m++;
+ 				*m = 0;
+@@ -1476,18 +1470,12 @@ static ssize_t pktgen_if_write(struct file *file,
+ 		i += len;
+ 
+ 		for (*m = 0; *v && m < pkt_dev->src_mac + 6; v++) {
+-			if (*v >= '0' && *v <= '9') {
+-				*m *= 16;
+-				*m += *v - '0';
+-			}
+-			if (*v >= 'A' && *v <= 'F') {
+-				*m *= 16;
+-				*m += *v - 'A' + 10;
+-			}
+-			if (*v >= 'a' && *v <= 'f') {
+-				*m *= 16;
+-				*m += *v - 'a' + 10;
+-			}
++			int value;
++
++			value = hex_to_bin(*v);
++			if (value >= 0)
++				*m = *m * 16 + value;
++
+ 			if (*v == ':') {
+ 				m++;
+ 				*m = 0;
 -- 
-Kees Cook
-Ubuntu Security Team
+1.7.1.1
+
