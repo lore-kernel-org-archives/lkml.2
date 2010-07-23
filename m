@@ -1,158 +1,156 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756342Ab0GWPuI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:50:08 -0400
-Received: from mail.windriver.com ([147.11.1.11]:62203 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756737Ab0GWPuG (ORCPT
+	id S1760507Ab0GWPvY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:51:24 -0400
+Received: from ipmail07.adl2.internode.on.net ([150.101.137.131]:38558 "EHLO
+	ipmail07.adl2.internode.on.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752579Ab0GWPvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:50:06 -0400
-Message-ID: <4C49BA00.5030200@windriver.com>
-Date: Fri, 23 Jul 2010 10:49:20 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Fri, 23 Jul 2010 11:51:22 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAGNVSUx5Lc6U/2dsb2JhbACfaHLBfYU2BA
+Date: Sat, 24 Jul 2010 01:51:18 +1000
+From: Nick Piggin <npiggin@kernel.dk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Nick Piggin <npiggin@kernel.dk>, linux-fsdevel@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+        Frank Mayhar <fmayhar@google.com>, John Stultz <johnstul@us.ibm.com>
+Subject: Re: VFS scalability git tree
+Message-ID: <20100723155118.GB5773@amd>
+References: <20100722190100.GA22269@amd>
+ <20100723111310.GI32635@dastard>
 MIME-Version: 1.0
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: "Deng, Dongdong" <dongdong.deng@windriver.com>, will.deacon@arm.com,
-        lethal@linux-sh.org, mahesh@linux.vnet.ibm.com,
-        prasad@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org,
-        mingo@elte.hu, kgdb-bugreport@lists.sourceforge.net,
-        linux-kernel@vger.kernel.org
-Subject: Re: [RFC PATCH] hw-breakpoints, kgdb, x86: add a flag topassDIE_DEBUG
- notification
-References: <1279851361-32604-1-git-send-email-dongdong.deng@windriver.com> <20100723130430.GA5255@nowhere> <4C4996FA.2010301@windriver.com> <20100723140745.GB5255@nowhere>
-In-Reply-To: <20100723140745.GB5255@nowhere>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Jul 2010 15:49:21.0808 (UTC) FILETIME=[9E2B6100:01CB2A7E]
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100723111310.GI32635@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2010 09:07 AM, Frederic Weisbecker wrote:
-> On Fri, Jul 23, 2010 at 08:19:54AM -0500, Jason Wessel wrote:
->   
->> On 07/23/2010 08:04 AM, Frederic Weisbecker wrote:
->>     
->> The patch may or may not be the right way to solve the problem.   It is
->> worth noting that early breakpoints are handled separately with a direct
->> writes to the debug registers so this API does not apply.
->>     
->
->
->
-> But you still need to handle them on the debug exception, right?
->
->
->   
+On Fri, Jul 23, 2010 at 09:13:10PM +1000, Dave Chinner wrote:
+> On Fri, Jul 23, 2010 at 05:01:00AM +1000, Nick Piggin wrote:
+> > I'm pleased to announce I have a git tree up of my vfs scalability work.
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/npiggin/linux-npiggin.git
+> > http://git.kernel.org/?p=linux/kernel/git/npiggin/linux-npiggin.git
+> > 
+> > Branch vfs-scale-working
+> 
+> I've got a couple of patches needed to build XFS - they shrinker
+> merge left some bad fragments - I'll post them in a minute. This
 
-Yes, but at that point kgdb is first in line for the notifier so it
-works out of the box.
-
->  
->   
->> This patch effectively causes the events to get passed to the normal
->> handlers.
->>
->> The source of the original problem (which was merged in 2.6.35) is
->> commit: 018cbffe6819f6f8db20a0a3acd9bab9bfd667e4 -     Merge commit
->> 'v2.6.33' into perf/core
->>
->> Specifically this line right here:
->> @@@ -502,6 -486,8 +486,6 @@@ static int __kprobes hw_breakpoint_hand
->>           rcu_read_lock();
->>  
->>           bp = per_cpu(bp_per_reg[i], cpu);
->>  -        if (bp)
->>  -            rc = NOTIFY_DONE;
->>
->> Because the NOTIFY_DONE is never set, a default value of NOTIFY_STOP is
->> passed at the end and kgdb never gets to see the break point even that
->> was never intended for the perf handler in the first place.
->>
->> It is not as easy of course to just revert this patch because it changed
->> other logic.
->>
->> Jason.
->>     
->
->
->
-> Right.
->
-> Actually NOTIFY_DONE is returned when there is more work to do: handling
-> another exception than breakpoint, or sending a signal. Otherwise yeah,
-> we return NOTIFY_STOP as we assume there is more work to do.
->
->   
-
-For this specific case the hw_breakpoint handler simply consumed a
-breakpoint which was not intended for it.
-
-> So the following alternatives appear to me:
->
-> - Moving the breakpoint exception handling into the
->   struct perf_event:overflow_handler. In fact I can't find the breakpoint
->   handling in kgdb.c
->
->   
-
-It is in the generic die notification handler for kgdb (looking at
-2.6.35-rc6)
-
-arch/x86/kernel/kgdb.c
-
-    516 static int __kgdb_notify(struct die_args *args, unsigned long cmd)
-...
-    551         case DIE_DEBUG:
-    552                 if (atomic_read(&kgdb_cpu_doing_single_step) !=
--1) {
-    553                         if (user_mode(regs))
-    554                                 return single_step_cont(regs, args);
-    555                         break;
-    556                 } else if (test_thread_flag(TIF_SINGLESTEP))
-    557                         /* This means a user thread is single
-stepping
-    558                          * a system call which should be ignored
-    559                          */
-    560                         return NOTIFY_DONE;
-    561                 /* fall through */
+OK cool.
 
 
-> - Have a higher priority in kgdb notifier (which means decreasing the one
->   of hw_breakpoint.c)
->   
+> email is for the longest ever lockdep warning I've seen that
+> occurred on boot.
 
-kgdb had always been last in line in arch/x86/kernel/kgdb.c:
+Ah thanks. OK that was one of my attempts to keep sockets out of
+hidding the vfs as much as possible (lazy inode number evaluation).
+Not a big problem, but I'll drop the patch for now.
 
-    608 static struct notifier_block kgdb_notifier = {
-    609         .notifier_call  = kgdb_notify,
-    610
-    611         /*
-    612          * Lowest-prio notifier priority, we want to be notified
-last:
-    613          */
-    614         .priority       = -INT_MAX,
-    615 };
+I have just got one for you too, btw :) (on vanilla kernel but it is
+messing up my lockdep stress testing on xfs). Real or false?
 
+[ INFO: possible circular locking dependency detected ]
+2.6.35-rc5-00064-ga9f7f2e #334
+-------------------------------------------------------
+kswapd0/605 is trying to acquire lock:
+ (&(&ip->i_lock)->mr_lock){++++--}, at: [<ffffffff8125500c>]
+xfs_ilock+0x7c/0xa0
 
-> - Always returning NOTIFY_DONE from the breakpoint path.
->
->   
+but task is already holding lock:
+ (&xfs_mount_list_lock){++++.-}, at: [<ffffffff81281a76>]
+xfs_reclaim_inode_shrink+0xc6/0x140
 
-Without some further investigation, I am not sure what this will do.  We
-don't want to make things worse of course.  Because kgdb uses the
-request hw_breakpoint api to request slot reservation having an
-attribute to say don't do anything to this HW breakpoint is certainly
-one way to fix it.
-
-> Is this a regression BTW?
->
->   
-
-Absolutely this is a regression.  No change was made in kgdb related to
-this and the kgdb HW breakpoint regression tests (which come with the
-kernel) stopped working and bisect to the commit I mentioned.
+which lock already depends on the new lock.
 
 
-Jason.
+the existing dependency chain (in reverse order) is:
+
+-> #1 (&xfs_mount_list_lock){++++.-}:
+       [<ffffffff8106ef9a>] lock_acquire+0x5a/0x70
+       [<ffffffff815aa646>] _raw_spin_lock+0x36/0x50
+       [<ffffffff810fabf3>] try_to_free_buffers+0x43/0xb0
+       [<ffffffff812763b2>] xfs_vm_releasepage+0x92/0xe0
+       [<ffffffff810908ee>] try_to_release_page+0x2e/0x50
+       [<ffffffff8109ef56>] shrink_page_list+0x486/0x5a0
+       [<ffffffff8109f35d>] shrink_inactive_list+0x2ed/0x700
+       [<ffffffff8109fda0>] shrink_zone+0x3b0/0x460
+       [<ffffffff810a0f41>] try_to_free_pages+0x241/0x3a0
+       [<ffffffff810999e2>] __alloc_pages_nodemask+0x4c2/0x6b0
+       [<ffffffff810c52c6>] alloc_pages_current+0x76/0xf0
+       [<ffffffff8109205b>] __page_cache_alloc+0xb/0x10
+       [<ffffffff81092a2a>] find_or_create_page+0x4a/0xa0
+       [<ffffffff812780cc>] _xfs_buf_lookup_pages+0x14c/0x360
+       [<ffffffff81279122>] xfs_buf_get+0x72/0x160
+       [<ffffffff8126eb68>] xfs_trans_get_buf+0xc8/0xf0
+       [<ffffffff8124439f>] xfs_da_do_buf+0x3df/0x6d0
+       [<ffffffff81244825>] xfs_da_get_buf+0x25/0x30
+       [<ffffffff8124a076>] xfs_dir2_data_init+0x46/0xe0
+       [<ffffffff81247f89>] xfs_dir2_sf_to_block+0xb9/0x5a0
+       [<ffffffff812501c8>] xfs_dir2_sf_addname+0x418/0x5c0
+       [<ffffffff81247d7c>] xfs_dir_createname+0x14c/0x1a0
+       [<ffffffff81271d49>] xfs_create+0x449/0x5d0
+       [<ffffffff8127d802>] xfs_vn_mknod+0xa2/0x1b0
+       [<ffffffff8127d92b>] xfs_vn_create+0xb/0x10
+       [<ffffffff810ddc81>] vfs_create+0x81/0xd0
+       [<ffffffff810df1a5>] do_last+0x535/0x690
+       [<ffffffff810e11fd>] do_filp_open+0x21d/0x660
+       [<ffffffff810d16b4>] do_sys_open+0x64/0x140
+       [<ffffffff810d17bb>] sys_open+0x1b/0x20
+       [<ffffffff810023eb>] system_call_fastpath+0x16/0x1b
+
+:-> #0 (&(&ip->i_lock)->mr_lock){++++--}:
+       [<ffffffff8106ef10>] __lock_acquire+0x1be0/0x1c10
+       [<ffffffff8106ef9a>] lock_acquire+0x5a/0x70
+       [<ffffffff8105dfba>] down_write_nested+0x4a/0x70
+       [<ffffffff8125500c>] xfs_ilock+0x7c/0xa0
+       [<ffffffff81280c98>] xfs_reclaim_inode+0x98/0x250
+       [<ffffffff81281824>] xfs_inode_ag_walk+0x74/0x120
+       [<ffffffff81281953>] xfs_inode_ag_iterator+0x83/0xe0
+       [<ffffffff81281aa4>] xfs_reclaim_inode_shrink+0xf4/0x140
+       [<ffffffff8109ff7d>] shrink_slab+0x12d/0x190
+       [<ffffffff810a07ad>] balance_pgdat+0x43d/0x6f0
+       [<ffffffff810a0b1e>] kswapd+0xbe/0x2a0
+       [<ffffffff810592ae>] kthread+0x8e/0xa0
+       [<ffffffff81003194>] kernel_thread_helper+0x4/0x10
+
+other info that might help us debug this:
+
+2 locks held by kswapd0/605:
+ #0:  (shrinker_rwsem){++++..}, at: [<ffffffff8109fe88>]
+shrink_slab+0x38/0x190
+ #1:  (&xfs_mount_list_lock){++++.-}, at: [<ffffffff81281a76>]
+xfs_reclaim_inode_shrink+0xc6/0x140
+
+stack backtrace:
+Pid: 605, comm: kswapd0 Not tainted 2.6.35-rc5-00064-ga9f7f2e #334
+Call Trace:
+ [<ffffffff8106c5d9>] print_circular_bug+0xe9/0xf0
+ [<ffffffff8106ef10>] __lock_acquire+0x1be0/0x1c10
+ [<ffffffff8106e3c2>] ? __lock_acquire+0x1092/0x1c10
+ [<ffffffff8106ef9a>] lock_acquire+0x5a/0x70
+ [<ffffffff8125500c>] ? xfs_ilock+0x7c/0xa0
+ [<ffffffff8105dfba>] down_write_nested+0x4a/0x70
+ [<ffffffff8125500c>] ? xfs_ilock+0x7c/0xa0
+ [<ffffffff815ae795>] ? sub_preempt_count+0x95/0xd0
+ [<ffffffff8125500c>] xfs_ilock+0x7c/0xa0
+ [<ffffffff81280c98>] xfs_reclaim_inode+0x98/0x250
+ [<ffffffff81281824>] xfs_inode_ag_walk+0x74/0x120
+ [<ffffffff81280c00>] ? xfs_reclaim_inode+0x0/0x250
+ [<ffffffff81281953>] xfs_inode_ag_iterator+0x83/0xe0
+ [<ffffffff81280c00>] ? xfs_reclaim_inode+0x0/0x250
+ [<ffffffff81281aa4>] xfs_reclaim_inode_shrink+0xf4/0x140
+ [<ffffffff8109ff7d>] shrink_slab+0x12d/0x190
+ [<ffffffff810a07ad>] balance_pgdat+0x43d/0x6f0
+ [<ffffffff810a0b1e>] kswapd+0xbe/0x2a0
+ [<ffffffff81059700>] ? autoremove_wake_function+0x0/0x40
+ [<ffffffff815aaf3d>] ? _raw_spin_unlock_irqrestore+0x3d/0x70
+ [<ffffffff810a0a60>] ? kswapd+0x0/0x2a0
+ [<ffffffff810592ae>] kthread+0x8e/0xa0
+ [<ffffffff81003194>] kernel_thread_helper+0x4/0x10
+ [<ffffffff815ab400>] ? restore_args+0x0/0x30
+ [<ffffffff81059220>] ? kthread+0x0/0xa0
+
