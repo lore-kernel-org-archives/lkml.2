@@ -1,62 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab0GWIST (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 04:18:19 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:64776 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752554Ab0GWISR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 04:18:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Jw3eaw7QFgF0Ftd2SAG9/ToBV1PnI2xznZsZIhaA8ZQj5ZGadCF1O8ilcGdptmWPEN
-         ZnzqNYaNhnK8pU4yrnHn+vlcC+t4BCb7aa0p9lFbuvlvjCFAc0x6qUAiRmW1dbYo2nN0
-         DNCYWDJ8k1KksUfmzp4Ux30FPcD8YxB7RyAWQ=
+	id S1753416Ab0GWIdW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 04:33:22 -0400
+Received: from mga03.intel.com ([143.182.124.21]:44893 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750877Ab0GWIdU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 04:33:20 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,246,1278313200"; 
+   d="scan'208";a="303495896"
+Date: Fri, 23 Jul 2010 16:33:15 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: Christoph Hellwig <hch@infradead.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        "linux-fsdevel@vger.kernel.org" <linux-fsdevel@vger.kernel.org>,
+        "linux-mm@kvack.org" <linux-mm@kvack.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>,
+        Rik van Riel <riel@redhat.com>, Johannes Weiner <hannes@cmpxchg.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Andrea Arcangeli <aarcange@redhat.com>,
+        Minchan Kim <minchan.kim@gmail.com>
+Subject: Re: [PATCH 7/8] writeback: sync old inodes first in background
+ writeback
+Message-ID: <20100723083315.GC5043@localhost>
+References: <1279545090-19169-1-git-send-email-mel@csn.ul.ie>
+ <1279545090-19169-8-git-send-email-mel@csn.ul.ie>
+ <20100719142145.GD12510@infradead.org>
+ <20100719144046.GR13117@csn.ul.ie>
+ <20100722085210.GA26714@localhost>
+ <20100722094208.GE13117@csn.ul.ie>
 MIME-Version: 1.0
-In-Reply-To: <4C49468B.40307@vflare.org>
-References: <20100621231809.GA11111@ca-server1.us.oracle.com>
-	<4C49468B.40307@vflare.org>
-Date: Fri, 23 Jul 2010 17:17:49 +0900
-Message-ID: <AANLkTi=W4xpz1VP9oPbK3pNY-5aODydzsAhuAWv-1+Vt@mail.gmail.com>
-Subject: Re: [PATCH V3 0/8] Cleancache: overview
-From: Minchan Kim <minchan.kim@gmail.com>
-To: ngupta@vflare.org
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, chris.mason@oracle.com,
-        viro@zeniv.linux.org.uk, akpm@linux-foundation.org, adilger@sun.com,
-        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
-        matthew@wil.cx, linux-btrfs@vger.kernel.org,
-        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
-        linux-mm@kvack.org, jeremy@goop.org, JBeulich@novell.com,
-        kurt.hackel@oracle.com, npiggin@suse.de, dave.mccracken@oracle.com,
-        riel@redhat.com, avi@redhat.com, konrad.wilk@oracle.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722094208.GE13117@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 4:36 PM, Nitin Gupta <ngupta@vflare.org> wrote:
->
-> 2. I think change in btrfs can be avoided by moving cleancache_get_page()
-> from do_mpage_reapage() to filemap_fault() and this should work for all
-> filesystems. See:
->
-> handle_pte_fault() -> do_(non)linear_fault() -> __do_fault()
->                                                -> vma->vm_ops->fault()
->
-> which is defined as filemap_fault() for all filesystems. If some future
-> filesystem uses its own custom function (why?) then it will have to arrange for
-> call to cleancache_get_page(), if it wants this feature.
+Hi Mel,
+
+On Thu, Jul 22, 2010 at 05:42:09PM +0800, Mel Gorman wrote:
+> On Thu, Jul 22, 2010 at 04:52:10PM +0800, Wu Fengguang wrote:
+> > > Some insight on how the other writeback changes that are being floated
+> > > around might affect the number of dirty pages reclaim encounters would also
+> > > be helpful.
+> > 
+> > Here is an interesting related problem about the wait_on_page_writeback() call
+> > inside shrink_page_list():
+> > 
+> >         http://lkml.org/lkml/2010/4/4/86
+
+I guess you've got the answers from the above thread, anyway here is
+the brief answers to your questions.
+
+> > 
+> > The problem is, wait_on_page_writeback() is called too early in the
+> > direct reclaim path, which blocks many random/unrelated processes when
+> > some slow (USB stick) writeback is on the way.
+> > 
+> > A simple dd can easily create a big range of dirty pages in the LRU
+> > list. Therefore priority can easily go below (DEF_PRIORITY - 2) in a
+> > typical desktop, which triggers the lumpy reclaim mode and hence
+> > wait_on_page_writeback().
+> > 
+> 
+> Lumpy reclaim is for high-order allocations. A simple dd should not be
+> triggering it regularly unless there was a lot of forking going on at the
+> same time.
+
+dd could create the dirty file fast enough, so that no other processes 
+are injecting pages into the LRU lists besides dd itself. So it's
+creating a large range of hard-to-reclaim LRU pages which will trigger
+this code
+
++       else if (sc->order && priority < DEF_PRIORITY - 2)
++               lumpy_reclaim = 1;
 
 
-filemap fault works only in case of file-backed page which is mapped
-but don't work not-mapped cache page.  So we could miss cache page by
-read system call if we move it into filemap_fault.
+> Also, how would a random or unrelated process get blocked on
+> writeback unless they were also doing high-order allocations?  What was the
+> source of the high-order allocations?
 
+sc->order is 1 on fork().
 
--- 
-Kind regards,
-Minchan Kim
+Thanks,
+Fengguang
