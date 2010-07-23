@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759101Ab0GWXFa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 19:05:30 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41692 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757962Ab0GWXF2 (ORCPT
+	id S1758924Ab0GWXQs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 19:16:48 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:61301 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754210Ab0GWXQr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 19:05:28 -0400
-Subject: [PATCH v2 2/2] of/irq: Fix endian issues in parsing interrupt
-	specifiers
-To: devicetree-discuss@lists.ozlabs.org, jeremy.kerr@canonical.com,
-        linux-kernel@vger.kernel.org
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Fri, 23 Jul 2010 17:05:25 -0600
-Message-ID: <20100723230514.28579.65527.stgit@angua>
-In-Reply-To: <20100723230437.28579.19577.stgit@angua>
-References: <20100723230437.28579.19577.stgit@angua>
-User-Agent: StGit/0.15
+	Fri, 23 Jul 2010 19:16:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=NFpQSRLyD6i8HZHdWIu8GBeLh27jzudIzCd7NS58Y50EV+YYu91gHPe178Dk4fLUtR
+         VuYeCKDyGbyIwhbaWqCBVVKOK9/xHvQz83qUDdUqzXXcZ5dwYJ+vLIwvcu+RZ2umWlV0
+         D2ZgLAFqqi4p2tYdYM/FwsdVQVzyjkhvFqH5k=
+From: "Sergey V." <sftp.mtuci@gmail.com>
+To: dave.bueso@gmail.com
+Subject: Re: [RFC] [PATCH procfs] Add process age
+Date: Sat, 24 Jul 2010 03:16:30 +0400
+User-Agent: KMail/1.13.3 (Linux/2.6.33.6-rt; KDE/4.4.3; x86_64; ; )
+Cc: Alexey Dobriyan <adobriyan@gmail.com>, torvalds@linux-foundation.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org
+References: <1279907271.4335.3.camel@cowboy> <20100723183549.GA10518@x200> <1279910830.1851.5.camel@cowboy>
+In-Reply-To: <1279910830.1851.5.camel@cowboy>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201007240316.30892.sftp.mtuci@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch fixes some instances where interrupt specifiers are
-dereferenced directly instead of doing a be32_to_cpu() conversion first.
+On Friday 23 of July 2010 22:47:10 Davidlohr Bueso wrote:
+> On Fri, 2010-07-23 at 21:35 +0300, Alexey Dobriyan wrote:
+> > On Fri, Jul 23, 2010 at 01:47:51PM -0400, Davidlohr Bueso wrote:
+> > > This patch exports a process's age, in seconds, adding a /proc/#/age 
+file.
+> > 
+> > What for?
+> 
+> I have not found any straight way to get the run time of a processes,
+> without having to interpret the start_time entry in /proc/#/stat and
+> manually subtract the uptime from it.
 
-Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
----
- drivers/of/irq.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
+Agree. I thing this feature can be useful in some cases.
 
-diff --git a/drivers/of/irq.c b/drivers/of/irq.c
-index 65cfae1..2d14eac 100644
---- a/drivers/of/irq.c
-+++ b/drivers/of/irq.c
-@@ -91,8 +91,8 @@ static struct device_node *of_irq_find_parent(struct device_node *child)
-  * properties, for example when resolving PCI interrupts when no device
-  * node exist for the parent.
-  */
--int of_irq_map_raw(struct device_node *parent, const u32 *intspec, u32 ointsize,
--		const u32 *addr, struct of_irq *out_irq)
-+int of_irq_map_raw(struct device_node *parent, const __be32 *intspec,
-+		   u32 ointsize, const __be32 *addr, struct of_irq *out_irq)
- {
- 	struct device_node *ipar, *tnode, *old = NULL, *newpar = NULL;
- 	const __be32 *tmp, *imap, *imask;
-@@ -100,7 +100,8 @@ int of_irq_map_raw(struct device_node *parent, const u32 *intspec, u32 ointsize,
- 	int imaplen, match, i;
- 
- 	pr_debug("of_irq_map_raw: par=%s,intspec=[0x%08x 0x%08x...],ointsize=%d\n",
--	    parent->full_name, intspec[0], intspec[1], ointsize);
-+		 parent->full_name, be32_to_cpup(intspec),
-+		 be32_to_cpu(intspec + 1), ointsize);
- 
- 	ipar = of_node_get(parent);
- 
-@@ -278,7 +279,7 @@ EXPORT_SYMBOL_GPL(of_irq_map_raw);
- int of_irq_map_one(struct device_node *device, int index, struct of_irq *out_irq)
- {
- 	struct device_node *p;
--	const u32 *intspec, *tmp, *addr;
-+	const __be32 *intspec, *tmp, *addr;
- 	u32 intsize, intlen;
- 	int res = -EINVAL;
- 
-@@ -292,9 +293,9 @@ int of_irq_map_one(struct device_node *device, int index, struct of_irq *out_irq
- 	intspec = of_get_property(device, "interrupts", &intlen);
- 	if (intspec == NULL)
- 		return -EINVAL;
--	intlen /= sizeof(u32);
-+	intlen /= sizeof(*intspec);
- 
--	pr_debug(" intspec=%d intlen=%d\n", *intspec, intlen);
-+	pr_debug(" intspec=%d intlen=%d\n", be32_to_cpup(intspec), intlen);
- 
- 	/* Get the reg property (if any) */
- 	addr = of_get_property(device, "reg", NULL);
+I have not found better than run something like this:
 
+echo `cat /proc/uptime | awk '{print $1}'` - \
+     `cat /proc/$PID/stat | awk '{print $22}'`/100 | bc
+
+> This small file simply aids the users to obtain the information easier
+> and quicker. Another alternative would be to add an entry
+> in /proc/#/status.
+> 
+> Davidlohr
