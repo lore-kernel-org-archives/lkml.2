@@ -1,58 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760155Ab0GWQmO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 12:42:14 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53544 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751125Ab0GWQmM (ORCPT
+	id S1760398Ab0GWQm7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 12:42:59 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:40119 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753580Ab0GWQm6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 12:42:12 -0400
-Date: Fri, 23 Jul 2010 09:41:34 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-        Cezary Jackiewicz <cezary.jackiewicz@gmail.com>,
-        Matthew Garrett <mjg@redhat.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-        platform-driver-x86@vger.kernel.org
-Subject: [PATCH -next] compal-laptop: depends on POWER_SUPPLY
-Message-Id: <20100723094134.10c86761.randy.dunlap@oracle.com>
-In-Reply-To: <20100723164931.7bf2160f.sfr@canb.auug.org.au>
-References: <20100723164931.7bf2160f.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt354.oracle.com [141.146.40.154]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C49C655.001F:SCFMA4539814,ss=1,fgs=0
+	Fri, 23 Jul 2010 12:42:58 -0400
+Date: Fri, 23 Jul 2010 17:42:18 +0100
+From: Russell King - ARM Linux <linux@arm.linux.org.uk>
+To: Stepan Moskovchenko <stepanm@codeaurora.org>
+Cc: dwalker@codeaurora.org, linux-kernel@vger.kernel.org,
+        linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH RFC] arm: msm: Add QSD8x60 System MMU support.
+Message-ID: <20100723164218.GC750@n2100.arm.linux.org.uk>
+References: <1279833694-1214-1-git-send-email-stepanm@codeaurora.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279833694-1214-1-git-send-email-stepanm@codeaurora.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, Jul 22, 2010 at 02:21:34PM -0700, Stepan Moskovchenko wrote:
+> Add support for the System MMUs found on the 8x60 and 8x72
+> families of Qualcomm MSMs. These SMMUs allow virtualization
+> of the address space used by most of the multimedia cores
+> on these chips.
 
-compal-laptop uses power_supply interfaces so it should depend
-on POWER_SUPPLY.
+There's lots of "return -1;" statements in this patch - it's obscene
+that this is used to indicate "some error occurred" in kernel space
+rather than a real errno value - even when an existing function
+(eg, request_irq) gave you an error code already.
 
-ERROR: "power_supply_register" [drivers/platform/x86/compal-laptop.ko] undefined!
-ERROR: "power_supply_unregister" [drivers/platform/x86/compal-laptop.ko] undefined!
+The problem comes when someone - or you - uses your code, assuming that
+you do return errno values, just like the rest of the kernel.  I've seen
+cases where this happened all the way through to userspace.  When "-1"
+is interpreted as an errno value, it means "Operation not permitted"
+which almost is never what you meant - and as kernel functions return
+negative errno values, this is exactly how it gets interpreted.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Cezary Jackiewicz <cezary.jackiewicz@gmail.com>
-Cc:	Matthew Garrett <mjg@redhat.com>
-Cc:	platform-driver-x86@vger.kernel.org
----
- drivers/platform/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
+Please note this for the future - and please review patches on this
+point internally first.
 
---- linux-next-20100723.orig/drivers/platform/x86/Kconfig
-+++ linux-next-20100723/drivers/platform/x86/Kconfig
-@@ -183,6 +183,7 @@ config COMPAL_LAPTOP
- 	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on RFKILL
- 	depends on HWMON
-+	depends on POWER_SUPPLY
- 	---help---
- 	  This is a driver for laptops built by Compal:
- 
+Thanks.
