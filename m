@@ -1,50 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754870Ab0GWSrR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 14:47:17 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:57660 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751715Ab0GWSrP (ORCPT
+	id S1755778Ab0GWSue (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 14:50:34 -0400
+Received: from p01c12o141.mxlogic.net ([208.65.145.64]:58214 "EHLO
+	p01c12o141.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab0GWSud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 14:47:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:reply-to:to:cc:in-reply-to:references:content-type
-         :date:message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=xqBUhqX8Z8TmDAfDF1jV0ONv7IOHow9OH2jY1DvI8yybJwHYi8rrAZioVfJ1hrLiVs
-         Bgh1vUBhAKI3uJo84zUIcIeSKnkK2/tjTjPQpge8L3GzCcIt2ruJafWDMymaV39SCsOd
-         gMypHQp9QMdxOk5W0w/oEAJVU9adqnSO4UdOc=
-Subject: Re: [RFC] [PATCH procfs] Add process age
-From: Davidlohr Bueso <dave.bueso@gmail.com>
-Reply-To: dave.bueso@gmail.com
-To: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-In-Reply-To: <20100723183549.GA10518@x200>
-References: <1279907271.4335.3.camel@cowboy>  <20100723183549.GA10518@x200>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Jul 2010 14:47:10 -0400
-Message-ID: <1279910830.1851.5.camel@cowboy>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 23 Jul 2010 14:50:33 -0400
+X-MXL-Hash: 4c49e47968713d7f-83c3063ba374a92b8a36fb4a973b1ac2baae6208
+X-MXL-Hash: 4c49e46e775047e2-74378205cf55f94e86c5aab948912c4edb52609c
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel <linux-kernel@vger.kernel.org>
+Subject: [PATCH] Staging: dt3155: make local functions static
+Date: Fri, 23 Jul 2010 11:49:25 -0700
+User-Agent: KMail/1.9.9
+CC: <devel@driverdev.osuosl.org>, <gregkh@suse.de>, <ss@aao.gov.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-ID: <201007231149.26015.hartleys@visionengravers.com>
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010070601)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [216.166.12.72]
+X-AnalysisOut: [v=1.0 c=1 a=aotffO6ukj8A:10 a=VphdPIyG4kEA:10 a=IkcTkHD0fZ]
+X-AnalysisOut: [MA:10 a=jM3uHZP82BWpxjlUuN2t4A==:17 a=i00gxMtYAAAA:8 a=OoR]
+X-AnalysisOut: [7ru7LXorzS3FmPqYA:9 a=jS6cX8wJPEcVu-1-xD4A:7 a=pp8nxvq9HiV]
+X-AnalysisOut: [bZDdxHLCtxA3Q0rcA:4 a=QEXdDO2ut3YA:10 a=x1WnkoZAwusA:10 a=]
+X-AnalysisOut: [0kPLrQdw3YYA:10 a=ZyMYofmC0d03tEYu:21 a=rCbehiuzG0tvYG5f:2]
+X-AnalysisOut: [1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-23 at 21:35 +0300, Alexey Dobriyan wrote:
-> On Fri, Jul 23, 2010 at 01:47:51PM -0400, Davidlohr Bueso wrote:
-> > This patch exports a process's age, in seconds, adding a /proc/#/age file.
-> 
-> What for?
+The functions adjust_4MB and allocate_buffers are only called locally in
+dt3155_isr.c and should be static.
 
-I have not found any straight way to get the run time of a processes,
-without having to interpret the start_time entry in /proc/#/stat and
-manually subtract the uptime from it.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Scott Smedley <ss@aao.gov.au>
 
-This small file simply aids the users to obtain the information easier
-and quicker. Another alternative would be to add an entry
-in /proc/#/status.
+---
 
-Davidlohr
-
+diff --git a/drivers/staging/dt3155/dt3155_isr.c b/drivers/staging/dt3155/dt3155_isr.c
+index 549186f..1e91e6c 100644
+--- a/drivers/staging/dt3155/dt3155_isr.c
++++ b/drivers/staging/dt3155/dt3155_isr.c
+@@ -180,7 +180,7 @@ void printques(struct dt3155_fbuffer *fb)
+  *  the start address up to the beginning of the
+  *  next 4MB chunk (assuming bufsize < 4MB).
+  *****************************************************/
+-u32 adjust_4MB(u32 buf_addr, u32 bufsize)
++static u32 adjust_4MB(u32 buf_addr, u32 bufsize)
+ {
+     if (((buf_addr+bufsize) & UPPER_10_BITS) != (buf_addr & UPPER_10_BITS))
+ 	return (buf_addr+bufsize) & UPPER_10_BITS;
+@@ -196,7 +196,7 @@ u32 adjust_4MB(u32 buf_addr, u32 bufsize)
+  *  buffers.  If there is not enough free space
+  *  try for less memory.
+  *****************************************************/
+-void allocate_buffers(u32 *buf_addr, u32* total_size_kbs,
++static void allocate_buffers(u32 *buf_addr, u32* total_size_kbs,
+ 		       u32 bufsize)
+ {
+   /* Compute the minimum amount of memory guaranteed to hold all
