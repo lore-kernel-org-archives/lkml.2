@@ -1,25 +1,28 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760171Ab0GWT7Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 15:59:16 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43148 "EHLO
+	id S1760313Ab0GWT7h (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 15:59:37 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43181 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757294Ab0GWT7I (ORCPT
+	with ESMTP id S1760292Ab0GWT7f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 15:59:08 -0400
+	Fri, 23 Jul 2010 15:59:35 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-arm-kernel@lists.infradead.org
-Cc: Russell King <linux@arm.linux.org.uk>,
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
+        Janusz Krzysztofik <jkrzyszt@tis.icnet.pl>,
+        Kalle Valo <kalle.valo@iki.fi>,
         =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>,
-        "Samuel R. C. Vale" <srcvale@holoscopio.com>,
-        Jiri Kosina <jkosina@suse.cz>, Andrew Victor <linux@maxim.org.za>,
+        Kevin Hilman <khilman@deeprootsystems.com>, linux-omap@vger.kernel.org,
         linux-kernel@vger.kernel.org
-Subject: [PATCH 01/11] ARM: cam60: move cam60_spi_devices to .init.data
-Date: Fri, 23 Jul 2010 21:58:24 +0200
-Message-Id: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
+Subject: [PATCH 11/11] ARM: omap: ams-delta: move config to .init.data
+Date: Fri, 23 Jul 2010 21:58:34 +0200
+Message-Id: <1279915120-4373-11-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
+References: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
@@ -31,44 +34,27 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-cam60_spi_devices is passed to at91_add_device_spi which calls
-spi_register_board_info.  The latter makes a copy of it, so living in
-.init.data is OK.
-
-This fixes the following warning in cam60_defconfig:
-	WARNING: vmlinux.o(.data+0x2a00): Section mismatch in reference from the variable cam60_spi_devices to the (unknown reference) .init.data:(unknown)
-	The variable cam60_spi_devices references
-	the (unknown reference) __initdata (unknown)
-	If the reference is valid then annotate the
-	variable with __init* or __refdata (see linux/init.h) or name the variable:
-	*_template, *_timer, *_sht, *_ops, *_probe, *_probe_one, *_console,
+Most other boards have their config in .init.data, too, so this should
+be OK.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- arch/arm/mach-at91/board-cam60.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/mach-omap1/board-ams-delta.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/arm/mach-at91/board-cam60.c b/arch/arm/mach-at91/board-cam60.c
-index 02138af..05c7072 100644
---- a/arch/arm/mach-at91/board-cam60.c
-+++ b/arch/arm/mach-at91/board-cam60.c
-@@ -98,14 +98,14 @@ static struct mtd_partition __initdata cam60_spi_partitions[] = {
- 	},
+diff --git a/arch/arm/mach-omap1/board-ams-delta.c b/arch/arm/mach-omap1/board-ams-delta.c
+index fdd1dd5..6b936cc 100644
+--- a/arch/arm/mach-omap1/board-ams-delta.c
++++ b/arch/arm/mach-omap1/board-ams-delta.c
+@@ -173,7 +173,7 @@ static struct omap_usb_config ams_delta_usb_config __initdata = {
+ 	.pins[0]	= 2,
  };
  
--static struct flash_platform_data __initdata cam60_spi_flash_platform_data = {
-+static struct flash_platform_data cam60_spi_flash_platform_data __initdata = {
- 	.name		= "spi_flash",
- 	.parts		= cam60_spi_partitions,
- 	.nr_parts	= ARRAY_SIZE(cam60_spi_partitions)
+-static struct omap_board_config_kernel ams_delta_config[] = {
++static struct omap_board_config_kernel ams_delta_config[] __initdata = {
+ 	{ OMAP_TAG_LCD,		&ams_delta_lcd_config },
  };
- #endif
  
--static struct spi_board_info cam60_spi_devices[] = {
-+static struct spi_board_info cam60_spi_devices[] __initdata = {
- #if defined(CONFIG_MTD_DATAFLASH)
- 	{	/* DataFlash chip */
- 		.modalias	= "mtd_dataflash",
 -- 
 1.7.1
 
