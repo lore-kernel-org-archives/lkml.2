@@ -1,53 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754744Ab0GWQfI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 12:35:08 -0400
-Received: from mail-ew0-f46.google.com ([209.85.215.46]:46189 "EHLO
-	mail-ew0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751875Ab0GWQfG (ORCPT
+	id S1759510Ab0GWQhU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 12:37:20 -0400
+Received: from stargate.chelsio.com ([67.207.112.58]:29895 "EHLO
+	stargate.chelsio.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753012Ab0GWQhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 12:35:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=p5Vti1PKkwPlgQd9ZYKmc4olLxxBFPbJ0mC6tR6rSF0kOAcRH7mj2iEnsE5TDvywmK
-         IWbuqNsDhMYBo2XUdywLNPEiE+pP5XKJJ8kpjb2bBcRCcEdl+ixTjPzfIQnWUqzEPm0H
-         nNoIdlBfnocsvCqQsbTMk9oY3GiYm3+fpPWzc=
-From: Kulikov Vasiliy <segooon@gmail.com>
-To: kernel-janitors@vger.kernel.org
-Cc: Jiri Slaby <jirislaby@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
-        Alan Cox <alan@linux.intel.com>,
-        Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-        linux-kernel@vger.kernel.org
-Subject: [PATCH] char: mxser: remove unnesesary NULL check
-Date: Fri, 23 Jul 2010 20:34:53 +0400
-Message-Id: <1279902893-27006-1-git-send-email-segooon@gmail.com>
-X-Mailer: git-send-email 1.7.0.4
+	Fri, 23 Jul 2010 12:37:18 -0400
+From: Casey Leedom <leedom@chelsio.com>
+Organization: Chelsio Communications, Inc.
+To: Stefan Assmann <sassmann@redhat.com>
+Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces with random MAC address
+Date: Fri, 23 Jul 2010 09:35:58 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; x86_64; ; )
+Cc: "Rose, Gregory V" <gregory.v.rose@intel.com>,
+        David Miller <davem@davemloft.net>, shemminger@vyatta.com,
+        andy@greyhouse.net, harald@redhat.com, bhutchings@solarflare.com,
+        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
+        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
+References: <20100721150732.GR7497@gospo.rdu.redhat.com> <2408F875-69BE-45D3-8605-4AE5CDA4601C@chelsio.com> <4C494DEE.3010101@redhat.com>
+In-Reply-To: <4C494DEE.3010101@redhat.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="windows-1252"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201007230935.59010.leedom@chelsio.com>
+X-OriginalArrivalTime: 23 Jul 2010 16:36:02.0088 (UTC) FILETIME=[23443280:01CB2A85]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-mxser_transmit_chars(tty, port) is called only from mxser_interrupt().
-NULL check is performed in mxser_interrupt() so it is redundant here.
+| From: Stefan Assmann <sassmann@redhat.com>
+| Date: Friday, July 23, 2010 01:08 am
+| 
+| On 23.07.2010 02:26, Casey Leedom wrote:
+| >  Or you simply don't have the VF Driver loaded in the "Domain 0" Control
+| >  OS.  When we install the cxgb4 PF Driver with "num_vf=..." this enables
+| >  the PCI-E SR-IOV Capabilities within the various PFs and the
+| >  corresponding VF PCI Devices are instantiated and discovered by the
+| >  Domain 0 Linux OS.  But without a cxgb4vf VF Driver loaded, those
+| >  devices just sit there available for "Device Assignment" to VMs.
+| 
+| Just out of curiosity, how do you prevent the VF driver from getting
+| loaded in the host? Except from blacklisting it.
 
-Signed-off-by: Kulikov Vasiliy <segooon@gmail.com>
----
- drivers/char/mxser.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+  I don't install them. :-)
 
-diff --git a/drivers/char/mxser.c b/drivers/char/mxser.c
-index d2692d4..3fc89da 100644
---- a/drivers/char/mxser.c
-+++ b/drivers/char/mxser.c
-@@ -2193,7 +2193,7 @@ static void mxser_transmit_chars(struct tty_struct *tty, struct mxser_port *port
- 	port->mon_data.up_txcnt += (cnt - port->xmit_cnt);
- 	port->icount.tx += (cnt - port->xmit_cnt);
- 
--	if (port->xmit_cnt < WAKEUP_CHARS && tty)
-+	if (port->xmit_cnt < WAKEUP_CHARS)
- 		tty_wakeup(tty);
- 
- 	if (port->xmit_cnt <= 0) {
--- 
-1.7.0.4
+  I'm actually fairly unfamiliar with the details of managing/administering 
+Linux systems so I'm guessing that there are much better ways of controlling for 
+which devices a Linux system will attempt to load drivers.  For instance, I 
+didn't know about the concept of "blacklisting" a driver.
 
+Casey
