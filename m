@@ -1,24 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758981Ab0GWT7N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 15:59:13 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:43127 "EHLO
+	id S1760789Ab0GWUAq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 16:00:46 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:43164 "EHLO
 	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756687Ab0GWT7H (ORCPT
+	with ESMTP id S1758423Ab0GWT7M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 15:59:07 -0400
+	Fri, 23 Jul 2010 15:59:12 -0400
 From: =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>
 To: linux-arm-kernel@lists.infradead.org
-Cc: Lennert Buytenhek <kernel@wantstofly.org>,
-        Nicolas Pitre <nico@fluxnic.net>,
-        Russell King <linux@arm.linux.org.uk>,
+Cc: Tony Lindgren <tony@atomide.com>, Russell King <linux@arm.linux.org.uk>,
         =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
 	<u.kleine-koenig@pengutronix.de>,
-        Martin Michlmayr <tbm@cyrius.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 02/11] ARM: kirkwood: move qnap_tsx1x_register_flash() to .init.text
-Date: Fri, 23 Jul 2010 21:58:25 +0200
-Message-Id: <1279915120-4373-2-git-send-email-u.kleine-koenig@pengutronix.de>
+        Tomi Valkeinen <tomi.valkeinen@nokia.com>, linux-omap@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Subject: [PATCH 04/11] ARM: omap: move omap_init_fb to .init.text
+Date: Fri, 23 Jul 2010 21:58:27 +0200
+Message-Id: <1279915120-4373-4-git-send-email-u.kleine-koenig@pengutronix.de>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
 References: <1279915120-4373-1-git-send-email-u.kleine-koenig@pengutronix.de>
@@ -33,48 +32,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-qnap_tsx1x_register_flash is only called by qnap_ts219_init and
-qnap_ts41x_init which both live in .init.text, too.  So the move is OK.
-
-This fixes the following warning in kirkwood_defconfig:
-	WARNING: vmlinux.o(.text+0x9334): Section mismatch in reference from the function qnap_tsx1x_register_flash() to the variable .init.data:qnap_tsx1x_spi_slave_info
-	The function qnap_tsx1x_register_flash() references
-	the variable __initdata qnap_tsx1x_spi_slave_info.
-	This is often because qnap_tsx1x_register_flash lacks a __initdata
-	annotation or the annotation of qnap_tsx1x_spi_slave_info is wrong.
+omap_init_fb() is only called as arch_initcall and so can live in
+.init.text.
 
 Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
 ---
- arch/arm/mach-kirkwood/tsx1x-common.c |    2 +-
- arch/arm/mach-kirkwood/tsx1x-common.h |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+ arch/arm/plat-omap/fb.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/arch/arm/mach-kirkwood/tsx1x-common.c b/arch/arm/mach-kirkwood/tsx1x-common.c
-index 7221c20..f781164 100644
---- a/arch/arm/mach-kirkwood/tsx1x-common.c
-+++ b/arch/arm/mach-kirkwood/tsx1x-common.c
-@@ -77,7 +77,7 @@ struct spi_board_info __initdata qnap_tsx1x_spi_slave_info[] = {
- 	},
- };
+diff --git a/arch/arm/plat-omap/fb.c b/arch/arm/plat-omap/fb.c
+index d3eea4f..e8a390d 100644
+--- a/arch/arm/plat-omap/fb.c
++++ b/arch/arm/plat-omap/fb.c
+@@ -307,7 +307,7 @@ void omapfb_set_ctrl_platform_data(void *data)
+ 	omapfb_config.ctrl_platform_data = data;
+ }
  
--void qnap_tsx1x_register_flash(void)
-+void __init qnap_tsx1x_register_flash(void)
+-static inline int omap_init_fb(void)
++static int __init omap_init_fb(void)
  {
- 	spi_register_board_info(qnap_tsx1x_spi_slave_info,
- 				ARRAY_SIZE(qnap_tsx1x_spi_slave_info));
-diff --git a/arch/arm/mach-kirkwood/tsx1x-common.h b/arch/arm/mach-kirkwood/tsx1x-common.h
-index 9a59296..7fa0373 100644
---- a/arch/arm/mach-kirkwood/tsx1x-common.h
-+++ b/arch/arm/mach-kirkwood/tsx1x-common.h
-@@ -1,7 +1,7 @@
- #ifndef __ARCH_KIRKWOOD_TSX1X_COMMON_H
- #define __ARCH_KIRKWOOD_TSX1X_COMMON_H
+ 	const struct omap_lcd_config *conf;
  
--extern void qnap_tsx1x_register_flash(void);
-+extern void __init qnap_tsx1x_register_flash(void);
- extern void qnap_tsx1x_power_off(void);
+@@ -352,7 +352,7 @@ void omapfb_set_platform_data(struct omapfb_platform_data *data)
+ 	omapfb_config = *data;
+ }
  
- #endif
+-static inline int omap_init_fb(void)
++static int __init omap_init_fb(void)
+ {
+ 	return platform_device_register(&omap_fb_device);
+ }
 -- 
 1.7.1
 
