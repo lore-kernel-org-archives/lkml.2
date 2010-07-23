@@ -1,194 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab0GWIsz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 04:48:55 -0400
-Received: from hqemgate03.nvidia.com ([216.228.121.140]:9488 "EHLO
-	hqemgate03.nvidia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750877Ab0GWIsx convert rfc822-to-8bit (ORCPT
+	id S1754988Ab0GWIx0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 04:53:26 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:39575 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751756Ab0GWIxY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 04:48:53 -0400
-X-PGP-Universal: processed;
-	by hqnvupgp03.nvidia.com on Fri, 23 Jul 2010 01:48:48 -0700
-From: Wei Ni <wni@nvidia.com>
-To: "'Takashi Iwai'" <tiwai@suse.de>
-CC: "'Wu Fengguang'" <fengguang.wu@intel.com>,
-        "'Pavel Hofman'" <pavel.hofman@insite.cz>,
-        "'alsa-devel'" <alsa-devel@alsa-project.org>,
-        "'linux-kernel'" <linux-kernel@vger.kernel.org>,
-        "'akpm'" <akpm@linux-foundation.org>,
-        Stephen Warren <swarren@nvidia.com>
-Date: Fri, 23 Jul 2010 16:43:57 +0800
-Subject: RE: Support MCP89 hdmi audio
-Thread-Topic: Support MCP89 hdmi audio
-Thread-Index: Acso07nMflWDO5UDTmCfLvbdwLjmOgAeCMgwAD24pmA=
-Message-ID: <6B4D417B830BC44B8026029FD256F7F1C29D065C7E@HKMAIL01.nvidia.com>
-References: <6B4D417B830BC44B8026029FD256F7F1C29D065C70@HKMAIL01.nvidia.com>
- <s5hr5ix2dzb.wl%tiwai@suse.de>
- <6B4D417B830BC44B8026029FD256F7F1C29D065C72@HKMAIL01.nvidia.com>
-In-Reply-To: <6B4D417B830BC44B8026029FD256F7F1C29D065C72@HKMAIL01.nvidia.com>
-Accept-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
+	Fri, 23 Jul 2010 04:53:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=Ybym9X8AWTo5R2nyjqSJnrYpHsL70FdOxpTJ1h/TwhJZMXX0x0LM9sRXQYzspvT0Pm
+         EmRqbWsTpKkQVyMjQW1GmzsCdPRS+Is7D2i2hr4yc+S2qEXJkKuwmdZum4xCXWa+MDQc
+         TAhgMcdJJwmHPrKre6kRCYbk03ulP3dTv8rkk=
+Message-ID: <4C495880.2090705@gmail.com>
+Date: Fri, 23 Jul 2010 10:53:20 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Language: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+To: Michael Jensen <emjay1988@gmail.com>
+CC: gregkh@suse.de, devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: comedi: comedidev: Fixed a macro definition
+ code style issue
+References: <1279865467-16522-1-git-send-email-emjay1988@gmail.com>
+In-Reply-To: <1279865467-16522-1-git-send-email-emjay1988@gmail.com>
+X-Enigmail-Version: 1.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Takashi
-I tried your patch file, it worked fine on MCP89 board.
-But I still need to check some other problems.
-So please don't add this patch now.
-
-Thanks
-Wei.
-
------Original Message-----
-From: Wei Ni 
-Sent: Thursday, July 22, 2010 11:14 AM
-To: 'Takashi Iwai'
-Cc: Wu Fengguang; 'Pavel Hofman'; 'alsa-devel'; 'linux-kernel'; 'akpm'
-Subject: RE: Support MCP89 hdmi audio
-
-it's great, I will try it.
-
-Thanks
-Wei.
-
------Original Message-----
-From: Takashi Iwai [mailto:tiwai@suse.de] 
-Sent: Wednesday, July 21, 2010 8:53 PM
-To: Wei Ni
-Cc: Wu Fengguang; 'Pavel Hofman'; 'alsa-devel'; 'linux-kernel'; 'akpm'
-Subject: Re: Support MCP89 hdmi audio
-
-At Wed, 21 Jul 2010 19:45:09 +0800,
-Wei Ni wrote:
+On 07/23/2010 08:11 AM, Michael Jensen wrote:
+> Fixed a code style issue.
 > 
-> Hi, all
-> I'm an Nvidia engineer, I maintain the nvidia linux hdmi audio driver.
+> Signed-off-by: Michael Jensen <emjay1988@gmail.com>
+> ---
+>  drivers/staging/comedi/comedidev.h |    7 ++++---
+>  1 files changed, 4 insertions(+), 3 deletions(-)
 > 
-> An end-user report a problem with his TV attached to an MCP89.
-> ALSA won't send audio to it, because
-> PD=0:
-> HDMI hot plug event: Pin=5 Presence_Detect=1 ELD_Valid=0
-> HDMI hot plug event: Pin=5 Presence_Detect=0 ELD_Valid=1
-> 
-> As you know, in linux driver patch_hdmi.c, it use (pind && eldv)
-> in unsolicited events. So the driver can't detect the monitor.
-> 
-> >From the HAD specification
-> (http://download.intel.com/standards/hdaudio/pdf/HDA036.pdf):
-> 
-> Original text for Unsolicited Response PD bit:
-> 
-> Presence Detect: When this bit is set, sense measurement has
-> changed on the pin widget and software can use the pin sense
-> control verb to determine the current pin sense data state.
-> For analog pin widgets, this UR means that Presence Detect or
-> Impedance has changed on the pin widget.
-> For digital pin widgets, including HDMI pin widgets, this means
-> that presence detect (and optionally ELD valid bit) has
-> **changed**. [my emphasis]
-> 
-> Updated text for Unsolicted Response PD bit:
-> 
-> Presence Detect: This bit reflects the **present** [my
-> emphasis] state of the Pin Sense Presence Detect bit when the
-> unsolicited response is triggered. Software can optionally use
-> the pin sense control verb to determine the latest pin sense
-> data state. This bit implementation is only required for
-> digital display pin widget. Non digital display pin widget is
-> optional to implement this bit.
-> 
-> For our MCP89, the values indicates the change of status of PD, not the actual value of PD,
-> which follows older description of UR for PD bit.
-> 
-> So could we add a workaround for MCP89? We could use Pin Sense to determine again in
-> unsolicited events. If it return 0xc0000000, it means PD=1 and ELVD=1.
-> Or do you have any suggestions?
+> diff --git a/drivers/staging/comedi/comedidev.h b/drivers/staging/comedi/comedidev.h
+> index 4eb2b77..a46e859 100644
+> --- a/drivers/staging/comedi/comedidev.h
+> +++ b/drivers/staging/comedi/comedidev.h
+> @@ -61,10 +61,11 @@
+>  	module_init(x ## _init_module);					\
+>  	module_exit(x ## _cleanup_module);
+>  
+> -#define COMEDI_MODULE_MACROS						\
+> -	MODULE_AUTHOR("Comedi http://www.comedi.org");		\
+> +#define COMEDI_MODULE_MACROS		do {				\
+> +	MODULE_AUTHOR("Comedi http://www.comedi.org");			\
+>  	MODULE_DESCRIPTION("Comedi low-level driver");			\
+> -	MODULE_LICENSE("GPL");
+> +	MODULE_LICENSE("GPL");						\
+> +} while (0)
 
-Yes.  The patch below does similar thing.
-Could you give it a try?
+Hmm, does this compile?
 
-
-thanks,
-
-Takashi
-
----
-diff --git a/sound/pci/hda/patch_hdmi.c b/sound/pci/hda/patch_hdmi.c
-index 86067ee..2fc5396 100644
---- a/sound/pci/hda/patch_hdmi.c
-+++ b/sound/pci/hda/patch_hdmi.c
-@@ -52,6 +52,10 @@ struct hdmi_spec {
- 	 */
- 	struct hda_multi_out multiout;
- 	unsigned int codec_type;
-+
-+	/* misc flags */
-+	/* PD bit indicates only the update, not the current state */
-+	unsigned int old_pin_detect:1;
- };
- 
- 
-@@ -616,6 +620,9 @@ static void hdmi_setup_audio_infoframe(struct hda_codec *codec, hda_nid_t nid,
-  * Unsolicited events
-  */
- 
-+static void hdmi_present_sense(struct hda_codec *codec, hda_nid_t pin_nid,
-+			       struct hdmi_eld *eld);
-+
- static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
- {
- 	struct hdmi_spec *spec = codec->spec;
-@@ -632,6 +639,12 @@ static void hdmi_intrinsic_event(struct hda_codec *codec, unsigned int res)
- 	if (index < 0)
- 		return;
- 
-+	if (spec->old_pin_detect) {
-+		if (pind)
-+			hdmi_present_sense(codec, tag, &spec->sink_eld[index]);
-+		pind = spec->sink_eld[index].monitor_present;
-+	}
-+
- 	spec->sink_eld[index].monitor_present = pind;
- 	spec->sink_eld[index].eld_valid = eldv;
- 
-diff --git a/sound/pci/hda/patch_nvhdmi.c b/sound/pci/hda/patch_nvhdmi.c
-index 3c10c0b..b0652ac 100644
---- a/sound/pci/hda/patch_nvhdmi.c
-+++ b/sound/pci/hda/patch_nvhdmi.c
-@@ -478,6 +478,7 @@ static int patch_nvhdmi_8ch_89(struct hda_codec *codec)
- 
- 	codec->spec = spec;
- 	spec->codec_type = HDA_CODEC_NVIDIA_MCP89;
-+	spec->old_pin_detect = 1;
- 
- 	if (hdmi_parse_codec(codec) < 0) {
- 		codec->spec = NULL;
-@@ -508,6 +509,7 @@ static int patch_nvhdmi_8ch_7x(struct hda_codec *codec)
- 	spec->multiout.max_channels = 8;
- 	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
- 	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
-+	spec->old_pin_detect = 1;
- 
- 	codec->patch_ops = nvhdmi_patch_ops_8ch_7x;
- 
-@@ -528,6 +530,7 @@ static int patch_nvhdmi_2ch(struct hda_codec *codec)
- 	spec->multiout.max_channels = 2;
- 	spec->multiout.dig_out_nid = nvhdmi_master_con_nid_7x;
- 	spec->codec_type = HDA_CODEC_NVIDIA_MCP7X;
-+	spec->old_pin_detect = 1;
- 
- 	codec->patch_ops = nvhdmi_patch_ops_2ch;
- 
------------------------------------------------------------------------------------
-This email message is for the sole use of the intended recipient(s) and may contain
-confidential information.  Any unauthorized review, use, disclosure or distribution
-is prohibited.  If you are not the intended recipient, please contact the sender by
-reply email and destroy all copies of the original message.
------------------------------------------------------------------------------------
+-- 
+js
