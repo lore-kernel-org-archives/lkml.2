@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754521Ab0GWFvB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 01:51:01 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58126
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753786Ab0GWFu6 (ORCPT
+	id S1754870Ab0GWFyJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 01:54:09 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40683 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754038Ab0GWFyG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 01:50:58 -0400
-Date: Thu, 22 Jul 2010 22:51:15 -0700 (PDT)
-Message-Id: <20100722.225115.160202643.davem@davemloft.net>
-To: grant.likely@secretlab.ca
-Cc: sfr@canb.auug.org.au, monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
-        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
-        linuxppc-dev@ozlabs.org, benh@kernel.crashing.org,
-        sparclinux@vger.kernel.org
-Subject: Re: [PATCH 3/4] sparc: remove references to of_device and
- to_of_device
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100722223016.21557.40832.stgit@angua>
-References: <20100722222600.21557.34167.stgit@angua>
-	<20100722223016.21557.40832.stgit@angua>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Fri, 23 Jul 2010 01:54:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=efLEzue1ZJXCRUMtHqBC5JbGGdnYUyHZUDR1w04m2M4KjOR677DxvunoAuaIlFfcnU
+         vgZmH+ufjzRBdt7yGn1cHZajCShrzl+Yz2E70nh3iGJynWCcd1e3q8KaIvd39y0NWsaq
+         fBeLHsIeUhiMHx6/X0NGOLrt8+YbslX8MmRsA=
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Barry Song <21cnbao@gmail.com>,
+        Kuninori Morimoto <morimoto.kuninori@renesas.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mike Arthur <linux@wolfsonmicro.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [PATCH v2 01/12] ad1836: fix a memory leak if another ad1836 is registered
+Date: Fri, 23 Jul 2010 05:53:43 +0000
+Message-Id: <1279864434-8010-2-git-send-email-axel.lin@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1279864434-8010-1-git-send-email-axel.lin@gmail.com>
+References: <1279864434-8010-1-git-send-email-axel.lin@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Grant Likely <grant.likely@secretlab.ca>
-Date: Thu, 22 Jul 2010 16:30:16 -0600
+ad1836 is allocated in ad1836_spi_probe() but is not freed if ad1836_register()
+return -EINVAL (if another ad1836 is registered).
 
-> of_device is just a #define alias to platform_device.  This patch
-> replaces all references to it with platform_device.
-> 
-> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Acked-by: Barry Song <21cnbao@gmail.com>
+---
+ sound/soc/codecs/ad1836.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Acked-by: David S. Miller <davem@davemloft.net>
+diff --git a/sound/soc/codecs/ad1836.c b/sound/soc/codecs/ad1836.c
+index 2175384..a01006c 100644
+--- a/sound/soc/codecs/ad1836.c
++++ b/sound/soc/codecs/ad1836.c
+@@ -272,6 +272,7 @@ static int ad1836_register(struct ad1836_priv *ad1836)
+ 
+ 	if (ad1836_codec) {
+ 		dev_err(codec->dev, "Another ad1836 is registered\n");
++		kfree(ad1836);
+ 		return -EINVAL;
+ 	}
+ 
+-- 
+1.7.0.4
+
