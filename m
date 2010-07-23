@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756910Ab0GWFzo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 01:55:44 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57042 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755552Ab0GWFyZ (ORCPT
+	id S1755777Ab0GWFyY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 01:54:24 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:37511 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755552Ab0GWFyS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 01:54:25 -0400
+	Fri, 23 Jul 2010 01:54:18 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=poVQfhHmPJxC8qnVs4Q85QlD5XtjD2D1hTAPYGJVpSGXGZTVU5DjsyB66vNoDTo4Rn
-         fUzM0T9ZZZIaSuR4KMUY9R2xl5y3GqVab1T3euZjXkhW/Qm0TYvKhE+jNZwJuzDA6eNG
-         +gHUoFAoZNZ9k6RttuzZOjYDeR9Qi7t5Zjgzg=
+        b=vgVit732MoOC5RdncY1A8B1SnNog67bP9429nq7APmudt5yDmxdXuzAaZ/q/lQb/y+
+         Dhr8bu7V3TtDirLvZYEJxaxmDfJEhvTz9vDvk8E80iBhNVGxmYKYAMmCqo1Ak7VXeIhT
+         WOBjpwzY7v3VP8nTaWKE5XoIsIVEXwBaHQLCM=
 From: Axel Lin <axel.lin@gmail.com>
 To: linux-kernel <linux-kernel@vger.kernel.org>
 Cc: Barry Song <21cnbao@gmail.com>,
@@ -21,9 +21,9 @@ Cc: Barry Song <21cnbao@gmail.com>,
         Mike Arthur <linux@wolfsonmicro.com>,
         Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
         Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: [PATCH v2 07/12] wm8940: fix a memory leak if wm8940_register return error
-Date: Fri, 23 Jul 2010 05:53:49 +0000
-Message-Id: <1279864434-8010-8-git-send-email-axel.lin@gmail.com>
+Subject: [PATCH v2 05/12] wm8711: fix a memory leak if another WM8711 is registered
+Date: Fri, 23 Jul 2010 05:53:47 +0000
+Message-Id: <1279864434-8010-6-git-send-email-axel.lin@gmail.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1279864434-8010-1-git-send-email-axel.lin@gmail.com>
 References: <1279864434-8010-1-git-send-email-axel.lin@gmail.com>
@@ -31,39 +31,28 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds checking for wm8940_register return value,
-and does kfree(wm8940) if wm8940_register() fail.
+wm8711 is allocated in either wm8711_spi_probe() or wm8711_i2c_probe() but is
+not freed if wm8711_register() return -EINVAL(if another ad1836 is registered).
 
 Signed-off-by: Axel Lin <axel.lin@gmail.com>
 ---
- sound/soc/codecs/wm8940.c |    7 ++++++-
- 1 files changed, 6 insertions(+), 1 deletions(-)
+ sound/soc/codecs/wm8711.c |    3 ++-
+ 1 files changed, 2 insertions(+), 1 deletions(-)
 
-diff --git a/sound/soc/codecs/wm8940.c b/sound/soc/codecs/wm8940.c
-index e3c4bbf..f0c1113 100644
---- a/sound/soc/codecs/wm8940.c
-+++ b/sound/soc/codecs/wm8940.c
-@@ -845,6 +845,7 @@ static void wm8940_unregister(struct wm8940_priv *wm8940)
- static int wm8940_i2c_probe(struct i2c_client *i2c,
- 			    const struct i2c_device_id *id)
- {
-+	int ret;
- 	struct wm8940_priv *wm8940;
- 	struct snd_soc_codec *codec;
+diff --git a/sound/soc/codecs/wm8711.c b/sound/soc/codecs/wm8711.c
+index effb14e..e2dba07 100644
+--- a/sound/soc/codecs/wm8711.c
++++ b/sound/soc/codecs/wm8711.c
+@@ -439,7 +439,8 @@ static int wm8711_register(struct wm8711_priv *wm8711,
  
-@@ -858,7 +859,11 @@ static int wm8940_i2c_probe(struct i2c_client *i2c,
- 	codec->control_data = i2c;
- 	codec->dev = &i2c->dev;
+ 	if (wm8711_codec) {
+ 		dev_err(codec->dev, "Another WM8711 is registered\n");
+-		return -EINVAL;
++		ret = -EINVAL;
++		goto err;
+ 	}
  
--	return wm8940_register(wm8940, SND_SOC_I2C);
-+	ret = wm8940_register(wm8940, SND_SOC_I2C);
-+	if (ret < 0)
-+		kfree(wm8940);
-+
-+	return ret;
- }
- 
- static int __devexit wm8940_i2c_remove(struct i2c_client *client)
+ 	mutex_init(&codec->mutex);
 -- 
 1.7.0.4
 
