@@ -1,58 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758034Ab0GWOUp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 10:20:45 -0400
-Received: from g4t0016.houston.hp.com ([15.201.24.19]:34905 "EHLO
-	g4t0016.houston.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755328Ab0GWOUn (ORCPT
+	id S1760179Ab0GWOV0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 10:21:26 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42563 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757734Ab0GWOVX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 10:20:43 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: [Bug #16007] x86/pci Oops with CONFIG_SND_HDA_INTEL
-Date: Fri, 23 Jul 2010 08:20:29 -0600
-User-Agent: KMail/1.13.2 (Linux/2.6.32-23-generic; KDE/4.4.2; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Graham Ramsey" <ramsey.graham@ntlworld.com>,
-        "Yinghai Lu" <yinghai@kernel.org>
-References: <wQMMFC59mnE.A.v-E.iUYSMB@chimera> <PRbv8sgxY6G.A.WmG.YWYSMB@chimera>
-In-Reply-To: <PRbv8sgxY6G.A.WmG.YWYSMB@chimera>
+	Fri, 23 Jul 2010 10:21:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=XJWHD9Vu8np0P7EqkPylHi11JntJaAoqBeAY5gsoCpM6CPKe+9M6Fa2qMvxS9iA9Re
+         X8NPwAhCrONc+05iRNgnOazeKUp1RuxixDRTevsf8pApsQXjJi/n/eBoMBYNYnPRbmoj
+         w35uee6nn/6M6VyyAmbCAApJ8xyBMso8Q2fUA=
+Message-ID: <4C49A577.3020306@lwfinger.net>
+Date: Fri, 23 Jul 2010 09:21:43 -0500
+From: Larry Finger <Larry.Finger@lwfinger.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.4) Gecko/20100608 SUSE/3.1.0 Thunderbird/3.1
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+        Maciej Rutecki <maciej.rutecki@gmail.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        Linus Torvalds <torvalds@linux-foundation.org>,
+        Kernel Testers List <kernel-testers@vger.kernel.org>,
+        Network Development <netdev@vger.kernel.org>,
+        Linux ACPI <linux-acpi@vger.kernel.org>,
+        Linux PM List <linux-pm@lists.linux-foundation.org>,
+        Linux SCSI List <linux-scsi@vger.kernel.org>,
+        Linux Wireless List <linux-wireless@vger.kernel.org>,
+        DRI <dri-devel@lists.freedesktop.org>
+Subject: Re: 2.6.35-rc6: Reported regressions from 2.6.34
+References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
+In-Reply-To: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201007230820.29465.bjorn.helgaas@hp.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 23, 2010 06:15:50 am Rafael J. Wysocki wrote:
-> This message has been generated automatically as a part of a report
-> of regressions introduced between 2.6.33 and 2.6.34.
-> 
-> The following bug entry is on the current list of known regressions
-> introduced between 2.6.33 and 2.6.34.  Please verify if it still should
-> be listed and let the tracking team know (either way).
-> 
-> 
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16007
-> Subject		: x86/pci Oops with CONFIG_SND_HDA_INTEL
-> Submitter	: Graham Ramsey <ramsey.graham@ntlworld.com>
-> Date		: 2010-05-19 17:09 (66 days old)
-> Handled-By	: Yinghai Lu <yinghai@kernel.org>
-> 		  Bjorn Helgaas <bjorn.helgaas@hp.com>
-> Patch		: https://patchwork.kernel.org/patch/105662/
+On 07/23/2010 06:42 AM, Rafael J. Wysocki wrote:
+> This message contains a list of some regressions from 2.6.34,
+> for which there are no fixes in the mainline known to the tracking team.
+> If any of them have been fixed already, please let us know.
 
-This entry should remain on the regression list.
+> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16312
+> Subject		: WARNING: at fs/fs-writeback.c:1127 __mark_inode_dirty
+> Submitter	: Zdenek Kabelac<zdenek.kabelac@gmail.com>
+> Date		: 2010-06-28 9:40 (26 days old)
+> Message-ID	:<AANLkTin24fr5O4_q5Xbo9Y_NKkEmtcp6Hgmr9_4qXaFz@mail.gmail.com>
+> References	: http://marc.info/?l=linux-kernel&m=127771804806465&w=2
 
-In my opinion, we should apply Graham's patch from comment 8:
-  https://bugzilla.kernel.org/attachment.cgi?id=26508
-which turns on "pci=use_crs" for this machine.
+I still have this in 2.6.35-rc5.
 
-BIOS is telling us what configuration works, and we should
-pay attention to it.  amd_bus.c has no hope of ever discovering
-this working configuration.
-
-Bjorn
+Larry
