@@ -1,76 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760153Ab0GWOYG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 10:24:06 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:39950 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab0GWOYE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 10:24:04 -0400
-X-Authority-Analysis: v=1.1 cv=nxp4sGnGskpld68D65f6QeagdS7Y+3TTkvBhhEd/T4I= c=1 sm=0 a=0EwOLGvg4BAA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=PKmOw-T66aZdscb9HcsA:9 a=w9NUGCwQDX7f8xkjvBDsquSmUfIA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [tip:x86/irq] x86: Always use irq stacks
-From: Steven Rostedt <rostedt@goodmis.org>
-To: Christoph Hellwig <hch@lst.de>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-        mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        linux-tip-commits@vger.kernel.org
-In-Reply-To: <1279894516.3319.44.camel@gandalf.stny.rr.com>
-References: <20100628121554.GA6605@lst.de>
-	 <tip-7974891db234467eaf1fec613ec0129cb4ac2332@git.kernel.org>
-	 <20100630074434.GA25509@elte.hu> <20100630075212.GA24658@lst.de>
-	 <20100630075818.GB25509@elte.hu> <20100630080453.GA14371@elte.hu>
-	 <20100708204251.GA13569@elte.hu> <20100708205302.GA23961@lst.de>
-	 <20100714151215.GA31825@lst.de>
-	 <alpine.LFD.2.00.1007141719130.3321@localhost.localdomain>
-	 <20100714154746.GA2074@lst.de>
-	 <1279894516.3319.44.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 23 Jul 2010 10:24:02 -0400
-Message-ID: <1279895042.3319.48.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1760214Ab0GWOYa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 10:24:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36087 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754892Ab0GWOY2 (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Fri, 23 Jul 2010 10:24:28 -0400
+Date: Fri, 23 Jul 2010 10:22:08 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Alok Kataria <akataria@vmware.com>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+        "ak@linux.intel.com" <ak@linux.intel.com>,
+        "lenb@kernel.org" <lenb@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
+        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+        Petr Vandrovec <petr@vmware.com>
+Subject: Re: swiotlb detection should be memory hotplug aware ?
+Message-ID: <20100723142208.GA4008@phenom.dumpdata.com>
+References: <20100721135750Z.fujita.tomonori@lab.ntt.co.jp>
+ <1279732414.10874.6.camel@ank32.eng.vmware.com>
+ <20100722084413I.fujita.tomonori@lab.ntt.co.jp>
+ <20100722090329O.fujita.tomonori@lab.ntt.co.jp>
+ <1279823680.31733.20.camel@ank32.eng.vmware.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279823680.31733.20.camel@ank32.eng.vmware.com>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Source-IP: acsmt353.oracle.com [141.146.40.153]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090207.4C49A5E3.000A:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-07-23 at 10:15 -0400, Steven Rostedt wrote:
-> On Wed, 2010-07-14 at 17:47 +0200, Christoph Hellwig wrote:
-
-> In arch/x86/kernel/dumpstack_32.c:
+On Thu, Jul 22, 2010 at 11:34:40AM -0700, Alok Kataria wrote:
+> Hi,
 > 
->                 context = (struct thread_info *)
->                         ((unsigned long)stack & (~(THREAD_SIZE - 1)));
->                 bp = ops->walk_stack(context, stack, bp, ops, data, NULL, &graph);
+> On Wed, 2010-07-21 at 17:03 -0700, FUJITA Tomonori wrote:
+> > On Thu, 22 Jul 2010 08:44:42 +0900
+> > FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
+> > 
+> > > On Wed, 21 Jul 2010 10:13:34 -0700
+> > > Alok Kataria <akataria@vmware.com> wrote:
+> > > 
+> > > > > Basically, you want to add hot-plug memory and enable swiotlb, right?
+> > > > 
+> > > > Not really, I am planning to do something like this, 
+> > > > 
+> > > > @@ -52,7 +52,7 @@ int __init pci_swiotlb_detect(void)
+> > > >  
+> > > >  	/* don't initialize swiotlb if iommu=off (no_iommu=1) */
+> > > >  #ifdef CONFIG_X86_64
+> > > > -	if (!no_iommu && max_pfn > MAX_DMA32_PFN)
+> > > > +	if (!no_iommu && (max_pfn > MAX_DMA32_PFN || hotplug_possible()))
+> > > >  		swiotlb = 1;
+> > > 
+> > > Always enable swiotlb with memory hotplug enabled?
 > 
-> Note: here, context (which ends up being tinfo) is just a bitmasking of
-> the current stack. If the stack is the irqstack, then what is passed to
-> walk_stack() is not the actual thread info structure.
+> yep though only on systems which have hotpluggable memory support.
+
+What machines are there that have hotplug support and no hardware IOMMU?
+I know of the IBM ones - but they use the Calgary IOMMU.
 > 
-> Note, if THREAD_SIZE is 8k and irqstacks are 4K then context is totally
-> wrong here.
+> >  Wasting 64MB on a
+> > > x86_64 system with 128MB doesn't look to be a good idea. I don't think
+> > > that there is an easy solution for this issue though.
+> 
+> Good now that you agree that, that's the only feasible solution, do you
+> have any suggestions for any interfaces that are available from SRAT for
+> implementing hotplug_possible ?
 
-irqstacks are indeed 8k as well, but:
+I thought SRAT has NUMA affinity information - so for example my AMD
+desktop box has that, but it does not support hotplug capability.
 
-union irq_ctx {
-        struct thread_info      tinfo;
-        u32                     stack[THREAD_SIZE/sizeof(u32)];
-} __attribute__((aligned(PAGE_SIZE)));
+I think first your 'hotplug_possible' code needs to be more specific -
+not just check if SRAT exists, but also if there are swaths of memory
+that are non-populated. It would also help if there was some indication
+of whether the box truly does a hardware hotplug - is there a way to do
+this?
 
+> 
+> > 
+> > btw, you need more work to enable switch on the fly.
+> > 
+> > You need to change the dma_ops pointer (see get_dma_ops()). It means
+> > that you need to track outstanding dma operations per device, locking,
+> > etc.
+> 
+> Yeah though if we are doing this during swiotlb_init time i.e. at bootup
+> as suggested in the pseudo patch, we don't need to worry about all this,
+> right ? 
 
-The stack is 8k, but it is aligned 4k. Which will have
-
-   context = (struct thread_info *)
-                  ((unsigned long)stack & (~(THREAD_SIZE - 1)));
-
-not give the expected result.
-
-So we should do:
-
-} __attribute__((aligned(THREAD_SIZE)));
-
--- Steve
-
-
+Right..
+> 
+> Thanks,
+> Alok
