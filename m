@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759308Ab0GWLxF (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 07:53:05 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:51663 "EHLO ogre.sisk.pl"
+	id S1758981Ab0GWLx3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 07:53:29 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:51661 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758899Ab0GWLwI convert rfc822-to-8bit (ORCPT
+	id S1757508Ab0GWLwH convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 07:52:08 -0400
+	Fri, 23 Jul 2010 07:52:07 -0400
 Cc: Kernel Testers List <kernel-testers@vger.kernel.org>,
         Maciej Rutecki <maciej.rutecki@gmail.com>,
-        "Peter Zijlstra" <peterz@infradead.org>,
-        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+        "Rafael J. Wysocki" <rjw@sisk.pl>, "tomas m" <tmezzadra@gmail.com>
 References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
 In-Reply-To: <Lupw7pePXBO.A.fZH.G2XSMB@chimera>
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
@@ -18,10 +17,10 @@ MIME-Version: 1.0
 Content-Disposition: inline
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 8BIT
-Message-ID: <tneGvaw1wLL.A.G4H.b2XSMB@chimera>
-Subject: [Bug #16399] perf failed with kernel 2.6.35-rc
+Message-ID: <tneGvaw1wLL.A.P8H.f2XSMB@chimera>
+Subject: [Bug #16396] [bisected] resume from suspend freezes system
 To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 23 Jul 2010 13:47:37 +0200 (CEST)
+Date: Fri, 23 Jul 2010 13:47:36 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -34,12 +33,11 @@ from 2.6.34.  Please verify if it still should be listed and let the tracking te
 know (either way).
 
 
-Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16399
-Subject		: perf failed with kernel 2.6.35-rc
-Submitter	: Zhang, Yanmin <yanmin_zhang@linux.intel.com>
-Date		: 2010-07-13 8:14 (11 days old)
-First-Bad-Commit: http://git.kernel.org/linus/1ac62cfff252fb668405ef3398a1fa7f4a0d6d15
-Message-ID	: <1279008849.2096.913.camel@ymzhang.sh.intel.com>
-References	: http://marc.info/?l=linux-kernel&m=127900880212470&w=2
+Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16396
+Subject		: [bisected] resume from suspend freezes system
+Submitter	: tomas m <tmezzadra@gmail.com>
+Date		: 2010-07-15 02:32 (9 days old)
+Handled-By	: Rafael J. Wysocki <rjw@sisk.pl>
+Patch		: https://patchwork.kernel.org/patch/113108/
 
 
