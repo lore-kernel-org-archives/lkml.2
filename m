@@ -1,52 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760595Ab0GWPKp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:10:45 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:46865 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1760224Ab0GWPKk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:10:40 -0400
-X-Authority-Analysis: v=1.1 cv=NvN00vXXLC/2Fo3NdLZJXFUM7u9qr/FOWvgMjmHRJhk= c=1 sm=0 a=G2SHEswpWIAA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=enOvQawGAAAA:8 a=LoFBYVZpXIPHBrC0mfcA:9 a=h5ofyjrwckcfzgXCxqHpGsi3tvkA:4 a=PUjeQqilurYA:10 a=bkT6KWdcy0IA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH] trace-cmd: Don't SIGSEGV when event field format
- cannot be parsed (v2).
-From: Steven Rostedt <rostedt@goodmis.org>
-To: David Daney <ddaney@caviumnetworks.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1279832705-14219-1-git-send-email-ddaney@caviumnetworks.com>
-References: <1279829325.3319.27.camel@gandalf.stny.rr.com>
-	 <1279832705-14219-1-git-send-email-ddaney@caviumnetworks.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Date: Fri, 23 Jul 2010 11:10:38 -0400
-Message-ID: <1279897838.3319.51.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932181Ab0GWPLW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:11:22 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42636 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759985Ab0GWPLR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 11:11:17 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+In-Reply-To: <20100722175913.5552.3905.stgit@warthog.procyon.org.uk>
+References: <20100722175913.5552.3905.stgit@warthog.procyon.org.uk> <20100722175847.5552.11520.stgit@warthog.procyon.org.uk>
+To: viro@ZenIV.linux.org.uk
+Cc: dhowells@redhat.com, raven@themaw.net, linux-fsdevel@vger.kernel.org,
+        linux-afs@lists.infradead.org, linux-nfs@vger.kernel.org,
+        linux-cifs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH 6/6] Add an AT_NO_AUTOMOUNT flag to suppress terminal automount [ver #2]
+Date: Fri, 23 Jul 2010 16:11:05 +0100
+Message-ID: <17789.1279897865@redhat.com>
+From: David Howells <dhowells@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-07-22 at 14:05 -0700, David Daney wrote:
-> >From the MIPS kernel we get things like:
-> 
-> print fmt: "page=%p pfn=%lu order=%d migratetype=%d", REC->page, ({ struct page *__pg = (REC->page); int __sec = page_to_section(__pg); (unsigned long)(__pg - __section_mem_map_addr(__nr_to_section(__sec))); }), REC->order, REC->migratetype
-> 
-> This cannot be parsed, leading to a NULL struct event_format* being
-> passed to pevent_get_common_field_val, which produces a SIGSEGV.  It
-> would be good to get a parsable format from the kernel, but to
-> remediate the problem for legacy kernels, we can just return an error
-> indicator in this case.  This allows some output from trace-cmd
-> report, although perhaps with some missing data.  But this is better
-> than crashing.
-> 
-> (v2): Do the check in all pevent_get_*
-> 
-> Signed-off-by: David Daney <ddaney@caviumnetworks.com>
 
-Applied, thanks David!
+This is an update required because the first patch in the series was also
+altered in the same area.
 
--- Steve
+David
+---
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] Add an AT_NO_AUTOMOUNT flag to suppress terminal automount
+
+Add an AT_NO_AUTOMOUNT flag to suppress terminal automounting of directories
+with follow_link semantics.  This can be used by fstatat() users to permit the
+gathering of attributes on an automount point and also prevent
+mass-automounting of a directory of automount points by ls.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+
+ fs/namei.c            |    6 ++++++
+ fs/stat.c             |    4 +++-
+ include/linux/fcntl.h |    1 +
+ include/linux/namei.h |    2 ++
+ 4 files changed, 12 insertions(+), 1 deletions(-)
 
 
+diff --git a/fs/namei.c b/fs/namei.c
+index f2910b7..c154112 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -629,6 +629,12 @@ static int follow_automount(struct path *path, unsigned flags, int res)
+ 	if (!path->dentry->d_op || !path->dentry->d_op->d_automount)
+ 		return -EREMOTE;
+ 
++	/* We don't want to mount if someone supplied AT_NO_AUTOMOUNT
++	 * and this is the terminal part of the path.
++	 */
++	if ((flags & LOOKUP_NO_AUTOMOUNT) && !(flags & LOOKUP_CONTINUE))
++		return -EXDEV; /* we actually want to stop here */
++
+ 	/* We want to mount if someone is trying to open/create a file of any
+ 	 * type under the mountpoint, wants to traverse through the mountpoint
+ 	 * or wants to open the mounted directory.
+diff --git a/fs/stat.c b/fs/stat.c
+index c4ecd52..bae6fa2 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -74,11 +74,13 @@ int vfs_fstatat(int dfd, char __user *filename, struct kstat *stat, int flag)
+ 	int error = -EINVAL;
+ 	int lookup_flags = 0;
+ 
+-	if ((flag & ~AT_SYMLINK_NOFOLLOW) != 0)
++	if ((flag & ~(AT_SYMLINK_NOFOLLOW | AT_NO_AUTOMOUNT)) != 0)
+ 		goto out;
+ 
+ 	if (!(flag & AT_SYMLINK_NOFOLLOW))
+ 		lookup_flags |= LOOKUP_FOLLOW;
++	if (flag & AT_NO_AUTOMOUNT)
++		lookup_flags |= LOOKUP_NO_AUTOMOUNT;
+ 
+ 	error = user_path_at(dfd, filename, lookup_flags, &path);
+ 	if (error)
+diff --git a/include/linux/fcntl.h b/include/linux/fcntl.h
+index afc00af..a562fa5 100644
+--- a/include/linux/fcntl.h
++++ b/include/linux/fcntl.h
+@@ -45,6 +45,7 @@
+ #define AT_REMOVEDIR		0x200   /* Remove directory instead of
+                                            unlinking file.  */
+ #define AT_SYMLINK_FOLLOW	0x400   /* Follow symbolic links.  */
++#define AT_NO_AUTOMOUNT		0x800	/* Suppress terminal automount traversal */
+ 
+ #ifdef __KERNEL__
+ 
+diff --git a/include/linux/namei.h b/include/linux/namei.h
+index 05b441d..1e1febf 100644
+--- a/include/linux/namei.h
++++ b/include/linux/namei.h
+@@ -43,12 +43,14 @@ enum {LAST_NORM, LAST_ROOT, LAST_DOT, LAST_DOTDOT, LAST_BIND};
+  *  - internal "there are more path components" flag
+  *  - locked when lookup done with dcache_lock held
+  *  - dentry cache is untrusted; force a real lookup
++ *  - suppress terminal automount
+  */
+ #define LOOKUP_FOLLOW		 1
+ #define LOOKUP_DIRECTORY	 2
+ #define LOOKUP_CONTINUE		 4
+ #define LOOKUP_PARENT		16
+ #define LOOKUP_REVAL		64
++#define LOOKUP_NO_AUTOMOUNT	128
+ /*
+  * Intent data
+  */
