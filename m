@@ -1,22 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758332Ab0GWWkA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 18:40:00 -0400
-Received: from mga11.intel.com ([192.55.52.93]:11374 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756206Ab0GWWj6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 18:39:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,250,1278313200"; 
-   d="scan'208";a="821126717"
-From: Dan Williams <dan.j.williams@intel.com>
-Subject: [PATCH] ioat2: catch and recover from broken vtd configurations v6
-To: linux-kernel@vger.kernel.org
-Cc: <stable@kernel.org>, David Woodhouse <David.Woodhouse@intel.com>,
-        Dan Williams <dan.j.williams@intel.com>
-Date: Fri, 23 Jul 2010 15:47:56 -0700
-Message-ID: <20100723224652.25725.36534.stgit@localhost.localdomain>
-User-Agent: StGIT/0.14.3
+	id S1757703Ab0GWXFO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 19:05:14 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53243 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750878Ab0GWXFM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 19:05:12 -0400
+Subject: [PATCH v2 1/2] of: Fix phandle endian issues
+To: devicetree-discuss@lists.ozlabs.org, jeremy.kerr@canonical.com,
+        linux-kernel@vger.kernel.org
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Fri, 23 Jul 2010 17:05:09 -0600
+Message-ID: <20100723230437.28579.19577.stgit@angua>
+User-Agent: StGit/0.15
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
@@ -24,165 +21,111 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On some platforms (MacPro3,1) the BIOS assigns the ioatdma device to the
-incorrect iommu causing faults when the driver initializes.  Add a quirk
-to catch this misconfiguration and try falling back to untranslated
-operation (which works in the MacPro3,1 case).
+The flat tree code wasn't fixing the endianness on phandle values when
+unflattening the tree, and the code in drivers/of wasn't always doing a
+be32_to_cpu before trying to dereference the phandle values.  This patch
+fixes them.
 
-Assuming there are other platforms with misconfigured iommus teach the
-ioatdma driver to treat initialization failures as non-fatal (just fail
-the driver load and emit a warning instead of triggering a BUG_ON).
-
-This can be classified as a boot regression since 2.6.32 on affected
-platforms since the ioatdma module did not autoload prior to that
-kernel.
-
-Cc: <stable@kernel.org>
-Cc: David Woodhouse <David.Woodhouse@intel.com>
-Reported-by: Chris Li <lkml@chrisli.org>
-Tested-by: Chris Li <lkml@chrisli.org>
-Signed-off-by: Dan Williams <dan.j.williams@intel.com>
+Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 ---
-David, looking for your sign-off to take this final version through my
-tree.
+changed in v2: fixed up reference in drivers/of/irq.c too
 
-Thanks,
-Dan
+ drivers/of/base.c |   12 ++++++------
+ drivers/of/fdt.c  |    4 ++--
+ drivers/of/irq.c  |    6 +++---
+ 3 files changed, 11 insertions(+), 11 deletions(-)
 
- drivers/dma/ioat/dma.h    |    1 +
- drivers/dma/ioat/dma_v2.c |   24 ++++++++++++++++++++++--
- drivers/dma/ioat/dma_v3.c |    5 ++++-
- drivers/pci/intel-iommu.c |   28 ++++++++++++++++++++++++++++
- 4 files changed, 55 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/dma/ioat/dma.h b/drivers/dma/ioat/dma.h
-index 6d3a73b..5216c8a 100644
---- a/drivers/dma/ioat/dma.h
-+++ b/drivers/dma/ioat/dma.h
-@@ -97,6 +97,7 @@ struct ioat_chan_common {
- 	#define IOAT_RESET_PENDING 2
- 	#define IOAT_KOBJ_INIT_FAIL 3
- 	#define IOAT_RESHAPE_PENDING 4
-+	#define IOAT_RUN 5
- 	struct timer_list timer;
- 	#define COMPLETION_TIMEOUT msecs_to_jiffies(100)
- 	#define IDLE_TIMEOUT msecs_to_jiffies(2000)
-diff --git a/drivers/dma/ioat/dma_v2.c b/drivers/dma/ioat/dma_v2.c
-index 3c8b32a..216f9d3 100644
---- a/drivers/dma/ioat/dma_v2.c
-+++ b/drivers/dma/ioat/dma_v2.c
-@@ -287,7 +287,10 @@ void ioat2_timer_event(unsigned long data)
- 			chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
- 			dev_err(to_dev(chan), "%s: Channel halted (%x)\n",
- 				__func__, chanerr);
--			BUG_ON(is_ioat_bug(chanerr));
-+			if (test_bit(IOAT_RUN, &chan->state))
-+				BUG_ON(is_ioat_bug(chanerr));
-+			else /* we never got off the ground */
-+				return;
- 		}
- 
- 		/* if we haven't made progress and we have already
-@@ -492,6 +495,8 @@ static struct ioat_ring_ent **ioat2_alloc_ring(struct dma_chan *c, int order, gf
- 	return ring;
- }
- 
-+void ioat2_free_chan_resources(struct dma_chan *c);
-+
- /* ioat2_alloc_chan_resources - allocate/initialize ioat2 descriptor ring
-  * @chan: channel to be initialized
-  */
-@@ -500,6 +505,7 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
- 	struct ioat2_dma_chan *ioat = to_ioat2_chan(c);
- 	struct ioat_chan_common *chan = &ioat->base;
- 	struct ioat_ring_ent **ring;
-+	u64 status;
- 	int order;
- 
- 	/* have we already been set up? */
-@@ -540,7 +546,20 @@ int ioat2_alloc_chan_resources(struct dma_chan *c)
- 	tasklet_enable(&chan->cleanup_task);
- 	ioat2_start_null_desc(ioat);
- 
--	return 1 << ioat->alloc_order;
-+	/* check that we got off the ground */
-+	udelay(5);
-+	status = ioat_chansts(chan);
-+	if (is_ioat_active(status) || is_ioat_idle(status)) {
-+		set_bit(IOAT_RUN, &chan->state);
-+		return 1 << ioat->alloc_order;
-+	} else {
-+		u32 chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
-+
-+		dev_WARN(to_dev(chan),
-+			"failed to start channel chanerr: %#x\n", chanerr);
-+		ioat2_free_chan_resources(c);
-+		return -EFAULT;
-+	}
- }
- 
- bool reshape_ring(struct ioat2_dma_chan *ioat, int order)
-@@ -778,6 +797,7 @@ void ioat2_free_chan_resources(struct dma_chan *c)
- 	del_timer_sync(&chan->timer);
- 	device->cleanup_fn((unsigned long) c);
- 	device->reset_hw(chan);
-+	clear_bit(IOAT_RUN, &chan->state);
- 
- 	spin_lock_bh(&chan->cleanup_lock);
- 	spin_lock_bh(&ioat->prep_lock);
-diff --git a/drivers/dma/ioat/dma_v3.c b/drivers/dma/ioat/dma_v3.c
-index 1cdd22e..d0f4990 100644
---- a/drivers/dma/ioat/dma_v3.c
-+++ b/drivers/dma/ioat/dma_v3.c
-@@ -361,7 +361,10 @@ static void ioat3_timer_event(unsigned long data)
- 			chanerr = readl(chan->reg_base + IOAT_CHANERR_OFFSET);
- 			dev_err(to_dev(chan), "%s: Channel halted (%x)\n",
- 				__func__, chanerr);
--			BUG_ON(is_ioat_bug(chanerr));
-+			if (test_bit(IOAT_RUN, &chan->state))
-+				BUG_ON(is_ioat_bug(chanerr));
-+			else /* we never got off the ground */
-+				return;
- 		}
- 
- 		/* if we haven't made progress and we have already
-diff --git a/drivers/pci/intel-iommu.c b/drivers/pci/intel-iommu.c
-index 796828f..90938c7 100644
---- a/drivers/pci/intel-iommu.c
-+++ b/drivers/pci/intel-iommu.c
-@@ -3029,6 +3029,34 @@ static void __init iommu_exit_mempool(void)
- 
- }
- 
-+static void quirk_ioat_snb_local_iommu(struct pci_dev *pdev)
-+{
-+	struct dmar_drhd_unit *drhd;
-+	u32 vtbar;
-+	int rc;
-+
-+	/* We know that this device on this chipset has its own IOMMU.
-+	 * If we find it under a different IOMMU, then the BIOS is lying
-+	 * to us. Hope that the IOMMU for this device is actually
-+	 * disabled, and it needs no translation...
-+	 */
-+	rc = pci_bus_read_config_dword(pdev->bus, PCI_DEVFN(0, 0), 0xb0, &vtbar);
-+	if (rc) {
-+		/* "can't" happen */
-+		dev_info(&pdev->dev, "failed to run vt-d quirk\n");
-+		return;
-+	}
-+	vtbar &= 0xffff0000;
-+
-+	/* we know that the this iommu should be at offset 0xa000 from vtbar */
-+	drhd = dmar_find_matched_drhd_unit(pdev);
-+	if (WARN_TAINT_ONCE(!drhd || drhd->reg_base_addr - vtbar != 0xa000,
-+			    TAINT_FIRMWARE_WORKAROUND,
-+			    "BIOS assigned incorrect VT-d unit for Intel(R) QuickData Technology device\n"))
-+		pdev->dev.archdata.iommu = DUMMY_DEVICE_DOMAIN_INFO;
-+}
-+DECLARE_PCI_FIXUP_ENABLE(PCI_VENDOR_ID_INTEL, PCI_DEVICE_ID_INTEL_IOAT_SNB, quirk_ioat_snb_local_iommu);
-+
- static void __init init_no_remapping_devices(void)
+diff --git a/drivers/of/base.c b/drivers/of/base.c
+index e3f7af8..aa80525 100644
+--- a/drivers/of/base.c
++++ b/drivers/of/base.c
+@@ -605,14 +605,14 @@ EXPORT_SYMBOL(of_find_node_by_phandle);
+ struct device_node *
+ of_parse_phandle(struct device_node *np, const char *phandle_name, int index)
  {
- 	struct dmar_drhd_unit *drhd;
+-	const phandle *phandle;
++	const __be32 *phandle;
+ 	int size;
+ 
+ 	phandle = of_get_property(np, phandle_name, &size);
+ 	if ((!phandle) || (size < sizeof(*phandle) * (index + 1)))
+ 		return NULL;
+ 
+-	return of_find_node_by_phandle(phandle[index]);
++	return of_find_node_by_phandle(be32_to_cpup(phandle + index));
+ }
+ EXPORT_SYMBOL(of_parse_phandle);
+ 
+@@ -668,16 +668,16 @@ int of_parse_phandles_with_args(struct device_node *np, const char *list_name,
+ 
+ 	while (list < list_end) {
+ 		const __be32 *cells;
+-		const phandle *phandle;
++		phandle phandle;
+ 
+-		phandle = list++;
++		phandle = be32_to_cpup(list++);
+ 		args = list;
+ 
+ 		/* one cell hole in the list = <>; */
+-		if (!*phandle)
++		if (!phandle)
+ 			goto next;
+ 
+-		node = of_find_node_by_phandle(*phandle);
++		node = of_find_node_by_phandle(phandle);
+ 		if (!node) {
+ 			pr_debug("%s: could not find phandle\n",
+ 				 np->full_name);
+diff --git a/drivers/of/fdt.c b/drivers/of/fdt.c
+index d61fda8..f3a7b4f 100644
+--- a/drivers/of/fdt.c
++++ b/drivers/of/fdt.c
+@@ -320,13 +320,13 @@ unsigned long __init unflatten_dt_node(unsigned long mem,
+ 			if ((strcmp(pname, "phandle") == 0) ||
+ 			    (strcmp(pname, "linux,phandle") == 0)) {
+ 				if (np->phandle == 0)
+-					np->phandle = *((u32 *)*p);
++					np->phandle = be32_to_cpup((__be32*)*p);
+ 			}
+ 			/* And we process the "ibm,phandle" property
+ 			 * used in pSeries dynamic device tree
+ 			 * stuff */
+ 			if (strcmp(pname, "ibm,phandle") == 0)
+-				np->phandle = *((u32 *)*p);
++				np->phandle = be32_to_cpup((__be32 *)*p);
+ 			pp->name = pname;
+ 			pp->length = sz;
+ 			pp->value = (void *)*p;
+diff --git a/drivers/of/irq.c b/drivers/of/irq.c
+index 6cfb307..65cfae1 100644
+--- a/drivers/of/irq.c
++++ b/drivers/of/irq.c
+@@ -54,7 +54,7 @@ EXPORT_SYMBOL_GPL(irq_of_parse_and_map);
+ static struct device_node *of_irq_find_parent(struct device_node *child)
+ {
+ 	struct device_node *p;
+-	const phandle *parp;
++	const __be32 *parp;
+ 
+ 	if (!of_node_get(child))
+ 		return NULL;
+@@ -67,7 +67,7 @@ static struct device_node *of_irq_find_parent(struct device_node *child)
+ 			if (of_irq_workarounds & OF_IMAP_NO_PHANDLE)
+ 				p = of_node_get(of_irq_dflt_pic);
+ 			else
+-				p = of_find_node_by_phandle(*parp);
++				p = of_find_node_by_phandle(be32_to_cpup(parp));
+ 		}
+ 		of_node_put(child);
+ 		child = p;
+@@ -206,7 +206,7 @@ int of_irq_map_raw(struct device_node *parent, const u32 *intspec, u32 ointsize,
+ 			if (of_irq_workarounds & OF_IMAP_NO_PHANDLE)
+ 				newpar = of_node_get(of_irq_dflt_pic);
+ 			else
+-				newpar = of_find_node_by_phandle((phandle)*imap);
++				newpar = of_find_node_by_phandle(be32_to_cpup(imap));
+ 			imap++;
+ 			--imaplen;
+ 
 
