@@ -1,98 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757177Ab0GWRkX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 13:40:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40390 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752644Ab0GWRkV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 13:40:21 -0400
-Message-ID: <4C49D3C5.4000007@kernel.org>
-Date: Fri, 23 Jul 2010 10:39:17 -0700
-From: Yinghai Lu <yinghai@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100520 SUSE/3.0.5 Thunderbird/3.0.5
+	id S1760134Ab0GWRk2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 13:40:28 -0400
+Received: from cantor.suse.de ([195.135.220.2]:46653 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752644Ab0GWRkY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 13:40:24 -0400
+Date: Fri, 23 Jul 2010 19:39:54 +0200
+From: Jan Kara <jack@suse.cz>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+        Dave Chinner <david@fromorbit.com>,
+        Christoph Hellwig <hch@infradead.org>, Mel Gorman <mel@csn.ul.ie>,
+        Chris Mason <chris.mason@oracle.com>,
+        Jens Axboe <jens.axboe@oracle.com>,
+        LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+        linux-mm@kvack.org
+Subject: Re: [PATCH 5/6] writeback: try more writeback as long as something
+ was written
+Message-ID: <20100723173953.GB20540@quack.suse.cz>
+References: <20100722050928.653312535@intel.com>
+ <20100722061823.050523298@intel.com>
 MIME-Version: 1.0
-To: Len Brown <lenb@kernel.org>, Huang Ying <ying.huang@intel.com>,
-        Andi Kleen <ak@linux.intel.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, Tejun Heo <tj@kernel.org>,
-        Daniel J Blueman <daniel.blueman@gmail.com>,
-        linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] acpi: fix apei related table size checking
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt353.oracle.com [141.146.40.153]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A090208.4C49D3CF.00E2,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100722061823.050523298@intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu 22-07-10 13:09:33, Wu Fengguang wrote:
+> writeback_inodes_wb()/__writeback_inodes_sb() are not agressive in that
+> they only populate b_io when necessary at entrance time. When the queued
+> set of inodes are all synced, they just return, possibly with
+> wbc.nr_to_write > 0.
+> 
+> For kupdate and background writeback, there may be more eligible inodes
+> sitting in b_dirty when the current set of b_io inodes are completed. So
+> it is necessary to try another round of writeback as long as we made some
+> progress in this round. When there are no more eligible inodes, no more
+> inodes will be enqueued in queue_io(), hence nothing could/will be
+> synced and we may safely bail.
+> 
+> This will livelock sync when there are heavy dirtiers. However in that case
+> sync will already be livelocked w/o this patch, as the current livelock
+> avoidance code is virtually a no-op (for one thing, wb_time should be
+> set statically at sync start time and be used in move_expired_inodes()).
+> The sync livelock problem will be addressed in other patches.
+  Hmm, any reason why you don't solve this problem by just removing the
+condition before queue_io()? It would also make the logic simpler - always
+queue all inodes that are eligible for writeback...
 
-also check if we can find right action in apei.
+								Honza
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 
----
- drivers/acpi/apei/apei-base.c |    5 +++++
- drivers/acpi/apei/einj.c      |    3 ++-
- drivers/acpi/apei/erst.c      |    3 ++-
- 3 files changed, 9 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/drivers/acpi/apei/einj.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/apei/einj.c
-+++ linux-2.6/drivers/acpi/apei/einj.c
-@@ -426,7 +426,8 @@ DEFINE_SIMPLE_ATTRIBUTE(error_inject_fop
- 
- static int einj_check_table(struct acpi_table_einj *einj_tab)
- {
--	if (einj_tab->header_length != sizeof(struct acpi_table_einj))
-+	if (einj_tab->header_length !=
-+	    (sizeof(struct acpi_table_einj) - sizeof(einj_tab->header)))
- 		return -EINVAL;
- 	if (einj_tab->header.length < sizeof(struct acpi_table_einj))
- 		return -EINVAL;
-Index: linux-2.6/drivers/acpi/apei/erst.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/apei/erst.c
-+++ linux-2.6/drivers/acpi/apei/erst.c
-@@ -749,7 +749,8 @@ __setup("erst_disable", setup_erst_disab
- 
- static int erst_check_table(struct acpi_table_erst *erst_tab)
- {
--	if (erst_tab->header_length != sizeof(struct acpi_table_erst))
-+	if (erst_tab->header_length !=
-+	    (sizeof(struct acpi_table_erst) - sizeof(erst_tab->header)))
- 		return -EINVAL;
- 	if (erst_tab->header.length < sizeof(struct acpi_table_erst))
- 		return -EINVAL;
-Index: linux-2.6/drivers/acpi/apei/apei-base.c
-===================================================================
---- linux-2.6.orig/drivers/acpi/apei/apei-base.c
-+++ linux-2.6/drivers/acpi/apei/apei-base.c
-@@ -163,6 +163,7 @@ int apei_exec_run(struct apei_exec_conte
- 	u32 i, ip;
- 	struct acpi_whea_header *entry;
- 	apei_exec_ins_func_t run;
-+	bool found_action = false;
- 
- 	ctx->ip = 0;
- 
-@@ -178,6 +179,7 @@ rewind:
- 		entry = &ctx->action_table[i];
- 		if (entry->action != action)
- 			continue;
-+		found_action = true;
- 		if (ip == ctx->ip) {
- 			if (entry->instruction >= ctx->instructions ||
- 			    !ctx->ins_table[entry->instruction].run) {
-@@ -198,6 +200,9 @@ rewind:
- 			goto rewind;
- 	}
- 
-+	if (!found_action)
-+		return -ENODEV;
-+
- 	return 0;
- }
- EXPORT_SYMBOL_GPL(apei_exec_run);
+> Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+> ---
+>  fs/fs-writeback.c |   19 +++++++++++--------
+>  1 file changed, 11 insertions(+), 8 deletions(-)
+> 
+> --- linux-next.orig/fs/fs-writeback.c	2010-07-22 13:07:51.000000000 +0800
+> +++ linux-next/fs/fs-writeback.c	2010-07-22 13:07:54.000000000 +0800
+> @@ -640,20 +640,23 @@ static long wb_writeback(struct bdi_writ
+>  		wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
+>  
+>  		/*
+> -		 * If we consumed everything, see if we have more
+> +		 * Did we write something? Try for more
+> +		 *
+> +		 * This is needed _before_ the b_more_io test because the
+> +		 * background writeback moves inodes to b_io and works on
+> +		 * them in batches (in order to sync old pages first).  The
+> +		 * completion of the current batch does not necessarily mean
+> +		 * the overall work is done.
+>  		 */
+> -		if (wbc.nr_to_write <= 0)
+> +		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
+>  			continue;
+> +
+>  		/*
+> -		 * Didn't write everything and we don't have more IO, bail
+> +		 * Nothing written and no more inodes for IO, bail
+>  		 */
+>  		if (list_empty(&wb->b_more_io))
+>  			break;
+> -		/*
+> -		 * Did we write something? Try for more
+> -		 */
+> -		if (wbc.nr_to_write < MAX_WRITEBACK_PAGES)
+> -			continue;
+> +
+>  		/*
+>  		 * Nothing written. Wait for some inode to
+>  		 * become available for writeback. Otherwise
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-fsdevel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
