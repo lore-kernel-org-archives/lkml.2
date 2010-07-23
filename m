@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760272Ab0GWPpB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 11:45:01 -0400
-Received: from mail.gmx.net ([213.165.64.20]:35871 "HELO mail.gmx.net"
+	id S1760342Ab0GWPpv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 11:45:51 -0400
+Received: from mail.gmx.net ([213.165.64.20]:44017 "HELO mail.gmx.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756517Ab0GWPpA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 11:45:00 -0400
+	id S1759017Ab0GWPpu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 11:45:50 -0400
 X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX1+PwFs17MuPjNA+CFfTt2gr5xHZli5HN4Yblwxxrd
-	6YBR/g0T9Nx0vZ
+X-Provags-ID: V01U2FsdGVkX1+cVXVd+2OcJfQkThrZ3eQJ2dXjc9a93Nq77vsjyG
+	oLoXDU9RTsV8H/
 From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 To: linux-fbdev@vger.kernel.org
 Cc: linux-kernel@vger.kernel.org,
         Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
         Joseph Chan <JosephChan@via.com.tw>
-Subject: [PATCH 10/11] viafb: probe cleanups
-Date: Fri, 23 Jul 2010 15:54:50 +0000
-Message-Id: <1279900490-4488-1-git-send-email-FlorianSchandinat@gmx.de>
+Subject: [PATCH 11/11] viafb: fix accel_flags check_var bug
+Date: Fri, 23 Jul 2010 15:55:52 +0000
+Message-Id: <1279900553-4525-1-git-send-email-FlorianSchandinat@gmx.de>
 X-Mailer: git-send-email 1.6.3.2
 In-Reply-To: <1279899566-4359-1-git-send-email-FlorianSchandinat@gmx.de>
 References: <1279899566-4359-1-git-send-email-FlorianSchandinat@gmx.de>
@@ -25,66 +25,36 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-viafb: probe cleanups
+viafb: fix accel_flags check_var bug
 
-Removal of strange special cases that must not exist as well as a
-useless check.
+In check_var we should check and modify the var given and not the
+one which is currently active. So this code was obviously wrong.
+Probably this was doing no harm because all acceleration functions
+also check whether acceleration is possible. (otherwise I would
+expect this to lead to a null pointer dereference)
 
 Signed-off-by: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
 Cc: Joseph Chan <JosephChan@via.com.tw>
 ---
- drivers/video/via/viafbdev.c |   27 +++------------------------
- 1 files changed, 3 insertions(+), 24 deletions(-)
+ drivers/video/via/viafbdev.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index 1128d51..0f56eb2 100644
+index 0f56eb2..bdd0e41 100644
 --- a/drivers/video/via/viafbdev.c
 +++ b/drivers/video/via/viafbdev.c
-@@ -1525,10 +1525,6 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
- 	parse_lcd_port();
- 	parse_dvi_port();
+@@ -216,9 +216,9 @@ static int viafb_check_var(struct fb_var_screeninfo *var,
  
--	/* for dual-fb must viafb_SAMM_ON=1 and viafb_dual_fb=1 */
--	if (!viafb_SAMM_ON)
--		viafb_dual_fb = 0;
--
- 	viafb_init_chip_info(vdev->chip_type);
- 	/*
- 	 * The framebuffer will have been successfully mapped by
-@@ -1572,30 +1568,13 @@ int __devinit via_fb_pci_probe(struct viafb_dev *vdev)
- 		parse_mode(viafb_mode1, &viafb_second_xres,
- 			&viafb_second_yres);
+ 	/* Adjust var according to our driver's own table */
+ 	viafb_fill_var_timing_info(var, viafb_refresh, vmode_entry);
+-	if (info->var.accel_flags & FB_ACCELF_TEXT &&
++	if (var->accel_flags & FB_ACCELF_TEXT &&
+ 		!ppar->shared->vdev->engine_mmio)
+-		info->var.accel_flags = 0;
++		var->accel_flags = 0;
  
--		if (0 == viafb_second_virtual_xres) {
--			switch (viafb_second_xres) {
--			case 1400:
--				viafb_second_virtual_xres = 1408;
--				break;
--			default:
--				viafb_second_virtual_xres = viafb_second_xres;
--				break;
--			}
--		}
--		if (0 == viafb_second_virtual_yres)
--			viafb_second_virtual_yres = viafb_second_yres;
-+		viafb_second_virtual_xres = viafb_second_xres;
-+		viafb_second_virtual_yres = viafb_second_yres;
- 	}
- 
- 	default_var.xres = default_xres;
- 	default_var.yres = default_yres;
--	switch (default_xres) {
--	case 1400:
--		default_var.xres_virtual = 1408;
--		break;
--	default:
--		default_var.xres_virtual = default_xres;
--		break;
--	}
-+	default_var.xres_virtual = default_xres;
- 	default_var.yres_virtual = default_yres;
- 	default_var.bits_per_pixel = viafb_bpp;
- 	default_var.pixclock =
+ 	return 0;
+ }
 -- 
 1.6.3.2
 
