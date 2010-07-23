@@ -1,90 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754411Ab0GWIia (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 04:38:30 -0400
-Received: from cantor.suse.de ([195.135.220.2]:55293 "EHLO mx1.suse.de"
+	id S1754332Ab0GWInr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 04:43:47 -0400
+Received: from mga02.intel.com ([134.134.136.20]:32169 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752090Ab0GWIi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 04:38:27 -0400
-Date: Fri, 23 Jul 2010 10:37:59 +0200
-From: Jan Kara <jack@suse.cz>
-To: shenghui <crosslonelyover@gmail.com>
-Cc: Jan Kara <jack@suse.cz>, linux-ext4 <linux-ext4@vger.kernel.org>,
-        linux-kernel <linux-kernel@vger.kernel.org>,
-        kernel-janitors <kernel-janitors@vger.kernel.org>
-Subject: Re: [PATCH] check name_len before down_read xattr_sem and sb_read
- in ext2_xattr_get
-Message-ID: <20100723083759.GA3305@quack.suse.cz>
-References: <201007122229025316610@gmail.com>
- <20100721174457.GE1215@atrey.karlin.mff.cuni.cz>
- <AANLkTikXSOHrIw0SVJMYqsQy1aG5sCXkvvOFU4XLDNGv@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikXSOHrIw0SVJMYqsQy1aG5sCXkvvOFU4XLDNGv@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752503Ab0GWIno (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 04:43:44 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.55,246,1278313200"; 
+   d="scan'208";a="538083971"
+Subject: Re: [PATCH] Don't apply for write lock on tasklist_lock if parent
+ doesn't ptrace other processes
+From: "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        LKML <linux-kernel@vger.kernel.org>, andi.kleen@intel.com,
+        stable@kernel.org
+In-Reply-To: <20100722090524.GA6647@redhat.com>
+References: <1279176663.2096.1264.camel@ymzhang.sh.intel.com>
+	 <20100721144944.5351c741.akpm@linux-foundation.org>
+	 <20100721222529.EFBAA400B6@magilla.sf.frob.com>
+	 <20100722090524.GA6647@redhat.com>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Fri, 23 Jul 2010 16:45:05 +0800
+Message-Id: <1279874705.2096.1274.camel@ymzhang.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 22-07-10 08:03:18, shenghui wrote:
-> 2010/7/22 Jan Kara <jack@suse.cz>:
-> >> Hi,
-> >>        I walked through ext2_xattr_get, and felt that we can
-> >> do some optimization on it. For name_len check, it's done
-> >> after down xattr_sem and sb_read, both of which are time
-> >> consuming operation compared with strlen:
-> >>          down_read(&EXT2_I(inode)->xattr_sem);
-> >>  ...
-> >>          bh = sb_bread(inode->i_sb, EXT2_I(inode)->i_file_acl);
-> >>  ...
-> >>          /* find named attribute */
-> >>          name_len = strlen(name);
-> >>
-> >>          error = -ERANGE;
-> >>          if (name_len > 255)
-> >>                  goto cleanup;
-> >>
-> >>        Most of the case, you'll get one valid block, but if the
-> >> name len > 255, then the xattr_sem down and sb_bread operation
-> >> can be seen as a waste of time. So I think we'd better do
-> >> name len check as early as possible.
-> >>        Following is my patch, and it's against 2.6.35-rc4.
-> >> Please check it.
-> >>
-> >> Signed-off-by: Wang Sheng-Hui <crosslonelyover@gmail.com>
-> >> ---
-> >>  fs/ext2/xattr.c |   12 +++++++-----
-> >>  1 files changed, 7 insertions(+), 5 deletions(-)
-> >>
-> >> diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
-> >> index 7c39157..0b94d61 100644
-> >> --- a/fs/ext2/xattr.c
-> >> +++ b/fs/ext2/xattr.c
-> >> @@ -161,6 +161,13 @@ ext2_xattr_get(struct inode *inode, int name_index, const char *name,
-> >>
-> >>       if (name == NULL)
-> >>               return -EINVAL;
-> >> +
-> >> +     /* find named attribute */
-> >> +     name_len = strlen(name);
-> >> +     error = -ERANGE;
-> >> +     if (name_len > 255)
-> >> +             goto cleanup;
-> >  But you cannot go to cleanup here because you don't hold xattr_sem...
-> >
-> 
-> Sorry, I'm a little confused by your words.
-> The patch just checks name_len, and it
-> doesn't need xattr_sem.
-  Checking of name_len is fine as you did it. But I wanted to point out
-that if name_len is greater than 255, you then go to 'cleanup' label which
-tries to do up_read(&EXT2_I(inode)->xattr_sem). But that's a bug because
-after you moved the code, we don't hold xattr_sem at the moment we check
-name_len.
+On Thu, 2010-07-22 at 11:05 +0200, Oleg Nesterov wrote:
+> I am not surpized perf blaims tasklist, but I am really surpized this patch
+> adds 10% improvement...
+I changed aim7 workfile to focus on fork/exec and other a couple of sub-cases.
+And this behavior is clear on 8-socket machines. 
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> 
+> On 07/21, Roland McGrath wrote:
+> >
+> > > > @@ -331,6 +331,9 @@ void exit_ptrace(struct task_struct *tra
+> > > >  	struct task_struct *p, *n;
+> > > >  	LIST_HEAD(ptrace_dead);
+> > > >
+> > > > +	if (list_empty(&tracer->ptraced))
+> > > > +		return;
+> > > > +
+> > > >  	write_lock_irq(&tasklist_lock);
+> > > >  	list_for_each_entry_safe(p, n, &tracer->ptraced, ptrace_entry) {
+> > > >  		if (__ptrace_detach(tracer, p))
+> >
+> > I think we may have tried that before.  Oleg can tell us if it's really
+> > safe vs a race with PTRACE_TRACEME or something like that.
+> 
+> Yes, this can race with ptrace_traceme(). Without tasklist_lock in
+> exit_ptrace(), it is possible that ptrace_traceme() starts __ptrace_link()
+> before it sees PF_EXITING, and completes before the result of list_add()
+> is visible to the exiting parent. tasklist acts as a barrier.
+Thanks for your kind explanation.
+
+> 
+> So, this list_empty() check needs taskslit at least for reading. But, we
+> are going to take it for writing right after exit_ptrace() returns, afaics
+> we can add this fastpatch check for free.
+> 
+> Uncompiled/untested.
+> 
+> Oleg.
+> 
+>  kernel/ptrace.c |   10 +++++++---
+>  kernel/exit.c   |    3 ++-
+>  2 files changed, 9 insertions(+), 4 deletions(-)
+> 
+> --- x/kernel/ptrace.c
+> +++ x/kernel/ptrace.c
+> @@ -324,26 +324,30 @@ int ptrace_detach(struct task_struct *ch
+>  }
+>  
+>  /*
+> - * Detach all tasks we were using ptrace on.
+> + * Detach all tasks we were using ptrace on. Called with tasklist held.
+>   */
+>  void exit_ptrace(struct task_struct *tracer)
+>  {
+>  	struct task_struct *p, *n;
+>  	LIST_HEAD(ptrace_dead);
+>  
+> -	write_lock_irq(&tasklist_lock);
+> +	if (likely(list_empty(&tracer->ptraced)))
+> +		return;
+> +
+>  	list_for_each_entry_safe(p, n, &tracer->ptraced, ptrace_entry) {
+>  		if (__ptrace_detach(tracer, p))
+>  			list_add(&p->ptrace_entry, &ptrace_dead);
+>  	}
+> -	write_unlock_irq(&tasklist_lock);
+>  
+> +	write_unlock_irq(&tasklist_lock);
+>  	BUG_ON(!list_empty(&tracer->ptraced));
+>  
+>  	list_for_each_entry_safe(p, n, &ptrace_dead, ptrace_entry) {
+>  		list_del_init(&p->ptrace_entry);
+>  		release_task(p);
+>  	}
+> +
+> +	write_lock_irq(&tasklist_lock);
+>  }
+>  
+>  int ptrace_readdata(struct task_struct *tsk, unsigned long src, char __user *dst, int len)
+> --- x/kernel/exit.c
+> +++ x/kernel/exit.c
+> @@ -771,9 +771,10 @@ static void forget_original_parent(struc
+After applying my patch (although it's incorrect as there is a race with TRACEME),
+perf shows write_lock_irq in forget_original_parent consumes less than 40% cpu time on
+8-socket machine.
+
+Is it possible to optimize it to use finer locks instead of the global tasklist_lock?
+
+
+>  	struct task_struct *p, *n, *reaper;
+>  	LIST_HEAD(dead_children);
+>  
+> +	write_lock_irq(&tasklist_lock);
+> +
+>  	exit_ptrace(father);
+>  
+> -	write_lock_irq(&tasklist_lock);
+>  	reaper = find_new_reaper(father);
+>  
+>  	list_for_each_entry_safe(p, n, &father->children, sibling) {
+> 
+
+
