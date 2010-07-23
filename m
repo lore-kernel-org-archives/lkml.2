@@ -1,84 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758118Ab0GWF4T (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 01:56:19 -0400
-Received: from claw.goop.org ([74.207.240.146]:37954 "EHLO claw.goop.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757812Ab0GWF4P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 01:56:15 -0400
-Message-ID: <4C492EFD.1090007@goop.org>
-Date: Thu, 22 Jul 2010 22:56:13 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.10) Gecko/20100621 Fedora/3.0.5-1.fc13 Lightning/1.0b2pre Thunderbird/3.0.5
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-        Tejun Heo <tj@kernel.org>, Ingo Molnar <mingo@redhat.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: linux-next: build failure after merge of the xen tree
-References: <20100723140107.2883b2d3.sfr@canb.auug.org.au>
-In-Reply-To: <20100723140107.2883b2d3.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+	id S1754594Ab0GWFyH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 01:54:07 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40683 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754000Ab0GWFyD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 01:54:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=QAZqhDBlfbNlbdDcKKPFdYzDiweAz7LZ1ygzNcmpODSR85Xa/0v3NEMV+qzluLZp47
+         CnPRYuH9fcYkKyjZFowi9lf42mb4W6jTcFQi/EKqfT3jXtUekFsdt3u5sfm/BX08uM98
+         EaQIAOzfpP/SqC5+nNikfhsY9s1xqtflG3jis=
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Barry Song <21cnbao@gmail.com>,
+        Kuninori Morimoto <morimoto.kuninori@renesas.com>,
+        Mark Brown <broonie@opensource.wolfsonmicro.com>,
+        Mike Arthur <linux@wolfsonmicro.com>,
+        Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+        Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: [PATCH v2 00/12] sound/alsa/soc/codec: fix memory leak and resource relaim in error path
+Date: Fri, 23 Jul 2010 05:53:42 +0000
+Message-Id: <1279864434-8010-1-git-send-email-axel.lin@gmail.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2010 09:01 PM, Stephen Rothwell wrote:
-> After merging the xen tree, today's linux-next build (86_64 allmodconfig)
-> failed like this:
->
-> arch/x86/xen/enlighten.c:71: error: __pcpu_scope_xen_vcpu causes a section type conflict
-> arch/x86/xen/enlighten.c:72: error: __pcpu_scope_xen_vcpu_info causes a section type conflict
-> arch/x86/xen/enlighten.c:71: error: __pcpu_unique_xen_vcpu causes a section type conflict
-> arch/x86/xen/enlighten.c:72: error: __pcpu_unique_xen_vcpu_info causes a section type conflict
-> arch/x86/xen/enlighten.c:558: error: __pcpu_unique_idt_desc causes a section type conflict
-> arch/x86/xen/enlighten.c:760: error: __pcpu_unique_xen_cr0_value causes a section type conflict
->
-> Not sure what has caused this.  I have dropped the xen tree for today.
->
-> gcc version 4.4.4 binutils version 2.20.1.
->   
+This serial of patches fixes memory leak and resource relaim in error path
 
-I can reproduce this.
+I made a mistake that changed the subject line for some of the update patches.
+So. here is a re-send and all patches are marked as v2.
 
-I bisected it down to change bee6ab53e652a414af20392899879b58cd80d033.
+Regards,
+Axel
 
-Ah!   That change uses RESERVE_BRK(), which creates a dummy function and
-puts it into the .discard section.  Presumably that makes gcc think that
-.discard is for code, and so when the percpu stuff starts putting data
-into .discard, gcc (now) complains.  If we add more .discard.* sections
-then everyone is happy:
+changes for v2:
+  wm8940: follow Guennadi's comment to move the buffer allocate and release
+          at the same level to prevent the memory leak.
+  wm9081: follow Guennadi's comment to move the buffer allocate and release
+          at the same level to prevent the memory leak.
 
-diff --git a/arch/x86/include/asm/setup.h b/arch/x86/include/asm/setup.h
-index 86b1506..ef292c7 100644
---- a/arch/x86/include/asm/setup.h
-+++ b/arch/x86/include/asm/setup.h
-@@ -82,7 +82,7 @@ void *extend_brk(size_t size, size_t align);
-  * executable.)
-  */
- #define RESERVE_BRK(name,sz)						\
--	static void __section(.discard) __used				\
-+	static void __section(.discard.text) __used			\
- 	__brk_reservation_fn_##name##__(void) {				\
- 		asm volatile (						\
- 			".pushsection .brk_reservation,\"aw\",@nobits;" \
-diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
-index 48c5299..ae6b88e 100644
---- a/include/asm-generic/vmlinux.lds.h
-+++ b/include/asm-generic/vmlinux.lds.h
-@@ -643,6 +643,7 @@
- 	EXIT_DATA							\
- 	EXIT_CALL							\
- 	*(.discard)							\
-+	*(.discard.*)							\
- 	}
- 
- /**
+Axel Lin (12):
+  ad1836: fix a memory leak if another ad1836 is registered
+  ak4642: fix a memory leak if failed to initialise AK4642
+  da7210: fix a memory leak if failed to initialise da7210 audio codec
+  wm8523: fix resource reclaim in wm8523_register error path
+  wm8711: fix a memory leak if another WM8711 is registered
+  wm8904: fix resource reclaim in wm8904_register error path
+  wm8940: fix a memory leak if wm8940_register return error
+  wm8955: fix resource reclaim in wm8955_register error path
+  wm8961: fix resource reclaim in wm8961_register error path
+  wm8974: fix a memory leak if another WM8974 is registered
+  wm8978: fix a memory leak if a wm8978_register fail
+  wm9081: fix resource reclaim in wm9081_register error path
 
-I'll write up a proper patch.
+ sound/soc/codecs/ad1836.c |    1 +
+ sound/soc/codecs/ak4642.c |    4 +++-
+ sound/soc/codecs/da7210.c |    8 ++++++--
+ sound/soc/codecs/wm8523.c |   10 ++++++----
+ sound/soc/codecs/wm8711.c |    3 ++-
+ sound/soc/codecs/wm8904.c |   13 ++++++++-----
+ sound/soc/codecs/wm8940.c |    7 ++++++-
+ sound/soc/codecs/wm8955.c |   10 ++++++----
+ sound/soc/codecs/wm8961.c |    9 +++++----
+ sound/soc/codecs/wm8974.c |    3 ++-
+ sound/soc/codecs/wm8978.c |   10 +++++++---
+ sound/soc/codecs/wm9081.c |   11 ++++++-----
+ 12 files changed, 58 insertions(+), 31 deletions(-)
 
-
-Thanks,
-    J
