@@ -1,68 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757719Ab0GWRBv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 13:01:51 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:33380 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab0GWRBu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 13:01:50 -0400
-Message-ID: <4C49CAED.6020304@cs.helsinki.fi>
-Date: Fri, 23 Jul 2010 20:01:33 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1756563Ab0GWRLR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 13:11:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48115 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756401Ab0GWRLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 13:11:15 -0400
+Date: Fri, 23 Jul 2010 13:10:54 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: fweisbec@gmail.com, peterz@infradead.org, mingo@elte.hu,
+        linux-kernel@vger.kernel.org
+Subject: Re: [RFC] x86: perf swallows all NMIs when registered with a user
+Message-ID: <20100723171054.GS7330@redhat.com>
+References: <20100722215136.GA23517@redhat.com>
+ <4C48CD0D.5020201@kernel.org>
+ <20100723125505.GQ7330@redhat.com>
+ <4C49C66A.3000002@kernel.org>
 MIME-Version: 1.0
-To: Patrick Pannuto <ppannuto@codeaurora.org>
-CC: linux-kernel@vger.kernel.org, Mark Fasheh <mfasheh@suse.com>,
-        Joel Becker <joel.becker@oracle.com>,
-        Stephen Hemminger <shemminger@vyatta.com>,
-        Jens Axboe <jens.axboe@oracle.com>,
-        David Teigland <teigland@redhat.com>, ocfs2-devel@oss.oracle.com
-Subject: Re: [PATCH 5/6] ocfs2: Fix memory leak on mlog_sys_init error path
-References: <1279836546-26913-1-git-send-email-ppannuto@codeaurora.org> <1279836546-26913-6-git-send-email-ppannuto@codeaurora.org>
-In-Reply-To: <1279836546-26913-6-git-send-email-ppannuto@codeaurora.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C49C66A.3000002@kernel.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patrick Pannuto wrote:
-> This leak is the same as the bus path; mlog_kset.kobj.name is
-> set, but kset_register fails, thus nothing will ever call
-> kset_unregister and name will be leaked
+On Fri, Jul 23, 2010 at 09:42:18AM -0700, Yinghai Lu wrote:
+> On 07/23/2010 05:55 AM, Don Zickus wrote:
+> > On Thu, Jul 22, 2010 at 03:58:21PM -0700, Yinghai Lu wrote:
+> >> cool, with your patch and following patch i can use nmi button now with CONFIG_LOCKUP_DETECTOR defined
+> >>
+> >> [PATCH] x86,nmi: move unknown_nmi_panic to traps.c
+> >>
+> >> So we use it even LOCKUP_DETECTOR is defined.
+> >>
+> >> need Don's patch...
+> > 
+> > Thanks for the feedback Yinghai!
+> >>
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> > 
+> > With regards to your patch, I am still a little uncomfortable with it, as
+> > it seems to be redundant with what is used in unknown_nmi_error() and the
+> > panic_on_unrecovered_nmi flag.  I agree that keeping the familiar flag
+> > 'unknown_nmi_panic' is needed.  But I was still wondering if wrapping it
+> > around 'panic_on_unrecovered_nmi' would be simpler and less code.
 > 
-> Signed-off-by: Patrick Pannuto <ppannuto@codeaurora.org>
-> ---
->  fs/ocfs2/cluster/masklog.c |    7 ++++++-
->  1 files changed, 6 insertions(+), 1 deletions(-)
-> 
-> diff --git a/fs/ocfs2/cluster/masklog.c b/fs/ocfs2/cluster/masklog.c
-> index c7fba39..de715d4 100644
-> --- a/fs/ocfs2/cluster/masklog.c
-> +++ b/fs/ocfs2/cluster/masklog.c
-> @@ -154,6 +154,7 @@ static struct kset mlog_kset = {
->  int mlog_sys_init(struct kset *o2cb_kset)
->  {
->  	int i = 0;
-> +	int ret;
->  
->  	while (mlog_attrs[i].attr.mode) {
->  		mlog_attr_ptrs[i] = &mlog_attrs[i].attr;
-> @@ -163,7 +164,11 @@ int mlog_sys_init(struct kset *o2cb_kset)
->  
->  	kobject_set_name(&mlog_kset.kobj, "logmask");
->  	mlog_kset.kobj.kset = o2cb_kset;
-> -	return kset_register(&mlog_kset);
-> +
-> +	ret = kset_register(&mlog_kset);
-> +	if (ret)
-> +		kfree(mlog_kset.kobj.name);
+> how about the one in sysctl?
 
-Aren't we supposed to use kobject_cleanup() here?
+Would it be wrong to do something like (sorry for the copy/paste):
 
-> +	return ret;
->  }
->  
->  void mlog_sys_shutdown(void)
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -744,7 +744,7 @@ static struct ctl_table kern_table[] = {
+ #if defined(CONFIG_X86_LOCAL_APIC) && defined(CONFIG_X86) &&
+!defined(CONFIG_LOCKUP_DETECTOR)
+        {
+                .procname       = "unknown_nmi_panic",
+-               .data           = &unknown_nmi_panic,
++               .data           = &panic_on_unrecovered_nmi,
+                .maxlen         = sizeof (int),
+                .mode           = 0644,
+                .proc_handler   = proc_dointvec,
+
+Cheers,
+Don
 
