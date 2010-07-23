@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754039Ab0GWIIw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 04:08:52 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39209 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750877Ab0GWIIr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 04:08:47 -0400
-Message-ID: <4C494DEE.3010101@redhat.com>
-Date: Fri, 23 Jul 2010 10:08:14 +0200
-From: Stefan Assmann <sassmann@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1752558Ab0GWIRL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 04:17:11 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:48433 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab0GWIRH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 04:17:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=pOfzotXoU+D7R2G9QyPYFggPrpi074ynWUBCWk8U7pnngOWCgtOX3IX3XRJjbUWAb9
+         J0WDEGJtFvKs/m96oyfp7BQ3wNgwOo+vvKHaaSCyOaGncICm1zH1ZVS3BgJK2ziy8CZa
+         mom+D2YscYL5uucsNkcqrqP3zJXFa7qzWPRX8=
 MIME-Version: 1.0
-To: Casey Leedom <leedom@chelsio.com>
-CC: "Rose, Gregory V" <gregory.v.rose@intel.com>,
-        David Miller <davem@davemloft.net>, shemminger@vyatta.com,
-        andy@greyhouse.net, harald@redhat.com, bhutchings@solarflare.com,
-        netdev@vger.kernel.org, linux-kernel@vger.kernel.org, gospo@redhat.com,
-        "Duyck, Alexander H" <alexander.h.duyck@intel.com>
-Subject: Re: [PATCH net-next] sysfs: add entry to indicate network interfaces
- with random MAC address
-References: <20100721150732.GR7497@gospo.rdu.redhat.com> <20100721102816.4bef5ada@nehalam> <20100721.103249.107094774.davem@davemloft.net> <201007211129.48288.leedom@chelsio.com> <43F901BD926A4E43B106BF17856F0755F184620A@orsmsx508.amr.corp.intel.com> <4C47EAF3.3080602@redhat.com> <2408F875-69BE-45D3-8605-4AE5CDA4601C@chelsio.com>
-In-Reply-To: <2408F875-69BE-45D3-8605-4AE5CDA4601C@chelsio.com>
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <4C49468B.40307@vflare.org>
+References: <20100621231809.GA11111@ca-server1.us.oracle.com>
+	<4C49468B.40307@vflare.org>
+Date: Fri, 23 Jul 2010 17:16:47 +0900
+Message-ID: <AANLkTikV6nypnLHjaidOyJPsP9xDawQ9ABOoRWKB-2+B@mail.gmail.com>
+Subject: Re: [PATCH V3 0/8] Cleancache: overview
+From: Minchan Kim <minchan.kim@gmail.com>
+To: ngupta@vflare.org
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>, chris.mason@oracle.com,
+        viro@zeniv.linux.org.uk, akpm@linux-foundation.org, adilger@sun.com,
+        tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com,
+        matthew@wil.cx, linux-btrfs@vger.kernel.org,
+        linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+        linux-ext4@vger.kernel.org, ocfs2-devel@oss.oracle.com,
+        linux-mm@kvack.org, jeremy@goop.org, JBeulich@novell.com,
+        kurt.hackel@oracle.com, npiggin@suse.de, dave.mccracken@oracle.com,
+        riel@redhat.com, avi@redhat.com, konrad.wilk@oracle.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.07.2010 02:26, Casey Leedom wrote:
-> 
->  Or you simply don't have the VF Driver loaded in the "Domain 0" Control OS.  When we install the cxgb4 PF Driver with "num_vf=..." this enables the PCI-E SR-IOV Capabilities within the various PFs and the corresponding VF PCI Devices are instantiated and discovered by the Domain 0 Linux OS.  But without a cxgb4vf VF Driver loaded, those devices just sit there  available for "Device Assignment" to VMs.
-> 
+On Fri, Jul 23, 2010 at 4:36 PM, Nitin Gupta <ngupta@vflare.org> wrote:
+>
+> 2. I think change in btrfs can be avoided by moving cleancache_get_page()
+> from do_mpage_reapage() to filemap_fault() and this should work for all
+> filesystems. See:
+>
+> handle_pte_fault() -> do_(non)linear_fault() -> __do_fault()
+>                                                -> vma->vm_ops->fault()
+>
+> which is defined as filemap_fault() for all filesystems. If some future
+> filesystem uses its own custom function (why?) then it will have to arrange for
+> call to cleancache_get_page(), if it wants this feature.
 
-Just out of curiosity, how do you prevent the VF driver from getting
-loaded in the host? Except from blacklisting it.
 
-  Stefan
---
-Stefan Assmann         | Red Hat GmbH
-Software Engineer      | Otto-Hahn-Strasse 20, 85609 Dornach
-                       | HR: Amtsgericht Muenchen HRB 153243
-                       | GF: Brendan Lane, Charlie Peters,
-sassmann at redhat.com |     Michael Cunningham, Charles Cachera
+filemap fault works only in case of file-backed page which is mapped
+but don't work not-mapped cache page.  So we could miss cache page by
+read system call if we move it into filemap_fault.
+
+
+-- 
+Kind regards,
+Minchan Kim
