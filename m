@@ -1,66 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab0GWMIi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 08:08:38 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:55649 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753447Ab0GWMIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 08:08:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=oWrgRFI6vqGPedP6JoI80paTSr1kX+VhXZ9vf2iu+NJmyWffI4neOxgQtZ9OPcbF/i
-         c/diByYGISyYfNHkzh7tOxDskq0TVqzfoiu+XSA/hIBtmhnbFkC47ku+lAyVIpmhj/vl
-         U4sROrMl5wBwxOjNk0DMJ4J4LZLwtNTSCR9ss=
-From: Helmut Schaa <helmut.schaa@googlemail.com>
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: Re: [RFC] tpm_tis: Fix subsequent suspend failures
-Date: Fri, 23 Jul 2010 14:07:51 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc5-wl-default+; KDE/4.4.4; x86_64; ; )
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-        tpmdd-devel@lists.sourceforge.net,
-        Debora Velarde <debora@linux.vnet.ibm.com>,
-        David Safford <safford@watson.ibm.com>, jmorris@namei.org,
+	id S1758968Ab0GWMJg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 08:09:36 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33187 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758814Ab0GWMJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 08:09:35 -0400
+Date: Fri, 23 Jul 2010 05:07:47 -0700
+From: Greg KH <gregkh@suse.de>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: Michael Jensen <emjay1988@gmail.com>, devel@driverdev.osuosl.org,
         linux-kernel@vger.kernel.org
-References: <201006091227.15729.helmut.schaa@googlemail.com> <5204AD54-F4BF-49A8-9168-3FCA112AAA2B@linux.vnet.ibm.com> <20100623130700.a032c373.akpm@linux-foundation.org>
-In-Reply-To: <20100623130700.a032c373.akpm@linux-foundation.org>
+Subject: Re: [PATCH] Staging: comedi: comedidev: Fixed a macro definition
+	code style issue
+Message-ID: <20100723120747.GC32608@suse.de>
+References: <1279865467-16522-1-git-send-email-emjay1988@gmail.com> <4C495880.2090705@gmail.com> <AANLkTi=KTEtA57aTHEd_tzXAmK_WsX+P4jO_3TedFGFk@mail.gmail.com> <4C4970BC.1070901@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007231407.51605.helmut.schaa@googlemail.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4C4970BC.1070901@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Am Mittwoch 23 Juni 2010 schrieb Andrew Morton:
-> On Wed, 23 Jun 2010 16:55:54 -0300
-> Rajiv Andrade <srajiv@linux.vnet.ibm.com> wrote:
-> 
-> > > (top-posting repaired.  Please don't do that).
-> > > 
-> > > This wasn't a very good way to send a patch.  I edited the diff,
-> > > reconstructed the patch and then assembled a decent-looking changelog. 
-> > > I also changed your acked-by to the required signed-off-by, because you
-> > > were on the patch's delivery path.
-> > > 
-> > > Pretty please: next time, prepare a proper mergeable patch with the
-> > > correct attributions and signoffs?  Thanks.
+On Fri, Jul 23, 2010 at 12:36:44PM +0200, Jiri Slaby wrote:
+> On 07/23/2010 11:17 AM, Michael Jensen wrote:
+> > On Fri, Jul 23, 2010 at 6:53 PM, Jiri Slaby <jirislaby@gmail.com> wrote:
+> >>
+> > <snip>
+> >> Hmm, does this compile?
+> >>
+> > I did build the comedi directory (as per Greg's "Write and submit your
+> > first kernel patch" video), and didn't get any errors (once I'd done
+> > the configuration)...
 > > 
-> > Sure, sorry. I was just not certain if I could just resent Helmut's patch to LKML without messing with his authorship.
+> > Did I miss something?
 > 
-> You can.  Put his "From:" line right at the top of the changelog and
-> everyone's patch-receiving tools will honour that.  If the From: at the
-> top of the changelog is absent, the tools will fall back to using the
-> From: line in the mail headers.
+> Then the macro is probably unused (or unused in your configuration).
+> Either way, the macro seems to be intended for use in the top-level
+> scope, so do { } while (0) cannot be used there.
 
-This patch still didn't make it into mainline and it fixes a regression.
-Rajiv, do you plan to resubmit the patch or did you expect it to go through
-Andrew's tree?
+I think we might have now removed all users of that macro, so it should
+just be deleted.
 
-Thanks,
-Helmut
+Michael, can you do that instead of the do/while stuff here, as that is
+not a valid change.
+
+thanks,
+
+greg k-h
