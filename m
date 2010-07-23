@@ -1,67 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759322Ab0GWCNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 22:13:06 -0400
-Received: from fn.samba.org ([216.83.154.106]:52926 "EHLO lists.samba.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866Ab0GWCNB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 22:13:01 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1759374Ab0GWCOI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 22:14:08 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37182 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753410Ab0GWCOF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 22:14:05 -0400
+X-Authority-Analysis: v=1.1 cv=NvN00vXXLC/2Fo3NdLZJXFUM7u9qr/FOWvgMjmHRJhk= c=1 sm=0 a=yRs0Bdu_tHsA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=MuEWEC7U8hhkXNCpiEcA:9 a=GZTMqLocBxpNe7Cy9Uu2pfh7HXcA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [RFC][PATCH v1 06/15] perf: export tracepoint events via
+ sysfs: iwlwifi and iwlwifi_io
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Johannes Berg <johannes@sipsolutions.net>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Reinette Chatre <reinette.chatre@intel.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "eranian@gmail.com" <eranian@gmail.com>,
+        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <20100723013716.GA7362@dastard>
+References: <1279797230.20942.87.camel@minggr.sh.intel.com>
+	 <1279797640.12439.11.camel@jlt3.sipsolutions.net>
+	 <1279805440.3319.2.camel@gandalf.stny.rr.com>
+	 <20100722134836.GA6881@elte.hu>
+	 <1279806844.3319.3.camel@gandalf.stny.rr.com>
+	 <20100723013716.GA7362@dastard>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 22 Jul 2010 22:14:00 -0400
+Message-ID: <1279851241.3319.31.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-ID: <19528.64159.999224.437890@samba.org>
-Date: Fri, 23 Jul 2010 12:12:47 +1000
-To: "Ted Ts'o" <tytso@mit.edu>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-        Jeremy Allison <jra@samba.org>, linux-cifs@vger.kernel.org,
-        linux-nfs@vger.kernel.org, Volker.Lendecke@sernet.de,
-        samba-technical@lists.samba.org, linux-kernel@vger.kernel.org,
-        Jan Engelhardt <jengelh@medozas.de>,
-        David Howells <dhowells@redhat.com>, viro@zeniv.linux.org.uk,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 02/18] xstat: Add a pair of system calls to make
- extended file stats available [ver #6]
-In-Reply-To: <20100723012130.GD16373@thunk.org>
-References: <20100715021709.5544.64506.stgit@warthog.procyon.org.uk>
-	<20100715021712.5544.44845.stgit@warthog.procyon.org.uk>
-	<30448.1279800887@redhat.com>
-	<E1Obuiy-00C9jr-Al@intern.SerNet.DE>
-	<AANLkTikBCXK6uEwWq4f0LvpdoKCPs3jvyFa4Zw4e2J_7@mail.gmail.com>
-	<E1Obxpd-00CRIo-SF@intern.SerNet.DE>
-	<AANLkTimwIq0pBhCeOjOVjB0yeM3JHOvzVoj9M4ui6al9@mail.gmail.com>
-	<20100722162712.GB10352@jeremy-laptop>
-	<AANLkTimdFCGSKLn7aGMpBMIauHTsHY7hpAAmpo6uTcnD@mail.gmail.com>
-	<19528.60019.28495.655512@samba.org>
-	<20100723012130.GD16373@thunk.org>
-X-Mailer: VM 8.0.13 under 23.1.1 (x86_64-pc-linux-gnu)
-Reply-To: tridge@samba.org
-From: tridge@samba.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ted,
+On Fri, 2010-07-23 at 11:37 +1000, Dave Chinner wrote:
+> On Thu, Jul 22, 2010 at 09:54:04AM -0400, Steven Rostedt wrote:
+> > On Thu, 2010-07-22 at 15:48 +0200, Ingo Molnar wrote:
+> > > * Steven Rostedt <rostedt@goodmis.org> wrote:
+> > 
+> > > Yeah - and the point of this submission is to allow the discussion of how to 
+> > > achieve these registrations.
+> > > 
+> > > Driver authors will want to have some control - for example the place where 
+> > > the events directory shows up in sysfs within the driver's directory structure 
+> > > - etc.
+> > > 
+> > > But we indeed want to automate it as much as possible.
+> > 
+> > Perhaps we can create a TRACE_EVENT_PATH() macro, that allows the
+> > developer to specify the path that the event will be seen in sysfs?
+> 
+> Perhaps you could build that into the event class definition as well
+> so each separate class in a subsystem can be placed in it's own
+> sub-directory?
+> 
+> That would make turning on and off specific classes trace points so
+> much simpler than it now, espcially for XFS where we now have > 250
+> tracepoints that are mostly defined by event classes already...
 
- > Does it literally mean "file creation time" in terms of when the OS
- > created the file, or does it mean "file" in the sense of
- > application contents.  For example, if an application edits the
- > file and saves it out using "write file to foo.new; sync; rename
- > foo to foo.bak; rename foo.new to foo", should the creation time
- > for the newly written file "foo" be the time when the editor saved
- > out the file (i.e., when "foo.new" was created), or copied from the
- > original file "foo"'s creation time.
 
-In Windows this is can be controlled by applications, but it also is
-done at the filesystem level in NTFS using a technique that Microsoft
-call "File System Tunneling". If you create a file with the same name
-within a short time (default 15s and settable in the registry) of when
-the file previously existed then it will get the same CreationTime as
-the previous file.
+I was working on creating a "TRACE_CATEGORY()" that allowed you to put
+tracepoints into categories. Thus, these tracepoints will all still be
+in the XFS system, but you can add hierarchical categories that let you
+group and enable tracepoints in these groups.
 
-For details see http://support.microsoft.com/kb/172190
+But I stopped this work since it was more ftrace specific than perf, and
+I need to figure out how to continue my work on ftrace and at the same
+time merge it towards perf. This has been taking much longer than I have
+expected. Perhaps I should just finish that work, and then see how we
+can make perf work with it too?
 
-Some applications also do this regardless of the registry setting for
-MaximumTunnelEntryAgeInSeconds. They use the ability to set the
-CreationTime to get the same behaviour.
+-- Steve
 
-Cheers, Tridge
+
