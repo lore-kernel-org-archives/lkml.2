@@ -1,54 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760207Ab0GWR5N (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 13:57:13 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:57057 "HELO
-	cpoproxy3-pub.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754083Ab0GWR5J (ORCPT
+	id S1754104Ab0GWR7u (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 13:59:50 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:46056 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752579Ab0GWR7r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 13:57:09 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=iSA95VmToL4aNErPRIVMkDGlaEl+Xgb6XRzJI9wcBU/Bf6hI1qUWnkM0n0ymlu0wCrXlEvUWescSImyxH7/7DcfsA5OvA7mDDat3cm3EFzNJg1wV6s7tdiQmB/k8br0t;
-Date: Fri, 23 Jul 2010 10:57:24 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Tino Keitel <tino.keitel@tikei.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Bug #16207] Suspend and VT switch hangs since 2.6.34
-Message-ID: <20100723105724.043d8174@virtuousgeek.org>
-In-Reply-To: <20100723175056.GA30411@x61.home>
-References: <wQMMFC59mnE.A.v-E.iUYSMB@chimera>
-	<PRbv8sgxY6G.A.j1F.aVYSMB@chimera>
-	<20100723103336.539a3d61@virtuousgeek.org>
-	<20100723175056.GA30411@x61.home>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+	Fri, 23 Jul 2010 13:59:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dK4s4QuJ89qXtoLvmwy1Elpt/lM+8xViFQg8diI0jR556JfuRlGMAoN9JRPENNrzJb
+         7XJmAc9iUeL29WspLjw38pH62p8LLcp6ejWMl8R1o5asaeBFs8qtUHSqtofjw/gMlUpX
+         bp5eXha6zYBhKjG0jHmxFT7sgHwYJ0g30xWbI=
+MIME-Version: 1.0
+In-Reply-To: <4C078FE2.9000804@vlnb.net>
+References: <20100531112817.GA16260@schmichrtp.mainz.de.ibm.com>
+	<yq1iq64kv9f.fsf@sermon.lab.mkp.net>
+	<1275318102.2823.47.camel@mulgrave.site>
+	<4C03D5FD.3000202@panasas.com>
+	<20100601103041.GA15922@schmichrtp.mainz.de.ibm.com>
+	<1275398876.21962.6.camel@mulgrave.site>
+	<4C078FE2.9000804@vlnb.net>
+Date: Fri, 23 Jul 2010 13:59:46 -0400
+Message-ID: <AANLkTinnrsFZ=nkX4QpG2eKOk05uNe5HpV-pP3kd7OF=@mail.gmail.com>
+Subject: Re: Wrong DIF guard tag on ext2 write
+From: Gennadiy Nerubayev <parakie@gmail.com>
+To: Vladislav Bolkhovitin <vst@vlnb.net>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+        Christof Schmitt <christof.schmitt@de.ibm.com>,
+        Boaz Harrosh <bharrosh@panasas.com>,
+        "Martin K. Petersen" <martin.petersen@oracle.com>,
+        linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, Chris Mason <chris.mason@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jul 2010 19:50:56 +0200
-Tino Keitel <tino.keitel@tikei.de> wrote:
+On Thu, Jun 3, 2010 at 7:20 AM, Vladislav Bolkhovitin <vst@vlnb.net> wrote:
+>
+> James Bottomley, on 06/01/2010 05:27 PM wrote:
+>>
+>> On Tue, 2010-06-01 at 12:30 +0200, Christof Schmitt wrote:
+>>>
+>>> What is the best strategy to continue with the invalid guard tags on
+>>> write requests? Should this be fixed in the filesystems?
+>>
+>> For write requests, as long as the page dirty bit is still set, it's
+>> safe to drop the request, since it's already going to be repeated.  What
+>> we probably want is an error code we can return that the layer that sees
+>> both the request and the page flags can make the call.
+>>
+>>> Another idea would be to pass invalid guard tags on write requests
+>>> down to the hardware, expect an "invalid guard tag" error and report
+>>> it to the block layer where a new checksum is generated and the
+>>> request is issued again. Basically implement a retry through the whole
+>>> I/O stack. But this also sounds complicated.
+>>
+>> No, no ... as long as the guard tag is wrong because the fs changed the
+>> page, the write request for the updated page will already be queued or
+>> in-flight, so there's no need to retry.
+>
+> There's one interesting problem here, at least theoretically, with SCSI or similar transports which allow to have commands queue depth >1 and allowed to internally reorder queued requests. I don't know the FS/block layers sufficiently well to tell if sending several requests for the same page really possible or not, but we can see a real life problem, which can be well explained if it's possible.
+>
+> The problem could be if the second (rewrite) request (SCSI command) for the same page queued to the corresponding device before the original request finished. Since the device allowed to freely reorder requests, there's a probability that the original write request would hit the permanent storage *AFTER* the retry request, hence the data changes it's carrying would be lost, hence welcome data corruption.
+>
+> For single parallel SCSI or SAS devices such race may look practically impossible, but for sophisticated clusters when many nodes pretending to be a single SCSI device in a load balancing configuration, it becomes very real.
+>
+> The real life problem we can see in an active-active DRBD-setup. In this configuration 2 nodes act as a single SCST-powered SCSI device and they both run DRBD to keep their backstorage in-sync. The initiator uses them as a single multipath device in an active-active round-robin load-balancing configuration, i.e. sends requests to both nodes in parallel, then DRBD takes care to replicate the requests to the other node.
+>
+> The problem is that sometimes DRBD complies about concurrent local writes, like:
+>
+> kernel: drbd0: scsi_tgt0[12503] Concurrent local write detected! [DISCARD L] new: 144072784s +8192; pending: 144072784s +8192
+>
+> This message means that DRBD detected that both nodes received overlapping writes on the same block(s) and DRBD can't figure out which one to store. This is possible only if the initiator sent the second write request before the first one completed.
+>
+> The topic of the discussion could well explain the cause of that. But, unfortunately, people who reported it forgot to note which OS they run on the initiator, i.e. I can't say for sure it's Linux.
 
-> On Fri, Jul 23, 2010 at 10:33:36 -0700, Jesse Barnes wrote:
-> 
-> [...]
-> 
-> > I think this may actually be an X server bug.  2.6.34 introduced some
-> 
-> Hi,
-> 
-> that seems to be not a kernel issue indeed, as at some point I never
-> got this hang again. However, I upgraded to new versions of Mesa, DRM,
-> and also new bugfix releases of the Xserver (those in Debian unstable).
+Sorry for the late chime in, but here's some more information of
+potential interest as I've previously inquired about this to the drbd
+mailing list:
 
-Great, we can close this one out then.  Thanks.
+1. It only happens when using blockio mode in IET or SCST. Fileio,
+nv_cache, and write_through do not generate the warnings.
+2. It happens on active/passive drbd clusters (on the active node
+obviously), NOT active/active. In fact, I've found that doing round
+robin on active/active is a Bad Idea (tm) even with a clustered
+filesystem, until at least the target software is able to synchronize
+the command state of either node.
+3. Linux and ESX initiators can generate the warning, but I've so far
+only been able to reliably reproduce it using a Windows initiator and
+sqlio or iometer benchmarks. I'll be trying again using iometer when I
+have the time.
+4. It only happens using a random write io workload (any block size),
+with initiator threads >1, OR initiator queue depth >1. The higher
+either of those is, the more spammy the warnings become.
+5. The transport does not matter (reproduced with iSCSI and SRP)
+6. If DRBD is disconnected (primary/unknown), the warnings are not
+generated. As soon as it's reconnected (primary/secondary), the
+warnings will reappear.
 
--- 
-Jesse Barnes, Intel Open Source Technology Center
+(sorry for the duplicate, forgot to plaintext)
+
+-Gennadiy
