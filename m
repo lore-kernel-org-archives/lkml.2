@@ -1,67 +1,121 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757540Ab0GWCMg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 22:12:36 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:47409 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750866Ab0GWCMe (ORCPT
+	id S1758661Ab0GWCMp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 22:12:45 -0400
+Received: from mail.windriver.com ([147.11.1.11]:57695 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752813Ab0GWCMf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 22:12:34 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=JKBSCjkUSFsxGtW0ywzrnMcCCDyO46MvrQB/6C1e4PXJGDYasNkwA/et2yR7kMG2M
-	+7OUJIOVqY8zc8XbC4QtQ==
-MIME-Version: 1.0
-In-Reply-To: <20100722131239.208d9501@mschwide.boeblingen.de.ibm.com>
-References: <1279583835-22854-1-git-send-email-venki@google.com>
-	<20100720095546.2f899e04@mschwide.boeblingen.de.ibm.com>
-	<AANLkTiktBNr3pVOHwxX3piwagtkGxHpp5TepBFS3UGhb@mail.gmail.com>
-	<20100722131239.208d9501@mschwide.boeblingen.de.ibm.com>
-Date: Thu, 22 Jul 2010 19:12:30 -0700
-Message-ID: <AANLkTim==2J3Fo8Axz0yLvpfWf1bq_e0c0EYWi6y3xRe@mail.gmail.com>
-Subject: Re: [PATCH 0/4] Finer granularity and task/cgroup irq time accounting
-From: Venkatesh Pallipadi <venki@google.com>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
-        Balbir Singh <balbir@linux.vnet.ibm.com>,
-        Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
-        Paul Turner <pjt@google.com>,
-        Heiko Carstens <heiko.carstens@de.ibm.com>,
-        Paul Mackerras <paulus@samba.org>, Tony Luck <tony.luck@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+	Thu, 22 Jul 2010 22:12:35 -0400
+From: Dongdong Deng <dongdong.deng@windriver.com>
+To: jason.wessel@windriver.com, fweisbec@gmail.com, will.deacon@arm.com,
+        lethal@linux-sh.org, mahesh@linux.vnet.ibm.com,
+        prasad@linux.vnet.ibm.com, benh@kernel.crashing.org, paulus@samba.org
+Cc: mingo@elte.hu, kgdb-bugreport@lists.sourceforge.net,
+        linux-kernel@vger.kernel.org
+Subject: [RFC PATCH] hw-breakpoints, kgdb, x86: add a flag to pass DIE_DEBUG notification
+Date: Fri, 23 Jul 2010 10:16:01 +0800
+Message-Id: <1279851361-32604-1-git-send-email-dongdong.deng@windriver.com>
+X-Mailer: git-send-email 1.6.0.4
+X-OriginalArrivalTime: 23 Jul 2010 02:11:42.0944 (UTC) FILETIME=[64CECE00:01CB2A0C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 4:12 AM, Martin Schwidefsky
-<schwidefsky@de.ibm.com> wrote:
-> On Tue, 20 Jul 2010 09:55:29 -0700
-> Venkatesh Pallipadi <venki@google.com> wrote:
->
-<snip>
->
->> Archs like s390/powerpc/ia64 already do this kind of accounting with
->> VIRT_CPU_ACCOUNTING. So, this patch will give them task and cgroup
->> level info free of charge (other than potential bugs with this code
->> change :-)).
->
-> Well, the task and cgroup information is there but what does it really
-> tell me? As long as the irq & softirq time can be caused by any other
-> process I don't see the value of this incorrect data point.
->
+The hw_breakpoint subsystem consumes all the hardware
+breakpoint exceptions since it hooks the notify_die
+handlers first, this means that kgdb doesn't get the
+opportunity to handle hw breakpoint exceptions generated
+by kgdb itself.
 
-Data point will be correct. How it gets used is a different qn. This
-interface will be useful for Alert/Paranoid/Annoyed user/admin who
-sees that the job exec_time is high but it is not doing any useful
-work. With this additional info, he can probably choose to move the
-job off to different system. User probably knows more about the job
-characteristics and whether it is rightly or wrongly being charged.
-Say one task in the task group being charged for another task in the
-task group is probably OK as well. So, user can look at this in
-different granularity than kernel can.
+This patch adds an extend flag to perf_event_attr for
+hw_breakpoint_handler() to decide to pass or stop the
+DIE_DEBUG notification.
 
-Thanks,
-Venki
+As KGDB set that flag, hw_breakpoint_handler() will pass
+the DIE_DEBUG notification, thus kgdb have the chance
+to take DIE_DEBUG notification.
+
+Signed-off-by: Dongdong Deng <dongdong.deng@windriver.com>
+Reviewed-by: Bruce Ashfield <bruce.ashfield@windriver.com>
+---
+ arch/x86/kernel/hw_breakpoint.c |   14 ++++++++++++++
+ arch/x86/kernel/kgdb.c          |    2 ++
+ include/linux/perf_event.h      |    9 +++++++++
+ 3 files changed, 25 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/kernel/hw_breakpoint.c b/arch/x86/kernel/hw_breakpoint.c
+index a8f1b80..b38f786 100644
+--- a/arch/x86/kernel/hw_breakpoint.c
++++ b/arch/x86/kernel/hw_breakpoint.c
+@@ -406,6 +406,8 @@ EXPORT_SYMBOL_GPL(hw_breakpoint_restore);
+  * ii) When there are more bits than trap<n> set in DR6 register (such
+  * as BD, BS or BT) indicating that more than one debug condition is
+  * met and requires some more action in do_debug().
++ * iii) The source of hw breakpoint event want to handle the event
++ * by itself, currently just KGDB have this notion.
+  *
+  * NOTIFY_STOP returned for all other cases
+  *
+@@ -464,6 +466,18 @@ static int __kprobes hw_breakpoint_handler(struct die_args *args)
+ 			break;
+ 		}
+ 
++		if (bp->attr.flag == SKIP_HWBP_EVENT_PERF_FLAG) {
++			/*
++			 * when attr.flag is set to SKIP_HWBP_EVENT_PERF_FLAG
++			 * it indicates currently hw breakpoint event
++			 * source want to handle this event by itself.
++			 * thus return NOTIFY_DONE here.
++			 */
++			rc = NOTIFY_DONE;
++			rcu_read_unlock();
++			break;
++		}
++
+ 		perf_bp_event(bp, args->regs);
+ 
+ 		rcu_read_unlock();
+diff --git a/arch/x86/kernel/kgdb.c b/arch/x86/kernel/kgdb.c
+index 4f4af75..bc3321f 100644
+--- a/arch/x86/kernel/kgdb.c
++++ b/arch/x86/kernel/kgdb.c
+@@ -641,6 +641,8 @@ void kgdb_arch_late(void)
+ 	attr.bp_len = HW_BREAKPOINT_LEN_1;
+ 	attr.bp_type = HW_BREAKPOINT_W;
+ 	attr.disabled = 1;
++	/* set kgdb's special requires flag to perf_event */
++	attr.flag = SKIP_HWBP_EVENT_PERF_FLAG;
+ 	for (i = 0; i < 4; i++) {
+ 		if (breakinfo[i].pev)
+ 			continue;
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 5d0266d..fcefb09 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -160,6 +160,11 @@ enum perf_event_read_format {
+ 
+ #define PERF_ATTR_SIZE_VER0	64	/* sizeof first published struct */
+ 
++enum perf_event_attr_flag {
++	NOSET_PERF_FLAG               = 0,
++	SKIP_HWBP_EVENT_PERF_FLAG     = 1,
++};
++
+ /*
+  * Hardware event_id to monitor via a performance monitoring event:
+  */
+@@ -225,6 +230,10 @@ struct perf_event_attr {
+ 	__u32			bp_type;
+ 	__u64			bp_addr;
+ 	__u64			bp_len;
++	/*
++	 * Ext flag, currently just kgdb used it.
++	 */
++	enum perf_event_attr_flag	flag;
+ };
+ 
+ /*
+-- 
+1.6.0.4
+
