@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758060Ab0GWCWc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 22:22:32 -0400
-Received: from mail-qw0-f46.google.com ([209.85.216.46]:47466 "EHLO
-	mail-qw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752343Ab0GWCWb convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 22:22:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=w1pGP7W0VPDaXSucN/gKG5qEPsNDNK6K+Tfey5maEyEsB3y0ZhxlFhv+ocD6AFc6ao
-         d+576WnI3rGhoezZ8J0SwQuv/BkI0nCCHX7Tepp8UnrsG+ZTJVIBaTHARWuDgVXFK1bt
-         8se/M7kgSjmZIwY/CHhZu9uGVURbaempxKudY=
-MIME-Version: 1.0
-In-Reply-To: <20100722150145.GE14882@thunk.org>
-References: <AANLkTilaycSLL2dDnXDVs1gCiD0B8K78i2rBdWJGZrRD@mail.gmail.com> 
-	<20100722150145.GE14882@thunk.org>
-From: Drunkard Zhang <gongfan193@gmail.com>
-Date: Fri, 23 Jul 2010 10:22:08 +0800
-Message-ID: <AANLkTinISdrdpYfgVzTAhgQmdJculdOJ5qNPdvNCBPjE@mail.gmail.com>
-Subject: Re: openvz: Oops in ext4 when VPS starts
-To: "Ted Ts'o" <tytso@mit.edu>, Drunkard Zhang <gongfan193@gmail.com>,
-        linux-kernel@vger.kernel.org, devel@openvz.org,
-        Andreas Dilger <adilger@sun.com>, linux-ext4@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1751670Ab0GWC0x (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 22:26:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49547 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751043Ab0GWC0v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 22:26:51 -0400
+Date: Fri, 23 Jul 2010 12:26:46 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: manual merge of the kgdb tree with Linus' tree
+Message-Id: <20100723122646.a788fc86.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__23_Jul_2010_12_26_46_+1000_/2H4MAE/m_EmqTqh"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/7/22 Ted Ts'o <tytso@mit.edu>:
-> On Thu, Jul 22, 2010 at 05:39:16PM +0800, Drunkard Zhang wrote:
->> I run into a oops when mirgate /vz directory to ext4 lvm under gentoo + openvz.
->
-> What were you doing precisely at the time of the oops?  The oops logs
-> indicates it was a cp, but a cp of what?  And is this somethign you
-> can easily reproduce?
->
-I did: "/etc/init.d/vz start" with vpsid 101 and 109, which from:
-http://bb.xnull.de/projects/gentoo/amd64/stage4-amd64-current.tar.bz2
-following the guide from:
-http://www.gentoo.org/proj/en/vps/openvz-howto.xml
+--Signature=_Fri__23_Jul_2010_12_26_46_+1000_/2H4MAE/m_EmqTqh
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Didn't change the content of stage4-amd64-current.tar.bz2 yet.
-It looks like when "/etc/init.d/vz start", it will cp all files from
-/vz/private/101/ to /vz/root/root/101/
+Hi Jason,
 
-The oops allways reproduced yesterday between reboot and kernel
-remake, but this morning when I trying to finger out the oops point
-using strace, I can't get the oops anymore. Sorry for interrupt,:-(
+Today's linux-next merge of the kgdb tree got a conflict in
+kernel/debug/kdb/kdb_main.c between commit
+edd63cb6b91024332d6983fc51058ac1ef0c081e ("sysrq,kdb: Use __handle_sysrq
+() for kdb's sysrq function") from Linus' tree and commit
+93c47fada46e034941106fb34b76a00a87108fc5 ("kdb: Restore previous sysrq
+state") from the kgdb tree.
 
-Maybe distcc caused problem? I used to make kernel... Sorry again.
+These are two fixes for the same problem.  I effectively reverted the one
+from the kgdb tree.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__23_Jul_2010_12_26_46_+1000_/2H4MAE/m_EmqTqh
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iQEcBAEBAgAGBQJMSP3mAAoJEDMEi1NhKgbs9+wH/0TPWCUv3doJI2FzcG+ev0yd
+eqs5PJTpoSeFpcBW+C4kJrWY/ls3R0+M8Nzx9DKQ1EWLBHZolodWBPnMUBCaHXL5
+F7foe3PO7jR0RtOxxLvX1KOcp5rMOKtAB4NVnl5ZaRgSpEzanHMc7BjliwytkcIz
+MEFao6sB9pXoWgzpuvWZcc1ybqu2TSyvWvzcYnoHlgd73xhcgAConABRBCRjnaUQ
+uXTFnrd1WCQ+a7C7wVeXUJVLxPwBgjuCicdflqETUl17fHDiw/7AC0XcnFKg2otI
+twlXLbVd+z1LEcza3c/FmzVAb9RCQMm+UF2/e+AT51jpXRm6qwaK01JuL68bdBU=
+=T7RO
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__23_Jul_2010_12_26_46_+1000_/2H4MAE/m_EmqTqh--
