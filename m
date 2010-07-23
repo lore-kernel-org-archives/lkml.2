@@ -1,41 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757086Ab0GWMim (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 08:38:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34488 "EHLO mx1.suse.de"
+	id S1757525Ab0GWMjx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 08:39:53 -0400
+Received: from kroah.org ([198.145.64.141]:38066 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754021Ab0GWMil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 08:38:41 -0400
-Date: Fri, 23 Jul 2010 05:37:46 -0700
-From: Greg KH <gregkh@suse.de>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: philippe.langlais@stericsson.com, linux-kernel@vger.kernel.org,
-        ludovic.barre@stericsson.com
-Subject: Re: patch "U6715 8250 serial like driver" added to gregkh-2.6 tree
-Message-ID: <20100723123746.GA2192@suse.de>
-References: <1279531660-16317-1-git-send-email-philippe.langlais@stericsson.com> <12798430773066@site> <20100723090119.5d63cfb7@lxorguk.ukuu.org.uk>
+	id S1751906Ab0GWMjw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 08:39:52 -0400
+Date: Fri, 23 Jul 2010 05:40:40 -0700
+From: Greg KH <greg@kroah.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+        linux-scsi@vger.kernel.org, alsa-devel@alsa-project.org,
+        Jens Axboe <axboe@kernel.dk>,
+        Stephen Hemminger <shemminger@vyatta.com>,
+        "Eric W. Biederman" <ebiederm@xmission.com>,
+        Kay Sievers <kay.sievers@vrfy.org>,
+        Alan Stern <stern@rowland.harvard.edu>,
+        "James E.J. Bottomley" <James.Bottomley@suse.de>,
+        Alexey Kuznetsov <kuznet@ms2.inr.ac.ru>,
+        Randy Dunlap <randy.dunlap@oracle.com>, Tejun Heo <tj@kernel.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
+        Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+        David Howells <dhowells@redhat.com>
+Subject: Re: [PATCH] driver core: remove CONFIG_SYSFS_DEPRECATED
+Message-ID: <20100723124040.GA2281@kroah.com>
+References: <20100709185450.GA29473@kroah.com> <20100714163852.b3c09930.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100723090119.5d63cfb7@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100714163852.b3c09930.akpm@linux-foundation.org>
 User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 09:01:19AM +0100, Alan Cox wrote:
-> On Thu, 22 Jul 2010 16:57:57 -0700
-> <gregkh@suse.de> wrote:
+On Wed, Jul 14, 2010 at 04:38:52PM -0700, Andrew Morton wrote:
+> On Fri, 9 Jul 2010 11:54:50 -0700
+> Greg Kroah-Hartman <gregkh@suse.de> wrote:
 > 
-> > 
-> > This is a note to let you know that I've just added the patch titled
+> > This is no longer needed by any userspace tools, so it's safe to
+> > remove.
 > 
-> NAK this
+> Makes my FC6 test box not boot - can't find /dev/root.  Then when I go
+> back to plain old mainline (2.6.35-rc5) and run `make oldconfig', the
+> .config change sticks:
 > 
-> I've nakked several similar patches already from people trying to
-> convolute the 8250 driver even further, doubly so when the patch
-> redefines properties of existing chips according to a compile time option
+> @@ -106,8 +106,7 @@
+>  CONFIG_LOG_BUF_SHIFT=17
+>  CONFIG_HAVE_UNSTABLE_SCHED_CLOCK=y
+>  # CONFIG_CGROUPS is not set
+> -CONFIG_SYSFS_DEPRECATED=y
+> -CONFIG_SYSFS_DEPRECATED_V2=y
+> +# CONFIG_SYSFS_DEPRECATED_V2 is not set
+>  CONFIG_RELAY=y
+>  CONFIG_NAMESPACES=y
+>  # CONFIG_UTS_NS is not set
+> 
+> and the box still won't boot.
 
-Sorry about that, I've now dropped it from my tree.
+Ok, for now, I've removed this patch from my tree, so you should not
+have any problem.
+
+I'll go work on this later next week when I have some more time.
+
+thanks,
 
 greg k-h
