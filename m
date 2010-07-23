@@ -1,156 +1,243 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757394Ab0GWBN3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 21:13:29 -0400
-Received: from thunk.org ([69.25.196.29]:40040 "EHLO thunker.thunk.org"
+	id S1757608Ab0GWBNs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 21:13:48 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:48702 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757291Ab0GWBNZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 21:13:25 -0400
-Date: Thu, 22 Jul 2010 21:13:15 -0400
-From: "Ted Ts'o" <tytso@mit.edu>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
-Message-ID: <20100723011315.GC16373@thunk.org>
-Mail-Followup-To: Ted Ts'o <tytso@mit.edu>,
-	Christoph Hellwig <hch@infradead.org>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Li Zefan <lizf@cn.fujitsu.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-	Frederic Weisbecker <fweisbec@gmail.com>
-References: <4C401CE3.7010004@cn.fujitsu.com>
- <20100721222508.8704.A69D9226@jp.fujitsu.com>
- <20100722054957.GA11670@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100722054957.GA11670@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
+	id S1756855Ab0GWBMy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 21:12:54 -0400
+From: Armando Uribe <x0095078@ti.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Ameya Palande <ameya.palande@nokia.com>,
+        <linux-kernel@vger.kernel.org>, <devel@driverdev.osuosl.org>,
+        Rene Sapiens <rene.sapiens@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Armando Uribe <x0095078@ti.com>
+Subject: [PATCH 7/9] staging: tidspbridge: Remove macros used as cast
+Date: Thu, 22 Jul 2010 20:25:32 -0500
+Message-Id: <1279848334-4043-8-git-send-email-x0095078@ti.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1279848334-4043-7-git-send-email-x0095078@ti.com>
+References: <1279848334-4043-1-git-send-email-x0095078@ti.com>
+ <1279848334-4043-2-git-send-email-x0095078@ti.com>
+ <1279848334-4043-3-git-send-email-x0095078@ti.com>
+ <1279848334-4043-4-git-send-email-x0095078@ti.com>
+ <1279848334-4043-5-git-send-email-x0095078@ti.com>
+ <1279848334-4043-6-git-send-email-x0095078@ti.com>
+ <1279848334-4043-7-git-send-email-x0095078@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 01:49:57AM -0400, Christoph Hellwig wrote:
-> 
-> I think ext4 is simply using an incorrectly typed tracepoint here.
-> If you want it to be useful in any way it needs a sb paramter and
-> an optional inode paramter, not the allocation context.
+This patch removes those macros that are used to
+perform casts
 
-I agree; this is the patch that I had whipped up to fix the problem.
-(See below)
-
-> Also the whole ext4_mb_release_group_pa function seems to be a bit
-> misdesigned.  The code using ac is a totally separate block at the
-> end of the function and does work that's unrelated to the rest
-> of the function.  Just making it a separate helper can calling it
-> only from those places that have the allocation context would make
-> the code more clear.
-
-I need to look more closely at this.  If I had time there would be a
-lot of things that I'd be refactoring and cleaning up in mballoc.c....
-
-       	      	       	  	      	  	   - Ted
-
-
->From 52f9a0d80ccdb1b23e364221167bb55b2886cc18 Mon Sep 17 00:00:00 2001
-From: Theodore Ts'o <tytso@mit.edu>
-Date: Thu, 22 Jul 2010 21:09:44 -0400
-Subject: [PATCH] ext4: fix potential NULL dereference while tracing
-
-The allocation_context pointer can be NULL.
-
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Armando Uribe <x0095078@ti.com>
 ---
- fs/ext4/mballoc.c           |    4 ++--
- include/trace/events/ext4.h |   20 ++++++++++++--------
- 2 files changed, 14 insertions(+), 10 deletions(-)
+ drivers/staging/tidspbridge/dynload/cload.c        |   19 ++++++-------------
+ drivers/staging/tidspbridge/dynload/doff.h         |    7 ++-----
+ drivers/staging/tidspbridge/dynload/getsection.c   |   16 ++++------------
+ drivers/staging/tidspbridge/dynload/reloc.c        |    2 +-
+ .../tidspbridge/dynload/reloc_table_c6000.c        |    2 +-
+ .../tidspbridge/dynload/tramp_table_c6000.c        |    2 +-
+ drivers/staging/tidspbridge/pmgr/dbll.c            |    5 +----
+ 7 files changed, 16 insertions(+), 37 deletions(-)
 
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index 3dfad95..8b3b934 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -3575,7 +3575,7 @@ ext4_mb_release_inode_pa(struct ext4_buddy *e4b, struct buffer_head *bitmap_bh,
- 			trace_ext4_mballoc_discard(ac);
+diff --git a/drivers/staging/tidspbridge/dynload/cload.c b/drivers/staging/tidspbridge/dynload/cload.c
+index 32150f0..c85a5e8 100644
+--- a/drivers/staging/tidspbridge/dynload/cload.c
++++ b/drivers/staging/tidspbridge/dynload/cload.c
+@@ -20,13 +20,6 @@
+ #define LINKER_MODULES_HEADER ("_" MODULES_HEADER)
+ 
+ /*
+- * we use the fact that DOFF section records are shaped just like
+- * ldr_section_info to reduce our section storage usage.  This macro marks
+- * the places where that assumption is made
+- */
+-#define DOFFSEC_IS_LDRSEC(pdoffsec) ((struct ldr_section_info *)(pdoffsec))
+-
+-/*
+  * forward references
+  */
+ static void dload_symbols(struct dload_state *dlthis);
+@@ -519,17 +512,17 @@ static void allocate_sections(struct dload_state *dlthis)
+ #if BITS_PER_AU <= BITS_PER_BYTE
+ 		/* attempt to insert the name of this section */
+ 		if (soffset < dlthis->dfile_hdr.df_strtab_size)
+-			DOFFSEC_IS_LDRSEC(shp)->name = dlthis->str_head +
+-			    soffset;
++			((struct ldr_section_info *)shp)->name =
++				dlthis->str_head + soffset;
+ 		else {
+ 			dload_error(dlthis, "Bad name offset in section %d",
+ 				    curr_sect);
+-			DOFFSEC_IS_LDRSEC(shp)->name = NULL;
++			((struct ldr_section_info *)shp)->name = NULL;
  		}
+ #endif
+ 		/* allocate target storage for sections that require it */
+ 		if (ds_needs_allocation(shp)) {
+-			*asecs = *DOFFSEC_IS_LDRSEC(shp);
++			*asecs = *(struct ldr_section_info *)shp;
+ 			asecs->context = 0;	/* zero the context field */
+ #if BITS_PER_AU > BITS_PER_BYTE
+ 			asecs->name = unpack_name(dlthis, soffset);
+@@ -1162,7 +1155,7 @@ static void dload_data(struct dload_state *dlthis)
+ 			if (curr_sect < dlthis->allocated_secn_count)
+ 				dlthis->delta_runaddr = sptr->ds_paddr;
+ 			else {
+-				lptr = DOFFSEC_IS_LDRSEC(sptr);
++				lptr = (struct ldr_section_info *)sptr;
+ 				dlthis->delta_runaddr = 0;
+ 			}
+ 			dlthis->image_secn = lptr;
+@@ -1337,7 +1330,7 @@ static void dload_data(struct dload_state *dlthis)
+ 			goto loop_cont;
  
--		trace_ext4_mb_release_inode_pa(ac, pa, grp_blk_start + bit,
-+		trace_ext4_mb_release_inode_pa(sb, ac, pa, grp_blk_start + bit,
- 					       next - bit);
- 		mb_free_blocks(pa->pa_inode, e4b, bit, next - bit);
- 		bit = next + 1;
-@@ -3606,7 +3606,7 @@ ext4_mb_release_group_pa(struct ext4_buddy *e4b,
- 	ext4_group_t group;
- 	ext4_grpblk_t bit;
+ 		if (curr_sect >= dlthis->allocated_secn_count)
+-			lptr = DOFFSEC_IS_LDRSEC(sptr);
++			lptr = (struct ldr_section_info *)sptr;
  
--	trace_ext4_mb_release_group_pa(ac, pa);
-+	trace_ext4_mb_release_group_pa(sb, ac, pa);
- 	BUG_ON(pa->pa_deleted == 0);
- 	ext4_get_group_no_and_offset(sb, pa->pa_pstart, &group, &bit);
- 	BUG_ON(group != e4b->bd_group && pa->pa_len != 0);
-diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-index f3865c7..01e9e00 100644
---- a/include/trace/events/ext4.h
-+++ b/include/trace/events/ext4.h
-@@ -395,11 +395,12 @@ DEFINE_EVENT(ext4__mb_new_pa, ext4_mb_new_group_pa,
- );
+ 		if (cinit_processed) {
+ 			/*Don't clear BSS after load-time initialization */
+diff --git a/drivers/staging/tidspbridge/dynload/doff.h b/drivers/staging/tidspbridge/dynload/doff.h
+index c00d189..a7c3145 100644
+--- a/drivers/staging/tidspbridge/dynload/doff.h
++++ b/drivers/staging/tidspbridge/dynload/doff.h
+@@ -24,11 +24,8 @@
+ #ifndef _DOFF_H
+ #define _DOFF_H
  
- TRACE_EVENT(ext4_mb_release_inode_pa,
--	TP_PROTO(struct ext4_allocation_context *ac,
-+	TP_PROTO(struct super_block *sb,
-+		 struct ext4_allocation_context *ac,
- 		 struct ext4_prealloc_space *pa,
- 		 unsigned long long block, unsigned int count),
+-#ifndef UINT32_C
+-#define UINT32_C(zzz) ((u32)zzz)
+-#endif
  
--	TP_ARGS(ac, pa, block, count),
-+	TP_ARGS(sb, ac, pa, block, count),
+-#define BYTE_RESHUFFLE_VALUE UINT32_C(0x00010203)
++#define BYTE_RESHUFFLE_VALUE 0x00010203
  
- 	TP_STRUCT__entry(
- 		__field(	dev_t,	dev			)
-@@ -410,8 +411,9 @@ TRACE_EVENT(ext4_mb_release_inode_pa,
- 	),
+ /* DOFF file header containing fields categorizing the remainder of the file */
+ struct doff_filehdr_t {
+@@ -312,7 +309,7 @@ struct reloc_record_t {
  
- 	TP_fast_assign(
--		__entry->dev		= ac->ac_sb->s_dev;
--		__entry->ino		= ac->ac_inode->i_ino;
-+		__entry->dev		= sb->s_dev;
-+		__entry->ino		= (ac && ac->ac_inode) ? 
-+						ac->ac_inode->i_ino : 0;
- 		__entry->block		= block;
- 		__entry->count		= count;
- 	),
-@@ -422,10 +424,11 @@ TRACE_EVENT(ext4_mb_release_inode_pa,
- );
+ /* Return the address/size >= to addr that is at a 32-bit boundary */
+ /* This assumes that a byte is 8 bits */
+-#define         DOFF_ALIGN(addr)            (((addr) + 3) & ~UINT32_C(3))
++#define         DOFF_ALIGN(addr)            (((addr) + 3) & ~3UL)
  
- TRACE_EVENT(ext4_mb_release_group_pa,
--	TP_PROTO(struct ext4_allocation_context *ac,
-+	TP_PROTO(struct super_block *sb,
-+		 struct ext4_allocation_context *ac,
- 		 struct ext4_prealloc_space *pa),
+ /**************************************************************************** */
+ /* */
+diff --git a/drivers/staging/tidspbridge/dynload/getsection.c b/drivers/staging/tidspbridge/dynload/getsection.c
+index 3086118..51a7167 100644
+--- a/drivers/staging/tidspbridge/dynload/getsection.c
++++ b/drivers/staging/tidspbridge/dynload/getsection.c
+@@ -34,14 +34,6 @@ static const char err_alloc[] = { "Syms->dload_allocate( %d ) failed" };
+ static const char stbl[] = { "Bad string table offset " FMT_UI32 };
+ #endif
  
--	TP_ARGS(ac, pa),
-+	TP_ARGS(sb, ac, pa),
+-/*
+- * we use the fact that DOFF section records are shaped just like
+- * ldr_section_info to reduce our section storage usage.  These macros
+- * marks the places where that assumption is made
+- */
+-#define DOFFSEC_IS_LDRSEC(pdoffsec) ((struct ldr_section_info *)(pdoffsec))
+-#define LDRSEC_IS_DOFFSEC(ldrsec) ((struct doff_scnhdr_t *)(ldrsec))
+-
+ /************************************************************** */
+ /********************* SUPPORT FUNCTIONS ********************** */
+ /************************************************************** */
+@@ -110,7 +102,7 @@ static void expand_sec_names(struct dload_state *dlthis)
+ 	/* For each sec, copy and expand its name */
+ 	curr = xstrings;
+ 	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
+-		shp = DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
++		shp = (struct ldr_section_info *)&dlthis->sect_hdrs[sec];
+ 		next = unpack_sec_name(dlthis, *(u32 *) &shp->name, curr);
+ 		if (next == NULL)
+ 			break;	/* error */
+@@ -213,7 +205,7 @@ void *dload_module_open(struct dynamic_loader_stream *module,
+ 	/* to a pointer into the string table. */
+ 	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
+ 		struct ldr_section_info *shp =
+-		    DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
++		    (struct ldr_section_info *)&dlthis->sect_hdrs[sec];
+ 		shp->name = dlthis->str_head + *(u32 *) &shp->name;
+ 	}
+ #endif
+@@ -249,7 +241,7 @@ int dload_get_section_info(void *minfo, const char *section_name,
+ 		return false;
  
- 	TP_STRUCT__entry(
- 		__field(	dev_t,	dev			)
-@@ -436,8 +439,9 @@ TRACE_EVENT(ext4_mb_release_group_pa,
- 	),
+ 	for (sec = 0; sec < dlthis->dfile_hdr.df_no_scns; sec++) {
+-		shp = DOFFSEC_IS_LDRSEC(&dlthis->sect_hdrs[sec]);
++		shp = (struct ldr_section_info *)&dlthis->sect_hdrs[sec];
+ 		if (strcmp(section_name, shp->name) == 0) {
+ 			*section_info = shp;
+ 			return true;
+@@ -294,7 +286,7 @@ int dload_get_section(void *minfo,
+ 	dlthis = (struct dload_state *)minfo;
+ 	if (!dlthis)
+ 		return false;
+-	sptr = LDRSEC_IS_DOFFSEC(section_info);
++	sptr = (struct doff_scnhdr_t *)section_info;
+ 	if (sptr == NULL)
+ 		return false;
  
- 	TP_fast_assign(
--		__entry->dev		= ac->ac_sb->s_dev;
--		__entry->ino		= ac->ac_inode->i_ino;
-+		__entry->dev		= sb->s_dev;
-+		__entry->ino		= (ac && ac->ac_inode) ?
-+						ac->ac_inode->i_ino : 0;
- 		__entry->pa_pstart	= pa->pa_pstart;
- 		__entry->pa_len		= pa->pa_len;
- 	),
+diff --git a/drivers/staging/tidspbridge/dynload/reloc.c b/drivers/staging/tidspbridge/dynload/reloc.c
+index ec59777..7b28c07 100644
+--- a/drivers/staging/tidspbridge/dynload/reloc.c
++++ b/drivers/staging/tidspbridge/dynload/reloc.c
+@@ -107,7 +107,7 @@ int dload_repack(struct dload_state *dlthis, rvalue val, tgt_au_t * data,
+ 
+ 	fieldsz -= 1;	/* avoid nastiness with 32-bit shift of 32-bit value */
+ 	/* clip the bits */
+-	mask = ((UINT32_C(2) << fieldsz) - 1);
++	mask = (2UL << fieldsz) - 1;
+ 	objval = (val & mask);
+ 	/* * store the bits through the specified mask */
+ 	if (TARGET_BIG_ENDIAN) {
+diff --git a/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c b/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
+index 8ae3b38..a28bc04 100644
+--- a/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
++++ b/drivers/staging/tidspbridge/dynload/reloc_table_c6000.c
+@@ -16,7 +16,7 @@
+ 
+ /* Tables generated for c6000 */
+ 
+-#define HASH_FUNC(zz) (((((zz) + 1) * UINT32_C(1845)) >> 11) & 63)
++#define HASH_FUNC(zz) (((((zz) + 1) * 1845UL) >> 11) & 63)
+ #define HASH_L(zz) ((zz) >> 8)
+ #define HASH_I(zz) ((zz) & 0xFF)
+ 
+diff --git a/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c b/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
+index 47b7492..09cc64f 100644
+--- a/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
++++ b/drivers/staging/tidspbridge/dynload/tramp_table_c6000.c
+@@ -27,7 +27,7 @@
+ #define C6X_TRAMP_MAX_RELOS			 8
+ 
+ /*  THIS HASH FUNCTION MUST MATCH THE ONE reloc_table_c6000.c */
+-#define HASH_FUNC(zz) (((((zz) + 1) * UINT32_C(1845)) >> 11) & 63)
++#define HASH_FUNC(zz) (((((zz) + 1) * 1845UL) >> 11) & 63)
+ 
+ /*  THIS MUST MATCH reloc_record_t FOR A SYMBOL BASED RELO */
+ struct c6000_relo_record {
+diff --git a/drivers/staging/tidspbridge/pmgr/dbll.c b/drivers/staging/tidspbridge/pmgr/dbll.c
+index e8da030..d1806aa 100644
+--- a/drivers/staging/tidspbridge/pmgr/dbll.c
++++ b/drivers/staging/tidspbridge/pmgr/dbll.c
+@@ -41,10 +41,7 @@
+ /* Max buffer length */
+ #define MAXEXPR 128
+ 
+-#ifndef UINT32_C
+-#define UINT32_C(zzz) ((uint32_t)zzz)
+-#endif
+-#define DOFF_ALIGN(x) (((x) + 3) & ~UINT32_C(3))
++#define DOFF_ALIGN(x) (((x) + 3) & ~3UL)
+ 
+ /*
+  *  ======== struct dbll_tar_obj* ========
 -- 
-1.7.0.4
+1.6.3.3
 
