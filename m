@@ -1,75 +1,211 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751473Ab0GWEOs (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 00:14:48 -0400
-Received: from gate.crashing.org ([63.228.1.57]:44134 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750780Ab0GWEOr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 00:14:47 -0400
-Subject: [git pull] Please pull powerpc.git merge branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-        Andrew Morton <akpm@linux-foundation.org>,
-        Russell King <linux@arm.linux.org.uk>,
-        Linux Kernel list <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 23 Jul 2010 14:14:28 +1000
-Message-ID: <1279858468.1970.64.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1751781Ab0GWEO7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 00:14:59 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:42043 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751524Ab0GWEO5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 00:14:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ppjPuQZ9eW7llIEXJPK77iLuF4kApLZHc66AhFxx8HYWwNViHKxFw8UUn0F7FoXk//
+         /Kj7bDPfXQj8A2tuw52+kbNht1U9GbL3lHeElkWWhlTshB4fjwNsBsE3C9PchWLV2YON
+         ZE/auYOtFJq1boPpjkptBjVrg2Dw1ufPuQ/l8=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTilI3KjFn1Ys09fC_ty0V2c9k8GndH0wZAwGaCaI@mail.gmail.com>
+References: <AANLkTin1vGdodjhqbckGpVtfScslb7d0KX0h4wPa54Yh@mail.gmail.com>
+	<AANLkTilI3KjFn1Ys09fC_ty0V2c9k8GndH0wZAwGaCaI@mail.gmail.com>
+Date: Fri, 23 Jul 2010 00:14:56 -0400
+Message-ID: <AANLkTimxNAomiFwuZJ-upvI_db4Y82KnzYYIPPa1efyp@mail.gmail.com>
+Subject: Re: 2.6.35-rc[1-5] + Radeon-kms: 3D graphic performance
+From: Alex Deucher <alexdeucher@gmail.com>
+To: trapdoor6@gmail.com
+Cc: LKML <linux-kernel@vger.kernel.org>, trapDoor <trapdoor6@googlemail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus !
+On Thu, Jul 22, 2010 at 9:19 PM, trapDoor <trapdoor6@gmail.com> wrote:
+> I had sent the first e-mail too soon by accident. In Gmail interface
+> the 'Send' and 'Save Now' buttons are dangerously close to each other,
+> far too close I'd say ..
+> So, what is missing there:
+> - a brief description of the regression (it's in the previous thread)
+> - when did it start: 2.6.35-rc1
+> - how I tested it
+> - what I think is causing it
+>
+> I will just refer to the last point now: I think the regression is
+> caused by the vblank stuff you mentioned in previous thread. And here
+> is the pattern I've found during testing:
+> Since the vblank patches have been committed (2.6.35-rc1) the glxgears
+> app started to show the accurate number of fps, corresponding to
+> vrefresh, and that's of course good. But in the same time when
+> glxgears behaves properly, the performance in Armagetron Advanced
+> decreases. During the unfinished bisect I had two 'good' and two 'bad'
+> kernels and in each case the bad kernel had the vblank commit(s)
+> applied (as far as I would know - just by looking at number of fps in
+> glxgears) and performance in AA was worse than in the 'good' kernels
+> without the vblank stuff. I'm not suggesting anything that the vblank
+> stuff is responsible directly for the regression. I just say what I
+> noticed. It may be that those patches cause the problem but only in
+> specific circumstances (e.g. with some other patches).
+>
+> I could just revert the commit(s) on current git tree or if there will
+> be any conflicts from some earlier version, and see what happens. I
+> think It will be (one of) these ?
+>
+> commit f81f202402640c27b38e1452dcb4d3e447043f48
+> Author: Matthew Garrett <mjg@redhat.com>
+> Date:   Wed Apr 28 12:13:06 2010 -0400
+>
+>    radeon: Try harder to ensure we reclock in vblank
+>
+>    The vblank interrupt on r600 doesn't seem to be especially reliable, so
+>    perform some sanity checks before the actual reclock.
+>
+> ------
+> commit 8a56df632e524a1c444c56bb7ce9fe8d94e639e0
+> Author: Alex Deucher <alexdeucher@gmail.com>
+> Date:   Mon Mar 15 17:09:05 2010 -0400
+>
+>    drm/radeon/kms/pm: interate across crtcs for vblank
+>
+>
 
-Here's a few things for 2.6.35.
+Those patches are only relevant when you enable dynpm (dynamic power
+management) which is not enabled by default.  I suspect you are seeing
+some aspect of this bug:
+https://bugs.freedesktop.org/show_bug.cgi?id=28341
+You might try the patches there.
 
-One's a fallover from the lmb->memblock rename that I missed, which causes
-a bunch of pseries machine to boot with 128M of memory and that's it :-)
+Alex
 
-There's a few patches fixing a nasty race we found in our hugepage code,
-a kexec fix from Kumar, and an .lds fix from Sam for a bug that as far
-as we know only affects powerpc.
-
-Cheers,
-Ben.
-
-The following changes since commit b37fa16e78d6f9790462b3181602a26b5af36260:
-  Linus Torvalds (1):
-        Linux 2.6.35-rc6
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
-
-Anton Blanchard (1):
-      powerpc/mm: Handle hypervisor pte insert failure in __hash_page_huge
-
-Benjamin Herrenschmidt (5):
-      powerpc/mm: Move around testing of _PAGE_PRESENT in hash code
-      powerpc/mm: Fix bugs in huge page hashing
-      powerpc/mm: Add some debug output when hash insertion fails
-      powerpc: Fix erroneous lmb->memblock conversions
-      Merge commit 'kumar/merge' into merge
-
-Kumar Gala (1):
-      powerpc/kexec: Fix boundary case for book-e kexec memory limits
-
-Sam Ravnborg (1):
-      vmlinux.lds: fix .data..init_task output section (fix popwerpc boot)
-
- arch/powerpc/include/asm/kexec.h                |    6 +-
- arch/powerpc/include/asm/mmu-hash64.h           |    4 +-
- arch/powerpc/kernel/prom.c                      |    2 +-
- arch/powerpc/mm/hash_low_64.S                   |    9 ----
- arch/powerpc/mm/hash_utils_64.c                 |   53 +++++++++++++++++------
- arch/powerpc/mm/hugetlbpage-hash64.c            |   40 +++++++++--------
- arch/powerpc/mm/numa.c                          |   24 +++++-----
- arch/powerpc/platforms/pseries/hotplug-memory.c |   22 +++++-----
- include/asm-generic/vmlinux.lds.h               |    2 +-
- 9 files changed, 93 insertions(+), 69 deletions(-)
-
-
+> --
+> Regards
+> trapDoor
+>
+>
+>>>>>>>>>>>>>>>>>>>>>>>>>>>
+> On Fri, Jul 23, 2010 at 1:21 AM, trapDoor <trapdoor6@gmail.com> wrote:
+>> Hi Alex,
+>> This is with regard to thread 'Blank (disconnected) screen during boot
+>> with latest 2.6.35-rcX kernels'.
+>>
+>> You asked me in your last e-mail if I could do a bisect to find out
+>> what caused a regression I mentioned about - in 3D graphic performance
+>> in kernels 2.6.35-rc + radeoon-kms. I started the bisect but
+>> unfortunately I haven't finished due to some problems I came across
+>> and I'm not sure if I can continue it. I'm pointing below how the
+>> bisect went and - if you'd like to take a look - at the last point I
+>> explained why I stopped.
+>>
+>> I did notice some pattern during this unfinished bisect though. And I
+>> think it may narrow down the regression to its source.
+>>
+>>
+>>
+>> ------
+>> 1. boot from 2.6.35-rc5-git4:
+>> git-clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
+>> linus-git
+>> cd linux-git
+>> git bisect start
+>>
+>> # marking kernel 2.6.35-rc1 as bad
+>> git bisect bad 67a3e12b05e055c0415c556a315a3d3eb637e29e
+>>
+>> # marking kernel 2.6.34 as good
+>> git bisect good e40152ee1e1c7a63f4777791863215e3faa37a86
+>> Bisecting: 4139 revisions left to test after this (roughly 12 steps)
+>> [f8965467f366fd18f01feafb5db10512d7b4422c] Merge
+>> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6
+>>
+>> ------
+>> 2. boot from 2.6.34-04401-gf896546 [f8965467f366fd18f01feafb5db10512d7b4422c]
+>> git bisect good
+>> Bisecting: 1978 revisions left to test after this (roughly 11 steps)
+>> [d79df0b1eda0099a22cbcece01ce5e7d222450de] Merge
+>> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
+>>
+>> ------
+>> 3. boot from 2.6.34-06562-gd79df0b [d79df0b1eda0099a22cbcece01ce5e7d222450de]
+>> git bisect bad
+>> Bisecting: 1102 revisions left to test after this (roughly 10 steps)
+>> [ac3ee84c604502240122c47b52f0542ec8774f15] Merge branch
+>> 'dbg-early-merge' of
+>> git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb
+>>
+>> ------
+>> 4. boot from 2.6.34-05459-gac3ee84 [ac3ee84c604502240122c47b52f0542ec8774f15]
+>> git bisect good
+>> Bisecting: 551 revisions left to test after this (roughly 9 steps)
+>> [7a6cb0d5497418599d2125b670926b75e673861c] Staging: Use kcalloc or kzalloc
+>>
+>> ------
+>> 5. boot from 2.6.34-rc6-00551-g7a6cb0d
+>> [7a6cb0d5497418599d2125b670926b75e673861c]
+>> git bisect good
+>> Bisecting: 239 revisions left to test after this (roughly 8 steps)
+>> [79c4581262e225a7c96d88b632b05ab3b5e9a52c] Merge branch 'next' of
+>> git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc
+>>
+>> ------
+>> 6. boot from 2.6.34-05771-g79c4581 [79c4581262e225a7c96d88b632b05ab3b5e9a52c]
+>> git bisect bad
+>> Bisecting: 155 revisions left to test after this (roughly 7 steps)
+>> [5876dd249e8e47c730cac090bf6edd88e5f04327] radeon: Unmap vram pages
+>> when reclocking
+>>
+>> ------
+>> 7. boot from 2.6.34-rc5-00156-g5876dd2
+>> [5876dd249e8e47c730cac090bf6edd88e5f04327]
+>> At this point I get stuck as I'm unable to perform the tests:
+>>
+>> -- Gnome fails to start, system freezes right after logging in
+>>
+>> -- KDE starts but it's almost unusable - very poor 2D performance and
+>> 3D seems to not work at all:
+>> desktop lost support for transparency/translucency
+>> glxgears: just a black window appears with no gears; in the output
+>> console it shows this:
+>> XIO:  fatal IO error 11 (Resource temporarily unavailable) on X server ":0.0"
+>>      after 36 requests (36 known processed) with 0 events remaining.
+>> Armagetron Advanced obviously doesn't work either - as above, just a
+>> black window comes up
+>>
+>> -- under minimal X environment (xterm) glxgears and Armagetron
+>> Advanced behave the same way as above
+>>
+>> Now I don't know if I can/how to continue this bisect. Clearly
+>> 2.6.34-rc5-00156-g5876dd2 is affected in the area I was testing. But
+>> differently and to the degree where I'm actually unable to test what I
+>> was testing. Also these issues may be not related to the original
+>> regression. They may be caused by different commit(s).
+>>
+>> To sum up: I can't specify whether kernel 2.6.34-rc5-00156-g5876dd2 is
+>> good or bad, in order to continue this bisect.
+>>
+>> Maybe I should start another bisect to solve the problem caused by
+>> this kernel, revert/apply appropriate patch(es) and then continue with
+>> the original bisect ? And then, with the next kernel, I may be able to
+>> carry on or I may be not and have to repeat what I did as a result of
+>> the 2nd bisect. Or I may bump into some other problems and have to
+>> start 3rd bisect ... I imagine that people can get into such traps but
+>> there must be some ways to solve it quicker and not get into endless
+>> bisect loop. Of course I'm not saying all this to show that I'm
+>> getting discouraged. Not at all - the more I learn about git the more
+>> I like it. It's magic, some people say - and I think they may be
+>> right.
+>>
+>>
+>> --
+>> Regards
+>> trapDoor
+>>
+>
