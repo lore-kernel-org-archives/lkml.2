@@ -1,67 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756407Ab0GWKzY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 06:55:24 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41812 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753391Ab0GWKzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 06:55:20 -0400
-Date: Fri, 23 Jul 2010 10:54:52 GMT
-From: tip-bot for Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-        tglx@linutronix.de, venki@google.com, stefano.stabellini@eu.citrix.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-        tglx@linutronix.de, stefano.stabellini@eu.citrix.com, venki@google.com
-In-Reply-To: <alpine.DEB.2.00.1007211726240.22235@kaball-desktop>
-References: <alpine.DEB.2.00.1007211726240.22235@kaball-desktop>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: Do not try to disable hpet if it hasn't been initialized before
-Message-ID: <tip-ff4878089e1eaeac79d57878ad4ea32910fb4037@git.kernel.org>
-Git-Commit-ID: ff4878089e1eaeac79d57878ad4ea32910fb4037
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 23 Jul 2010 10:54:54 +0000 (UTC)
+	id S1756184Ab0GWKzW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 06:55:22 -0400
+Received: from mail-pz0-f46.google.com ([209.85.210.46]:55665 "EHLO
+	mail-pz0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752628Ab0GWKzT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 06:55:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:date:message-id:subject;
+        b=imx8BkXN4vgS3EEEYhP7LgRtN5baxN+brUGpPVJp91MIPb8njxPjUepSOZF5GQY80v
+         L1EOii1aMwu6NOwMEHKnLIqjeX8XULV2sx8OwgBMzYfAhIw7VraO0avbqIusDyfzfYIu
+         DR7ad/rZJF//UIlh4sSNPVU1gGdkel+YEODac=
+From: Magnus Damm <magnus.damm@gmail.com>
+To: linux-kernel@vger.kernel.org
+Cc: Magnus Damm <magnus.damm@gmail.com>, gregkh@suse.de
+Date: Fri, 23 Jul 2010 19:56:18 +0900
+Message-Id: <20100723105618.11690.75431.sendpatchset@t400s>
+Subject: [PATCH] Driver core: Add BUS_NOTIFY_BIND_DRIVER
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  ff4878089e1eaeac79d57878ad4ea32910fb4037
-Gitweb:     http://git.kernel.org/tip/ff4878089e1eaeac79d57878ad4ea32910fb4037
-Author:     Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-AuthorDate: Wed, 21 Jul 2010 18:32:37 +0100
-Committer:  Thomas Gleixner <tglx@linutronix.de>
-CommitDate: Fri, 23 Jul 2010 12:53:00 +0200
+From: Magnus Damm <damm@opensource.se>
 
-x86: Do not try to disable hpet if it hasn't been initialized before
+Add BUS_NOTIFY_BIND_DRIVER as a bus notifier event.
 
-hpet_disable is called unconditionally on machine reboot if hpet support
-is compiled in the kernel.
-hpet_disable only checks if the machine is hpet capable but doesn't make
-sure that hpet has been initialized.
+For driver binding/unbinding we with this in
+place have the following bus notifier events:
+ - BUS_NOTIFY_BIND_DRIVER - before ->probe()
+ - BUS_NOTIFY_BOUND_DRIVER - after ->probe()
+ - BUS_NOTIFY_UNBIND_DRIVER - before ->remove()
+ - BUS_NOTIFY_UNBOUND_DRIVER - after ->remove()
 
-[ tglx: Made it a one liner and removed the redundant hpet_address check ]
+The event BUS_NOTIFY_BIND_DRIVER allows bus code
+to be notified that ->probe() is about to be called.
 
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Acked-by: Venkatesh Pallipadi <venki@google.com>
-LKML-Reference: <alpine.DEB.2.00.1007211726240.22235@kaball-desktop>
-Cc: stable@kernel.org
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+Useful for bus code that needs to setup hardware before
+the driver gets to run. With this in place platform
+drivers can be loaded and unloaded as modules and the
+new BIND event allows bus code to control for instance
+device clocks that must be enabled before the driver
+can be executed.
+
+Without this patch there is no way for the bus code to
+get notified that a modular driver is about to be probed.
+
+Signed-off-by: Magnus Damm <damm@opensource.se>
 ---
- arch/x86/kernel/hpet.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/arch/x86/kernel/hpet.c b/arch/x86/kernel/hpet.c
-index a198b7c..ba390d7 100644
---- a/arch/x86/kernel/hpet.c
-+++ b/arch/x86/kernel/hpet.c
-@@ -964,7 +964,7 @@ fs_initcall(hpet_late_init);
- 
- void hpet_disable(void)
+ drivers/base/dd.c      |    4 ++++
+ include/linux/device.h |    8 +++++---
+ 2 files changed, 9 insertions(+), 3 deletions(-)
+
+--- 0003/drivers/base/dd.c
++++ work/drivers/base/dd.c	2010-07-23 19:13:14.000000000 +0900
+@@ -51,6 +51,10 @@ static int driver_sysfs_add(struct devic
  {
--	if (is_hpet_capable()) {
-+	if (is_hpet_capable() && hpet_virt_address) {
- 		unsigned int cfg = hpet_readl(HPET_CFG);
+ 	int ret;
  
- 		if (hpet_legacy_int_enabled) {
++	if (dev->bus)
++		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
++					     BUS_NOTIFY_BIND_DRIVER, dev);
++
+ 	ret = sysfs_create_link(&dev->driver->p->kobj, &dev->kobj,
+ 			  kobject_name(&dev->kobj));
+ 	if (ret == 0) {
+--- 0001/include/linux/device.h
++++ work/include/linux/device.h	2010-07-23 19:13:52.000000000 +0900
+@@ -110,10 +110,12 @@ extern int bus_unregister_notifier(struc
+  */
+ #define BUS_NOTIFY_ADD_DEVICE		0x00000001 /* device added */
+ #define BUS_NOTIFY_DEL_DEVICE		0x00000002 /* device removed */
+-#define BUS_NOTIFY_BOUND_DRIVER		0x00000003 /* driver bound to device */
+-#define BUS_NOTIFY_UNBIND_DRIVER	0x00000004 /* driver about to be
++#define BUS_NOTIFY_BIND_DRIVER		0x00000003 /* driver about to be
++						      bound */
++#define BUS_NOTIFY_BOUND_DRIVER		0x00000004 /* driver bound to device */
++#define BUS_NOTIFY_UNBIND_DRIVER	0x00000005 /* driver about to be
+ 						      unbound */
+-#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000005 /* driver is unbound
++#define BUS_NOTIFY_UNBOUND_DRIVER	0x00000006 /* driver is unbound
+ 						      from the device */
+ 
+ extern struct kset *bus_get_kset(struct bus_type *bus);
