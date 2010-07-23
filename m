@@ -1,99 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752644Ab0GWSfi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 14:35:38 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:51428 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751318Ab0GWSff (ORCPT
+	id S1754125Ab0GWSf6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 14:35:58 -0400
+Received: from mail-ey0-f174.google.com ([209.85.215.174]:65089 "EHLO
+	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752747Ab0GWSf4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 14:35:35 -0400
-Message-ID: <4C49E111.2000106@vflare.org>
-Date: Sat, 24 Jul 2010 00:06:01 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2 Thunderbird/3.1.1
+	Fri, 23 Jul 2010 14:35:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=lvQeGJmGql/bTnHuLbD1AW4gtrxRPhMI2/uKeVmkMBf1Ftdkuo8v1gRh+nw483Ltyx
+         9DBVK1Jcbm99JBBodJN31QM727HVM9XBZx8rmkqaqfdFF+POCxmJOcL8ACj31URfKCCO
+         GKMs4rRnfgS04pFlDpkZVD2sX72vTvUhEXg3c=
+Date: Fri, 23 Jul 2010 21:35:49 +0300
+From: Alexey Dobriyan <adobriyan@gmail.com>
+To: Davidlohr Bueso <dave.bueso@gmail.com>
+Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org
+Subject: Re: [RFC] [PATCH procfs] Add process age
+Message-ID: <20100723183549.GA10518@x200>
+References: <1279907271.4335.3.camel@cowboy>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Christoph Hellwig <hch@infradead.org>, akpm@linux-foundation.org,
-        Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
-        adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
-        Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
-        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
-        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
-        npiggin@suse.de, Dave Mccracken <dave.mccracken@oracle.com>,
-        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>
-Subject: Re: [PATCH V3 0/8] Cleancache: overview
-References: <20100621231809.GA11111@ca-server1.us.oracle.com4C49468B.40307@vflare.org> <840b32ff-a303-468e-9d4e-30fc92f629f8@default 20100723140440.GA12423@infradead.org 364c83bd-ccb2-48cc-920d-ffcf9ca7df19@default> <c979fa45-8878-4e40-9060-c3e929eebbab@default>
-In-Reply-To: <c979fa45-8878-4e40-9060-c3e929eebbab@default>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279907271.4335.3.camel@cowboy>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/23/2010 11:07 PM, Dan Magenheimer wrote:
->> From: Dan Magenheimer
->> Subject: RE: [PATCH V3 0/8] Cleancache: overview
->>
->>> From: Christoph Hellwig [mailto:hch@infradead.org]
->>> Subject: Re: [PATCH V3 0/8] Cleancache: overview
->>>
->>> On Fri, Jul 23, 2010 at 06:58:03AM -0700, Dan Magenheimer wrote:
->>>> CHRISTOPH AND ANDREW, if you disagree and your concerns have
->>>> not been resolved, please speak up.
->>
->> Hi Christoph --
->>
->> Thanks very much for the quick (instantaneous?) reply!
->>
->>> Anything that need modification of a normal non-shared fs is utterly
->>> broken and you'll get a clear NAK, so the propsal before is a good
->>> one.
->>
->> Unless/until all filesystems are 100% built on top of VFS,
->> I have to disagree.  Abstractions (e.g. VFS) are never perfect.
-> 
-> After thinking about this some more, I can see a way
-> to enforce "opt-in" in the cleancache backend without
-> any changes to non-generic fs code.   I think it's a horrible
-> hack and we can try it, but I expect fs maintainers
-> would prefer the explicit one-line-patch opt-in.
-> 
-> 1) Cleancache backend maintains a list of "known working"
->    filesystems (those that have been tested).
+On Fri, Jul 23, 2010 at 01:47:51PM -0400, Davidlohr Bueso wrote:
+> This patch exports a process's age, in seconds, adding a /proc/#/age file.
 
-Checks against "known working list" indeed looks horrible.
-Isn't there any way to identify pagecache -> disk I/O boundaries
-which every filesystem obeys? I'm not yet sure but if this is
-doable, then we won't require such hacks.
-
-> 
-> 2) Nitin's proposed changes pass the *sb as a parameter.
->   The string name of the filesystem type is available via
->   sb->s_type->name.  This can be compared against
->   the "known working" list.
->
-
-sb->s_magic could also be used, or better if we can somehow
-get rid of these checks  :)
-
-> Using the sb pointer as a "handle" requires an extra
-> table search on every cleancache get/put/flush,
-> and fs/super.c changes are required for fs unmount
-> notification anyway (e.g. to call cleancache_flush_fs)
-> so I'd prefer to keep the cleancache_poolid addition
-> to the sb.  I'll assume this is OK since this is in generic
-> fs code.
-> 
-
-
-I will also try making changes to cleancache so it does not
-touch any fs specific code. Though IMHO one liners to fs-code
-should really be acceptable but unfortunately this doesn't seem
-to be the case.  Maybe generic cleancache will have better
-chances.
-
-Thanks,
-Nitin
+What for?
