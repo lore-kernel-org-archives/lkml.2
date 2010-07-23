@@ -1,36 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759089Ab0GWQkY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 12:40:24 -0400
-Received: from verein.lst.de ([213.95.11.210]:51039 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751125Ab0GWQkW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 12:40:22 -0400
-Date: Fri, 23 Jul 2010 18:39:54 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Christoph Hellwig <hch@lst.de>, Thomas Gleixner <tglx@linutronix.de>,
-        Ingo Molnar <mingo@elte.hu>, mingo@redhat.com, hpa@zytor.com,
-        linux-kernel@vger.kernel.org, linux-tip-commits@vger.kernel.org
-Subject: Re: [tip:x86/irq] x86: Always use irq stacks
-Message-ID: <20100723163954.GA23669@lst.de>
-References: <20100630075212.GA24658@lst.de> <20100630075818.GB25509@elte.hu> <20100630080453.GA14371@elte.hu> <20100708204251.GA13569@elte.hu> <20100708205302.GA23961@lst.de> <20100714151215.GA31825@lst.de> <alpine.LFD.2.00.1007141719130.3321@localhost.localdomain> <20100714154746.GA2074@lst.de> <1279894516.3319.44.camel@gandalf.stny.rr.com> <1279895042.3319.48.camel@gandalf.stny.rr.com>
+	id S1760155Ab0GWQmO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 12:42:14 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53544 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751125Ab0GWQmM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 12:42:12 -0400
+Date: Fri, 23 Jul 2010 09:41:34 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+        Cezary Jackiewicz <cezary.jackiewicz@gmail.com>,
+        Matthew Garrett <mjg@redhat.com>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+        platform-driver-x86@vger.kernel.org
+Subject: [PATCH -next] compal-laptop: depends on POWER_SUPPLY
+Message-Id: <20100723094134.10c86761.randy.dunlap@oracle.com>
+In-Reply-To: <20100723164931.7bf2160f.sfr@canb.auug.org.au>
+References: <20100723164931.7bf2160f.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279895042.3319.48.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt354.oracle.com [141.146.40.154]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A090208.4C49C655.001F:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 10:24:02AM -0400, Steven Rostedt wrote:
-> So we should do:
-> 
-> } __attribute__((aligned(THREAD_SIZE)));
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Yes, that looks like a likely culprit.  I tried to verify it, but right
-now I can't reproduce the issue anymore.  I've done another completely
-clean rebuild to see if I can reproduce it again.
+compal-laptop uses power_supply interfaces so it should depend
+on POWER_SUPPLY.
 
+ERROR: "power_supply_register" [drivers/platform/x86/compal-laptop.ko] undefined!
+ERROR: "power_supply_unregister" [drivers/platform/x86/compal-laptop.ko] undefined!
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	Cezary Jackiewicz <cezary.jackiewicz@gmail.com>
+Cc:	Matthew Garrett <mjg@redhat.com>
+Cc:	platform-driver-x86@vger.kernel.org
+---
+ drivers/platform/x86/Kconfig |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- linux-next-20100723.orig/drivers/platform/x86/Kconfig
++++ linux-next-20100723/drivers/platform/x86/Kconfig
+@@ -183,6 +183,7 @@ config COMPAL_LAPTOP
+ 	depends on BACKLIGHT_CLASS_DEVICE
+ 	depends on RFKILL
+ 	depends on HWMON
++	depends on POWER_SUPPLY
+ 	---help---
+ 	  This is a driver for laptops built by Compal:
+ 
