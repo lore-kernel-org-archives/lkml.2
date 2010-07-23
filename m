@@ -1,37 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754125Ab0GWSf6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 14:35:58 -0400
-Received: from mail-ey0-f174.google.com ([209.85.215.174]:65089 "EHLO
-	mail-ey0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752747Ab0GWSf4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 14:35:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lvQeGJmGql/bTnHuLbD1AW4gtrxRPhMI2/uKeVmkMBf1Ftdkuo8v1gRh+nw483Ltyx
-         9DBVK1Jcbm99JBBodJN31QM727HVM9XBZx8rmkqaqfdFF+POCxmJOcL8ACj31URfKCCO
-         GKMs4rRnfgS04pFlDpkZVD2sX72vTvUhEXg3c=
-Date: Fri, 23 Jul 2010 21:35:49 +0300
-From: Alexey Dobriyan <adobriyan@gmail.com>
-To: Davidlohr Bueso <dave.bueso@gmail.com>
-Cc: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org,
-        linux-fsdevel@vger.kernel.org
-Subject: Re: [RFC] [PATCH procfs] Add process age
-Message-ID: <20100723183549.GA10518@x200>
-References: <1279907271.4335.3.camel@cowboy>
+	id S1753115Ab0GWShf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 14:37:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39508 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751086Ab0GWShd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 14:37:33 -0400
+Date: Fri, 23 Jul 2010 14:37:20 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Heinz Diehl <htd@fancy-poultry.org>
+Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, nauman@google.com,
+        dpshah@google.com, guijianfeng@cn.fujitsu.com, jmoyer@redhat.com,
+        czoccolo@gmail.com
+Subject: Re: [RFC PATCH] cfq-iosched: IOPS mode for group scheduling and new
+ group_idle tunable
+Message-ID: <20100723183720.GD13104@redhat.com>
+References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
+ <20100723140343.GA8478@fancy-poultry.org>
+ <20100723141303.GB13104@redhat.com>
+ <20100723145631.GA8844@fancy-poultry.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1279907271.4335.3.camel@cowboy>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100723145631.GA8844@fancy-poultry.org>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, Jul 23, 2010 at 01:47:51PM -0400, Davidlohr Bueso wrote:
-> This patch exports a process's age, in seconds, adding a /proc/#/age file.
+On Fri, Jul 23, 2010 at 04:56:31PM +0200, Heinz Diehl wrote:
+> On 23.07.2010, Vivek Goyal wrote: 
+> 
+> > Thanks for some testing Heinz. I am assuming you are not using cgroups
+> > and blkio controller.
+> 
+> Not at all.
+> 
+> > In that case, you are seeing improvements probably due to first patch
+> > where we don't idle on service tree if slice_idle=0. Hence we cut down on
+> > overall idling and can see throughput incrase.
+> 
+> Hmm, in any case it's not getting worse by setting slice_idle to 8. 
+> 
+> My main motivation to test your patches was that I thought 
+> the other way 'round, and was just curious on how this patchset 
+> will affect machines which are NOT a high end server/storage system :-) 
+> 
+> > What kind of configuration these 3 disks are on your system? Some Hardare
+> > RAID or software RAID ?
+> 
+> Just 3 SATA disks plugged into the onboard controller, no RAID or whatsoever.
+> 
+> I used fs_mark for testing:
+> "fs_mark  -S  1  -D  10000  -N  100000  -d  /home/htd/fsmark/test  -s 65536  -t  1  -w  4096  -F"
+> 
+> These are the results with plain cfq (2.6.35-rc6) and the settings which
+> gave the best speed/throughput on my machine:
+> 
+> low_latency = 0
+> slice_idle = 4
+> quantum = 32
+> 
+> Setting slice_idle to 0 didn't improve anything, I tried this before.
+> 
+> FSUse%        Count         Size    Files/sec     App Overhead
+>     27         1000        65536        360.3            34133
+>     27         2000        65536        384.4            34657
+>     27         3000        65536        401.1            32994
+>     27         4000        65536        394.3            33781
+>     27         5000        65536        406.8            32569
+>     27         6000        65536        401.9            34001
+>     27         7000        65536        374.5            33192
+>     27         8000        65536        398.3            32839
+>     27         9000        65536        405.2            34110
+>     27        10000        65536        398.9            33887
+>     27        11000        65536        402.3            34111
+>     27        12000        65536        398.1            33652
+>     27        13000        65536        412.9            32443
+>     27        14000        65536        408.1            32197
+> 
+> 
+> And this is after applying your patchset, with your settings
+> (and slice_idle = 0):
+> 
+> FSUse%        Count         Size    Files/sec     App Overhead
+>     27         1000        65536        600.7            29579
+>     27         2000        65536        568.4            30650
+>     27         3000        65536        522.0            29171
+>     27         4000        65536        534.1            29751
+>     27         5000        65536        550.7            30168
+>     27         6000        65536        521.7            30158
+>     27         7000        65536        493.3            29211
+>     27         8000        65536        495.3            30183
+>     27         9000        65536        587.8            29881
+>     27        10000        65536        469.9            29602
+>     27        11000        65536        482.7            29557
+>     27        12000        65536        486.6            30700
+>     27        13000        65536        516.1            30243
+> 
 
-What for?
+I think that above improvement is due to first patch and changes in
+cfq_should_idle(). cfq_should_idle() used to return 1 even if slice_idle=0
+and that created bottlenecks at some places like in select_queue() we
+will not expire a queue till request from that queue completed. This
+stopped a new queue from dispatching requests etc...
+
+Anyway, for fs_mark problem, can you give following patch a try.
+
+https://patchwork.kernel.org/patch/113061/
+
+Above patch should improve your fs_mark numbers even without setting
+slice_idle=0.
+
+Thanks
+Vivek
