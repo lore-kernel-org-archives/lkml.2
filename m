@@ -1,60 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756327Ab0GWLDM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 07:03:12 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:49385 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754411Ab0GWLDJ (ORCPT
+	id S1756115Ab0GWLFy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 07:05:54 -0400
+Received: from mail-qy0-f174.google.com ([209.85.216.174]:45079 "EHLO
+	mail-qy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753435Ab0GWLFw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 07:03:09 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Date: Fri, 23 Jul 2010 13:02:54 +0200 (CEST)
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-Subject: [PATCH] firewire: core: fix upper bound of possible CSR allocations
-To: linux1394-devel@lists.sourceforge.net
-cc: linux-kernel@vger.kernel.org
-Message-ID: <tkrat.e4d747d0544a6f14@s5r6.in-berlin.de>
+	Fri, 23 Jul 2010 07:05:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=RR4uO7ID6/t9jB5zPWZjsyTkh7v26sMDZ3+mdxLpIzonx1VOSGESCnGX9KxTxTjG68
+         +N6pn9Ao52abEo1aVeqmG6CqVtvVe7+IioQ7hFOg8TTWyKxil9rkBGvzoh7JrRPrydva
+         2LWO99/ZHDuWk/va/RYvb1wG/mY0Zts68KlVI=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; CHARSET=us-ascii
-Content-Disposition: INLINE
+In-Reply-To: <4C4555DA.40203@renesas.com>
+References: <4C4555DA.40203@renesas.com>
+Date: Fri, 23 Jul 2010 20:05:50 +0900
+Message-ID: <AANLkTikVm-GWq6vun-AjqLJ1L7Y+s28CdDJqmCEX4+2R@mail.gmail.com>
+Subject: Re: [PATCH] tmio_mmc: Allow 2 byte requests in 4-bit mode
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Yusuke Goda <yusuke.goda.sx@renesas.com>
+Cc: ian@mnementh.co.uk, damm@opensource.se, sameo@linux.intel.com,
+        Paul Mundt <lethal@linux-sh.org>, g.liakhovetski@gmx.de,
+        linux-mmc@vger.kernel.org, linux-kernel@vger.kernel.org,
+        Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-region->end is defined as an upper bound of the requested address range,
-exclusive --- i.e. as an address outside of the range in which the
-requested CSR is to be placed.
+2010/7/20 Yusuke Goda <yusuke.goda.sx@renesas.com>:
+> Adjust the tmio_mmc block size check to accept 2-byte requests in 4-bit mode.
+> Tested with the SDHI hardware block included in sh7724.
+>
+> Signed-off-by: Yusuke Goda <yusuke.goda.sx@renesas.com>
 
-Hence 0x0001,0000,0000,0000 is the biggest valid region->end, not
-0x0000,ffff,ffff,fffc like the current check asserted.
+With this patch applied I can use SDIO cards in polling mode with the
+tmio-mmc driver. Tested with the SDHI hardware block on sh7372 using
+the b43 driver and BCM4318 hardware and the unfortunately out-of-tree
+AR6002 "android" driver.
 
-For simplicity, the fix drops the region->end & 3 test because there is
-no actual problem with these bits set in region->end.  The allocated
-address range will be quadlet aligned and of a size of multiple quadlets
-due to the checks for region->start & 3 and handler->length & 3 alone.
-
-Signed-off-by: Stefan Richter <stefanr@s5r6.in-berlin.de>
----
- drivers/firewire/core-transaction.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: b/drivers/firewire/core-transaction.c
-===================================================================
---- a/drivers/firewire/core-transaction.c
-+++ b/drivers/firewire/core-transaction.c
-@@ -543,8 +543,8 @@ int fw_core_add_address_handler(struct f
- 	int ret = -EBUSY;
- 
- 	if (region->start & 0xffff000000000003ULL ||
--	    region->end   & 0xffff000000000003ULL ||
- 	    region->start >= region->end ||
-+	    region->end   > 0x0001000000000000ULL ||
- 	    handler->length & 3 ||
- 	    handler->length == 0)
- 		return -EINVAL;
-
--- 
-Stefan Richter
--=====-==-=- -=== =-===
-http://arcgraph.de/sr/
-
+Acked-by: Magnus Damm <damm@opensource.se>
