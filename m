@@ -1,73 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752183Ab0GWScg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 14:32:36 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:57588 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751086Ab0GWScf (ORCPT
+	id S1752644Ab0GWSfi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 14:35:38 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51428 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751318Ab0GWSff (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 14:32:35 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,6052"; a="48448013"
-Message-ID: <4C49E041.8070009@codeaurora.org>
-Date: Fri, 23 Jul 2010 12:32:33 -0600
-From: Kenneth Heitke <kheitke@codeaurora.org>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Fri, 23 Jul 2010 14:35:35 -0400
+Message-ID: <4C49E111.2000106@vflare.org>
+Date: Sat, 24 Jul 2010 00:06:01 +0530
+From: Nitin Gupta <ngupta@vflare.org>
+Reply-To: ngupta@vflare.org
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.2.7) Gecko/20100720 Fedora/3.1.1-1.fc13 Lightning/1.0b2 Thunderbird/3.1.1
 MIME-Version: 1.0
-To: =?ISO-8859-15?Q?Daniel_Gl=F6ckner?= <dg@emlix.com>
-CC: khali@linux-fr.org, ben-linux@fluff.org, linux-arm-msm@vger.kernel.org,
-        sdharia@codeaurora.org, Crane Cai <crane.cai@amd.com>,
-        Samuel Ortiz <sameo@linux.intel.com>,
-        Linus Walleij <linus.walleij@stericsson.com>,
-        Ralf Baechle <ralf@linux-mips.org>,
-        srinidhi kasagar <srinidhi.kasagar@stericsson.com>,
-        linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] i2c: Single-wire Serial Bus Interface for Qualcomm MSM
- chipsets
-References: <1279734768-8436-1-git-send-email-kheitke@codeaurora.org> <4C496C58.1080806@emlix.com>
-In-Reply-To: <4C496C58.1080806@emlix.com>
-Content-Type: text/plain; charset=ISO-8859-15; format=flowed
-Content-Transfer-Encoding: 8bit
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Christoph Hellwig <hch@infradead.org>, akpm@linux-foundation.org,
+        Chris Mason <chris.mason@oracle.com>, viro@zeniv.linux.org.uk,
+        adilger@sun.com, tytso@mit.edu, mfasheh@suse.com,
+        Joel Becker <joel.becker@oracle.com>, matthew@wil.cx,
+        linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+        ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, jeremy@goop.org,
+        JBeulich@novell.com, Kurt Hackel <kurt.hackel@oracle.com>,
+        npiggin@suse.de, Dave Mccracken <dave.mccracken@oracle.com>,
+        riel@redhat.com, avi@redhat.com, Konrad Wilk <konrad.wilk@oracle.com>
+Subject: Re: [PATCH V3 0/8] Cleancache: overview
+References: <20100621231809.GA11111@ca-server1.us.oracle.com4C49468B.40307@vflare.org> <840b32ff-a303-468e-9d4e-30fc92f629f8@default 20100723140440.GA12423@infradead.org 364c83bd-ccb2-48cc-920d-ffcf9ca7df19@default> <c979fa45-8878-4e40-9060-c3e929eebbab@default>
+In-Reply-To: <c979fa45-8878-4e40-9060-c3e929eebbab@default>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Daniel Glöckner wrote:
-> On 07/21/2010 07:52 PM, Kenneth Heitke wrote:
->> Unlike I2C, SSBI is a point-to-point connection, and therefore there is no
->> need to specify a slave device address. The SSBI implementation
->> overrides the slave device address to be a device register address
->> instead.  This restricts the client drivers from using the SMBus
->> communication APIs unless they update the address field (addr) of the
->> i2c_client structure prior to every SMBus function call.
+On 07/23/2010 11:07 PM, Dan Magenheimer wrote:
+>> From: Dan Magenheimer
+>> Subject: RE: [PATCH V3 0/8] Cleancache: overview
+>>
+>>> From: Christoph Hellwig [mailto:hch@infradead.org]
+>>> Subject: Re: [PATCH V3 0/8] Cleancache: overview
+>>>
+>>> On Fri, Jul 23, 2010 at 06:58:03AM -0700, Dan Magenheimer wrote:
+>>>> CHRISTOPH AND ANDREW, if you disagree and your concerns have
+>>>> not been resolved, please speak up.
+>>
+>> Hi Christoph --
+>>
+>> Thanks very much for the quick (instantaneous?) reply!
+>>
+>>> Anything that need modification of a normal non-shared fs is utterly
+>>> broken and you'll get a clear NAK, so the propsal before is a good
+>>> one.
+>>
+>> Unless/until all filesystems are 100% built on top of VFS,
+>> I have to disagree.  Abstractions (e.g. VFS) are never perfect.
 > 
+> After thinking about this some more, I can see a way
+> to enforce "opt-in" in the cleancache backend without
+> any changes to non-generic fs code.   I think it's a horrible
+> hack and we can try it, but I expect fs maintainers
+> would prefer the explicit one-line-patch opt-in.
 > 
->> +static int
->> +i2c_ssbi_write_bytes(struct i2c_ssbi_dev *ssbi, struct i2c_msg *msg)
->> +{
->> +	int ret = 0;
->> +	u8 *buf = msg->buf;
->> +	u16 len = msg->len;
->> +	u16 addr = msg->addr;
->> +
->> +	if (ssbi->controller_type == MSM_SBI_CTRL_SSBI2) {
->> +		u32 mode2 = readl(ssbi->base + SSBI2_MODE2);
->> +		writel(SSBI_MODE2_REG_ADDR_15_8(mode2, addr),
->> +				ssbi->base + SSBI2_MODE2);
->> +	}
->> +
->> +	while (len) {
+> 1) Cleancache backend maintains a list of "known working"
+>    filesystems (those that have been tested).
+
+Checks against "known working list" indeed looks horrible.
+Isn't there any way to identify pagecache -> disk I/O boundaries
+which every filesystem obeys? I'm not yet sure but if this is
+doable, then we won't require such hacks.
+
 > 
-> Where do you set the address if controller_type == MSM_SBI_CTRL_SSBI?
-> 
->   Daniel
-> 
+> 2) Nitin's proposed changes pass the *sb as a parameter.
+>   The string name of the filesystem type is available via
+>   sb->s_type->name.  This can be compared against
+>   the "known working" list.
+>
+
+sb->s_magic could also be used, or better if we can somehow
+get rid of these checks  :)
+
+> Using the sb pointer as a "handle" requires an extra
+> table search on every cleancache get/put/flush,
+> and fs/super.c changes are required for fs unmount
+> notification anyway (e.g. to call cleancache_flush_fs)
+> so I'd prefer to keep the cleancache_poolid addition
+> to the sb.  I'll assume this is OK since this is in generic
+> fs code.
 > 
 
-The SSBI_MODE2_REG_ADDR register contains the upper 8-bits of the 
-address which is only supported by SSBI 2.0.  The lower 8 address bits 
-are written as part of the SSBI_CMD_WRITE macro which is common for both 
-of the controller types.
 
--- 
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum.
+I will also try making changes to cleancache so it does not
+touch any fs specific code. Though IMHO one liners to fs-code
+should really be acceptable but unfortunately this doesn't seem
+to be the case.  Maybe generic cleancache will have better
+chances.
+
+Thanks,
+Nitin
