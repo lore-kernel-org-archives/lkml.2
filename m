@@ -1,46 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753055Ab0GWJDU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 05:03:20 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:58877 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab0GWJDT convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 05:03:19 -0400
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Date: Fri, 23 Jul 2010 11:04:40 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCHv4 1/5] USB: gadget: composite: Better string override
- handling
-In-reply-to: <20100722234630.GA1352@kroah.com>
-To: Greg KH <greg@kroah.com>
-Cc: linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-        Marek Szyprowski <m.szyprowski@samsung.com>,
-        David Brownell <david-b@pacbell.net>,
-        Alan Stern <stern@rowland.harvard.edu>, linux-kernel@vger.kernel.org,
-        Dries Van Puymbroeck <Dries.VanPuymbroeck@dekimo.com>
-Message-id: <op.vgagt2te7p4s8u@pikus>
-Organization: Samsung Electronics
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.60 (Linux)
-References: <e2d14d0a730dde4b716c0e086761ef65ba9afda8.1278619472.git.m.nazarewicz@samsung.com>
- <89baa7d196b5e1d8427c90a78f2aa0cda4331d7a.1279794289.git.m.nazarewicz@samsung.com>
- <20100722234630.GA1352@kroah.com>
+	id S1753391Ab0GWJL7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 05:11:59 -0400
+Received: from DMZ-MAILSEC-SCANNER-3.MIT.EDU ([18.9.25.14]:42867 "EHLO
+	dmz-mailsec-scanner-3.mit.edu" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752455Ab0GWJL6 convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 05:11:58 -0400
+X-AuditID: 1209190e-b7bbeae000000a09-3b-4c495cdec594
+Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
+Mime-Version: 1.0 (Apple Message framework v1081)
+Content-Type: text/plain; charset=us-ascii
+From: Theodore Tso <tytso@MIT.EDU>
+In-Reply-To: <20100723144549.88BA.A69D9226@jp.fujitsu.com>
+Date: Fri, 23 Jul 2010 05:11:50 -0400
+Cc: Christoph Hellwig <hch@infradead.org>, Li Zefan <lizf@cn.fujitsu.com>,
+        Steven Rostedt <rostedt@goodmis.org>,
+        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
+        Frederic Weisbecker <fweisbec@gmail.com>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4E28BC9A-BB77-45BC-862A-29601EF4AE2C@mit.edu>
+References: <20100722054957.GA11670@infradead.org> <20100723011315.GC16373@thunk.org> <20100723144549.88BA.A69D9226@jp.fujitsu.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+X-Mailer: Apple Mail (2.1081)
+X-Brightmail-Tracker: AAAAAA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 23 Jul 2010 01:46:30 +0200, Greg KH <greg@kroah.com> wrote:
-> And they are not -stable material, no matter what, sorry, so you can
-> stop copying stable@kernel.org on them.
 
-True enough.  I probably haven't given enough thought copying the Cc.
-Sorry about that.  Removing the line from the patch should solve the
-issue nicely. ;)
+On Jul 23, 2010, at 1:47 AM, KOSAKI Motohiro wrote:
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+> 
+> I'm not familiar ext4 so much. but you patch seems very nice!
+> thank you :)
+
+So, can someone confirm that this fixes the NULL pointer dereference?  The patch itself makes sense, and it doesn't change the tracepoint output, so I'm inclined to include it, but I haven't been able to reproduce the failure myself using the reproduction recipe given at the beginning of this thread --- and I'd feel much better if someone who has been able to reproduce the crash can confirm this fixes things for them.
+
+Thanks,
+
+-- Ted
+ 
