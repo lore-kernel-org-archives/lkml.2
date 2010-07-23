@@ -1,230 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759892Ab0GWNTW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 09:19:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19803 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759393Ab0GWNTU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 09:19:20 -0400
-Date: Fri, 23 Jul 2010 15:19:13 +0200
-From: Jiri Olsa <jolsa@redhat.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: fweisbec@gmail.com, linux-kernel@vger.kernel.org
-Subject: [PATCHv2] trace: funcgraph tracer - adding funcgraph-irq option
-Message-ID: <20100723131913.GB1829@jolsa.brq.redhat.com>
-References: <1278951670-8133-1-git-send-email-jolsa@redhat.com>
- <1279828821.3319.23.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279828821.3319.23.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+	id S1760071Ab0GWNUN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 09:20:13 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:54478 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753569Ab0GWNSt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 09:18:49 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
+        b=N3Cm+21M+bnYuxGAcf0oATV73XINXjBNmx+YFelNriovc8OTtofxs0LVxoOdPmyhH4
+         4wPdrxmRZaqHR2aSzkhBooWO6ZdOiKZxLQY1qqlZ+zidGnoMhSQIH/cqiMmwUqn5g64K
+         SLlyTXdbEzYEEBhU/wQFL4y3GWROGr7LtHsas=
+From: Andy Shevchenko <andy.shevchenko@gmail.com>
+To: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Andy Shevchenko <andy.shevchenko@gmail.com>,
+        Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org
+Subject: [PATCH 3/5] usb: usbnet: use newly introduced hex_to_bin()
+Date: Fri, 23 Jul 2010 16:18:08 +0300
+Message-Id: <dfeaa560c7a129bd667521be983794a05a12a12e.1279890832.git.andy.shevchenko@gmail.com>
+X-Mailer: git-send-email 1.7.1.1
+In-Reply-To: <cover.1279890832.git.andy.shevchenko@gmail.com>
+References: <cover.1279890832.git.andy.shevchenko@gmail.com>
+In-Reply-To: <cover.1279890832.git.andy.shevchenko@gmail.com>
+References: <cover.1279890832.git.andy.shevchenko@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 04:00:21PM -0400, Steven Rostedt wrote:
-> On Mon, 2010-07-12 at 18:21 +0200, Jiri Olsa wrote:
-> 
-SNIP
-
-> 
-> What happens if we lose the return event? That is, due to buffer
-> overruns, the return of the trace is lost. Then we lose out on all
-> events until another event of the same IRQ happens and its return is not
-> lost.
-> 
-> You should save the depth instead of the function. When you are in a
-> interrupt, record the depth. Then when the depth is less than or equal
-> to the recorded depth you can restart printing. This may still suffer
-> from missed returns, but it would not have as much of a consequence when
-> it happens.
-hi,
-you're right, changed patch is attached
-
-thanks,
-jirka
-
+Signed-off-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-usb@vger.kernel.org
 ---
-Adding funcgraph-irq option for function graph tracer.
+ drivers/net/usb/usbnet.c |   13 ++-----------
+ 1 files changed, 2 insertions(+), 11 deletions(-)
 
-It's handy to be able to disable the irq related output
-and not to have to jump over each irq related code, when
-you have no interrest in it.
-
-The option is by default enabled, so there's no change to
-current behaviour. It affects only the final output, so all
-the irq related data stays in the ring buffer.
-
-wbr,
-jirka
-
-
-Signed-off-by: Jiri Olsa <jolsa@redhat.com>
----
- kernel/trace/trace_functions_graph.c |  101 +++++++++++++++++++++++++++++++++-
- 1 files changed, 100 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
-index 6bff236..e66f71f 100644
---- a/kernel/trace/trace_functions_graph.c
-+++ b/kernel/trace/trace_functions_graph.c
-@@ -18,6 +18,7 @@
- struct fgraph_cpu_data {
- 	pid_t		last_pid;
- 	int		depth;
-+	int		depth_irq;
- 	int		ignore;
- 	unsigned long	enter_funcs[FTRACE_RETFUNC_DEPTH];
- };
-@@ -41,6 +42,7 @@ struct fgraph_data {
- #define TRACE_GRAPH_PRINT_PROC		0x8
- #define TRACE_GRAPH_PRINT_DURATION	0x10
- #define TRACE_GRAPH_PRINT_ABS_TIME	0x20
-+#define TRACE_GRAPH_PRINT_IRQS		0x40
+diff --git a/drivers/net/usb/usbnet.c b/drivers/net/usb/usbnet.c
+index 7eab407..f5e1639 100644
+--- a/drivers/net/usb/usbnet.c
++++ b/drivers/net/usb/usbnet.c
+@@ -44,6 +44,7 @@
+ #include <linux/usb.h>
+ #include <linux/usb/usbnet.h>
+ #include <linux/slab.h>
++#include <linux/kernel.h>
  
- static struct tracer_opt trace_opts[] = {
- 	/* Display overruns? (for self-debug purpose) */
-@@ -55,13 +57,15 @@ static struct tracer_opt trace_opts[] = {
- 	{ TRACER_OPT(funcgraph-duration, TRACE_GRAPH_PRINT_DURATION) },
- 	/* Display absolute time of an entry */
- 	{ TRACER_OPT(funcgraph-abstime, TRACE_GRAPH_PRINT_ABS_TIME) },
-+	/* Display interrupts */
-+	{ TRACER_OPT(funcgraph-irqs, TRACE_GRAPH_PRINT_IRQS) },
- 	{ } /* Empty entry */
- };
+ #define DRIVER_VERSION		"22-Aug-2005"
  
- static struct tracer_flags tracer_flags = {
- 	/* Don't display overruns and proc by default */
- 	.val = TRACE_GRAPH_PRINT_CPU | TRACE_GRAPH_PRINT_OVERHEAD |
--	       TRACE_GRAPH_PRINT_DURATION,
-+	       TRACE_GRAPH_PRINT_DURATION | TRACE_GRAPH_PRINT_IRQS,
- 	.opts = trace_opts
- };
+@@ -158,16 +159,6 @@ int usbnet_get_endpoints(struct usbnet *dev, struct usb_interface *intf)
+ }
+ EXPORT_SYMBOL_GPL(usbnet_get_endpoints);
  
-@@ -847,6 +851,92 @@ print_graph_prologue(struct trace_iterator *iter, struct trace_seq *s,
+-static u8 nibble(unsigned char c)
+-{
+-	if (likely(isdigit(c)))
+-		return c - '0';
+-	c = toupper(c);
+-	if (likely(isxdigit(c)))
+-		return 10 + c - 'A';
+-	return 0;
+-}
+-
+ int usbnet_get_ethernet_addr(struct usbnet *dev, int iMACAddress)
+ {
+ 	int 		tmp, i;
+@@ -183,7 +174,7 @@ int usbnet_get_ethernet_addr(struct usbnet *dev, int iMACAddress)
+ 	}
+ 	for (i = tmp = 0; i < 6; i++, tmp += 2)
+ 		dev->net->dev_addr [i] =
+-			(nibble(buf [tmp]) << 4) + nibble(buf [tmp + 1]);
++			(hex_to_bin(buf[tmp]) << 4) + hex_to_bin(buf[tmp + 1]);
  	return 0;
  }
- 
-+/*
-+ * Entry check for irq code
-+ *
-+ * returns 1 if
-+ *  - we are inside irq code
-+ *  - we just extered irq code
-+ *
-+ * retunns 0 if
-+ *  - funcgraph-interrupts option is set
-+ *  - we are not inside irq code
-+ */
-+static int
-+check_irq_entry(struct trace_iterator *iter, u32 flags,
-+		unsigned long addr, int depth)
-+{
-+	int cpu = iter->cpu;
-+	struct fgraph_data *data = iter->private;
-+	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-+
-+	if (flags & TRACE_GRAPH_PRINT_IRQS)
-+		return 0;
-+
-+	/*
-+	 * We are inside the irq code
-+	 */
-+	if (*depth_irq >= 0)
-+		return 1;
-+
-+	if ((addr < (unsigned long)__irqentry_text_start) ||
-+	    (addr >= (unsigned long)__irqentry_text_end))
-+		return 0;
-+
-+	/*
-+	 * We are entering irq code.
-+	 */
-+	*depth_irq = depth;
-+	return 1;
-+}
-+
-+/*
-+ * Return check for irq code
-+ *
-+ * returns 1 if
-+ *  - we are inside irq code
-+ *  - we just left irq code
-+ *
-+ * returns 0 if
-+ *  - funcgraph-interrupts option is set
-+ *  - we are not inside irq code
-+ */
-+static int
-+check_irq_return(struct trace_iterator *iter, u32 flags, int depth)
-+{
-+	int cpu = iter->cpu;
-+	struct fgraph_data *data = iter->private;
-+	int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-+
-+	if (flags & TRACE_GRAPH_PRINT_IRQS)
-+		return 0;
-+
-+	/*
-+	 * We are not inside the irq code.
-+	 */
-+	if (*depth_irq == -1)
-+		return 0;
-+
-+	/*
-+	 * We are inside the irq code, and this is returning entry.
-+	 * Let's not trace it and clear the entry depth, since
-+	 * we are out of irq code.
-+	 *
-+	 * This condition ensures that we 'leave the irq code' once
-+	 * we are out of the entry depth. Thus protecting us from
-+	 * the RETURN entry loss.
-+	 */
-+	if (*depth_irq >= depth) {
-+		*depth_irq = -1;
-+		return 1;
-+	}
-+
-+	/*
-+	 * We are inside the irq code, and this is not the entry.
-+	 */
-+	return 1;
-+}
-+
- static enum print_line_t
- print_graph_entry(struct ftrace_graph_ent_entry *field, struct trace_seq *s,
- 			struct trace_iterator *iter, u32 flags)
-@@ -857,6 +947,9 @@ print_graph_entry(struct ftrace_graph_ent_entry *field, struct trace_seq *s,
- 	static enum print_line_t ret;
- 	int cpu = iter->cpu;
- 
-+	if (check_irq_entry(iter, flags, call->func, call->depth))
-+		return TRACE_TYPE_HANDLED;
-+
- 	if (print_graph_prologue(iter, s, TRACE_GRAPH_ENT, call->func, flags))
- 		return TRACE_TYPE_PARTIAL_LINE;
- 
-@@ -894,6 +987,9 @@ print_graph_return(struct ftrace_graph_ret *trace, struct trace_seq *s,
- 	int ret;
- 	int i;
- 
-+	if (check_irq_return(iter, flags, trace->depth))
-+		return TRACE_TYPE_HANDLED;
-+
- 	if (data) {
- 		struct fgraph_cpu_data *cpu_data;
- 		int cpu = iter->cpu;
-@@ -1202,9 +1298,12 @@ void graph_trace_open(struct trace_iterator *iter)
- 		pid_t *pid = &(per_cpu_ptr(data->cpu_data, cpu)->last_pid);
- 		int *depth = &(per_cpu_ptr(data->cpu_data, cpu)->depth);
- 		int *ignore = &(per_cpu_ptr(data->cpu_data, cpu)->ignore);
-+		int *depth_irq = &(per_cpu_ptr(data->cpu_data, cpu)->depth_irq);
-+
- 		*pid = -1;
- 		*depth = 0;
- 		*ignore = 0;
-+		*depth_irq = -1;
- 	}
- 
- 	iter->private = data;
+ EXPORT_SYMBOL_GPL(usbnet_get_ethernet_addr);
+-- 
+1.7.1.1
+
