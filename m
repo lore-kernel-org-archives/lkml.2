@@ -1,65 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760257Ab0GWOdj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 10:33:39 -0400
-Received: from mga11.intel.com ([192.55.52.93]:39214 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752644Ab0GWOdi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 10:33:38 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.55,248,1278313200"; 
-   d="scan'208";a="589076988"
-Message-ID: <4C49A83C.8070203@linux.intel.com>
-Date: Fri, 23 Jul 2010 16:33:32 +0200
-From: Andi Kleen <ak@linux.intel.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.7) Gecko/20100713 Thunderbird/3.1.1
-MIME-Version: 1.0
-To: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-CC: Alok Kataria <akataria@vmware.com>,
-        FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-        "lenb@kernel.org" <lenb@kernel.org>, "x86@kernel.org" <x86@kernel.org>,
-        "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-        Petr Vandrovec <petr@vmware.com>
-Subject: Re: swiotlb detection should be memory hotplug aware ?
-References: <20100721135750Z.fujita.tomonori@lab.ntt.co.jp> <1279732414.10874.6.camel@ank32.eng.vmware.com> <20100722084413I.fujita.tomonori@lab.ntt.co.jp> <20100722090329O.fujita.tomonori@lab.ntt.co.jp> <1279823680.31733.20.camel@ank32.eng.vmware.com> <20100723142208.GA4008@phenom.dumpdata.com>
-In-Reply-To: <20100723142208.GA4008@phenom.dumpdata.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756753Ab0GWOg2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 10:36:28 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:42316 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab0GWOg1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 10:36:27 -0400
+From: Bryan Wu <bryan.wu@canonical.com>
+To: felipe.balbi@nokia.com, linux-usb@vger.kernel.org
+Cc: kernel-team@lists.ubuntu.com, linux-kernel@vger.kernel.org,
+        ricardo.salveti@canonical.com, david-b@pacbell.net
+Subject: [PATCH] musb: move usb_add_hcd to the core init code from gadget code (v2)
+Date: Fri, 23 Jul 2010 22:36:23 +0800
+Message-Id: <1279895783-7313-1-git-send-email-bryan.wu@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+BugLink: http://bugs.launchpad.net/bugs/608312
 
-> I thought SRAT has NUMA affinity information - so for example my AMD
-> desktop box has that, but it does not support hotplug capability.
->
-> I think first your 'hotplug_possible' code needs to be more specific -
-> not just check if SRAT exists, but also if there are swaths of memory
-> that are non-populated. It would also help if there was some indication
-> of whether the box truly does a hardware hotplug - is there a way to do
-> this?
+v2:
+fix the building error on latest 2.6.35-rc kernel, since v1 was generated in
+2.6.33 kernel.
 
-The SRAT declares hotplug memory ranges in advance. And Linux already 
-uses this
-information in the SRAT parser (just the code for doing this is a bit 
-dumb, I have a rewrite
-somewhere)
+v1:
+usb_add_hcd was only called when we insmod the gadget class module or built-in
+that gadget class driver. If musb is configured as OTG controller, we need to
+insmod or built-in gadget class driver to make our Host mode fucntion works.
 
-The only drawback is that some older systems claimed to have large 
-hotplug memory ranges
-when they didn't actually support it. So it's better to not do anything 
-with a lot
-of overhead.
+In our Ubuntu system, normally we compiled all the gadget class drivers as
+modules. Then users can insmod the gadget modules as they want. But without the
+gadget class driver running, we needs host function to support common USB
+devices.
 
-So yes it would be reasonable to let swiotlb (and possibly other code 
-sizing itself
-based on memory) call into the SRAT parser and check the hotplug ranges too.
+This patch fix this issue and tested on omap3 beagle board and Gumstix board.
 
-BTW longer term swiotlb should be really more dynamic anyways and grow
-and shrink on demand. I attempted this some time ago with my DMA 
-allocator patchkit,
-unfortunately that didn't go forward.
+Signed-off-by: Bryan Wu <bryan.wu@canonical.com>
+---
+ drivers/usb/musb/musb_core.c   |   13 +++++--------
+ drivers/usb/musb/musb_gadget.c |   18 ------------------
+ 2 files changed, 5 insertions(+), 26 deletions(-)
 
--Andi
+diff --git a/drivers/usb/musb/musb_core.c b/drivers/usb/musb/musb_core.c
+index 3b795c5..1b6d74c 100644
+--- a/drivers/usb/musb/musb_core.c
++++ b/drivers/usb/musb/musb_core.c
+@@ -1583,14 +1583,6 @@ irqreturn_t musb_interrupt(struct musb *musb)
+ 		(devctl & MUSB_DEVCTL_HM) ? "host" : "peripheral",
+ 		musb->int_usb, musb->int_tx, musb->int_rx);
+ 
+-#ifdef CONFIG_USB_GADGET_MUSB_HDRC
+-	if (is_otg_enabled(musb) || is_peripheral_enabled(musb))
+-		if (!musb->gadget_driver) {
+-			DBG(5, "No gadget driver loaded\n");
+-			return IRQ_HANDLED;
+-		}
+-#endif
+-
+ 	/* the core can interrupt us for multiple reasons; docs have
+ 	 * a generic interrupt flowchart to follow
+ 	 */
+@@ -2128,6 +2120,11 @@ bad_config:
+ 
+ 		status = musb_gadget_setup(musb);
+ 
++		if (is_otg_enabled(musb)) {
++			status = usb_add_hcd(musb_to_hcd(musb), -1, 0);
++			musb_start(musb);
++		}
++
+ 		DBG(1, "%s mode, status %d, dev%02x\n",
+ 			is_otg_enabled(musb) ? "OTG" : "PERIPHERAL",
+ 			status,
+diff --git a/drivers/usb/musb/musb_gadget.c b/drivers/usb/musb/musb_gadget.c
+index 6fca870..9e55534 100644
+--- a/drivers/usb/musb/musb_gadget.c
++++ b/drivers/usb/musb/musb_gadget.c
+@@ -1761,24 +1761,6 @@ int usb_gadget_register_driver(struct usb_gadget_driver *driver)
+ 		otg_set_peripheral(musb->xceiv, &musb->g);
+ 
+ 		spin_unlock_irqrestore(&musb->lock, flags);
+-
+-		if (is_otg_enabled(musb)) {
+-			DBG(3, "OTG startup...\n");
+-
+-			/* REVISIT:  funcall to other code, which also
+-			 * handles power budgeting ... this way also
+-			 * ensures HdrcStart is indirectly called.
+-			 */
+-			retval = usb_add_hcd(musb_to_hcd(musb), -1, 0);
+-			if (retval < 0) {
+-				DBG(1, "add_hcd failed, %d\n", retval);
+-				spin_lock_irqsave(&musb->lock, flags);
+-				otg_set_peripheral(musb->xceiv, NULL);
+-				musb->gadget_driver = NULL;
+-				musb->g.dev.driver = NULL;
+-				spin_unlock_irqrestore(&musb->lock, flags);
+-			}
+-		}
+ 	}
+ 
+ 	return retval;
+-- 
+1.7.0.4
 
