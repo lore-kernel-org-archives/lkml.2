@@ -1,45 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755108Ab0GWDih (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 23:38:37 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41809 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753243Ab0GWDif (ORCPT
+	id S1755007Ab0GWD5j (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 23:57:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:44383 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752934Ab0GWD5i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 23:38:35 -0400
-Message-ID: <4C490EB0.2030007@windriver.com>
-Date: Thu, 22 Jul 2010 22:38:24 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: manual merge of the kgdb tree with Linus' tree
-References: <20100723122646.a788fc86.sfr@canb.auug.org.au>
-In-Reply-To: <20100723122646.a788fc86.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
+	Thu, 22 Jul 2010 23:57:38 -0400
+X-Authority-Analysis: v=1.1 cv=NvN00vXXLC/2Fo3NdLZJXFUM7u9qr/FOWvgMjmHRJhk= c=1 sm=0 a=yRs0Bdu_tHsA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=7cxh9BZpSVGz3-NWGiIA:9 a=cuhv01bmcD8hfrMHNN-qYYLayr4A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [RFC][PATCH v1 06/15] perf: export tracepoint events via
+ sysfs: iwlwifi and iwlwifi_io
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Dave Chinner <david@fromorbit.com>, Ingo Molnar <mingo@elte.hu>,
+        Johannes Berg <johannes@sipsolutions.net>,
+        "Chatre, Reinette" <reinette.chatre@intel.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "eranian@gmail.com" <eranian@gmail.com>,
+        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1279853134.24607.38.camel@minggr.sh.intel.com>
+References: <1279797230.20942.87.camel@minggr.sh.intel.com>
+	 <1279797640.12439.11.camel@jlt3.sipsolutions.net>
+	 <1279805440.3319.2.camel@gandalf.stny.rr.com>
+	 <20100722134836.GA6881@elte.hu>
+	 <1279806844.3319.3.camel@gandalf.stny.rr.com>
+	 <20100723013716.GA7362@dastard>
+	 <1279851241.3319.31.camel@gandalf.stny.rr.com>
+	 <1279853134.24607.38.camel@minggr.sh.intel.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Thu, 22 Jul 2010 23:57:34 -0400
+Message-ID: <1279857454.3319.34.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 23 Jul 2010 03:38:26.0452 (UTC) FILETIME=[82571D40:01CB2A18]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 07/22/2010 09:26 PM, Stephen Rothwell wrote:
-> Hi Jason,
->
-> Today's linux-next merge of the kgdb tree got a conflict in
-> kernel/debug/kdb/kdb_main.c between commit
-> edd63cb6b91024332d6983fc51058ac1ef0c081e ("sysrq,kdb: Use __handle_sysrq
-> () for kdb's sysrq function") from Linus' tree and commit
-> 93c47fada46e034941106fb34b76a00a87108fc5 ("kdb: Restore previous sysrq
-> state") from the kgdb tree.
->
-> These are two fixes for the same problem.  I effectively reverted the one
-> from the kgdb tree.
->   
+On Fri, 2010-07-23 at 10:45 +0800, Lin Ming wrote:
+> On Fri, 2010-07-23 at 10:14 +0800, Steven Rostedt wrote:
 
-This already fixed.  The problem was caused by the for_linus pull branch
-being out of sync with kgdb-next.
+> Does this "TRACE_CATEGORY()" can help to specify different event
+> attribute value?
+> 
+> /sys/devices/pci0000:00/0000:00:02.0/drm/card0/events
+> |-- i915_gem_object_bind
+> |   |-- config
+> |   |-- type
+> |   |-- filter  ==> filter for card0
+> 
+> /sys/devices/pci0000:00/0000:00:02.0/drm/card1/events
+> |-- i915_gem_object_bind
+> |   |-- config
+> |   |-- type
+> |   |-- filter  ==> filter for card1
+> 
+> In above example, the values of "config" and "type" are same.
+> But the values of "filter" are different.
 
-Thanks,
-Jason.
+No, it does not make a single event with different atts. It is just a
+way to group events.
+
+What you are showing is two events with the same name under two
+different groups. But there still only exists one event (the place that
+trace_i915_gem_object_bind() is located).
+
+-- Steve
+
+
