@@ -1,45 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760908Ab0GWUB5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 16:01:57 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53749 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1760534Ab0GWUBy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 16:01:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [Bug #16201] SIOCGIWFREQ ioctl fails to get frequency info
-Date: Fri, 23 Jul 2010 22:00:43 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.35-rc6-rjw+; KDE/4.4.4; x86_64; ; )
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Kernel Testers List <kernel-testers@vger.kernel.org>,
-        Maciej Rutecki <maciej.rutecki@gmail.com>, nuh <nuh@mailinator.net>
-References: <Lupw7pePXBO.A.fZH.G2XSMB@chimera> <tneGvaw1wLL.A.maC._4XSMB@chimera> <20100723143831.GB2426@tuxdriver.com>
-In-Reply-To: <20100723143831.GB2426@tuxdriver.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007232200.43440.rjw@sisk.pl>
+	id S1760950Ab0GWUCe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 16:02:34 -0400
+Received: from e39.co.us.ibm.com ([32.97.110.160]:49423 "EHLO
+	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1760361Ab0GWUCc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 23 Jul 2010 16:02:32 -0400
+From: Jay Vosburgh <fubar@us.ibm.com>
+To: Greg Edwards <greg.edwards@hp.com>
+cc: netdev@vger.kernel.org, "David S. Miller" <davem@davemloft.net>,
+        bonding-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
+Subject: [PATCH net-next-2.6] bonding: set device in RLB ARP packet handler
+In-reply-to: <20100722195240.GA25359@w-gedwards.lhn.com>
+References: <20100722195240.GA25359@w-gedwards.lhn.com>
+Comments: In-reply-to Greg Edwards <greg.edwards@hp.com>
+   message dated "Thu, 22 Jul 2010 13:52:40 -0600."
+X-Mailer: MH-E 8.2; nmh 1.3-RC3; GNU Emacs 23.2.1
+Date: Fri, 23 Jul 2010 13:02:04 -0700
+Message-ID: <28252.1279915324@death>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, July 23, 2010, John W. Linville wrote:
-> On Fri, Jul 23, 2010 at 01:47:29PM +0200, Rafael J. Wysocki wrote:
-> > This message has been generated automatically as a part of a summary report
-> > of recent regressions.
-> > 
-> > The following bug entry is on the current list of known regressions
-> > from 2.6.34.  Please verify if it still should be listed and let the tracking team
-> > know (either way).
-> > 
-> > 
-> > Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=16201
-> > Subject		: SIOCGIWFREQ ioctl fails to get frequency info
-> > Submitter	: nuh <nuh@mailinator.net>
-> > Date		: 2010-06-14 10:45 (40 days old)
-> 
-> No response for the submitter, no reproducer -- I think it should be closed.
 
-OK
+From: Greg Edwards <greg.edwards@hp.com>
+
+After:
+
+commit 6146b1a4da98377e4abddc91ba5856bef8f23f1e
+Author: Jay Vosburgh <fubar@us.ibm.com>
+Date:   Tue Nov 4 17:51:15 2008 -0800
+
+    bonding: Fix ALB mode to balance traffic on VLANs
+
+the dev field in the RLB ARP packet handler was set to NULL to wildcard
+and accommodate balancing VLANs on top of bonds.
+
+This has the side-effect of the packet handler being called against
+other, non RLB-enabled bonds, and a kernel oops results when it tries to
+dereference rx_hashtbl in rlb_update_entry_from_arp(), which won't be
+set for those bonds, e.g. active-backup.
+
+With the __netif_receive_skb() changes from:
+
+commit 1f3c8804acba841b5573b953f5560d2683d2db0d
+Author: Andy Gospodarek <andy@greyhouse.net>
+Date:   Mon Dec 14 10:48:58 2009 +0000
+
+    bonding: allow arp_ip_targets on separate vlans to use arp validation
+
+frames received on VLANs correctly make their way to the bond's handler,
+so we no longer need to wildcard the device.
+
+The oops can be reproduced by:
+
+modprobe bonding
+
+echo active-backup > /sys/class/net/bond0/bonding/mode
+echo 100 > /sys/class/net/bond0/bonding/miimon
+ifconfig bond0 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
+echo +eth0 > /sys/class/net/bond0/bonding/slaves
+echo +eth1 > /sys/class/net/bond0/bonding/slaves
+
+echo +bond1 > /sys/class/net/bonding_masters
+echo balance-alb > /sys/class/net/bond1/bonding/mode
+echo 100 > /sys/class/net/bond1/bonding/miimon
+ifconfig bond1 xxx.xxx.xxx.xxx netmask xxx.xxx.xxx.xxx
+echo +eth2 > /sys/class/net/bond1/bonding/slaves
+echo +eth3 > /sys/class/net/bond1/bonding/slaves
+
+Pass some traffic on bond0.  Boom.
+
+[ Tested, behaves as advertised.  I do not believe a test of the bonding
+mode is necessary, as there is no race between the packet handler and
+the bonding mode changing (the mode can only change when the device is
+closed).  Also updated the log message to include the reproduction and
+full commit ids.  -J ]
+	
+Signed-off-by: Greg Edwards <greg.edwards@hp.com>
+Signed-off-by: Jay Vosburgh <fubar@us.ibm.com>
+
+---
+
+ drivers/net/bonding/bond_alb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/net/bonding/bond_alb.c b/drivers/net/bonding/bond_alb.c
+index df48307..8d7dfd2 100644
+--- a/drivers/net/bonding/bond_alb.c
++++ b/drivers/net/bonding/bond_alb.c
+@@ -822,7 +822,7 @@ static int rlb_initialize(struct bonding *bond)
+
+ 	/*initialize packet type*/
+ 	pk_type->type = cpu_to_be16(ETH_P_ARP);
+-	pk_type->dev = NULL;
++	pk_type->dev = bond->dev;
+ 	pk_type->func = rlb_arp_recv;
+
+ 	/* register to receive ARPs */
+-- 
+1.7.0.4
+
