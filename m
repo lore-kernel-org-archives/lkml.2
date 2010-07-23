@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759982Ab0GWOEP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 10:04:15 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:61800 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752234Ab0GWOEN (ORCPT
+	id S1760101Ab0GWOE0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 10:04:26 -0400
+Received: from bld-mail18.adl2.internode.on.net ([150.101.137.103]:57859 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1760034Ab0GWOEX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 10:04:13 -0400
-Date: Fri, 23 Jul 2010 16:03:43 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: Vivek Goyal <vgoyal@redhat.com>
-Cc: linux-kernel@vger.kernel.org, jaxboe@fusionio.com, nauman@google.com,
-        dpshah@google.com, guijianfeng@cn.fujitsu.com, jmoyer@redhat.com,
-        czoccolo@gmail.com
-Subject: Re: [RFC PATCH] cfq-iosched: IOPS mode for group scheduling and new
- group_idle tunable
-Message-ID: <20100723140343.GA8478@fancy-poultry.org>
-References: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1279834172-4227-1-git-send-email-vgoyal@redhat.com>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100619 (GNU/Linux)
-X-Provags-ID: V02:K0:6IY2yIgUzr1jgqu3aHTdm5HUlu8xJNnQcrBzjbCF1Li
- p3MxrOehZ3Fg6os2yHeZYrwAbIFBl6a2tFAKHSC+FKyAIlEVza
- ctfERzq7daPqWK9/gtO+vnwZ5wQAE6JUdPzLjn0XCmTMfckyj+
- 9rSoR9OfrrbzuigfXyHs3nIbpZimvdALnthLvvb46t5QgPengb
- /lRD4HVVdZAU8moNLU2IA==
+	Fri, 23 Jul 2010 10:04:23 -0400
+From: Dave Chinner <david@fromorbit.com>
+To: npiggin@kernel.dk
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+        linux-mm@kvack.org, fmayhar@google.com, johnstul@us.ibm.com
+Subject: [PATCH 1/2] xfs: fix shrinker build
+Date: Sat, 24 Jul 2010 00:04:01 +1000
+Message-Id: <1279893842-4246-2-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100723111310.GI32635@dastard>
+References: <20100723111310.GI32635@dastard>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 23.07.2010, Vivek Goyal wrote: 
+From: Dave Chinner <dchinner@redhat.com>
 
-> This is V4 of the patchset which implements a new tunable group_idle and also
-> implements IOPS mode for group fairness. Following are changes since V3.
-[....]
+Remove the stray mount list lock reference from the shrinker code.
 
-Just for information: this patchset, applied to 2.6.35-rc6, gives about
-20-25% increase in speed/throughput on my desktop system 
-(Phenom 2.5GHz Quadcore, 3 disks) with the tunables set according 
-to what you've used/reported here (the setup with slice_idle set to 0),
-and it's measurable with fs_mark, too.
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/xfs/linux-2.6/xfs_sync.c |    5 +----
+ 1 files changed, 1 insertions(+), 4 deletions(-)
 
-After 2 hours of hard testing, the machine remains stable and responsive.
+diff --git a/fs/xfs/linux-2.6/xfs_sync.c b/fs/xfs/linux-2.6/xfs_sync.c
+index 7a5a368..05426bf 100644
+--- a/fs/xfs/linux-2.6/xfs_sync.c
++++ b/fs/xfs/linux-2.6/xfs_sync.c
+@@ -916,10 +916,8 @@ xfs_reclaim_inode_shrink(
+ 
+ done:
+ 	nr = shrinker_do_scan(&nr_to_scan, SHRINK_BATCH);
+-	if (!nr) {
+-		up_read(&xfs_mount_list_lock);
++	if (!nr)
+ 		return 0;
+-	}
+ 	xfs_inode_ag_iterator(mp, xfs_reclaim_inode, 0,
+ 				XFS_ICI_RECLAIM_TAG, 1, &nr);
+ 	/* if we don't exhaust the scan, don't bother coming back */
+@@ -935,7 +933,6 @@ xfs_inode_shrinker_register(
+ 	struct xfs_mount	*mp)
+ {
+ 	mp->m_inode_shrink.shrink = xfs_reclaim_inode_shrink;
+-	mp->m_inode_shrink.seeks = DEFAULT_SEEKS;
+ 	register_shrinker(&mp->m_inode_shrink);
+ }
+ 
+-- 
+1.7.1
 
