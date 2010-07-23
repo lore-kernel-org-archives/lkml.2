@@ -1,96 +1,208 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab0GWBKZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 21:10:25 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:50627 "EHLO smtps.tip.net.au"
+	id S1756577Ab0GWBMt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 21:12:49 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:45420 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752401Ab0GWBKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 21:10:24 -0400
-Date: Fri, 23 Jul 2010 11:10:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: "Xen-devel@lists.xensource.com" <Xen-devel@lists.xensource.com>,
-        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-        Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>,
-        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: Re: New branches for linux-next
-Message-Id: <20100723111018.f250c0f5.sfr@canb.auug.org.au>
-In-Reply-To: <4C48D9C8.3090701@goop.org>
-References: <4C48D9C8.3090701@goop.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__23_Jul_2010_11_10_18_+1000_2jUSn7mR7S.MF0wb"
+	id S1752240Ab0GWBMr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 21:12:47 -0400
+From: Armando Uribe <x0095078@ti.com>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: Omar Ramirez Luna <omar.ramirez@ti.com>, Ohad Ben-Cohen <ohad@wizery.com>,
+        Ameya Palande <ameya.palande@nokia.com>,
+        <linux-kernel@vger.kernel.org>, <devel@driverdev.osuosl.org>,
+        Rene Sapiens <rene.sapiens@ti.com>,
+        Felipe Contreras <felipe.contreras@gmail.com>,
+        Armando Uribe <x0095078@ti.com>
+Subject: [PATCH 2/9] staging: tidspbridge: Remove redundant macros in io_sm.c
+Date: Thu, 22 Jul 2010 20:25:27 -0500
+Message-Id: <1279848334-4043-3-git-send-email-x0095078@ti.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1279848334-4043-2-git-send-email-x0095078@ti.com>
+References: <1279848334-4043-1-git-send-email-x0095078@ti.com>
+ <1279848334-4043-2-git-send-email-x0095078@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__23_Jul_2010_11_10_18_+1000_2jUSn7mR7S.MF0wb
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+This patch removes 4 redundant macros used to perform
+read/write operations in shared memory region from io_sm.c.
 
-Hi Jeremy,
+Signed-off-by: Armando Uribe <x0095078@ti.com>
+---
+ drivers/staging/tidspbridge/core/io_sm.c           |   77 ++++++++------------
+ .../staging/tidspbridge/include/dspbridge/io_sm.h  |    5 --
+ 2 files changed, 30 insertions(+), 52 deletions(-)
 
-On Thu, 22 Jul 2010 16:52:40 -0700 Jeremy Fitzhardinge <jeremy@goop.org> wr=
-ote:
->
-> Could you add:
->=20
->     git://git.kernel.org/pub/scm/linux/kernel/git/jeremy/xen.git
->     upstream/xen
+diff --git a/drivers/staging/tidspbridge/core/io_sm.c b/drivers/staging/tidspbridge/core/io_sm.c
+index b115cb3..03960bd 100644
+--- a/drivers/staging/tidspbridge/core/io_sm.c
++++ b/drivers/staging/tidspbridge/core/io_sm.c
+@@ -1094,15 +1094,12 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
+ 	chnl_mgr_obj = pio_mgr->hchnl_mgr;
+ 
+ 	/* Attempt to perform input */
+-	if (!IO_GET_VALUE(pio_mgr->hbridge_context, struct shm, sm, input_full))
++	if (!sm->input_full)
+ 		goto func_end;
+ 
+-	bytes =
+-	    IO_GET_VALUE(pio_mgr->hbridge_context, struct shm, sm,
+-			 input_size) * chnl_mgr_obj->word_size;
+-	chnl_id = IO_GET_VALUE(pio_mgr->hbridge_context, struct shm,
+-							sm, input_id);
+-	dw_arg = IO_GET_LONG(pio_mgr->hbridge_context, struct shm, sm, arg);
++	bytes = sm->input_size * chnl_mgr_obj->word_size;
++	chnl_id = sm->input_id;
++	dw_arg = sm->arg;
+ 	if (chnl_id >= CHNL_MAXCHANNELS) {
+ 		/* Shouldn't be here: would indicate corrupted shm. */
+ 		DBC_ASSERT(chnl_id);
+@@ -1185,8 +1182,7 @@ static void input_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
+ 	}
+ 	if (clear_chnl) {
+ 		/* Indicate to the DSP we have read the input */
+-		IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm,
+-							input_full, 0);
++		sm->input_full = 0;
+ 		sm_interrupt_dsp(pio_mgr->hbridge_context, MBX_PCPY_CLASS);
+ 	}
+ 	if (notify_client) {
+@@ -1215,12 +1211,8 @@ static void input_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
+ 
+ 	msg_ctr_obj = pio_mgr->msg_input_ctrl;
+ 	/* Get the number of input messages to be read */
+-	input_empty =
+-	    IO_GET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl, msg_ctr_obj,
+-			 buf_empty);
+-	num_msgs =
+-	    IO_GET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl, msg_ctr_obj,
+-			 size);
++	input_empty = msg_ctr_obj->buf_empty;
++	num_msgs = msg_ctr_obj->size;
+ 	if (input_empty)
+ 		goto func_end;
+ 
+@@ -1310,10 +1302,8 @@ static void input_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
+ 	/* Set the post SWI flag */
+ 	if (num_msgs > 0) {
+ 		/* Tell the DSP we've read the messages */
+-		IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
+-			     msg_ctr_obj, buf_empty, true);
+-		IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
+-			     msg_ctr_obj, post_swi, true);
++		msg_ctr_obj->buf_empty = true;
++		msg_ctr_obj->post_swi = true;
+ 		sm_interrupt_dsp(pio_mgr->hbridge_context, MBX_PCPY_CLASS);
+ 	}
+ func_end:
+@@ -1375,15 +1365,14 @@ static void output_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
+ 	chnl_mgr_obj = pio_mgr->hchnl_mgr;
+ 	sm = pio_mgr->shared_mem;
+ 	/* Attempt to perform output */
+-	if (IO_GET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_full))
++	if (sm->output_full)
+ 		goto func_end;
+ 
+ 	if (pchnl && !((pchnl->dw_state & ~CHNL_STATEEOS) == CHNL_STATEREADY))
+ 		goto func_end;
+ 
+ 	/* Look to see if both a PC and DSP output channel are ready */
+-	dw_dsp_f_mask = IO_GET_VALUE(pio_mgr->hbridge_context, struct shm, sm,
+-				     dsp_free_mask);
++	dw_dsp_f_mask = sm->dsp_free_mask;
+ 	chnl_id =
+ 	    find_ready_output(chnl_mgr_obj, pchnl,
+ 			      (chnl_mgr_obj->dw_output_mask & dw_dsp_f_mask));
+@@ -1415,23 +1404,19 @@ static void output_chnl(struct io_mgr *pio_mgr, struct chnl_object *pchnl,
+ 					chnl_packet_obj->byte_size);
+ 	pchnl->bytes_moved += chnl_packet_obj->byte_size;
+ 	/* Write all 32 bits of arg */
+-	IO_SET_LONG(pio_mgr->hbridge_context, struct shm, sm, arg,
+-		    chnl_packet_obj->dw_arg);
++	sm->arg = chnl_packet_obj->dw_arg;
+ #if _CHNL_WORDSIZE == 2
+-	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_id,
+-		     (u16) chnl_id);
+-	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_size,
+-		     (u16) (chnl_packet_obj->byte_size +
+-			    (chnl_mgr_obj->word_size -
+-			     1)) / (u16) chnl_mgr_obj->word_size);
++	/* Access can be different SM access word size (e.g. 16/32 bit words) */
++	sm->output_id = (u16) chnl_id;
++	sm->output_size = (u16) (chnl_packet_obj->byte_size +
++				chnl_mgr_obj->word_size - 1) /
++				(u16) chnl_mgr_obj->word_size;
+ #else
+-	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_id,
+-								chnl_id);
+-	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_size,
+-		     (chnl_packet_obj->byte_size +
+-		      (chnl_mgr_obj->word_size - 1)) / chnl_mgr_obj->word_size);
++	sm->output_id = chnl_id;
++	sm->output_size = (chnl_packet_obj->byte_size +
++			chnl_mgr_obj->word_size - 1) / chnl_mgr_obj->word_size;
+ #endif
+-	IO_SET_VALUE(pio_mgr->hbridge_context, struct shm, sm, output_full, 1);
++	sm->output_full =  1;
+ 	/* Indicate to the DSP we have written the output */
+ 	sm_interrupt_dsp(pio_mgr->hbridge_context, MBX_PCPY_CLASS);
+ 	/* Notify client with IO completion record (keep EOS) */
+@@ -1463,9 +1448,7 @@ static void output_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
+ 	msg_ctr_obj = pio_mgr->msg_output_ctrl;
+ 
+ 	/* Check if output has been cleared */
+-	output_empty =
+-	    IO_GET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl, msg_ctr_obj,
+-			 buf_empty);
++	output_empty = msg_ctr_obj->buf_empty;
+ 	if (output_empty) {
+ 		num_msgs = (hmsg_mgr->msgs_pending > hmsg_mgr->max_msgs) ?
+ 		    hmsg_mgr->max_msgs : hmsg_mgr->msgs_pending;
+@@ -1512,17 +1495,17 @@ static void output_msg(struct io_mgr *pio_mgr, struct msg_mgr *hmsg_mgr)
+ 		if (num_msgs > 0) {
+ 			hmsg_mgr->msgs_pending -= num_msgs;
+ #if _CHNL_WORDSIZE == 2
+-			IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
+-				     msg_ctr_obj, size, (u16) num_msgs);
++			/*
++			 * Access can be different SM access word size
++			 * (e.g. 16/32 bit words)
++			 */
++			msg_ctr_obj->size = (u16) num_msgs;
+ #else
+-			IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
+-				     msg_ctr_obj, size, num_msgs);
++			msg_ctr_obj->size = num_msgs;
+ #endif
+-			IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
+-				     msg_ctr_obj, buf_empty, false);
++			msg_ctr_obj->buf_empty = false;
+ 			/* Set the post SWI flag */
+-			IO_SET_VALUE(pio_mgr->hbridge_context, struct msg_ctrl,
+-				     msg_ctr_obj, post_swi, true);
++			msg_ctr_obj->post_swi = true;
+ 			/* Tell the DSP we have written the output. */
+ 			sm_interrupt_dsp(pio_mgr->hbridge_context,
+ 						MBX_PCPY_CLASS);
+diff --git a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
+index 8b51c37..f1c44f8 100644
+--- a/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
++++ b/drivers/staging/tidspbridge/include/dspbridge/io_sm.h
+@@ -33,13 +33,8 @@
+ #define DSP_FIELD_ADDR(type, field, base, wordsize) \
+     ((((s32)&(((type *)0)->field)) / wordsize) + (u32)base)
+ 
+-/* Access can be different SM access word size (e.g. 16/32 bit words) */
+-#define IO_SET_VALUE(context, type, base, field, value) (base->field = value)
+-#define IO_GET_VALUE(context, type, base, field)	(base->field)
+ #define IO_OR_VALUE(context, type, base, field, value)  (base->field |= value)
+ #define IO_AND_VALUE(context, type, base, field, value) (base->field &= value)
+-#define IO_SET_LONG(context, type, base, field, value)  (base->field = value)
+-#define IO_GET_LONG(context, type, base, field)         (base->field)
+ 
+ #ifdef CONFIG_TIDSPBRIDGE_DVFS
+ /* The maximum number of OPPs that are supported */
+-- 
+1.6.3.3
 
-Added starting today.  I put just you as the contact - I can add more
-people/lists if you like.
-
-Thanks for adding your subsystem tree as a participant of linux-next.  As
-you may know, this is not a judgment of your code.  The purpose of
-linux-next is for integration testing and to lower the impact of
-conflicts between subsystems in the next merge window.=20
-
-You will need to ensure that the patches/commits in your tree/series have
-been:
-     * submitted under GPL v2 (or later) and include the Contributor's
-	Signed-off-by,
-     * posted to the relevant mailing list,
-     * reviewed by you (or another maintainer of your subsystem tree),
-     * successfully unit tested, and=20
-     * destined for the current or next Linux merge window.
-
-Basically, this should be just what you would send to Linus (or ask him
-to fetch).  It is allowed to be rebased if you deem it necessary.
-
---=20
-Cheers,
-Stephen Rothwell=20
-sfr@canb.auug.org.au
-
-Legal Stuff:
-By participating in linux-next, your subsystem tree contributions are
-public and will be included in the linux-next trees.  You may be sent
-e-mail messages indicating errors or other issues when the
-patches/commits from your subsystem tree are merged and tested in
-linux-next.  These messages may also be cross-posted to the linux-next
-mailing list, the linux-kernel mailing list, etc.  The linux-next tree
-project and IBM (my employer) make no warranties regarding the linux-next
-project, the testing procedures, the results, the e-mails, etc.  If you
-don't agree to these ground rules, let me know and I'll remove your tree
-from participation in linux-next.
-
---Signature=_Fri__23_Jul_2010_11_10_18_+1000_2jUSn7mR7S.MF0wb
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQEcBAEBAgAGBQJMSOv6AAoJEDMEi1NhKgbsZ2EH/11bhTEFe+ZbikLcooqS2zmf
-Fmgv0XppQc4ylLQGX7ptioP2F8jSHAms9qe+moR4HU0vBx8AtaAaaVXSI/8SOVKu
-yHoPupkN6XF6QLvC301mYwMrpKYMdh5tKDnCsfiR5IaN7TEi2M+FpiZdn8wbJPbO
-jPqhfZ+VwVUdzXdtadFN5TOX3h54k+IoleH74LMCjdAEFrtRTu3qVDuUB2IIaSjA
-wDnpaz4Q/v8TT8e8isSZ2KGa0Lfq9AiVElXGtUJssroCIWFHWkm0T/BUODt+M4Ow
-OI6fmpy7MIC2PJkVdtJubSgp5rL4QZ6hSW2VcPxGcSoLSJqr98mwSoC+ndasvqI=
-=t/DU
------END PGP SIGNATURE-----
-
---Signature=_Fri__23_Jul_2010_11_10_18_+1000_2jUSn7mR7S.MF0wb--
