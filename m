@@ -1,54 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753829Ab0GWFri (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 01:47:38 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:60923 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753429Ab0GWFrg (ORCPT
+	id S1754099Ab0GWFun (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 01:50:43 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58111
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753139Ab0GWFul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 01:47:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: "Ted Ts'o" <tytso@mit.edu>, Christoph Hellwig <hch@infradead.org>,
-        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-        Li Zefan <lizf@cn.fujitsu.com>, Steven Rostedt <rostedt@goodmis.org>,
-        LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org,
-        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [BUG] ext4 trace events cause NULL pointer dereferences
-Cc: kosaki.motohiro@jp.fujitsu.com
-In-Reply-To: <20100723011315.GC16373@thunk.org>
-References: <20100722054957.GA11670@infradead.org> <20100723011315.GC16373@thunk.org>
-Message-Id: <20100723144549.88BA.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Fri, 23 Jul 2010 01:50:41 -0400
+Date: Thu, 22 Jul 2010 22:50:58 -0700 (PDT)
+Message-Id: <20100722.225058.178805105.davem@davemloft.net>
+To: grant.likely@secretlab.ca
+Cc: sfr@canb.auug.org.au, monstr@monstr.eu, microblaze-uclinux@itee.uq.edu.au,
+        devicetree-discuss@lists.ozlabs.org, linux-kernel@vger.kernel.org,
+        linuxppc-dev@ozlabs.org, benh@kernel.crashing.org,
+        sparclinux@vger.kernel.org
+Subject: Re: [PATCH 1/4] of/device: Replace of_device with platform_device
+ in includes and core code
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100722223006.21557.84275.stgit@angua>
+References: <20100722222600.21557.34167.stgit@angua>
+	<20100722223006.21557.84275.stgit@angua>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 23 Jul 2010 14:47:33 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Thu, Jul 22, 2010 at 01:49:57AM -0400, Christoph Hellwig wrote:
-> > 
-> > I think ext4 is simply using an incorrectly typed tracepoint here.
-> > If you want it to be useful in any way it needs a sb paramter and
-> > an optional inode paramter, not the allocation context.
+From: Grant Likely <grant.likely@secretlab.ca>
+Date: Thu, 22 Jul 2010 16:30:06 -0600
+
+> of_device is currently just an #define alias to platform_device until it
+> gets removed entirely.  This patch removes references to it from the
+> include directories and the core drivers/of code.
 > 
-> I agree; this is the patch that I had whipped up to fix the problem.
-> (See below)
+> Signed-off-by: Grant Likely <grant.likely@secretlab.ca>
 
-I'm not familiar ext4 so much. but you patch seems very nice!
-thank you :)
-
-> 
-> > Also the whole ext4_mb_release_group_pa function seems to be a bit
-> > misdesigned.  The code using ac is a totally separate block at the
-> > end of the function and does work that's unrelated to the rest
-> > of the function.  Just making it a separate helper can calling it
-> > only from those places that have the allocation context would make
-> > the code more clear.
-> 
-> I need to look more closely at this.  If I had time there would be a
-> lot of things that I'd be refactoring and cleaning up in mballoc.c....
-
-
+Acked-by: David S. Miller <davem@davemloft.net>
