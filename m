@@ -1,104 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753969Ab0GWCFn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 22 Jul 2010 22:05:43 -0400
-Received: from ozlabs.org ([203.10.76.45]:52764 "EHLO ozlabs.org"
+	id S1755266Ab0GWCIS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 22 Jul 2010 22:08:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20741 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750866Ab0GWCFm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 22 Jul 2010 22:05:42 -0400
-Subject: Re: linux-next: OOPS at bot time
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Ben Hutchings <bhutchings@solarflare.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-        ppc-dev <linuxppc-dev@lists.ozlabs.org>,
-        LKML <linux-kernel@vger.kernel.org>,
-        Jesse Barnes <jbarnes@virtuousgeek.org>
-In-Reply-To: <1279847985.4883.391.camel@localhost>
-References: <20100723102202.871a3131.sfr@canb.auug.org.au>
-	 <1279847985.4883.391.camel@localhost>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-2jwhBwbFMozNiZtbZlTX"
-Date: Fri, 23 Jul 2010 12:05:40 +1000
-Message-ID: <1279850740.6381.19.camel@concordia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753410Ab0GWCIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 22 Jul 2010 22:08:17 -0400
+Date: Thu, 22 Jul 2010 22:07:15 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Greg KH <gregkh@suse.de>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Paul Menage <menage@google.com>,
+        Li Zefan <lizf@cn.fujitsu.com>,
+        Lennart Poettering <lennart@poettering.net>,
+        Andrew Morton <akpm@linux-foundation.org>,
+        KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+        Ben Blum <bblum@andrew.cmu.edu>, containers@lists.linux-foundation.org,
+        linux-kernel@vger.kernel.org,
+        "Daniel P. Berrange" <berrange@redhat.com>,
+        Jan Safranek <jsafrane@redhat.com>,
+        Balbir Singh <balbir@linux.vnet.ibm.com>
+Subject: Re: [PATCH] cgroupfs: create /sys/fs/cgroup to mount cgroupfs on
+Message-ID: <20100723020714.GA11236@redhat.com>
+References: <20100722182638.GA12712@kroah.com>
+ <AANLkTinRGBksuWAZhdmvr39FNACU18+kc5ut49VUf=mp@mail.gmail.com>
+ <20100722183614.GA5443@suse.de>
+ <20100722193741.GA2688@redhat.com>
+ <20100722211856.GA1297@suse.de>
+ <AANLkTinFQtwrCC82T9KlKskDV8fn-zYgimyH2wguHkqY@mail.gmail.com>
+ <20100722231401.GA11538@suse.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100722231401.GA11538@suse.de>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, Jul 22, 2010 at 04:14:01PM -0700, Greg KH wrote:
+> On Fri, Jul 23, 2010 at 01:08:12AM +0200, Kay Sievers wrote:
+> > On Thu, Jul 22, 2010 at 23:18, Greg KH <gregkh@suse.de> wrote:
+> > >> For my testing I now always use /cgroup/ and create directories under it
+> > >> /cgroup/blkio /cgroup/cpu etc and mount controllers on respective
+> > >> directories.
+> > >
+> > > Lennart and Kay, is this what systemd is doing?  I really don't think we
+> > > should be adding a root /cgroup/ mount point to the system for something
+> > > like this.
+> > 
+> > Already solved. Systemd always mounts an empty tmpfs at the 'cgroup'
+> > mountpoint, and stuff is free to create subdirs there. Systemd itself
+> > mount 'systemd' there.
+> 
+> Ah, that makes it easier.  Paul and Vivek, any objection to this patch
+> going in now?
+> 
 
---=-2jwhBwbFMozNiZtbZlTX
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+This sounds reasonable to me also.
 
-On Fri, 2010-07-23 at 02:19 +0100, Ben Hutchings wrote:
-> On Fri, 2010-07-23 at 10:22 +1000, Stephen Rothwell wrote:
-> > Hi all,
-> >=20
-> > My Power7 boot test paniced like this: (next-20100722)
-> >=20
-> > %GQLogic Fibre Channel HBA Driver: 8.03.03-k0
-> > qla2xxx 0002:01:00.2: enabling device (0144 -> 0146)
-> > qla2xxx 0002:01:00.2: Found an ISP8001, irq 35, iobase 0xd0000800800140=
-00
-> > ------------[ cut here ]------------
-> > kernel BUG at drivers/pci/msi.c:205!
-> [...]
-> > Call Trace:
-> > [c00000000278b270] [c000000000048d9c] .rtas_setup_msi_irqs+0x1d8/0x254 =
-(unreliable)
-> > [c00000000278b360] [c00000000002a9cc] .arch_setup_msi_irqs+0x34/0x4c
-> > [c00000000278b3e0] [c0000000002fd3fc] .pci_enable_msix+0x49c/0x4ac
-> [...]
-> > That line number is this:
-> >=20
-> > 	BUG_ON(!(entry->msg.address_hi | entry->msg.address_lo |
-> > 		 entry->msg.data));
-> >=20
-> > in read_msi_msg_desc().  That BUG_ON was added by commit
-> > 2ca1af9aa3285c6a5f103ed31ad09f7399fc65d7 ("PCI: MSI: Remove unsafe and
-> > unnecessary hardware access") from the pci tree.
->=20
-> I wanted to assert that read_msi_msg_desc() is only used to update
-> MSI/MSI-X descriptors that have already been generated by Linux.  It
-> looks like you found an exception.
->
-> We could make read_msi_msg() fall back to reading from the hardware, but
-> I think that what the pSeries code is trying to do - save an MSI message
-> generated by firmware - is different from what the other callers want.
-> Instead we could add:
->=20
-> void save_msi_msg(unsigned int irq)
-> {
-> 	struct irq_desc *desc =3D irq_to_desc(irq);
-> 	struct msi_desc *entry =3D get_irq_desc_msi(desc);
-> 	struct msi_msg *msg =3D &entry->msg;
->=20
-> 	/* ...followed by the old implementation of read_msi_msg_desc() */
-> }
->=20
-> Possibly conditional on something like CONFIG_ARCH_NEEDS_SAVE_MSI_MSG.
+Jan, I know you have been working in this area and raised concenrs about
+cgroup mount point in the past. Does it look good to you?
 
-Maybe.
-
-But then you end up with read_msi_msg(), which doesn't actually read
-anything, which I think is confusing. I'd rather read_msi_msg() read the
-message, from the device, and we have another routine which returns the
-previously saved msg from the msi_desc.
-
-cheers
-
---=-2jwhBwbFMozNiZtbZlTX
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkxI+PEACgkQdSjSd0sB4dJZBwCfYn60t5zXzoyyHNimeOZ36zx7
-uqIAn0MgXgdUi7R1W2kux1Ur+hoBWn8Y
-=qTcF
------END PGP SIGNATURE-----
-
---=-2jwhBwbFMozNiZtbZlTX--
-
+Vivek
