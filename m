@@ -1,42 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752986Ab0GWH6P (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 03:58:15 -0400
-Received: from smtp-out003.kontent.com ([81.88.40.217]:38589 "EHLO
-	smtp-out003.kontent.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751591Ab0GWH6O (ORCPT
+	id S1754016Ab0GWH7D (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 03:59:03 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:62832 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751693Ab0GWH7A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 03:58:14 -0400
-From: Oliver Neukum <oliver@neukum.org>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH] USB: core: Choose configuration with lowest bConfigurationValue
-Date: Thu, 22 Jul 2010 18:19:47 +0200
-User-Agent: KMail/1.13.5 (Linux/2.6.34-12-desktop; KDE/4.4.4; x86_64; ; )
-Cc: linux-usb@vger.kernel.org, Adam Kropelin <akropel1@rochester.rr.com>,
-        Xiaofan Chen <xiaofanc@gmail.com>, linux-kernel@vger.kernel.org
-References: <op.vf8lmjow7p4s8u@pikus> <ed7910dcd6f62c058938f30aceb0fa5cd7c3f385.1279807231.git.m.nazarewicz@samsung.com>
-In-Reply-To: <ed7910dcd6f62c058938f30aceb0fa5cd7c3f385.1279807231.git.m.nazarewicz@samsung.com>
+	Fri, 23 Jul 2010 03:59:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QKMgPml0NPZecjsANOAT3+fgQOHvt3NZTBZB5wMs5sIUHccyeui8DqM69eoItjtbmR
+         6JZXqh9HwOtn0MouKBo4+rmf5Q0+txoAIMngYESfDB3BlyFwXbrruqSNlWMs9jIRCzkJ
+         hXf/l5r9K91x9QIV99xHw0BWhQwdCEQkngYi0=
+Date: Fri, 23 Jul 2010 16:03:03 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: zhanglx <zhanglx@semico.com.cn>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Question about net subsystem
+Message-ID: <20100723080303.GA5822@cr0.nay.redhat.com>
+References: <007001cb293c$36ec6630$3701a8c0@wxintech.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201007221819.47141.oliver@neukum.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <007001cb293c$36ec6630$3701a8c0@wxintech.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Donnerstag, 22. Juli 2010, 16:09:10 schrieb Michal Nazarewicz:
-> This patch removes code from usb_choose_configuration()
-> responsible for ignoring the first USB device configuration if
-> its first interface is RNDIS.  Instead,
-> usb_choose_configuration() chooses configuration with lowest
-> bConfigurationValue.  Linux' Ethernet gadget uses a lower
-> bConfigurationValue for the second configuration which is
-> a CDC configuration so this code should choose configuration
-> that suits Linux better.
+On Thu, Jul 22, 2010 at 09:21:30AM +0800, zhanglx wrote:
+>hello,
+>
+>I have some questions about net subsystem.
+>
+>Does the kernel code store the IP address of local machine, in which variable?
 
-But what if the other side is not a Linux gadget? We need this code
-to not select RNDIS on those devices. I am afraid we can't do this?
 
-	Regards
-		Oliver
+Yes, it is in a per-interface struct, you must be interested in how
+SIOCGIFADDR is handled.
+
+>
+>If there are two net cards, then there will be two IP and MAC address, how will the kernel store them? When there are two net cards, which card will the PC use to connect to net.
+>
+
+
+This depends on your route table. :)
+
+
+>Does the webbrowser such as Firefox also use the series of functions( sock(), connect(), send(),receive()...) to connect to internet?
+>
+
+Sure.
+
+Hope this helps.
