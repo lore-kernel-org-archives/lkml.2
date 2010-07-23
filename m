@@ -1,211 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751781Ab0GWEO7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 23 Jul 2010 00:14:59 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:42043 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751524Ab0GWEO5 convert rfc822-to-8bit (ORCPT
+	id S1751387Ab0GWEU5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 23 Jul 2010 00:20:57 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:55975 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750778Ab0GWEU4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 23 Jul 2010 00:14:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=ppjPuQZ9eW7llIEXJPK77iLuF4kApLZHc66AhFxx8HYWwNViHKxFw8UUn0F7FoXk//
-         /Kj7bDPfXQj8A2tuw52+kbNht1U9GbL3lHeElkWWhlTshB4fjwNsBsE3C9PchWLV2YON
-         ZE/auYOtFJq1boPpjkptBjVrg2Dw1ufPuQ/l8=
+	Fri, 23 Jul 2010 00:20:56 -0400
+Date: Fri, 23 Jul 2010 14:20:41 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Johannes Berg <johannes@sipsolutions.net>,
+        Lin Ming <ming.m.lin@intel.com>,
+        Reinette Chatre <reinette.chatre@intel.com>,
+        Robert Richter <robert.richter@amd.com>,
+        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+        Peter Zijlstra <peterz@infradead.org>, Greg KH <greg@kroah.com>,
+        Frederic Weisbecker <fweisbec@gmail.com>,
+        Paul Mundt <lethal@linux-sh.org>,
+        "eranian@gmail.com" <eranian@gmail.com>,
+        "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+        "arjan@linux.intel.com" <arjan@linux.intel.com>,
+        "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+        Paul Mackerras <paulus@samba.org>,
+        "David S. Miller" <davem@davemloft.net>,
+        Russell King <rmk+kernel@arm.linux.org.uk>,
+        Arnaldo Carvalho de Melo <acme@redhat.com>,
+        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+        lkml <linux-kernel@vger.kernel.org>,
+        Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [RFC][PATCH v1 06/15] perf: export tracepoint events via
+ sysfs: iwlwifi and iwlwifi_io
+Message-ID: <20100723042041.GF32635@dastard>
+References: <1279797230.20942.87.camel@minggr.sh.intel.com>
+ <1279797640.12439.11.camel@jlt3.sipsolutions.net>
+ <1279805440.3319.2.camel@gandalf.stny.rr.com>
+ <20100722134836.GA6881@elte.hu>
+ <1279806844.3319.3.camel@gandalf.stny.rr.com>
+ <20100723013716.GA7362@dastard>
+ <1279851241.3319.31.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilI3KjFn1Ys09fC_ty0V2c9k8GndH0wZAwGaCaI@mail.gmail.com>
-References: <AANLkTin1vGdodjhqbckGpVtfScslb7d0KX0h4wPa54Yh@mail.gmail.com>
-	<AANLkTilI3KjFn1Ys09fC_ty0V2c9k8GndH0wZAwGaCaI@mail.gmail.com>
-Date: Fri, 23 Jul 2010 00:14:56 -0400
-Message-ID: <AANLkTimxNAomiFwuZJ-upvI_db4Y82KnzYYIPPa1efyp@mail.gmail.com>
-Subject: Re: 2.6.35-rc[1-5] + Radeon-kms: 3D graphic performance
-From: Alex Deucher <alexdeucher@gmail.com>
-To: trapdoor6@gmail.com
-Cc: LKML <linux-kernel@vger.kernel.org>, trapDoor <trapdoor6@googlemail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1279851241.3319.31.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Jul 22, 2010 at 9:19 PM, trapDoor <trapdoor6@gmail.com> wrote:
-> I had sent the first e-mail too soon by accident. In Gmail interface
-> the 'Send' and 'Save Now' buttons are dangerously close to each other,
-> far too close I'd say ..
-> So, what is missing there:
-> - a brief description of the regression (it's in the previous thread)
-> - when did it start: 2.6.35-rc1
-> - how I tested it
-> - what I think is causing it
->
-> I will just refer to the last point now: I think the regression is
-> caused by the vblank stuff you mentioned in previous thread. And here
-> is the pattern I've found during testing:
-> Since the vblank patches have been committed (2.6.35-rc1) the glxgears
-> app started to show the accurate number of fps, corresponding to
-> vrefresh, and that's of course good. But in the same time when
-> glxgears behaves properly, the performance in Armagetron Advanced
-> decreases. During the unfinished bisect I had two 'good' and two 'bad'
-> kernels and in each case the bad kernel had the vblank commit(s)
-> applied (as far as I would know - just by looking at number of fps in
-> glxgears) and performance in AA was worse than in the 'good' kernels
-> without the vblank stuff. I'm not suggesting anything that the vblank
-> stuff is responsible directly for the regression. I just say what I
-> noticed. It may be that those patches cause the problem but only in
-> specific circumstances (e.g. with some other patches).
->
-> I could just revert the commit(s) on current git tree or if there will
-> be any conflicts from some earlier version, and see what happens. I
-> think It will be (one of) these ?
->
-> commit f81f202402640c27b38e1452dcb4d3e447043f48
-> Author: Matthew Garrett <mjg@redhat.com>
-> Date:   Wed Apr 28 12:13:06 2010 -0400
->
->    radeon: Try harder to ensure we reclock in vblank
->
->    The vblank interrupt on r600 doesn't seem to be especially reliable, so
->    perform some sanity checks before the actual reclock.
->
-> ------
-> commit 8a56df632e524a1c444c56bb7ce9fe8d94e639e0
-> Author: Alex Deucher <alexdeucher@gmail.com>
-> Date:   Mon Mar 15 17:09:05 2010 -0400
->
->    drm/radeon/kms/pm: interate across crtcs for vblank
->
->
+On Thu, Jul 22, 2010 at 10:14:00PM -0400, Steven Rostedt wrote:
+> On Fri, 2010-07-23 at 11:37 +1000, Dave Chinner wrote:
+> > On Thu, Jul 22, 2010 at 09:54:04AM -0400, Steven Rostedt wrote:
+> > > On Thu, 2010-07-22 at 15:48 +0200, Ingo Molnar wrote:
+> > > > * Steven Rostedt <rostedt@goodmis.org> wrote:
+> > > 
+> > > > Yeah - and the point of this submission is to allow the discussion of how to 
+> > > > achieve these registrations.
+> > > > 
+> > > > Driver authors will want to have some control - for example the place where 
+> > > > the events directory shows up in sysfs within the driver's directory structure 
+> > > > - etc.
+> > > > 
+> > > > But we indeed want to automate it as much as possible.
+> > > 
+> > > Perhaps we can create a TRACE_EVENT_PATH() macro, that allows the
+> > > developer to specify the path that the event will be seen in sysfs?
+> > 
+> > Perhaps you could build that into the event class definition as well
+> > so each separate class in a subsystem can be placed in it's own
+> > sub-directory?
+> > 
+> > That would make turning on and off specific classes trace points so
+> > much simpler than it now, espcially for XFS where we now have > 250
+> > tracepoints that are mostly defined by event classes already...
+> 
+> I was working on creating a "TRACE_CATEGORY()" that allowed you to put
+> tracepoints into categories. Thus, these tracepoints will all still be
+> in the XFS system, but you can add hierarchical categories that let you
+> group and enable tracepoints in these groups.
 
-Those patches are only relevant when you enable dynpm (dynamic power
-management) which is not enabled by default.  I suspect you are seeing
-some aspect of this bug:
-https://bugs.freedesktop.org/show_bug.cgi?id=28341
-You might try the patches there.
+Yes, that's pretty much what I was thinking of.
 
-Alex
+> But I stopped this work since it was more ftrace specific than perf, and
+> I need to figure out how to continue my work on ftrace and at the same
+> time merge it towards perf. This has been taking much longer than I have
+> expected. Perhaps I should just finish that work, and then see how we
+> can make perf work with it too?
 
-> --
-> Regards
-> trapDoor
->
->
->>>>>>>>>>>>>>>>>>>>>>>>>>>
-> On Fri, Jul 23, 2010 at 1:21 AM, trapDoor <trapdoor6@gmail.com> wrote:
->> Hi Alex,
->> This is with regard to thread 'Blank (disconnected) screen during boot
->> with latest 2.6.35-rcX kernels'.
->>
->> You asked me in your last e-mail if I could do a bisect to find out
->> what caused a regression I mentioned about - in 3D graphic performance
->> in kernels 2.6.35-rc + radeoon-kms. I started the bisect but
->> unfortunately I haven't finished due to some problems I came across
->> and I'm not sure if I can continue it. I'm pointing below how the
->> bisect went and - if you'd like to take a look - at the last point I
->> explained why I stopped.
->>
->> I did notice some pattern during this unfinished bisect though. And I
->> think it may narrow down the regression to its source.
->>
->>
->>
->> ------
->> 1. boot from 2.6.35-rc5-git4:
->> git-clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux-2.6.git
->> linus-git
->> cd linux-git
->> git bisect start
->>
->> # marking kernel 2.6.35-rc1 as bad
->> git bisect bad 67a3e12b05e055c0415c556a315a3d3eb637e29e
->>
->> # marking kernel 2.6.34 as good
->> git bisect good e40152ee1e1c7a63f4777791863215e3faa37a86
->> Bisecting: 4139 revisions left to test after this (roughly 12 steps)
->> [f8965467f366fd18f01feafb5db10512d7b4422c] Merge
->> git://git.kernel.org/pub/scm/linux/kernel/git/davem/net-next-2.6
->>
->> ------
->> 2. boot from 2.6.34-04401-gf896546 [f8965467f366fd18f01feafb5db10512d7b4422c]
->> git bisect good
->> Bisecting: 1978 revisions left to test after this (roughly 11 steps)
->> [d79df0b1eda0099a22cbcece01ce5e7d222450de] Merge
->> git://git.kernel.org/pub/scm/linux/kernel/git/gregkh/staging-2.6
->>
->> ------
->> 3. boot from 2.6.34-06562-gd79df0b [d79df0b1eda0099a22cbcece01ce5e7d222450de]
->> git bisect bad
->> Bisecting: 1102 revisions left to test after this (roughly 10 steps)
->> [ac3ee84c604502240122c47b52f0542ec8774f15] Merge branch
->> 'dbg-early-merge' of
->> git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb
->>
->> ------
->> 4. boot from 2.6.34-05459-gac3ee84 [ac3ee84c604502240122c47b52f0542ec8774f15]
->> git bisect good
->> Bisecting: 551 revisions left to test after this (roughly 9 steps)
->> [7a6cb0d5497418599d2125b670926b75e673861c] Staging: Use kcalloc or kzalloc
->>
->> ------
->> 5. boot from 2.6.34-rc6-00551-g7a6cb0d
->> [7a6cb0d5497418599d2125b670926b75e673861c]
->> git bisect good
->> Bisecting: 239 revisions left to test after this (roughly 8 steps)
->> [79c4581262e225a7c96d88b632b05ab3b5e9a52c] Merge branch 'next' of
->> git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc
->>
->> ------
->> 6. boot from 2.6.34-05771-g79c4581 [79c4581262e225a7c96d88b632b05ab3b5e9a52c]
->> git bisect bad
->> Bisecting: 155 revisions left to test after this (roughly 7 steps)
->> [5876dd249e8e47c730cac090bf6edd88e5f04327] radeon: Unmap vram pages
->> when reclocking
->>
->> ------
->> 7. boot from 2.6.34-rc5-00156-g5876dd2
->> [5876dd249e8e47c730cac090bf6edd88e5f04327]
->> At this point I get stuck as I'm unable to perform the tests:
->>
->> -- Gnome fails to start, system freezes right after logging in
->>
->> -- KDE starts but it's almost unusable - very poor 2D performance and
->> 3D seems to not work at all:
->> desktop lost support for transparency/translucency
->> glxgears: just a black window appears with no gears; in the output
->> console it shows this:
->> XIO:  fatal IO error 11 (Resource temporarily unavailable) on X server ":0.0"
->>      after 36 requests (36 known processed) with 0 events remaining.
->> Armagetron Advanced obviously doesn't work either - as above, just a
->> black window comes up
->>
->> -- under minimal X environment (xterm) glxgears and Armagetron
->> Advanced behave the same way as above
->>
->> Now I don't know if I can/how to continue this bisect. Clearly
->> 2.6.34-rc5-00156-g5876dd2 is affected in the area I was testing. But
->> differently and to the degree where I'm actually unable to test what I
->> was testing. Also these issues may be not related to the original
->> regression. They may be caused by different commit(s).
->>
->> To sum up: I can't specify whether kernel 2.6.34-rc5-00156-g5876dd2 is
->> good or bad, in order to continue this bisect.
->>
->> Maybe I should start another bisect to solve the problem caused by
->> this kernel, revert/apply appropriate patch(es) and then continue with
->> the original bisect ? And then, with the next kernel, I may be able to
->> carry on or I may be not and have to repeat what I did as a result of
->> the 2nd bisect. Or I may bump into some other problems and have to
->> start 3rd bisect ... I imagine that people can get into such traps but
->> there must be some ways to solve it quicker and not get into endless
->> bisect loop. Of course I'm not saying all this to show that I'm
->> getting discouraged. Not at all - the more I learn about git the more
->> I like it. It's magic, some people say - and I think they may be
->> right.
->>
->>
->> --
->> Regards
->> trapDoor
->>
->
+I'm not fussed - it's more of a wishlist item right now. If it's in
+the pipeline, then I'm happy to wait until you've done all the hard
+work for me. ;)
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
